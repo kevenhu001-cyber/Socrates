@@ -172,6 +172,50 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 
 /* P2.3 — Storage modal */
 .storage-modal{width:min(560px,92vw);max-height:75vh;display:flex;flex-direction:column}
+
+/* P5.8 — Slash-command palette (Spotlight-style). Anchored
+   above the chat input bar; the active row is highlighted
+   and the kbd hints sit at the bottom. */
+.slash-command-palette{position:fixed;left:50%;bottom:120px;transform:translateX(-50%) translateY(8px);width:min(520px,92vw);max-height:60vh;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:12px;box-shadow:0 16px 50px hsl(var(--always-black)/0.4);overflow:hidden;display:none;flex-direction:column;z-index:850;opacity:0;transition:opacity .12s,transform .12s}
+.slash-command-palette.visible{display:flex;opacity:1;transform:translateX(-50%) translateY(0)}
+.slash-command-head{padding:10px 14px;font-size:11px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:hsl(var(--text-500));border-bottom:0.5px solid hsl(var(--border-300)/0.15)}
+.slash-command-empty{padding:20px 14px;text-align:center;color:hsl(var(--text-400));font-size:12px}
+.slash-command-row{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;transition:background .1s}
+.slash-command-row:hover,.slash-command-row.selected{background:hsl(var(--bg-200))}
+.slash-command-icon{font-size:18px;line-height:1;flex-shrink:0;width:24px;text-align:center}
+.slash-command-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.slash-command-title{font-size:13px;font-weight:500;color:hsl(var(--text-100));display:flex;align-items:center;gap:8px}
+.slash-command-shortcut{font-size:11px;color:hsl(var(--accent-000));font-family:var(--font-mono);background:hsl(var(--accent-900));padding:1px 6px;border-radius:3px}
+.slash-command-desc{font-size:11px;color:hsl(var(--text-400));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slash-command-foot{display:flex;gap:14px;padding:6px 14px;border-top:0.5px solid hsl(var(--border-300)/0.15);font-size:10px;color:hsl(var(--text-500))}
+.slash-command-foot kbd{font-family:var(--font-mono);font-size:10px;padding:1px 4px;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:3px;background:transparent;margin-right:3px}
+
+/* P5.8 — Prompt templates manager + editor */
+.prompt-templates-modal{width:min(620px,92vw);max-height:80vh;display:flex;flex-direction:column}
+.prompt-templates-body{padding:14px 18px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.prompt-templates-section-label{font-size:11px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:hsl(var(--text-500));padding:4px 0 2px}
+.prompt-templates-empty{padding:14px;border:0.5px dashed hsl(var(--border-300)/0.3);border-radius:8px;text-align:center;color:hsl(var(--text-400));font-size:12px}
+.prompt-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.15)}
+.prompt-row-icon{font-size:18px;line-height:1;width:24px;text-align:center;flex-shrink:0}
+.prompt-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.prompt-row-title{font-size:13px;font-weight:500;color:hsl(var(--text-100));display:flex;align-items:center;gap:6px}
+.prompt-row-shortcut{font-size:10px;color:hsl(var(--accent-000));font-family:var(--font-mono);background:hsl(var(--accent-900));padding:1px 5px;border-radius:3px}
+.prompt-row-desc{font-size:11px;color:hsl(var(--text-400));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prompt-row-actions{display:flex;gap:4px;flex-shrink:0}
+.prompt-row-edit,.prompt-row-delete{padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer;border:0.5px solid transparent;background:transparent;font-family:inherit}
+.prompt-row-edit{color:hsl(var(--text-300));border-color:hsl(var(--border-300)/0.4)}
+.prompt-row-edit:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.prompt-row-delete{color:hsl(0 60% 70%);border-color:hsl(0 60% 30%/0.4)}
+.prompt-row-delete:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 80%)}
+.prompt-templates-new{padding:8px 14px;border-radius:8px;background:transparent;border:0.5px dashed hsl(var(--border-300)/0.4);color:hsl(var(--text-300));font-size:13px;cursor:pointer;font-family:inherit;margin-top:6px}
+.prompt-templates-new:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100));border-color:hsl(var(--accent-000)/0.4)}
+.prompt-editor-grid{display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:10px}
+.prompt-editor-label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:hsl(var(--text-400))}
+.prompt-editor-input,.prompt-editor-textarea,.prompt-editor-input select{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;color:hsl(var(--text-100));outline:none;font-family:inherit}
+.prompt-editor-input:focus,.prompt-editor-textarea:focus{border-color:hsl(var(--accent-000)/0.6);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.15)}
+.prompt-editor-shortcut{width:160px;font-family:var(--font-mono)}
+.prompt-editor-icon{width:60px;text-align:center}
+.prompt-editor-textarea{min-height:100px;resize:vertical;font-family:var(--font-sans);line-height:1.5}
 .storage-modal-body{padding:14px 18px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
 .storage-modal-desc{font-size:12px;color:hsl(var(--text-400));line-height:1.5}
 .storage-list{display:flex;flex-direction:column;gap:6px}
@@ -4797,8 +4841,192 @@ function getExplanation(status){var pool=explanationContent[status]||explanation
    CHAT INTERACTION
    ============================================================ */
 function handleChatKey(e){
-  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submitChatMessage()}
+  if(e.key==="Enter"&&!e.shiftKey){
+    e.preventDefault();
+    if(isSlashCommandPaletteOpen())closeSlashCommandPalette();
+    submitChatMessage();
+    return;
+  }
+  /* P5.8 — Slash-command palette. Typing `/` as the only
+     content in the input opens a Spotlight-style picker of
+     prompt templates; arrow keys navigate, Enter inserts the
+     template body (with the cursor on the placeholder line
+     so the user can immediately type), Esc closes.
+     Backspacing to an empty input also closes the palette
+     so we don't shadow what the user is trying to type. */
+  var t=e.target;
+  if(t&&t.id==="chatInputArea"){
+    if(e.key==="/"){
+      /* Defer to next tick so the new `/` is in the value
+         before we read it. */
+      setTimeout(function(){
+        if(t.value==="/")openSlashCommandPalette();
+      },0);
+    }else if(isSlashCommandPaletteOpen()&&t.value===""){
+      closeSlashCommandPalette();
+    }
+  }
 }
+
+/* P5.8 — Prompt templates. Six built-ins plus any user
+   customisations. The full list is the union of BUILTIN_TEMPLATES
+   and the user-saved ones, with the latter overriding a
+   built-in of the same shortcut.
+   Storage: localStorage key "socrates-prompt-templates",
+   value: Array<{ id, title, description, body, icon,
+                   category, shortcut, isBuiltin }>.
+   API contract: docs/api/openapi.yaml P5.8 — these mirror
+   the server shape; when the backend lands /api/prompts
+   the local array becomes the offline cache. */
+var BUILTIN_TEMPLATES=[
+  {id:"tpl-summarize",title:"Summarize",description:"Condense the pasted text into bullet points.",icon:"📝",category:"writing",shortcut:"/summarize",body:"Please summarize the following text in concise bullet points (≤ 5):\n\n",isBuiltin:true},
+  {id:"tpl-translate",title:"Translate to English",description:"Translate the input into natural English.",icon:"🌐",category:"writing",shortcut:"/translate",body:"Translate the following into natural English, preserving tone:\n\n",isBuiltin:true},
+  {id:"tpl-explain-code",title:"Explain this code",description:"Walk through the snippet line by line.",icon:"💻",category:"code",shortcut:"/explain",body:"Walk me through this code line by line, calling out anything surprising or worth refactoring:\n\n```\n\n```",isBuiltin:true},
+  {id:"tpl-debug",title:"Debug this",description:"Find the bug, propose a fix, explain why it worked.",icon:"🐞",category:"code",shortcut:"/debug",body:"This code is misbehaving. Find the bug, propose a minimal fix, and explain the root cause:\n\n```\n\n```\n\nExpected behavior:\nActual behavior:\n",isBuiltin:true},
+  {id:"tpl-quiz",title:"Quiz me",description:"Generate 5 questions on a topic.",icon:"🧠",category:"learning",shortcut:"/quiz",body:"Quiz me with 5 questions on the following topic. Mix difficulty levels and tell me the answer only after I've answered:\n\nTopic: ",isBuiltin:true},
+  {id:"tpl-socratic",title:"Socratic me",description:"Don't tell me the answer — ask me leading questions.",icon:"🌀",category:"learning",shortcut:"/socratic",body:"Help me work through this with questions, not answers. Don't reveal the solution until I've reasoned it out:\n\nProblem: ",isBuiltin:true}
+];
+var PROMPT_TEMPLATES_KEY="socrates-prompt-templates";
+function loadPromptTemplates(){
+  try{
+    var raw=localStorage.getItem(PROMPT_TEMPLATES_KEY);
+    var custom=raw?JSON.parse(raw):null;
+    if(!Array.isArray(custom))custom=[];
+  }catch(_){custom=[]}
+  /* Custom entries shadow built-ins of the same shortcut. */
+  var byShortcut={};
+  BUILTIN_TEMPLATES.forEach(function(t){byShortcut[t.shortcut]=t;});
+  custom.forEach(function(t){if(t&&t.shortcut)byShortcut[t.shortcut]=t;});
+  return Object.values(byShortcut).sort(function(a,b){
+    return(a.title||"").localeCompare(b.title||"");
+  });
+}
+function savePromptTemplates(customs){
+  try{
+    /* Persist only non-built-in entries. */
+    var persistable=(customs||[]).filter(function(t){return t&&!t.isBuiltin;});
+    localStorage.setItem(PROMPT_TEMPLATES_KEY,JSON.stringify(persistable));
+  }catch(_){}
+}
+function findTemplateByShortcut(s){
+  if(!s)return null;
+  var list=loadPromptTemplates();
+  for(var i=0;i<list.length;i++)if(list[i].shortcut===s)return list[i];
+  return null;
+}
+function upsertCustomTemplate(t){
+  var customs=loadPromptTemplates().filter(function(x){return!x.isBuiltin;});
+  var idx=-1;
+  for(var i=0;i<customs.length;i++)if(customs[i].id===t.id){idx=i;break}
+  if(idx>=0)customs[idx]=t;else customs.push(t);
+  savePromptTemplates(customs);
+}
+function deleteCustomTemplate(id){
+  var customs=loadPromptTemplates().filter(function(x){return!x.isBuiltin&&x.id!==id;});
+  savePromptTemplates(customs);
+}
+
+/* P5.8 — Slash-command palette overlay. A single instance
+   that's lazily created the first time the user types `/`.
+   Renders the list filtered by the current input; arrow
+   keys move the highlight; Enter inserts the body at the
+   cursor position; Esc closes. */
+var _slashSelected=0;
+var _slashList=[];
+function isSlashCommandPaletteOpen(){
+  var p=document.getElementById("slashCommandPalette");
+  return p&&p.classList.contains("visible");
+}
+function openSlashCommandPalette(){
+  var p=document.getElementById("slashCommandPalette");
+  if(!p){
+    p=document.createElement("div");
+    p.id="slashCommandPalette";
+    p.className="slash-command-palette";
+    document.body.appendChild(p);
+  }
+  _slashList=loadPromptTemplates();
+  _slashSelected=0;
+  renderSlashCommandPalette();
+  p.classList.add("visible");
+}
+function closeSlashCommandPalette(){
+  var p=document.getElementById("slashCommandPalette");
+  if(p)p.classList.remove("visible");
+}
+function renderSlashCommandPalette(){
+  var p=document.getElementById("slashCommandPalette");
+  if(!p)return;
+  var html=[];
+  html.push('<div class="slash-command-head">Prompt templates</div>');
+  if(!_slashList.length){
+    html.push('<div class="slash-command-empty">No templates yet. Add one from the Profile → Data section.</div>');
+  }else{
+    _slashList.forEach(function(t,i){
+      html.push(
+        '<div class="slash-command-row '+(i===_slashSelected?"selected":"")+'" onclick="onSlashRowClick('+i+')" onmouseenter="_slashSelected='+i+';updateSlashSelected()">'+
+          '<span class="slash-command-icon">'+esc(t.icon||"📄")+'</span>'+
+          '<div class="slash-command-main">'+
+            '<div class="slash-command-title">'+esc(t.title)+' <span class="slash-command-shortcut">'+esc(t.shortcut)+'</span></div>'+
+            '<div class="slash-command-desc">'+esc(t.description||"")+'</div>'+
+          '</div>'+
+        '</div>'
+      );
+    });
+  }
+  html.push('<div class="slash-command-foot"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> insert</span><span><kbd>esc</kbd> close</span></div>');
+  p.innerHTML=html.join("");
+}
+function updateSlashSelected(){
+  var rows=document.querySelectorAll("#slashCommandPalette .slash-command-row");
+  rows.forEach(function(r,i){
+    r.classList.toggle("selected",i===_slashSelected);
+    if(i===_slashSelected)r.scrollIntoView({block:"nearest"});
+  });
+}
+function onSlashRowClick(i){_slashSelected=i;insertSelectedSlashTemplate()}
+function insertSelectedSlashTemplate(){
+  if(!_slashList.length)return;
+  var t=_slashList[_slashSelected];
+  if(!t)return;
+  var input=document.getElementById("chatInputArea");
+  if(!input)return;
+  /* Replace the leading `/` with the template body, then
+     put the cursor on a blank line so the user can type
+     the topic / code / etc. immediately. If the body ends
+     with a newline, the cursor lands on the next line
+     naturally; if not, we add a trailing newline. */
+  var body=t.body||"";
+  input.value=body;
+  input.focus();
+  /* Place cursor at end. */
+  var end=input.value.length;
+  try{input.setSelectionRange(end,end)}catch(_){}
+  /* Trigger autoResize so the textarea grows. */
+  if(typeof autoResize==="function")autoResize(input);
+  if(typeof updateSendBtn==="function")updateSendBtn();
+  closeSlashCommandPalette();
+}
+/* Wire arrow / Enter / Esc handling for the palette itself. */
+document.addEventListener("keydown",function(e){
+  if(!isSlashCommandPaletteOpen())return;
+  var k=e.key;
+  if(k==="ArrowDown"){
+    e.preventDefault();
+    _slashSelected=(_slashSelected+1)%Math.max(1,_slashList.length);
+    updateSlashSelected();
+  }else if(k==="ArrowUp"){
+    e.preventDefault();
+    _slashSelected=(_slashSelected-1+_slashList.length)%Math.max(1,_slashList.length);
+    updateSlashSelected();
+  }else if(k==="Enter"&&!e.shiftKey){
+    e.preventDefault();
+    insertSelectedSlashTemplate();
+  }else if(k==="Escape"){
+    e.preventDefault();
+    closeSlashCommandPalette();
+  }
+});
 
 async function submitChatMessage(textOverride,opts){
   opts=opts||{};
@@ -8067,6 +8295,125 @@ function closeStorageModal(){
   var overlay=document.getElementById("storageModalOverlay");
   if(overlay)overlay.classList.add("hidden");
 }
+
+/* P5.8 — Prompt templates manager modal. Lists built-ins
+   (read-only) and user customs (editable). The 'New
+   template' button opens a lightweight editor inline. */
+function openPromptTemplatesModal(){
+  var overlay=document.getElementById("promptTemplatesOverlay");
+  if(!overlay){
+    overlay=document.createElement("div");
+    overlay.id="promptTemplatesOverlay";
+    overlay.className="cmd-k-overlay hidden";
+    overlay.onclick=function(ev){if(ev.target===overlay)closePromptTemplatesModal()};
+    overlay.innerHTML='<div class="cmd-k-modal prompt-templates-modal" onclick="event.stopPropagation()"></div>';
+    document.body.appendChild(overlay);
+  }
+  overlay.classList.remove("hidden");
+  renderPromptTemplatesModal();
+}
+function closePromptTemplatesModal(){
+  var overlay=document.getElementById("promptTemplatesOverlay");
+  if(overlay)overlay.classList.add("hidden");
+}
+function renderPromptTemplatesModal(){
+  var body=document.querySelector("#promptTemplatesOverlay .prompt-templates-modal");
+  if(!body)return;
+  var all=loadPromptTemplates();
+  var customs=all.filter(function(t){return!t.isBuiltin;});
+  var builtins=all.filter(function(t){returnt.isBuiltin;});
+  var html=
+    '<div class="project-editor-head">'+
+      '<span class="project-editor-title">Prompt templates</span>'+
+      '<button class="project-editor-close" onclick="closePromptTemplatesModal()">×</button>'+
+    '</div>'+
+    '<div class="prompt-templates-body">'+
+      '<div class="prompt-templates-section-label">Built-in ('+builtins.length+')</div>'+
+      builtins.map(function(t){return renderPromptRow(t,false);}).join("")+
+      '<div class="prompt-templates-section-label" style="margin-top:14px">Your templates ('+customs.length+')</div>'+
+      (customs.length?customs.map(function(t){return renderPromptRow(t,true);}).join(""):
+        '<div class="prompt-templates-empty">No custom templates yet.</div>')+
+      '<button class="prompt-templates-new" onclick="openPromptTemplateEditor()">+ New template</button>'+
+    '</div>';
+  body.innerHTML=html;
+}
+function renderPromptRow(t,editable){
+  return '<div class="prompt-row'+(t.isBuiltin?" builtin":"")+'">'+
+    '<span class="prompt-row-icon">'+esc(t.icon||"📄")+'</span>'+
+    '<div class="prompt-row-main">'+
+      '<div class="prompt-row-title">'+esc(t.title)+' <span class="prompt-row-shortcut">'+esc(t.shortcut)+'</span></div>'+
+      '<div class="prompt-row-desc">'+esc(t.description||"")+'</div>'+
+    '</div>'+
+    (editable?
+      '<div class="prompt-row-actions">'+
+        '<button class="prompt-row-edit" onclick=\'openPromptTemplateEditor('+JSON.stringify(t).replace(/'/g,"&#39;')+')\'>Edit</button>'+
+        '<button class="prompt-row-delete" onclick="onPromptRowDelete(\''+esc(t.id)+'\')">Delete</button>'+
+      '</div>':'')+
+  '</div>';
+}
+function onPromptRowDelete(id){
+  showConfirm("Delete template?","This removes your custom template. Built-ins stay.",true).then(function(yes){
+    if(!yes)return;
+    deleteCustomTemplate(id);
+    renderPromptTemplatesModal();
+  });
+}
+
+/* P5.8 — Inline template editor. Reuses the same modal
+   shell but replaces the list with a form. `existing` is
+   either a full template object (edit) or null (new). */
+function openPromptTemplateEditor(existing){
+  var body=document.querySelector("#promptTemplatesOverlay .prompt-templates-modal");
+  if(!body)return;
+  var t=existing||{id:"tpl-"+Date.now().toString(36),title:"",description:"",body:"",icon:"📄",category:"writing",shortcut:"/my-template"};
+  /* Save on Enter inside title field; Cmd/Ctrl+Enter inside
+     body. */
+  body.innerHTML=
+    '<div class="project-editor-head">'+
+      '<span class="project-editor-title">'+(existing?"Edit template":"New template")+'</span>'+
+      '<button class="project-editor-close" onclick="renderPromptTemplatesModal()">×</button>'+
+    '</div>'+
+    '<div class="prompt-templates-body">'+
+      '<div class="prompt-editor-grid">'+
+        '<label class="prompt-editor-label">Title<input class="prompt-editor-input" id="ptTitle" maxlength="80" value="'+esc(t.title)+'" placeholder="e.g. Code review"></label>'+
+        '<label class="prompt-editor-label">Shortcut<input class="prompt-editor-input prompt-editor-shortcut" id="ptShortcut" maxlength="20" pattern="^/[a-z0-9-]+$" value="'+esc(t.shortcut)+'" placeholder="/my-template"></label>'+
+      '</div>'+
+      '<label class="prompt-editor-label">Description<input class="prompt-editor-input" id="ptDescription" maxlength="200" value="'+esc(t.description||"")+'" placeholder="One-line summary"></label>'+
+      '<div class="prompt-editor-grid">'+
+        '<label class="prompt-editor-label">Icon<input class="prompt-editor-input prompt-editor-icon" id="ptIcon" maxlength="4" value="'+esc(t.icon||"📄")+'"></label>'+
+        '<label class="prompt-editor-label">Category'+
+          '<select class="prompt-editor-input" id="ptCategory">'+
+            ["writing","code","learning","analysis","creative","other"].map(function(c){
+              return '<option value="'+c+'" '+(t.category===c?"selected":"")+'>'+c+'</option>';
+            }).join("")+
+          '</select>'+
+        '</label>'+
+      '</div>'+
+      '<label class="prompt-editor-label">Body<textarea class="prompt-editor-textarea" id="ptBody" rows="6" placeholder="The text inserted into the chat. Leave a blank line at the end so the user can type below.">'+esc(t.body||"")+'</textarea></label>'+
+    '</div>'+
+    '<div class="project-editor-foot">'+
+      '<div class="project-editor-spacer"></div>'+
+      '<button class="project-editor-cancel" onclick="renderPromptTemplatesModal()">Cancel</button>'+
+      '<button class="project-editor-save" onclick="onPromptTemplateEditorSave(\''+esc(t.id)+'\','+(existing?'1':'0')+')">Save</button>'+
+    '</div>';
+  var title=document.getElementById("ptTitle");
+  if(title){setTimeout(function(){title.focus();title.select()},0)}
+}
+function onPromptTemplateEditorSave(id,wasExisting){
+  var title=((document.getElementById("ptTitle")||{}).value||"").trim();
+  var shortcut=((document.getElementById("ptShortcut")||{}).value||"").trim();
+  var description=((document.getElementById("ptDescription")||{}).value||"").trim();
+  var icon=((document.getElementById("ptIcon")||{}).value||"📄").trim();
+  var category=((document.getElementById("ptCategory")||{}).value||"other");
+  var body=((document.getElementById("ptBody")||{}).value||"");
+  if(!title){showToast("Title is required");return}
+  if(!/^\/[a-z0-9-]+$/.test(shortcut)){showToast("Shortcut must look like /my-template");return}
+  var existing=findTemplateByShortcut(shortcut);
+  if(existing&&existing.id!==id){showToast("That shortcut is already in use");return}
+  upsertCustomTemplate({id:id,title:title,description:description,icon:icon||"📄",category:category,shortcut:shortcut,body:body,isBuiltin:false});
+  renderPromptTemplatesModal();
+  showToast("Template saved");
+}
 function renderArchivedList(){
   var body=document.querySelector("#storageModalOverlay .storage-modal");
   if(!body)return;
@@ -10972,6 +11319,16 @@ generateFollowUpStream=async function(answer,node,domain,onDelta,onThinking){
             <div class="profile-action-desc">Sessions you deleted are kept here for 30 days before being permanently erased.</div>
           </div>
           <button class="profile-btn" onclick="openStorageModal()" style="width:auto;padding:6px 14px;flex-shrink:0">Manage</button>
+        </div>
+        <!-- P5.8 — Prompt templates. Opens a manager modal
+             where the user can add / edit / delete custom
+             templates. Built-ins are listed but read-only. -->
+        <div class="profile-action-row">
+          <div>
+            <div class="profile-action-label">Prompt templates</div>
+            <div class="profile-action-desc">Reusable prompts you can fire from the chat with <code>/shortcut</code>.</div>
+          </div>
+          <button class="profile-btn" onclick="openPromptTemplatesModal()" style="width:auto;padding:6px 14px;flex-shrink:0">Manage</button>
         </div>
         <div class="profile-action-row">
           <div>
