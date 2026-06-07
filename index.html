@@ -84,6 +84,65 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 
 /* P2.1 — Recents filter chip ("Showing: Math ›") */
 .recents-filter{padding:0 4px 6px;flex-shrink:0}
+
+/* P2.2 — secondary filter chip row. A horizontal scroll of
+   short tag/preset chips below the project filter. */
+.recents-filter-chips{display:flex;align-items:center;gap:4px;padding:0 4px 8px;flex-shrink:0;overflow-x:auto;scrollbar-width:thin}
+.recents-filter-chips-sep{width:1px;height:14px;background:hsl(var(--border-300)/0.3);flex-shrink:0;margin:0 2px}
+.recents-filter-chip-btn{padding:3px 8px;border-radius:999px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);color:hsl(var(--text-400));font-size:11px;cursor:pointer;flex-shrink:0;line-height:1.4;transition:all .1s;font-family:inherit}
+.recents-filter-chip-btn:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.recents-filter-chip-btn.active{background:hsl(var(--accent-900));color:hsl(var(--accent-100));border-color:hsl(var(--accent-000)/0.4)}
+
+/* P2.2 — recent-item layout: pin button on the left, mode
+   badge + title/meta/tags in the middle, action buttons on
+   the right. The previous grid had only a delete button;
+   the new layout adds a tag button and a pin button while
+   keeping the title visible at the same width. */
+.recent-item{display:grid;grid-template-columns:auto auto 1fr auto;align-items:start;gap:6px;padding:8px 8px 8px 4px;border-radius:8px;cursor:pointer;transition:background .1s;position:relative}
+.recent-item:hover{background:hsl(var(--bg-200))}
+.recent-item.active{background:hsl(var(--bg-200));box-shadow:inset 2px 0 0 hsl(var(--accent-000))}
+.recent-item.pinned{background:hsl(var(--bg-100)/0.6)}
+.recent-item-pin{width:22px;height:22px;border-radius:4px;background:transparent;border:0;color:hsl(var(--text-500));cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:color .1s,background .1s;flex-shrink:0;margin-top:1px}
+.recent-item-pin:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.recent-item-pin.pinned{color:hsl(var(--accent-000))}
+.recent-item-pin svg{width:13px;height:13px}
+.recent-item-main{min-width:0;display:flex;flex-direction:column;gap:2px}
+.recent-item-text{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-100));font-weight:500;line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical}
+.recent-item-meta{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));display:flex;align-items:center;gap:6px}
+.recent-item-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px}
+.recent-tag-pill{padding:1px 6px;border-radius:999px;background:hsl(var(--bg-300));color:hsl(var(--text-300));font-size:10px;border:0;cursor:pointer;font-family:inherit;line-height:1.5}
+.recent-tag-pill:hover{background:hsl(var(--accent-900));color:hsl(var(--accent-100))}
+.recent-item-actions{display:flex;align-items:center;gap:2px;opacity:0;transition:opacity .1s;flex-shrink:0;margin-top:1px}
+.recent-item:hover .recent-item-actions{opacity:1}
+.recent-item-tag-btn{width:22px;height:22px;border-radius:4px;background:transparent;border:0;color:hsl(var(--text-500));cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:all .1s}
+.recent-item-tag-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.recent-item-tag-btn svg{width:12px;height:12px}
+.recent-item-del{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-500));opacity:1;transition:opacity .1s,background .1s,color .1s;flex-shrink:0;background:transparent;border:0;cursor:pointer;padding:0}
+.recent-item-del:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
+.recent-item-del svg{width:12px;height:12px}
+
+/* P2.2 — tag editor popover */
+.tag-editor-popover{position:fixed;width:320px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:10px;box-shadow:0 12px 36px hsl(var(--always-black)/0.35);z-index:950;padding:14px;display:none;flex-direction:column;gap:10px}
+.tag-editor-popover.visible{display:flex}
+.tag-editor-head{font-size:13px;font-weight:600;color:hsl(var(--text-200))}
+.tag-editor-current{display:flex;flex-wrap:wrap;gap:4px;min-height:24px}
+.tag-editor-empty{font-size:11px;color:hsl(var(--text-500));font-style:italic;align-self:center}
+.tag-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 8px;border-radius:999px;background:hsl(var(--bg-300));color:hsl(var(--text-200));font-size:11px}
+.tag-pill.removable{padding-right:2px}
+.tag-pill-x{width:14px;height:14px;border-radius:50%;background:transparent;border:0;color:hsl(var(--text-400));font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.tag-pill-x:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
+.tag-editor-input-row{display:flex;gap:4px}
+.tag-editor-input{flex:1;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:6px;padding:6px 8px;font:inherit;font-size:12px;color:hsl(var(--text-100));outline:none}
+.tag-editor-input:focus{border-color:hsl(var(--accent-000)/0.6);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.15)}
+.tag-editor-add{padding:4px 10px;background:hsl(var(--accent-000));color:hsl(var(--always-white));border:0;border-radius:6px;font-size:12px;cursor:pointer;font-weight:500}
+.tag-editor-add:hover{filter:brightness(1.1)}
+.tag-editor-suggest{display:flex;flex-wrap:wrap;gap:4px}
+.tag-editor-suggest-label{font-size:10px;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:0.05em;width:100%;margin-bottom:2px}
+.tag-editor-suggest-btn{padding:2px 8px;border-radius:999px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);color:hsl(var(--text-300));font-size:11px;cursor:pointer;font-family:inherit}
+.tag-editor-suggest-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.tag-editor-foot{display:flex;justify-content:flex-end;padding-top:6px;border-top:0.5px solid hsl(var(--border-300)/0.15)}
+.tag-editor-done{padding:4px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:12px;cursor:pointer;font-family:inherit}
+.tag-editor-done:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .recents-filter-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 4px 3px 8px;border-radius:999px;background:hsl(var(--bg-200));border:0.5px solid var(--chip-color, hsl(var(--border-300)/0.3));font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-200));border-left:3px solid var(--chip-color,transparent)}
 .recents-filter-icon{font-size:12px;line-height:1}
 .recents-filter-name{font-weight:500}
@@ -1559,6 +1618,11 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
            the user is filtered to a specific project; clicking
            the × restores "All projects". -->
       <div class="recents-filter" id="recentsFilter"></div>
+      <!-- P2.2 — secondary filter chips. "All" / "Pinned" plus
+           a few of the user's most-used tags. Renders inline
+           below the project filter; the active chip is
+           highlighted. -->
+      <div class="recents-filter-chips" id="recentsFilterChips"></div>
       <div id="recentsList"></div>
     </div>
     <div class="recents-panel hidden" id="mistakesPanel">
@@ -2683,8 +2747,44 @@ function generateId(){return Date.now().toString(36)+"-"+Math.random().toString(
 function getChatIdFromURL(){return new URLSearchParams(location.search).get("chat")||null}
 function setChatIdInURL(id){history.replaceState({chatId:id},"",id?"?chat="+encodeURIComponent(id):location.pathname)}
 function pushChatIdToURL(id){history.pushState({chatId:id},"",id?"?chat="+encodeURIComponent(id):location.pathname)}
-function getRecents(){return SERVER_SESSIONS.slice()}
+function getRecents(){
+  /* P2.2 — pinned sessions always come first, then everything
+     else sorted by updatedAt desc. The sort is stable; ties keep
+     their original order. */
+  var copy=SERVER_SESSIONS.slice();
+  copy.sort(function(a,b){
+    var ap=a&&a.pinned?1:0;
+    var bp=b&&b.pinned?1:0;
+    if(ap!==bp)return bp-ap;
+    var at=(a&&(a.updated_at||a.updatedAt||a.created_at||a.createdAt))||0;
+    var bt=(b&&(b.updated_at||b.updatedAt||b.created_at||b.createdAt))||0;
+    return bt-at;
+  });
+  return copy;
+}
 function setRecents(arr){SERVER_SESSIONS=Array.isArray(arr)?arr.slice(0,RECENTS_CAP):[]}
+
+/* P2.2 — filter chip state. `null` = all; otherwise one of
+   "pinned" or a tag string. Persisted in localStorage so
+   the user's last filter survives a reload. */
+var RECENTS_FILTER_KEY="socrates-recents-filter";
+function getRecentsFilter(){
+  try{return localStorage.getItem(RECENTS_FILTER_KEY)||null}catch(_){return null}
+}
+function setRecentsFilter(v){
+  try{if(v)localStorage.setItem(RECENTS_FILTER_KEY,v);else localStorage.removeItem(RECENTS_FILTER_KEY)}catch(_){}
+  renderRecents();
+}
+
+/* P2.2 — set of tag strings the user has ever used. Powers
+   the autocomplete suggestions in the tag editor popover. */
+function getKnownTags(){
+  var seen={};
+  (SERVER_SESSIONS||[]).forEach(function(s){
+    (s.tags||[]).forEach(function(t){if(t)seen[t]=1});
+  });
+  return Object.keys(seen).sort();
+}
 async function refreshServerSessions(){
   if(!CURRENT_USER)return[];
   try{
@@ -3235,6 +3335,170 @@ function showDeleteConfirm(clientId){
     if(_deleteConfirmStates[clientId])cancelDeleteConfirm(clientId)}
   ,5000);
 }
+/* P2.2 — toggle a session's pinned state. The UI re-renders
+   immediately; the server sync is fire-and-forget. */
+function togglePinSession(id,e){
+  if(e){e.stopPropagation();e.preventDefault()}
+  var idx=findServerSessionIndex(id);
+  if(idx<0)return;
+  var s=SERVER_SESSIONS[idx];
+  s.pinned=!s.pinned;
+  /* Persist via PATCH so the same value flows to other
+     devices the next time /api/sessions is called. The
+     server-side PATCH accepts any subset of SessionSummary
+     fields. */
+  apiFetch("/api/sessions/"+encodeURIComponent(id),{
+    method:"PATCH",
+    body:{pinned:s.pinned},
+    timeoutMs:8000
+  }).catch(function(err){
+    console.debug("[pin] server sync failed:",err&&err.message);
+  });
+  renderRecents();
+}
+
+/* P2.2 — open the inline tag editor popover anchored to a
+   session row. The popover accepts comma / Enter separated
+   tags and persists via PATCH. */
+function openTagEditor(id,e){
+  if(e){e.stopPropagation();e.preventDefault()}
+  var idx=findServerSessionIndex(id);
+  if(idx<0)return;
+  var s=SERVER_SESSIONS[idx];
+  /* Reuse a singleton popover; positioning is recomputed each
+     time so the popover lands next to the row the user clicked. */
+  var pop=document.getElementById("tagEditorPopover");
+  if(!pop){
+    pop=document.createElement("div");
+    pop.id="tagEditorPopover";
+    pop.className="tag-editor-popover";
+    document.body.appendChild(pop);
+  }
+  pop.dataset.sessionId=id;
+  var known=getKnownTags().filter(function(t){return!(s.tags||[]).indexOf(t)>=0});
+  pop.innerHTML=
+    '<div class="tag-editor-head">Tags for this session</div>'+
+    '<div class="tag-editor-current">'+
+      ((s.tags||[]).map(function(t){
+        return '<span class="tag-pill removable" data-tag="'+esc(t)+'">'+esc(t)+
+          '<button class="tag-pill-x" data-tag-remove="'+esc(t)+'" title="Remove">×</button>'+
+        '</span>';
+      }).join("")||'<span class="tag-editor-empty">No tags yet</span>')+
+    '</div>'+
+    '<div class="tag-editor-input-row">'+
+      '<input class="tag-editor-input" id="tagEditorInput" placeholder="Add a tag and press Enter" maxlength="30" autocomplete="off">'+
+      '<button class="tag-editor-add" id="tagEditorAdd">Add</button>'+
+    '</div>'+
+    (known.length?'<div class="tag-editor-suggest"><div class="tag-editor-suggest-label">Suggested</div>'+
+      known.slice(0,12).map(function(t){
+        return '<button class="tag-editor-suggest-btn" data-tag-suggest="'+esc(t)+'">'+esc(t)+'</button>';
+      }).join("")+
+    '</div>':'')+
+    '<div class="tag-editor-foot">'+
+      '<button class="tag-editor-done" onclick="closeTagEditor()">Done</button>'+
+    '</div>';
+  /* Position. */
+  var row=(e&&e.currentTarget&&e.currentTarget.closest(".recent-item"))||null;
+  if(row){
+    var r=row.getBoundingClientRect();
+    pop.style.top=Math.min(window.innerHeight-300,r.bottom+6)+"px";
+    pop.style.left=Math.max(8,Math.min(window.innerWidth-340,r.right-340))+"px";
+  }else{
+    pop.style.top="20vh";
+    pop.style.left="50%";
+    pop.style.transform="translateX(-50%)";
+  }
+  pop.classList.add("visible");
+  /* Wire up handlers. */
+  var input=pop.querySelector("#tagEditorInput");
+  var addBtn=pop.querySelector("#tagEditorAdd");
+  function commitInput(){
+    var v=(input.value||"").trim();
+    if(!v)return;
+    /* Accept comma-separated multi-add. */
+    v.split(/[,,]/).forEach(function(part){
+      var t=part.trim().slice(0,30);
+      if(t)addTagToSession(id,t);
+    });
+    input.value="";
+  }
+  input.onkeydown=function(ev){
+    if(ev.key==="Enter"){ev.preventDefault();commitInput()}
+    else if(ev.key==="Escape"){ev.preventDefault();closeTagEditor()}
+  };
+  addBtn.onclick=commitInput;
+  pop.querySelectorAll("[data-tag-remove]").forEach(function(b){
+    b.onclick=function(){
+      removeTagFromSession(id,b.getAttribute("data-tag-remove"));
+    };
+  });
+  pop.querySelectorAll("[data-tag-suggest]").forEach(function(b){
+    b.onclick=function(){
+      addTagToSession(id,b.getAttribute("data-tag-suggest"));
+    };
+  });
+  /* Click-outside dismiss. */
+  setTimeout(function(){
+    if(!document.body._tagEditorClickBound){
+      document.body._tagEditorClickBound=true;
+      document.addEventListener("click",function(ev){
+        var p=document.getElementById("tagEditorPopover");
+        if(p&&p.classList.contains("visible")&&!p.contains(ev.target)&&!ev.target.closest("[data-tag-open]")){
+          closeTagEditor();
+        }
+      });
+    }
+  },0);
+  setTimeout(function(){input.focus()},0);
+}
+function closeTagEditor(){
+  var pop=document.getElementById("tagEditorPopover");
+  if(pop)pop.classList.remove("visible");
+}
+function addTagToSession(id,tag){
+  var idx=findServerSessionIndex(id);
+  if(idx<0)return;
+  var s=SERVER_SESSIONS[idx];
+  s.tags=Array.isArray(s.tags)?s.tags.slice():[];
+  if(s.tags.indexOf(tag)>=0)return;
+  if(s.tags.length>=12){
+    showToast("Maximum 12 tags per session");
+    return;
+  }
+  s.tags.push(tag);
+  apiFetch("/api/sessions/"+encodeURIComponent(id)+"/tags",{
+    method:"PUT",
+    body:{tags:s.tags},
+    timeoutMs:8000
+  }).catch(function(err){
+    console.debug("[tags] server sync failed:",err&&err.message);
+  });
+  renderRecents();
+  /* Re-open the popover with the updated state. */
+  openTagEditor(id,{stopPropagation:function(){},preventDefault:function(){},currentTarget:document.querySelector('.recent-item[data-recent-actual="'+id+'"] .tag-btn')});
+}
+function removeTagFromSession(id,tag){
+  var idx=findServerSessionIndex(id);
+  if(idx<0)return;
+  var s=SERVER_SESSIONS[idx];
+  s.tags=(s.tags||[]).filter(function(t){return t!==tag});
+  apiFetch("/api/sessions/"+encodeURIComponent(id)+"/tags",{
+    method:"PUT",
+    body:{tags:s.tags},
+    timeoutMs:8000
+  }).catch(function(err){
+    console.debug("[tags] server sync failed:",err&&err.message);
+  });
+  renderRecents();
+  openTagEditor(id,{stopPropagation:function(){},preventDefault:function(){},currentTarget:document.querySelector('.recent-item[data-recent-actual="'+id+'"] .tag-btn')});
+}
+function findServerSessionIndex(id){
+  for(var i=0;i<SERVER_SESSIONS.length;i++){
+    if(SERVER_SESSIONS[i].id===id)return i;
+  }
+  return -1;
+}
+
 function actuallyDeleteSession(id){
   if(!CURRENT_USER)return;
   apiFetch("/api/sessions/"+encodeURIComponent(id),{method:"DELETE"}).then(function(){
@@ -3442,7 +3706,19 @@ function renderRecents(){
       return pid===filter;
     });
   }
-  /* Render the filter chip showing what's currently shown. */
+  /* P2.2 — apply the persistent tag / pin filter, layered on
+     top of the project filter. The two compose: "show pinned
+     in this project" is just (project==P) ∧ (filter==pinned). */
+  var recentsFilter=getRecentsFilter();
+  if(recentsFilter==="pinned"){
+    recents=recents.filter(function(s){return s&&s.pinned;});
+  }else if(recentsFilter&&recentsFilter!=="all"){
+    recents=recents.filter(function(s){
+      return Array.isArray(s.tags)&&s.tags.indexOf(recentsFilter)>=0;
+    });
+  }
+  /* Render the project filter chip showing what's currently
+     shown. */
   var filterEl=document.getElementById("recentsFilter");
   if(filterEl){
     if(filter){
@@ -3465,7 +3741,7 @@ function renderRecents(){
   }
   var html="";
   recents.forEach(function(s){
-    var active=s.id===state.currentSessionId;
+    var active=s.id===state.session.currentSessionId;
     var meta=[];
     meta.push(formatRelativeTime(s.updated_at||s.updatedAt||s.created_at||s.createdAt||Date.now()));
     if(s.total_q||s.totalQ)meta.push((s.total_q||s.totalQ)+" Qs");
@@ -3487,20 +3763,37 @@ function renderRecents(){
     }
     var modeLabel=resolvedMode==="chat"?"Chat":"Tutor";
     var modeCls=resolvedMode==="chat"?"mode-chat":"mode-tutor";
-    /* P4.1 — use a safe-id for the DOM attribute and stash the real
-       id in data-recent-actual so the confirm flow can read it back
-       after re-render. The safe-id is just a hash of the real id. */
     var safeId="r-"+Math.abs((s.id||"").split("").reduce(function(a,b){a=(a<<5)-a+b.charCodeAt(0);return a&a},0));
-    html+='<div class="recent-item'+(active?" active":"")+'" data-recent-id="'+safeId+'" data-recent-actual="'+esc(s.id)+'" onclick="loadSession(\''+esc(s.id)+'\')">';
+    var pinned=!!(s.pinned);
+    html+='<div class="recent-item'+(active?" active":"")+(pinned?" pinned":"")+'" data-recent-id="'+safeId+'" data-recent-actual="'+esc(s.id)+'" onclick="loadSession(\''+esc(s.id)+'\')">';
+    /* P2.2 — pin button on the left edge of the row. Tapping
+       toggles the pinned state; pinned rows float to the top
+       automatically because getRecents() sorts them first. */
+    html+='<button class="recent-item-pin'+(pinned?" pinned":"")+'" title="'+(pinned?"Unpin":"Pin to top")+'" onclick="togglePinSession(\''+esc(s.id)+'\',event)">';
+    html+='<svg viewBox="0 0 24 24" fill="'+(pinned?"currentColor":"none")+'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.7 5.2L19 9l-5.3 1.8L12 16l-1.7-5.2L5 9l5.3-1.8L12 2z"/></svg>';
+    html+='</button>';
     html+='<span class="recent-mode-badge '+modeCls+'">'+modeLabel+'</span>';
     html+='<div class="recent-item-main">';
     html+='<div class="recent-item-text">'+esc(s.title||s.topic||"(untitled)")+'</div>';
     html+='<div class="recent-item-meta">'+meta.map(function(m){return"<span>"+esc(m)+"</span>"}).join('<span class="dot"></span>')+'</div>';
+    /* P2.2 — tag pills row. Tapping the row's tag button
+       opens the tag editor popover; clicking an individual
+       tag pill filters the list to that tag. */
+    var tags=Array.isArray(s.tags)?s.tags:[];
+    if(tags.length){
+      html+='<div class="recent-item-tags">';
+      tags.forEach(function(t){
+        html+='<button class="recent-tag-pill" onclick="setRecentsFilter(\''+esc(t)+'\')" title="Filter by tag: '+esc(t)+'">#'+esc(t)+'</button>';
+      });
+      html+='</div>';
+    }
     html+='</div>';
-    /* P4.1 — long-press / mousedown triggers the confirm flow
-       instead of an immediate DELETE. Also bind touchstart for
-       mobile. The keyboard "Enter/Space" path is wired inside
-       startDeleteConfirm. */
+    html+='<div class="recent-item-actions">';
+    /* Tag editor trigger. */
+    html+='<button class="recent-item-tag-btn" data-tag-open="1" title="Edit tags" onclick="openTagEditor(\''+esc(s.id)+'\',event)">';
+    html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
+    html+='</button>';
+    /* Delete (P4.1 long-press confirm). */
     html+='<button class="recent-item-del" title="Hold to delete" aria-label="Delete session"';
     html+=' onmousedown="startDeleteConfirm(\''+safeId+'\',this)"';
     html+=' onmouseup="clearDeleteConfirmTimer(\''+safeId+'\')"';
@@ -3511,13 +3804,42 @@ function renderRecents(){
     html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
     html+='</button>';
     html+='</div>';
+    html+='</div>';
   });
   cont.innerHTML=html;
+  /* P2.2 — render the secondary filter chip row. "All" is the
+     default; "Pinned" filters to pinned sessions; the user's
+     most-used tags are also surfaced. The active chip is
+     highlighted; clicking a chip toggles its filter state. */
+  renderRecentsFilterChips();
 }
 
-/* ============================================================
-   AI MOCK ENGINE
-   Generates content dynamically based on the user's topic.
+function renderRecentsFilterChips(){
+  var el=document.getElementById("recentsFilterChips");
+  if(!el)return;
+  var cur=getRecentsFilter();
+  var tags=getKnownTags().slice(0,8);
+  var html=[];
+  function chip(label,val,isActive){
+    return '<button class="recents-filter-chip-btn'+(isActive?" active":"")+'" data-filter="'+esc(val==null?"all":val)+'" onclick="onRecentsFilterChipClick(\''+esc(val==null?"all":val)+'\')">'+esc(label)+'</button>';
+  }
+  html.push(chip("All",null,!cur));
+  html.push(chip("📌 Pinned","pinned",cur==="pinned"));
+  if(tags.length){
+    html.push('<span class="recents-filter-chips-sep"></span>');
+    tags.forEach(function(t){
+      html.push(chip("#"+t,t,cur===t));
+    });
+  }
+  el.innerHTML=html.join("");
+}
+
+function onRecentsFilterChipClick(val){
+  var cur=getRecentsFilter();
+  if(val==="all"){setRecentsFilter(null)}
+  else if(cur===val){setRecentsFilter(null)}  /* toggle off */
+  else{setRecentsFilter(val)}
+}
    In production, this would call an LLM API.
    ============================================================ */
 /* Detect user language from input text */
