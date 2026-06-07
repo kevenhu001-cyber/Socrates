@@ -1,0 +1,126 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-apk.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'android/**'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type (debug/release)'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+      base_url:
+        description: 'Backend API base URL'
+        required: false
+        default: 'https://app.topodrive.top/'
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build APK (${{ github.event.inputs.build_type || 'debug' }})
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: android
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Determine build type
+        id: build-type
+        run: |
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'debug' }}"
+          echo "type=$BUILD_TYPE" >> $GITHUB_OUTPUT
+          echo "Building $BUILD_TYPE APK"
+
+      - name: Build APK
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://app.topodrive.top/' }}
+        run: |
+          ./gradlew :app:assemble${{ steps.build-type.outputs.type == 'release' && 'Release' || 'Debug' }} \
+            -PBASE_URL="$BASE_URL"
+
+      - name: Run lint
+        run: ./gradlew :app:lint${{ steps.build-type.outputs.type == 'release' && 'Release' || 'Debug' }}
+
+      - name: Run unit tests
+        run: ./gradlew :app:test${{ steps.build-type.outputs.type == 'release' && 'Release' || 'Debug' }}UnitTest
+
+      - name: Locate APK
+        id: apk
+        run: |
+          APK=$(ls app/build/outputs/apk/${{ steps.build-type.outputs.type }}/app-*.apk 2>/dev/null | head -1)
+          echo "path=$APK" >> $GITHUB_OUTPUT
+          echo "name=$(basename $APK)" >> $GITHUB_OUTPUT
+          echo "Found APK: $APK"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: socrates-apk-${{ steps.build-type.outputs.type }}-${{ github.sha }}
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+
+  release:
+    name: Create Release (debug)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: socrates-apk-debug-${{ github.sha }}
+          path: ./apk
+
+      - name: Generate release tag
+        id: tag
+        run: |
+          DATE_TAG="nightly-$(date -u +%Y%m%d-%H%M%S)"
+          echo "tag=$DATE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "Nightly Build ${{ steps.tag.outputs.tag }}"
+          body: |
+            Auto-built APK from the latest commit on `main`.
+
+            - Commit: ${{ github.sha }}
+            - Build date: ${{ steps.date.outputs.date }}
+          files: |
+            apk/*.apk
+          make_latest: true
+          prerelease: true
