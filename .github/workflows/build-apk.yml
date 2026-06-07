@@ -104,11 +104,13 @@ jobs:
           name: socrates-apk-debug-${{ github.sha }}
           path: ./apk
 
-      - name: Generate release tag
+      - name: Generate release tag and date
         id: tag
         run: |
           DATE_TAG="nightly-$(date -u +%Y%m%d-%H%M%S)"
+          BUILD_DATE="$(date -u +'%Y-%m-%d %H:%M:%S UTC')"
           echo "tag=$DATE_TAG" >> $GITHUB_OUTPUT
+          echo "date=$BUILD_DATE" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -119,7 +121,7 @@ jobs:
             Auto-built APK from the latest commit on `main`.
 
             - Commit: ${{ github.sha }}
-            - Build date: ${{ steps.date.outputs.date }}
+            - Build date: ${{ steps.tag.outputs.date }}
           files: |
             apk/*.apk
           make_latest: true
