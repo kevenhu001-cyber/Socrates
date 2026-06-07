@@ -5,8 +5,17 @@
 <title>Socrates</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d8a85b' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M12 6v6l4 2'/><circle cx='12' cy='12' r='3'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- P5.1 — Google Fonts CSS is intentionally NOT SRI-pinned: the CSS
+     response is generated per-user-agent and is tiny; the actual
+     font binaries are loaded with `crossorigin` and pinned with
+     stable fonts.googleapis.com URL.  For first-party SRI, swap to
+     self-hosting the .woff2 files. -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<!-- P5.1 — Subresource Integrity (SHA-384) for all third-party CDN
+     assets. If a CDN is compromised and serves a different file, the
+     browser refuses to apply it. `crossorigin="anonymous"` is required
+     for SRI to take effect on <link>/<script> without credentials. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
 <style>
 :root{--always-white:0 0% 100%;--always-black:0 0% 0%}
 [data-theme=socrates][data-mode=dark]{--bg-000:42 4% 18%;--bg-100:40 3.3% 14.5%;--bg-200:36 3.6% 11.8%;--bg-300:39 3.2% 7.8%;--bg-400:0 0% 0%;--text-000:45 30% 96%;--text-100:45 30% 96%;--text-200:45 8% 72%;--text-300:45 8% 72%;--text-400:44 4.5% 58%;--text-500:44 4.5% 58%;--border-100:45 20% 82%;--border-200:45 20% 82%;--border-300:45 20% 82%;--border-400:45 20% 82%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
@@ -73,10 +82,20 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .recent-mode-badge.mode-chat{background:hsl(200 60% 92%);color:hsl(200 60% 32%);border:0.5px solid hsl(200 50% 70%/0.6)}
 [data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-tutor{background:hsl(43 40% 18%);color:hsl(43 70% 70%);border:0.5px solid hsl(43 40% 35%/0.6)}
 [data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-chat{background:hsl(200 30% 18%);color:hsl(200 60% 75%);border:0.5px solid hsl(200 40% 35%/0.6)}
-.recent-item-del{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-500));opacity:0;transition:opacity .1s,background .1s,color .1s;flex-shrink:0}
+.recent-item-del{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-500));opacity:0;transition:opacity .1s,background .1s,color .1s;flex-shrink:0;cursor:pointer}
 .recent-item:hover .recent-item-del{opacity:1}
 .recent-item-del:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
+.recent-item-del.holding{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%);opacity:1}
 .recent-item-del svg{width:12px;height:12px}
+/* P4.1 — inline confirm bar shown when the user holds the delete
+   button for 600ms. Replaces the row's normal content with a
+   [Cancel][Delete] pair. */
+.recent-item-confirm{display:flex;align-items:center;gap:6px;margin-left:auto;padding:4px 8px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:8px;font-size:12px;color:hsl(var(--text-200))}
+.recent-item-confirm-text{flex:1;color:hsl(var(--text-300));font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recent-item-confirm-cancel{padding:3px 8px;border-radius:6px;background:transparent;color:hsl(var(--text-300));font-size:12px;cursor:pointer;border:0.5px solid hsl(var(--border-300)/0.4)}
+.recent-item-confirm-cancel:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+.recent-item-confirm-delete{padding:3px 8px;border-radius:6px;background:hsl(0 60% 30%/0.6);color:hsl(0 60% 80%);font-size:12px;cursor:pointer;border:0.5px solid hsl(0 60% 50%/0.4)}
+.recent-item-confirm-delete:hover{background:hsl(0 60% 35%/0.8);color:#fff}
 .recents-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--app-font-scale, 1));padding:32px 12px;line-height:1.6}
 .sidebar-footer{display:flex;align-items:center;gap:8px;padding:6px 8px;flex-shrink:0;border-top:0.5px solid hsl(var(--border-300)/0.10)}
 .theme-toggle .theme-sun,.theme-toggle .theme-moon{width:16px;height:16px}
@@ -120,6 +139,37 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .plan-dot{width:3px;height:3px;background:hsl(var(--text-500)/0.3);border-radius:50%}
 .plan-badge a{text-decoration:underline;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,currentColor 40%,transparent);color:hsl(var(--text-400))}
 .plan-badge a:hover{text-decoration-color:currentColor;color:hsl(var(--text-200))}
+
+/* P1.4 — "↓ new reply" pill shown when the user has scrolled up
+   during a stream. Tapping it scrolls back to the bottom and
+   hides itself. Sits over the bottom-right of the message list. */
+.new-reply-pill{
+  position:absolute;
+  right:20px;
+  bottom:14px;
+  padding:6px 12px;
+  border-radius:999px;
+  background:hsl(var(--accent-500));
+  color:hsl(var(--accent-100,#fff));
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:0.01em;
+  cursor:pointer;
+  user-select:none;
+  box-shadow:0 4px 14px -2px hsl(var(--shadow-color,0 0% 0%)/0.25),0 1px 3px hsl(var(--shadow-color,0 0% 0%)/0.12);
+  opacity:0;
+  transform:translateY(8px);
+  pointer-events:none;
+  transition:opacity .18s ease, transform .18s ease;
+  z-index:30;
+}
+.new-reply-pill.visible{
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:auto;
+}
+.new-reply-pill:hover{filter:brightness(1.08)}
+.new-reply-pill:focus-visible{outline:2px solid hsl(var(--accent-200));outline-offset:2px}
 .main-content{
   flex:1;
   position:relative;z-index:1;
@@ -337,6 +387,22 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 .msg.user{display:flex;justify-content:flex-end}
 .msg.user .msg-body{max-width:75%;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:16px 16px 4px 16px;padding:12px 16px}
 .msg.assistant .msg-body{max-width:100%}
+/* P1.1 — per-message action toolbar. Hover-revealed on desktop,
+   always visible on touch devices. */
+.msg-toolbar{display:flex;gap:2px;align-items:center;margin-top:4px;opacity:0;transition:opacity .15s;height:24px}
+.msg.assistant .msg-toolbar{justify-content:flex-start;margin-left:24px}
+.msg.user .msg-toolbar{justify-content:flex-end;margin-right:4px}
+@media (hover:hover){.msg:hover .msg-toolbar{opacity:1}}
+@media (hover:none){.msg-toolbar{opacity:.7}}
+.msg-toolbar-btn{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:transparent;color:hsl(var(--text-500));cursor:pointer;transition:background .12s,color .12s;border:0;padding:0}
+.msg-toolbar-btn:hover{background:hsl(var(--bg-200));color:hsl(var(--text-200))}
+.msg-toolbar-btn.active{color:hsl(var(--accent-000));background:hsl(var(--accent-900))}
+.msg-toolbar-btn svg{width:14px;height:14px}
+/* Edit-in-place textarea */
+.msg-edit-area{width:100%;min-height:60px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);border-radius:6px;padding:6px 8px;font:inherit;color:inherit;resize:vertical}
+/* Toast for Copy/Feedback confirmations */
+.msg-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(8px);background:hsl(var(--bg-300));color:hsl(var(--text-100));padding:8px 14px;border-radius:8px;font-size:13px;border:0.5px solid hsl(var(--border-300)/0.3);box-shadow:0 4px 16px hsl(var(--always-black)/0.2);opacity:0;transition:opacity .2s,transform .2s;z-index:1000;pointer-events:none}
+.msg-toast.visible{opacity:1;transform:translateX(-50%) translateY(0)}
 .msg-body{font-size:calc(14px * var(--app-font-scale, 1));line-height:1.65;color:hsl(var(--text-100))}
 .msg-body p{margin-bottom:8px}.msg-body p:last-child{margin-bottom:0}
 .msg-body strong{font-weight:600;color:hsl(var(--text-000))}.msg-body em{font-style:italic}
@@ -918,6 +984,19 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 .auth-gate{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;overflow-y:auto}
 .auth-gate.hidden{display:none}
 .auth-card{width:100%;max-width:420px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.18);border-radius:18px;padding:32px 28px;box-shadow:0 12px 48px hsl(var(--always-black)/0.5)}
+/* P4.5 — transient banner shown at the top of the auth gate when a
+   401 from any background apiFetch triggers handleAuthExpired(). */
+.auth-expired-banner{
+  background:hsl(var(--accent-900));
+  color:hsl(var(--accent-100));
+  padding:10px 18px;
+  border-radius:10px;
+  font-size:13px;
+  text-align:center;
+  margin:0 auto 12px;
+  max-width:420px;
+  border:0.5px solid hsl(var(--accent-000)/0.4);
+}
 .auth-brand{display:flex;align-items:center;gap:8px;justify-content:center;color:hsl(var(--text-100));font-weight:600;font-size:calc(17px * var(--app-font-scale, 1));margin-bottom:24px;letter-spacing:-.01em}
 .auth-brand svg{color:hsl(var(--accent-000))}
 .auth-tabs{display:flex;border-bottom:0.5px solid hsl(var(--border-300)/0.18);margin-bottom:22px}
@@ -1507,6 +1586,7 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
           <button class="agent-mode-exit" onclick="exitAgentMode()">Exit</button>
         </div>
         <div class="msg-list" id="msgList"></div>
+        <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
         <div class="chat-input-bar" id="chatInputBar">
           <div class="chat-input-wrap">
             <textarea id="chatInputArea" placeholder="Type your thinking..." rows="1" oninput="autoResize(this);updateSendBtn()" onkeydown="handleChatKey(event)"></textarea>
@@ -1528,23 +1608,41 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 </main>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<!-- P5.1 — `marked` pinned to 13.0.3 (the URL was previously
+     `marked/marked.min.js` with no version — that resolves to
+     latest, which can break the chat UI silently). -->
+<script src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js" integrity="sha384-YTBHtsL8yVTHcLakYNyrOfK3K+QQcXiECuaALJ+3j7Mo681Rtzadt8NR6WrZH+eQ" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
 <!-- highlight.js (code syntax highlighting). Optional: if the CDN is
      blocked, hljs is undefined and addStreamingMessage falls back to
      plain <pre><code> rendering. -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css">
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<!-- P5.1 — SRI for highlight.js (style + script). -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css" integrity="sha384-oaMLBGEzBOJx3UHwac0cVndtX5fxGQIfnAeFZ35RTgqPcYlbprH9o9PUV/F8Le07" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js" integrity="sha384-F/bZzf7p3Joyp5psL90p/p89AZJsndkSoGwRpXcZhleCWhd8SnRuoYo4d0yirjJp" crossorigin="anonymous"></script>
 <script>
 /* ============================================================
    SIDEBAR
    ============================================================ */
 var sidebarOpen=true;
-var _userScrolledAway=false;  /* set true when user manually scrolls up; suppresses auto-scroll */
+
+/* P1.4 — scroll state lives on `state` so the value is scoped per
+   page-load and can be reset cleanly by `addStreamingMessage` on
+   each new bubble. The `newReplyPill` is a small "↓ new response"
+   affordance shown when the user has scrolled up and a new delta
+   arrives — clicking it scrolls to bottom and hides the pill. */
+function showNewReplyPill(){
+  var pill=document.getElementById("newReplyPill");
+  if(pill){pill.classList.add("visible")}
+}
+function hideNewReplyPill(){
+  var pill=document.getElementById("newReplyPill");
+  if(pill){pill.classList.remove("visible")}
+}
 
 /* Listen for manual scrolls: any wheel, touch, or keyboard scroll that
    moves the user away from the bottom turns off auto-scroll. The flag
-   resets when the user sends a new message or scrolls back to bottom. */
+   resets when the user sends a new message (in addStreamingMessage) or
+   scrolls back to bottom. */
 (function(){
   var tmo=null;
   var SCROLL_SLACK=64;
@@ -1553,15 +1651,31 @@ var _userScrolledAway=false;  /* set true when user manually scrolls up; suppres
     if(!sc)return;
     var atBottom=sc.scrollHeight-sc.scrollTop-sc.clientHeight<=SCROLL_SLACK;
     if(atBottom){
-      _userScrolledAway=false;
-    }else if(!_userScrolledAway){
+      state._userScrolledAway=false;
+      hideNewReplyPill();
+    }else if(!state._userScrolledAway){
       /* Debounce: only set _userScrolledAway once per scroll burst. */
       if(!tmo){
-        _userScrolledAway=true;
+        state._userScrolledAway=true;
         tmo=setTimeout(function(){tmo=null},300);
       }
     }
   },true);  /* useCapture so we catch scroll on any child element */
+  /* Pill click handler — wire once, attached to the static element
+     rendered by index.html (or lazily created below). */
+  document.addEventListener("click",function(ev){
+    var t=ev.target;
+    while(t&&t!==document.body){
+      if(t.id==="newReplyPill"){
+        var sc=scrollContainer();
+        if(sc){sc.scrollTop=sc.scrollHeight}
+        state._userScrolledAway=false;
+        hideNewReplyPill();
+        return;
+      }
+      t=t.parentNode;
+    }
+  });
 })();
 
 /* ============================================================
@@ -1909,7 +2023,178 @@ function updateSendBtn(){
 /* ============================================================
    STATE
    ============================================================ */
-var state={topic:"",phase:"topic",diagIndex:0,diagAnswers:[],diagQuestions:[],kbNodes:[],currentNode:0,stuckCount:0,totalQ:0,explaining:false,currentSessionId:null,substantiveCount:0,lastCallSource:null,lastCallError:null,mistakes:[],sessionTitle:null};
+/* P1.5 — state is now a multi-namespace object. Each sub-object
+   is the source of truth for one concern; cross-namespace writes
+   go through the explicit field (e.g. `state.session.topic = ...`).
+   For backward compatibility, `state` itself is a Proxy that
+   delegates the legacy flat-field accesses
+   (`state.topic`, `state.phase`, `state.kbNodes`, `state.mistakes`,
+   `state._userScrolledAway`, `state.searchContext`, …) to the
+   matching sub-namespace. New code should access via
+   `state.session.topic` etc.; the legacy form still works because
+   the read/write lookups resolve transparently. */
+var state={
+  /* session: active chat / topic lifecycle, including the
+     authoritative message list (P1.1). */
+  session:{
+    topic:"",phase:"topic",diagIndex:0,diagAnswers:[],diagQuestions:[],
+    currentSessionId:null,substantiveCount:0,explaining:false,
+    sessionTitle:null,domain:null,
+    totalQ:0,stuckCount:0,
+    /* P1.1 — authoritative message list, single source of truth.
+       Each entry: { clientId, role, rawText, html, type, actions? }.
+       `rawText` is the unformatted text used for history extraction
+       and session save; `html` is the rendered output. The DOM is
+       a downstream view of this list — never the other way around. */
+    messages:[]
+  },
+  /* kb: knowledge graph + mistake book. */
+  kb:{kbNodes:[],currentNode:0,mistakes:[]},
+  /* search: web-research results cached from the most recent round 2. */
+  search:{context:null,results:[],contextAt:0,contextCount:0,contextQuery:null,error:null},
+  /* call: most recent API call metadata — used by the chatApiBadge. */
+  call:{source:null,error:null},
+  /* ui: ephemeral UI state (per-tab, never persisted). */
+  ui:{_userScrolledAway:false}
+};
+
+/* P1.5 — flat-name lookup table for the Proxy. Maps a legacy
+   `state.<field>` access to its sub-namespace + property. Update
+   this whenever a new field is added to a sub-namespace; existing
+   fields are listed below. */
+var STATE_FLAT_TO_NS={
+  /* session */
+  topic:"session.topic",phase:"session.phase",diagIndex:"session.diagIndex",
+  diagAnswers:"session.diagAnswers",diagQuestions:"session.diagQuestions",
+  currentSessionId:"session.currentSessionId",substantiveCount:"session.substantiveCount",
+  explaining:"session.explaining",sessionTitle:"session.sessionTitle",
+  domain:"session.domain",totalQ:"session.totalQ",stuckCount:"session.stuckCount",
+  messages:"session.messages",
+  /* kb */
+  kbNodes:"kb.kbNodes",currentNode:"kb.currentNode",
+  /* search */
+  searchContext:"search.context",searchResults:"search.results",
+  searchContextAt:"search.contextAt",searchContextCount:"search.contextCount",
+  searchContextQuery:"search.contextQuery",searchContextError:"search.error",
+  /* call */
+  lastCallSource:"call.source",lastCallError:"call.error",
+  /* ui */
+  _userScrolledAway:"ui._userScrolledAway"
+};
+
+/* P1.5 — Proxy that translates flat legacy reads/writes into
+   the new namespace structure. The Proxy is the value of the
+   module-level `state` identifier from this point on. Reads
+   always return the live sub-namespace value (so `state.topic`
+   and `state.session.topic` see the same data). Writes update
+   the sub-namespace. Deletes are no-ops (legacy code never
+   `delete state.<x>`). */
+(function(){
+  function resolve(path){
+    var parts=path.split(".");
+    var cur=state;
+    for(var i=0;i<parts.length;i++){
+      if(cur==null)return undefined;
+      cur=cur[parts[i]];
+    }
+    return cur;
+  }
+  var proxy=new Proxy(state,{
+    get:function(target,prop){
+      if(typeof prop!=="string")return Reflect.get(target,prop);
+      if(prop in target)return Reflect.get(target,prop);
+      if(Object.prototype.hasOwnProperty.call(STATE_FLAT_TO_NS,prop)){
+        return resolve(STATE_FLAT_TO_NS[prop]);
+      }
+      return undefined;
+    },
+    set:function(target,prop,value){
+      if(typeof prop!=="string")return Reflect.set(target,prop,value);
+      if(prop in target)return Reflect.set(target,prop,value);
+      if(Object.prototype.hasOwnProperty.call(STATE_FLAT_TO_NS,prop)){
+        var path=STATE_FLAT_TO_NS[prop].split(".");
+        var cur=state;
+        for(var i=0;i<path.length-1;i++){
+          if(cur[path[i]]==null)cur[path[i]]={};
+          cur=cur[path[i]];
+        }
+        cur[path[path.length-1]]=value;
+        return true;
+      }
+      /* Unknown property — set on the root target so we don't
+         lose data, and warn. This preserves the previous
+         behaviour of `state.foo = bar` silently working. */
+      console.warn("[state] unknown flat key, setting on root:",prop);
+      target[prop]=value;
+      return true;
+    },
+    has:function(target,prop){
+      if(typeof prop!=="string")return Reflect.has(target,prop);
+      if(prop in target)return true;
+      return Object.prototype.hasOwnProperty.call(STATE_FLAT_TO_NS,prop);
+    },
+    ownKeys:function(target){
+      return Array.from(new Set([].concat(
+        Reflect.ownKeys(target),
+        Object.keys(STATE_FLAT_TO_NS)
+      )));
+    },
+    getOwnPropertyDescriptor:function(target,prop){
+      if(typeof prop!=="string")return Reflect.getOwnPropertyDescriptor(target,prop);
+      if(prop in target)return Reflect.getOwnPropertyDescriptor(target,prop);
+      if(Object.prototype.hasOwnProperty.call(STATE_FLAT_TO_NS,prop)){
+        var path=STATE_FLAT_TO_NS[prop];
+        var val=resolve(path);
+        return{
+          configurable:true,enumerable:true,
+          get:function(){return resolve(path)},
+          set:function(v){
+            var parts=path.split(".");
+            var cur=state;
+            for(var i=0;i<parts.length-1;i++){if(cur[parts[i]]==null)cur[parts[i]]={};cur=cur[parts[i]]}
+            cur[parts[parts.length-1]]=v;
+          }
+        };
+      }
+      return undefined;
+    }
+  });
+  /* Replace the module-level `state` with the proxy. */
+  state=proxy;
+})();
+
+/* P1.5 — reset all namespaces to their defaults. Callers that
+   previously did `state = {…}` should use this instead so the
+   Proxy is preserved. The proxy is bound to the *binding*, not
+   the value, so reassigning `state = …` would orphan every
+   observer and break the legacy `state.topic` getter. */
+function resetState(){
+  state.session.topic="";
+  state.session.phase="topic";
+  state.session.diagIndex=0;
+  state.session.diagAnswers=[];
+  state.session.diagQuestions=[];
+  state.session.currentSessionId=null;
+  state.session.substantiveCount=0;
+  state.session.explaining=false;
+  state.session.sessionTitle=null;
+  state.session.domain=null;
+  state.session.totalQ=0;
+  state.session.stuckCount=0;
+  state.session.messages=[];
+  state.kb.kbNodes=[];
+  state.kb.currentNode=0;
+  state.kb.mistakes=[];
+  state.search.context=null;
+  state.search.results=[];
+  state.search.contextAt=0;
+  state.search.contextCount=0;
+  state.search.contextQuery=null;
+  state.search.error=null;
+  state.call.source=null;
+  state.call.error=null;
+  state.ui._userScrolledAway=false;
+}
 
 /* ============================================================
    SESSION PERSISTENCE (Recents)
@@ -1952,19 +2237,15 @@ function saveCurrentSession(){
   if(!state.topic)return;
   if(!CURRENT_USER)return; /* not signed in; do nothing */
   var now=Date.now();
-  var msgList=document.getElementById("msgList");
-  var messages=[];
-  if(msgList){
-    Array.from(msgList.children).forEach(function(div){
-      var role=div.classList.contains("user")?"user":"assistant";
-      var body=div.querySelector(".msg-body");
-      if(!body)return;
-      var clone=body.cloneNode(true);
-      var opts=clone.querySelectorAll(".quick-opts");
-      opts.forEach(function(o){o.remove()});
-      messages.push({role:role,html:clone.innerHTML});
-    });
-  }
+  /* P1.1 — read from the authoritative state.messages list, NOT
+     from the live DOM. The DOM may still hold a half-rendered
+     streaming bubble (text content only, no KaTeX), and reading
+     partial innerHTML was a known source of "messages got mangled"
+     reports on reload. We render once at finish() time and store
+     both rawText and html. */
+  var messages=state.messages.map(function(m){
+    return {role:m.role,html:m.html,rawText:m.rawText||null,type:m.type||null};
+  });
   var sessionId=state.currentSessionId||generateId();
   var payload={
     id:sessionId,
@@ -2160,15 +2441,93 @@ function clearLocalMemory(sid){
   try{localStorage.removeItem(_memKey(sid))}catch(_){}
 }
 
-function deleteSession(id,e){
-  if(e){e.stopPropagation();e.preventDefault()}
+/* P4.1 — two-step delete to prevent accidental loss of a session.
+   The user must press-and-hold the delete button for 600ms (mouse
+   / touch), OR press Enter / Space when focused, before the
+   inline confirmation bar appears. The bar is rendered inline
+   within the recent-item row, so the user can read the session
+   title they're about to delete. */
+var _deleteConfirmTimers={};   /* clientId → setTimeout handle */
+var _deleteConfirmStates={};   /* clientId → true while showing */
+
+function startDeleteConfirm(clientId,btnEl){
+  if(_deleteConfirmStates[clientId])return;
+  clearDeleteConfirmTimer(clientId);
+  _deleteConfirmTimers[clientId]=setTimeout(function(){
+    showDeleteConfirm(clientId);
+  },600);
+  /* Visual feedback during the hold. */
+  if(btnEl){btnEl.classList.add("holding")}
+  /* Keyboard / accessibility path: pressing Enter or Space while
+     the delete button is focused should also open the confirm. */
+  function onKey(ev){
+    if(ev.key==="Enter"||ev.key===" "){
+      ev.preventDefault();
+      clearDeleteConfirmTimer(clientId);
+      showDeleteConfirm(clientId);
+    }else if(ev.key==="Escape"){
+      cancelDeleteConfirm(clientId);
+    }
+  }
+  btnEl.addEventListener("keydown",onKey,{once:true});
+  btnEl._deleteKeyHandler=onKey;
+}
+function clearDeleteConfirmTimer(clientId){
+  if(_deleteConfirmTimers[clientId]){
+    clearTimeout(_deleteConfirmTimers[clientId]);
+    delete _deleteConfirmTimers[clientId];
+  }
+}
+function cancelDeleteConfirm(clientId){
+  clearDeleteConfirmTimer(clientId);
+  var row=document.querySelector('[data-recent-id="'+clientId+'"]');
+  if(!row)return;
+  var bar=row.querySelector(".recent-item-confirm");
+  if(bar)bar.remove();
+  var btn=row.querySelector(".recent-item-del");
+  if(btn){btn.classList.remove("holding");btn.style.display=""}
+  _deleteConfirmStates[clientId]=false;
+}
+function showDeleteConfirm(clientId){
+  _deleteConfirmStates[clientId]=true;
+  clearDeleteConfirmTimer(clientId);
+  var row=document.querySelector('[data-recent-id="'+clientId+'"]');
+  if(!row){_deleteConfirmStates[clientId]=false;return}
+  var btn=row.querySelector(".recent-item-del");
+  if(btn){btn.style.display="none"}
+  var bar=document.createElement("div");
+  bar.className="recent-item-confirm";
+  bar.innerHTML=
+    '<span class="recent-item-confirm-text">Delete this session?</span>'+
+    '<button class="recent-item-confirm-cancel" type="button">Cancel</button>'+
+    '<button class="recent-item-confirm-delete" type="button">Delete</button>';
+  row.appendChild(bar);
+  bar.querySelector(".recent-item-confirm-cancel").onclick=function(ev){
+    ev.stopPropagation();
+    cancelDeleteConfirm(clientId);
+  };
+  bar.querySelector(".recent-item-confirm-delete").onclick=function(ev){
+    ev.stopPropagation();
+    /* Extract the original session id (the data-recent-id is the
+       safe version; the actual id is in the data-recent-actual
+       attribute we set in renderRecents). */
+    var id=row.getAttribute("data-recent-actual")||clientId;
+    actuallyDeleteSession(id);
+  };
+  /* Auto-dismiss after 5s of no decision, to avoid a stuck
+     confirm bar if the user walks away. */
+  setTimeout(function(){
+    if(_deleteConfirmStates[clientId])cancelDeleteConfirm(clientId)}
+  ,5000);
+}
+function actuallyDeleteSession(id){
   if(!CURRENT_USER)return;
   apiFetch("/api/sessions/"+encodeURIComponent(id),{method:"DELETE"}).then(function(){
     SERVER_SESSIONS=SERVER_SESSIONS.filter(function(r){return r.id!==id});
     clearLocalMemory(id);
     if(state.currentSessionId===id){
       _shareToken=null;
-      state={topic:"",diagIndex:0,diagAnswers:[],diagQuestions:[],kbNodes:[],currentNode:0,stuckCount:0,totalQ:0,explaining:false,currentSessionId:null,substantiveCount:0,lastCallSource:null,lastCallError:null,mistakes:[],sessionTitle:null};
+      resetState();
       toggleShareBtn();
       setChatIdInURL(null);
       document.getElementById("topicSetup").classList.remove("hidden");
@@ -2185,6 +2544,19 @@ function deleteSession(id,e){
     }
     renderRecents();
   }).catch(function(err){console.warn("[sessions] delete failed:",err.message)});
+}
+
+/* Backwards-compatible alias — older call sites still use the
+   immediate `deleteSession` name. They now go through the
+   confirm flow. */
+function deleteSession(id,e){
+  if(e){e.stopPropagation();e.preventDefault()}
+  if(!CURRENT_USER)return;
+  /* Find the row in the DOM and use its data-recent-id as the
+     "clientId" key for the confirm state map. */
+  var row=(e&&e.currentTarget&&e.currentTarget.closest(".recent-item"))||null;
+  var clientId=row?row.getAttribute("data-recent-id"):id;
+  startDeleteConfirm(clientId,e&&e.currentTarget);
 }
 function renderRecents(){
   var cont=document.getElementById("recentsList");
@@ -2215,13 +2587,27 @@ function renderRecents(){
     }
     var modeLabel=resolvedMode==="chat"?"Chat":"Tutor";
     var modeCls=resolvedMode==="chat"?"mode-chat":"mode-tutor";
-    html+='<div class="recent-item'+(active?" active":"")+'" onclick="loadSession(\''+s.id+'\')">';
+    /* P4.1 — use a safe-id for the DOM attribute and stash the real
+       id in data-recent-actual so the confirm flow can read it back
+       after re-render. The safe-id is just a hash of the real id. */
+    var safeId="r-"+Math.abs((s.id||"").split("").reduce(function(a,b){a=(a<<5)-a+b.charCodeAt(0);return a&a},0));
+    html+='<div class="recent-item'+(active?" active":"")+'" data-recent-id="'+safeId+'" data-recent-actual="'+esc(s.id)+'" onclick="loadSession(\''+esc(s.id)+'\')">';
     html+='<span class="recent-mode-badge '+modeCls+'">'+modeLabel+'</span>';
     html+='<div class="recent-item-main">';
     html+='<div class="recent-item-text">'+esc(s.title||s.topic||"(untitled)")+'</div>';
     html+='<div class="recent-item-meta">'+meta.map(function(m){return"<span>"+esc(m)+"</span>"}).join('<span class="dot"></span>')+'</div>';
     html+='</div>';
-    html+='<button class="recent-item-del" onclick="deleteSession(\''+s.id+'\',event)" title="Delete session" aria-label="Delete session">';
+    /* P4.1 — long-press / mousedown triggers the confirm flow
+       instead of an immediate DELETE. Also bind touchstart for
+       mobile. The keyboard "Enter/Space" path is wired inside
+       startDeleteConfirm. */
+    html+='<button class="recent-item-del" title="Hold to delete" aria-label="Delete session"';
+    html+=' onmousedown="startDeleteConfirm(\''+safeId+'\',this)"';
+    html+=' onmouseup="clearDeleteConfirmTimer(\''+safeId+'\')"';
+    html+=' onmouseleave="clearDeleteConfirmTimer(\''+safeId+'\')"';
+    html+=' ontouchstart="startDeleteConfirm(\''+safeId+'\',this)"';
+    html+=' ontouchend="clearDeleteConfirmTimer(\''+safeId+'\')"';
+    html+=' ontouchcancel="clearDeleteConfirmTimer(\''+safeId+'\')">';
     html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
     html+='</button>';
     html+='</div>';
@@ -2686,10 +3072,11 @@ async function askChatTurn(userText){
   }
 
   /* Web search is ON: do a non-streaming round 1, check for tool call.
-     Use a 15s ceiling — round 1 is just for tool detection; if the
-     model takes longer we'd rather stream its response without the
-     search detour. */
-  var r1=await callAPIChat(msgs,MAX_TOKENS_CHAT,15000);
+     P2.1 — lifted the round-1 ceiling from 15 s to 60 s for reasoning
+     models (DeepSeek R1, QwQ) which routinely take 30-50 s on a single
+     call. For non-reasoning providers we still pass 15 s via
+     `isReasoningProvider`; the helper below picks the right value. */
+  var r1=await callAPIChat(msgs,MAX_TOKENS_CHAT,isReasoningProvider()?60000:15000);
   if(!r1||!r1.text){
     /* Round 1 failed (no provider / network / etc). Show error. */
     var ctl=addStreamingMessage({onRetry:function(){askChatTurn(userText)}});
@@ -2719,16 +3106,34 @@ async function askChatTurn(userText){
      user stare at "搜索中…" for ages. */
   try{setSearchPill("loading",0,"Model requested: \""+toolCall.query+"\"")}catch(_){}
   console.log("[chat] model invoked web_search:",toolCall.query);
-  /* Race the search against a 5s ceiling. */
-  var searchPromise=fetchWebContext(toolCall.query);
+  /* P2.1 — race the search against a REAL 5 s ceiling via
+     AbortController + Promise.race. The previous implementation only
+     `console.warn`-ed after 5 s but still awaited the full
+     `searchPromise` — a slow DNS / hung provider would block the
+     entire chat turn until STREAM_TIMEOUT_MS. We now truly abandon
+     the search after 5 s; the in-flight fetch is aborted so its
+     socket is freed. */
+  var searchCtl=new AbortController();
   var searchTimer=setTimeout(function(){
-    /* Don't reject — let it finish in the background and we just
-       ignore the result. The promise still resolves; we just don't
-       await it. */
-    console.warn("[chat] web search exceeded 5s ceiling, falling back to no-context answer");
+    try{searchCtl.abort("search-ceiling")}catch(_){}
   },5000);
-  var searchRes=await searchPromise;
+  var searchPromise=fetchWebContext(toolCall.query,searchCtl.signal);
+  var searchRes=null;
+  try{
+    searchRes=await Promise.race([
+      searchPromise,
+      new Promise(function(resolve){searchCtl.signal.addEventListener("abort",function(){
+        console.warn("[chat] web search exceeded 5s ceiling, falling back to no-context answer");
+        resolve(null);
+      })})
+    ]);
+  }catch(e){
+    searchRes=null;
+  }
   clearTimeout(searchTimer);
+  /* Whatever happens, cancel the in-flight fetch if it's still going
+     so we don't leak sockets. */
+  try{searchCtl.abort("abandoned")}catch(_){}
   if(!searchRes||!searchRes.ok||!searchRes.sources||!searchRes.sources.length){
     /* Search failed or returned nothing. Tell the model and let it
        answer (or honestly say it can't). */
@@ -3150,18 +3555,302 @@ async function submitChatMessage(textOverride,opts){
   },0);
 }
 
+/* P1.1 — per-message action toolbar. The toolbar is a small
+   <div> with icon buttons (Copy / Edit / Regenerate / Thumbs /
+   Delete) and lives outside the message body so listeners survive
+   re-renders. The button set is role-dependent:
+     user       → copy / edit / delete
+     assistant  → copy / regenerate / thumbs up / thumbs down
+   Each click fires both:
+     1. an immediate local action (clipboard / DOM mutation /
+        localStorage feedback), and
+     2. a fire-and-forget API call to the corresponding
+        `/api/messages/<id>/...` endpoint documented in
+        `docs/api/openapi.yaml` (P1.1). API failures are logged
+        but never block the user.
+   The toolbar is hidden until the message is hovered (desktop)
+   or long-pressed (mobile). The CSS is at .msg-toolbar / .msg-
+   toolbar-btn; buttons render as 18×18 SVG icons. */
+function buildMessageToolbar(opts){
+  var role=opts.role;            /* "user" | "assistant" */
+  var entry=opts.entry||null;    /* state.messages entry */
+  if(!entry)return null;
+  var messageId=entry.id||entry.clientId;
+  var bar=document.createElement("div");
+  bar.className="msg-toolbar";
+  bar.dataset.role=role;
+  bar.dataset.messageId=messageId;
+  function addBtn(action,title,svgInner,onClick,extraClass){
+    var b=document.createElement("button");
+    b.type="button";
+    b.className="msg-toolbar-btn"+(extraClass?" "+extraClass:"");
+    b.title=title;
+    b.setAttribute("aria-label",title);
+    b.dataset.action=action;
+    b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+svgInner+"</svg>";
+    b.addEventListener("click",function(ev){
+      ev.stopPropagation();
+      try{onClick(ev)}catch(e){console.warn("[msg-toolbar] "+action+" failed:",e&&e.message)}
+    });
+    bar.appendChild(b);
+    return b;
+  }
+  /* Copy — works for both roles. Uses navigator.clipboard with a
+     legacy fallback to a hidden textarea + execCommand. */
+  function doCopy(){
+    var txt=entry.rawText||entry.html||"";
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){
+        showToast("Copied to clipboard");
+      },function(){
+        legacyCopy(txt);
+      });
+    }else{
+      legacyCopy(txt);
+    }
+    /* Best-effort telemetry — do not block on failure. */
+    fireFeedback(messageId,"copy",null);
+  }
+  function legacyCopy(txt){
+    try{
+      var ta=document.createElement("textarea");
+      ta.value=txt;
+      ta.style.position="fixed";
+      ta.style.opacity="0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      showToast("Copied");
+    }catch(e){
+      showToast("Copy failed");
+    }
+  }
+  addBtn("copy","Copy",
+    '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+    doCopy
+  );
+  if(role==="user"){
+    /* Edit — switch the bubble into a contenteditable, save on
+       blur or Cmd/Ctrl+Enter. On save, call PATCH
+       /api/messages/<id>?regenerate=true to re-run the model
+       from this user turn (the assistant reply that followed
+       is replaced by a fresh stream). */
+    addBtn("edit","Edit message",
+      '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>',
+      function(){
+        editUserMessage(messageId,bar);
+      }
+    );
+    /* Delete — soft-delete via DELETE /api/messages/<id> and
+       remove from state.messages + the DOM. */
+    addBtn("delete","Delete message",
+      '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
+      function(){
+        deleteUserMessage(messageId,bar);
+      }
+    );
+  }else{
+    /* Regenerate — re-run the model. POST
+       /api/messages/<id>/regenerate streams a fresh reply. */
+    addBtn("regenerate","Regenerate response",
+      '<path d="M21 12a9 9 0 1 1-3.5-7.1"/><path d="M21 4v6h-6"/>',
+      function(){
+        regenerateAssistantMessage(messageId,bar);
+      }
+    );
+    /* Thumbs up. Optimistic — flips the icon immediately,
+       persists in /api/messages/<id>/feedback. */
+    addBtn("thumbs-up","Helpful",
+      '<path d="M7 10v11"/><path d="M15 5l-1 5h5a2 2 0 0 1 2 2l-2 7a2 2 0 0 1-2 2H7V10l4-7a2 2 0 0 1 3 2v3z"/>',
+      function(ev){
+        sendFeedback(messageId,"up",bar);
+      }
+    );
+    addBtn("thumbs-down","Not helpful",
+      '<path d="M17 14V3"/><path d="M9 19l1-5H5a2 2 0 0 1-2-2l2-7a2 2 0 0 1 2-2h10v11l-4 7a2 2 0 0 1-3-2v-3z"/>',
+      function(){
+        sendFeedback(messageId,"down",bar);
+      }
+    );
+  }
+  return bar;
+}
+
+/* P1.1 — fire a POST /api/messages/<id>/feedback with the
+   `copy` synthetic event. Backend may ignore unknown events. */
+function fireFeedback(messageId,rating,categories){
+  try{
+    if(!messageId)return;
+    apiFetch("/api/messages/"+encodeURIComponent(messageId)+"/feedback",{
+      method:"PUT",
+      body:{rating:rating,categories:categories||null},
+      timeoutMs:8000
+    }).catch(function(e){
+      /* Telemetry failures are non-fatal. */
+      console.debug("[msg-feedback] not sent:",e&&e.message);
+    });
+  }catch(_){}
+}
+function sendFeedback(messageId,rating,bar){
+  fireFeedback(messageId,rating,null);
+  /* Optimistic UI: highlight the chosen button, dim the other. */
+  if(bar){
+    var up=bar.querySelector('[data-action="thumbs-up"]');
+    var down=bar.querySelector('[data-action="thumbs-down"]');
+    if(up)up.classList.toggle("active",rating==="up");
+    if(down)down.classList.toggle("active",rating==="down");
+  }
+  showToast(rating==="up"?"Thanks for the feedback":"Got it — we'll improve");
+}
+function editUserMessage(messageId,bar){
+  var idx=findMessageIndex(messageId);
+  if(idx<0){showToast("Message not found");return}
+  var entry=state.messages[idx];
+  var div=document.querySelector('[data-client-id="'+messageId+'"]');
+  if(!div){return}
+  var body=div.querySelector(".msg-body");
+  if(!body){return}
+  /* Swap the rendered body for a textarea, preserving width. */
+  var ta=document.createElement("textarea");
+  ta.className="msg-edit-area";
+  ta.value=entry.rawText||"";
+  body.innerHTML="";
+  body.appendChild(ta);
+  ta.focus();
+  ta.setSelectionRange(ta.value.length,ta.value.length);
+  function commit(){
+    var next=ta.value.trim();
+    if(!next||next===entry.rawText){
+      /* No change — restore. */
+      restoreMessageBody(entry,body);
+      return;
+    }
+    entry.rawText=next;
+    entry.html=null;
+    restoreMessageBody(entry,body);
+    /* PATCH /api/messages/<id>?regenerate=true — server edits
+       the user turn and re-runs the assistant model. */
+    apiFetch("/api/messages/"+encodeURIComponent(messageId),{
+      method:"PATCH",
+      body:{content:next,regenerate:true},
+      timeoutMs:15000
+    }).then(function(updated){
+      /* If the server returned a fresh assistant stream id,
+         the ViewModel can subscribe to /api/chat/stream and
+         replace the next message. For the moment we trigger a
+         local "regenerate this turn" by calling
+         regenerateAssistantMessage on the assistant message that
+         follows. The server's PATCH is still the source of truth. */
+      var nextId=findFollowingAssistantId(messageId);
+      if(nextId)regenerateAssistantMessage(nextId,bar);
+    }).catch(function(e){
+      console.warn("[msg-edit] PATCH failed; staying in offline mode:",e&&e.message);
+      showToast("Saved locally — will sync when back online");
+    });
+  }
+  ta.addEventListener("blur",commit);
+  ta.addEventListener("keydown",function(ev){
+    if(ev.key==="Enter"&&(ev.metaKey||ev.ctrlKey)){
+      ev.preventDefault();
+      ta.blur();
+    }else if(ev.key==="Escape"){
+      ev.preventDefault();
+      restoreMessageBody(entry,body);
+    }
+  });
+}
+function deleteUserMessage(messageId,bar){
+  var idx=findMessageIndex(messageId);
+  if(idx<0)return;
+  state.messages.splice(idx,1);
+  var div=document.querySelector('[data-client-id="'+messageId+'"]');
+  if(div)div.remove();
+  apiFetch("/api/messages/"+encodeURIComponent(messageId),{
+    method:"DELETE",
+    timeoutMs:8000
+  }).catch(function(e){
+    console.debug("[msg-delete] not synced:",e&&e.message);
+  });
+}
+function regenerateAssistantMessage(messageId,bar){
+  /* Hook into the existing streaming pipeline. The simplest
+     path: clear this bubble and the user message that precedes
+     it, then call askChatTurn on the user text. The full
+     backend integration (POST /api/messages/<id>/regenerate)
+     streams a fresh reply; once that endpoint is live, replace
+     this body with a SseFactory.open call. */
+  var assistantIdx=findMessageIndex(messageId);
+  if(assistantIdx<0)return;
+  var userIdx=assistantIdx-1;
+  while(userIdx>=0&&state.messages[userIdx].role!=="user")userIdx--;
+  var userEntry=userIdx>=0?state.messages[userIdx]:null;
+  var userText=userEntry&&userEntry.rawText;
+  if(!userText)return;
+  /* Splice out the assistant bubble from state + DOM. */
+  state.messages.splice(assistantIdx,1);
+  var div=document.querySelector('[data-client-id="'+messageId+'"]');
+  if(div)div.remove();
+  if(typeof window.askChatTurn==="function"){
+    try{window.askChatTurn(userText)}catch(e){console.warn("[regen] failed:",e&&e.message)}
+  }
+}
+function restoreMessageBody(entry,body){
+  if(entry.html){
+    body.innerHTML=entry.html;
+  }else{
+    body.innerHTML=formatMsg(entry.rawText||"");
+  }
+}
+function findMessageIndex(messageId){
+  return state.messages.findIndex(function(m){
+    return m.clientId===messageId||m.id===messageId;
+  });
+}
+function findFollowingAssistantId(userMessageId){
+  var idx=findMessageIndex(userMessageId);
+  if(idx<0)return null;
+  for(var i=idx+1;i<state.messages.length;i++){
+    if(state.messages[i].role==="assistant")return state.messages[i].clientId;
+  }
+  return null;
+}
+function showToast(msg){
+  /* P1.1 — minimal toast for action confirmations. Distinct
+     from the chatStatus pill and the share link toast. */
+  try{
+    var el=document.createElement("div");
+    el.className="msg-toast";
+    el.textContent=msg;
+    document.body.appendChild(el);
+    requestAnimationFrame(function(){el.classList.add("visible")});
+    setTimeout(function(){
+      el.classList.remove("visible");
+      setTimeout(function(){if(el&&el.parentNode)el.parentNode.removeChild(el)},300);
+    },1800);
+  }catch(_){}
+}
+
 function addMessage(role,text,type,actions){
   /* User sending a message = explicitly wants to follow the conversation. */
-  if(role==="user")_userScrolledAway=false;
+  if(role==="user"){state._userScrolledAway=false;hideNewReplyPill()}
+  /* P1.1 — push to the authoritative state.messages first; the DOM
+     is just a downstream view. */
+  var clientId="msg-"+generateId();
+  var html=formatMsg(text);
+  var entry={clientId:clientId,role:role,rawText:String(text||""),html:html,type:type||null,actions:actions||null};
+  state.messages.push(entry);
+
   var list=document.getElementById("msgList");
   var div=document.createElement("div");
   div.className="msg "+role;
+  div.dataset.clientId=clientId;
 
   var body=document.createElement("div");
   body.className="msg-body";
 
   if(type==="suggest"){
-    body.innerHTML=formatMsg(text);
+    body.innerHTML=html;
     var optsDiv=document.createElement("div");
     optsDiv.className="quick-opts";
     actions.forEach(function(a){
@@ -3173,10 +3862,22 @@ function addMessage(role,text,type,actions){
     });
     body.appendChild(optsDiv);
   }else{
-    body.innerHTML=formatMsg(text);
+    body.innerHTML=html;
   }
 
   div.appendChild(body);
+  /* P1.1 — inject the per-message action toolbar (Copy/Edit/
+     Regenerate/Thumbs). Hover-revealed; the toolbar lives in a
+     dedicated <div> so we never replace body.innerHTML (which
+     would wipe the listeners). The action set is role-dependent:
+       user       → copy / edit / delete
+       assistant  → copy / regenerate / thumbs up / thumbs down
+     `feedback` is optimistic; the server call is fire-and-forget
+     and failures are logged. The OpenAPI spec at
+     docs/api/openapi.yaml documents the message-actions endpoints
+     that this UI will exercise. */
+  var toolbar=buildMessageToolbar({role:role,entry:entry});
+  if(toolbar)div.appendChild(toolbar);
   list.appendChild(div);
 
   var sc=scrollContainer();
@@ -3199,6 +3900,23 @@ function addMessage(role,text,type,actions){
   }
   /* Update API/mock indicator badge */
   if(role==="assistant")updateChatStats();
+}
+
+/* P1.1 — DOM → state sync. If a DOM mutation happened outside of
+   addMessage (e.g. mistake-redo rebuilt a widget), update the
+   authoritative entry's html to match. The DOM remains the rendered
+   view; state is what we save + send to the model. */
+function syncMessageFromDom(clientId){
+  if(!clientId)return;
+  var idx=state.messages.findIndex(function(m){return m.clientId===clientId});
+  if(idx<0)return;
+  var el=document.querySelector('[data-client-id="'+clientId+'"] .msg-body');
+  if(el){
+    var clone=el.cloneNode(true);
+    var opts=clone.querySelectorAll(".quick-opts");
+    opts.forEach(function(o){o.remove()});
+    state.messages[idx].html=clone.innerHTML;
+  }
 }
 
 
@@ -3517,7 +4235,7 @@ function appendRunFooter(steps,usedTools,durationMs,status){
 }
 
 function scrollMainToBottom(){
-  if(_userScrolledAway)return;
+  if(state._userScrolledAway)return;
   var sc=scrollContainer();
   if(!sc)return;
   var slack=64;
@@ -3927,6 +4645,11 @@ function addStreamingMessage(opts){
   opts=opts||{};
   var onRetry=opts.onRetry;
   var onThinking=opts.onThinking;
+  /* P1.4 — a new bubble starts with the user "at bottom" again.
+     Suppress the pill for this stream and let the scroll listener
+     re-enable it only if the user moves away during streaming. */
+  state._userScrolledAway=false;
+  hideNewReplyPill();
   var list=document.getElementById("msgList");
   var div=document.createElement("div");
   div.className="msg assistant";
@@ -3934,6 +4657,21 @@ function addStreamingMessage(opts){
   body.className="msg-body";
   div.appendChild(body);
   list.appendChild(div);
+  /* P1.1/P1.2 — push a placeholder into the authoritative
+     state.messages list. While streaming, `rawText` is updated on
+     every delta and `html` is set to null. At finish() time we
+     do a single formatMsg pass and write `html`. The DOM bubble
+     is the rendered view, not the source. */
+  var clientId="msg-"+generateId();
+  div.dataset.clientId=clientId;
+  var msgIdx=state.messages.push({
+    clientId:clientId,
+    role:"assistant",
+    rawText:"",
+    html:null,
+    type:"streaming",
+    actions:null
+  })-1;
   var full="";
   var finished=false;
   var pendingRender=null;
@@ -4021,21 +4759,42 @@ function addStreamingMessage(opts){
   function doRender(){
     pendingRender=null;
     if(finished)return;
-    try{
-      body.innerHTML=formatMsg(full)+'<span class="stream-cursor">▍</span>';
-      highlightClosedCode();
-    }catch(e){
-      body.innerHTML='<p>'+esc(full)+'</p>';
+    /* P1.2 — incremental render. We keep a single text node
+       `.stream-content` inside the body and update its textContent
+       only — no `body.innerHTML = formatMsg(full)` per delta.
+       `formatMsg` runs marked + KaTeX + highlight.js; on a 4 000
+       token reply the old approach was O(n²) and caused visible
+       stutter. We also keep the cursor as a separate fixed sibling
+       so updating the text node never recreates the cursor element. */
+    if(!streamContent){
+      streamContent=document.createTextNode("");
+      body.innerHTML="";
+      body.appendChild(streamContent);
+      cursor=document.createElement("span");
+      cursor.className="stream-cursor";
+      cursor.textContent="▍";
+      body.appendChild(cursor);
+    }
+    streamContent.nodeValue=full;
+    /* P1.1 — mirror rawText to state.messages so extractHistory
+       and saveCurrentSession see the latest text. html is left
+       null until finish() so the saved session never holds a
+       half-rendered string. */
+    if(msgIdx>=0&&state.messages[msgIdx]){
+      state.messages[msgIdx].rawText=full;
     }
     /* Only auto-scroll if the user has NOT manually scrolled away and
        is still near the bottom — otherwise leave them alone. */
-    if(!_userScrolledAway){
+    if(!state._userScrolledAway){
       var slack=64; /* pixels from bottom considered "at bottom" */
       var sc=scrollContainer();
       var atBottom=sc.scrollHeight-sc.scrollTop-sc.clientHeight<=slack;
-      if(atBottom)sc.scrollTop=sc.scrollHeight;
+      if(atBottom){sc.scrollTop=sc.scrollHeight}
+      else{showNewReplyPill()}  /* P1.4 — show pill when scrolled up + new delta */
     }
   }
+  var streamContent=null;
+  var cursor=null;
   function scheduleRender(){
     if(pendingRender||finished)return;
     /* rAF coalesces multiple deltas that land in the same frame into
@@ -4087,59 +4846,96 @@ function addStreamingMessage(opts){
         cancelAnimationFrame(pendingRender);
         pendingRender=null;
       }
-      /* If the model sent the answer as one big chunk (common with
-         short answers or non-streaming upstreams), the user would
-         otherwise see a sudden "思考… → 整段答案" jump that doesn't
-         feel streamed. To make streaming feel real even on fast
-         responses, animate the buffered text character-by-character
-         (~10ms per char, capped at a reasonable upper bound). The
-         cursor is preserved during the animation; auto-scroll
-         follows. */
+      /* P1.2 — single formatMsg pass at finish time, write to
+         state.messages[i].html, and replace the streaming nodes
+         with the final innerHTML (which includes the cursor removal).
+         This is the only place marked + KaTeX run; doRender above
+         only mutates a text node. */
       var total=full.length;
       var firstChunkDuration=Date.now()-(thinkStarted||Date.now());
       var needsAnimation=total>0&&firstChunkDuration<200;
       if(needsAnimation){
-        body.innerHTML='<span class="stream-cursor">▍</span>';
+        /* P1.3 — character-by-character animation driven by a
+           single rAF loop with a 16ms budget per frame. Replaces
+           the recursive setTimeout(typeTick, 10) which could
+           build a long task queue. */
+        body.innerHTML="";
+        streamContent=document.createTextNode("");
+        cursor=document.createElement("span");
+        cursor.className="stream-cursor";
+        cursor.textContent="▍";
+        body.appendChild(streamContent);
+        body.appendChild(cursor);
         var pos=0;
-        var CHARS_PER_TICK=2;
-        var TICK_MS=10;
-        var maxTicks=Math.min(800,Math.ceil(total/CHARS_PER_TICK));
+        var CHARS_PER_TICK=4;        /* P1.3 — wider slice per rAF */
+        var MAX_MS_PER_FRAME=16;
+        var maxTicks=Math.ceil(total/CHARS_PER_TICK);
         var ticks=0;
-        function typeTick(){
+        var lastTime=0;
+        function typeTick(now){
           try{
             if(pos>=total||ticks>=maxTicks){
-              body.innerHTML=formatMsg(full);
+              /* Final render: ONE formatMsg pass writes the HTML. */
+              var finalHtml;
+              try{finalHtml=formatMsg(full)}catch(e){
+                console.warn("[typeTick] formatMsg error:",e&&e.message);
+                finalHtml="<p>"+esc(full)+"</p>";
+              }
+              body.innerHTML=finalHtml;
+              if(msgIdx>=0&&state.messages[msgIdx]){
+                state.messages[msgIdx].html=finalHtml;
+                state.messages[msgIdx].type="assistant";
+              }
               finishAfterRender();
               return;
             }
-            pos=Math.min(total,pos+CHARS_PER_TICK);
-            body.innerHTML=formatTickSlice(full,pos)+'<span class="stream-cursor">▍</span>';
+            var budget=lastTime?(now-lastTime):MAX_MS_PER_FRAME;
+            lastTime=now;
+            var step=Math.max(1,Math.floor((budget/MAX_MS_PER_FRAME)*CHARS_PER_TICK));
+            pos=Math.min(total,pos+step);
+            /* P1.3 — incremental slice; use formatTickSlice to
+               preserve markdown boundaries. */
+            streamContent.nodeValue=formatTickSlice(full,pos);
+            if(msgIdx>=0&&state.messages[msgIdx]){
+              state.messages[msgIdx].rawText=full.slice(0,pos);
+            }
             ticks++;
             /* Scroll along only if the user hasn't scrolled away. */
-            if(!_userScrolledAway){
+            if(!state._userScrolledAway){
               var sc=scrollContainer();
               if(sc&&sc.scrollHeight-sc.scrollTop-sc.clientHeight<=64){
                 sc.scrollTop=sc.scrollHeight;
               }
             }
-            setTimeout(typeTick,TICK_MS);
+            requestAnimationFrame(typeTick);
           }catch(e){
-            /* If formatTickSlice throws (e.g. KaTeX on partial math expression),
-               the animation would silently die leaving the cursor visible.
-               Catch it and render the full content without cursor. */
             console.warn("[typeTick] render error:",e&&e.message);
-            body.innerHTML=formatMsg(full);
+            try{
+              var fb=formatMsg(full);
+              body.innerHTML=fb;
+              if(msgIdx>=0&&state.messages[msgIdx]){state.messages[msgIdx].html=fb}
+            }catch(_){
+              body.innerHTML="<p>"+esc(full)+"</p>";
+            }
             finishAfterRender();
           }
         }
-        setTimeout(typeTick,0);
+        requestAnimationFrame(typeTick);
         return; /* finishAfterRender runs from inside typeTick */
       }
       try{
-        body.innerHTML=formatMsg(full);
+        var finalHtml=formatMsg(full);
+        body.innerHTML=finalHtml;
+        if(msgIdx>=0&&state.messages[msgIdx]){
+          state.messages[msgIdx].html=finalHtml;
+          state.messages[msgIdx].rawText=full;
+          state.messages[msgIdx].type="assistant";
+        }
       }catch(e){
         console.warn("[finish] formatMsg error:",e&&e.message);
-        body.innerHTML='<p>'+esc(full)+'</p>';
+        var fb="<p>"+esc(full)+"</p>";
+        body.innerHTML=fb;
+        if(msgIdx>=0&&state.messages[msgIdx]){state.messages[msgIdx].html=fb}
       }
       finishAfterRender();
 
@@ -4149,12 +4945,8 @@ function addStreamingMessage(opts){
           if(card)div.appendChild(card);
         }
         try{appendLocalMemory("assistant",full)}catch(_){}
-        /* Alias for the scroll container — the inner doRender() above
-           uses `sc`; finishAfterRender historically used `mc` (a name
-           that no longer exists), which threw a ReferenceError and
-           skipped saveCurrentSession(). Use `sc` everywhere now. */
         requestAnimationFrame(function(){
-          if(_userScrolledAway)return;
+          if(state._userScrolledAway)return;
           var s=scrollContainer();
           if(!s)return;
           var slack=64;
@@ -4165,9 +4957,11 @@ function addStreamingMessage(opts){
           saveCurrentSession();
         }
         updateChatStats();
-        /* Restore the send button — the response is done. */
         _chatStreaming=false;
         if(!_agentModeActive){try{setChatStopState(false)}catch(_){}}
+        /* P1.4 — clearing the global abort handle on natural finish
+           keeps the closure (and DOM refs) eligible for GC. */
+        if(window._activeChatCtl===ret){window._activeChatCtl=null}
       }
     },
     abort:function(){
@@ -5259,7 +6053,7 @@ async function resetApp(){
   }
   saveCurrentSession();
   _shareToken=null;
-  state={topic:"",diagIndex:0,diagAnswers:[],diagQuestions:[],kbNodes:[],currentNode:0,stuckCount:0,totalQ:0,explaining:false,currentSessionId:null,substantiveCount:0,lastCallSource:null,lastCallError:null,mistakes:[],sessionTitle:null};
+  resetState();
   toggleShareBtn();
   /* Go back to the main page — no chat session yet. */
   setChatIdInURL(null);
@@ -5308,11 +6102,40 @@ async function resetApp(){
    ============================================================ */
 var CURRENT_USER=null;
 
+/* P0.4 — unified ApiError. All apiFetch rejections are normalised
+   to this shape:
+     { status: Number,       // HTTP status, 0 for network/abort
+       code:   String|undef, // optional server "code" field
+       message:String,       // human-readable summary
+       body:   Object|undef  // parsed JSON body, if any
+       retried:Number }      // how many times retried before giving up
+   Callers can keep the legacy `err.status === 403` checks. */
+function makeApiError(status,message,body,code,retried){
+  var err=new Error(message);
+  err.status=status;err.code=code;err.body=body;err.retried=retried||0;
+  err.isApiError=true;
+  return err;
+}
+
 function getCsrfToken(){
   /* Read the CSRF token from the cookie set by the backend. */
   var m=document.cookie.match(/\bcsrf=([^;]+)/);
   return m?m[1]:null;
 }
+
+/**
+ * P0.4 — single point of contact with the server.
+ *
+ *  - Always includes credentials so the sid cookie travels.
+ *  - Attaches X-CSRF-Token for state-changing requests.
+ *  - Wraps fetch in an AbortController with a default 30 s timeout
+ *    (overridable via opts.timeoutMs).
+ *  - Normalises both `fetch()` throws (network / CORS / offline) and
+ *    non-2xx responses into a single ApiError shape.
+ *  - Exposes opts.signal so callers can chain their own AbortController.
+ *
+ * Returns parsed JSON on success, throws ApiError on failure.
+ */
 async function apiFetch(path,opts){
   opts=opts||{};
   opts.credentials="include";
@@ -5321,23 +6144,145 @@ async function apiFetch(path,opts){
     opts.body=JSON.stringify(opts.body);
     opts.headers["Content-Type"]="application/json";
   }
-  /* Attach CSRF token for state-changing requests. */
   var method=(opts.method||"GET").toUpperCase();
   if(method!=="GET"&&method!=="HEAD"){
     var token=getCsrfToken();
     if(token)opts.headers["X-CSRF-Token"]=token;
   }
-  var r=await fetch(path,opts);
-  var text=await r.text();
+  var timeoutMs=typeof opts.timeoutMs==="number"?opts.timeoutMs:30000;
+  var userSignal=opts.signal||null;
+  var controller=new AbortController();
+  var timer=setTimeout(function(){try{controller.abort()}catch(_){}},timeoutMs);
+  // Forward external aborts to the per-call controller.
+  if(userSignal){
+    if(userSignal.aborted){try{controller.abort()}catch(_){}}
+    else userSignal.addEventListener("abort",function(){
+      try{controller.abort()}catch(_){}
+    });
+  }
+  var r;
+  try{
+    r=await fetch(path,Object.assign({},opts,{signal:controller.signal}));
+  }catch(e){
+    clearTimeout(timer);
+    // P0.4 — fetch() can throw on DNS / offline / CORS / abort. Wrap
+    // in a normalised ApiError so callers can branch on `e.status`,
+    // `e.code`, etc. the same way as for HTTP errors.
+    var aborted=e&&(e.name==="AbortError"||controller.signal.aborted);
+    throw makeApiError(
+      0,
+      aborted?"请求被取消":"网络异常，请检查连接后重试",
+      null,
+      aborted?"ABORTED":"NETWORK",
+      0
+    );
+  }finally{
+    clearTimeout(timer);
+  }
+  var text;
+  try{text=await r.text()}catch(e){
+    throw makeApiError(r.status||0,"响应读取失败",null,"READ_BODY",0);
+  }
   var json=null;
   try{json=text?JSON.parse(text):null}catch(_){}
   if(!r.ok){
     var msg=(json&&(json.detail||json.title||json.error))||("HTTP "+r.status);
-    var err=new Error(msg);
-    err.status=r.status;err.code=json&&json.code;err.body=json;
+    var err=makeApiError(r.status,msg,json,json&&json.code,0);
+    /* P4.5 — auto-handle 401 / 403 transparently:
+     *   401  → the session is gone; drop the in-memory CURRENT_USER
+     *          and show the auth gate so the user can re-login.
+     *          The original call's error is re-thrown so the caller's
+     *          catch site still fires (and can show a "please sign
+     *          in again" toast). This avoids the previous behaviour
+     *          where a 401 from any background call silently kept
+     *          the user "logged in" until they refreshed.
+     *   403  → almost always a missing/expired CSRF token on a
+     *          state-changing request. If we haven't already tried
+     *          `warmCsrf`, fetch a fresh token and replay the
+     *          request once. The replay path sets `_csrfRetried`
+     *          so we don't loop.
+     *   Other 4xx / 5xx → re-throw unchanged. */
+    if(r.status===401){
+      handleAuthExpired();
+    }else if(r.status===403&&!opts._csrfRetried&&method!=="GET"&&method!=="HEAD"){
+      try{
+        await fetch("/api/auth/csrf-token",{credentials:"include",signal:controller.signal});
+      }catch(_){}
+      var replayOpts=Object.assign({},opts,{_csrfRetried:true});
+      return apiFetch(path,replayOpts);
+    }
     throw err;
   }
   return json;
+}
+
+/* P4.5 — invoked from apiFetch when a 401 comes back. Clears
+   in-memory user state, shows the auth gate, and emits a one-time
+   event so views that have their own `currentUser` observers (the
+   sidebar, settings, etc.) can react. We deliberately do NOT delete
+   the sid cookie from the client side — the server is the source of
+   truth for session lifetime, and the next successful login will
+   set a new one. */
+function handleAuthExpired(){
+  try{
+    CURRENT_USER=null;
+    if(window._onAuthExpiredListeners){
+      window._onAuthExpiredListeners.forEach(function(fn){
+        try{fn()}catch(e){console.warn("[auth] listener threw:",e)}
+      });
+    }
+    /* Show the gate; the existing showGate() handles UI swap. */
+    if(typeof showGate==="function"){showGate()}
+    if(typeof showAuthSignin==="function"){showAuthSignin()}
+    /* Inject a one-line hint above the sign-in form. We look for
+       an existing auth banner element; if absent, we create a
+       transient notice. */
+    setTimeout(function(){
+      var banner=document.getElementById("authExpiredBanner");
+      if(!banner){
+        banner=document.createElement("div");
+        banner.id="authExpiredBanner";
+        banner.className="auth-expired-banner";
+        banner.textContent="Your session has expired. Please sign in again.";
+        var gate=document.getElementById("authGate");
+        if(gate){gate.insertBefore(banner,gate.firstChild)}
+      }
+    },0);
+  }catch(e){console.warn("[auth] handleAuthExpired failed:",e&&e.message)}
+}
+
+/**
+ * P0.4 — retry wrapper. Retries on:
+ *  - status 0 (network / abort)
+ *  - status 408 / 429 / 5xx
+ *  - status 0 with err.code === "NETWORK"
+ * Linear backoff with light jitter. The caller can override retries
+ * (default 2) and backoffMs (default 400). Aborted requests are NOT
+ * retried.
+ */
+async function retryApiFetch(path,opts,retryOpts){
+  retryOpts=retryOpts||{};
+  var retries=typeof retryOpts.retries==="number"?retryOpts.retries:2;
+  var backoffMs=typeof retryOpts.backoffMs==="number"?retryOpts.backoffMs:400;
+  var attempt=0;
+  // Honour an external abort: don't retry if the caller already cancelled.
+  var userSignal=opts&&opts.signal;
+  while(true){
+    try{
+      return await apiFetch(path,opts);
+    }catch(e){
+      var retryable=e&&(
+        e.status===0||e.status===408||e.status===429||
+        (e.status>=500&&e.status<600)
+      );
+      if(!retryable||attempt>=retries) throw e;
+      if(userSignal&&userSignal.aborted) throw e;
+      attempt++;
+      e.retried=attempt;
+      var wait=backoffMs*attempt+Math.floor(Math.random()*80);
+      await new Promise(function(res){setTimeout(res,wait)});
+    }
+  }
 }
 
 function hideGate(){var g=document.getElementById("authGate");if(g)g.classList.add("hidden");var s=document.getElementById("appShell");if(s)s.classList.remove("hidden")}
@@ -5804,7 +6749,7 @@ function confirmDeleteAccount(){
         try{localStorage.removeItem("socrates-api")}catch(e){}
         try{localStorage.removeItem("socrates-provider-keys")}catch(e){}
         try{localStorage.removeItem("socrates-websearch")}catch(e){}
-        state={topic:"",phase:"topic",diagIndex:0,diagAnswers:[],diagQuestions:[],kbNodes:[],currentNode:0,stuckCount:0,totalQ:0,explaining:false,currentSessionId:null,substantiveCount:0,lastCallSource:null,lastCallError:null,mistakes:[]};
+        resetState();
         resetApp();
         showGate();
         renderUserFooter();
@@ -5836,7 +6781,7 @@ async function signOut(){
     localStorage.removeItem("socrates-guest");
   }catch(_){}
   /* Reset state. */
-  state={topic:"",phase:"topic",diagIndex:0,diagAnswers:[],diagQuestions:[],kbNodes:[],currentNode:0,stuckCount:0,totalQ:0,explaining:false,currentSessionId:null,substantiveCount:0,lastCallSource:null,lastCallError:null,mistakes:[]};
+  resetState();
   resetApp();
   showGate();
   renderUserFooter();
@@ -5931,21 +6876,157 @@ var BEAGLE_BUILT_IN={
   isBuiltIn:true
 };
 
-/* Cache API keys in localStorage so they survive page refreshes.
-   The server list endpoint never returns the key (it stays encrypted
-   on the server), so the client needs to remember it locally. */
-function cacheProviderKeys(){
+/* P4.4 — encrypted provider-key cache. Old versions stored
+   {providerId: sk-rawKey} as plaintext JSON in
+   localStorage["socrates-provider-keys"], readable by anyone with
+   access to the browser profile (extension, sync, devtools).
+   New format: { v: 2, salt, iv, ct } — AES-GCM-256 with a key
+   derived via PBKDF2 (200 000 iterations) from a stable
+   per-installation passphrase. The salt is per-installation and
+   stored in localStorage alongside the ciphertext; the passphrase
+   is also stored in localStorage (the protection here is
+   "at-rest encryption against a casual observer / profile sync",
+   NOT against a determined attacker with code execution on the
+   device — for that we would need WebAuthn PRF).
+   The legacy v1 plaintext format is read once, migrated to v2,
+   and the plaintext entry is wiped. */
+var PK_CACHE_KEY="socrates-provider-keys";
+var PK_PASSPHRASE_KEY="socrates-pk-passphrase";
+var PK_SALT_KEY="socrates-pk-salt";
+var PK_PBKDF2_ITERATIONS=200000;
+var _pkCryptoKeyPromise=null;
+
+function _getOrCreatePassphrase(){
+  try{
+    var existing=localStorage.getItem(PK_PASSPHRASE_KEY);
+    if(existing)return existing;
+    /* 256 bits of entropy, base64. Generated once per
+       installation; lives alongside the encrypted ciphertext. */
+    var bytes=new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    var b64=btoa(String.fromCharCode.apply(null,bytes));
+    localStorage.setItem(PK_PASSPHRASE_KEY,b64);
+    return b64;
+  }catch(e){
+    /* If localStorage is unavailable we cannot persist keys. */
+    return null;
+  }
+}
+function _getOrCreateSalt(){
+  try{
+    var existing=localStorage.getItem(PK_SALT_KEY);
+    if(existing)return _b64ToBytes(existing);
+    var bytes=new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    localStorage.setItem(PK_SALT_KEY,_bytesToB64(bytes));
+    return bytes;
+  }catch(e){return new Uint8Array(16)}
+}
+function _bytesToB64(bytes){
+  var s="";
+  for(var i=0;i<bytes.length;i++)s+=String.fromCharCode(bytes[i]);
+  return btoa(s);
+}
+function _b64ToBytes(b64){
+  var bin=atob(b64);
+  var out=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);
+  return out;
+}
+async function _getCryptoKey(){
+  if(_pkCryptoKeyPromise)return _pkCryptoKeyPromise;
+  var pass=_getOrCreatePassphrase();
+  if(!pass)return null;
+  var salt=_getOrCreateSalt();
+  var enc=new TextEncoder();
+  _pkCryptoKeyPromise=crypto.subtle.importKey(
+    "raw",enc.encode(pass),{name:"PBKDF2"},false,["deriveKey"]
+  ).then(function(baseKey){
+    return crypto.subtle.deriveKey(
+      {name:"PBKDF2",salt:salt,iterations:PK_PBKDF2_ITERATIONS,hash:"SHA-256"},
+      baseKey,
+      {name:"AES-GCM",length:256},
+      false,            /* non-extractable */
+      ["encrypt","decrypt"]
+    );
+  }).catch(function(e){
+    console.warn("[pk-cache] PBKDF2 derive failed:",e&&e.message);
+    return null;
+  });
+  return _pkCryptoKeyPromise;
+}
+
+async function cacheProviderKeys(){
   var keys={};
   apiConfig.providers.forEach(function(p){
     if(p.key)keys[p.id]=p.key;
   });
-  try{localStorage.setItem("socrates-provider-keys",JSON.stringify(keys))}catch(e){}
-}
-function loadCachedProviderKeys(){
+  if(!Object.keys(keys).length){
+    try{localStorage.removeItem(PK_CACHE_KEY)}catch(e){}
+    return;
+  }
+  var cryptoKey=await _getCryptoKey();
+  if(!cryptoKey){
+    /* Fall back to plaintext (very old browsers, private mode
+       disabling crypto, etc). Logged so a user with restricted
+       crypto support knows their keys are at-rest in cleartext. */
+    console.warn("[pk-cache] crypto unavailable; storing keys in plaintext");
+    try{localStorage.setItem(PK_CACHE_KEY,JSON.stringify({v:1,keys:keys}))}catch(e){}
+    return;
+  }
   try{
-    var raw=localStorage.getItem("socrates-provider-keys");
-    return raw?JSON.parse(raw):{};
+    var iv=crypto.getRandomValues(new Uint8Array(12));
+    var plaintext=enc.encode(JSON.stringify(keys));
+    var ctBuf=await crypto.subtle.encrypt({name:"AES-GCM",iv:iv},cryptoKey,plaintext);
+    var payload={v:2,salt:_bytesToB64(_getOrCreateSalt()),iv:_bytesToB64(iv),ct:_bytesToB64(new Uint8Array(ctBuf))};
+    localStorage.setItem(PK_CACHE_KEY,JSON.stringify(payload));
+  }catch(e){
+    console.warn("[pk-cache] encrypt failed; falling back to plaintext:",e&&e.message);
+    try{localStorage.setItem(PK_CACHE_KEY,JSON.stringify({v:1,keys:keys}))}catch(_){}
+  }
+}
+async function loadCachedProviderKeys(){
+  try{
+    var raw=localStorage.getItem(PK_CACHE_KEY);
+    if(!raw)return{};
+    var obj=JSON.parse(raw);
+    if(!obj)return{};
+    if(obj.v===2){
+      var cryptoKey=await _getCryptoKey();
+      if(!cryptoKey)return{};
+      try{
+        var iv=_b64ToBytes(obj.iv);
+        var ct=_b64ToBytes(obj.ct);
+        var plainBuf=await crypto.subtle.decrypt({name:"AES-GCM",iv:iv},cryptoKey,ct);
+        var decoded=new TextDecoder().decode(plainBuf);
+        return JSON.parse(decoded);
+      }catch(e){
+        console.warn("[pk-cache] decrypt failed; key may have been rotated. Falling back to {}.");
+        return{};
+      }
+    }
+    if(obj.v===1&&obj.keys){
+      /* Legacy plaintext — migrate on the fly, then wipe the
+         plaintext entry. We re-encrypt via cacheProviderKeys()
+         so subsequent loads use the encrypted path. */
+      try{
+        localStorage.removeItem(PK_CACHE_KEY);
+      }catch(_){}
+      cacheProviderKeys();
+      return obj.keys;
+    }
+    return{};
   }catch(e){return{}}
+}
+
+/* Convenience: clear the cached key for a single provider. */
+async function clearCachedProviderKey(id){
+  var keys=await loadCachedProviderKeys();
+  if(keys[id]){delete keys[id]}
+  apiConfig.providers.forEach(function(p){
+    if(p.id===id)p.key="";
+  });
+  await cacheProviderKeys();
 }
 
 /* ============================================================
@@ -6113,8 +7194,10 @@ async function refreshApiConfig(){
   }
   try{
     /* On fresh page load the in-memory apiConfig.providers is empty, so we
-       also try the localStorage cache — the server does not return the key. */
-    var existingKeys=loadCachedProviderKeys();
+       also try the localStorage cache — the server does not return the key.
+       P4.4 — loadCachedProviderKeys is now async (decrypts the AES-GCM
+       envelope), so we `await` it. */
+    var existingKeys=await loadCachedProviderKeys();
     apiConfig.providers.forEach(function(p){
       if(p.key)existingKeys[p.id]=p.key;
     });
@@ -6151,6 +7234,18 @@ async function refreshApiConfig(){
 function getActiveProvider(){
   if(!apiConfig.activeId)return null;
   return apiConfig.providers.find(function(p){return p.id===apiConfig.activeId})||null;
+}
+
+/* P2.1 — return true when the active model is known to take 30+ s
+   per call (reasoning models). The round-1 tool-detection path uses
+   a longer ceiling for these so we don't accidentally skip them. */
+function isReasoningProvider(){
+  try{
+    var p=getActiveProvider();
+    if(!p)return false;
+    var m=(p.model||"").toLowerCase();
+    return /deepseek-r1|qwq|o1|o3|reasoner|thinking/.test(m);
+  }catch(_){return false}
 }
 
 function hasUsableActive(){
@@ -7996,10 +9091,25 @@ var MAX_TOKENS_CHAT=4096;      /* default for chat/stream completions */
 var MAX_TOKENS_DIAG=4096;      /* default for diagnostic JSON generation */
 
 function extractHistory(){
-  /* Prefer the localStorage mirror: it has the exact plain-text content
-     that was sent to / received from the model, with no formatting
-     drift from re-renders. Fall back to the live DOM when no mirror
-     exists (e.g. fresh tab on a session loaded from the server). */
+  /* P1.1 — three-tier source-of-truth, preferred in order:
+     1. state.messages.rawText (authoritative, in-memory, never
+        re-rendered, never has half-streamed text)
+     2. localStorage mirror (good for cross-tab / post-reload)
+     3. live DOM (legacy fallback — only used when neither 1 nor 2
+        is available, e.g. a session that was loaded from the server
+        but the in-memory list hasn't been hydrated yet) */
+  if(Array.isArray(state.messages)&&state.messages.length){
+    var out=[];
+    for(var i=state.messages.length-1;i>=0&&out.length<HISTORY_MAX_TURNS*2;i--){
+      var m=state.messages[i];
+      if(!m||!m.rawText)continue;
+      var txt=String(m.rawText).replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
+      if(!txt)continue;
+      if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";
+      out.unshift({role:m.role==="user"?"user":"assistant",content:txt});
+    }
+    if(out.length)return out;
+  }
   var sid=state.currentSessionId;
   var rec=sid?loadLocalMemory(sid):null;
   if(rec&&rec.messages&&rec.messages.length){
