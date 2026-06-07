@@ -65,6 +65,56 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .recents-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px}
 .recents-panel.hidden{display:none}
 .recents-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+
+/* P2.1 — project chip row at the top of the sidebar. Chips
+   are horizontally scrollable; the active chip has a coloured
+   left bar. The + chip is a static plus button that opens
+   the project editor. */
+.sidebar-projects{display:flex;align-items:center;gap:4px;padding:8px 8px 6px;overflow-x:auto;flex-shrink:0;border-bottom:0.5px solid hsl(var(--border-300)/0.08);scrollbar-width:thin}
+.sidebar-project-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 8px 4px 6px;border-radius:999px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.15);font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-300));cursor:pointer;flex-shrink:0;transition:all .12s;border-left:3px solid var(--chip-color,transparent);line-height:1.2}
+.sidebar-project-chip:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.sidebar-project-chip.active{background:hsl(var(--bg-200));color:hsl(var(--text-100));font-weight:500}
+.sidebar-project-chip.filter{box-shadow:0 0 0 1.5px var(--chip-color,transparent)}
+.sidebar-project-icon{font-size:13px;line-height:1}
+.sidebar-project-name{white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+.sidebar-project-count{font-size:10px;color:hsl(var(--text-500));font-variant-numeric:tabular-nums;background:hsl(var(--bg-300));padding:1px 5px;border-radius:6px;min-width:18px;text-align:center}
+.sidebar-project-chip.active .sidebar-project-count{background:var(--chip-color);color:hsl(var(--always-white))}
+.sidebar-project-add{padding:4px 6px;color:hsl(var(--text-400))}
+.sidebar-project-add:hover{color:hsl(var(--text-100))}
+
+/* P2.1 — Recents filter chip ("Showing: Math ›") */
+.recents-filter{padding:0 4px 6px;flex-shrink:0}
+.recents-filter-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 4px 3px 8px;border-radius:999px;background:hsl(var(--bg-200));border:0.5px solid var(--chip-color, hsl(var(--border-300)/0.3));font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-200));border-left:3px solid var(--chip-color,transparent)}
+.recents-filter-icon{font-size:12px;line-height:1}
+.recents-filter-name{font-weight:500}
+.recents-filter-clear{width:18px;height:18px;border-radius:50%;background:transparent;border:0;color:hsl(var(--text-400));font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.recents-filter-clear:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+
+/* P2.1 — Project editor modal */
+.project-editor{padding:0;max-height:75vh;overflow-y:auto}
+.project-editor-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:0.5px solid hsl(var(--border-300)/0.18)}
+.project-editor-title{font-size:15px;font-weight:600}
+.project-editor-close{width:28px;height:28px;border-radius:6px;background:transparent;border:0;font-size:18px;color:hsl(var(--text-400));cursor:pointer}
+.project-editor-close:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.project-editor-body{padding:18px;display:flex;flex-direction:column;gap:12px}
+.project-editor-label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:hsl(var(--text-400))}
+.project-editor-input,.project-editor-textarea{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:6px;padding:8px 10px;font:inherit;font-size:14px;color:hsl(var(--text-100));outline:none}
+.project-editor-input:focus,.project-editor-textarea:focus{border-color:hsl(var(--accent-000)/0.6);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.15)}
+.project-editor-icon{max-width:60px}
+.project-editor-textarea{min-height:60px;resize:vertical;font-family:var(--font-sans)}
+.project-editor-colors{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.project-editor-swatch{width:24px;height:24px;border-radius:50%;border:1.5px solid transparent;cursor:pointer;padding:0;transition:transform .1s}
+.project-editor-swatch:hover{transform:scale(1.1)}
+.project-editor-swatch[data-selected]{border-color:hsl(var(--text-100));box-shadow:0 0 0 1.5px hsl(var(--bg-100))}
+.project-editor-foot{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:0.5px solid hsl(var(--border-300)/0.18);background:hsl(var(--bg-200))}
+.project-editor-spacer{flex:1}
+.project-editor-cancel,.project-editor-save,.project-editor-delete{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid transparent}
+.project-editor-cancel{background:transparent;color:hsl(var(--text-300));border-color:hsl(var(--border-300)/0.4)}
+.project-editor-cancel:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.project-editor-save{background:hsl(var(--accent-000));color:hsl(var(--always-white))}
+.project-editor-save:hover{filter:brightness(1.1)}
+.project-editor-delete{background:transparent;color:hsl(0 60% 70%);border-color:hsl(0 60% 30%/0.5)}
+.project-editor-delete:hover{background:hsl(0 60% 30%/0.4)}
 .recents-title{font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
 .recents-new-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-300));background:transparent;border:0.5px solid hsl(var(--border-300)/0.5);transition:all .12s;cursor:pointer;line-height:1}
 .recents-new-btn:hover{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.08)}
@@ -1473,6 +1523,13 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
         </button>
       </div>
     </div>
+    <!-- P2.1 — Projects row at the top of the sidebar. The
+         Inbox project is the system default; user-created
+         projects live as horizontal chips. Each chip is
+         clickable to filter the Recents panel; a long-press
+         (or the + button) opens the project editor. -->
+    <div class="sidebar-projects" id="sidebarProjects"></div>
+
     <div class="sidebar-tabs">
       <div class="sidebar-tab active" id="tabKnowledge" onclick="switchTab('knowledge')">Knowledge</div>
       <div class="sidebar-tab" id="tabRecents" onclick="switchTab('recents')">Recents</div>
@@ -1490,6 +1547,10 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
           <span>New</span>
         </button>
       </div>
+      <!-- P2.1 — active project filter chip. Renders only when
+           the user is filtered to a specific project; clicking
+           the × restores "All projects". -->
+      <div class="recents-filter" id="recentsFilter"></div>
       <div id="recentsList"></div>
     </div>
     <div class="recents-panel hidden" id="mistakesPanel">
@@ -2102,7 +2163,14 @@ var state={
        `rawText` is the unformatted text used for history extraction
        and session save; `html` is the rendered output. The DOM is
        a downstream view of this list — never the other way around. */
-    messages:[]
+    messages:[],
+    /* P2.1 — project binding. `currentProjectId` is the project
+       the active session belongs to (defaults to "inbox" for
+       legacy sessions). */
+    currentProjectId:null,
+    /* P2.1 — UI state: which project is the Recents panel
+       currently filtered to. `null` = "All projects". */
+    activeProjectFilter:null
   },
   /* kb: knowledge graph + mistake book. */
   kb:{kbNodes:[],currentNode:0,mistakes:[]},
@@ -2126,6 +2194,8 @@ var STATE_FLAT_TO_NS={
   explaining:"session.explaining",sessionTitle:"session.sessionTitle",
   domain:"session.domain",totalQ:"session.totalQ",stuckCount:"session.stuckCount",
   messages:"session.messages",
+  currentProjectId:"session.currentProjectId",
+  activeProjectFilter:"session.activeProjectFilter",
   /* kb */
   kbNodes:"kb.kbNodes",currentNode:"kb.currentNode",
   /* search */
@@ -2238,6 +2308,8 @@ function resetState(){
   state.session.totalQ=0;
   state.session.stuckCount=0;
   state.session.messages=[];
+  state.session.currentProjectId=null;
+  state.session.activeProjectFilter=null;
   state.kb.kbNodes=[];
   state.kb.currentNode=0;
   state.kb.mistakes=[];
@@ -2263,6 +2335,95 @@ var RECENTS_CAP=20;
    tabs without a roundtrip on every action. We keep it fresh via
    getRecents() / setRecents() — which now hit the server. */
 var SERVER_SESSIONS=[];
+
+/* P2.1 — Projects. The web SPA has a built-in "Inbox" project
+   (the default for legacy sessions) and supports user-created
+   projects as a way to group related sessions. Schema:
+     { id, name, description, color, icon, systemPrompt,
+       createdAt, archivedAt }
+   Stored client-side in `socrates-projects` while the server-
+   side /api/projects endpoint (docs/api/openapi.yaml P2.1) is
+   not yet live; switched to fetch once the backend ships.
+   Sessions get a `projectId` field; missing → "inbox".
+   The default Recents list shows everything; clicking a
+   project chip filters to that project only. */
+var PROJECTS_KEY="socrates-projects";
+var INBOX_PROJECT_ID="inbox";
+var INBOX_PROJECT={id:INBOX_PROJECT_ID,name:"Inbox",description:"All sessions without a project",color:"#7d7468",icon:"📥",systemPrompt:"",createdAt:0,archivedAt:null,isSystem:true};
+var PROJECTS=[INBOX_PROJECT];
+function loadProjects(){
+  try{
+    var raw=localStorage.getItem(PROJECTS_KEY);
+    var arr=raw?JSON.parse(raw):null;
+    if(Array.isArray(arr)&&arr.length){
+      /* Always ensure Inbox is first. */
+      PROJECTS=[INBOX_PROJECT].concat(arr.filter(function(p){return p.id!==INBOX_PROJECT_ID}));
+    }else{
+      PROJECTS=[INBOX_PROJECT];
+    }
+  }catch(_){
+    PROJECTS=[INBOX_PROJECT];
+  }
+}
+function saveProjects(){
+  try{
+    var persistable=PROJECTS.filter(function(p){return!p.isSystem});
+    localStorage.setItem(PROJECTS_KEY,JSON.stringify(persistable));
+  }catch(_){}
+}
+function getProjectById(id){
+  if(!id)return INBOX_PROJECT;
+  for(var i=0;i<PROJECTS.length;i++)if(PROJECTS[i].id===id)return PROJECTS[i];
+  return INBOX_PROJECT;
+}
+function createProject(opts){
+  var p={
+    id:generateId(),
+    name:(opts&&opts.name||"New project").trim().slice(0,80),
+    description:(opts&&opts.description||"").trim().slice(0,500),
+    color:(opts&&opts.color)||randomProjectColor(),
+    icon:(opts&&opts.icon)||"📁",
+    systemPrompt:(opts&&opts.systemPrompt||"").slice(0,8000),
+    createdAt:Date.now(),
+    archivedAt:null
+  };
+  PROJECTS.push(p);
+  saveProjects();
+  renderProjects();
+  return p;
+}
+function updateProject(id,patch){
+  var p=getProjectById(id);
+  if(p.isSystem)return p;
+  if(patch.name!==undefined)p.name=String(patch.name).trim().slice(0,80);
+  if(patch.description!==undefined)p.description=String(patch.description).trim().slice(0,500);
+  if(patch.color!==undefined)p.color=patch.color;
+  if(patch.icon!==undefined)p.icon=String(patch.icon).slice(0,4);
+  if(patch.systemPrompt!==undefined)p.systemPrompt=String(patch.systemPrompt).slice(0,8000);
+  saveProjects();
+  renderProjects();
+  return p;
+}
+function deleteProject(id){
+  if(id===INBOX_PROJECT_ID)return;
+  /* Re-parent affected sessions back to Inbox. */
+  for(var i=0;i<SERVER_SESSIONS.length;i++){
+    if(SERVER_SESSIONS[i].projectId===id)SERVER_SESSIONS[i].projectId=null;
+  }
+  /* Same for in-memory active session. */
+  if(state.session.currentProjectId===id)state.session.currentProjectId=null;
+  PROJECTS=PROJECTS.filter(function(p){return p.id!==id});
+  saveProjects();
+  renderProjects();
+  renderRecents();
+}
+function randomProjectColor(){
+  /* Curated palette that pairs with the existing tier-badge
+     colors. Each entry is a hex that the dot + chip both
+     reference. */
+  var palette=["#d8a85b","#7da9d8","#a0c46c","#c47ed1","#e07b5b","#5bc0be","#d6a4d1","#b8b54a"];
+  return palette[Math.floor(Math.random()*palette.length)];
+}
 function generateId(){return Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)}
 function getChatIdFromURL(){return new URLSearchParams(location.search).get("chat")||null}
 function setChatIdInURL(id){history.replaceState({chatId:id},"",id?"?chat="+encodeURIComponent(id):location.pathname)}
@@ -2538,18 +2699,22 @@ function saveCurrentSession(){
   var messages=state.messages.map(function(m){
     return {role:m.role,html:m.html,rawText:m.rawText||null,type:m.type||null};
   });
-  var sessionId=state.currentSessionId||generateId();
+  var sessionId=state.session.currentSessionId||generateId();
   var payload={
     id:sessionId,
-    topic:state.topic,
-    title:state.sessionTitle||state.topic,
-    domain:state.domain||state.topic,
+    topic:state.session.topic,
+    title:state.session.sessionTitle||state.session.topic,
+    domain:state.session.domain||state.session.topic,
     mode:appMode,
+    /* P2.1 — write the active project binding into the session
+       record so the server-side list endpoint can group by
+       project. `null` (or missing) means Inbox. */
+    projectId:state.session.currentProjectId||null,
     messages:messages,
-    kbNodes:state.kbNodes,
-    mistakes:state.mistakes||[],
-    currentNode:state.currentNode,
-    totalQ:state.totalQ,
+    kbNodes:state.kb.kbNodes,
+    mistakes:state.kb.mistakes||[],
+    currentNode:state.kb.currentNode,
+    totalQ:state.session.totalQ,
     phase:state.phase,
     updatedAt:now,
   };
@@ -2853,11 +3018,196 @@ function deleteSession(id,e){
   var clientId=row?row.getAttribute("data-recent-id"):id;
   startDeleteConfirm(clientId,e&&e.currentTarget);
 }
+
+/* P2.1 — Project sidebar + filter UI. The chip row is
+   always visible (above the tab strip) and is the canonical
+   way to scope the Recents panel. The active session's
+   `currentProjectId` defaults to whatever the chip row shows,
+   so the user always knows where new chats will land. */
+function renderProjects(){
+  loadProjects();
+  var cont=document.getElementById("sidebarProjects");
+  if(!cont)return;
+  var html=[];
+  PROJECTS.forEach(function(p){
+    var isActive=p.id===state.session.currentProjectId;
+    var isFilter=p.id===state.session.activeProjectFilter;
+    var count=SERVER_SESSIONS.filter(function(s){return (s.projectId||INBOX_PROJECT_ID)===p.id;}).length;
+    html.push(
+      '<button class="sidebar-project-chip'+(isActive?" active":"")+(isFilter?" filter":"")+'" data-project-id="'+esc(p.id)+'" style="--chip-color:'+esc(p.color)+'" onclick="onProjectChipClick(\''+esc(p.id)+'\',event)" oncontextmenu="event.preventDefault();openProjectEditor(\''+esc(p.id)+'\')" title="'+esc(p.name)+(p.isSystem?"": " — right-click to edit")+'">'+
+        '<span class="sidebar-project-icon">'+esc(p.icon)+'</span>'+
+        '<span class="sidebar-project-name">'+esc(p.name)+'</span>'+
+        '<span class="sidebar-project-count">'+count+'</span>'+
+      '</button>'
+    );
+  });
+  html.push('<button class="sidebar-project-chip sidebar-project-add" onclick="openProjectEditor(null)" title="New project"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M12 5v14M5 12h14"/></svg></button>');
+  cont.innerHTML=html.join("");
+}
+function onProjectChipClick(projectId,ev){
+  if(ev&&(ev.shiftKey||ev.metaKey||ev.ctrlKey)){
+    /* Multi-select: toggle this project as a filter while
+       keeping the active project unchanged. */
+    if(state.session.activeProjectFilter===projectId){
+      state.session.activeProjectFilter=null;
+    }else{
+      state.session.activeProjectFilter=projectId;
+    }
+  }else{
+    /* Plain click: pin the active project to this one, and
+       scope Recents to it. */
+    state.session.currentProjectId=projectId===INBOX_PROJECT_ID?null:projectId;
+    state.session.activeProjectFilter=projectId;
+  }
+  renderProjects();
+  renderRecents();
+}
+function clearProjectFilter(){
+  state.session.activeProjectFilter=null;
+  renderProjects();
+  renderRecents();
+}
+function openProjectEditor(projectId){
+  var existing=projectId?getProjectById(projectId):null;
+  if(existing&&existing.isSystem){
+    showToast("The Inbox project is permanent");
+    return;
+  }
+  /* Lightweight modal — uses the existing shareOverlay
+     structure as a generic dialog shell. */
+  var overlay=document.getElementById("projectEditorOverlay");
+  if(!overlay){
+    overlay=document.createElement("div");
+    overlay.id="projectEditorOverlay";
+    overlay.className="cmd-k-overlay hidden";
+    overlay.onclick=function(ev){if(ev.target===overlay)closeProjectEditor()};
+    overlay.innerHTML='<div class="cmd-k-modal project-editor" onclick="event.stopPropagation()"></div>';
+    document.body.appendChild(overlay);
+  }
+  var body=overlay.querySelector(".project-editor");
+  body.innerHTML=
+    '<div class="project-editor-head">'+
+      '<span class="project-editor-title">'+(existing?"Edit project":"New project")+'</span>'+
+      '<button class="project-editor-close" onclick="closeProjectEditor()">×</button>'+
+    '</div>'+
+    '<div class="project-editor-body">'+
+      '<label class="project-editor-label">Name<input class="project-editor-input" id="projName" maxlength="80" placeholder="e.g. Linear Algebra" value="'+esc(existing?existing.name:"")+'"></label>'+
+      '<label class="project-editor-label">Description<textarea class="project-editor-textarea" id="projDescription" maxlength="500" placeholder="Optional. Helps the tutor tailor its style.">'+esc(existing&&existing.description||"")+'</textarea></label>'+
+      '<label class="project-editor-label">Icon<input class="project-editor-input project-editor-icon" id="projIcon" maxlength="4" value="'+esc(existing&&existing.icon||"📁")+'"></label>'+
+      '<div class="project-editor-label">Color'+
+        '<div class="project-editor-colors" id="projColors">'+
+          ["#d8a85b","#7da9d8","#a0c46c","#c47ed1","#e07b5b","#5bc0be","#d6a4d1","#b8b54a"].map(function(c){
+            return '<button class="project-editor-swatch" data-color="'+c+'" style="background:'+c+'" onclick="pickProjectColor(\''+c+'\')" '+(existing&&existing.color===c?"data-selected=\"1\"":"" )+'></button>';
+          }).join("")+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="project-editor-foot">'+
+      (existing?'<button class="project-editor-delete" onclick="onProjectDelete(\''+esc(existing.id)+'\')">Delete</button>':'')+
+      '<div class="project-editor-spacer"></div>'+
+      '<button class="project-editor-cancel" onclick="closeProjectEditor()">Cancel</button>'+
+      '<button class="project-editor-save" onclick="onProjectEditorSave(\''+(existing?esc(existing.id):"")+'\')">Save</button>'+
+    '</div>';
+  /* Stash the picked color on the body so the save handler
+     can read it without a hidden input. */
+  body.dataset.pickedColor=existing?existing.color:randomProjectColor();
+  overlay.classList.remove("hidden");
+  var nameEl=document.getElementById("projName");
+  if(nameEl){setTimeout(function(){nameEl.focus();nameEl.select()},0)}
+}
+function pickProjectColor(c){
+  var body=document.querySelector("#projectEditorOverlay .project-editor");
+  if(!body)return;
+  body.dataset.pickedColor=c;
+  /* Visual selection state. */
+  Array.from(body.querySelectorAll(".project-editor-swatch")).forEach(function(s){
+    if(s.dataset.color===c)s.setAttribute("data-selected","1");
+    else s.removeAttribute("data-selected");
+  });
+}
+function onProjectEditorSave(projectId){
+  var body=document.querySelector("#projectEditorOverlay .project-editor");
+  if(!body)return;
+  var name=(document.getElementById("projName")||{}).value||"";
+  var description=(document.getElementById("projDescription")||{}).value||"";
+  var icon=(document.getElementById("projIcon")||{}).value||"📁";
+  var color=body.dataset.pickedColor||randomProjectColor();
+  if(!name.trim()){
+    showToast("Project name is required");
+    return;
+  }
+  if(projectId){
+    updateProject(projectId,{name:name,description:description,color:color,icon:icon});
+  }else{
+    var p=createProject({name:name,description:description,color:color,icon:icon});
+    state.session.currentProjectId=p.id;
+    state.session.activeProjectFilter=p.id;
+  }
+  closeProjectEditor();
+  renderRecents();
+  /* Best-effort server sync — non-blocking. */
+  try{
+    apiFetch(projectId?"/api/projects/"+encodeURIComponent(projectId):"/api/projects",{
+      method:projectId?"PATCH":"POST",
+      body:{name:name,description:description,color:color,icon:icon},
+      timeoutMs:8000
+    }).catch(function(e){console.debug("[project] server sync failed:",e&&e.message)});
+  }catch(_){}
+}
+function onProjectDelete(projectId){
+  if(!projectId)return;
+  showConfirm("Delete project?","Sessions in this project will move back to Inbox. This cannot be undone.",true).then(function(yes){
+    if(!yes)return;
+    deleteProject(projectId);
+    closeProjectEditor();
+    try{
+      apiFetch("/api/projects/"+encodeURIComponent(projectId),{method:"DELETE",timeoutMs:8000}).catch(function(){});
+    }catch(_){}
+  });
+}
+function closeProjectEditor(){
+  var overlay=document.getElementById("projectEditorOverlay");
+  if(overlay)overlay.classList.add("hidden");
+}
+/* P2.1 — when starting a new chat, persist the active project
+   binding to the new session record. Called from resetApp(). */
+function getActiveProjectId(){return state.session.currentProjectId||null;}
+
 function renderRecents(){
   var cont=document.getElementById("recentsList");
   if(!cont)return;
   var recents=getRecents();
-  if(recents.length===0){cont.innerHTML='<div class="recents-empty">No recent sessions yet.<br>Start a topic to begin.</div>';return}
+  /* P2.1 — apply the active project filter. `null` = show all.
+     A project id (including INBOX_PROJECT_ID) scopes the list
+     to that project. */
+  var filter=state.session.activeProjectFilter;
+  if(filter){
+    recents=recents.filter(function(s){
+      var pid=s.projectId||INBOX_PROJECT_ID;
+      return pid===filter;
+    });
+  }
+  /* Render the filter chip showing what's currently shown. */
+  var filterEl=document.getElementById("recentsFilter");
+  if(filterEl){
+    if(filter){
+      var proj=getProjectById(filter);
+      filterEl.innerHTML='<span class="recents-filter-chip" style="--chip-color:'+esc(proj.color)+'">'+
+        '<span class="recents-filter-icon">'+esc(proj.icon)+'</span>'+
+        '<span class="recents-filter-name">'+esc(proj.name)+'</span>'+
+        '<button class="recents-filter-clear" onclick="clearProjectFilter()" title="Show all projects">×</button>'+
+      '</span>';
+    }else{
+      filterEl.innerHTML="";
+    }
+  }
+  if(recents.length===0){
+    var emptyMsg=filter?
+      '<div class="recents-empty">No sessions in this project yet.<br><a href="#" onclick="resetApp();return false">Start a new chat</a> in this project.</div>':
+      '<div class="recents-empty">No recent sessions yet.<br>Start a topic to begin.</div>';
+    cont.innerHTML=emptyMsg;
+    return;
+  }
   var html="";
   recents.forEach(function(s){
     var active=s.id===state.currentSessionId;
@@ -6349,6 +6699,9 @@ async function resetApp(){
   saveCurrentSession();
   _shareToken=null;
   resetState();
+  /* P2.1 — preserve the project binding so a new chat in the
+     same project keeps the user in their context. */
+  state.session.currentProjectId=getActiveProjectId();
   toggleShareBtn();
   /* Go back to the main page — no chat session yet. */
   setChatIdInURL(null);
@@ -6749,6 +7102,12 @@ async function submitAuthVerify(token){
 
 async function afterAuthEnter(){
   toggleShareBtn();
+  /* P2.1 — hydrate the project list from localStorage and
+     paint the chip row. Server-side /api/projects is
+     fire-and-forget after this; local copy is the source of
+     truth until that endpoint is live. */
+  loadProjects();
+  renderProjects();
   /* Run the localStorage -> server migration once if there's anything to bring. */
   try{
     var localApi=localStorage.getItem("socrates-api");
