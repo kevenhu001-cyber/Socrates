@@ -37,7 +37,7 @@ fun SocratesApp(
     val booting = remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
-        container.http().warmCsrf()
+        container.http.warmCsrf()
         container.auth.probe()
         booting.value = false
     }

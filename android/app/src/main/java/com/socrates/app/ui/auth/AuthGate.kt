@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,10 +48,11 @@ fun AuthGate(
     var pendingEmail by remember { mutableStateOf("") }
     val lastEmail by container.prefs.lastEmail.collectAsState(initial = "")
 
+    val captchaFailedMsg = stringResource(R.string.auth_captcha_failed)
     val refreshCaptcha: () -> Unit = {
         scope.launch {
             captcha = container.auth.captcha().getOrNull()
-            captchaError = if (captcha == null) stringResource(R.string.auth_captcha_failed) else null
+            captchaError = if (captcha == null) captchaFailedMsg else null
         }
     }
 
@@ -303,7 +305,7 @@ internal fun CaptchaField(captcha: Captcha?, error: String?, onRefresh: () -> Un
         )
         IconButton(onClick = onRefresh) {
             Icon(
-                androidx.compose.material.icons.Icons.Filled.Refresh,
+                Icons.Default.Refresh,
                 contentDescription = "Refresh"
             )
         }

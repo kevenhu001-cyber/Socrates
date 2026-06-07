@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -30,7 +32,8 @@ android {
             // Falls back to debug keystore if no signing.properties is present.
             val ks = rootProject.file("signing.properties")
             if (ks.exists()) {
-                val props = java.util.Properties().apply { load(ks.inputStream()) }
+                val props = Properties()
+                ks.inputStream().buffered().reader().use { reader -> props.load(reader) }
                 storeFile = file(props.getProperty("storeFile"))
                 storePassword = props.getProperty("storePassword")
                 keyAlias = props.getProperty("keyAlias")
@@ -99,7 +102,7 @@ dependencies {
     implementation(libs.compose.material.icons)
     implementation(libs.compose.foundation)
     implementation(libs.compose.runtime)
-    implementation(libs.compose.window)
+
     debugImplementation(libs.compose.ui.tooling)
 
     implementation(libs.retrofit)

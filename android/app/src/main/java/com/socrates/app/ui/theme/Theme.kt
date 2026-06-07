@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import com.socrates.app.data.local.PreferencesStore
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 
 /**
  * Socrates theme — mirrors the socrates/dark and socrates/light CSS
