@@ -406,6 +406,23 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 
 /* P1.2 — global search modal. Mac-style centered overlay with
    a single input + scrollable results column. */
+.profile-instructions-label{font-size:12px;color:hsl(var(--text-300));font-weight:500;letter-spacing:0.01em}
+.profile-instructions-area{width:100%;min-height:64px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.2);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;color:hsl(var(--text-100));line-height:1.5;resize:vertical;font-family:var(--font-sans)}
+.profile-instructions-area:focus{outline:none;border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.15)}
+.profile-instructions-foot{margin-top:4px;display:flex;justify-content:flex-end}
+.profile-instructions-state{font-size:11px;color:hsl(var(--text-500));font-style:italic}
+.profile-instructions-state.saved{color:hsl(var(--accent-000))}
+.profile-instructions-state.pending{color:hsl(var(--text-500))}
+
+/* P1.3 — Custom Instructions textareas inside the profile modal */
+.profile-instructions{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.profile-instructions-label{font-size:12px;color:hsl(var(--text-300));font-weight:500;letter-spacing:0.01em}
+.profile-instructions-area{width:100%;min-height:64px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.2);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;color:hsl(var(--text-100));line-height:1.5;resize:vertical;font-family:var(--font-sans)}
+.profile-instructions-area:focus{outline:none;border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.15)}
+.profile-instructions-foot{margin-top:4px;display:flex;justify-content:flex-end}
+.profile-instructions-state{font-size:11px;color:hsl(var(--text-500));font-style:italic}
+.profile-instructions-state.saved{color:hsl(var(--accent-000))}
+.profile-instructions-state.pending{color:hsl(var(--text-500))}
 .cmd-k-overlay{position:fixed;inset:0;background:hsl(var(--always-black)/0.55);z-index:900;display:flex;align-items:flex-start;justify-content:center;padding-top:min(18vh,140px);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .cmd-k-overlay.hidden{display:none}
 .cmd-k-modal{width:min(640px,92vw);max-height:60vh;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.25);border-radius:14px;box-shadow:0 24px 60px hsl(var(--always-black)/0.45);overflow:hidden;display:flex;flex-direction:column}
@@ -6915,6 +6932,11 @@ function renderUserFooter(){
 }
 function openProfile(){
   if(!CURRENT_USER)return;
+  /* P1.3 — hydrate the custom-instructions textareas from the
+     last-saved value (localStorage first; falls back to
+     CURRENT_USER.customInstructions if the server already
+     returns it). */
+  loadCustomInstructionsIntoUI();
   document.getElementById("profileAvatar").textContent=(CURRENT_USER.displayName||CURRENT_USER.email||"?").slice(0,2).toUpperCase();
   document.getElementById("profileName").textContent=CURRENT_USER.displayName||"User";
   document.getElementById("profileEmail").textContent=CURRENT_USER.email||"";
@@ -6950,6 +6972,94 @@ function openProfile(){
 }
 function closeProfile(){
   document.getElementById("profileOverlay").classList.add("hidden");
+}
+
+/* P1.3 — Custom Instructions: load/save/serialize.
+   Schema (localStorage key "socrates-custom-instructions"):
+     { response: "How should I respond?",
+       about:    "What do you know about me?",
+       savedAt:  ISO-8601 timestamp }
+   The two strings are also pushed to the server via
+   PATCH /api/users/me.customInstructions so the same value
+   flows to the Android client on the next sign-in. */
+var _customInstructionsSaveTimer=null;
+function loadCustomInstructions(){
+  try{
+    var raw=localStorage.getItem("socrates-custom-instructions");
+    if(raw)return JSON.parse(raw)||{};
+  }catch(_){}
+  return {};
+}
+function saveCustomInstructions(value){
+  try{localStorage.setItem("socrates-custom-instructions",JSON.stringify(value))}catch(_){}
+}
+function loadCustomInstructionsIntoUI(){
+  var data=loadCustomInstructions();
+  /* Fall back to the server-side value if local is empty. */
+  if(!data.response&&CURRENT_USER&&CURRENT_USER.customInstructions){
+    data.response=CURRENT_USER.customInstructions;
+  }
+  var respEl=document.getElementById("profileInstResponse");
+  var aboutEl=document.getElementById("profileInstAbout");
+  if(respEl)respEl.value=data.response||"";
+  if(aboutEl)aboutEl.value=data.about||"";
+  updateInstSaveState(data.savedAt);
+}
+function onCustomInstructionsChange(){
+  var respEl=document.getElementById("profileInstResponse");
+  var aboutEl=document.getElementById("profileInstAbout");
+  if(!respEl||!aboutEl)return;
+  updateInstSaveState(null);
+  /* Debounce 600ms — typing fires oninput on every keystroke. */
+  clearTimeout(_customInstructionsSaveTimer);
+  _customInstructionsSaveTimer=setTimeout(function(){
+    var value={
+      response:respEl.value,
+      about:aboutEl.value,
+      savedAt:new Date().toISOString()
+    };
+    saveCustomInstructions(value);
+    updateInstSaveState(value.savedAt);
+    /* Best-effort server sync — non-blocking. */
+    apiFetch("/api/users/me",{
+      method:"PATCH",
+      body:{customInstructions:buildCustomInstructionsString(value)},
+      timeoutMs:8000
+    }).then(function(){
+      /* Server accepted; nothing to do. */
+    }).catch(function(e){
+      console.debug("[custom-inst] server sync failed (will retry on next save):",e&&e.message);
+    });
+  },600);
+}
+function buildCustomInstructionsString(value){
+  var parts=[];
+  if(value&&value.response)parts.push("[How to respond]\n"+value.response);
+  if(value&&value.about)parts.push("[About the user]\n"+value.about);
+  return parts.join("\n\n");
+}
+function updateInstSaveState(savedAt){
+  var el=document.getElementById("profileInstSaveState");
+  if(!el)return;
+  if(!savedAt){
+    el.textContent="Saving…";
+    el.className="profile-instructions-state pending";
+    return;
+  }
+  var t=new Date(savedAt);
+  var hh=String(t.getHours()).padStart(2,"0");
+  var mm=String(t.getMinutes()).padStart(2,"0");
+  el.textContent="Saved at "+hh+":"+mm;
+  el.className="profile-instructions-state saved";
+}
+/* Returns the in-flight custom-instructions string (or "") for
+   callers that build the chat messages array — see
+   getSystemContext(). The string is fetched fresh on every
+   call so changes from another tab or device (post sync) are
+   visible immediately. */
+function getCustomInstructionsString(){
+  var v=loadCustomInstructions();
+  return buildCustomInstructionsString(v);
 }
 /* Web search toggle in profile. */
 function toggleProfileWebSearch(){
@@ -8848,6 +8958,16 @@ async function callAPI(messages,maxTokens){ maxTokens=maxTokens||1024;
     return null; /* fall back to mock */
   }
   state.lastCallError=null;
+  /* P1.3 — prepend the user's Custom Instructions to the
+     system-context block. Loaded fresh on every call so changes
+     from another tab (or a future Android device that syncs the
+     same /api/users/me.customInstructions) are visible
+     immediately. */
+  var customInst=getCustomInstructionsString();
+  if(customInst){
+    messages=messages.slice();
+    messages.unshift({role:"system",content:"[User custom instructions]\n"+customInst});
+  }
   /* Built-in Beagle: call MiniMax directly (server proxy can't route there). */
   if(provider.isBuiltIn){
     var beagleMsgs=messages.slice();
@@ -9695,6 +9815,23 @@ generateFollowUpStream=async function(answer,node,domain,onDelta,onThinking){
         <div class="profile-toggle" id="profileWebSearchToggle" onclick="toggleProfileWebSearch()">
           <span class="profile-toggle-label">Web search</span>
           <div class="stg-toggle-track" id="profileWebSearchTrack"><div class="stg-toggle-knob"></div></div>
+        </div>
+        <!-- P1.3 — Custom Instructions. Two free-form textareas
+             that are prepended to the system prompt on every chat
+             turn. The first is "How should I respond?" (style /
+             tone / format); the second is "What do you know about
+             me?" (persisted context). Both are stored locally
+             under socrates-custom-instructions; when the backend
+             /api/users/me PATCH endpoint (docs/api/openapi.yaml
+             P1.3) is live, we sync to the server. -->
+        <div class="profile-instructions">
+          <label class="profile-instructions-label" for="profileInstResponse">How should I respond?</label>
+          <textarea id="profileInstResponse" class="profile-instructions-area" maxlength="4000" placeholder="e.g. Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language." oninput="onCustomInstructionsChange()"></textarea>
+          <label class="profile-instructions-label" for="profileInstAbout" style="margin-top:10px">What do you know about me?</label>
+          <textarea id="profileInstAbout" class="profile-instructions-area" maxlength="4000" placeholder="e.g. I'm a backend engineer working on a payments product. I'm allergic to puns." oninput="onCustomInstructionsChange()"></textarea>
+          <div class="profile-instructions-foot">
+            <span id="profileInstSaveState" class="profile-instructions-state">Not yet saved</span>
+          </div>
         </div>
       </div>
       <!-- Data management section -->
