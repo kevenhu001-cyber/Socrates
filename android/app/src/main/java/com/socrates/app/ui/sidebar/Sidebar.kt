@@ -149,10 +149,10 @@ private fun KnowledgeRow(node: KnowledgeNode, onMark: (String?, String, String) 
     }
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(tint))
+            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(label))
             Spacer(Modifier.width(8.dp))
-            Text(node.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-            Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            Text(node.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = tint)
+            Text(dot, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
         }
         Row(modifier = Modifier.padding(start = 16.dp, top = 4.dp)) {
             listOf("internalized" to "✓", "fuzzy" to "~", "blank" to "?").forEach { (status, glyph) ->

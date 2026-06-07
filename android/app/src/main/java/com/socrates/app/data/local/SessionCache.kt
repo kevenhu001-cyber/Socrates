@@ -89,16 +89,11 @@ interface MistakeDao {
     version = 1,
     exportSchema = false
 )
-@TypeConverters(Converters::class)
 abstract class SocratesDb : RoomDatabase() {
     abstract fun sessions(): SessionDao
     abstract fun mistakes(): MistakeDao
 }
 
-class Converters {
-    @TypeConverter fun fromLong(v: Long?): Long? = v
-    @TypeConverter fun toLong(v: Long?): Long? = v
-}
 
 class SessionCache(context: Context) {
     private val db = Room.databaseBuilder(

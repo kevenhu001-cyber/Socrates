@@ -1,5 +1,6 @@
 package com.socrates.app.ui.chat
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -291,4 +292,4 @@ private fun ChatInput(
     }
 }
 
-private fun Modifier.background(color: Color) = this.then(androidx.compose.foundation.background(color))
+

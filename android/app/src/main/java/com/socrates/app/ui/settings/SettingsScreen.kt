@@ -31,10 +31,10 @@ fun SettingsScreen(
 ) {
     val scope = rememberCoroutineScope()
     val user by container.auth.currentUser.collectAsStateWithLifecycle()
-    val themeMode by container.prefs.theme.collectAsStateWithLifecycle(initial = "system")
-    val fontStep by container.prefs.fontStep.collectAsStateWithLifecycle(initial = 1)
-    val widthStep by container.prefs.widthStep.collectAsStateWithLifecycle(initial = 1)
-    val isGuest by container.prefs.isGuest.collectAsStateWithLifecycle(initial = false)
+    val themeMode by container.prefs.theme.collectAsStateWithLifecycle(initialValue = "system")
+    val fontStep by container.prefs.fontStep.collectAsStateWithLifecycle(initialValue = 1)
+    val widthStep by container.prefs.widthStep.collectAsStateWithLifecycle(initialValue = 1)
+    val isGuest by container.prefs.isGuest.collectAsStateWithLifecycle(initialValue = false)
     var providers by remember { mutableStateOf<List<ApiProvider>>(emptyList()) }
     var activeId by remember { mutableStateOf<String?>(null) }
     var showAddKey by rememberSaveable { mutableStateOf(false) }

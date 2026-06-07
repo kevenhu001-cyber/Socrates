@@ -7,7 +7,7 @@ import retrofit2.Response
 import retrofit2.http.*
 
 /**
- * Retrofit interface that mirrors the web client's `/api/*` surface.
+ * Retrofit interface that mirrors the web client's `/api/` surface.
  * Every state-changing call expects the caller to attach the
  * `X-CSRF-Token` header — the OkHttp [com.socrates.app.net.CsrfInterceptor]
  * does that automatically by reading it from the persistent cookie jar.
