@@ -1,0 +1,26 @@
+# ── Web project ──
+node_modules/
+.env
+*.env.local
+*.env.*
+server.log
+
+# ── Android / Gradle ──
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/signing.properties
+*.iml
+.idea/
+*.hprof
+
+# ── OS files ──
+.DS_Store
+Thumbs.db
+
+# ── Playwright MCP artifacts ──
+.playwright-mcp/
+
+# ── OpenCode / IDE ──
+.omo/

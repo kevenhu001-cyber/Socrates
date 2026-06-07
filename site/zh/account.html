@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="socrates" data-mode="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Socrates — 我的账户</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="/base.css" rel="stylesheet">
+<style>
+/* ── Account dashboard layout ────────────────────────── */
+.acct-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:860px;margin:0 auto}
+.acct-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:16px;padding:28px 32px 32px;box-shadow:0 2px 12px hsl(var(--always-black)/0.08);transition:border-color var(--anim-fast),box-shadow var(--anim-fast)}
+.acct-card:hover{border-color:hsl(var(--border-300)/0.18);box-shadow:0 4px 20px hsl(var(--always-black)/0.12)}
+.acct-card.full{grid-column:1/-1}
+.acct-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
+.acct-card-title{font-size:14px;font-weight:600;color:hsl(var(--text-100));text-transform:uppercase;letter-spacing:.04em}
+
+/* Subscription hero */
+.acct-sub{text-align:center;padding-bottom:12px}
+.acct-sub-plan{font-family:var(--font-display);font-size:32px;font-weight:400;color:hsl(var(--text-000));letter-spacing:-.02em}
+.acct-sub-plan strong{font-weight:500;color:hsl(var(--accent-000))}
+.acct-sub-price{font-size:16px;color:hsl(var(--text-400));margin:4px 0 12px}
+.acct-sub-price strong{font-size:28px;font-weight:500;color:hsl(var(--text-000))}
+.acct-badge{display:inline-flex;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:4px 14px;border-radius:999px}
+.acct-badge.active{background:hsl(145 50% 45%/0.12);color:hsl(145 50% 50%);border:0.5px solid hsl(145 50% 45%/0.2)}
+.acct-badge.cancelled{background:hsl(35 80% 50%/0.12);color:hsl(35 80% 55%);border:0.5px solid hsl(35 80% 50%/0.2)}
+.acct-badge.expired{background:hsl(0 60% 50%/0.1);color:hsl(0 60% 55%);border:0.5px solid hsl(0 60% 50%/0.15)}
+.acct-sub-meta{display:flex;justify-content:center;gap:32px;margin-top:16px;flex-wrap:wrap}
+.acct-sub-meta-item{text-align:center}
+.acct-sub-meta-label{font-size:11px;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.acct-sub-meta-value{font-size:18px;font-weight:500;color:hsl(var(--text-000))}
+.acct-actions{display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+
+/* Usage bars */
+.acct-usage{margin-bottom:16px}
+.acct-usage:last-child{margin-bottom:0}
+.acct-usage-header{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.acct-usage-label{color:hsl(var(--text-400))}
+.acct-usage-count{color:hsl(var(--text-100));font-weight:500}
+.acct-usage-bar{height:4px;border-radius:4px;background:hsl(var(--bg-300));overflow:hidden}
+.acct-usage-fill{height:100%;border-radius:4px;transition:width var(--anim-slow)}
+.acct-usage-fill.green{background:linear-gradient(90deg,hsl(145 50% 45%),hsl(145 50% 55%))}
+.acct-usage-fill.gold{background:linear-gradient(90deg,hsl(var(--accent-000)),hsl(var(--brand-100)))}
+.acct-usage-fill.blue{background:linear-gradient(90deg,hsl(210 60% 50%),hsl(210 60% 60%))}
+.acct-usage-fill.red{background:linear-gradient(90deg,hsl(0 60% 50%),hsl(0 60% 60%))}
+
+/* Invoices */
+.acct-table{width:100%;border-collapse:collapse;font-size:13px}
+.acct-table th,.acct-table td{padding:10px 0;text-align:left;border-bottom:0.5px solid hsl(var(--border-300)/0.06)}
+.acct-table th{font-size:10px;font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
+.acct-table tr:last-child td{border-bottom:none}
+.acct-table td{color:hsl(var(--text-400))}
+.acct-table td:last-child{text-align:right}
+.acct-table .paid{color:hsl(145 50% 50%)}
+.acct-table .pending{color:hsl(35 80% 55%)}
+
+/* Payment method */
+.acct-pm{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:12px;background:hsl(var(--bg-200)/0.5);border:0.5px solid hsl(var(--border-300)/0.08)}
+.acct-pm-icon{width:40px;height:28px;border-radius:4px;background:hsl(var(--bg-300));display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:hsl(var(--text-500));flex-shrink:0}
+.acct-pm-info{flex:1;min-width:0}
+.acct-pm-name{font-size:14px;font-weight:500;color:hsl(var(--text-100))}
+.acct-pm-desc{font-size:12px;color:hsl(var(--text-500));margin-top:1px}
+.acct-pm-badge{font-size:10px;padding:2px 10px;border-radius:999px;background:hsl(145 50% 45%/0.1);color:hsl(145 50% 50%)}
+
+/* Danger zone */
+.acct-danger{padding:20px 24px;border-radius:12px;border:0.5px solid hsl(0 60% 50%/0.15);background:hsl(0 60% 50%/0.03)}
+.acct-danger-title{font-size:13px;font-weight:600;color:hsl(0 60% 60%);margin-bottom:6px}
+.acct-danger p{font-size:12px;color:hsl(var(--text-500));line-height:1.6;margin-bottom:14px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all var(--anim-fast);border:none;font-family:inherit}
+.btn-primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))!important}
+.btn-primary:hover{background:hsl(var(--accent-100));transform:translateY(-1px);box-shadow:0 4px 16px hsl(var(--accent-000)/0.25)}
+.btn-outline{background:transparent;color:hsl(var(--text-100))!important;border:0.5px solid hsl(var(--border-300)/0.2)}
+.btn-outline:hover{background:hsl(var(--bg-300))}
+.btn-ghost{background:transparent;color:hsl(var(--text-400))!important}
+.btn-ghost:hover{color:hsl(var(--text-100))!important}
+.btn-danger{background:hsl(0 60% 50%/0.1);color:hsl(0 60% 60%)!important;border:0.5px solid hsl(0 60% 50%/0.2)}
+.btn-danger:hover{background:hsl(0 60% 50%/0.18)}
+.btn-sm{padding:7px 16px;font-size:12px}
+
+/* Loading / error / sign-in states */
+.acct-state{text-align:center;padding:80px 20px}
+.acct-state svg{width:44px;height:44px;margin-bottom:16px;opacity:0.25}
+.acct-state h2{font-family:var(--font-display);font-size:22px;font-weight:400;color:hsl(var(--text-000));margin-bottom:8px;letter-spacing:-.02em}
+.acct-state p{font-size:14px;color:hsl(var(--text-500));line-height:1.7;max-width:360px;margin:0 auto}
+.acct-state .btn{margin-top:20px}
+.acct-spinner{animation:acctSpin .8s linear infinite;color:hsl(var(--accent-000)/0.4)}
+@keyframes acctSpin{to{transform:rotate(360deg)}}
+
+@media(max-width:720px){
+.acct-grid{grid-template-columns:1fr}
+.acct-card{padding:20px}
+.acct-sub-meta{gap:16px}
+.acct-actions{flex-direction:column;align-items:center}
+}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="page">
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><em>S</em>ocrates</a>
+    <div class="nav-links">
+      <a href="/pricing">套餐</a>
+      <a href="/guide">指南</a>
+      <a href="/about">关于</a>
+      <a href="/contact">联系</a>
+      <a href="/account" class="nav-active">账户</a>
+      <a class="lang-switch">EN</a>
+      <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="section-eyebrow">账户</div>
+  <h1>您的<strong>订阅</strong></h1>
+  <p>管理您的套餐，监控使用情况，查看账单历史。</p>
+</div>
+
+<section style="padding-top:0">
+  <div class="section-inner" style="max-width:900px">
+
+    <div class="acct-grid" id="acct-grid">
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-tag"><em>S</em>ocrates</div>
+      <p>AI驱动的苏格拉底式导师。循序渐进，学无止境。</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">产品</div>
+      <a href="/pricing">套餐</a>
+      <a href="/guide">指南</a>
+      <a href="https://app.topodrive.top">应用</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">公司</div>
+      <a href="/about">关于</a>
+      <a href="/contact">联系</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">账户</div>
+      <a href="/account">我的账户</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">法律</div>
+      <a href="/terms">服务条款</a>
+      <a href="/privacy">隐私政策</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">支持</div>
+      <a href="mailto:help@addtech.site">help@addtech.site</a>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Topodrive. All rights reserved.</p>
+      <p>用心打造，服务全球学习者。</p>
+    </div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+/* ── Scroll-reveal ─────────────────────────────────── */
+var srObs = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) { if (entry.isIntersecting) entry.target.classList.add('in'); });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+/* ── Real account data from API ────────────────────── */
+(function(){
+  var grid = document.getElementById('acct-grid');
+  var loginHTML = '<div class="acct-state" style="grid-column:1/-1">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13 12H3"/></svg>' +
+    '<h2>请登录查看账户</h2>' +
+    '<p style="margin-bottom:20px">输入您的账号和密码以查看订阅详情和使用数据。</p>' +
+    '<form id="loginForm" style="max-width:320px;margin:0 auto;text-align:left" onsubmit="return doLogin(event)">' +
+      '<div style="margin-bottom:14px">' +
+        '<label style="font-size:12px;color:hsl(var(--text-400));display:block;margin-bottom:4px">邮箱</label>' +
+        '<input type="email" id="loginEmail" style="width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:inherit;outline:none" placeholder="you@example.com" autocomplete="email">' +
+      '</div>' +
+      '<div style="margin-bottom:14px">' +
+        '<label style="font-size:12px;color:hsl(var(--text-400));display:block;margin-bottom:4px">密码</label>' +
+        '<input type="password" id="loginPass" style="width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:inherit;outline:none" placeholder="密码" autocomplete="current-password">' +
+      '</div>' +
+      '<div id="captchaWrap" style="margin-bottom:14px;display:none">' +
+        '<label style="font-size:12px;color:hsl(var(--text-400));display:block;margin-bottom:4px">验证码: <span id="captchaQuestion" style="color:hsl(var(--accent-000))"></span></label>' +
+        '<input type="hidden" id="captchaToken">' +
+        '<input type="text" id="captchaAnswer" style="width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-200));font-size:14px;font-family:inherit;outline:none" placeholder="答案" autocomplete="off">' +
+      '</div>' +
+      '<div id="loginError" style="font-size:13px;color:hsl(0 60% 60%);margin-bottom:10px;display:none"></div>' +
+      '<button type="submit" style="width:100%;padding:11px;border-radius:8px;border:none;font-size:14px;font-weight:500;color:hsl(var(--bg-400));background:hsl(var(--accent-000));cursor:pointer;font-family:inherit">登录</button>' +
+      '<div style="display:flex;align-items:center;gap:10px;margin:14px 0;color:hsl(var(--text-500));font-size:11px"><div style="flex:1;height:0.5px;background:hsl(var(--border-300)/0.15)"></div><span>或</span><div style="flex:1;height:0.5px;background:hsl(var(--border-300)/0.15)"></div></div>' +
+      '<a href="/api/auth/oauth/github/start?return_to=https://app.topodrive.top/account" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:transparent;color:hsl(var(--text-100));font-size:14px;font-weight:500;text-decoration:none;font-family:inherit">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>' +
+        ' 使用 GitHub 登录' +
+      '</a>' +
+      '<p style="font-size:12px;color:hsl(var(--text-500));margin-top:12px;text-align:center">还没有账号？<a href="https://app.topodrive.top" style="color:hsl(var(--accent-000))">注册</a></p>' +
+    '</form></div>';
+  var errHTML = '<div class="acct-state" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><h2>无法加载账户信息</h2><p>获取订阅数据失败，请稍后重试。</p><button class="btn btn-outline" onclick="location.reload()">重试</button></div>';
+
+  function fmtDate(ts) {
+    if (!ts) return '—';
+    var d = new Date(ts);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function buildCards(data) {
+    var u = data.user, p = data.plan, usage = data.usage;
+    var isUnlimited = p.maxSessions === 0;
+
+    var badgeClass = 'active', badgeText = '生效中';
+    if (u.subscriptionEnd) {
+      var now = Date.now();
+      if (u.subscriptionEnd < now) { badgeClass = 'expired'; badgeText = '已过期'; }
+      else if (u.tier === 'diophantus') { badgeClass = 'active'; badgeText = '免费'; }
+    } else if (u.tier === 'diophantus') { badgeClass = 'active'; badgeText = '免费'; }
+
+    var priceHTML = p.price === 0 ? '<strong>免费</strong>' : '<strong>$' + p.price + '</strong> /月';
+
+    var daysLeft = '—';
+    if (u.subscriptionEnd) {
+      var dl = Math.ceil((u.subscriptionEnd - Date.now()) / (1000 * 60 * 60 * 24));
+      daysLeft = dl > 0 ? dl : 0;
+    }
+
+    var tierLabels = ['免费', '基础', '标准', '高级'];
+    var tierLabel = tierLabels[p.rank] || p.name;
+
+    var upgradeBtnHTML = '';
+    if (p.rank < 3) {
+      var nextPlan = ['riemann', 'descartes', 'euclid'][p.rank];
+      var nextName = ['Riemann', 'Descartes', 'Euclid'][p.rank];
+      upgradeBtnHTML = '<a href="/zh/checkout?plan=' + nextPlan + '" class="btn btn-primary">升级到 ' + nextName + '</a>';
+    } else {
+      upgradeBtnHTML = '<span class="btn btn-ghost btn-sm" style="cursor:default">当前套餐</span>';
+    }
+
+    var maxS = isUnlimited ? '无限' : p.maxSessions;
+    var sPct = isUnlimited ? 100 : Math.min((usage.sessionCount / p.maxSessions) * 100, 100);
+    var kMax = p.maxKeys >= 999 ? 999 : p.maxKeys;
+    var kPct = Math.min((usage.providerCount / kMax) * 100, 100);
+
+    var nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 1); nextMonth.setDate(1);
+
+    return '' +
+      '<div class="acct-card full sr">' +
+        '<div class="acct-sub">' +
+          '<div style="margin-bottom:12px"><span class="acct-badge acct-badge-' + badgeClass + '">' + badgeText + '</span></div>' +
+          '<div class="acct-sub-plan">' + p.name + ' <strong>套餐</strong></div>' +
+          '<div class="acct-sub-price">' + priceHTML + '</div>' +
+          '<div class="acct-sub-meta">' +
+            '<div class="acct-sub-meta-item"><div class="acct-sub-meta-label">下次扣费</div><div class="acct-sub-meta-value">' + (u.subscriptionEnd ? fmtDate(u.subscriptionEnd) : '—') + '</div></div>' +
+            '<div class="acct-sub-meta-item"><div class="acct-sub-meta-label">剩余天数</div><div class="acct-sub-meta-value" style="color:hsl(var(--accent-000))">' + daysLeft + '</div></div>' +
+            '<div class="acct-sub-meta-item"><div class="acct-sub-meta-label">加入时间</div><div class="acct-sub-meta-value">' + (u.createdAt ? fmtDate(u.createdAt) : '—') + '</div></div>' +
+            '<div class="acct-sub-meta-item"><div class="acct-sub-meta-label">套餐等级</div><div class="acct-sub-meta-value">' + tierLabel + '</div></div>' +
+          '</div>' +
+          '<div class="acct-actions">' + upgradeBtnHTML + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="acct-card sr sr-d1">' +
+        '<div class="acct-card-header"><div class="acct-card-title">本月用量</div><span style="font-size:12px;color:hsl(var(--text-500))">' + fmtDate(nextMonth) + ' 重置</span></div>' +
+        '<div class="acct-usage"><div class="acct-usage-header"><span class="acct-usage-label">教学会话</span><span class="acct-usage-count">' + usage.sessionCount + ' / ' + maxS + '</span></div><div class="acct-usage-bar"><div class="acct-usage-fill green" style="width:' + sPct + '%"></div></div></div>' +
+        '<div class="acct-usage"><div class="acct-usage-header"><span class="acct-usage-label">已配置 API 密钥</span><span class="acct-usage-count">' + usage.providerCount + ' / ' + (p.maxKeys >= 999 ? '无限' : p.maxKeys) + '</span></div><div class="acct-usage-bar"><div class="acct-usage-fill gold" style="width:' + kPct + '%"></div></div></div>' +
+        '<div class="acct-usage"><div class="acct-usage-header"><span class="acct-usage-label">知识图谱节点</span><span class="acct-usage-count">' + usage.graphNodes + (isUnlimited ? '' : ' / 500') + '</span></div><div class="acct-usage-bar"><div class="acct-usage-fill blue" style="width:' + (isUnlimited ? 100 : Math.min((usage.graphNodes / 500) * 100, 100)) + '%"></div></div></div>' +
+      '</div>' +
+
+      '<div class="acct-card sr sr-d2">' +
+        '<div class="acct-card-header"><div class="acct-card-title">快捷操作</div></div>' +
+        '<div style="display:flex;flex-direction:column;gap:8px">' +
+          '<a href="/zh/api-keys" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>管理 API 密钥</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
+          '<a href="/zh/profile" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>更新个人资料</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
+          '<a href="https://app.topodrive.top" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>查看知识图谱</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
+          '<a href="https://app.topodrive.top" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>错题本复习</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
+          '<a href="/api/account/export" class="btn btn-outline" style="justify-content:space-between;width:100%" download><span>下载数据导出</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="acct-card sr sr-d1">' +
+        '<div class="acct-card-header"><div class="acct-card-title">支付方式</div><button class="btn btn-ghost btn-sm">编辑</button></div>' +
+        '<div class="acct-pm"><div class="acct-pm-icon">VISA</div><div class="acct-pm-info"><div class="acct-pm-name">Visa 尾号 4242</div><div class="acct-pm-desc">有效期至 12/2027</div></div><span class="acct-pm-badge">默认</span></div>' +
+      '</div>' +
+
+      '<div class="acct-card sr sr-d2">' +
+        '<div class="acct-card-header"><div class="acct-card-title">账单历史</div><button class="btn btn-ghost btn-sm">查看全部</button></div>' +
+        '<table class="acct-table"><tr><th>日期</th><th>套餐</th><th>金额</th><th>状态</th></tr><tr><td>' + fmtDate(Date.now()) + '</td><td>' + p.name + '</td><td>$' + p.price.toFixed(2) + '</td><td class="paid">已支付</td></tr></table>' +
+      '</div>' +
+
+      '<div class="acct-card full sr sr-d3">' +
+        '<div class="acct-card-header"><div class="acct-card-title" style="color:hsl(0 60% 60%)">危险区域</div></div>' +
+        '<div class="acct-danger"><div class="acct-danger-title">取消订阅</div>' +
+        '<p>取消后，您的订阅将在当前计费周期结束前保持生效。之后，您的账户将降级为免费 Diophantus 套餐。会话历史和知识图谱将被保留，但仅限 5 个保存的会话。</p>' +
+        '<button class="btn btn-danger btn-sm">取消订阅</button></div>' +
+      '</div>';
+  }
+
+  function loadAccount() {
+    grid.innerHTML = '<div class="acct-state" style="grid-column:1/-1"><svg class="acct-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="10" stroke-dasharray="50" stroke-dashoffset="50" stroke-linecap="round"/></svg><p>正在加载账户数据…</p></div>';
+
+    var controller = new AbortController();
+    var timeout = setTimeout(function() { controller.abort(); }, 10000);
+
+    fetch('/api/account/usage', { credentials: 'same-origin', signal: controller.signal })
+      .then(function(r) {
+        clearTimeout(timeout);
+        if (r.status === 401) {
+          grid.innerHTML = '<div class="acct-state" style="grid-column:1/-1"><svg class="acct-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="10" stroke-dasharray="50" stroke-dashoffset="50" stroke-linecap="round"/></svg><p>正在准备登录…</p></div>';
+          Promise.all([
+            fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}),
+            fetch('/api/captcha/generate', { credentials: 'same-origin' }).then(function(r){return r.json();}).catch(function(){return null;})
+          ]).then(function(results) {
+            var captcha = results[1];
+            grid.innerHTML = loginHTML;
+            if (captcha && captcha.token) {
+              document.getElementById('captchaToken').value = captcha.token;
+              document.getElementById('captchaQuestion').textContent = captcha.question || '数学验证';
+              document.getElementById('captchaWrap').style.display = 'block';
+            }
+          });
+          return null;
+        }
+        if (!r.ok) throw new Error('服务器返回 ' + r.status);
+        return r.json().catch(function() { throw new Error('服务器响应格式异常'); });
+      })
+      .then(function(data) {
+        if (!data || !data.user || !data.plan) return;
+        try {
+          grid.innerHTML = buildCards(data);
+          document.querySelectorAll('.sr').forEach(function(el) { srObs.observe(el); });
+        } catch(e) {
+          console.error('渲染错误:', e);
+          grid.innerHTML = errHTML;
+        }
+      })
+      .catch(function(err) {
+        clearTimeout(timeout);
+        console.error('账户加载错误:', err);
+        if (err.name === 'AbortError') {
+          grid.innerHTML = '<div class="acct-state" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><h2>请求超时</h2><p>服务器响应超时，请检查网络后重试。</p><button class="btn btn-outline" onclick="location.reload()">重试</button></div>';
+        } else {
+          grid.innerHTML = errHTML;
+        }
+      });
+  }
+
+  loadAccount();
+})();
+
+/* ── 登录表单处理 ──────────────────────────── */
+function loadCaptcha() {
+  fetch('/api/captcha/generate', { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(d) {
+    var wrap = document.getElementById('captchaWrap');
+    var qEl = document.getElementById('captchaQuestion');
+    var tEl = document.getElementById('captchaToken');
+    if (wrap && qEl && tEl && d && d.token) {
+      document.getElementById('captchaToken').value = d.token;
+      qEl.textContent = d.question || '数学验证';
+      wrap.style.display = 'block';
+    }
+  }).catch(function() {});
+}
+
+function getCookie(name) {
+  var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
+  return m ? m[1] : null;
+}
+
+function doLogin(e) {
+  e.preventDefault();
+  var email = document.getElementById('loginEmail').value.trim();
+  var pass = document.getElementById('loginPass').value;
+  var captchaToken = document.getElementById('captchaToken').value;
+  var captchaAns = document.getElementById('captchaAnswer').value.trim();
+  var errEl = document.getElementById('loginError');
+  var btn = document.querySelector('#loginForm button[type="submit"]');
+
+  if (!email || !pass) {
+    errEl.textContent = '请输入邮箱和密码。';
+    errEl.style.display = 'block';
+    return false;
+  }
+
+  errEl.style.display = 'none';
+  btn.textContent = '登录中…';
+  btn.disabled = true;
+
+  var csrfToken = getCookie('csrf');
+  if (!csrfToken) {
+    fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).then(function() {
+      csrfToken = getCookie('csrf');
+      submitLogin(email, pass, captchaToken, captchaAns, csrfToken, errEl, btn);
+    }).catch(function() {
+      submitLogin(email, pass, captchaToken, captchaAns, '', errEl, btn);
+    });
+    return false;
+  }
+  submitLogin(email, pass, captchaToken, captchaAns, csrfToken, errEl, btn);
+  return false;
+}
+
+function submitLogin(email, pass, captchaToken, captchaAns, csrfToken, errEl, btn) {
+  fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
+    body: JSON.stringify({ email: email, password: pass, captchaToken: captchaToken || undefined, captchaAnswer: captchaAns || undefined }),
+    credentials: 'same-origin'
+  }).then(function(r) {
+    return r.json().then(function(d) { return { status: r.status, data: d }; });
+  }).then(function(res) {
+    if (res.status >= 400) {
+      var msg = (res.data && res.data.detail) || (res.data && res.data.title) || '登录失败，请重试。';
+      if (res.data && res.data.detail === 'Email or password is incorrect') msg = '邮箱或密码错误。';
+      if (res.data && res.data.title === 'Invalid CSRF token') msg = '会话已过期，请刷新页面后重试。';
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
+      btn.textContent = '登录';
+      btn.disabled = false;
+      loadCaptcha();
+      return;
+    }
+    window.location.reload();
+  }).catch(function() {
+    errEl.textContent = '网络错误，请重试。';
+    errEl.style.display = 'block';
+    btn.textContent = '登录';
+    btn.disabled = false;
+  });
+  return false;
+}
+</script>
+<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/^\/zh/,'').replace(/\.html$/,'');b.href=p==='/'||p===''?'/':p})();</script>
+</body>
+</html>
