@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="socrates" data-mode="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Socrates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<style>
+:root{--always-white:0 0% 100%;--always-black:0 0% 0%}
+[data-theme=socrates][data-mode=dark]{--bg-000:42 4% 18%;--bg-100:40 3.3% 14.5%;--bg-200:36 3.6% 11.8%;--bg-300:39 3.2% 7.8%;--bg-400:0 0% 0%;--text-000:45 30% 96%;--text-100:45 30% 96%;--text-200:45 8% 72%;--text-300:45 8% 72%;--text-400:44 4.5% 58%;--text-500:44 4.5% 58%;--border-100:45 20% 82%;--border-200:45 20% 82%;--border-300:45 20% 82%;--border-400:45 20% 82%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font-sans);font-size:14px;line-height:1.5;color:hsl(var(--text-100));background:hsl(var(--bg-100));-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.01em}
+button,input,textarea{font-family:inherit;font-size:inherit;color:inherit;letter-spacing:inherit}
+button{border:none;background:none;cursor:pointer;outline:none;font-weight:inherit}
+a{color:inherit;text-decoration:none}
+::selection{background:hsl(var(--accent-000)/0.3);color:hsl(var(--text-000))}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:hsl(var(--always-white)/0.12);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:hsl(var(--always-white)/0.22)}
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:18rem;min-width:18rem;display:flex;flex-direction:column;background:hsl(var(--bg-000));border-right:0.5px solid hsl(var(--border-300)/0.12);transition:width .15s var(--ease-out),min-width .15s var(--ease-out);overflow:hidden;z-index:20;position:relative}
+.sidebar.collapsed{width:0;min-width:0;border-right-color:transparent}
+.sidebar-header{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 8px 12px;flex-shrink:0}
+.sidebar-logo{display:flex;align-items:center;gap:6px;padding:3px 8px;font-weight:600;font-size:16px;letter-spacing:-.02em;white-space:nowrap;border-radius:6px;transition:background .06s;color:hsl(var(--text-100));cursor:pointer}
+.sidebar-logo:hover{background:hsl(var(--always-white)/0.05)}.sidebar-logo svg{flex-shrink:0}
+.icon-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .06s,background .06s}
+.icon-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}.icon-btn svg{width:16px;height:16px}
+.sidebar-tabs{display:flex;border-bottom:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0;padding:0 8px}
+.sidebar-tab{flex:1;text-align:center;padding:8px 0;font-size:13px;color:hsl(var(--text-400));border-bottom:2px solid transparent;transition:color .1s,border-color .1s;cursor:pointer;font-weight:500}
+.sidebar-tab:hover{color:hsl(var(--text-200))}.sidebar-tab.active{color:hsl(var(--text-100));border-bottom-color:hsl(var(--accent-000))}
+.knowledge-panel{flex:1;overflow-y:auto;padding:12px 8px;display:flex;flex-direction:column;gap:6px}
+.knowledge-panel.hidden{display:none}
+.kb-section-title{font-size:11px;font-weight:500;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 2px}
+.kb-node{display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:8px;font-size:13px;transition:background .06s;cursor:pointer}
+.kb-node:hover{background:hsl(var(--bg-300))}
+.kb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.kb-dot.internalized{background:hsl(145 50% 50%)}.kb-dot.fuzzy{background:hsl(var(--accent-000))}.kb-dot.blank{background:hsl(var(--text-500))}
+.kb-name{flex:1;color:hsl(var(--text-200))}.kb-count{font-size:11px;color:hsl(var(--text-500))}
+.kb-empty{text-align:center;color:hsl(var(--text-500));font-size:13px;padding:32px 12px;line-height:1.6}
+.recents-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px}
+.recents-panel.hidden{display:none}
+.recents-header{padding:8px 12px 6px;flex-shrink:0}
+.recents-title{font-size:11px;font-weight:500;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
+.recent-item{display:flex;align-items:center;padding:6px 12px;border-radius:8px;font-size:13px;color:hsl(var(--text-200));transition:background .06s,color .06s;white-space:nowrap;overflow:hidden;cursor:pointer}
+.recent-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.recent-item-text{overflow:hidden;text-overflow:ellipsis;flex:1}
+.recent-item-date{font-size:11px;color:hsl(var(--text-500));flex-shrink:0;margin-left:8px}
+.sidebar-footer{display:flex;align-items:center;gap:8px;padding:6px 8px;flex-shrink:0;border-top:0.5px solid hsl(var(--border-300)/0.10)}
+.user-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;transition:background .06s;cursor:pointer}
+.user-row:hover{background:hsl(var(--bg-300))}
+.user-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;background:hsl(var(--text-200));color:hsl(var(--bg-100))}
+.user-name{font-size:13px;font-weight:500;color:hsl(var(--text-100))}.user-plan{font-size:11px;color:hsl(var(--text-500))}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;overflow:hidden}
+.main-bg{position:absolute;inset:0;pointer-events:none;z-index:0;background-color:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;clip-path:circle(150% at 50% 50%);opacity:0.5}
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;flex-shrink:0;position:relative;z-index:5}
+.top-bar-left{display:flex;align-items:center;gap:6px}
+.toggle-sidebar{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .06s,background .06s}
+.toggle-sidebar:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}.toggle-sidebar svg{width:16px;height:16px}
+.topic-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:16px;font-size:13px;color:hsl(var(--text-300));background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.1)}
+.topic-badge .tb-dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000))}
+.plan-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 8px 3px 6px;border-radius:6px;font-size:12px;color:hsl(var(--text-500));background:hsl(var(--bg-200))}
+.plan-dot{width:3px;height:3px;background:hsl(var(--text-500)/0.3);border-radius:50%}
+.plan-badge a{text-decoration:underline;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,currentColor 40%,transparent);color:hsl(var(--text-400))}
+.plan-badge a:hover{text-decoration-color:currentColor;color:hsl(var(--text-200))}
+.main-content{flex:1;overflow-y:auto;overflow-x:hidden;position:relative;z-index:1}
+.main-inner{display:flex;flex-direction:column;align-items:center;padding:6vh 16px 24px;max-width:720px;margin:0 auto;width:100%;min-height:100%}
+.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:10vh;flex:1}
+.topic-title{font-family:var(--font-display);font-size:clamp(1.5rem,1rem + 1.5vw,2rem);font-weight:500;color:hsl(var(--text-200));text-align:center;line-height:1.4}
+.topic-sub{font-size:14px;color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:480px}
+.topic-examples{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.topic-chip{padding:8px 16px;border-radius:20px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:13px;color:hsl(var(--text-300));transition:all .1s;cursor:pointer}
+.topic-chip:hover{border-color:hsl(var(--border-200)/0.4);background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.topic-input-wrap{width:100%;max-width:520px;background:hsl(var(--bg-000));border:1px solid transparent;border-radius:16px;box-shadow:0 .25rem 1.25rem hsl(var(--always-black)/3.5%),0 0 0 0.5px hsl(var(--border-300)/0.15);transition:box-shadow .2s,border-color .2s}
+.topic-input-wrap:focus-within{box-shadow:0 .25rem 1.25rem hsl(var(--always-black)/7.5%),0 0 0 0.5px hsl(var(--border-200)/0.3);border-color:hsl(var(--border-200)/0.15)}
+#topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:15px;line-height:1.55;color:hsl(var(--text-100));min-height:48px;max-height:120px;overflow-y:auto;font-family:var(--font-sans);padding:14px 16px}
+#topicInput::placeholder{color:hsl(var(--text-400))}
+.topic-footer{display:flex;align-items:center;justify-content:space-between;padding:0 14px 12px}
+.start-btn{padding:8px 20px;border-radius:10px;font-size:14px;font-weight:500;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:all .1s}
+.start-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}.start-btn.active:hover{background:hsl(var(--accent-100))}
+.diagnostic-view{width:100%;display:flex;flex-direction:column;gap:24px}
+.diag-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px}
+.diag-loading-text{color:hsl(var(--text-400));font-size:14px;text-align:center}
+.diag-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.12);border-radius:16px;padding:24px;transition:opacity .3s,transform .3s}
+.diag-num{font-size:11px;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.diag-text{font-size:16px;color:hsl(var(--text-100));line-height:1.55;margin-bottom:18px}
+.diag-opts{display:flex;flex-direction:column;gap:6px}
+.diag-opt{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.1);font-size:14px;color:hsl(var(--text-200));transition:all .1s;cursor:pointer;text-align:left;width:100%}
+.diag-opt:hover{border-color:hsl(var(--border-200)/0.3);background:hsl(var(--always-white)/0.03);color:hsl(var(--text-100))}
+.diag-opt.selected{border-color:hsl(var(--accent-000)/0.25);background:hsl(var(--accent-000)/0.06);color:hsl(var(--text-100))}
+.diag-opt-letter{width:22px;height:22px;border-radius:50%;border:1px solid hsl(var(--text-500));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:hsl(var(--text-400));flex-shrink:0;transition:all .1s}
+.diag-opt.selected .diag-opt-letter{border-color:hsl(var(--accent-000));background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.diag-opt-text{font-size:14px;line-height:1.55;color:hsl(var(--text-200))}
+.diag-opt-text p{margin-bottom:4px}.diag-opt-text p:last-child{margin-bottom:0}
+.diag-opt-text strong{font-weight:600;color:hsl(var(--text-100))}.diag-opt-text em{font-style:italic}
+.diag-opt-text code{font-family:var(--font-mono);font-size:.9em;background:hsl(var(--always-white)/0.06);padding:2px 5px;border-radius:3px}
+.diag-opt-text .katex{font-size:1em}
+.diag-text h1{font-size:1.3em;font-weight:600;color:hsl(var(--text-000));margin:14px 0 6px;line-height:1.3}
+.diag-text h2{font-size:1.15em;font-weight:600;color:hsl(var(--text-000));margin:12px 0 4px;line-height:1.3}
+.diag-text h3{font-size:1.05em;font-weight:600;color:hsl(var(--text-100));margin:10px 0 4px;line-height:1.3}
+.diag-text ul,.diag-text ol{padding-left:20px;margin:4px 0 8px}
+.diag-text li{margin-bottom:2px}
+.diag-text li::marker{color:hsl(var(--text-500))}
+.diag-text code{font-family:var(--font-mono);font-size:.9em;background:hsl(var(--always-white)/0.06);padding:2px 5px;border-radius:3px}
+.diag-text pre{background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-radius:10px;padding:10px 12px;overflow-x:auto;font-family:var(--font-mono);font-size:12px;line-height:1.5;margin:6px 0;color:hsl(var(--text-200))}
+.diag-text pre code{background:none;padding:0}
+.diag-text blockquote{border-left:2px solid hsl(var(--accent-000)/0.4);padding:4px 0 4px 14px;margin:6px 0;color:hsl(var(--text-300));font-style:italic}
+.diag-text table{border-collapse:collapse;width:100%;margin:6px 0;font-size:13px}
+.diag-text th,.diag-text td{border:0.5px solid hsl(var(--border-300)/0.15);padding:6px 10px;text-align:left}
+.diag-text th{background:hsl(var(--bg-200));font-weight:600;color:hsl(var(--text-100))}
+.diag-text td{color:hsl(var(--text-200))}
+.diag-text a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
+.diag-nav{display:flex;justify-content:space-between;align-items:center}
+.diag-nav button{font-size:13px;color:hsl(var(--text-400));padding:8px 14px;border-radius:6px;transition:all .1s}
+.diag-nav button:hover{color:hsl(var(--text-200));background:hsl(var(--bg-300))}
+.diag-nav .diag-continue{background:hsl(var(--bg-300));font-weight:500}
+.diag-nav .diag-continue.enabled{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.diag-nav .diag-continue.enabled:hover{background:hsl(var(--accent-100))}
+.chat-view{width:100%;display:flex;flex-direction:column;gap:16px;flex:1}
+.chat-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:8px}
+.chat-domain{font-size:12px;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.05em}
+.chat-stats{font-size:12px;color:hsl(var(--text-500))}.chat-api-badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:6px;font-weight:500;color:hsl(var(--text-500));background:hsl(var(--bg-300))}.chat-api-badge.on{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12)}
+.msg-list{display:flex;flex-direction:column;gap:14px;flex:1}
+.msg{animation:msgIn .3s var(--ease-out);padding:6px 0}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{display:flex;justify-content:flex-end}
+.msg.user .msg-body{max-width:75%;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:16px 16px 4px 16px;padding:12px 16px}
+.msg.assistant .msg-body{max-width:100%}
+.msg-body{font-size:14px;line-height:1.65;color:hsl(var(--text-100))}
+.msg-body p{margin-bottom:8px}.msg-body p:last-child{margin-bottom:0}
+.msg-body strong{font-weight:600;color:hsl(var(--text-000))}.msg-body em{font-style:italic}
+.msg-body pre{background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-radius:10px;padding:12px 14px;overflow-x:auto;font-family:var(--font-mono);font-size:12px;line-height:1.5;margin:8px 0;color:hsl(var(--text-200))}
+.msg-body code{font-family:var(--font-mono);font-size:.9em;background:hsl(var(--always-white)/0.06);padding:2px 5px;border-radius:3px}
+.msg-body pre code{background:none;padding:0}
+.quick-opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.quick-opt{padding:6px 14px;border-radius:16px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:13px;color:hsl(var(--text-300));transition:all .1s;cursor:pointer}
+.quick-opt:hover{border-color:hsl(var(--border-200)/0.4);background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.quick-opt.primary{background:hsl(var(--accent-000)/0.1);border-color:hsl(var(--accent-000)/0.25);color:hsl(var(--accent-000))}
+.chat-input-bar{width:100%;flex-shrink:0}
+.chat-input-wrap{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.12);border-radius:14px;overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.chat-input-wrap:focus-within{border-color:hsl(var(--border-200)/0.3);box-shadow:0 2px 12px hsl(var(--always-black)/0.2)}
+#chatInputArea{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:15px;line-height:1.55;color:hsl(var(--text-100));min-height:44px;max-height:160px;overflow-y:auto;font-family:var(--font-sans);padding:12px 16px}
+#chatInputArea::placeholder{color:hsl(var(--text-400))}
+.chat-input-footer{display:flex;align-items:center;justify-content:space-between;padding:0 12px 10px}
+.chat-input-hint{font-size:11px;color:hsl(var(--text-500))}
+.send-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:all .08s;flex-shrink:0}
+.send-btn:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
+.send-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}.send-btn.active:hover{background:hsl(var(--accent-100))}
+.send-btn svg{width:16px;height:16px}
+.loading{display:flex;gap:4px;padding:4px 0}
+.loading span{width:5px;height:5px;border-radius:50%;background:hsl(var(--text-500));animation:loadBounce 1.4s infinite}
+.loading span:nth-child(2){animation-delay:.2s}.loading span:nth-child(3){animation-delay:.4s}
+@keyframes loadBounce{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+.disclaimer{text-align:center;font-size:11px;color:hsl(var(--text-400));padding:16px 0 0;line-height:1.4}
+
+/* settings modal */
+.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+.settings-overlay.hidden{display:none}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.settings-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:440px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out)}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.settings-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
+.settings-title{font-size:16px;font-weight:600;color:hsl(var(--text-100))}
+.settings-close{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-400));transition:color .06s,background .06s;cursor:pointer}
+.settings-close:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+.settings-body{padding:16px 20px 20px;display:flex;flex-direction:column;gap:16px}
+.settings-field{display:flex;flex-direction:column;gap:6px}
+.settings-label{font-size:12px;font-weight:500;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em}
+.settings-input{width:100%;padding:10px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:var(--font-mono);outline:none;transition:border-color .12s}
+.settings-input:focus{border-color:hsl(var(--accent-000)/0.4)}
+.settings-input::placeholder{color:hsl(var(--text-500));font-family:var(--font-sans)}
+.settings-hint{font-size:11px;color:hsl(var(--text-500));line-height:1.4}
+.settings-status{font-size:12px;padding:6px 10px;border-radius:6px;text-align:center}
+.settings-status.ok{background:hsl(145 30% 15%);color:hsl(145 50% 55%)}
+.settings-status.warn{background:hsl(39 30% 15%);color:hsl(39 70% 50%)}
+.settings-actions{display:flex;gap:8px;justify-content:flex-end}
+.settings-btn{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;transition:all .1s;cursor:pointer}
+.settings-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.settings-btn.primary:hover{background:hsl(var(--accent-100))}
+.settings-btn.secondary{background:hsl(var(--bg-300));color:hsl(var(--text-300))}
+.settings-btn.secondary:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
+.settings-btn.danger{background:transparent;color:hsl(0 60% 55%)}
+.settings-btn.danger:hover{background:hsl(0 60% 15%)}
+.stg-toggle{display:flex;align-items:center;gap:10px;cursor:pointer}
+.stg-toggle-track{width:36px;height:20px;border-radius:10px;background:hsl(var(--bg-400));transition:background .15s;position:relative}
+.stg-toggle-track.on{background:hsl(var(--accent-000))}
+.stg-toggle-knob{width:16px;height:16px;border-radius:50%;background:hsl(var(--text-000));position:absolute;top:2px;left:2px;transition:left .15s}
+.stg-toggle-track.on .stg-toggle-knob{left:18px}
+
+.hidden{display:none !important}
+
+
+/* Markdown rendered content */
+.msg-body h1{font-size:1.4em;font-weight:600;color:hsl(var(--text-000));margin:16px 0 8px;line-height:1.3}
+.msg-body h2{font-size:1.2em;font-weight:600;color:hsl(var(--text-000));margin:14px 0 6px;line-height:1.3}
+.msg-body h3{font-size:1.05em;font-weight:600;color:hsl(var(--text-100));margin:12px 0 4px;line-height:1.3}
+.msg-body h4,.msg-body h5,.msg-body h6{font-size:1em;font-weight:600;color:hsl(var(--text-100));margin:10px 0 4px}
+.msg-body ul,.msg-body ol{padding-left:20px;margin:6px 0 10px}
+.msg-body li{margin-bottom:3px}
+.msg-body li::marker{color:hsl(var(--text-500))}
+.msg-body blockquote{border-left:2px solid hsl(var(--accent-000)/0.4);padding:4px 0 4px 14px;margin:8px 0;color:hsl(var(--text-300));font-style:italic}
+.msg-body table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px}
+.msg-body th,.msg-body td{border:0.5px solid hsl(var(--border-300)/0.15);padding:8px 12px;text-align:left}
+.msg-body th{background:hsl(var(--bg-200));font-weight:600;color:hsl(var(--text-100))}
+.msg-body td{color:hsl(var(--text-200))}
+.msg-body hr{border:none;border-top:0.5px solid hsl(var(--border-300)/0.15);margin:14px 0}
+.msg-body a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
+.msg-body a:hover{color:hsl(var(--accent-100))}
+.msg-body img{max-width:100%;border-radius:8px;margin:8px 0}
+
+/* Think block */
+.think-block{margin:6px 0;border:0.5px solid hsl(var(--border-300)/0.12);border-radius:10px;overflow:hidden;background:hsl(var(--bg-200)/0.5)}
+.think-summary{display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:500;color:hsl(var(--text-400));cursor:pointer;user-select:none;list-style:none;transition:color .08s}
+.think-summary::-webkit-details-marker{display:none}
+.think-summary::before{content:'';display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid hsl(var(--text-500));transition:transform .15s;flex-shrink:0}
+.think-block[open] .think-summary::before{transform:rotate(-180deg)}
+.think-summary:hover{color:hsl(var(--text-200))}
+.think-content{padding:6px 14px 12px;font-size:13px;line-height:1.6;color:hsl(var(--text-400));white-space:pre-wrap;font-family:var(--font-sans);border-top:0.5px solid hsl(var(--border-300)/0.06)}
+
+/* KaTeX dark theme overrides */
+.katex{font-size:1.05em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0;margin:8px 0}
+.katex-display>.katex{font-size:1.1em}
+.katex .mathnormal{color:hsl(var(--text-100))}
+.katex .mord{color:hsl(var(--text-100))}
+.katex .mbin{color:hsl(var(--accent-000))}
+.katex .mrel{color:hsl(var(--accent-000))}
+@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4)}.sidebar.collapsed{width:0;min-width:0;box-shadow:none}.main-inner{padding:4vh 12px 24px}.topic-title{font-size:1.25rem}}
+</style>
+</head>
+<body>
+<div class="app">
+
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <a class="sidebar-logo" onclick="resetApp()" title="New session">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="3"/></svg>
+      <span>Socrates</span>
+    </a>
+    <button class="icon-btn" title="Close sidebar" onclick="toggleSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
+    </button>
+  </div>
+  <div class="sidebar-tabs">
+    <div class="sidebar-tab active" id="tabKnowledge" onclick="switchTab('knowledge')">Knowledge</div>
+    <div class="sidebar-tab" id="tabRecents" onclick="switchTab('recents')">Recents</div>
+  </div>
+  <div class="knowledge-panel" id="knowledgePanel">
+    <div id="kbContent"><div class="kb-empty">Set a learning topic to build your knowledge map.</div></div>
+  </div>
+  <div class="recents-panel hidden" id="recentsPanel">
+    <div class="recents-header"><span class="recents-title">Recent Sessions</span></div>
+    <div id="recentsList"></div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-row"><div class="user-avatar">JH</div><div><div class="user-name">Jiacheng Hu</div><div class="user-plan">Free plan</div></div></div>
+    <button class="icon-btn" onclick="openSettings()" title="API Settings" style="margin-left:auto">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="main-bg" aria-hidden="true"></div>
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <button class="toggle-sidebar" onclick="toggleSidebar()" title="Toggle sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
+      </button>
+      <div class="topic-badge hidden" id="topicBadge"><div class="tb-dot"></div><span id="topicBadgeText"></span></div>
+    </div>
+    <div class="plan-badge">Free plan<div class="plan-dot"></div><span><a href="#">Upgrade</a></span></div>
+  </div>
+  <div class="main-content" id="mainContent">
+    <div class="main-inner" id="mainInner">
+
+      <div class="topic-setup" id="topicSetup">
+        <h1 class="topic-title">What would you like to explore?</h1>
+        <p class="topic-sub">Describe what you want to learn. Socrates will ask you questions to help you think deeper about it.</p>
+        <div class="topic-examples" id="topicExamples"></div>
+        <div class="topic-input-wrap">
+          <textarea id="topicInput" placeholder="e.g. I want to understand how machine learning works..." rows="1" oninput="autoResize(this);updateStartBtn()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startSession()}"></textarea>
+          <div class="topic-footer">
+            <span style="font-size:11px;color:hsl(var(--text-500))">Be specific for better results</span>
+            <button class="start-btn" id="startBtn" onclick="startSession()">Begin</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="diagnostic-view hidden" id="diagnosticView"></div>
+
+      <div class="chat-view hidden" id="chatView">
+        <div class="chat-header">
+          <span class="chat-domain" id="chatDomain"></span>
+          <span class="chat-stats" id="chatStats"></span>
+        </div>
+        <div class="msg-list" id="msgList"></div>
+        <div class="chat-input-bar">
+          <div class="chat-input-wrap">
+            <textarea id="chatInputArea" placeholder="Type your thinking..." rows="2" oninput="autoResize(this);updateSendBtn()" onkeydown="handleChatKey(event)"></textarea>
+            <div class="chat-input-footer">
+              <span class="chat-input-hint">Shift+Enter for new line</span>
+              <button class="send-btn" id="sendBtn" onclick="submitChatMessage()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="disclaimer">Socrates asks questions to help you think. It does not judge your answers.</p>
+
+    </div>
+  </div>
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script>
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+var sidebarOpen=true;
+function toggleSidebar(){
+  sidebarOpen=!sidebarOpen;
+  var s=document.getElementById("sidebar");
+  if(sidebarOpen)s.classList.remove("collapsed");
+  else s.classList.add("collapsed");
+  try{localStorage.setItem("socrates-sb",sidebarOpen?"1":"0")}catch(e){}
+}
+try{if(localStorage.getItem("socrates-sb")==="0"){sidebarOpen=false;document.getElementById("sidebar").classList.add("collapsed")}}catch(e){}
+document.addEventListener("keydown",function(e){if(e.key==="\\"&&e.ctrlKey){e.preventDefault();toggleSidebar()}});
+
+function switchTab(tab){
+  document.getElementById("tabKnowledge").classList.toggle("active",tab==="knowledge");
+  document.getElementById("tabRecents").classList.toggle("active",tab==="recents");
+  document.getElementById("knowledgePanel").classList.toggle("hidden",tab!=="knowledge");
+  document.getElementById("recentsPanel").classList.toggle("hidden",tab!=="recents");
+}
+
+/* ============================================================
+   TOPIC SETUP
+   ============================================================ */
+var examples=["Understanding quantum computing","Learning to write better essays","How does blockchain actually work","Getting started with Python programming","The philosophy of Stoicism","How neural networks learn","Basics of logical reasoning"];
+(function(){
+  var cont=document.getElementById("topicExamples");
+  examples.forEach(function(ex){
+    var chip=document.createElement("button");
+    chip.className="topic-chip";chip.textContent=ex;
+    chip.onclick=function(){document.getElementById("topicInput").value=ex;autoResize(document.getElementById("topicInput"));updateStartBtn()};
+    cont.appendChild(chip);
+  });
+})();
+
+function autoResize(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight,160)+"px"}
+function updateStartBtn(){
+  var v=document.getElementById("topicInput").value.trim();
+  var b=document.getElementById("startBtn");
+  if(v)b.classList.add("active");else b.classList.remove("active");
+}
+function updateSendBtn(){
+  var v=document.getElementById("chatInputArea").value.trim();
+  var b=document.getElementById("sendBtn");
+  if(v)b.classList.add("active");else b.classList.remove("active");
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+var state={topic:"",phase:"topic",diagIndex:0,diagAnswers:[],diagQuestions:[],kbNodes:[],currentNode:0,stuckCount:0,totalQ:0,explaining:false};
+
+/* ============================================================
+   AI MOCK ENGINE
+   Generates content dynamically based on the user's topic.
+   In production, this would call an LLM API.
+   ============================================================ */
+/* Detect user language from input text */
+function detectLanguage(text){
+  if(/[\u4e00-\u9fff]/.test(text))return'zh';
+  if(/[\u3040-\u309f\u30a0-\u30ff]/.test(text))return'ja';
+  if(/[\uac00-\ud7af]/.test(text))return'ko';
+  if(/[\u0400-\u04ff]/.test(text))return'ru';
+  if(/[\u0600-\u06ff]/.test(text))return'ar';
+  return'en';
+}
+
+var DIAG_SYSTEM_PROMPT = "You are a diagnostic engine. Generate exactly 5 multiple-choice questions to assess a learner's knowledge of {topic}.\n\nRules:\n- Write ALL questions and options in {language}\n- Use Markdown for formatting (bold, italic, code) and LaTeX ($...$ or $$...$$) for mathematical notation where applicable\n- Each question probes a different aspect: basic familiarity, applied understanding, conceptual depth, misconception awareness, and critical analysis\n- Each question must have exactly 3-4 options labeled A, B, C, D\n- Each option must include a level field: internalized (deep understanding), fuzzy (some knowledge but gaps), or blank (no knowledge)\n- Output ONLY a valid JSON array, no other text: [{\"q\":\"question text\", \"opts\":[{\"letter\":\"A\",\"text\":\"option text\",\"level\":\"internalized\"},...]}, ...]\n- Do NOT wrap the JSON in code fences. Just the raw JSON array.";
+
+async function generateDiagnosticQuestions(topic,language){
+  var langNames={zh:'Chinese',ja:'Japanese',ko:'Korean',ru:'Russian',ar:'Arabic',en:'English'};
+  var langName=langNames[language]||'English';
+  var prompt=DIAG_SYSTEM_PROMPT.replace('{topic}',topic).replace('{language}',langName);
+  var msgs=[{role:'system',content:prompt},{role:'user',content:'Topic: '+topic}];
+  var resp=await callAPI(msgs,2048);
+  if(!resp){console.log("Diag API: no response, falling back to mock");return null;}
+  try{
+    /* Strip think blocks, code fences if present */
+    var json=resp.replace(/<think>[\s\S]*?<\/think>/gi,'').replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    var start=json.indexOf("["),end=json.lastIndexOf("]"); var match=start>=0&&end>start?[json.slice(start,end+1)]:null;
+    if(match){
+      var parsed=JSON.parse(match[0]);
+      if(Array.isArray(parsed)&&parsed.length>=3&&parsed[0].q&&parsed[0].opts)return parsed.slice(0,5);
+    }
+  }catch(e){console.log('Diag JSON parse failed:',e.message,'Raw:',resp.substring(0,200));}
+  return null;
+}
+
+function aiGenerate(topic){
+  var clean=topic.replace(/^(i want to |i'd like to |i would like to |learn about |learn |understand |study |explore )/i,"").replace(/[.!?]+$/,"").trim();
+  var domain=clean.length>30?clean.substring(0,27)+"...":clean;
+  domain=domain.charAt(0).toUpperCase()+domain.slice(1);
+
+  var nodes=[
+    {name:"Core concepts of "+domain,status:"fuzzy",questions:2},
+    {name:"Key principles",status:"blank",questions:2},
+    {name:"Practical applications",status:"blank",questions:2},
+    {name:"Common misconceptions",status:"blank",questions:1},
+    {name:"Advanced topics",status:"blank",questions:1}
+  ];
+
+  var diagQs=generateMockDiagQs(domain);
+  return {domain:domain,nodes:nodes,diagQuestions:diagQs};
+}
+
+/* Generate varied mock diagnostic questions for fallback */
+function generateMockDiagQs(domain){
+  var templates=[
+    {q:["Before we begin, how familiar are you with "+domain+"?","What is your current level of experience with "+domain+"?","How much prior exposure have you had to "+domain+"?"],
+     opts:[
+       [{letter:"A",text:"I have studied it formally and can apply concepts independently",level:"internalized"},{letter:"B",text:"I understand the basics but there are gaps in my knowledge",level:"fuzzy"},{letter:"C",text:"I have heard about it but could not explain it clearly",level:"fuzzy"},{letter:"D",text:"This is completely new to me",level:"blank"}],
+       [{letter:"A",text:"I work with it regularly and feel confident",level:"internalized"},{letter:"B",text:"I have some hands-on experience but still learning",level:"fuzzy"},{letter:"C",text:"I have only read about it",level:"blank"},{letter:"D",text:"I am starting from zero",level:"blank"}]
+     ]},
+    {q:["If you had to explain "+domain+" to a complete beginner in two minutes, what would you focus on?","What is the first thing that comes to mind when you hear \""+domain+"\"?","If someone asked you \""+domain+" in a nutshell\", what would you say?"],
+     opts:[
+       [{letter:"A",text:"I could give a clear, structured overview with concrete examples",level:"internalized"},{letter:"B",text:"I could give a rough sketch but would miss important details",level:"fuzzy"},{letter:"C",text:"I would struggle to articulate anything coherent",level:"blank"}],
+       [{letter:"A",text:"I can explain it from first principles",level:"internalized"},{letter:"B",text:"I can describe it in general terms",level:"fuzzy"},{letter:"C",text:"I cannot define it clearly",level:"blank"}]
+     ]},
+    {q:["Can you think of a real-world situation where "+domain+" is applied, and describe how it works?","Have you ever used "+domain+" to solve a practical problem?","Where do you encounter "+domain+" in everyday life?"],
+     opts:[
+       [{letter:"A",text:"Yes, I have applied it to real problems multiple times",level:"internalized"},{letter:"B",text:"I can think of examples but have not applied it myself",level:"fuzzy"},{letter:"C",text:"I see applications around me but could not explain how they work",level:"fuzzy"},{letter:"D",text:"I do not know where it is applied in the real world",level:"blank"}],
+       [{letter:"A",text:"I have built or created something with it",level:"internalized"},{letter:"B",text:"I understand the theory but lack practical experience",level:"fuzzy"},{letter:"C",text:"I only know it from textbooks or articles",level:"blank"}]
+     ]},
+    {q:["What do you think is the most commonly misunderstood aspect of "+domain+"?","If you had to identify one gap or weak spot in how most people learn "+domain+", what would it be?","Is there something about "+domain+" that you suspect you have been misunderstanding?"],
+     opts:[
+       [{letter:"A",text:"I can identify specific misconceptions and explain why they are wrong",level:"internalized"},{letter:"B",text:"I have a vague sense but could not articulate it clearly",level:"fuzzy"},{letter:"C",text:"I have never thought about misconceptions in this area",level:"blank"}],
+       [{letter:"A",text:"I am aware of common pitfalls and can avoid them",level:"internalized"},{letter:"B",text:"I sometimes catch myself making errors but do not fully understand why",level:"fuzzy"},{letter:"C",text:"I take information at face value without questioning it",level:"blank"}]
+     ]},
+    {q:["How do you evaluate whether a claim about "+domain+" is trustworthy or not?","When you read conflicting opinions about "+domain+", how do you decide which one is more credible?","What criteria would you use to judge whether someone truly understands "+domain+"?"],
+     opts:[
+       [{letter:"A",text:"I can critically evaluate claims using established principles",level:"internalized"},{letter:"B",text:"I try to be critical but often rely on the reputation of the source",level:"fuzzy"},{letter:"C",text:"I generally accept what authoritative sources say",level:"blank"}],
+       [{letter:"A",text:"I actively question assumptions and seek evidence",level:"internalized"},{letter:"B",text:"I sometimes question things but do not always know how to verify",level:"fuzzy"},{letter:"C",text:"I rarely question what I read or hear",level:"blank"}]
+     ]}
+  ];
+
+  /* Shuffle and pick 5, randomize options within each */
+  var pool=templates.slice();
+  for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var tmp=pool[i];pool[i]=pool[j];pool[j]=tmp;}
+  pool=pool.slice(0,5);
+
+  return pool.map(function(t){
+    var qi=Math.floor(Math.random()*t.q.length);
+    var oi=Math.floor(Math.random()*t.opts.length);
+    return {q:t.q[qi],opts:t.opts[oi]};
+  });
+}
+
+
+/* ============================================================
+   SESSION START
+   ============================================================ */
+async function startSession(){
+  var input=document.getElementById("topicInput");
+  var topic=input.value.trim();
+  if(!topic)return;
+
+  state.topic=topic;
+  state.diagIndex=0;
+  state.diagAnswers=[];
+
+  var lang=detectLanguage(topic);
+
+  /* Always generate nodes and fallback questions */
+  var gen=aiGenerate(topic);
+  state.kbNodes=gen.nodes;
+  state.domain=gen.domain;
+
+  state.currentNode=0;
+  state.stuckCount=0;
+  state.totalQ=0;
+  state.explaining=false;
+  state.lastCallSource=null;
+
+  /* Show diagnostic view with loading animation immediately */
+  document.getElementById("topicSetup").classList.add("hidden");
+  document.getElementById("diagnosticView").classList.remove("hidden");
+  document.getElementById("chatView").classList.add("hidden");
+  document.getElementById("topicBadge").classList.remove("hidden");
+  document.getElementById("topicBadgeText").textContent=state.domain;
+  document.getElementById("chatDomain").textContent=state.domain;
+  document.getElementById("diagnosticView").innerHTML='<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">Generating questions...</p></div>';
+
+  /* Try AI-generated diagnostic questions */
+  if(apiConfig.key&&apiConfig.model){
+    var diagQs=await generateDiagnosticQuestions(topic,lang);
+    if(diagQs)state.diagQuestions=diagQs;
+    else state.diagQuestions=gen.diagQuestions;
+  }else{
+    state.diagQuestions=gen.diagQuestions;
+  }
+
+  renderDiagQuestion();
+  updateKB();
+}
+
+function renderDiagQuestion(){
+  var q=state.diagQuestions[state.diagIndex];
+  var sel=state.diagAnswers[state.diagIndex];
+  var view=document.getElementById("diagnosticView");
+
+  var html='<div class="diag-card">';
+  html+='<div class="diag-num">Question '+(state.diagIndex+1)+' of '+state.diagQuestions.length+'</div>';
+  html+='<div class="diag-text">'+formatMsg(q.q)+'</div>';
+  html+='<div class="diag-opts">';
+  q.opts.forEach(function(o,i){
+    html+='<button class="diag-opt'+(sel===i?' selected':'')+'" onclick="selectDiag('+i+')">';
+    html+='<div class="diag-opt-letter">'+o.letter+'</div>';
+    html+='<div class="diag-opt-text">'+formatMsg(o.text)+'</div>';
+    html+='</button>';
+  });
+  html+='</div></div>';
+
+  html+='<div class="diag-nav">';
+  html+='<button onclick="prevDiagQuestion()"'+(state.diagIndex===0?' style="visibility:hidden"':'')+'>Back</button>';
+  if(state.diagIndex<state.diagQuestions.length-1){
+    html+='<button class="diag-continue'+(sel!==undefined?' enabled':'')+'" onclick="nextDiagQuestion()"'+(sel===undefined?' disabled':'')+'>Next</button>';
+  }else{
+    html+='<button class="diag-continue'+(sel!==undefined?' enabled':'')+'" onclick="finishDiagnostic()"'+(sel===undefined?' disabled':'')+'>Begin</button>';
+  }
+  html+='</div>';
+
+  view.innerHTML=html;
+  document.getElementById("mainContent").scrollTop=0;
+}
+
+function selectDiag(idx){
+  state.diagAnswers[state.diagIndex]=idx;
+  renderDiagQuestion();
+}
+function prevDiagQuestion(){
+  if(state.diagIndex>0){state.diagIndex--;renderDiagQuestion()}
+}
+function nextDiagQuestion(){
+  if(state.diagAnswers[state.diagIndex]===undefined)return;
+  state.diagIndex++;
+  renderDiagQuestion();
+}
+
+function finishDiagnostic(){
+  if(state.diagAnswers[state.diagIndex]===undefined)return;
+
+  /* Update KB based on diagnostic */
+  state.diagQuestions.forEach(function(q,i){
+    var ans=state.diagAnswers[i];
+    if(ans!==undefined){
+      var level=q.opts[ans].level;
+      var nodeIdx=Math.min(i,state.kbNodes.length-1);
+      if(level==="internalized"&&i===0)state.kbNodes[0].status="internalized";
+      else if(level==="blank"&&i===0)state.kbNodes[0].status="fuzzy";
+    }
+  });
+
+  document.getElementById("diagnosticView").classList.add("hidden");
+  document.getElementById("chatView").classList.remove("hidden");
+  updateKB();
+  updateChatStats();
+
+  /* First Socratic question */
+  setTimeout(function(){
+    askNextQuestion();
+  },400);
+}
+
+/* ============================================================
+   SOCRATIC QUESTIONS
+   ============================================================ */
+async function askNextQuestion(){
+  var node=state.kbNodes[state.currentNode];
+  var q=await generateSocraticQuestion(node,state.domain);
+  addMessage("assistant",q.text);
+  state.stuckCount=0;
+  state.totalQ++;
+  updateChatStats();
+}
+
+function generateSocraticQuestion(node,domain){
+  var qs={
+    fuzzy:[
+      "Can you describe "+domain+" in your own words, as if explaining it to someone who has never heard of it?",
+      "What do you think is the most commonly misunderstood aspect of "+domain+"?",
+      "If you had to identify one gap in your understanding of "+domain+", what would it be?",
+      "Can you think of a situation where the standard rules of "+domain+" might not apply?",
+      "What is the relationship between "+domain+" and the broader field it belongs to?",
+      "If you were explaining "+domain+" to a skeptical friend, what would be your strongest argument for why it matters?",
+      "What part of "+domain+" do you find most counterintuitive?",
+      "How does "+domain+" connect to things you already know well?",
+      "What question about "+domain+" have you hesitated to ask because it might seem too basic?",
+      "If "+domain+" were a story, what would be its central conflict?"
+    ],
+    blank:[
+      "What do you already know, or think you know, about "+domain+"?",
+      "Before we dive in, what questions do you have about "+domain+"?",
+      'When you hear the term "'+domain+'", what comes to mind first?',
+      "What made you interested in learning about "+domain+"?",
+      "If "+domain+" were a tool, what problem do you think it solves?",
+      "Have you encountered "+domain+" in your daily life, even without realizing it?",
+      "What do you imagine an expert in "+domain+" thinks about that beginners do not?",
+      "Is there anything about "+domain+" that feels intimidating? What specifically?",
+      "If you could ask one question to the best "+domain+" expert in the world, what would it be?",
+      "What would success look like for you in learning "+domain+"?"
+    ],
+    internalized:[
+      "Can you identify an assumption that most people make about "+domain+" that might not always hold true?",
+      "How would you test whether someone truly understands "+domain+" versus just memorizing facts?",
+      "What is a concrete example from your own experience that illustrates a key principle of "+domain+"?",
+      "If you were to teach "+domain+" to someone, where would you start and why?",
+      "What is the most elegant or beautiful idea within "+domain+" in your opinion?",
+      "Can you think of two seemingly unrelated ideas in "+domain+" that actually share a deep connection?",
+      "What limitations or boundaries of "+domain+" are rarely discussed?",
+      "How has your understanding of "+domain+" changed over time? What caused those shifts?",
+      "If you had to argue against a core principle of "+domain+", what would your argument be?",
+      "Where do you think "+domain+" will be in 20 years, and what will drive that change?"
+    ]
+  };
+  var pool=qs[node.status]||qs.fuzzy;
+  var idx=Math.floor(Math.random()*pool.length);
+  return {text:pool[idx],node:node};
+}
+
+function generateFollowUp(answer,node,domain){
+  var phrase=extractKeyPhrase(answer);
+  var fus=[
+    'You mentioned "'+phrase+'". Could you elaborate on what you mean by that?',
+    "That is an interesting perspective. What leads you to that conclusion?",
+    "Can you give me a specific, concrete example of what you just described?",
+    "What would be the strongest argument against what you just said?",
+    "How does what you described connect to the broader concept of "+domain+"?",
+    "If someone disagreed with your view, what might their reasoning be?",
+    "Is there an assumption in your answer that might not always be true?",
+    'You used the term "'+phrase+'". How would you define that in your own words?',
+    "Can you walk me through the reasoning behind that, step by step?",
+    "What experience or evidence supports what you just shared?",
+    "If we zoom out, how does this relate to the bigger picture of "+domain+"?",
+    "Is what you described always the case, or can you think of exceptions?"
+  ];
+  return fus[Math.floor(Math.random()*fus.length)];
+}function extractKeyPhrase(text){
+  var words=text.split(/\s+/);
+  if(words.length<4)return text;
+  var start=Math.floor(Math.random()*Math.min(words.length-3,words.length));
+  return words.slice(start,start+3).join(" ");
+}
+
+var _explanationMock={
+  fuzzy:[
+    "Let us step back and approach this from a different angle. When we encounter a concept like this, it helps to start not with definitions but with concrete examples. Consider a situation where you have used this idea without realizing it. The key is to recognize the pattern, not memorize the terminology. Once the pattern is clear, the formal definition becomes much easier to grasp. Think about a specific instance in your own life where this pattern appears. What was the situation? What did you do? What was the result?",
+    "Sometimes the best way to understand something is to see it in action. Imagine watching someone who deeply understands this topic. What would they notice that others miss? What questions would they ask? Try to put yourself in that mindset. Instead of trying to absorb isolated facts, try to see the patterns. Patterns are the language of deep understanding. Once you see them, the facts organize themselves.",
+    "A useful way to approach this is to ask: what problem was this idea originally designed to solve? Ideas do not emerge from nowhere. They come from someone encountering a real challenge and needing a new way to think about it. If you can understand the original problem, the solution makes much more sense. So let us trace this back. What need, what gap, what frustration gave birth to this concept?"
+  ],
+  blank:[
+    "This is new territory, so let us build from the ground up. The most important thing to understand first is why this concept exists. Every idea in any field exists because someone encountered a problem and needed a solution. If you can understand the original problem, the solution makes intuitive sense. So let us start there. What problem do you think this concept was designed to solve? Even if you are not sure, take a guess. The act of guessing activates the part of your brain that will later connect to the correct answer.",
+    "Learning something new is like exploring an unfamiliar city. At first everything seems disconnected. But gradually you start to recognize landmarks, then streets, then neighborhoods. The same happens with ideas. Right now you are building your first landmarks. Do not worry about seeing the whole map yet. Focus on one thing at a time. What is the first landmark you want to establish?",
+    "Think of this as building a mental model from scratch. Every complex idea can be broken down into simpler pieces. The trick is finding the right starting piece, the one that makes everything else click. Usually that piece is the simplest version of the idea, stripped of jargon and technical detail. Once that piece is in place, everything else attaches to it naturally."
+  ],
+  internalized:[
+    "You seem to have a solid grasp of this. Let us push deeper. A sign of true understanding is being able to identify the boundaries of an idea: where it applies and where it breaks down. Can you think of a scenario where the usual rules of this concept would not apply, or would produce a misleading result? Edge cases reveal whether your understanding is flexible or rigid.",
+    "Now that the foundation is solid, we can explore the subtleties. The difference between competence and mastery often lies in understanding the exceptions, the edge cases, the situations where the standard approach fails. Think about the assumptions baked into what you know. Which of those assumptions are actually optional? Which are truly fundamental?",
+    "Mastery is not about knowing more facts. It is about developing intuition for what matters and what does not. When you look at this topic now, what do you see that a beginner would miss? What shortcuts has your experience taught you? Those insights are the real measure of deep understanding."
+  ]
+};
+var _explanationMock={
+  fuzzy:[
+    "Let us step back and approach this from a different angle. When we encounter a concept like this, it helps to start not with definitions but with concrete examples. Consider a situation where you have used this idea without realizing it. The key is to recognize the pattern, not memorize the terminology. Once the pattern is clear, the formal definition becomes much easier to grasp. Think about a specific instance in your own life where this pattern appears. What was the situation? What did you do? What was the result?",
+    "Sometimes the best way to understand something is to see it in action. Imagine watching someone who deeply understands this topic. What would they notice that others miss? What questions would they ask? Try to put yourself in that mindset. Instead of trying to absorb isolated facts, try to see the patterns. Patterns are the language of deep understanding. Once you see them, the facts organize themselves.",
+    "A useful way to approach this is to ask: what problem was this idea originally designed to solve? Ideas do not emerge from nowhere. They come from someone encountering a real challenge and needing a new way to think about it. If you can understand the original problem, the solution makes much more sense. So let us trace this back. What need, what gap, what frustration gave birth to this concept?"
+  ],
+  blank:[
+    "This is new territory, so let us build from the ground up. The most important thing to understand first is why this concept exists. Every idea in any field exists because someone encountered a problem and needed a solution. If you can understand the original problem, the solution makes intuitive sense. So let us start there. What problem do you think this concept was designed to solve? Even if you are not sure, take a guess. The act of guessing activates the part of your brain that will later connect to the correct answer.",
+    "Learning something new is like exploring an unfamiliar city. At first everything seems disconnected. But gradually you start to recognize landmarks, then streets, then neighborhoods. The same happens with ideas. Right now you are building your first landmarks. Do not worry about seeing the whole map yet. Focus on one thing at a time. What is the first landmark you want to establish?",
+    "Think of this as building a mental model from scratch. Every complex idea can be broken down into simpler pieces. The trick is finding the right starting piece, the one that makes everything else click. Usually that piece is the simplest version of the idea, stripped of jargon and technical detail. Once that piece is in place, everything else attaches to it naturally."
+  ],
+  internalized:[
+    "You seem to have a solid grasp of this. Let us push deeper. A sign of true understanding is being able to identify the boundaries of an idea: where it applies and where it breaks down. Can you think of a scenario where the usual rules of this concept would not apply, or would produce a misleading result? Edge cases reveal whether your understanding is flexible or rigid.",
+    "Now that the foundation is solid, we can explore the subtleties. The difference between competence and mastery often lies in understanding the exceptions, the edge cases, the situations where the standard approach fails. Think about the assumptions baked into what you know. Which of those assumptions are actually optional? Which are truly fundamental?",
+    "Mastery is not about knowing more facts. It is about developing intuition for what matters and what does not. When you look at this topic now, what do you see that a beginner would miss? What shortcuts has your experience taught you? Those insights are the real measure of deep understanding."
+  ]
+};
+var explanationContent={fuzzy:_explanationMock.fuzzy,blank:_explanationMock.blank,internalized:_explanationMock.internalized};
+function getExplanation(status){var pool=explanationContent[status]||explanationContent.fuzzy;return pool[Math.floor(Math.random()*pool.length)]}
+
+/* ============================================================
+   CHAT INTERACTION
+   ============================================================ */
+function handleChatKey(e){
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submitChatMessage()}
+}
+
+async function submitChatMessage(){
+  var input=document.getElementById("chatInputArea");
+  var text=input.value.trim();
+  if(!text)return;
+
+  addMessage("user",text);
+  input.value="";autoResize(input);updateSendBtn();
+  input.focus();
+
+  /* AI processes the answer */
+  setTimeout(async function(){
+    var node=state.kbNodes[state.currentNode];
+    state.stuckCount++;
+
+    /* Check if the answer seems substantive */
+    var isSubstantive=text.length>40&&text.split(/\s+/).length>8;
+
+    if(isSubstantive||state.stuckCount<3){
+      /* Follow up within same node */
+      var fu=await generateFollowUp(text,node,state.domain);
+      addMessage("assistant",fu);
+      state.stuckCount=0;
+      state.totalQ++;
+    }else{
+      /* User seems stuck or giving short answers */
+      if(state.stuckCount>=3){
+        addMessage("assistant","Let's try a different approach.","suggest",[
+          {text:"Explain this concept to me",action:"explain",primary:true},
+          {text:"Ask me a different question",action:"skip"},
+          {text:"I need to think more",action:"retry"}
+        ]);
+        state.stuckCount=0;
+      }else{
+        addMessage("assistant","Take your time. There is no rush. What thoughts do you have, even if they are incomplete?");
+      }
+    }
+    updateChatStats();
+  },600+Math.random()*800);
+}
+
+function addMessage(role,text,type,actions){
+  var list=document.getElementById("msgList");
+  var div=document.createElement("div");
+  div.className="msg "+role;
+
+  var body=document.createElement("div");
+  body.className="msg-body";
+
+  if(type==="suggest"){
+    body.innerHTML=formatMsg(text);
+    var optsDiv=document.createElement("div");
+    optsDiv.className="quick-opts";
+    actions.forEach(function(a){
+      var btn=document.createElement("button");
+      btn.className="quick-opt"+(a.primary?" primary":"");
+      btn.textContent=a.text;
+      btn.onclick=function(){handleQuickAction(a.action)};
+      optsDiv.appendChild(btn);
+    });
+    body.appendChild(optsDiv);
+  }else{
+    body.innerHTML=formatMsg(text);
+  }
+
+  div.appendChild(body);
+  list.appendChild(div);
+
+  var mc=document.getElementById("mainContent");
+  requestAnimationFrame(function(){mc.scrollTop=mc.scrollHeight});
+
+  /* Update KB: if user is answering substantive questions, mark current node progress */
+  if(role==="user"&&state.kbNodes[state.currentNode].status==="blank"){
+    state.kbNodes[state.currentNode].status="fuzzy";
+    state.kbNodes[state.currentNode].questions++;
+    updateKB();
+  }
+}
+
+async function handleQuickAction(action){
+  /* Remove quick option buttons from last assistant message */
+  var msgs=document.querySelectorAll(".msg.assistant:last-of-type .quick-opts");
+  msgs.forEach(function(m){m.style.display="none"});
+
+  if(action==="explain"){
+    state.explaining=true;
+    var node=state.kbNodes[state.currentNode];
+    var expText=getExplanation(node.status);
+    addMessage("assistant",expText);
+    setTimeout(function(){
+      addMessage("assistant","Does that help clarify things? What questions do you have now?");
+      state.explaining=false;
+    },300);
+  }else if(action==="skip"){
+    state.currentNode=Math.min(state.currentNode+1,state.kbNodes.length-1);
+    state.stuckCount=0;
+    await askNextQuestion();
+  }else if(action==="retry"){
+    addMessage("assistant","No problem. Let's try from a different angle.");
+    await askNextQuestion();
+  }
+}
+
+/* ============================================================
+   KNOWLEDGE BOUNDARY PANEL
+   ============================================================ */
+function updateKB(){
+  var cont=document.getElementById("kbContent");
+  if(!state.kbNodes.length){cont.innerHTML='<div class="kb-empty">Set a learning topic to build your knowledge map.</div>';return}
+
+  var sections={internalized:[],fuzzy:[],blank:[]};
+  state.kbNodes.forEach(function(n,i){
+    var cls=n.status==="internalized"?"internalized":n.status==="fuzzy"?"fuzzy":"blank";
+    sections[cls].push({name:n.name,questions:n.questions||0,idx:i});
+  });
+
+  var html="";
+  if(sections.internalized.length){
+    html+='<div class="kb-section-title">Internalized</div>';
+    sections.internalized.forEach(function(n){html+=kbNodeHtml(n,"internalized")});
+  }
+  if(sections.fuzzy.length){
+    html+='<div class="kb-section-title">Exploring</div>';
+    sections.fuzzy.forEach(function(n){html+=kbNodeHtml(n,"fuzzy")});
+  }
+  if(sections.blank.length){
+    html+='<div class="kb-section-title">Not yet reached</div>';
+    sections.blank.forEach(function(n){html+=kbNodeHtml(n,"blank")});
+  }
+  cont.innerHTML=html;
+}
+
+function kbNodeHtml(n,cls){
+  return '<div class="kb-node" onclick="jumpToNode('+n.idx+')"><div class="kb-dot '+cls+'"></div><span class="kb-name">'+esc(n.name)+'</span>'+(n.questions?'<span class="kb-count">'+n.questions+' Qs</span>':'')+'</div>';
+}
+
+async function jumpToNode(idx){
+  state.currentNode=idx;
+  state.stuckCount=0;
+  await askNextQuestion();
+}
+
+function updateChatStats(){
+  document.getElementById("chatStats").textContent="Questions asked: "+state.totalQ;
+}
+
+/* ============================================================
+   UTILS
+   ============================================================ */
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function formatMsg(t){
+  if(typeof marked==="undefined"||typeof katex==="undefined"){return"<p>"+esc(t).replace(/```(\w*)\r?\n?([\s\S]*?)```/g,function(_,l,c){return"<pre><code>"+esc(c.trim())+"</code></pre>"}).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>")+"</p>"}
+  var blocks=[];
+  var pid=0;
+  function save(html){
+    var id=pid++;
+    blocks.push(html);
+    return'\x00BLOCK'+id+'\x00';
+  }
+
+  /* 1. Think blocks */
+  t=t.replace(/<think>([\s\S]*?)<\/think>/g,function(_,content){
+    return save('<details class="think-block"><summary class="think-summary">Thinking...</summary><div class="think-content">'+esc(content.trim())+'</div></details>');
+  });
+
+  /* 2. Code blocks */
+  t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){
+    var langAttr=lang?' class="language-'+esc(lang)+'"':'';
+    return save('<pre><code'+langAttr+'>'+esc(code.trim())+'</code></pre>');
+  });
+
+  /* 3. Display math $$...$$ */
+  t=t.replace(/\$\$([\s\S]*?)\$\$/g,function(_,math){
+    try{
+      return save(katex.renderToString(math.trim(),{displayMode:true,throwOnError:false}));
+    }catch(e){
+      return save('<pre>'+esc('$$'+math+'$$')+'</pre>');
+    }
+  });
+
+  /* 4. Inline math $...$ */
+  t=t.replace(/\$(.+?)\$/g,function(_,math){
+    try{
+      return save(katex.renderToString(math.trim(),{displayMode:false,throwOnError:false}));
+    }catch(e){
+      return save('<code>'+esc('$'+math+'$')+'</code>');
+    }
+  });
+
+  /* 5. Render Markdown */
+  var html=marked.parse(t,{breaks:true,gfm:true});
+
+  /* 6. Restore protected blocks */
+  html=html.replace(/\x00BLOCK(\d+)\x00/g,function(_,id){
+    return blocks[parseInt(id)];
+  });
+
+  return html;
+}
+function resetApp(){
+  state={topic:"",phase:"topic",diagIndex:0,diagAnswers:[],diagQuestions:[],kbNodes:[],currentNode:0,stuckCount:0,totalQ:0,explaining:false};
+  document.getElementById("topicSetup").classList.remove("hidden");
+  document.getElementById("diagnosticView").classList.add("hidden");
+  document.getElementById("chatView").classList.add("hidden");
+  document.getElementById("topicBadge").classList.add("hidden");
+  document.getElementById("msgList").innerHTML="";
+  document.getElementById("topicInput").value="";
+  document.getElementById("kbContent").innerHTML='<div class="kb-empty">Set a learning topic to build your knowledge map.</div>';
+  document.getElementById("chatStats").textContent="";
+  updateStartBtn();
+  var mc=document.getElementById("mainContent");mc.scrollTop=0;
+}
+
+/* ============================================================
+   SETTINGS & API
+   ============================================================ */
+var apiConfig={enabled:false,url:"",key:"",model:""};
+(function loadSettings(){
+  try{
+    var s=JSON.parse(localStorage.getItem("socrates-api")||"{}");
+    apiConfig.enabled=!!(s.enabled||(s.key&&s.model));
+    apiConfig.url=s.url||"";
+    apiConfig.key=s.key||"";
+    apiConfig.model=s.model||"";
+  }catch(e){}
+  syncSettingsUI();
+})();
+
+function openSettings(){
+  document.getElementById("settingsOverlay").classList.remove("hidden");
+  document.getElementById("stgURL").value=apiConfig.url;
+  document.getElementById("stgKey").value=apiConfig.key;
+  document.getElementById("stgModel").value=apiConfig.model;
+  syncSettingsUI();
+  document.getElementById("stgStatus").innerHTML="";
+}
+function closeSettings(){
+  document.getElementById("settingsOverlay").classList.add("hidden");
+}
+function toggleAPI(){
+  apiConfig.enabled=!apiConfig.enabled;
+  syncSettingsUI();
+}
+function syncSettingsUI(){
+  var track=document.getElementById("stgToggleTrack");
+  if(!track)return;
+  if(apiConfig.enabled)track.classList.add("on");else track.classList.remove("on");
+}
+function saveSettings(){
+  apiConfig.url=document.getElementById("stgURL").value.trim();
+  apiConfig.key=document.getElementById("stgKey").value.trim();
+  apiConfig.model=document.getElementById("stgModel").value.trim();
+  if(apiConfig.key&&apiConfig.model)apiConfig.enabled=true;
+  try{localStorage.setItem("socrates-api",JSON.stringify(apiConfig))}catch(e){}
+  var status=document.getElementById("stgStatus");
+  if(apiConfig.enabled&&(!apiConfig.key||!apiConfig.model)){
+    status.className="settings-status warn";
+    status.textContent="API enabled but key or model is empty. Using mock engine as fallback.";
+  }else if(apiConfig.enabled){
+    status.className="settings-status ok";
+    status.textContent="Configuration saved. API calls will use "+apiConfig.model+".";
+  }else{
+    status.className="settings-status ok";
+    status.textContent="Using built-in mock engine.";
+  }
+  setTimeout(function(){closeSettings()},800);
+}
+function clearSettings(){
+  apiConfig={enabled:false,url:"",key:"",model:""};
+  try{localStorage.removeItem("socrates-api")}catch(e){}
+  document.getElementById("stgURL").value="";
+  document.getElementById("stgKey").value="";
+  document.getElementById("stgModel").value="";
+  syncSettingsUI();
+  document.getElementById("stgStatus").className="settings-status ok";
+  document.getElementById("stgStatus").textContent="Settings cleared. Using mock engine.";
+}
+
+/* ============================================================
+   API CALL (replaces mock when enabled)
+   ============================================================ */
+var SOCRATIC_SYSTEM_PROMPT = "You are Socrates, an AI that helps people learn through questioning. You never lecture or give answers directly. Your method:\n\n1. Ask ONE question at a time that probes the user's understanding.\n2. When the user answers, follow up with a question that goes deeper into their response.\n3. Never say 'correct' or 'wrong'. Never judge.\n4. If the user seems stuck after 2-3 attempts, offer to explain or move on.\n5. When explaining, use natural continuous paragraphs. You may use Markdown for structure (headings, lists, emphasis) and LaTeX ($...$ or $$...$$) for mathematical notation. Enclose your internal reasoning in <think>...</think> tags.\n6. Keep questions open-ended. Avoid yes/no questions.\n7. Adapt your questions based on the user's apparent level of understanding.\n8. Your goal is to help the user discover insights themselves, not to tell them facts.\n\nThe user is learning about: {topic}. Their current level in this area: {level}.\n\n{context}";
+
+async function callAPI(messages,maxTokens){ maxTokens=maxTokens||1024;
+  if(!apiConfig.key||!apiConfig.model){
+    return null; /* fall back to mock */
+  }
+  var baseURL=apiConfig.url||"https://api.openai.com/v1";
+  var endpoint=baseURL.replace(/\/+$/,"")+"/chat/completions";
+
+  try{
+    var resp=await fetch(endpoint,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+apiConfig.key},
+      body:JSON.stringify({model:apiConfig.model,messages:messages,temperature:0.7,max_tokens:maxTokens})
+    });
+    if(!resp.ok){
+      console.error("API error:",resp.status,await resp.text());
+      return null;
+    }
+    var data=await resp.json();
+    return data.choices[0].message.content;
+  }catch(e){
+    console.error("API call failed:",e);
+    return null;
+  }
+}
+
+function buildSocraticPrompt(topic,level,context){
+  return SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",context||"Start by asking a diagnostic question to understand what the user already knows.");
+}
+
+/* Override: try API first, fall back to mock */
+var _origGenerateSocraticQuestion=generateSocraticQuestion;
+generateSocraticQuestion=async function(node,domain){
+  if(apiConfig.key&&apiConfig.model){
+    console.log("%c[Socratic] Calling API for: "+node.name,"color:#4af");
+    var prompt=buildSocraticPrompt(domain,node.status,"Ask a single open-ended Socratic question about: "+node.name+". Keep it under 3 sentences.");
+    var msgs=[{role:"system",content:prompt},{role:"user",content:"I am ready. Ask me a question."}];
+    var apiResp=await callAPI(msgs);
+    if(apiResp&&apiResp.trim()){
+      console.log("%c[Socratic] <- API ("+apiResp.length+" chars)","color:#4f4");
+      state.lastCallSource="api";
+      return {text:apiResp.trim(),node:node};
+    }
+    console.warn("%c[Socratic] API empty/error -> mock","color:#f90");
+    state.lastCallSource="mock";
+  } else { state.lastCallSource="mock"; }
+  return _origGenerateSocraticQuestion(node,domain);
+};
+
+
+/* Override explanation: try API first, fall back to mock */
+var _origExplanationContent=explanationContent;
+(function setupExplanationAPI(){
+  var orig=explanationContent;
+  explanationContent={};
+  ["fuzzy","blank","internalized"].forEach(function(s){
+    explanationContent[s]=[orig[s]]; /* wrap in array so getExplanation still works */
+  });
+  /* replace getExplanation to try API */
+  var _origGetExp=getExplanation;
+  getExplanation=async function(status){
+    var node=state.kbNodes[state.currentNode];
+    var domain=state.domain;
+    if(apiConfig.key&&apiConfig.model){
+      var levelDesc=status==='internalized'?'has solid knowledge':status==='blank'?'is completely new':'has some familiarity';
+      var prompt=buildSocraticPrompt(domain,status,"The user is stuck on: "+node.name+". The user "+levelDesc+" of this topic. Provide a clear, patient explanation in natural continuous paragraphs. No bullet lists. No bold formatting.");
+      var msgs=[{role:"system",content:prompt},{role:"user",content:"Please explain this concept to me."}];
+      var apiResp=await callAPI(msgs,1024);
+      if(apiResp)return apiResp;
+    }
+    return _origGetExp(status);
+  };
+})();
+var _origGenerateFollowUp=generateFollowUp;
+generateFollowUp=async function(answer,node,domain){
+  if(apiConfig.key&&apiConfig.model){
+    var prompt=buildSocraticPrompt(domain,node.status,"The user just said: \""+answer+"\". Ask a single follow-up question that probes deeper into their response. Keep it under 2 sentences.");
+    var msgs=[{role:"system",content:prompt}];
+    var apiResp=await callAPI(msgs);
+    if(apiResp&&apiResp.trim()){
+      console.log("%c[FollowUp] <- API","color:#4f4");
+      state.lastCallSource="api";
+      return apiResp.trim();
+    }
+    console.warn("%c[FollowUp] API empty/error -> mock","color:#f90");
+    state.lastCallSource="mock";
+  } else { state.lastCallSource="mock"; }
+  return _origGenerateFollowUp(answer,node,domain);
+};
+
+</script>
+
+<!-- Settings Modal -->
+<div class="settings-overlay hidden" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-modal" onclick="event.stopPropagation()">
+    <div class="settings-header">
+      <span class="settings-title">API Configuration</span>
+      <button class="settings-close" onclick="closeSettings()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="settings-body">
+      <div class="stg-toggle" onclick="toggleAPI()">
+        <span class="settings-label" style="margin-bottom:0">Enable External API</span>
+        <div class="stg-toggle-track" id="stgToggleTrack"><div class="stg-toggle-knob"></div></div>
+      </div>
+      <div class="settings-field">
+        <span class="settings-label">Base URL</span>
+        <input class="settings-input" id="stgURL" placeholder="https://api.openai.com/v1" autocomplete="off">
+        <span class="settings-hint">OpenAI-compatible endpoint. Defaults to OpenAI.</span>
+      </div>
+      <div class="settings-field">
+        <span class="settings-label">API Key</span>
+        <input class="settings-input" id="stgKey" type="password" placeholder="sk-..." autocomplete="off">
+        <span class="settings-hint">Stored locally in your browser. Never sent anywhere else.</span>
+      </div>
+      <div class="settings-field">
+        <span class="settings-label">Model ID</span>
+        <input class="settings-input" id="stgModel" placeholder="gpt-4o" autocomplete="off">
+        <span class="settings-hint">Model name your provider recognizes.</span>
+      </div>
+      <div id="stgStatus"></div>
+      <div class="settings-actions">
+        <button class="settings-btn danger" onclick="clearSettings()">Clear</button>
+        <button class="settings-btn secondary" onclick="closeSettings()">Cancel</button>
+        <button class="settings-btn primary" onclick="saveSettings()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
