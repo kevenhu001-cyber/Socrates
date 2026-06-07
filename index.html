@@ -107,6 +107,14 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .project-editor-swatch:hover{transform:scale(1.1)}
 .project-editor-swatch[data-selected]{border-color:hsl(var(--text-100));box-shadow:0 0 0 1.5px hsl(var(--bg-100))}
 .project-editor-foot{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:0.5px solid hsl(var(--border-300)/0.18);background:hsl(var(--bg-200))}
+
+/* P5.6 — shortcut cheatsheet modal */
+.cheatsheet{max-height:75vh;width:min(520px,92vw);display:flex;flex-direction:column}
+.cheatsheet-body{padding:0 6px 12px;overflow-y:auto}
+.cheatsheet-section{padding:8px 12px}
+.cheatsheet-row{display:flex;align-items:center;gap:6px;padding:4px 0}
+.cheatsheet-kbd{font-family:var(--font-mono);font-size:10px;padding:2px 6px;min-width:18px;text-align:center;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:4px;background:hsl(var(--bg-000));color:hsl(var(--text-200))}
+.cheatsheet-desc{margin-left:8px;font-size:13px;color:hsl(var(--text-200))}
 .project-editor-spacer{flex:1}
 .project-editor-cancel,.project-editor-save,.project-editor-delete{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid transparent}
 .project-editor-cancel{background:transparent;color:hsl(var(--text-300));border-color:hsl(var(--border-300)/0.4)}
@@ -2039,6 +2047,253 @@ document.addEventListener("keydown",function(e){
     if(typeof openCmdK==="function")openCmdK();
   }
 });
+
+/* P5.6 — single global keydown dispatcher for the full
+   keyboard-shortcut set. Replaces the four ad-hoc keydown
+   listeners previously scattered around the file. The
+   handler is registered last so it has the highest priority
+   (when a shortcut fires we preventDefault and the original
+   listeners never run for that key).
+
+   Shortcut table (showing Mac keys; on Windows/Linux Cmd is
+   Ctrl):
+     ⌘ K         open search
+     ⌘ /         open shortcut cheatsheet
+     ⌘ B         toggle sidebar
+     ⌘ .         toggle settings / profile modal
+     ⌘ ⇧ O       new chat (resetApp)
+     ⌘ ⇧ S       share current session
+     ⌘ ⇧ A       open projects picker
+     ⌘ ⇧ P       cycle active project
+     ⌘ ⇧ T       toggle theme
+     ⌘ ⇧ F       toggle web search (extension)
+     ⌘ ⇧ M       toggle "show AI thinking"
+     Esc         close any open modal
+     ↑ (empty)   edit last user message
+     ⌘ ⏎         send (alternative to Enter)
+     ⇧ ⏎         newline (the default) */
+document.addEventListener("keydown",function(e){
+  var cmd=e.metaKey||e.ctrlKey;
+  var key=(e.key||"").toLowerCase();
+  var k=e.key;
+  /* Esc — close any open modal that has its own close
+     function. We look for a stack of known modal IDs. */
+  if(k==="Escape"){
+    if(!document.getElementById("cmdKOverlay").classList.contains("hidden")){
+      e.preventDefault();closeCmdK();return;
+    }
+    if(document.getElementById("projectEditorOverlay")&&!document.getElementById("projectEditorOverlay").classList.contains("hidden")){
+      e.preventDefault();closeProjectEditor();return;
+    }
+    if(document.getElementById("profileOverlay")&&!document.getElementById("profileOverlay").classList.contains("hidden")){
+      e.preventDefault();closeProfile();return;
+    }
+    if(!document.getElementById("shareOverlay").classList.contains("hidden")){
+      e.preventDefault();closeShareModal();return;
+    }
+  }
+  /* Cmd+K — global search. (Already handled above; re-check
+     here to keep the cheatsheet in sync.) */
+  if(cmd&&!e.altKey&&!e.shiftKey&&key==="k"){
+    e.preventDefault();
+    if(typeof openCmdK==="function")openCmdK();
+    return;
+  }
+  /* Cmd+/ — shortcut cheatsheet. Some keyboards send "?" for
+     Shift+/; we accept both. */
+  if(cmd&&!e.altKey&&(key==="/"||k==="?")){
+    e.preventDefault();
+    openCheatsheet();
+    return;
+  }
+  /* Cmd+B — toggle sidebar. */
+  if(cmd&&!e.altKey&&!e.shiftKey&&key==="b"){
+    e.preventDefault();
+    if(typeof toggleSidebar==="function")toggleSidebar();
+    return;
+  }
+  /* Cmd+. — toggle settings/profile. */
+  if(cmd&&!e.altKey&&!e.shiftKey&&key==="."){
+    e.preventDefault();
+    if(typeof openProfile==="function"){
+      if(document.getElementById("profileOverlay")&&!document.getElementById("profileOverlay").classList.contains("hidden")){
+        closeProfile();
+      }else{
+        openProfile();
+      }
+    }
+    return;
+  }
+  /* Cmd+Shift+O — new chat. */
+  if(cmd&&!e.altKey&&e.shiftKey&&key==="o"){
+    e.preventDefault();
+    if(typeof resetApp==="function")resetApp();
+    return;
+  }
+  /* Cmd+Shift+S — share. */
+  if(cmd&&!e.altKey&&e.shiftKey&&key==="s"){
+    e.preventDefault();
+    if(typeof openShareModal==="function"&&state.session.currentSessionId){
+      openShareModal();
+    }else{
+      showToast("Start a chat first to share it");
+    }
+    return;
+  }
+  /* Cmd+Shift+A — open projects picker (focus the chip row). */
+  if(cmd&&!e.altKey&&e.shiftKey&&key==="a"){
+    e.preventDefault();
+    var row=document.getElementById("sidebarProjects");
+    if(row){row.scrollIntoView({behavior:"smooth",block:"center"})}
+    showToast("Project chips ↑ — click to switch");
+    return;
+  }
+  /* Cmd+Shift+P — cycle to next project. */
+  if(cmd&&!e.altKey&&e.shiftKey&&key==="p"){
+    e.preventDefault();
+    cycleActiveProject();
+    return;
+  }
+  /* Cmd+Shift+T — toggle theme. */
+  if(cmd&&!e.altKey&&e.shiftKey&&key==="t"){
+    e.preventDefault();
+    if(typeof toggleTheme==="function")toggleTheme();
+    return;
+  }
+  /* Cmd+Shift+F — toggle web search extension. */
+  if(cmd&&!e.altKey&&e.shiftKey&&key==="f"){
+    e.preventDefault();
+    toggleProfileWebSearch();
+    return;
+  }
+  /* Cmd+Shift+M — toggle "show AI thinking" preference. */
+  if(cmd&&!e.altKey&&e.shiftKey&&key==="m"){
+    e.preventDefault();
+    if(typeof thinkingOn!=="undefined"){
+      thinkingOn=!thinkingOn;
+      try{localStorage.setItem("socrates-thinking",JSON.stringify(thinkingOn))}catch(_){}
+      showToast("Show AI thinking: "+(thinkingOn?"on":"off"));
+    }
+    return;
+  }
+  /* Cmd+Enter — send (alternative). The textarea's keydown
+     handler already calls submitChatMessage on Enter, so we
+     only need this for non-textarea contexts (e.g. the
+     topic input). */
+  if(cmd&&!e.altKey&&!e.shiftKey&&(key==="enter"||k==="Enter")){
+    var t=e.target;
+    if(t&&t.tagName!=="TEXTAREA"){
+      e.preventDefault();
+      if(t&&t.id==="topicInput"&&typeof startTopic==="function")startTopic();
+      else if(typeof submitChatMessage==="function")submitChatMessage();
+    }
+    return;
+  }
+  /* Up arrow in an empty textarea — load the last user
+     message into the input for editing. Skipped when the
+     textarea has text (so the user can still navigate within
+     a multi-line draft). */
+  if(k==="ArrowUp"&&!cmd&&!e.altKey&&!e.shiftKey){
+    var ta=e.target;
+    if(ta&&ta.id==="chatInputArea"&&!ta.value){
+      var lastUser=findLastUserMessage();
+      if(lastUser){
+        e.preventDefault();
+        ta.value=lastUser;
+        ta.dispatchEvent(new Event("input"));
+      }
+    }
+  }
+});
+
+/* P5.6 — cycle to the next project in the sidebar. Used by
+   the Cmd+Shift+P shortcut. */
+function cycleActiveProject(){
+  if(typeof PROJECTS==="undefined"||!PROJECTS.length)return;
+  var cur=state.session.currentProjectId||INBOX_PROJECT_ID;
+  var idx=-1;
+  for(var i=0;i<PROJECTS.length;i++){if(PROJECTS[i].id===cur){idx=i;break;}}
+  var next=PROJECTS[(idx+1)%PROJECTS.length];
+  state.session.currentProjectId=next.id===INBOX_PROJECT_ID?null:next.id;
+  state.session.activeProjectFilter=next.id;
+  renderProjects();
+  renderRecents();
+  showToast("Project: "+next.name);
+}
+
+/* P5.6 — find the most recent user-authored message in
+   state.session.messages. Used by the Up-arrow-in-empty-input
+   shortcut to pop the previous prompt back into the input
+   for editing. */
+function findLastUserMessage(){
+  var list=state.session.messages||[];
+  for(var i=list.length-1;i>=0;i--){
+    if(list[i].role==="user"&&list[i].rawText)return list[i].rawText;
+  }
+  return null;
+}
+
+/* P5.6 — open / close the shortcut cheatsheet modal. The
+   content is a small static table so the user can learn the
+   shortcuts without leaving the app. */
+function openCheatsheet(){
+  var overlay=document.getElementById("cheatsheetOverlay");
+  if(!overlay){
+    overlay=document.createElement("div");
+    overlay.id="cheatsheetOverlay";
+    overlay.className="cmd-k-overlay hidden";
+    overlay.onclick=function(ev){if(ev.target===overlay)closeCheatsheet()};
+    overlay.innerHTML='<div class="cmd-k-modal cheatsheet" onclick="event.stopPropagation()"></div>';
+    document.body.appendChild(overlay);
+  }
+  var body=overlay.querySelector(".cheatsheet");
+  body.innerHTML=
+    '<div class="project-editor-head">'+
+      '<span class="project-editor-title">Keyboard shortcuts</span>'+
+      '<button class="project-editor-close" onclick="closeCheatsheet()">×</button>'+
+    '</div>'+
+    '<div class="cheatsheet-body">'+
+      buildCheatsheetSection("Navigation",[
+        ["Open search",        ["⌘","K"]],
+        ["Toggle sidebar",     ["⌘","B"]],
+        ["Open settings",      ["⌘","."]],
+        ["New chat",           ["⌘","⇧","O"]],
+        ["Cycle project",      ["⌘","⇧","P"]]
+      ])+
+      buildCheatsheetSection("Sharing & search",[
+        ["Share current chat",["⌘","⇧","S"]],
+        ["Open project picker",["⌘","⇧","A"]]
+      ])+
+      buildCheatsheetSection("Toggles",[
+        ["Toggle theme",       ["⌘","⇧","T"]],
+        ["Toggle web search",  ["⌘","⇧","F"]],
+        ["Toggle thinking pill",["⌘","⇧","M"]]
+      ])+
+      buildCheatsheetSection("Composing",[
+        ["Send (alternative)", ["⌘","⏎"]],
+        ["Edit last prompt",   ["↑","(empty input)"]],
+        ["New line",           ["⇧","⏎"]]
+      ])+
+    '</div>';
+  overlay.classList.remove("hidden");
+}
+function buildCheatsheetSection(title,rows){
+  var html='<div class="cheatsheet-section"><div class="cmd-k-section-label">'+esc(title)+'</div>';
+  rows.forEach(function(row){
+    html+='<div class="cheatsheet-row">';
+    for(var i=0;i<row[1].length;i++){
+      html+='<kbd class="cheatsheet-kbd">'+esc(row[1][i])+'</kbd>';
+    }
+    html+='<span class="cheatsheet-desc">'+esc(row[0])+'</span>';
+    html+='</div>';
+  });
+  html+='</div>';
+  return html;
+}
+function closeCheatsheet(){
+  var overlay=document.getElementById("cheatsheetOverlay");
+  if(overlay)overlay.classList.add("hidden");
+}
 /* Mobile: tap anywhere outside the sidebar (and outside the toggle button)
    to close it. On desktop the sidebar is a permanent fixture, so we skip
    the handler when the viewport is wider than 768px. The backdrop is a
