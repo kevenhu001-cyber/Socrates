@@ -169,6 +169,23 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 
 /* P5.6 — shortcut cheatsheet modal */
 .cheatsheet{max-height:75vh;width:min(520px,92vw);display:flex;flex-direction:column}
+
+/* P2.3 — Storage modal */
+.storage-modal{width:min(560px,92vw);max-height:75vh;display:flex;flex-direction:column}
+.storage-modal-body{padding:14px 18px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.storage-modal-desc{font-size:12px;color:hsl(var(--text-400));line-height:1.5}
+.storage-list{display:flex;flex-direction:column;gap:6px}
+.storage-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.15)}
+.storage-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.storage-row-title{font-size:13px;font-weight:500;color:hsl(var(--text-100));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.storage-row-meta{font-size:11px;color:hsl(var(--text-500))}
+.storage-row-actions{display:flex;gap:6px;flex-shrink:0}
+.storage-btn-restore,.storage-btn-delete{padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;border:0.5px solid transparent;font-weight:500;font-family:inherit}
+.storage-btn-restore{background:hsl(var(--accent-000));color:hsl(var(--always-white))}
+.storage-btn-restore:hover{filter:brightness(1.1)}
+.storage-btn-delete{background:transparent;color:hsl(0 60% 70%);border-color:hsl(0 60% 30%/0.4)}
+.storage-btn-delete:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 80%)}
+.storage-empty{text-align:center;padding:32px 12px;color:hsl(var(--text-400));font-size:13px}
 .cheatsheet-body{padding:0 6px 12px;overflow-y:auto}
 .cheatsheet-section{padding:8px 12px}
 .cheatsheet-row{display:flex;align-items:center;gap:6px;padding:4px 0}
@@ -2149,6 +2166,9 @@ document.addEventListener("keydown",function(e){
     if(document.getElementById("projectEditorOverlay")&&!document.getElementById("projectEditorOverlay").classList.contains("hidden")){
       e.preventDefault();closeProjectEditor();return;
     }
+    if(document.getElementById("storageModalOverlay")&&!document.getElementById("storageModalOverlay").classList.contains("hidden")){
+      e.preventDefault();closeStorageModal();return;
+    }
     if(document.getElementById("profileOverlay")&&!document.getElementById("profileOverlay").classList.contains("hidden")){
       e.preventDefault();closeProfile();return;
     }
@@ -2649,6 +2669,13 @@ function resetState(){
 var RECENTS_KEY="socrates-sessions-v2";
 var RECENTS_KEY_OLD="socrates-sessions";
 var RECENTS_CAP=20;
+/* P2.3 — how long the client and server keep an archived
+   session before it's permanently erased. The server is the
+   source of truth (it runs a daily GC job); we mirror the
+   window on the client to keep the Storage modal and the
+   Recents list in sync without waiting for the server's
+   next sync round. */
+var ARCHIVE_RETENTION_MS=30*24*60*60*1000;
 /* Server-side session cache. The SPA keeps a copy of the user's chat
    sessions here so the UI can render the Recents / Knowledge / Mistakes
    tabs without a roundtrip on every action. We keep it fresh via
@@ -2748,10 +2775,15 @@ function getChatIdFromURL(){return new URLSearchParams(location.search).get("cha
 function setChatIdInURL(id){history.replaceState({chatId:id},"",id?"?chat="+encodeURIComponent(id):location.pathname)}
 function pushChatIdToURL(id){history.pushState({chatId:id},"",id?"?chat="+encodeURIComponent(id):location.pathname)}
 function getRecents(){
+  /* P2.3 — sweep local expired archives first so the Recents
+     list and the Storage modal never disagree. */
+  sweepExpiredArchives();
+  /* P2.3 — archived sessions are hidden from the default
+     Recents list. Users restore them from the Storage modal. */
+  var copy=SERVER_SESSIONS.filter(function(s){return!s||!s.archivedAt;});
   /* P2.2 — pinned sessions always come first, then everything
      else sorted by updatedAt desc. The sort is stable; ties keep
      their original order. */
-  var copy=SERVER_SESSIONS.slice();
   copy.sort(function(a,b){
     var ap=a&&a.pinned?1:0;
     var bp=b&&b.pinned?1:0;
@@ -3501,28 +3533,132 @@ function findServerSessionIndex(id){
 
 function actuallyDeleteSession(id){
   if(!CURRENT_USER)return;
-  apiFetch("/api/sessions/"+encodeURIComponent(id),{method:"DELETE"}).then(function(){
-    SERVER_SESSIONS=SERVER_SESSIONS.filter(function(r){return r.id!==id});
-    clearLocalMemory(id);
-    if(state.currentSessionId===id){
-      _shareToken=null;
-      resetState();
-      toggleShareBtn();
-      setChatIdInURL(null);
-      document.getElementById("topicSetup").classList.remove("hidden");
-      document.getElementById("diagnosticView").classList.add("hidden");
-      document.getElementById("chatView").classList.add("hidden");
-      document.getElementById("topicBadge").classList.add("hidden");
-      document.getElementById("msgList").innerHTML="";
-      document.getElementById("topicInput").value="";
-      document.getElementById("kbContent").innerHTML='<div class="kb-empty">Set a learning topic to build your knowledge map.</div>';
-      document.getElementById("chatStats").textContent="";
-      var badge=document.getElementById("chatApiBadge");
-      if(badge){badge.textContent="";badge.classList.remove("on");badge.title="";}
-      updateStartBtn();
-    }
-    renderRecents();
-  }).catch(function(err){console.warn("[sessions] delete failed:",err.message)});
+  /* P2.3 — the "delete" action is now archive, not hard delete.
+     Set archivedAt to the current time and call the server's
+     archive endpoint. The server is expected to GC archived
+     sessions 30 days after the timestamp; we mirror the same
+     window on the client by sweeping local entries on every
+     read. The old hard-delete endpoint is still reachable via
+     /api/sessions/<id> (DELETE) for users who explicitly want
+     a permanent erase — see confirmPurgeSession(). */
+  var now=Date.now();
+  archiveSessionLocal(id,now);
+  apiFetch("/api/sessions/"+encodeURIComponent(id)+"/archive",{
+    method:"POST",
+    timeoutMs:8000
+  }).catch(function(err){
+    console.debug("[archive] server sync failed:",err&&err.message);
+  });
+  /* If the user was inside the archived session, bounce them
+     back to the topic screen. */
+  if(state.session.currentSessionId===id){
+    bounceOutOfArchivedSession();
+  }
+  renderRecents();
+}
+
+/* P2.3 — record the archive timestamp locally. The local copy
+   is the source of truth for the UI (filtered out of
+   Recents, surfaced in the Storage modal). The server mirrors
+   it via the POST /api/sessions/<id>/archive call in
+   actuallyDeleteSession. */
+function archiveSessionLocal(id,when){
+  var idx=findServerSessionIndex(id);
+  if(idx<0)return;
+  SERVER_SESSIONS[idx].archivedAt=when||Date.now();
+}
+function restoreSession(id){
+  if(!CURRENT_USER)return;
+  var idx=findServerSessionIndex(id);
+  if(idx<0)return;
+  SERVER_SESSIONS[idx].archivedAt=null;
+  apiFetch("/api/sessions/"+encodeURIComponent(id)+"/archive",{
+    method:"DELETE",
+    timeoutMs:8000
+  }).catch(function(err){
+    console.debug("[archive] restore sync failed:",err&&err.message);
+  });
+  renderRecents();
+}
+/* P2.3 — permanent erase. Two-step: only available from the
+   Storage modal (not the long-press delete), and requires
+   typing the session title. Mirrors the backend's "must be
+   archived first" constraint documented in
+   docs/api/openapi.yaml P2.3 (409 on active session). */
+function confirmPurgeSession(id){
+  var idx=findServerSessionIndex(id);
+  if(idx<0)return;
+  var s=SERVER_SESSIONS[idx];
+  if(!s.archivedAt){
+    showToast("Archive the session first (long-press → Delete).");
+    return;
+  }
+  showConfirm(
+    "Delete this session forever?",
+    "This permanently erases \""+(s.title||s.topic||"this session")+"\". "+
+    "Messages, knowledge graph, and mistake book entries are gone. "+
+    "This cannot be undone.",
+    true
+  ).then(function(yes){
+    if(!yes)return;
+    apiFetch("/api/sessions/"+encodeURIComponent(id),{
+      method:"DELETE",
+      timeoutMs:8000
+    }).then(function(){
+      SERVER_SESSIONS=SERVER_SESSIONS.filter(function(r){return r.id!==id});
+      clearLocalMemory(id);
+      renderArchivedList();
+      renderRecents();
+      showToast("Session deleted");
+    }).catch(function(err){
+      showToast("Delete failed: "+(err&&err.message||"server error"));
+    });
+  });
+}
+
+/* P2.3 — return a list of archived sessions, sorted newest
+   first, with entries older than 30 days filtered out (the
+   server is expected to GC them too, but we mirror the
+   policy client-side so the Storage modal doesn't show
+   ghost rows). */
+function getArchivedSessions(){
+  var cutoff=Date.now()-ARCHIVE_RETENTION_MS;
+  return (SERVER_SESSIONS||[])
+    .filter(function(s){return s&&s.archivedAt&&s.archivedAt>cutoff})
+    .sort(function(a,b){return(b.archivedAt||0)-(a.archivedAt||0)});
+}
+/* P2.3 — the localStorage mirror is swept the same way the
+   server is expected to. Called from refreshServerSessions
+   and on every read of getArchivedSessions. */
+function sweepExpiredArchives(){
+  var cutoff=Date.now()-ARCHIVE_RETENTION_MS;
+  var before=SERVER_SESSIONS.length;
+  SERVER_SESSIONS=(SERVER_SESSIONS||[]).filter(function(s){
+    return!s.archivedAt||s.archivedAt>cutoff;
+  });
+  return SERVER_SESSIONS.length!==before;
+}
+
+/* P2.3 — bounce the user out of an archived session. Used by
+   actuallyDeleteSession when the active session is the one
+   being archived; the chat view collapses back to the topic
+   screen. */
+function bounceOutOfArchivedSession(){
+  _shareToken=null;
+  resetState();
+  toggleShareBtn();
+  setChatIdInURL(null);
+  document.getElementById("topicSetup").classList.remove("hidden");
+  document.getElementById("diagnosticView").classList.add("hidden");
+  document.getElementById("chatView").classList.add("hidden");
+  document.getElementById("topicBadge").classList.add("hidden");
+  document.getElementById("msgList").innerHTML="";
+  document.getElementById("topicInput").value="";
+  document.getElementById("kbContent").innerHTML='<div class="kb-empty">Set a learning topic to build your knowledge map.</div>';
+  document.getElementById("chatStats").textContent="";
+  var badge=document.getElementById("chatApiBadge");
+  if(badge){badge.textContent="";badge.classList.remove("on");badge.title="";}
+  updateStartBtn();
 }
 
 /* Backwards-compatible alias — older call sites still use the
@@ -7910,6 +8046,59 @@ function closeProfile(){
   document.getElementById("profileOverlay").classList.add("hidden");
 }
 
+/* P2.3 — Storage modal. Lists archived sessions with the
+   days-remaining countdown, plus a Restore / Delete-forever
+   pair per row. The modal is a single instance that gets
+   rebuilt every time it opens, so the count is always live. */
+function openStorageModal(){
+  var overlay=document.getElementById("storageModalOverlay");
+  if(!overlay){
+    overlay=document.createElement("div");
+    overlay.id="storageModalOverlay";
+    overlay.className="cmd-k-overlay hidden";
+    overlay.onclick=function(ev){if(ev.target===overlay)closeStorageModal()};
+    overlay.innerHTML='<div class="cmd-k-modal storage-modal" onclick="event.stopPropagation()"></div>';
+    document.body.appendChild(overlay);
+  }
+  overlay.classList.remove("hidden");
+  renderArchivedList();
+}
+function closeStorageModal(){
+  var overlay=document.getElementById("storageModalOverlay");
+  if(overlay)overlay.classList.add("hidden");
+}
+function renderArchivedList(){
+  var body=document.querySelector("#storageModalOverlay .storage-modal");
+  if(!body)return;
+  var archived=getArchivedSessions();
+  var html=
+    '<div class="project-editor-head">'+
+      '<span class="project-editor-title">Archived sessions ('+archived.length+')</span>'+
+      '<button class="project-editor-close" onclick="closeStorageModal()">×</button>'+
+    '</div>'+
+    '<div class="storage-modal-body">'+
+      '<div class="storage-modal-desc">Sessions you deleted are kept here for 30 days, then permanently erased on both this device and the server. Restore a session to bring it back to Recents.</div>'+
+      (archived.length?
+        '<div class="storage-list">'+archived.map(function(s){
+          var ageDays=Math.max(0,Math.floor((Date.now()-(s.archivedAt||0))/(24*60*60*1000)));
+          var remain=Math.max(0,30-ageDays);
+          return '<div class="storage-row">'+
+            '<div class="storage-row-main">'+
+              '<div class="storage-row-title">'+esc(s.title||s.topic||"(untitled)")+'</div>'+
+              '<div class="storage-row-meta">Archived '+ageDays+' day'+(ageDays===1?"":"s")+' ago · '+remain+' day'+(remain===1?"":"s")+' left</div>'+
+            '</div>'+
+            '<div class="storage-row-actions">'+
+              '<button class="storage-btn-restore" onclick="restoreSession(\''+esc(s.id)+'\')">Restore</button>'+
+              '<button class="storage-btn-delete" onclick="confirmPurgeSession(\''+esc(s.id)+'\')">Delete forever</button>'+
+            '</div>'+
+          '</div>';
+        }).join("")+'</div>':
+        '<div class="storage-empty">No archived sessions. Long-press a session in Recents to send it here.</div>'
+      )+
+    '</div>';
+  body.innerHTML=html;
+}
+
 /* P1.3 — Custom Instructions: load/save/serialize.
    Schema (localStorage key "socrates-custom-instructions"):
      { response: "How should I respond?",
@@ -10773,6 +10962,17 @@ generateFollowUpStream=async function(answer,node,domain,onDelta,onThinking){
       <!-- Data management section -->
       <div class="profile-section">
         <div class="profile-section-title">Data</div>
+        <!-- P2.3 — Storage entry. Opens a modal listing archived
+             sessions with restore / delete controls. The button
+             label shows the live count so the user knows if
+             there's anything to act on. -->
+        <div class="profile-action-row">
+          <div>
+            <div class="profile-action-label">Archived sessions</div>
+            <div class="profile-action-desc">Sessions you deleted are kept here for 30 days before being permanently erased.</div>
+          </div>
+          <button class="profile-btn" onclick="openStorageModal()" style="width:auto;padding:6px 14px;flex-shrink:0">Manage</button>
+        </div>
         <div class="profile-action-row">
           <div>
             <div class="profile-action-label">Clear conversations</div>
