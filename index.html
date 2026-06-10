@@ -16,6 +16,24 @@
      browser refuses to apply it. `crossorigin="anonymous"` is required
      for SRI to take effect on <link>/<script> without credentials. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<!-- P0.6 — pre-boot marker. -->
+<script>
+(function(){
+  try{document.documentElement.dataset.bootState="checking"}catch(_){}
+  /* Safety net: if authBoot() never replaces bootState within 12s
+   * (offline / backend hung / unexpected error), default to the
+   * sign-in form so the user always has a way out. */
+  setTimeout(function(){
+    try{
+      if(document.documentElement.dataset.bootState==="checking"){
+        document.documentElement.dataset.bootState="auth";
+        var g=document.getElementById("authGate");if(g)g.classList.remove("hidden");
+        var s=document.getElementById("appShell");if(s)s.classList.add("hidden");
+      }
+    }catch(_){}
+  },12000);
+})();
+</script>
 <style>
 :root{--always-white:0 0% 100%;--always-black:0 0% 0%}
 [data-theme=socrates][data-mode=dark]{--bg-000:42 4% 18%;--bg-100:40 3.3% 14.5%;--bg-200:36 3.6% 11.8%;--bg-300:39 3.2% 7.8%;--bg-400:0 0% 0%;--text-000:45 30% 96%;--text-100:45 30% 96%;--text-200:45 8% 72%;--text-300:45 8% 72%;--text-400:44 4.5% 58%;--text-500:44 4.5% 58%;--border-100:45 20% 82%;--border-200:45 20% 82%;--border-300:45 20% 82%;--border-400:45 20% 82%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
@@ -696,9 +714,9 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 .settings-hint{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));line-height:1.4}
 .settings-status{font-size:calc(12px * var(--app-font-scale, 1));padding:8px 12px;border-radius:8px;text-align:center;line-height:1.4;display:flex;align-items:center;gap:6px;justify-content:center}
 .settings-status.ok{color:hsl(145 50% 55%);background:hsl(145 30% 10%/0.6);border:0.5px solid hsl(145 40% 30%/0.4)}
-.settings-status.ok::before{content:'✓';font-weight:600;font-size:calc(13px * var(--app-font-scale, 1))}
+.settings-status.ok::before{content:'';display:inline-block;width:calc(13px * var(--app-font-scale, 1));height:calc(13px * var(--app-font-scale, 1));background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z' fill='%2322c55e'/%3E%3C/svg%3E") center/contain no-repeat;flex-shrink:0}
 .settings-status.warn{color:hsl(39 70% 50%);background:hsl(39 30% 10%/0.6);border:0.5px solid hsl(39 40% 30%/0.4)}
-.settings-status.warn::before{content:'⚠';font-size:calc(13px * var(--app-font-scale, 1))}
+.settings-status.warn::before{content:'';display:inline-block;width:calc(13px * var(--app-font-scale, 1));height:calc(13px * var(--app-font-scale, 1));background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5a.75.75 0 0 1 .65.375l6.25 11.25a.75.75 0 0 1-.65 1.125H1.75a.75.75 0 0 1-.65-1.125L7.35 1.875A.75.75 0 0 1 8 1.5zM8 5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 1 0v-3A.5.5 0 0 0 8 5zm0 5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z' fill='%23d97706'/%3E%3C/svg%3E") center/contain no-repeat;flex-shrink:0}
 .settings-actions{display:flex;gap:8px;justify-content:flex-end}
 .settings-btn{padding:8px 18px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;transition:all .1s;cursor:pointer}
 .settings-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
@@ -1200,6 +1218,27 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 /* Auth gate */
 .auth-gate{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;overflow-y:auto}
 .auth-gate.hidden{display:none}
+/* P0.6 — pre-boot hidden state. When <html data-boot-state="checking">
+   neither the auth gate nor the app shell is shown, so the user never
+   sees a flash of the wrong view during the async /api/auth/me call.
+   The boot IIFE flips data-boot-state to "auth" or "app" once /me
+   resolves, which then reveals the correct view via these rules. */
+html[data-boot-state="checking"] #authGate,
+html[data-boot-state="checking"] #appShell{display:none !important}
+html[data-boot-state="app"] #authGate{display:none !important}
+html[data-boot-state="auth"] #appShell{display:none !important}
+/* Pre-boot loading shell — covers the viewport while the auth check
+   is in flight. Uses the same dotted background as the auth gate so
+   the transition is invisible when /me resolves to "auth". */
+.boot-loading{position:fixed;inset:0;z-index:190;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;opacity:1;transition:opacity .25s var(--ease-out)}
+html[data-boot-state="app"] .boot-loading,
+html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
+.boot-loading-logo{display:flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-weight:600;font-size:calc(15px * var(--app-font-scale,1));letter-spacing:-.02em}
+.boot-loading-logo svg{flex-shrink:0;color:hsl(var(--brand-000))}
+.boot-loading-dots{display:inline-flex;gap:5px;margin-left:2px}
+.boot-loading-dots span{width:5px;height:5px;border-radius:50%;background:hsl(var(--text-500));animation:loadBounce 1.4s infinite}
+.boot-loading-dots span:nth-child(2){animation-delay:.2s}
+.boot-loading-dots span:nth-child(3){animation-delay:.4s}
 .auth-card{width:100%;max-width:420px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.18);border-radius:18px;padding:32px 28px;box-shadow:0 12px 48px hsl(var(--always-black)/0.5)}
 /* P4.5 — transient banner shown at the top of the auth gate when a
    401 from any background apiFetch triggers handleAuthExpired(). */
@@ -1295,7 +1334,7 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 /* Practice problem block */
 .inline-practice{margin:14px 0;padding:14px 16px;background:hsl(43 60% 12%/0.4);border:0.5px solid hsl(43 60% 35%/0.4);border-radius:12px;border-left:3px solid hsl(43 77% 55%)}
 .inline-practice-title{font-size:calc(12px * var(--app-font-scale, 1));font-weight:600;color:hsl(43 77% 65%);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.inline-practice-title::before{content:'✎';color:hsl(43 77% 55%);font-size:calc(14px * var(--app-font-scale, 1))}
+.inline-practice-title::before{content:'';display:inline-block;width:calc(14px * var(--app-font-scale, 1));height:calc(14px * var(--app-font-scale, 1));background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.647a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.29 9.003l-.22.22-.122.611-.544 2.718a.5.5 0 0 0 .585.585l2.718-.544.61-.122.22-.22 6.503-6.503zM1.5 14a.5.5 0 1 0 0 1h13a.5.5 0 1 0 0-1h-13z' fill='%23d4a04a'/%3E%3C/svg%3E") center/contain no-repeat;flex-shrink:0}
 .inline-practice-problem{font-size:calc(14px * var(--app-font-scale, 1));line-height:1.6;color:hsl(var(--text-100));margin-bottom:8px}
 .inline-practice-hint{font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));font-style:italic;margin-top:6px;line-height:1.5}
 .inline-practice-hint .label{font-style:normal;font-weight:600;color:hsl(43 60% 65%);margin-right:4px;text-transform:uppercase;font-size:calc(10px * var(--app-font-scale, 1));letter-spacing:.06em}
@@ -1459,6 +1498,20 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 </head>
 <body>
 
+<!-- P0.6 — pre-boot loading shell. Visible only while
+     data-boot-state="checking" (i.e. between the synchronous
+     pre-boot script and authBoot() finishing /api/auth/me). The
+     CSS rules for that data attribute set opacity:0 and
+     pointer-events:none on this element as soon as bootState
+     flips to "auth" or "app", so the transition is smooth. -->
+<div class="boot-loading" id="bootLoading" aria-hidden="true">
+  <div class="boot-loading-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="3"/></svg>
+    <span>Socrates</span>
+    <span class="boot-loading-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+  </div>
+</div>
+
 <!-- ============================================================
      AUTH GATE
      Shown whenever the user is not signed in. Covers the whole
@@ -1492,7 +1545,7 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
         <label class="auth-guest-label"><input type="checkbox" id="authGuestCheckbox"> Guest mode</label>
         <button class="auth-btn primary" id="authSigninBtn" type="submit">Sign in</button>
         <div class="auth-view-separator">or</div>
-        <a class="auth-btn secondary" id="authGithubBtn" href="/api/auth/oauth/github/start?return_to=https://app.topodrive.top" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>Continue with GitHub</a>
+        <a class="auth-btn secondary" id="authGithubBtn" href="/api/auth/oauth/github/start?return_to=/" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>Continue with GitHub</a>
         <a class="auth-inline-link" href="#" onclick="event.preventDefault();showAuthCodeLogin()" style="text-align:center;display:block;margin-top:10px;margin-bottom:4px">Login with verification code</a>
         <div class="auth-foot">No account? <a href="#" onclick="event.preventDefault();switchAuthTab('register')">Create one</a></div>
       </form>
@@ -1516,7 +1569,7 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         </div>
         <h2 class="auth-title">Check your inbox</h2>
-        <p class="auth-lede">We sent a verification link to <strong id="authVerifyEmail"></strong>. Click the button in the email to start learning with Socrates. The link expires in 30 minutes.</p>
+        <p class="auth-lede">We sent a verification link to <strong id="authVerifyEmail"></strong>. Click the button in the email to start learning with Socrates. The link expires in 24 hours.</p>
         <button class="auth-btn secondary" onclick="resendVerification()">Resend the link</button>
         <div class="auth-foot"><a href="#" onclick="event.preventDefault();showAuthSignin()">Use a different email</a></div>
       </div>
@@ -1527,7 +1580,7 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
         <h2 class="auth-title" id="authVerifyFailedTitle">This link is invalid or expired</h2>
-        <p class="auth-lede" id="authVerifyFailedMsg">Verification links expire after 30 minutes. Enter your email and we'll send a fresh one.</p>
+        <p class="auth-lede" id="authVerifyFailedMsg">Verification links expire after 24 hours. Enter your email and we'll send a fresh one.</p>
         <form onsubmit="event.preventDefault();resendVerification()">
           <input class="auth-input" id="authResendEmail" type="email" required placeholder="you@example.com">
           <div class="auth-error" id="authVerifyFailedError"></div>
@@ -1568,7 +1621,7 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         </div>
         <h2 class="auth-title">Check your inbox</h2>
-        <p class="auth-lede">If an account exists for <strong id="authForgotSentEmail"></strong>, we sent a password reset link. The link expires in 30 minutes.</p>
+        <p class="auth-lede">If an account exists for <strong id="authForgotSentEmail"></strong>, we sent a password reset link. The link expires in 1 hour.</p>
         <div class="auth-foot"><a href="#" onclick="event.preventDefault();showAuthSignin()">Back to sign in</a></div>
       </div>
 
@@ -1632,7 +1685,7 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
   <div class="auth-footnote">Socrates asks questions to help you think. It does not judge your answers.</div>
 </div>
 
-<div class="app" id="appShell">
+<div class="app hidden" id="appShell">
 
 
 <aside class="sidebar" id="sidebar">
@@ -2300,7 +2353,6 @@ document.addEventListener("keydown",function(e){
     if(typeof thinkingOn!=="undefined"){
       thinkingOn=!thinkingOn;
       try{localStorage.setItem("socrates-thinking",JSON.stringify(thinkingOn))}catch(_){}
-      showToast("Show AI thinking: "+(thinkingOn?"on":"off"));
     }
     return;
   }
@@ -2353,10 +2405,53 @@ function cycleActiveProject(){
    state.session.messages. Used by the Up-arrow-in-empty-input
    shortcut to pop the previous prompt back into the input
    for editing. */
+/* Strip markdown formatting symbols from text so the user sees clean
+   plain text when editing or resending a message. Removes **bold**,
+   *italic*, `code`, $math$, [links](url), # headings, > blockquotes,
+   and code fences — keeping only the visible content. */
+function stripMarkdown(s){
+  if(!s)return"";
+  return String(s)
+    /* Strip any HTML tags first — older server payloads sometimes
+       stored the rendered <p>foo</p> rather than the plain text.
+       Editing a user message must never expose raw <p>/<br>/etc. */
+    .replace(/<\/?[a-zA-Z][^>]*>/g,"")
+    .replace(/<!--[\s\S]*?-->/g,"")
+    .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g,"")
+    /* Remove fenced code blocks (```...``` or ~~~...~~~) */
+    .replace(/```[\s\S]*?```/g,"")
+    .replace(/~~~[\s\S]*?~~~/g,"")
+    /* Remove inline code and math: $...$, $$...$$, `...` */
+    .replace(/\$\$[^$]*\$\$/g,"")
+    .replace(/\$[^$]*\$/g,"")
+    .replace(/`[^`]*`/g,"")
+    /* Remove images: ![alt](url) */
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g,"$1")
+    /* Replace links: [text](url) → text */
+    .replace(/\[([^\]]*)\]\([^)]*\)/g,"$1")
+    /* Strip bold/italic markers */
+    .replace(/\*\*([^*]*)\*\*/g,"$1")
+    .replace(/__([^_]*)__/g,"$1")
+    .replace(/\*([^*]*)\*/g,"$1")
+    .replace(/_([^_]*)_/g,"$1")
+    /* Remove heading markers */
+    .replace(/^#{1,6}\s+/gm,"")
+    /* Remove blockquote markers */
+    .replace(/^>\s+/gm,"")
+    /* Remove horizontal rules */
+    .replace(/^[-*_]{3,}\s*$/gm,"")
+    /* Remove list markers (-, *, +, 1.) */
+    .replace(/^[-*+]\s+/gm,"")
+    .replace(/^\d+\.\s+/gm,"")
+    /* Collapse multiple newlines into one */
+    .replace(/\n{3,}/g,"\n\n")
+    .trim();
+}
+
 function findLastUserMessage(){
   var list=state.session.messages||[];
   for(var i=list.length-1;i>=0;i--){
-    if(list[i].role==="user"&&list[i].rawText)return list[i].rawText;
+    if(list[i].role==="user"&&list[i].rawText)return stripMarkdown(list[i].rawText);
   }
   return null;
 }
@@ -2739,7 +2834,7 @@ var SERVER_SESSIONS=[];
    project chip filters to that project only. */
 var PROJECTS_KEY="socrates-projects";
 var INBOX_PROJECT_ID="inbox";
-var INBOX_PROJECT={id:INBOX_PROJECT_ID,name:"Inbox",description:"All sessions without a project",color:"#7d7468",icon:"📥",systemPrompt:"",createdAt:0,archivedAt:null,isSystem:true};
+var INBOX_PROJECT={id:INBOX_PROJECT_ID,name:"Inbox",description:"All sessions without a project",color:"#7d7468",icon:"in",systemPrompt:"",createdAt:0,archivedAt:null,isSystem:true};
 var PROJECTS=[INBOX_PROJECT];
 function loadProjects(){
   try{
@@ -2772,7 +2867,7 @@ function createProject(opts){
     name:(opts&&opts.name||"New project").trim().slice(0,80),
     description:(opts&&opts.description||"").trim().slice(0,500),
     color:(opts&&opts.color)||randomProjectColor(),
-    icon:(opts&&opts.icon)||"📁",
+    icon:(opts&&opts.icon)||"fl",
     systemPrompt:(opts&&opts.systemPrompt||"").slice(0,8000),
     createdAt:Date.now(),
     archivedAt:null
@@ -2814,7 +2909,23 @@ function randomProjectColor(){
   var palette=["#d8a85b","#7da9d8","#a0c46c","#c47ed1","#e07b5b","#5bc0be","#d6a4d1","#b8b54a"];
   return palette[Math.floor(Math.random()*palette.length)];
 }
-function generateId(){return Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)}
+function generateId(){
+  /* Use the standard UUIDv4 when the browser supports it — the
+   * server's `sessions.id` column is typed as `uuid`, so anything
+   * that isn't a real UUID is rejected and the save 500s. The
+   * legacy "base36 timestamp + base36 random" format is kept as
+   * a fallback for ancient browsers / insecure contexts where
+   * `crypto.randomUUID` is unavailable, and for the rare call
+   * sites (e.g. message clientIds) where the value is purely
+   * client-side. The server still strips non-UUID values from
+   * POST /api/sessions to be safe. */
+  try{
+    if(typeof crypto!=="undefined"&&typeof crypto.randomUUID==="function"){
+      return crypto.randomUUID();
+    }
+  }catch(_){}
+  return Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);
+}
 function getChatIdFromURL(){return new URLSearchParams(location.search).get("chat")||null}
 function setChatIdInURL(id){history.replaceState({chatId:id},"",id?"?chat="+encodeURIComponent(id):location.pathname)}
 function pushChatIdToURL(id){history.pushState({chatId:id},"",id?"?chat="+encodeURIComponent(id):location.pathname)}
@@ -3157,9 +3268,19 @@ function saveCurrentSession(){
      user can immediately find the message they just sent. */
   rebuildCmdKIndex();
   /* Fire-and-forget write to server. The local SERVER_SESSIONS cache is
-     refreshed on next renderRecents; we don't block the UI on the roundtrip. */
+     refreshed on next renderRecents; we don't block the UI on the roundtrip.
+     P0.0 — adopt the server's canonical session id when it differs
+     from what we sent. Pre-UUID fix the client generated identifiers
+     like "mq61wc16-ayb8j6" and the server swapped in a fresh UUID
+     before inserting. Without this adoption step, every subsequent
+     save kept sending the original (rejected) id, breaking the upsert
+     and producing duplicate rows. */
   apiFetch("/api/sessions",{method:"POST",body:payload}).then(function(r){
-    /* Refresh the cache so the recents tab shows the new entry. */
+    if(r&&r.id&&r.id!==sessionId){
+      state.currentSessionId=r.id;
+      if(state.session)state.session.currentSessionId=r.id;
+      pushChatIdToURL(r.id);
+    }
     return refreshServerSessions();
   }).then(function(){renderRecents()}).catch(function(e){
     console.warn("[sessions] save failed:",e.message);
@@ -3341,27 +3462,13 @@ function clearLocalMemory(sid){
 var _deleteConfirmTimers={};   /* clientId → setTimeout handle */
 var _deleteConfirmStates={};   /* clientId → true while showing */
 
-function startDeleteConfirm(clientId,btnEl){
+function startDeleteConfirm(clientId,evOrBtn){
   if(_deleteConfirmStates[clientId])return;
-  clearDeleteConfirmTimer(clientId);
-  _deleteConfirmTimers[clientId]=setTimeout(function(){
-    showDeleteConfirm(clientId);
-  },600);
-  /* Visual feedback during the hold. */
-  if(btnEl){btnEl.classList.add("holding")}
-  /* Keyboard / accessibility path: pressing Enter or Space while
-     the delete button is focused should also open the confirm. */
-  function onKey(ev){
-    if(ev.key==="Enter"||ev.key===" "){
-      ev.preventDefault();
-      clearDeleteConfirmTimer(clientId);
-      showDeleteConfirm(clientId);
-    }else if(ev.key==="Escape"){
-      cancelDeleteConfirm(clientId);
-    }
-  }
-  btnEl.addEventListener("keydown",onKey,{once:true});
-  btnEl._deleteKeyHandler=onKey;
+  if(evOrBtn&&evOrBtn.stopPropagation)evOrBtn.stopPropagation();
+  /* Support both direct call (from legacy deleteSession) and event call. */
+  var btnEl=evOrBtn&&evOrBtn.currentTarget?evOrBtn.currentTarget:evOrBtn;
+  if(btnEl&&btnEl.classList)btnEl.classList.add("holding");
+  showDeleteConfirm(clientId);
 }
 function clearDeleteConfirmTimer(clientId){
   if(_deleteConfirmTimers[clientId]){
@@ -3577,28 +3684,32 @@ function findServerSessionIndex(id){
 
 function actuallyDeleteSession(id){
   if(!CURRENT_USER)return;
-  /* P2.3 — the "delete" action is now archive, not hard delete.
-     Set archivedAt to the current time and call the server's
-     archive endpoint. The server is expected to GC archived
-     sessions 30 days after the timestamp; we mirror the same
-     window on the client by sweeping local entries on every
-     read. The old hard-delete endpoint is still reachable via
-     /api/sessions/<id> (DELETE) for users who explicitly want
-     a permanent erase — see confirmPurgeSession(). */
-  var now=Date.now();
-  archiveSessionLocal(id,now);
-  apiFetch("/api/sessions/"+encodeURIComponent(id)+"/archive",{
-    method:"POST",
-    timeoutMs:8000
-  }).catch(function(err){
-    console.debug("[archive] server sync failed:",err&&err.message);
-  });
-  /* If the user was inside the archived session, bounce them
-     back to the topic screen. */
+  /* Bounce the user out of the chat view if the deleted session
+     was the one currently on screen. Doing this before we touch
+     SERVER_SESSIONS avoids a render where the active row briefly
+     lingers without a backing session record. */
   if(state.session.currentSessionId===id){
     bounceOutOfArchivedSession();
   }
+  /* Drop the session from the local cache immediately so the UI
+     updates without waiting for the round-trip. If the server
+     call fails, the catch handler re-fetches and re-renders. */
+  SERVER_SESSIONS=SERVER_SESSIONS.filter(function(s){return s.id!==id;});
+  clearLocalMemory(id);
   renderRecents();
+  /* Single-step: server's DELETE /api/sessions/:id now deletes
+     directly without requiring archive first. */
+  apiFetch("/api/sessions/"+encodeURIComponent(id),{
+    method:"DELETE",
+    timeoutMs:8000
+  }).then(function(){
+    showToast("Session deleted");
+    refreshServerSessions();
+  }).catch(function(err){
+    console.warn("[delete] server sync failed:",err&&err.message);
+    try{showToast("Delete failed: "+(err&&err.message||"server error")+" - refreshing.",4000)}catch(_){}
+    refreshServerSessions();
+  });
 }
 
 /* P2.3 — record the archive timestamp locally. The local copy
@@ -3705,17 +3816,14 @@ function bounceOutOfArchivedSession(){
   updateStartBtn();
 }
 
-/* Backwards-compatible alias — older call sites still use the
-   immediate `deleteSession` name. They now go through the
-   confirm flow. */
+/* Backwards-compatible alias — now deletes immediately. */
 function deleteSession(id,e){
   if(e){e.stopPropagation();e.preventDefault()}
   if(!CURRENT_USER)return;
-  /* Find the row in the DOM and use its data-recent-id as the
-     "clientId" key for the confirm state map. */
+  /* Find the row in the DOM and get the actual session ID. */
   var row=(e&&e.currentTarget&&e.currentTarget.closest(".recent-item"))||null;
-  var clientId=row?row.getAttribute("data-recent-id"):id;
-  startDeleteConfirm(clientId,e&&e.currentTarget);
+  var actualId=row?row.getAttribute("data-recent-actual"):id;
+  actuallyDeleteSession(actualId);
 }
 
 /* P2.1 — Project sidebar + filter UI. The chip row is
@@ -3792,7 +3900,7 @@ function openProjectEditor(projectId){
     '<div class="project-editor-body">'+
       '<label class="project-editor-label">Name<input class="project-editor-input" id="projName" maxlength="80" placeholder="e.g. Linear Algebra" value="'+esc(existing?existing.name:"")+'"></label>'+
       '<label class="project-editor-label">Description<textarea class="project-editor-textarea" id="projDescription" maxlength="500" placeholder="Optional. Helps the tutor tailor its style.">'+esc(existing&&existing.description||"")+'</textarea></label>'+
-      '<label class="project-editor-label">Icon<input class="project-editor-input project-editor-icon" id="projIcon" maxlength="4" value="'+esc(existing&&existing.icon||"📁")+'"></label>'+
+      '<label class="project-editor-label">Icon<input class="project-editor-input project-editor-icon" id="projIcon" maxlength="4" value="'+esc(existing&&existing.icon||"pg")+'"></label>'+
       '<div class="project-editor-label">Color'+
         '<div class="project-editor-colors" id="projColors">'+
           ["#d8a85b","#7da9d8","#a0c46c","#c47ed1","#e07b5b","#5bc0be","#d6a4d1","#b8b54a"].map(function(c){
@@ -3829,7 +3937,7 @@ function onProjectEditorSave(projectId){
   if(!body)return;
   var name=(document.getElementById("projName")||{}).value||"";
   var description=(document.getElementById("projDescription")||{}).value||"";
-  var icon=(document.getElementById("projIcon")||{}).value||"📁";
+  var icon=(document.getElementById("projIcon")||{}).value||"fl";
   var color=body.dataset.pickedColor||randomProjectColor();
   if(!name.trim()){
     showToast("Project name is required");
@@ -3973,14 +4081,9 @@ function renderRecents(){
     html+='<button class="recent-item-tag-btn" data-tag-open="1" title="Edit tags" onclick="openTagEditor(\''+esc(s.id)+'\',event)">';
     html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
     html+='</button>';
-    /* Delete (P4.1 long-press confirm). */
-    html+='<button class="recent-item-del" title="Hold to delete" aria-label="Delete session"';
-    html+=' onmousedown="startDeleteConfirm(\''+safeId+'\',this)"';
-    html+=' onmouseup="clearDeleteConfirmTimer(\''+safeId+'\')"';
-    html+=' onmouseleave="clearDeleteConfirmTimer(\''+safeId+'\')"';
-    html+=' ontouchstart="startDeleteConfirm(\''+safeId+'\',this)"';
-    html+=' ontouchend="clearDeleteConfirmTimer(\''+safeId+'\')"';
-    html+=' ontouchcancel="clearDeleteConfirmTimer(\''+safeId+'\')">';
+    /* Delete — click deletes immediately (no confirm). */
+    html+='<button class="recent-item-del" title="Delete session" aria-label="Delete session"';
+    html+=' onclick="actuallyDeleteSession(\''+esc(s.id)+'\',event)">';
     html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
     html+='</button>';
     html+='</div>';
@@ -4004,7 +4107,8 @@ function renderRecentsFilterChips(){
     return '<button class="recents-filter-chip-btn'+(isActive?" active":"")+'" data-filter="'+esc(val==null?"all":val)+'" onclick="onRecentsFilterChipClick(\''+esc(val==null?"all":val)+'\')">'+esc(label)+'</button>';
   }
   html.push(chip("All",null,!cur));
-  html.push(chip("📌 Pinned","pinned",cur==="pinned"));
+  var pinActive=cur==="pinned";
+  html.push('<button class="recents-filter-chip-btn'+(pinActive?" active":"")+'" data-filter="pinned" onclick="onRecentsFilterChipClick(\'pinned\')"><svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .199 2.126c-.082.592-.356 1.055-.689 1.389a.5.5 0 0 1-.707 0L7.01 10.828l-3.88 3.88a.5.5 0 1 1-.707-.707l3.88-3.88L3.586 5.536a.5.5 0 0 1 .707-.707c.334-.333.797-.607 1.389-.689a5.927 5.927 0 0 1 2.126.199l3.134-3.134a1.4 1.4 0 0 1-.039-.46c0-.43.108-1.022.588-1.503a.5.5 0 0 1 .353-.146z"/></svg> Pinned</button>');
   if(tags.length){
     html.push('<span class="recents-filter-chips-sep"></span>');
     tags.forEach(function(t){
@@ -4020,6 +4124,7 @@ function onRecentsFilterChipClick(val){
   else if(cur===val){setRecentsFilter(null)}  /* toggle off */
   else{setRecentsFilter(val)}
 }
+/* =============================================================
    In production, this would call an LLM API.
    ============================================================ */
 /* Detect user language from input text */
@@ -4439,7 +4544,7 @@ async function askChatTurn(userText){
     }catch(_){}
   }
   var sysCtx=getSystemContext();
-  var msgs=[{role:"system",content:sysCtx+"\n\n"+CHAT_SYSTEM_PROMPT+beagleSuffix()+thinkingSuffix()}];
+  var msgs=[{role:"system",content:sysCtx+"\n\n"+CHAT_SYSTEM_PROMPT+beagleSuffix()+thinkingSuffix()+memoriesSuffix()}];
   msgs=msgs.concat(history);
   if(pageBlocks.length){
     /* Append a single user turn carrying both the original text and the
@@ -4559,7 +4664,7 @@ async function askChatTurn(userText){
      results as a follow-up user/system message. */
   var ctl4=addStreamingMessage({onRetry:function(){askChatTurn(userText)}});
   var round2Msgs=[
-    {role:"system",content:getSystemContext()+"\n\n"+CHAT_SYSTEM_PROMPT+"\n\n"+sourcesBlock+beagleSuffix()+thinkingSuffix()}
+    {role:"system",content:getSystemContext()+"\n\n"+CHAT_SYSTEM_PROMPT+"\n\n"+sourcesBlock+beagleSuffix()+thinkingSuffix()+memoriesSuffix()}
   ].concat(history).concat([
     {role:"user",content:userMsg},
     {role:"assistant",content:r1.text},
@@ -4598,59 +4703,55 @@ async function callAPIChat(messages,maxTokens,timeoutMs){
   maxTokens=maxTokens||1024;
   if(!getActiveProvider()){state.lastCallError="no provider";return null}
   state.lastCallError=null;
-  var body=JSON.stringify({messages:messages,temperature:0.2,max_tokens:maxTokens});
-  var csrf=getCsrfToken()||"";
   var ac=new AbortController();
   /* Caller-supplied timeout caps this round's wait. Default 15s —
      long enough for the model to declare "I'll search" or "no I
      won't", short enough that the user doesn't wait minutes for a
      tool-detection phase. */
   var tmo=setTimeout(function(){try{ac.abort("timeout")}catch(_){}},timeoutMs||15000);
+  var r;
   try{
-    var r=await fetch("/api/chat/stream",{
+    /* P0.3 — use apiFetchRaw so CSRF/credentials/401→handleAuthExpired
+     * are handled centrally. Throws on non-2xx. Pass body as an object so
+     * apiFetchRaw stringifies it and sets Content-Type: application/json.
+     * Pre-stringified bodies cause express.json() to skip parsing. */
+    r=await apiFetchRaw("/api/chat/stream",{
       method:"POST",
-      headers:{"Content-Type":"application/json","X-CSRF-Token":csrf},
-      credentials:"include",
-      body:body,
+      body:{messages:messages,temperature:0.2,max_tokens:maxTokens},
       signal:ac.signal
     });
-    clearTimeout(tmo);
-    if(!r.ok){
-      var bodyText="";try{bodyText=await r.text()}catch(_){}
-      state.lastCallError=r.status+" "+(bodyText||r.statusText||"error").slice(0,200);
-      return null;
-    }
-    if(!r.body||!r.body.getReader){state.lastCallError="no stream body";return null}
-    var reader=r.body.getReader();
-    var decoder=new TextDecoder("utf-8");
-    var buf="";var full="";
-    while(true){
-      var step=await reader.read();
-      if(step.done)break;
-      buf+=decoder.decode(step.value,{stream:true});
-      var idx;
-      while((idx=buf.indexOf("\n\n"))>=0){
-        var frame=buf.slice(0,idx);buf=buf.slice(idx+2);
-        var lines=frame.split("\n");
-        for(var li=0;li<lines.length;li++){
-          var line=lines[li];
-          if(line.indexOf("data:")!==0)continue;
-          var payload=line.slice(5).trim();
-          if(!payload||payload==="[DONE]")continue;
-          try{
-            var obj=JSON.parse(payload);
-            var d=obj.choices&&obj.choices[0]&&obj.choices[0].delta&&obj.choices[0].delta.content;
-            if(typeof d==="string")full+=d;
-          }catch(_){}
-        }
-      }
-    }
-    return{text:full,html:null,widgets:[],cancelled:false};
   }catch(e){
     clearTimeout(tmo);
-    state.lastCallError=(e&&e.message)||String(e);
+    state.lastCallError=(e&&e.status?e.status+" ":"")+(e&&e.message||e);
     return null;
   }
+  clearTimeout(tmo);
+  if(!r.body||!r.body.getReader){state.lastCallError="no stream body";return null}
+  var reader=r.body.getReader();
+  var decoder=new TextDecoder("utf-8");
+  var buf="";var full="";
+  while(true){
+    var step=await reader.read();
+    if(step.done)break;
+    buf+=decoder.decode(step.value,{stream:true});
+    var idx;
+    while((idx=buf.indexOf("\n\n"))>=0){
+      var frame=buf.slice(0,idx);buf=buf.slice(idx+2);
+      var lines=frame.split("\n");
+      for(var li=0;li<lines.length;li++){
+        var line=lines[li];
+        if(line.indexOf("data:")!==0)continue;
+        var payload=line.slice(5).trim();
+        if(!payload||payload==="[DONE]")continue;
+        try{
+          var obj=JSON.parse(payload);
+          var d=obj.choices&&obj.choices[0]&&obj.choices[0].delta&&obj.choices[0].delta.content;
+          if(typeof d==="string")full+=d;
+        }catch(_){}
+      }
+    }
+  }
+  return{text:full,html:null,widgets:[],cancelled:false};
 }
 
 /* Detect a tool envelope in the model's response. Returns:
@@ -4879,12 +4980,12 @@ function handleChatKey(e){
    the server shape; when the backend lands /api/prompts
    the local array becomes the offline cache. */
 var BUILTIN_TEMPLATES=[
-  {id:"tpl-summarize",title:"Summarize",description:"Condense the pasted text into bullet points.",icon:"📝",category:"writing",shortcut:"/summarize",body:"Please summarize the following text in concise bullet points (≤ 5):\n\n",isBuiltin:true},
-  {id:"tpl-translate",title:"Translate to English",description:"Translate the input into natural English.",icon:"🌐",category:"writing",shortcut:"/translate",body:"Translate the following into natural English, preserving tone:\n\n",isBuiltin:true},
-  {id:"tpl-explain-code",title:"Explain this code",description:"Walk through the snippet line by line.",icon:"💻",category:"code",shortcut:"/explain",body:"Walk me through this code line by line, calling out anything surprising or worth refactoring:\n\n```\n\n```",isBuiltin:true},
-  {id:"tpl-debug",title:"Debug this",description:"Find the bug, propose a fix, explain why it worked.",icon:"🐞",category:"code",shortcut:"/debug",body:"This code is misbehaving. Find the bug, propose a minimal fix, and explain the root cause:\n\n```\n\n```\n\nExpected behavior:\nActual behavior:\n",isBuiltin:true},
-  {id:"tpl-quiz",title:"Quiz me",description:"Generate 5 questions on a topic.",icon:"🧠",category:"learning",shortcut:"/quiz",body:"Quiz me with 5 questions on the following topic. Mix difficulty levels and tell me the answer only after I've answered:\n\nTopic: ",isBuiltin:true},
-  {id:"tpl-socratic",title:"Socratic me",description:"Don't tell me the answer — ask me leading questions.",icon:"🌀",category:"learning",shortcut:"/socratic",body:"Help me work through this with questions, not answers. Don't reveal the solution until I've reasoned it out:\n\nProblem: ",isBuiltin:true}
+  {id:"tpl-summarize",title:"Summarize",description:"Condense the pasted text into bullet points.",icon:"no",category:"writing",shortcut:"/summarize",body:"Please summarize the following text in concise bullet points (≤ 5):\n\n",isBuiltin:true},
+  {id:"tpl-translate",title:"Translate to English",description:"Translate the input into natural English.",icon:'<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.74 3.74 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.06 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75Zm7.251 10.324.004-5.073H4.75a.75.75 0 0 1 0-1.5h2.5l.005-4.243H4.75a.75.75 0 0 1 0-1.5h2.5V.75a.75.75 0 0 1 1.5 0v1.008h2.5a.75.75 0 0 1 0 1.5h-2.5l-.004 4.243H11.5a.75.75 0 0 1 0 1.5H9.255l-.004 5.072Z"/></svg>',category:"writing",shortcut:"/translate",body:"Translate the following into natural English, preserving tone:\n\n",isBuiltin:true},
+  {id:"tpl-explain-code",title:"Explain this code",description:"Walk through the snippet line by line.",icon:'<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M5.854 4.854a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708l3.5 3.5a.5.5 0 0 1 0 .708"/><path d="M2.5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-1a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1V3a1 1 0 0 0-1-1z"/></svg>',category:"code",shortcut:"/explain",body:"Walk me through this code line by line, calling out anything surprising or worth refactoring:\n\n```\n\n```",isBuiltin:true},
+  {id:"tpl-debug",title:"Debug this",description:"Find the bug, propose a fix, explain why it worked.",icon:'<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M4.978.855a.5.5 0 1 0-.956.29l.41 1.367A4.98 4.98 0 0 0 3 6h10a4.98 4.98 0 0 0-1.432-3.488l.41-1.367a.5.5 0 1 0-.956-.29l-.291.972A5 5 0 0 0 8 1a5 5 0 0 0-2.731.827l-.291-.972z"/><path d="M13 6.5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-.021A2.5 2.5 0 0 1 11 11h-.5a.5.5 0 0 1-.5-.5V8h-4v2.5a.5.5 0 0 1-.5.5H5a2.5 2.5 0 0 1-1.979-1H3a.5.5 0 0 1-.5-.5V7a.5.5 0 0 1 .5-.5z"/></svg>',category:"code",shortcut:"/debug",body:"This code is misbehaving. Find the bug, propose a minimal fix, and explain the root cause:\n\n```\n\n```\n\nExpected behavior:\nActual behavior:\n",isBuiltin:true},
+  {id:"tpl-quiz",title:"Quiz me",description:"Generate 5 questions on a topic.",icon:'<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M5.5 13.5a.5.5 0 0 1 0 1H2a.5.5 0 0 1-.5-.5V2a.5.5 0 0 1 .5-.5h5.5a.5.5 0 0 1 0 1H3v10.5zm3-12a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v12a.5.5 0 0 1-.5.5H9a.5.5 0 0 1-.5-.5zm1.5.5v11h4v-11z"/><path d="M11 3a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 11 3m-1.5.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm1 2.5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m-1.5.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5z"/></svg>',category:"learning",shortcut:"/quiz",body:"Quiz me with 5 questions on the following topic. Mix difficulty levels and tell me the answer only after I've answered:\n\nTopic: ",isBuiltin:true},
+  {id:"tpl-socratic",title:"Socratic me",description:"Don't tell me the answer — ask me leading questions.",icon:'<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a1 1 0 0 1 .707.293l2.853 2.853a.5.5 0 0 0 .854-.353V2a1 1 0 0 0-1-1zm4 3.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m-2.5.5a.5.5 0 0 1 .5-.5h.5a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h.5a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.5-.5"/></svg>',category:"learning",shortcut:"/socratic",body:"Help me work through this with questions, not answers. Don't reveal the solution until I've reasoned it out:\n\nProblem: ",isBuiltin:true}
 ];
 var PROMPT_TEMPLATES_KEY="socrates-prompt-templates";
 function loadPromptTemplates(){
@@ -4965,7 +5066,7 @@ function renderSlashCommandPalette(){
     _slashList.forEach(function(t,i){
       html.push(
         '<div class="slash-command-row '+(i===_slashSelected?"selected":"")+'" onclick="onSlashRowClick('+i+')" onmouseenter="_slashSelected='+i+';updateSlashSelected()">'+
-          '<span class="slash-command-icon">'+esc(t.icon||"📄")+'</span>'+
+          '<span class="slash-command-icon">'+(t.icon&&t.icon.indexOf("<svg")===0?t.icon:esc(t.icon||"pg"))+'</span>'+
           '<div class="slash-command-main">'+
             '<div class="slash-command-title">'+esc(t.title)+' <span class="slash-command-shortcut">'+esc(t.shortcut)+'</span></div>'+
             '<div class="slash-command-desc">'+esc(t.description||"")+'</div>'+
@@ -5297,10 +5398,12 @@ function editUserMessage(messageId,bar){
   if(!div){return}
   var body=div.querySelector(".msg-body");
   if(!body){return}
-  /* Swap the rendered body for a textarea, preserving width. */
+  /* Swap the rendered body for a textarea, preserving width.
+     Show plain text only — strip markdown formatting symbols so
+     the user edits clean content without **bold**, *italic*, etc. */
   var ta=document.createElement("textarea");
   ta.className="msg-edit-area";
-  ta.value=entry.rawText||"";
+  ta.value=stripMarkdown(entry.rawText||"");
   body.innerHTML="";
   body.appendChild(ta);
   ta.focus();
@@ -5675,9 +5778,11 @@ function appendThinking(text){
     buffer=pill.dataset.thinkingBuffer||pill.textContent||"";
   }else{
     pill=document.createElement("div");
-    pill.className="agent-thinking expanded";
-    /* We render collapsed-by-default but the CSS uses .expanded for
-       streaming. Click-to-collapse logic: toggling .expanded on click. */
+    /* Collapsed by default — small preview with ellipsis, click to
+       expand and read the full reasoning. The .expanded class is
+       only added by the click handler once the buffer is long
+       enough that the preview is genuinely a preview. */
+    pill.className="agent-thinking";
     pill.addEventListener("click",function(){
       if(!buffer||buffer.length<200)return;  /* tiny thoughts: don't bother */
       pill.classList.toggle("expanded");
@@ -5689,6 +5794,15 @@ function appendThinking(text){
   function doRender(){
     pending=null;
     if(!pill.isConnected)return;
+    /* Empty buffer — show a pulsing "Thinking…" placeholder so the
+       pill doesn't look like an empty box. The actual content
+       replaces this on the next render. */
+    if(!buffer){
+      pill.innerHTML='<span class="thinking-pulse"></span> Thinking…';
+      pill.dataset.thinkingBuffer=buffer;
+      scrollMainToBottom();
+      return;
+    }
     try{
       pill.innerHTML=formatMsg(buffer);
       /* Highlight any closed code blocks (the formatMsg helper doesn't
@@ -5987,11 +6101,19 @@ function _agentSend(){
    When agent mode is active, intercept. */
 var _origSubmitChatMessage=window.submitChatMessage;
 window.submitChatMessage=function(textOverride,opts){
-  /* Chat mode + send button morphed into Stop → abort the stream. */
-  if(!_agentModeActive&&_chatStopMode&&_chatStreaming){
-    stopChatRun();
-    return;
-  }
+  /* Read the live input value so we can distinguish "user wants to
+   * stop the current stream" (input is empty) from "user wants to
+   * send a new message while a stream is still in flight" (input
+   * has text). The previous logic treated every click during a
+   * stream as a stop request, which meant a typed-but-not-yet-sent
+   * message would never reach the model — the wrapper just aborted
+   * the greeting stream and returned without forwarding the new
+   * text. P0.0 — fix this so the user can interrupt and send. */
+  var liveInput=(textOverride==null)
+    ?document.getElementById("chatInputArea")
+    :null;
+  var liveValue=liveInput?liveInput.value.trim():"";
+  var hasPendingText=!!liveValue;
   /* Agent mode + send button morphed into Stop → abort the run. */
   if(_agentModeActive&&_agentStopMode){
     stopAgentRun();
@@ -6000,6 +6122,22 @@ window.submitChatMessage=function(textOverride,opts){
   if(_agentModeActive&&!_agentAbortCtl){
     submitAgentTask(textOverride);
     return;
+  }
+  /* Chat mode + stream in flight + no pending text → stop. */
+  if(!_agentModeActive&&_chatStopMode&&_chatStreaming&&!hasPendingText){
+    stopChatRun();
+    return;
+  }
+  /* Chat mode + stream in flight + typed text → cancel the stream
+   * and forward the new text. askChatTurn / submitChatMessage will
+   * see the active controller on the next turn and replace it via
+   * the existing _activeChatAbort handle. We do this synchronously
+   * here so the user never sees a "frozen" UI for the 200ms between
+   * the click and the abort callback. */
+  if(!_agentModeActive&&_chatStreaming&&hasPendingText){
+    try{
+      if(window._activeChatAbort){window._activeChatAbort("superseded-by-new-message")}
+    }catch(_){}
   }
   if(_origSubmitChatMessage){_origSubmitChatMessage(textOverride,opts)}
 };
@@ -6060,11 +6198,9 @@ async function submitAgentTask(textOverride){
     if(offlineGuard()){
       throw new Error("offline: you appear to be offline");
     }
-    var resp=await fetch("/api/agent/run",{
+    var resp=await apiFetchRaw("/api/agent/run",{
       method:"POST",
-      headers:{"Content-Type":"application/json","X-CSRF-Token":getCsrfToken()||""},
-      credentials:"include",
-      body:JSON.stringify({task:task,maxSteps:25}),
+      body:{task:task,maxSteps:25},
       signal:ac.signal
     });
     watchdog.touch();
@@ -6342,26 +6478,231 @@ function addStreamingMessage(opts){
     }
   }
 
+  /* P0.7 — streaming state for inline <think>…</think> blocks.
+     Reasoning models stream the chain-of-thought in-band with the
+     final answer. We want to route the in-think content into a
+     collapsible <details> as soon as <think> arrives (even before
+     it closes), and keep routing content into the right section
+     until </think> is seen. The block is collapsed by default;
+     the summary pulses "Thinking…" while the model is still
+     reasoning, and switches to a static "Thinking" label once
+     the think is closed. The final answer after </think> is
+     rendered as a regular text node. The cursor is always at the
+     end of the body so the user sees it after the active section. */
+  var thinkState={
+    /* -1 until a <think> has been seen in `full`. */
+    startIdx:-1,
+    /* index just past the closing </think>, or -1 if still open. */
+    endIdx:-1,
+    /* DOM nodes for the three sections; null until laid out. */
+    beforeNode:null,
+    details:null,
+    summary:null,
+    thinkDiv:null,
+    afterNode:null,
+    cursorNode:null,
+    /* Cached last think content so we can skip the formatMsg
+       pass (which is expensive — marked + KaTeX) when nothing
+       has changed. */
+    lastRenderedThink:null,
+    /* P1.4 — same idea for the pre-think and post-think slices.
+       The renderer (formatMsgProgressive) is cheap but the
+       string-compare lets us skip the innerHTML write entirely
+       on frames where the slice didn't grow — which is most
+       frames after <think> closes, since only the think content
+       keeps streaming. */
+    lastRenderedBefore:null,
+    lastRenderedAfter:null
+  };
+
+  function ensureThinkStructure(){
+    if(thinkState.beforeNode)return;
+    body.innerHTML="";
+    /* P1.4 — pre-think text is a block-level container that holds
+       rendered markdown HTML, NOT a text node. The previous design
+       used document.createTextNode and wrote the raw slice via
+       nodeValue, which made "# Title" / "- item" / code fences
+       appear as raw symbols mid-stream, and HTML's whitespace
+       handling collapsed every "\n" to a single space — so the
+       user saw one run-on blob of unparsed markdown. */
+    thinkState.beforeNode=document.createElement("div");
+    thinkState.beforeNode.className="think-prefix";
+    body.appendChild(thinkState.beforeNode);
+
+    var det=document.createElement("details");
+    det.className="think-block";
+    /* P0.7 — start collapsed. The user clicks the summary to
+       expand. The stream-cursor is NOT inside the details so the
+       pulsing "Thinking…" indicator stays visible even while the
+       reasoning is hidden. */
+    var sum=document.createElement("summary");
+    sum.className="think-summary";
+    sum.innerHTML='<span class="thinking-pulse"></span> Thinking…';
+    det.appendChild(sum);
+
+    var td=document.createElement("div");
+    td.className="think-content";
+    det.appendChild(td);
+    body.appendChild(det);
+
+    /* P1.4 — post-think text gets the same block-level container
+       treatment; empty until </think> arrives, then populated by
+       doRender via formatMsgProgressive. */
+    thinkState.afterNode=document.createElement("div");
+    thinkState.afterNode.className="think-suffix";
+    body.appendChild(thinkState.afterNode);
+
+    var cur=document.createElement("span");
+    cur.className="stream-cursor";
+    cur.textContent="▍";
+    body.appendChild(cur);
+
+    thinkState.details=det;
+    thinkState.summary=sum;
+    thinkState.thinkDiv=td;
+    thinkState.cursorNode=cur;
+    /* The old single-text-node + cursor are no longer in use. */
+    streamContent=null;
+    cursor=null;
+  }
+
+function teardownThinkStructure(){
+    /* Roll back to the simple [text][cursor] layout. Called when
+       the user / 答案 boundary was a false alarm (e.g. the
+       model wrote the literal text 答案 somewhere) and the
+       marker actually never closes — in that case we collapse
+       the think block and stream the raw text as a normal
+       answer. Currently we do not roll back automatically;
+       finish() always re-runs formatMsg which is the source of
+       truth. */
+    body.innerHTML="";
+    streamContent=document.createElement("div");
+    streamContent.className="stream-content";
+    streamContent.innerHTML=formatMsgProgressive(full);
+    body.appendChild(streamContent);
+    cursor=document.createElement("span");
+    cursor.className="stream-cursor";
+    cursor.textContent="▍";
+    body.appendChild(cursor);
+    thinkState.beforeNode=null;
+    thinkState.details=null;
+    thinkState.summary=null;
+    thinkState.thinkDiv=null;
+    thinkState.afterNode=null;
+    thinkState.cursorNode=null;
+    thinkState.startIdx=-1;
+    thinkState.endIdx=-1;
+    thinkState.lastRenderedThink=null;
+    thinkState.lastRenderedBefore=null;
+    thinkState.lastRenderedAfter=null;
+  }
+
   function doRender(){
     pendingRender=null;
     if(finished)return;
-    /* P1.2 — incremental render. We keep a single text node
-       `.stream-content` inside the body and update its textContent
-       only — no `body.innerHTML = formatMsg(full)` per delta.
-       `formatMsg` runs marked + KaTeX + highlight.js; on a 4 000
-       token reply the old approach was O(n²) and caused visible
-       stutter. We also keep the cursor as a separate fixed sibling
-       so updating the text node never recreates the cursor element. */
-    if(!streamContent){
-      streamContent=document.createTextNode("");
-      body.innerHTML="";
-      body.appendChild(streamContent);
-      cursor=document.createElement("span");
-      cursor.className="stream-cursor";
-      cursor.textContent="▍";
-      body.appendChild(cursor);
+
+    /* P0 — chat-template artifact strip. The upstream LLM (Beagle,
+     * DeepSeek, MiniMax M2, etc.) can leak <|im_start|>...<|im_end|>,
+     * [INST]...[/INST], <s>, <|endoftext|>, etc. into the streamed
+     * tokens. The final formatMsg pass strips them, but mid-stream
+     * the user would see them as raw text in the live bubble. Strip
+     * once per render so all downstream slicing (think-block
+     * detection, beforeText/thinkContent/afterText, the no-think
+     * text node) operates on the cleaned version. The raw `full`
+     * is still kept in state.messages[msgIdx].rawText for save /
+     * history so a later formatMsg can re-process it. */
+    var displayFull=stripChatArtifacts(full);
+
+    /* Locate <think> / </think> in the accumulated stream. The
+       startIdx is only set the first time we see <think> so the
+       text-before-think doesn't get re-laid out on every delta
+       (which would wipe the user's cursor position). */
+    if(thinkState.startIdx===-1){
+      var s=displayFull.indexOf("<think>");
+      if(s!==-1)thinkState.startIdx=s;
     }
-    streamContent.nodeValue=full;
+    if(thinkState.startIdx!==-1&&thinkState.endIdx===-1){
+      var e=displayFull.indexOf("</think>",thinkState.startIdx);
+      if(e!==-1)thinkState.endIdx=e+"</think>".length;
+    }
+
+    if(thinkState.startIdx===-1){
+      /* P1.2 — progressive markdown render. We use a lightweight
+         markdown renderer (formatMsgProgressive) that handles basic
+         formatting (bold, italic, code, headers, lists, paragraphs)
+         without heavy KaTeX/highlight.js. This gives users formatted
+         output during streaming, while the final render uses full
+         formatMsg for complete fidelity. We keep the cursor as a
+         separate fixed sibling so updating innerHTML never recreates
+         the cursor element. */
+      if(!streamContent){
+        streamContent=document.createElement("div");
+        streamContent.className="stream-content";
+        body.innerHTML="";
+        body.appendChild(streamContent);
+        cursor=document.createElement("span");
+        cursor.className="stream-cursor";
+        cursor.textContent="▍";
+        body.appendChild(cursor);
+      }
+      streamContent.innerHTML=formatMsgProgressive(displayFull);
+    }else{
+      /* Think block is in play. Lay out the three-section
+         structure once, then update the text nodes and the
+         think content incrementally. */
+      ensureThinkStructure();
+      var beforeText=displayFull.slice(0,thinkState.startIdx);
+      var thinkClosed=thinkState.endIdx!==-1;
+      var thinkContent=thinkClosed
+        ?displayFull.slice(thinkState.startIdx+"<think>".length,thinkState.endIdx-"</think>".length)
+        :displayFull.slice(thinkState.startIdx+"<think>".length);
+      var afterText=thinkClosed?displayFull.slice(thinkState.endIdx):"";
+      /* P1.4 — write the pre/post-think slices as rendered markdown
+         HTML, not raw text. Cache the last value we wrote so we
+         only call the renderer when the slice actually grew (the
+         no-think path re-renders the entire streamContent every
+         frame; here we only need to re-render the one section that
+         changed). finish() replaces the whole body with the full
+         formatMsg pass, so this is purely the mid-stream view. */
+      if(thinkState.lastRenderedBefore!==beforeText){
+        thinkState.beforeNode.innerHTML=beforeText?formatMsgProgressive(beforeText):"";
+        thinkState.lastRenderedBefore=beforeText;
+      }
+      if(thinkState.lastRenderedAfter!==afterText){
+        thinkState.afterNode.innerHTML=afterText?formatMsgProgressive(afterText):"";
+        thinkState.lastRenderedAfter=afterText;
+      }
+      /* When </think> has been seen, swap the summary to a
+         static label and drop the pulse — the model is done
+         thinking. */
+      if(thinkClosed&&thinkState.summary.innerHTML.indexOf("thinking-pulse")!==-1){
+        thinkState.summary.innerHTML="Thinking";
+      }
+      /* Re-render the think content only if it changed. The
+         recursive formatMsg call is the same code path used by
+         the final render at finish(), so the live and final
+         look match exactly. */
+      if(thinkState.lastRenderedThink!==thinkContent){
+        if(thinkContent){
+          try{
+            thinkState.thinkDiv.innerHTML=formatMsg(thinkContent.replace(/<\/?think>/g,""));
+            if(typeof hljs!=="undefined"){
+              thinkState.thinkDiv.querySelectorAll("pre code").forEach(function(c){
+                if(c.dataset&&c.dataset.hljsDone)return;
+                if(/```\s*$/.test(c.textContent||""))return;
+                try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
+              });
+            }
+          }catch(e){
+            thinkState.thinkDiv.textContent=thinkContent;
+          }
+        }else{
+          thinkState.thinkDiv.innerHTML="";
+        }
+        thinkState.lastRenderedThink=thinkContent;
+      }
+    }
+
     /* P1.1 — mirror rawText to state.messages so extractHistory
        and saveCurrentSession see the latest text. html is left
        null until finish() so the saved session never holds a
@@ -6439,14 +6780,22 @@ function addStreamingMessage(opts){
          only mutates a text node. */
       var total=full.length;
       var firstChunkDuration=Date.now()-(thinkStarted||Date.now());
-      var needsAnimation=total>0&&firstChunkDuration<200;
+      /* Skip the char-by-char animation when the response contains
+       * a <think> marker. The animation writes formatted HTML into
+       * a text node, so mid-stream the user would see literal
+       * `<details class="think-block">` tags flicker by. The final
+       * formatMsg pass renders properly, but going straight there
+       * is cleaner. */
+      var hasThinkMarker=full.indexOf("<think>")!==-1;
+      var needsAnimation=total>0&&firstChunkDuration<200&&!hasThinkMarker;
       if(needsAnimation){
         /* P1.3 — character-by-character animation driven by a
            single rAF loop with a 16ms budget per frame. Replaces
            the recursive setTimeout(typeTick, 10) which could
            build a long task queue. */
         body.innerHTML="";
-        streamContent=document.createTextNode("");
+        streamContent=document.createElement("div");
+        streamContent.className="stream-content";
         cursor=document.createElement("span");
         cursor.className="stream-cursor";
         cursor.textContent="▍";
@@ -6481,7 +6830,7 @@ function addStreamingMessage(opts){
             pos=Math.min(total,pos+step);
             /* P1.3 — incremental slice; use formatTickSlice to
                preserve markdown boundaries. */
-            streamContent.nodeValue=formatTickSlice(full,pos);
+            streamContent.innerHTML=formatTickSlice(full,pos);
             if(msgIdx>=0&&state.messages[msgIdx]){
               state.messages[msgIdx].rawText=full.slice(0,pos);
             }
@@ -6543,11 +6892,20 @@ function addStreamingMessage(opts){
           saveCurrentSession();
         }
         updateChatStats();
-        _chatStreaming=false;
-        if(!_agentModeActive){try{setChatStopState(false)}catch(_){}}
-        /* P1.4 — clearing the global abort handle on natural finish
-           keeps the closure (and DOM refs) eligible for GC. */
-        if(window._activeChatCtl===ret){window._activeChatCtl=null}
+        /* P0.0 — only reset the global streaming flags if THIS
+         * controller is still the active one. When the user
+         * interrupts a stream with a new message, a fresh
+         * addStreamingMessage has already flipped _chatStreaming
+         * back to true; the old controller's teardown must not
+         * clobber that, or the next "Stop" click would think no
+         * stream is running. */
+        if(window._activeChatCtl===ret){
+          _chatStreaming=false;
+          if(!_agentModeActive){try{setChatStopState(false)}catch(_){}}
+          /* P1.4 — clearing the global abort handle on natural finish
+             keeps the closure (and DOM refs) eligible for GC. */
+          window._activeChatCtl=null;
+        }
       }
     },
     abort:function(){
@@ -6559,9 +6917,14 @@ function addStreamingMessage(opts){
         cancelAnimationFrame(pendingRender);
         pendingRender=null;
       }
-      /* Restore the send button. */
-      _chatStreaming=false;
-      if(!_agentModeActive){try{setChatStopState(false)}catch(_){}}
+      /* Restore the send button — but only if no new stream has
+       * already taken over (the new wrapper cancels the OLD
+       * controller when the user sends a follow-up, and the new
+       * addStreamingMessage has already raised _chatStreaming). */
+      if(window._activeChatCtl===ret){
+        _chatStreaming=false;
+        if(!_agentModeActive){try{setChatStopState(false)}catch(_){}}
+      }
       /* Delay remove so a pending rAF render doesn't throw on detached DOM */
       requestAnimationFrame(function(){div.remove()});
     },
@@ -6606,9 +6969,13 @@ function addStreamingMessage(opts){
          body.innerHTML='<p>'+esc(errMsg||'Generation failed')+'</p>';
        }
        updateChatStats();
-       /* Restore the send button — even error paths end the stream. */
-       _chatStreaming=false;
-       if(!_agentModeActive){try{setChatStopState(false)}catch(_){}}
+       /* Restore the send button — even error paths end the stream.
+        * Guarded on the active controller so a new stream that
+        * supersedes this one is not clobbered. */
+       if(window._activeChatCtl===ret){
+         _chatStreaming=false;
+         if(!_agentModeActive){try{setChatStopState(false)}catch(_){}}
+       }
      }
   };
   /* Publish this controller on window so a subsequent turn in the same
@@ -6865,9 +7232,10 @@ function handleQuizPick(cardEl,optsEl,feedback,btns,picked,parsed){
   }
   if(correct){
     feedback.classList.add(isRight?"ok":"bad");
-    feedback.textContent=isRight
-      ?("✓ Correct ("+correct+").")
-      :("✗ Not quite. The correct answer is "+correct+".");
+    var safeCor=esc(correct);
+    feedback.innerHTML=isRight
+      ?('<svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"/></svg> Correct ('+safeCor+').')
+      :('<svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg> Not quite. The correct answer is '+safeCor+'.');
   }else{
     feedback.textContent="Recorded: "+picked.letter+".";
   }
@@ -7203,7 +7571,7 @@ function updateChatStats(){
        The full text remains in the title attribute for tooltip / devtools. */
     var reason=state.lastCallError||"no provider";
     var shortReason=reason.length>80?reason.slice(0,77)+"…":reason;
-    badge.textContent="⚠ mock ("+shortReason+")";
+    badge.innerHTML='<svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 1.5a.75.75 0 0 1 .65.375l6.25 11.25a.75.75 0 0 1-.65 1.125H1.75a.75.75 0 0 1-.65-1.125L7.35 1.875A.75.75 0 0 1 8 1.5zM8 5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 1 0v-3A.5.5 0 0 0 8 5zm0 5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z"/></svg> mock ('+esc(shortReason)+')';
     badge.className="chat-api-badge mocked";
     badge.title="Fallback reason: "+reason+". Reply came from the local mock engine. Check API settings if this is unexpected.";
   }else{
@@ -7521,7 +7889,213 @@ function renderVizError(htmlStr,errorMsg){
 }
 
 function formatTickSlice(full,len){
-  return formatMsg(full.slice(0,len));
+  return formatMsgProgressive(full.slice(0,len));
+}
+
+/* Strip chat-template artifacts that some reasoning / instruct-tuned
+ * models leak into the stream. Shared between the streaming doRender
+ * path and the final formatMsg pass so the user never sees
+ * <|im_start|>...<|im_end|>, <|endoftext|>, [INST]...[/INST], <s>,
+ * etc. as raw text — both in the live bubble and in the final
+ * rendered output. */
+function stripChatArtifacts(t){
+  if(!t)return t;
+  /* Multi-line blocks first: <|im_start|>...<|im_end|> including any
+     system-prompt body the model also leaked. Non-greedy so the first
+     <|im_end|> closes the block. */
+  t=t.replace(/<\|im_start\|>[\s\S]*?<\|im_end\|>/g,"");
+  /* Standalone chat-template tokens (angle-pipe-word-pipe-angle). */
+  t=t.replace(/<\|[a-z_]+\|>/gi,"");
+  /* Llama 1 / SentencePiece boundary tokens. */
+  t=t.replace(/<\/?s>/g,"");
+  /* Llama 2 chat format markers. */
+  t=t.replace(/\[INST\]|\[\/INST\]|<<SYS>>|<<\/SYS>>/g,"");
+  /* Tidy whitespace the strip left behind: drop trailing spaces
+     before a newline, collapse 3+ consecutive newlines back to 2
+     so we don't get big blank paragraphs in the rendered output. */
+  t=t.replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n");
+  return t;
+}
+
+/* Progressive markdown renderer for streaming. Walks the
+   accumulated text line-by-line and emits real HTML structure
+   (headings, lists, code blocks, blockquotes, paragraphs) so the
+   user sees formatted output as the text streams in — not raw
+   markdown symbols with <br> for newlines.
+
+   The currently-being-typed line is treated the same as completed
+   lines: as soon as `# ` or `- ` appears at the start of a line,
+   the matching block element is emitted. This makes the H1/LI/etc.
+   appear the instant the model types the opener, instead of leaving
+   `# Title` visible as raw text for half a second.
+
+   Performance: O(n) per call. Called once per animation frame
+   (rAF, ~60 Hz), so even a 4000-char response renders in well
+   under 1 ms. */
+function formatMsgProgressive(t){
+  if(!t)return"";
+  var s=String(t);
+  /* Drop a single trailing newline so the last split element is
+     not an empty line. Without this every chunk ending in \n would
+     add a phantom blank paragraph. */
+  if(s.charCodeAt(s.length-1)===10){s=s.slice(0,-1)}
+  if(!s)return"";
+
+  var lines=s.split("\n");
+  var n=lines.length;
+  var out=[];
+  var st={inCode:false,codeLang:"",codeBuf:[],listType:null};
+
+  for(var i=0;i<n;i++){
+    var line=lines[i];
+
+    /* Code fence ``` ... ``` — checked first so a bare ``` line
+       is only meaningful as a fence. */
+    var fence=line.match(/^```(\w*)\s*$/);
+    if(fence){
+      if(st.inCode){flushCodeProgressive(out,st)}
+      else{
+        closeListProgressive(out,st);
+        st.inCode=true;
+        st.codeLang=fence[1]||"";
+        st.codeBuf=[];
+      }
+      continue;
+    }
+    if(st.inCode){st.codeBuf.push(line);continue}
+
+    /* ATX heading: # H1 … ###### H6. Empty heading content is
+       allowed so `# ` renders as <h1></h1> instead of falling
+       through to <p># </p> mid-stream (visible flicker). */
+    var h=line.match(/^(#{1,6})\s+(.*)$/);
+    if(h){
+      closeListProgressive(out,st);
+      var lvl=h[1].length;
+      out.push("<h"+lvl+">"+renderInlineProgressive(h[2])+"</h"+lvl+">");
+      continue;
+    }
+
+    /* Unordered list: -, *, + */
+    var ul=line.match(/^[-*+]\s+(.*)$/);
+    if(ul){
+      if(st.listType!=="ul"){
+        closeListProgressive(out,st);
+        out.push("<ul>");
+        st.listType="ul";
+      }
+      out.push("<li>"+renderInlineProgressive(ul[1])+"</li>");
+      continue;
+    }
+
+    /* Ordered list: 1. 2. … */
+    var ol=line.match(/^\d+\.\s+(.*)$/);
+    if(ol){
+      if(st.listType!=="ol"){
+        closeListProgressive(out,st);
+        out.push("<ol>");
+        st.listType="ol";
+      }
+      out.push("<li>"+renderInlineProgressive(ol[1])+"</li>");
+      continue;
+    }
+
+    /* Blockquote: > … — consecutive > lines collapse into a
+       single <blockquote> with <br> between them. */
+    if(/^>\s+/.test(line) || line===">"){
+      closeListProgressive(out,st);
+      var qLines=[];
+      while(i<n && (/^>\s+/.test(lines[i]) || lines[i]===">")){
+        qLines.push(lines[i].replace(/^>\s?/,""));
+        i++;
+      }
+      i--; /* outer for-loop increments */
+      out.push("<blockquote>"+qLines.map(renderInlineProgressive).join("<br>")+"</blockquote>");
+      continue;
+    }
+
+    /* Horizontal rule: ---, ***, ___ (3+ of the same char, optional
+       spaces). We test inline so the regex intent stays close to
+       the use site. */
+    if(/^(?:[-*_]\s*){3,}$/.test(line)){
+      closeListProgressive(out,st);
+      out.push("<hr>");
+      continue;
+    }
+
+    /* Blank line = paragraph break. Collapse runs of blanks. */
+    if(line===""){
+      closeListProgressive(out,st);
+      while(i+1<n && lines[i+1]==="")i++;
+      continue;
+    }
+
+    /* Regular paragraph: gather consecutive non-empty non-block
+       lines into a single <p>, joined with <br> for soft breaks. */
+    closeListProgressive(out,st);
+    var pLines=[line];
+    i++;
+    while(i<n && lines[i]!=="" && !isBlockStartProgressive(lines[i])){
+      pLines.push(lines[i]);
+      i++;
+    }
+    i--;
+    out.push("<p>"+pLines.map(renderInlineProgressive).join("<br>")+"</p>");
+  }
+
+  closeListProgressive(out,st);
+  if(st.inCode)flushCodeProgressive(out,st);
+  return out.join("");
+}
+
+function closeListProgressive(out,st){
+  if(st.listType){out.push("</"+st.listType+">");st.listType=null}
+}
+
+function flushCodeProgressive(out,st){
+  var code=st.codeBuf.join("\n");
+  var langAttr=st.codeLang?' class="language-'+escAttr(st.codeLang)+'"':"";
+  out.push("<pre><code"+langAttr+">"+escHTML(code)+"</code></pre>");
+  st.inCode=false;
+  st.codeLang="";
+  st.codeBuf=[];
+}
+
+function isBlockStartProgressive(line){
+  return /^(#{1,6}\s+|[-*+]\s+|\d+\.\s+|>[\s>]?|```|[-*_]{3,}\s*[-*_]*\s*$)/.test(line);
+}
+
+function escHTML(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function escAttr(s){
+  return escHTML(s).replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+/* Inline markdown for the progressive renderer. Stashes the
+   generated HTML in nonce placeholders, escapes the surrounding
+   text, then restores — so user text that happens to contain the
+   literal string "<code>" or "&lt;" is NEVER re-interpreted as a
+   real tag (a bug in the old escape-restore approach). */
+function renderInlineProgressive(s){
+  if(!s)return"";
+  /* Nonce per call so user text containing the placeholder string
+     can never collide. */
+  var nonce="z"+Math.random().toString(36).slice(2,10);
+  var stash=[];
+  function st(html){var k="\x01"+nonce+stash.length+"\x02";stash.push(html);return k}
+  /* Longer patterns first so ** (bold) wins over * (italic). */
+  s=s
+    .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g,function(_,alt,url){return st('<img src="'+escAttr(url)+'" alt="'+escAttr(alt)+'">')})
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,function(_,text,url){return st('<a href="'+escAttr(url)+'" target="_blank" rel="noopener">'+text+'</a>')})
+    .replace(/`([^`\n]+)`/g,function(_,code){return st('<code>'+escHTML(code)+'</code>')})
+    .replace(/\*\*([^*\n]+)\*\*/g,function(_,text){return st('<strong>'+text+'</strong>')})
+    .replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g,function(_,pre,text){return st(pre+'<em>'+text+'</em>')})
+    .replace(/~~([^~\n]+)~~/g,function(_,text){return st('<del>'+text+'</del>')});
+  s=escHTML(s);
+  for(var j=0;j<stash.length;j++){
+    s=s.split("\x01"+nonce+j+"\x02").join(stash[j]);
+  }
+  return s;
 }
 
 function formatMsg(t){
@@ -7535,8 +8109,15 @@ function formatMsg(t){
   }
 
   /* 0. Normalize HTML-escaped think tags — some backends escape <think> to &lt;think&gt;
-        before JSON-serializing the SSE payload. Convert them back so the regex matches. */
+       before JSON-serializing the SSE payload. Convert them back so the regex matches. */
   t=t.replace(/&lt;think&gt;/g,'<think>').replace(/&lt;\/think&gt;/g,'</think>');
+
+  /* 0a. Strip chat-template artifacts (hoisted to top-level
+        stripChatArtifacts so the streaming doRender path can reuse
+        it — otherwise the user sees leaked <|im_start|>... etc. as
+        the text streams in, and only sees them disappear at the
+        final formatMsg pass). */
+  t=stripChatArtifacts(t);
 
   /* 0b. Pre-emptive viz detection.
      As soon as the streamed text contains a ```viz or ```html fence
@@ -7547,14 +8128,38 @@ function formatMsg(t){
      sees raw HTML character-by-character as it streams. */
   t=t.replace(/^```(?:viz|html)\s*$/m,'```viz\n');
 
-  /* 1. Think blocks — always visible (open) so the user sees the reasoning.
-        The user can click the summary to collapse and jump to the answer. */
+  /* 1. Think blocks — collapsed by default; the user clicks the
+        summary to expand and read the reasoning. The content is
+        rendered through formatMsg itself (marked + KaTeX +
+        highlight.js) so markdown, inline code, lists, links,
+        and math in the reasoning are typeset properly instead
+        of being dumped as raw escaped text — and we strip any
+        stray <think>/</think> from the inner content first so
+        the recursive call can't spawn a nested think block. */
   t=t.replace(/<think>([\s\S]*?)<\/think>/g,function(_,content){
-    return save('<details class="think-block" open><summary class="think-summary">Thinking...</summary><div class="think-content">'+esc(content.trim())+'</div></details>');
+    var inner;
+    try{
+      inner=formatMsg(content.trim().replace(/<\/?think>/g,""));
+    }catch(_){
+      inner=esc(content.trim());
+    }
+    return save('<details class="think-block"><summary class="think-summary">Thinking</summary><div class="think-content">'+inner+'</div></details>');
   });
-  /* 1b. Unclosed <think> during streaming — same expanded rendering. */
+  /* 1b. Unclosed <think> — same collapsed rendering with a
+        pulsing "Thinking…" placeholder. The streaming state
+        machine in addStreamingMessage owns the live state; this
+        rule only fires on full formatMsg passes (e.g. the
+        typeTick animation at finish, or a backend that forgets
+        to close the tag). */
   t=t.replace(/<think>([\s\S]*)$/g,function(_,content){
-    return save('<details class="think-block" open><summary class="think-summary">Thinking...</summary><div class="think-content">'+esc(content.trim())+'</div></details>');
+    var inner="";
+    try{
+      var c=content.trim().replace(/<\/?think>/g,"");
+      inner=c?formatMsg(c):'<span class="thinking-pulse"></span> Thinking…';
+    }catch(_){
+      inner=esc(content.trim());
+    }
+    return save('<details class="think-block"><summary class="think-summary"><span class="thinking-pulse"></span> Thinking…</summary><div class="think-content">'+inner+'</div></details>');
   });
 
   /* 1c. Viz blocks — AI-generated HTML in a sandboxed iframe.
@@ -7713,6 +8318,74 @@ function getCsrfToken(){
 }
 
 /**
+ * P0.3 — like apiFetch, but returns the raw Response so streaming
+ * callers (SSE, chunked) can consume the body themselves. Adds the
+ * same CSRF header, credentials, 401 → handleAuthExpired, and
+ * 403 → refresh+yield+replay-once behaviour.
+ *
+ * Use this for /api/chat/stream, /api/agent/run, /api/search,
+ * /api/fetch-batch. For ordinary JSON endpoints, use apiFetch.
+ */
+async function apiFetchRaw(path, opts) {
+  opts = opts || {};
+  opts.credentials = "include";
+  if (!opts.headers) opts.headers = {};
+  if (opts.body && typeof opts.body !== "string") {
+    opts.body = JSON.stringify(opts.body);
+    opts.headers["Content-Type"] = "application/json";
+  }
+  var method = (opts.method || "GET").toUpperCase();
+  if (method !== "GET" && method !== "HEAD") {
+    var t = getCsrfToken();
+    if (t) opts.headers["X-CSRF-Token"] = t;
+  }
+  var controller = new AbortController();
+  var tmo = setTimeout(function () { try { controller.abort() } catch (_) {} }, 30000);
+  if (opts.signal) {
+    if (opts.signal.aborted) { try { controller.abort() } catch (_) {} }
+    else opts.signal.addEventListener("abort", function () { try { controller.abort() } catch (_) {} });
+  }
+  var r;
+  try {
+    r = await fetch(path, Object.assign({}, opts, { signal: controller.signal }));
+  } catch (e) {
+    clearTimeout(tmo);
+    throw makeApiError(0, "网络异常，请检查连接后重试", null, "NETWORK", 0);
+  }
+  clearTimeout(tmo);
+  if (!r.ok) {
+    if (r.status === 401 && !opts._authEndpoint && !isInAuthGraceWindow()) {
+      try { handleAuthExpired("apiFetchRaw:"+method+" "+path) } catch (_) {}
+    } else if (r.status === 403 && !opts._csrfRetried && method !== "GET" && method !== "HEAD") {
+      try { await fetch("/api/auth/csrf-token", { credentials: "include" }) } catch (_) {}
+      await new Promise(function (res) { setTimeout(res, 0) });
+      return apiFetchRaw(path, Object.assign({}, opts, { _csrfRetried: true }));
+    }
+    var txt = "";
+    try { txt = await r.text() } catch (_) {}
+    var msg = (txt || r.statusText || ("HTTP " + r.status)).slice(0, 200);
+    throw makeApiError(r.status, msg, null, null, 0);
+  }
+  return r;
+}
+
+/* Post-auth grace window. Right after a successful register or
+ * login the browser hasn't always written the new `sid` cookie to
+ * its cookie jar by the time the next fetch() runs, so a 401 on
+ * a background call (e.g. refreshServerSessions) doesn't actually
+ * mean the session is gone — it's a race. We give the browser ~3
+ * seconds to settle, during which 401s from non-auth endpoints are
+ * NOT treated as session expiry. */
+var _lastAuthSuccessAt=0;
+var AUTH_GRACE_MS=3000;
+function markAuthSuccess(){
+  _lastAuthSuccessAt=Date.now();
+}
+function isInAuthGraceWindow(){
+  return (Date.now()-_lastAuthSuccessAt) < AUTH_GRACE_MS;
+}
+
+/**
  * P0.4 — single point of contact with the server.
  *
  *  - Always includes credentials so the sid cookie travels.
@@ -7785,18 +8458,30 @@ async function apiFetch(path,opts){
      *          in again" toast). This avoids the previous behaviour
      *          where a 401 from any background call silently kept
      *          the user "logged in" until they refreshed.
+     *          EXCEPTION: within the post-auth grace window (3s after
+     *          register/login), the Set-Cookie from the auth response
+     *          may not have propagated to the next request yet, so a
+     *          401 on a background call here is almost certainly a
+     *          race, not a real expiry. Ignore it and let the caller's
+     *          catch site handle it normally.
      *   403  → almost always a missing/expired CSRF token on a
      *          state-changing request. If we haven't already tried
      *          `warmCsrf`, fetch a fresh token and replay the
      *          request once. The replay path sets `_csrfRetried`
      *          so we don't loop.
      *   Other 4xx / 5xx → re-throw unchanged. */
-    if(r.status===401){
-      handleAuthExpired();
-    }else if(r.status===403&&!opts._csrfRetried&&method!=="GET"&&method!=="HEAD"){
+     if(r.status===401&&!opts._authEndpoint&&!isInAuthGraceWindow()){
+        try{handleAuthExpired("apiFetch:"+method+" "+path)}catch(_){}
+     }else if(r.status===403&&!opts._csrfRetried&&method!=="GET"&&method!=="HEAD"){
       try{
         await fetch("/api/auth/csrf-token",{credentials:"include",signal:controller.signal});
       }catch(_){}
+      /* Set-Cookie from the refresh is committed to the outgoing cookie
+       * jar on a future tick. Yield once so the replay sends the new
+       * cookie value (both as the X-CSRF-Token header and in the
+       * Cookie: header). Without this, the replay 403s again on the
+       * same race and _csrfRetried blocks the loop. */
+      await new Promise(function(res){setTimeout(res,0)});
       var replayOpts=Object.assign({},opts,{_csrfRetried:true});
       return apiFetch(path,replayOpts);
     }
@@ -7812,9 +8497,17 @@ async function apiFetch(path,opts){
    the sid cookie from the client side — the server is the source of
    truth for session lifetime, and the next successful login will
    set a new one. */
-function handleAuthExpired(){
+function handleAuthExpired(cause){
+  console.warn("[auth] handleAuthExpired called, cause="+(cause||"apiFetch-401"),"at",new Error().stack?.split("\n")[2]?.trim());
   try{
     CURRENT_USER=null;
+    /* Abort any active SSE chat stream so in-flight requests don't
+       complete after the user has been sent to the auth gate and
+       trigger further state mutations. */
+    try{
+      if(window._activeChatCtl){_activeChatCtl.abort();window._activeChatCtl=null}
+      if(window._activeChatAbort){_activeChatAbort("session-expired");window._activeChatAbort=null}
+    }catch(_){}
     if(window._onAuthExpiredListeners){
       window._onAuthExpiredListeners.forEach(function(fn){
         try{fn()}catch(e){console.warn("[auth] listener threw:",e)}
@@ -7874,8 +8567,19 @@ async function retryApiFetch(path,opts,retryOpts){
   }
 }
 
-function hideGate(){var g=document.getElementById("authGate");if(g)g.classList.add("hidden");var s=document.getElementById("appShell");if(s)s.classList.remove("hidden")}
-function showGate(){var g=document.getElementById("authGate");if(g)g.classList.remove("hidden");var s=document.getElementById("appShell");if(s)s.classList.add("hidden")}
+function hideGate(){
+  var g=document.getElementById("authGate");if(g)g.classList.add("hidden");
+  var s=document.getElementById("appShell");if(s)s.classList.remove("hidden");
+  /* P0.6 — also flip the pre-boot data attribute so the CSS rules
+     in <head> take over. From this point on, showGate()/hideGate()
+     are the single source of truth for which view is on top. */
+  try{document.documentElement.dataset.bootState="app"}catch(_){}
+}
+function showGate(){
+  var g=document.getElementById("authGate");if(g)g.classList.remove("hidden");
+  var s=document.getElementById("appShell");if(s)s.classList.add("hidden");
+  try{document.documentElement.dataset.bootState="auth"}catch(_){}
+}
 
 function showAuthView(id){
   ["authSigninView","authRegisterView","authVerifySentView","authVerifyFailedView","authVerifiedView","authForgotPasswordView","authForgotSentView","authResetPasswordView","authResetSuccessView","authCodeLoginView"].forEach(function(v){
@@ -7915,14 +8619,21 @@ async function refreshCaptcha(prefix){
     if(qEl)qEl.textContent=r.question;
     if(aEl){aEl.value="";aEl.focus()}
   }catch(e){
-    /* CAPTCHA server unavailable — allow through. */
+    console.warn("[captcha] refresh failed:", e.status, e.code, e.message);
     if(qEl)qEl.textContent="—";
-    delete captchaStore[prefix];
+    // Don't silently mark the captcha as "offline" — that allowed
+    // attackers to bypass the check by simply disabling the network
+    // for /api/captcha/generate. Surface a visible error to the user
+    // and leave `token` empty so submitAuth* refuses to submit.
+    captchaStore[prefix]={token:null, error: e.message||'captcha unavailable'};
   }
 }
 function readCaptcha(prefix){
   var entry=captchaStore[prefix];
-  if(!entry||!entry.token)return null;
+  if(!entry)return null;
+  // No more "skip" envelope. If the captcha failed to load,
+  // `token` is null and the caller must reject the submission.
+  if(!entry.token)return null;
   var aEl=document.getElementById(prefix+"A");
   if(!aEl||!aEl.value.trim())return null;
   return{token:entry.token,answer:aEl.value.trim()};
@@ -7945,13 +8656,34 @@ async function submitAuthSignin(){
   if(!captcha)return setAuthError("authSigninError","Please solve the security check.");
   var btn=document.getElementById("authSigninBtn");btn.disabled=true;btn.textContent="Signing in…";
   try{
-    var r=await apiFetch("/api/auth/login",{method:"POST",body:{email,password,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
-    CURRENT_USER=r.user;
+    var r=await apiFetch("/api/auth/login",{method:"POST",_authEndpoint:true,body:{email,password,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
     if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){}
-    /* Yielding the event loop gives the browser a chance to write the
-       Set-Cookie from the login response before follow-up requests
-       (refreshServerSessions etc.) need it. */
-    await new Promise(function(r){setTimeout(r,50)});
+    // Build 2026-06-09b: /login now returns the full user shape (incl.
+    // verifiedAt). Log it so a hard-refresh test can confirm the new
+    // payload is reaching the browser.
+    console.log("[boot/build 2026-06-09b] login.user =", JSON.stringify(r.user).substring(0, 300));
+    /* Start the post-auth grace window + adopt the canonical user
+       object from /me. This avoids the "Guest / Not signed in"
+       flash that happens when background calls hit the server
+       before the Set-Cookie has fully propagated. */
+    markAuthSuccess();
+    try{
+      var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
+      CURRENT_USER=(me&&me.user)?me.user:r.user;
+      console.log("[boot/build 2026-06-09b] /me.user =", JSON.stringify(me.user).substring(0, 300));
+    }catch(_){
+      // /me is the source of truth for the user object (tier,
+      // preferences, etc.). If it fails after a successful login,
+      // something is wrong with the new session — fall back to
+      // the login response but DON'T proceed into the app until
+      // we've at least confirmed the session is alive on a retry.
+      CURRENT_USER=r.user;
+      try{
+        await new Promise(function(r2){setTimeout(r2,150)});
+        var me2=await apiFetch("/api/auth/me",{_authEndpoint:true});
+        if(me2&&me2.user)CURRENT_USER=me2.user;
+      }catch(__){ /* still nothing — proceed with what we have */ }
+    }
     await afterAuthEnter();
     hideGate();
   }catch(e){
@@ -7980,8 +8712,14 @@ async function submitAuthRegister(){
   if(!captcha)return setAuthError("authRegisterError","Please solve the security check.");
   var btn=document.getElementById("authRegisterBtn");btn.disabled=true;btn.textContent="Sending…";
   try{
-    await apiFetch("/api/auth/register",{method:"POST",body:{email,password,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
+    /* The server stores the registration as pending and sends a
+       verification email. No account or session is created until
+       the user clicks the link in the email. */
+    var r=await apiFetch("/api/auth/register",{method:"POST",_authEndpoint:true,body:{email,password,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
+    /* Always show the "verification sent" view — no auto-login. */
     document.getElementById("authVerifyEmail").textContent=email;
+    var resendEl=document.getElementById("authResendEmail");
+    if(resendEl)resendEl.value=email;
     showAuthView("authVerifySentView");
     document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
   }catch(e){
@@ -8000,7 +8738,11 @@ async function resendVerification(){
   var captcha=readCaptcha("authResendCaptcha");
   if(!captcha)return setAuthError("authVerifyFailedError","Please solve the security check.");
   try{
-    await apiFetch("/api/auth/register",{method:"POST",body:{email,password:"resend-temp-pass-1234",captchaToken:captcha.token,captchaAnswer:captcha.answer}});
+    /* Dedicated resend endpoint — never send a hard-coded password
+       to /register (it would let anyone who knows the email log in
+       with that password if the account is later activated). */
+    var body={email, captchaToken:captcha.token, captchaAnswer:captcha.answer};
+    await apiFetch("/api/auth/resend-verification",{method:"POST",body:body});
     document.getElementById("authVerifyEmail").textContent=email;
     showAuthView("authVerifySentView");
   }catch(e){
@@ -8015,30 +8757,37 @@ async function submitAuthVerify(token){
   document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
   try{
     var r=await apiFetch("/api/auth/verify?token="+encodeURIComponent(token));
-    if(r&&r.ok){
-      /* Server just consumed the token and set the cookie. Fetch me. */
-      var me=await apiFetch("/api/auth/me");
-      CURRENT_USER=me.user;
-      /* Keep the "Email verified" card on screen for ~900ms so the user
-         sees the transition before we slide into the app. */
-      await new Promise(function(res){setTimeout(res,900)});
-      await afterAuthEnter();
-      hideGate();
-      return true;
+    /* Verification creates the user account (from pending registration)
+       and starts a session. Adopt the canonical user object from the
+       response or /me to enter the app. */
+    markAuthSuccess();
+    try{
+      var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
+      CURRENT_USER=(me&&me.user)?me.user:((r&&r.user)?r.user:null);
+    }catch(_){
+      CURRENT_USER=(r&&r.user)?r.user:null;
+      if(CURRENT_USER){
+        try{
+          await new Promise(function(r2){setTimeout(r2,150)});
+          var me2=await apiFetch("/api/auth/me",{_authEndpoint:true});
+          if(me2&&me2.user)CURRENT_USER=me2.user;
+        }catch(__){ /* fall through with what we have */ }
+      }
     }
+    await afterAuthEnter();
+    hideGate();
   }catch(e){
     var title="This link is invalid or expired";
-    var msg="Verification links expire after 30 minutes. Enter your email and we'll send a fresh one.";
+    var msg="Verification links expire after 24 hours. Enter your email and we'll send a fresh one.";
     if(e.status===400&&e.code==="EXPIRED"){
       title="This link has expired";
-      msg="Verification links expire after 30 minutes. Enter your email and we'll send a fresh one.";
+      msg="Verification links expire after 24 hours. Enter your email and we'll send a fresh one.";
     }
     document.getElementById("authVerifyFailedTitle").textContent=title;
     document.getElementById("authVerifyFailedMsg").textContent=msg;
     showAuthView("authVerifyFailedView");
     setTimeout(function(){refreshCaptcha("authResendCaptcha")},100);
   }
-  return false;
 }
 
 async function afterAuthEnter(){
@@ -8070,6 +8819,8 @@ async function afterAuthEnter(){
   await refreshServerSessions();
   /* Load the user's saved API providers and model configs. */
   await refreshApiConfig();
+  /* Load the user's saved memories for long-term context. */
+  loadUserMemories();
   /* Update sidebar footer with user info. */
   renderUserFooter();
   /* Re-render sidebar lists now that the cache is fresh. */
@@ -8129,7 +8880,7 @@ async function submitAuthForgotPassword(){
   if(!captcha)return setAuthError("authForgotError","Please solve the security check.");
   var btn=document.getElementById("authForgotBtn");btn.disabled=true;btn.textContent="Sending…";
   try{
-    await apiFetch("/api/auth/forgot-password",{method:"POST",body:{email,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
+    await apiFetch("/api/auth/forgot-password",{method:"POST",_authEndpoint:true,body:{email,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
     document.getElementById("authForgotSentEmail").textContent=email;
     showAuthView("authForgotSentView");
   }catch(e){
@@ -8165,7 +8916,7 @@ async function submitAuthSendCode(){
   if(!captcha)return setAuthError("authCodeError","Please solve the security check.");
   var btn=document.getElementById("authCodeSendBtn");btn.disabled=true;btn.textContent="Sending…";
   try{
-    await apiFetch("/api/auth/send-code",{method:"POST",body:{email,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
+    await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:{email,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
     document.getElementById("authCodeCodeWrap").classList.remove("hidden");
     document.getElementById("authCodeSentEmail").textContent=email;
     document.getElementById("authCodeSentMsg").classList.remove("hidden");
@@ -8191,10 +8942,15 @@ async function submitAuthLoginWithCode(){
   if(!captcha)return setAuthError("authCodeError","Please solve the security check.");
   var btn=document.getElementById("authCodeLoginBtn");btn.disabled=true;btn.textContent="Logging in…";
   try{
-    var r=await apiFetch("/api/auth/login-with-code",{method:"POST",body:{email,code,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
-    CURRENT_USER=r.user;
+    var r=await apiFetch("/api/auth/login-with-code",{method:"POST",_authEndpoint:true,body:{email,code,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
+    markAuthSuccess();
+    try{
+      var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
+      CURRENT_USER=(me&&me.user)?me.user:r.user;
+    }catch(_){
+      CURRENT_USER=r.user;
+    }
     if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){}
-    await new Promise(function(r){setTimeout(r,50)});
     await afterAuthEnter();
     hideGate();
   }catch(e){
@@ -8208,9 +8964,25 @@ async function submitAuthLoginWithCode(){
 async function resendAuthCode(){
   var email=document.getElementById("authCodeEmail").value.trim();
   if(!email)return;
+  /* P1.2 — sendCode on the server now requires captcha. Refresh first
+   * to make sure the store has a fresh challenge, then include the
+   * token+answer in the body. The captcha is normally still valid from
+   * the original send, so we try readCaptcha first and only refresh if
+   * it's missing. */
+  var captcha=readCaptcha("authCodeCaptcha");
+  if(!captcha){
+    try{await refreshCaptcha("authCodeCaptcha")}catch(_){}
+    captcha=readCaptcha("authCodeCaptcha");
+  }
+  if(!captcha)return;
+  var body={email:email, captchaToken:captcha.token, captchaAnswer:captcha.answer};
   try{
-    await apiFetch("/api/auth/send-code",{method:"POST",body:{email}});
-  }catch(_){}
+    await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:body});
+  }catch(e){
+    /* If the server rejected (e.g. captcha expired or already used),
+     * refresh the challenge so the user can retry from the UI. */
+    setTimeout(function(){refreshCaptcha("authCodeCaptcha")},100);
+  }
 }
 
 function renderUserFooter(){
@@ -8222,8 +8994,13 @@ function renderUserFooter(){
   }
   var initials=(CURRENT_USER.displayName||CURRENT_USER.email||"?").slice(0,2).toUpperCase();
   var tier=CURRENT_USER.tier||'diophantus';
-  var tierBadge='<span class="tier-badge tier-'+tier+'">'+tier.charAt(0).toUpperCase()+tier.slice(1)+'</span>';
-  row.innerHTML='<div class="user-avatar">'+escapeHtml(initials)+'</div><div style="flex:1;min-width:0" onclick="event.stopPropagation();openProfile()"><div class="user-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">'+escapeHtml(CURRENT_USER.displayName||CURRENT_USER.email)+'</div><div class="user-plan">'+tierBadge+'</div></div>';
+  // Tier is server-controlled and known-safe, but escape anyway in case
+  // a future tier value (e.g. "tier-<script>") is ever introduced.
+  var safeTier=escapeHtml(tier);
+  var tierLabel=escapeHtml(tier.charAt(0).toUpperCase()+tier.slice(1));
+  var tierBadge='<span class="tier-badge '+safeTier+'">'+tierLabel+'</span>';
+  var safeName=escapeHtml(CURRENT_USER.displayName||CURRENT_USER.email||"");
+  row.innerHTML='<div class="user-avatar">'+escapeHtml(initials)+'</div><div style="flex:1;min-width:0" onclick="event.stopPropagation();openProfile()"><div class="user-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">'+safeName+'</div><div class="user-plan">'+tierBadge+'</div></div>';
   /* Show upgrade badge in top-right only for free-tier users. */
   var planBadge=document.getElementById("planBadge");
   if(planBadge)planBadge.classList.toggle("hidden",tier!=="diophantus");
@@ -8321,7 +9098,7 @@ function renderPromptTemplatesModal(){
   if(!body)return;
   var all=loadPromptTemplates();
   var customs=all.filter(function(t){return!t.isBuiltin;});
-  var builtins=all.filter(function(t){returnt.isBuiltin;});
+  var builtins=all.filter(function(t){return t.isBuiltin;});
   var html=
     '<div class="project-editor-head">'+
       '<span class="project-editor-title">Prompt templates</span>'+
@@ -8338,15 +9115,16 @@ function renderPromptTemplatesModal(){
   body.innerHTML=html;
 }
 function renderPromptRow(t,editable){
+  var iconHtml=t.icon&&t.icon.indexOf("<svg")===0?t.icon:esc(t.icon||"pg");
   return '<div class="prompt-row'+(t.isBuiltin?" builtin":"")+'">'+
-    '<span class="prompt-row-icon">'+esc(t.icon||"📄")+'</span>'+
+    '<span class="prompt-row-icon">'+iconHtml+'</span>'+
     '<div class="prompt-row-main">'+
       '<div class="prompt-row-title">'+esc(t.title)+' <span class="prompt-row-shortcut">'+esc(t.shortcut)+'</span></div>'+
       '<div class="prompt-row-desc">'+esc(t.description||"")+'</div>'+
     '</div>'+
     (editable?
       '<div class="prompt-row-actions">'+
-        '<button class="prompt-row-edit" onclick=\'openPromptTemplateEditor('+JSON.stringify(t).replace(/'/g,"&#39;')+')\'>Edit</button>'+
+      '<button class="prompt-row-edit" onclick="openPromptTemplateEditor('+encodeURIComponent(JSON.stringify(t))+')">Edit</button>'+
         '<button class="prompt-row-delete" onclick="onPromptRowDelete(\''+esc(t.id)+'\')">Delete</button>'+
       '</div>':'')+
   '</div>';
@@ -8365,7 +9143,7 @@ function onPromptRowDelete(id){
 function openPromptTemplateEditor(existing){
   var body=document.querySelector("#promptTemplatesOverlay .prompt-templates-modal");
   if(!body)return;
-  var t=existing||{id:"tpl-"+Date.now().toString(36),title:"",description:"",body:"",icon:"📄",category:"writing",shortcut:"/my-template"};
+  var t=existing||{id:"tpl-"+Date.now().toString(36),title:"",description:"",body:"",icon:"pg",category:"writing",shortcut:"/my-template"};
   /* Save on Enter inside title field; Cmd/Ctrl+Enter inside
      body. */
   body.innerHTML=
@@ -8380,7 +9158,7 @@ function openPromptTemplateEditor(existing){
       '</div>'+
       '<label class="prompt-editor-label">Description<input class="prompt-editor-input" id="ptDescription" maxlength="200" value="'+esc(t.description||"")+'" placeholder="One-line summary"></label>'+
       '<div class="prompt-editor-grid">'+
-        '<label class="prompt-editor-label">Icon<input class="prompt-editor-input prompt-editor-icon" id="ptIcon" maxlength="4" value="'+esc(t.icon||"📄")+'"></label>'+
+        '<label class="prompt-editor-label">Icon<input class="prompt-editor-input prompt-editor-icon" id="ptIcon" maxlength="4" value="'+esc(t.icon||"pg")+'"></label>'+
         '<label class="prompt-editor-label">Category'+
           '<select class="prompt-editor-input" id="ptCategory">'+
             ["writing","code","learning","analysis","creative","other"].map(function(c){
@@ -8403,14 +9181,14 @@ function onPromptTemplateEditorSave(id,wasExisting){
   var title=((document.getElementById("ptTitle")||{}).value||"").trim();
   var shortcut=((document.getElementById("ptShortcut")||{}).value||"").trim();
   var description=((document.getElementById("ptDescription")||{}).value||"").trim();
-  var icon=((document.getElementById("ptIcon")||{}).value||"📄").trim();
+  var icon=((document.getElementById("ptIcon")||{}).value||"pg").trim();
   var category=((document.getElementById("ptCategory")||{}).value||"other");
   var body=((document.getElementById("ptBody")||{}).value||"");
   if(!title){showToast("Title is required");return}
   if(!/^\/[a-z0-9-]+$/.test(shortcut)){showToast("Shortcut must look like /my-template");return}
   var existing=findTemplateByShortcut(shortcut);
   if(existing&&existing.id!==id){showToast("That shortcut is already in use");return}
-  upsertCustomTemplate({id:id,title:title,description:description,icon:icon||"📄",category:category,shortcut:shortcut,body:body,isBuiltin:false});
+  upsertCustomTemplate({id:id,title:title,description:description,icon:icon||"pg",category:category,shortcut:shortcut,body:body,isBuiltin:false});
   renderPromptTemplatesModal();
   showToast("Template saved");
 }
@@ -8424,7 +9202,7 @@ function renderArchivedList(){
       '<button class="project-editor-close" onclick="closeStorageModal()">×</button>'+
     '</div>'+
     '<div class="storage-modal-body">'+
-      '<div class="storage-modal-desc">Sessions you deleted are kept here for 30 days, then permanently erased on both this device and the server. Restore a session to bring it back to Recents.</div>'+
+      '<div class="storage-modal-desc">These sessions are pending permanent deletion. Deleting a session in Recents first archives it for up to 30 days as a safety net; this list shows any that have not yet been purged. Use Restore to bring one back, or Delete forever to remove it now.</div>'+
       (archived.length?
         '<div class="storage-list">'+archived.map(function(s){
           var ageDays=Math.max(0,Math.floor((Date.now()-(s.archivedAt||0))/(24*60*60*1000)));
@@ -8582,15 +9360,23 @@ function confirmClearSettings(){
     if(!yes)return;
     if(!CURRENT_USER)return;
     (async function(){
-      try{
-        for(var i=0;i<apiConfig.providers.length;i++){
-          var p=apiConfig.providers[i];
-          if(p.id.indexOf("new-")!==0){
+      /* Delete each non-built-in provider one by one. Built-in entries
+         (e.g. BEAGLE_BUILT_IN) live only in the frontend constant and
+         carry a non-UUID id, so the backend would reject them. Per-item
+         try/catch keeps one failure from aborting the rest of the loop. */
+      for(var i=0;i<apiConfig.providers.length;i++){
+        var p=apiConfig.providers[i];
+        if(p.isBuiltIn||p.id==="beagle-built-in")continue;
+        if(p.id.indexOf("new-")!==0){
+          try{
             await apiFetch("/api/api-key/"+encodeURIComponent(p.id),{method:"DELETE"});
-          }
+          }catch(e){console.warn("[profile] clear settings: delete "+p.id+" failed:",e.message)}
         }
-      }catch(e){console.warn("[profile] clear settings:",e.message)}
+      }
       apiConfig={activeId:null,providers:[]};
+      /* Keep the built-in Beagle provider available after clearing. */
+      apiConfig.providers.push(Object.assign({},BEAGLE_BUILT_IN));
+      apiConfig.activeId=BEAGLE_BUILT_IN.id;
       try{localStorage.removeItem("socrates-provider-keys")}catch(e){}
       renderProviderList();syncModelPills();syncSettingsUI();
     })();
@@ -8647,6 +9433,19 @@ async function signOut(){
   renderUserFooter();
 }
 
+/* Built-in Beagle model — always available, never shown in settings.
+   The API key is fetched from the server at boot via GET /api/config
+   so it stays out of the source tree. Defined here (before authBoot)
+   so the IIFE can reference it without relying on var-hoisting timing. */
+var BEAGLE_BUILT_IN={
+  id:"beagle-built-in",
+  label:"Beagle A",
+  url:"/api/minimax/v1",
+  model:"MiniMax-M2.7",
+  key:"",
+  isBuiltIn:true
+};
+
 /* On boot: try /api/auth/me. If the URL has ?token=… it's a verification
    link, so consume that first. If ?reset_token=… it's a password reset. */
 (async function authBoot(){
@@ -8656,6 +9455,23 @@ async function signOut(){
   fetchGeoInfo();
 
   var params=new URLSearchParams(location.search);
+  var oauthError=params.get("oauth_error");
+  if(oauthError){
+    history.replaceState(null,"",location.pathname);
+    showGate();
+    showAuthSignin();
+    var msg="GitHub login failed: "+decodeURIComponent(oauthError)+".";
+    setTimeout(function(){try{showToast(msg,5000)}catch(_){}},500);
+    return;
+  }
+  /* Also handle plain ?error= for backward compatibility. */
+  var plainError=params.get("error");
+  if(plainError){
+    history.replaceState(null,"",location.pathname);
+    showGate();
+    showAuthSignin();
+  }
+
   var shareToken=params.get("share");
   if(shareToken){
     /* Shared session view — load immediately, no auth needed for public. */
@@ -8693,16 +9509,88 @@ async function signOut(){
     })();
     return;
   }
+  /* Fetch the built-in Beagle API key from the server's public config
+     endpoint so the key lives in the server environment, not the source. */
+  var cfgOk=false;
   try{
-    var me=await apiFetch("/api/auth/me");
+    var cfg=await fetch("/api/config",{credentials:"include"}).then(function(r){return r.json()}).catch(function(){return{}});
+    if(cfg&&cfg.hasBeagleKey){
+      BEAGLE_BUILT_IN.key=cfg.beagleKey;
+      BEAGLE_BUILT_IN.model=cfg.beagleModel||BEAGLE_BUILT_IN.model;
+      cfgOk=true;
+    }
+  }catch(_){console.warn("[boot] config fetch failed")}
+  console.log("[boot] config hasBeagleKey="+cfgOk+", BEAGLE_BUILT_IN.key.length="+BEAGLE_BUILT_IN.key.length);
+
+  /* P0.0 — only route the user to the auth gate when the server
+   * explicitly says 401. Network blips, 5xx, and a missing
+   * `/api/auth/me` response must NOT silently log the user out, or
+   * a transient hiccup on a refresh will force them back through
+   * the sign-in flow. We retry once after 500ms on transient
+   * failures, then show a "couldn't reach the server" toast and
+   * stop on the topic-setup shell so the user can try again. */
+  var me=null;
+  var meLastErr=null;
+  for(var meAttempt=1;meAttempt<=3;meAttempt++){
+    try{
+      me=await apiFetch("/api/auth/me",{_authEndpoint:true});
+      break;
+    }catch(e){
+      meLastErr=e;
+      console.warn("[boot] /me attempt "+meAttempt+" failed:",e&&e.message,e&&e.status);
+      if(e&&e.status===401){
+        /* Genuine session expiry. Don't immediately kick to the gate on the
+         * very first 401 — a transient race or a Set-Cookie propagation
+         * delay can produce a 401 even when the session is still valid.
+         * Retry once more after a short delay before declaring the user
+         * logged out, so a single bad response doesn't force a re-login. */
+        if(meAttempt<3){
+          await new Promise(function(r){setTimeout(r,500)});
+          continue;
+        }
+        showGate();
+        showAuthSignin();
+        return;
+      }
+      if(meAttempt<3)await new Promise(function(r){setTimeout(r,500)});
+    }
+  }
+  if(me&&me.user){
     CURRENT_USER=me.user;
+    console.log("[boot] /me succeeded: user="+(me.user&&me.user.email)+
+      " verifiedAt="+(me.user&&me.user.verifiedAt)+
+      " plan="+(me.user&&me.user.plan));
+    /* Grace window for the Set-Cookie to settle (see notes in
+     * markAuthSuccess). */
+    markAuthSuccess();
     await afterAuthEnter();
     hideGate();
-  }catch(e){
-    showGate();
-    showAuthSignin();
+    return;
   }
-})();
+  /* /me never resolved with a user — surface a visible error and
+   * leave the user on the existing app shell so they can retry,
+   * rather than yanking them to the sign-in form. */
+  console.warn("[boot] /me unresolved after retries:",meLastErr&&meLastErr.message);
+  /* P0.6 — pre-boot used to silently fall through to the auth gate
+   * (which was the default visible element), but with the new
+   * data-boot-state="checking" shell, doing nothing leaves the
+   * user on the spinner forever. Show the sign-in form so they
+   * have a way forward; the toast still surfaces the underlying
+   * reason. */
+  showGate();
+  showAuthSignin();
+  try{showToast("Couldn't reach the server. Check your connection and retry.",5000)}catch(_){}
+  if(typeof renderUserFooter==="function")renderUserFooter();
+})().catch(function(e){
+  /* Catch any unhandled error from the boot IIFE so the page isn't
+     left in a broken state. The gate may already be showing (from the
+     /me catch above) — ensure it is. */
+  console.error("[boot] unhandled error:",e&&e.message);
+  try{
+    if(typeof showGate==="function")showGate();
+    if(typeof showAuthSignin==="function")showAuthSignin();
+  }catch(_){}
+});
 
 /* Listen for browser back/forward and load the corresponding chat. */
 window.addEventListener("popstate",function(e){
@@ -8726,15 +9614,6 @@ window.addEventListener("popstate",function(e){
    ============================================================ */
 var apiConfig={activeId:null,providers:[]};
 
-/* Built-in Beagle model — always available, never shown in settings. */
-var BEAGLE_BUILT_IN={
-  id:"beagle-built-in",
-  label:"Beagle A",
-  url:"/api/minimax/v1",
-  model:"minimax-m3",
-  key:"sk-cp-sNKLK9Aa_GZbH6qA3i_UMdU2RZLuvgasIEtpDHG4nTdL9GUvYns5Vw0qP5o1iLNtk1m950IuOxX1uMKEV7tlCh9K1u9haL5jPD2_yJAGwvFthtKByGCtwFE",
-  isBuiltIn:true
-};
 
 /* P4.4 — encrypted provider-key cache. Old versions stored
    {providerId: sk-rawKey} as plaintext JSON in
@@ -9068,7 +9947,7 @@ async function refreshApiConfig(){
        constant handles Beagle now via the nginx reverse proxy. */
     rows=rows.filter(function(p){return p.label!==BEAGLE_BUILT_IN.label});
     apiConfig={activeId:null,providers:rows.map(function(p){
-      return{id:p.id,isActive:p.isActive,label:p.label,url:p.url,model:p.model,key:existingKeys[p.id]||p.key||""};
+      return{id:p.id,isActive:p.isActive,isBuiltIn:p.isBuiltIn,label:p.label,url:p.url,model:p.model,key:existingKeys[p.id]||p.key||""};
     })};
     /* Merge the built-in Beagle provider (frontend-only, no server registration). */
     var hasBeagle=apiConfig.providers.some(function(p){return p.isBuiltIn||p.id==="beagle-built-in"});
@@ -9245,7 +10124,7 @@ var EXTENSIONS=[
   {key:"tutorMode",   name:"Tutor mode",   desc:"Run a diagnostic and Socratic Q&A. Off for plain chat.",
    on:appMode==="tutor", onChange:function(v){appMode=v?"tutor":"chat";try{localStorage.setItem("socrates-appmode",appMode)}catch(e){} syncAppModeUI(); syncSidebarForMode(); syncExtensionsUI();}},
   {key:"thinkingMode",name:"Show AI thinking",desc:"Render the model's step-by-step reasoning with Markdown & math. Toggle any time.",
-   on:thinkingOn, onChange:function(v){thinkingOn=v;try{localStorage.setItem("socrates-thinking",JSON.stringify(thinkingOn))}catch(e){} syncExtensionsUI();showToast("AI thinking "+(v?"enabled":"disabled")+" — applies to the next message");}},
+   on:thinkingOn, onChange:function(v){thinkingOn=v;try{localStorage.setItem("socrates-thinking",JSON.stringify(thinkingOn))}catch(e){} syncExtensionsUI();}},
 ];
 function renderExtensionsMenu(){
   var menu=document.getElementById("extensionsMenu");
@@ -9509,16 +10388,13 @@ async function fetchWebContext(topic,opts){
     var searchResults=[];
     var seenUrls={};
     var searches=queries.map(function(q){
-      return fetch("/api/search",{
+      return apiFetchRaw("/api/web-search",{
         method:"POST",
-        headers:{"Content-Type":"application/json","X-CSRF-Token":getCsrfToken()||""},
-        credentials:"include",
-        body:JSON.stringify({query:q,count:8}),
+        body:{query:q,count:8},
         signal:ac.signal
       }).then(function(r){
-        if(!r.ok)return{ok:false,status:r.status,results:[]};
         return r.json().then(function(d){return{ok:true,query:q,results:(d&&d.results)||[]}});
-      }).catch(function(e){return{ok:false,reason:e&&e.message,results:[]}});
+      }).catch(function(e){return{ok:false,status:e&&e.status,reason:e&&e.message,results:[]}});
     });
     var searchResps=await Promise.all(searches);
     for(var si=0;si<searchResps.length;si++){
@@ -9539,17 +10415,13 @@ async function fetchWebContext(topic,opts){
        the raw topic — sometimes the rewriter is too aggressive. */
     if(!searchResults.length&&queries[0]!==topic){
       try{
-        var r2=await fetch("/api/search",{
+        var r2=await apiFetchRaw("/api/web-search",{
           method:"POST",
-          headers:{"Content-Type":"application/json","X-CSRF-Token":getCsrfToken()||""},
-          credentials:"include",
-          body:JSON.stringify({query:topic,count:8}),
+          body:{query:topic,count:8},
           signal:ac.signal
         });
-        if(r2.ok){
-          var d2=await r2.json();
-          searchResults=(d2.results||[]).map(function(x){return Object.assign({matchedQuery:topic},x)});
-        }
+        var d2=await r2.json();
+        searchResults=(d2.results||[]).map(function(x){return Object.assign({matchedQuery:topic},x)});
       }catch(_){}
     }
     if(!searchResults.length){
@@ -9580,21 +10452,15 @@ async function fetchWebContext(topic,opts){
     var fetched=[];
     if(topUrls.length){
       try{
-        var fb=await fetch("/api/fetch-batch",{
+        var fb=await apiFetchRaw("/api/fetch-batch",{
           method:"POST",
-          headers:{"Content-Type":"application/json","X-CSRF-Token":getCsrfToken()||""},
-          credentials:"include",
-          body:JSON.stringify({urls:topUrls}),
+          body:{urls:topUrls},
           signal:ac.signal
         });
-        if(fb.ok){
-          var fd=await fb.json();
-          fetched=fd.results||[];
-        }else{
-          console.warn("[web fetch] batch HTTP",fb.status);
-        }
+        var fd=await fb.json();
+        fetched=fd.results||[];
       }catch(e){
-        console.warn("[web fetch] batch failed:",e&&e.message);
+        console.warn("[web fetch] batch failed:",e&&e.message,"status:",e&&e.status);
       }
     }
     /* Merge: for each result, attach the fetched body if successful. */
@@ -9852,7 +10718,7 @@ function renderNoUrlHint(targetEl){
   card.className="link-card err no-url-hint";
   card.innerHTML=
     '<div class="link-card-head">'+
-      '<div class="link-card-host">🔗 No URL detected</div>'+
+      '<div class="link-card-host"><svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z"/><path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4 4 0 0 1-.82 1H12a3 3 0 1 0 0-6z"/></svg> No URL detected</div>'+
       '<div class="link-card-status err">awaiting full link</div>'+
     '</div>'+
     '<div class="link-card-excerpt">'+
@@ -9889,11 +10755,11 @@ function renderLinkPreviews(targetEl,urls,results){
       statusHtml='<div class="link-card-status">'+esc(meta)+'</div>';
     }else{
       var reason=(f&&f.reason)||"fetch failed";
-      statusHtml='<div class="link-card-status err">✕ '+esc(reason)+'</div>';
+      statusHtml='<div class="link-card-status err"><svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg> '+esc(reason)+'</div>';
     }
     card.innerHTML=
       '<div class="link-card-head">'+
-        '<div class="link-card-host">🔗 '+esc(host)+'</div>'+
+        '<div class="link-card-host"><svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z"/><path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4 4 0 0 1-.82 1H12a3 3 0 1 0 0-6z"/></svg> '+esc(host)+'</div>'+
         statusHtml+
       '</div>'+
       '<a class="link-card-title" href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+esc(title)+'</a>'+
@@ -10001,12 +10867,36 @@ function generateSessionTitle(){
     "\"Understanding machine learning basics\", \"Writing better essays\". "+
     "Do NOT use a question or a label — it must read as a statement. "+
     "Output ONLY the title, no quotes, no extra text.\n\n"+topic.slice(0,300);
-  var msgs2=[{role:"user",content:prompt}];
+  /* System instruction forbids thinking for this short task. Some
+   * models still emit a <think>…</think> block anyway, so we
+   * also defensively strip think blocks and chat-template tokens
+   * from the response below before using it as the title. */
+  var sysMsg={role:"system",content:"Do NOT output <think>...</think> blocks, internal reasoning, or chain-of-thought. Reply directly with the final title in clean prose. No preamble."};
+  var userMsg={role:"user",content:prompt};
+  var msgs2=[sysMsg,userMsg];
   /* Always go through the server proxy — Beagle is registered server-side. */
   apiFetch("/api/chat",{method:"POST",body:{messages:msgs2,temperature:0.3,max_tokens:30}}).then(function(r){
     _titleGenQueued=false;
     if(!r||!r.choices||!r.choices[0]||!r.choices[0].message)return;
-    var title=(r.choices[0].message.content||"").trim().replace(/^["']|["']$/g,"").slice(0,60);
+    var raw=(r.choices[0].message.content||"");
+    /* Mirror the strips formatMsg() / stripChatArtifacts() apply to
+     * chat output, plus a few extra guards for title-gen quirks:
+     *  - closed <think>…</think> and unclosed trailing <think>…$
+     *  - chat-template tokens (<|im_start|>, <s>, [INST], etc.)
+     *  - any leading punctuation the model added (quotes, dashes,
+     *    bullets) that would look ugly in a sidebar title. */
+    var title=raw
+      .replace(/<think>[\s\S]*?<\/think>/gi,"")
+      .replace(/<think>[\s\S]*$/gi,"")
+      .replace(/<\|im_start\|>[\s\S]*?<\|im_end\|>/g,"")
+      .replace(/<\|[a-z_]+\|>/gi,"")
+      .replace(/<\/?s>/g,"")
+      .replace(/\[INST\]|\[\/INST\]|<<SYS>>|<<\/SYS>>/g,"")
+      .replace(/^\s*Title\s*[:\-]\s*/i,"")
+      .trim()
+      .replace(/^["']+|["']+$/g,"")
+      .replace(/^[\s\-•·—:]+/,"")
+      .slice(0,60);
     if(title&&title.length>2){state.sessionTitle=title;saveCurrentSession()}
   }).catch(function(e){
     _titleGenQueued=false;
@@ -10306,25 +11196,26 @@ function clearSettings(){
   if(!CURRENT_USER)return;
   /* Delete all server-side providers one by one. */
   (async function(){
-    try{
-      for(var i=0;i<apiConfig.providers.length;i++){
-        var p=apiConfig.providers[i];
-        if(p.id.indexOf("new-")!==0){
+    /* Same loop-shape fix as confirmClearSettings: skip built-in providers
+       and isolate each delete so a single failure doesn't strand the rest. */
+    for(var i=0;i<apiConfig.providers.length;i++){
+      var p=apiConfig.providers[i];
+      if(p.isBuiltIn||p.id==="beagle-built-in")continue;
+      if(p.id.indexOf("new-")!==0){
+        try{
           await apiFetch("/api/api-key/"+encodeURIComponent(p.id),{method:"DELETE"});
-        }
+        }catch(e){console.warn("[api-key] clear: delete "+p.id+" failed:",e.message)}
       }
-      apiConfig={activeId:null,providers:[]};
-      /* Re-add the built-in Beagle provider after clearing. */
-      apiConfig.providers.push(Object.assign({},BEAGLE_BUILT_IN));
-      apiConfig.activeId=BEAGLE_BUILT_IN.id;
-      try{localStorage.removeItem("socrates-provider-keys")}catch(e){}
-      renderProviderList();syncModelPills();syncSettingsUI();
-      var status=document.getElementById("stgStatus");
-      status.className="settings-status ok";
-      status.textContent="Cleared. Built-in Beagle A is still available.";
-    }catch(e){
-      console.warn("[api-key] clear failed:",e.message);
     }
+    apiConfig={activeId:null,providers:[]};
+    /* Re-add the built-in Beagle provider after clearing. */
+    apiConfig.providers.push(Object.assign({},BEAGLE_BUILT_IN));
+    apiConfig.activeId=BEAGLE_BUILT_IN.id;
+    try{localStorage.removeItem("socrates-provider-keys")}catch(e){}
+    renderProviderList();syncModelPills();syncSettingsUI();
+    var status=document.getElementById("stgStatus");
+    status.className="settings-status ok";
+    status.textContent="Cleared. Built-in Beagle A is still available.";
   })();
 }
 
@@ -10337,6 +11228,19 @@ function clearSettings(){
    ============================================================ */
 var _geoInfo={country:"",region:"",city:"",tz:""};
 var _geoFetched=false;
+var _userMemories=[];   /* cached memories injected into system context */
+
+/* Fetch the user's saved memories from the server so getSystemContext
+   can inject them as long-term context. Memories are cached globally
+   and refreshed at most once per minute. */
+function loadUserMemories(){
+  if(!CURRENT_USER)return;
+  try{
+    apiFetch("/api/memory",{_authEndpoint:true}).then(function(r){
+      if(r&&Array.isArray(r))_userMemories=r.filter(function(m){return m.enabled!==false}).map(function(m){return m.text});
+    }).catch(function(){});
+  }catch(_){}
+}
 
 /* Fetch user location from a free IP geolocation service. Cached
    in memory (and localStorage) so we don't hit the API every page load. */
@@ -10711,8 +11615,6 @@ async function callAPIStream(messages,maxTokens,onDelta,onThinking){
     return null;
   }
 
-  var body=JSON.stringify({messages:messages,temperature:0.7,max_tokens:maxTokens});
-  var csrf=getCsrfToken()||"";
   var attempt=0;
   var lastErr=null;
   /* Offline precheck — fail fast (don't waste the 1.5s + 3.5s backoff
@@ -10730,47 +11632,45 @@ async function callAPIStream(messages,maxTokens,onDelta,onThinking){
     var hbTmo=null;
     var resp=null;
     try{
-      resp=await fetch("/api/chat/stream",{
+      /* P0.3 — use apiFetchRaw so credentials / CSRF / 401 → handleAuthExpired /
+       * 403 → refresh+yield+replay are all handled centrally. It throws
+       * an ApiError on non-2xx, which we catch below to decide whether
+       * to retry (transient 5xx/429) or fail terminally.
+       * Pass body as an object so apiFetchRaw stringifies it and sets
+       * Content-Type: application/json — pre-stringified bodies are skipped. */
+      resp=await apiFetchRaw("/api/chat/stream",{
         method:"POST",
-        headers:{"Content-Type":"application/json","X-CSRF-Token":csrf},
-        credentials:"include",
-        body:body,
+        body:{messages:messages,temperature:0.7,max_tokens:maxTokens},
         signal:ac.signal
       });
     }catch(e){
       clearTimeout(tmo);
       if(hbTmo)clearTimeout(hbTmo);
-      var isAbort=(e&&(e.name==="AbortError"||e.code===20));
+      var eStatus=e&&e.status;
+      var isAbort=(e&&(e.name==="AbortError"||ac.signal.aborted));
       if(isAbort){
         lastErr="request timed out after "+(STREAM_TIMEOUT_MS/1000)+"s";
         /* Total budget exhausted — stop retrying. */
         break;
       }
-      lastErr="network: "+(e&&e.message||e);
-      if(attempt<STREAM_MAX_ATTEMPTS){
-        await sleepBackoff(attempt,resp&&resp.headers&&resp.headers.get("Retry-After"));
+      if(eStatus===401){
+        /* 401 was already surfaced via handleAuthExpired by apiFetchRaw
+         * (gated on the grace window). Set lastCallError and exit. */
+        state.lastCallError="401: session expired";
+        return null;
+      }
+      if(STREAM_RETRYABLE_STATUS[eStatus]&&attempt<STREAM_MAX_ATTEMPTS){
+        lastErr=eStatus+" "+(e.message||"error");
+        var retryAfterHdr=e&&e.body&&e.body.headers?e.body.headers.get("Retry-After"):null;
+        await sleepBackoff(attempt,retryAfterHdr);
         continue;
       }
-      console.error("[API stream] fetch failed:",e);
+      lastErr=(eStatus?eStatus+" ":"network: ")+(e&&e.message||e);
+      console.error("[API stream] request failed:",e);
       state.lastCallError=lastErr;
       return null;
     }
     clearTimeout(tmo);
-
-    if(!resp.ok){
-      var bodyText="";
-      try{bodyText=await resp.text()}catch(_){}
-      var shortErr=(bodyText||"").slice(0,200).replace(/\s+/g," ");
-      var status=resp.status;
-      console.warn("[API stream]",status,shortErr);
-      if(STREAM_RETRYABLE_STATUS[status]&&attempt<STREAM_MAX_ATTEMPTS){
-        lastErr=status+" "+(shortErr||resp.statusText||"error");
-        await sleepBackoff(attempt,resp.headers.get("Retry-After"));
-        continue;
-      }
-      state.lastCallError=status+" "+(shortErr||resp.statusText||"error");
-      return null;
-    }
 
     if(!resp.body||!resp.body.getReader){
       state.lastCallError="no stream body";
@@ -10912,6 +11812,13 @@ async function callAPIStream(messages,maxTokens,onDelta,onThinking){
    provider is active. This is appended LAST so the model sees it as the
    most recent instruction about its identity, overriding any generic
    system prompt that came before. */
+/* Return a prefix with the user's saved memories for long-term context.
+   Memories are fetched from /api/memory and cached in _userMemories. */
+function memoriesSuffix(){
+  if(!_userMemories||!_userMemories.length)return"";
+  return"\n\n## User's saved memories (long-term context)\n"+_userMemories.map(function(t){return"- "+t}).join("\n");
+}
+
 function beagleSuffix(){
   var p=getActiveProvider();
   if(p&&p.isBuiltIn){
@@ -10946,7 +11853,7 @@ function buildSocraticPrompt(topic,level,context){
   }else{
     full+="\n\nNote: no [Web research] block is present. You do not have live web access for this turn — say so honestly rather than guessing about current events, prices, dates, or anything that may have changed since your training cutoff.";
   }
-  return sysCtx+"\n\n"+SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+beagleSuffix()+thinkingSuffix();
+  return sysCtx+"\n\n"+SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+beagleSuffix()+thinkingSuffix()+memoriesSuffix();
 }
 
 /* ============================================================
@@ -10955,42 +11862,80 @@ function buildSocraticPrompt(topic,level,context){
    the model can see the running conversation. Without this every
    API call is a one-shot prompt and the model "resets" each turn.
    ============================================================ */
-var HISTORY_MAX_TURNS=8;       /* user+assistant pairs to keep */
-var HISTORY_MAX_CHARS=500;     /* per-message truncation ceiling */
+var HISTORY_MAX_TURNS=30;      /* user+assistant pairs to keep (increased for longer context) */
+var HISTORY_MAX_CHARS=2000;    /* per-message truncation ceiling (increased from 500) */
 var MAX_TOKENS_CHAT=4096;      /* default for chat/stream completions */
 var MAX_TOKENS_DIAG=4096;      /* default for diagnostic JSON generation */
+
+/* Compress a list of message texts into a short summary for when
+   the conversation is longer than HISTORY_MAX_TURNS. Drops oldest
+   messages but captures their key topics in a condensed form. */
+function compressMessages(msgs){
+  if(!msgs||!msgs.length)return"";
+  var parts=[];
+  for(var ci=0;ci<msgs.length;ci++){
+    var ct=String(msgs[ci].rawText||msgs[ci].content||"").trim();
+    if(!ct)continue;
+    /* Take first 120 chars of each older message as a keyphrase. */
+    if(ct.length>120)ct=ct.slice(0,117)+"…";
+    parts.push(ct);
+  }
+  if(!parts.length)return"";
+  return"[Earlier conversation: "+parts.join(" | ")+"]";
+}
 
 function extractHistory(){
   /* P1.1 — three-tier source-of-truth, preferred in order:
      1. state.messages.rawText (authoritative, in-memory, never
-        re-rendered, never has half-streamed text)
+       re-rendered, never has half-streamed text)
      2. localStorage mirror (good for cross-tab / post-reload)
      3. live DOM (legacy fallback — only used when neither 1 nor 2
-        is available, e.g. a session that was loaded from the server
-        but the in-memory list hasn't been hydrated yet) */
+       is available, e.g. a session that was loaded from the server
+       but the in-memory list hasn't been hydrated yet) */
   if(Array.isArray(state.messages)&&state.messages.length){
+    var maxTurns=HISTORY_MAX_TURNS*2;
+    var tooMany=state.messages.length>maxTurns;
+    var summary=null;
+    if(tooMany){
+      /* Compress the overflow messages into a summary prefix. */
+      var overflow=state.messages.slice(0,state.messages.length-maxTurns);
+      summary=compressMessages(overflow);
+    }
     var out=[];
-    for(var i=state.messages.length-1;i>=0&&out.length<HISTORY_MAX_TURNS*2;i--){
+    if(summary){
+      out.push({role:"system",content:"[Conversation summary of earlier messages]: "+summary});
+    }
+    for(var i=Math.max(0,state.messages.length-maxTurns);i<state.messages.length;i++){
       var m=state.messages[i];
       if(!m||!m.rawText)continue;
       var txt=String(m.rawText).replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
       if(!txt)continue;
       if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";
-      out.unshift({role:m.role==="user"?"user":"assistant",content:txt});
+      out.push({role:m.role==="user"?"user":"assistant",content:txt});
     }
     if(out.length)return out;
   }
   var sid=state.currentSessionId;
   var rec=sid?loadLocalMemory(sid):null;
   if(rec&&rec.messages&&rec.messages.length){
+    var maxTurns=HISTORY_MAX_TURNS*2;
+    var tooMany=rec.messages.length>maxTurns;
+    var summary=null;
+    if(tooMany){
+      var overflow=rec.messages.slice(0,rec.messages.length-maxTurns);
+      summary=compressMessages(overflow);
+    }
     var out=[];
-    for(var i=rec.messages.length-1;i>=0&&out.length<HISTORY_MAX_TURNS*2;i--){
-      var m=rec.messages[i];
+    if(summary){
+      out.push({role:"system",content:"[Conversation summary of earlier messages]: "+summary});
+    }
+    for(var ri=Math.max(0,rec.messages.length-maxTurns);ri<rec.messages.length;ri++){
+      var m=rec.messages[ri];
       if(!m||!m.content)continue;
       var txt=String(m.content).replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
       if(!txt)continue;
       if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";
-      out.unshift({role:m.role==="user"?"user":"assistant",content:txt});
+      out.push({role:m.role==="user"?"user":"assistant",content:txt});
     }
     if(out.length)return out;
     /* Fall through to DOM if local cache has nothing usable */
