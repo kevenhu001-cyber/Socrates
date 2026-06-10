@@ -64,8 +64,12 @@ router.delete('/:id', async (req, res, next) => {
 router.post('/:id/enable', async (req, res, next) => {
   try {
     const db = getDb();
+    const [m] = await db.select().from(memories)
+      .where(and(eq(memories.id, req.params.id), eq(memories.userId, req.userId)))
+      .limit(1);
+    if (!m) throw new NotFound('Memory not found');
     await db.update(memories).set({ enabled: true })
-      .where(and(eq(memories.id, req.params.id), eq(memories.userId, req.userId)));
+      .where(eq(memories.id, req.params.id));
     return res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -74,8 +78,12 @@ router.post('/:id/enable', async (req, res, next) => {
 router.post('/:id/disable', async (req, res, next) => {
   try {
     const db = getDb();
+    const [m] = await db.select().from(memories)
+      .where(and(eq(memories.id, req.params.id), eq(memories.userId, req.userId)))
+      .limit(1);
+    if (!m) throw new NotFound('Memory not found');
     await db.update(memories).set({ enabled: false })
-      .where(and(eq(memories.id, req.params.id), eq(memories.userId, req.userId)));
+      .where(eq(memories.id, req.params.id));
     return res.json({ ok: true });
   } catch (err) { next(err); }
 });

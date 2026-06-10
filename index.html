@@ -329,7 +329,8 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .top-bar-left{display:flex;align-items:center;gap:6px}
 .toggle-sidebar{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .06s,background .06s}
 .toggle-sidebar:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}.toggle-sidebar svg{width:16px;height:16px}
-.topic-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:16px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.1)}
+.topic-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:16px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.1);max-width:calc(100vw - 180px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topic-badge span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topic-badge .tb-dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000))}
 .plan-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 8px 3px 6px;border-radius:6px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));background:hsl(var(--bg-200))}
 .plan-dot{width:3px;height:3px;background:hsl(var(--text-500)/0.3);border-radius:50%}
@@ -1899,6 +1900,8 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
      latest, which can break the chat UI silently). -->
 <script src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js" integrity="sha384-YTBHtsL8yVTHcLakYNyrOfK3K+QQcXiECuaALJ+3j7Mo681Rtzadt8NR6WrZH+eQ" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-ifpG+NlgMq0kvOSGqGQxW1mJKpjjMDmZdpKGq3tbvD3WPhyshCEEYClriK/wRVU0" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js" integrity="sha384-yQ4mmBBT+vhTAwjFH0toJXNYJ6O4usWnt6EPIdWwrRvx2V/n5lXuDZQwQFeSFydF" crossorigin="anonymous" onload="try{mermaid.initialize({startOnLoad:false})}catch(_){}"></script>
 <!-- highlight.js (code syntax highlighting). Optional: if the CDN is
      blocked, hljs is undefined and addStreamingMessage falls back to
      plain <pre><code> rendering. -->
@@ -6646,6 +6649,19 @@ function teardownThinkStructure(){
         body.appendChild(cursor);
       }
       streamContent.innerHTML=formatMsgProgressive(displayFull);
+      /* Highlight closed code blocks during streaming (now that
+         formatMsgProgressive uses marked.parse, code blocks are
+         proper <pre><code> elements that hljs can process). */
+      if(typeof hljs!=="undefined"){
+        var codeBlocks=streamContent.querySelectorAll("pre code");
+        for(var _hci=0;_hci<codeBlocks.length;_hci++){
+          var _cb=codeBlocks[_hci];
+          if(_cb.dataset.hljsDone)continue;
+          var _raw=_cb.textContent||"";
+          if(/```\s*$/.test(_raw))continue;
+          try{hljs.highlightElement(_cb);_cb.dataset.hljsDone="1"}catch(_e){}
+        }
+      }
     }else{
       /* Think block is in play. Lay out the three-section
          structure once, then update the text nodes and the
@@ -6666,10 +6682,24 @@ function teardownThinkStructure(){
          formatMsg pass, so this is purely the mid-stream view. */
       if(thinkState.lastRenderedBefore!==beforeText){
         thinkState.beforeNode.innerHTML=beforeText?formatMsgProgressive(beforeText):"";
+        if(typeof hljs!=="undefined"&&beforeText){
+          thinkState.beforeNode.querySelectorAll("pre code").forEach(function(c){
+            if(c.dataset&&c.dataset.hljsDone)return;
+            if(/```\s*$/.test(c.textContent||""))return;
+            try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
+          });
+        }
         thinkState.lastRenderedBefore=beforeText;
       }
       if(thinkState.lastRenderedAfter!==afterText){
         thinkState.afterNode.innerHTML=afterText?formatMsgProgressive(afterText):"";
+        if(typeof hljs!=="undefined"&&afterText){
+          thinkState.afterNode.querySelectorAll("pre code").forEach(function(c){
+            if(c.dataset&&c.dataset.hljsDone)return;
+            if(/```\s*$/.test(c.textContent||""))return;
+            try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
+          });
+        }
         thinkState.lastRenderedAfter=afterText;
       }
       /* When </think> has been seen, swap the summary to a
@@ -6776,8 +6806,8 @@ function teardownThinkStructure(){
       /* P1.2 — single formatMsg pass at finish time, write to
          state.messages[i].html, and replace the streaming nodes
          with the final innerHTML (which includes the cursor removal).
-         This is the only place marked + KaTeX run; doRender above
-         only mutates a text node. */
+         This is the only place marked + KaTeX run for the FINAL render; doRender above
+         now also uses marked + KaTeX via formatMsgProgressive for live streaming. */
       var total=full.length;
       var firstChunkDuration=Date.now()-(thinkStarted||Date.now());
       /* Skip the char-by-char animation when the response contains
@@ -6875,6 +6905,7 @@ function teardownThinkStructure(){
       finishAfterRender();
 
       function finishAfterRender(){
+        try{processPendingMermaid()}catch(_){}
         if(hasSources){
           var card=renderSourcesCard(sourcesSnapshot);
           if(card)div.appendChild(card);
@@ -7765,6 +7796,77 @@ function vizErrorHtml(message){
   '</div>';
 }
 
+/* ── Mermaid diagram rendering ──
+   Pending mermaid diagrams registered during formatMsg().
+   Processed asynchronously in processPendingMermaid() after
+   the final innerHTML is set, because mermaid.render() is async. */
+var _pendingMermaid=[];
+
+function renderMermaid(code){
+  /* If mermaid failed to load, fall back to a code block */
+  if(typeof mermaid==="undefined"){
+    return'<pre><code class="language-mermaid">'+esc(code)+'</code></pre>';
+  }
+  var id="mermaid-card-"+(++_vizId);
+  _pendingMermaid.push({id:id,code:code});
+  return'<div class="viz-card" id="'+id+'" data-viz-state="loading">'+
+    '<div class="viz-card-head">'+
+      '<span class="viz-card-head-icon">'+VIZ_ICON_RENDER+'</span>'+
+      '<span class="viz-card-title">Diagram</span>'+
+      '<span class="viz-card-status">Rendering</span>'+
+      vizHeadActions(id,'socrates-mermaid-'+id)+
+    '</div>'+
+    '<div class="viz-card-body">'+vizSkeletonHtml()+'</div>'+
+  '</div>';
+}
+
+function processPendingMermaid(){
+  if(typeof mermaid==="undefined")return;
+  var pending=_pendingMermaid;
+  _pendingMermaid=[];
+  pending.forEach(function(item){
+    try{
+      mermaid.render('mermaid-svg-'+item.id,item.code)
+        .then(function(result){
+          var el=document.getElementById(item.id);
+          if(!el)return;
+          var body=el.querySelector('.viz-card-body');
+          if(!body)return;
+          body.innerHTML=result.svg;
+          el.setAttribute('data-viz-state','ready');
+          if(result.bindFunctions)result.bindFunctions(body);
+          /* Auto-size based on SVG dimensions */
+          var svg=body.querySelector('svg');
+          if(svg){
+            svg.style.maxWidth='100%';
+            svg.style.height='auto';
+          }
+        })
+        .catch(function(err){
+          var el=document.getElementById(item.id);
+          if(!el)return;
+          var body=el.querySelector('.viz-card-body');
+          if(!body)return;
+          body.innerHTML='<div class="viz-error">'+
+            '<div class="viz-error-icon">!</div>'+
+            '<div class="viz-error-detail">Mermaid error: '+esc(err.message||String(err))+'</div>'+
+          '</div>';
+          el.setAttribute('data-viz-state','error');
+        });
+    }catch(e){
+      var el=document.getElementById(item.id);
+      if(!el)return;
+      var body=el.querySelector('.viz-card-body');
+      if(!body)return;
+      body.innerHTML='<div class="viz-error">'+
+        '<div class="viz-error-icon">!</div>'+
+        '<div class="viz-error-detail">Mermaid error: '+esc(e.message||String(e))+'</div>'+
+      '</div>';
+      el.setAttribute('data-viz-state','error');
+    }
+  });
+}
+
 /* While the AI is still streaming, render the skeleton. The data-
    viz-state is "loading". */
 function renderVizLoading(){
@@ -7932,6 +8034,48 @@ function stripChatArtifacts(t){
    Performance: O(n) per call. Called once per animation frame
    (rAF, ~60 Hz), so even a 4000-char response renders in well
    under 1 ms. */
+function escHTML(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+
+/* ── KaTeX macros and config ──
+   Defined globally so both formatMsgProgressive and formatMsg can use them.
+   - \div → \operatorname{div}   (divergence, not ÷)
+   - \curl → \operatorname{curl} (curl)
+   - \grad → \operatorname{grad} (gradient)
+   - \laplacian → \nabla^2
+   - \R/\N/\Z/\Q/\C → \mathbb{...} (number sets) */
+var KATEX_MACROS={
+  "\\div":"\\operatorname{div}",
+  "\\curl":"\\operatorname{curl}",
+  "\\grad":"\\operatorname{grad}",
+  "\\laplacian":"\\nabla^2",
+  "\\R":"\\mathbb{R}",
+  "\\N":"\\mathbb{N}",
+  "\\Z":"\\mathbb{Z}",
+  "\\Q":"\\mathbb{Q}",
+  "\\C":"\\mathbb{C}",
+  "\\eps":"\\varepsilon",
+  "\\ve":"\\varepsilon",
+  "\\dd":"\\operatorname{d}",
+  "\\pd":"\\partial",
+  "\\T":"\\top",
+  "\\tr":"\\operatorname{tr}",
+  "\\rank":"\\operatorname{rank}",
+  "\\im":"\\operatorname{im}",
+  "\\re":"\\operatorname{Re}",
+  "\\Var":"\\operatorname{Var}",
+  "\\Cov":"\\operatorname{Cov}",
+  "\\argmin":"\\operatorname{argmin}",
+  "\\argmax":"\\operatorname{argmax}",
+  "\\sgn":"\\operatorname{sgn}",
+  "\\supp":"\\operatorname{supp}",
+  "\\Span":"\\operatorname{span}",
+  "\\diag":"\\operatorname{diag}",
+  "\\proj":"\\operatorname{proj}",
+  "\\per":"\\perp",
+   "\\U":"\\cup",
+   "\\union":"\\cup",
+   "\\intersection":"\\cap",
+};
 function formatMsgProgressive(t){
   if(!t)return"";
   var s=String(t);
@@ -7941,161 +8085,117 @@ function formatMsgProgressive(t){
   if(s.charCodeAt(s.length-1)===10){s=s.slice(0,-1)}
   if(!s)return"";
 
-  var lines=s.split("\n");
-  var n=lines.length;
-  var out=[];
-  var st={inCode:false,codeLang:"",codeBuf:[],listType:null};
+  /* ── Progressive renderer using marked.parse + KaTeX ──
+     This mirrors formatMsg's approach so that formulas, tables, and
+     other rich content render correctly DURING streaming, not just
+     after finish(). The key difference from formatMsg is handling
+     of UNCLOSED blocks (partial $$, unclosed code fences, incomplete
+     tables) that exist mid-stream: we try to render them gracefully
+      or show a subtle placeholder instead of dumping raw LaTeX/markup. */
 
-  for(var i=0;i<n;i++){
-    var line=lines[i];
-
-    /* Code fence ``` ... ``` — checked first so a bare ``` line
-       is only meaningful as a fence. */
-    var fence=line.match(/^```(\w*)\s*$/);
-    if(fence){
-      if(st.inCode){flushCodeProgressive(out,st)}
-      else{
-        closeListProgressive(out,st);
-        st.inCode=true;
-        st.codeLang=fence[1]||"";
-        st.codeBuf=[];
-      }
-      continue;
-    }
-    if(st.inCode){st.codeBuf.push(line);continue}
-
-    /* ATX heading: # H1 … ###### H6. Empty heading content is
-       allowed so `# ` renders as <h1></h1> instead of falling
-       through to <p># </p> mid-stream (visible flicker). */
-    var h=line.match(/^(#{1,6})\s+(.*)$/);
-    if(h){
-      closeListProgressive(out,st);
-      var lvl=h[1].length;
-      out.push("<h"+lvl+">"+renderInlineProgressive(h[2])+"</h"+lvl+">");
-      continue;
-    }
-
-    /* Unordered list: -, *, + */
-    var ul=line.match(/^[-*+]\s+(.*)$/);
-    if(ul){
-      if(st.listType!=="ul"){
-        closeListProgressive(out,st);
-        out.push("<ul>");
-        st.listType="ul";
-      }
-      out.push("<li>"+renderInlineProgressive(ul[1])+"</li>");
-      continue;
-    }
-
-    /* Ordered list: 1. 2. … */
-    var ol=line.match(/^\d+\.\s+(.*)$/);
-    if(ol){
-      if(st.listType!=="ol"){
-        closeListProgressive(out,st);
-        out.push("<ol>");
-        st.listType="ol";
-      }
-      out.push("<li>"+renderInlineProgressive(ol[1])+"</li>");
-      continue;
-    }
-
-    /* Blockquote: > … — consecutive > lines collapse into a
-       single <blockquote> with <br> between them. */
-    if(/^>\s+/.test(line) || line===">"){
-      closeListProgressive(out,st);
-      var qLines=[];
-      while(i<n && (/^>\s+/.test(lines[i]) || lines[i]===">")){
-        qLines.push(lines[i].replace(/^>\s?/,""));
-        i++;
-      }
-      i--; /* outer for-loop increments */
-      out.push("<blockquote>"+qLines.map(renderInlineProgressive).join("<br>")+"</blockquote>");
-      continue;
-    }
-
-    /* Horizontal rule: ---, ***, ___ (3+ of the same char, optional
-       spaces). We test inline so the regex intent stays close to
-       the use site. */
-    if(/^(?:[-*_]\s*){3,}$/.test(line)){
-      closeListProgressive(out,st);
-      out.push("<hr>");
-      continue;
-    }
-
-    /* Blank line = paragraph break. Collapse runs of blanks. */
-    if(line===""){
-      closeListProgressive(out,st);
-      while(i+1<n && lines[i+1]==="")i++;
-      continue;
-    }
-
-    /* Regular paragraph: gather consecutive non-empty non-block
-       lines into a single <p>, joined with <br> for soft breaks. */
-    closeListProgressive(out,st);
-    var pLines=[line];
-    i++;
-    while(i<n && lines[i]!=="" && !isBlockStartProgressive(lines[i])){
-      pLines.push(lines[i]);
-      i++;
-    }
-    i--;
-    out.push("<p>"+pLines.map(renderInlineProgressive).join("<br>")+"</p>");
+  var blocks=[];
+  var pid=0;
+  function save(html){
+    var id=pid++;
+    blocks.push(html);
+    return'\x00BLOCK'+id+'\x00';
   }
 
-  closeListProgressive(out,st);
-  if(st.inCode)flushCodeProgressive(out,st);
-  return out.join("");
-}
+  /* 1. Closed think blocks */
+  s=s.replace(/<think>([\s\S]*?)<\/think>/g,function(_,content){
+    var inner;
+    try{
+      inner=formatMsgProgressive(content.trim().replace(/<\/?think>/g,""));
+    }catch(_e){
+      inner=escHTML(content.trim());
+    }
+    return save('<details class="think-block"><summary class="think-summary">Thinking</summary><div class="think-content">'+inner+'</div></details>');
+  });
+  /* Unclosed <think> — show pulsing placeholder */
+  s=s.replace(/<think>([\s\S]*)$/g,function(_,content){
+    var inner="";
+    try{
+      var c=content.trim().replace(/<\/?think>/g,"");
+      inner=c?formatMsgProgressive(c):'<span class="thinking-pulse"></span> Thinking…';
+    }catch(_e){
+      inner=escHTML(content.trim());
+    }
+    return save('<details class="think-block"><summary class="think-summary"><span class="thinking-pulse"></span> Thinking…</summary><div class="think-content">'+inner+'</div></details>');
+  });
 
-function closeListProgressive(out,st){
-  if(st.listType){out.push("</"+st.listType+">");st.listType=null}
-}
-
-function flushCodeProgressive(out,st){
-  var code=st.codeBuf.join("\n");
-  var langAttr=st.codeLang?' class="language-'+escAttr(st.codeLang)+'"':"";
-  out.push("<pre><code"+langAttr+">"+escHTML(code)+"</code></pre>");
-  st.inCode=false;
-  st.codeLang="";
-  st.codeBuf=[];
-}
-
-function isBlockStartProgressive(line){
-  return /^(#{1,6}\s+|[-*+]\s+|\d+\.\s+|>[\s>]?|```|[-*_]{3,}\s*[-*_]*\s*$)/.test(line);
-}
-
-function escHTML(s){
-  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
-function escAttr(s){
-  return escHTML(s).replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-}
-
-/* Inline markdown for the progressive renderer. Stashes the
-   generated HTML in nonce placeholders, escapes the surrounding
-   text, then restores — so user text that happens to contain the
-   literal string "<code>" or "&lt;" is NEVER re-interpreted as a
-   real tag (a bug in the old escape-restore approach). */
-function renderInlineProgressive(s){
-  if(!s)return"";
-  /* Nonce per call so user text containing the placeholder string
-     can never collide. */
-  var nonce="z"+Math.random().toString(36).slice(2,10);
-  var stash=[];
-  function st(html){var k="\x01"+nonce+stash.length+"\x02";stash.push(html);return k}
-  /* Longer patterns first so ** (bold) wins over * (italic). */
-  s=s
-    .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g,function(_,alt,url){return st('<img src="'+escAttr(url)+'" alt="'+escAttr(alt)+'">')})
-    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,function(_,text,url){return st('<a href="'+escAttr(url)+'" target="_blank" rel="noopener">'+text+'</a>')})
-    .replace(/`([^`\n]+)`/g,function(_,code){return st('<code>'+escHTML(code)+'</code>')})
-    .replace(/\*\*([^*\n]+)\*\*/g,function(_,text){return st('<strong>'+text+'</strong>')})
-    .replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g,function(_,pre,text){return st(pre+'<em>'+text+'</em>')})
-    .replace(/~~([^~\n]+)~~/g,function(_,text){return st('<del>'+text+'</del>')});
-  s=escHTML(s);
-  for(var j=0;j<stash.length;j++){
-    s=s.split("\x01"+nonce+j+"\x02").join(stash[j]);
+  /* 2. Display math $$...$$ — CLOSED blocks render with KaTeX now.
+     Unclosed $$ (still streaming) are also rendered with KaTeX
+     (throwOnError:false means partial LaTeX degrades gracefully);
+     if KaTeX can't handle it at all, show a subtle placeholder. */
+  if(typeof katex!=="undefined"){
+    /* Closed $$...$$ — render immediately */
+    s=s.replace(/\$\$([\s\S]+?)\$\$/g,function(_,math){
+      try{
+        return save(katex.renderToString(math.trim(),{displayMode:true,throwOnError:false,macros:KATEX_MACROS}));
+      }catch(e){
+        return save('<pre>'+escHTML('$$'+math+'$$')+'</pre>');
+      }
+    });
+    /* Unclosed $$ — try KaTeX on the partial content; if it fails,
+       show a subtle placeholder so raw LaTeX source is hidden */
+    s=s.replace(/\$\$([\s\S]+)$/g,function(_,math){
+      try{
+        return save(katex.renderToString(math.trim(),{displayMode:true,throwOnError:false,macros:KATEX_MACROS}));
+      }catch(e){
+        return save('<span class="math-partial" style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
+      }
+    });
   }
-  return s;
+
+  /* 3. Inline math $...$ — same as formatMsg */
+  if(typeof katex!=="undefined"){
+    s=s.replace(/\$([^\$\n]+?)\$/g,function(_,math){
+      try{
+        return save(katex.renderToString(math.trim(),{displayMode:false,throwOnError:false,macros:KATEX_MACROS}));
+      }catch(e){
+        return save('<code>'+escHTML("$"+math+"$")+'</code>');
+      }
+    });
+  }
+
+  /* 4. Closed code fences ```lang\n...\n``` — render as <pre><code> */
+  s=s.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){
+    var trimmed=code.trim();
+    var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
+    return save('<pre><code'+langAttr+'>'+escHTML(trimmed)+'</code></pre>');
+  });
+
+  /* 5. Unclosed code fence — show what we have so far in a code
+     block rather than letting marked dump it as raw text */
+  s=s.replace(/```(\w*)\n?([\s\S]*)$/g,function(_,lang,body){
+    var trimmed=body.trim();
+    if(trimmed){
+      var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
+      return save('<pre><code'+langAttr+'>'+escHTML(trimmed)+'</code></pre>');
+    }
+    return save('<span style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
+  });
+
+  /* 6. Render Markdown via marked.parse — handles tables, lists,
+     headings, blockquotes, paragraphs, links, images, etc. with
+     full GFM support, matching the final formatMsg output.
+     This is the key change: we now use marked.parse during streaming
+     instead of a custom lightweight renderer, so tables and other
+     GFM features render correctly as they stream in. */
+  var html;
+  if(typeof marked!=="undefined"){
+    html=marked.parse(s,{breaks:true,gfm:true});
+  }else{
+    /* Fallback: very basic markdown if marked is unavailable */
+    html="<p>"+escHTML(s).replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>")+"</p>";
+  }
+
+  /* 7. Restore protected blocks */
+  html=html.replace(/\x00BLOCK(\d+)\x00/g,function(_,id){
+    return blocks[parseInt(id)];
+  });
+
+  return html;
 }
 
 function formatMsg(t){
@@ -8162,7 +8262,19 @@ function formatMsg(t){
     return save('<details class="think-block"><summary class="think-summary"><span class="thinking-pulse"></span> Thinking…</summary><div class="think-content">'+inner+'</div></details>');
   });
 
-  /* 1c. Viz blocks — AI-generated HTML in a sandboxed iframe.
+  /* 1c. Mermaid diagram blocks — render as SVG via mermaid.js.
+     Closed ```mermaid fences produce a viz-card that is filled
+     asynchronously by processPendingMermaid() after the innerHTML
+     is set. Unclosed fences show a loading skeleton. */
+  t=t.replace(/```mermaid\s*\n?([\s\S]*?)```/g,function(_,code){
+    var trimmed=code.trim();
+    return trimmed?save(renderMermaid(trimmed)):'';
+  });
+  t=t.replace(/```mermaid\s*\n?([\s\S]*?)$/g,function(_,body){
+    return save(renderVizLoading());
+  });
+
+  /* 1d. Viz blocks — AI-generated HTML in a sandboxed iframe.
      ```viz <any HTML with inline CSS/JS> ``` or ```html <viz HTML> ```.
      IMPORTANT: we replace BEFORE marked.js runs so that the raw
      HTML inside a viz/html fence is never rendered as <pre><code>
@@ -8212,7 +8324,7 @@ function formatMsg(t){
   /* 3. Display math $$...$$ */
   t=t.replace(/\$\$([\s\S]*?)\$\$/g,function(_,math){
     try{
-      return save(katex.renderToString(math.trim(),{displayMode:true,throwOnError:false}));
+      return save(katex.renderToString(math.trim(),{displayMode:true,throwOnError:false,macros:KATEX_MACROS}));
     }catch(e){
       return save('<pre>'+esc('$$'+math+'$$')+'</pre>');
     }
@@ -8221,7 +8333,7 @@ function formatMsg(t){
   /* 4. Inline math $...$ */
   t=t.replace(/\$(.+?)\$/g,function(_,math){
     try{
-      return save(katex.renderToString(math.trim(),{displayMode:false,throwOnError:false}));
+      return save(katex.renderToString(math.trim(),{displayMode:false,throwOnError:false,macros:KATEX_MACROS}));
     }catch(e){
       return save('<code>'+esc('$'+math+'$')+'</code>');
     }
@@ -11319,10 +11431,10 @@ function getSystemContext(){
    no Socratic questioning, no knowledge-graph awareness. Used when
    the user picks "Chat mode" on the topic-setup screen. */
 
-var CHAT_SYSTEM_PROMPT = "You are a helpful, knowledgeable assistant having a plain conversation with the user. Answer their questions directly and conversationally.\n\n- Use Markdown for structure (headings, lists, **bold**, *italic*, `code`).\n- Use LaTeX for math: $...$ for inline and $$...$$ for display. Follow the same KaTeX rules as the tutor (lowercase commands only, no `\\\\begin{align}` etc.).\n- Do NOT emit `<quiz>`, `<example>`, `<practice>`, or `<mistake>` blocks. They are tutor-mode constructs and will not be rendered here.\n- Keep responses proportionate to the question. A one-line question deserves a focused answer, not a textbook chapter.\n- Read the conversation history before answering. Never restart from zero or repeat yourself.\n- Match the language the user is writing in.\n\n## Web search tool\n\nYou have access to a web_search tool. It runs a real-time search and returns results (with full article text for the top hits) that you can use as fresh, authoritative information.\n\n**When to use it — be conservative. Only call it when one of these is true:**\n- The user explicitly asks you to look something up, search, or check (\"search for X\", \"look up X\", \"what's the latest on X\").\n- The question is about current events, recent releases, prices, scores, dates, or anything that may have changed since your training cutoff, AND the answer would be misleading if it were stale.\n- The question requires information from many sources (a comparison, a survey, recent research) that you cannot reliably produce from training alone.\n- You tried to answer and realized you don't actually know with confidence.\n\n**When NOT to use it — answer directly from your own knowledge:**\n- The question is conceptual, definitional, or about how something works (\"explain X\", \"how does Y work\").\n- It's a coding, math, logic, language, or general-knowledge question you can answer confidently.\n- The user is just chatting, brainstorming, or asking your opinion.\n- The user already gave you the information in the conversation.\n- Calling search would add latency without changing the answer.\n- If the user already pasted URLs and you can answer from them, do NOT call search — that just adds latency.\n\n**Reading URLs the user shares:**\nWhen the user's message contains an http(s) URL, the system has already fetched the page and prepended a `[Referenced page] <url>\nTitle: …\n<content>` block to the user's turn. Treat that block as the authoritative source for anything about that page — quote from it, summarize it, answer questions about it. Do NOT refuse and do NOT ask the user to paste the content themselves; you can see it. If the block says the page could not be retrieved, acknowledge that honestly and proceed from what you know.\n\n- Cite the URL inline using `[1]`, `[2]`, … in the order the pages appear in the prompt. The numbers map to the order of `[Referenced page]` blocks. At the end of your answer (or whenever the user asks for sources), list them as:\n  [1] Title — https://example.com/...\n  [2] Title — https://example.com/...\n- If you quote a sentence, put the citation right after the closing punctuation: `…end of quote. [1]`\n- Do not invent URLs that weren't in the prompt. If you need additional sources, use the web_search tool above.\n\n**How to call it — EXACT format required:**\nIf you decide to search, output EXACTLY one of these JSON formats and NOTHING else on that turn — no preamble, no apology, no commentary, no extra text:\n\nPreferred (single JSON on its own line):\n{\"tool\":\"web_search\",\"query\":\"<one short keyword query, max 8 words>\"}\n\nAlternative (inside a code block):\n```json\n{\"tool\":\"web_search\",\"query\":\"<one keyword query>\"}\n```\n\nCRITICAL — do NOT:\n- Say anything before the JSON (no \"I'll search\", \"Let me look that up\", etc.)\n- Wrap it in [TOOL_CALL] or any other tags — use the raw JSON format only\n- Output multiple tool calls — ONE search per turn\n- Use queries longer than 8 words — be specific but concise\n\nIf you do NOT need to search, just answer the user normally. The system will not see any tool call and will display your response directly.\n\nWhen search results DO come back, you will see a `[Web research]` block in the next round. Cite results inline as [1], [2], etc. If the user asked for sources, list them.";
+var CHAT_SYSTEM_PROMPT = "You are a helpful, knowledgeable assistant having a plain conversation with the user. Answer their questions directly and conversationally.\n\n- Use Markdown for structure (headings, lists, **bold**, *italic*, `code`).\n- Use LaTeX for math: $...$ for inline and $$...$$ for display.\n- For diagrams (flowcharts, sequence diagrams, class diagrams, etc.), use ```mermaid code blocks instead of ASCII art — they render as live SVG.\n- Follow the same KaTeX rules as the tutor (lowercase commands only, no `\\\\begin{align}` etc.).\n- Do NOT emit `<quiz>`, `<example>`, `<practice>`, or `<mistake>` blocks. They are tutor-mode constructs and will not be rendered here.\n- Keep responses proportionate to the question. A one-line question deserves a focused answer, not a textbook chapter.\n- Read the conversation history before answering. Never restart from zero or repeat yourself.\n- Match the language the user is writing in.\n\n## Web search tool\n\nYou have access to a web_search tool. It runs a real-time search and returns results (with full article text for the top hits) that you can use as fresh, authoritative information.\n\n**When to use it — be conservative. Only call it when one of these is true:**\n- The user explicitly asks you to look something up, search, or check (\"search for X\", \"look up X\", \"what's the latest on X\").\n- The question is about current events, recent releases, prices, scores, dates, or anything that may have changed since your training cutoff, AND the answer would be misleading if it were stale.\n- The question requires information from many sources (a comparison, a survey, recent research) that you cannot reliably produce from training alone.\n- You tried to answer and realized you don't actually know with confidence.\n\n**When NOT to use it — answer directly from your own knowledge:**\n- The question is conceptual, definitional, or about how something works (\"explain X\", \"how does Y work\").\n- It's a coding, math, logic, language, or general-knowledge question you can answer confidently.\n- The user is just chatting, brainstorming, or asking your opinion.\n- The user already gave you the information in the conversation.\n- Calling search would add latency without changing the answer.\n- If the user already pasted URLs and you can answer from them, do NOT call search — that just adds latency.\n\n**Reading URLs the user shares:**\nWhen the user's message contains an http(s) URL, the system has already fetched the page and prepended a `[Referenced page] <url>\nTitle: …\n<content>` block to the user's turn. Treat that block as the authoritative source for anything about that page — quote from it, summarize it, answer questions about it. Do NOT refuse and do NOT ask the user to paste the content themselves; you can see it. If the block says the page could not be retrieved, acknowledge that honestly and proceed from what you know.\n\n- Cite the URL inline using `[1]`, `[2]`, … in the order the pages appear in the prompt. The numbers map to the order of `[Referenced page]` blocks. At the end of your answer (or whenever the user asks for sources), list them as:\n  [1] Title — https://example.com/...\n  [2] Title — https://example.com/...\n- If you quote a sentence, put the citation right after the closing punctuation: `…end of quote. [1]`\n- Do not invent URLs that weren't in the prompt. If you need additional sources, use the web_search tool above.\n\n**How to call it — EXACT format required:**\nIf you decide to search, output EXACTLY one of these JSON formats and NOTHING else on that turn — no preamble, no apology, no commentary, no extra text:\n\nPreferred (single JSON on its own line):\n{\"tool\":\"web_search\",\"query\":\"<one short keyword query, max 8 words>\"}\n\nAlternative (inside a code block):\n```json\n{\"tool\":\"web_search\",\"query\":\"<one keyword query>\"}\n```\n\nCRITICAL — do NOT:\n- Say anything before the JSON (no \"I'll search\", \"Let me look that up\", etc.)\n- Wrap it in [TOOL_CALL] or any other tags — use the raw JSON format only\n- Output multiple tool calls — ONE search per turn\n- Use queries longer than 8 words — be specific but concise\n\nIf you do NOT need to search, just answer the user normally. The system will not see any tool call and will display your response directly.\n\nWhen search results DO come back, you will see a `[Web research]` block in the next round. Cite results inline as [1], [2], etc. If the user asked for sources, list them.";
 
 /* Tutor mode: the long textbook-style Socratic prompt. */
-var SOCRATIC_SYSTEM_PROMPT = "You are Socrates, a rigorous textbook author and patient tutor. Your explanations must read like a chapter from an authoritative English-language textbook — **systematic, logically progressive, precise in language, and thorough in foundation-building**. Every topic should be presented as part of a coherent knowledge system, not as isolated facts. Your teaching proceeds in a natural flow — Motivate → Define → Develop → Illustrate → Exercise — but you do NOT follow a fixed heading template; adapt the structure to the content.\n\n---\n## CORE PRINCIPLES — how to think like a textbook author\n\n**1. Coherent Knowledge System — every concept connects.**\n- Every new concept MUST be explicitly connected to what the student already knows from this lesson. Start each section with a brief sentence linking back: \"Building on our understanding of X, we now turn to Y.\"\n- Create a narrative arc across the lesson. The sub-topics are not independent — they are chapters of a book. Show how each piece fits into the larger picture.\n- After teaching a concept, briefly foreshadow what comes next and why: \"This property of X will become essential when we later discuss Y.\"\n- End each topic with a **takeaway sentence** that sums up what was learned and how it connects to the next topic.\n\n**2. Layer by Layer — from foundation to summit.**\n- Start from the absolute foundation. Even if the student claims familiarity, begin with the core definition and build up. Do NOT assume prior knowledge.\n- Each layer MUST be firmly established before moving to the next. A layer is established when you have: defined it → illustrated it with an example → checked understanding.\n- Progression: concrete → abstract → general. Start with specific numeric instances, then generalize to abstract forms, then state the general theorem or formula.\n- Do NOT jump to advanced applications before the foundation is solid. The learner should feel like each step is a natural, inevitable next step.\n\n**3. No Shortcuts on Fundamentals.**\n- The first example for any concept should be **deliberately simple** — so simple it feels obvious. This is not wasted time; this is anchoring intuition.\n- Before introducing a formula or theorem, spend a paragraph explaining **why it makes sense intuitively**. Use a concrete numeric case first, then generalize.\n- Common pitfalls and edge cases should be introduced AFTER the basic understanding is secured — not before.\n- If a concept has prerequisites, briefly review or reference them before proceeding.\n\n**4. Textbook Formal Register — precise academic English.**\n- Use formal, precise academic language. Avoid contractions (\"don't\", \"it's\", \"can't\" → \"does not\", \"it is\", \"cannot\"). Avoid conversational fillers (\"well\", \"so\", \"you see\", \"basically\", \"essentially\", \"kind of\", \"sort of\").\n- Be rigorous in your statements: say \"the function f is continuous on the closed interval [a, b]\" not \"the function is continuous on this range\".\n- Use the first-person plural (\"we\") throughout for the shared learning journey: \"We now consider...\", \"This leads us to...\", \"We observe that...\", \"We may therefore conclude...\"\n- Use the present tense for mathematical truth: \"The derivative represents...\", not \"The derivative will represent...\". Mathematical statements are timeless.\n- Definitions must be stated in standard textbook form: \"**Definition** (Term). Let X be ...\" Bold the term being defined.\n- Theorems, lemmas, and properties should be clearly labeled: \"**Theorem 1** (Fundamental Theorem of Calculus).\", \"**Lemma 2.**\", \"**Proposition.**\", \"**Key Property.**\"\n- Use transitional phrases that signal logical structure: \"Therefore...\", \"Conversely...\", \"In particular...\", \"More generally...\", \"As a concrete illustration...\", \"On the other hand...\", \"It follows that...\", \"Observe that...\", \"Notice that...\", \"By contrast...\", \"Furthermore...\", \"Hence...\", \"Thus we see that...\"\n- Number important equations for reference: $$\\\\label{eq:1} ... $$  (but never use \\\\label literally — just write \"(1)\" manually after the equation).\n- Use the **Definition → Theorem → Proof → Example → Exercise** cadence that characterizes rigorous textbooks.\n\n---\n## EXPLANATION STRUCTURE — flowing, but thorough\n\nDo NOT force every explanation into rigid section headings. Instead, write a flowing exposition that covers these phases seamlessly:\n\n1. **Motivation & Context (Introduction)** — Set the stage. Frame the problem this concept solves. Connect to previously learned material. Address the question: Why should the student care? What question does this concept answer? What gap does it fill? 2-4 paragraphs.\n\n2. **Precise Development (Definition &amp; Derivation)** — Develop the concept step by step. Define every new term with textbook precision. Show derivations in full detail — do not skip algebraic steps. Include small inline examples after each sub-idea, not as separate sections but as immediate illustrations. Go deeper into implications, edge cases, and connections. This is the main body and should be **8-20 paragraphs** depending on complexity.\n\n3. **Consolidation (Summary &amp; Transition)** — End the exposition with 1-2 paragraphs that consolidate what was learned, restate the key result, and explicitly connect to the next topic: \"Having established X, we are now ready to explore Y.\"\n\n---\n## PARAGRAPH CRAFT — how to write each paragraph\n\n- Every paragraph should make ONE clear point. The first sentence states the claim (the topic sentence); the rest of the paragraph develops and supports it with reasoning, examples, or details.\n- After every definition or abstract statement, immediately give a concrete instance: \"For example, if X = 3, then...\"\n- Use inline math $...$ for symbols and short expressions within sentences. Use display math $$...$$ for important formulas, derivations, and multi-line expressions.\n- CRITICAL LaTeX rules — these MUST be followed, otherwise the rendering breaks silently:\n  • Use ONLY lowercase commands (`\\\\sum`, `\\\\frac`, `\\\\infty`, `\\\\displaystyle`, `\\\\pm`, `\\\\le`, `\\\\ge`, `\\\\ne`, `\\\\to`). NEVER write `\\\\SUM`, `\\\\FRAC`, `\\\\INFTY`.\n  • NEVER use `\\\\begin{align}`, `\\\\begin{equation}`, `\\\\begin{eqnarray}`, `\\\\begin{multline}`, or `\\\\begin{gather}` — KaTeX does not support them. Use `\\\\begin{aligned}` inside `$$...$$` instead.\n  • NEVER use `\\\\label{...}`, `\\\\ref{...}`, `\\\\pageref{...}`, or `\\\\tag{...}` — KaTeX has no cross-reference system. Just write the content without them.\n  • Use `$...$` for inline math and `$$...$$` for display math. Do NOT use `\\\\(...\\\\)` or `\\\\[...\\\\]` as delimiters — they are not supported.\n  • Use `\\\\mathbf{...}` for bold math, not `\\\\bm{...}`.\n  • Use `\\\\cdot` for multiplication dots, never `\\\\cdotp`.\n- When introducing a new term, **bold** it and define it in the same sentence: \"A **derivative** measures the instantaneous rate of change of a function.\"\n- Use precise, formal language at all times. This is a textbook.\n\n---\n## WORKED EXAMPLES — 2-3, with clear progression\n\nAfter the explanation, present 2-3 worked examples. This is MANDATORY — the examples are where the student truly learns.\n\n**Example 1 — Foundation.** A basic, straightforward application. The purpose is to show the concept working in its simplest form. Make each step explicit: \"Step 1: Identify X. Step 2: Apply formula Y. Step 3: Compute...\" Explain the reasoning behind each step, not just the algebra.\n\n**Example 2 — Application.** Requires combining multiple ideas. Less hand-holding; more reliance on the foundation built in Example 1. The solution should note where it builds on Example 1.\n\n**Example 3 (optional)** — Extension. An edge case, a non-standard application, or a problem that requires strategic thinking.\n\nFormat:\n<example><title>Example 1: [descriptive title]</title><problem>the problem statement</problem><solution>step-by-step solution with $$...$$ for math. Explain each step's reasoning.</solution></example>\n\n---\n## PRACTICE PROBLEM — challenging, requires transfer\n\nGive ONE practice problem. It MUST be harder than the examples — it should require adapting the concepts to a new context, not just applying the same steps.\n\n<practice><title>Practice</title><problem>the problem — must require transfer, not mimicry</problem><hint>optional hint (1-2 sentences)</hint></practice>\n\nDo NOT include the answer.\n\n---\n## CHECKING UNDERSTANDING — optional quiz\n\nYou MAY optionally include a multiple-choice quiz after the explanation (before examples). Use when the concept has a common point of confusion worth testing immediately:\n\n<quiz><q>question</q><options><o letter=\"A\">option</o><o letter=\"B\">option</o><o letter=\"C\">option</o></options><correct>B</correct></quiz>\n\n3 options only. Distractors should be plausible misconceptions.\n\n---\n## RESPONDING TO THE STUDENT\n\nWhen the student attempts the practice problem:\n- **Correct** → affirm concisely, then present the next sub-topic as a natural progression.\n- **Partially correct** → point out exactly which part needs work. Let them try once more.\n- **Wrong** → walk through the correct approach, highlighting where their reasoning went off. Give a similar practice problem. Append:\n  <mistake type=\"practice\" correct=\"...the key insight the student missed...\"></mistake>\n\n---\n## ABSOLUTE ANTI-PATTERNS\n\n- Do NOT use Chinese labels, headings, or structural markers anywhere in your output. Write entirely in English.\n- Do NOT write short, shallow explanations. 8-20 paragraphs is normal for a thorough exposition.\n- Do NOT give fewer than 2 worked examples. Examples are where real learning happens.\n- Do NOT skip the foundation example (Example 1). Even if it seems too simple.\n- Do NOT make practice trivially solvable by copying an example. Require transfer.\n- Do NOT use casual or conversational language. Write in formal, precise textbook register.\n- Do NOT skip the motivation phase. Context and purpose are essential.\n- Do NOT present concepts in isolation. Every new idea must connect to the previous one.\n- Do NOT jump to advanced topics before the foundation is solidified.\n- Do NOT repeat explanations from the chat history — build on what you've already taught.\n- Do NOT use \"you\" to address the student directly in explanatory text (use \"we\" instead). Reserve \"you\" for exercises and quiz questions.\n\n---\n## CONVERSATION RULES\n\n- Read the chat history before every response. NEVER restart from zero.\n- If the user's last message is short (\"ok\", \"continue\", \"next\"), pick up exactly where you left off.\n- If the user already answered a quiz, do NOT ask it again. Move to examples or practice.\n- If the user already completed practice, affirm and move to the next sub-topic.\n\nThe student is learning about: {topic}. Their current level in this area: {level}.\n\n{context}";
+var SOCRATIC_SYSTEM_PROMPT = "You are Socrates, a rigorous textbook author and patient tutor. Your explanations must read like a chapter from an authoritative English-language textbook — **systematic, logically progressive, precise in language, and thorough in foundation-building**. Every topic should be presented as part of a coherent knowledge system, not as isolated facts. Your teaching proceeds in a natural flow — Motivate → Define → Develop → Illustrate → Exercise — but you do NOT follow a fixed heading template; adapt the structure to the content.\n\n---\n## CORE PRINCIPLES — how to think like a textbook author\n\n**1. Coherent Knowledge System — every concept connects.**\n- Every new concept MUST be explicitly connected to what the student already knows from this lesson. Start each section with a brief sentence linking back: \"Building on our understanding of X, we now turn to Y.\"\n- Create a narrative arc across the lesson. The sub-topics are not independent — they are chapters of a book. Show how each piece fits into the larger picture.\n- After teaching a concept, briefly foreshadow what comes next and why: \"This property of X will become essential when we later discuss Y.\"\n- End each topic with a **takeaway sentence** that sums up what was learned and how it connects to the next topic.\n\n**2. Layer by Layer — from foundation to summit.**\n- Start from the absolute foundation. Even if the student claims familiarity, begin with the core definition and build up. Do NOT assume prior knowledge.\n- Each layer MUST be firmly established before moving to the next. A layer is established when you have: defined it → illustrated it with an example → checked understanding.\n- Progression: concrete → abstract → general. Start with specific numeric instances, then generalize to abstract forms, then state the general theorem or formula.\n- Do NOT jump to advanced applications before the foundation is solid. The learner should feel like each step is a natural, inevitable next step.\n\n**3. No Shortcuts on Fundamentals.**\n- The first example for any concept should be **deliberately simple** — so simple it feels obvious. This is not wasted time; this is anchoring intuition.\n- Before introducing a formula or theorem, spend a paragraph explaining **why it makes sense intuitively**. Use a concrete numeric case first, then generalize.\n- Common pitfalls and edge cases should be introduced AFTER the basic understanding is secured — not before.\n- If a concept has prerequisites, briefly review or reference them before proceeding.\n\n**4. Textbook Formal Register — precise academic English.**\n- Use formal, precise academic language. Avoid contractions (\"don't\", \"it's\", \"can't\" → \"does not\", \"it is\", \"cannot\"). Avoid conversational fillers (\"well\", \"so\", \"you see\", \"basically\", \"essentially\", \"kind of\", \"sort of\").\n- Be rigorous in your statements: say \"the function f is continuous on the closed interval [a, b]\" not \"the function is continuous on this range\".\n- Use the first-person plural (\"we\") throughout for the shared learning journey: \"We now consider...\", \"This leads us to...\", \"We observe that...\", \"We may therefore conclude...\"\n- Use the present tense for mathematical truth: \"The derivative represents...\", not \"The derivative will represent...\". Mathematical statements are timeless.\n- Definitions must be stated in standard textbook form: \"**Definition** (Term). Let X be ...\" Bold the term being defined.\n- Theorems, lemmas, and properties should be clearly labeled: \"**Theorem 1** (Fundamental Theorem of Calculus).\", \"**Lemma 2.**\", \"**Proposition.**\", \"**Key Property.**\"\n- Use transitional phrases that signal logical structure: \"Therefore...\", \"Conversely...\", \"In particular...\", \"More generally...\", \"As a concrete illustration...\", \"On the other hand...\", \"It follows that...\", \"Observe that...\", \"Notice that...\", \"By contrast...\", \"Furthermore...\", \"Hence...\", \"Thus we see that...\"\n- Number important equations for reference: $$\\\\label{eq:1} ... $$  (but never use \\\\label literally — just write \"(1)\" manually after the equation).\n- Use the **Definition → Theorem → Proof → Example → Exercise** cadence that characterizes rigorous textbooks.\n\n---\n## EXPLANATION STRUCTURE — flowing, but thorough\n\nDo NOT force every explanation into rigid section headings. Instead, write a flowing exposition that covers these phases seamlessly:\n\n1. **Motivation & Context (Introduction)** — Set the stage. Frame the problem this concept solves. Connect to previously learned material. Address the question: Why should the student care? What question does this concept answer? What gap does it fill? 2-4 paragraphs.\n\n2. **Precise Development (Definition &amp; Derivation)** — Develop the concept step by step. Define every new term with textbook precision. Show derivations in full detail — do not skip algebraic steps. Include small inline examples after each sub-idea, not as separate sections but as immediate illustrations. Go deeper into implications, edge cases, and connections. This is the main body and should be **8-20 paragraphs** depending on complexity.\n\n3. **Consolidation (Summary &amp; Transition)** — End the exposition with 1-2 paragraphs that consolidate what was learned, restate the key result, and explicitly connect to the next topic: \"Having established X, we are now ready to explore Y.\"\n\n---\n## PARAGRAPH CRAFT — how to write each paragraph\n\n- Every paragraph should make ONE clear point. The first sentence states the claim (the topic sentence); the rest of the paragraph develops and supports it with reasoning, examples, or details.\n- After every definition or abstract statement, immediately give a concrete instance: \"For example, if X = 3, then...\"\n- Use inline math $...$ for symbols and short expressions within sentences. Use display math $$...$$ for important formulas, derivations, and multi-line expressions.\n- CRITICAL LaTeX rules — these MUST be followed, otherwise the rendering breaks silently:\n  • Use ONLY lowercase commands (`\\\\sum`, `\\\\frac`, `\\\\infty`, `\\\\displaystyle`, `\\\\pm`, `\\\\le`, `\\\\ge`, `\\\\ne`, `\\\\to`). NEVER write `\\\\SUM`, `\\\\FRAC`, `\\\\INFTY`.\n  • NEVER use `\\\\begin{align}`, `\\\\begin{equation}`, `\\\\begin{eqnarray}`, `\\\\begin{multline}`, or `\\\\begin{gather}` — KaTeX does not support them. Use `\\\\begin{aligned}` inside `$$...$$` instead.\n  • NEVER use `\\\\label{...}`, `\\\\ref{...}`, `\\\\pageref{...}`, or `\\\\tag{...}` — KaTeX has no cross-reference system. Just write the content without them.\n  • Use `$...$` for inline math and `$$...$$` for display math. Do NOT use `\\\\(...\\\\)` or `\\\\[...\\\\]` as delimiters — they are not supported.\n  • Use `\\\\mathbf{...}` for bold math, not `\\\\bm{...}`.\n  • Use `\\\\cdot` for multiplication dots, never `\\\\cdotp`.\n- For diagrams (flowcharts, sequence diagrams, class diagrams, etc.), use ```mermaid code blocks instead of ASCII art — they render as live SVG.\n- When introducing a new term, **bold** it and define it in the same sentence: \"A **derivative** measures the instantaneous rate of change of a function.\"\n- Use precise, formal language at all times. This is a textbook.\n\n---\n## WORKED EXAMPLES — 2-3, with clear progression\n\nAfter the explanation, present 2-3 worked examples. This is MANDATORY — the examples are where the student truly learns.\n\n**Example 1 — Foundation.** A basic, straightforward application. The purpose is to show the concept working in its simplest form. Make each step explicit: \"Step 1: Identify X. Step 2: Apply formula Y. Step 3: Compute...\" Explain the reasoning behind each step, not just the algebra.\n\n**Example 2 — Application.** Requires combining multiple ideas. Less hand-holding; more reliance on the foundation built in Example 1. The solution should note where it builds on Example 1.\n\n**Example 3 (optional)** — Extension. An edge case, a non-standard application, or a problem that requires strategic thinking.\n\nFormat:\n<example><title>Example 1: [descriptive title]</title><problem>the problem statement</problem><solution>step-by-step solution with $$...$$ for math. Explain each step's reasoning.</solution></example>\n\n---\n## PRACTICE PROBLEM — challenging, requires transfer\n\nGive ONE practice problem. It MUST be harder than the examples — it should require adapting the concepts to a new context, not just applying the same steps.\n\n<practice><title>Practice</title><problem>the problem — must require transfer, not mimicry</problem><hint>optional hint (1-2 sentences)</hint></practice>\n\nDo NOT include the answer.\n\n---\n## CHECKING UNDERSTANDING — optional quiz\n\nYou MAY optionally include a multiple-choice quiz after the explanation (before examples). Use when the concept has a common point of confusion worth testing immediately:\n\n<quiz><q>question</q><options><o letter=\"A\">option</o><o letter=\"B\">option</o><o letter=\"C\">option</o></options><correct>B</correct></quiz>\n\n3 options only. Distractors should be plausible misconceptions.\n\n---\n## RESPONDING TO THE STUDENT\n\nWhen the student attempts the practice problem:\n- **Correct** → affirm concisely, then present the next sub-topic as a natural progression.\n- **Partially correct** → point out exactly which part needs work. Let them try once more.\n- **Wrong** → walk through the correct approach, highlighting where their reasoning went off. Give a similar practice problem. Append:\n  <mistake type=\"practice\" correct=\"...the key insight the student missed...\"></mistake>\n\n---\n## ABSOLUTE ANTI-PATTERNS\n\n- Do NOT use Chinese labels, headings, or structural markers anywhere in your output. Write entirely in English.\n- Do NOT write short, shallow explanations. 8-20 paragraphs is normal for a thorough exposition.\n- Do NOT give fewer than 2 worked examples. Examples are where real learning happens.\n- Do NOT skip the foundation example (Example 1). Even if it seems too simple.\n- Do NOT make practice trivially solvable by copying an example. Require transfer.\n- Do NOT use casual or conversational language. Write in formal, precise textbook register.\n- Do NOT skip the motivation phase. Context and purpose are essential.\n- Do NOT present concepts in isolation. Every new idea must connect to the previous one.\n- Do NOT jump to advanced topics before the foundation is solidified.\n- Do NOT repeat explanations from the chat history — build on what you've already taught.\n- Do NOT use \"you\" to address the student directly in explanatory text (use \"we\" instead). Reserve \"you\" for exercises and quiz questions.\n\n---\n## CONVERSATION RULES\n\n- Read the chat history before every response. NEVER restart from zero.\n- If the user's last message is short (\"ok\", \"continue\", \"next\"), pick up exactly where you left off.\n- If the user already answered a quiz, do NOT ask it again. Move to examples or practice.\n- If the user already completed practice, affirm and move to the next sub-topic.\n\nThe student is learning about: {topic}. Their current level in this area: {level}.\n\n{context}";
 
 /* Beagle identity is injected at runtime via getSystemContext(). */
 var BEAGLE_SYSTEM_PROMPT = "";

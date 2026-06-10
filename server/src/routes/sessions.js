@@ -1,5 +1,9 @@
 import { Router } from 'express';
 import { eq, and, desc, isNull, sql } from 'drizzle-orm';
+import crypto from 'node:crypto';
+import { randomUUID } from 'node:crypto';
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(s) { return typeof s === 'string' && UUID_RE.test(s); }
 import { getDb } from '../db/index.js';
 import { sessions, messages, shares } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -42,7 +46,14 @@ router.post('/', async (req, res, next) => {
     const { id, topic, title, domain, mode, phase, projectId,
             messages: msgs, kbNodes, mistakes, pinned, totalQ, currentNode } = req.body;
 
-    const sessionId = id || crypto.randomUUID();
+    /* P0.0 — accept a client-supplied id only if it looks like a real
+     * UUID. The front-end used to generate short non-UUID identifiers
+     * like "mq61wc16-ayb8j6" which the database rejected, returning
+     * 500 INTERNAL_ERROR on every save. We silently swap in a fresh
+     * UUID when the input is missing or malformed, then return the
+     * canonical id in the response so the client can update its
+     * in-memory state.currentSessionId. */
+    const sessionId = isUuid(id) ? id : randomUUID();
 
     // Upsert
     await db.insert(sessions).values({
@@ -77,9 +88,27 @@ router.post('/', async (req, res, next) => {
       },
     });
 
-    // Save messages
+    // Save messages — use clientId as a soft idempotency key.
+    // The front-end re-sends the full message list on every save, so
+    // we need a way to avoid duplicating rows when (a) the user
+    // already has the message saved, or (b) the back-end generated a
+    // different UUID for the same logical message.
     if (Array.isArray(msgs) && msgs.length) {
       for (const msg of msgs) {
+        if (msg.clientId) {
+          // Has a stable client-side id — skip if a row with the
+          // same (sessionId, clientId) already exists. This keeps
+          // the back-end-generated `id` stable across resends while
+          // still allowing the front-end to attach later data.
+          const [existing] = await db.select({ id: messages.id })
+            .from(messages)
+            .where(and(
+              eq(messages.sessionId, sessionId),
+              eq(messages.clientId, msg.clientId),
+            ))
+            .limit(1);
+          if (existing) continue;
+        }
         await db.insert(messages).values({
           sessionId,
           role: msg.role || 'user',
@@ -89,7 +118,7 @@ router.post('/', async (req, res, next) => {
           type: msg.type || null,
           sources: msg.sources || null,
           clientId: msg.clientId || null,
-        }).onConflictDoNothing({ target: messages.id });
+        });
       }
     }
 
@@ -137,7 +166,7 @@ router.patch('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/* ─── Delete / purge session (only if archived) ─── */
+/* ─── Delete / purge session ─── */
 router.delete('/:id', async (req, res, next) => {
   try {
     const db = getDb();
@@ -145,7 +174,6 @@ router.delete('/:id', async (req, res, next) => {
       .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId)))
       .limit(1);
     if (!session) throw new NotFound('Session not found');
-    if (!session.archivedAt) throw new Forbidden('SESSION_NOT_ARCHIVED', 'Session must be archived first');
     await db.delete(sessions).where(eq(sessions.id, req.params.id));
     return res.status(204).end();
   } catch (err) { next(err); }
@@ -154,6 +182,7 @@ router.delete('/:id', async (req, res, next) => {
 /* ─── Archive ─── */
 router.post('/:id/archive', async (req, res, next) => {
   try {
+    if (!isUuid(req.params.id)) throw new NotFound('Session not found');
     const db = getDb();
     const [session] = await db.select().from(sessions)
       .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId)))
@@ -168,6 +197,7 @@ router.post('/:id/archive', async (req, res, next) => {
 /* ─── Unarchive ─── */
 router.delete('/:id/archive', async (req, res, next) => {
   try {
+    if (!isUuid(req.params.id)) throw new NotFound('Session not found');
     const db = getDb();
     const [session] = await db.select().from(sessions)
       .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId)))

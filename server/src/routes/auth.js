@@ -1,10 +1,52 @@
 import { Router } from 'express';
 import { randomBytes } from 'node:crypto';
-import { setCsrfToken } from '../middleware/csrf.js';
+import { setCsrfToken, clearCsrfCookie } from '../middleware/csrf.js';
 import { requireAuth } from '../middleware/auth.js';
 import * as authService from '../services/auth.js';
 
 const router = Router();
+
+/**
+ * Returns cookie options for session cookies.
+ *
+ * We set `domain: '.topodrive.top'` in production so the cookie is shared
+ * across *.topodrive.top subdomains — the SPA (app.topodrive.top) and the
+ * marketing site (topodrive.top) both need to read the session for pages
+ * like /account and /profile.
+ *
+ * The potential conflict with a host-only cookie is handled by always
+ * calling `clearSidCookie(res)` BEFORE setting a new one, which deletes
+ * BOTH the host-only and domain variants. This ensures there is never
+ * more than one `sid` cookie in the browser at any time.
+ */
+function getSessionCookieOptions() {
+  const isProd = process.env.NODE_ENV === 'production';
+  const base = {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  };
+  if (isProd) {
+    return { ...base, domain: '.topodrive.top' };
+  }
+  return base;
+}
+
+/**
+ * Clear ALL variants of the `sid` cookie (host-only and domain) so there's
+ * never a duplicate-cookie conflict. Browser cookie-parser uses the first
+ * value when multiple cookies with the same name exist.
+ */
+function clearSidCookie(res) {
+  res.clearCookie('sid', { path: '/' });
+  // Clear the domain variant from previous code versions that used
+  // `domain: '.topodrive.top'` — it may still persist in user browsers.
+  if (process.env.NODE_ENV === 'production') {
+    res.clearCookie('sid', { path: '/', domain: '.topodrive.top' });
+  }
+}
 
 router.get('/csrf-token', setCsrfToken);
 
@@ -16,18 +58,23 @@ router.post('/register', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ─── Resend verification email (no password required) ─── */
+router.post('/resend-verification', async (req, res, next) => {
+  try {
+    const { email, captchaToken, captchaAnswer } = req.body;
+    const result = await authService.resendVerification(email, captchaToken, captchaAnswer);
+    return res.json(result);
+  } catch (err) { next(err); }
+});
+
 /* ─── Login ─── */
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password, captchaToken, captchaAnswer } = req.body;
     const result = await authService.login(email, password, captchaToken, captchaAnswer);
-    res.cookie('sid', result.sid, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    // Clear any stale cookie variants first to avoid duplicate-cookie conflicts
+    clearSidCookie(res);
+    res.cookie('sid', result.sid, getSessionCookieOptions());
     return res.json({ user: result.user });
   } catch (err) { next(err); }
 });
@@ -45,8 +92,9 @@ router.post('/logout', async (req, res, next) => {
   try {
     const sid = req.cookies?.sid;
     await authService.logout(sid);
-    res.clearCookie('sid', { path: '/' });
-    res.clearCookie('csrf', { path: '/' });
+    // Clear ALL cookie variants so there's no stale state in the browser
+    clearSidCookie(res);
+    clearCsrfCookie(res);
     return res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -57,13 +105,8 @@ router.get('/verify', async (req, res, next) => {
     const { token } = req.query;
     const result = await authService.verifyEmail(token);
     if (result && result.sid) {
-      res.cookie('sid', result.sid, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-      });
+      clearSidCookie(res);
+      res.cookie('sid', result.sid, getSessionCookieOptions());
     }
     return res.json(result);
   } catch (err) { next(err); }
@@ -82,13 +125,8 @@ router.post('/send-code', async (req, res, next) => {
 router.post('/guest', async (_req, res, next) => {
   try {
     const result = await authService.loginAsGuest();
-    res.cookie('sid', result.sid, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    clearSidCookie(res);
+    res.cookie('sid', result.sid, getSessionCookieOptions());
     return res.status(201).json({ user: result.user });
   } catch (err) { next(err); }
 });
@@ -98,13 +136,8 @@ router.post('/login-with-code', async (req, res, next) => {
   try {
     const { email, code } = req.body;
     const result = await authService.loginWithCode(email, code);
-    res.cookie('sid', result.sid, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    clearSidCookie(res);
+    res.cookie('sid', result.sid, getSessionCookieOptions());
     return res.json({ user: result.user });
   } catch (err) { next(err); }
 });
@@ -136,23 +169,44 @@ router.post('/reset-password', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* ─── Change password (authenticated) ─── */
+router.post('/password', requireAuth, async (req, res, next) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    await authService.changePassword(req.userId, oldPassword, newPassword);
+    return res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
 /* ─── Delete account ─── */
 router.delete('/account', requireAuth, async (req, res, next) => {
   try {
     await authService.deleteAccount(req.userId);
-    res.clearCookie('sid', { path: '/' });
-    res.clearCookie('csrf', { path: '/' });
+    clearSidCookie(res);
+    clearCsrfCookie(res);
     return res.json({ ok: true });
   } catch (err) { next(err); }
 });
 
 /* ─── OAuth GitHub start ─── */
+function safeReturnTo(input) {
+  // Whitelist the redirect target to a same-origin relative path.
+  // Reject anything that could be a protocol-relative URL
+  // (`//evil.com`) or an absolute URL — both can be used for
+  // open-redirect attacks.
+  if (typeof input !== 'string') return '/';
+  if (!input.startsWith('/')) return '/';
+  if (input.startsWith('//')) return '/';
+  if (input.startsWith('/\\')) return '/';
+  return input;
+}
+
 router.get('/oauth/github/start', (_req, res) => {
   const clientId = process.env.GITHUB_CLIENT_ID;
   if (!clientId) {
     return res.redirect('/?oauth_error=' + encodeURIComponent('github_not_configured'));
   }
-  const returnTo = _req.query.return_to || '/';
+  const returnTo = safeReturnTo(_req.query.return_to);
   const state = Buffer.from(JSON.stringify({ returnTo })).toString('base64url');
   const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(process.env.GITHUB_CALLBACK_URL || '')}&state=${state}&scope=user:email`;
   return res.redirect(url);
@@ -239,13 +293,8 @@ router.get('/oauth/github/callback', async (req, res, next) => {
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await db.insert(authSessions).values({ token, userId: user.id, expiresAt });
 
-    res.cookie('sid', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    clearSidCookie(res);
+    res.cookie('sid', token, getSessionCookieOptions());
     return res.redirect(returnTo);
   } catch (err) {
     console.error('[auth] OAuth callback failed:', err);

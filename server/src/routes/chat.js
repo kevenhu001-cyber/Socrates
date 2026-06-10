@@ -83,7 +83,7 @@ router.post('/stream', optionalAuth, async (req, res, next) => {
       (chunk) => {
         fullText += chunk;
         try {
-          res.write(`data: {"choices":[{"delta":{"content":${JSON.stringify(chunk)}}}]\n\n`);
+          res.write(`data: {"choices":[{"delta":{"content":${JSON.stringify(chunk)}}}]}\n\n`);
         } catch { /* client disconnected */ }
       },
       // onDone

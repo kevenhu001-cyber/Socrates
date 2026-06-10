@@ -25,6 +25,13 @@ const LLM_TIMEOUT_MS = 120_000;
 export async function streamChatCompletion(opts, onChunk, onDone, onError) {
   const { apiBase, apiKey, model, messages, maxTokens = 4096, temperature = 0.7, signal } = opts;
 
+  // Merge external signal with the LLM timeout so a hung provider
+  // doesn't hold the request open forever.
+  const timeoutSignal = AbortSignal.timeout(LLM_TIMEOUT_MS);
+  const mergedSignal = signal
+    ? AbortSignal.any([signal, timeoutSignal])
+    : timeoutSignal;
+
   try {
     const response = await fetch(`${apiBase}/chat/completions`, {
       method: 'POST',
@@ -39,7 +46,7 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError) {
         temperature,
         stream: true,
       }),
-      signal,
+      signal: mergedSignal,
     });
 
     if (!response.ok) {
@@ -106,6 +113,10 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError) {
 export async function callChatCompletion(opts) {
   const { apiBase, apiKey, model, messages, maxTokens = 250, temperature = 0.3, signal } = opts;
 
+  const mergedSignal = signal
+    ? AbortSignal.any([signal, AbortSignal.timeout(LLM_TIMEOUT_MS)])
+    : AbortSignal.timeout(LLM_TIMEOUT_MS);
+
   const response = await fetch(`${apiBase}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -119,7 +130,7 @@ export async function callChatCompletion(opts) {
       temperature,
       stream: false,
     }),
-    signal,
+    signal: mergedSignal,
   });
 
   if (!response.ok) {

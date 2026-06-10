@@ -139,6 +139,19 @@ router.put('/:id/feedback', async (req, res, next) => {
     if (!['up', 'down', 'none'].includes(rating)) throw new BadRequest('rating must be up/down/none');
 
     const db = getDb();
+    // Verify the message exists AND belongs to one of the caller's
+    // sessions. Without this, any logged-in user could rate-up/down
+    // any message in the database.
+    const [msg] = await db.select({ id: messages.id, sessionId: messages.sessionId })
+      .from(messages)
+      .where(eq(messages.id, req.params.id))
+      .limit(1);
+    if (!msg) throw new NotFound('Message not found');
+    const [sess] = await db.select({ id: sessions.id }).from(sessions)
+      .where(and(eq(sessions.id, msg.sessionId), eq(sessions.userId, req.userId)))
+      .limit(1);
+    if (!sess) throw new NotFound('Message not found');
+
     await db.insert(feedback).values({
       messageId: req.params.id,
       rating,

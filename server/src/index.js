@@ -25,6 +25,14 @@ async function main() {
     process.exit(1);
   }
 
+  // ── Seed built-in Beagle provider if MINIMAX_API_KEY is set ──
+  try {
+    const { seedBuiltInProvider } = await import('./services/apiKey.js');
+    await seedBuiltInProvider();
+  } catch (err) {
+    console.warn('[seed] Beagle provider skipped:', err.message);
+  }
+
   // ── Start HTTP server ──
   const server = app.listen(PORT, () => {
     console.log(`[server] Listening on http://0.0.0.0:${PORT} (${process.env.NODE_ENV || 'development'})`);

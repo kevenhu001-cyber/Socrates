@@ -54,6 +54,16 @@ router.post('/classes/:id/join', async (req, res, next) => {
 router.get('/classes/:id/students', async (req, res, next) => {
   try {
     const db = getDb();
+    const [klass] = await db.select().from(classroomClasses).where(eq(classroomClasses.id, req.params.id)).limit(1);
+    if (!klass) throw new NotFound('Class not found');
+    if (klass.teacherId !== req.userId) {
+      const [enrolled] = await db.select().from(classStudents)
+        .where(and(eq(classStudents.classId, req.params.id), eq(classStudents.userId, req.userId)))
+        .limit(1);
+      if (!enrolled) {
+        return res.status(403).json({ code: 'FORBIDDEN', message: 'Not a member of this class' });
+      }
+    }
     const students = await db.select().from(classStudents).where(eq(classStudents.classId, req.params.id));
     return res.json({ students });
   } catch (err) { next(err); }

@@ -9,6 +9,8 @@ import { encrypt, decrypt, deriveEncryptionKey } from '../lib/crypto.js';
 const ENCRYPTION_KEY = deriveEncryptionKey(process.env.SESSION_SECRET || 'dev-secret');
 const router = Router();
 
+// Reject malformed ids before they reach the DB. The `apiKeys.id` column is a UUID, so anything else would otherwise trigger a Postgres "invalid input syntax for type uuid" error, which the error middleware surfaces as a generic 500. NotFound is the honest answer.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 router.use(requireAuth);
 
 /* ─── List API keys ─── */
@@ -55,6 +57,7 @@ router.post('/', async (req, res, next) => {
 /* ─── Update API key ─── */
 router.patch('/:id', async (req, res, next) => {
   try {
+    if (!UUID_RE.test(req.params.id)) throw new NotFound('API key not found');
     const db = getDb();
     const [existing] = await db.select().from(apiKeys)
       .where(and(eq(apiKeys.id, req.params.id), eq(apiKeys.userId, req.userId)))
@@ -80,6 +83,7 @@ router.patch('/:id', async (req, res, next) => {
 /* ─── Delete API key ─── */
 router.delete('/:id', async (req, res, next) => {
   try {
+    if (!UUID_RE.test(req.params.id)) throw new NotFound('API key not found');
     const db = getDb();
     const [existing] = await db.select().from(apiKeys)
       .where(and(eq(apiKeys.id, req.params.id), eq(apiKeys.userId, req.userId)))

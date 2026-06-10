@@ -170,13 +170,13 @@ function saveProfile() {
   var el = document.getElementById('profileMsg');
   if (!name) { msg(el, '显示名称不能为空。', 'err'); return; }
   msg(el, '保存中…', '');
-  fetch('/api/me', {
-    method: 'POST',
+  fetch('/api/users/me', {
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
     body: JSON.stringify({ displayName: name }),
     credentials: 'same-origin'
   }).then(function(r){
-    if (!r.ok) { return r.json().then(function(d){ throw new Error(d.error || '请求失败'); }); }
+    if (!r.ok) { return r.json().then(function(d){ throw new Error(d.detail || d.message || '请求失败'); }); }
     return r.json();
   }).then(function(d){
     msg(el, '个人资料更新成功。', 'ok');

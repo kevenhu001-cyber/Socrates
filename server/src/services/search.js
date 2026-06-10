@@ -4,7 +4,7 @@ import { users, sessions, messages } from '../db/schema.js';
 import { BadRequest } from '../lib/errors.js';
 
 /**
- * Search across sessions and messages.
+ * Search across sessions and messages using PostgreSQL full-text search.
  * POST /api/search
  * Body: { q: string, scope?: string, limit?: number }
  */
@@ -13,7 +13,8 @@ export async function searchContent(userId, { q, scope = 'all', limit = 20 }) {
 
   const db = getDb();
   const maxLimit = Math.min(limit, 100);
-  const pattern = `%${q.trim()}%`;
+  const query = q.trim();
+  const tsQuery = sql`plainto_tsquery('simple', ${query})`;  // 'simple' config = no stemming, good for multilingual
   const hits = [];
 
   if (scope === 'all' || scope === 'sessions') {
@@ -21,16 +22,16 @@ export async function searchContent(userId, { q, scope = 'all', limit = 20 }) {
       kind: sql`'session'`.as('kind'),
       id: sessions.id,
       title: sessions.title,
-      snippet: sql`LEFT(${sessions.topic}, 200)`.as('snippet'),
+      topic: sessions.topic,
+      snippet: sql`ts_headline('simple', ${sessions.topic}, ${tsQuery}, 'MaxWords=50, MinWords=10, StartSel=<mark>, StopSel=</mark>')`.as('snippet'),
       updatedAt: sessions.updatedAt,
+      rank: sql`ts_rank_cd(to_tsvector('simple', coalesce(${sessions.title}, '') || ' ' || coalesce(${sessions.topic}, '')), ${tsQuery})`.as('rank'),
     }).from(sessions)
       .where(and(
         eq(sessions.userId, userId),
-        or(
-          sql`${sessions.title} ILIKE ${pattern}`,
-          sql`${sessions.topic} ILIKE ${pattern}`,
-        ),
+        sql`to_tsvector('simple', coalesce(${sessions.title}, '') || ' ' || coalesce(${sessions.topic}, '')) @@ ${tsQuery}`,
       ))
+      .orderBy(sql`rank DESC`)
       .limit(maxLimit);
 
     sessionHits.forEach(s => hits.push({ ...s, sessionId: s.id }));
@@ -41,16 +42,22 @@ export async function searchContent(userId, { q, scope = 'all', limit = 20 }) {
       kind: sql`'message'`.as('kind'),
       id: messages.id,
       sessionId: messages.sessionId,
-      snippet: sql`LEFT(${messages.content}, 300)`.as('snippet'),
+      snippet: sql`ts_headline('simple', ${messages.content}, ${tsQuery}, 'MaxWords=50, MinWords=10, StartSel=<mark>, StopSel=</mark>')`.as('snippet'),
       updatedAt: messages.createdAt,
+      rank: sql`ts_rank_cd(to_tsvector('simple', ${messages.content}), ${tsQuery})`.as('rank'),
     }).from(messages)
-      .where(sql`${messages.content} ILIKE ${pattern}`)
+      .innerJoin(sessions, eq(messages.sessionId, sessions.id))
+      .where(and(
+        eq(sessions.userId, userId),
+        sql`to_tsvector('simple', ${messages.content}) @@ ${tsQuery}`,
+      ))
+      .orderBy(sql`rank DESC`)
       .limit(maxLimit);
 
     msgHits.forEach(m => hits.push(m));
   }
 
-  // Sort by updatedAt descending, limit
-  hits.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  // Sort by rank descending (already ordered per-query, but combine and re-sort)
+  hits.sort((a, b) => Number(b.rank) - Number(a.rank));
   return { hits: hits.slice(0, maxLimit) };
 }
