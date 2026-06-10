@@ -59,6 +59,51 @@ function decryptProvider(key) {
 /**
  * Encrypt and store a new API key.
  */
+/**
+ * Seed the built-in Beagle provider from environment variables.
+ * Called once on server startup. Idempotent — updates the key if
+ * the provider already exists, otherwise creates it.
+ */
+export async function seedBuiltInProvider() {
+  const apiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey) {
+    console.log('[seed] MINIMAX_API_KEY not set — skipping built-in Beagle provider');
+    return;
+  }
+
+  try {
+    const db = getDb();
+    const model = process.env.MINIMAX_MODEL || 'MiniMax-M2.7';
+    const url = (process.env.MINIMAX_BASE_URL || 'https://api.minimax.io/v1').replace(/\/+$/, '');
+    const keyCiphertext = encrypt(apiKey, ENCRYPTION_KEY);
+
+    const [existing] = await db.select()
+      .from(apiKeys)
+      .where(and(eq(apiKeys.isBuiltIn, true), eq(apiKeys.label, 'Beagle A')))
+      .limit(1);
+
+    if (existing) {
+      await db.update(apiKeys)
+        .set({ keyCiphertext, keyHint: apiKey.slice(0, 8), url, model })
+        .where(eq(apiKeys.id, existing.id));
+      console.log('[seed] Updated built-in Beagle A provider');
+    } else {
+      await db.insert(apiKeys).values({
+        label: 'Beagle A',
+        url,
+        model,
+        keyCiphertext,
+        keyHint: apiKey.slice(0, 8),
+        isBuiltIn: true,
+        isActive: true,
+      });
+      console.log('[seed] Created built-in Beagle A provider');
+    }
+  } catch (err) {
+    console.error('[seed] Failed to seed built-in provider:', err.message);
+  }
+}
+
 export async function createApiKey(userId, { label, url, model, key }) {
   const keyCiphertext = key ? encrypt(key, ENCRYPTION_KEY) : null;
   const keyHint = key ? key.slice(0, 8) : null;

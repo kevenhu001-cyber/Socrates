@@ -2,11 +2,19 @@ import { Router } from 'express';
 import { getDb } from '../db/index.js';
 import { shares, sessions } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
-import { requireAuth, optionalAuth } from '../middleware/auth.js';
-import { NotFound, Forbidden } from '../lib/errors.js';
+import { requireAuth } from '../middleware/auth.js';
+import { NotFound } from '../lib/errors.js';
 import { generateShareToken } from '../lib/crypto.js';
 
 const router = Router();
+
+/* Helper — verify the caller owns the session and return it. */
+async function getOwnedSession(db, sessionId, userId) {
+  const [session] = await db.select().from(sessions)
+    .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId)))
+    .limit(1);
+  return session || null;
+}
 
 /* ─── Session share routes (all require auth) ─── */
 
@@ -14,6 +22,10 @@ const router = Router();
 router.get('/', requireAuth, async (req, res, next) => {
   try {
     const db = getDb();
+    // Only return the share if the caller actually owns the session.
+    if (!(await getOwnedSession(db, req.params.id, req.userId))) {
+      return res.json({ token: null, visibility: 'private' });
+    }
     const [share] = await db.select()
       .from(shares)
       .where(eq(shares.sessionId, req.params.id))
@@ -29,10 +41,9 @@ router.post('/', requireAuth, async (req, res, next) => {
     const { visibility = 'unlisted' } = req.body;
 
     // Verify ownership
-    const [session] = await db.select().from(sessions)
-      .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId)))
-      .limit(1);
-    if (!session) throw new NotFound('Session not found');
+    if (!(await getOwnedSession(db, req.params.id, req.userId))) {
+      throw new NotFound('Session not found');
+    }
 
     const token = generateShareToken();
 
@@ -53,6 +64,11 @@ router.post('/', requireAuth, async (req, res, next) => {
 router.delete('/', requireAuth, async (req, res, next) => {
   try {
     const db = getDb();
+    // Revocation is restricted to the owner. Without this check,
+    // any logged-in user could revoke any session's share.
+    if (!(await getOwnedSession(db, req.params.id, req.userId))) {
+      throw new NotFound('Session not found');
+    }
     await db.delete(shares)
       .where(eq(shares.sessionId, req.params.id));
     return res.status(204).end();

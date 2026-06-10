@@ -25,3 +25,8 @@ Thumbs.db
 
 # ── OpenCode / IDE ──
 .omo/
+
+# ── Local tooling artifacts ──
+.codegraph/
+codegraph.db
+openai-codex-*.tgz

@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
 import { csrfProtection } from './middleware/csrf.js';
+import { requireAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import authRouter from './routes/auth.js';
 import sessionRouter from './routes/sessions.js';
@@ -21,11 +22,13 @@ import memoryRouter from './routes/memory.js';
 import promptRouter from './routes/prompts.js';
 import notificationRouter from './routes/notifications.js';
 import usageRouter from './routes/usage.js';
+import accountRouter from './routes/account.js';
 import importRouter from './routes/import.js';
 import agentRouter from './routes/agent.js';
 import classroomRouter from './routes/classroom.js';
 import { generateCaptcha } from './services/captcha.js';
 import { searchContent } from './services/search.js';
+import { webSearch } from './services/webSearch.js';
 import { fetchBatch } from './services/fetchBatch.js';
 
 const app = express();
@@ -77,6 +80,20 @@ app.get('/api/captcha/generate', (_req, res) => {
   res.json(generateCaptcha());
 });
 
+// Public configuration endpoint (no auth required).
+// Returns the MiniMax key so the built-in Beagle provider works
+// without hardcoding it in the frontend source. This is the same
+// security posture as a hardcoded key (visible to anyone who can
+// view the page) but makes it configurable server-side.
+app.get('/api/config', (_req, res) => {
+  res.json({
+    beagleKey: process.env.MINIMAX_API_KEY || '',
+    beagleModel: process.env.MINIMAX_MODEL || 'MiniMax-M2.7',
+    beagleBaseUrl: process.env.MINIMAX_BASE_URL || 'https://api.minimax.io/v1',
+    hasBeagleKey: !!process.env.MINIMAX_API_KEY,
+  });
+});
+
 // Auth (Phase 1)
 app.use('/api/auth', authRouter);
 
@@ -101,14 +118,24 @@ app.use('/api/messages', messageRouter);
 // Users (Phase 3)
 app.use('/api/users', userRouter);
 
-// Search (Phase 3)
-app.post('/api/search', async (req, res, next) => {
+// Search (Phase 3) — local content (sessions + messages), used by Cmd-K.
+app.post('/api/search', requireAuth, async (req, res, next) => {
   try {
     const { q, scope, limit } = req.body;
-    const userId = req.userId || req.user?.id;
-    if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Not authenticated' });
-    const result = await searchContent(userId, { q, scope, limit });
+    const result = await searchContent(req.userId, { q, scope, limit });
     return res.json(result);
+  } catch (err) { next(err); }
+});
+
+// Web search — live internet results for the in-prompt research block
+// (fetchWebContext in the SPA). Returns {results: [{title,url,snippet},…]},
+// the shape the client already expects. Requires auth so we can rate-limit
+// per user and surface 429 if needed in the future.
+app.post('/api/web-search', requireAuth, async (req, res, next) => {
+  try {
+    const { query, count } = req.body || {};
+    const results = await webSearch(query, count);
+    return res.json({ results, query: String(query || '').slice(0, 200) });
   } catch (err) { next(err); }
 });
 
@@ -148,6 +175,9 @@ app.use('/api/notifications', notificationRouter);
 
 // Usage (Phase 5)
 app.use('/api/usage', usageRouter);
+
+// Account dashboard (Phase 3)
+app.use('/api/account', accountRouter);
 
 // Import (Phase 5)
 app.use('/api/import', importRouter);

@@ -123,7 +123,7 @@ export const feedback = pgTable('feedback', {
   categories: jsonb('categories').default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
-  index('feedback_message_id_idx').on(table.messageId),
+  uniqueIndex('feedback_message_id_idx').on(table.messageId),
 ]);
 
 /* ──────────────────────────────────────────────
@@ -167,7 +167,7 @@ export const projects = pgTable('projects', {
    ────────────────────────────────────────────── */
 export const apiKeys = pgTable('api_keys', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   label: text('label').notNull(),
   url: text('url').notNull(),
   model: text('model').notNull(),

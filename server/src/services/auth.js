@@ -1,4 +1,4 @@
-import { eq, and, gte, desc } from 'drizzle-orm';
+import { eq, and, gte, desc, sql } from 'drizzle-orm';
 import crypto from 'node:crypto';
 import { getDb } from '../db/index.js';
 import { users, authSessions, verificationTokens, pendingRegistrations } from '../db/schema.js';
@@ -19,6 +19,10 @@ const VERIFY_TTL_HOURS = 24;
 const RESET_TTL_HOURS = 1;
 const CODE_TTL_MINUTES = 10;
 
+/* Minimum password length — must match the front-end gate
+ * (index.html:8065/8243) and the input minlength="8" attribute. */
+const MIN_PASSWORD_LENGTH = 8;
+
 /* ──────────────────────────────────────────────
    Helpers
    ────────────────────────────────────────────── */
@@ -33,10 +37,44 @@ function sessionCookieOptions() {
   };
 }
 
+/**
+ * Public user shape returned by /login, /verify, /login-with-code, and
+ * /guest. The front-end uses this object as a fallback when /me fails
+ * (e.g. cookie race after a fresh login), so it MUST include every
+ * field the UI relies on — verifiedAt, plan, preferences, etc. Keeping
+ * it in one place ensures the four login-shaped endpoints stay in sync
+ * and we never accidentally regress to the "verified status shows No"
+ * bug because /me was unreachable.
+ */
+export function publicUser(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName,
+    tier: user.tier,
+    plan: user.plan ?? null,
+    isGuest: !!user.isGuest,
+    verifiedAt: user.verifiedAt,
+    createdAt: user.createdAt,
+    customInstructions: user.customInstructions,
+    preferences: user.preferences ?? {},
+    defaultModel: user.defaultModel,
+  };
+}
+
 async function createSession(userId) {
+  const db = getDb();
+  // Opportunistic cleanup — drop any expired sessions for this user
+  // so the table doesn't grow unbounded. Done in the same await
+  // chain as the insert so the new session is created atomically
+  // with the cleanup.
+  await db.delete(authSessions).where(and(
+    eq(authSessions.userId, userId),
+    sql`${authSessions.expiresAt} < NOW()`,
+  ));
+
   const token = generateSessionToken();
   const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
-  const db = getDb();
   await db.insert(authSessions).values({ token, userId, expiresAt });
   return token;
 }
@@ -71,7 +109,7 @@ export async function register(email, password, captchaToken, captchaAnswer) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
     throw new BadRequest('Invalid email format');
   }
-  if (password.length < 6) throw new BadRequest('Password must be at least 6 characters');
+  if (password.length < MIN_PASSWORD_LENGTH) throw new BadRequest('Password must be at least 8 characters');
 
   const db = getDb();
 
@@ -85,9 +123,15 @@ export async function register(email, password, captchaToken, captchaAnswer) {
   const [existingPending] = await db.select().from(pendingRegistrations)
     .where(eq(pendingRegistrations.email, normalizedEmail)).limit(1);
   if (existingPending) {
-    // Resend the verification email with the existing token
-    await sendVerificationEmail(normalizedEmail, existingPending.token);
-    return { ok: true };
+    if (existingPending.expiresAt < new Date()) {
+      // Expired — clear it so we can re-create below with a fresh token.
+      // Prevents indefinite "resend" abuse and stale-token accumulation.
+      await db.delete(pendingRegistrations).where(eq(pendingRegistrations.id, existingPending.id));
+    } else {
+      // Still valid — re-send the verification email with the existing token.
+      await sendVerificationEmail(normalizedEmail, existingPending.token);
+      return { ok: true };
+    }
   }
 
   // Hash password and create pending registration
@@ -104,6 +148,37 @@ export async function register(email, password, captchaToken, captchaAnswer) {
 
   await sendVerificationEmail(normalizedEmail, verToken);
 
+  return { ok: true };
+}
+
+/**
+ * Re-send the verification email for an existing pending registration.
+ * Does NOT take a password — the captcha is the only proof that the
+ * requester is human. Always returns { ok: true } to avoid leaking
+ * which emails have a pending registration.
+ */
+export async function resendVerification(email, captchaToken, captchaAnswer) {
+  if (!email) throw new BadRequest('Email is required');
+  if (!verifyCaptcha(captchaToken, captchaAnswer)) {
+    throw new BadRequest('Invalid captcha');
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+  const db = getDb();
+
+  const [pending] = await db.select().from(pendingRegistrations)
+    .where(eq(pendingRegistrations.email, normalizedEmail)).limit(1);
+
+  // Silently no-op if no pending registration — don't leak which emails
+  // are registered or pending. Also no-op if the user is already verified.
+  const [existing] = await db.select().from(users)
+    .where(eq(users.email, normalizedEmail)).limit(1);
+  if (!pending || existing) {
+    console.log(`[auth] resend-verification: nothing to do for ${normalizedEmail}`);
+    return { ok: true };
+  }
+
+  await sendVerificationEmail(normalizedEmail, pending.token);
   return { ok: true };
 }
 
@@ -134,7 +209,7 @@ export async function login(email, password, captchaToken, captchaAnswer) {
   const sid = await createSession(user.id);
 
   return {
-    user: { id: user.id, email: user.email, displayName: user.displayName, tier: user.tier, isGuest: !!user.isGuest },
+    user: publicUser(user),
     sid,
   };
 }
@@ -210,7 +285,7 @@ export async function verifyEmail(token) {
   const sid = await createSession(user.id);
 
   return {
-    user: { id: user.id, email: user.email, displayName: user.displayName, tier: user.tier, isGuest: !!user.isGuest },
+    user: publicUser(user),
     sid,
   };
 }
@@ -274,7 +349,7 @@ export async function loginAsGuest() {
   const sid = await createSession(user.id);
 
   return {
-    user: { id: user.id, email: user.email, displayName: user.displayName, tier: user.tier, isGuest: true },
+    user: publicUser({ ...user, isGuest: true }),
     sid,
   };
 }
@@ -306,7 +381,7 @@ export async function loginWithCode(email, code) {
 
   const sid = await createSession(user.id);
   return {
-    user: { id: user.id, email: user.email, displayName: user.displayName, tier: user.tier, isGuest: !!user.isGuest },
+    user: publicUser(user),
     sid,
   };
 }
@@ -362,7 +437,7 @@ export async function getResetInfo(token) {
  */
 export async function resetPassword(token, newPassword) {
   if (!token || !newPassword) throw new BadRequest('Token and new password are required');
-  if (newPassword.length < 6) throw new BadRequest('Password must be at least 6 characters');
+  if (newPassword.length < MIN_PASSWORD_LENGTH) throw new BadRequest('Password must be at least 8 characters');
 
   const db = getDb();
 
@@ -378,6 +453,25 @@ export async function resetPassword(token, newPassword) {
   const passwordHash = await hashPassword(newPassword);
   await db.update(users).set({ passwordHash }).where(eq(users.id, vt.userId));
   await db.delete(verificationTokens).where(eq(verificationTokens.token, token));
+}
+
+/**
+ * POST /api/auth/password — change password while authenticated.
+ * Requires oldPassword for verification, then sets newPassword.
+ */
+export async function changePassword(userId, oldPassword, newPassword) {
+  if (!oldPassword || !newPassword) throw new BadRequest('Current password and new password are required');
+  if (newPassword.length < MIN_PASSWORD_LENGTH) throw new BadRequest('Password must be at least 8 characters');
+
+  const db = getDb();
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) throw new NotFound('User not found');
+
+  const valid = await comparePassword(oldPassword, user.passwordHash);
+  if (!valid) throw new Unauthorized('Current password is incorrect');
+
+  const passwordHash = await hashPassword(newPassword);
+  await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
 }
 
 /**

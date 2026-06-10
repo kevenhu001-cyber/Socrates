@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import crypto from 'node:crypto';
 import { getDb } from '../db/index.js';
 import { sessions, messages, apiKeys } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
