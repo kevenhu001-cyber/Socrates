@@ -1,3 +1,7 @@
+/* ─── Module imports (Phase 2 split) ─── */
+import './state.js';
+import './i18n.js';
+
 /* ============================================================
    SIDEBAR
    ============================================================ */
@@ -722,185 +726,6 @@ function updateSendBtn(){
    matching sub-namespace. New code should access via
    `state.session.topic` etc.; the legacy form still works because
    the read/write lookups resolve transparently. */
-var state={
-  /* session: active chat / topic lifecycle, including the
-     authoritative message list (P1.1). */
-  session:{
-    topic:"",phase:"topic",diagIndex:0,diagAnswers:[],diagQuestions:[],
-    currentSessionId:null,substantiveCount:0,explaining:false,
-    sessionTitle:null,domain:null,
-    totalQ:0,stuckCount:0,
-    /* P1.1 — authoritative message list, single source of truth.
-       Each entry: { clientId, role, rawText, html, type, actions? }.
-       `rawText` is the unformatted text used for history extraction
-       and session save; `html` is the rendered output. The DOM is
-       a downstream view of this list — never the other way around. */
-    messages:[],
-    /* P2.1 — project binding. `currentProjectId` is the project
-       the active session belongs to (defaults to "inbox" for
-       legacy sessions). */
-    currentProjectId:null,
-    /* P2.1 — UI state: which project is the Recents panel
-       currently filtered to. `null` = "All projects". */
-    activeProjectFilter:null
-  },
-  /* kb: knowledge graph + mistake book. */
-  kb:{kbNodes:[],currentNode:0,mistakes:[]},
-  /* search: web-research results cached from the most recent round 2. */
-  search:{context:null,results:[],contextAt:0,contextCount:0,contextQuery:null,error:null},
-  /* call: most recent API call metadata — used by the chatApiBadge. */
-  call:{source:null,error:null},
-  /* ui: ephemeral UI state (per-tab, never persisted). */
-  ui:{_userScrolledAway:false},
-  /* exam: exam-mode state (ephemeral, never persisted). */
-  exam:{cancel:false,questions:[],answers:{},submitted:false,topic:"",count:0}
-};
-
-/* P1.5 — flat-name lookup table for the Proxy. Maps a legacy
-   `state.<field>` access to its sub-namespace + property. Update
-   this whenever a new field is added to a sub-namespace; existing
-   fields are listed below. */
-var STATE_FLAT_TO_NS={
-  /* session */
-  topic:"session.topic",phase:"session.phase",diagIndex:"session.diagIndex",
-  diagAnswers:"session.diagAnswers",diagQuestions:"session.diagQuestions",
-  currentSessionId:"session.currentSessionId",substantiveCount:"session.substantiveCount",
-  explaining:"session.explaining",sessionTitle:"session.sessionTitle",
-  domain:"session.domain",totalQ:"session.totalQ",stuckCount:"session.stuckCount",
-  messages:"session.messages",
-  currentProjectId:"session.currentProjectId",
-  activeProjectFilter:"session.activeProjectFilter",
-  /* kb */
-  kbNodes:"kb.kbNodes",currentNode:"kb.currentNode",
-  /* search */
-  searchContext:"search.context",searchResults:"search.results",
-  searchContextAt:"search.contextAt",searchContextCount:"search.contextCount",
-  searchContextQuery:"search.contextQuery",searchContextError:"search.error",
-  /* call */
-  lastCallSource:"call.source",lastCallError:"call.error",
-  /* ui */
-  _userScrolledAway:"ui._userScrolledAway",
-  /* exam */
-  examCancel:"exam.cancel",examQuestions:"exam.questions",
-  examAnswers:"exam.answers",examSubmitted:"exam.submitted",
-  examTopic:"exam.topic",examCount:"exam.count"
-};
-
-/* P1.5 — Proxy that translates flat legacy reads/writes into
-   the new namespace structure. The Proxy is the value of the
-   module-level `state` identifier from this point on. Reads
-   always return the live sub-namespace value (so `state.topic`
-   and `state.session.topic` see the same data). Writes update
-   the sub-namespace. Deletes are no-ops (legacy code never
-   `delete state.<x>`). */
-(function(){
-  function resolve(path){
-    var parts=path.split(".");
-    var cur=state;
-    for(var i=0;i<parts.length;i++){
-      if(cur==null)return undefined;
-      cur=cur[parts[i]];
-    }
-    return cur;
-  }
-  var proxy=new Proxy(state,{
-    get:function(target,prop){
-      if(typeof prop!=="string")return Reflect.get(target,prop);
-      if(prop in target)return Reflect.get(target,prop);
-      if(Object.prototype.hasOwnProperty.call(STATE_FLAT_TO_NS,prop)){
-        return resolve(STATE_FLAT_TO_NS[prop]);
-      }
-      return undefined;
-    },
-    set:function(target,prop,value){
-      if(typeof prop!=="string")return Reflect.set(target,prop,value);
-      if(prop in target)return Reflect.set(target,prop,value);
-      if(Object.prototype.hasOwnProperty.call(STATE_FLAT_TO_NS,prop)){
-        var path=STATE_FLAT_TO_NS[prop].split(".");
-        var cur=state;
-        for(var i=0;i<path.length-1;i++){
-          if(cur[path[i]]==null)cur[path[i]]={};
-          cur=cur[path[i]];
-        }
-        cur[path[path.length-1]]=value;
-        return true;
-      }
-      /* Unknown property — set on the root target so we don't
-         lose data, and warn. This preserves the previous
-         behaviour of `state.foo = bar` silently working. */
-      console.warn("[state] unknown flat key, setting on root:",prop);
-      target[prop]=value;
-      return true;
-    },
-    has:function(target,prop){
-      if(typeof prop!=="string")return Reflect.has(target,prop);
-      if(prop in target)return true;
-      return Object.prototype.hasOwnProperty.call(STATE_FLAT_TO_NS,prop);
-    },
-    ownKeys:function(target){
-      return Array.from(new Set([].concat(
-        Reflect.ownKeys(target),
-        Object.keys(STATE_FLAT_TO_NS)
-      )));
-    },
-    getOwnPropertyDescriptor:function(target,prop){
-      if(typeof prop!=="string")return Reflect.getOwnPropertyDescriptor(target,prop);
-      if(prop in target)return Reflect.getOwnPropertyDescriptor(target,prop);
-      if(Object.prototype.hasOwnProperty.call(STATE_FLAT_TO_NS,prop)){
-        var path=STATE_FLAT_TO_NS[prop];
-        var val=resolve(path);
-        return{
-          configurable:true,enumerable:true,
-          get:function(){return resolve(path)},
-          set:function(v){
-            var parts=path.split(".");
-            var cur=state;
-            for(var i=0;i<parts.length-1;i++){if(cur[parts[i]]==null)cur[parts[i]]={};cur=cur[parts[i]]}
-            cur[parts[parts.length-1]]=v;
-          }
-        };
-      }
-      return undefined;
-    }
-  });
-  /* Replace the module-level `state` with the proxy. */
-  state=proxy;
-})();
-
-/* P1.5 — reset all namespaces to their defaults. Callers that
-   previously did `state = {…}` should use this instead so the
-   Proxy is preserved. The proxy is bound to the *binding*, not
-   the value, so reassigning `state = …` would orphan every
-   observer and break the legacy `state.topic` getter. */
-function resetState(){
-  state.session.topic="";
-  state.session.phase="topic";
-  state.session.diagIndex=0;
-  state.session.diagAnswers=[];
-  state.session.diagQuestions=[];
-  state.session.currentSessionId=null;
-  state.session.substantiveCount=0;
-  state.session.explaining=false;
-  state.session.sessionTitle=null;
-  state.session.domain=null;
-  state.session.totalQ=0;
-  state.session.stuckCount=0;
-  state.session.messages=[];
-  state.session.currentProjectId=null;
-  state.session.activeProjectFilter=null;
-  state.kb.kbNodes=[];
-  state.kb.currentNode=0;
-  state.kb.mistakes=[];
-  state.search.context=null;
-  state.search.results=[];
-  state.search.contextAt=0;
-  state.search.contextCount=0;
-  state.search.contextQuery=null;
-  state.search.error=null;
-  state.call.source=null;
-  state.call.error=null;
-  state.ui._userScrolledAway=false;
-}
 
 /* ============================================================
    SESSION PERSISTENCE (Recents)
@@ -2950,7 +2775,8 @@ function handleChatApiResult(result,ctl,userText){
   }
 }
 
-function generateSocraticQuestion(node,domain){
+/* Mock Socratic questions (fallback when no API available). */
+function _origGenerateSocraticQuestion(node,domain){
   var qs={
     fuzzy:[
       "Can you describe "+domain+" in your own words, as if explaining it to someone who has never heard of it?",
@@ -2994,7 +2820,7 @@ function generateSocraticQuestion(node,domain){
   return {text:pool[idx],node:node};
 }
 
-function generateFollowUp(answer,node,domain){
+function _origGenerateFollowUp(answer,node,domain){
   var phrase=extractKeyPhrase(answer);
   var fus=[
     'You mentioned "'+phrase+'". Could you elaborate on what you mean by that?',
@@ -3036,7 +2862,7 @@ var _explanationMock={
   ]
 };
 var explanationContent={fuzzy:_explanationMock.fuzzy,blank:_explanationMock.blank,internalized:_explanationMock.internalized};
-function getExplanation(status){var pool=explanationContent[status]||explanationContent.fuzzy;return pool[Math.floor(Math.random()*pool.length)]}
+function _origGetExplanation(status){var pool=explanationContent[status]||explanationContent.fuzzy;return pool[Math.floor(Math.random()*pool.length)]}
 
 /* ============================================================
    CHAT INTERACTION
@@ -10017,103 +9843,6 @@ var BEAGLE_SYSTEM_PROMPT = "";
 
 /* I18N — bilingual UI strings (en / zh). Add more entries as
    new surface text is introduced. */
-var I18N={
-  en:{
-    "chat.placeholder":"Type your thinking...",
-    "chat.hint":"Shift+Enter for new line",
-    "chat.send":"Send",
-    "topic.title":"What would you like to explore?",
-    "topic.subtitle":"Describe what you want to learn. Socrates will ask you questions to help you think deeper about it.",
-    "topic.start":"Begin",
-    "topic.hint":"Be specific for better results",
-    "topic.model":"Model",
-    "topic.extensions":"Extensions",
-    "profile.usage":"Token usage",
-    "profile.usage.desc":"View daily token usage heatmap and monthly breakdown.",
-    "profile.view":"View",
-    "exam.title":"Generate Exam",
-    "exam.back":"Back to chat",
-    "exam.cancel":"Cancel",
-    "exam.generate":"Generate Exam",
-    "exam.topic":"Topic",
-    "exam.difficulty":"Difficulty",
-    "exam.count":"Number of questions",
-    "exam.types":"Question types",
-    "exam.instructions":"Detailed instructions (optional)",
-    "exam.submit":"Submit for Grading",
-    "exam.new":"New Exam",
-    "exam.close":"Close",
-    "common.cancel":"Cancel",
-    "common.save":"Save",
-    "common.delete":"Delete",
-    "common.close":"Close"
-  },
-  zh:{
-    "chat.placeholder":"输入你的想法...",
-    "chat.hint":"Shift+Enter 换行",
-    "chat.send":"发送",
-    "topic.title":"想学什么？",
-    "topic.subtitle":"描述你想学的内容。苏格拉底会通过提问帮你深入理解。",
-    "topic.start":"开始",
-    "topic.hint":"描述越具体效果越好",
-    "topic.model":"模型",
-    "topic.extensions":"扩展",
-    "profile.usage":"Token 用量",
-    "profile.usage.desc":"查看每日 token 用量热力图和月度统计。",
-    "profile.view":"查看",
-    "exam.title":"生成考试",
-    "exam.back":"返回对话",
-    "exam.cancel":"取消",
-    "exam.generate":"生成考试",
-    "exam.topic":"主题",
-    "exam.difficulty":"难度",
-    "exam.count":"题目数量",
-    "exam.types":"题型",
-    "exam.instructions":"详细说明（可选）",
-    "exam.submit":"提交批改",
-    "exam.new":"新考试",
-    "exam.close":"关闭",
-    "common.cancel":"取消",
-    "common.save":"保存",
-    "common.delete":"删除",
-    "common.close":"关闭"
-  }
-};
-var _currentLang="en";
-function t(key){return (I18N[_currentLang]&&I18N[_currentLang][key])||I18N.en[key]||key;}
-function setLang(lang){
-  if(!I18N[lang])return;
-  _currentLang=lang;
-  try{localStorage.setItem("socrates-lang-app",lang)}catch(_){}
-  applyI18n();
-}
-function applyI18n(){
-  /* Placeholder / value updates — done selectively for now. */
-  var ci=document.getElementById("chatInputArea");
-  if(ci)ci.placeholder=t("chat.placeholder");
-  var ch=document.getElementById("chatInputHint");
-  if(ch)ch.textContent=t("chat.hint");
-  var tt=document.getElementById("topicTitle");
-  if(tt)tt.textContent=t("topic.title");
-  var ts=document.getElementById("topicSub");
-  if(ts)ts.textContent=t("topic.subtitle");
-  var sb=document.getElementById("startBtn");
-  if(sb)sb.textContent=t("topic.start");
-  var el=document.getElementById("extensionsLabel");
-  if(el)el.textContent=t("topic.extensions");
-  var ev=document.getElementById("examViewTitle");
-  if(ev&&state._examInView)ev.textContent=ev.textContent; /* already localized by render */
-}
-/* Load saved language preference */
-try{var s=localStorage.getItem("socrates-lang-app");if(s&&I18N[s])_currentLang=s;}catch(_){}
-/* Update the language toggle label on load */
-try{
-  setTimeout(function(){
-    var lbl=document.getElementById("langToggleLabel");
-    if(lbl)lbl.textContent=_currentLang==="en"?"EN":"中";
-    applyI18n();
-  },0);
-}catch(_){}
 
 async function callAPI(messages,maxTokens){ maxTokens=maxTokens||1024;
   var provider=getActiveProvider();
@@ -10756,11 +10485,8 @@ function extractHistory(){
      - <name>         : non-streaming, returns full text at once
      - <name>Stream   : streaming, calls onDelta for each token, returns full text
    The chat path uses the *Stream variants; the non-streaming versions are
-   kept so the explain / quickAction paths still work.
-   ============================================================ */
-var _origGenerateSocraticQuestion=generateSocraticQuestion;
-var _origGetExplanation=getExplanation;
-var _origGenerateFollowUp=generateFollowUp;
+    kept so the explain / quickAction paths still work.
+    ============================================================ */
 
 function buildSocraticMessages(node,domain,history,isFirst){
   var prompt=buildSocraticPrompt(domain,node.status,
@@ -10786,7 +10512,7 @@ function buildSocraticMessages(node,domain,history,isFirst){
   return msgs;
 }
 
-generateSocraticQuestion=async function(node,domain){
+async function generateSocraticQuestion(node,domain){
   if(hasUsableActive()){
     console.log("%c[Socratic] non-stream for: "+node.name,"color:#4af");
     var history=extractHistory();
@@ -10802,7 +10528,7 @@ generateSocraticQuestion=async function(node,domain){
   return _origGenerateSocraticQuestion(node,domain);
 };
 
-generateSocraticQuestionStream=async function(node,domain,onDelta){
+async function generateSocraticQuestionStream(node,domain,onDelta){
   if(hasUsableActive()){
     console.log("%c[Socratic] stream for: "+node.name,"color:#4af");
     var history=extractHistory();
@@ -10819,7 +10545,7 @@ generateSocraticQuestionStream=async function(node,domain,onDelta){
 };
 
 /* Explanation: called from handleQuickAction('explain') — non-stream is fine here. */
-getExplanation=async function(status){
+async function getExplanation(status){
   if(hasUsableActive()){
     var node=state.kbNodes[state.currentNode];
     var domain=state.domain;
@@ -10853,7 +10579,7 @@ function buildFollowUpMessages(answer,node,domain,history){
   return [{role:"system",content:prompt}].concat(history).concat([{role:"user",content:answer}]);
 }
 
-generateFollowUp=async function(answer,node,domain){
+async function generateFollowUp(answer,node,domain){
   if(hasUsableActive()){
     var history=extractHistory();
     var msgs=buildFollowUpMessages(answer,node,domain,history);
@@ -10867,7 +10593,7 @@ generateFollowUp=async function(answer,node,domain){
   return _origGenerateFollowUp(answer,node,domain);
 };
 
-generateFollowUpStream=async function(answer,node,domain,onDelta,onThinking){
+async function generateFollowUpStream(answer,node,domain,onDelta,onThinking){
   if(hasUsableActive()){
     var history=extractHistory();
     var msgs=buildFollowUpMessages(answer,node,domain,history);
