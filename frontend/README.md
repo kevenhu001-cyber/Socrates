@@ -13,63 +13,30 @@ what the deploy script copies to
 
 ```
 frontend/
-├── index.html          # Markup only (~52 KB, down from 700 KB)
+├── index.html          # Markup only (~52 KB)
 ├── src/
 │   ├── styles.css      # All CSS (~146 KB, splits cleanly with Vite)
-│   └── main.js         # All app logic (~503 KB, minified to ~176 KB)
-├── public/             # Static assets served as-is (currently empty)
-├── dist/               # Build output (gitignored)
+│   ├── state.js        # State object + Proxy (179 lines, standalone)
+│   ├── i18n.js         # I18N dictionary + t()/setLang() (97 lines, standalone)
+│   └── main.js         # App logic (~9.8k lines, imports state + i18n)
+├── public/
+├── dist/
 ├── package.json
 ├── vite.config.js
 └── README.md
 ```
 
-## Commands
+## Module split (Phase 2)
 
-```bash
-# Dev server with HMR (proxies /api to the live backend on :3037)
-npm run dev
+`main.js` is 10 000 lines and is still monolithic by function. Two
+standalone modules have been extracted:
 
-# Production build (outputs to dist/)
-npm run build
+| Module | Lines | Responsibility |
+|---|---|---|
+| `state.js` | 179 | State object, `STATE_FLAT_TO_NS`, Proxy, `resetState()` |
+| `i18n.js` | 97 | `I18N`, `t()`, `setLang()`, `applyI18n()` |
 
-# Preview the production build
-npm run preview
-```
-
-## Deployment
-
-`/home/ubuntu/Socrates/deploy.sh` runs `vite build` and copies
-`dist/*` into the nginx web root. Run from the project root:
-
-```bash
-./deploy.sh
-```
-
-## Migration notes (split from monoline index.html)
-
-The original `index.html` was a single 13,000-line file with all CSS
-in one `<style>` block and all JS in one `<script>` block. This
-folder is the first phase of the refactor — the modules are still
-one big file each, but the structure is now:
-
-- **index.html** — markup only
-- **src/styles.css** — extracted as-is from the original `<style>` block
-- **src/main.js** — extracted as-is from the original `<script>` block
-
-The next phase (not done yet) is splitting `main.js` into ES modules
-by responsibility: `state/`, `api/`, `views/`, `i18n/`, `utils/`.
-Each module will re-export from a top-level `main.js` barrel.
-
-## Build output
-
-A typical build produces:
-
-```
-dist/index.html                  53 kB │ gzip: 12 kB
-dist/assets/style-*.css         131 kB │ gzip: 21 kB
-dist/assets/index-*.js          176 kB │ gzip: 58 kB
-```
-
-Total ~360 KB raw / 91 KB gzipped — down from the original 700 KB
-inline bundle.
+The remaining modules (`api.js` for API calls, `views.js` for page
+controllers, `utils.js` for helpers) are Phase 3 — deferred because
+they have circular dependencies on each other that require
+refactoring the cross-references into proper import/export chains.
