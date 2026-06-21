@@ -143,6 +143,12 @@ var STATE_FLAT_TO_NS={
   state=proxy;
 })();
 
+/* Expose as a global for backward compat with the rest of the code.
+   main.js and other modules reference `state` as a bare name; since
+   ES module scope does not share var/let/const across import chains,
+   we put it on window so all code sees the same instance. */
+window.state = state;
+
 /* P1.5 — reset all namespaces to their defaults. Callers that
    previously did `state = {…}` should use this instead so the
    Proxy is preserved. The proxy is bound to the *binding*, not
