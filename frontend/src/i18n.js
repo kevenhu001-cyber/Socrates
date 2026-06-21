@@ -95,3 +95,9 @@ try{
     applyI18n();
   },0);
 }catch(_){}
+
+/* Expose i18n functions as globals for main.js and other modules. */
+window._currentLang = _currentLang;
+window.t = t;
+window.setLang = setLang;
+window.applyI18n = applyI18n;
