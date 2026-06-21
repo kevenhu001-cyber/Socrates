@@ -74,10 +74,22 @@ export function csrfProtection(req, res, next) {
 
   const headerToken = req.headers['x-csrf-token'];
   const cookieToken = req.cookies?.csrf;
+  const sidCookie = req.cookies?.sid;
 
-  // If the request doesn't carry a CSRF token AND doesn't have a session
-  // cookie, it may be a preflight or unauthenticated request — let auth
-  // middleware handle it.
+  // Reject the dangerous case explicitly: an authenticated request
+  // (sid cookie present) without a matching CSRF token pair is exactly
+  // the cross-site forgery scenario the double-submit pattern exists to
+  // prevent. Without this check, the original code would pass through
+  // any state-changing request that happened to lack BOTH the header
+  // and the csrf cookie — including forged requests from a malicious
+  // origin that triggered a top-level navigation but never received
+  // the csrf cookie (because it's set on .topodrive.top).
+  if (sidCookie && (!headerToken || !cookieToken || headerToken !== cookieToken)) {
+    return next(new Forbidden('CSRF_TOKEN_MISMATCH', 'CSRF token required for authenticated requests'));
+  }
+
+  // Unauthenticated requests (no sid cookie) and preflight-style probes
+  // pass through to whatever auth middleware is mounted on the route.
   if (!headerToken && !cookieToken) {
     return next();
   }

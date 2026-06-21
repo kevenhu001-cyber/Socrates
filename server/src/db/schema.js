@@ -73,7 +73,7 @@ export const sessions = pgTable('sessions', {
   mode: text('mode').notNull().default('tutor'),   // tutor | chat
   phase: text('phase').notNull().default('topic'), // topic | diagnostic | chat
   domain: text('domain'),
-  projectId: uuid('project_id'),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
   pinned: boolean('pinned').notNull().default(false),
   archivedAt: timestamp('archived_at', { withTimezone: true }),
   preview: text('preview'),
@@ -87,6 +87,7 @@ export const sessions = pgTable('sessions', {
   index('sessions_user_id_idx').on(table.userId),
   index('sessions_archived_at_idx').on(table.archivedAt),
   index('sessions_updated_at_idx').on(table.updatedAt),
+  index('sessions_project_id_idx').on(table.projectId),
 ]);
 
 /* ──────────────────────────────────────────────
@@ -110,6 +111,7 @@ export const messages = pgTable('messages', {
 }, (table) => [
   index('messages_session_id_idx').on(table.sessionId),
   index('messages_parent_id_idx').on(table.parentId),
+  index('messages_created_at_idx').on(table.createdAt),
 ]);
 
 /* ──────────────────────────────────────────────
@@ -213,6 +215,7 @@ export const files = pgTable('files', {
 }, (table) => [
   index('files_user_id_idx').on(table.userId),
   index('files_sha256_idx').on(table.sha256),
+  index('files_session_id_idx').on(table.sessionId),
 ]);
 
 /* ──────────────────────────────────────────────
@@ -223,13 +226,14 @@ export const memories = pgTable('memories', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   text: text('text').notNull(),
   scope: text('scope').notNull().default('global'),  // global | project
-  projectId: uuid('project_id'),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
   source: text('source').notNull().default('user'),   // user | extracted
   enabled: boolean('enabled').notNull().default(true),
   confidence: integer('confidence'),                   // 0-100
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('memories_user_id_idx').on(table.userId),
+  index('memories_project_id_idx').on(table.projectId),
 ]);
 
 /* ──────────────────────────────────────────────
@@ -242,9 +246,9 @@ export const artifacts = pgTable('artifacts', {
   title: text('title').notNull().default(''),
   source: text('source').notNull(),
   language: text('language'),
-  sessionId: uuid('session_id'),
-  messageId: uuid('message_id'),
-  projectId: uuid('project_id'),
+  sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
+  messageId: uuid('message_id').references(() => messages.id, { onDelete: 'set null' }),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
   visibility: text('visibility').notNull().default('private'),
   shareToken: text('share_token'),
   version: integer('version').notNull().default(1),
@@ -252,6 +256,9 @@ export const artifacts = pgTable('artifacts', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('artifacts_user_id_idx').on(table.userId),
+  index('artifacts_session_id_idx').on(table.sessionId),
+  index('artifacts_message_id_idx').on(table.messageId),
+  index('artifacts_project_id_idx').on(table.projectId),
 ]);
 
 export const artifactVersions = pgTable('artifact_versions', {
@@ -339,7 +346,7 @@ export const notificationTokens = pgTable('notification_tokens', {
 export const agentRuns = pgTable('agent_runs', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  sessionId: uuid('session_id'),
+  sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
   task: text('task').notNull(),
   status: text('status').notNull().default('planning'),
   plan: jsonb('plan').default([]),
@@ -347,6 +354,7 @@ export const agentRuns = pgTable('agent_runs', {
   completedAt: timestamp('completed_at', { withTimezone: true }),
 }, (table) => [
   index('agent_runs_user_id_idx').on(table.userId),
+  index('agent_runs_session_id_idx').on(table.sessionId),
 ]);
 
 /* ──────────────────────────────────────────────

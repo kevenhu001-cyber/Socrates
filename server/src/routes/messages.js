@@ -7,6 +7,17 @@ import { NotFound, BadRequest } from '../lib/errors.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion } from '../services/llm.js';
 
+/* UUID format guard — the messages.id column is a Postgres uuid type
+ * which rejects any non-UUID string with `invalid input syntax for
+ * type uuid`. The SPA generates client-side IDs like
+ * "msg-b749937d-7ff1-4999-8752-cf043f5c3c3a" that are NOT UUIDs, so
+ * when the user tries to edit / delete a message the query blew up
+ * with a 500. Reject early with a clean 400 instead. The same
+ * helper is used by /api/sessions routes; copy the regex rather
+ * than introduce a circular import. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(s) { return typeof s === 'string' && UUID_RE.test(s); }
+
 const router = Router();
 router.use(requireAuth);
 
@@ -18,8 +29,14 @@ router.use(requireAuth);
 router.patch('/:id', async (req, res, next) => {
   try {
     const db = getDb();
-    const { content, regenerate } = req.body;
+    const { content, regenerate, discardFollowing } = req.body;
     if (!content) throw new BadRequest('content is required');
+
+    /* P10.x — reject client-generated non-UUID ids with a 400 instead
+       of letting Postgres throw `invalid input syntax for type uuid`
+       (which becomes a 500). The SPA occasionally passes ids like
+       `msg-<random>` from the front-end state. */
+    if (!isUuid(req.params.id)) throw new BadRequest('Invalid message id');
 
     const [msg] = await db.select().from(messages).where(eq(messages.id, req.params.id)).limit(1);
     if (!msg) throw new NotFound('Message not found');
@@ -32,6 +49,25 @@ router.patch('/:id', async (req, res, next) => {
 
     await db.update(messages).set({ content, rawText: content, editedAt: new Date() })
       .where(eq(messages.id, req.params.id));
+
+    /* P_edit — when the client passes `discardFollowing`, drop every
+     * assistant message that was authored AFTER the edited user turn
+     * so the next reload does not surface a stale reply. The client
+     * regenerates the new reply in-place; without this cleanup the
+     * server would keep the old reply around forever. */
+    if (discardFollowing) {
+      const later = await db.select().from(messages)
+        .where(and(
+          eq(messages.sessionId, msg.sessionId),
+          eq(messages.role, 'assistant'),
+        ))
+        .orderBy(asc(messages.createdAt));
+      for (const r of later) {
+        if (r.createdAt >= msg.createdAt) {
+          await db.delete(messages).where(eq(messages.id, r.id));
+        }
+      }
+    }
 
     if (!regenerate) {
       return res.json({ ok: true });
@@ -119,6 +155,8 @@ router.patch('/:id', async (req, res, next) => {
 router.delete('/:id', async (req, res, next) => {
   try {
     const db = getDb();
+    /* P10.x — see PATCH handler above for the rationale. */
+    if (!isUuid(req.params.id)) throw new BadRequest('Invalid message id');
     const [msg] = await db.select().from(messages).where(eq(messages.id, req.params.id)).limit(1);
     if (!msg) throw new NotFound('Message not found');
 
@@ -137,6 +175,8 @@ router.put('/:id/feedback', async (req, res, next) => {
   try {
     const { rating, reason, categories } = req.body;
     if (!['up', 'down', 'none'].includes(rating)) throw new BadRequest('rating must be up/down/none');
+    /* P10.x — see PATCH handler above for the rationale. */
+    if (!isUuid(req.params.id)) throw new BadRequest('Invalid message id');
 
     const db = getDb();
     // Verify the message exists AND belongs to one of the caller's

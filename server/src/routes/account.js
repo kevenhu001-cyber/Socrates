@@ -50,16 +50,12 @@ router.get('/usage', async (req, res, next) => {
       .where(eq(apiKeys.userId, req.userId));
     const providerCount = keyResult?.value ?? 0;
 
-    // 4) Compute knowledge-graph node count from session kbNodes
-    //    Each session stores an array of kbNodes; sum their lengths.
-    const sessionRows = await db
-      .select({ kbNodes: sessions.kbNodes })
+    // 4) Knowledge-graph node count (aggregated in SQL).
+    const [nodeResult] = await db
+      .select({ value: sql<number>`COALESCE(SUM(jsonb_array_length(${sessions.kbNodes})), 0)::int` })
       .from(sessions)
       .where(eq(sessions.userId, req.userId));
-    let graphNodes = 0;
-    for (const row of sessionRows) {
-      if (Array.isArray(row.kbNodes)) graphNodes += row.kbNodes.length;
-    }
+    const graphNodes = nodeResult?.value ?? 0;
 
     // 5) Determine plan details from user tier
     const tier = user.tier || 'diophantus';

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { eq, and, or } from 'drizzle-orm';
+import { eq, and, or, desc, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { prompts } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -8,16 +8,29 @@ import { NotFound, BadRequest } from '../lib/errors.js';
 const router = Router();
 router.use(requireAuth);
 
-/* GET /api/prompts */
+/* GET /api/prompts (cursor-paginated) */
 router.get('/', async (req, res, next) => {
   try {
     const db = getDb();
-    const { scope = 'all' } = req.query;
-    const where = scope === 'builtin' ? eq(prompts.isBuiltin, true)
-      : scope === 'mine' ? eq(prompts.userId, req.userId)
-      : or(eq(prompts.userId, req.userId), eq(prompts.isBuiltin, true));
-    const rows = await db.select().from(prompts).where(where);
-    return res.json({ templates: rows });
+    const { scope = 'all', limit, cursor } = req.query;
+    const maxLimit = Math.min(parseInt(limit || '50', 10), 200);
+
+    const conditions = [];
+    if (scope === 'builtin') conditions.push(eq(prompts.isBuiltin, true));
+    else if (scope === 'mine') conditions.push(eq(prompts.userId, req.userId));
+    else conditions.push(or(eq(prompts.userId, req.userId), eq(prompts.isBuiltin, true)));
+    if (cursor) conditions.push(sql`${prompts.createdAt} < ${cursor}::timestamptz`);
+
+    const rows = await db.select().from(prompts)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(prompts.createdAt))
+      .limit(maxLimit + 1);
+
+    const hasMore = rows.length > maxLimit;
+    const list = hasMore ? rows.slice(0, maxLimit) : rows;
+    const nextCursor = hasMore ? list[list.length - 1].createdAt.toISOString() : null;
+
+    return res.json({ templates: list, nextCursor });
   } catch (err) { next(err); }
 });
 

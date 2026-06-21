@@ -57,9 +57,6 @@ function decryptProvider(key) {
 }
 
 /**
- * Encrypt and store a new API key.
- */
-/**
  * Seed the built-in Beagle provider from environment variables.
  * Called once on server startup. Idempotent — updates the key if
  * the provider already exists, otherwise creates it.

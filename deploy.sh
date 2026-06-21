@@ -41,11 +41,19 @@ if ! sudo nginx -t >/dev/null 2>&1; then
   echo "WARNING: nginx config test failed (not related to file copy)" >&2
 fi
 
-# 4. Reload nginx (only needed if the site config changes; cheap if not)
-sudo nginx -s reload >/dev/null 2>&1 || true
+# 4. Reload nginx (only needed if the site config changes; cheap if not).
+# P6.x — the previous `|| true` silently swallowed reload failures and
+# always reported success. Surface the failure so deploy logs are
+# honest about nginx state.
+if sudo nginx -s reload >/dev/null 2>&1; then
+  NGINX_STATUS="reloaded"
+else
+  NGINX_STATUS="RELOAD FAILED — files are in place but nginx did not pick them up; check 'sudo nginx -t' manually"
+fi
 
 # 5. Report
 echo "✓ $SRC → $APP_DEST"
 echo "  size:    $(stat -c%s "$APP_DEST") bytes"
 echo "  md5:     $(md5sum "$APP_DEST" | cut -d' ' -f1)"
 echo "  served:  $(curl -s -o /dev/null -w '%{http_code}' --max-time 5 https://app.topodrive.top/)"
+echo "  nginx:   $NGINX_STATUS"

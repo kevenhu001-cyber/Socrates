@@ -4,7 +4,7 @@ import { getDb } from '../db/index.js';
 import { users, authSessions, verificationTokens, pendingRegistrations } from '../db/schema.js';
 import {
   hashPassword, comparePassword,
-  generateSessionToken, generateShortToken,
+  generateSessionToken, generateShortToken, generateLoginCode,
 } from '../lib/crypto.js';
 import {
   ApiError, BadRequest, Unauthorized, Forbidden, NotFound, Conflict,
@@ -13,6 +13,19 @@ import { verifyCaptcha } from './captcha.js';
 import {
   sendVerificationEmail, sendPasswordResetEmail, sendLoginCode,
 } from './email.js';
+
+/**
+ * Mask an email for log output — enough context to correlate log
+ * lines (so `alice@foo` and `alice@bar` look distinct) without
+ * leaking the raw address into shared log destinations.
+ */
+function maskEmail(e) {
+  if (typeof e !== 'string' || !e) return '';
+  const at = e.indexOf('@');
+  if (at < 0) return e.slice(0, 1) + '***';
+  if (at <= 1) return '***' + e.slice(at);
+  return e[0] + '***' + e.slice(at);
+}
 
 const SESSION_TTL_DAYS = 30;
 const VERIFY_TTL_HOURS = 24;
@@ -174,7 +187,7 @@ export async function resendVerification(email, captchaToken, captchaAnswer) {
   const [existing] = await db.select().from(users)
     .where(eq(users.email, normalizedEmail)).limit(1);
   if (!pending || existing) {
-    console.log(`[auth] resend-verification: nothing to do for ${normalizedEmail}`);
+    console.log(`[auth] resend-verification: nothing to do for ${maskEmail(normalizedEmail)}`);
     return { ok: true };
   }
 
@@ -306,11 +319,11 @@ export async function sendCode(email, captchaToken, captchaAnswer) {
   const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   if (!user) {
     // Don't reveal whether the user exists; still "send" the code
-    console.log(`[auth] send-code: no user for ${normalizedEmail}`);
+    console.log(`[auth] send-code: no user for ${maskEmail(normalizedEmail)}`);
     return;
   }
 
-  const code = String(crypto.randomInt(100000, 999999));
+  const code = generateLoginCode();
   const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000);
 
   // Store the code as a verification token
@@ -402,7 +415,7 @@ export async function forgotPassword(email, captchaToken, captchaAnswer) {
   const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   if (!user) {
     // Don't reveal whether the user exists
-    console.log(`[auth] forgot-password: no user for ${normalizedEmail}`);
+    console.log(`[auth] forgot-password: no user for ${maskEmail(normalizedEmail)}`);
     return;
   }
 

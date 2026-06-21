@@ -28,6 +28,18 @@ export function generateShortToken() {
   return crypto.randomBytes(8).toString('hex');
 }
 
+// 30-char alphabet excluding 0/O/1/I/l → ~39 bits at 8 chars + authLimiter.
+const LOGIN_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+/** 8-char alphanumeric login code (replaces brute-forceable 6-digit). */
+export function generateLoginCode() {
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += LOGIN_CODE_ALPHABET[crypto.randomInt(0, LOGIN_CODE_ALPHABET.length)];
+  }
+  return code;
+}
+
 /**
  * Encrypt a plaintext string (e.g. an API key) with AES-256-GCM.
  * Returns a colon-delimited string: iv:authTag:ciphertext (all hex).

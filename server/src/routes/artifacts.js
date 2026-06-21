@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { artifacts, artifactVersions } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -9,16 +9,28 @@ import { generateShareToken } from '../lib/crypto.js';
 const router = Router();
 router.use(requireAuth);
 
-/* GET /api/artifacts — list user's artifacts */
+/* GET /api/artifacts — list user's artifacts (cursor-paginated) */
 router.get('/', async (req, res, next) => {
   try {
     const db = getDb();
-    const { sessionId, projectId } = req.query;
+    const { sessionId, projectId, limit, cursor } = req.query;
+    const maxLimit = Math.min(parseInt(limit || '50', 10), 200);
+
     const conditions = [eq(artifacts.userId, req.userId)];
     if (sessionId) conditions.push(eq(artifacts.sessionId, sessionId));
     if (projectId) conditions.push(eq(artifacts.projectId, projectId));
-    const rows = await db.select().from(artifacts).where(and(...conditions)).orderBy(desc(artifacts.updatedAt));
-    return res.json({ artifacts: rows });
+    if (cursor) conditions.push(sql`${artifacts.updatedAt} < ${cursor}::timestamptz`);
+
+    const rows = await db.select().from(artifacts)
+      .where(and(...conditions))
+      .orderBy(desc(artifacts.updatedAt))
+      .limit(maxLimit + 1);
+
+    const hasMore = rows.length > maxLimit;
+    const list = hasMore ? rows.slice(0, maxLimit) : rows;
+    const nextCursor = hasMore ? list[list.length - 1].updatedAt.toISOString() : null;
+
+    return res.json({ artifacts: list, nextCursor });
   } catch (err) { next(err); }
 });
 
