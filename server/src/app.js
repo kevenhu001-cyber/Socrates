@@ -5,6 +5,8 @@ import cors from 'cors';
 import { csrfProtection } from './middleware/csrf.js';
 import { requireAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
+import { searchLimiter, fetchLimiter } from './middleware/rateLimit.js';
+import crypto from 'node:crypto';
 import authRouter from './routes/auth.js';
 import sessionRouter from './routes/sessions.js';
 import chatRouter from './routes/chat.js';
@@ -26,10 +28,13 @@ import accountRouter from './routes/account.js';
 import importRouter from './routes/import.js';
 import agentRouter from './routes/agent.js';
 import classroomRouter from './routes/classroom.js';
+import minimaxRouter from './routes/minimaxProxy.js';
 import { generateCaptcha } from './services/captcha.js';
 import { searchContent } from './services/search.js';
-import { webSearch } from './services/webSearch.js';
+import { webSearch, imageSearch } from './services/webSearch.js';
 import { fetchBatch } from './services/fetchBatch.js';
+import { getDb } from './db/index.js';
+import { sql } from 'drizzle-orm';
 
 const app = express();
 
@@ -39,6 +44,15 @@ app.set('trust proxy', true);
 /* ────────────────────────────
    Global middleware
    ──────────────────────────── */
+
+// Request id — set before anything else so downstream middleware
+// (csrf, auth, error handler) can include it in logs / headers for
+// log correlation across server + browser.
+app.use(function requestId(req, res, next){
+  req.id = crypto.randomUUID();
+  res.setHeader('X-Request-Id', req.id);
+  next();
+});
 
 // Body parsing
 app.use(express.json({ limit: '2mb' }));
@@ -70,9 +84,14 @@ app.use((req, _res, next) => {
    Routes
    ──────────────────────────── */
 
-// Health check
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, uptime: process.uptime() });
+app.get('/api/health', async (_req, res) => {
+  try {
+    const db = getDb();
+    await db.execute(sql`SELECT 1`);
+    res.json({ ok: true, db: 'connected', uptime: process.uptime() });
+  } catch {
+    res.status(503).json({ ok: false, db: 'disconnected', uptime: process.uptime() });
+  }
 });
 
 // Captcha
@@ -81,15 +100,11 @@ app.get('/api/captcha/generate', (_req, res) => {
 });
 
 // Public configuration endpoint (no auth required).
-// Returns the MiniMax key so the built-in Beagle provider works
-// without hardcoding it in the frontend source. This is the same
-// security posture as a hardcoded key (visible to anyone who can
-// view the page) but makes it configurable server-side.
+// Tells the SPA whether the built-in Beagle provider is available.
+// The raw key is NEVER sent to the client — the server proxies
+// all Beagle requests via /api/minimax/v1/chat/completions.
 app.get('/api/config', (_req, res) => {
   res.json({
-    beagleKey: process.env.MINIMAX_API_KEY || '',
-    beagleModel: process.env.MINIMAX_MODEL || 'MiniMax-M2.7',
-    beagleBaseUrl: process.env.MINIMAX_BASE_URL || 'https://api.minimax.io/v1',
     hasBeagleKey: !!process.env.MINIMAX_API_KEY,
   });
 });
@@ -131,10 +146,20 @@ app.post('/api/search', requireAuth, async (req, res, next) => {
 // (fetchWebContext in the SPA). Returns {results: [{title,url,snippet},…]},
 // the shape the client already expects. Requires auth so we can rate-limit
 // per user and surface 429 if needed in the future.
-app.post('/api/web-search', requireAuth, async (req, res, next) => {
+app.post('/api/web-search', searchLimiter, requireAuth, async (req, res, next) => {
   try {
     const { query, count } = req.body || {};
     const results = await webSearch(query, count);
+    return res.json({ results, query: String(query || '').slice(0, 200) });
+  } catch (err) { next(err); }
+});
+
+// Image search — live image results from Bing Images. Returns
+// { results: [{ title, url, thumbnailUrl, sourceUrl }] }.
+app.post('/api/image-search', searchLimiter, requireAuth, async (req, res, next) => {
+  try {
+    const { query, count } = req.body || {};
+    const results = await imageSearch(query, count);
     return res.json({ results, query: String(query || '').slice(0, 200) });
   } catch (err) { next(err); }
 });
@@ -152,7 +177,7 @@ app.use('/api/files', fileRouter);
 app.use('/api/migrate', migrateRouter);
 
 // Fetch-batch (Phase 4)
-app.post('/api/fetch-batch', async (req, res, next) => {
+app.post('/api/fetch-batch', fetchLimiter, async (req, res, next) => {
   try {
     const { urls } = req.body;
     if (!Array.isArray(urls)) return res.status(400).json({ code: 'BAD_REQUEST', message: 'urls must be an array' });
@@ -187,6 +212,8 @@ app.use('/api/agent', agentRouter);
 
 // Classroom (Phase 6)
 app.use('/api/classroom', classroomRouter);
+
+app.use('/api/minimax', minimaxRouter);
 
 /* ────────────────────────────
    Error handling (must be LAST)

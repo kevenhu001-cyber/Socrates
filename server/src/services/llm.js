@@ -99,7 +99,14 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError) {
     onDone();
   } catch (err) {
     if (err.name === 'AbortError') {
-      onDone(); // User aborted — not an error
+      // Distinguish user-initiated abort (client disconnect) from
+      // server-side timeout. The user signal fires on disconnect;
+      // the merged timeout fires when 120 s elapse with no response.
+      if (signal && signal.aborted) {
+        onDone(); // Client disconnected — clean close
+      } else {
+        onError(new Error(`LLM request timed out after ${LLM_TIMEOUT_MS / 1000} s`));
+      }
     } else {
       onError(err);
     }

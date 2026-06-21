@@ -55,4 +55,29 @@ router.get('/limits', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* GET /api/usage/daily — daily token counts for heatmap (last 365 days) */
+router.get('/daily', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const { days = '365' } = req.query;
+    const since = new Date(Date.now() - parseInt(days, 10) * 86400000);
+
+    const rows = await db.select({
+      day: sql`DATE(${messages.createdAt})`,
+      tokens: sql`COALESCE(SUM(${messages.tokenCount}), 0)::int`,
+      messages: sql`COUNT(*)::int`,
+    }).from(messages)
+      .innerJoin(sessions, eq(messages.sessionId, sessions.id))
+      .where(and(
+        eq(messages.role, 'assistant'),
+        eq(sessions.userId, req.userId),
+        gte(messages.createdAt, since),
+      ))
+      .groupBy(sql`DATE(${messages.createdAt})`)
+      .orderBy(sql`DATE(${messages.createdAt})`);
+
+    return res.json({ days: parseInt(days, 10), entries: rows });
+  } catch (err) { next(err); }
+});
+
 export default router;

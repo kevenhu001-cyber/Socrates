@@ -17,7 +17,11 @@ export function initDb(databaseUrl) {
   pool = new Pool({
     connectionString: databaseUrl,
     max: 20,
+    min: 2,
     idleTimeoutMillis: 30000,
+    maxLifetimeMillis: 30 * 60 * 1000,
+    connectionTimeoutMillis: 5000,
+    statement_timeout: 30_000,
   });
 
   db = drizzle(pool, { schema });

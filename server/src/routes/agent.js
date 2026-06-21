@@ -3,6 +3,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { agentRuns, sessions, messages } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { chatLimiter } from '../middleware/rateLimit.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion } from '../services/llm.js';
@@ -12,7 +13,7 @@ const router = Router();
 router.use(requireAuth);
 
 /* POST /api/agent/run — SSE agent stream */
-router.post('/run', async (req, res, next) => {
+router.post('/run', chatLimiter, async (req, res, next) => {
   try {
     const { task, sessionId } = req.body;
     if (!task) throw new BadRequest('task is required');

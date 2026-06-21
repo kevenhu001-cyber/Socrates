@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { memories } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -8,15 +8,28 @@ import { NotFound, BadRequest } from '../lib/errors.js';
 const router = Router();
 router.use(requireAuth);
 
-/* GET /api/memory */
+/* GET /api/memory (cursor-paginated) */
 router.get('/', async (req, res, next) => {
   try {
     const db = getDb();
     const includeDisabled = req.query.includeDisabled === 'true';
+    const { limit, cursor } = req.query;
+    const maxLimit = Math.min(parseInt(limit || '50', 10), 200);
+
     const conditions = [eq(memories.userId, req.userId)];
     if (!includeDisabled) conditions.push(eq(memories.enabled, true));
-    const rows = await db.select().from(memories).where(and(...conditions));
-    return res.json({ memories: rows });
+    if (cursor) conditions.push(sql`${memories.createdAt} < ${cursor}::timestamptz`);
+
+    const rows = await db.select().from(memories)
+      .where(and(...conditions))
+      .orderBy(desc(memories.createdAt))
+      .limit(maxLimit + 1);
+
+    const hasMore = rows.length > maxLimit;
+    const list = hasMore ? rows.slice(0, maxLimit) : rows;
+    const nextCursor = hasMore ? list[list.length - 1].createdAt.toISOString() : null;
+
+    return res.json({ memories: list, nextCursor });
   } catch (err) { next(err); }
 });
 

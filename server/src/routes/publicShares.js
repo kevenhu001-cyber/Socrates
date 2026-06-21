@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { eq } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { shares, sessions, messages } from '../db/schema.js';
 
@@ -24,7 +24,11 @@ router.get('/:token', async (req, res, next) => {
       return res.status(403).json({ code: 'PRIVATE', message: 'This share is private' });
     }
 
-    const [session] = await db.select().from(sessions).where(eq(sessions.id, share.sessionId)).limit(1);
+    // Archived sessions are private/trash; an old share token must
+    // not bypass that and expose the content to its holder.
+    const [session] = await db.select().from(sessions)
+      .where(and(eq(sessions.id, share.sessionId), isNull(sessions.archivedAt)))
+      .limit(1);
     if (!session) {
       return res.status(404).json({ code: 'NOT_FOUND', message: 'Session not found' });
     }

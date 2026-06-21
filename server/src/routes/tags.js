@@ -19,18 +19,37 @@ router.put('/sessions/:id/tags', async (req, res, next) => {
       .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId))).limit(1);
     if (!session) throw new NotFound('Session not found');
 
-    // Remove existing tags
-    await db.delete(sessionTags).where(eq(sessionTags.sessionId, req.params.id));
+    // Atomic tag assignment: delete old links, fetch existing tags
+    // in one SELECT, bulk-INSERT any missing tags, bulk-INSERT the new
+    // links. All steps run in one transaction so a mid-loop failure
+    // rolls back cleanly instead of leaving a partial tag set.
+    await db.transaction(async (tx) => {
+      await tx.delete(sessionTags).where(eq(sessionTags.sessionId, req.params.id));
 
-    // Create or find tags
-    for (const name of tagNames.slice(0, 12)) {
-      let [tag] = await db.select().from(tags)
-        .where(and(eq(tags.userId, req.userId), eq(tags.name, name))).limit(1);
-      if (!tag) {
-        [tag] = await db.insert(tags).values({ userId: req.userId, name }).returning();
+      const names = tagNames.slice(0, 12);
+      if (names.length === 0) return;
+
+      const existingTags = await tx.select().from(tags)
+        .where(and(eq(tags.userId, req.userId), inArray(tags.name, names)));
+      const existingByName = new Map(existingTags.map(t => [t.name, t]));
+
+      const missingNames = names.filter(n => !existingByName.has(n));
+      let createdTags = [];
+      if (missingNames.length > 0) {
+        createdTags = await tx.insert(tags)
+          .values(missingNames.map(name => ({ userId: req.userId, name })))
+          .returning();
+        for (const t of createdTags) existingByName.set(t.name, t);
       }
-      await db.insert(sessionTags).values({ sessionId: req.params.id, tagId: tag.id });
-    }
+
+      const links = names.map(n => {
+        const t = existingByName.get(n);
+        return t ? { sessionId: req.params.id, tagId: t.id } : null;
+      }).filter(Boolean);
+      if (links.length > 0) {
+        await tx.insert(sessionTags).values(links);
+      }
+    });
 
     return res.json({ tags: tagNames });
   } catch (err) { next(err); }

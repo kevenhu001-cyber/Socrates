@@ -6,14 +6,16 @@ import { ApiError } from '../lib/errors.js';
  * as an error handler rather than normal middleware.
  */
 export function errorHandler(err, req, res, _next) {
-  // Always log errors with their route so an INTERNAL_ERROR in
-  // production shows up in journalctl. The previous behaviour
-  // (silent in production) made session-save failures invisible
-  // until the client logged "[sessions] save failed: HTTP 500",
-  // which is too late to diagnose. Stack traces are trimmed to
-  // 1200 chars so the systemd journal does not balloon.
+  // P6.x — `req.id` is set by the requestId middleware mounted
+  // early in app.js. Including it in the log line lets an operator
+  // grep one ID and find the matching client-side console error.
+  const rid = req && req.id ? req.id : 'no-id';
   const meta = req ? `${req.method} ${req.originalUrl}` : '';
-  console.error('[error]', meta, err.stack ? err.stack.slice(0, 1200) : err);
+  console.error('[error]', `req=${rid}`, meta, err.stack ? err.stack.slice(0, 1200) : err);
+
+  // Echo the request id back so the browser can correlate too —
+  // the SPA's apiFetch wrapper surfaces this header in error toasts.
+  if (req && req.id) res.setHeader('X-Request-Id', req.id);
 
   // Known ApiError — serialise consistently
   if (err instanceof ApiError) {

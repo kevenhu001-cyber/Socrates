@@ -1,19 +1,45 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { getDb } from '../db/index.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
+import { chatLimiter } from '../middleware/rateLimit.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion, callChatCompletion } from '../services/llm.js';
 import { BadRequest, TooManyRequests } from '../lib/errors.js';
 
 const router = Router();
 
+// P6.x — cap message count and per-message content (prevents a 10k-
+// message payload from spiking OpenAI costs / proxy timeouts).
+// Supports both plain text (string) and multimodal content parts (array)
+// for vision/image attachments.
+const ContentPartSchema = z.object({
+  type: z.enum(['text', 'image_url']),
+  text: z.string().max(200000).optional(),
+  image_url: z.object({
+    url: z.string().max(500000),
+    detail: z.string().optional(),
+  }).optional(),
+}).passthrough();
+
+const MessageSchema = z.object({
+  role: z.enum(['user', 'assistant', 'system']),
+  content: z.union([
+    z.string().max(200000),
+    z.array(ContentPartSchema).min(1).max(50),
+  ]),
+});
+
+const ChatPayloadSchema = z.object({
+  messages: z.array(MessageSchema).min(1).max(100),
+  temperature: z.number().min(0).max(2).optional(),
+  max_tokens: z.number().int().positive().max(32000).optional(),
+}).passthrough();
+
 /* ─── Non-streaming chat (title gen, query rewrite, short tasks) ─── */
-router.post('/', optionalAuth, async (req, res, next) => {
+router.post('/', chatLimiter, optionalAuth, async (req, res, next) => {
   try {
-    const { messages, temperature = 0.3, max_tokens = 250 } = req.body;
-    if (!messages || !Array.isArray(messages) || !messages.length) {
-      throw new BadRequest('messages array is required');
-    }
+    const { messages, temperature = 0.3, max_tokens = 250 } = ChatPayloadSchema.parse(req.body);
 
     const provider = await getActiveApiKey(req.userId);
     if (!provider) {
@@ -36,12 +62,9 @@ router.post('/', optionalAuth, async (req, res, next) => {
 });
 
 /* ─── SSE streaming chat ─── */
-router.post('/stream', optionalAuth, async (req, res, next) => {
+router.post('/stream', chatLimiter, optionalAuth, async (req, res, next) => {
   try {
-    const { messages, temperature = 0.7, max_tokens } = req.body;
-    if (!messages || !Array.isArray(messages) || !messages.length) {
-      throw new BadRequest('messages array is required');
-    }
+    const { messages, temperature = 0.7, max_tokens } = ChatPayloadSchema.parse(req.body);
 
     const provider = await getActiveApiKey(req.userId);
     if (!provider) {
@@ -99,7 +122,7 @@ router.post('/stream', optionalAuth, async (req, res, next) => {
         clearInterval(heartbeat);
         console.error('[chat/stream] LLM error:', err.message);
         try {
-          res.write(`data: {"error":"${err.message}"}\n\n`);
+          res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
           res.write('data: [DONE]\n\n');
           res.end();
         } catch { /* ignore */ }

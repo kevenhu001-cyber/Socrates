@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { randomBytes } from 'node:crypto';
 import { setCsrfToken, clearCsrfCookie } from '../middleware/csrf.js';
 import { requireAuth } from '../middleware/auth.js';
+import { authLimiter } from '../middleware/rateLimit.js';
 import * as authService from '../services/auth.js';
 
 const router = Router();
@@ -13,6 +14,12 @@ const router = Router();
  * across *.topodrive.top subdomains — the SPA (app.topodrive.top) and the
  * marketing site (topodrive.top) both need to read the session for pages
  * like /account and /profile.
+ *
+ * SameSite stays at `lax` (not `strict`) because OAuth callbacks arrive as
+ * cross-site top-level navigations (github.com → app.topodrive.top/.../callback)
+ * and would not carry the session cookie under `strict`. Combined with the
+ * cookie's HttpOnly flag and the CSRF double-submit middleware, `lax` is
+ * the strongest setting that still allows the OAuth flow to function.
  *
  * The potential conflict with a host-only cookie is handled by always
  * calling `clearSidCookie(res)` BEFORE setting a new one, which deletes
@@ -113,7 +120,7 @@ router.get('/verify', async (req, res, next) => {
 });
 
 /* ─── Send login code ─── */
-router.post('/send-code', async (req, res, next) => {
+router.post('/send-code', authLimiter, async (req, res, next) => {
   try {
     const { email, captchaToken, captchaAnswer } = req.body;
     await authService.sendCode(email, captchaToken, captchaAnswer);
@@ -122,7 +129,7 @@ router.post('/send-code', async (req, res, next) => {
 });
 
 /* ─── Guest login ─── */
-router.post('/guest', async (_req, res, next) => {
+router.post('/guest', authLimiter, async (_req, res, next) => {
   try {
     const result = await authService.loginAsGuest();
     clearSidCookie(res);
@@ -132,7 +139,7 @@ router.post('/guest', async (_req, res, next) => {
 });
 
 /* ─── Login with code ─── */
-router.post('/login-with-code', async (req, res, next) => {
+router.post('/login-with-code', authLimiter, async (req, res, next) => {
   try {
     const { email, code } = req.body;
     const result = await authService.loginWithCode(email, code);
@@ -143,7 +150,7 @@ router.post('/login-with-code', async (req, res, next) => {
 });
 
 /* ─── Forgot password ─── */
-router.post('/forgot-password', async (req, res, next) => {
+router.post('/forgot-password', authLimiter, async (req, res, next) => {
   try {
     const { email, captchaToken, captchaAnswer } = req.body;
     await authService.forgotPassword(email, captchaToken, captchaAnswer);
@@ -161,7 +168,7 @@ router.get('/reset-info', async (req, res, next) => {
 });
 
 /* ─── Reset password ─── */
-router.post('/reset-password', async (req, res, next) => {
+router.post('/reset-password', authLimiter, async (req, res, next) => {
   try {
     const { token, password } = req.body;
     await authService.resetPassword(token, password);

@@ -1,13 +1,41 @@
 import { Router } from 'express';
-import { eq, and, desc, isNull, sql } from 'drizzle-orm';
+import { eq, and, desc, isNull, sql, inArray } from 'drizzle-orm';
 import crypto from 'node:crypto';
 import { randomUUID } from 'node:crypto';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isUuid(s) { return typeof s === 'string' && UUID_RE.test(s); }
+import { z } from 'zod';
 import { getDb } from '../db/index.js';
 import { sessions, messages, shares } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { writeLimiter } from '../middleware/rateLimit.js';
 import { NotFound, Forbidden, BadRequest } from '../lib/errors.js';
+
+// P6.x — zod schema caps field lengths and validates types; throws
+// ZodError → errorHandler returns 400 with the offending path.
+const SessionPayloadSchema = z.object({
+  id: z.string().uuid().optional(),
+  topic: z.string().max(10000).optional().default(''),
+  title: z.string().max(500).optional(),
+  domain: z.string().max(500).optional().nullable(),
+  mode: z.enum(['tutor', 'chat']).optional().default('tutor'),
+  phase: z.enum(['topic', 'diagnostic', 'chat']).optional().default('topic'),
+  projectId: z.string().uuid().optional().nullable(),
+  messages: z.array(z.object({
+    role: z.string(),
+    rawText: z.string().max(200000).optional().nullable(),
+    content: z.string().max(200000).optional().nullable(),
+    html: z.string().max(500000).optional().nullable(),
+    type: z.string().max(50).optional().nullable(),
+    sources: z.array(z.any()).max(100).optional().nullable(),
+    clientId: z.string().max(100).optional().nullable(),
+  })).max(1000).optional(),
+  kbNodes: z.array(z.any()).max(5000).optional(),
+  mistakes: z.array(z.any()).max(1000).optional(),
+  pinned: z.boolean().optional(),
+  totalQ: z.number().int().nonnegative().max(1000000).optional(),
+  currentNode: z.number().int().nonnegative().max(1000000).optional(),
+}).passthrough();
 
 const router = Router();
 
@@ -40,11 +68,12 @@ router.get('/', async (req, res, next) => {
 });
 
 /* ─── Create / upsert session ─── */
-router.post('/', async (req, res, next) => {
+router.post('/', writeLimiter, async (req, res, next) => {
   try {
     const db = getDb();
+    // zod throws ZodError on malformed input → errorHandler returns 400.
     const { id, topic, title, domain, mode, phase, projectId,
-            messages: msgs, kbNodes, mistakes, pinned, totalQ, currentNode } = req.body;
+            messages: msgs, kbNodes, mistakes, pinned, totalQ, currentNode } = SessionPayloadSchema.parse(req.body);
 
     /* P0.0 — accept a client-supplied id only if it looks like a real
      * UUID. The front-end used to generate short non-UUID identifiers
@@ -53,7 +82,26 @@ router.post('/', async (req, res, next) => {
      * UUID when the input is missing or malformed, then return the
      * canonical id in the response so the client can update its
      * in-memory state.currentSessionId. */
-    const sessionId = isUuid(id) ? id : randomUUID();
+    let sessionId;
+
+    /* P10.x — defense-in-depth against resurrection of deleted
+     * sessions. We will only adopt the client-supplied UUID if it
+     * currently exists AND belongs to this user. Otherwise we mint a
+     * fresh server-side UUID and return it (the SPA adopts it on
+     * response). The previous logic accepted any UUID that didn't
+     * exist — which is true both for "never existed" AND for "just
+     * hard-deleted" — so a deleted conversation could silently come
+     * back to life on the user's next chat turn if any code path
+     * leaked the stale id into POST /api/sessions. */
+    if (isUuid(id)) {
+      const [owner] = await db.select({ userId: sessions.userId })
+        .from(sessions)
+        .where(eq(sessions.id, id))
+        .limit(1);
+      sessionId = (owner && owner.userId === req.userId) ? id : randomUUID();
+    } else {
+      sessionId = randomUUID();
+    }
 
     // Upsert
     await db.insert(sessions).values({
@@ -94,31 +142,31 @@ router.post('/', async (req, res, next) => {
     // already has the message saved, or (b) the back-end generated a
     // different UUID for the same logical message.
     if (Array.isArray(msgs) && msgs.length) {
-      for (const msg of msgs) {
-        if (msg.clientId) {
-          // Has a stable client-side id — skip if a row with the
-          // same (sessionId, clientId) already exists. This keeps
-          // the back-end-generated `id` stable across resends while
-          // still allowing the front-end to attach later data.
-          const [existing] = await db.select({ id: messages.id })
-            .from(messages)
-            .where(and(
-              eq(messages.sessionId, sessionId),
-              eq(messages.clientId, msg.clientId),
-            ))
-            .limit(1);
-          if (existing) continue;
-        }
-        await db.insert(messages).values({
+      const clientIds = msgs.map(m => m.clientId).filter(Boolean);
+      const existingClientIds = new Set();
+      if (clientIds.length > 0) {
+        const existing = await db.select({ clientId: messages.clientId })
+          .from(messages)
+          .where(and(
+            eq(messages.sessionId, sessionId),
+            inArray(messages.clientId, clientIds),
+          ));
+        for (const row of existing) existingClientIds.add(row.clientId);
+      }
+      const toInsert = msgs
+        .filter(m => !m.clientId || !existingClientIds.has(m.clientId))
+        .map(m => ({
           sessionId,
-          role: msg.role || 'user',
-          content: msg.rawText || msg.content || '',
-          rawText: msg.rawText || null,
-          html: msg.html || null,
-          type: msg.type || null,
-          sources: msg.sources || null,
-          clientId: msg.clientId || null,
-        });
+          role: m.role || 'user',
+          content: m.rawText || m.content || '',
+          rawText: m.rawText || null,
+          html: m.html || null,
+          type: m.type || null,
+          sources: m.sources || null,
+          clientId: m.clientId || null,
+        }));
+      if (toInsert.length > 0) {
+        await db.insert(messages).values(toInsert);
       }
     }
 
@@ -169,13 +217,52 @@ router.patch('/:id', async (req, res, next) => {
 /* ─── Delete / purge session ─── */
 router.delete('/:id', async (req, res, next) => {
   try {
+    if (!isUuid(req.params.id)) throw new NotFound('Session not found');
     const db = getDb();
-    const [session] = await db.select().from(sessions)
-      .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId)))
-      .limit(1);
-    if (!session) throw new NotFound('Session not found');
-    await db.delete(sessions).where(eq(sessions.id, req.params.id));
+    /* P6.x — wrap ownership check + delete in a single transaction so
+     * a concurrent POST /api/sessions (the SPA's auto-save fires
+     * every few seconds) can't re-INSERT a row with the deleted id
+     * between our SELECT and DELETE. The DELETE also re-checks
+     * userId (defense in depth — the SELECT alone is enough to
+     * authorise, but the extra predicate guarantees a stolen cookie
+     * can't delete via a guessed id). Messages are deleted
+     * explicitly so any FK violation surfaces distinctly instead of
+     * relying on the implicit cascade. */
+    await db.transaction(async (tx) => {
+      const [session] = await tx.select({ id: sessions.id })
+        .from(sessions)
+        .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId)))
+        .limit(1);
+      if (!session) throw new NotFound('Session not found');
+      await tx.delete(messages).where(eq(messages.sessionId, req.params.id));
+      await tx.delete(sessions)
+        .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId)));
+    });
     return res.status(204).end();
+  } catch (err) { next(err); }
+});
+
+/* ─── Bulk delete: clear every non-archived session for the caller ─── */
+/* P6.x — the SPA's Storage modal "Clear conversations" button used
+ * to only wipe the localStorage cache and reload, leaving the server
+ * rows in place; after a refresh /api/sessions would return them
+ * again. Archived sessions are intentionally preserved so the user
+ * can still recover them from the Archive / Trash UI. */
+router.delete('/', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const deleted = await db.transaction(async (tx) => {
+      const rows = await tx.select({ id: sessions.id })
+        .from(sessions)
+        .where(and(eq(sessions.userId, req.userId), isNull(sessions.archivedAt)));
+      const ids = rows.map(r => r.id);
+      if (ids.length === 0) return 0;
+      await tx.delete(messages).where(inArray(messages.sessionId, ids));
+      await tx.delete(sessions)
+        .where(and(eq(sessions.userId, req.userId), isNull(sessions.archivedAt)));
+      return ids.length;
+    });
+    return res.json({ ok: true, deleted });
   } catch (err) { next(err); }
 });
 

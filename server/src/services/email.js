@@ -229,12 +229,12 @@ export async function sendPasswordResetEmail(email, token) {
 }
 
 /**
- * Send a 6-digit login code (passwordless sign-in).
+ * Send an 8-character login code (passwordless sign-in).
  */
 export async function sendLoginCode(email, code) {
   const lockSvg = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#b8955a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
 
-  // Render the 6 digits as individual boxes for a more polished look.
+  // Render each character as its own box for a more polished look.
   const boxes = code.split('').map((d) => `
     <td align="center" style="width:42px;height:54px;background:#faf6ef;border:1px solid #e8e0d0;border-radius:8px;font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-size:24px;font-weight:600;color:#2c2c2a;letter-spacing:0">${d}</td>
     <td style="width:6px"></td>
@@ -273,7 +273,7 @@ export async function sendLoginCode(email, code) {
       'This code expires in 10 minutes. If you did not request this, ignore this email.',
     ]),
     html: shell({
-      preheader: `Your 6-digit sign-in code is ${code}.`,
+      preheader: `Your sign-in code is ${code}.`,
       title: 'Your Socrates login code',
       body,
     }),
