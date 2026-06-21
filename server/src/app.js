@@ -7,6 +7,7 @@ import { requireAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { searchLimiter, fetchLimiter } from './middleware/rateLimit.js';
 import crypto from 'node:crypto';
+import { shouldUseSharedDomain } from './lib/cookieEnv.js';
 import authRouter from './routes/auth.js';
 import sessionRouter from './routes/sessions.js';
 import chatRouter from './routes/chat.js';
@@ -61,11 +62,27 @@ app.use(express.urlencoded({ extended: true }));
 // Cookie parsing (required for auth / CSRF)
 app.use(cookieParser());
 
-// CORS — allow same-origin (app behind same-domain nginx) + dev
+// CORS — allow same-origin (app behind same-domain nginx) + dev.
+// We key off the actual request's Host header (rather than NODE_ENV) so
+// dev requests from 127.0.0.1 work even when the server is started with
+// `NODE_ENV=production` (the default in .env).
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://app.topodrive.top', 'https://topodrive.top']
-    : ['http://localhost:8080', 'http://localhost:3000'],
+  origin(origin, cb) {
+    // Same-origin (no Origin header) is always allowed — covers direct
+    // browser nav and same-origin fetches.
+    if (!origin) return cb(null, true);
+    try {
+      const host = new URL(origin).host.toLowerCase();
+      const allowed = [
+        'app.topodrive.top', 'topodrive.top', 'www.topodrive.top',
+        // Dev hosts
+        'localhost:8080', 'localhost:3000', 'localhost:5173', 'localhost:5174', 'localhost:5175',
+        '127.0.0.1:8080', '127.0.0.1:3000', '127.0.0.1:5173', '127.0.0.1:5174', '127.0.0.1:5175',
+      ];
+      if (allowed.includes(host)) return cb(null, true);
+    } catch (_) { /* fall through */ }
+    cb(null, false);
+  },
   credentials: true,
 }));
 

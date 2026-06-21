@@ -681,14 +681,14 @@ if(window.visualViewport){
 }
 
 function switchTab(tab){
-  document.getElementById("tabKnowledge").classList.toggle("active",tab==="knowledge");
-  document.getElementById("tabRecents").classList.toggle("active",tab==="recents");
+  var tk=document.getElementById("tabKnowledge");if(tk)tk.classList.toggle("active",tab==="knowledge");
+  var tr=document.getElementById("tabRecents");if(tr)tr.classList.toggle("active",tab==="recents");
   var mt=document.getElementById("tabMistakes");
   if(mt)mt.classList.toggle("active",tab==="mistakes");
   var at=document.getElementById("tabAgent");
   if(at)at.classList.toggle("active",tab==="agent");
-  document.getElementById("knowledgePanel").classList.toggle("hidden",tab!=="knowledge");
-  document.getElementById("recentsPanel").classList.toggle("hidden",tab!=="recents");
+  var kp=document.getElementById("knowledgePanel");if(kp)kp.classList.toggle("hidden",tab!=="knowledge");
+  var rp=document.getElementById("recentsPanel");if(rp)rp.classList.toggle("hidden",tab!=="recents");
   var mp=document.getElementById("mistakesPanel");
   if(mp)mp.classList.toggle("hidden",tab!=="mistakes");
   var ap=document.getElementById("agentPanel");
@@ -838,18 +838,19 @@ function generateId(){
   /* Use the standard UUIDv4 when the browser supports it — the
    * server's `sessions.id` column is typed as `uuid`, so anything
    * that isn't a real UUID is rejected and the save 500s. The
-   * legacy "base36 timestamp + base36 random" format is kept as
-   * a fallback for ancient browsers / insecure contexts where
-   * `crypto.randomUUID` is unavailable, and for the rare call
-   * sites (e.g. message clientIds) where the value is purely
-   * client-side. The server still strips non-UUID values from
-   * POST /api/sessions to be safe. */
+   * fallback below generates a string that MATCHES the UUID format
+   * so the server's isUuid() check (and the upsert's onConflictDoUpdate)
+   * operate correctly even in insecure contexts or old browsers. */
   try{
     if(typeof crypto!=="undefined"&&typeof crypto.randomUUID==="function"){
       return crypto.randomUUID();
     }
   }catch(_){}
-  return Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);
+  /* Fallback: produce a UUIDv4-compatible string so the server
+     recognises it. Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+     where x is random hex and y is 8, 9, a, or b. */
+  function h(){return Math.floor(Math.random()*65536).toString(16).padStart(4,'0')}
+  return h()+h()+'-'+h()+'-4'+h().slice(1)+'-'+(8+Math.floor(Math.random()*4)).toString(16)+h().slice(1)+'-'+h()+h()+h();
 }
 function getChatIdFromURL(){return new URLSearchParams(location.search).get("chat")||null}
 function setChatIdInURL(id){history.replaceState({chatId:id},"",id?"?chat="+encodeURIComponent(id):location.pathname)}
@@ -9870,9 +9871,11 @@ async function callAPI(messages,maxTokens){ maxTokens=maxTokens||1024;
     try{
       var ac=new AbortController();
       var tmo=setTimeout(function(){ac.abort()},90000);
+      var csrfBeagle=getCsrfToken();
       var resp=await fetch("/api/minimax/v1/chat/completions",{
         method:"POST",
-        headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key},
+        credentials:"include",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key,"X-CSRF-Token":csrfBeagle||""},
         body:JSON.stringify({messages:beagleMsgs,model:provider.model,temperature:0.7,max_tokens:maxTokens}),
         signal:ac.signal
       });
@@ -10042,9 +10045,11 @@ async function callAPIStream(messages,maxTokens,onDelta,onThinking){
       var acDirect=wdBeagle.ac;
       window._activeChatAbort=function(reason){try{acDirect.abort(reason||"superseded")}catch(_){}};
       try{
+        var csrfDirect=getCsrfToken();
         var respDirect=await fetch("/api/minimax/v1/chat/completions",{
           method:"POST",
-          headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key},
+          credentials:"include",
+          headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key,"X-CSRF-Token":csrfDirect||""},
           body:body,
           signal:acDirect.signal
         });
@@ -10607,6 +10612,11 @@ async function generateFollowUpStream(answer,node,domain,onDelta,onThinking){
   return null;
 };
 
+/* Implicit-global declarations — these are assigned within functions
+   without var/let/const and must be declared in module scope for
+   strict-mode compat. */
+var _examSelectedTypes, _examStreamBuffer, _examStreamStartTime;
+
 /* ─── Expose all onclick-required functions on window ─── */
 window.addProvider = addProvider;
 window.clearSettings = clearSettings;
@@ -10625,6 +10635,8 @@ window.copyShareLink = copyShareLink;
 window.createShareLink = createShareLink;
 window.exitAgentMode = exitAgentMode;
 window.openAgentView = openAgentView;
+window.openProfile = openProfile;
+window.startExamGeneration = startExamGeneration;
 window.openPromptTemplatesModal = openPromptTemplatesModal;
 window.openSettings = openSettings;
 window.openShareModal = openShareModal;
@@ -10661,3 +10673,55 @@ window.selectExamOpt = selectExamOpt;
 window.toggleExamType = toggleExamType;
 window.showUsageTip = showUsageTip;
 window.hideUsageTip = hideUsageTip;
+window.closeCheatsheet = closeCheatsheet;
+window.autoResize = autoResize;
+window.closeModelPicker = closeModelPicker;
+window.closeProjectEditor = closeProjectEditor;
+window.closePromptTemplatesModal = closePromptTemplatesModal;
+window.closeStorageModal = closeStorageModal;
+window.closeTagEditor = closeTagEditor;
+window.actuallyDeleteSession = actuallyDeleteSession;
+window.confirmPurgeSession = confirmPurgeSession;
+window.deleteAgentRun = deleteAgentRun;
+window.finishDiagnostic = finishDiagnostic;
+window.loadSession = loadSession;
+window.loadUsageData = loadUsageData;
+window.loadUsageMonth = loadUsageMonth;
+window.nextDiagQuestion = nextDiagQuestion;
+window.onCmdKInput = onCmdKInput;
+window.onProjectChipClick = onProjectChipClick;
+window.onProjectDelete = onProjectDelete;
+window.onProjectEditorSave = onProjectEditorSave;
+window.onPromptRowDelete = onPromptRowDelete;
+window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
+window.onRecentsFilterChipClick = onRecentsFilterChipClick;
+window.onSlashRowClick = onSlashRowClick;
+window.openCmdKResult = openCmdKResult;
+window.openProjectEditor = openProjectEditor;
+window.openPromptTemplateEditor = openPromptTemplateEditor;
+window.openTagEditor = openTagEditor;
+window.pickActiveProviderById = pickActiveProviderById;
+window.pickProjectColor = pickProjectColor;
+window.prevDiagQuestion = prevDiagQuestion;
+window.renderExamForm = renderExamForm;
+window.renderPromptTemplatesModal = renderPromptTemplatesModal;
+window.restoreSession = restoreSession;
+window.selectDiag = selectDiag;
+window.setActiveProvider = setActiveProvider;
+window.setRecentsFilter = setRecentsFilter;
+window.submitExam = submitExam;
+window.toggleKBDetail = toggleKBDetail;
+window.togglePinSession = togglePinSession;
+window.__vizOpenModal = __vizOpenModal;
+window.removeProvider = removeProvider;
+window.clearProjectFilter = clearProjectFilter;
+window.esc = esc;
+window.handleChatKey = handleChatKey;
+window.onCmdKKey = onCmdKKey;
+window.onCustomInstructionsChange = onCustomInstructionsChange;
+window.submitAuthForgotPassword = submitAuthForgotPassword;
+window.submitAuthRegister = submitAuthRegister;
+window.submitAuthResetPassword = submitAuthResetPassword;
+window.submitAuthSignin = submitAuthSignin;
+window.updateSendBtn = updateSendBtn;
+window.updateStartBtn = updateStartBtn;

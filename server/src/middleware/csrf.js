@@ -1,15 +1,17 @@
 import crypto from 'node:crypto';
 import { Forbidden } from '../lib/errors.js';
+import { shouldUseSharedDomain, SHARED_COOKIE_DOMAIN } from '../lib/cookieEnv.js';
 
 /**
  * Returns cookie options for CSRF cookies.
  *
- * Domain is set in production so the cookie is shared across subdomains
- * (app.topodrive.top + topodrive.top). The `clearCsrfCookie` call before
- * setting a new token ensures no duplicate-cookie conflict.
+ * Domain is set when the request actually targets a topodrive.top host
+ * so the cookie is shared across subdomains (app.topodrive.top +
+ * topodrive.top). The `clearCsrfCookie` call before setting a new token
+ * ensures no duplicate-cookie conflict.
  */
-function getCsrfCookieOptions() {
-  const isProd = process.env.NODE_ENV === 'production';
+function getCsrfCookieOptions(req) {
+  const isProd = shouldUseSharedDomain(req);
   const base = {
     httpOnly: false,      // Must be readable by front-end JS
     secure: isProd,
@@ -18,7 +20,7 @@ function getCsrfCookieOptions() {
     maxAge: 30 * 24 * 60 * 60 * 1000,  // 30 days — match session cookie lifetime
   };
   if (isProd) {
-    return { ...base, domain: '.topodrive.top' };
+    return { ...base, domain: SHARED_COOKIE_DOMAIN };
   }
   return base;
 }
@@ -28,10 +30,10 @@ function getCsrfCookieOptions() {
  * duplicate-cookie conflicts. Called before setting a new CSRF token and
  * during logout.
  */
-export function clearCsrfCookie(res) {
+export function clearCsrfCookie(res, req) {
   res.clearCookie('csrf', { path: '/' });
-  if (process.env.NODE_ENV === 'production') {
-    res.clearCookie('csrf', { path: '/', domain: '.topodrive.top' });
+  if (shouldUseSharedDomain(req)) {
+    res.clearCookie('csrf', { path: '/', domain: SHARED_COOKIE_DOMAIN });
   }
 }
 
@@ -40,9 +42,9 @@ export function clearCsrfCookie(res) {
  * The front-end calls this on boot and on 403 retry.
  */
 export function setCsrfToken(req, res) {
-  clearCsrfCookie(res);
+  clearCsrfCookie(res, req);
   const token = crypto.randomBytes(32).toString('hex');
-  res.cookie('csrf', token, getCsrfCookieOptions());
+  res.cookie('csrf', token, getCsrfCookieOptions(req));
   return res.json({ ok: true });
 }
 
