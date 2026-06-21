@@ -83,7 +83,7 @@ function applyI18n(){
   var el=document.getElementById("extensionsLabel");
   if(el)el.textContent=t("topic.extensions");
   var ev=document.getElementById("examViewTitle");
-  if(ev&&state._examInView)ev.textContent=ev.textContent; /* already localized by render */
+  if(ev&&window.state&&window.state._examInView)ev.textContent=ev.textContent; /* already localized by render */
 }
 /* Load saved language preference */
 try{var s=localStorage.getItem("socrates-lang-app");if(s&&I18N[s])_currentLang=s;}catch(_){}

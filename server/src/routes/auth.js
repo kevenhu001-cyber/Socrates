@@ -4,6 +4,7 @@ import { setCsrfToken, clearCsrfCookie } from '../middleware/csrf.js';
 import { requireAuth } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import * as authService from '../services/auth.js';
+import { shouldUseSharedDomain, SHARED_COOKIE_DOMAIN } from '../lib/cookieEnv.js';
 
 const router = Router();
 
@@ -26,8 +27,8 @@ const router = Router();
  * BOTH the host-only and domain variants. This ensures there is never
  * more than one `sid` cookie in the browser at any time.
  */
-function getSessionCookieOptions() {
-  const isProd = process.env.NODE_ENV === 'production';
+function getSessionCookieOptions(req) {
+  const isProd = shouldUseSharedDomain(req);
   const base = {
     httpOnly: true,
     secure: isProd,
@@ -36,7 +37,7 @@ function getSessionCookieOptions() {
     maxAge: 30 * 24 * 60 * 60 * 1000,
   };
   if (isProd) {
-    return { ...base, domain: '.topodrive.top' };
+    return { ...base, domain: SHARED_COOKIE_DOMAIN };
   }
   return base;
 }
@@ -46,12 +47,12 @@ function getSessionCookieOptions() {
  * never a duplicate-cookie conflict. Browser cookie-parser uses the first
  * value when multiple cookies with the same name exist.
  */
-function clearSidCookie(res) {
+function clearSidCookie(res, req) {
   res.clearCookie('sid', { path: '/' });
   // Clear the domain variant from previous code versions that used
   // `domain: '.topodrive.top'` — it may still persist in user browsers.
-  if (process.env.NODE_ENV === 'production') {
-    res.clearCookie('sid', { path: '/', domain: '.topodrive.top' });
+  if (shouldUseSharedDomain(req)) {
+    res.clearCookie('sid', { path: '/', domain: SHARED_COOKIE_DOMAIN });
   }
 }
 
@@ -80,8 +81,8 @@ router.post('/login', async (req, res, next) => {
     const { email, password, captchaToken, captchaAnswer } = req.body;
     const result = await authService.login(email, password, captchaToken, captchaAnswer);
     // Clear any stale cookie variants first to avoid duplicate-cookie conflicts
-    clearSidCookie(res);
-    res.cookie('sid', result.sid, getSessionCookieOptions());
+    clearSidCookie(res, req);
+    res.cookie('sid', result.sid, getSessionCookieOptions(req));
     return res.json({ user: result.user });
   } catch (err) { next(err); }
 });
@@ -100,8 +101,8 @@ router.post('/logout', async (req, res, next) => {
     const sid = req.cookies?.sid;
     await authService.logout(sid);
     // Clear ALL cookie variants so there's no stale state in the browser
-    clearSidCookie(res);
-    clearCsrfCookie(res);
+    clearSidCookie(res, req);
+    clearCsrfCookie(res, req);
     return res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -112,8 +113,8 @@ router.get('/verify', async (req, res, next) => {
     const { token } = req.query;
     const result = await authService.verifyEmail(token);
     if (result && result.sid) {
-      clearSidCookie(res);
-      res.cookie('sid', result.sid, getSessionCookieOptions());
+      clearSidCookie(res, req);
+      res.cookie('sid', result.sid, getSessionCookieOptions(req));
     }
     return res.json(result);
   } catch (err) { next(err); }
@@ -129,11 +130,11 @@ router.post('/send-code', authLimiter, async (req, res, next) => {
 });
 
 /* ─── Guest login ─── */
-router.post('/guest', authLimiter, async (_req, res, next) => {
+router.post('/guest', authLimiter, async (req, res, next) => {
   try {
     const result = await authService.loginAsGuest();
-    clearSidCookie(res);
-    res.cookie('sid', result.sid, getSessionCookieOptions());
+    clearSidCookie(res, req);
+    res.cookie('sid', result.sid, getSessionCookieOptions(req));
     return res.status(201).json({ user: result.user });
   } catch (err) { next(err); }
 });
@@ -143,8 +144,8 @@ router.post('/login-with-code', authLimiter, async (req, res, next) => {
   try {
     const { email, code } = req.body;
     const result = await authService.loginWithCode(email, code);
-    clearSidCookie(res);
-    res.cookie('sid', result.sid, getSessionCookieOptions());
+    clearSidCookie(res, req);
+    res.cookie('sid', result.sid, getSessionCookieOptions(req));
     return res.json({ user: result.user });
   } catch (err) { next(err); }
 });
@@ -189,8 +190,8 @@ router.post('/password', requireAuth, async (req, res, next) => {
 router.delete('/account', requireAuth, async (req, res, next) => {
   try {
     await authService.deleteAccount(req.userId);
-    clearSidCookie(res);
-    clearCsrfCookie(res);
+    clearSidCookie(res, req);
+    clearCsrfCookie(res, req);
     return res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -300,8 +301,8 @@ router.get('/oauth/github/callback', async (req, res, next) => {
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await db.insert(authSessions).values({ token, userId: user.id, expiresAt });
 
-    clearSidCookie(res);
-    res.cookie('sid', token, getSessionCookieOptions());
+    clearSidCookie(res, req);
+    res.cookie('sid', token, getSessionCookieOptions(req));
     return res.redirect(returnTo);
   } catch (err) {
     console.error('[auth] OAuth callback failed:', err);
