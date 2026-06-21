@@ -10606,3 +10606,58 @@ async function generateFollowUpStream(answer,node,domain,onDelta,onThinking){
   } else { state.lastCallSource="mock"; }
   return null;
 };
+
+/* ─── Expose all onclick-required functions on window ─── */
+window.addProvider = addProvider;
+window.clearSettings = clearSettings;
+window.closeCmdK = closeCmdK;
+window.closeConfirm = closeConfirm;
+window.closeExamModal = closeExamModal;
+window.closeExamView = closeExamView;
+window.closeProfile = closeProfile;
+window.closeSettings = closeSettings;
+window.closeShareModal = closeShareModal;
+window.closeUsageModal = closeUsageModal;
+window.confirmClearCache = confirmClearCache;
+window.confirmClearSettings = confirmClearSettings;
+window.confirmDeleteAccount = confirmDeleteAccount;
+window.copyShareLink = copyShareLink;
+window.createShareLink = createShareLink;
+window.exitAgentMode = exitAgentMode;
+window.openAgentView = openAgentView;
+window.openPromptTemplatesModal = openPromptTemplatesModal;
+window.openSettings = openSettings;
+window.openShareModal = openShareModal;
+window.openStorageModal = openStorageModal;
+window.openUsageModal = openUsageModal;
+window.refreshCaptcha = refreshCaptcha;
+window.resendAuthCode = resendAuthCode;
+window.resendVerification = resendVerification;
+window.resetApp = resetApp;
+window.revokeShareLink = revokeShareLink;
+window.saveSettings = saveSettings;
+window.selectShareVis = selectShareVis;
+window.showAuthCodeLogin = showAuthCodeLogin;
+window.showAuthForgotPassword = showAuthForgotPassword;
+window.showAuthSignin = showAuthSignin;
+window.signOut = signOut;
+window.startSession = startSession;
+window.submitAuthLoginWithCode = submitAuthLoginWithCode;
+window.submitAuthSendCode = submitAuthSendCode;
+window.submitChatMessage = submitChatMessage;
+window.switchAuthTab = switchAuthTab;
+window.switchTab = switchTab;
+window.toggleAPI = toggleAPI;
+window.toggleAppLang = toggleAppLang;
+window.toggleDisplayPrefs = toggleDisplayPrefs;
+window.toggleExtensionsPicker = toggleExtensionsPicker;
+window.toggleModelPicker = toggleModelPicker;
+window.toggleProfileWebSearch = toggleProfileWebSearch;
+window.toggleSidebar = toggleSidebar;
+window.toggleTheme = toggleTheme;
+
+/* exam/quiz dynamic handlers */
+window.selectExamOpt = selectExamOpt;
+window.toggleExamType = toggleExamType;
+window.showUsageTip = showUsageTip;
+window.hideUsageTip = hideUsageTip;
