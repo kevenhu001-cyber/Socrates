@@ -6442,6 +6442,29 @@ function preprocessMarkdown(t){
   s = _protectFences(s);
   s = _protectInlineCode(s);
 
+  /* ── Protect LaTeX bracket-delimiter math ──
+     Models routinely emit `\[ ... \]` and `\( ... \)` (the LaTeX
+     bracket-style display / inline math delimiters) instead of the
+     markdown-standard `$$...$$` / `$...$`. KaTeX understands both,
+     but our pipeline only knows about the `$` family — so `\[...\]`
+     would otherwise appear in the rendered output as raw
+     `[<br>\mathcal{E} = ...<br>]` text.
+
+     Stash them in placeholders (same mechanism as code blocks) so
+     the dollar heuristics below don't touch them, then convert
+     them to `$...$` / `$$...$$` AFTER the placeholder restore — at
+     that point they're safe to feed to KaTeX. */
+  s = s.replace(/\\\[([\s\S]+?)\\\]/g, function (m) {
+    /* store the inner content; the closing `\]` marker is preserved
+       in the comment but the actual placeholder text is what we'll
+       expand back. Format: a unique token with `DM` prefix so the
+       KaTeX block-substitution step can identify it later. */
+    return _stash('\\[' + m.slice(2, -2).trim() + '\\]');
+  });
+  s = s.replace(/\\\(([\s\S]+?)\\\)/g, function (m) {
+    return _stash('\\(' + m.slice(2, -2).trim() + '\\)');
+  });
+
   /* Strip a leading whitespace inside $$..$$ captures ($$ x=1 $$ →
      $$x=1$$) so trailing-whitespace before a Chinese character on the
      next line doesn't produce a stray <br>. Also handles leading
@@ -6577,6 +6600,15 @@ function preprocessMarkdown(t){
   /* Restore protected code spans. */
   s = s.replace(/\x01PP(\d+)\x01/g, function (_, id) { return _ppStash[parseInt(id)]; });
 
+  /* Convert any remaining `\[ ... \]` / `\( ... \]` bracket-style
+     LaTeX delimiters into their `$$...$$` / `$...$` equivalents so
+     the downstream KaTeX block-substitution step (which only matches
+     `$`) can pick them up. By the time we reach this line, the
+     dollar-parity rules above have already run, so we're not
+     disturbing their parity checks. */
+  s = s.replace(/\\\[([\s\S]+?)\\\]/g, '$$$$$1$$$$');
+  s = s.replace(/\\\(([\s\S]+?)\\\)/g, '$$$1$$');
+
   return s;
 }
 
@@ -6668,6 +6700,15 @@ function preprocessMarkdownForStreaming(t){
   });
   s = s.replace(/`[^`\n]+`/g, function (m) { return _stash(m); });
 
+  /* Protect bracket-style LaTeX delimiters. Idempotent — already-
+     converted placeholders don't match again. */
+  s = s.replace(/\\\[([\s\S]+?)\\\]/g, function (m) {
+    return _stash('\\[' + m.slice(2, -2).trim() + '\\]');
+  });
+  s = s.replace(/\\\(([\s\S]+?)\\\)/g, function (m) {
+    return _stash('\\(' + m.slice(2, -2).trim() + '\\)');
+  });
+
   /* NOTE: we intentionally skip:
        - The lone-`$...$` → `$$...$$` promote rule (it depends on
          a fully-closed `$...$` pair).
@@ -6709,6 +6750,12 @@ function preprocessMarkdownForStreaming(t){
 
   /* Restore protected code spans. */
   s = s.replace(/\x01PP(\d+)\x01/g, function (_, id) { return _ppStash[parseInt(id)]; });
+  /* Convert bracket-style LaTeX delimiters to $$ / $ so KaTeX picks
+     them up. Same idempotency consideration: if the previous pass
+     already converted them, the source `\[...\]` is gone and the
+     regex won't match again. */
+  s = s.replace(/\\\[([\s\S]+?)\\\]/g, '$$$$$1$$$$');
+  s = s.replace(/\\\(([\s\S]+?)\\\)/g, '$$$1$$');
   return s;
 }
 
