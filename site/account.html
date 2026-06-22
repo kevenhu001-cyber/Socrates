@@ -257,6 +257,12 @@ document.querySelectorAll('.sr').forEach(el => srObs.observe(el));
 
     var nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 1); nextMonth.setDate(1);
 
+    /* Free-tier guard: Payment Method, Billing History, and the
+       "Cancel Subscription" button are only meaningful for paid users.
+       `diophantus` is the canonical free tier (rank 0). Deleting the
+       account is always allowed regardless of tier. */
+    var isFree = (u.tier === 'diophantus' || !u.tier);
+
     return '' +
       /* Subscription card */
       '<div class="acct-card full sr">' +
@@ -294,24 +300,33 @@ document.querySelectorAll('.sr').forEach(el => srObs.observe(el));
         '</div>' +
       '</div>' +
 
-      /* Payment Method */
+      /* Payment Method — paid tiers only */
+      (isFree ? '' :
       '<div class="acct-card sr sr-d1">' +
         '<div class="acct-card-header"><div class="acct-card-title">Payment Method</div><button class="btn btn-ghost btn-sm">Edit</button></div>' +
         '<div class="acct-pm"><div class="acct-pm-icon">VISA</div><div class="acct-pm-info"><div class="acct-pm-name">Visa ending in 4242</div><div class="acct-pm-desc">Expires 12/2027</div></div><span class="acct-pm-badge">Default</span></div>' +
-      '</div>' +
+      '</div>'
+      ) +
 
-      /* Billing History */
+      /* Billing History — paid tiers only */
+      (isFree ? '' :
       '<div class="acct-card sr sr-d2">' +
         '<div class="acct-card-header"><div class="acct-card-title">Billing History</div><button class="btn btn-ghost btn-sm">View All</button></div>' +
         '<table class="acct-table"><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr><tr><td>' + fmtDate(Date.now()) + '</td><td>' + p.name + '</td><td>$' + p.price.toFixed(2) + '</td><td class="paid">Paid</td></tr></table>' +
-      '</div>' +
+      '</div>'
+      ) +
 
-      /* Danger Zone */
+      /* Danger Zone — Cancel Subscription (paid) + Delete Account (always) */
       '<div class="acct-card full sr sr-d3">' +
         '<div class="acct-card-header"><div class="acct-card-title" style="color:hsl(0 60% 60%)">Danger Zone</div></div>' +
-        '<div class="acct-danger"><div class="acct-danger-title">Cancel Subscription</div>' +
-        '<p>Once you cancel, your subscription will remain active until the end of your current billing period. After that, your account will be downgraded to the free Diophantus tier. Your session history and knowledge graph will be preserved but limited to 5 saved sessions.</p>' +
-        '<button class="btn btn-danger btn-sm">Cancel Subscription</button></div>' +
+        (isFree ? '' :
+          '<div class="acct-danger" style="margin-bottom:14px"><div class="acct-danger-title">Cancel Subscription</div>' +
+          '<p>Once you cancel, your subscription will remain active until the end of your current billing period. After that, your account will be downgraded to the free Diophantus tier. Your session history and knowledge graph will be preserved but limited to 5 saved sessions.</p>' +
+          '<button class="btn btn-danger btn-sm" onclick="cancelSubscription()">Cancel Subscription</button></div>'
+        ) +
+        '<div class="acct-danger"><div class="acct-danger-title">Delete Account</div>' +
+        '<p>Permanently delete your account and all associated data — sessions, messages, knowledge graph, mistake book, and API keys. This action cannot be undone.</p>' +
+        '<button class="btn btn-danger btn-sm" onclick="deleteAccount()">Delete Account</button></div>' +
       '</div>';
   }
 
@@ -452,6 +467,56 @@ function submitLogin(email, pass, captchaToken, captchaAns, csrfToken, errEl, bt
   });
   return false;
 }
+
+/* ── Danger-zone handlers ──────────────────────────── */
+
+function ensureCsrf() {
+  return fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).then(function() {
+    return getCookie('csrf') || '';
+  });
+}
+
+function cancelSubscription() {
+  if (!confirm('Cancel your subscription? You\'ll keep access until the end of your current billing period, then your account will be downgraded to the free Diophantus tier.')) return;
+  ensureCsrf().then(function(csrfToken) {
+    fetch('/api/account/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
+      credentials: 'same-origin'
+    }).then(function(r) {
+      if (!r.ok) throw new Error('Server returned ' + r.status);
+      return r.json();
+    }).then(function() {
+      alert('Subscription cancelled. Reloading…');
+      window.location.reload();
+    }).catch(function(err) {
+      alert('Could not cancel subscription: ' + (err && err.message ? err.message : 'unknown error'));
+    });
+  });
+}
+
+function deleteAccount() {
+  /* Two-step confirm — make the action hard to trigger by accident. */
+  if (!confirm('Delete your account permanently? This will erase all of your sessions, messages, knowledge graph, mistake book, and API keys. This cannot be undone.')) return;
+  if (!confirm('Are you absolutely sure? There is no recovery from this.')) return;
+  ensureCsrf().then(function(csrfToken) {
+    fetch('/api/auth/account', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
+      credentials: 'same-origin'
+    }).then(function(r) {
+      if (!r.ok) throw new Error('Server returned ' + r.status);
+      return r.json();
+    }).then(function() {
+      alert('Your account has been deleted.');
+      window.location.href = '/';
+    }).catch(function(err) {
+      alert('Could not delete account: ' + (err && err.message ? err.message : 'unknown error'));
+    });
+  });
+}
+window.cancelSubscription = cancelSubscription;
+window.deleteAccount = deleteAccount;
 </script>
 <script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/\.html$/,'');b.href=p==='/'||p===''?'/zh/':'/zh'+p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","zh")}catch(e){}});})();</script>
 </body>

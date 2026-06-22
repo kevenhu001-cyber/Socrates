@@ -8,6 +8,33 @@ const router = Router();
 router.use(requireAuth);
 
 /**
+ * POST /api/account/cancel — downgrade a paid subscription back to the
+ * free Diophantus tier. Mirrors the front-end My Account "Cancel
+ * Subscription" action. Idempotent: calling it on an already-free user
+ * is a no-op (returns 200 with the unchanged tier).
+ */
+router.post('/cancel', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, req.userId))
+      .limit(1);
+    if (!user) {
+      return res.status(404).json({ code: 'USER_NOT_FOUND', message: 'User not found' });
+    }
+    if (user.tier !== 'diophantus') {
+      await db
+        .update(users)
+        .set({ tier: 'diophantus', plan: null })
+        .where(eq(users.id, req.userId));
+    }
+    return res.json({ ok: true, tier: 'diophantus' });
+  } catch (err) { next(err); }
+});
+
+/**
  * Plan/tier definitions matching the front-end buildCards() expectations.
  * rank: 0=Free, 1=Basic, 2=Standard, 3=Premium
  */
