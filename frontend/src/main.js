@@ -4624,7 +4624,9 @@ function teardownThinkStructure(){
     cursor=document.createElement("span");
     cursor.className="stream-cursor";
     cursor.textContent="▍";
-    body.appendChild(cursor);
+    /* Cursor is a child of streamContent (see note in the other
+       appendChild(cursor) callsites). */
+    streamContent.appendChild(cursor);
     thinkState.beforeNode=null;
     thinkState.details=null;
     thinkState.summary=null;
@@ -4699,7 +4701,13 @@ function teardownThinkStructure(){
         cursor=document.createElement("span");
         cursor.className="stream-cursor";
         cursor.textContent="▍";
-        body.appendChild(cursor);
+        /* Cursor must be a child of streamContent so the
+           streamContent.insertBefore(chunk, cursor) calls below
+           work (insertBefore requires the reference node to be a
+           child of the parent). The previous layout appended
+           cursor to body directly, which made every chunk flush
+           throw `NotFoundError: Failed to execute 'insertBefore'`. */
+        streamContent.appendChild(cursor);
         chunkState={renderedLength:0,pendingText:"",pendingNode:null,lastFlushAt:Date.now()};
       }
       var prevLen=chunkState.renderedLength;
@@ -4760,7 +4768,7 @@ function teardownThinkStructure(){
         }catch(_){
           chunk.textContent=slice;
         }
-        streamContent.insertBefore(chunk,chunkState.pendingNode||cursor);
+        streamContent.insertBefore(chunk,(chunkState.pendingNode&&chunkState.pendingNode.parentNode===streamContent)?chunkState.pendingNode:cursor);
         /* Trigger the fade-in on the next frame so the browser
            registers the initial opacity:0 state first. */
         requestAnimationFrame(function(){chunk.classList.add("stream-chunk-in")});
@@ -4966,7 +4974,11 @@ function teardownThinkStructure(){
         cursor.className="stream-cursor";
         cursor.textContent="▍";
         body.appendChild(streamContent);
-        body.appendChild(cursor);
+        /* Cursor is a child of streamContent so subsequent
+           insertBefore(chunk, cursor) calls succeed (see the
+           corresponding comments in the other appendChild(cursor)
+           callsites for the full story). */
+        streamContent.appendChild(cursor);
         var pos=0;
         var CHARS_PER_TICK=4;        /* P1.3 — wider slice per rAF */
         var MAX_MS_PER_FRAME=16;
