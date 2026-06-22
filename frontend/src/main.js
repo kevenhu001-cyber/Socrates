@@ -6414,39 +6414,183 @@ function preprocessMarkdown(t){
         double-parsed as both inline HTML and plain text. */
   s=s.replace(/<p>\s*/gi,"").replace(/\s*<\/p>/gi,"\n");
   s=s.replace(/<br\s*\/?>/gi,"\n");
-  /* 1. Promote lone `$...$` that contains a `\\` line-break
-        (heuristic for display math) to `$$...$$`. Only when the
-        `$...$` is on its own line / span. */
-  s=s.replace(/(^|\n)\$([^$\n]+(?:\\\\[^$\n]*)*)\$(\s*\n|$)/g,function(_,lead,math,tail){
-    /* If the inner content already has balanced $$ pair, leave as-is. */
-    return lead+"$$"+math+"$$"+tail;
+
+  /* ── Protect code blocks + inline code + raw math zones ──
+     The downstream $ / $...$ / $$...$$ heuristics must not act on
+     text inside code (e.g. `echo $PATH`, ```bash $PATH ```), so we
+     substitute those spans with neutral placeholders, run the
+     normalization passes, then restore the originals untouched.
+     The placeholder token is chosen to be both: a) unparseable by
+     marked (so it passes through as plain text in the markdown
+     source) and b) containing no `$`, so the dollar heuristics are
+     blind to it. */
+  var _ppStash = [];
+  function _stash(replacement) {
+    var id = _ppStash.length;
+    _ppStash.push(replacement);
+    return '\x01PP' + id + '\x01';
+  }
+  function _protectFences(s) {
+    return s.replace(/```([\w-]*)\n?([\s\S]*?)```/g, function (_, lang, body) {
+      return _stash('```' + lang + '\n' + body + '```');
+    });
+  }
+  function _protectInlineCode(s) {
+    return s.replace(/`[^`\n]+`/g, function (m) { return _stash(m); });
+  }
+
+  s = _protectFences(s);
+  s = _protectInlineCode(s);
+
+  /* Strip a leading whitespace inside $$..$$ captures ($$ x=1 $$ →
+     $$x=1$$) so trailing-whitespace before a Chinese character on the
+     next line doesn't produce a stray <br>. Also handles leading
+     whitespace. Only operates OUTSIDE code (which is stashed). */
+  s = s.replace(/\$\$\s+([\s\S]+?)\s+\$\$/g, '$$$$' + '$1' + '$$$$');
+
+  /* Promote lone `$...$` that contains a `\\` line-break (heuristic for
+     display math) to `$$...$$`. Only when the `$...$` is on its own
+     line / span. */
+  s = s.replace(/(^|\n)\$([^$\n]+(?:\\\\[^$\n]*)*)\$(\s*\n|$)/g, function (_, lead, math, tail) {
+    return lead + '$$' + math + '$$' + tail;
   });
-  /* 2. Stray unmatched `$`. Count total occurrences; if odd, the
-        last lone `$` is almost certainly punctuation ("$5", "$100")
-        rather than math. Escape it so KaTeX regex doesn't eat it. */
-  var dollarCount=(s.match(/\$/g)||[]).length;
-  if(dollarCount%2===1){
-    /* Find the last lone `$` not part of `$$` and escape it. */
-    var idx=s.length;
-    while((idx=s.lastIndexOf("$",idx-1))!==-1){
-      var prev=s.charAt(idx-1),next=s.charAt(idx+1);
-      if(prev!=="$"&&next!=="$"){
-        s=s.slice(0,idx)+"\\$"+s.slice(idx+1);
+
+  /* Stray unmatched `$`. Count total occurrences; if odd, the last
+     lone `$` is almost certainly punctuation ("$5", "$100") rather
+     than math. Escape it so the inline-math regex doesn't eat it.
+     Skip any `$` that's part of the placeholder token (none — the
+     placeholders contain no `$`). */
+  var dollarCount = (s.match(/\$/g) || []).length;
+  if (dollarCount % 2 === 1) {
+    var idx = s.length;
+    while ((idx = s.lastIndexOf('$', idx - 1)) !== -1) {
+      var prev = s.charAt(idx - 1), next = s.charAt(idx + 1);
+      if (prev !== '$' && next !== '$') {
+        s = s.slice(0, idx) + '\\$' + s.slice(idx + 1);
         break;
       }
     }
   }
-  /* 3. Unclosed code fence. Count ``` occurrences. If odd, append
-        a closing ``` at the very end (only if `s` doesn't end with
-        a partial fence line). */
-  var fenceCount=(s.match(/```/g)||[]).length;
-  if(fenceCount%2===1){
-    if(!/```\s*$/.test(s))s=s+"\n```";
+
+  /* Unclosed code fence. Count the number of ``` that are NOT inside
+     a placeholder (placeholders never contain ```). The original
+     approach was a global `s.match(/```/g)` which would over-count
+     the fences inside the (then-stashed) code blocks — but those
+     were already correctly balanced by the protection pass, so the
+     only case we need to fix is when the model emits an odd number
+     of fences in the FREE text. The stashes each contain 1 pair of
+     ``` so they don't affect parity. Subtract 2 per placeholder to
+     get the "free" fence count. */
+  var fenceCount = (s.match(/```/g) || []).length;
+  fenceCount -= _ppStash.length * 2; /* each stash has 2 fences */
+  if (fenceCount % 2 === 1) {
+    if (!/```\s*$/.test(s)) s = s + '\n```';
   }
-  /* 6. Normalize bullet glyphs to `- ` so marked treats them as
-        list items. */
-  s=s.replace(/(^|\n)\s*[•‣◦・·]\s+/g,"$1- ");
+
+  /* Normalize bullet glyphs to `- ` so marked treats them as list items. */
+  s = s.replace(/(^|\n)\s*[•‣◦・·]\s+/g, '$1- ');
+
+  /* Normalize markdown table separator rows so marked.js doesn't drop
+     columns or refuse to render. The bug: a model writes
+        | A | B | C |
+        |---|---|---|
+     correctly, but sometimes also
+        | A | B | C |
+        |---|---|---
+     (last cell missing trailing `|`), or
+        | A | B |
+        |---|---|
+     with mismatched counts, or a separator without the leading `|`.
+     We rewrite the line directly after a header line. */
+  s = fixMarkdownTableSeparators(s);
+
+  /* Ensure a blank line AFTER a markdown table block so the following
+     paragraph isn't eaten as a new row.
+
+     A GFM table is:
+       - 1+ header lines starting with `|`
+       - 1 separator line `|---|---|...`
+       - 0+ data rows starting with `|`
+     followed by a non-table paragraph.
+
+     The bug we're fixing: when the model writes a table with NO blank
+     line after the last row, marked.js treats the next paragraph as
+     another table row.
+
+     Strategy: walk lines. When a line starts with `|` (a data row)
+     and is immediately followed by a non-blank, non-table line (a
+     paragraph), AND somewhere above (possibly after several other
+     table rows) there's a separator line — inject a blank line. */
+  s = (function () {
+    var lines = s.split('\n');
+    for (var i = 0; i < lines.length - 1; i++) {
+      var cur = lines[i];
+      var nxt = lines[i + 1];
+      if (!/^[ \t]*\|/.test(cur)) continue; /* not a table row */
+      if (nxt === '' || /^[ \t]*$/.test(nxt)) continue; /* next is blank — OK */
+      if (/^[ \t]*\|[^\n]/.test(nxt)) continue; /* next is another table row — still in table */
+      /* nxt is a non-blank, non-table line. Walk back over consecutive
+         table rows + the header to find a separator line. If found,
+         the current line is the last row of a table. */
+      var j = i;
+      while (j >= 0 && /^[ \t]*\|[^\n]/.test(lines[j])) j--;
+      /* `j` is now the line just before the header. The header line
+         is at j+1. The separator (if any) is at j+2. */
+      var sep = j + 2 < lines.length ? lines[j + 2] : '';
+      if (!/^\s*\|[\s:|-]+\s*\|?\s*$/.test(sep)) continue;
+      /* Inject a blank line at position i+1. */
+      lines.splice(i + 1, 0, '');
+      i++; /* skip the inserted blank */
+    }
+    return lines.join('\n');
+  })();
+
+  /* Restore protected code spans. */
+  s = s.replace(/\x01PP(\d+)\x01/g, function (_, id) { return _ppStash[parseInt(id)]; });
+
   return s;
+}
+
+/* Detect and fix a GFM table separator row that:
+   1) Has fewer cells than the header, OR
+   2) Has the same number of cells but the last cell is missing its
+      trailing `|`, OR
+   3) Is missing the leading `|` entirely.
+   Only fires on a line that contains `---` (or `:--:` / `--:` style
+   alignment markers) so we don't accidentally rewrite non-table lines.
+   Returns the separator line padded to match the header column count
+   and terminated with `|`. */
+function fixMarkdownTableSeparators(s) {
+  var lines = s.split('\n');
+  for (var i = 1; i < lines.length; i++) {
+    var prev = lines[i - 1];
+    var cur = lines[i];
+    if (!/\|/.test(prev)) continue;
+    /* Is `cur` a separator row? Allow leading/trailing spaces. */
+    if (!/^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(cur)) continue;
+    /* Count header cells: split on `|` and drop empties at the ends. */
+    var headerCells = prev.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').length;
+    /* Split the current separator on `|` similarly. */
+    var sepCells = cur.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|');
+    if (sepCells.length === headerCells) {
+      /* Length matches but no trailing pipe — just add it. */
+      if (!/\|/.test(cur.replace(/^\s*\|/, '').slice(-1)) || !/\|\s*$/.test(cur)) {
+        lines[i] = cur.replace(/\s*$/, '') + ' |';
+      }
+      continue;
+    }
+    if (sepCells.length < headerCells) {
+      /* Pad to match header. Each missing cell becomes `| --- |`. */
+      while (sepCells.length < headerCells) sepCells.push(' --- ');
+      lines[i] = '| ' + sepCells.join(' | ').trim() + ' |';
+      continue;
+    }
+    if (sepCells.length > headerCells) {
+      /* Truncate to header. */
+      lines[i] = '| ' + sepCells.slice(0, headerCells).join(' | ').trim() + ' |';
+    }
+  }
+  return lines.join('\n');
 }
 
 function formatMsgProgressive(t){
@@ -6520,9 +6664,12 @@ function formatMsgProgressive(t){
     });
   }
 
-  /* 3. Inline math $...$ — same as formatMsg */
+  /* 3. Inline math $...$ — same as formatMsg.
+     Note: we allow newlines in the captured math (KaTeX handles
+     them as whitespace). The previous [^\$\n]+? pattern refused
+     to match streaming chunks where the boundary fell at a \n. */
   if(typeof katex!=="undefined"){
-    s=s.replace(/\$([^\$\n]+?)\$/g,function(_,math){
+    s=s.replace(/\$(.+?)\$/g,function(_,math){
       try{
         return save(katex.renderToString(math.trim(),{displayMode:false,throwOnError:false,macros:KATEX_MACROS}));
       }catch(e){
@@ -6748,8 +6895,14 @@ function formatMsg(t){
     });
   }
 
-  /* 4. Inline math $...$ */
-  t=t.replace(/\$(.+?)\$/g,function(_,math){
+  /* 4. Inline math $...$
+     IMPORTANT: this regex must allow newlines in the captured math
+     (KaTeX renders \n inside $...$ as a soft space). The previous
+     [^\$\n]+? pattern silently failed when a streaming chunk boundary
+     landed at a \n inside a formula — the user would see raw $x\n=1$
+     in the output until the closing $ arrived. Using [\s\S]+? (or .+?
+     with the s flag) is the fix. */
+  t=t.replace(/\$([\s\S]+?)\$/g,function(_,math){
     try{
       return save(katex.renderToString(math.trim(),{displayMode:false,throwOnError:false,macros:KATEX_MACROS}));
     }catch(e){
