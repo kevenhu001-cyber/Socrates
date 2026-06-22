@@ -1175,9 +1175,37 @@ function onCmdKKey(ev){
   }
 }
 
+/* P_dup-session-race — when multiple saveCurrentSession() calls
+   fire in quick succession (e.g. the several call sites inside
+   askChatTurn at lines 2559 / 2574 / 2588 / 2638 / 2677), each one
+   POSTs the same client-side UUID. If the server hasn't committed
+   the row yet when the second POST arrives, its existence check
+   (server line ~96-104) misses the row, mints a fresh UUID, and
+   inserts a SECOND session record. Result: the same chat appears
+   twice in Recents.
+
+   Fix: serialize saves through a single in-flight promise. While
+   one save is awaiting the server's response, additional calls are
+   folded into a "dirty" flag; once the in-flight save finishes,
+   one follow-up save fires (if anything queued). Net effect: at
+   most TWO POSTs per rapid burst — the original and one trailing
+   coalesced one — and both carry the same canonical id (the one
+   the server adopted on the first response). */
+var _saveInFlight=null;
+var _saveDirty=false;
 function saveCurrentSession(){
   if(!state.topic)return;
   if(!CURRENT_USER)return; /* not signed in; do nothing */
+  /* If a save is already running, mark dirty and let it coalesce. */
+  if(_saveInFlight){
+    _saveDirty=true;
+    return;
+  }
+  _saveDirty=false;
+  doSave();
+}
+
+function doSave(){
   var now=Date.now();
   /* P1.1 — read from the authoritative state.messages list, NOT
      from the live DOM. The DOM may still hold a half-rendered
@@ -1231,7 +1259,7 @@ function saveCurrentSession(){
      before inserting. Without this adoption step, every subsequent
      save kept sending the original (rejected) id, breaking the upsert
      and producing duplicate rows. */
-  apiFetch("/api/sessions",{method:"POST",body:payload}).then(function(r){
+  _saveInFlight=apiFetch("/api/sessions",{method:"POST",body:payload}).then(function(r){
     if(r&&r.id&&r.id!==sessionId){
       state.currentSessionId=r.id;
       if(state.session)state.session.currentSessionId=r.id;
@@ -1240,6 +1268,15 @@ function saveCurrentSession(){
     return refreshServerSessions();
   }).then(function(){renderRecents()}).catch(function(e){
     console.warn("[sessions] save failed:",e.message);
+  }).then(function(){
+    /* Clear the in-flight flag BEFORE re-checking dirty so a
+       queued save picks up the latest state (and the just-adopted
+       server id, if any) instead of re-sending a stale id. */
+    _saveInFlight=null;
+    if(_saveDirty){
+      _saveDirty=false;
+      doSave();
+    }
   });
 }
 async function loadSession(id){
