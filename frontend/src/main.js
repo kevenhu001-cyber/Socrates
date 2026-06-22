@@ -6455,19 +6455,48 @@ function preprocessMarkdown(t){
     return lead + '$$' + math + '$$' + tail;
   });
 
-  /* Stray unmatched `$`. Count total occurrences; if odd, the last
+  /* Stray unmatched `$`. Count UNESCAPED occurrences; if odd, the last
      lone `$` is almost certainly punctuation ("$5", "$100") rather
      than math. Escape it so the inline-math regex doesn't eat it.
      Skip any `$` that's part of the placeholder token (none — the
-     placeholders contain no `$`). */
-  var dollarCount = (s.match(/\$/g) || []).length;
-  if (dollarCount % 2 === 1) {
-    var idx = s.length;
-    while ((idx = s.lastIndexOf('$', idx - 1)) !== -1) {
+     placeholders contain no `$`).
+
+     CRITICAL for streaming: this function is called on the FULL
+     accumulated text on every chunk arrival. The previous
+     implementation counted ALL `$` characters — including those we
+     just escaped on the previous call — so each chunk arrival added
+     another `\` in front of the same stray `$`. After 5 chunks you'd
+     see `\\\\\\$5` instead of `\$5`. The fix: count only UNESCAPED
+     `$` (those not preceded by an odd number of backslashes). On a
+     second pass, the `\$` we wrote is already escaped and is no
+     longer counted, so the parity check stays stable. */
+  function _countUnescapedDollars(s) {
+    var n = 0;
+    for (var i = 0; i < s.length; i++) {
+      if (s.charAt(i) !== '$') continue;
+      var bs = 0;
+      var j = i - 1;
+      while (j >= 0 && s.charAt(j) === '\\') { bs++; j--; }
+      if (bs % 2 === 0) n++;
+    }
+    return n;
+  }
+  function _lastUnescapedDollar(s) {
+    for (var i = s.length - 1; i >= 0; i--) {
+      if (s.charAt(i) !== '$') continue;
+      var bs = 0;
+      var j = i - 1;
+      while (j >= 0 && s.charAt(j) === '\\') { bs++; j--; }
+      if (bs % 2 === 0) return i;
+    }
+    return -1;
+  }
+  if (_countUnescapedDollars(s) % 2 === 1) {
+    var idx = _lastUnescapedDollar(s);
+    if (idx >= 0) {
       var prev = s.charAt(idx - 1), next = s.charAt(idx + 1);
       if (prev !== '$' && next !== '$') {
         s = s.slice(0, idx) + '\\$' + s.slice(idx + 1);
-        break;
       }
     }
   }
@@ -6593,9 +6622,99 @@ function fixMarkdownTableSeparators(s) {
   return lines.join('\n');
 }
 
+/* Streaming-safe variant of preprocessMarkdown. The full
+   preprocessMarkdown runs several rules that are NOT idempotent on
+   partial streaming text — when the same accumulated buffer is
+   re-processed on every chunk arrival, the output drifts:
+
+     - The stray-$ escape rule escaped the LAST lone `$` on every
+       pass, producing `\$` → `\\$` → `\\\$` after 3 chunks.
+     - The unclosed-fence append added `\n\`\`\`` whenever the
+       buffer ended with an odd fence count; when the model's real
+       closing ` ``` ` arrived later, the buffer was over-closed.
+     - The `$$ x=1 $$` whitespace trim only fires when whitespace is
+       present; the first pass produces `$$ x=1 $$` and the second
+       trims to `$$x=1 $$`, causing a flicker on every chunk that
+       adds more text inside the math.
+
+   The streaming path needs IDEMPOTENT and PARTIAL-STRING-SAFE rules.
+   We drop the three problematic rules above and keep the rest
+   (CRLF, stray HTML, code-block $ protection, table separator fix,
+   table blank-line injection, bullet glyph normalization). The
+   dropped rules are still applied in the FINAL formatMsg pass —
+   by then the buffer is complete so idempotency doesn't matter. */
+function preprocessMarkdownForStreaming(t){
+  if(!t)return t;
+  var s=String(t);
+  /* CRLF → LF */
+  s=s.replace(/\r\n?/g,"\n");
+  /* Stray HTML — drop <p>/</p> wrappers and <br/> tags. */
+  s=s.replace(/<p>\s*/gi,"").replace(/\s*<\/p>/gi,"\n");
+  s=s.replace(/<br\s*\/?>/gi,"\n");
+
+  /* ── Protect code blocks + inline code ──
+     Same stash+restore pattern as the full preprocessor, but we do
+     NOT add a placeholder for unclosed ``` — the streaming pass
+     must preserve whatever the model wrote verbatim, even mid-code-
+     block, because the closing ``` may arrive in a later chunk. */
+  var _ppStash = [];
+  function _stash(replacement) {
+    var id = _ppStash.length;
+    _ppStash.push(replacement);
+    return '\x01PP' + id + '\x01';
+  }
+  s = s.replace(/```([\w-]*)\n?([\s\S]*?)```/g, function (_, lang, body) {
+    return _stash('```' + lang + '\n' + body + '```');
+  });
+  s = s.replace(/`[^`\n]+`/g, function (m) { return _stash(m); });
+
+  /* NOTE: we intentionally skip:
+       - The lone-`$...$` → `$$...$$` promote rule (it depends on
+         a fully-closed `$...$` pair).
+       - The stray-`$` escape rule (non-idempotent; see comment at
+         top of file).
+       - The unclosed-fence append (non-idempotent; appended
+         fences fight with the model's real closing fence).
+       - The `$$ x=1 $$` whitespace trim (causes flicker between
+         consecutive chunks).
+     All four are applied in the FINAL preprocessMarkdown call from
+     formatMsg. */
+
+  /* Normalize bullet glyphs. */
+  s = s.replace(/(^|\n)\s*[•‣◦・·]\s+/g, '$1- ');
+
+  /* Table separator fix. Idempotent: a properly-formed separator is
+     unchanged on re-processing. */
+  s = fixMarkdownTableSeparators(s);
+
+  /* Table blank-line injection. Idempotent: once the blank line is
+     injected, the next pass sees it and skips the insertion. */
+  s = (function () {
+    var lines = s.split('\n');
+    for (var i = 0; i < lines.length - 1; i++) {
+      var cur = lines[i];
+      var nxt = lines[i + 1];
+      if (!/^[ \t]*\|/.test(cur)) continue;
+      if (nxt === '' || /^[ \t]*$/.test(nxt)) continue;
+      if (/^[ \t]*\|[^\n]/.test(nxt)) continue;
+      var j = i;
+      while (j >= 0 && /^[ \t]*\|[^\n]/.test(lines[j])) j--;
+      var sep = j + 2 < lines.length ? lines[j + 2] : '';
+      if (!/^\s*\|[\s:|-]+\s*\|?\s*$/.test(sep)) continue;
+      lines.splice(i + 1, 0, '');
+      i++;
+    }
+    return lines.join('\n');
+  })();
+
+  /* Restore protected code spans. */
+  s = s.replace(/\x01PP(\d+)\x01/g, function (_, id) { return _ppStash[parseInt(id)]; });
+  return s;
+}
+
 function formatMsgProgressive(t){
   if(!t)return"";
-  var s=preprocessMarkdown(String(t));
+  var s=preprocessMarkdownForStreaming(String(t));
   /* Drop a single trailing newline so the last split element is
      not an empty line. Without this every chunk ending in \n would
      add a phantom blank paragraph. */
