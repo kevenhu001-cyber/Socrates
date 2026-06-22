@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { eq, and, desc, isNull, sql, inArray } from 'drizzle-orm';
+import { eq, and, desc, gt, isNull, sql, inArray } from 'drizzle-orm';
 import crypto from 'node:crypto';
 import { randomUUID } from 'node:crypto';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -92,13 +92,56 @@ router.post('/', writeLimiter, async (req, res, next) => {
      * exist — which is true both for "never existed" AND for "just
      * hard-deleted" — so a deleted conversation could silently come
      * back to life on the user's next chat turn if any code path
-     * leaked the stale id into POST /api/sessions. */
+     * leaked the stale id into POST /api/sessions.
+     *
+     * P_dup-session-race — when multiple POSTs arrive in flight from
+     * the same client (because the SPA calls saveCurrentSession from
+     * several call sites within one chat turn), each one carries the
+     * same client-side UUID. The first POST to land inserts the row
+     * and returns its canonical id. Subsequent POSTs — arriving
+     * before the SPA has had time to adopt that canonical id —
+     * also miss the existence check (because the previous row was
+     * minted under a different UUID) and each mints a fresh row.
+     * The user then sees the same chat appear twice in Recents.
+     *
+     * Defensive fix: when the client-supplied id is a UUID that does
+     * NOT exist, look up a recently-created sibling session for the
+     * SAME user with the SAME topic+title (the same logical chat
+     * the SPA is trying to upsert) and adopt its id instead of
+     * minting yet another one. The 5-second window is wide enough
+     * to absorb a racing burst but narrow enough that legitimate
+     * distinct sessions for the same topic won't collide. */
     if (isUuid(id)) {
       const [owner] = await db.select({ userId: sessions.userId })
         .from(sessions)
         .where(eq(sessions.id, id))
         .limit(1);
-      sessionId = (owner && owner.userId === req.userId) ? id : randomUUID();
+      if (owner && owner.userId === req.userId) {
+        sessionId = id;
+      } else {
+        // No row yet for this UUID — try to find a recent sibling.
+        const safeTopic = (topic || '').trim();
+        const safeTitle = (title || topic || '').trim();
+        if (safeTopic || safeTitle) {
+          const recent = await db.select({ id: sessions.id })
+            .from(sessions)
+            .where(and(
+              eq(sessions.userId, req.userId),
+              eq(sessions.topic, safeTopic),
+              eq(sessions.title, safeTitle),
+              gt(sessions.createdAt, sql`NOW() - INTERVAL '5 seconds'`),
+            ))
+            .orderBy(sql`${sessions.createdAt} DESC`)
+            .limit(1);
+          if (recent.length > 0) {
+            sessionId = recent[0].id;
+          } else {
+            sessionId = randomUUID();
+          }
+        } else {
+          sessionId = randomUUID();
+        }
+      }
     } else {
       sessionId = randomUUID();
     }
