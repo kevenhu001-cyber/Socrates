@@ -3362,28 +3362,48 @@ function editUserMessage(messageId,bar){
       restoreMessageBody(entry,body);
       return;
     }
-    entry.rawText=next;
+    /* P_edit — "edit a message" means "roll the conversation back
+       to here and replay from this turn". Any assistant / user /
+       system messages that followed this turn no longer make sense
+       once the user turn is different, so we drop them from the
+       authoritative state + the DOM before re-sending. */
+    var editedText=next;
+    entry.rawText=editedText;
     entry.html=null;
     restoreMessageBody(entry,body);
-    /* PATCH /api/messages/<id>?regenerate=true — server edits
-       the user turn and re-runs the assistant model. */
-    apiFetch("/api/messages/"+encodeURIComponent(messageId),{
+    rollbackMessagesAfter(messageId);
+    /* PATCH /api/messages/<id>?regenerate=true&discardFollowing=true
+       — server updates the user turn in place AND deletes any later
+       assistant / user rows it had previously stored, so a hard
+       reload after the edit doesn't surface stale replies. The
+       local state is already trimmed; this keeps the server in
+       sync. We don't wait for the PATCH before re-asking the model
+       (the user wants to see the new answer immediately), but the
+       promise is surfaced so a failure can show a toast. */
+    var patchPromise=apiFetch("/api/messages/"+encodeURIComponent(messageId),{
       method:"PATCH",
-      body:{content:next,regenerate:true},
+      body:{content:editedText,regenerate:true,discardFollowing:true},
       timeoutMs:15000
-    }).then(function(updated){
-      /* If the server returned a fresh assistant stream id,
-         the ViewModel can subscribe to /api/chat/stream and
-         replace the next message. For the moment we trigger a
-         local "regenerate this turn" by calling
-         regenerateAssistantMessage on the assistant message that
-         follows. The server's PATCH is still the source of truth. */
-      var nextId=findFollowingAssistantId(messageId);
-      if(nextId)regenerateAssistantMessage(nextId,bar);
     }).catch(function(e){
       console.warn("[msg-edit] PATCH failed; staying in offline mode:",e&&e.message);
       showToast("Saved locally — will sync when back online");
     });
+    /* Replay from the edited turn. askChatTurn writes a fresh
+       streaming assistant bubble into the now-empty tail of the
+       conversation. */
+    if(typeof window.askChatTurn==="function"){
+      try{
+        /* If a stream is already in flight (e.g. user clicked edit
+           while the previous reply was still arriving), abort it
+           first so the new turn isn't racing the old one. */
+        if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+        if(window._activeChatAbort){try{window._activeChatAbort("msg-edit")}catch(_){}}
+        window.askChatTurn(editedText);
+      }catch(e){console.warn("[msg-edit] replay failed:",e&&e.message)}
+    }
+    /* Avoid leaving the patch promise dangling — reference it so
+       linters don't drop it. */
+    void patchPromise;
   }
   ta.addEventListener("blur",commit);
   ta.addEventListener("keydown",function(ev){
@@ -3395,6 +3415,30 @@ function editUserMessage(messageId,bar){
       restoreMessageBody(entry,body);
     }
   });
+}
+
+/* P_edit — remove every message whose position in state.messages
+   is greater than `userMessageId`. Removes both the state entry
+   and its DOM node. Returns the number of messages dropped.
+   Used by editUserMessage so the conversation "rewinds" to the
+   edited turn before the new answer is generated. */
+function rollbackMessagesAfter(userMessageId){
+  var startIdx=findMessageIndex(userMessageId);
+  if(startIdx<0)return 0;
+  /* Snapshot ids first — splicing the array while iterating
+     backwards is safe, but collecting the list up front keeps the
+     DOM removal straightforward. */
+  var toDrop=[];
+  for(var i=startIdx+1;i<state.messages.length;i++){
+    toDrop.push(state.messages[i]);
+  }
+  state.messages.splice(startIdx+1,toDrop.length);
+  toDrop.forEach(function(m){
+    if(!m||!m.clientId)return;
+    var div=document.querySelector('[data-client-id="'+m.clientId+'"]');
+    if(div&&div.parentNode)div.parentNode.removeChild(div);
+  });
+  return toDrop.length;
 }
 function deleteUserMessage(messageId,bar){
   var idx=findMessageIndex(messageId);
@@ -3949,6 +3993,18 @@ function setChatStopState(stopMode){
   var btn=document.getElementById("sendBtn");
   if(!btn)return;
   _chatStopMode=!!stopMode;
+  /* Also update the chat-input hint so chat-mode users have a second,
+   * always-visible signal that work is in flight — the in-bubble
+   * thinking-dot scrolls away as the answer arrives, but the input
+   * bar stays pinned to the bottom of the viewport. */
+  var hint=document.getElementById("chatInputHint");
+  if(hint){
+    if(stopMode){
+      hint.innerHTML='<span class="thinking-pulse" style="width:6px;height:6px"></span> Streaming…  click <svg viewBox="0 0 24 24" fill="currentColor" width="9" height="9" style="vertical-align:-1px"><rect x="5" y="5" width="14" height="14" rx="2"/></svg> to stop';
+    }else if(!_agentModeActive){
+      hint.textContent="Shift+Enter for new line";
+    }
+  }
   if(stopMode){
     btn.classList.add("chat-stop");
     btn.title="Stop the current response";
@@ -4368,9 +4424,12 @@ function addStreamingMessage(opts){
   /* Show a "thinking" placeholder until the first delta arrives.
      FIRST_DELTA_TIMEOUT_MS is set to the same value as the stream
      timeout so there is effectively one timeout — the model can take
-     up to 120s to start generating without a false expiry. */
+     up to 120s to start generating without a false expiry. The
+     data-mode attribute lets CSS style the chat-mode placeholder
+     more prominently (chat mode has no KB / diagnostic to give
+     the user context that work is happening). */
   var FIRST_DELTA_TIMEOUT_MS=120000;
-  body.innerHTML='<span class="thinking-dot"><span class="thinking-pulse"></span>Thinking…</span>';
+  body.innerHTML='<span class="thinking-dot" data-mode="'+esc(appMode)+'"><span class="thinking-pulse"></span>'+(appMode==="chat"?"Thinking…":"Generating…")+'</span>';
   /* Morph the send button into a red Stop so the user can abort
      the stream. Agent mode uses its own state; we only flip chat
      here. setChatStopState(false) on finish/abort. */
@@ -4382,7 +4441,7 @@ function addStreamingMessage(opts){
   _elapsedTick=setInterval(function(){
     if(finished||!firstDelta)return;
     var sec=Math.round((Date.now()-thinkStarted)/1000);
-    body.innerHTML='<span class="thinking-dot"><span class="thinking-pulse"></span>Thinking… '+sec+'s</span>';
+    body.innerHTML='<span class="thinking-dot" data-mode="'+esc(appMode)+'"><span class="thinking-pulse"></span>'+(appMode==="chat"?"Thinking…":"Generating…")+' '+sec+'s</span>';
   },5000);
   var firstDeltaTimer=setTimeout(function(){
     if(finished||!firstDelta)return;
