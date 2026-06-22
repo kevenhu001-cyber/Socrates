@@ -4633,23 +4633,29 @@ function teardownThinkStructure(){
     }
 
     if(thinkState.startIdx===-1){
-      /* P_chunked-fade — replace character-by-character innerHTML
-         re-renders with chunked append-only text. Each new "chunk"
-         (a span ending at a sentence/paragraph boundary or after a
-         short character budget) fades in via CSS animation, giving
-         the user a piece-by-piece reveal rather than a typewriter.
+      /* P_chunked-fade — render the stream in 1–3 line chunks that
+         each fade in. Each chunk is a <div class="stream-chunk">
+         whose innerHTML is the result of running formatMsg on the
+         closed slice — markdown, KaTeX formulas, code fences all
+         resolved inside the chunk's own bounds. Because each chunk
+         is rendered ONCE when its closing boundary arrives and never
+         re-rendered, KaTeX formulas never land mid-stream and the
+         height of the chunks above the cursor can't shift under
+         the user.
 
-         Why not call formatMsgProgressive every frame? KaTeX only
-         renders formulas once BOTH delimiters are seen. The first
-         half of "$x^2 + y^2 = z^2$" streams in as raw text on a
-         single line, then the closing $ arrives and KaTeX suddenly
-         produces an inline-block element ~1.4× the line height —
-         the text below jumps downward by the difference. The user
-         sees this as vertical jitter on every formula. By only
-         appending text mid-stream and deferring formula / code /
-         markdown rendering to finish()'s single formatMsg pass,
-         the visible bubble stays one stable line-height per chunk
-         and never reflows the chunks above the new one. */
+         The trailing "pending" zone (between the last flushed chunk
+         and the cursor) shows RAW text — no formatMsg, no KaTeX —
+         so an unclosed $...$ or ``` is harmless; it just displays
+         as literal characters until its closing delimiter arrives
+         and the chunk boundary moves past it.
+
+         Boundaries chosen so chunks land on paragraph (\n\n),
+         line (\n), or sentence edges:
+           - any \n\n                  → flush through it
+           - any \n once pending > 60  → flush through it
+           - any [.!?] once pending>120 → flush through it
+           - hard cap: ~220 chars or ~280ms → flush what we have
+         This keeps each chunk to roughly 1–3 lines of text. */
       if(!streamContent){
         streamContent=document.createElement("div");
         streamContent.className="stream-content";
@@ -4659,33 +4665,92 @@ function teardownThinkStructure(){
         cursor.className="stream-cursor";
         cursor.textContent="▍";
         body.appendChild(cursor);
-        chunkState={renderedLength:0,pending:null,pendingLen:0,lastFlushAt:0};
+        chunkState={renderedLength:0,pendingText:"",pendingNode:null,lastFlushAt:Date.now()};
       }
       var prevLen=chunkState.renderedLength;
       var newSlice=displayFull.length>prevLen?displayFull.slice(prevLen):"";
       if(newSlice){
         chunkState.renderedLength=displayFull.length;
-        /* Append character-by-character into the pending chunk so the
-           cursor stays anchored; flush (close + animate) the pending
-           chunk whenever a natural boundary shows up or the chunk
-           exceeds ~36 chars / ~220ms. Boundaries chosen so flushes
-           land on word / sentence / paragraph edges, never mid-token. */
-        if(!chunkState.pending){
-          chunkState.pending=document.createElement("span");
-          chunkState.pending.className="stream-chunk";
-          streamContent.insertBefore(chunkState.pending,cursor);
+        chunkState.pendingText+=newSlice;
+      }
+      /* Decide whether the pending text has reached a flush point.
+         We never split mid-token: flush position is always the index
+         of a known boundary character inside the pending text. */
+      var pt=chunkState.pendingText;
+      var flushIdx=-1;
+      var ppIdx=pt.indexOf("\n\n");
+      if(ppIdx!==-1){
+        flushIdx=ppIdx+2;
+      }else if(pt.length>60){
+        var lfIdx=pt.indexOf("\n");
+        if(lfIdx!==-1)flushIdx=lfIdx+1;
+        else{
+          /* Sentence-end fallback for one-paragraph responses: cut
+             at the last [.!?] followed by whitespace, if any, once
+             the pending text is over 120 chars. */
+          var match=/[.!?。！？]["')\]]?\s/.exec(pt);
+          if(match)flushIdx=match.index+match[0].length;
         }
-        chunkState.pending.appendChild(document.createTextNode(newSlice));
-        chunkState.pendingLen+=newSlice.length;
-        var boundary=/[.!?。！？\)\]"'”]\s|[。！？]\s|\n\n|\n$/.test(chunkState.pending.textContent);
-        var tooLong=chunkState.pendingLen>=36;
-        var tooStale=chunkState.pendingLen>=12&&(Date.now()-chunkState.lastFlushAt)>220;
-        if(boundary||tooLong||tooStale){
-          chunkState.pending.classList.add("stream-chunk-in");
-          chunkState.pending=null;
-          chunkState.pendingLen=0;
-          chunkState.lastFlushAt=Date.now();
+      }
+      var tooLong=pt.length>=220;
+      var tooStale=pt.length>=80&&(Date.now()-chunkState.lastFlushAt)>280;
+      if(flushIdx===-1&&(tooLong||tooStale)){
+        /* No natural boundary hit yet — flush at a word boundary
+           (last space) closest to the soft cap so we don't slice
+           through the middle of a word. */
+        var softCap=Math.min(pt.length,pt.length>=220?220:200);
+        var cutAt=pt.lastIndexOf(" ",softCap);
+        if(cutAt>40)flushIdx=cutAt+1;
+        else flushIdx=softCap;
+      }
+      if(flushIdx>0&&flushIdx<pt.length){
+        var slice=pt.slice(0,flushIdx);
+        var remaining=pt.slice(flushIdx);
+        /* Build a fresh block-level chunk, render the closed slice
+           through formatMsg, and slot it in just before the cursor.
+           The trailing "remaining" text continues as the next
+           pending zone (no formatMsg yet). */
+        var chunk=document.createElement("div");
+        chunk.className="stream-chunk";
+        try{
+          var html=formatMsg(slice);
+          chunk.innerHTML=html;
+          if(typeof hljs!=="undefined"){
+            chunk.querySelectorAll("pre code").forEach(function(c){
+              if(c.dataset&&c.dataset.hljsDone)return;
+              if(/```\s*$/.test(c.textContent||""))return;
+              try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
+            });
+          }
+        }catch(_){
+          chunk.textContent=slice;
         }
+        streamContent.insertBefore(chunk,cursor);
+        /* Trigger the fade-in on the next frame so the browser
+           registers the initial opacity:0 state first. */
+        requestAnimationFrame(function(){chunk.classList.add("stream-chunk-in")});
+        chunkState.pendingText=remaining;
+        chunkState.lastFlushAt=Date.now();
+      }
+      /* Always reflect the latest raw pending text in the trailing
+         pendingNode (a plain <span> sitting just before the cursor)
+         so the user sees their response being typed live. */
+      if(pt!==chunkState.pendingText){
+        /* pendingText changed above — refresh the pendingNode from
+           the new value. */
+      }
+      if(chunkState.pendingText){
+        if(!chunkState.pendingNode){
+          chunkState.pendingNode=document.createElement("span");
+          chunkState.pendingNode.className="stream-chunk stream-chunk-pending";
+          streamContent.insertBefore(chunkState.pendingNode,cursor);
+        }
+        if(chunkState.pendingNode.textContent!==chunkState.pendingText){
+          chunkState.pendingNode.textContent=chunkState.pendingText;
+        }
+      }else if(chunkState.pendingNode){
+        chunkState.pendingNode.remove();
+        chunkState.pendingNode=null;
       }
     }else{
       /* Think block is in play. Lay out the three-section
@@ -4925,16 +4990,16 @@ function teardownThinkStructure(){
         return; /* finishAfterRender runs from inside typeTick */
       }
       try{
-        /* P_chunked-fade — close out the trailing pending chunk (if
-           any) so its text is at least visible mid-stream, then
-           replace the streaming DOM with the final formatted HTML.
-           The fade-in animation applies per-chunk during the
-           stream; this final pass is a single deterministic render
-           with no further animation, so we don't need to keep the
-           chunk wrapper. */
-        if(chunkState&&chunkState.pending){
-          chunkState.pending.classList.add("stream-chunk-in");
-          chunkState.pending=null;
+        /* P_chunked-fade — close out the trailing pendingNode (the
+           raw-text slice that was still in flight when the stream
+           finished) so it doesn't survive into the final render,
+           then replace the streaming DOM with the single formatted
+           HTML pass. The chunks above already contain their own
+           formatMsg output and stay in place visually because the
+           final render reproduces them byte-for-byte. */
+        if(chunkState&&chunkState.pendingNode){
+          chunkState.pendingNode.remove();
+          chunkState.pendingNode=null;
         }
         var finalHtml=formatMsg(full);
         body.innerHTML=finalHtml;
@@ -8949,7 +9014,7 @@ function syncAppModeUI(){
   }else{
     if(title)title.textContent="What can I help you with?";
     if(sub)sub.textContent="Ask me anything. Plain conversation — no diagnostic, no lesson plan.";
-    if(disc)disc.textContent="Chat mode is a plain conversation. No knowledge graph or mistake book is kept.";
+    if(disc)disc.textContent="Chat mode is a plain conversation.";
   }
   if(typeof syncExtensionsUI==="function")syncExtensionsUI();
 }
