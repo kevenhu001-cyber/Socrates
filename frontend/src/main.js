@@ -353,7 +353,10 @@ document.addEventListener("keydown",function(e){
   var key=(e.key||"").toLowerCase();
   var k=e.key;
   /* Esc — close any open modal that has its own close
-     function. We look for a stack of known modal IDs. */
+     function. We look for a stack of known modal IDs.
+     P-arch: extended to cover settingsOverlay, cheatsheetOverlay,
+     examOverlay, usageOverlay, promptTemplatesOverlay, and
+     tagEditorPopover (the last two are dynamically created). */
   if(k==="Escape"){
     if(!document.getElementById("cmdKOverlay").classList.contains("hidden")){
       e.preventDefault();closeCmdK();return;
@@ -364,8 +367,26 @@ document.addEventListener("keydown",function(e){
     if(document.getElementById("storageModalOverlay")&&!document.getElementById("storageModalOverlay").classList.contains("hidden")){
       e.preventDefault();closeStorageModal();return;
     }
+    if(document.getElementById("promptTemplatesOverlay")&&!document.getElementById("promptTemplatesOverlay").classList.contains("hidden")){
+      e.preventDefault();closePromptTemplatesModal();return;
+    }
     if(document.getElementById("profileOverlay")&&!document.getElementById("profileOverlay").classList.contains("hidden")){
       e.preventDefault();closeProfile();return;
+    }
+    if(document.getElementById("settingsOverlay")&&!document.getElementById("settingsOverlay").classList.contains("hidden")){
+      e.preventDefault();closeSettings();return;
+    }
+    if(document.getElementById("cheatsheetOverlay")&&!document.getElementById("cheatsheetOverlay").classList.contains("hidden")){
+      e.preventDefault();closeCheatsheet();return;
+    }
+    if(document.getElementById("examOverlay")&&!document.getElementById("examOverlay").classList.contains("hidden")){
+      e.preventDefault();closeExamModal();return;
+    }
+    if(document.getElementById("usageOverlay")&&!document.getElementById("usageOverlay").classList.contains("hidden")){
+      e.preventDefault();closeUsageModal();return;
+    }
+    if(document.getElementById("tagEditorPopover")&&!document.getElementById("tagEditorPopover").classList.contains("hidden")){
+      e.preventDefault();closeTagEditor();return;
     }
     if(!document.getElementById("shareOverlay").classList.contains("hidden")){
       e.preventDefault();closeShareModal();return;
@@ -1165,7 +1186,7 @@ function saveCurrentSession(){
      reports on reload. We render once at finish() time and store
      both rawText and html. */
   var messages=state.messages.map(function(m){
-    return {role:m.role,html:m.html,rawText:m.rawText||null,type:m.type||null};
+    return {clientId:m.clientId||null,role:m.role,html:m.html,rawText:m.rawText||null,type:m.type||null};
   });
   var sessionId=state.session.currentSessionId||generateId();
   var payload={
@@ -2626,7 +2647,6 @@ async function askChatTurn(userText){
 async function callAPIChat(messages,maxTokens,timeoutMs){
   /* Reuse the streaming call but accumulate without rendering. We
      don't have a non-streaming callAPI exposed, so do it inline. */
-  maxTokens=maxTokens||1024;
   if(!getActiveProvider()){state.lastCallError="no provider";return null}
   state.lastCallError=null;
   var ac=new AbortController();
@@ -7936,11 +7956,20 @@ function escapeHtml(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace
 
 async function signOut(){
   try{await apiFetch("/api/auth/logout",{method:"POST"})}catch(_){}
-  /* Clear browser cookies on the current domain. */
+  /* Clear browser cookies on the current domain. The server already
+   * cleared both the host-only and .topodrive.top variants of `sid`
+   * and `csrf`, but belt-and-braces: also expire the host-only copy
+   * locally so a re-login on the same subdomain doesn't see a
+   * stale value. We use the bare hostname (no leading dot) for the
+   * host-only match and skip the parent-domain variant — the
+   * server's Set-Cookie with Domain=.topodrive.top will already
+   * overwrite it on the next login. */
+  var host=location.hostname;
   document.cookie.split(";").forEach(function(c){
     var eq=c.indexOf("="),name=eq>-1?c.substring(0,eq).trim():c.trim();
+    if(!name)return;
     document.cookie=name+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-    document.cookie=name+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain="+location.hostname;
+    document.cookie=name+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain="+host;
   });
   /* Re-fetch the CSRF token cookie so subsequent auth POSTs succeed. */
   try{await fetch("/api/auth/csrf-token",{credentials:"include"})}catch(_){}
@@ -8686,6 +8715,15 @@ function toggleExtensionByKey(key){
   menu.addEventListener("click",function(e){
     var btn=e.target.closest(".extensions-item");
     if(!btn)return;
+    e.stopPropagation();  // P-arch: renderExtensionsMenu() rebuilds the
+                          // menu HTML synchronously, which detaches the
+                          // original button before the document-level
+                          // "click outside the picker" handler runs.
+                      // On a detached node, p.contains(target) is false,
+                      // so the picker would close itself after every
+                      // item click. Stop the bubble here so the
+                      // document handler never sees the (about-to-be-
+                      // detached) target.
     toggleExtensionByKey(btn.getAttribute("data-ext"));
   });
 })();
@@ -9845,7 +9883,7 @@ var BEAGLE_SYSTEM_PROMPT = "";
 /* I18N — bilingual UI strings (en / zh). Add more entries as
    new surface text is introduced. */
 
-async function callAPI(messages,maxTokens){ maxTokens=maxTokens||1024;
+async function callAPI(messages,maxTokens){
   var provider=getActiveProvider();
   if(!provider){
     state.lastCallError="no provider";
@@ -10006,7 +10044,6 @@ function sleepBackoff(attempt,retryAfterHeader){
 }
 
 async function callAPIStream(messages,maxTokens,onDelta,onThinking){
-  maxTokens=maxTokens||1024;
   var provider=getActiveProvider();
   if(!provider){
     state.lastCallError="no provider";
@@ -10659,6 +10696,7 @@ window.submitAuthSendCode = submitAuthSendCode;
 window.submitChatMessage = submitChatMessage;
 window.switchAuthTab = switchAuthTab;
 window.switchTab = switchTab;
+window.syncSidebarBtns = syncSidebarBtns;
 window.toggleAPI = toggleAPI;
 window.toggleAppLang = toggleAppLang;
 window.toggleDisplayPrefs = toggleDisplayPrefs;
@@ -10696,6 +10734,8 @@ window.onPromptRowDelete = onPromptRowDelete;
 window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
 window.onRecentsFilterChipClick = onRecentsFilterChipClick;
 window.onSlashRowClick = onSlashRowClick;
+window.updateSlashSelected = updateSlashSelected;
+window.updateCmdKSelected = updateCmdKSelected;
 window.openCmdKResult = openCmdKResult;
 window.openProjectEditor = openProjectEditor;
 window.openPromptTemplateEditor = openPromptTemplateEditor;

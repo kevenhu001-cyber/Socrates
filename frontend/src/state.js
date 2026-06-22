@@ -27,7 +27,7 @@ var state={
   /* call: most recent API call metadata — used by the chatApiBadge. */
   call:{source:null,error:null},
   /* ui: ephemeral UI state (per-tab, never persisted). */
-  ui:{_userScrolledAway:false},
+  ui:{_userScrolledAway:false,_examInView:false},
   /* exam: exam-mode state (ephemeral, never persisted). */
   exam:{cancel:false,questions:[],answers:{},submitted:false,topic:"",count:0}
 };
@@ -48,6 +48,7 @@ var STATE_FLAT_TO_NS={
   activeProjectFilter:"session.activeProjectFilter",
   /* kb */
   kbNodes:"kb.kbNodes",currentNode:"kb.currentNode",
+  mistakes:"kb.mistakes",
   /* search */
   searchContext:"search.context",searchResults:"search.results",
   searchContextAt:"search.contextAt",searchContextCount:"search.contextCount",
@@ -56,6 +57,7 @@ var STATE_FLAT_TO_NS={
   lastCallSource:"call.source",lastCallError:"call.error",
   /* ui */
   _userScrolledAway:"ui._userScrolledAway",
+  _examInView:"ui._examInView",
   /* exam */
   examCancel:"exam.cancel",examQuestions:"exam.questions",
   examAnswers:"exam.answers",examSubmitted:"exam.submitted",
@@ -183,3 +185,5 @@ function resetState(){
   state.call.error=null;
   state.ui._userScrolledAway=false;
 }
+/* Expose for modules that reference resetState via onclick handlers. */
+window.resetState = resetState;
