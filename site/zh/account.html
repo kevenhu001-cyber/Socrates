@@ -251,6 +251,10 @@ var srObs = new IntersectionObserver(function(entries) {
 
     var nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 1); nextMonth.setDate(1);
 
+    /* 免层守卫：支付方式、账单历史、"取消订阅"按钮仅对付费用户有意义。
+       `diophantus` 是规范免层（rank 0）。删除账号对所有层级都允许。 */
+    var isFree = (u.tier === 'diophantus' || !u.tier);
+
     return '' +
       '<div class="acct-card full sr">' +
         '<div class="acct-sub">' +
@@ -285,21 +289,32 @@ var srObs = new IntersectionObserver(function(entries) {
         '</div>' +
       '</div>' +
 
+      (isFree ? '' :
       '<div class="acct-card sr sr-d1">' +
         '<div class="acct-card-header"><div class="acct-card-title">支付方式</div><button class="btn btn-ghost btn-sm">编辑</button></div>' +
         '<div class="acct-pm"><div class="acct-pm-icon">VISA</div><div class="acct-pm-info"><div class="acct-pm-name">Visa 尾号 4242</div><div class="acct-pm-desc">有效期至 12/2027</div></div><span class="acct-pm-badge">默认</span></div>' +
-      '</div>' +
+      '</div>'
+      ) +
 
+      /* 账单历史 — 仅付费用户 */
+      (isFree ? '' :
       '<div class="acct-card sr sr-d2">' +
         '<div class="acct-card-header"><div class="acct-card-title">账单历史</div><button class="btn btn-ghost btn-sm">查看全部</button></div>' +
         '<table class="acct-table"><tr><th>日期</th><th>套餐</th><th>金额</th><th>状态</th></tr><tr><td>' + fmtDate(Date.now()) + '</td><td>' + p.name + '</td><td>$' + p.price.toFixed(2) + '</td><td class="paid">已支付</td></tr></table>' +
-      '</div>' +
+      '</div>'
+      ) +
 
+      /* 危险区域 — 取消订阅（付费）+ 删除账号（始终） */
       '<div class="acct-card full sr sr-d3">' +
         '<div class="acct-card-header"><div class="acct-card-title" style="color:hsl(0 60% 60%)">危险区域</div></div>' +
-        '<div class="acct-danger"><div class="acct-danger-title">取消订阅</div>' +
-        '<p>取消后，您的订阅将在当前计费周期结束前保持生效。之后，您的账户将降级为免费 Diophantus 套餐。会话历史和知识图谱将被保留，但仅限 5 个保存的会话。</p>' +
-        '<button class="btn btn-danger btn-sm">取消订阅</button></div>' +
+        (isFree ? '' :
+          '<div class="acct-danger" style="margin-bottom:14px"><div class="acct-danger-title">取消订阅</div>' +
+          '<p>取消后，您的订阅将在当前计费周期结束前保持生效。之后，您的账户将降级为免费 Diophantus 套餐。会话历史和知识图谱将被保留，但仅限 5 个保存的会话。</p>' +
+          '<button class="btn btn-danger btn-sm" onclick="cancelSubscription()">取消订阅</button></div>'
+        ) +
+        '<div class="acct-danger"><div class="acct-danger-title">删除账号</div>' +
+        '<p>永久删除您的账户及所有相关数据——会话、消息、知识图谱、错题本、API 密钥。此操作无法撤销。</p>' +
+        '<button class="btn btn-danger btn-sm" onclick="deleteAccount()">删除账号</button></div>' +
       '</div>';
   }
 
@@ -436,6 +451,56 @@ function submitLogin(email, pass, captchaToken, captchaAns, csrfToken, errEl, bt
   });
   return false;
 }
+
+/* ── 危险区域处理器 ──────────────────────────── */
+
+function ensureCsrf() {
+  return fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).then(function() {
+    return getCookie('csrf') || '';
+  });
+}
+
+function cancelSubscription() {
+  if (!confirm('确认取消订阅？您将在当前计费周期结束前继续享有权益，随后账户将降级为免费 Diophantus 套餐。')) return;
+  ensureCsrf().then(function(csrfToken) {
+    fetch('/api/account/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
+      credentials: 'same-origin'
+    }).then(function(r) {
+      if (!r.ok) throw new Error('服务器返回 ' + r.status);
+      return r.json();
+    }).then(function() {
+      alert('订阅已取消。正在刷新…');
+      window.location.reload();
+    }).catch(function(err) {
+      alert('无法取消订阅：' + (err && err.message ? err.message : '未知错误'));
+    });
+  });
+}
+
+function deleteAccount() {
+  /* 两步确认，避免误操作。 */
+  if (!confirm('确认永久删除您的账号？所有会话、消息、知识图谱、错题本、API 密钥将一并清除，且无法恢复。')) return;
+  if (!confirm('再次确认：此操作不可撤销。')) return;
+  ensureCsrf().then(function(csrfToken) {
+    fetch('/api/auth/account', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
+      credentials: 'same-origin'
+    }).then(function(r) {
+      if (!r.ok) throw new Error('服务器返回 ' + r.status);
+      return r.json();
+    }).then(function() {
+      alert('您的账号已删除。');
+      window.location.href = '/';
+    }).catch(function(err) {
+      alert('无法删除账号：' + (err && err.message ? err.message : '未知错误'));
+    });
+  });
+}
+window.cancelSubscription = cancelSubscription;
+window.deleteAccount = deleteAccount;
 </script>
 <script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/^\/zh/,'').replace(/\.html$/,'');b.href=p==='/'||p===''?'/':p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","en")}catch(e){}});})();</script>
 </body>
