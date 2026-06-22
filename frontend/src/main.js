@@ -4720,17 +4720,72 @@ function teardownThinkStructure(){
          We never split mid-token: flush position is always the index
          of a known boundary character inside the pending text. */
       var pt=chunkState.pendingText;
+      /* Find a flush boundary that is NOT inside an open $$...$$
+         display-math block or ``` fenced code block. Splitting
+         inside such a block renders a half-complete slice through
+         formatMsg, where the unclosed $ or ``` makes KaTeX / marked
+         drop the content or escape it — so the user sees raw LaTeX
+         or raw markdown instead of a typeset formula or code block.
+         Same for GFM tables: a chunk boundary that lands between
+         rows breaks the table into two partial fragments, and each
+         fragment renders as an independent broken table. We treat
+         an open GFM table header (`| ... |\n| --- |\n`) as a no-flush
+         zone until we see a blank line or a non-pipe line.
+         We scan from the start of `pt` and only consider boundary
+         positions that sit at depth-0 (outside all fences / tables). */
+      function topLevelFlushPos(pt){
+        var i=0, n=pt.length;
+        var inMath=false, inFence=false, inTable=false;
+        var lastNl=0;
+        while(i<n){
+          var ch=pt.charAt(i);
+          /* Detect a GFM table header line: `|...|\n|---|\n`. Once
+             we enter the table, only a blank line (or EOF) closes
+             it. Rows themselves may have leading/trailing pipes. */
+          if(ch==='\n'){
+            var line=pt.slice(lastNl,i);
+            if(/^\s*\|.*\|\s*$/.test(line)&&/^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/.test(pt.slice(i+1).split('\n')[0]||"")){
+              inTable=true;
+            }
+            if(inTable&&line==="")inTable=false;
+            lastNl=i+1;
+          }
+          if(!inFence&&pt.charAt(i)==='$'&&pt.charAt(i+1)==='$'){
+            inMath=!inMath; i+=2; continue;
+          }
+          if(!inMath&&!inFence&&pt.charAt(i)==='`'&&pt.charAt(i+1)==='`'&&pt.charAt(i+2)==='`'){
+            inFence=!inFence; i+=3; continue;
+          }
+          if(!inMath&&!inFence&&!inTable&&(ch==='\n')){
+            return i+1; /* first top-level \n — flush through it */
+          }
+          i++;
+        }
+        return-1;
+      }
       var flushIdx=-1;
       var ppIdx=pt.indexOf("\n\n");
       if(ppIdx!==-1){
-        flushIdx=ppIdx+2;
+        /* Even \n\n shouldn't split a math/code block. Confirm the
+           position sits at top level before using it. */
+        var safePp=topLevelFlushPos(pt.slice(0,ppIdx))!==-1
+          ?topLevelFlushPos(pt.slice(0,ppIdx))+0
+          :-1;
+        if(safePp>=0){
+          flushIdx=ppIdx+2;
+        }else{
+          /* \n\n lives inside an unclosed math/code block — fall
+             through to the smaller-boundary search below. */
+        }
       }else if(pt.length>60){
-        var lfIdx=pt.indexOf("\n");
-        if(lfIdx!==-1)flushIdx=lfIdx+1;
-        else{
+        var tl=topLevelFlushPos(pt);
+        if(tl!==-1){
+          flushIdx=tl;
+        }else{
           /* Sentence-end fallback for one-paragraph responses: cut
              at the last [.!?] followed by whitespace, if any, once
-             the pending text is over 120 chars. */
+             the pending text is over 120 chars. Only used if no
+             top-level \n was found at all. */
           var match=/[.!?。！？]["')\]]?\s/.exec(pt);
           if(match)flushIdx=match.index+match[0].length;
         }
@@ -4740,9 +4795,34 @@ function teardownThinkStructure(){
       if(flushIdx===-1&&(tooLong||tooStale)){
         /* No natural boundary hit yet — flush at a word boundary
            (last space) closest to the soft cap so we don't slice
-           through the middle of a word. */
+           through the middle of a word. Even here we must avoid
+           landing inside an open $$...$$ or ``` fence or GFM table —
+           so walk back from softCap to the closest top-level space. */
         var softCap=Math.min(pt.length,pt.length>=220?220:200);
-        var cutAt=pt.lastIndexOf(" ",softCap);
+        var cutAt=-1;
+        for(var s=softCap;s>40;s--){
+          if(pt.charAt(s)!==' ')continue;
+          /* Is this space at depth-0 (outside all open fences /
+             tables)? */
+          var head=pt.slice(0,s);
+          var dOpen=0, fOpen=0;
+          var di=head.indexOf("$$");
+          while(di!==-1){dOpen++;di=head.indexOf("$$",di+2)}
+          var fi=head.indexOf("```");
+          while(fi!==-1){fOpen++;fi=head.indexOf("```",fi+3)}
+          if((dOpen%2===1)||(fOpen%2===1))continue;
+          /* Detect open GFM table: if head ends with a row line and
+             we have a separator earlier on its own line, we're in
+             a table. The simplest reliable check: does head contain
+             a `|---|---|` style separator that has no matching blank
+             line + closing? Heuristic: count newline positions of
+             lines starting with `|` minus lines starting with `|---`.
+             If positive, we're inside a table. */
+          var tableOpen=(head.match(/^\s*\|.*\|$/gm)||[]).length
+                      -(head.match(/^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/gm)||[]).length;
+          if(tableOpen>0)continue;
+          cutAt=s;break;
+        }
         if(cutAt>40)flushIdx=cutAt+1;
         else flushIdx=softCap;
       }
@@ -6519,6 +6599,41 @@ function formatMsg(t){
       return save('<pre>'+esc('$$'+math+'$$')+'</pre>');
     }
   });
+  /* 3b. Unclosed $$...$ — try to render whatever KaTeX can from the
+     partial LaTeX source. If the slice ends mid-block (because the
+     chunk boundary fell inside the math), we still emit SOMETHING so
+     the user sees typeset math instead of raw `$$\begin{aligned}...`
+     streaming in as plain text. throwOnError:false means KaTeX
+     degrades gracefully on partial LaTeX. */
+  if(typeof katex!=="undefined"){
+    t=t.replace(/\$\$([\s\S]+?)$/g,function(_,math){
+      var src=math.trim();
+      /* Auto-close any matching \begin{...} environments that are
+         still open at the end of the slice. Without this, KaTeX
+         emits a katex-error span for partial aligned/array/cases
+         blocks (e.g. the user streamed `\begin{aligned}\n... \\`
+         without the closing \end{aligned} yet). */
+      var begins=src.match(/\\begin\{([^}]+)\}/g)||[];
+      var ends=src.match(/\\end\{([^}]+)\}/g)||[];
+      var openNames=[];
+      begins.forEach(function(b){openNames.push(b.slice(7,-1))});
+      ends.forEach(function(e){
+        var name=e.slice(5,-1);
+        for(var k=openNames.length-1;k>=0;k--){
+          if(openNames[k]===name){openNames.splice(k,1);break}
+        }
+      });
+      var closed=src;
+      for(var i=openNames.length-1;i>=0;i--){
+        closed+="\n\\end{"+openNames[i]+"}";
+      }
+      try{
+        return save(katex.renderToString(closed,{displayMode:true,throwOnError:false,macros:KATEX_MACROS}));
+      }catch(e){
+        return save('<span class="math-partial" style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
+      }
+    });
+  }
 
   /* 4. Inline math $...$ */
   t=t.replace(/\$(.+?)\$/g,function(_,math){
