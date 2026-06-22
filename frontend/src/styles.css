@@ -545,14 +545,22 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 .msg-list{display:flex;flex-direction:column;gap:14px;flex:1}
 .msg{animation:msgIn .3s var(--ease-out);padding:6px 0}
 @keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.msg.user{display:flex;justify-content:flex-end}
+/* User bubbles right-align. The toolbar lives BELOW the bubble
+ * (flex-direction:column + align-items:flex-end), not next to it on
+ * the right edge. This keeps the bubble flush-right while putting
+ * the action row in a clean horizontal strip under the text. */
+.msg.user{display:flex;flex-direction:column;align-items:flex-end}
 .msg.user .msg-body{max-width:75%;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:16px 16px 4px 16px;padding:12px 16px}
 .msg.assistant .msg-body{max-width:100%}
 /* P1.1 — per-message action toolbar. Hover-revealed on desktop,
-   always visible on touch devices. */
+   always visible on touch devices. Sits as its own row under the
+   bubble; for user messages we align it to the right edge of the
+   bubble (no offset needed since the parent column already
+   right-aligns). For assistant messages it sits indented under
+   the bubble. */
 .msg-toolbar{display:flex;gap:2px;align-items:center;margin-top:4px;opacity:0;transition:opacity .15s;height:24px}
 .msg.assistant .msg-toolbar{justify-content:flex-start;margin-left:24px}
-.msg.user .msg-toolbar{justify-content:flex-end;margin-right:4px}
+.msg.user .msg-toolbar{justify-content:flex-end;margin-right:0}
 @media (hover:hover){.msg:hover .msg-toolbar{opacity:1}}
 @media (hover:none){.msg-toolbar{opacity:.7}}
 .msg-toolbar-btn{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:transparent;color:hsl(var(--text-500));cursor:pointer;transition:background .12s,color .12s;border:0;padding:0}
@@ -1487,9 +1495,15 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .mistake-redo-btn{width:100%;padding:6px 10px;border-radius:6px;background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.3);font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:all .1s}
 .mistake-redo-btn:hover{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 
-/* Thinking dot — shown until the first stream delta arrives */
-.thinking-dot{display:inline-flex;align-items:center;gap:8px;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale, 1));padding:4px 0}
-.thinking-pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:hsl(var(--accent-000));animation:thinking-pulse 1.2s ease-in-out infinite}
+/* Thinking dot — shown until the first stream delta arrives.
+   In chat mode (no KB / no diagnostic) this is the ONLY signal that
+   the model is still alive — without it the user has no way to tell
+   whether the request is in flight or the page is hung. We make it
+   slightly bolder than the default and add a subtle background so
+   it reads as a "live indicator" rather than a stray inline label. */
+.thinking-dot{display:inline-flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:6px 10px;border-radius:999px;background:hsl(var(--accent-000)/0.08);border:0.5px solid hsl(var(--accent-000)/0.18)}
+.thinking-pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:hsl(var(--accent-000));animation:thinking-pulse 1.2s ease-in-out infinite;flex-shrink:0}
+.thinking-dot[data-mode="chat"]{font-weight:500;color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.1);border-color:hsl(var(--accent-000)/0.25)}
 @keyframes thinking-pulse{0%,100%{transform:scale(0.6);opacity:0.4}50%{transform:scale(1);opacity:1}}
 
 /* Inline error/retry state — replaces the streaming bubble on failure */
