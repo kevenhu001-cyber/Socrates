@@ -39,8 +39,14 @@ import { sql } from 'drizzle-orm';
 
 const app = express();
 
-// Trust nginx reverse proxy (so req.protocol reflects X-Forwarded-Proto)
-app.set('trust proxy', true);
+/* Trust nginx (and any CDN hop in front of nginx). With Edgio +
+ * nginx in front of us, the client IP arrives in X-Forwarded-For
+ * after two hops — the left-most untrusted proxy entry is the real
+ * client. Setting trust proxy to `2` (or a numeric count) instead of
+ * the boolean `true` silences express-rate-limit's
+ * ERR_ERL_PERMISSIVE_TRUST_PROXY warning while still letting
+ * req.protocol / req.ip see the real client values. */
+app.set('trust proxy', 2);
 
 /* ────────────────────────────
    Global middleware

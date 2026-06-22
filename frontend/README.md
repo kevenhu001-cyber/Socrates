@@ -28,13 +28,26 @@ frontend/
 
 ## Module split (Phase 2)
 
-`main.js` is 10 000 lines and is still monolithic by function. Two
-standalone modules have been extracted:
+`main.js` is still 10 000 lines and monolithic. Three standalone
+modules and one compat shim have been extracted:
 
 | Module | Lines | Responsibility |
 |---|---|---|
-| `state.js` | 179 | State object, `STATE_FLAT_TO_NS`, Proxy, `resetState()` |
-| `i18n.js` | 97 | `I18N`, `t()`, `setLang()`, `applyI18n()` |
+| `state.js` | 184 | State object, `STATE_FLAT_TO_NS`, Proxy, `resetState()` |
+| `i18n.js` | 100 | `I18N`, `t()`, `setLang()`, `applyI18n()` |
+| `main.js` (exports block) | 55 | `window` compat shim for onclick handlers |
+
+### Backward-compat shim
+
+All functions referenced from HTML inline `onclick` attributes are
+exposed via `window.x = x` at the end of `main.js` (55 entries).
+Without this, Vite's ES module scope hides them from the HTML
+attributes. The list covers `toggleTheme`, `toggleModelPicker`,
+`toggleExtensionsPicker`, `resetApp`, `startSession`, and ~50 more.
+
+Future code should use `addEventListener` instead of inline
+`onclick="…"` — the legacy names will stay on window for as long
+as the old markup is in use.
 
 The remaining modules (`api.js` for API calls, `views.js` for page
 controllers, `utils.js` for helpers) are Phase 3 — deferred because

@@ -23,7 +23,17 @@ const LLM_TIMEOUT_MS = 120_000;
  * @param {function} onError    - Called on error
  */
 export async function streamChatCompletion(opts, onChunk, onDone, onError) {
-  const { apiBase, apiKey, model, messages, maxTokens = 4096, temperature = 0.7, signal } = opts;
+  const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.7, signal } = opts;
+
+  // P0.0 — when no maxTokens is set, default to a very high value so
+  // the model is not silently truncated by the upstream provider's
+  // small default (e.g. OpenAI's 4K-16K depending on model, Anthropic's
+  // 4K default). The 32 K ceiling matches our request schema and
+  // covers even the longest outputs from reasoning models (DeepSeek R1,
+  // QwQ) whose chain-of-thought is streamed separately as
+  // reasoning_content and does not consume the answer's max_tokens
+  // budget, but the final answer can still run long.
+  const effectiveMaxTokens = maxTokens || 32000;
 
   // Merge external signal with the LLM timeout so a hung provider
   // doesn't hold the request open forever.
@@ -42,7 +52,7 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError) {
       body: JSON.stringify({
         model,
         messages,
-        max_tokens: maxTokens,
+        max_tokens: effectiveMaxTokens,
         temperature,
         stream: true,
       }),
@@ -118,7 +128,8 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError) {
  * Returns { content: string } or throws.
  */
 export async function callChatCompletion(opts) {
-  const { apiBase, apiKey, model, messages, maxTokens = 250, temperature = 0.3, signal } = opts;
+  const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.3, signal } = opts;
+  const effectiveMaxTokens = maxTokens || 32000;
 
   const mergedSignal = signal
     ? AbortSignal.any([signal, AbortSignal.timeout(LLM_TIMEOUT_MS)])
@@ -133,7 +144,7 @@ export async function callChatCompletion(opts) {
     body: JSON.stringify({
       model,
       messages,
-      max_tokens: maxTokens,
+      max_tokens: effectiveMaxTokens,
       temperature,
       stream: false,
     }),

@@ -44,7 +44,16 @@ router.post('/run', chatLimiter, async (req, res, next) => {
 
     let fullText = '';
     await streamChatCompletion(
-      { apiBase: provider.url, apiKey: provider.keyPlaintext, model: provider.model, messages: msgs, maxTokens: 4096, signal: ac.signal },
+      {
+        apiBase: provider.url,
+        apiKey: provider.keyPlaintext,
+        model: provider.model,
+        messages: msgs,
+        /* undefined → llm.js default (32 K) so a long agent trace
+           isn't silently truncated by a small per-model cap. */
+        maxTokens: undefined,
+        signal: ac.signal,
+      },
       (chunk) => { fullText += chunk; try { res.write(`event: text\ndata: ${JSON.stringify(chunk)}\n\n`); } catch {} },
       () => {
         clearInterval(hb);

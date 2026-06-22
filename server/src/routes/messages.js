@@ -118,7 +118,9 @@ router.patch('/:id', async (req, res, next) => {
         apiKey: provider.keyPlaintext,
         model: provider.model,
         messages: llmMessages,
-        maxTokens: 4096,
+        /* undefined → llm.js default (32 K) so a long regenerated
+           reply isn't silently truncated by a small per-model cap. */
+        maxTokens: undefined,
         signal: ac.signal,
       },
       (chunk) => {

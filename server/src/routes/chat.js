@@ -39,7 +39,7 @@ const ChatPayloadSchema = z.object({
 /* ─── Non-streaming chat (title gen, query rewrite, short tasks) ─── */
 router.post('/', chatLimiter, optionalAuth, async (req, res, next) => {
   try {
-    const { messages, temperature = 0.3, max_tokens = 250 } = ChatPayloadSchema.parse(req.body);
+    const { messages, temperature = 0.3, max_tokens } = ChatPayloadSchema.parse(req.body);
 
     const provider = await getActiveApiKey(req.userId);
     if (!provider) {
@@ -98,7 +98,7 @@ router.post('/stream', chatLimiter, optionalAuth, async (req, res, next) => {
         apiKey: provider.keyPlaintext,
         model: provider.model,
         messages,
-        maxTokens: max_tokens || 4096,
+        maxTokens: max_tokens,  /* undefined → backend passes through to model default */
         temperature,
         signal: abortController.signal,
       },

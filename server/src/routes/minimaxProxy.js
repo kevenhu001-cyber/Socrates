@@ -45,7 +45,9 @@ router.post('/v1/chat/completions', async (req, res, next) => {
           apiKey: provider.keyPlaintext,
           model: model || provider.model,
           messages,
-          maxTokens: max_tokens || 4096,
+          /* undefined → llm.js default (32 K) so a long streamed
+             answer isn't silently truncated by a small per-model cap. */
+          maxTokens: max_tokens,
           temperature: temperature ?? 0.7,
           signal: abortController.signal,
         },
@@ -79,7 +81,9 @@ router.post('/v1/chat/completions', async (req, res, next) => {
         apiKey: provider.keyPlaintext,
         model: model || provider.model,
         messages,
-        maxTokens: max_tokens || 250,
+        /* undefined → llm.js default (32 K) so a long response isn't
+           silently truncated by a small per-model cap. */
+        maxTokens: max_tokens,
         temperature: temperature ?? 0.3,
       });
 

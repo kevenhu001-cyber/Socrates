@@ -52,7 +52,7 @@ router.get('/usage', async (req, res, next) => {
 
     // 4) Knowledge-graph node count (aggregated in SQL).
     const [nodeResult] = await db
-      .select({ value: sql<number>`COALESCE(SUM(jsonb_array_length(${sessions.kbNodes})), 0)::int` })
+      .select({ value: sql`COALESCE(SUM(jsonb_array_length(${sessions.kbNodes})), 0)::int` })
       .from(sessions)
       .where(eq(sessions.userId, req.userId));
     const graphNodes = nodeResult?.value ?? 0;
