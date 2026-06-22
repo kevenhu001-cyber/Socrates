@@ -6383,6 +6383,60 @@ var KATEX_MACROS={
    "\\union":"\\cup",
    "\\intersection":"\\cap",
 };
+
+/* LaTeX command whitelist used by _autoWrapBareBracketMath to
+   distinguish math content from markdown links, list checkboxes,
+   citations, etc. Match any of these commands as a substring. */
+var LATEX_COMMANDS_RE = /\\(frac|int|sum|prod|partial|nabla|sqrt|mathcal|mathrm|mathbf|mathit|boldsymbol|text|textbf|textit|varepsilon|alpha|beta|gamma|delta|theta|lambda|mu|pi|sigma|phi|omega|tau|to|infty|cdot|times|div|pm|leq|geq|neq|approx|equiv|sim|propto|leftarrow|rightarrow|Leftarrow|Rightarrow|leftrightarrow|Leftrightarrow|in|notin|subset|supset|cup|cap|emptyset|mathbb|binom|over|underline|hat|bar|vec|tilde|dot|ddot)/;
+
+/* Heuristic: a block of text looks like LaTeX if it contains (a) any
+   LaTeX command, OR (b) at least one math operator (=, +, −, ×,
+   etc.) AND at least one letter. The second branch catches simple
+   expressions like "x = 1" that have no LaTeX commands but are
+   clearly math. */
+var MATH_OPERATOR_RE = /[=+\-×÷≤≥≠→←⇒⇔∫∑∏∂√∞∈∉⊂⊃±∓]/;
+var HAS_LETTER_RE = /[a-zA-Z\\]/;
+
+function _looksLikeLatex(s) {
+  if (LATEX_COMMANDS_RE.test(s)) return true;
+  if (MATH_OPERATOR_RE.test(s) && HAS_LETTER_RE.test(s)) return true;
+  return false;
+}
+
+/* Detect bare `[ ... ]` and `( ... )` math lines that weak models
+   frequently emit (e.g. `莱布尼兹法则：\n[\n\\frac{...}\n]\n`).
+   KaTeX does not recognize these as math delimiters, so the raw
+   bracketed text leaks into the rendered output. We wrap the
+   contents with `\[...\]` / `\(...\)` so the existing bracket-stash
+   pass above picks them up and converts to `$$...$$` / `$...$`.
+
+   Pattern requirements:
+     - `[` must be at line start (or string start) — prevents matching
+       `[click here](url)` markdown links.
+     - `]` must be at line end (or string end) — prevents matching
+       inline text like `see [section 2]`.
+     - Multi-line content is allowed via `[\s\S]+?` lazy match.
+
+   The function is idempotent: a second pass sees `\[...\]` already
+   escaped and the regex doesn't match. This is critical for the
+   streaming variant where preprocessMarkdownForStreaming is called
+   on every chunk arrival. */
+function _autoWrapBareBracketMath(s) {
+  /* Bracket-style display math: `[ ... ]` on its own lines. */
+  s = s.replace(/(^|\n)\[([\s\S]+?)\](?=\n|$)/g, function (m, lead, inner) {
+    if (!_looksLikeLatex(inner)) return m;
+    return lead + '\\[' + inner.trim() + '\\]';
+  });
+  /* Paren-style inline math: `( ... )` on a single line. We require
+     the content to be a single line so we don't break prose like
+     "see (note above)". The math heuristic gates further. */
+  s = s.replace(/(^|\n)\(([^()\n]+)\)(?=\n|$)/g, function (m, lead, inner) {
+    if (!_looksLikeLatex(inner)) return m;
+    return lead + '\\(' + inner.trim() + '\\)';
+  });
+  return s;
+}
+
 /* Pre-process raw assistant output to compensate for common
    formatting sloppiness in weak / small models. Returns a string
    with normalized delimiters and closed block structures so the
@@ -6523,6 +6577,29 @@ function preprocessMarkdown(t){
       }
     }
   }
+
+  /* Auto-wrap bare `[ ... ]` (and `( ... )`) lines that contain LaTeX
+     content into proper `\[...\]` / `\(...\)` delimiters. Weak models
+     frequently emit display math wrapped in PLAIN square brackets
+     instead of `\[...\]` (e.g. "莱布尼兹法则：\n[\n\\frac{d}{dt} ...\n]")
+     because the markdown source is inside a code block or because
+     the user prompt was written with bare brackets for visual
+     separation. KaTeX does not recognize `[...]` as a math zone, so
+     the model emits what looks to us like "[<br>\frac{...}<br>]" in
+     the rendered output.
+
+     We detect LaTeX content with two heuristics:
+       1) The block contains any LaTeX command (\frac, \int, \sum,
+          Greek letters, etc.).
+       2) OR the block contains >= 1 math operator (=, +, −, ×, ÷,
+          ≤, ≥, etc.) AND at least one letter — this catches simple
+          expressions like "x = 1" that have no LaTeX commands.
+
+     The `[ ... ]` form requires `[` and `]` to be on their own
+     visual lines (line start, line end) so we don't accidentally
+     match markdown links like `[text](url)`, list items
+     `- [ ] task`, or inline citations `[1]`. */
+  s = _autoWrapBareBracketMath(s);
 
   /* Unclosed code fence. Count the number of ``` that are NOT inside
      a placeholder (placeholders never contain ```). The original
@@ -6720,6 +6797,12 @@ function preprocessMarkdownForStreaming(t){
          consecutive chunks).
      All four are applied in the FINAL preprocessMarkdown call from
      formatMsg. */
+
+  /* Auto-wrap bare `[ ... ]` math. Idempotent: once `[ ... ]` has
+     been rewritten to `\[ ... \]` the regex won't match again on a
+     second pass, so repeatedly calling preprocessMarkdownForStreaming
+     on a growing buffer is safe. */
+  s = _autoWrapBareBracketMath(s);
 
   /* Normalize bullet glyphs. */
   s = s.replace(/(^|\n)\s*[•‣◦・·]\s+/g, '$1- ');
