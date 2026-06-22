@@ -497,11 +497,11 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
   overflow-y:auto;
   /* Bottom padding so the user can scroll the last AI message
      above the docked input bar. Roughly = input bar height
-     (~80-100px) + the visual gap above it (24px). The actual
-     docked bar has bottom:24px; this padding lives inside the
+     (~80-100px) + the visual gap above it (16px). The actual
+     docked bar has bottom:8px; this padding lives inside the
      scroll container so scrolling reveals the previously-hidden
      last message instead of leaving it stranded under the bar. */
-  padding-bottom:calc(140px + env(safe-area-inset-bottom,0));
+  padding-bottom:calc(120px + env(safe-area-inset-bottom,0));
 }
 .demo-banner{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:hsl(var(--accent-000)/0.08);border:0.5px solid hsl(var(--accent-000)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));line-height:1.4}
 .demo-banner[hidden]{display:none}
@@ -624,19 +624,19 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 .chat-input-bar{
   width:100%;
   flex-shrink:0;
-  /* Docked near the bottom of the visible chat-view, but with a
-     small gap so it doesn't sit flush against the viewport edge —
-     gives the layout a sense of breathing room. Lives OUTSIDE the
-     flex/scroll flow so message length never affects its position.
+  /* Docked to the bottom of the chat-view with minimal breathing
+     room so the input box sits as low as practical — users kept
+     feeling the input floated too high. Lives OUTSIDE the flex/
+     scroll flow so message length never affects its position.
      Keyboard-avoidance (visualViewport resize) handles iOS. */
   position:absolute;
   left:0;
   right:0;
-  /* 24px breathing room at the bottom on desktop, 16px on mobile. */
-  bottom:24px;
+  /* 8px breathing room at the bottom on desktop, 6px on mobile. */
+  bottom:8px;
   z-index:10;
   background:linear-gradient(to top,hsl(var(--bg-000)) 70%,hsla(var(--bg-000)/0) 100%);
-  padding-top:18px;
+  padding-top:14px;
   padding-bottom:env(safe-area-inset-bottom,0);
 }
 .chat-input-wrap{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.12);border-radius:14px;overflow:hidden;transition:border-color .15s,box-shadow .15s}
@@ -1312,7 +1312,7 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 .katex .mord{color:hsl(var(--text-100))}
 .katex .mbin{color:hsl(var(--accent-000))}
 .katex .mrel{color:hsl(var(--accent-000))}
-@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .35s cubic-bezier(0.34,1.3,0.64,1),box-shadow .35s var(--ease-out);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4vh 12px 24px}.topic-title{font-size:calc(1.25rem * var(--app-font-scale, 1))}.chat-input-bar{bottom:16px;padding-top:14px}}
+@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .35s cubic-bezier(0.34,1.3,0.64,1),box-shadow .35s var(--ease-out);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4vh 12px 24px}.topic-title{font-size:calc(1.25rem * var(--app-font-scale, 1))}.chat-input-bar{bottom:6px;padding-top:12px}}
 .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:25;animation:fadeIn .15s}
 .sidebar-backdrop.show{display:block}
 
@@ -1507,20 +1507,37 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 @keyframes thinking-pulse{0%,100%{transform:scale(0.6);opacity:0.4}50%{transform:scale(1);opacity:1}}
 
 /* P_chunked-fade — animated reveal of streamed text. Each "chunk"
-   is a <span> produced by addStreamingMessage, flushed at a
-   sentence / paragraph boundary or after ~36 chars. The fade-in
-   replaces the old character-by-character typewriter so the bubble
-   reveals as discrete pieces rather than typed glyphs, which also
-   avoids the vertical jitter that KaTeX rendering used to cause
-   mid-stream (formulas only render on finish's single formatMsg
-   pass now, so the bubble height doesn't pulse on each delimiter). */
-.stream-content{white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word}
-.stream-chunk{display:inline;opacity:1}
+   is a <div class="stream-chunk"> produced by addStreamingMessage
+   at a paragraph / line / sentence boundary (1–3 lines per chunk).
+   The chunk's innerHTML is the result of formatMsg on the closed
+   slice, so KaTeX formulas and code fences render properly inside
+   the chunk's own bounds — and since each chunk is rendered ONCE
+   when its closing boundary arrives and never re-rendered, no
+   formula ever lands mid-stream to push the chunks above the
+   cursor down.
+
+   The trailing pending slice is a <span class="stream-chunk
+   stream-chunk-pending"> sitting just before the cursor; it shows
+   raw text only (no formatMsg), so an unclosed $...$ or ``` is
+   harmless until its closing delimiter arrives.
+
+   The fade-in animation replaces the old character-by-character
+   typewriter: each new chunk rises 2px and fades from blur(2px) to
+   clear over ~420ms, giving a soft "settle into place" feel. */
+.stream-content{white-space:normal;word-wrap:break-word;overflow-wrap:break-word}
+.stream-chunk{display:block;opacity:1}
+.stream-chunk.stream-chunk-pending{display:inline;white-space:pre-wrap}
 .stream-chunk-in{animation:streamChunkFade .42s var(--ease-out, cubic-bezier(0.16,1,0.3,1)) both}
 @keyframes streamChunkFade{
-  from{opacity:0;transform:translateY(2px);filter:blur(2px)}
+  from{opacity:0;transform:translateY(4px);filter:blur(2px)}
   to{opacity:1;transform:translateY(0);filter:blur(0)}
 }
+/* Normalise paragraph margins inside chunks so multiple chunks stack
+   with the same spacing as multiple paragraphs in a single chunk,
+   and so the first / last paragraph inside a chunk don't carry an
+   extra gap to the chunk border. */
+.stream-content>.stream-chunk>p:first-child{margin-top:0}
+.stream-content>.stream-chunk>p:last-child{margin-bottom:0}
 
 /* Inline error/retry state — replaces the streaming bubble on failure */
 .msg-error{display:flex;align-items:center;gap:10px;padding:10px 14px;border:0.5px solid hsl(0 60% 50%/0.3);border-radius:10px;background:hsl(0 60% 30%/0.1);color:hsl(0 60% 75%);font-size:calc(13px * var(--app-font-scale, 1));flex-wrap:wrap}
