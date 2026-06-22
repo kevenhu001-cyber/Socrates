@@ -378,3 +378,26 @@ export const classStudents = pgTable('class_students', {
 }, (table) => [
   uniqueIndex('class_students_pk').on(table.classId, table.userId),
 ]);
+
+/* ──────────────────────────────────────────────
+   Token Usage Events
+   One row per chat completion. Aggregated by the heatmap endpoint
+   into hourly buckets (date_trunc('hour', createdAt)). Each row
+   records the user, the source model, and the estimated token
+   counts. We use estimation (chars / 4) for portability across
+   providers that don't return `usage` in their streaming SSE
+   frames; the heatmap cares about magnitude, not precision. */
+export const usageEvents = pgTable('usage_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  model: text('model'),
+  sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
+  promptTokens: integer('prompt_tokens').notNull().default(0),
+  completionTokens: integer('completion_tokens').notNull().default(0),
+  totalTokens: integer('total_tokens').notNull().default(0),
+  source: text('source').notNull().default('chat'),   /* chat | agent | title */
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('usage_events_user_id_idx').on(table.userId),
+  index('usage_events_user_created_idx').on(table.userId, table.createdAt),
+]);

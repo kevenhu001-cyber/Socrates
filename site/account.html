@@ -79,6 +79,31 @@
 .btn-danger:hover{background:hsl(0 60% 50%/0.18)}
 .btn-sm{padding:7px 16px;font-size:12px}
 
+/* Token heatmap (GitHub-style) — 7 days × 24 hours */
+.acct-heatmap-grid{display:grid;grid-template-columns:64px repeat(24,1fr);gap:4px;margin-top:8px}
+.acct-heatmap-day-label{font-size:10px;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center}
+.acct-heatmap-row{display:contents}
+.acct-heatmap-cell{aspect-ratio:1/1;border-radius:3px;background:hsl(var(--bg-300));transition:transform var(--anim-fast);position:relative}
+.acct-heatmap-cell:hover{transform:scale(1.25);z-index:2}
+.acct-heatmap-cell[data-level="0"]{background:hsl(var(--bg-300)/0.4)}
+.acct-heatmap-cell[data-level="1"]{background:hsl(145 50% 45%/0.18)}
+.acct-heatmap-cell[data-level="2"]{background:hsl(145 50% 45%/0.4)}
+.acct-heatmap-cell[data-level="3"]{background:hsl(145 50% 45%/0.7)}
+.acct-heatmap-cell[data-level="4"]{background:hsl(145 50% 50%)}
+.acct-heatmap-axis{display:flex;justify-content:space-between;font-size:10px;color:hsl(var(--text-500));margin-top:8px;letter-spacing:.04em}
+.acct-heatmap-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity var(--anim-fast);border:0.5px solid hsl(var(--border-300)/0.2);z-index:3}
+.acct-heatmap-cell:hover .acct-heatmap-tooltip{opacity:1}
+.acct-heatmap-legend{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:11px;color:hsl(var(--text-500));justify-content:flex-end}
+.acct-heatmap-legend-cells{display:flex;gap:3px}
+.acct-heatmap-legend-cells span{width:11px;height:11px;border-radius:2px;background:hsl(var(--bg-300)/0.4)}
+.acct-heatmap-legend-cells span:nth-child(2){background:hsl(145 50% 45%/0.18)}
+.acct-heatmap-legend-cells span:nth-child(3){background:hsl(145 50% 45%/0.4)}
+.acct-heatmap-legend-cells span:nth-child(4){background:hsl(145 50% 45%/0.7)}
+.acct-heatmap-legend-cells span:nth-child(5){background:hsl(145 50% 50%)}
+.acct-heatmap-summary{display:flex;gap:24px;margin-bottom:14px;font-size:13px;color:hsl(var(--text-400))}
+.acct-heatmap-summary strong{color:hsl(var(--text-100));font-weight:500}
+.acct-heatmap-empty{text-align:center;color:hsl(var(--text-500));font-size:13px;padding:24px 0}
+
 /* Loading / error / sign-in states */
 .acct-state{text-align:center;padding:80px 20px}
 .acct-state svg{width:44px;height:44px;margin-bottom:16px;opacity:0.25}
@@ -316,6 +341,15 @@ document.querySelectorAll('.sr').forEach(el => srObs.observe(el));
       '</div>'
       ) +
 
+      /* Token Usage Heatmap — every user (free + paid).
+         Wrapped in a container the JS will fill in with hourly
+         cells once /api/account/usage-heatmap responds. */
+      '<div class="acct-card full sr sr-d2" id="usageHeatmapCard">' +
+        '<div class="acct-card-header"><div class="acct-card-title">Token Activity</div><span id="usageHeatmapSub" style="font-size:12px;color:hsl(var(--text-500))">Last 7 days, hourly</span></div>' +
+        '<div class="acct-heatmap-summary" id="usageHeatmapSummary"></div>' +
+        '<div id="usageHeatmapBody"><div class="acct-heatmap-empty">Loading token activity…</div></div>' +
+      '</div>' +
+
       /* Danger Zone — Cancel Subscription (paid) + Delete Account (always) */
       '<div class="acct-card full sr sr-d3">' +
         '<div class="acct-card-header"><div class="acct-card-title" style="color:hsl(0 60% 60%)">Danger Zone</div></div>' +
@@ -364,6 +398,9 @@ document.querySelectorAll('.sr').forEach(el => srObs.observe(el));
         try {
           grid.innerHTML = buildCards(data);
           document.querySelectorAll('.sr').forEach(function(el) { srObs.observe(el); });
+          /* Token heatmap loads independently — its slow endpoint
+             shouldn't block the rest of the dashboard. */
+          loadUsageHeatmap();
         } catch(e) {
           console.error('Render error:', e);
           grid.innerHTML = errHTML;
@@ -382,6 +419,95 @@ document.querySelectorAll('.sr').forEach(el => srObs.observe(el));
 
   loadAccount();
 })();
+
+/* ── Token usage heatmap ─────────────────────────── */
+function loadUsageHeatmap(){
+  var body=document.getElementById('usageHeatmapBody');
+  var sumEl=document.getElementById('usageHeatmapSummary');
+  if(!body)return;
+  fetch('/api/account/usage-heatmap',{credentials:'same-origin'})
+    .then(function(r){return r.json()})
+    .then(function(data){
+      if(!data||!Array.isArray(data.buckets)){
+        body.innerHTML='<div class="acct-heatmap-empty">No token activity yet. Start a chat to populate this graph.</div>';
+        return;
+      }
+      renderHeatmap(data);
+    })
+    .catch(function(){
+      body.innerHTML='<div class="acct-heatmap-empty">Couldn\'t load token activity.</div>';
+    });
+}
+
+function fmtTokens(n){
+  if(n>=1000000)return(n/1000000).toFixed(1)+'M';
+  if(n>=1000)return(n/1000).toFixed(1)+'k';
+  return String(n);
+}
+
+function renderHeatmap(data){
+  var body=document.getElementById('usageHeatmapBody');
+  var sumEl=document.getElementById('usageHeatmapSummary');
+  /* Bucket = 168 hourly slots (7 days × 24 hours). Each bucket
+     carries an `hour` ISO timestamp. We lay them out as
+     7 day-rows × 24 hour-columns, oldest day at the top. */
+  var buckets=data.buckets||[];
+  var p95=Math.max(data.p95||0,1);
+  /* Build per-day hour maps keyed by local date string. */
+  var byDayHour={}; /* 'YYYY-MM-DD' -> {hour -> tokens} */
+  for(var i=0;i<buckets.length;i++){
+    var d=new Date(buckets[i].hour);
+    var key=d.toISOString().slice(0,10);
+    if(!byDayHour[key])byDayHour[key]={};
+    byDayHour[key][d.getUTCHours()]=buckets[i].tokens;
+  }
+  /* Build the 7 calendar days ending today (UTC). */
+  var today=new Date();
+  today.setUTCHours(0,0,0,0);
+  var days=[];
+  for(var off=6;off>=0;off--){
+    var dt=new Date(today.getTime()-off*86400000);
+    var key=dt.toISOString().slice(0,10);
+    days.push({date:dt,key:key});
+  }
+  var monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  /* Render: for each of the 7 days, render a left-side date label
+     followed by 24 hour cells. We use grid-template-columns:
+     80px repeat(24, 1fr) so labels sit in the first column. */
+  var html='<div class="acct-heatmap-grid">';
+  for(var di=0;di<days.length;di++){
+    var dInfo=days[di];
+    var dLabel=monthNames[dInfo.date.getUTCMonth()]+' '+dInfo.date.getUTCDate();
+    html+='<div class="acct-heatmap-day-label">'+dLabel+'</div>';
+    for(var h=0;h<24;h++){
+      var tokens=(byDayHour[dInfo.key]&&byDayHour[dInfo.key][h])||0;
+      var level=0;
+      if(tokens>0){
+        var ratio=tokens/p95;
+        if(ratio>0.75)level=4;
+        else if(ratio>0.5)level=3;
+        else if(ratio>0.25)level=2;
+        else level=1;
+      }
+      var tooltipLabel=dLabel+' '+String(h).padStart(2,'0')+':00 — '+fmtTokens(tokens)+' tokens';
+      html+='<div class="acct-heatmap-cell" data-level="'+level+'">'+
+              '<span class="acct-heatmap-tooltip">'+tooltipLabel+'</span>'+
+            '</div>';
+    }
+  }
+  html+='</div>';
+  html+='<div class="acct-heatmap-axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>';
+  html+='<div class="acct-heatmap-legend"><span>Less</span><div class="acct-heatmap-legend-cells"><span></span><span></span><span></span><span></span><span></span></div><span>More</span></div>';
+  body.innerHTML=html;
+  if(sumEl){
+    sumEl.innerHTML=
+      '<div><strong>'+fmtTokens(data.totalTokens||0)+'</strong> tokens used</div>'+
+      '<div><strong>'+fmtTokens(data.totalCalls||0)+'</strong> chat calls</div>'+
+      '<div><strong>'+fmtTokens(data.p95||0)+'</strong> tokens / hour (peak)</div>';
+  }
+}
+window.loadUsageHeatmap=loadUsageHeatmap;
+window.renderHeatmap=renderHeatmap;
 
 /* ── Login form handler ──────────────────────────── */
 function loadCaptcha() {

@@ -6383,9 +6383,75 @@ var KATEX_MACROS={
    "\\union":"\\cup",
    "\\intersection":"\\cap",
 };
+/* Pre-process raw assistant output to compensate for common
+   formatting sloppiness in weak / small models. Returns a string
+   with normalized delimiters and closed block structures so the
+   downstream renderer (formatMsg / formatMsgProgressive) sees
+   well-formed markdown + math.
+
+   What this fixes:
+   1. `$...$$...$` — model wrote a single `$` for display math
+      (then a stray `$$` or `$` somewhere else). We detect the
+      pattern and promote to `$$...$$`.
+   2. Stray unmatched `$` — if the count of `$` in `s` is odd, we
+      treat the last lone `$` as a literal dollar sign (escaped)
+      so the math regex below doesn't accidentally swallow half
+      a sentence.
+   3. Unclosed code fence ``` — append a closing ``` before the
+      end of `s` so the fence regex matches.
+   4. Stray HTML — `<br>` → `\n`, normalize `<p>...</p>` to plain
+      paragraphs. Models that wrap everything in `<p>...</p>`
+      confuse the markdown parser.
+   5. Windows line endings — normalize `\r\n` to `\n`.
+   6. Bullet character normalization — `• `, `‣ `, `◦ `, `・ ` at
+      line start → `- ` (marked's bullet). */
+function preprocessMarkdown(t){
+  if(!t)return t;
+  var s=String(t);
+  /* 5. CRLF → LF */
+  s=s.replace(/\r\n?/g,"\n");
+  /* 4. stray HTML — drop <p>/</p> wrappers so markdown isn't
+        double-parsed as both inline HTML and plain text. */
+  s=s.replace(/<p>\s*/gi,"").replace(/\s*<\/p>/gi,"\n");
+  s=s.replace(/<br\s*\/?>/gi,"\n");
+  /* 1. Promote lone `$...$` that contains a `\\` line-break
+        (heuristic for display math) to `$$...$$`. Only when the
+        `$...$` is on its own line / span. */
+  s=s.replace(/(^|\n)\$([^$\n]+(?:\\\\[^$\n]*)*)\$(\s*\n|$)/g,function(_,lead,math,tail){
+    /* If the inner content already has balanced $$ pair, leave as-is. */
+    return lead+"$$"+math+"$$"+tail;
+  });
+  /* 2. Stray unmatched `$`. Count total occurrences; if odd, the
+        last lone `$` is almost certainly punctuation ("$5", "$100")
+        rather than math. Escape it so KaTeX regex doesn't eat it. */
+  var dollarCount=(s.match(/\$/g)||[]).length;
+  if(dollarCount%2===1){
+    /* Find the last lone `$` not part of `$$` and escape it. */
+    var idx=s.length;
+    while((idx=s.lastIndexOf("$",idx-1))!==-1){
+      var prev=s.charAt(idx-1),next=s.charAt(idx+1);
+      if(prev!=="$"&&next!=="$"){
+        s=s.slice(0,idx)+"\\$"+s.slice(idx+1);
+        break;
+      }
+    }
+  }
+  /* 3. Unclosed code fence. Count ``` occurrences. If odd, append
+        a closing ``` at the very end (only if `s` doesn't end with
+        a partial fence line). */
+  var fenceCount=(s.match(/```/g)||[]).length;
+  if(fenceCount%2===1){
+    if(!/```\s*$/.test(s))s=s+"\n```";
+  }
+  /* 6. Normalize bullet glyphs to `- ` so marked treats them as
+        list items. */
+  s=s.replace(/(^|\n)\s*[•‣◦・·]\s+/g,"$1- ");
+  return s;
+}
+
 function formatMsgProgressive(t){
   if(!t)return"";
-  var s=String(t);
+  var s=preprocessMarkdown(String(t));
   /* Drop a single trailing newline so the last split element is
      not an empty line. Without this every chunk ending in \n would
      add a phantom blank paragraph. */
@@ -6506,7 +6572,11 @@ function formatMsgProgressive(t){
 }
 
 function formatMsg(t){
-  if(typeof marked==="undefined"||typeof katex==="undefined"){return"<p>"+esc(t).replace(/```(\w*)\r?\n?([\s\S]*?)```/g,function(_,l,c){return"<pre><code>"+esc(c.trim())+"</code></pre>"}).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>")+"</p>"}
+  /* Run the weak-model markdown preprocessor first — see its
+     definition just above formatMsgProgressive for the list of
+     fixes (CRLF normalization, stray-HTML unwrapping, unclosed
+     fence closure, stray-$ escaping, bullet-glyph normalization). */
+  if(typeof marked==="undefined"||typeof katex==="undefined"){return"<p>"+esc(preprocessMarkdown(t)).replace(/```(\w*)\r?\n?([\s\S]*?)```/g,function(_,l,c){return"<pre><code>"+esc(c.trim())+"</code></pre>"}).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>")+"</p>"}
   var blocks=[];
   var pid=0;
   function save(html){
@@ -6525,6 +6595,12 @@ function formatMsg(t){
         the text streams in, and only sees them disappear at the
         final formatMsg pass). */
   t=stripChatArtifacts(t);
+
+  /* 0a-weak. Weak-model preprocessor — see preprocessMarkdown above
+     for the full fix list (CRLF, stray HTML, lone-$ escaping,
+     unclosed-fence closure, bullet-glyph normalization, promote
+     single-$ display-math to $$). */
+  t=preprocessMarkdown(t);
 
   /* 0b. Pre-emptive viz detection.
      As soon as the streamed text contains a ```viz or ```html fence
@@ -10365,8 +10441,8 @@ async function callAPI(messages,maxTokens){
    - Empty delta is OK if backend sent a __FORMATTED__ pre-render
    - Returns cancelled:true if the AbortController fired (caller can
      decide whether to show a "stopped" UI or fall back to mock) */
-var STREAM_TIMEOUT_MS=120000;
-var STREAM_HEARTBEAT_MS=60000;
+var STREAM_TIMEOUT_MS=600000;          /* 10 min — long enough for reasoning models */
+var STREAM_HEARTBEAT_MS=90000;         /* 90 s silence before we treat as stall */
 var STREAM_MAX_ATTEMPTS=3;
 /* Agent mode has its own budget. The agent runs up to 25 steps; each
    step can take 30-60s on reasoning models, but the whole run must not

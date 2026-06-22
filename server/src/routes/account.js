@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { eq, count, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { users, sessions, apiKeys } from '../db/schema.js';
+import { users, sessions, apiKeys, usageEvents } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
@@ -118,6 +118,72 @@ router.get('/usage', async (req, res, next) => {
         providerCount,
         graphNodes,
       },
+    });
+  } catch (err) { next(err); }
+});
+
+/**
+ * GET /api/account/usage-heatmap — hourly token-usage buckets for
+ * the heatmap widget on the My Account dashboard. Returns one row
+ * per hour for the last 7 days (168 buckets). Hours with no usage
+ * are still returned with tokens=0 so the front-end can paint a
+ * consistent grid without gap-detection logic.
+ *
+ * Each bucket carries:
+ *   - hour      : ISO timestamp at hour granularity (UTC)
+ *   - tokens    : total tokens (prompt + completion) consumed in that hour
+ *   - calls     : number of chat completions in that hour
+ *
+ * The heatmap colors each cell based on its tokens relative to the
+ * user's 95th-percentile hour over the window — a percentile-based
+ * scale (instead of absolute) keeps the visualisation meaningful for
+ * both light and heavy users. */
+router.get('/usage-heatmap', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const hours = Math.min(Math.max(parseInt(req.query.hours, 10) || 168, 24), 168);
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+    const rows = await db
+      .select({
+        hour: sql`date_trunc('hour', ${usageEvents.createdAt})`,
+        tokens: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
+        calls: sql`COUNT(*)::int`,
+      })
+      .from(usageEvents)
+      .where(sql`${usageEvents.userId} = ${req.userId} AND ${usageEvents.createdAt} >= ${since}`)
+      .groupBy(sql`date_trunc('hour', ${usageEvents.createdAt})`)
+      .orderBy(sql`date_trunc('hour', ${usageEvents.createdAt})`);
+
+    /* Fill in zero-buckets for any hour with no activity so the
+       front-end can render a continuous grid without gaps. */
+    const byHour = new Map();
+    for (const r of rows) {
+      byHour.set(new Date(r.hour).toISOString(), { hour: r.hour, tokens: r.tokens, calls: r.calls });
+    }
+    const filled = [];
+    const startMs = Math.floor(since.getTime() / 3600000) * 3600000;
+    const endMs = Math.floor(Date.now() / 3600000) * 3600000;
+    for (let t = startMs; t <= endMs; t += 3600000) {
+      const key = new Date(t).toISOString();
+      const existing = byHour.get(key);
+      filled.push(existing || { hour: key, tokens: 0, calls: 0 });
+    }
+
+    /* Totals + 95th percentile for the heatmap color scale. */
+    const totalTokens = filled.reduce((s, b) => s + b.tokens, 0);
+    const totalCalls = filled.reduce((s, b) => s + b.calls, 0);
+    const sortedNonZero = filled.map((b) => b.tokens).filter((t) => t > 0).sort((a, b) => a - b);
+    const p95 = sortedNonZero.length
+      ? sortedNonZero[Math.min(sortedNonZero.length - 1, Math.floor(sortedNonZero.length * 0.95))]
+      : 0;
+
+    return res.json({
+      hours,
+      totalTokens,
+      totalCalls,
+      p95,
+      buckets: filled,
     });
   } catch (err) { next(err); }
 });
