@@ -184,6 +184,15 @@ function resetState(){
   state.call.source=null;
   state.call.error=null;
   state.ui._userScrolledAway=false;
+  /* P_dup-session — also clear the top-level mirror so a follow-up
+     call to saveCurrentSession doesn't read a stale id and try to
+     re-open a session that was just deleted / reset. Without this,
+     bounceOutOfArchivedSession left state.currentSessionId pointing
+     at the deleted session, which (a) confused renderRecents about
+     which row was active and (b) made the chat view briefly show
+     stale content if any code path looked at the top-level field
+     instead of state.session.currentSessionId. */
+  try{if("currentSessionId" in state)state.currentSessionId=null}catch(_){}
 }
 /* Expose for modules that reference resetState via onclick handlers. */
 window.resetState = resetState;

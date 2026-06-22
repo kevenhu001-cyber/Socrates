@@ -1208,6 +1208,15 @@ function saveCurrentSession(){
     updatedAt:now,
   };
   state.currentSessionId=sessionId;
+  /* P_dup-session — sync the namespace mirror too. Without this,
+     a second saveCurrentSession in the same tick reads
+     state.session.currentSessionId (still null because line 1228
+     only fires after the server responds), regenerates a new id,
+     and the server creates a SECOND session record — the user
+     sees the same chat appear twice in Recents. The two fields
+     have to stay in lock-step synchronously, not just on the
+     async POST response. */
+  state.session.currentSessionId=sessionId;
   toggleShareBtn();
   /* Kick off AI title generation based on the user's first input. */
   if(!state.sessionTitle)generateSessionTitle();
@@ -1631,11 +1640,20 @@ function findServerSessionIndex(id){
 
 function actuallyDeleteSession(id){
   if(!CURRENT_USER)return;
-  /* Bounce the user out of the chat view if the deleted session
-     was the one currently on screen. Doing this before we touch
-     SERVER_SESSIONS avoids a render where the active row briefly
-     lingers without a backing session record. */
-  if(state.session.currentSessionId===id){
+  /* P_delete-stale — bounce the user out of the chat view if the
+     deleted session is EITHER (a) the one currently on screen
+     (state.session.currentSessionId) OR (b) referenced by the
+     top-level state.currentSessionId mirror. Without checking
+     both, a session whose currentSessionId drifted onto the
+     top-level mirror (the duplicate-session bug we fixed) would
+     get deleted but the chat view would keep rendering its
+     messages because the bounce never fired. Also cancel any
+     in-flight chat stream so a half-written reply doesn't
+     resurface after the delete. */
+  var wasActive=state.session.currentSessionId===id||state.currentSessionId===id;
+  if(wasActive){
+    if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+    if(window._activeChatAbort){try{window._activeChatAbort("session-deleted")}catch(_){}}
     bounceOutOfArchivedSession();
   }
   /* Drop the session from the local cache immediately so the UI
@@ -1651,7 +1669,18 @@ function actuallyDeleteSession(id){
     timeoutMs:8000
   }).then(function(){
     showToast("Session deleted");
-    refreshServerSessions();
+    /* P_delete-stale — if no sessions remain, make sure the
+       chat view is hidden and the topic-setup is showing so the
+       user lands on a clean "start a new conversation" surface
+       instead of a blank / stale chat panel. */
+    refreshServerSessions().then(function(){
+      var remaining=getRecents().length;
+      if(remaining===0){
+        bounceOutOfArchivedSession();
+      }else if(wasActive){
+        renderRecents();
+      }
+    });
   }).catch(function(err){
     console.warn("[delete] server sync failed:",err&&err.message);
     try{showToast("Delete failed: "+(err&&err.message||"server error")+" - refreshing.",4000)}catch(_){}
@@ -2225,7 +2254,13 @@ async function startSession(){
   state.lastCallSource=null;
 
   /* User clicked Begin — this is when the session officially starts. */
-  state.currentSessionId=generateId();
+  var newSessId=generateId();
+  state.currentSessionId=newSessId;
+  /* P_dup-session — mirror into the namespaced field too so the
+     first saveCurrentSession after Begin uses this id rather than
+     re-generating its own (which the previous code did, creating
+     a duplicate session on the server). */
+  state.session.currentSessionId=newSessId;
   pushChatIdToURL(state.currentSessionId);
 
   /* Chat mode: skip diagnostic, KB, mistake book. Go straight to chat
@@ -4725,7 +4760,7 @@ function teardownThinkStructure(){
         }catch(_){
           chunk.textContent=slice;
         }
-        streamContent.insertBefore(chunk,cursor);
+        streamContent.insertBefore(chunk,chunkState.pendingNode||cursor);
         /* Trigger the fade-in on the next frame so the browser
            registers the initial opacity:0 state first. */
         requestAnimationFrame(function(){chunk.classList.add("stream-chunk-in")});
@@ -4990,19 +5025,50 @@ function teardownThinkStructure(){
         return; /* finishAfterRender runs from inside typeTick */
       }
       try{
-        /* P_chunked-fade — close out the trailing pendingNode (the
-           raw-text slice that was still in flight when the stream
-           finished) so it doesn't survive into the final render,
-           then replace the streaming DOM with the single formatted
-           HTML pass. The chunks above already contain their own
-           formatMsg output and stay in place visually because the
-           final render reproduces them byte-for-byte. */
+        /* P_chunked-fade — at finish, the chunks that were already
+           streamed are sitting in streamContent, each containing its
+           own formatMsg output. Do NOT replace body.innerHTML here:
+           doing so wipes the per-chunk fade-ins the user just watched
+           appear and re-renders the whole bubble in one frame, which
+           is exactly the "all at once" symptom we were avoiding.
+
+           Instead:
+             1. Flush the trailing pendingNode (raw text slice that
+                arrived after the last chunk boundary) as a final
+                chunk via formatMsg, so the in-flight slice becomes
+                the styled chunk the user was waiting for.
+             2. Remove the stream cursor.
+             3. Capture the final concatenated HTML for state +
+                saveCurrentSession.
+           The DOM the user sees on screen is the same content they
+           were watching appear chunk-by-chunk — only the last raw
+           pendingNode is converted to formatted HTML. */
         if(chunkState&&chunkState.pendingNode){
+          if(chunkState.pendingText){
+            var tailSlice=chunkState.pendingText;
+            try{
+              var tailHtml=formatMsg(tailSlice);
+              var tailChunk=document.createElement("div");
+              tailChunk.className="stream-chunk";
+              tailChunk.innerHTML=tailHtml;
+              if(typeof hljs!=="undefined"){
+                tailChunk.querySelectorAll("pre code").forEach(function(c){
+                  if(c.dataset&&c.dataset.hljsDone)return;
+                  if(/```\s*$/.test(c.textContent||""))return;
+                  try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
+                });
+              }
+              streamContent.insertBefore(tailChunk,cursor);
+            }catch(_){
+              /* formatMsg failed — fall back to leaving the raw text
+                 in place; the user can still read it. */
+            }
+          }
           chunkState.pendingNode.remove();
           chunkState.pendingNode=null;
         }
-        var finalHtml=formatMsg(full);
-        body.innerHTML=finalHtml;
+        if(cursor){cursor.remove();cursor=null}
+        var finalHtml=streamContent?streamContent.innerHTML:formatMsg(full);
         if(msgIdx>=0&&state.messages[msgIdx]){
           state.messages[msgIdx].html=finalHtml;
           state.messages[msgIdx].rawText=full;
