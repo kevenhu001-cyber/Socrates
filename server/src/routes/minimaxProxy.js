@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion, callChatCompletion } from '../services/llm.js';
+import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
 
 const router = Router();
 
@@ -39,6 +40,11 @@ router.post('/v1/chat/completions', async (req, res, next) => {
       const abortController = new AbortController();
       req.on('close', () => abortController.abort());
 
+      /* Token accounting for the built-in MiniMax provider. */
+      const promptTokens = estimateMessageTokens(messages);
+      let completionTokens = 0;
+      let fullText = '';
+
       await streamChatCompletion(
         {
           apiBase: provider.url,
@@ -53,6 +59,8 @@ router.post('/v1/chat/completions', async (req, res, next) => {
         },
         // onChunk
         (chunk) => {
+          fullText += chunk;
+          completionTokens = estimateTokens(fullText);
           try {
             res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`);
           } catch { /* client disconnected */ }
@@ -63,6 +71,16 @@ router.post('/v1/chat/completions', async (req, res, next) => {
             res.write('data: [DONE]\n\n');
             res.end();
           } catch { /* ignore */ }
+          if (req.userId) {
+            recordUsage({
+              userId: req.userId,
+              model: model || provider.model,
+              sessionId: typeof req.query.sessionId === 'string' ? req.query.sessionId : null,
+              promptTokens,
+              completionTokens,
+              source: 'chat',
+            });
+          }
         },
         // onError
         (err) => {
@@ -72,6 +90,16 @@ router.post('/v1/chat/completions', async (req, res, next) => {
             res.write('data: [DONE]\n\n');
             res.end();
           } catch { /* ignore */ }
+          if (req.userId && fullText.length > 0) {
+            recordUsage({
+              userId: req.userId,
+              model: model || provider.model,
+              sessionId: typeof req.query.sessionId === 'string' ? req.query.sessionId : null,
+              promptTokens,
+              completionTokens: estimateTokens(fullText),
+              source: 'chat',
+            });
+          }
         },
       );
     } else {

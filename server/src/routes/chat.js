@@ -5,6 +5,7 @@ import { requireAuth, optionalAuth } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion, callChatCompletion } from '../services/llm.js';
+import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
 import { BadRequest, TooManyRequests } from '../lib/errors.js';
 
 const router = Router();
@@ -85,12 +86,22 @@ router.post('/stream', chatLimiter, optionalAuth, async (req, res, next) => {
     }, 10_000);
 
     let fullText = '';
+    /* Token accounting — compute prompt tokens once from the
+       incoming messages, then increment completion tokens as
+       chunks arrive. On done/error, persist a usage event into
+       `usage_events` so the heatmap has data to draw. */
+    const promptTokens = estimateMessageTokens(messages);
+    let completionTokens = 0;
 
     const abortController = new AbortController();
     req.on('close', () => {
       clearInterval(heartbeat);
       abortController.abort();
     });
+
+    const sessionIdFromQuery = typeof req.query.sessionId === 'string'
+      ? req.query.sessionId
+      : null;
 
     await streamChatCompletion(
       {
@@ -105,6 +116,7 @@ router.post('/stream', chatLimiter, optionalAuth, async (req, res, next) => {
       // onChunk
       (chunk) => {
         fullText += chunk;
+        completionTokens = estimateTokens(fullText);
         try {
           res.write(`data: {"choices":[{"delta":{"content":${JSON.stringify(chunk)}}}]}\n\n`);
         } catch { /* client disconnected */ }
@@ -116,6 +128,16 @@ router.post('/stream', chatLimiter, optionalAuth, async (req, res, next) => {
           res.write('data: [DONE]\n\n');
           res.end();
         } catch { /* ignore */ }
+        if (req.userId) {
+          recordUsage({
+            userId: req.userId,
+            model: provider.model,
+            sessionId: sessionIdFromQuery,
+            promptTokens,
+            completionTokens,
+            source: 'chat',
+          });
+        }
       },
       // onError
       (err) => {
@@ -126,6 +148,18 @@ router.post('/stream', chatLimiter, optionalAuth, async (req, res, next) => {
           res.write('data: [DONE]\n\n');
           res.end();
         } catch { /* ignore */ }
+        if (req.userId && fullText.length > 0) {
+          /* Even on partial failure, record what we got — the
+             heatmap should reflect activity regardless of outcome. */
+          recordUsage({
+            userId: req.userId,
+            model: provider.model,
+            sessionId: sessionIdFromQuery,
+            promptTokens,
+            completionTokens: estimateTokens(fullText),
+            source: 'chat',
+          });
+        }
       }
     );
   } catch (err) { next(err); }
