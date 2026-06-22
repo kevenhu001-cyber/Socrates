@@ -4633,14 +4633,23 @@ function teardownThinkStructure(){
     }
 
     if(thinkState.startIdx===-1){
-      /* P1.2 — progressive markdown render. We use a lightweight
-         markdown renderer (formatMsgProgressive) that handles basic
-         formatting (bold, italic, code, headers, lists, paragraphs)
-         without heavy KaTeX/highlight.js. This gives users formatted
-         output during streaming, while the final render uses full
-         formatMsg for complete fidelity. We keep the cursor as a
-         separate fixed sibling so updating innerHTML never recreates
-         the cursor element. */
+      /* P_chunked-fade — replace character-by-character innerHTML
+         re-renders with chunked append-only text. Each new "chunk"
+         (a span ending at a sentence/paragraph boundary or after a
+         short character budget) fades in via CSS animation, giving
+         the user a piece-by-piece reveal rather than a typewriter.
+
+         Why not call formatMsgProgressive every frame? KaTeX only
+         renders formulas once BOTH delimiters are seen. The first
+         half of "$x^2 + y^2 = z^2$" streams in as raw text on a
+         single line, then the closing $ arrives and KaTeX suddenly
+         produces an inline-block element ~1.4× the line height —
+         the text below jumps downward by the difference. The user
+         sees this as vertical jitter on every formula. By only
+         appending text mid-stream and deferring formula / code /
+         markdown rendering to finish()'s single formatMsg pass,
+         the visible bubble stays one stable line-height per chunk
+         and never reflows the chunks above the new one. */
       if(!streamContent){
         streamContent=document.createElement("div");
         streamContent.className="stream-content";
@@ -4650,19 +4659,32 @@ function teardownThinkStructure(){
         cursor.className="stream-cursor";
         cursor.textContent="▍";
         body.appendChild(cursor);
+        chunkState={renderedLength:0,pending:null,pendingLen:0,lastFlushAt:0};
       }
-      streamContent.innerHTML=formatMsgProgressive(displayFull);
-      /* Highlight closed code blocks during streaming (now that
-         formatMsgProgressive uses marked.parse, code blocks are
-         proper <pre><code> elements that hljs can process). */
-      if(typeof hljs!=="undefined"){
-        var codeBlocks=streamContent.querySelectorAll("pre code");
-        for(var _hci=0;_hci<codeBlocks.length;_hci++){
-          var _cb=codeBlocks[_hci];
-          if(_cb.dataset.hljsDone)continue;
-          var _raw=_cb.textContent||"";
-          if(/```\s*$/.test(_raw))continue;
-          try{hljs.highlightElement(_cb);_cb.dataset.hljsDone="1"}catch(_e){}
+      var prevLen=chunkState.renderedLength;
+      var newSlice=displayFull.length>prevLen?displayFull.slice(prevLen):"";
+      if(newSlice){
+        chunkState.renderedLength=displayFull.length;
+        /* Append character-by-character into the pending chunk so the
+           cursor stays anchored; flush (close + animate) the pending
+           chunk whenever a natural boundary shows up or the chunk
+           exceeds ~36 chars / ~220ms. Boundaries chosen so flushes
+           land on word / sentence / paragraph edges, never mid-token. */
+        if(!chunkState.pending){
+          chunkState.pending=document.createElement("span");
+          chunkState.pending.className="stream-chunk";
+          streamContent.insertBefore(chunkState.pending,cursor);
+        }
+        chunkState.pending.appendChild(document.createTextNode(newSlice));
+        chunkState.pendingLen+=newSlice.length;
+        var boundary=/[.!?。！？\)\]"'”]\s|[。！？]\s|\n\n|\n$/.test(chunkState.pending.textContent);
+        var tooLong=chunkState.pendingLen>=36;
+        var tooStale=chunkState.pendingLen>=12&&(Date.now()-chunkState.lastFlushAt)>220;
+        if(boundary||tooLong||tooStale){
+          chunkState.pending.classList.add("stream-chunk-in");
+          chunkState.pending=null;
+          chunkState.pendingLen=0;
+          chunkState.lastFlushAt=Date.now();
         }
       }
     }else{
@@ -4755,6 +4777,11 @@ function teardownThinkStructure(){
   }
   var streamContent=null;
   var cursor=null;
+  /* P_chunked-fade — chunk fade-in bookkeeping. Lives at the same
+     scope as streamContent so doRender can read/write it across
+     multiple frames. Initialised lazily inside doRender the first
+     time streamContent is created. */
+  var chunkState=null;
   function scheduleRender(){
     if(pendingRender||finished)return;
     /* rAF coalesces multiple deltas that land in the same frame into
@@ -4820,7 +4847,13 @@ function teardownThinkStructure(){
        * formatMsg pass renders properly, but going straight there
        * is cleaner. */
       var hasThinkMarker=full.indexOf("<think>")!==-1;
-      var needsAnimation=total>0&&firstChunkDuration<200&&!hasThinkMarker;
+      /* P_chunked-fade — the chunk-by-chunk fade-in during streaming
+         is already the "animation". Running typeTick on top of it
+         would replay the same content with a second typewriter pass
+         on top of the chunks the user just watched appear, which
+         looks stuttery. Skip typeTick and go straight to the final
+         formatMsg pass. */
+      var needsAnimation=false;
       if(needsAnimation){
         /* P1.3 — character-by-character animation driven by a
            single rAF loop with a 16ms budget per frame. Replaces
@@ -4892,6 +4925,17 @@ function teardownThinkStructure(){
         return; /* finishAfterRender runs from inside typeTick */
       }
       try{
+        /* P_chunked-fade — close out the trailing pending chunk (if
+           any) so its text is at least visible mid-stream, then
+           replace the streaming DOM with the final formatted HTML.
+           The fade-in animation applies per-chunk during the
+           stream; this final pass is a single deterministic render
+           with no further animation, so we don't need to keep the
+           chunk wrapper. */
+        if(chunkState&&chunkState.pending){
+          chunkState.pending.classList.add("stream-chunk-in");
+          chunkState.pending=null;
+        }
         var finalHtml=formatMsg(full);
         body.innerHTML=finalHtml;
         if(msgIdx>=0&&state.messages[msgIdx]){
