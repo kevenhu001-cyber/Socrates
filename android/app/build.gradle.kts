@@ -117,4 +117,9 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    implementation(libs.markwon.core)
+    implementation(libs.markwon.katex)
+    implementation(libs.markwon.prism4j)
+    implementation(libs.markwon.recycler)
 }

@@ -47,6 +47,10 @@ okhttp-sse                    = { module = "com.squareup.okhttp3:okhttp-sse", ve
 kotlinx-serialization-json    = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerial" }
 kotlinx-coroutines            = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version = "1.8.1" }
 coil-compose                  = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+markwon-core                  = { module = "io.noties.markwon:core", version = "4.6.2" }
+markwon-katex                 = { module = "io.noties.markwon:ext-katex", version = "4.6.2" }
+markwon-prism4j               = { module = "io.noties.markwon:ext-prism4j", version = "4.6.2" }
+markwon-recycler              = { module = "io.noties.markwon:recycler", version = "4.6.2" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
