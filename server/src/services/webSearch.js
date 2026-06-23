@@ -10,26 +10,48 @@ import {
   scoreCrossSource,
   scoreSpamPenalty,
   contentQualityBoost,
+  tokenizeQuery,
+  tokenBigrams,
+  detectLanguageCluster,
+  scoreLanguageMatch,
 } from './scoring.js';
+import * as searchResultCache from '../lib/searchResultCache.js';
+import * as searchHealth from '../lib/searchHealth.js';
+import { searchWikipedia } from './searchEngines/wikipedia.js';
+import { searchArxiv } from './searchEngines/arxiv.js';
+import { searchDdg } from './searchEngines/ddg.js';
 
 /**
  * Web search backend — multi-source, high-precision search.
  *
- * Strategy (current):
- *   1. Expand the user's query into 1-3 variants using the LLM
+ * Strategy (Phase 2):
+ *   0. CACHE HIT CHECK  — if (userId, query, count, enrich, locale,
+ *      apiKeyHint) match a recent result, return it directly. Cached
+ *      results have `fromCache: true` on each entry.
+ *   1. Detect query language cluster (cjk | cyrillic | latin | other)
+ *      and pick the Bing host accordingly (cn.bing.com for CJK,
+ *      www.bing.com otherwise).
+ *   2. Expand the user's query into 1-3 variants using the LLM
  *      (server/src/services/queryExpander.js).
- *   2. For each variant, run Bing + Google + Baidu (HTML scraping) in
- *      parallel.
- *   3. Merge across all variants × all engines with Reciprocal Rank
+ *   3. Skip engines that have been failing/captcha-blocked for this
+ *      language cluster in the last 30 minutes (searchHealth.js).
+ *      Floor at 2 engines running per query.
+ *   4. For each remaining variant × engine, run all 6 sources in
+ *      parallel: Bing + Google + Baidu + Wikipedia + arXiv + DDG.
+ *   5. Record per-engine outcomes in searchHealth for the next call.
+ *   6. Merge across all variants × all engines with Reciprocal Rank
  *      Fusion (RRF), tracking which query variants surfaced each URL.
- *   4. Fetch the top 6 URLs in parallel and extract their main content
- *      using Readability (server/src/services/contentExtractor.js,
- *      wired in via server/src/services/fetchBatch.js).
- *   5. Re-score with title-query match, URL-path date, content
- *      quality, and spam penalties (server/src/services/scoring.js).
- *   6. Return the top `count` results, with new fields attached:
+ *   7. Fetch the top 6 URLs in parallel (with HTTP conditional-GET via
+ *      urlCache.js) and extract their main content via Readability
+ *      (contentExtractor.js, wired in via fetchBatch.js).
+ *   8. Re-score with title-query match, URL-path date, content
+ *      quality, language-cluster match, and spam penalties
+ *      (scoring.js).
+ *   9. Cache the final result in searchResultCache.js for 5 minutes.
+ *  10. Return the top `count` results, with new fields attached:
  *      `fullContent`, `excerpt`, `pageDate`, `wordCount`,
- *      `fetchMethod`, `matchedQueries`, `expandedQueries`.
+ *      `fetchMethod`, `matchedQueries`, `expandedQueries`,
+ *      `language`, `languageCluster`, `fromCache`.
  *
  * Backwards compatibility:
  *   - The endpoint signature is `webSearch(query, count, opts)`. The
@@ -44,7 +66,8 @@ import {
 
 /* ─── Configuration ─── */
 
-const BING_HOST        = process.env.WEB_SEARCH_HOST || 'cn.bing.com';
+const BING_HOST_CJK    = process.env.WEB_SEARCH_HOST_CJK   || 'cn.bing.com';
+const BING_HOST_INTL   = process.env.WEB_SEARCH_HOST      || 'www.bing.com';
 const REQUEST_TIMEOUT  = 12_000;       // per-source timeout
 const MAX_RESULTS      = 15;           // per source (merged later)
 const MAX_RESULTS_MERGED = 12;         // final merged count
@@ -216,8 +239,9 @@ function parseBingHtml(html) {
   return results;
 }
 
-async function searchBing(query, limit) {
-  const url = `https://${BING_HOST}/search?q=${encodeURIComponent(query)}&count=${limit + 4}`;
+async function searchBing(query, limit, langCluster = 'latin') {
+  const host = langCluster === 'cjk' ? BING_HOST_CJK : BING_HOST_INTL;
+  const url = `https://${host}/search?q=${encodeURIComponent(query)}&count=${limit + 4}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   try {
@@ -227,7 +251,7 @@ async function searchBing(query, limit) {
       headers: {
         'User-Agent': randomUA(),
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
+        'Accept-Language': langCluster === 'cjk' ? 'zh-CN,zh;q=0.9,en;q=0.8' : 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
       },
       redirect: 'follow',
     });
@@ -656,58 +680,104 @@ export async function webSearch(query, count = 10, opts = {}) {
   }
   const enrich = opts.enrich !== false;
   const limit = Math.max(1, Math.min(MAX_RESULTS_MERGED, parseInt(count, 10) || 10));
+  const locale = opts.locale || null;
+  const langCluster = detectLanguageCluster(query);
+
+  // 0. Cross-request result cache (per user × query × count × enrich × locale × apiKeyHint)
+  // We need the active key's hint to invalidate when the user switches providers.
+  // If we can't get one, we still cache but with a stable "no-key" placeholder.
+  const apiKeyHint = opts.apiKeyHint || 'no-key';
+  const cacheHit = searchResultCache.get({
+    userId: opts.userId, query, count: limit, enrich, locale, apiKeyHint,
+  });
+  if (cacheHit) {
+    return cacheHit;
+  }
 
   // 1. Query expansion (cached, 6s timeout, falls back to [query])
   const queries = await expandQuery(query, { userId: opts.userId });
 
-  // 2. Multi-variant × multi-source fan-out
+  // 2. Decide which engines to skip for this language cluster.
+  // Health tracking considers all 6 engines; floor at 2 (handled inside
+  // searchHealth.shouldSkip by returning engines.length - 2 max skips).
+  const ALL_ENGINES = ['bing', 'google', 'baidu', 'wikipedia', 'arxiv', 'ddg'];
+  const skipEngines = new Set(searchHealth.shouldSkip(ALL_ENGINES, langCluster));
+  const useEngine = (name) => !skipEngines.has(name);
+
+  // 3. Multi-variant × multi-source fan-out.
+  // We keep the original 6 engines but skip ones flagged by searchHealth.
   const perVariant = await Promise.allSettled(
     queries.map((q) => Promise.allSettled([
-      searchBing(q, MAX_RESULTS),
-      searchGoogle(q, MAX_RESULTS),
-      searchBaidu(q, MAX_RESULTS),
+      useEngine('bing')      ? searchBing(q, MAX_RESULTS, langCluster)         : Promise.resolve([]),
+      useEngine('google')    ? searchGoogle(q, MAX_RESULTS)                     : Promise.resolve([]),
+      useEngine('baidu')     ? searchBaidu(q, MAX_RESULTS)                      : Promise.resolve([]),
+      useEngine('wikipedia') ? searchWikipedia(q, MAX_RESULTS, langCluster)     : Promise.resolve([]),
+      useEngine('arxiv')     ? searchArxiv(q, MAX_RESULTS)                      : Promise.resolve([]),
+      useEngine('ddg')       ? searchDdg(q, MAX_RESULTS, langCluster)           : Promise.resolve([]),
     ]))
   );
 
   // Flatten per-variant results into the {query, results[]} shape that
-  // mergeResultsRRF expects. Skip variants where every engine failed.
+  // mergeResultsRRF expects. Track per-engine outcomes for health.
+  const engineNames = ['bing', 'google', 'baidu', 'wikipedia', 'arxiv', 'ddg'];
   const sourceLists = [];
   perVariant.forEach((settled, idx) => {
     const variantQuery = queries[idx];
     if (settled.status !== 'fulfilled') return;
-    const [bing, google, baidu] = settled.value;
-    const values = [
-      bing.status === 'fulfilled' ? bing.value : [],
-      google.status === 'fulfilled' ? google.value : [],
-      baidu.status === 'fulfilled' ? baidu.value : [],
-    ];
-    // Diagnostic logging for the PRIMARY query variant (queries[0])
-    // only — too noisy to log for every variant.
-    if (idx === 0) {
-      if (values[0].length === 0) console.error('[webSearch] Bing returned 0 results');
-      if (values[1].length === 0) console.error('[webSearch] Google returned 0 results');
-      if (values[2].length === 0) console.error('[webSearch] Baidu returned 0 results');
-      if (bing.status === 'rejected')    console.error('[webSearch] Bing failed:', bing.reason?.message || bing.reason);
-      if (google.status === 'rejected')  console.error('[webSearch] Google failed:', google.reason?.message || google.reason);
-      if (baidu.status === 'rejected')   console.error('[webSearch] Baidu failed:', baidu.reason?.message || baidu.reason);
-    }
-    // Emit one entry per non-empty source so matchedQueries tracks
-    // which variant surfaced each URL.
-    for (const v of values) {
-      if (v && v.length) sourceLists.push({ query: variantQuery, results: v });
-    }
+    settled.value.forEach((engineSettled, engineIdx) => {
+      const engineName = engineNames[engineIdx];
+      if (skipEngines.has(engineName)) return; // we short-circuited, don't pollute health
+      const value = engineSettled.status === 'fulfilled' ? engineSettled.value : [];
+      // Health tracking: only record for the PRIMARY variant to keep noise low.
+      if (idx === 0) {
+        if (engineSettled.status === 'rejected') {
+          searchHealth.record(engineName, langCluster, 'error');
+        } else if (!value.length) {
+          searchHealth.record(engineName, langCluster, 'empty');
+        } else {
+          // Quick lang-match check on top result.
+          const top = value[0] || {};
+          const blob = `${top.title || ''} ${top.snippet || ''}`;
+          const topCluster = detectLanguageCluster(blob);
+          if (topCluster === langCluster) searchHealth.record(engineName, langCluster, 'ok');
+          else if (topCluster === 'other') searchHealth.record(engineName, langCluster, 'ok');
+          else searchHealth.record(engineName, langCluster, 'langBad');
+        }
+      }
+      if (value.length) sourceLists.push({ query: variantQuery, results: value });
+    });
   });
 
-  // 3. Merge with RRF
+  // Diagnostic logging for the PRIMARY variant (existing observability).
+  if (queries[0]) {
+    const primaryCounts = {};
+    for (const sl of sourceLists.filter(s => s.query === queries[0])) {
+      primaryCounts[(sl.results[0] || {}).source || '?'] = sl.results.length;
+    }
+    for (const e of engineNames) {
+      if (!primaryCounts[e]) console.error(`[webSearch] ${e} returned 0 results`);
+    }
+  }
+
+  // 4. Merge with RRF
   let merged = mergeResultsRRF(sourceLists, query, MAX_RESULTS_MERGED);
 
   // Emergency fallback: if everything came back empty, retry each
-  // engine once on the original query (existing safety net).
+  // non-skipped engine once on the original query.
   if (!merged.length) {
     console.error('[webSearch] All sources × variants returned empty — retrying primary query');
-    for (const [name, fn] of [['Bing', searchBing], ['Google', searchGoogle], ['Baidu', searchBaidu]]) {
+    const retryPlan = [
+      ['bing', (q) => searchBing(q, MAX_RESULTS, langCluster)],
+      ['google', (q) => searchGoogle(q, MAX_RESULTS)],
+      ['baidu', (q) => searchBaidu(q, MAX_RESULTS)],
+      ['wikipedia', (q) => searchWikipedia(q, MAX_RESULTS, langCluster)],
+      ['arxiv', (q) => searchArxiv(q, MAX_RESULTS)],
+      ['ddg', (q) => searchDdg(q, MAX_RESULTS, langCluster)],
+    ];
+    for (const [name, fn] of retryPlan) {
+      if (skipEngines.has(name)) continue;
       try {
-        const retry = await fn(query, limit);
+        const retry = await fn(query);
         if (retry && retry.length) {
           const fallback = mergeResultsRRF(
             [{ query, results: retry }], query, limit
@@ -720,7 +790,7 @@ export async function webSearch(query, count = 10, opts = {}) {
     }
   }
 
-  // 4. Fetch top-N URLs and extract main content (when enrich enabled)
+  // 5. Fetch top-N URLs and extract main content (when enrich enabled)
   const fetchedByUrl = new Map();
   if (enrich && merged.length) {
     const topUrls = merged.slice(0, MAX_FETCH_DOCS).map((r) => r.url);
@@ -734,11 +804,14 @@ export async function webSearch(query, count = 10, opts = {}) {
     }
   }
 
-  // 5. Attach extracted content + re-score
-  const queryWords = query.toLowerCase().split(/\W+/).filter(w => w.length > 2);
+  // 6. Attach extracted content + re-score. Use tokenizeQuery for
+  // proper Unicode handling (Phase 2 fix).
+  const queryTokens = tokenizeQuery(query);
+  const queryBigrams = tokenBigrams(queryTokens);
   const finalResults = merged.map((r) => {
     const fetched = fetchedByUrl.get(r.url);
     const next = { ...r };
+    next.languageCluster = langCluster;
 
     if (fetched) {
       next.fullContent = fetched.content || null;
@@ -746,6 +819,7 @@ export async function webSearch(query, count = 10, opts = {}) {
       next.pageDate = fetched.pageDate || scoreDateFromUrlPath(r.url) || r.date || null;
       next.wordCount = fetched.wordCount || 0;
       next.fetchMethod = fetched.method || null;
+      if (fetched.fromCache) next.fromCache = true;
     } else {
       next.fullContent = null;
       next.excerpt = null;
@@ -754,38 +828,47 @@ export async function webSearch(query, count = 10, opts = {}) {
       next.fetchMethod = null;
     }
 
-    // Re-score with the post-extraction signals. The base RRF +
-    // keyword/authority/freshness/spam score is already on
-    // `next._relevance`; we ADD new deltas here and clamp.
+    // Re-score with post-extraction signals + language-cluster match.
     let score = next._relevance;
-    score += scoreTitleQueryMatch(next.title, queryWords);
-    score += scoreFreshness(next.pageDate);     // URL-path / meta-tag date may differ from snippet
+    score += scoreKeywordSignals(next.title, next.snippet, queryTokens, queryBigrams);
+    score += scoreTitleQueryMatch(next.title, queryTokens);
+    score += scoreFreshness(next.pageDate);
     score += contentQualityBoost(next.wordCount);
-    score += scoreSpamPenalty(next.url, next.title); // re-check spam in case URL-only signals changed
+    score += scoreLanguageMatch(langCluster, `${next.title} ${next.snippet}`);
+    score += scoreSpamPenalty(next.url, next.title);
     next._relevance = Math.round(Math.min(100, Math.max(0, score)));
     return next;
   });
 
-  // 6. Sort by the updated score and trim to the requested limit
+  // 7. Sort by the updated score and trim to the requested limit
   finalResults.sort((a, b) => b._relevance - a._relevance);
+  const sliced = finalResults.slice(0, limit);
 
-  // 7. Surface the variants we actually searched on so the caller can
-  // show them in UI. Attach at the top level via a wrapper if needed;
-  // for backwards compat we add it as a non-enumerable sidecar on the
-  // array so JSON.stringify still drops it (callers can read it via
-  // results.expandedQueries || fall back to legacy `query`).
+  // 8. Surface the variants we actually searched on (non-enumerable).
   try {
-    Object.defineProperty(finalResults, 'expandedQueries', {
+    Object.defineProperty(sliced, 'expandedQueries', {
       value: queries,
       enumerable: false,
       configurable: true,
       writable: false,
     });
-  } catch {
-    /* defineProperty on a plain array should always work; ignore */
-  }
+    Object.defineProperty(sliced, 'language', {
+      value: langCluster,
+      enumerable: false,
+      configurable: true,
+      writable: false,
+    });
+  } catch { /* defineProperty should always work */ }
 
-  return finalResults.slice(0, limit);
+  // 9. Cache the final result for cross-request reuse (5 min TTL).
+  try {
+    searchResultCache.set({
+      userId: opts.userId, query, count: limit, enrich, locale, apiKeyHint,
+      result: sliced,
+    });
+  } catch { /* cache is best-effort */ }
+
+  return sliced;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -835,7 +918,7 @@ export async function imageSearch(query, count = 8) {
     throw new BadRequest('Query is required');
   }
   const limit = Math.max(1, Math.min(MAX_RESULTS, parseInt(count, 10) || 8));
-  const url = `https://${BING_HOST}/images/search?q=${encodeURIComponent(query)}&count=${limit + 4}`;
+  const url = `https://${BING_HOST_INTL}/images/search?q=${encodeURIComponent(query)}&count=${limit + 4}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   try {

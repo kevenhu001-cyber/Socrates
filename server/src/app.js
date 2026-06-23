@@ -34,6 +34,7 @@ import { generateCaptcha } from './services/captcha.js';
 import { searchContent } from './services/search.js';
 import { webSearch, imageSearch } from './services/webSearch.js';
 import { fetchBatch } from './services/fetchBatch.js';
+import { getActiveApiKey } from './services/apiKey.js';
 import { getDb } from './db/index.js';
 import { sql } from 'drizzle-orm';
 
@@ -172,7 +173,17 @@ app.post('/api/search', requireAuth, async (req, res, next) => {
 app.post('/api/web-search', searchLimiter, requireAuth, async (req, res, next) => {
   try {
     const { query, count, enrich } = req.body || {};
-    const results = await webSearch(query, count, { userId: req.userId, enrich });
+    // Resolve the user's active LLM key hint so the cross-request
+    // result cache invalidates automatically when they switch providers.
+    let apiKeyHint = 'no-key';
+    try {
+      const cfg = await getActiveApiKey(req.userId);
+      if (cfg && cfg.keyHint) apiKeyHint = `${cfg.keyHint}:${cfg.url || ''}:${cfg.model || ''}`;
+    } catch { /* leave placeholder hint */ }
+    const locale = (req.headers['accept-language'] || '').split(',')[0].trim() || null;
+    const results = await webSearch(query, count, {
+      userId: req.userId, enrich, locale, apiKeyHint,
+    });
     return res.json({ results, query: String(query || '').slice(0, 200) });
   } catch (err) { next(err); }
 });
