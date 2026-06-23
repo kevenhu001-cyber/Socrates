@@ -1,5 +1,6 @@
 import dns from 'node:dns/promises';
 import net from 'node:net';
+import { extractArticle } from './contentExtractor.js';
 
 /**
  * Fetch a batch of URLs server-side. Used by the front-end web research
@@ -12,6 +13,12 @@ import net from 'node:net';
  *    BEFORE issuing the request. (The user can still be tricked into
  *    DNS-rebinding past the lookup, but this blocks the obvious
  *    `http://169.254.169.254/...` style probes.)
+ *
+ * Content extraction:
+ *  - After fetching, run each page through `extractArticle` (Mozilla
+ *    Readability with a text-density fallback). The returned `content`
+ *    field is boilerplate-cleaned text, not raw HTML. The LLM context
+ *    builder can pass it straight into the prompt.
  */
 function isPrivateIp(addr) {
   if (net.isIP(addr) === 4) {
@@ -99,6 +106,33 @@ export async function fetchBatch(urls) {
         let title = '';
         const titleMatch = text.match(/<title[^>]*>([^<]+)<\/title>/i);
         if (titleMatch) title = titleMatch[1].trim();
+
+        // Run main-content extraction (Readability + heuristic
+        // fallback). This is the new behavior — `content` is now
+        // boilerplate-cleaned text, not raw HTML. The LLM context
+        // builder can pass it straight into the prompt.
+        let extracted = null;
+        try { extracted = extractArticle(text, url); } catch { extracted = null; }
+
+        // If extraction failed, fall back to the raw HTML so the
+        // caller still has SOMETHING. `method` distinguishes.
+        if (extracted) {
+          return {
+            ok: true,
+            url,
+            title: extracted.title || title,
+            // New fields (preferred by the LLM context builder):
+            content: extracted.content,
+            excerpt: extracted.excerpt,
+            wordCount: extracted.length,
+            pageDate: extracted.date,
+            method: extracted.method,
+            // Backwards-compat for any caller that still reads raw HTML:
+            rawHtml: text,
+            truncated,
+            chars: text.length,
+          };
+        }
 
         return {
           ok: true,
