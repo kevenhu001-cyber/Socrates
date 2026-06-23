@@ -30,6 +30,8 @@ import importRouter from './routes/import.js';
 import agentRouter from './routes/agent.js';
 import classroomRouter from './routes/classroom.js';
 import minimaxRouter from './routes/minimaxProxy.js';
+import mistakesRouter from './routes/mistakes.js';
+import knowledgeBoundaryRouter from './routes/knowledgeBoundary.js';
 import { generateCaptcha } from './services/captcha.js';
 import { searchContent } from './services/search.js';
 import { webSearch, imageSearch } from './services/webSearch.js';
@@ -248,6 +250,12 @@ app.use('/api/agent', agentRouter);
 app.use('/api/classroom', classroomRouter);
 
 app.use('/api/minimax', minimaxRouter);
+
+// Mistakes (错题本) — first-class CRUD
+app.use('/api/mistakes', mistakesRouter);
+
+// Knowledge boundary — aggregate kbNodes across sessions
+app.use('/api/knowledge-boundary', knowledgeBoundaryRouter);
 
 /* ────────────────────────────
    Error handling (must be LAST)

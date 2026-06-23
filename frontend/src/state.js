@@ -18,10 +18,54 @@ var state={
     currentProjectId:null,
     /* P2.1 — UI state: which project is the Recents panel
        currently filtered to. `null` = "All projects". */
-    activeProjectFilter:null
+    activeProjectFilter:null,
+    /* Task 2.1 — explicit client-side teaching-stage state machine.
+       `teachingStage` tracks where we are in the
+       motivate → define → develop → illustrate → exercise → check
+       loop for the current sub-topic. `currentExampleIdx` is the
+       0-based index of the example we're on; `practiceAttempts`
+       counts how many times the user has attempted the current
+       practice problem. `teachingPlan` holds the structured plan
+       object produced by finishDiagnostic (see Task 3.1). */
+    teachingStage:"motivate",
+    currentExampleIdx:0,
+    practiceAttempts:0,
+    practicePhase:"foundation",
+    teachingPlan:null,
+    /* v3.0 design — long-term plan fields populated by the user from
+       the topic-setup screen. Defaults match §10.1 of the design doc
+       (30 minutes/day, no fixed deadline, no scheduled rest days). */
+    planTargetDate:null,
+    planDailyMinutes:30,
+    planWeeklyRestDays:[],
+    planStartedAt:null,
+    planLastWarnedAt:0,
+    /* v3.0 design — stuck-detection. The "stuck check" prompt appears
+       once the system has observed what looks like a conceptual break
+       (reasoning chain fracture, not just a short answer). The four
+       options are: hint, full explanation, add to mistake book,
+       skip. `stuckCheckOffered` tracks whether we've already shown
+       the "讲解一下 / 再想想" choice for the current node — once both
+       branches are exhausted we fall through to the four-option
+       dialog. */
+    stuckCheckOffered:false,
+    stuckCheckRejected:0,
+    fourOptionDialog:null
   },
   /* kb: knowledge graph + mistake book. */
-  kb:{kbNodes:[],currentNode:0,mistakes:[]},
+  kb:{kbNodes:[],currentNode:0,mistakes:[],
+    /* v3.0 design — knowledge boundary version history. Each
+       `boundariesSavedAt` mutation produces a snapshot in
+       `boundariesHistory` so the user can compare past and present
+       (the most direct growth signal per §6.6). Bounded to last 30
+       entries to avoid unbounded localStorage growth. */
+    boundariesHistory:[],
+    boundariesSavedAt:0,
+    /* v3.0 design — mistake book UI state. `mistakeFilter` mirrors
+       the sidebar filter dropdown (all/unresolved/byNode). */
+    mistakeFilter:"all"},
+  /* plan: long-term plan warnings (e.g. deadline pressure). */
+  plan:{warning:null,lastEvaluatedAt:0},
   /* search: web-research results cached from the most recent round 2. */
   search:{context:null,results:[],contextAt:0,contextCount:0,contextQuery:null,error:null},
   /* call: most recent API call metadata — used by the chatApiBadge. */
@@ -46,9 +90,20 @@ var STATE_FLAT_TO_NS={
   messages:"session.messages",
   currentProjectId:"session.currentProjectId",
   activeProjectFilter:"session.activeProjectFilter",
+  /* Task 2.1 — teaching-stage state machine fields. Mapped so
+     legacy `state.teachingStage` etc. continue to work alongside
+     the namespaced `state.session.teachingStage`. */
+  teachingStage:"session.teachingStage",
+  currentExampleIdx:"session.currentExampleIdx",
+  practiceAttempts:"session.practiceAttempts",
+  practicePhase:"session.practicePhase",
+  teachingPlan:"session.teachingPlan",
   /* kb */
   kbNodes:"kb.kbNodes",currentNode:"kb.currentNode",
   mistakes:"kb.mistakes",
+  boundariesHistory:"kb.boundariesHistory",
+  boundariesSavedAt:"kb.boundariesSavedAt",
+  mistakeFilter:"kb.mistakeFilter",
   /* search */
   searchContext:"search.context",searchResults:"search.results",
   searchContextAt:"search.contextAt",searchContextCount:"search.contextCount",
@@ -151,6 +206,134 @@ var STATE_FLAT_TO_NS={
    we put it on window so all code sees the same instance. */
 window.state = state;
 
+/* v3.0 design — wire the plan-setup toggle and inputs once the
+   DOM is ready. Called from a DOMContentLoaded handler so the
+   <button>s exist by the time we attach. */
+if(typeof document!=="undefined"){
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",initPlanSetupUI);
+  }else{
+    try{initPlanSetupUI()}catch(_){}
+  }
+}
+
+/* Task 3.1 — teachingPlan structure (stored in state.session.teachingPlan):
+   {
+     subtopics: [
+       {
+         name:            <string>,  // sub-topic display name (mirrors kbNode.name)
+         status:          <"blank"|"fuzzy"|"internalized">,
+         objective:       <string>,  // e.g. "Master <name>"
+         exampleCount:    <number>,  // how many worked examples to present (default 2)
+         practiceCount:   <number>,  // how many practice problems (default 1)
+         inspectionType:  <"concept"|"procedural"|"application">,
+         prerequisites:   <string[]> // names of sub-topics that should precede this one
+       }
+     ],
+     currentSubtopicIdx: <number>,   // index into subtopics[] currently being taught
+     createdAt:          <number>    // Date.now() when the plan was generated
+   }
+   Generated by finishDiagnostic in main.js; rendered by renderKnowledgeView. */
+
+/* v3.0 design — §10.1 plan-setup toggle + input wiring.
+   Called once on page load. The toggle expands/collapses the
+   optional fields; the inputs write into state.session.* via
+   setPlanInputs so the rest of the system sees one source of
+   truth. */
+function initPlanSetupUI(){
+  var toggle=document.getElementById("planSetupToggle");
+  var fields=document.getElementById("planSetupFields");
+  if(toggle&&fields){
+    toggle.onclick=function(){
+      var open=toggle.getAttribute("aria-expanded")==="true";
+      toggle.setAttribute("aria-expanded",open?"false":"true");
+      fields.hidden=open;
+    };
+  }
+  var dateInput=document.getElementById("planTargetDateInput");
+  if(dateInput){
+    dateInput.onchange=function(){
+      var v=dateInput.value?new Date(dateInput.value).toISOString():null;
+      try{state.planTargetDate=v}catch(_){}
+      try{state.session.planTargetDate=v}catch(_){}
+    };
+  }
+  var minInput=document.getElementById("planDailyMinutesInput");
+  if(minInput){
+    minInput.onchange=function(){
+      var v=Math.max(5,parseInt(minInput.value,10)||30);
+      try{state.planDailyMinutes=v}catch(_){}
+      try{state.session.planDailyMinutes=v}catch(_){}
+    };
+  }
+  var restWrap=document.getElementById("planRestDays");
+  if(restWrap){
+    Array.prototype.forEach.call(restWrap.querySelectorAll(".plan-restday"),function(btn){
+      btn.onclick=function(){
+        btn.classList.toggle("active");
+        var days=[];
+        Array.prototype.forEach.call(restWrap.querySelectorAll(".plan-restday.active"),function(b){
+          days.push(parseInt(b.getAttribute("data-day"),10));
+        });
+        try{state.planWeeklyRestDays=days}catch(_){}
+        try{state.session.planWeeklyRestDays=days}catch(_){}
+      };
+    });
+  }
+}
+window.initPlanSetupUI=initPlanSetupUI;
+
+/* Read the current plan-setup values into state. Called from
+   startSession so any pending input change is committed. */
+function readPlanSetupIntoState(){
+  var dateInput=document.getElementById("planTargetDateInput");
+  if(dateInput&&dateInput.value){
+    try{state.session.planTargetDate=new Date(dateInput.value).toISOString()}catch(_){}
+  }
+  var minInput=document.getElementById("planDailyMinutesInput");
+  if(minInput){
+    var v=Math.max(5,parseInt(minInput.value,10)||30);
+    try{state.session.planDailyMinutes=v}catch(_){}
+  }
+  var restWrap=document.getElementById("planRestDays");
+  if(restWrap){
+    var days=[];
+    Array.prototype.forEach.call(restWrap.querySelectorAll(".plan-restday.active"),function(b){
+      days.push(parseInt(b.getAttribute("data-day"),10));
+    });
+    try{state.session.planWeeklyRestDays=days}catch(_){}
+  }
+}
+window.readPlanSetupIntoState=readPlanSetupIntoState;
+
+/* Populate the plan-setup inputs from state — used on load
+ * (after a session restore) and on returning to the topic-setup
+ * screen. Idempotent: safe to call repeatedly. */
+function writeStateIntoPlanSetup(){
+  var dateInput=document.getElementById("planTargetDateInput");
+  if(dateInput){
+    var t=state.session.planTargetDate;
+    if(t){
+      try{dateInput.value=new Date(t).toISOString().slice(0,10)}catch(_){}
+    }else{
+      dateInput.value="";
+    }
+  }
+  var minInput=document.getElementById("planDailyMinutesInput");
+  if(minInput){
+    minInput.value=String(state.session.planDailyMinutes||30);
+  }
+  var restWrap=document.getElementById("planRestDays");
+  if(restWrap){
+    var days=Array.isArray(state.session.planWeeklyRestDays)?state.session.planWeeklyRestDays:[];
+    Array.prototype.forEach.call(restWrap.querySelectorAll(".plan-restday"),function(b){
+      var d=parseInt(b.getAttribute("data-day"),10);
+      b.classList.toggle("active",days.indexOf(d)!==-1);
+    });
+  }
+}
+window.writeStateIntoPlanSetup=writeStateIntoPlanSetup;
+
 /* P1.5 — reset all namespaces to their defaults. Callers that
    previously did `state = {…}` should use this instead so the
    Proxy is preserved. The proxy is bound to the *binding*, not
@@ -172,9 +355,29 @@ function resetState(){
   state.session.messages=[];
   state.session.currentProjectId=null;
   state.session.activeProjectFilter=null;
+  /* Task 2.1 — reset the teaching-stage state machine so a new
+     session starts at the motivate stage with no plan. */
+  state.session.teachingStage="motivate";
+  state.session.currentExampleIdx=0;
+  state.session.practiceAttempts=0;
+  state.session.practicePhase="foundation";
+  state.session.teachingPlan=null;
+  state.session.planTargetDate=null;
+  state.session.planDailyMinutes=30;
+  state.session.planWeeklyRestDays=[];
+  state.session.planStartedAt=null;
+  state.session.planLastWarnedAt=0;
+  state.session.stuckCheckOffered=false;
+  state.session.stuckCheckRejected=0;
+  state.session.fourOptionDialog=null;
   state.kb.kbNodes=[];
   state.kb.currentNode=0;
   state.kb.mistakes=[];
+  state.kb.boundariesHistory=[];
+  state.kb.boundariesSavedAt=0;
+  state.kb.mistakeFilter="all";
+  state.plan.warning=null;
+  state.plan.lastEvaluatedAt=0;
   state.search.context=null;
   state.search.results=[];
   state.search.contextAt=0;

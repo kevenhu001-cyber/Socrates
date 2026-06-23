@@ -401,3 +401,24 @@ export const usageEvents = pgTable('usage_events', {
   index('usage_events_user_id_idx').on(table.userId),
   index('usage_events_user_created_idx').on(table.userId, table.createdAt),
 ]);
+
+/* ──────────────────────────────────────────────
+   Mistakes (错题本) — first-class entity
+   ────────────────────────────────────────────── */
+export const mistakes = pgTable('mistakes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
+  nodeName: text('node_name'),
+  questionContent: text('question_content').notNull(),
+  userAnswer: text('user_answer'),
+  correctAnswer: text('correct_answer'),
+  source: text('source').notNull().default('quiz'),  // quiz | practice | manual
+  isResolved: boolean('is_resolved').notNull().default(false),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  collectedAt: timestamp('collected_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('mistakes_user_id_idx').on(table.userId),
+  index('mistakes_user_resolved_idx').on(table.userId, table.isResolved),
+]);
