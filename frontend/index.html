@@ -257,7 +257,7 @@
       <div class="sidebar-tab" id="tabMistakes" onclick="switchTab('mistakes')">Mistakes<span class="tab-badge" id="mistakesTabBadge"></span></div>
       <div class="sidebar-tab" id="tabAgent" onclick="switchTab('agent')">Agent</div>
     </div>
-    <div class="knowledge-panel" id="knowledgePanel">
+    <div class="knowledge-panel tutor-only" id="knowledgePanel">
       <div id="teachingPlanContent"></div>
       <div id="kbContent"><div class="kb-empty">Set a learning topic to build your knowledge map.</div></div>
     </div>
@@ -280,7 +280,7 @@
       <div class="recents-filter-chips" id="recentsFilterChips"></div>
       <div id="recentsList"></div>
     </div>
-    <div class="recents-panel hidden" id="mistakesPanel">
+    <div class="recents-panel hidden tutor-only" id="mistakesPanel">
       <div class="recents-header"><span class="recents-title">Mistake Book</span></div>
       <div id="mistakesList"></div>
     </div>
@@ -428,7 +428,7 @@
         </div>
       </div>
 
-      <div class="diagnostic-view hidden" id="diagnosticView"></div>
+      <div class="diagnostic-view hidden tutor-only" id="diagnosticView"></div>
 
       <div class="exam-view hidden" id="examView">
         <div class="exam-view-header">

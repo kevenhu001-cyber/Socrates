@@ -2534,16 +2534,16 @@ function renderDiagQuestion(){
     html+='<div class="diag-opt-text">'+formatMsg(o.text)+'</div>';
     html+='</button>';
   });
-  html+='</div></div>';
-
-  html+='<div class="diag-nav">';
+  html+='</div>';  /* close .diag-opts */
+  html+='<div class="diag-actions">';
   html+='<button onclick="prevDiagQuestion()"'+(state.diagIndex===0?' style="visibility:hidden"':'')+'>'+t("tutor.back")+'</button>';
   if(state.diagIndex<state.diagQuestions.length-1){
     html+='<button class="diag-continue'+(sel!==undefined?' enabled':'')+'" onclick="nextDiagQuestion()"'+(sel===undefined?' disabled':'')+'>'+t("tutor.next")+'</button>';
   }else{
     html+='<button class="diag-continue'+(sel!==undefined?' enabled':'')+'" onclick="finishDiagnostic()"'+(sel===undefined?' disabled':'')+'>'+t("tutor.begin")+'</button>';
   }
-  html+='</div>';
+  html+='</div>';  /* close .diag-actions */
+  html+='</div>';  /* close .diag-card */
 
   view.innerHTML=html;
   scrollContainer().scrollTop=0;
@@ -10518,6 +10518,12 @@ function syncAppModeUI(){
      the whole block to keep the topic-setup screen uncluttered. */
   var planSetup=document.getElementById("planSetup");
   if(planSetup)planSetup.classList.toggle("hidden",appMode!=="tutor");
+  /* Mirror the current mode onto <body data-app-mode> so the
+     CSS rule `body[data-app-mode="chat"] .tutor-only{display:none}`
+     can hide every Tutor-only element with one selector. The
+     plan-setup form (above) keeps its own .hidden class for the
+     brief moment before the dataset attribute lands. */
+  try{document.body.dataset.appMode=appMode}catch(_){}
   if(typeof syncExtensionsUI==="function")syncExtensionsUI();
 }
 function syncSidebarForMode(){
