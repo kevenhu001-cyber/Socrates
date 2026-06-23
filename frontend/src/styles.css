@@ -1874,41 +1874,42 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 /* Mode banner — sits at the top of the chat list. Subtle by design;
  * audit U-H1/U-H2 noted that the tutor mode was invisible. */
 .mode-banner{
-  display:flex;align-items:center;gap:10px;
-  padding:8px 14px;
-  background:hsl(var(--bg-200)/0.7);
-  border-bottom:0.5px solid hsl(var(--border-300)/0.18);
-  font-size:calc(12px * var(--app-font-scale, 1));
+  display:flex;align-items:center;gap:8px;
+  padding:4px 12px;
+  background:transparent;
+  border-bottom:0.5px solid hsl(var(--border-300)/0.12);
+  font-size:calc(11px * var(--app-font-scale, 1));
   color:hsl(var(--text-300));
   flex-wrap:wrap;
+  min-height:24px;
 }
 .mode-banner-dot{
-  display:inline-block;width:8px;height:8px;border-radius:50%;
+  display:inline-block;width:6px;height:6px;border-radius:50%;
   background:hsl(var(--accent-000));flex-shrink:0;
 }
 .mode-banner-dot-chat{background:hsl(200 60% 55%)}
-.mode-banner-label{font-weight:600;color:hsl(var(--text-100))}
-.mode-banner-desc{flex:1;color:hsl(var(--text-400));min-width:0}
+.mode-banner-label{font-weight:500;color:hsl(var(--text-200))}
 .mode-banner-switch{
-  background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);
-  color:hsl(var(--text-200));
-  padding:3px 10px;border-radius:6px;
+  background:transparent;border:0;color:hsl(var(--text-400));
+  padding:1px 6px;border-radius:4px;
   font-size:calc(11px * var(--app-font-scale, 1));
-  cursor:pointer;flex-shrink:0;
+  cursor:pointer;flex-shrink:0;margin-left:auto;
 }
-.mode-banner-switch:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.mode-banner-switch:hover{color:hsl(var(--accent-000))}
 
 /* Diagnostic timeout warning (audit U-H3). */
 .diag-banner-warn{
-  background:hsl(36 70% 50%/0.12);
-  border:0.5px solid hsl(36 70% 50%/0.3);
+  background:hsl(36 70% 50%/0.10);
   color:hsl(36 70% 30%);
-  padding:10px 14px;border-radius:8px;
-  font-size:calc(12px * var(--app-font-scale, 1));
-  margin:0 0 12px;
+  padding:4px 12px;
+  font-size:calc(11px * var(--app-font-scale, 1));
+  margin:0 0 8px;
+  border-radius:0;
+  border-top:0.5px solid hsl(36 70% 50%/0.25);
+  border-bottom:0.5px solid hsl(36 70% 50%/0.25);
 }
 [data-theme=socrates][data-mode=dark] .diag-banner-warn{
-  color:hsl(45 70% 80%);background:hsl(36 70% 30%/0.18);
+  color:hsl(45 70% 80%);background:hsl(36 70% 30%/0.15);
 }
 
 /* Mistake book filter bar. */
@@ -2059,31 +2060,26 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 /* §8.5 — practice progress chip (shown below the mode banner
  * during the exercise stage). Tiny, glanceable, no emoji. */
 .practice-progress-chip{
-  display:flex;align-items:center;gap:10px;
-  padding:4px 14px 6px;
-  background:hsl(var(--bg-200)/0.4);
-  border-bottom:0.5px solid hsl(var(--border-300)/0.12);
-  font-size:calc(11px * var(--app-font-scale, 1));
-  color:hsl(var(--text-400));
+  display:flex;align-items:center;gap:6px;
+  padding:2px 12px 3px;
+  background:transparent;
+  font-size:calc(10px * var(--app-font-scale, 1));
+  color:hsl(var(--text-500));
   flex-wrap:wrap;
+  min-height:18px;
 }
 .practice-progress-chip-phase{
-  background:hsl(var(--accent-000)/0.15);
+  background:hsl(var(--accent-000)/0.10);
   color:hsl(var(--accent-000));
-  padding:1px 7px;
-  border-radius:5px;
-  font-weight:600;
-  letter-spacing:.04em;
-}
-.practice-progress-chip-node{
-  color:hsl(var(--text-200));
+  padding:0 6px;
+  border-radius:3px;
   font-weight:500;
-  flex:1;min-width:0;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  letter-spacing:.02em;
 }
 .practice-progress-chip-attempts{
   color:hsl(var(--text-500));
   font-variant-numeric:tabular-nums;
+  font-size:calc(10px * var(--app-font-scale, 1));
 }
 
 /* Long-term-plan empty state. */
