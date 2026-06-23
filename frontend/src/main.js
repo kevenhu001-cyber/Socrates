@@ -10343,13 +10343,13 @@ document.addEventListener("keydown",function(e){
    the menu; clicking an item toggles that extension.
    ============================================================ */
 var EXTENSIONS=[
-  {key:"webSearch",   name:"Web search",   desc:"Ground the model in current, factual material.",
+  {key:"webSearch",   name:"Web search",
    on:webSearchOn, onChange:function(v){webSearchOn=v;try{localStorage.setItem("socrates-websearch",JSON.stringify(webSearchOn))}catch(e){} syncExtensionsUI();}},
-  {key:"tutorMode",   name:"Tutor mode",   desc:"Run a diagnostic and Socratic Q&A. Off for plain chat.",
+  {key:"tutorMode",   name:"Tutor mode",
    on:appMode==="tutor", onChange:function(v){appMode=v?"tutor":"chat";try{localStorage.setItem("socrates-appmode",appMode)}catch(e){} syncAppModeUI(); syncSidebarForMode(); syncExtensionsUI();}},
-  {key:"thinkingMode",name:"Show AI thinking",desc:"Render the model's step-by-step reasoning with Markdown & math. Toggle any time.",
+  {key:"thinkingMode",name:"Show AI thinking",
    on:thinkingOn, onChange:function(v){thinkingOn=v;try{localStorage.setItem("socrates-thinking",JSON.stringify(thinkingOn))}catch(e){} syncExtensionsUI();}},
-  {key:"exam",         name:"Generate exam",  desc:"Create a practice test with AI-generated questions (MC & fill-blank).",
+  {key:"exam",         name:"Generate exam",
    on:false, onChange:function(){openExamModal(); syncExtensionsUI();}},
 ];
 function renderExtensionsMenu(){
@@ -10361,7 +10361,6 @@ function renderExtensionsMenu(){
     html+='<span class="extensions-item-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>';
     html+='<span class="extensions-item-main">';
     html+='<span class="extensions-item-name">'+esc(ext.name)+'</span>';
-    if(ext.desc)html+='<span class="extensions-item-desc">'+esc(ext.desc)+'</span>';
     html+='</span>';
     html+='</button>';
   });
@@ -10514,6 +10513,11 @@ function syncAppModeUI(){
     if(sub)sub.textContent="Ask me anything. Plain conversation — no diagnostic, no lesson plan.";
     if(disc)disc.textContent="Chat mode is a plain conversation.";
   }
+  /* v3.0 — long-term plan setup is only meaningful in Tutor mode
+     (it drives the KB / plan-warning flow). In Chat mode we hide
+     the whole block to keep the topic-setup screen uncluttered. */
+  var planSetup=document.getElementById("planSetup");
+  if(planSetup)planSetup.classList.toggle("hidden",appMode!=="tutor");
   if(typeof syncExtensionsUI==="function")syncExtensionsUI();
 }
 function syncSidebarForMode(){
