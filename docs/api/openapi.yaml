@@ -1670,31 +1670,6 @@ paths:
                   longest: { type: integer }
                   last7Days: { type: array, items: { type: boolean } }
 
-  /api/mistakes/{mistakeId}/share:
-    parameters:
-      - in: path
-        name: mistakeId
-        required: true
-        schema: { type: string, format: uuid }
-    post:
-      tags: [classroom]
-      operationId: shareMistake
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                visibility: { type: string, enum: [public, unlisted, class_only], default: unlisted }
-                classId: { type: string, format: uuid, nullable: true }
-      responses:
-        '201':
-          description: Shared
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ShareResponse' }
-
   # ========================================================================
   # Existing endpoints (summary)
   # ========================================================================
@@ -1958,7 +1933,7 @@ components:
         id: { type: string, format: uuid }
         title: { type: string, nullable: true }
         topic: { type: string, nullable: true }
-        mode: { type: string, enum: [tutor, chat, agent] }
+        mode: { type: string, enum: [tutor, chat] }
         projectId: { type: string, format: uuid, nullable: true }
         tags:
           type: array
