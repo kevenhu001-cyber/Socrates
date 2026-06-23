@@ -537,7 +537,7 @@
     if (!cont) {
       cont = document.createElement('div');
       cont.id = 'practiceProgressChip';
-      cont.className = 'practice-progress-chip';
+      cont.className = 'practice-progress-chip tutor-only';
       var banner = document.getElementById('modeBanner');
       if (banner && banner.parentNode) {
         banner.parentNode.insertBefore(cont, banner.nextSibling);
@@ -573,7 +573,7 @@
     if (!cont) {
       cont = document.createElement('div');
       cont.id = 'modeBanner';
-      cont.className = 'mode-banner';
+      cont.className = 'mode-banner tutor-only';
       var msgList = document.getElementById('msgList');
       if (msgList && msgList.parentNode) {
         msgList.parentNode.insertBefore(cont, msgList);
@@ -630,7 +630,7 @@
       : ti('tutor.diagTimeout', 'Question generation timed out. Showing built-in placeholders. ') + (err ? '(' + err + ')' : '');
     var banner = document.createElement('div');
     banner.id = 'diagnosticBanner';
-    banner.className = 'diag-banner-warn';
+    banner.className = 'diag-banner-warn tutor-only';
     banner.textContent = note;
     view.insertBefore(banner, view.firstChild);
   }
@@ -654,7 +654,7 @@
     if (!cont) {
       cont = document.createElement('div');
       cont.id = 'mistakeFilterBar';
-      cont.className = 'mistake-filter-bar';
+      cont.className = 'mistake-filter-bar tutor-only';
       var panel = document.getElementById('mistakesPanel');
       if (panel) panel.insertBefore(cont, panel.firstChild);
     }

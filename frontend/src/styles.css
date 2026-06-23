@@ -360,7 +360,7 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
    (140px) so the input bar has its own breathing room without
    affecting other views. The .main-inner itself doesn't need
    extra bottom padding. */
-.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:10vh;flex:1}
+.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:10vh;flex:1;min-height:0;overflow-y:auto}
 .topic-title{font-family:var(--font-display);font-size:clamp(1.5rem,1rem + 1.5vw,2rem);font-weight:500;color:hsl(var(--text-200));text-align:center;line-height:1.4}
 .topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:480px}
 .topic-input-wrap{width:100%;max-width:520px;background:hsl(var(--bg-000));border:1px solid transparent;border-radius:16px;box-shadow:0 .25rem 1.25rem hsl(var(--always-black)/3.5%),0 0 0 0.5px hsl(var(--border-300)/0.15);transition:box-shadow .2s,border-color .2s}
@@ -439,7 +439,12 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .provider-fields .settings-input{padding:7px 10px;font-size:calc(12px * var(--app-font-scale, 1))}
 .provider-del{background:transparent;border:none;cursor:pointer;color:hsl(var(--text-400));font-size:calc(18px * var(--app-font-scale, 1));line-height:1;padding:2px 6px;flex-shrink:0;border-radius:6px;transition:all .1s}
 .provider-del:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
-.diagnostic-view{width:100%;display:flex;flex-direction:column;gap:24px}
+.diagnostic-view{width:100%;display:flex;flex-direction:column;gap:24px;flex:1;min-height:0;overflow-y:auto;padding-right:4px;max-height:100%}
+/* When the diagnostic card is very tall (long question + long
+   options), pin the action row to the bottom of the visible area
+   so the Next / Submit button is always reachable. */
+.diag-card{display:flex;flex-direction:column}
+.diag-actions{margin-top:auto;padding-top:18px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
 .diag-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px}
 .diag-loading-text{color:hsl(var(--text-400));font-size:calc(14px * var(--app-font-scale, 1));text-align:center}
 .diag-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.12);border-radius:16px;padding:24px;transition:opacity .3s,transform .3s}
@@ -1967,6 +1972,13 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    `display:grid` above. Restore the default so the toggle can
    actually collapse the field block. */
 .plan-setup-fields[hidden]{display:none}
+
+/* Chat mode — strip every Tutor-only UI element in one place.
+   `appMode` is mirrored onto <body data-app-mode> by syncAppModeUI
+   in main.js. .tutor-only is added in index.html (knowledgePanel,
+   mistakesPanel, diagnosticView) and tutorSocratic.js (mode banner,
+   practice chip, diagnostic banner, mistake filter bar). */
+body[data-app-mode="chat"] .tutor-only{display:none !important}
 .plan-setup-field{
   display:flex;flex-direction:column;gap:4px;
 }
