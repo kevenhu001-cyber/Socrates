@@ -1642,3 +1642,103 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-run-footer.stopped{background:hsl(45 50% 92%);color:hsl(36 60% 32%)}
 [data-theme=socrates][data-mode=dark] .agent-run-footer.error{background:hsl(0 30% 18%);color:hsl(0 55% 70%)}
 [data-theme=socrates][data-mode=dark] .agent-run-footer.stopped{background:hsl(45 30% 18%);color:hsl(45 70% 70%)}
+
+/* ──────────────────────────────────────────────────────────────────────
+   Phase 3 — Search Progress Log
+   ──────────────────────────────────────────────────────────────────────
+   A collapsible activity feed that surfaces the steps of a web search
+   inside the AI bubble that will answer the user. Default state:
+   collapsed (just the header line, click to expand). When the search
+   is in flight, `.running` adds a pulsing dot. On completion the
+   header collapses to a one-line summary. */
+.search-progress{
+  font-size:calc(11.5px * var(--app-font-scale, 1));
+  color:hsl(var(--text-400));
+  line-height:1.5;
+  margin:6px 0 10px;
+  padding:8px 10px;
+  border-radius:8px;
+  background:hsl(var(--bg-100)/0.5);
+  border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.5));
+  list-style:none;
+  cursor:pointer;
+  user-select:none;
+}
+.search-progress.running{background:hsl(45 50% 95%);border-color:hsl(45 50% 75%/0.6)}
+.search-progress.ok{background:hsl(200 50% 95%);border-color:hsl(200 50% 75%/0.5)}
+.search-progress.warn{background:hsl(45 50% 92%);border-color:hsl(45 50% 70%/0.5)}
+.search-progress.err{background:hsl(0 50% 95%);border-color:hsl(0 50% 70%/0.5)}
+[data-theme=socrates][data-mode=dark] .search-progress.running{background:hsl(45 30% 18%);border-color:hsl(45 40% 38%/0.6)}
+[data-theme=socrates][data-mode=dark] .search-progress.ok{background:hsl(200 30% 16%);border-color:hsl(200 40% 36%/0.5)}
+[data-theme=socrates][data-mode=dark] .search-progress.warn{background:hsl(45 30% 16%);border-color:hsl(45 40% 36%/0.5)}
+[data-theme=socrates][data-mode=dark] .search-progress.err{background:hsl(0 30% 16%);border-color:hsl(0 40% 38%/0.5)}
+
+.search-progress-head{
+  display:flex;align-items:center;gap:6px;
+  font-weight:500;letter-spacing:.01em;
+  color:hsl(var(--text-300));
+}
+.search-progress-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.search-progress-chev{
+  margin-left:auto;
+  font-size:calc(10px * var(--app-font-scale, 1));
+  color:hsl(var(--text-400));
+  transition:transform .15s;
+}
+.search-progress.open .search-progress-chev{transform:rotate(180deg)}
+
+/* The pulsing dot in the header — reuses the .thinking-pulse keyframe
+ * defined earlier in this stylesheet. */
+.search-progress-pulse{
+  display:inline-block;
+  width:8px;height:8px;border-radius:50%;
+  background:hsl(var(--accent-000));
+  animation:thinking-pulse 1.2s ease-in-out infinite;
+  flex-shrink:0;
+}
+.search-progress.ok .search-progress-pulse,
+.search-progress.warn .search-progress-pulse,
+.search-progress.err .search-progress-pulse{display:none}
+
+.search-progress-steps{
+  margin:6px 0 0;padding:0;list-style:none;
+  display:none;
+  border-top:0.5px dashed hsl(var(--border-300)/0.5);
+  padding-top:6px;
+  /* The list itself shouldn't be clickable; clicks bubble to root which
+   * toggles .open. We stop propagation on .search-progress-step to
+   * avoid that. */
+}
+.search-progress.open .search-progress-steps{display:block}
+
+.search-progress-step{
+  display:flex;align-items:baseline;gap:6px;
+  padding:2px 0;
+  font-variant-numeric:tabular-nums;
+  color:hsl(var(--text-300));
+}
+.search-progress-step .icon{flex-shrink:0;width:14px;text-align:center;font-weight:600}
+.search-progress-step .text{flex:1;min-width:0;word-break:break-word}
+.search-progress-step.running .icon{color:hsl(var(--accent-000))}
+.search-progress-step.ok .icon{color:hsl(140 50% 45%)}
+.search-progress-step.warn .icon{color:hsl(36 70% 45%)}
+.search-progress-step.err .icon{color:hsl(0 60% 50%)}
+[data-theme=socrates][data-mode=dark] .search-progress-step.ok .icon{color:hsl(140 50% 65%)}
+[data-theme=socrates][data-mode=dark] .search-progress-step.warn .icon{color:hsl(45 70% 70%)}
+[data-theme=socrates][data-mode=dark] .search-progress-step.err .icon{color:hsl(0 55% 70%)}
+
+/* Last-resort floating panel when neither bubble nor diagnostic card
+ * is available. Pinned to the bottom of the chat. */
+.search-progress-floating{
+  position:sticky;
+  bottom:8px;
+  margin:8px 12px;
+  z-index:5;
+  box-shadow:0 4px 16px hsl(var(--shadow-color, 0 0% 0%) / 0.08);
+}
+
+/* In the diagnostic loading card, render the log un-collapsed so the
+ * user can see the full history before being taken to the questions. */
+.diag-loading .search-progress{cursor:default}
+.diag-loading .search-progress-steps{display:block}
+.diag-loading .search-progress-chev{display:none}

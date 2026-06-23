@@ -2395,9 +2395,31 @@ async function startSession(){
   document.getElementById("chatDomain").textContent=state.domain;
   document.getElementById("diagnosticView").innerHTML='<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">'+(webSearchOn?"Searching the web and generating questions...":"Generating questions...")+'</p></div>';
 
+  /* Phase 3 — create the search-progress log up front so the user sees
+   * the activity feed next to the spinner while the search runs.
+   * Replay events into it as they arrive. */
+  var diagSearchLog=null;
+  if(webSearchOn){
+    try{
+      var diagLoading=document.querySelector("#diagnosticView .diag-loading");
+      diagSearchLog=startSearchProgress(topic,{mount:diagLoading,collapsed:false});
+    }catch(_){diagSearchLog=null}
+  }
+
   /* Fetch web context if enabled (graceful degrade if backend down) */
-  var sc=await fetchWebContext(topic);
+  var sc=await fetchWebContext(topic,{onStep:function(ev){if(diagSearchLog)diagSearchLog.onStep(ev)}});
   state.searchContext=sc.context||"";
+  if(diagSearchLog){
+    try{
+      var finalEngines=sc&&sc.sources?sc.sources.reduce(function(acc,s){var k=s.source||"web";acc[k]=(acc[k]||0)+1;return acc;},{}):{};
+      var fetchedN=sc&&sc.sources?sc.sources.filter(function(x){return!!x.fullContent}).length:0;
+      if(sc&&sc.ok&&sc.results){
+        diagSearchLog.finalize({state:"ok",finalCount:sc.results,fetchedCount:fetchedN,engines:finalEngines});
+      }else{
+        diagSearchLog.finalize({state:"err",message:(sc&&sc.reason)||"no results"});
+      }
+    }catch(_){}
+  }
 
   /* Try AI-generated diagnostic questions.
      Race against a 60-second timeout. The diagnostic prompt asks the model
@@ -2704,7 +2726,11 @@ async function askChatTurn(userText){
   var searchTimer=setTimeout(function(){
     try{searchCtl.abort("search-ceiling")}catch(_){}
   },5000);
-  var searchPromise=fetchWebContext(toolCall.query,searchCtl.signal);
+  /* Phase 3 — capture every step event from fetchWebContext so we can
+   * replay it into the bubble's search-progress log when the bubble
+   * is created (a moment after the search resolves). */
+  var capturedEvents=[];
+  var searchPromise=fetchWebContext(toolCall.query,{signal:searchCtl.signal,onStep:function(ev){capturedEvents.push(ev)}});
   var searchRes=null;
   try{
     searchRes=await Promise.race([
@@ -2721,10 +2747,25 @@ async function askChatTurn(userText){
   /* Whatever happens, cancel the in-flight fetch if it's still going
      so we don't leak sockets. */
   try{searchCtl.abort("abandoned")}catch(_){}
+  /* Helper: build a search-progress log and replay the captured events
+   * into it. Used by both the success and the fallback paths. */
+  function _replaySearchProgress(bubbleCtl,finalSummary){
+    try{
+      var progress=startSearchProgress(toolCall.query);
+      if(bubbleCtl&&typeof bubbleCtl.attachSearchProgress==="function"){
+        bubbleCtl.attachSearchProgress(progress);
+      }
+      for(var i=0;i<capturedEvents.length;i++){
+        progress.onStep(capturedEvents[i]);
+      }
+      progress.finalize(finalSummary||{state:searchRes&&searchRes.ok?"ok":"warn",finalCount:(searchRes&&searchRes.results)||0,fetchedCount:0});
+    }catch(e){console.warn("[search-progress] replay failed:",e&&e.message)}
+  }
   if(!searchRes||!searchRes.ok||!searchRes.sources||!searchRes.sources.length){
     /* Search failed or returned nothing. Tell the model and let it
        answer (or honestly say it can't). */
     var ctl3=addStreamingMessage({onRetry:function(){askChatTurn(userText)}});
+    _replaySearchProgress(ctl3,{state:"err",message:searchRes&&searchRes.reason||"no results"});
     try{setSearchPill("err",0,"Search failed")}catch(_){}
     var fallbackMsgs=msgs.concat([
       {role:"assistant",content:r1.text},
@@ -2743,6 +2784,9 @@ async function askChatTurn(userText){
      back as a tool message (so it knows the call "succeeded") and the
      results as a follow-up user/system message. */
   var ctl4=addStreamingMessage({onRetry:function(){askChatTurn(userText)}});
+  /* Phase 3 — replay the captured search events into the round-2
+   * bubble's search-progress log. */
+  _replaySearchProgress(ctl4,{state:"ok",finalCount:searchRes.sources.length,fetchedCount:searchRes.sources.filter(function(x){return!!x.fullContent}).length,engines:searchRes.sources.reduce(function(acc,s){var k=s.source||"web";acc[k]=(acc[k]||0)+1;return acc;},{})});
   var round2Msgs=[
     {role:"system",content:getSystemContext()+"\n\n"+CHAT_SYSTEM_PROMPT+"\n\n"+sourcesBlock+beagleSuffix()+thinkingSuffix()+memoriesSuffix()}
   ].concat(history).concat([
@@ -3978,6 +4022,275 @@ function appendThinking(text){
   };
 }
 
+/* ──────────────────────────────────────────────────────────────────────
+   Phase 3 — Search Progress Log
+   ──────────────────────────────────────────────────────────────────────
+   A streaming, collapsible activity log that surfaces each step of
+   `fetchWebContext` (and any future re-search round) as it happens.
+   Appears in the AI bubble that will answer the user, or inside the
+   diagnostic loading card. Modeled on the `appendThinking` controller
+   pattern: returns { appendStep, onStep, finalize, remove } so the
+   caller can drive it from the existing fetchWebContext onStep
+   callback with no extra plumbing. */
+
+var SEARCH_PROGRESS_LABELS = {
+  en: {
+    started:    'Searching the web for "{topic}"',
+    expanding:  'Tried {n} query variants',
+    querying:   '🔍 {query}',
+    got_results:'  · {n} results',
+    retry:      '↻ First round was thin. Retrying with the original query…',
+    fetching:   'Reading {n} pages…',
+    fetched:    '✓ Read {ok}/{total} pages',
+    scored:     '  · top match {topRel}% relevance',
+    filtered:   '  · kept {kept}, dropped {dropped}',
+    good:       '✓ Quality OK ({score}/5)',
+    retry_low:  '↻ First round was thin. AI rewriting the query…',
+    retry_rewrote:'↻ New query: {q}',
+    retry_still_bad:'↻ Still thin. Proceeding with what we have.',
+    done:       '🔍 {n} sources · {engines} · {fetched} read',
+    error:      'Search failed: {msg}',
+    warn:       '⚠ {msg}',
+    cancelled:  'Search cancelled.',
+    ceiling:    'Search exceeded {sec}s — proceeding without web context.',
+  },
+  zh: {
+    started:    '正在搜索：“{topic}”',
+    expanding:  '尝试了 {n} 个查询变体',
+    querying:   '🔍 {query}',
+    got_results:'  · {n} 条结果',
+    retry:      '↻ 第一轮结果偏少，正在用原查询重试…',
+    fetching:   '正在阅读 {n} 个页面…',
+    fetched:    '✓ 已读 {ok}/{total} 个页面',
+    scored:     '  · 最佳匹配相关度 {topRel}%',
+    filtered:   '  · 保留 {kept}，剔除 {dropped}',
+    good:       '✓ 质量良好（{score}/5）',
+    retry_low:  '↻ 第一轮结果偏少，AI 正在改写查询…',
+    retry_rewrote:'↻ 新查询：{q}',
+    retry_still_bad:'↻ 仍不理想，继续。',
+    done:       '🔍 {n} 条来源 · {engines} · 已读 {fetched}',
+    error:      '搜索失败：{msg}',
+    warn:       '⚠ {msg}',
+    cancelled:  '搜索已取消。',
+    ceiling:    '搜索超过 {sec} 秒，将在没有网络上下文的情况下继续。',
+  },
+};
+
+/* Tiny tr(key, vars) for the search-progress labels. Picks language
+   from state.locale; falls back to en for any missing key. */
+function trSearchLabel(key, vars) {
+  var lang = (state && state.locale === 'zh') ? 'zh' : 'en';
+  var labels = SEARCH_PROGRESS_LABELS[lang] || SEARCH_PROGRESS_LABELS.en;
+  var tpl = labels[key] || (SEARCH_PROGRESS_LABELS.en[key] || key);
+  if (!vars) return tpl;
+  return tpl.replace(/\{(\w+)\}/g, function (m, name) {
+    return (vars[name] != null) ? String(vars[name]) : m;
+  });
+}
+
+/* Build a short, comma-separated engine breakdown like
+ * "arXiv ×3, Wikipedia ×1, Bing ×2" from {engine: count} map. */
+function _formatEngineBreakdown(engines) {
+  if (!engines || typeof engines !== 'object') return '';
+  var keys = Object.keys(engines);
+  if (!keys.length) return '';
+  /* Sort: by count desc, then alphabetically. */
+  keys.sort(function (a, b) { return (engines[b] - engines[a]) || (a < b ? -1 : 1); });
+  return keys.map(function (k) {
+    /* Map raw source tags to friendlier labels. */
+    var labelMap = { bing: 'Bing', google: 'Google', baidu: 'Baidu',
+                     wikipedia: 'Wikipedia', arxiv: 'arXiv', ddg: 'DDG',
+                     web: 'Web' };
+    var label = labelMap[k] || k;
+    return label + ' ×' + engines[k];
+  }).join(', ');
+}
+
+/* startSearchProgress(topic, opts) — create a streaming activity log
+ * inside `opts.mount` (or fall back to the most recent AI bubble body,
+ * or the diagnostic loading card). Returns a controller:
+ *   ctl.onStep(event)   — feed it a fetchWebContext event
+ *   ctl.appendStep(ev)  — push a synthetic step (used by webSearchWithRetry
+ *                         for retry / judge messages)
+ *   ctl.finalize(summary) — collapse to the final summary line
+ *   ctl.remove()        — detach entirely (used on cancel / error)
+ *
+ * Steps are coalesced via rAF so a burst of events from fetchWebContext
+ * doesn't fire 20 innerHTML assignments. */
+function startSearchProgress(topic, opts) {
+  opts = opts || {};
+  /* Decide where to mount. Caller can pass opts.mount (a real Element).
+   * Otherwise, fall back to the most recent assistant bubble body. If
+   * neither exists (e.g. diagnostic flow), look for the diagnostic
+   * loading card. If even that is missing, create a floating panel
+   * pinned to the bottom of the chat. */
+  var mount = opts.mount;
+  if (!mount) {
+    var lastAssistant = document.querySelector('.msg.assistant:last-child .msg-body');
+    if (lastAssistant) mount = lastAssistant;
+  }
+  if (!mount) {
+    var diag = document.querySelector('#diagnosticView .diag-loading-text, #diagnosticView .diag-loading');
+    if (diag) mount = diag;
+  }
+  /* Create the root element. We always create a fresh `<div>` and
+   * prepend it to mount — that way the search log appears at the top
+   * of the bubble body, just above the streaming answer text. */
+  var root = document.createElement('div');
+  root.className = 'search-progress running';
+  if (opts.collapsed === false) root.classList.add('open');
+
+  var head = document.createElement('div');
+  head.className = 'search-progress-head';
+  head.innerHTML =
+    '<span class="search-progress-pulse"></span>' +
+    '<span class="search-progress-title">' + esc(trSearchLabel('started', { topic: topic || '' })) + '</span>' +
+    '<span class="search-progress-chev">▾</span>';
+  root.appendChild(head);
+
+  var stepsList = document.createElement('ul');
+  stepsList.className = 'search-progress-steps';
+  root.appendChild(stepsList);
+
+  if (mount) {
+    /* Insert at the very top of mount so the log precedes any stream. */
+    if (mount.firstChild) mount.insertBefore(root, mount.firstChild);
+    else mount.appendChild(root);
+  } else {
+    /* Last-resort: floating panel pinned to chat bottom. */
+    root.classList.add('search-progress-floating');
+    var msgList = document.getElementById('msgList');
+    if (msgList && msgList.parentNode) {
+      msgList.parentNode.insertBefore(root, msgList.nextSibling);
+    } else {
+      document.body.appendChild(root);
+    }
+  }
+
+  /* Click-to-expand: clicking the header toggles `.open` (CSS controls
+   * visibility of .search-progress-steps). */
+  head.addEventListener('click', function () { root.classList.toggle('open'); });
+
+  /* Append a step. kind: 'running' | 'ok' | 'warn' | 'err'. */
+  function makeStepEl(text, kind) {
+    var li = document.createElement('li');
+    li.className = 'search-progress-step ' + (kind || 'running');
+    var icon = document.createElement('span');
+    icon.className = 'icon';
+    icon.textContent = kind === 'ok' ? '✓' : kind === 'warn' ? '⚠' : kind === 'err' ? '✕' : '·';
+    var t = document.createElement('span');
+    t.className = 'text';
+    t.textContent = text;
+    li.appendChild(icon);
+    li.appendChild(t);
+    stepsList.appendChild(li);
+    return li;
+  }
+
+  var pendingSteps = [];
+  var rafScheduled = false;
+  function scheduleFlush() {
+    if (rafScheduled) return;
+    rafScheduled = true;
+    requestAnimationFrame(function () {
+      rafScheduled = false;
+      var pending = pendingSteps;
+      pendingSteps = [];
+      for (var i = 0; i < pending.length; i++) {
+        var p = pending[i];
+        var li = makeStepEl(p.text, p.kind);
+        if (p.autoscroll) scrollMainToBottom();
+      }
+    });
+  }
+
+  /* Translate a fetchWebContext step event into a user-visible line. */
+  function renderEvent(ev) {
+    var d = ev.data || {};
+    switch (ev.kind) {
+      case 'started':
+        return null; /* Already shown in the header — no extra line. */
+      case 'expanding':
+        return { text: trSearchLabel('expanding', { n: d.count || 0 }), kind: 'running' };
+      case 'querying':
+        return { text: trSearchLabel('querying', { query: d.query || '' }), kind: 'running' };
+      case 'got_results':
+        return { text: trSearchLabel('got_results', { n: d.count || 0 }), kind: d.count > 0 ? 'ok' : 'warn' };
+      case 'retry':
+        return { text: trSearchLabel('retry'), kind: 'warn' };
+      case 'fetching':
+        return { text: trSearchLabel('fetching', { n: d.count || 0 }), kind: 'running' };
+      case 'fetched':
+        if (d.error) return { text: trSearchLabel('warn', { msg: d.error }), kind: 'warn' };
+        return { text: trSearchLabel('fetched', { ok: d.okCount || 0, total: d.total || 0 }), kind: d.okCount > 0 ? 'ok' : 'warn' };
+      case 'scored':
+        return { text: trSearchLabel('scored', { topRel: d.topRel || 0 }), kind: 'running' };
+      case 'filtered':
+        return { text: trSearchLabel('filtered', { kept: d.keptCount || 0, dropped: d.droppedCount || 0 }), kind: 'running' };
+      case 'done':
+        return null; /* Final summary is rendered into the header by finalize(). */
+      case 'error':
+        return { text: trSearchLabel('error', { msg: d.message || 'failed' }), kind: 'err' };
+      default:
+        return null;
+    }
+  }
+
+  function appendSynthetic(text, kind) {
+    pendingSteps.push({ text: text, kind: kind || 'running', autoscroll: true });
+    scheduleFlush();
+  }
+
+  function onStep(ev) {
+    var step = renderEvent(ev);
+    if (step) appendSynthetic(step.text, step.kind);
+  }
+
+  function finalize(summary) {
+    summary = summary || {};
+    var state = summary.state || 'ok';
+    root.classList.remove('running');
+    root.classList.add(state);
+    var titleEl = head.querySelector('.search-progress-title');
+    var chev = head.querySelector('.search-progress-chev');
+    /* In the diagnostic flow, leave the steps list expanded so the user
+     * can see the full history before they're taken to the next step. */
+    if (opts.collapsed === false) {
+      /* Keep .open. */
+    } else {
+      /* Default: collapse the steps after finalize. */
+      root.classList.remove('open');
+    }
+    if (chev) chev.style.display = '';
+    if (state === 'err') {
+      if (titleEl) titleEl.textContent = trSearchLabel('error', { msg: summary.message || 'failed' });
+    } else if (state === 'warn') {
+      if (titleEl) titleEl.textContent = trSearchLabel('warn', { msg: summary.message || '' });
+    } else {
+      var engineStr = _formatEngineBreakdown(summary.engines);
+      if (titleEl) {
+        titleEl.textContent = trSearchLabel('done', {
+          n: summary.finalCount || 0,
+          engines: engineStr || '—',
+          fetched: summary.fetchedCount || 0,
+        });
+      }
+    }
+  }
+
+  function remove() {
+    if (root && root.parentNode) root.parentNode.removeChild(root);
+  }
+
+  return {
+    onStep: onStep,
+    appendStep: appendSynthetic,
+    finalize: finalize,
+    remove: remove,
+  };
+}
+
+
 /* Stream agent text into a single assistant bubble. Returns the
    controller { append(delta), finalize() }. Same rAF-coalesced
    pattern as addStreamingMessage — so we get the full chat
@@ -4910,6 +5223,14 @@ function teardownThinkStructure(){
   /* First delta renders immediately so the user sees content right away */
   var firstDelta=true;
 
+  /* Phase 3 — search-progress log attached to this bubble. The chat
+   * path (line 2707) creates a startSearchProgress() instance up front
+   * (so the log can prepend to the bubble's body even before the first
+   * delta) and then drives it via the prependSearchStep / finalize
+   * methods below. We keep a single closure ref so the methods can
+   * detach, finalize, and feed it without re-querying the DOM. */
+  var _searchProgress = null;
+
   var ret={
     append:function(delta){
       if(finished)return;
@@ -5177,7 +5498,34 @@ function teardownThinkStructure(){
          _chatStreaming=false;
          if(!_agentModeActive){try{setChatStopState(false)}catch(_){}}
        }
-     }
+     },
+    /* Phase 3 — attach a search-progress controller to this bubble.
+     * `progress` is the object returned by startSearchProgress(). The
+     * log was already prepended to `body`; we just stash the ref so
+     * prependSearchStep / finalizeSearchProgress can drive it. */
+    attachSearchProgress:function(progress){
+      _searchProgress=progress;
+    },
+    /* Phase 3 — feed one fetchWebContext step event to the search
+     * log attached to this bubble. No-op if none attached. */
+    prependSearchStep:function(event){
+      try{if(_searchProgress)_searchProgress.onStep(event)}catch(_){}
+    },
+    /* Phase 3 — feed a synthetic step (used by webSearchWithRetry for
+     * judge + retry messages). */
+    prependSearchStepText:function(text,kind){
+      try{if(_searchProgress)_searchProgress.appendStep(text,kind||'running')}catch(_){}
+    },
+    /* Phase 3 — finalize the search log with a summary (or 'err' /
+     * 'warn'). Safe to call multiple times — only the first sticks. */
+    finalizeSearchProgress:function(summary){
+      try{if(_searchProgress){_searchProgress.finalize(summary||{});_searchProgress=null}}catch(_){}
+    },
+    /* Phase 3 — detach the search log entirely (used on cancel / when
+     * the user sends a new message mid-search). */
+    removeSearchProgress:function(){
+      try{if(_searchProgress){_searchProgress.remove();_searchProgress=null}}catch(_){}
+    }
   };
   /* Publish this controller on window so a subsequent turn in the same
      chat can call _activeChatCtl.abort() to evict the "正在思考…"
