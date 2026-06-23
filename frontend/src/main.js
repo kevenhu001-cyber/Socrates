@@ -2715,28 +2715,45 @@ async function askChatTurn(userText){
      user stare at "搜索中…" for ages. */
   try{setSearchPill("loading",0,"Model requested: \""+toolCall.query+"\"")}catch(_){}
   console.log("[chat] model invoked web_search:",toolCall.query);
-  /* P2.1 — race the search against a REAL 5 s ceiling via
-     AbortController + Promise.race. The previous implementation only
-     `console.warn`-ed after 5 s but still awaited the full
-     `searchPromise` — a slow DNS / hung provider would block the
-     entire chat turn until STREAM_TIMEOUT_MS. We now truly abandon
-     the search after 5 s; the in-flight fetch is aborted so its
-     socket is freed. */
+  /* P2.1 — race the search against a REAL ceiling via AbortController
+     + Promise.race. The previous implementation only `console.warn`-ed
+     after 5 s but still awaited the full `searchPromise` — a slow
+     DNS / hung provider would block the entire chat turn until
+     STREAM_TIMEOUT_MS. We now truly abandon the search after the
+     ceiling; the in-flight fetch is aborted so its socket is freed. */
   var searchCtl=new AbortController();
+  /* Phase 3 — ceiling relaxed from 5 s → 12 s to accommodate the
+   * round-1 + judge + (optional) round-2 loop. The first answer
+   * token still arrives in <1 s because the main answer stream
+   * runs in parallel (not awaiting the search). */
+  var SEARCH_CEILING_MS=12000;
   var searchTimer=setTimeout(function(){
     try{searchCtl.abort("search-ceiling")}catch(_){}
-  },5000);
-  /* Phase 3 — capture every step event from fetchWebContext so we can
-   * replay it into the bubble's search-progress log when the bubble
-   * is created (a moment after the search resolves). */
-  var capturedEvents=[];
-  var searchPromise=fetchWebContext(toolCall.query,{signal:searchCtl.signal,onStep:function(ev){capturedEvents.push(ev)}});
+  },SEARCH_CEILING_MS);
+  /* Phase 3 — drive the bubble's search-progress log LIVE (not
+   * capture-and-replay) by feeding onStep events directly to a
+   * controller attached to the round-2 bubble. The bubble is created
+   * up front so the user sees the activity feed as the search runs. */
+  var ctl4=addStreamingMessage({onRetry:function(){askChatTurn(userText)}});
+  var searchProgress=null;
+  try{
+    /* No explicit mount — startSearchProgress falls back to the last
+     * AI bubble body, which is ctl4 (we just created it above). */
+    searchProgress=startSearchProgress(toolCall.query);
+    if(ctl4&&searchProgress)ctl4.attachSearchProgress(searchProgress);
+  }catch(e){console.warn("[search-progress] init failed:",e&&e.message);searchProgress=null}
+  var searchPromise=webSearchWithRetry(toolCall.query,{
+    signal:searchCtl.signal,
+    onStep:function(ev){
+      try{if(searchProgress)searchProgress.onStep(ev)}catch(_){}
+    }
+  });
   var searchRes=null;
   try{
     searchRes=await Promise.race([
       searchPromise,
       new Promise(function(resolve){searchCtl.signal.addEventListener("abort",function(){
-        console.warn("[chat] web search exceeded 5s ceiling, falling back to no-context answer");
+        console.warn("[chat] web search exceeded "+SEARCH_CEILING_MS+"ms ceiling, falling back to no-context answer");
         resolve(null);
       })})
     ]);
@@ -2747,46 +2764,46 @@ async function askChatTurn(userText){
   /* Whatever happens, cancel the in-flight fetch if it's still going
      so we don't leak sockets. */
   try{searchCtl.abort("abandoned")}catch(_){}
-  /* Helper: build a search-progress log and replay the captured events
-   * into it. Used by both the success and the fallback paths. */
-  function _replaySearchProgress(bubbleCtl,finalSummary){
-    try{
-      var progress=startSearchProgress(toolCall.query);
-      if(bubbleCtl&&typeof bubbleCtl.attachSearchProgress==="function"){
-        bubbleCtl.attachSearchProgress(progress);
-      }
-      for(var i=0;i<capturedEvents.length;i++){
-        progress.onStep(capturedEvents[i]);
-      }
-      progress.finalize(finalSummary||{state:searchRes&&searchRes.ok?"ok":"warn",finalCount:(searchRes&&searchRes.results)||0,fetchedCount:0});
-    }catch(e){console.warn("[search-progress] replay failed:",e&&e.message)}
-  }
   if(!searchRes||!searchRes.ok||!searchRes.sources||!searchRes.sources.length){
-    /* Search failed or returned nothing. Tell the model and let it
-       answer (or honestly say it can't). */
-    var ctl3=addStreamingMessage({onRetry:function(){askChatTurn(userText)}});
-    _replaySearchProgress(ctl3,{state:"err",message:searchRes&&searchRes.reason||"no results"});
+    /* Search failed or returned nothing. Finalize the log to err
+       state and tell the model to answer from its own knowledge. */
+    try{if(searchProgress){
+      searchProgress.finalize({state:"err",message:searchRes&&searchRes.reason||"no results"});
+      searchProgress=null;
+    }}catch(_){}
     try{setSearchPill("err",0,"Search failed")}catch(_){}
     var fallbackMsgs=msgs.concat([
       {role:"assistant",content:r1.text},
       {role:"user",content:"[System] The web_search tool returned no results (error: "+(searchRes&&searchRes.reason||"empty")+"). Please answer the user's question from your own knowledge, or say honestly that you don't have current information."}
     ]);
-    var result=await callAPIStream(fallbackMsgs,MAX_TOKENS_CHAT,function(delta){ctl3.append(delta)},function(t){ctl3.appendThinking(t)});
-    handleChatApiResult(result,ctl3,userText);
+    var result=await callAPIStream(fallbackMsgs,MAX_TOKENS_CHAT,function(delta){ctl4.append(delta)},function(t){ctl4.appendThinking(t)});
+    handleChatApiResult(result,ctl4,userText);
     updateChatStats();
     if(state.phase==="chat"||(state.topic&&state.kbNodes.length))saveCurrentSession();
     return;
   }
   /* Build the [Web research] block from the search+fetch results. */
   var sourcesBlock=formatSourcesBlock(searchRes.sources,toolCall.query);
-  /* Round 2: stream the answer with the [Web research] block appended
-     to the system message. The model sees its own tool call echoed
-     back as a tool message (so it knows the call "succeeded") and the
-     results as a follow-up user/system message. */
-  var ctl4=addStreamingMessage({onRetry:function(){askChatTurn(userText)}});
-  /* Phase 3 — replay the captured search events into the round-2
-   * bubble's search-progress log. */
-  _replaySearchProgress(ctl4,{state:"ok",finalCount:searchRes.sources.length,fetchedCount:searchRes.sources.filter(function(x){return!!x.fullContent}).length,engines:searchRes.sources.reduce(function(acc,s){var k=s.source||"web";acc[k]=(acc[k]||0)+1;return acc;},{})});
+  /* Phase 3 — finalise the search-progress log on the bubble with the
+   * engine breakdown summary. */
+  try{
+    if(searchProgress){
+      var finalEngines=searchRes.sources.reduce(function(acc,s){var k=s.source||"web";acc[k]=(acc[k]||0)+1;return acc;},{});
+      var fetchedN=searchRes.sources.filter(function(x){return!!x.fullContent}).length;
+      searchProgress.finalize({state:"ok",finalCount:searchRes.sources.length,fetchedCount:fetchedN,engines:finalEngines});
+      searchProgress=null;
+    }
+  }catch(_){}
+  /* Stash the sources for the post-render sources card. */
+  state.searchContext=sourcesBlock;
+  state.searchResults=searchRes.sources;
+  state.searchContextAt=Date.now();
+  state.searchContextCount=searchRes.sources.length;
+  state.searchContextQuery=toolCall.query;
+  /* Round 2: stream the answer with the [Web research] block in the
+   * system message so the model can cite [1]..[n]. The bubble is
+   * already created (ctl4) and the search log is prepended; the
+   * streamed answer text appends below it. */
   var round2Msgs=[
     {role:"system",content:getSystemContext()+"\n\n"+CHAT_SYSTEM_PROMPT+"\n\n"+sourcesBlock+beagleSuffix()+thinkingSuffix()+memoriesSuffix()}
   ].concat(history).concat([
@@ -2794,27 +2811,8 @@ async function askChatTurn(userText){
     {role:"assistant",content:r1.text},
     {role:"user",content:"[Web research results for query: \""+toolCall.query+"\"]\n"+sourcesBlock+"\n\nPlease answer the user's original question using these results. Cite inline as [1], [2], etc."}
   ]);
-  /* Stash the sources for the post-render sources card. */
-  state.searchContext=sourcesBlock;
-  state.searchResults=searchRes.sources;
-  state.searchContextAt=Date.now();
-  state.searchContextCount=searchRes.sources.length;
-  state.searchContextQuery=toolCall.query;
   var result2=await callAPIStream(round2Msgs,MAX_TOKENS_CHAT,function(delta){ctl4.append(delta)},function(t){ctl4.appendThinking(t)});
-  if(result2&&result2.text&&result2.text.trim()){
-    state.lastCallSource="api";
-    ctl4.finish();
-  }else{
-    state.lastCallSource="mock";
-    if(state.lastCallError){
-      ctl4.replaceWithError("No response: "+state.lastCallError,function(){
-        askChatTurn(userText);
-      });
-    }else{
-      ctl4.abort();
-      addMessage("assistant","(no response — check your API settings)");
-    }
-  }
+  handleChatApiResult(result2,ctl4,userText);
   updateChatStats();
   if(state.phase==="chat"||(state.topic&&state.kbNodes.length))saveCurrentSession();
 }
@@ -10296,6 +10294,147 @@ async function fetchWebContext(topic,opts){
        grounding from the next turn. */
     return{ok:false,reason:emsg,results:0,context:opts.background?state.searchContext||"":""};
   }
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+   Phase 3 — AI-driven search-quality judge + re-search loop
+   ──────────────────────────────────────────────────────────────────────
+   `judgeSearchQuality` makes a tiny, fast, non-streaming LLM call to
+   score the round-1 result set on a 0–5 scale. If score < 3, it
+   returns a rewritten query the caller can use for round 2.
+
+   `webSearchWithRetry` is a thin wrapper around fetchWebContext that
+   runs round 1, judges it, and (if needed) runs round 2 with the
+   rewrite. Round cap = 2. Events from both rounds are forwarded to
+   `opts.onStep` so the search-progress log can render the full
+   activity timeline.
+
+   Latency budget: round 1 (≤10 s) + judge (≤4 s) + round 2 (≤8 s)
+   = 22 s worst case. The caller is expected to race this against
+   the main answer stream to keep first-token latency low. */
+
+/* Build a compact results digest (first 5 sources, snippet only) for
+ * the judge prompt. The judge doesn't need fullContent — only the
+ * title + snippet + source, so we keep the prompt small. */
+function _buildJudgeDigest(sources){
+  if(!Array.isArray(sources))return"[]";
+  var top=(sources.slice(0,5)).map(function(s){
+    return{
+      title:(s.title||"").slice(0,200),
+      url:s.url||"",
+      snippet:(s.snippet||"").slice(0,300),
+      source:s.source||"web"
+    };
+  });
+  try{return JSON.stringify(top)}catch(_){return"[]"}
+}
+
+/* Judge the result set via a small non-streaming LLM call. Returns
+ * {score: 0..5, rewrite: string}. Failure of the call is treated as
+ * score=3 (don't retry). 4 s ceiling via AbortController. */
+async function judgeSearchQuality(sources, topic, opts){
+  opts=opts||{};
+  if(!Array.isArray(sources)||!sources.length)return{score:0,rewrite:""};
+  if(!hasUsableActive||!hasUsableActive())return{score:3,rewrite:""};
+  var digest=_buildJudgeDigest(sources);
+  var promptText=
+    "You are a search-quality judge. Given the user's TOPIC and a list of search results, return strict JSON only:\n"+
+    "{ \"score\": <0-5 integer>, \"rewrite\": \"<better search query, or empty if score>=3>\" }\n\n"+
+    "Score 0 if results are all irrelevant or wrong language. Score 5 if top 3 results directly answer the topic. "+
+    "Score 3 if results are tangential but usable. Below 3, provide a sharper rewrite in the same language.\n\n"+
+    "TOPIC: "+(topic||"").slice(0,500)+"\n\n"+
+    "RESULTS: "+digest;
+  var msgs=[
+    {role:"system",content:"You are a strict JSON-output search-quality judge. Output JSON only, no prose, no markdown fences."},
+    {role:"user",content:promptText}
+  ];
+  var judgeCtl=new AbortController();
+  var timer=setTimeout(function(){try{judgeCtl.abort("judge-ceiling")}catch(_){}},4000);
+  try{
+    var raw=await callAPI(msgs,80);
+    clearTimeout(timer);
+    if(!raw)return{score:3,rewrite:""};
+    /* callAPI may return a string (the LLM's reply content) or an
+     * object with {content} or {text} depending on the provider. */
+    var text="";
+    if(typeof raw==="string")text=raw;
+    else if(raw&&typeof raw==="object"){
+      if(typeof raw.content==="string")text=raw.content;
+      else if(typeof raw.text==="string")text=raw.text;
+      else if(Array.isArray(raw.choices)&&raw.choices[0]&&raw.choices[0].message){
+        text=String(raw.choices[0].message.content||"");
+      }
+    }
+    text=(text||"").trim();
+    /* Strip code fences if the model wrapped the JSON. */
+    text=text.replace(/^```(?:json)?\s*/i,"").replace(/```\s*$/i,"").trim();
+    var parsed=null;
+    try{parsed=JSON.parse(text)}catch(_){
+      /* Try to extract the first {...} block from the text. */
+      var m=text.match(/\{[\s\S]*\}/);
+      if(m)try{parsed=JSON.parse(m[0])}catch(_){parsed=null}
+    }
+    if(!parsed||typeof parsed!=="object")return{score:3,rewrite:""};
+    var scoreN=parseInt(parsed.score,10);
+    if(isNaN(scoreN))scoreN=3;
+    scoreN=Math.max(0,Math.min(5,scoreN));
+    return{score:scoreN,rewrite:(typeof parsed.rewrite==="string")?parsed.rewrite:""};
+  }catch(e){
+    clearTimeout(timer);
+    /* Treat judge failures as "good enough" (don't retry). */
+    return{score:3,rewrite:""};
+  }
+}
+
+/* Wrap fetchWebContext with a judge + 1-retry loop. Round cap = 2.
+ *
+ * Forwards every onStep event from both rounds to opts.onStep. After
+ * round 1, calls judgeSearchQuality. If score < 3 AND we haven't
+ * already retried, calls fetchWebContext again with the rewritten
+ * query. Returns the same shape as fetchWebContext ({ok, reason,
+ * results, context, sources}); prefers round-2 results if a retry
+ * succeeded.
+ *
+ * opts:
+ *   onStep   — optional step observer (forwards events from both rounds)
+ *   signal   — optional AbortSignal (cancels both rounds)
+ *   ceilingMs — hard cap on the whole loop (default 12000)
+ */
+async function webSearchWithRetry(topic, opts){
+  opts=opts||{};
+  var onStep=opts.onStep;
+  function _emit(kind,data){
+    try{if(typeof onStep==="function")onStep({kind:kind,data:data||{}})}catch(_){}
+  }
+  _emit("started",{topic:topic});
+  /* Round 1 */
+  var res=await fetchWebContext(topic,{
+    signal:opts.signal,
+    onStep:function(ev){_emit(ev.kind,ev.data)}
+  });
+  if(!res||!res.ok||!res.sources||!res.sources.length){
+    return res||{ok:false,reason:"empty",results:0,context:""};
+  }
+  /* Judge */
+  var verdict=await judgeSearchQuality(res.sources,topic,opts);
+  _emit("scored",{avgRel:0,topRel:0,distribution:[0,0,0],judgeScore:verdict.score});
+  if(verdict.score>=3||!verdict.rewrite||verdict.rewrite===topic){
+    _emit("good",{score:verdict.score});
+    return res;
+  }
+  /* Round 2 */
+  _emit("retry_low",{score:verdict.score,rewrite:verdict.rewrite});
+  var res2=await fetchWebContext(verdict.rewrite,{
+    signal:opts.signal,
+    onStep:function(ev){_emit(ev.kind,ev.data)}
+  });
+  if(res2&&res2.ok&&res2.sources&&res2.sources.length){
+    _emit("retry_rewrote",{q:verdict.rewrite,n:res2.sources.length});
+    return res2;
+  }
+  _emit("retry_still_bad",{score:verdict.score});
+  /* Round 2 failed too — fall back to round-1 results. */
+  return res;
 }
 
 /* Heuristic: returns true if the user's text seems to refer to a
