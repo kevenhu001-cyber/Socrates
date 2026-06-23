@@ -1319,7 +1319,21 @@ async function loadSession(id){
       div.className="msg "+m.role;
       var body=document.createElement("div");
       body.className="msg-body";
-      body.innerHTML=m.html;
+      // P-arch — re-render from rawText so the latest renderer
+      // (auto-wrap bare [...] math, \[...\] support, stray-$ escape,
+      // etc.) applies to OLD messages whose stored `html` was
+      // rendered with an older renderer. User messages are plain
+      // text and get HTML-escaped (they often contain stray HTML
+      // like `<p>` wrappers from the input field that we don't
+      // want to interpret as DOM). Assistant messages go through
+      // the full formatMsg pipeline.
+      if(m.role==="assistant" && m.rawText){
+        body.innerHTML = formatMsg(m.rawText);
+      }else if(m.rawText){
+        body.innerHTML = "<p>"+esc(m.rawText)+"</p>";
+      }else{
+        body.innerHTML = m.html || "";
+      }
       div.appendChild(body);
       msgList.appendChild(div);
     });
@@ -1331,12 +1345,20 @@ async function loadSession(id){
       try{
         var rec={topic:s.topic||"",ts:Date.now(),messages:[]};
         (s.messages||[]).forEach(function(m){
-          var body=document.createElement("div");
-          body.innerHTML=m.html||"";
-          var txt=(body.innerText||body.textContent||"").trim();
-          if(!txt)return;
+          // Prefer rawText (the source markdown) over html (a rendered
+          // snapshot) so the LLM context gets clean content without
+          // embedded HTML tags.
+          var txt="";
+          if(m.rawText){
+            txt=m.rawText;
+          }else if(m.html){
+            var body=document.createElement("div");
+            body.innerHTML=m.html;
+            txt=(body.innerText||body.textContent||"").trim();
+          }
           txt=txt.replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
-          if(txt)rec.messages.push({role:m.role,content:txt});
+          if(!txt)return;
+          rec.messages.push({role:m.role,content:txt});
         });
         if(rec.messages.length)localStorage.setItem(_memKey(s.id),JSON.stringify(rec));
       }catch(e){console.warn("[sessions] mirror to local memory failed:",e.message)}
@@ -3548,10 +3570,20 @@ function regenerateAssistantMessage(messageId,bar){
   }
 }
 function restoreMessageBody(entry,body){
-  if(entry.html){
-    body.innerHTML=entry.html;
+  // P-arch — prefer re-rendering from rawText so the LATEST markdown
+  // + KaTeX renderer (including recent fixes for weak-model output
+  // like bare-bracket auto-wrap, bracket-style LaTeX delimiters,
+  // stray-$ escape, etc.) is used for every message. The stored
+  // `entry.html` is a snapshot from when the message was first saved
+  // — it's frozen at that renderer version, so any renderer bugfix
+  // made after the message was saved never reaches the user unless
+  // we re-render.
+  if(entry.rawText){
+    body.innerHTML = formatMsg(entry.rawText);
+  }else if(entry.html){
+    body.innerHTML = entry.html;
   }else{
-    body.innerHTML=formatMsg(entry.rawText||"");
+    body.innerHTML = "";
   }
 }
 function findMessageIndex(messageId){
@@ -9326,7 +9358,15 @@ async function loadSharedSession(token){
       div.className="msg "+(m.role||"assistant");
       var body=document.createElement("div");
       body.className="msg-body";
-      body.innerHTML=m.html||m.content||"";
+      // Re-render from rawText for assistant messages so the latest
+      // renderer is used (see loadSession comment for rationale).
+      if(m.role==="assistant" && m.rawText){
+        body.innerHTML = formatMsg(m.rawText);
+      }else if(m.rawText){
+        body.innerHTML = "<p>"+esc(m.rawText)+"</p>";
+      }else{
+        body.innerHTML = m.html||m.content||"";
+      }
       div.appendChild(body);
       msgList.appendChild(div);
     });
