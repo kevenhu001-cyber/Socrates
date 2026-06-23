@@ -4739,36 +4739,49 @@ function teardownThinkStructure(){
     }
 
     if(thinkState.startIdx===-1){
-      /* P_arch typewriter — append raw text to streamContent as it
-         arrives. NO formatMsg during streaming — that happens once at
-         finish() to produce the final HTML. This avoids:
-           - Mid-stream reflow when KaTeX swaps raw text for typeset
-             math (the "jitter" the chunked-fade attempt was meant to
-             fix but instead introduced a different breakage).
-           - Split-token rendering errors: any heuristic that flushes
-             a chunk before the closing delimiter arrives will render
-             half a math/code block as broken raw text — the user's
-             report ("当前的渲染机制会导致很多都渲染失败" — many
-             things fail to render) is exactly this.
-           - The user sees a stable line-height bubble while the
-             model streams; the cursor blinks at the end of the
-             in-progress text.
-         The streaming surface is just a single text node. Newlines
-         render as line breaks naturally because <div> + text content
-         collapses \n in the layout — we use white-space:pre-wrap via
-         the .stream-typing class so newlines are preserved. */
+      /* P_arch streaming-render — run formatMsgProgressive on every
+         rAF tick so the user sees real-time markdown + math rendering
+         as the model streams (not waiting until finish()).
+
+         Why formatMsgProgressive and not formatMsg?
+           - formatMsgProgressive handles UNCLOSED $$...$$ and ```...```
+             with subtle placeholders ("…"), so a half-arrived math
+             formula never leaks raw LaTeX source into the live bubble.
+           - formatMsg assumes closed pairs; on partial input it falls
+             back to escaping and the user sees "$$\frac{" raw.
+           - preprocessMarkdownForStreaming is the streaming-safe
+             preprocessor: idempotent on repeated calls (the
+             stray-$ escape, lone-$ promote, and unclosed-fence
+             append rules are skipped — those break on re-entry).
+
+         Why no chunked boundaries?
+           - The previous chunked-fade split on `\n\n` or sentence
+             ends and called formatMsg on each slice. A chunk that
+             landed inside an open `\[...\]` rendered a half-complete
+             slice as broken KaTeX. Without chunking, formatMsgProgressive
+             handles the partial state itself; nothing splits mid-token.
+           - The user's complaint was "渲染失败" — broken rendering.
+             The streaming-safe renderer preserves the typewriter feel
+             (text appears char-by-char as deltas arrive) while making
+             sure markdown and math render correctly in real time. */
       if(!streamContent){
         body.innerHTML="";
         streamContent=document.createElement("div");
-        streamContent.className="stream-content stream-typing";
+        streamContent.className="stream-content";
         body.appendChild(streamContent);
         cursor=document.createElement("span");
         cursor.className="stream-cursor";
         cursor.textContent="▍";
         body.appendChild(cursor);
       }
-      if(streamContent.textContent!==displayFull){
-        streamContent.textContent=displayFull;
+      /* Skip the DOM write if the rendered HTML hasn't changed —
+         the most common case once the cursor blinks and the model
+         produces no new tokens. Caching by raw text length + last
+         few chars is cheap and avoids a layout per frame. */
+      var rendered=formatMsgProgressive(displayFull);
+      if(streamContent.dataset.lastRendered!==rendered){
+        streamContent.innerHTML=rendered;
+        streamContent.dataset.lastRendered=rendered;
       }
     }else{
       /* Think block is in play. Lay out the three-section
@@ -4781,19 +4794,18 @@ function teardownThinkStructure(){
         ?displayFull.slice(thinkState.startIdx+"<think>".length,thinkState.endIdx-"</think>".length)
         :displayFull.slice(thinkState.startIdx+"<think>".length);
       var afterText=thinkClosed?displayFull.slice(thinkState.endIdx):"";
-      /* P_arch typewriter — write the pre/post-think slices as RAW
-         text only. The previous code ran formatMsgProgressive on
-         every frame, which calls KaTeX on partial math — and partial
-         math that doesn't parse cleanly falls back to rendering raw
-         LaTeX source, which is exactly the broken formula the user
-         reports ("当前的渲染机制会导致很多都渲染失败"). The final
-         formatMsg pass at finish() handles everything properly; the
-         streaming view is just typewriter text. */
-      if(thinkState.beforeNode.textContent!==beforeText){
-        thinkState.beforeNode.textContent=beforeText;
+      /* P_arch streaming-render — pre-think and post-think slices
+         use formatMsgProgressive (streaming-safe) for real-time
+         rendering. formatMsgProgressive handles partial $$ and ```
+         with placeholders, so a half-arrived formula doesn't leak
+         raw LaTeX into the live bubble. */
+      if(thinkState.beforeNode.dataset.lastRendered!==beforeText){
+        thinkState.beforeNode.innerHTML=beforeText?formatMsgProgressive(beforeText):"";
+        thinkState.beforeNode.dataset.lastRendered=beforeText;
       }
-      if(thinkState.afterNode.textContent!==afterText){
-        thinkState.afterNode.textContent=afterText;
+      if(thinkState.afterNode.dataset.lastRendered!==afterText){
+        thinkState.afterNode.innerHTML=afterText?formatMsgProgressive(afterText):"";
+        thinkState.afterNode.dataset.lastRendered=afterText;
       }
       /* When </think> has been seen, swap the summary to a
          static label and drop the pulse — the model is done
