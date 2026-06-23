@@ -86,20 +86,20 @@
 .acct-heatmap-cell{aspect-ratio:1/1;border-radius:3px;background:hsl(var(--bg-300));transition:transform var(--anim-fast);position:relative}
 .acct-heatmap-cell:hover{transform:scale(1.25);z-index:2}
 .acct-heatmap-cell[data-level="0"]{background:hsl(var(--bg-300)/0.4)}
-.acct-heatmap-cell[data-level="1"]{background:hsl(145 50% 45%/0.18)}
-.acct-heatmap-cell[data-level="2"]{background:hsl(145 50% 45%/0.4)}
-.acct-heatmap-cell[data-level="3"]{background:hsl(145 50% 45%/0.7)}
-.acct-heatmap-cell[data-level="4"]{background:hsl(145 50% 50%)}
-.acct-heatmap-axis{display:flex;justify-content:space-between;font-size:10px;color:hsl(var(--text-500));margin-top:8px;letter-spacing:.04em}
+.acct-heatmap-cell[data-level="1"]{background:hsl(35 85% 50%/0.18)}
+.acct-heatmap-cell[data-level="2"]{background:hsl(35 85% 50%/0.4)}
+.acct-heatmap-cell[data-level="3"]{background:hsl(35 85% 50%/0.7)}
+.acct-heatmap-cell[data-level="4"]{background:hsl(35 85% 55%)}
+.acct-heatmap-axis{display:flex;justify-content:space-between;font-size:10px;color:hsl(var(--text-500));margin-top:8px;letter-spacing:.04em;padding-left:68px}
 .acct-heatmap-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity var(--anim-fast);border:0.5px solid hsl(var(--border-300)/0.2);z-index:3}
 .acct-heatmap-cell:hover .acct-heatmap-tooltip{opacity:1}
 .acct-heatmap-legend{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:11px;color:hsl(var(--text-500));justify-content:flex-end}
 .acct-heatmap-legend-cells{display:flex;gap:3px}
 .acct-heatmap-legend-cells span{width:11px;height:11px;border-radius:2px;background:hsl(var(--bg-300)/0.4)}
-.acct-heatmap-legend-cells span:nth-child(2){background:hsl(145 50% 45%/0.18)}
-.acct-heatmap-legend-cells span:nth-child(3){background:hsl(145 50% 45%/0.4)}
-.acct-heatmap-legend-cells span:nth-child(4){background:hsl(145 50% 45%/0.7)}
-.acct-heatmap-legend-cells span:nth-child(5){background:hsl(145 50% 50%)}
+.acct-heatmap-legend-cells span:nth-child(2){background:hsl(35 85% 50%/0.18)}
+.acct-heatmap-legend-cells span:nth-child(3){background:hsl(35 85% 50%/0.4)}
+.acct-heatmap-legend-cells span:nth-child(4){background:hsl(35 85% 50%/0.7)}
+.acct-heatmap-legend-cells span:nth-child(5){background:hsl(35 85% 55%)}
 .acct-heatmap-summary{display:flex;gap:24px;margin-bottom:14px;font-size:13px;color:hsl(var(--text-400))}
 .acct-heatmap-summary strong{color:hsl(var(--text-100));font-weight:500}
 .acct-heatmap-empty{text-align:center;color:hsl(var(--text-500));font-size:13px;padding:24px 0}
@@ -123,8 +123,31 @@
 .acct-card{padding:20px}
 .acct-sub-meta{gap:16px}
 .acct-actions{flex-direction:column;align-items:center}
+/* Heatmap mobile: allow horizontal scroll */
+#usageHeatmapCard{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.acct-heatmap-grid{min-width:580px}
+.acct-heatmap-axis{padding-left:68px}
+.acct-heatmap-summary{gap:16px;flex-wrap:wrap}
+.acct-heatmap-cell{width:14px;height:14px}
 }
 </style>
+<script>
+!function(){
+  try{
+    var p=localStorage.getItem("socrates-lang");
+    if(!p)return;
+    var c=document.documentElement.lang;
+    var here=window.location.pathname;
+    if(p==="zh"&&c.indexOf("zh")!==0){
+      var target=here.replace(/\.html$/,"");
+      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
+    }else if(p==="en"&&c.indexOf("en")!==0){
+      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
+      window.location.replace(target2==="/"||target2===""?"/":target2);
+    }
+  }catch(e){}
+}();
+</script>
 </head>
 <body>
 <div class="bg-grid"></div>

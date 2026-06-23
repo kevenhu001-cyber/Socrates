@@ -69,20 +69,20 @@
 .acct-heatmap-cell{aspect-ratio:1/1;border-radius:3px;background:hsl(var(--bg-300));transition:transform var(--anim-fast);position:relative}
 .acct-heatmap-cell:hover{transform:scale(1.25);z-index:2}
 .acct-heatmap-cell[data-level="0"]{background:hsl(var(--bg-300)/0.4)}
-.acct-heatmap-cell[data-level="1"]{background:hsl(145 50% 45%/0.18)}
-.acct-heatmap-cell[data-level="2"]{background:hsl(145 50% 45%/0.4)}
-.acct-heatmap-cell[data-level="3"]{background:hsl(145 50% 45%/0.7)}
-.acct-heatmap-cell[data-level="4"]{background:hsl(145 50% 50%)}
+.acct-heatmap-cell[data-level="1"]{background:hsl(35 85% 50%/0.18)}
+.acct-heatmap-cell[data-level="2"]{background:hsl(35 85% 50%/0.4)}
+.acct-heatmap-cell[data-level="3"]{background:hsl(35 85% 50%/0.7)}
+.acct-heatmap-cell[data-level="4"]{background:hsl(35 85% 55%)}
 .acct-heatmap-axis{display:flex;justify-content:space-between;font-size:10px;color:hsl(var(--text-500));margin-top:8px;letter-spacing:.04em;padding-left:68px}
 .acct-heatmap-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity var(--anim-fast);border:0.5px solid hsl(var(--border-300)/0.2);z-index:3}
 .acct-heatmap-cell:hover .acct-heatmap-tooltip{opacity:1}
 .acct-heatmap-legend{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:11px;color:hsl(var(--text-500));justify-content:flex-end}
 .acct-heatmap-legend-cells{display:flex;gap:3px}
 .acct-heatmap-legend-cells span{width:11px;height:11px;border-radius:2px;background:hsl(var(--bg-300)/0.4)}
-.acct-heatmap-legend-cells span:nth-child(2){background:hsl(145 50% 45%/0.18)}
-.acct-heatmap-legend-cells span:nth-child(3){background:hsl(145 50% 45%/0.4)}
-.acct-heatmap-legend-cells span:nth-child(4){background:hsl(145 50% 45%/0.7)}
-.acct-heatmap-legend-cells span:nth-child(5){background:hsl(145 50% 50%)}
+.acct-heatmap-legend-cells span:nth-child(2){background:hsl(35 85% 50%/0.18)}
+.acct-heatmap-legend-cells span:nth-child(3){background:hsl(35 85% 50%/0.4)}
+.acct-heatmap-legend-cells span:nth-child(4){background:hsl(35 85% 50%/0.7)}
+.acct-heatmap-legend-cells span:nth-child(5){background:hsl(35 85% 55%)}
 .acct-heatmap-summary{display:flex;gap:24px;margin-bottom:14px;font-size:13px;color:hsl(var(--text-400))}
 .acct-heatmap-summary strong{color:hsl(var(--text-100));font-weight:500}
 .acct-heatmap-empty{text-align:center;color:hsl(var(--text-500));font-size:13px;padding:24px 0}
@@ -118,8 +118,30 @@
 .acct-card{padding:20px}
 .acct-sub-meta{gap:16px}
 .acct-actions{flex-direction:column;align-items:center}
+/* 热力图移动端适配：允许横向滚动 */
+#usageHeatmapCard{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.acct-heatmap-grid{min-width:580px}
+.acct-heatmap-summary{gap:16px;flex-wrap:wrap}
+.acct-heatmap-cell{width:14px;height:14px}
 }
 </style>
+<script>
+!function(){
+  try{
+    var p=localStorage.getItem("socrates-lang");
+    if(!p)return;
+    var c=document.documentElement.lang;
+    var here=window.location.pathname;
+    if(p==="zh"&&c.indexOf("zh")!==0){
+      var target=here.replace(/\.html$/,"");
+      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
+    }else if(p==="en"&&c.indexOf("en")!==0){
+      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
+      window.location.replace(target2==="/"||target2===""?"/":target2);
+    }
+  }catch(e){}
+}();
+</script>
 </head>
 <body>
 <div class="bg-grid"></div>
@@ -435,51 +457,55 @@ var srObs = new IntersectionObserver(function(entries) {
       '<div><strong>' + data.totalCalls + '</strong> 次调用</div>' +
       '<div>峰值（P95）：<strong>' + fmtTokens(data.p95) + '</strong> / 小时</div>';
 
-    var p95 = data.p95 || 0;
-    var byHour = {};
-    for (var i = 0; i < data.buckets.length; i++) {
-      byHour[data.buckets[i].hour] = data.buckets[i];
+    /* 使用与英文版一致的 UTC 日期+小时分组查询方式 */
+    var buckets = data.buckets || [];
+    var p95 = Math.max(data.p95 || 0, 1);
+    var byDayHour = {};
+    for (var i = 0; i < buckets.length; i++) {
+      var d = new Date(buckets[i].hour);
+      var dateKey = d.toISOString().slice(0, 10);
+      if (!byDayHour[dateKey]) byDayHour[dateKey] = {};
+      byDayHour[dateKey][d.getUTCHours()] = buckets[i];
     }
 
     var days = ['日', '一', '二', '三', '四', '五', '六'];
-    var now = new Date();
-    var endMs = Math.floor(now.getTime() / 3600000) * 3600000;
-    var html = '<div class="acct-heatmap-grid">';
+    var today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    var dayList = [];
+    for (var off = 6; off >= 0; off--) {
+      var dt = new Date(today.getTime() - off * 86400000);
+      dayList.push({ date: dt, key: dt.toISOString().slice(0, 10) });
+    }
 
-    /* 7 行 × 24 小时（最新一行是今天）。每行：星期标签 + 24 个单元格。 */
-    for (var d = 6; d >= 0; d--) {
-      var rowMs = endMs - d * 86400000;
-      var dayDate = new Date(rowMs);
-      var dow = dayDate.getUTCDay();
-      var isToday = (d === 0);
+    var html = '<div class="acct-heatmap-grid">';
+    for (var di = 0; di < dayList.length; di++) {
+      var dInfo = dayList[di];
+      var dow = dInfo.date.getUTCDay();
+      var isToday = (di === dayList.length - 1);
 
       html += '<div class="acct-heatmap-day-label">';
       if (isToday) {
         html += '今天';
       } else {
-        html += '周' + days[dow] + ' ' + (dayDate.getUTCMonth() + 1) + '/' + dayDate.getUTCDate();
+        html += '周' + days[dow] + ' ' + (dInfo.date.getUTCMonth() + 1) + '/' + dInfo.date.getUTCDate();
       }
       html += '</div>';
 
       for (var h = 0; h < 24; h++) {
-        var cellMs = rowMs - rowMs % 86400000 + h * 3600000;
-        var key = new Date(cellMs).toISOString();
-        var b = byHour[key] || { tokens: 0, calls: 0 };
-        var lvl = heatmapLevel(b.tokens, p95);
-        var tip = b.tokens > 0
-          ? fmtTokens(b.tokens) + ' tokens · ' + b.calls + ' 次调用'
+        var cellData = (byDayHour[dInfo.key] && byDayHour[dInfo.key][h]) || { tokens: 0, calls: 0 };
+        var lvl = heatmapLevel(cellData.tokens, p95);
+        var tip = cellData.tokens > 0
+          ? fmtTokens(cellData.tokens) + ' tokens · ' + cellData.calls + ' 次调用'
           : '无活动';
         html += '<div class="acct-heatmap-cell" data-level="' + lvl + '" data-hour="' + h + '"><span class="acct-heatmap-tooltip">' + tip + '</span></div>';
       }
     }
     html += '</div>';
 
-    /* X 轴：每 6 小时一个标签 */
     html += '<div class="acct-heatmap-axis">' +
       '<span>0时</span><span>6时</span><span>12时</span><span>18时</span><span>23时</span>' +
       '</div>';
 
-    /* 图例 */
     html += '<div class="acct-heatmap-legend">' +
       '<span>少</span>' +
       '<div class="acct-heatmap-legend-cells"><span></span><span></span><span></span><span></span><span></span></div>' +
