@@ -547,18 +547,16 @@
     var phase = window.state.practicePhase;
     if (!phase) { cont.innerHTML = ''; return; }
     var attempts = window.state.practiceAttempts || 0;
-    var node = (window.state.kbNodes || [])[window.state.currentNode] || {};
-    var nodeName = node.name || (currentLang() === 'zh' ? '当前主题' : 'current topic');
     var phaseText = phase === 'foundation'
-      ? ti('tutor.practiceFoundation', currentLang() === 'zh' ? '基础题' : 'Foundation')
-      : ti('tutor.practiceTransfer',   currentLang() === 'zh' ? '变式题' : 'Transfer');
-    var attemptsText = currentLang() === 'zh'
-      ? ti('tutor.practiceAttempts', '已尝试 ' + attempts + ' 次').replace('{n}', String(attempts))
-      : ti('tutor.practiceAttempts', attempts + ' attempt' + (attempts === 1 ? '' : 's')).replace('{n}', String(attempts));
+      ? ti('tutor.practiceFoundation', currentLang() === 'zh' ? '基础' : 'Foundation')
+      : ti('tutor.practiceTransfer',   currentLang() === 'zh' ? '变式' : 'Transfer');
+    /* Slim inline: phase pill · attempt count. Node name is the
+       already-shown in the current sub-topic header so we don't
+       repeat it here. */
+    var attemptsShort = '·' + attempts;
     cont.innerHTML =
       '<span class="practice-progress-chip-phase">' + esc(phaseText) + '</span>' +
-      '<span class="practice-progress-chip-node">' + esc(nodeName) + '</span>' +
-      '<span class="practice-progress-chip-attempts">' + esc(attemptsText) + '</span>';
+      '<span class="practice-progress-chip-attempts">' + esc(attemptsShort) + '</span>';
   }
 
   /* ----------------------------------------------------------------
@@ -581,20 +579,18 @@
     }
     var mode = (window.appMode === 'chat') ? 'chat' : 'tutor';
     var label = (mode === 'chat')
-      ? ti('tutor.modeChat', currentLang() === 'zh' ? '对话模式' : 'Chat')
-      : ti('tutor.modeTutor', currentLang() === 'zh' ? '引导模式' : 'Tutor');
-    var desc = (mode === 'chat')
-      ? ti('tutor.modeChatDesc', currentLang() === 'zh' ? '普通对话，无教学引导' : 'Plain conversation, no scaffolding')
-      : ti('tutor.modeTutorDesc', currentLang() === 'zh' ? 'AI 主动提问并跟踪你的学习' : 'AI asks, follows up, and tracks what you know');
+      ? ti('tutor.modeChat', currentLang() === 'zh' ? '对话' : 'Chat')
+      : ti('tutor.modeTutor', currentLang() === 'zh' ? '引导' : 'Tutor');
     var other = (mode === 'chat') ? 'tutor' : 'chat';
-    var otherLabel = (other === 'tutor')
-      ? ti('tutor.modeSwitchToTutor', currentLang() === 'zh' ? '切换到引导模式' : 'Switch to Tutor')
-      : ti('tutor.modeSwitchToChat', currentLang() === 'zh' ? '切换到对话模式' : 'Switch to Chat');
+    var otherLabel = (other === 'tutor') ? 'Tutor' : 'Chat';
+    /* Slim one-line chip: dot · label · switch. The dot color
+       alone signals which mode is active; the switch button is
+       labelled with the *target* mode (e.g. "Tutor" when currently
+       in Chat) so it doubles as a mode indicator at a glance. */
     cont.innerHTML =
       '<span class="mode-banner-dot mode-banner-dot-' + mode + '"></span>' +
       '<span class="mode-banner-label">' + esc(label) + '</span>' +
-      '<span class="mode-banner-desc">' + esc(desc) + '</span>' +
-      '<button class="mode-banner-switch" type="button">' + esc(otherLabel) + '</button>';
+      '<button class="mode-banner-switch" type="button" title="' + esc(otherLabel) + '">' + esc(otherLabel) + '</button>';
     var btn = cont.querySelector('.mode-banner-switch');
     if (btn) {
       btn.onclick = function () {
@@ -626,8 +622,8 @@
     var err = window.state && window.state.lastCallError;
     if (src !== 'mock') return;
     var note = (currentLang() === 'zh')
-      ? ti('tutor.diagTimeout', '题目生成超时，使用内置占位题。') + (err ? '（' + err + '）' : '')
-      : ti('tutor.diagTimeout', 'Question generation timed out. Showing built-in placeholders. ') + (err ? '(' + err + ')' : '');
+      ? ti('tutor.diagTimeout', '题目生成超时，使用占位题。')
+      : ti('tutor.diagTimeout', 'Question generation timed out — using placeholders.');
     var banner = document.createElement('div');
     banner.id = 'diagnosticBanner';
     banner.className = 'diag-banner-warn tutor-only';
