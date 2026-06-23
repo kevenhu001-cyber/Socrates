@@ -1525,6 +1525,11 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    typewriter: each new chunk rises 2px and fades from blur(2px) to
    clear over ~420ms, giving a soft "settle into place" feel. */
 .stream-content{white-space:normal;word-wrap:break-word;overflow-wrap:break-word}
+/* P_arch typewriter — during streaming we show raw text only (no
+   markdown rendering, no KaTeX). Newlines need to be preserved so
+   the streamed source reflects the model's actual line breaks
+   instead of all collapsing into one run-on line. */
+.stream-content.stream-typing{white-space:pre-wrap;word-wrap:break-word}
 .stream-chunk{display:block;opacity:1}
 .stream-chunk.stream-chunk-pending{display:inline;white-space:pre-wrap}
 .stream-chunk-in{animation:streamChunkFade .42s var(--ease-out, cubic-bezier(0.16,1,0.3,1)) both}

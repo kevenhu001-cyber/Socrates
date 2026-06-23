@@ -4739,210 +4739,36 @@ function teardownThinkStructure(){
     }
 
     if(thinkState.startIdx===-1){
-      /* P_chunked-fade — render the stream in 1–3 line chunks that
-         each fade in. Each chunk is a <div class="stream-chunk">
-         whose innerHTML is the result of running formatMsg on the
-         closed slice — markdown, KaTeX formulas, code fences all
-         resolved inside the chunk's own bounds. Because each chunk
-         is rendered ONCE when its closing boundary arrives and never
-         re-rendered, KaTeX formulas never land mid-stream and the
-         height of the chunks above the cursor can't shift under
-         the user.
-
-         The trailing "pending" zone (between the last flushed chunk
-         and the cursor) shows RAW text — no formatMsg, no KaTeX —
-         so an unclosed $...$ or ``` is harmless; it just displays
-         as literal characters until its closing delimiter arrives
-         and the chunk boundary moves past it.
-
-         Boundaries chosen so chunks land on paragraph (\n\n),
-         line (\n), or sentence edges:
-           - any \n\n                  → flush through it
-           - any \n once pending > 60  → flush through it
-           - any [.!?] once pending>120 → flush through it
-           - hard cap: ~220 chars or ~280ms → flush what we have
-         This keeps each chunk to roughly 1–3 lines of text. */
+      /* P_arch typewriter — append raw text to streamContent as it
+         arrives. NO formatMsg during streaming — that happens once at
+         finish() to produce the final HTML. This avoids:
+           - Mid-stream reflow when KaTeX swaps raw text for typeset
+             math (the "jitter" the chunked-fade attempt was meant to
+             fix but instead introduced a different breakage).
+           - Split-token rendering errors: any heuristic that flushes
+             a chunk before the closing delimiter arrives will render
+             half a math/code block as broken raw text — the user's
+             report ("当前的渲染机制会导致很多都渲染失败" — many
+             things fail to render) is exactly this.
+           - The user sees a stable line-height bubble while the
+             model streams; the cursor blinks at the end of the
+             in-progress text.
+         The streaming surface is just a single text node. Newlines
+         render as line breaks naturally because <div> + text content
+         collapses \n in the layout — we use white-space:pre-wrap via
+         the .stream-typing class so newlines are preserved. */
       if(!streamContent){
-        streamContent=document.createElement("div");
-        streamContent.className="stream-content";
         body.innerHTML="";
+        streamContent=document.createElement("div");
+        streamContent.className="stream-content stream-typing";
         body.appendChild(streamContent);
         cursor=document.createElement("span");
         cursor.className="stream-cursor";
         cursor.textContent="▍";
-        /* Cursor must be a child of streamContent so the
-           streamContent.insertBefore(chunk, cursor) calls below
-           work (insertBefore requires the reference node to be a
-           child of the parent). The previous layout appended
-           cursor to body directly, which made every chunk flush
-           throw `NotFoundError: Failed to execute 'insertBefore'`. */
-        streamContent.appendChild(cursor);
-        chunkState={renderedLength:0,pendingText:"",pendingNode:null,lastFlushAt:Date.now()};
+        body.appendChild(cursor);
       }
-      var prevLen=chunkState.renderedLength;
-      var newSlice=displayFull.length>prevLen?displayFull.slice(prevLen):"";
-      if(newSlice){
-        chunkState.renderedLength=displayFull.length;
-        chunkState.pendingText+=newSlice;
-      }
-      /* Decide whether the pending text has reached a flush point.
-         We never split mid-token: flush position is always the index
-         of a known boundary character inside the pending text. */
-      var pt=chunkState.pendingText;
-      /* Find a flush boundary that is NOT inside an open $$...$$
-         display-math block or ``` fenced code block. Splitting
-         inside such a block renders a half-complete slice through
-         formatMsg, where the unclosed $ or ``` makes KaTeX / marked
-         drop the content or escape it — so the user sees raw LaTeX
-         or raw markdown instead of a typeset formula or code block.
-         Same for GFM tables: a chunk boundary that lands between
-         rows breaks the table into two partial fragments, and each
-         fragment renders as an independent broken table. We treat
-         an open GFM table header (`| ... |\n| --- |\n`) as a no-flush
-         zone until we see a blank line or a non-pipe line.
-         We scan from the start of `pt` and only consider boundary
-         positions that sit at depth-0 (outside all fences / tables). */
-      function topLevelFlushPos(pt){
-        var i=0, n=pt.length;
-        var inMath=false, inFence=false, inTable=false;
-        var lastNl=0;
-        while(i<n){
-          var ch=pt.charAt(i);
-          /* Detect a GFM table header line: `|...|\n|---|\n`. Once
-             we enter the table, only a blank line (or EOF) closes
-             it. Rows themselves may have leading/trailing pipes. */
-          if(ch==='\n'){
-            var line=pt.slice(lastNl,i);
-            if(/^\s*\|.*\|\s*$/.test(line)&&/^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/.test(pt.slice(i+1).split('\n')[0]||"")){
-              inTable=true;
-            }
-            if(inTable&&line==="")inTable=false;
-            lastNl=i+1;
-          }
-          if(!inFence&&pt.charAt(i)==='$'&&pt.charAt(i+1)==='$'){
-            inMath=!inMath; i+=2; continue;
-          }
-          if(!inMath&&!inFence&&pt.charAt(i)==='`'&&pt.charAt(i+1)==='`'&&pt.charAt(i+2)==='`'){
-            inFence=!inFence; i+=3; continue;
-          }
-          if(!inMath&&!inFence&&!inTable&&(ch==='\n')){
-            return i+1; /* first top-level \n — flush through it */
-          }
-          i++;
-        }
-        return-1;
-      }
-      var flushIdx=-1;
-      var ppIdx=pt.indexOf("\n\n");
-      if(ppIdx!==-1){
-        /* Even \n\n shouldn't split a math/code block. Confirm the
-           position sits at top level before using it. */
-        var safePp=topLevelFlushPos(pt.slice(0,ppIdx))!==-1
-          ?topLevelFlushPos(pt.slice(0,ppIdx))+0
-          :-1;
-        if(safePp>=0){
-          flushIdx=ppIdx+2;
-        }else{
-          /* \n\n lives inside an unclosed math/code block — fall
-             through to the smaller-boundary search below. */
-        }
-      }else if(pt.length>60){
-        var tl=topLevelFlushPos(pt);
-        if(tl!==-1){
-          flushIdx=tl;
-        }else{
-          /* Sentence-end fallback for one-paragraph responses: cut
-             at the last [.!?] followed by whitespace, if any, once
-             the pending text is over 120 chars. Only used if no
-             top-level \n was found at all. */
-          var match=/[.!?。！？]["')\]]?\s/.exec(pt);
-          if(match)flushIdx=match.index+match[0].length;
-        }
-      }
-      var tooLong=pt.length>=220;
-      var tooStale=pt.length>=80&&(Date.now()-chunkState.lastFlushAt)>280;
-      if(flushIdx===-1&&(tooLong||tooStale)){
-        /* No natural boundary hit yet — flush at a word boundary
-           (last space) closest to the soft cap so we don't slice
-           through the middle of a word. Even here we must avoid
-           landing inside an open $$...$$ or ``` fence or GFM table —
-           so walk back from softCap to the closest top-level space. */
-        var softCap=Math.min(pt.length,pt.length>=220?220:200);
-        var cutAt=-1;
-        for(var s=softCap;s>40;s--){
-          if(pt.charAt(s)!==' ')continue;
-          /* Is this space at depth-0 (outside all open fences /
-             tables)? */
-          var head=pt.slice(0,s);
-          var dOpen=0, fOpen=0;
-          var di=head.indexOf("$$");
-          while(di!==-1){dOpen++;di=head.indexOf("$$",di+2)}
-          var fi=head.indexOf("```");
-          while(fi!==-1){fOpen++;fi=head.indexOf("```",fi+3)}
-          if((dOpen%2===1)||(fOpen%2===1))continue;
-          /* Detect open GFM table: if head ends with a row line and
-             we have a separator earlier on its own line, we're in
-             a table. The simplest reliable check: does head contain
-             a `|---|---|` style separator that has no matching blank
-             line + closing? Heuristic: count newline positions of
-             lines starting with `|` minus lines starting with `|---`.
-             If positive, we're inside a table. */
-          var tableOpen=(head.match(/^\s*\|.*\|$/gm)||[]).length
-                      -(head.match(/^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/gm)||[]).length;
-          if(tableOpen>0)continue;
-          cutAt=s;break;
-        }
-        if(cutAt>40)flushIdx=cutAt+1;
-        else flushIdx=softCap;
-      }
-      if(flushIdx>0&&flushIdx<pt.length){
-        var slice=pt.slice(0,flushIdx);
-        var remaining=pt.slice(flushIdx);
-        /* Build a fresh block-level chunk, render the closed slice
-           through formatMsg, and slot it in just before the cursor.
-           The trailing "remaining" text continues as the next
-           pending zone (no formatMsg yet). */
-        var chunk=document.createElement("div");
-        chunk.className="stream-chunk";
-        try{
-          var html=formatMsg(slice);
-          chunk.innerHTML=html;
-          if(typeof hljs!=="undefined"){
-            chunk.querySelectorAll("pre code").forEach(function(c){
-              if(c.dataset&&c.dataset.hljsDone)return;
-              if(/```\s*$/.test(c.textContent||""))return;
-              try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
-            });
-          }
-        }catch(_){
-          chunk.textContent=slice;
-        }
-        streamContent.insertBefore(chunk,(chunkState.pendingNode&&chunkState.pendingNode.parentNode===streamContent)?chunkState.pendingNode:cursor);
-        /* Trigger the fade-in on the next frame so the browser
-           registers the initial opacity:0 state first. */
-        requestAnimationFrame(function(){chunk.classList.add("stream-chunk-in")});
-        chunkState.pendingText=remaining;
-        chunkState.lastFlushAt=Date.now();
-      }
-      /* Always reflect the latest raw pending text in the trailing
-         pendingNode (a plain <span> sitting just before the cursor)
-         so the user sees their response being typed live. */
-      if(pt!==chunkState.pendingText){
-        /* pendingText changed above — refresh the pendingNode from
-           the new value. */
-      }
-      if(chunkState.pendingText){
-        if(!chunkState.pendingNode){
-          chunkState.pendingNode=document.createElement("span");
-          chunkState.pendingNode.className="stream-chunk stream-chunk-pending";
-          streamContent.insertBefore(chunkState.pendingNode,cursor);
-        }
-        if(chunkState.pendingNode.textContent!==chunkState.pendingText){
-          chunkState.pendingNode.textContent=chunkState.pendingText;
-        }
-      }else if(chunkState.pendingNode){
-        chunkState.pendingNode.remove();
-        chunkState.pendingNode=null;
+      if(streamContent.textContent!==displayFull){
+        streamContent.textContent=displayFull;
       }
     }else{
       /* Think block is in play. Lay out the three-section
@@ -4955,34 +4781,19 @@ function teardownThinkStructure(){
         ?displayFull.slice(thinkState.startIdx+"<think>".length,thinkState.endIdx-"</think>".length)
         :displayFull.slice(thinkState.startIdx+"<think>".length);
       var afterText=thinkClosed?displayFull.slice(thinkState.endIdx):"";
-      /* P1.4 — write the pre/post-think slices as rendered markdown
-         HTML, not raw text. Cache the last value we wrote so we
-         only call the renderer when the slice actually grew (the
-         no-think path re-renders the entire streamContent every
-         frame; here we only need to re-render the one section that
-         changed). finish() replaces the whole body with the full
-         formatMsg pass, so this is purely the mid-stream view. */
-      if(thinkState.lastRenderedBefore!==beforeText){
-        thinkState.beforeNode.innerHTML=beforeText?formatMsgProgressive(beforeText):"";
-        if(typeof hljs!=="undefined"&&beforeText){
-          thinkState.beforeNode.querySelectorAll("pre code").forEach(function(c){
-            if(c.dataset&&c.dataset.hljsDone)return;
-            if(/```\s*$/.test(c.textContent||""))return;
-            try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
-          });
-        }
-        thinkState.lastRenderedBefore=beforeText;
+      /* P_arch typewriter — write the pre/post-think slices as RAW
+         text only. The previous code ran formatMsgProgressive on
+         every frame, which calls KaTeX on partial math — and partial
+         math that doesn't parse cleanly falls back to rendering raw
+         LaTeX source, which is exactly the broken formula the user
+         reports ("当前的渲染机制会导致很多都渲染失败"). The final
+         formatMsg pass at finish() handles everything properly; the
+         streaming view is just typewriter text. */
+      if(thinkState.beforeNode.textContent!==beforeText){
+        thinkState.beforeNode.textContent=beforeText;
       }
-      if(thinkState.lastRenderedAfter!==afterText){
-        thinkState.afterNode.innerHTML=afterText?formatMsgProgressive(afterText):"";
-        if(typeof hljs!=="undefined"&&afterText){
-          thinkState.afterNode.querySelectorAll("pre code").forEach(function(c){
-            if(c.dataset&&c.dataset.hljsDone)return;
-            if(/```\s*$/.test(c.textContent||""))return;
-            try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
-          });
-        }
-        thinkState.lastRenderedAfter=afterText;
+      if(thinkState.afterNode.textContent!==afterText){
+        thinkState.afterNode.textContent=afterText;
       }
       /* When </think> has been seen, swap the summary to a
          static label and drop the pulse — the model is done
@@ -5034,11 +4845,9 @@ function teardownThinkStructure(){
   }
   var streamContent=null;
   var cursor=null;
-  /* P_chunked-fade — chunk fade-in bookkeeping. Lives at the same
-     scope as streamContent so doRender can read/write it across
-     multiple frames. Initialised lazily inside doRender the first
-     time streamContent is created. */
-  var chunkState=null;
+  /* P_arch typewriter — no chunked bookkeeping needed. The streaming
+     surface is a single text node; new deltas are appended by
+     overwriting streamContent.textContent on each rAF frame. */
   function scheduleRender(){
     if(pendingRender||finished)return;
     /* rAF coalesces multiple deltas that land in the same frame into
@@ -5186,50 +4995,21 @@ function teardownThinkStructure(){
         return; /* finishAfterRender runs from inside typeTick */
       }
       try{
-        /* P_chunked-fade — at finish, the chunks that were already
-           streamed are sitting in streamContent, each containing its
-           own formatMsg output. Do NOT replace body.innerHTML here:
-           doing so wipes the per-chunk fade-ins the user just watched
-           appear and re-renders the whole bubble in one frame, which
-           is exactly the "all at once" symptom we were avoiding.
-
-           Instead:
-             1. Flush the trailing pendingNode (raw text slice that
-                arrived after the last chunk boundary) as a final
-                chunk via formatMsg, so the in-flight slice becomes
-                the styled chunk the user was waiting for.
-             2. Remove the stream cursor.
-             3. Capture the final concatenated HTML for state +
-                saveCurrentSession.
-           The DOM the user sees on screen is the same content they
-           were watching appear chunk-by-chunk — only the last raw
-           pendingNode is converted to formatted HTML. */
-        if(chunkState&&chunkState.pendingNode){
-          if(chunkState.pendingText){
-            var tailSlice=chunkState.pendingText;
-            try{
-              var tailHtml=formatMsg(tailSlice);
-              var tailChunk=document.createElement("div");
-              tailChunk.className="stream-chunk";
-              tailChunk.innerHTML=tailHtml;
-              if(typeof hljs!=="undefined"){
-                tailChunk.querySelectorAll("pre code").forEach(function(c){
-                  if(c.dataset&&c.dataset.hljsDone)return;
-                  if(/```\s*$/.test(c.textContent||""))return;
-                  try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
-                });
-              }
-              streamContent.insertBefore(tailChunk,cursor);
-            }catch(_){
-              /* formatMsg failed — fall back to leaving the raw text
-                 in place; the user can still read it. */
-            }
-          }
-          chunkState.pendingNode.remove();
-          chunkState.pendingNode=null;
+        /* P_arch typewriter — at finish, the in-progress raw text is
+           sitting in streamContent as a single text node. Replace the
+           bubble body with a single formatMsg pass on the full text.
+           This is the ONLY place marked + KaTeX run for the final
+           render, so the user gets exactly the same HTML they would
+           see if they re-opened the saved message. */
+        var finalHtml;
+        try{
+          finalHtml=formatMsg(full);
+        }catch(e){
+          console.warn("[finish] formatMsg error:",e&&e.message);
+          finalHtml="<p>"+esc(full)+"</p>";
         }
+        body.innerHTML=finalHtml;
         if(cursor){cursor.remove();cursor=null}
-        var finalHtml=streamContent?streamContent.innerHTML:formatMsg(full);
         if(msgIdx>=0&&state.messages[msgIdx]){
           state.messages[msgIdx].html=finalHtml;
           state.messages[msgIdx].rawText=full;
