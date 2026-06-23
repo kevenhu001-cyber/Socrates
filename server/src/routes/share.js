@@ -6,7 +6,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { NotFound } from '../lib/errors.js';
 import { generateShareToken } from '../lib/crypto.js';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 /* Helper — verify the caller owns the session and return it. */
 async function getOwnedSession(db, sessionId, userId) {
