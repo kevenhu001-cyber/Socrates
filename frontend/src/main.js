@@ -1322,17 +1322,30 @@ async function loadSession(id){
       // P-arch — re-render from rawText so the latest renderer
       // (auto-wrap bare [...] math, \[...\] support, stray-$ escape,
       // etc.) applies to OLD messages whose stored `html` was
-      // rendered with an older renderer. User messages are plain
-      // text and get HTML-escaped (they often contain stray HTML
-      // like `<p>` wrappers from the input field that we don't
-      // want to interpret as DOM). Assistant messages go through
-      // the full formatMsg pipeline.
-      if(m.role==="assistant" && m.rawText){
+      // rendered with an older renderer. User messages also go
+      // through formatMsg so markdown formatting (backticks, **bold**,
+      // lists, math) in user text renders properly, and so any
+      // legacy payloads where `rawText` was stored as the rendered
+      // HTML (e.g. "<p>讲解一下高斯定理</p>") are handled — formatMsg
+      // runs preprocessMarkdown which strips the stray <p>/<br> and
+      // re-renders cleanly. The previous code path of
+      //   body.innerHTML = "<p>"+esc(m.rawText)+"</p>"
+      // visibly displayed the literal tag text for such payloads.
+      var _userRaw = m.rawText;
+      if(m.role === "user" && _userRaw) {
+        // Strip a leading/trailing <p>...</p> wrapper that older
+        // code paths may have stored as rawText. This is a no-op
+        // for clean text like "讲解一下高斯定理".
+        _userRaw = String(_userRaw).replace(/^\s*<p>\s*/i, "").replace(/\s*<\/p>\s*$/i, "").trim();
+      }
+      if(_userRaw && m.role === "user") {
+        body.innerHTML = formatMsg(_userRaw);
+      } else if(m.role==="assistant" && m.rawText){
         body.innerHTML = formatMsg(m.rawText);
-      }else if(m.rawText){
-        body.innerHTML = "<p>"+esc(m.rawText)+"</p>";
-      }else{
-        body.innerHTML = m.html || "";
+      } else if(m.html){
+        body.innerHTML = m.html;
+      } else {
+        body.innerHTML = "";
       }
       div.appendChild(body);
       msgList.appendChild(div);
@@ -9152,12 +9165,22 @@ async function loadSharedSession(token){
       body.className="msg-body";
       // Re-render from rawText for assistant messages so the latest
       // renderer is used (see loadSession comment for rationale).
-      if(m.role==="assistant" && m.rawText){
+      // User messages also go through formatMsg so legacy payloads
+      // where rawText was the rendered HTML (e.g. "<p>...</p>") are
+      // cleaned up by preprocessMarkdown instead of being displayed
+      // as visible tag text.
+      var _userRaw = m.rawText;
+      if(m.role === "user" && _userRaw) {
+        _userRaw = String(_userRaw).replace(/^\s*<p>\s*/i, "").replace(/\s*<\/p>\s*$/i, "").trim();
+      }
+      if(_userRaw && m.role === "user") {
+        body.innerHTML = formatMsg(_userRaw);
+      } else if(m.role==="assistant" && m.rawText){
         body.innerHTML = formatMsg(m.rawText);
-      }else if(m.rawText){
-        body.innerHTML = "<p>"+esc(m.rawText)+"</p>";
-      }else{
-        body.innerHTML = m.html||m.content||"";
+      } else if(m.html){
+        body.innerHTML = m.html;
+      } else {
+        body.innerHTML = m.content||"";
       }
       div.appendChild(body);
       msgList.appendChild(div);
