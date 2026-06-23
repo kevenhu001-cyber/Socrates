@@ -2482,40 +2482,13 @@ async function startSession(){
     }catch(_){}
   }
 
-  /* Try AI-generated diagnostic questions.
-     Race against a 60-second timeout. The diagnostic prompt asks the model
-     to generate 5 multiple-choice questions in JSON, which can take 30-50s
-     on reasoning models (DeepSeek R1, QwQ, etc.) — 20s was far too tight.
-     The 60s ceiling still keeps cold start snappy enough and is well under
-     the backend's 120s upstream timeout. */
-  if(hasUsableActive()){
-    var diagTimeout=false;
-    var diagQs=await Promise.race([
-      generateDiagnosticQuestions(topic,lang),
-      new Promise(function(r){setTimeout(function(){diagTimeout=true;r(null)},60000)})
-    ]);
-    if(diagQs){state.diagQuestions=diagQs;state.lastCallSource="api";}
-    else{
-      if(diagTimeout)console.warn("[diagnostic] API timed out after 60s, falling back to mock");
-      state.diagQuestions=gen.diagQuestions;
-      state.lastCallSource="mock";
-      state.lastCallError=diagTimeout?"diag API timed out after 60s":"diag API returned no valid questions";
-    }
-  }else{
-    state.diagQuestions=gen.diagQuestions;
-    state.lastCallSource="mock";
-  }
+  /* Use built-in diagnostic questions directly. The AI-generated
+     diagnostic often times out (60s) on reasoning models, and the
+     built-in questions cover the same ground without the wait. */
+  state.diagQuestions = gen.diagQuestions;
   updateChatStats();
 
   renderDiagQuestion();
-  /* v3.0 design — if the diagnostic fell back to mock questions
-     (60s API timeout, audit U-H3), surface a banner so the user
-     is not silently handed a different exam than they were
-     promised. */
-  if(typeof tutorSocratic==="object"&&tutorSocratic
-     &&typeof tutorSocratic.renderDiagnosticBanner==="function"){
-    try{tutorSocratic.renderDiagnosticBanner()}catch(_){}
-  }
   updateKB();
 }
 
@@ -8680,9 +8653,6 @@ function renderUserFooter(){
   var tierBadge='<span class="tier-badge '+safeTier+'">'+tierLabel+'</span>';
   var safeName=escapeHtml(CURRENT_USER.displayName||CURRENT_USER.email||"");
   row.innerHTML='<div class="user-avatar">'+escapeHtml(initials)+'</div><div style="flex:1;min-width:0" onclick="event.stopPropagation();openProfile()"><div class="user-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">'+safeName+'</div><div class="user-plan">'+tierBadge+'</div></div>';
-  /* Show upgrade badge in top-right only for free-tier users. */
-  var planBadge=document.getElementById("planBadge");
-  if(planBadge)planBadge.classList.toggle("hidden",tier!=="diophantus");
   /* Clicking the avatar opens the profile modal. */
   row.querySelector(".user-avatar").onclick=function(e){e.stopPropagation();openProfile()};
 }
@@ -9954,12 +9924,11 @@ async function clearCachedProviderKey(id){
    ============================================================ */
 function toggleShareBtn(){
   var btn=document.getElementById("shareBtn");
+  var container=document.getElementById("planBadge");
   if(!btn)return;
-  if(CURRENT_USER&&state.currentSessionId&&state.topic){
-    btn.classList.remove("hidden");
-  }else{
-    btn.classList.add("hidden");
-  }
+  var show=CURRENT_USER&&state.currentSessionId&&state.topic;
+  btn.classList.toggle("hidden",!show);
+  if(container)container.classList.toggle("hidden",!show);
 }
 var _shareVisibility="public";
 var _shareToken=null;  /* current share token for this session */

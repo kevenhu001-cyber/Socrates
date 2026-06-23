@@ -607,31 +607,6 @@
   }
 
   /* ----------------------------------------------------------------
-   * Diagnostic timeout feedback
-   *
-   * Audit U-H3: the 60s timeout silently falls back to mock
-   * questions. We expose a banner so the user is told the AI
-   * timed out and the questions are best-effort placeholders.
-   * ---------------------------------------------------------------- */
-  function renderDiagnosticBanner() {
-    var view = document.getElementById('diagnosticView');
-    if (!view) return;
-    var existing = document.getElementById('diagnosticBanner');
-    if (existing) existing.remove();
-    var src = window.state && window.state.lastCallSource;
-    var err = window.state && window.state.lastCallError;
-    if (src !== 'mock') return;
-    var note = (currentLang() === 'zh')
-      ? ti('tutor.diagTimeout', '题目生成超时，使用占位题。')
-      : ti('tutor.diagTimeout', 'Question generation timed out — using placeholders.');
-    var banner = document.createElement('div');
-    banner.id = 'diagnosticBanner';
-    banner.className = 'diag-banner-warn tutor-only';
-    banner.textContent = note;
-    view.insertBefore(banner, view.firstChild);
-  }
-
-  /* ----------------------------------------------------------------
    * Mistake book filter (§9.4)
    *
    * The audit noted the mistake book shows "未消化的练习题" cards
@@ -927,7 +902,6 @@
     renderTeachingPlan: renderTeachingPlan,
     renderModeBanner: renderModeBanner,
     renderPracticeProgress: renderPracticeProgress,
-    renderDiagnosticBanner: renderDiagnosticBanner,
     evaluatePlanWarning: evaluatePlanWarning,
     invalidatePlanWarningCache: invalidatePlanWarningCache,
     renderPlanWarning: renderPlanWarning,

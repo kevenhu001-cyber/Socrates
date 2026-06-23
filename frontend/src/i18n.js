@@ -87,8 +87,6 @@ var I18N={
     "tutor.modeTutorDesc":"AI asks, follows up, and tracks what you know",
     "tutor.modeSwitchToTutor":"Switch to Tutor",
     "tutor.modeSwitchToChat":"Switch to Chat",
-    /* v3.0 design — diagnostic timeout banner. */
-    "tutor.diagTimeout":"Question generation timed out. Showing built-in placeholders. ",
     /* v3.0 design — mistake book filter (§9.4). */
     "tutor.mistakeFilterAll":"All",
     "tutor.mistakeFilterUnresolved":"Unresolved",
@@ -201,8 +199,6 @@ var I18N={
     "tutor.modeTutorDesc":"AI 主动提问并跟踪你的学习",
     "tutor.modeSwitchToTutor":"切换到引导模式",
     "tutor.modeSwitchToChat":"切换到对话模式",
-    /* v3.0 design — diagnostic timeout banner (zh) */
-    "tutor.diagTimeout":"题目生成超时，使用内置占位题。",
     /* v3.0 design — mistake book filter (zh) */
     "tutor.mistakeFilterAll":"全部",
     "tutor.mistakeFilterUnresolved":"未攻克",

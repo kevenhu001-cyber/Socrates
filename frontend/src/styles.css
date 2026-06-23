@@ -296,18 +296,12 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .topic-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:16px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.1);max-width:calc(100vw - 180px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topic-badge span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topic-badge .tb-dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000))}
-.plan-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 8px 3px 6px;border-radius:6px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));background:hsl(var(--bg-200))}
-.plan-dot{width:3px;height:3px;background:hsl(var(--text-500)/0.3);border-radius:50%}
-.plan-badge a{text-decoration:underline;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,currentColor 40%,transparent);color:hsl(var(--text-400))}
-.plan-badge a:hover{text-decoration-color:currentColor;color:hsl(var(--text-200))}
-.plan-badge-label{color:hsl(var(--text-400))}
-.plan-badge-upgrade{font-weight:500}
-.plan-badge .share-btn{margin-left:4px;padding:2px 7px;font-size:calc(11px * var(--app-font-scale, 1))}
-/* Mobile: drop the whole badge row. Free plan upgrade is
-   desktop-only; the user can find it via the user profile in
-   the sidebar. */
+.plan-badge{display:inline-flex;align-items:center}
+.plan-badge .share-btn{padding:3px 10px;font-size:calc(12px * var(--app-font-scale, 1))}
+/* Mobile: keep Share button visible; Free plan upgrade has been
+   removed from this position (accessible via sidebar profile). */
 @media(max-width:768px){
-  .plan-badge{display:none !important}
+  .plan-badge .share-btn .share-btn-label{display:none}
 }
 
 /* P1.4 — "↓ new reply" pill shown when the user has scrolled up
@@ -1905,21 +1899,6 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   cursor:pointer;flex-shrink:0;margin-left:auto;
 }
 .mode-banner-switch:hover{color:hsl(var(--accent-000))}
-
-/* Diagnostic timeout warning (audit U-H3). */
-.diag-banner-warn{
-  background:hsl(36 70% 50%/0.10);
-  color:hsl(36 70% 30%);
-  padding:4px 12px;
-  font-size:calc(11px * var(--app-font-scale, 1));
-  margin:0 0 8px;
-  border-radius:0;
-  border-top:0.5px solid hsl(36 70% 50%/0.25);
-  border-bottom:0.5px solid hsl(36 70% 50%/0.25);
-}
-[data-theme=socrates][data-mode=dark] .diag-banner-warn{
-  color:hsl(45 70% 80%);background:hsl(36 70% 30%/0.15);
-}
 
 /* Mistake book filter bar. */
 .mistake-filter-bar{
