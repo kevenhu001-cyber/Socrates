@@ -171,8 +171,8 @@ app.post('/api/search', requireAuth, async (req, res, next) => {
 // per user and surface 429 if needed in the future.
 app.post('/api/web-search', searchLimiter, requireAuth, async (req, res, next) => {
   try {
-    const { query, count } = req.body || {};
-    const results = await webSearch(query, count);
+    const { query, count, enrich } = req.body || {};
+    const results = await webSearch(query, count, { userId: req.userId, enrich });
     return res.json({ results, query: String(query || '').slice(0, 200) });
   } catch (err) { next(err); }
 });

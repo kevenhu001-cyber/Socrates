@@ -1,18 +1,45 @@
 import { BadRequest } from '../lib/errors.js';
+import { expandQuery } from './queryExpander.js';
+import { fetchBatch } from './fetchBatch.js';
+import {
+  scoreKeywordSignals,
+  scoreTitleQueryMatch,
+  scoreAuthority,
+  scoreFreshness,
+  scoreDateFromUrlPath,
+  scoreCrossSource,
+  scoreSpamPenalty,
+  contentQualityBoost,
+} from './scoring.js';
 
 /**
  * Web search backend — multi-source, high-precision search.
  *
- * Strategy: run Bing + Google (scraped HTML) in PARALLEL for every query,
- * merge results with deduplication, and return the best unified set.
- * Two parallel sources dramatically improves both coverage and resilience:
- * if Bing's HTML changes, Google still works and vice versa.
+ * Strategy (current):
+ *   1. Expand the user's query into 1-3 variants using the LLM
+ *      (server/src/services/queryExpander.js).
+ *   2. For each variant, run Bing + Google + Baidu (HTML scraping) in
+ *      parallel.
+ *   3. Merge across all variants × all engines with Reciprocal Rank
+ *      Fusion (RRF), tracking which query variants surfaced each URL.
+ *   4. Fetch the top 6 URLs in parallel and extract their main content
+ *      using Readability (server/src/services/contentExtractor.js,
+ *      wired in via server/src/services/fetchBatch.js).
+ *   5. Re-score with title-query match, URL-path date, content
+ *      quality, and spam penalties (server/src/services/scoring.js).
+ *   6. Return the top `count` results, with new fields attached:
+ *      `fullContent`, `excerpt`, `pageDate`, `wordCount`,
+ *      `fetchMethod`, `matchedQueries`, `expandedQueries`.
  *
- * Fallback chain per source: primary selector → secondary selector →
- * regex-based extraction → graceful empty.
- *
- * Future: Brave Search API (free tier, ~2k queries/month) or SerpAPI
- * can be added as a third parallel source with minimal changes.
+ * Backwards compatibility:
+ *   - The endpoint signature is `webSearch(query, count, opts)`. The
+ *     third arg is optional. If not passed, expansion falls back to
+ *     [query] and the userId lookup in queryExpander returns no LLM
+ *     config → it just runs the search on the raw query (the old
+ *     behavior).
+ *   - Each result keeps all legacy fields. New fields are additive.
+ *   - If `opts.enrich === false`, the fetch+extract step is skipped
+ *     and SERP-only results are returned.
  */
 
 /* ─── Configuration ─── */
@@ -509,18 +536,24 @@ function rrfScore(rank, k = 60) {
 
 /**
  * Merge results from multiple sources using Reciprocal Rank Fusion.
- * Each engine's ranked list contributes RRF scores, then results are
- * combined, deduplicated, and annotated with cross-source metadata.
+ *
+ * Accepts a list of `{ query, results }` pairs so each result can be
+ * tagged with the query variant that returned it (a strong relevance
+ * signal: a URL surfaced by both the user's exact query AND an LLM-
+ * reformulated variant is more likely to be on-topic).
+ *
+ * Combines results with RRF, deduplicates by normalized URL, applies
+ * keyword / authority / freshness / spam scoring helpers, then sorts.
  */
-function mergeResultsRRF(sources, query, limit) {
+function mergeResultsRRF(sourceLists, primaryQuery, limit) {
   const seen = new Map();
-  const queryWords = query.toLowerCase().split(/\W+/).filter(w => w.length > 2);
+  const queryWords = primaryQuery.toLowerCase().split(/\W+/).filter(w => w.length > 2);
   const queryBigrams = [];
   for (let i = 0; i < queryWords.length - 1; i++) {
     queryBigrams.push(queryWords[i] + ' ' + queryWords[i + 1]);
   }
 
-  for (const results of sources) {
+  for (const { query: sourceQuery, results } of sourceLists) {
     if (!results || !results.length) continue;
     for (let rank = 0; rank < results.length; rank++) {
       const r = results[rank];
@@ -533,7 +566,7 @@ function mergeResultsRRF(sources, query, limit) {
 
       const existing = seen.get(norm);
       if (existing) {
-        existing.rrfScore += rrfScore(rank); // use this engine's rank too
+        existing.rrfScore += rrfScore(rank);
         existing.sourceCount = (existing.sourceCount || 1) + 1;
         existing.sources = existing.sources || [existing.source];
         existing.sources.push(r.source);
@@ -541,134 +574,145 @@ function mergeResultsRRF(sources, query, limit) {
           existing.snippet = r.snippet;
         }
         existing._engineRanks.push(rank);
+        // Track which query variants surfaced this URL.
+        if (sourceQuery && !existing.matchedQueries.includes(sourceQuery)) {
+          existing.matchedQueries.push(sourceQuery);
+        }
         continue;
       }
 
-      // Calculate relevance score (0-100) combining RRF + keyword signals
-      const title = (r.title || '').toLowerCase();
-      const snippet = (r.snippet || '').toLowerCase();
-      let score = rrfScore(rank) * 100;  // base from RRF
-
-      // Keyword signals
-      for (const w of queryWords) {
-        if (title.indexOf(w) !== -1) score += 3;
-        if (snippet.indexOf(w) !== -1) score += 1.5;
-      }
-      for (const bg of queryBigrams) {
-        if (title.indexOf(bg) !== -1) score += 4;
-        if (snippet.indexOf(bg) !== -1) score += 2;
-      }
-
-      // Domain authority bonus
-      const auth = r.authority || 'normal';
-      if (auth === 'gov' || auth === 'edu') score += 3;
-      else if (auth === 'high') score += 1.5;
-
-      // Freshness bonus
-      if (r.date) {
-        const pub = new Date(r.date).getTime();
-        if (!isNaN(pub)) {
-          const ageDays = (Date.now() - pub) / 86400000;
-          if (ageDays < 30) score += 2;
-          else if (ageDays < 365) score += 1;
-          else if (ageDays < 1825) score += 0.5;
-        }
-      }
-
-      // Spam penalty
-      try {
-        const host = new URL(r.url).hostname;
-        const spammy = ['doubleclick.net', 'googleadservices.com', 'amazon-adsystem.com'];
-        if (spammy.some(s => host.includes(s))) score -= 5;
-      } catch {}
+      // First time we see this URL: build the base relevance score.
+      const score =
+        rrfScore(rank) * 100
+        + scoreKeywordSignals(r.title, r.snippet, queryWords, queryBigrams)
+        + scoreAuthority(r.authority)
+        + scoreFreshness(r.date)
+        + scoreSpamPenalty(r.url, r.title);
 
       r._relevance = Math.round(Math.min(100, Math.max(0, score)));
       r.rrfScore = rrfScore(rank);
       r.sourceCount = 1;
       r.sources = [r.source];
       r._engineRanks = [rank];
+      r.matchedQueries = sourceQuery ? [sourceQuery] : [];
 
       seen.set(norm, r);
     }
   }
 
-  // Finalize: boost cross-source results, sort by combined score
+  // Cross-source + early-rank boost, applied uniformly through the
+  // helper so the scoring rules stay co-located.
   const merged = Array.from(seen.values());
   for (const r of merged) {
-    // Cross-source results get extra boost
-    if (r.sourceCount >= 2) {
-      r._relevance = Math.min(100, r._relevance + 8);
-    }
-    // Upvote results with high RRF (early in many engine rankings)
-    const avgRank = r._engineRanks.reduce((a, b) => a + b, 0) / r._engineRanks.length;
-    if (avgRank < 3) r._relevance = Math.min(100, r._relevance + 5);
+    r._relevance = Math.min(100, r._relevance + scoreCrossSource(r));
   }
 
   merged.sort((a, b) => b._relevance - a._relevance);
   return merged.slice(0, limit).map(r => {
-    const { _relevance, sourceCount, sources, rrfScore, _engineRanks, ...rest } = r;
-    return { ...rest, matchedQuery: query, _relevance, sourceCount, sources };
+    const { _relevance, sourceCount, sources, rrfScore, _engineRanks, matchedQueries, ...rest } = r;
+    return {
+      ...rest,
+      matchedQuery: primaryQuery,
+      matchedQueries: matchedQueries || [],
+      _relevance,
+      sourceCount,
+      sources,
+    };
   });
 }
 
 /**
- * Run a web search across Bing + Google + 百度(Baidu) in parallel, merge
- * results with Reciprocal Rank Fusion and deduplication. All three
- * engines are accessible from mainland China.
+ * Run a web search across Bing + Google + 百度(Baidu), with optional
+ * query expansion and full-content enrichment. Pipeline:
  *
- * Returns: { results: [{ title, url, snippet, date, authority, source,
- *                        _relevance, sourceCount, sources }] }
+ *   1. Expand the user's query into 1–3 variants via the LLM (cached).
+ *   2. For each variant, run Bing + Google + Baidu in parallel.
+ *   3. Merge across all variants × all engines with RRF, tracking
+ *      which queries surfaced each URL (`matchedQueries`).
+ *   4. Fetch the top-N URLs in parallel and extract their main content
+ *      (Mozilla Readability, with text-density fallback).
+ *   5. Re-score with title-query match, URL-path date, content-quality
+ *      boost, and spam penalties. Attach `fullContent`, `excerpt`,
+ *      `pageDate`, `wordCount`, `fetchMethod` to each result.
  *
- * Each result is tagged with:
- *   - `source`: original engine ('bing' | 'google' | 'baidu')
- *   - `sources`: array of engines that found this URL (dedup signal)
- *   - `sourceCount`: how many engines found it (higher = more reliable)
- *   - `_relevance`: 0-100 relevance score to the query
- *   - `date`: parsed publish date (ISO string) or null
- *   - `authority`: 'gov' | 'edu' | 'org' | 'high' | 'normal'
+ * Returns: an array of result objects, all legacy fields preserved
+ * (`title, url, snippet, date, authority, source, _relevance,
+ * sourceCount, sources, matchedQuery`) plus additive new fields.
+ *
+ * @param {string} query       The user's search query.
+ * @param {number} [count=10]  How many results to return (1–20).
+ * @param {object} [opts]
+ * @param {string} [opts.userId]   User ID, for picking the user's
+ *                                 active LLM config for query
+ *                                 expansion. If absent, expansion
+ *                                 falls back to `[query]` (no LLM).
+ * @param {boolean} [opts.enrich=true]  When false, skip the
+ *                                      fetch+extract step (faster,
+ *                                      SERP-snippet-only path).
  */
-export async function webSearch(query, count = 10) {
+export async function webSearch(query, count = 10, opts = {}) {
   if (!query || !String(query).trim()) {
     throw new BadRequest('Query is required');
   }
+  const enrich = opts.enrich !== false;
   const limit = Math.max(1, Math.min(MAX_RESULTS_MERGED, parseInt(count, 10) || 10));
 
-  // Run all three sources in PARALLEL
-  const [bingResults, googleResults, baiduResults] = await Promise.allSettled([
-    searchBing(query, MAX_RESULTS),
-    searchGoogle(query, MAX_RESULTS),
-    searchBaidu(query, MAX_RESULTS),
-  ]);
+  // 1. Query expansion (cached, 6s timeout, falls back to [query])
+  const queries = await expandQuery(query, { userId: opts.userId });
 
-  // Log per-source failures for diagnostics — critical because any of
-  // these engines can silently fail (blocked, captcha, HTML change).
-  if (bingResults.status === 'rejected')    console.error('[webSearch] Bing failed:', bingResults.reason?.message || bingResults.reason);
-  if (googleResults.status === 'rejected')  console.error('[webSearch] Google failed:', googleResults.reason?.message || googleResults.reason);
-  if (baiduResults.status === 'rejected')   console.error('[webSearch] Baidu failed:', baiduResults.reason?.message || baiduResults.reason);
+  // 2. Multi-variant × multi-source fan-out
+  const perVariant = await Promise.allSettled(
+    queries.map((q) => Promise.allSettled([
+      searchBing(q, MAX_RESULTS),
+      searchGoogle(q, MAX_RESULTS),
+      searchBaidu(q, MAX_RESULTS),
+    ]))
+  );
 
-  const sources = [
-    bingResults.status === 'fulfilled' ? bingResults.value : [],
-    googleResults.status === 'fulfilled' ? googleResults.value : [],
-    baiduResults.status === 'fulfilled' ? baiduResults.value : [],
-  ];
+  // Flatten per-variant results into the {query, results[]} shape that
+  // mergeResultsRRF expects. Skip variants where every engine failed.
+  const sourceLists = [];
+  perVariant.forEach((settled, idx) => {
+    const variantQuery = queries[idx];
+    if (settled.status !== 'fulfilled') return;
+    const [bing, google, baidu] = settled.value;
+    const values = [
+      bing.status === 'fulfilled' ? bing.value : [],
+      google.status === 'fulfilled' ? google.value : [],
+      baidu.status === 'fulfilled' ? baidu.value : [],
+    ];
+    // Diagnostic logging for the PRIMARY query variant (queries[0])
+    // only — too noisy to log for every variant.
+    if (idx === 0) {
+      if (values[0].length === 0) console.error('[webSearch] Bing returned 0 results');
+      if (values[1].length === 0) console.error('[webSearch] Google returned 0 results');
+      if (values[2].length === 0) console.error('[webSearch] Baidu returned 0 results');
+      if (bing.status === 'rejected')    console.error('[webSearch] Bing failed:', bing.reason?.message || bing.reason);
+      if (google.status === 'rejected')  console.error('[webSearch] Google failed:', google.reason?.message || google.reason);
+      if (baidu.status === 'rejected')   console.error('[webSearch] Baidu failed:', baidu.reason?.message || baidu.reason);
+    }
+    // Emit one entry per non-empty source so matchedQueries tracks
+    // which variant surfaced each URL.
+    for (const v of values) {
+      if (v && v.length) sourceLists.push({ query: variantQuery, results: v });
+    }
+  });
 
-  // Log if sources returned empty (valid HTML but no results parsed)
-  if (!sources[0].length) console.error('[webSearch] Bing returned 0 results');
-  if (!sources[1].length) console.error('[webSearch] Google returned 0 results');
-  if (!sources[2].length) console.error('[webSearch] Baidu returned 0 results');
+  // 3. Merge with RRF
+  let merged = mergeResultsRRF(sourceLists, query, MAX_RESULTS_MERGED);
 
-  const merged = mergeResultsRRF(sources, query, limit);
-
-  // If all sources returned nothing, retry each source once in sequence
+  // Emergency fallback: if everything came back empty, retry each
+  // engine once on the original query (existing safety net).
   if (!merged.length) {
-    console.error('[webSearch] All sources returned empty — retrying each source');
+    console.error('[webSearch] All sources × variants returned empty — retrying primary query');
     for (const [name, fn] of [['Bing', searchBing], ['Google', searchGoogle], ['Baidu', searchBaidu]]) {
       try {
         const retry = await fn(query, limit);
         if (retry && retry.length) {
-          console.error('[webSearch] Retry succeeded with', name, '—', retry.length, 'results');
-          const fallback = mergeResultsRRF([retry, [], []], query, limit);
-          if (fallback.length) return fallback;
+          const fallback = mergeResultsRRF(
+            [{ query, results: retry }], query, limit
+          );
+          if (fallback.length) { merged = fallback; break; }
         }
       } catch (e) {
         console.error('[webSearch] Retry also failed for', name, ':', e.message);
@@ -676,7 +720,72 @@ export async function webSearch(query, count = 10) {
     }
   }
 
-  return merged;
+  // 4. Fetch top-N URLs and extract main content (when enrich enabled)
+  const fetchedByUrl = new Map();
+  if (enrich && merged.length) {
+    const topUrls = merged.slice(0, MAX_FETCH_DOCS).map((r) => r.url);
+    try {
+      const { results: fetched } = await fetchBatch(topUrls);
+      for (const item of fetched) {
+        if (item && item.ok) fetchedByUrl.set(item.url, item);
+      }
+    } catch (e) {
+      console.error('[webSearch] fetchBatch failed:', e.message);
+    }
+  }
+
+  // 5. Attach extracted content + re-score
+  const queryWords = query.toLowerCase().split(/\W+/).filter(w => w.length > 2);
+  const finalResults = merged.map((r) => {
+    const fetched = fetchedByUrl.get(r.url);
+    const next = { ...r };
+
+    if (fetched) {
+      next.fullContent = fetched.content || null;
+      next.excerpt = fetched.excerpt || null;
+      next.pageDate = fetched.pageDate || scoreDateFromUrlPath(r.url) || r.date || null;
+      next.wordCount = fetched.wordCount || 0;
+      next.fetchMethod = fetched.method || null;
+    } else {
+      next.fullContent = null;
+      next.excerpt = null;
+      next.pageDate = scoreDateFromUrlPath(r.url) || r.date || null;
+      next.wordCount = 0;
+      next.fetchMethod = null;
+    }
+
+    // Re-score with the post-extraction signals. The base RRF +
+    // keyword/authority/freshness/spam score is already on
+    // `next._relevance`; we ADD new deltas here and clamp.
+    let score = next._relevance;
+    score += scoreTitleQueryMatch(next.title, queryWords);
+    score += scoreFreshness(next.pageDate);     // URL-path / meta-tag date may differ from snippet
+    score += contentQualityBoost(next.wordCount);
+    score += scoreSpamPenalty(next.url, next.title); // re-check spam in case URL-only signals changed
+    next._relevance = Math.round(Math.min(100, Math.max(0, score)));
+    return next;
+  });
+
+  // 6. Sort by the updated score and trim to the requested limit
+  finalResults.sort((a, b) => b._relevance - a._relevance);
+
+  // 7. Surface the variants we actually searched on so the caller can
+  // show them in UI. Attach at the top level via a wrapper if needed;
+  // for backwards compat we add it as a non-enumerable sidecar on the
+  // array so JSON.stringify still drops it (callers can read it via
+  // results.expandedQueries || fall back to legacy `query`).
+  try {
+    Object.defineProperty(finalResults, 'expandedQueries', {
+      value: queries,
+      enumerable: false,
+      configurable: true,
+      writable: false,
+    });
+  } catch {
+    /* defineProperty on a plain array should always work; ignore */
+  }
+
+  return finalResults.slice(0, limit);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
