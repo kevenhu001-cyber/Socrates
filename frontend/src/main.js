@@ -9669,6 +9669,13 @@ var SEARCH_TIMEOUT_MS=12000;
 
 async function fetchWebContext(topic,opts){
   opts=opts||{};
+  /* Phase 3: optional onStep observer. Emits step events at every natural
+     pipeline boundary so the UI (search-progress log) can render a
+     streaming activity feed. Wrapped in try/catch so a UI bug never
+     breaks the search itself. */
+  function _emit(kind,data){
+    try{if(typeof opts.onStep==="function")opts.onStep({kind:kind,data:data||{}})}catch(_){}
+  }
   if(!webSearchOn||!topic)return{ok:false,reason:"disabled",results:0,context:""};
   if(opts.background){
     /* Background refresh — set the pill to "refreshing" but don't await.
@@ -9689,6 +9696,7 @@ async function fetchWebContext(topic,opts){
   }else{
     try{setSearchPill("loading",0,"Searching…")}catch(_){}
   }
+  _emit("started",{topic:topic,background:!!opts.background});
   /* Offline precheck — fail fast in background too, so the pill
      resolves to an error state instead of hanging on "Refreshing…". */
   if(offlineGuard()){
@@ -9709,6 +9717,7 @@ async function fetchWebContext(topic,opts){
   if(queries.indexOf(topic)===-1)queries.push(topic);
   /* Cap to 6 for a good balance of breadth vs latency. */
   if(queries.length>6)queries=queries.slice(0,6);
+  _emit("expanding",{queries:queries.slice(),count:queries.length});
   /* Always do at least one search; dedupe results by URL. */
   var ac=new AbortController();
   var tmo=setTimeout(function(){ac.abort("timeout")},SEARCH_TIMEOUT_MS);
@@ -9716,7 +9725,8 @@ async function fetchWebContext(topic,opts){
     /* Run searches in parallel for both queries. */
     var searchResults=[];
     var seenUrls={};
-    var searches=queries.map(function(q){
+    var searches=queries.map(function(q,idx){
+      _emit("querying",{query:q,idx:idx,total:queries.length});
       return apiFetchRaw("/api/web-search",{
         method:"POST",
         body:{query:q,count:8},
@@ -9727,6 +9737,7 @@ async function fetchWebContext(topic,opts){
     });
     var searchResps=await Promise.all(searches);
     for(var si=0;si<searchResps.length;si++){
+      _emit("got_results",{query:searchResps[si].query,count:(searchResps[si].results||[]).length});
       var sr=searchResps[si];
       if(!sr.ok||!sr.results)continue;
       for(var ri=0;ri<sr.results.length;ri++){
@@ -9743,6 +9754,7 @@ async function fetchWebContext(topic,opts){
     /* If every search failed AND we used the rewriter, retry once with
        the raw topic — sometimes the rewriter is too aggressive. */
     if(!searchResults.length&&queries[0]!==topic){
+      _emit("retry",{reason:"all-failed",query:topic});
       try{
         var r2=await apiFetchRaw("/api/web-search",{
           method:"POST",
@@ -9751,6 +9763,7 @@ async function fetchWebContext(topic,opts){
         });
         var d2=await r2.json();
         searchResults=(d2.results||[]).map(function(x){return Object.assign({matchedQuery:topic},x)});
+        _emit("got_results",{query:topic,count:searchResults.length});
       }catch(_){}
     }
     if(!searchResults.length){
@@ -9760,6 +9773,7 @@ async function fetchWebContext(topic,opts){
       var emsg=firstErr?(firstErr.status?"HTTP "+firstErr.status:(firstErr.reason||"failed")):"no results";
       console.warn("[web search] all queries failed:",emsg);
       state.searchContextError=emsg;
+      _emit("error",{message:emsg,code:"no-results"});
       try{setSearchPill("err",0,"Search failed: "+emsg)}catch(_){}
       return{ok:false,reason:emsg,results:0,context:opts.background?state.searchContext||"":""};
     }
@@ -9780,6 +9794,7 @@ async function fetchWebContext(topic,opts){
     var topUrls=d.results.slice(0,8).map(function(x){return x.url});
     var fetched=[];
     if(topUrls.length){
+      _emit("fetching",{urls:topUrls,count:topUrls.length});
       try{
         var fb=await apiFetchRaw("/api/fetch-batch",{
           method:"POST",
@@ -9788,8 +9803,11 @@ async function fetchWebContext(topic,opts){
         });
         var fd=await fb.json();
         fetched=fd.results||[];
+        var okN=fetched.filter(function(x){return x&&x.ok}).length;
+        _emit("fetched",{okCount:okN,total:topUrls.length});
       }catch(e){
         console.warn("[web fetch] batch failed:",e&&e.message,"status:",e&&e.status);
+        _emit("fetched",{okCount:0,total:topUrls.length,error:e&&e.message});
       }
     }
     /* Merge: for each result, attach the fetched body if successful. */
@@ -9845,9 +9863,24 @@ async function fetchWebContext(topic,opts){
       var maxScore=topicWords.length*28+(topicWords.length-1)*30;
       x._relevance=Math.round(Math.min(100,score/Math.max(1,maxScore)*100));
     });
+    /* Phase 3: emit a summary of the relevance distribution. The UI uses
+       this to render "Top match: 78% relevance" or similar. */
+    {
+      var dist=[0,0,0];  // b30, 30-69, 70+
+      var topRel=0,sumRel=0,scoredN=enriched.length;
+      for(var di=0;di<enriched.length;di++){
+        var r=enriched[di]._relevance||0;
+        sumRel+=r;
+        if(r>topRel)topRel=r;
+        if(r<30)dist[0]++;else if(r<70)dist[1]++;else dist[2]++;
+      }
+      _emit("scored",{avgRel:scoredN?Math.round(sumRel/scoredN):0,topRel:topRel,distribution:dist,count:scoredN});
+    }
     /* Filter out low-quality results — don't just tag them, remove them.
        This prevents the model from wasting context on irrelevant pages. */
+    var preFilterCount=enriched.length;
     enriched=enriched.filter(function(x){return x._relevance>=30});
+    _emit("filtered",{keptCount:enriched.length,droppedCount:preFilterCount-enriched.length});
     /* If filtering gutted the list, keep at least the top 3 (they might
        still be useful even if weakly matched). */
     if(!enriched.length){
@@ -9891,6 +9924,16 @@ async function fetchWebContext(topic,opts){
     state.searchContextQuery=topic;
     state.searchResults=enriched;   /* [{title,url,snippet,fullContent?,truncated?}] */
     var fetchedCount=enriched.filter(function(x){return!!x.fullContent}).length;
+    /* Phase 3: emit per-source engine breakdown so the UI can render
+       "Wikipedia ×2, arXiv ×1, Bing ×3" in the summary. */
+    {
+      var engineCounts={};
+      for(var ei=0;ei<enriched.length;ei++){
+        var s=enriched[ei].source||"web";
+        engineCounts[s]=(engineCounts[s]||0)+1;
+      }
+      _emit("done",{finalCount:enriched.length,fetchedCount:fetchedCount,engines:engineCounts});
+    }
     console.log("[web search]",enriched.length,"results ("+fetchedCount+" fetched) for:",topic);
     try{setSearchPill("ok",enriched.length,enriched.length+" sources"+(fetchedCount?" · "+fetchedCount+" full":""))}catch(_){}
     return{ok:true,reason:"ok",results:enriched.length,context:ctx,sources:enriched};
@@ -9899,6 +9942,7 @@ async function fetchWebContext(topic,opts){
     var emsg=(e&&e.message)||String(e);
     console.warn("[web search] failed:",emsg);
     state.searchContextError=emsg;
+    _emit("error",{message:emsg,code:"exception"});
     try{setSearchPill("err",0,"Search: "+emsg)}catch(_){}
     /* Keep the previous context so a transient failure doesn't drop
        grounding from the next turn. */
