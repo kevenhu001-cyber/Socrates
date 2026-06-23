@@ -1314,6 +1314,14 @@ async function loadSession(id){
     document.getElementById("chatDomain").textContent=state.domain;
     var msgList=document.getElementById("msgList");
     msgList.innerHTML="";
+    // P-arch context-resume — reset the authoritative message list so
+    // extractHistory() sees the loaded history when the user sends
+    // the next turn. Without this, the user opens an old session,
+    // types a new message, and the LLM only sees the new question
+    // — the prior conversation context is dropped because
+    // state.messages was still pointing at the previous (or empty)
+    // session's list.
+    state.messages.length = 0;
     (s.messages||[]).forEach(function(m){
       var div=document.createElement("div");
       div.className="msg "+m.role;
@@ -1338,15 +1346,33 @@ async function loadSession(id){
         // for clean text like "讲解一下高斯定理".
         _userRaw = String(_userRaw).replace(/^\s*<p>\s*/i, "").replace(/\s*<\/p>\s*$/i, "").trim();
       }
+      var renderHtml = "";
       if(_userRaw && m.role === "user") {
-        body.innerHTML = formatMsg(_userRaw);
+        renderHtml = formatMsg(_userRaw);
       } else if(m.role==="assistant" && m.rawText){
-        body.innerHTML = formatMsg(m.rawText);
+        renderHtml = formatMsg(m.rawText);
       } else if(m.html){
-        body.innerHTML = m.html;
-      } else {
-        body.innerHTML = "";
+        renderHtml = m.html;
       }
+      body.innerHTML = renderHtml;
+      // Reuse the server-side UUID as the clientId so edit/delete
+      // can address the real DB row; fall back to a synthetic id
+      // for messages that lack a server id (older payloads).
+      var clientId = m.id || ("loaded-"+(m.clientId || generateId()));
+      div.dataset.clientId = clientId;
+      // Mirror into the authoritative state.messages so the next
+      // chat turn sends the full history to the LLM via
+      // extractHistory(). `rawText` is the canonical source for
+      // history (the LLM context is plain text); `html` is what
+      // we just rendered. type/actions are unused on load.
+      state.messages.push({
+        clientId: clientId,
+        role: m.role,
+        rawText: m.rawText || "",
+        html: renderHtml,
+        type: m.type || null,
+        actions: null
+      });
       div.appendChild(body);
       msgList.appendChild(div);
     });
@@ -9158,6 +9184,13 @@ async function loadSharedSession(token){
     /* Render messages in read-only mode. */
     var msgList=document.getElementById("msgList");
     msgList.innerHTML="";
+    // P-arch context-resume — mirror loaded messages into state.messages
+    // so a follow-up chat turn can include the prior conversation in
+    // its history payload. Shared sessions are read-only for replying
+    // (the input bar is hidden further down), so this primarily
+    // ensures the local copy and DOM stay in sync; if reply is later
+    // enabled, the history will already be present.
+    state.messages.length = 0;
     session.messages.forEach(function(m){
       var div=document.createElement("div");
       div.className="msg "+(m.role||"assistant");
@@ -9173,15 +9206,27 @@ async function loadSharedSession(token){
       if(m.role === "user" && _userRaw) {
         _userRaw = String(_userRaw).replace(/^\s*<p>\s*/i, "").replace(/\s*<\/p>\s*$/i, "").trim();
       }
+      var renderHtml = "";
       if(_userRaw && m.role === "user") {
-        body.innerHTML = formatMsg(_userRaw);
+        renderHtml = formatMsg(_userRaw);
       } else if(m.role==="assistant" && m.rawText){
-        body.innerHTML = formatMsg(m.rawText);
+        renderHtml = formatMsg(m.rawText);
       } else if(m.html){
-        body.innerHTML = m.html;
+        renderHtml = m.html;
       } else {
-        body.innerHTML = m.content||"";
+        renderHtml = m.content||"";
       }
+      body.innerHTML = renderHtml;
+      var clientId = m.id || ("shared-"+generateId());
+      div.dataset.clientId = clientId;
+      state.messages.push({
+        clientId: clientId,
+        role: m.role,
+        rawText: m.rawText || "",
+        html: renderHtml,
+        type: m.type || null,
+        actions: null
+      });
       div.appendChild(body);
       msgList.appendChild(div);
     });
