@@ -258,6 +258,7 @@
       <div class="sidebar-tab" id="tabAgent" onclick="switchTab('agent')">Agent</div>
     </div>
     <div class="knowledge-panel" id="knowledgePanel">
+      <div id="teachingPlanContent"></div>
       <div id="kbContent"><div class="kb-empty">Set a learning topic to build your knowledge map.</div></div>
     </div>
     <div class="recents-panel hidden" id="recentsPanel">
@@ -371,6 +372,41 @@
           </div>
         </div>
 
+        <!-- v3.0 design — §10.1 long-term-plan optional inputs.
+             All three fields are OPTIONAL. If the user leaves
+             them empty the system still works (it just won't
+             warn about deadline pressure or pace targets). The
+             whole row is collapsed under a "Show optional plan"
+             toggle to keep the cold-start friction low (§4.1). -->
+        <div class="plan-setup" id="planSetup">
+          <button class="plan-setup-toggle" id="planSetupToggle" type="button" aria-expanded="false" aria-controls="planSetupFields">
+            <span class="plan-setup-caret" aria-hidden="true">›</span>
+            <span class="plan-setup-label" data-i18n="tutor.planSetupToggle">Optional: set a target date and daily time</span>
+          </button>
+          <div class="plan-setup-fields" id="planSetupFields" hidden>
+            <label class="plan-setup-field">
+              <span class="plan-setup-field-label" data-i18n="tutor.planSetupTargetDate">Target date</span>
+              <input class="plan-setup-input" type="date" id="planTargetDateInput">
+            </label>
+            <label class="plan-setup-field">
+              <span class="plan-setup-field-label" data-i18n="tutor.planSetupDailyMinutes">Daily minutes</span>
+              <input class="plan-setup-input" type="number" id="planDailyMinutesInput" min="5" max="240" step="5" value="30">
+            </label>
+            <div class="plan-setup-field plan-setup-field-rest">
+              <span class="plan-setup-field-label" data-i18n="tutor.planSetupRestDays">Rest days</span>
+              <div class="plan-setup-restdays" id="planRestDays" role="group" aria-label="Rest days of the week">
+                <button type="button" class="plan-restday" data-day="0">Sun</button>
+                <button type="button" class="plan-restday" data-day="1">Mon</button>
+                <button type="button" class="plan-restday" data-day="2">Tue</button>
+                <button type="button" class="plan-restday" data-day="3">Wed</button>
+                <button type="button" class="plan-restday" data-day="4">Thu</button>
+                <button type="button" class="plan-restday" data-day="5">Fri</button>
+                <button type="button" class="plan-restday" data-day="6">Sat</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="topic-setup-row">
         <div class="model-picker" id="modelPicker" data-open="false">
           <button class="model-picker-trigger" id="modelPickerTrigger" type="button" onclick="toggleModelPicker()" aria-haspopup="listbox" aria-expanded="false" title="Pick which model to use for this conversation">
@@ -469,6 +505,7 @@
      and artifact entries. -->
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js" integrity="sha384-PCSoOZTpbkikBEtd/+uV3WNdc676i9KUf01KOA8CnJotvlx8rRrETbDuwdjqTYvt" crossorigin="anonymous"></script>
 <script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/tutorSocratic.js"></script>
 
 <!-- Settings Modal -->
 <!-- P1.2 — global search modal. Toggled by `Cmd/Ctrl+K` (and

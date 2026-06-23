@@ -717,6 +717,10 @@ function switchTab(tab){
   if(tab==="recents")renderRecents();
   if(tab==="mistakes")renderMistakes();
   if(tab==="agent")renderAgentHistory();
+  /* Task 3.3 — refresh the teaching-plan view whenever the
+     Knowledge tab is shown, so the stage / current sub-topic
+     stay in sync after in-chat advances. */
+  if(tab==="knowledge")renderKnowledgeView();
 }
 
 /* ============================================================
@@ -1233,6 +1237,29 @@ function doSave(){
     currentNode:state.kb.currentNode,
     totalQ:state.session.totalQ,
     phase:state.phase,
+    /* Task 2.4 — persist the teaching-stage state machine so a
+       reloaded session resumes at the right stage. The backend
+       sessions.js uses .passthrough() so these extra fields are
+       accepted without schema changes. */
+    teachingStage:state.session.teachingStage||"motivate",
+    currentExampleIdx:state.session.currentExampleIdx||0,
+    practiceAttempts:state.session.practiceAttempts||0,
+    practicePhase:state.session.practicePhase||"foundation",
+    teachingPlan:state.session.teachingPlan||null,
+    /* v3.0 design — persist the long-term-plan optional fields
+       (§10) so a reloaded session restores the deadline, daily
+       budget, and rest-day selection. The backend sessions
+       schema uses .passthrough() so these are accepted as-is. */
+    planTargetDate:state.session.planTargetDate||null,
+    planDailyMinutes:state.session.planDailyMinutes||30,
+    planWeeklyRestDays:state.session.planWeeklyRestDays||[],
+    planStartedAt:state.session.planStartedAt||null,
+    planLastWarnedAt:state.session.planLastWarnedAt||0,
+    /* v3.0 design — knowledge boundary history (snapshots) and
+       mistake filter are also persisted so the sidebar state
+       survives reloads. */
+    boundariesHistory:state.kb.boundariesHistory||[],
+    mistakeFilter:state.kb.mistakeFilter||"all",
     updatedAt:now,
   };
   state.currentSessionId=sessionId;
@@ -1301,6 +1328,31 @@ async function loadSession(id){
     state.diagAnswers=[];
     state.diagQuestions=[];
     state.explaining=false;
+    /* Task 2.4 — restore the teaching-stage state machine. Default
+       to motivate / 0 / null for sessions saved before Task 2.1. */
+    state.teachingStage=s.teachingStage||"motivate";
+    state.currentExampleIdx=s.currentExampleIdx||0;
+    state.practiceAttempts=s.practiceAttempts||0;
+    state.practicePhase=s.practicePhase||"foundation";
+    state.teachingPlan=s.teachingPlan||null;
+    /* v3.0 design — restore the long-term plan fields. Sessions
+       saved before this field existed default to a 30 min/day
+       budget with no deadline. */
+    state.session.planTargetDate=s.planTargetDate||null;
+    state.session.planDailyMinutes=s.planDailyMinutes||30;
+    state.session.planWeeklyRestDays=Array.isArray(s.planWeeklyRestDays)?s.planWeeklyRestDays:[];
+    state.session.planStartedAt=s.planStartedAt||null;
+    state.session.planLastWarnedAt=s.planLastWarnedAt||0;
+    /* Restore KB boundary history and mistake filter. */
+    state.kb.boundariesHistory=Array.isArray(s.boundariesHistory)?s.boundariesHistory:[];
+    state.kb.mistakeFilter=s.mistakeFilter||"all";
+    /* A-R2 perf — invalidate the cached plan warning; the
+       underlying planTargetDate / dailyMinutes may have just
+       changed. */
+    if(typeof tutorSocratic==="object"&&tutorSocratic
+       &&typeof tutorSocratic.invalidatePlanWarningCache==="function"){
+      try{tutorSocratic.invalidatePlanWarningCache()}catch(_){}
+    }
     /* Restore the mode the session was started in. Default to tutor for
        sessions saved before the mode field existed. */
     appMode=(s.mode==="chat")?"chat":"tutor";
@@ -1884,6 +1936,9 @@ function bounceOutOfArchivedSession(){
   document.getElementById("msgList").innerHTML="";
   document.getElementById("topicInput").value="";
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">Set a learning topic to build your knowledge map.</div>';
+  /* Task 3.3 — clear the teaching-plan view on full reset so a
+     previous session's plan doesn't linger in the sidebar. */
+  var _tpc=document.getElementById("teachingPlanContent");if(_tpc)_tpc.innerHTML="";
   document.getElementById("chatStats").textContent="";
   var badge=document.getElementById("chatApiBadge");
   if(badge){badge.textContent="";badge.classList.remove("on");badge.title="";}
@@ -2337,6 +2392,12 @@ async function startSession(){
   state.topic=topic;
   state.diagIndex=0;
   state.diagAnswers=[];
+  /* v3.0 design — §10.1 read the optional long-term plan fields
+     (target date / daily minutes / rest days) into state before
+     the KB is built so the plan generator can use them. */
+  if(typeof readPlanSetupIntoState==="function"){
+    try{readPlanSetupIntoState()}catch(_){}
+  }
 
   var lang=detectLanguage(topic);
 
@@ -2393,7 +2454,7 @@ async function startSession(){
   document.getElementById("topicBadge").classList.remove("hidden");
   document.getElementById("topicBadgeText").textContent=state.domain;
   document.getElementById("chatDomain").textContent=state.domain;
-  document.getElementById("diagnosticView").innerHTML='<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">'+(webSearchOn?"Searching the web and generating questions...":"Generating questions...")+'</p></div>';
+  document.getElementById("diagnosticView").innerHTML='<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">'+(webSearchOn?t("tutor.loadingWeb"):t("tutor.loading"))+'</p></div>';
 
   /* Phase 3 — create the search-progress log up front so the user sees
    * the activity feed next to the spinner while the search runs.
@@ -2447,6 +2508,14 @@ async function startSession(){
   updateChatStats();
 
   renderDiagQuestion();
+  /* v3.0 design — if the diagnostic fell back to mock questions
+     (60s API timeout, audit U-H3), surface a banner so the user
+     is not silently handed a different exam than they were
+     promised. */
+  if(typeof tutorSocratic==="object"&&tutorSocratic
+     &&typeof tutorSocratic.renderDiagnosticBanner==="function"){
+    try{tutorSocratic.renderDiagnosticBanner()}catch(_){}
+  }
   updateKB();
 }
 
@@ -2456,7 +2525,7 @@ function renderDiagQuestion(){
   var view=document.getElementById("diagnosticView");
 
   var html='<div class="diag-card">';
-  html+='<div class="diag-num">Question '+(state.diagIndex+1)+' of '+state.diagQuestions.length+'</div>';
+  html+='<div class="diag-num">'+t("tutor.questionOf").replace("{n}",state.diagIndex+1).replace("{total}",state.diagQuestions.length)+'</div>';
   html+='<div class="diag-text">'+formatMsg(q.q)+'</div>';
   html+='<div class="diag-opts">';
   q.opts.forEach(function(o,i){
@@ -2468,11 +2537,11 @@ function renderDiagQuestion(){
   html+='</div></div>';
 
   html+='<div class="diag-nav">';
-  html+='<button onclick="prevDiagQuestion()"'+(state.diagIndex===0?' style="visibility:hidden"':'')+'>Back</button>';
+  html+='<button onclick="prevDiagQuestion()"'+(state.diagIndex===0?' style="visibility:hidden"':'')+'>'+t("tutor.back")+'</button>';
   if(state.diagIndex<state.diagQuestions.length-1){
-    html+='<button class="diag-continue'+(sel!==undefined?' enabled':'')+'" onclick="nextDiagQuestion()"'+(sel===undefined?' disabled':'')+'>Next</button>';
+    html+='<button class="diag-continue'+(sel!==undefined?' enabled':'')+'" onclick="nextDiagQuestion()"'+(sel===undefined?' disabled':'')+'>'+t("tutor.next")+'</button>';
   }else{
-    html+='<button class="diag-continue'+(sel!==undefined?' enabled':'')+'" onclick="finishDiagnostic()"'+(sel===undefined?' disabled':'')+'>Begin</button>';
+    html+='<button class="diag-continue'+(sel!==undefined?' enabled':'')+'" onclick="finishDiagnostic()"'+(sel===undefined?' disabled':'')+'>'+t("tutor.begin")+'</button>';
   }
   html+='</div>';
 
@@ -2528,12 +2597,106 @@ function finishDiagnostic(){
   document.getElementById("chatView").classList.remove("hidden");
   updateKB();
   updateChatStats();
+
+  /* Task 3.2 — generate the structured teaching plan from the
+     freshly-populated KB. Sub-topics are sorted so fuzzy nodes
+     come first (the user has some familiarity — quickest wins),
+     then blank nodes, with internalized nodes pushed to the end
+     as already-complete. currentSubtopicIdx points at the first
+     non-internalized sub-topic so teaching starts there. */
+  state.teachingPlan=buildTeachingPlanFromKB();
+  /* v3.0 design (§10) — overlay the long-term plan: target date,
+     daily minutes, weekly rest days, day-by-day distribution with
+     the last 7 days reserved as a review buffer. The plan object
+     keeps the legacy fields (subtopics, currentSubtopicIdx) for
+     backwards compatibility with the rest of the code. */
+  if(typeof tutorSocratic==="object"&&tutorSocratic
+     &&typeof tutorSocratic.buildLongTermPlan==="function"){
+    try{
+      var _ltp=tutorSocratic.buildLongTermPlan({});
+      if(_ltp){
+        /* Merge the schedule fields into the existing plan so
+           callers reading state.teachingPlan see one shape. */
+        for(var _k in _ltp){
+          if(Object.prototype.hasOwnProperty.call(_ltp,_k)
+             &&!Object.prototype.hasOwnProperty.call(state.teachingPlan,_k)){
+            state.teachingPlan[_k]=_ltp[_k];
+          }
+        }
+        state.teachingPlan.days=_ltp.days;
+        state.teachingPlan.dailyMinutes=_ltp.dailyMinutes;
+        state.teachingPlan.targetDate=_ltp.targetDate;
+        state.teachingPlan.totalMinutes=_ltp.totalMinutes;
+        state.teachingPlan.weeklyRestDays=_ltp.weeklyRestDays;
+      }
+    }catch(_){}
+  }
+  /* If the first sub-topic is already internalized (rare but
+     possible), advance currentNode to the first non-internalized
+     node so askNextQuestion below teaches the right thing. */
+  if(state.teachingPlan&&state.teachingPlan.subtopics.length){
+    var firstActive=-1;
+    for(var pi=0;pi<state.teachingPlan.subtopics.length;pi++){
+      if(state.teachingPlan.subtopics[pi].status!=="internalized"){firstActive=pi;break}
+    }
+    if(firstActive>=0&&firstActive!==state.teachingPlan.currentSubtopicIdx){
+      state.teachingPlan.currentSubtopicIdx=firstActive;
+      state.currentNode=Math.min(firstActive,state.kbNodes.length-1);
+    }
+  }
+  /* Task 2.1 — start the new session at the motivate stage. */
+  state.teachingStage="motivate";
+  state.currentExampleIdx=0;
+  state.practiceAttempts=0;
+
   saveCurrentSession();
 
   /* First Socratic question */
   setTimeout(function(){
     askNextQuestion();
   },400);
+}
+
+/* Task 3.2 — build a structured teaching plan from state.kbNodes.
+   Returns the plan object documented in state.js (Task 3.1).
+   Sub-topics are sorted fuzzy → blank → internalized so the
+   student tackles the most tractable material first. */
+function buildTeachingPlanFromKB(){
+  var nodes=state.kbNodes||[];
+  if(!nodes.length)return null;
+  var subtopics=nodes.map(function(n){
+    return {
+      name:n.name,
+      status:n.status||"blank",
+      objective:"Master "+n.name,
+      exampleCount:2,
+      practiceCount:1,
+      inspectionType:"concept",
+      prerequisites:[]
+    };
+  });
+  /* Sort: fuzzy first, then blank, then internalized last. The
+     sort is stable on the original index so equal-priority nodes
+     keep their AI-generated order. */
+  var rank={"fuzzy":0,"blank":1,"internalized":2};
+  subtopics=subtopics.map(function(s,i){return{s:s,i:i}})
+    .sort(function(a,b){
+      var ra=rank[a.s.status]!=null?rank[a.s.status]:1;
+      var rb=rank[b.s.status]!=null?rank[b.s.status]:1;
+      if(ra!==rb)return ra-rb;
+      return a.i-b.i;
+    })
+    .map(function(x){return x.s});
+  var currentSubtopicIdx=0;
+  for(var i=0;i<subtopics.length;i++){
+    if(subtopics[i].status!=="internalized"){currentSubtopicIdx=i;break}
+    if(i===subtopics.length-1)currentSubtopicIdx=0;
+  }
+  return {
+    subtopics:subtopics,
+    currentSubtopicIdx:currentSubtopicIdx,
+    createdAt:Date.now()
+  };
 }
 
 /* ============================================================
@@ -2955,7 +3118,7 @@ function formatSourcesBlock(sources,query){
 }
 
 function handleChatApiResult(result,ctl,userText){
-  if(result&&result.text&&result.text.trim()){
+  if(result&&result.text&&typeof result.text==="string"&&result.text.trim()){
     state.lastCallSource="api";
     ctl.finish();
   }else{
@@ -3283,17 +3446,56 @@ async function submitChatMessage(textOverride,opts){
     var node=state.kbNodes[state.currentNode];
     state.stuckCount++;
 
+    /* §8.5 — increment the practice-attempt counter when the
+       student answers during the exercise stage. The chip in
+       the mode banner reads from this. */
+    if(state.teachingStage==="exercise"){
+      state.practiceAttempts=(state.practiceAttempts||0)+1;
+    }
+
     /* Check if the answer seems substantive */
     var isSubstantive=text.length>40&&text.split(/\s+/).length>8;
     if(isSubstantive)state.substantiveCount++;
 
     var ADVANCE_THRESHOLD=3;
 
+    /* Task 2.3 — advance the explicit teaching-stage state machine
+       one step per substantive free-form answer. Quiz-origin
+       answers (opts.origin==="quiz") are stage-driven by
+       handleQuizPick and don't bump the stage here. We advance
+       motivate → define → develop → illustrate → exercise → check
+       and stop at check (the check stage is quiz-driven). */
+    if(isSubstantive&&state.teachingStage!=="check"&&opts.origin!=="quiz"){
+      var order=["motivate","define","develop","illustrate","exercise","check"];
+      var curIdx=order.indexOf(state.teachingStage||"motivate");
+      if(curIdx>=0&&curIdx<order.length-1){
+        state.teachingStage=order[curIdx+1];
+        if(state.teachingStage==="exercise"){
+          state.practiceAttempts=0;
+          state.practicePhase="foundation";
+        }
+      }
+    }
+    /* Practice-progress chip — update after every answer so the
+       user sees their attempt count climb. */
+    if(typeof tutorSocratic==="object"&&tutorSocratic
+       &&typeof tutorSocratic.renderPracticeProgress==="function"){
+      try{tutorSocratic.renderPracticeProgress()}catch(_){}
+    }
+
     if(state.substantiveCount>=ADVANCE_THRESHOLD&&!opts.origin){
       /* User has shown depth on this node — advance */
       node.status="internalized";
       node.questions=(node.questions||0)+1;
       state.substantiveCount=0;
+      /* A-R2 perf — node status flipped; the cached plan warning
+         is now stale. Invalidate so the next evaluatePlanWarning
+         recomputes the blank/fuzzy ratio. */
+      try{
+        if(window.tutorSocratic&&window.tutorSocratic._invalidatePlanWarningCache){
+          window.tutorSocratic._invalidatePlanWarningCache();
+        }
+      }catch(_){}
       var nextIdx=-1;
       for(var i=state.currentNode+1;i<state.kbNodes.length;i++){
         if(state.kbNodes[i].status!=="internalized"){nextIdx=i;break}
@@ -3304,6 +3506,12 @@ async function submitChatMessage(textOverride,opts){
       }else{
         state.currentNode=nextIdx;
         state.stuckCount=0;
+        /* Task 2.3 — reset the teaching-stage state machine for
+           the new sub-topic. The new node starts at motivate with
+           no examples shown and no practice attempts. */
+        state.teachingStage="motivate";
+        state.currentExampleIdx=0;
+        state.practiceAttempts=0;
         var prevName=node.name;
         var nextName=state.kbNodes[nextIdx].name;
         addMessage("assistant","Good depth on **"+prevName+"**. Let's move to the next area: **"+nextName+"**.");
@@ -3348,17 +3556,62 @@ async function submitChatMessage(textOverride,opts){
       state.stuckCount=0;
       state.totalQ++;
     }else{
-      /* User seems stuck or giving short answers */
+      /* v3.0 design — §8.2 first offer the "讲解一下 / 再想想"
+         two-choice prompt, then escalate to the §8.6 four-option
+         dialog if the user keeps refusing. Audit U-H3 noted the
+         old path was a one-shot "explain/skip/retry" with no
+         escape valve. */
       if(state.stuckCount>=3){
-        addMessage("assistant","Let's try a different approach.","suggest",[
-          {text:"Explain this concept to me",action:"explain",primary:true},
-          {text:"Ask me a different question",action:"skip"},
-          {text:"I need to think more",action:"retry"}
-        ]);
-        state.stuckCount=0;
+        if(state.stuckCheckOffered&&state.stuckCheckRejected>=1){
+          /* Two "再想想" rejections in a row → §8.2 forces the
+             four-option dialog (per design). */
+          if(typeof tutorSocratic==="object"&&tutorSocratic
+             &&typeof tutorSocratic.showFourOptionDialog==="function"){
+            try{tutorSocratic.showFourOptionDialog(text)}catch(_){}
+          }else{
+            addMessage("assistant","Let's try a different approach.","suggest",[
+              {text:t("tutor.explain"),action:"explain",primary:true},
+              {text:t("tutor.skip"),action:"skip"},
+              {text:t("tutor.thinkMore"),action:"retry"}
+            ]);
+          }
+          state.stuckCount=0;
+          state.stuckCheckOffered=false;
+          state.stuckCheckRejected=0;
+        }else if(!state.stuckCheckOffered){
+          /* First time on this node: ask permission to explain
+             instead of dumping a textbook at the user. */
+          if(typeof tutorSocratic==="object"&&tutorSocratic
+             &&typeof tutorSocratic.showExplainPrompt==="function"){
+            try{tutorSocratic.showExplainPrompt(node&&node.name||"")}catch(_){}
+          }else{
+            addMessage("assistant","Let's try a different approach.","suggest",[
+              {text:t("tutor.explain"),action:"explain",primary:true},
+              {text:t("tutor.skip"),action:"skip"},
+              {text:t("tutor.thinkMore"),action:"retry"}
+            ]);
+          }
+          state.stuckCheckOffered=true;
+          state.stuckCount=0;
+        }else{
+          state.stuckCheckRejected=(state.stuckCheckRejected||0)+1;
+          state.stuckCount=0;
+          addMessage("assistant",t("tutor.takeTime"));
+        }
       }else{
-        addMessage("assistant","Take your time. There is no rush. What thoughts do you have, even if they are incomplete?");
+        addMessage("assistant",t("tutor.takeTime"));
       }
+    }
+    /* v3.0 design — §10.4 plan warning. Evaluate after every
+       user turn; render if a warning is due. The evaluator
+       itself throttles so the user is not nagged. */
+    if(typeof tutorSocratic==="object"&&tutorSocratic
+       &&typeof tutorSocratic.evaluatePlanWarning==="function"
+       &&typeof tutorSocratic.renderPlanWarning==="function"){
+      try{
+        var _warn=tutorSocratic.evaluatePlanWarning();
+        if(_warn)tutorSocratic.renderPlanWarning(_warn);
+      }catch(_){}
     }
     updateChatStats();
   },0);
@@ -5556,7 +5809,12 @@ function renderAssistantHTML(rawText){
   var m,qi=0;
   while((m=quizRe.exec(text))!==null){
     var parsed=parseQuizInner(m[1]);
-    if(!parsed){continue}
+    if(!parsed){
+      var fbHtml='<div class="inline-block-fallback"><div class="inline-block-fallback-label">'+t("tutor.fallbackWarn")+'</div><pre class="inline-block-fallback-content">'+esc(m[1])+'</pre></div>';
+      text=text.slice(0,m.index)+"\n\n"+fbHtml+"\n\n"+text.slice(quizRe.lastIndex);
+      quizRe.lastIndex=m.index+fbHtml.length+8;
+      continue;
+    }
     var id="quiz-"+(++qi)+"-"+Math.random().toString(36).slice(2,7);
     var slot='<div class="quiz-slot" data-quiz-id="'+id+'"></div>';
     text=text.slice(0,m.index)+"\n\n"+slot+"\n\n"+text.slice(quizRe.lastIndex);
@@ -5569,7 +5827,12 @@ function renderAssistantHTML(rawText){
   var em,ei=0;
   while((em=exampleRe.exec(text))!==null){
     var parsedEx=parseExampleInner(em[1]);
-    if(!parsedEx){continue}
+    if(!parsedEx){
+      var fbHtml='<div class="inline-block-fallback"><div class="inline-block-fallback-label">'+t("tutor.fallbackWarn")+'</div><pre class="inline-block-fallback-content">'+esc(em[1])+'</pre></div>';
+      text=text.slice(0,em.index)+"\n\n"+fbHtml+"\n\n"+text.slice(exampleRe.lastIndex);
+      exampleRe.lastIndex=em.index+fbHtml.length+8;
+      continue;
+    }
     var eId="ex-"+(++ei)+"-"+Math.random().toString(36).slice(2,7);
     var eSlot='<div class="example-slot" data-example-id="'+eId+'"></div>';
     text=text.slice(0,em.index)+"\n\n"+eSlot+"\n\n"+text.slice(exampleRe.lastIndex);
@@ -5582,7 +5845,12 @@ function renderAssistantHTML(rawText){
   var pm,pi=0;
   while((pm=practiceRe.exec(text))!==null){
     var parsedPr=parsePracticeInner(pm[1]);
-    if(!parsedPr){continue}
+    if(!parsedPr){
+      var fbHtml='<div class="inline-block-fallback"><div class="inline-block-fallback-label">'+t("tutor.fallbackWarn")+'</div><pre class="inline-block-fallback-content">'+esc(pm[1])+'</pre></div>';
+      text=text.slice(0,pm.index)+"\n\n"+fbHtml+"\n\n"+text.slice(practiceRe.lastIndex);
+      practiceRe.lastIndex=pm.index+fbHtml.length+8;
+      continue;
+    }
     var pId="pr-"+(++pi)+"-"+Math.random().toString(36).slice(2,7);
     var pSlot='<div class="practice-slot" data-practice-id="'+pId+'"></div>';
     text=text.slice(0,pm.index)+"\n\n"+pSlot+"\n\n"+text.slice(practiceRe.lastIndex);
@@ -5690,13 +5958,13 @@ function mountExampleWidget(slot,parsed){
   if(parsed.problem){
     var pEl=document.createElement("div");
     pEl.className="inline-example-problem";
-    pEl.innerHTML='<span class="label">Problem</span>'+formatMsg(parsed.problem);
+    pEl.innerHTML='<span class="label">'+t("tutor.problem")+'</span>'+formatMsg(parsed.problem);
     el.appendChild(pEl);
   }
   if(parsed.solution){
     var sEl=document.createElement("div");
     sEl.className="inline-example-solution";
-    sEl.innerHTML='<span class="label">Solution</span>'+formatMsg(parsed.solution);
+    sEl.innerHTML='<span class="label">'+t("tutor.solution")+'</span>'+formatMsg(parsed.solution);
     el.appendChild(sEl);
   }
   slot.replaceWith(el);
@@ -5716,7 +5984,7 @@ function mountPracticeWidget(slot,parsed){
   if(parsed.hint){
     var hEl=document.createElement("div");
     hEl.className="inline-practice-hint";
-    hEl.innerHTML='<span class="label">Hint</span>'+formatMsg(parsed.hint);
+    hEl.innerHTML='<span class="label">'+t("tutor.hint")+'</span>'+formatMsg(parsed.hint);
     el.appendChild(hEl);
   }
   slot.replaceWith(el);
@@ -5743,7 +6011,7 @@ function mountQuizWidget(slot,parsed){
      script tags). We pass it through esc() first as a hard guarantee
      against the unparsed/malformed case, but in practice formatMsg
      handles its own escaping. */
-  qEl.innerHTML='<span class="q-tag">Quick check</span>'+formatMsg(parsed.q);
+  qEl.innerHTML='<span class="q-tag">'+t("tutor.quickCheck")+'</span>'+formatMsg(parsed.q);
   el.appendChild(qEl);
   var optsEl=document.createElement("div");
   optsEl.className="inline-quiz-opts";
@@ -5800,6 +6068,29 @@ function handleQuizPick(cardEl,optsEl,feedback,btns,picked,parsed){
     /* A correct pick on a redo'd mistake clears that mistake from the book. */
     removeMistakeForQuizSlot(parsed.slotId);
   }
+  /* Task 2.3 — advance the teaching-stage state machine based on
+     the quiz outcome. Only the exercise / check stages are
+     quiz-driven; in other stages the quiz is informational and we
+     leave the stage alone. Node advancement on a correct `check`
+     answer is handled by submitChatMessage's substantiveCount /
+     stuckCount logic, so we don't touch it here. */
+  if(state.teachingStage==="exercise"){
+    if(isRight){
+      state.teachingStage="check";
+      state.practiceAttempts=0;
+    }else{
+      state.practiceAttempts=(state.practiceAttempts||0)+1;
+    }
+  }else if(state.teachingStage==="check"){
+    /* A wrong check answer keeps us in check so the model can
+       re-quiz; a correct one leaves node advancement to the
+       existing submitChatMessage flow. */
+    if(!isRight){
+      state.practiceAttempts=(state.practiceAttempts||0)+1;
+    }else{
+      state.practiceAttempts=0;
+    }
+  }
   /* Synthesise a user message + chat turn so the AI gets a real follow-up
      opportunity that references the choice. */
   var text="I chose "+picked.letter+". "+picked.text;
@@ -5813,6 +6104,37 @@ function handleQuizPick(cardEl,optsEl,feedback,btns,picked,parsed){
    a dedicated sidebar tab with a Redo button that re-enables the
    original widget (or re-emits it inline if the widget is gone).
    ============================================================ */
+/* Task 5.5 — fire-and-forget POST to /api/mistakes so the server-side
+   mistakes table stays in sync with the client-side mistake book. The
+   mistake is already in state.mistakes (recordMistake unshifted it), so
+   a failed POST is non-fatal — we just log and move on. Uses apiFetch
+   for credentials / CSRF / JSON body handling, consistent with other
+   calls (e.g. /api/sessions). */
+function persistMistake(mistakeData){
+  var sid=state.currentSessionId;
+  /* The backend zod schema requires a UUID for sessionId; during
+     session creation currentSessionId can briefly hold a non-uuid
+     value, so guard before sending to avoid a noisy 400. */
+  if(typeof sid!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sid))sid=null;
+  try{
+    apiFetch("/api/mistakes",{
+      method:"POST",
+      body:{
+        sessionId:sid,
+        nodeName:mistakeData.nodeName||null,
+        questionContent:mistakeData.questionContent||"",
+        userAnswer:mistakeData.userAnswer!=null?String(mistakeData.userAnswer):null,
+        correctAnswer:mistakeData.correctAnswer!=null?String(mistakeData.correctAnswer):null,
+        source:mistakeData.source||"quiz"
+      }
+    }).catch(function(e){
+      console.warn("[mistakes] failed to persist mistake:",e&&e.message);
+    });
+  }catch(e){
+    console.warn("[mistakes] persistMistake threw:",e&&e.message);
+  }
+}
+
 function recordMistake(rec){
   if(!state.mistakes)state.mistakes=[];
   var node=state.kbNodes[state.currentNode]||{};
@@ -5832,6 +6154,19 @@ function recordMistake(rec){
     quizSlotId:rec.quizSlotId||null
   };
   state.mistakes.unshift(mistake);
+  /* Task 5.5 — mirror the mistake to the backend mistakes table.
+     Fire-and-forget; the client-side array above remains the source
+     of truth for the UI, so a failed POST doesn't break anything.
+     Both recording sites (the <mistake> block parser and
+     handleQuizPick) funnel through recordMistake, so this covers
+     them both. */
+  persistMistake({
+    nodeName:mistake.node||null,
+    questionContent:mistake.q||"",
+    userAnswer:mistake.userAnswer,
+    correctAnswer:mistake.correct,
+    source:mistake.type==="practice"?"practice":"quiz"
+  });
   saveCurrentSession();
   renderMistakes();
   updateMistakesBadge();
@@ -5858,19 +6193,44 @@ function updateMistakesBadge(){
 function renderMistakes(){
   var cont=document.getElementById("mistakesList");
   if(!cont)return;
+  /* v3.0 design — §9.4 filter bar (all / unresolved / resolved) */
+  if(typeof tutorSocratic==="object"&&tutorSocratic
+     &&typeof tutorSocratic.renderMistakeFilterBar==="function"){
+    try{tutorSocratic.renderMistakeFilterBar()}catch(_){}
+  }
   if(!state.mistakes||state.mistakes.length===0){
     cont.innerHTML='<div class="recents-empty">No mistakes yet.<br>Wrong quiz picks and incorrect practice attempts will land here for review.</div>';
     return;
   }
+  /* v3.0 design — apply the user's current filter selection
+     (all / unresolved / resolved) per §9.4. */
+  var filter=state.mistakeFilter||"all";
+  var filtered=state.mistakes.slice();
+  if(filter==="unresolved"){
+    filtered=filtered.filter(function(m){return!m.resolved&&!m.isResolved});
+  }else if(filter==="resolved"){
+    filtered=filtered.filter(function(m){return!!(m.resolved||m.isResolved)});
+  }
+  if(!filtered.length){
+    cont.innerHTML='<div class="recents-empty">'
+      +(filter==="resolved"
+        ?"No resolved mistakes yet. Mark a mistake as conquered after redoing it successfully."
+        :"Nothing in this filter. Switch to \"all\" to see every mistake.")
+      +'</div>';
+    return;
+  }
   var html="";
-  state.mistakes.forEach(function(m){
+  filtered.forEach(function(m){
     var optsHtml="";
     (m.options||[]).forEach(function(o){
       var tag=o.letter===m.correct?"correct-tag":(o.letter===m.userAnswer?"wrong-tag":"");
       optsHtml+='<div class="mistake-opt '+tag+'"><span class="mistake-opt-letter">'+esc(o.letter)+'</span><span>'+esc(o.text)+'</span></div>';
     });
-    html+='<div class="mistake-card" data-mistake-id="'+esc(m.id)+'">';
-    html+='<div class="mistake-meta"><span class="mistake-type">'+esc(m.type)+'</span><span class="mistake-topic">'+esc(m.topic||"")+'</span><span class="mistake-time">'+formatRelativeTime(m.timestamp)+'</span></div>';
+    var resolvedFlag=!!(m.resolved||m.isResolved);
+    html+='<div class="mistake-card'+(resolvedFlag?' mistake-card-resolved':'')+'" data-mistake-id="'+esc(m.id)+'">';
+    html+='<div class="mistake-meta"><span class="mistake-type">'+esc(m.type)+'</span><span class="mistake-topic">'+esc(m.topic||"")+'</span><span class="mistake-time">'+formatRelativeTime(m.timestamp)+'</span>'
+      +(resolvedFlag?'<span class="mistake-resolved-tag">conquered</span>':'')
+      +'</div>';
     html+='<div class="mistake-q">'+esc(m.q||"")+'</div>';
     html+='<div class="mistake-opts">'+optsHtml+'</div>';
     if(m.redoCount)html+='<div class="mistake-redo-count">Redone '+m.redoCount+' time'+(m.redoCount>1?'s':'')+'</div>';
@@ -5968,8 +6328,35 @@ async function handleQuickAction(action){
    KNOWLEDGE BOUNDARY PANEL
    ============================================================ */
 function updateKB(){
+  /* Task 3.3 — keep the teaching-plan view in sync with the KB.
+     renderKnowledgeView is a no-op when there's no plan, so
+     callers that don't have one yet (chat mode, pre-diagnostic)
+     are unaffected. */
+  renderKnowledgeView();
+  /* v3.0 design — knowledge-boundary file rendering lives in
+     tutorSocratic.js. The renderer reads state.kbNodes directly
+     and shows the [系统]/[我] annotation lines from §6.3 plus
+     the snapshot history from §6.5. We delegate the entire
+     #kbContent body to that renderer. */
+  if(typeof tutorSocratic==="object"&&tutorSocratic
+     &&typeof tutorSocratic.renderKnowledgeBoundaryFile==="function"){
+    try{tutorSocratic.renderKnowledgeBoundaryFile()}catch(e){console.warn("[kb] boundary render failed",e)}
+  }
+  /* Mode banner and teaching plan re-render in the new module. */
+  if(typeof tutorSocratic==="object"&&tutorSocratic){
+    try{tutorSocratic.renderTeachingPlan()}catch(_){}
+    try{tutorSocratic.renderModeBanner()}catch(_){}
+    try{tutorSocratic.renderLongTermPlan()}catch(_){}
+    try{tutorSocratic.renderPracticeProgress()}catch(_){}
+  }
   var cont=document.getElementById("kbContent");
-  if(!state.kbNodes.length){cont.innerHTML='<div class="kb-empty">Set a learning topic to build your knowledge map.</div>';return}
+  if(!cont)return;
+  if(!state.kbNodes.length){
+    cont.innerHTML='<div class="kb-empty">'+(typeof t==="function"
+      ?t("tutor.setTopicFirst")
+      :"Set a learning topic to build your knowledge map.")+'</div>';
+    return
+  }
 
   var sections={internalized:[],fuzzy:[],blank:[]};
   state.kbNodes.forEach(function(n,i){
@@ -5991,6 +6378,145 @@ function updateKB(){
     sections.blank.forEach(function(n){html+=kbNodeHtml(n,"blank")});
   }
   cont.innerHTML=html;
+}
+
+/* Task 3.3 — render the structured teaching plan into the
+   #teachingPlanContent container at the top of the Knowledge
+   sidebar. Shows the ordered list of sub-topics with their
+   status, highlights the current sub-topic, and shows the
+   current teaching stage next to it. Completed (internalized)
+   sub-topics get a text "[done]" marker — no emoji per the
+   design constraints. Called from updateKB() and from
+   switchTab('knowledge') so it stays in sync. */
+function renderKnowledgeView(){
+  var cont=document.getElementById("teachingPlanContent");
+  if(!cont)return;
+  /* v3.0 design — delegate to tutorSocratic.renderTeachingPlan
+     so the stage label is human-readable ("Intuition" / "建立直觉")
+     instead of the raw internal identifier (audit U-H4). */
+  if(typeof tutorSocratic==="object"&&tutorSocratic
+     &&typeof tutorSocratic.renderTeachingPlan==="function"){
+    try{tutorSocratic.renderTeachingPlan()}catch(_){}
+  }
+  return;
+  /* Legacy inline render below — kept for reference but no longer
+     reached. The original showed the raw `state.teachingStage`
+     value ("motivate", "define", "develop"...) which leaked
+     internal identifiers into the UI. The new module translates
+     these to friendly labels and adds a progress bar (§10.7). */
+  var plan=state.teachingPlan;
+  var html='';
+  if(plan&&plan.subtopics&&plan.subtopics.length){
+    var curIdx=plan.currentSubtopicIdx||0;
+    var stage=state.teachingStage||"motivate";
+    var stageText=(typeof tutorSocratic==="object"&&tutorSocratic&&typeof tutorSocratic.stageLabel==="function")
+      ?tutorSocratic.stageLabel(stage):stage;
+    html+='<div class="teaching-plan">';
+    html+='<div class="teaching-plan-title">Teaching Plan</div>';
+    plan.subtopics.forEach(function(s,i){
+      var isCurrent=i===curIdx&&s.status!=="internalized";
+      var isDone=s.status==="internalized";
+      var cls="teaching-plan-subtopic";
+      if(isCurrent)cls+=" current";
+      if(isDone)cls+=" done";
+      var statusLabel=s.status==="internalized"?"done":s.status==="fuzzy"?"exploring":"new";
+      html+='<div class="'+cls+'">';
+      html+='<span class="teaching-plan-marker">'+(isDone?"[done]":isCurrent?"›":"·")+'</span>';
+      html+='<span class="teaching-plan-name">'+esc(s.name)+'</span>';
+      if(isCurrent){
+        html+='<span class="teaching-plan-stage">'+esc(stageText)+'</span>';
+      }
+      html+='<span class="teaching-plan-status">'+statusLabel+'</span>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  /* Task 6.4 — cross-session knowledge-boundary aggregation, shown
+     below the teaching plan. Rendered for every session (including
+     those without a teaching plan) since it aggregates across all
+     sessions, not just the current one. */
+  html+='<div class="kb-cross-session" id="kbCrossSession">';
+  html+='<div class="kb-cross-header"><span class="kb-cross-title">Cross-session knowledge</span><button class="kb-cross-refresh" id="kbCrossRefresh" type="button">Refresh</button></div>';
+  html+='<div class="kb-cross-body" id="kbCrossBody">Loading…</div>';
+  html+='</div>';
+  cont.innerHTML=html;
+  var refreshBtn=document.getElementById("kbCrossRefresh");
+  if(refreshBtn)refreshBtn.onclick=function(){loadAndRenderCrossSessionKB(true)};
+  loadAndRenderCrossSessionKB(false);
+}
+
+/* Task 6.4 — fetch /api/knowledge-boundary and cache the {items,
+   summary} response for 60s. Pass {force:true} to bypass the cache
+   (used by the Refresh button). On error, returns an empty shape so
+   the UI degrades gracefully. */
+var _crossSessionKBCache={data:null,at:0};
+function loadCrossSessionKB(opts){
+  opts=opts||{};
+  var now=Date.now();
+  if(!opts.force&&_crossSessionKBCache.data&&now-_crossSessionKBCache.at<60000){
+    return Promise.resolve(_crossSessionKBCache.data);
+  }
+  return apiFetch("/api/knowledge-boundary",{method:"GET"}).then(function(r){
+    _crossSessionKBCache={data:r,at:Date.now()};
+    return r;
+  }).catch(function(e){
+    console.warn("[kb] failed to load cross-session boundary:",e&&e.message);
+    return {items:[],summary:{total:0,fuzzy:0,internalized:0,blank:0}};
+  });
+}
+
+/* Render the cross-session section into #kbCrossBody. Uses the cache
+   when fresh; otherwise shows a loading state and fetches. */
+function loadAndRenderCrossSessionKB(force){
+  var body=document.getElementById("kbCrossBody");
+  if(!body)return;
+  var now=Date.now();
+  if(!force&&_crossSessionKBCache.data&&now-_crossSessionKBCache.at<60000){
+    body.innerHTML=renderCrossSessionKBHtml(_crossSessionKBCache.data);
+    return;
+  }
+  body.textContent="Loading…";
+  loadCrossSessionKB({force:force}).then(function(data){
+    var b=document.getElementById("kbCrossBody");
+    if(b)b.innerHTML=renderCrossSessionKBHtml(data);
+  });
+}
+
+/* Build the HTML for the cross-session section: summary counts plus
+   a compact node list grouped by name, showing the best status across
+   sessions (internalized > fuzzy > blank). */
+function renderCrossSessionKBHtml(data){
+  if(!data||!data.items)data={items:[],summary:{total:0,fuzzy:0,internalized:0,blank:0}};
+  var s=data.summary||{};
+  var rank={internalized:3,fuzzy:2,blank:1};
+  var byName={};
+  (data.items||[]).forEach(function(it){
+    if(!it||!it.nodeName)return;
+    var cur=byName[it.nodeName];
+    if(!cur||(rank[it.status]||0)>(rank[cur.status]||0)){
+      byName[it.nodeName]=it;
+    }
+  });
+  var names=Object.keys(byName).sort();
+  var html='<div class="kb-cross-summary">';
+  html+='<span class="kb-cross-count kb-cross-internalized">internalized: '+esc(String(s.internalized||0))+'</span>';
+  html+='<span class="kb-cross-count kb-cross-fuzzy">fuzzy: '+esc(String(s.fuzzy||0))+'</span>';
+  html+='<span class="kb-cross-count kb-cross-blank">blank: '+esc(String(s.blank||0))+'</span>';
+  html+='</div>';
+  if(!names.length){
+    html+='<div class="kb-cross-empty">No knowledge-boundary data across sessions yet.</div>';
+    return html;
+  }
+  html+='<div class="kb-cross-nodes">';
+  names.forEach(function(n){
+    var it=byName[n];
+    html+='<div class="kb-cross-node kb-cross-status-'+esc(it.status||"blank")+'">';
+    html+='<span class="kb-cross-node-name">'+esc(n)+'</span>';
+    html+='<span class="kb-cross-node-status">'+esc(it.status||"blank")+'</span>';
+    html+='</div>';
+  });
+  html+='</div>';
+  return html;
 }
 
 function kbNodeHtml(n,cls){
@@ -7400,6 +7926,17 @@ async function resetApp(){
   document.getElementById("topicInput").value="";
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">Set a learning topic to build your knowledge map.</div>';
   document.getElementById("chatStats").textContent="";
+  /* v3.0 design — refresh the plan-setup form so a returning
+     user sees their previously chosen target date / daily
+     minutes / rest days. Without this, the form would always
+     show the default 30-minute empty date, even after the
+     user had set values in a previous session. */
+  if(typeof writeStateIntoPlanSetup==="function"){
+    try{writeStateIntoPlanSetup()}catch(_){}
+  }
+  /* Task 3.3 — clear the teaching-plan view on full reset so a
+     previous session's plan doesn't linger in the sidebar. */
+  var _tpc2=document.getElementById("teachingPlanContent");if(_tpc2)_tpc2.innerHTML="";
   /* Refresh the API badge so it doesn't show the previous session's source. */
   var badge=document.getElementById("chatApiBadge");
   if(badge){badge.textContent="";badge.classList.remove("on");badge.title="";}
@@ -7481,7 +8018,8 @@ async function apiFetchRaw(path, opts) {
     if (t) opts.headers["X-CSRF-Token"] = t;
   }
   var controller = new AbortController();
-  var tmo = setTimeout(function () { try { controller.abort() } catch (_) {} }, 30000);
+  var rawTimeoutMs = typeof opts.timeoutMs === "number" ? opts.timeoutMs : 30000;
+  var tmo = setTimeout(function () { try { controller.abort() } catch (_) {} }, rawTimeoutMs);
   if (opts.signal) {
     if (opts.signal.aborted) { try { controller.abort() } catch (_) {} }
     else opts.signal.addEventListener("abort", function () { try { controller.abort() } catch (_) {} });
@@ -9594,6 +10132,9 @@ async function loadSharedSession(token){
     syncSidebarBtns();
     document.getElementById("authGate").classList.add("hidden");
     document.getElementById("appShell").classList.remove("hidden");
+    /* P0.6 — prevent the 12s pre-boot timeout from re-showing the
+       auth gate (bootState is still "checking" at this point). */
+    try{document.documentElement.dataset.bootState="app"}catch(_){}
     renderUserFooter();
   }catch(e){
     console.warn("[share] failed to load:",e&&e.message);
@@ -9603,6 +10144,9 @@ async function loadSharedSession(token){
     if(titleEl)titleEl.textContent="Shared conversation not found";
     var subEl=document.getElementById("topicSub");
     if(subEl)subEl.textContent="The link may be expired or invalid.";
+    /* Still flip bootState so the 12s timeout doesn't layer the
+       auth gate on top of the "not found" message. */
+    try{document.documentElement.dataset.bootState="app"}catch(_){}
   }
 }
 
@@ -9949,7 +10493,7 @@ function syncWebSearchUI(){
    switching mid-conversation saves the current session to Recents
    and resets the app, just like clicking "New" manually.
    ============================================================ */
-var appMode="chat";
+var appMode="tutor";
 try{
   var savedMode=localStorage.getItem("socrates-appmode");
   if(savedMode==="chat"||savedMode==="tutor")appMode=savedMode;
@@ -9997,7 +10541,17 @@ async function toggleAppMode(){
   try{localStorage.setItem("socrates-appmode",appMode)}catch(e){}
   syncAppModeUI();
   syncSidebarForMode();
+  /* v3.0 design — re-render the mode banner after a switch so the
+     label and switch-button text flip. */
+  if(typeof tutorSocratic==="object"&&tutorSocratic
+     &&typeof tutorSocratic.renderModeBanner==="function"){
+    try{tutorSocratic.renderModeBanner()}catch(_){}
+  }
 }
+/* Expose to other modules — the mode banner in tutorSocratic.js
+   calls window.toggleAppMode when the user clicks "Switch to
+   Chat/Tutor". */
+window.toggleAppMode = toggleAppMode;
 
 /* Fetch web context for `topic`. Returns a structured result so the UI
    can show a "N sources" pill (or an error pill). The `state` fields
@@ -11241,7 +11795,7 @@ async function callAPI(messages,maxTokens){
     var tmo=setTimeout(function(){ac.abort()},90000);
     var resp;
     try{
-      resp=await apiFetch("/api/chat",{method:"POST",body:{messages:messages,temperature:0.7,max_tokens:maxTokens},signal:ac.signal});
+      resp=await apiFetch("/api/chat",{method:"POST",body:{messages:messages,temperature:0.7,max_tokens:maxTokens},signal:ac.signal,timeoutMs:90000});
     }finally{
       clearTimeout(tmo);
     }
@@ -11507,7 +12061,8 @@ async function callAPIStream(messages,maxTokens,onDelta,onThinking){
       resp=await apiFetchRaw("/api/chat/stream",{
         method:"POST",
         body:{messages:messages,temperature:0.7,max_tokens:maxTokens},
-        signal:ac.signal
+        signal:ac.signal,
+        timeoutMs:STREAM_TIMEOUT_MS
       });
     }catch(e){
       clearTimeout(tmo);
@@ -11838,10 +12393,17 @@ function extractHistory(){
     ============================================================ */
 
 function buildSocraticMessages(node,domain,history,isFirst){
+  /* Task 2.2 — drive the lesson from the explicit teaching-stage
+     state machine instead of asking the model to infer position
+     from chat history. `stageInstruction` returns a short, stage-
+     specific directive that is injected into the system prompt. */
+  var stage=state.teachingStage||"motivate";
+  var stageInstr=stageInstruction(stage);
   var prompt=buildSocraticPrompt(domain,node.status,
     (isFirst
-      ? "This is the START of the lesson for the sub-topic: "+node.name+". "+
-        "Run the FULL teaching cycle in a single reply. Follow the textbook principles:\n"+
+      ? "You are beginning the '"+stage+"' stage for sub-topic: "+node.name+". "+
+        "START at this stage — do not run earlier stages. "+stageInstr+"\n"+
+        "Follow the textbook principles:\n"+
         "1) **Foundation-first**: Start with the core definition, build up layer by layer.\n"+
         "2) **Systematic connection**: Link this sub-topic to the broader topic. Make it part of a coherent narrative.\n"+
         "3) **Thorough explanation**: Follow the Motivate → Define → Develop → Illustrate flow. 8-20 paragraphs. Formal textbook register.\n"+
@@ -11849,9 +12411,8 @@ function buildSocraticMessages(node,domain,history,isFirst){
         "5) After examples, end with 1 <practice> block — harder than the examples, requiring transfer.\n"+
         "6) Optional <quiz> block after explanation (before examples) if there's a key point worth checking.\n"+
         "Write in formal, precise textbook language. Use bold for terms. Use LaTeX for math. Build a knowledge system, not isolated facts."
-      : "Continue teaching sub-topic: "+node.name+". The chat history shows where you left off. "+
-        "Read it carefully and resume the teaching cycle from exactly where you stopped. "+
-        "Do NOT restart from the beginning. Connect new material to what was already taught. "+
+      : "Current teaching stage: "+stage+". Sub-topic: "+node.name+". Advance the lesson according to the stage: "+stageInstr+" "+
+        "Connect new material to what was already taught. Do NOT restart from the beginning. "+
         "Always include 2-3 <example> blocks (with progression) before any new <practice> block. "+
         "Use <quiz>, <example>, and <practice> blocks per the system prompt. "+
         "Write in formal textbook register. Build systematically on prior knowledge.")
@@ -11859,6 +12420,21 @@ function buildSocraticMessages(node,domain,history,isFirst){
   var msgs=[{role:"system",content:prompt}].concat(history);
   msgs.push({role:"user",content:isFirst?"I'm ready to begin. Please teach me about "+node.name+".":"Continue the lesson from where we left off."});
   return msgs;
+}
+
+/* Task 2.2 — short per-stage directive used by buildSocraticMessages
+   and buildFollowUpMessages. Keeping it in one place means the
+   stage names and their instructions never drift apart. */
+function stageInstruction(stage){
+  switch(stage){
+    case "motivate":   return "Give motivation and context for why this concept matters. Do not define it yet.";
+    case "define":     return "Now give the precise definition and core development (8-20 paragraphs).";
+    case "develop":    return "Develop the concept in depth with worked examples.";
+    case "illustrate": return "Provide 2-3 worked examples with progression.";
+    case "exercise":   return "Present a practice problem for the student to attempt.";
+    case "check":      return "Check understanding with a quick quiz, then move to the next sub-topic.";
+    default:           return "Advance the lesson one stage.";
+  }
 }
 
 async function generateSocraticQuestion(node,domain){
@@ -11917,8 +12493,35 @@ async function getExplanation(status){
 };
 
 function buildFollowUpMessages(answer,node,domain,history){
+  /* Task 2.2 — use the explicit teaching-stage state machine
+     instead of telling the model to "look at chat history to see
+     exactly where you are". The stage + sub-topic are passed in
+     directly, and the per-stage directive is reused from
+     stageInstruction() so the wording stays consistent with
+     buildSocraticMessages. */
+  var stage=state.teachingStage||"motivate";
+  var stageInstr=stageInstruction(stage);
+  var attempts=state.practiceAttempts||0;
+  /* Stage-specific guidance that also factors in whether the user
+     just answered a quiz / practice correctly. For quiz-origin
+     answers we know `state.practiceAttempts` was bumped on wrong
+     attempts; a fresh attempts===0 in the exercise stage implies
+     the user just got it right. */
+  var stageGuidance="";
+  if(stage==="exercise"){
+    stageGuidance=attempts>0
+      ? "The student has made "+attempts+" attempt(s) at the current practice problem. Evaluate their work: if correct, affirm and move on to the check stage; if wrong or partial, point out the gap, walk through the correct approach briefly, and give a similar practice problem."
+      : "Present a practice problem for the student to attempt, then wait for their answer.";
+  }else if(stage==="check"){
+    stageGuidance="If the student just answered a <quiz> correctly, acknowledge and prepare to move to the next sub-topic. If wrong, briefly correct the misconception and re-check with another short quiz.";
+  }else if(stage==="illustrate"){
+    stageGuidance="If the student just answered a <quiz>, acknowledge (right/wrong) and continue with the next worked <example> in the progression.";
+  }else{
+    stageGuidance="Advance the lesson one stage: "+stageInstr;
+  }
   var prompt=buildSocraticPrompt(domain,node.status,
-    "The student just said: \""+answer+"\". Look at the chat history to see exactly where you are in the teach/check/example/practice loop for sub-topic: "+node.name+".\n"+
+    "Current teaching stage: "+stage+". Sub-topic: "+node.name+". "+
+    "The student just said: \""+answer+"\". "+stageGuidance+"\n"+
     "Your job is to advance the lesson:\n"+
     "- If the student just answered a <quiz>, acknowledge (right/wrong) and move to the next stage (a worked <example> or a <practice> problem).\n"+
     "- If the student just attempted a <practice> problem, evaluate their work: if correct, affirm and present the next sub-topic; if wrong or partial, point out the gap, walk through the correct approach briefly, and give a similar practice problem.\n"+
@@ -11946,10 +12549,10 @@ async function generateFollowUpStream(answer,node,domain,onDelta,onThinking){
   if(hasUsableActive()){
     var history=extractHistory();
     var msgs=buildFollowUpMessages(answer,node,domain,history);
-    var text=await callAPIStream(msgs,MAX_TOKENS_CHAT,onDelta,onThinking);
-    if(text&&text.trim()){
+    var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,onDelta,onThinking);
+    if(result&&result.text&&result.text.trim()){
       state.lastCallSource="api";
-      return text.trim();
+      return result.text.trim();
     }
     state.lastCallSource="mock";
   } else { state.lastCallSource="mock"; }

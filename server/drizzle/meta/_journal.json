@@ -43,6 +43,13 @@
       "when": 1782144114984,
       "tag": "0005_careless_the_call",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782225554000,
+      "tag": "0006_tutor_mistakes_kb",
+      "breakpoints": true
     }
   ]
 }

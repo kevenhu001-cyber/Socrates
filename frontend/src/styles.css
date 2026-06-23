@@ -477,6 +477,40 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .diag-nav .diag-continue{background:hsl(var(--bg-300));font-weight:500}
 .diag-nav .diag-continue.enabled{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .diag-nav .diag-continue.enabled:hover{background:hsl(var(--accent-100))}
+/* Task 3.4 — teaching-plan view in the Knowledge sidebar. Kept
+   minimal and consistent with the .diag-* / .kb-* styles: same
+   font-scale pattern, same colour tokens, text markers (no emoji). */
+.teaching-plan{display:flex;flex-direction:column;gap:2px;padding:4px 4px 10px;margin-bottom:6px;border-bottom:0.5px solid hsl(var(--border-300)/0.12)}
+.teaching-plan-title{font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em;padding:4px 8px 6px}
+.teaching-plan-subtopic{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));transition:background .06s}
+.teaching-plan-subtopic.current{background:hsl(var(--accent-000)/0.08);color:hsl(var(--text-100))}
+.teaching-plan-subtopic.done{color:hsl(var(--text-500))}
+.teaching-plan-marker{flex-shrink:0;width:38px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-500));font-family:var(--font-mono)}
+.teaching-plan-subtopic.current .teaching-plan-marker{color:hsl(var(--accent-000))}
+.teaching-plan-subtopic.done .teaching-plan-marker{color:hsl(145 50% 50%)}
+.teaching-plan-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.teaching-plan-stage{font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12);padding:2px 7px;border-radius:6px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.teaching-plan-status{font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+/* Task 6.4 — cross-session knowledge-boundary section. */
+.kb-cross-session{display:flex;flex-direction:column;gap:6px;padding:8px 8px 10px;margin-top:2px}
+.kb-cross-header{display:flex;align-items:center;justify-content:space-between;padding:0 2px}
+.kb-cross-title{font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
+.kb-cross-refresh{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--accent-000));background:transparent;border:0;padding:2px 6px;border-radius:6px;cursor:pointer;transition:background .1s}
+.kb-cross-refresh:hover{background:hsl(var(--accent-000)/0.1)}
+.kb-cross-body{display:flex;flex-direction:column;gap:6px}
+.kb-cross-summary{display:flex;flex-wrap:wrap;gap:8px;padding:2px 2px 4px}
+.kb-cross-count{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));padding:2px 8px;border-radius:6px;background:hsl(var(--bg-300))}
+.kb-cross-count.kb-cross-internalized{color:hsl(145 50% 65%);background:hsl(145 50% 50%/0.14)}
+.kb-cross-count.kb-cross-fuzzy{color:hsl(43 77% 70%);background:hsl(43 77% 62%/0.14)}
+.kb-cross-count.kb-cross-blank{color:hsl(var(--text-500));background:hsl(var(--bg-300))}
+.kb-cross-nodes{display:flex;flex-direction:column;gap:1px}
+.kb-cross-node{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:7px;font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-300))}
+.kb-cross-node-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kb-cross-node-status{font-size:calc(10px * var(--app-font-scale, 1));text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.kb-cross-status-internalized .kb-cross-node-status{color:hsl(145 50% 65%)}
+.kb-cross-status-fuzzy .kb-cross-node-status{color:hsl(43 77% 70%)}
+.kb-cross-status-blank .kb-cross-node-status{color:hsl(var(--text-500))}
+.kb-cross-empty{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));padding:6px 2px;line-height:1.5}
 .chat-view{
   width:100%;
   display:flex;
@@ -1742,3 +1776,351 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .diag-loading .search-progress{cursor:default}
 .diag-loading .search-progress-steps{display:block}
 .diag-loading .search-progress-chev{display:none}
+
+/* =====================================================================
+ * v3.0 design — Tutor mode UI additions
+ * Knowledge-boundary file (§6), teaching plan labels (§10), mode
+ * banner (audit U-H2), diagnostic warning (audit U-H3), mistake
+ * filter (§9.4).
+ * ===================================================================== */
+
+/* KB file header with snapshot button. */
+.kb-file-header{
+  display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  padding:8px 12px 10px;
+  border-bottom:0.5px solid hsl(var(--border-300)/0.15);
+  margin-bottom:6px;
+}
+.kb-file-title{
+  font-size:calc(13px * var(--app-font-scale, 1));
+  font-weight:600;color:hsl(var(--text-200));
+}
+.kb-file-meta{
+  font-size:calc(11px * var(--app-font-scale, 1));
+  color:hsl(var(--text-500));
+  flex:1;
+}
+.kb-file-snapshot{
+  background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);
+  color:hsl(var(--text-300));
+  padding:3px 10px;border-radius:6px;
+  font-size:calc(11px * var(--app-font-scale, 1));
+  cursor:pointer;
+  transition:background .08s,color .08s;
+}
+.kb-file-snapshot:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+
+.kb-node-name{display:flex;align-items:center;gap:6px;font-weight:500}
+.kb-verify-tag{
+  font-size:calc(10px * var(--app-font-scale, 1));
+  color:hsl(145 50% 55%);
+  background:hsl(145 50% 45%/0.12);
+  padding:1px 6px;border-radius:5px;
+  font-weight:500;
+}
+.kb-node-system-note,.kb-node-user-note{
+  font-size:calc(12px * var(--app-font-scale, 1));
+  line-height:1.5;
+  color:hsl(var(--text-300));
+  padding:4px 0 2px 6px;
+  border-left:2px solid hsl(var(--border-300)/0.2);
+  margin-top:4px;
+}
+.kb-tag-system{
+  font-size:calc(10px * var(--app-font-scale, 1));
+  font-weight:600;color:hsl(var(--accent-000));
+  margin-right:4px;letter-spacing:.04em;
+}
+.kb-tag-user{
+  font-size:calc(10px * var(--app-font-scale, 1));
+  font-weight:600;color:hsl(36 60% 55%);
+  margin-right:4px;letter-spacing:.04em;
+}
+.kb-section-title-secondary{color:hsl(var(--text-500))}
+.kb-history-list{list-style:none;padding:4px 12px 8px;margin:0;display:flex;flex-direction:column;gap:4px}
+.kb-history-item{
+  display:flex;align-items:baseline;gap:8px;
+  font-size:calc(12px * var(--app-font-scale, 1));
+  color:hsl(var(--text-400));
+  font-variant-numeric:tabular-nums;
+}
+.kb-history-date{color:hsl(var(--text-500));flex-shrink:0}
+.kb-history-summary{flex:1}
+
+/* Teaching-plan progress bar. */
+.teaching-plan-progress{
+  display:flex;flex-direction:column;gap:4px;
+  padding:2px 10px 8px;
+}
+.teaching-plan-progress-bar{
+  height:4px;background:hsl(var(--bg-300));border-radius:99px;overflow:hidden;
+}
+.teaching-plan-progress-fill{
+  height:100%;background:hsl(var(--accent-000));
+  transition:width .25s ease-out;
+}
+.teaching-plan-progress-text{
+  font-size:calc(10px * var(--app-font-scale, 1));
+  color:hsl(var(--text-500));
+  font-variant-numeric:tabular-nums;
+  text-align:right;
+}
+
+/* Mode banner — sits at the top of the chat list. Subtle by design;
+ * audit U-H1/U-H2 noted that the tutor mode was invisible. */
+.mode-banner{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 14px;
+  background:hsl(var(--bg-200)/0.7);
+  border-bottom:0.5px solid hsl(var(--border-300)/0.18);
+  font-size:calc(12px * var(--app-font-scale, 1));
+  color:hsl(var(--text-300));
+  flex-wrap:wrap;
+}
+.mode-banner-dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:hsl(var(--accent-000));flex-shrink:0;
+}
+.mode-banner-dot-chat{background:hsl(200 60% 55%)}
+.mode-banner-label{font-weight:600;color:hsl(var(--text-100))}
+.mode-banner-desc{flex:1;color:hsl(var(--text-400));min-width:0}
+.mode-banner-switch{
+  background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);
+  color:hsl(var(--text-200));
+  padding:3px 10px;border-radius:6px;
+  font-size:calc(11px * var(--app-font-scale, 1));
+  cursor:pointer;flex-shrink:0;
+}
+.mode-banner-switch:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+
+/* Diagnostic timeout warning (audit U-H3). */
+.diag-banner-warn{
+  background:hsl(36 70% 50%/0.12);
+  border:0.5px solid hsl(36 70% 50%/0.3);
+  color:hsl(36 70% 30%);
+  padding:10px 14px;border-radius:8px;
+  font-size:calc(12px * var(--app-font-scale, 1));
+  margin:0 0 12px;
+}
+[data-theme=socrates][data-mode=dark] .diag-banner-warn{
+  color:hsl(45 70% 80%);background:hsl(36 70% 30%/0.18);
+}
+
+/* Mistake book filter bar. */
+.mistake-filter-bar{
+  display:flex;gap:6px;padding:8px 12px;
+  border-bottom:0.5px solid hsl(var(--border-300)/0.15);
+  background:hsl(var(--bg-200)/0.5);
+}
+.mistake-filter-btn{
+  background:transparent;border:0.5px solid hsl(var(--border-300)/0.25);
+  color:hsl(var(--text-400));
+  padding:3px 10px;border-radius:6px;
+  font-size:calc(11px * var(--app-font-scale, 1));
+  cursor:pointer;transition:background .08s,color .08s;
+}
+.mistake-filter-btn:hover{color:hsl(var(--text-100))}
+.mistake-filter-btn.active{
+  background:hsl(var(--accent-000)/0.15);
+  color:hsl(var(--accent-000));
+  border-color:hsl(var(--accent-000)/0.4);
+}
+
+/* =====================================================================
+ * v3.0 design — Long-term plan setup (topic-setup screen)
+ * §10.1 user input. Optional fields, collapsed by default to
+ * preserve cold-start friction.
+ * ===================================================================== */
+
+.plan-setup{
+  max-width:680px;
+  width:100%;
+  margin:8px auto 0;
+  padding:0 4px;
+  text-align:left;
+}
+.plan-setup-toggle{
+  display:flex;align-items:center;gap:6px;
+  background:transparent;border:0;
+  color:hsl(var(--text-400));
+  font-size:calc(12px * var(--app-font-scale, 1));
+  padding:6px 0;
+  cursor:pointer;
+}
+.plan-setup-toggle:hover{color:hsl(var(--text-200))}
+.plan-setup-caret{
+  display:inline-block;
+  transition:transform .15s ease;
+  font-size:calc(14px * var(--app-font-scale, 1));
+  width:14px;text-align:center;
+}
+.plan-setup-toggle[aria-expanded="true"] .plan-setup-caret{transform:rotate(90deg)}
+.plan-setup-fields{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  padding:6px 4px 4px 20px;
+  border-left:1px solid hsl(var(--border-300)/0.25);
+  margin:2px 0 6px 6px;
+}
+.plan-setup-field{
+  display:flex;flex-direction:column;gap:4px;
+}
+.plan-setup-field-rest{grid-column:1 / -1}
+.plan-setup-field-label{
+  font-size:calc(11px * var(--app-font-scale, 1));
+  color:hsl(var(--text-500));
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  font-weight:600;
+}
+.plan-setup-input{
+  background:hsl(var(--bg-200));
+  border:0.5px solid hsl(var(--border-300)/0.3);
+  color:hsl(var(--text-100));
+  padding:6px 10px;
+  border-radius:6px;
+  font-size:calc(13px * var(--app-font-scale, 1));
+}
+.plan-setup-input:focus{outline:none;border-color:hsl(var(--accent-000)/0.6)}
+.plan-setup-restdays{display:flex;gap:4px;flex-wrap:wrap}
+.plan-restday{
+  background:transparent;
+  border:0.5px solid hsl(var(--border-300)/0.3);
+  color:hsl(var(--text-400));
+  padding:3px 8px;
+  border-radius:6px;
+  font-size:calc(11px * var(--app-font-scale, 1));
+  cursor:pointer;
+  transition:background .08s,color .08s;
+}
+.plan-restday:hover{color:hsl(var(--text-100))}
+.plan-restday.active{
+  background:hsl(var(--accent-000)/0.15);
+  color:hsl(var(--accent-000));
+  border-color:hsl(var(--accent-000)/0.4);
+}
+
+/* Long-term-plan daily schedule. */
+.ltp{
+  padding:6px 4px 10px;
+  margin-top:6px;
+  border-top:0.5px solid hsl(var(--border-300)/0.15);
+}
+.ltp-title{
+  font-size:calc(11px * var(--app-font-scale, 1));
+  font-weight:600;color:hsl(var(--text-500));
+  text-transform:uppercase;letter-spacing:.06em;
+  padding:6px 8px 4px;
+}
+.ltp-meta{
+  font-size:calc(11px * var(--app-font-scale, 1));
+  color:hsl(var(--text-400));
+  padding:0 8px 6px;
+  font-variant-numeric:tabular-nums;
+}
+.ltp-days{
+  list-style:none;padding:0;margin:0;
+  display:flex;flex-direction:column;gap:2px;
+  padding:0 4px;
+}
+.ltp-day{
+  display:flex;align-items:baseline;gap:8px;
+  padding:4px 8px;
+  border-radius:6px;
+  font-size:calc(12px * var(--app-font-scale, 1));
+  color:hsl(var(--text-300));
+}
+.ltp-day-date{
+  color:hsl(var(--text-500));
+  font-variant-numeric:tabular-nums;
+  flex-shrink:0;width:36px;
+}
+.ltp-day-tasks{flex:1;min-width:0;word-break:break-word}
+.ltp-day-review{color:hsl(var(--text-500));font-style:italic}
+.ltp-day-more{color:hsl(var(--text-500));font-size:calc(11px * var(--app-font-scale, 1))}
+
+/* §8.5 — practice progress chip (shown below the mode banner
+ * during the exercise stage). Tiny, glanceable, no emoji. */
+.practice-progress-chip{
+  display:flex;align-items:center;gap:10px;
+  padding:4px 14px 6px;
+  background:hsl(var(--bg-200)/0.4);
+  border-bottom:0.5px solid hsl(var(--border-300)/0.12);
+  font-size:calc(11px * var(--app-font-scale, 1));
+  color:hsl(var(--text-400));
+  flex-wrap:wrap;
+}
+.practice-progress-chip-phase{
+  background:hsl(var(--accent-000)/0.15);
+  color:hsl(var(--accent-000));
+  padding:1px 7px;
+  border-radius:5px;
+  font-weight:600;
+  letter-spacing:.04em;
+}
+.practice-progress-chip-node{
+  color:hsl(var(--text-200));
+  font-weight:500;
+  flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.practice-progress-chip-attempts{
+  color:hsl(var(--text-500));
+  font-variant-numeric:tabular-nums;
+}
+
+/* Long-term-plan empty state. */
+.ltp-empty{
+  font-size:calc(12px * var(--app-font-scale, 1));
+  line-height:1.5;
+  color:hsl(var(--text-400));
+  padding:6px 8px 8px;
+  border-radius:6px;
+  background:hsl(var(--bg-200)/0.4);
+  border:0.5px dashed hsl(var(--border-300)/0.3);
+  margin:4px 4px 6px;
+}
+.ltp-empty-cta{
+  display:inline-block;
+  background:hsl(var(--accent-000)/0.12);
+  color:hsl(var(--accent-000));
+  border:0.5px solid hsl(var(--accent-000)/0.3);
+  padding:4px 12px;
+  border-radius:6px;
+  font-size:calc(12px * var(--app-font-scale, 1));
+  cursor:pointer;
+  margin:0 4px 8px;
+  font-weight:500;
+  transition:background .08s;
+}
+.ltp-empty-cta:hover{background:hsl(var(--accent-000)/0.2)}
+
+/* §9.4 — resolved mistake cards are visually muted. The user
+ * still sees them (the audit noted they should be retained as
+ * reference) but they no longer compete with unresolved ones. */
+.mistake-card-resolved{
+  opacity:0.6;
+  background:hsl(var(--bg-200)/0.4);
+  border-color:hsl(var(--border-300)/0.15);
+}
+.mistake-card-resolved .mistake-q{
+  text-decoration:line-through;
+  text-decoration-color:hsl(var(--text-500)/0.4);
+}
+.mistake-resolved-tag{
+  display:inline-block;
+  background:hsl(145 50% 45%/0.18);
+  color:hsl(145 50% 50%);
+  padding:1px 8px;
+  border-radius:99px;
+  font-size:calc(10px * var(--app-font-scale, 1));
+  font-weight:600;
+  letter-spacing:.04em;
+  margin-left:auto;
+  text-transform:uppercase;
+}
+[data-theme=socrates][data-mode=dark] .mistake-resolved-tag{
+  background:hsl(145 50% 50%/0.22);
+  color:hsl(145 50% 70%);
+}
