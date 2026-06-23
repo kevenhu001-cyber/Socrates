@@ -1963,6 +1963,10 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   border-left:1px solid hsl(var(--border-300)/0.25);
   margin:2px 0 6px 6px;
 }
+/* The HTML `hidden` attribute is overridden by the explicit
+   `display:grid` above. Restore the default so the toggle can
+   actually collapse the field block. */
+.plan-setup-fields[hidden]{display:none}
 .plan-setup-field{
   display:flex;flex-direction:column;gap:4px;
 }
