@@ -360,7 +360,7 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
    (140px) so the input bar has its own breathing room without
    affecting other views. The .main-inner itself doesn't need
    extra bottom padding. */
-.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:18vh;flex:1}
+.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:4vh;flex:1}
 .topic-title{font-family:var(--font-display);font-size:clamp(1.5rem,1rem + 1.5vw,2rem);font-weight:500;color:hsl(var(--text-200));text-align:center;line-height:1.4}
 .topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:480px}
 .topic-input-wrap{width:100%;max-width:520px;background:hsl(var(--bg-000));border:1px solid transparent;border-radius:16px;box-shadow:0 .25rem 1.25rem hsl(var(--always-black)/3.5%),0 0 0 0.5px hsl(var(--border-300)/0.15);transition:box-shadow .2s,border-color .2s}
@@ -624,17 +624,17 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 .chat-input-bar{
   width:100%;
   flex-shrink:0;
-  /* Docked to the bottom of the chat-view with extra breathing room
-     so the input box sits as low as practical — users kept feeling
-     the input floated too high. Lives OUTSIDE the flex/scroll flow
-     so message length never affects its position. Keyboard-avoidance
-     (visualViewport resize) handles iOS. */
+  /* Docked to the bottom of the chat-view with minimal breathing
+     room so the input box sits as low as practical — users kept
+     feeling the input floated too high. Lives OUTSIDE the flex/
+     scroll flow so message length never affects its position.
+     Keyboard-avoidance (visualViewport resize) handles iOS. */
   position:absolute;
   left:0;
   right:0;
-  /* 28px breathing room at the bottom on desktop so the input bar
-     sits well below the message stream; 24px on mobile. */
-  bottom:28px;
+  /* 2px breathing room at the bottom on desktop, 2px on mobile —
+     tucked right against the bottom edge. */
+  bottom:2px;
   z-index:10;
   background:linear-gradient(to top,hsl(var(--bg-000)) 70%,hsla(var(--bg-000)/0) 100%);
   padding-top:14px;
@@ -667,7 +667,7 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 .loading span{width:5px;height:5px;border-radius:50%;background:hsl(var(--text-500));animation:loadBounce 1.4s infinite}
 .loading span:nth-child(2){animation-delay:.2s}.loading span:nth-child(3){animation-delay:.4s}
 @keyframes loadBounce{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
-.disclaimer{text-align:center;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));padding:28px 0 0;line-height:1.4}
+.disclaimer{text-align:center;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));padding:6px 0 0;line-height:1.4}
 
 /* settings modal */
 .settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
@@ -1313,7 +1313,7 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 .katex .mord{color:hsl(var(--text-100))}
 .katex .mbin{color:hsl(var(--accent-000))}
 .katex .mrel{color:hsl(var(--accent-000))}
-@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .35s cubic-bezier(0.34,1.3,0.64,1),box-shadow .35s var(--ease-out);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4vh 12px 24px}.topic-title{font-size:calc(1.25rem * var(--app-font-scale, 1))}.chat-input-bar{bottom:24px;padding-top:12px}}
+@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .35s cubic-bezier(0.34,1.3,0.64,1),box-shadow .35s var(--ease-out);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4vh 12px 24px}.topic-title{font-size:calc(1.25rem * var(--app-font-scale, 1))}.chat-input-bar{bottom:2px;padding-top:12px}}
 .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:25;animation:fadeIn .15s}
 .sidebar-backdrop.show{display:block}
 
