@@ -10300,10 +10300,13 @@ function confirmClearSettings(){
         }
       }
       apiConfig={activeId:null,providers:[]};
-      /* Keep the built-in Beagle provider available after clearing. */
+      /* Keep the built-in Beagle provider available after clearing, but
+         do NOT auto-activate it. The user must explicitly pick a model
+         in the picker — auto-picking BEAGLE would silently route every
+         cold-start through a model they never chose. */
       apiConfig.providers.push(Object.assign({},BEAGLE_BUILT_IN));
-      apiConfig.activeId=BEAGLE_BUILT_IN.id;
       try{localStorage.removeItem("socrates-provider-keys")}catch(e){}
+      try{localStorage.removeItem(LAST_ACTIVE_ID_KEY)}catch(e){}
       renderProviderList();syncModelPills();syncSettingsUI();
     })();
     closeProfile();
@@ -10968,33 +10971,26 @@ async function refreshApiConfig(){
     }
     /* Cold-start: honour the user's persisted active provider first. The
        server's `isActive` flag is the source of truth for what the user
-       chose via the model picker / Settings. We only fall back to the
-       built-in Beagle (or leave activeId null) when the user has no usable
-       provider of their own — never auto-override an explicit choice. */
+       chose via the model picker / Settings. If none is marked, fall back
+       to the last provider they picked (kept in localStorage by
+       setActiveProvider). NEVER auto-pick BEAGLE on cold start — the
+       user must explicitly choose it via the model picker. */
     var userActive=apiConfig.providers.find(function(p){
       return p.isActive && providerUsable(p);
     });
     if(userActive){
       apiConfig.activeId=userActive.id;
-    }else if(SERVER_HAS_BEAGLE_KEY){
-      var beagle=apiConfig.providers.find(function(p){return p.isBuiltIn});
-      if(beagle){
-        beagle.isActive=true;
-        apiConfig.activeId=beagle.id;
+    }else{
+      var lastId=loadLastActiveId();
+      var lastProvider=lastId?apiConfig.providers.find(function(p){
+        return p.id===lastId && providerUsable(p);
+      }):null;
+      if(lastProvider){
+        apiConfig.activeId=lastProvider.id;
       }else{
-        apiConfig.activeId=null;
-      }
-    }else if(apiConfig.providers.length){
-      /* No Beagle on this server and no user-marked active provider.
-         Pick the first user-configured provider that's actually usable,
-         otherwise leave activeId null. */
-      var userProvider=apiConfig.providers.find(function(p){
-        return !p.isBuiltIn && providerUsable(p);
-      });
-      if(userProvider){
-        userProvider.isActive=true;
-        apiConfig.activeId=userProvider.id;
-      }else{
+        /* Truly nothing usable. Leave activeId null so the user
+           gets a clear "no provider" state in the model picker,
+           rather than silently routing through BEAGLE. */
         apiConfig.activeId=null;
       }
     }
@@ -12390,14 +12386,30 @@ function setActiveProvider(id){
     /* Built-in provider: update local state only, no server roundtrip. */
     apiConfig.providers.forEach(function(p){p.isActive=(p.id===id)});
     apiConfig.activeId=id;
+    saveLastActiveId(id);
     renderProviderList();syncModelPills();syncSettingsUI();
     return;
   }
   apiFetch("/api/api-key/"+encodeURIComponent(id),{method:"PATCH",body:{isActive:true}}).then(function(){
     apiConfig.providers.forEach(function(p){p.isActive=(p.id===id)});
     apiConfig.activeId=id;
+    saveLastActiveId(id);
     renderProviderList();syncModelPills();syncSettingsUI();
   }).catch(function(e){console.warn("[api-key] set active failed:",e.message)});
+}
+
+/* Remember the last provider the user picked across page reloads.
+   The server's `isActive` flag is the authoritative source, but if
+   the server hasn't marked any provider (e.g. a brand-new install
+   or a row whose key never finished saving) this local fallback
+   keeps the user's last choice instead of switching to BEAGLE. */
+var LAST_ACTIVE_ID_KEY="socrates-last-active-id";
+function saveLastActiveId(id){
+  if(!id)return;
+  try{localStorage.setItem(LAST_ACTIVE_ID_KEY,id)}catch(_){}
+}
+function loadLastActiveId(){
+  try{return localStorage.getItem(LAST_ACTIVE_ID_KEY)||null}catch(_){return null}
 }
 function updateProviderField(id,field,value){
   var p=apiConfig.providers.find(function(x){return x.id===id});
@@ -12512,14 +12524,17 @@ function clearSettings(){
       }
     }
     apiConfig={activeId:null,providers:[]};
-    /* Re-add the built-in Beagle provider after clearing. */
+    /* Re-add the built-in Beagle provider after clearing, but do NOT
+       auto-activate it — the user just wiped their settings, so leaving
+       them with a model picker that says "Pick a model" is the honest
+       state. Same reason as refreshApiConfig. */
     apiConfig.providers.push(Object.assign({},BEAGLE_BUILT_IN));
-    apiConfig.activeId=BEAGLE_BUILT_IN.id;
     try{localStorage.removeItem("socrates-provider-keys")}catch(e){}
+    try{localStorage.removeItem(LAST_ACTIVE_ID_KEY)}catch(e){}
     renderProviderList();syncModelPills();syncSettingsUI();
     var status=document.getElementById("stgStatus");
     status.className="settings-status ok";
-    status.textContent="Cleared. Built-in Beagle A is still available.";
+    status.textContent="Cleared. Built-in Beagle A is still available — pick a model to start.";
   })();
 }
 
