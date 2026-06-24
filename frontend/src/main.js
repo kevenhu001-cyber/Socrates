@@ -9805,7 +9805,12 @@ window.addEventListener("popstate",function(e){
    encrypted and the chat proxy uses it from the per-user row in
    api_providers. The browser only sees {id, isActive, label, url, model}.
    ============================================================ */
-var apiConfig={activeId:null,providers:[]};
+/* Initialize with the built-in Beagle provider so getActiveProvider()
+   always returns something usable even before refreshApiConfig()
+   completes its first run. The full refresh overwrites this with
+   server-side rows when available, but keeps BEAGLE_BUILT_IN in
+   providers[] if no row claims it. */
+var apiConfig={activeId:BEAGLE_BUILT_IN.id,providers:[Object.assign({},BEAGLE_BUILT_IN)]};
 
 
 /* P4.4 — encrypted provider-key cache. Old versions stored
@@ -10163,7 +10168,10 @@ async function loadSharedSession(token){
 
 async function refreshApiConfig(){
   if(!CURRENT_USER){
-    apiConfig={activeId:null,providers:[]};
+    /* Cold-boot path — no user yet. Seed the built-in Beagle so the
+       very first Tutor / chat click has a provider even before
+       afterAuthEnter() finishes loading user-specific rows. */
+    apiConfig={activeId:BEAGLE_BUILT_IN.id,providers:[Object.assign({},BEAGLE_BUILT_IN)]};
     return apiConfig;
   }
   try{
@@ -10201,6 +10209,19 @@ async function refreshApiConfig(){
     }
   }catch(e){
     console.warn("[api-key] refresh failed:",e.message);
+    /* Even if /api/api-key failed (401 on cold boot, network blip,
+       etc.), still surface the built-in Beagle provider so the user
+       doesn't get a "no provider" fallback on every Tutor session.
+       BEAGLE_BUILT_IN is frontend-only and proxies through the
+       nginx → server → MiniMax pipeline that doesn't need a
+       per-user api-key row. */
+    if(!apiConfig.providers.some(function(p){return p.isBuiltIn||p.id==="beagle-built-in"})){
+      apiConfig.providers.push(Object.assign({},BEAGLE_BUILT_IN));
+    }
+    if(!apiConfig.activeId){
+      var beagle=apiConfig.providers.find(function(p){return p.isBuiltIn||p.id==="beagle-built-in"});
+      if(beagle)apiConfig.activeId=beagle.id;
+    }
   }
   return apiConfig;
 }
