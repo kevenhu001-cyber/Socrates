@@ -2275,72 +2275,119 @@ function detectLanguage(text){
   return'en';
 }
 
-var DIAG_SYSTEM_PROMPT = "You are a diagnostic engine. Generate exactly 5 multiple-choice questions to assess a learner's knowledge of {topic}.\n\nRules:\n- Write ALL questions and options in {language}\n- Use Markdown for formatting (bold, italic, code) and LaTeX ($...$ or $$...$$) for mathematical notation where applicable\n- Each question probes a different aspect: basic familiarity, applied understanding, conceptual depth, misconception awareness, and critical analysis\n- Each question must have exactly 3-4 options labeled A, B, C, D\n- Each option must include a level field: internalized (deep understanding), fuzzy (some knowledge but gaps), or blank (no knowledge)\n- Output ONLY a valid JSON array, no other text: [{\"q\":\"question text\", \"opts\":[{\"letter\":\"A\",\"text\":\"option text\",\"level\":\"internalized\"},...]}, ...]\n- Do NOT wrap the JSON in code fences. Just the raw JSON array.\n- CRITICAL: inside any Chinese / Japanese / Korean string value, NEVER use ASCII double quotes (\\\"...) to quote phrases. Use full-width quotation marks 「...」 or 『...』, or just plain text without any quotes. ASCII double quotes are reserved for JSON delimiters only. Same rule for English text — no inline \"quoted phrases\" inside the string values, otherwise the JSON breaks.";
+var DIAG_SYSTEM_PROMPT = "You are a thoughtful diagnostic tutor. Generate exactly 1 multiple-choice question (this is question {questionNumber} of 5, focused on {aspect}) to assess a learner's grasp of {topic}.\n\n{previousQuestions}\n\nVoice and form:\n- Write the question and all options in {language}. The learner thinks in {language}; the text must read as native, not a translation. Match the learner's input language exactly.\n- Use academic but accessible language, like a kind teacher who is precise yet warm. Imagine a professor explaining to a curious student over tea.\n- Show depth and a small intellectual flavor (韵味) in the question. It should feel thoughtful, never mechanical. Probe what the learner truly understands, not just surface familiarity.\n- Avoid em-dashes (—, ——) where possible. Prefer periods, commas, colons, semicolons, or parentheses instead.\n- Use Markdown for formatting (bold, italic, code) and LaTeX ($...$ or $$...$$) for mathematical notation where applicable.\n\nStructure:\n- The question must probe {aspect} from a different angle than anything listed above.\n- Provide 3 to 4 options labeled A, B, C, D.\n- Each option includes a level field: internalized (deep grasp), fuzzy (some knowledge with gaps), or blank (no knowledge).\n- Output ONLY a single valid JSON object, no other text: {\"q\":\"question text\", \"opts\":[{\"letter\":\"A\",\"text\":\"option text\",\"level\":\"internalized\"}, ...]}\n- Do NOT wrap the JSON in code fences.\n- CRITICAL: inside any string value, NEVER use ASCII double quotes (\\\"...) to quote phrases. Use full-width quotation marks 「...」 or 『...』 for CJK text, or just plain text without quotes for English. ASCII double quotes are reserved for JSON delimiters only.";
 
+/* The five probe angles, one per question. Mapped 1:1 to the
+   fixed KB nodes in aiGenerate() (0 Core concepts, 1 Key principles,
+   2 Practical applications, 3 Common misconceptions, 4 Advanced).
+   The descriptions are passed to the model so each call gets a
+   fresh, non-overlapping angle. */
+var DIAG_ASPECTS=[
+  "basic familiarity and vocabulary: what the learner already recognizes on sight",
+  "applied understanding: can the learner put the ideas to work in a concrete case",
+  "conceptual depth: does the learner see the underlying mechanism, not just the surface",
+  "common misconceptions: what the learner might wrongly assume, and why it would fail",
+  "critical analysis: can the learner weigh, compare, or judge a subtle claim"
+];
+
+/* Build the 5-question diagnostic by calling the LLM once per
+   question, passing the previous questions so the model avoids
+   repetition. Falls back to mock (caller side) if fewer than 3
+   questions come back successfully. */
 async function generateDiagnosticQuestions(topic,language){
   var langNames={zh:'Chinese',ja:'Japanese',ko:'Korean',ru:'Russian',ar:'Arabic',en:'English'};
   var langName=langNames[language]||'English';
-  var prompt=DIAG_SYSTEM_PROMPT.replace('{topic}',topic).replace('{language}',langName);
-  if(state.searchContext){
-    prompt+="\n\n"+state.searchContext;
-    prompt+="\n\nNote: a [Web research] block is present above. You MAY ground the diagnostic questions in its contents. If no [Web research] block is present, you do not have live web access for this turn.";
-  }else{
-    prompt+="\n\nNote: no [Web research] block is present. You do not have live web access for this turn — say so honestly rather than guessing about current events.";
+  var all=[];
+  var previousTexts=[];
+  for(var i=0;i<5;i++){
+    var aspect=DIAG_ASPECTS[i]||DIAG_ASPECTS[DIAG_ASPECTS.length-1];
+    var prevBlock=previousTexts.length
+      ?"Already asked in this diagnostic. Do NOT repeat the same angle or wording:\n"+
+        previousTexts.map(function(t,idx){return(idx+1)+". "+t}).join("\n")
+      :"This is the first question in the diagnostic.";
+    var prompt=DIAG_SYSTEM_PROMPT
+      .replace('{topic}',topic)
+      .replace('{language}',langName)
+      .replace('{questionNumber}',String(i+1))
+      .replace('{aspect}',aspect)
+      .replace('{previousQuestions}',prevBlock);
+    /* Web context only needs to be mentioned once (on the first
+       call) — the same context applies to all 5 questions and
+       repeating it 5x burns tokens without changing behavior. */
+    if(i===0){
+      if(state.searchContext){
+        prompt+="\n\n"+state.searchContext;
+        prompt+="\n\nNote: a [Web research] block is present above. You MAY ground the diagnostic questions in its contents. If no [Web research] block is present, you do not have live web access for this turn.";
+      }else{
+        prompt+="\n\nNote: no [Web research] block is present. You do not have live web access for this turn — say so honestly rather than guessing about current events.";
+      }
+    }
+    var msgs=[{role:'system',content:prompt},{role:'user',content:'Topic: '+topic}];
+    var resp=await callAPI(msgs,MAX_TOKENS_DIAG);
+    if(!resp){
+      if(!state.lastCallError)state.lastCallError="Diag call returned empty response";
+      console.log("[diag] step "+(i+1)+"/5: no response, reason="+state.lastCallError);
+      break;
+    }
+    var q=parseOneDiagResponse(resp,i);
+    if(!q){
+      console.log("[diag] step "+(i+1)+"/5: parse failed, reason="+state.lastCallError);
+      break;
+    }
+    all.push(q);
+    previousTexts.push(q.q);
   }
-  var msgs=[{role:'system',content:prompt},{role:'user',content:'Topic: '+topic}];
-  var resp=await callAPI(msgs,MAX_TOKENS_DIAG);
-  if(!resp){
-    /* callAPI is supposed to set state.lastCallError on every early-
-       return, but if it returned null with no error (older code path
-       or external override) the user would otherwise see the generic
-       "Diag generator returned no questions" with no clue. Make the
-       reason explicit so the api-badge shows something useful. */
-    if(!state.lastCallError)state.lastCallError="Diag call returned empty response";
-    console.log("Diag API: no response, falling back to mock. reason="+state.lastCallError);
-    return null;
-  }
+  /* If we got fewer than 3 of 5 questions, treat the whole call as
+     failed and let the caller fall back to mock. The user gets a
+     consistent 5-question diagnostic either way. */
+  if(all.length<3)return null;
+  return all;
+}
+
+/* Parse a single-question JSON object from the model response.
+   Returns the normalized question or null. Sets state.lastCallError
+   on failure for the api-badge to surface. */
+function parseOneDiagResponse(resp,index){
   try{
-    /* Strip think blocks. The reasoning models emit
-        <think>...</think> which can be large. If the response was
-       truncated mid-think, there's no closing tag — in that case
-       discard everything from <think> onward so we don't accidentally
-       swallow the JSON array. */
     var raw=String(resp||"");
+    /* Strip think blocks. Reasoning models emit <think>...</think>
+       which can be huge; if the response was truncated mid-think
+       there's no closing tag — discard everything from <think>
+       onward so we don't accidentally swallow the JSON. */
     raw=raw.replace(/<think>[\s\S]*?<\/think>/gi,'');
     raw=raw.replace(/<think>[\s\S]*$/gi,'');
     /* Strip code fences if present */
     raw=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
-    var json=raw;
-    var start=json.indexOf("["),end=json.lastIndexOf("]"); var match=start>=0&&end>start?[json.slice(start,end+1)]:null;
-    if(match){
-      try{
-        var parsed=JSON.parse(match[0]);
-        if(Array.isArray(parsed)&&parsed.length>=3&&parsed[0].q&&parsed[0].opts){
-          return normalizeDiagQuestions(parsed);
-        }
-      }catch(parseErr){
-        /* JSON parse failed — usually because the model embedded
-           unescaped ASCII double quotes inside a Chinese / Japanese /
-           Korean string value (e.g. "q":"关于"同时性"...").
-           Fall back to a balanced-brace extractor so we can still
-           surface the questions instead of falling back to mock. */
-        var extracted=extractDiagQuestionsBalanced(match[0]);
-        if(extracted&&extracted.length>=3)return normalizeDiagQuestions(extracted);
-        /* Otherwise fall through to the catch block below for the
-           informative lastCallError. */
-        throw parseErr;
-      }
-      state.lastCallError='Diag response not a valid array of questions';
-    }else{
-      state.lastCallError='Diag response had no JSON array';
+    var start=raw.indexOf("{"),end=raw.lastIndexOf("}");
+    if(start<0||end<=start){
+      state.lastCallError="Diag response had no JSON object";
+      return null;
     }
+    var jsonStr=raw.slice(start,end+1);
+    var parsed=null;
+    try{
+      parsed=JSON.parse(jsonStr);
+    }catch(parseErr){
+      /* JSON.parse failed — usually because the model embedded
+         unescaped ASCII double quotes inside a CJK string. Fall
+         back to the existing balanced-brace per-object extractor
+         so we still surface the question instead of giving up. */
+      parsed=parseSingleDiagObject(jsonStr);
+      if(!parsed)throw parseErr;
+    }
+    if(!parsed||typeof parsed.q!=="string"||!Array.isArray(parsed.opts)||parsed.opts.length<3){
+      state.lastCallError="Diag response not a valid question object";
+      return null;
+    }
+    /* Pin nodeIdx to the question slot so each step maps to its
+       own KB node. The model may return a nodeIdx but we trust
+       the round-robin slot more. */
+    parsed.nodeIdx=index;
+    return normalizeDiagQuestions([parsed])[0]||null;
   }catch(e){
-    console.log('Diag JSON parse failed:',e.message,'Raw:',resp.substring(0,200));
-    /* Surface the parse failure on the api-badge so the user (and
-       we, debugging) can see why we fell back to mock. */
-    state.lastCallError='Diag JSON parse failed: '+(e&&e.message?e.message:String(e));
+    state.lastCallError="Diag JSON parse failed: "+(e&&e.message?e.message:String(e));
+    return null;
   }
-  return null;
 }
 
 /* Shared finalizer: takes an array of question objects (from either
