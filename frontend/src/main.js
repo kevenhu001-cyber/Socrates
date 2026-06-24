@@ -2385,202 +2385,6 @@ function generateMockDiagQs(domain){
    SESSION START
    ============================================================ */
 
-/* LLM-authored diagnostic questions.
-   Calls /api/chat/stream with mode=tutor and a strict JSON-output
-   prompt. Returns an array of {q, subarea, nodeIdx, opts} shaped
-   exactly like generateMockDiagQs(), so the downstream render
-   path is unchanged. Falls back to [] on any error/timeout —
-   the caller then falls back to the mock set.
-
-   Design notes:
-   - We do NOT use mode=tutor's teacher-mode persona for this call.
-     The persona is for actual student-facing conversation. The
-     diagnostic question generator is a back-office prompt; if we
-     reuse the persona, the model often slips into "asking the
-     student a question" instead of producing 5 self-evaluation
-     items. So we pass mode='chat' + a custom system prompt.
-   - We use max_tokens=1200 — enough for 5 questions × ~30 words
-     + 4 options each. Larger budgets make the model ramble.
-   - We use temperature=0.4 — low enough to be deterministic-ish,
-     high enough that retry gives a meaningfully different set.
-   - The response may be wrapped in ```json ... ``` fences; we
-     strip them. The JSON may also be truncated at max_tokens; we
-     attempt to repair by closing the array/object before parsing.
-   - AbortController is used so a slow model doesn't make the user
-     wait past `timeoutMs` (default 18s). */
-async function generateLLMDiagQuestions(topic, webContext, opts) {
-  opts = opts || {};
-  var timeoutMs = opts.timeoutMs || 18000;
-  var onTick = opts.onTick || function () {};
-  var lang = detectLanguage(topic);
-  var langHint = (lang === 'zh') ? '请用中文出题' : 'Write the questions in English.';
-
-  var systemPrompt = [
-    'You are a curriculum designer writing a 5-question self-assessment for a student who just said they want to learn: "' + topic + '".',
-    '',
-    'Output STRICT JSON only (no prose, no markdown fences outside the JSON). ' + langHint,
-    'Each question probes a different sub-area of the topic. Each question has 3 multiple-choice options mapping to:',
-    '  - "internalized" = the student already knows this',
-    '  - "fuzzy"        = the student has heard of it',
-    '  - "blank"        = the student has no idea',
-    '',
-    'Schema (return an array of exactly 5 objects, in this order):',
-    '[',
-    '  {',
-    '    "q": "<one short diagnostic question about a sub-area>",',
-    '    "subarea": "<short name of the sub-area this question covers>",',
-    '    "nodeIdx": <integer 0..4, unique per question, in 0..4 order>,',
-    '    "opts": [',
-    '      {"letter": "A", "text": "<option for internalized>", "level": "internalized"},',
-    '      {"letter": "B", "text": "<option for fuzzy>",        "level": "fuzzy"},',
-    '      {"letter": "C", "text": "<option for blank>",        "level": "blank"}',
-    '    ]',
-    '  },',
-    '  ... 4 more',
-    ']',
-    '',
-    'Rules:',
-    '- Output ONLY the JSON array. No prose, no code fences, no commentary.',
-    '- Keep each question under 25 words.',
-    '- Keep each option under 20 words.',
-    '- Use the user\'s topic language.',
-    '- nodeIdx values: 0, 1, 2, 3, 4 in order, no repeats.',
-    '- Make options feel like real student self-reports, not formal definitions.'
-  ].join('\n');
-
-  var userMsg = 'Topic: ' + topic +
-    (webContext && webContext.context ? '\n\nBackground context (use to make questions grounded, do NOT quote it):\n' + webContext.context.slice(0, 2000) : '');
-
-  var messages = [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: userMsg }
-  ];
-
-  var ac = new AbortController();
-  var tmo = setTimeout(function () { try { ac.abort('timeout'); } catch (_) {} }, timeoutMs);
-  onTick(opts.tickLoading || 'Asking the model to design a quick check…');
-  var full = '';
-  try {
-    var resp = await apiFetchRaw('/api/chat/stream', {
-      method: 'POST',
-      body: { messages: messages, mode: 'chat', temperature: 0.4, max_tokens: 1200 },
-      signal: ac.signal
-    });
-    clearTimeout(tmo);
-    if (!resp || !resp.body || !resp.body.getReader) return [];
-    var reader = resp.body.getReader();
-    var decoder = new TextDecoder('utf-8');
-    var buf = '';
-    while (true) {
-      var step = await reader.read();
-      if (step.done) break;
-      buf += decoder.decode(step.value, { stream: true });
-      var idx;
-      while ((idx = buf.indexOf('\n\n')) >= 0) {
-        var frame = buf.slice(0, idx); buf = buf.slice(idx + 2);
-        var lines = frame.split('\n');
-        for (var li = 0; li < lines.length; li++) {
-          var line = lines[li];
-          if (!line || line.indexOf('data:') !== 0) continue;
-          var payload = line.slice(5).trim();
-          if (payload === '[DONE]') continue;
-          try {
-            var ev = JSON.parse(payload);
-            var delta = ev && ev.choices && ev.choices[0] && ev.choices[0].delta && ev.choices[0].delta.content;
-            if (delta) full += delta;
-          } catch (_) { /* ignore non-JSON frames */ }
-        }
-      }
-    }
-  } catch (e) {
-    clearTimeout(tmo);
-    return [];
-  }
-
-  onTick('Parsing the model\'s response…');
-  return parseDiagQuestionsJson(full, gen /* unused, see body */);
-}
-
-/* Parse the model's free-form text into a clean diag question
-   array. Tolerant of:
-   - ```json ... ``` fences
-   - leading / trailing prose
-   - truncated JSON (we try to close the array before parse)
-   - nodeIdx out of range (clamped to 0..4)
-   Returns [] if nothing usable comes out. */
-function parseDiagQuestionsJson(text, _unused) {
-  if (!text) return [];
-  var s = String(text);
-
-  /* Strip code fences. */
-  s = s.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '');
-
-  /* Find the first '[' and the last ']'. If the model wrapped JSON
-     in prose ("Here are the questions: [...]"), this still finds
-     the array. */
-  var firstBracket = s.indexOf('[');
-  var lastBracket = s.lastIndexOf(']');
-  if (firstBracket < 0) return [];
-  if (lastBracket < firstBracket) {
-    /* Truncated: try to close the array. Walk back from the end
-       and find the last '}', then close. */
-    var lastBrace = s.lastIndexOf('}');
-    if (lastBrace < firstBracket) return [];
-    s = s.slice(firstBracket, lastBrace + 1) + ']';
-  } else {
-    s = s.slice(firstBracket, lastBracket + 1);
-  }
-
-  var arr;
-  try { arr = JSON.parse(s); } catch (_) {
-    /* One more attempt: try to repair by closing any open objects. */
-    var open = (s.match(/\{/g) || []).length;
-    var close = (s.match(/\}/g) || []).length;
-    if (open > close) {
-      var padded = s.slice(0, s.lastIndexOf('}') + 1);
-      while ((padded.match(/\{/g) || []).length > (padded.match(/\}/g) || []).length) padded += '}';
-      if (!padded.endsWith(']')) padded += ']';
-      try { arr = JSON.parse(padded); } catch (_) { return []; }
-    } else {
-      return [];
-    }
-  }
-  if (!Array.isArray(arr)) return [];
-
-  var out = [];
-  for (var i = 0; i < arr.length; i++) {
-    var q = arr[i];
-    if (!q || typeof q.q !== 'string' || !q.q.trim()) continue;
-    if (!Array.isArray(q.opts) || q.opts.length < 3) continue;
-    /* Normalize options: take the first 3, ensure A/B/C, level set. */
-    var letters = ['A', 'B', 'C'];
-    var levels = ['internalized', 'fuzzy', 'blank'];
-    var opts = [];
-    for (var oi = 0; oi < 3; oi++) {
-      var src = q.opts[oi] || {};
-      var text = (typeof src.text === 'string' && src.text.trim()) ? src.text.trim()
-               : (levels[oi] === 'internalized' ? 'I know this well'
-                : levels[oi] === 'fuzzy'        ? 'I have heard of this'
-                : 'I do not know this');
-      opts.push({
-        letter: letters[oi],
-        text: text,
-        level: levels[oi]
-      });
-    }
-    var nodeIdx = parseInt(q.nodeIdx, 10);
-    if (!isFinite(nodeIdx) || nodeIdx < 0 || nodeIdx > 4) nodeIdx = out.length;
-    out.push({
-      q: q.q.trim(),
-      subarea: (typeof q.subarea === 'string' && q.subarea.trim()) ? q.subarea.trim() : 'Topic area',
-      nodeIdx: nodeIdx,
-      opts: opts
-    });
-    if (out.length >= 5) break;
-  }
-  return out;
-}
-
 async function startSession(){
   var input=document.getElementById("topicInput");
   var topic=input.value.trim();
@@ -2679,21 +2483,17 @@ async function startSession(){
     }catch(_){}
   }
 
-  /* Try the real LLM first (5-15s window), then fall back to
-     the built-in mock only if it times out / errors. The mock
-     stays as a safety net but is no longer the default — the
-     design doc assumes LLM-authored questions that actually
-     reference the user's topic. */
+  /* Try the real LLM first (via the project's existing
+     generateDiagnosticQuestions — it goes through callAPI() and
+     so respects the user's configured provider, plus the
+     DIAG_SYSTEM_PROMPT already instructs the model to write all
+     questions and options in the user's input language).
+     Falls back to the built-in mock only if the LLM call returns
+     nothing usable. */
   var diagQs = null;
   var diagErr = null;
   try {
-    diagQs = await generateLLMDiagQuestions(topic, sc, {
-      timeoutMs: 18000,
-      onTick: function (msg) {
-        var loadingEl = document.querySelector('#diagnosticView .diag-loading-text');
-        if (loadingEl) loadingEl.textContent = msg;
-      }
-    });
+    diagQs = await generateDiagnosticQuestions(topic, lang);
   } catch (e) {
     diagErr = (e && e.message) || String(e);
   }
