@@ -1364,6 +1364,7 @@ async function loadSession(id){
     document.getElementById("topicBadge").classList.remove("hidden");
     document.getElementById("topicBadgeText").textContent=state.domain;
     document.getElementById("chatDomain").textContent=state.domain;
+    syncChatModel();
     var msgList=document.getElementById("msgList");
     msgList.innerHTML="";
     // P-arch context-resume — reset the authoritative message list so
@@ -1402,7 +1403,15 @@ async function loadSession(id){
       if(_userRaw && m.role === "user") {
         renderHtml = formatMsg(_userRaw);
       } else if(m.role==="assistant" && m.rawText){
-        renderHtml = formatMsg(m.rawText);
+        /* renderAssistantHTML parses <quiz>/<example>/<practice>
+           scaffold blocks, runs formatMsg, and queues async widget
+           mount in setTimeout(0). On reload this guarantees the
+           interactive widgets re-appear (not the raw <quiz> XML). */
+        try {
+          renderHtml = renderAssistantHTML(m.rawText);
+        } catch (_) {
+          renderHtml = formatMsg(m.rawText);
+        }
       } else if(m.html){
         renderHtml = m.html;
       }
@@ -1493,7 +1502,7 @@ async function loadSession(id){
         try{
           var pill=document.getElementById("searchPill");
           if(pill){
-            pill.textContent="That chat link no longer points to a saved session — start a new topic.";
+            pill.textContent="Link expired — start a new topic.";
             pill.classList.remove("hidden");
           }
         }catch(_){}
@@ -2281,7 +2290,13 @@ async function generateDiagnosticQuestions(topic,language){
   var msgs=[{role:'system',content:prompt},{role:'user',content:'Topic: '+topic}];
   var resp=await callAPI(msgs,MAX_TOKENS_DIAG);
   if(!resp){
-    console.log("Diag API: no response, falling back to mock. reason="+(state.lastCallError||"<unset>"));
+    /* callAPI is supposed to set state.lastCallError on every early-
+       return, but if it returned null with no error (older code path
+       or external override) the user would otherwise see the generic
+       "Diag generator returned no questions" with no clue. Make the
+       reason explicit so the api-badge shows something useful. */
+    if(!state.lastCallError)state.lastCallError="Diag call returned empty response";
+    console.log("Diag API: no response, falling back to mock. reason="+state.lastCallError);
     return null;
   }
   try{
@@ -2677,9 +2692,10 @@ async function startSession(){
   document.getElementById("topicSetup").classList.add("hidden");
   document.getElementById("diagnosticView").classList.remove("hidden");
   document.getElementById("chatView").classList.add("hidden");
-  document.getElementById("topicBadge").classList.remove("hidden");
-  document.getElementById("topicBadgeText").textContent=state.domain;
-  document.getElementById("chatDomain").textContent=state.domain;
+    document.getElementById("topicBadge").classList.remove("hidden");
+    document.getElementById("topicBadgeText").textContent=state.domain;
+    document.getElementById("chatDomain").textContent=state.domain;
+    syncChatModel();
   document.getElementById("diagnosticView").innerHTML='<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">'+(webSearchOn?t("tutor.loadingWeb"):t("tutor.loading"))+'</p></div>';
 
   /* Phase 3 — create the search-progress log up front so the user sees
@@ -2727,6 +2743,27 @@ async function startSession(){
     diagQs = await generateDiagnosticQuestions(topic, lang);
   } catch (e) {
     diagErr = (e && e.message) || String(e);
+  }
+  if (!diagQs) {
+    /* Belt-and-braces: if callAPI / generateDiagnosticQuestions
+       returned null without writing lastCallError, synthesise a
+       reason from the current apiConfig so the api-badge actually
+       tells the user something useful. */
+    if (!state.lastCallError) {
+      var ap = (typeof getActiveProvider === "function") ? getActiveProvider() : null;
+      if (!ap) state.lastCallError = "no provider configured";
+      else if (!ap.model) state.lastCallError = "active provider missing model";
+      else if (ap.isBuiltIn) state.lastCallError = "built-in provider call failed (network or server error)";
+      else state.lastCallError = "active provider '"+(ap.label||ap.id)+"' call failed";
+    } else {
+      /* generateDiagnosticQuestions already wrote a specific reason
+         (e.g. "Diag JSON parse failed: ..." or "Diag response had no
+         JSON array"). Log it once at warn level so the user / dev
+         console shows the actual failure mode, not just the generic
+         "Diag generator returned no questions" string the badge
+         displays. */
+      try{console.warn("[diag] generator failed, lastCallError="+state.lastCallError)}catch(_){}
+    }
   }
   if (diagQs && diagQs.length) {
     state.diagQuestions = diagQs;
@@ -2943,6 +2980,13 @@ async function askNextQuestion(){
   if(hasUsableActive()){
     var ctl=addStreamingMessage({onRetry:function(){askNextQuestion()}});
     var result=await generateSocraticQuestionStream(node,state.domain,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)});
+    /* User explicitly clicked Stop on the bubble — clean it up
+       silently. Don't fall back to mock (the user wanted to STOP,
+       not get a different question), don't show an error. */
+    if(result&&result.cancelled){
+      ctl.abort();
+      return;
+    }
     if(result!=null){
       ctl.finish();
       state.stuckCount=0;
@@ -3354,6 +3398,14 @@ function formatSourcesBlock(sources,query){
 }
 
 function handleChatApiResult(result,ctl,userText){
+  /* User clicked Stop — silently clean up the bubble. Don't show an
+     error, don't fall back to mock. Whatever text already streamed is
+     discarded so the conversation state stays consistent with what the
+     user actually saw (a stopped bubble is not a finished answer). */
+  if(result&&result.cancelled){
+    ctl.abort();
+    return;
+  }
   if(result&&result.text&&typeof result.text==="string"&&result.text.trim()){
     state.lastCallSource="api";
     ctl.finish();
@@ -4140,16 +4192,15 @@ function regenerateAssistantMessage(messageId,bar){
   }
 }
 function restoreMessageBody(entry,body){
-  // P-arch — prefer re-rendering from rawText so the LATEST markdown
-  // + KaTeX renderer (including recent fixes for weak-model output
-  // like bare-bracket auto-wrap, bracket-style LaTeX delimiters,
-  // stray-$ escape, etc.) is used for every message. The stored
-  // `entry.html` is a snapshot from when the message was first saved
-  // — it's frozen at that renderer version, so any renderer bugfix
-  // made after the message was saved never reaches the user unless
-  // we re-render.
   if(entry.rawText){
-    body.innerHTML = formatMsg(entry.rawText);
+    /* Re-render so the latest renderer (KaTeX, weak-model fixes,
+       scaffold widgets) applies to every message — not the frozen
+       html from when it was first saved. */
+    var raw = entry.rawText;
+    if(entry.role === "assistant" && /<(quiz|example|practice|definition|step|flashcard)\b/i.test(raw)){
+      try { body.innerHTML = renderAssistantHTML(raw); return; } catch(_) {}
+    }
+    body.innerHTML = formatMsg(raw);
   }else if(entry.html){
     body.innerHTML = entry.html;
   }else{
@@ -4191,8 +4242,21 @@ function addMessage(role,text,type,actions){
   /* P1.1 — push to the authoritative state.messages first; the DOM
      is just a downstream view. */
   var clientId="msg-"+generateId();
-  var html=formatMsg(text);
-  var entry={clientId:clientId,role:role,rawText:String(text||""),html:html,type:type||null,actions:actions||null};
+  /* Use renderAssistantHTML for assistant messages containing scaffold
+     XML tags so <quiz>/<example>/<practice>/<definition>/<step>/<flashcard>
+     are converted to interactive widgets instead of raw XML text. */
+  var html;
+  if(role==="assistant"&&/<(quiz|example|practice|definition|step|flashcard)\b/i.test(text)){
+    try{html=renderAssistantHTML(text)}catch(_){html=formatMsg(text)}
+  }else{
+    html=formatMsg(text);
+  }
+  var modelInfo=null;
+  if(role==="assistant"){
+    var mp=getActiveProvider();
+    if(mp)modelInfo={label:mp.label||mp.model||"",model:mp.model||""};
+  }
+  var entry={clientId:clientId,role:role,rawText:String(text||""),html:html,type:type||null,actions:actions||null,modelInfo:modelInfo};
   state.messages.push(entry);
 
   var list=document.getElementById("msgList");
@@ -4232,6 +4296,13 @@ function addMessage(role,text,type,actions){
      that this UI will exercise. */
   var toolbar=buildMessageToolbar({role:role,entry:entry});
   if(toolbar)div.appendChild(toolbar);
+  /* Show model info on assistant messages */
+  if(role==="assistant"&&entry.modelInfo){
+    var modelEl=document.createElement("div");
+    modelEl.className="msg-model";
+    modelEl.textContent=entry.modelInfo.label;
+    div.appendChild(modelEl);
+  }
   list.appendChild(div);
 
   var sc=scrollContainer();
@@ -5805,10 +5876,15 @@ function teardownThinkStructure(){
         function typeTick(now){
           try{
             if(pos>=total||ticks>=maxTicks){
-              /* Final render: ONE formatMsg pass writes the HTML. */
+              /* Final render: renderAssistantHTML parses <quiz>/<example>/<practice>
+                 scaffold blocks (replaces them with slot divs), runs formatMsg,
+                 then asynchronously mounts interactive widgets in setTimeout(0).
+                 Without this, the raw <quiz>…</quiz> XML was either dumped as
+                 escaped text or stripped by markdown — the user saw no
+                 interactive widgets in live tutor mode. */
               var finalHtml;
-              try{finalHtml=formatMsg(full)}catch(e){
-                console.warn("[typeTick] formatMsg error:",e&&e.message);
+              try{finalHtml=renderAssistantHTML(full)}catch(e){
+                console.warn("[typeTick] renderAssistantHTML error:",e&&e.message);
                 finalHtml="<p>"+esc(full)+"</p>";
               }
               body.innerHTML=finalHtml;
@@ -5841,7 +5917,7 @@ function teardownThinkStructure(){
           }catch(e){
             console.warn("[typeTick] render error:",e&&e.message);
             try{
-              var fb=formatMsg(full);
+              var fb=renderAssistantHTML(full);
               body.innerHTML=fb;
               if(msgIdx>=0&&state.messages[msgIdx]){state.messages[msgIdx].html=fb}
             }catch(_){
@@ -5856,15 +5932,16 @@ function teardownThinkStructure(){
       try{
         /* P_arch typewriter — at finish, the in-progress raw text is
            sitting in streamContent as a single text node. Replace the
-           bubble body with a single formatMsg pass on the full text.
-           This is the ONLY place marked + KaTeX run for the final
-           render, so the user gets exactly the same HTML they would
-           see if they re-opened the saved message. */
+           bubble body with a single renderAssistantHTML pass on the full
+           text. renderAssistantHTML internally calls formatMsg, then
+           injects <quiz>/<example>/<practice> scaffold slots, then
+           asynchronously mounts the interactive widgets in setTimeout(0).
+           Without this, no scaffold widgets ever rendered in live mode. */
         var finalHtml;
         try{
-          finalHtml=formatMsg(full);
+          finalHtml=renderAssistantHTML(full);
         }catch(e){
-          console.warn("[finish] formatMsg error:",e&&e.message);
+          console.warn("[finish] renderAssistantHTML error:",e&&e.message);
           finalHtml="<p>"+esc(full)+"</p>";
         }
         body.innerHTML=finalHtml;
@@ -6039,6 +6116,9 @@ function renderAssistantHTML(rawText){
   var quizPH=[];
   var examplePH=[];
   var practicePH=[];
+  var definitionPH=[];
+  var stepPH=[];
+  var flashcardPH=[];
 
   /* Pass 1: <quiz>…</quiz> → interactive multiple-choice widget. */
   var quizRe=/<quiz\b[^>]*>([\s\S]*?)<\/quiz>/gi;
@@ -6048,17 +6128,18 @@ function renderAssistantHTML(rawText){
     if(!parsed){
       var fbHtml='<div class="inline-block-fallback"><div class="inline-block-fallback-label">'+t("tutor.fallbackWarn")+'</div><pre class="inline-block-fallback-content">'+esc(m[1])+'</pre></div>';
       text=text.slice(0,m.index)+"\n\n"+fbHtml+"\n\n"+text.slice(quizRe.lastIndex);
-      quizRe.lastIndex=m.index+fbHtml.length+8;
+      quizRe.lastIndex=m.index+fbHtml.length+4;
       continue;
     }
     var id="quiz-"+(++qi)+"-"+Math.random().toString(36).slice(2,7);
     var slot='<div class="quiz-slot" data-quiz-id="'+id+'"></div>';
     text=text.slice(0,m.index)+"\n\n"+slot+"\n\n"+text.slice(quizRe.lastIndex);
-    quizRe.lastIndex=m.index+slot.length+8;
+    quizRe.lastIndex=m.index+slot.length+4;
     quizPH.push({id:id,parsed:parsed});
   }
 
-  /* Pass 2: <example>…</example> → static worked-example card. */
+  /* Pass 2: <example>…</example> → worked-example card with hidden solution
+     behind a reveal button (added in change 3). */
   var exampleRe=/<example\b[^>]*>([\s\S]*?)<\/example>/gi;
   var em,ei=0;
   while((em=exampleRe.exec(text))!==null){
@@ -6066,31 +6147,37 @@ function renderAssistantHTML(rawText){
     if(!parsedEx){
       var fbHtml='<div class="inline-block-fallback"><div class="inline-block-fallback-label">'+t("tutor.fallbackWarn")+'</div><pre class="inline-block-fallback-content">'+esc(em[1])+'</pre></div>';
       text=text.slice(0,em.index)+"\n\n"+fbHtml+"\n\n"+text.slice(exampleRe.lastIndex);
-      exampleRe.lastIndex=em.index+fbHtml.length+8;
+      exampleRe.lastIndex=em.index+fbHtml.length+4;
       continue;
     }
     var eId="ex-"+(++ei)+"-"+Math.random().toString(36).slice(2,7);
     var eSlot='<div class="example-slot" data-example-id="'+eId+'"></div>';
     text=text.slice(0,em.index)+"\n\n"+eSlot+"\n\n"+text.slice(exampleRe.lastIndex);
-    exampleRe.lastIndex=em.index+eSlot.length+8;
+    exampleRe.lastIndex=em.index+eSlot.length+4;
     examplePH.push({id:eId,parsed:parsedEx});
   }
 
-  /* Pass 3: <practice>…</practice> → static practice card. */
-  var practiceRe=/<practice\b[^>]*>([\s\S]*?)<\/practice>/gi;
+  /* Pass 3: <practice>…</practice> → interactive practice card with a
+     textarea + Submit button (added in change 2). The optional
+     `correct="…"` attribute on the opening tag enables self-grading
+     and a Reveal-answer button. */
+  var practiceRe=/<practice\b([^>]*)>([\s\S]*?)<\/practice>/gi;
   var pm,pi=0;
   while((pm=practiceRe.exec(text))!==null){
-    var parsedPr=parsePracticeInner(pm[1]);
+    var pAttrs=pm[1]||"";
+    var pCorrectM=pAttrs.match(/correct="([^"]+)"/i);
+    var parsedPr=parsePracticeInner(pm[2]);
     if(!parsedPr){
-      var fbHtml='<div class="inline-block-fallback"><div class="inline-block-fallback-label">'+t("tutor.fallbackWarn")+'</div><pre class="inline-block-fallback-content">'+esc(pm[1])+'</pre></div>';
+      var fbHtml='<div class="inline-block-fallback"><div class="inline-block-fallback-label">'+t("tutor.fallbackWarn")+'</div><pre class="inline-block-fallback-content">'+esc(pm[2])+'</pre></div>';
       text=text.slice(0,pm.index)+"\n\n"+fbHtml+"\n\n"+text.slice(practiceRe.lastIndex);
-      practiceRe.lastIndex=pm.index+fbHtml.length+8;
+      practiceRe.lastIndex=pm.index+fbHtml.length+4;
       continue;
     }
+    if(pCorrectM){parsedPr.correct=pCorrectM[1]}
     var pId="pr-"+(++pi)+"-"+Math.random().toString(36).slice(2,7);
     var pSlot='<div class="practice-slot" data-practice-id="'+pId+'"></div>';
     text=text.slice(0,pm.index)+"\n\n"+pSlot+"\n\n"+text.slice(practiceRe.lastIndex);
-    practiceRe.lastIndex=pm.index+pSlot.length+8;
+    practiceRe.lastIndex=pm.index+pSlot.length+4;
     practicePH.push({id:pId,parsed:parsedPr});
   }
 
@@ -6117,12 +6204,73 @@ function renderAssistantHTML(rawText){
     mistakeRe.lastIndex=mm.index;
   }
 
+  /* Pass 5: <definition>…</definition> → vocabulary card. Sibling
+     scaffolds (definition / step / flashcard) added in change 4. */
+  var definitionRe=/<definition\b[^>]*>([\s\S]*?)<\/definition>/gi;
+  var dm,di=0;
+  while((dm=definitionRe.exec(text))!==null){
+    var parsedDef=parseDefinitionInner(dm[1]);
+    if(!parsedDef){
+      var fbHtml='<div class="inline-block-fallback"><div class="inline-block-fallback-label">'+t("tutor.fallbackWarn")+'</div><pre class="inline-block-fallback-content">'+esc(dm[1])+'</pre></div>';
+      text=text.slice(0,dm.index)+"\n\n"+fbHtml+"\n\n"+text.slice(definitionRe.lastIndex);
+      definitionRe.lastIndex=dm.index+fbHtml.length+4;
+      continue;
+    }
+    var dId="def-"+(++di)+"-"+Math.random().toString(36).slice(2,7);
+    var dSlot='<div class="definition-slot" data-definition-id="'+dId+'"></div>';
+    text=text.slice(0,dm.index)+"\n\n"+dSlot+"\n\n"+text.slice(definitionRe.lastIndex);
+    definitionRe.lastIndex=dm.index+dSlot.length+4;
+    definitionPH.push({id:dId,parsed:parsedDef});
+  }
+
+  /* Pass 6: <step n="…">…</step> (one or more) → numbered procedure list.
+     Adjacent <step> blocks are merged into a single list with shared
+     styling; an empty n="" defaults to the position in the sequence. */
+  var stepRe=/<step\b([^>]*?)>([\s\S]*?)<\/step>/gi;
+  var sm,si=0;
+  while((sm=stepRe.exec(text))!==null){
+    var sAttrs=sm[1]||"";
+    var sNM=sAttrs.match(/n="([^"]+)"/i);
+    var sIdx=sNM?parseInt(sNM[1],10):(si+1);
+    if(!isFinite(sIdx)||sIdx<1){sIdx=si+1}
+    var parsedStep={n:sIdx,body:stripTags(decodeEntities(sm[2].trim()))};
+    if(!parsedStep.body){
+      var fbHtml='<div class="inline-block-fallback"><div class="inline-block-fallback-label">'+t("tutor.fallbackWarn")+'</div><pre class="inline-block-fallback-content">'+esc(sm[2])+'</pre></div>';
+      text=text.slice(0,sm.index)+"\n\n"+fbHtml+"\n\n"+text.slice(stepRe.lastIndex);
+      stepRe.lastIndex=sm.index+fbHtml.length+4;
+      continue;
+    }
+    var sId="step-"+(++si)+"-"+Math.random().toString(36).slice(2,7);
+    var sSlot='<div class="step-slot" data-step-id="'+sId+'"></div>';
+    text=text.slice(0,sm.index)+"\n\n"+sSlot+"\n\n"+text.slice(stepRe.lastIndex);
+    stepRe.lastIndex=sm.index+sSlot.length+4;
+    stepPH.push({id:sId,parsed:parsedStep});
+  }
+
+  /* Pass 7: <flashcard>…</flashcard> → click-to-flip recall card. */
+  var flashcardRe=/<flashcard\b[^>]*>([\s\S]*?)<\/flashcard>/gi;
+  var fm,fi=0;
+  while((fm=flashcardRe.exec(text))!==null){
+    var parsedFc=parseFlashcardInner(fm[1]);
+    if(!parsedFc){
+      var fbHtml='<div class="inline-block-fallback"><div class="inline-block-fallback-label">'+t("tutor.fallbackWarn")+'</div><pre class="inline-block-fallback-content">'+esc(fm[1])+'</pre></div>';
+      text=text.slice(0,fm.index)+"\n\n"+fbHtml+"\n\n"+text.slice(flashcardRe.lastIndex);
+      flashcardRe.lastIndex=fm.index+fbHtml.length+4;
+      continue;
+    }
+    var fId="fc-"+(++fi)+"-"+Math.random().toString(36).slice(2,7);
+    var fSlot='<div class="flashcard-slot" data-flashcard-id="'+fId+'"></div>';
+    text=text.slice(0,fm.index)+"\n\n"+fSlot+"\n\n"+text.slice(flashcardRe.lastIndex);
+    flashcardRe.lastIndex=fm.index+fSlot.length+4;
+    flashcardPH.push({id:fId,parsed:parsedFc});
+  }
+
   /* formatMsg uses marked.parse, which passes raw <div> blocks through
      untouched. The slots will land in the final HTML intact. */
   var html=formatMsg(text);
 
   /* Defer DOM mount until the html is actually inserted. */
-  if(quizPH.length||examplePH.length||practicePH.length){
+  if(quizPH.length||examplePH.length||practicePH.length||definitionPH.length||stepPH.length||flashcardPH.length){
     setTimeout(function(){
       quizPH.forEach(function(p){
         var slot=document.querySelector('[data-quiz-id="'+p.id+'"]');
@@ -6135,6 +6283,24 @@ function renderAssistantHTML(rawText){
       practicePH.forEach(function(p){
         var slot=document.querySelector('[data-practice-id="'+p.id+'"]');
         if(slot)mountPracticeWidget(slot,p.parsed);
+      });
+      definitionPH.forEach(function(p){
+        var slot=document.querySelector('[data-definition-id="'+p.id+'"]');
+        if(slot)mountDefinitionWidget(slot,p.parsed);
+      });
+      /* Steps are merged into one list under the first slot; remaining
+         step slots are removed so the surrounding markdown is clean. */
+      if(stepPH.length){
+        var firstSlot=document.querySelector('[data-step-id="'+stepPH[0].id+'"]');
+        if(firstSlot)mountStepList(firstSlot,stepPH.map(function(s){return s.parsed}));
+        stepPH.slice(1).forEach(function(p){
+          var slot=document.querySelector('[data-step-id="'+p.id+'"]');
+          if(slot)slot.remove();
+        });
+      }
+      flashcardPH.forEach(function(p){
+        var slot=document.querySelector('[data-flashcard-id="'+p.id+'"]');
+        if(slot)mountFlashcardWidget(slot,p.parsed);
       });
     },0);
   }
@@ -6171,7 +6337,10 @@ function parseExampleInner(inner){
   };
 }
 
-/* Parse <practice>…</practice> inner into {title, problem, hint}. */
+/* Parse <practice>…</practice> inner into {title, problem, hint}.
+   The optional `correct="…"` attribute on the opening <practice> tag
+   is captured separately by renderAssistantHTML (which has access to
+   the raw attribute string) and assigned to parsed.correct. */
 function parsePracticeInner(inner){
   var t=inner.match(/<title>([\s\S]*?)<\/title>/i);
   var p=inner.match(/<problem>([\s\S]*?)<\/problem>/i);
@@ -6181,6 +6350,30 @@ function parsePracticeInner(inner){
     title:t?stripTags(decodeEntities(t[1].trim())):"Practice",
     problem:stripTags(decodeEntities(p[1].trim())),
     hint:h?stripTags(decodeEntities(h[1].trim())):""
+  };
+}
+
+/* Parse <definition>…</definition> inner into {term, body}. Both fields
+   are required — a definition without a term is meaningless. */
+function parseDefinitionInner(inner){
+  var tM=inner.match(/<term>([\s\S]*?)<\/term>/i);
+  var bM=inner.match(/<body>([\s\S]*?)<\/body>/i);
+  if(!tM&&!bM)return null;
+  return{
+    term:tM?stripTags(decodeEntities(tM[1].trim())):"",
+    body:bM?stripTags(decodeEntities(bM[1].trim())):""
+  };
+}
+
+/* Parse <flashcard>…</flashcard> inner into {front, back}. Both sides
+   are required; the card just toggles visibility on click. */
+function parseFlashcardInner(inner){
+  var fM=inner.match(/<front>([\s\S]*?)<\/front>/i);
+  var bM=inner.match(/<back>([\s\S]*?)<\/back>/i);
+  if(!fM&&!bM)return null;
+  return{
+    front:fM?stripTags(decodeEntities(fM[1].trim())):"",
+    back:bM?stripTags(decodeEntities(bM[1].trim())):""
   };
 }
 
@@ -6197,15 +6390,49 @@ function mountExampleWidget(slot,parsed){
     pEl.innerHTML='<span class="label">'+t("tutor.problem")+'</span>'+formatMsg(parsed.problem);
     el.appendChild(pEl);
   }
+  /* Hide the solution behind a reveal button so students can self-test
+     before peeking. Persist the reveal state on parsed so subsequent
+     re-renders (e.g. after Reload Session) keep the same view. */
   if(parsed.solution){
+    var revealBtn=document.createElement("button");
+    revealBtn.type="button";
+    revealBtn.className="inline-example-reveal";
+    revealBtn.textContent=parsed._revealed?t("tutor.hideSolution"):t("tutor.showSolution");
+    el.appendChild(revealBtn);
     var sEl=document.createElement("div");
     sEl.className="inline-example-solution";
+    if(!parsed._revealed){sEl.setAttribute("hidden","")}
     sEl.innerHTML='<span class="label">'+t("tutor.solution")+'</span>'+formatMsg(parsed.solution);
     el.appendChild(sEl);
+    revealBtn.onclick=function(){
+      var hidden=sEl.hasAttribute("hidden");
+      if(hidden){
+        sEl.removeAttribute("hidden");
+        revealBtn.textContent=t("tutor.hideSolution");
+        parsed._revealed=true;
+      }else{
+        sEl.setAttribute("hidden","");
+        revealBtn.textContent=t("tutor.showSolution");
+        parsed._revealed=false;
+      }
+    };
   }
   slot.replaceWith(el);
 }
 
+/* Interactive practice widget — the old read-only card has been replaced
+   with a tappable card that contains:
+   - The problem statement (markdown-rendered).
+   - Optional hint, hidden behind a toggle.
+   - A textarea + Submit button. Submit pipes the typed attempt through
+     submitChatMessage so the existing practiceAttempts / mistake-book
+     / stage-advancement logic in submitChatMessage applies unchanged.
+   - Optional Reveal-answer button shown only when the AI emitted
+     <practice correct="…">. Clicking reveals the answer in the
+     feedback area and disables the textarea + Submit.
+   This is the primary "scaffolding for displaying 试题/例题/练习题"
+   feature that was previously missing — students used to have to scroll
+   to the bottom chat composer and re-type context. */
 function mountPracticeWidget(slot,parsed){
   var el=document.createElement("div");
   el.className="inline-practice";
@@ -6217,12 +6444,195 @@ function mountPracticeWidget(slot,parsed){
   pEl.className="inline-practice-problem";
   pEl.innerHTML=formatMsg(parsed.problem);
   el.appendChild(pEl);
+  var hintToggle=null,hEl=null;
   if(parsed.hint){
-    var hEl=document.createElement("div");
+    hintToggle=document.createElement("button");
+    hintToggle.type="button";
+    hintToggle.className="inline-practice-hint-toggle";
+    hintToggle.textContent=t("tutor.showHint");
+    el.appendChild(hintToggle);
+    hEl=document.createElement("div");
     hEl.className="inline-practice-hint";
+    hEl.setAttribute("hidden","");
     hEl.innerHTML='<span class="label">'+t("tutor.hint")+'</span>'+formatMsg(parsed.hint);
     el.appendChild(hEl);
+    hintToggle.onclick=function(){
+      var hidden=hEl.hasAttribute("hidden");
+      if(hidden){
+        hEl.removeAttribute("hidden");
+        hintToggle.textContent=t("tutor.hideHint");
+      }else{
+        hEl.setAttribute("hidden","");
+        hintToggle.textContent=t("tutor.showHint");
+      }
+    };
   }
+  var formEl=document.createElement("form");
+  formEl.className="inline-practice-form";
+  formEl.onsubmit=function(){return false};
+  var taEl=document.createElement("textarea");
+  taEl.className="inline-practice-textarea";
+  taEl.rows=3;
+  taEl.placeholder=t("tutor.practicePlaceholder");
+  formEl.appendChild(taEl);
+  var actionsEl=document.createElement("div");
+  actionsEl.className="inline-practice-actions";
+  var revealBtn=null;
+  if(parsed.correct){
+    revealBtn=document.createElement("button");
+    revealBtn.type="button";
+    revealBtn.className="inline-practice-reveal";
+    revealBtn.textContent=t("tutor.revealAnswer");
+    actionsEl.appendChild(revealBtn);
+  }
+  var submitBtn=document.createElement("button");
+  submitBtn.type="button";
+  submitBtn.className="inline-practice-submit";
+  submitBtn.textContent=t("tutor.submitAnswer");
+  actionsEl.appendChild(submitBtn);
+  formEl.appendChild(actionsEl);
+  var feedbackEl=document.createElement("div");
+  feedbackEl.className="inline-practice-feedback";
+  formEl.appendChild(feedbackEl);
+  el.appendChild(formEl);
+  /* Stash slot id so practice mistakes can be cleared on a future correct
+     attempt — mirrors the parsed.slotId pattern in mountQuizWidget. */
+  if(slot&&slot.getAttribute&&!parsed.slotId){
+    parsed.slotId=slot.getAttribute("data-practice-id");
+  }
+  submitBtn.onclick=function(){
+    var text=(taEl.value||"").trim();
+    if(!text){
+      feedbackEl.className="inline-practice-feedback bad";
+      feedbackEl.textContent=t("tutor.practiceEmpty");
+      return;
+    }
+    submitBtn.disabled=true;
+    if(revealBtn)revealBtn.disabled=true;
+    taEl.disabled=true;
+    /* Pipe the attempt through the existing chat send path so the
+       stage-advancement + practiceAttempts bump logic in submitChatMessage
+       (line ~3730) fires unchanged. origin:"practice" is informational
+       only — the existing logic doesn't gate on it. */
+    var sentText=t("tutor.practicePrefix")+text;
+    submitChatMessage(sentText,{origin:"practice"});
+    /* Self-grade against the optional <practice correct="…"> attribute. */
+    if(parsed.correct){
+      var norm=function(s){return String(s).toLowerCase().replace(/[\s.,;:!?\(\)\[\]'"]/g,"").trim()};
+      var isRight=norm(text)===norm(parsed.correct);
+      feedbackEl.className="inline-practice-feedback "+(isRight?"ok":"bad");
+      feedbackEl.innerHTML=(isRight
+        ?('<svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"/></svg> '
+          +t("tutor.practiceSelfCorrect"))
+        :('<svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg> '
+          +t("tutor.practiceSelfWrong")+" ")+esc(parsed.correct));
+      if(isRight){
+        /* Reset practiceAttempts to 0 (mirrors quiz-correct path at
+           main.js ~6358). A future mistake book entry shouldn't pile up
+           if the student nailed the self-graded one. */
+        if(typeof state!=="undefined"){state.practiceAttempts=0}
+      }else{
+        recordMistake({
+          type:"practice",
+          q:parsed.problem,
+          options:[],
+          correct:parsed.correct,
+          userAnswer:text,
+          judgedAnswer:parsed.correct,
+          practiceSlotId:parsed.slotId||null
+        });
+      }
+    }else{
+      feedbackEl.className="inline-practice-feedback recorded";
+      feedbackEl.textContent=t("tutor.practiceSent");
+    }
+  };
+  if(revealBtn){
+    revealBtn.onclick=function(){
+      revealBtn.disabled=true;
+      submitBtn.disabled=true;
+      taEl.disabled=true;
+      feedbackEl.className="inline-practice-feedback recorded";
+      feedbackEl.innerHTML='<span class="label">'+t("tutor.answer")+'</span>'+formatMsg(parsed.correct);
+    };
+  }
+  slot.replaceWith(el);
+}
+
+/* Vocabulary card — purple-accented, term prominent, body in standard
+   reading weight. Mirrors the inline-example / inline-practice pattern. */
+function mountDefinitionWidget(slot,parsed){
+  var el=document.createElement("div");
+  el.className="inline-definition";
+  var tEl=document.createElement("div");
+  tEl.className="inline-definition-term";
+  tEl.innerHTML=formatMsg(parsed.term||t("tutor.definitionFallback"));
+  el.appendChild(tEl);
+  if(parsed.body){
+    var bEl=document.createElement("div");
+    bEl.className="inline-definition-body";
+    bEl.innerHTML=formatMsg(parsed.body);
+    el.appendChild(bEl);
+  }
+  slot.replaceWith(el);
+}
+
+/* Stepped procedure list. Multiple <step> blocks are collected by
+   renderAssistantHTML into a single ordered list. We render them with
+   a numbered chip on the left. The first slot is replaced with the
+   list; subsequent slots are removed by renderAssistantHTML. */
+function mountStepList(slot,steps){
+  var el=document.createElement("div");
+  el.className="inline-step-list";
+  var titleEl=document.createElement("div");
+  titleEl.className="inline-step-list-title";
+  titleEl.textContent=t("tutor.stepsTitle");
+  el.appendChild(titleEl);
+  steps.forEach(function(s){
+    var row=document.createElement("div");
+    row.className="inline-step";
+    var nChip=document.createElement("span");
+    nChip.className="inline-step-n";
+    nChip.textContent=String(s.n);
+    row.appendChild(nChip);
+    var body=document.createElement("div");
+    body.className="inline-step-body";
+    body.innerHTML=formatMsg(s.body);
+    row.appendChild(body);
+    el.appendChild(row);
+  });
+  slot.replaceWith(el);
+}
+
+/* Click-to-flip recall card. Front shows by default; clicking the card
+   swaps to the back. A small label chip makes the direction explicit. */
+function mountFlashcardWidget(slot,parsed){
+  var el=document.createElement("div");
+  el.className="inline-flashcard";
+  el.setAttribute("role","button");
+  el.setAttribute("tabindex","0");
+  el.setAttribute("aria-label",t("tutor.flashcardAria"));
+  var frontEl=document.createElement("div");
+  frontEl.className="inline-flashcard-front";
+  frontEl.innerHTML='<span class="inline-flashcard-tag">'+t("tutor.flashcardFront")+'</span>'+formatMsg(parsed.front||"");
+  el.appendChild(frontEl);
+  var backEl=document.createElement("div");
+  backEl.className="inline-flashcard-back";
+  backEl.setAttribute("hidden","");
+  backEl.innerHTML='<span class="inline-flashcard-tag">'+t("tutor.flashcardBack")+'</span>'+formatMsg(parsed.back||"");
+  el.appendChild(backEl);
+  function flip(){
+    var showingBack=!backEl.hasAttribute("hidden");
+    if(showingBack){
+      backEl.setAttribute("hidden","");
+      frontEl.removeAttribute("hidden");
+    }else{
+      frontEl.setAttribute("hidden","");
+      backEl.removeAttribute("hidden");
+    }
+  }
+  el.onclick=flip;
+  el.onkeydown=function(ev){if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();flip()}};
   slot.replaceWith(el);
 }
 
@@ -6542,7 +6952,7 @@ async function handleQuickAction(action){
     state.explaining=true;
     state.substantiveCount=0;
     var node=state.kbNodes[state.currentNode];
-    var expText=getExplanation(node.status);
+    var expText=await getExplanation(node.status);
     addMessage("assistant",expText);
     setTimeout(function(){
       addMessage("assistant","Does that help clarify things? What questions do you have now?");
@@ -7860,6 +8270,28 @@ function formatMsgProgressive(t){
     return save('<details class="think-block"><summary class="think-summary"><span class="thinking-pulse"></span> Thinking…</summary><div class="think-content">'+inner+'</div></details>');
   });
 
+  /* 1b. Tutor scaffold blocks — show text-only preview during streaming.
+         At finish time renderAssistantHTML replaces them with interactive widgets. */
+  function _scaffoldText(inner) {
+    var text = inner.replace(/<[^>]+>/g, '').trim();
+    return text.length > 200 ? text.slice(0, 200) + '…' : text;
+  }
+  s = s.replace(/<(quiz|example|practice|definition|flashcard)\b[^>]*>([\s\S]*?)<\/\1>/gi, function(_, tag, content) {
+    var label = tag === 'quiz'     ? '[Quick Check]'
+              : tag === 'example'  ? '[Example]'
+              : tag === 'practice' ? '[Practice]'
+              : tag === 'definition' ? '[Definition]'
+              : tag === 'flashcard'  ? '[Flashcard]'
+              : '[' + tag + ']';
+    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">' + label + '</span> ' + escHTML(_scaffoldText(content)) + '</div>');
+  });
+  s = s.replace(/<step\b[^>]*>([\s\S]*?)<\/step>/gi, function(_, content) {
+    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">[Step]</span> ' + escHTML(_scaffoldText(content)) + '</div>');
+  });
+  s = s.replace(/<(quiz|example|practice|definition|step|flashcard)\b[^>]*>([\s\S]*?)$/gi, function(_, tag) {
+    return save('<span class="scaffold-stream scaffold-stream-unclosed">…' + escHTML(tag) + '…</span>');
+  });
+
   /* 2. Display math $$...$$ — CLOSED blocks render with KaTeX now.
      Unclosed $$ (still streaming) are also rendered with KaTeX
      (throwOnError:false means partial LaTeX degrades gracefully);
@@ -7968,6 +8400,24 @@ function formatMsg(t){
      unclosed-fence closure, bullet-glyph normalization, promote
      single-$ display-math to $$). */
   t=preprocessMarkdown(t);
+
+  /* 0a-tutor. Fallback safety: strip raw scaffold XML when formatMsg
+         is called standalone (renderAssistantHTML already replaced them
+         in the normal path). */
+  t=t.replace(/<(quiz|example|practice|definition|flashcard)\b[^>]*>([\s\S]*?)<\/\1>/gi,function(_,tag,content){
+    var label='['+(tag==='quiz'?'Quiz':tag==='example'?'Example':tag==='practice'?'Practice':tag==='definition'?'Definition':'Flashcard')+']';
+    var txt=content.replace(/<[^>]+>/g,'').trim();
+    if(txt.length>300)txt=txt.slice(0,300)+'…';
+    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">'+label+'</span>'+esc(txt)+'</div>');
+  });
+  t=t.replace(/<step\b[^>]*>([\s\S]*?)<\/step>/gi,function(_,content){
+    var txt=content.replace(/<[^>]+>/g,'').trim();
+    if(txt.length>300)txt=txt.slice(0,300)+'…';
+    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">[Step]</span>'+esc(txt)+'</div>');
+  });
+  t=t.replace(/<(quiz|example|practice|definition|step|flashcard)\b[^>]*>([\s\S]*?)$/gi,function(_,tag){
+    return save('<span class="scaffold-stream scaffold-stream-unclosed">…'+esc(tag)+'…</span>');
+  });
 
   /* 0b. Pre-emptive viz detection.
      As soon as the streamed text contains a ```viz or ```html fence
@@ -9294,13 +9744,16 @@ function closeUsageModal(){
 function loadUsageData(){
   var body=document.getElementById("usageBody");
   body.innerHTML='<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> Loading usage data…</div>';
-  apiFetch("/api/usage/daily?days=365").then(function(data){
-    renderUsageHeatmap(data,body);
+  Promise.all([
+    apiFetch("/api/usage/daily?days=365"),
+    apiFetch("/api/usage/limits"),
+  ]).then(function(results){
+    renderUsageHeatmap(results[0],body,results[1]);
   }).catch(function(){
     body.innerHTML='<div class="usage-loading" style="color:hsl(0 60% 55%)">Failed to load usage data. Make sure you are signed in.</div>';
   });
 }
-function renderUsageHeatmap(data,body){
+function renderUsageHeatmap(data,body,limits){
   var entries=data.entries||[];
   var lookup={};
   var totalTokens=0,totalMsgs=0;
@@ -9351,6 +9804,28 @@ function renderUsageHeatmap(data,body){
 
   /* Build HTML */
   var html='';
+
+  /* Beagle monthly usage bar (only shown when usage > 0 or user is free tier) */
+  if(limits&&limits.beagleLimit){
+    var beagleUsed=parseInt(limits.beagleUsed,10)||0;
+    var beagleLimit=limits.beagleLimit;
+    var beaglePct=Math.min(100,Math.round(beagleUsed/beagleLimit*100));
+    var barColor=beaglePct>=90?'hsl(0 65% 55%)':beaglePct>=70?'hsl(35 80% 55%)':'hsl(var(--accent-000))';
+    html+='<div class="usage-beagle-section" style="margin-bottom:20px;padding:14px 16px;background:hsl(var(--bg-100));border-radius:10px">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    html+='<div style="font-size:calc(13px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-000))">Beagle Monthly Usage</div>';
+    html+='<div style="font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))">'+beagleUsed.toLocaleString()+' / '+beagleLimit.toLocaleString()+' tokens</div>';
+    html+='</div>';
+    html+='<div style="height:8px;background:hsl(var(--bg-300));border-radius:4px;overflow:hidden">';
+    html+='<div style="height:100%;width:'+beaglePct+'%;background:'+barColor+';border-radius:4px;transition:width .3s ease"></div>';
+    html+='</div>';
+    if(beaglePct>=100){
+      html+='<div style="margin-top:6px;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(0 65% 55%);font-weight:500">Limit reached. Add your own API key in Account → API Keys to continue using Beagle.</div>';
+    }else if(beaglePct>=80){
+      html+='<div style="margin-top:6px;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(35 80% 55%)">Approaching monthly limit ('+beaglePct+'% used).</div>';
+    }
+    html+='</div>';
+  }
 
   /* Summary stats */
   html+='<div class="usage-summary">';
@@ -9445,8 +9920,11 @@ function hideUsageTip(){var tip=document.getElementById("usageTooltip");if(tip)t
 function loadUsageMonth(){
   var body=document.getElementById("usageBody");
   body.innerHTML='<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> Loading usage data…</div>';
-  apiFetch("/api/usage/daily?days=31").then(function(data){
-    renderUsageHeatmap(data,body);
+  Promise.all([
+    apiFetch("/api/usage/daily?days=31"),
+    apiFetch("/api/usage/limits"),
+  ]).then(function(results){
+    renderUsageHeatmap(results[0],body,results[1]);
   }).catch(function(){
     body.innerHTML='<div class="usage-loading" style="color:hsl(0 60% 55%)">Failed to load usage data.</div>';
   });
@@ -9856,6 +10334,14 @@ var BEAGLE_BUILT_IN={
   isBuiltIn:true
 };
 
+/* Set to true by authBoot() after /api/config confirms the server
+   exposes a built-in MiniMax key (MINIMAX_API_KEY env var). Consumed
+   by refreshApiConfig() to decide whether to auto-activate BEAGLE
+   on cold start when the user has no provider of their own.
+   Hoisted as `var` so both authBoot and refreshApiConfig see the
+   same binding regardless of execution order. */
+var SERVER_HAS_BEAGLE_KEY=false;
+
 /* On boot: try /api/auth/me. If the URL has ?token=… it's a verification
    link, so consume that first. If ?reset_token=… it's a password reset. */
 (async function authBoot(){
@@ -9934,6 +10420,10 @@ var BEAGLE_BUILT_IN={
       cfgOk=true;
     }
   }catch(_){console.warn("[boot] config fetch failed")}
+  /* `cfgOk` is local to this IIFE; promote it to the module-level
+     flag so refreshApiConfig() — which runs after we return — can
+     decide whether to fall back to BEAGLE on cold start. */
+  SERVER_HAS_BEAGLE_KEY=cfgOk;
   console.log("[boot] config hasBeagleKey="+cfgOk+", BEAGLE_BUILT_IN.key.length="+(BEAGLE_BUILT_IN.key||"").length);
 
   /* P0.0 — only route the user to the auth gate when the server
@@ -10422,21 +10912,43 @@ async function refreshApiConfig(){
     if(!hasBeagle){
       apiConfig.providers.push(Object.assign({},BEAGLE_BUILT_IN));
     }
-    var act=apiConfig.providers.find(function(p){return p.isActive});
-    if(act){
-      apiConfig.activeId=act.id;
+    /* A provider is "usable" if it is a built-in (server has the key)
+       or if it has a non-empty key in the local cache. Empty keys come
+       from rows the user added but never finished configuring, or from
+       stale rows whose plaintext key is no longer in localStorage. */
+    function providerUsable(p){
+      return !!(p && (p.isBuiltIn || (p.key && p.key.length > 0)));
+    }
+    /* Cold-start: honour the user's persisted active provider first. The
+       server's `isActive` flag is the source of truth for what the user
+       chose via the model picker / Settings. We only fall back to the
+       built-in Beagle (or leave activeId null) when the user has no usable
+       provider of their own — never auto-override an explicit choice. */
+    var userActive=apiConfig.providers.find(function(p){
+      return p.isActive && providerUsable(p);
+    });
+    if(userActive){
+      apiConfig.activeId=userActive.id;
+    }else if(SERVER_HAS_BEAGLE_KEY){
+      var beagle=apiConfig.providers.find(function(p){return p.isBuiltIn});
+      if(beagle){
+        beagle.isActive=true;
+        apiConfig.activeId=beagle.id;
+      }else{
+        apiConfig.activeId=null;
+      }
     }else if(apiConfig.providers.length){
-      /* No row is marked active. Prefer a user-configured provider
-         over a built-in fallback — picking BEAGLE silently when the
-         user has their own provider in the list would override their
-         explicit choice. If there is no user-configured provider at
-         all, leave activeId null so the UI can prompt the user to
-         pick one. */
-      var userProvider=apiConfig.providers.find(function(p){return!p.isBuiltIn});
-      var chosen=userProvider||null;
-      if(chosen){
-        chosen.isActive=true;
-        apiConfig.activeId=chosen.id;
+      /* No Beagle on this server and no user-marked active provider.
+         Pick the first user-configured provider that's actually usable,
+         otherwise leave activeId null. */
+      var userProvider=apiConfig.providers.find(function(p){
+        return !p.isBuiltIn && providerUsable(p);
+      });
+      if(userProvider){
+        userProvider.isActive=true;
+        apiConfig.activeId=userProvider.id;
+      }else{
+        apiConfig.activeId=null;
       }
     }
   }catch(e){
@@ -10572,6 +11084,7 @@ function syncModelPills(){
   html+=providers.length?'Manage models…':'Add a model…';
   html+='</button>';
   menu.innerHTML=html;
+  syncChatModel();
 }
 /* Click outside the picker closes the menu. */
 document.addEventListener("click",function(e){
@@ -10588,6 +11101,71 @@ document.addEventListener("keydown",function(e){
     closeModelPicker();
     e.stopPropagation();
   }
+});
+
+/* ============================================================
+   CHAT MODEL — display active model in chat header, switch mid-conversation
+   ============================================================ */
+function syncChatModel(){
+  var label=document.getElementById("chatModelLabel");
+  if(!label)return;
+  var p=getActiveProvider();
+  label.textContent=p?(p.label||p.model||"Model"):(apiConfig.providers.length?"Pick a model":"Add a model");
+  label.title=p&&!p.isBuiltIn?(p.model||""):"";
+}
+function toggleChatModelMenu(){
+  var menu=document.getElementById("chatModelMenu");
+  if(!menu)return;
+  if(!menu.classList.contains("hidden")){closeChatModelMenu();return}
+  var trigger=document.getElementById("chatModel");
+  if(trigger)trigger.classList.add("menu-open");
+  /* Build the list */
+  var providers=apiConfig.providers||[];
+  var sorted=providers.slice().sort(function(a,b){
+    if(a.isBuiltIn&&!b.isBuiltIn)return -1;
+    if(!a.isBuiltIn&&b.isBuiltIn)return 1;
+    return 0;
+  });
+  var html="";
+  if(!providers.length){
+    html='<div class="model-picker-empty">No models yet. Open Settings to add one.</div>';
+  }else{
+    sorted.forEach(function(p){
+      var isActive=p&&p.id===apiConfig.activeId;
+      var name=esc(p.label||p.model||"Model");
+      var sub=p.isBuiltIn?"":esc(p.model||"");
+      var url=esc(p.url||"");
+      var subLine=sub&&sub!==name?sub:(p.isBuiltIn?"":url);
+      html+='<button type="button" class="model-picker-item'+(isActive?" active":"")+'" data-id="'+esc(p.id||"")+'" onclick="pickChatModel(this.getAttribute(\'data-id\'))" role="option" aria-selected="'+isActive+'">';
+      html+='<span class="model-picker-item-main"><span class="model-picker-item-name">'+name+'</span>';
+      if(subLine)html+='<span class="model-picker-item-sub">'+subLine+'</span>';
+      html+='</span>';
+      html+='<svg class="model-picker-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+      html+='</button>';
+    });
+  }
+  menu.innerHTML=html;
+  menu.classList.remove("hidden");
+}
+function closeChatModelMenu(){
+  var menu=document.getElementById("chatModelMenu");
+  if(menu)menu.classList.add("hidden");
+  var trigger=document.getElementById("chatModel");
+  if(trigger)trigger.classList.remove("menu-open");
+}
+function pickChatModel(id){
+  if(!id)return;
+  pickActiveProviderById(id);
+  closeChatModelMenu();
+  syncChatModel();
+}
+/* Click outside closes the menu. */
+document.addEventListener("click",function(e){
+  var wrap=document.getElementById("chatModelWrap");
+  if(!wrap)return;
+  var menu=document.getElementById("chatModelMenu");
+  if(!menu||menu.classList.contains("hidden"))return;
+  if(!wrap.contains(e.target))closeChatModelMenu();
 });
 
 /* ============================================================
@@ -12001,7 +12579,7 @@ function getSystemContext(){
 var CHAT_SYSTEM_PROMPT = "You are a helpful, knowledgeable assistant having a plain conversation with the user. Answer their questions directly and conversationally.\n\n- Use Markdown for structure (headings, lists, **bold**, *italic*, `code`).\n- Use LaTeX for math: $...$ for inline and $$...$$ for display. The renderer uses KaTeX (not full LaTeX), so ALL KaTeX compatibility rules below are MANDATORY.\n- KaTeX CRITICAL rules — violations cause SILENT rendering failures (the formula disappears entirely, no error shown):\n  • Use ONLY lowercase LaTeX commands: \\\\sum, \\\\frac, \\\\infty, \\\\displaystyle, \\\\pm, \\\\le, \\\\ge, \\\\ne, \\\\to, \\\\alpha, \\\\beta, etc. NEVER use uppercase (\\\\SUM, \\\\FRAC, \\\\INFTY).\n  • Do NOT use \\\\begin{align}, \\\\begin{equation}, \\\\begin{eqnarray}, \\\\begin{multline}, \\\\begin{gather}, \\\\begin{flalign} — KaTeX does NOT support them. Use \\\\begin{aligned} inside $$...$$ instead for multi-line equations.\n  • Do NOT use \\\\label{...}, \\\\ref{...}, \\\\eqref{...}, \\\\pageref{...}, \\\\tag{...} — KaTeX has no cross-reference system. Write equation numbers manually as text, e.g. \"(1)\".\n  • Use $...$ for inline math and $$...$$ for display math. Do NOT use \\\\(...\\\\) or \\\\[...\\\\] as delimiters — they are NOT supported.\n  • Use \\\\mathbf{...} for bold math, NOT \\\\bm{...}.\n  • Use \\\\cdot for multiplication dot, NOT \\\\cdotp.\n  • For cases/environments, use \\\\begin{cases} ... \\\\end{cases} only. Do NOT use \\\\begin{dcases}, \\\\begin{rcases}, etc.\n  • Use \\\\text{...} for plain text inside math. Keep \\\\text content short.\n  • NEVER use \\\\ce{...}, \\\\pu{...}, or other mhchem extensions unless you are certain they are loaded.\n  • Always escape special chars in text that should be literal: use \\\\% for percent, \\\\$ for dollar sign, \\\\_ for underscore in text mode.\n  • For matrices, use \\\\begin{matrix}, \\\\begin{pmatrix}, \\\\begin{bmatrix}, \\\\begin{vmatrix} — all supported individually, but NOT inside \\\\begin{align}.\n- For diagrams (flowcharts, sequence diagrams, class diagrams, etc.), use ```mermaid code blocks instead of ASCII art — they render as live SVG.\n- Do NOT emit `<quiz>`, `<example>`, `<practice>`, or `<mistake>` blocks. They are tutor-mode constructs and will not be rendered here.\n- Keep responses proportionate to the question. A one-line question deserves a focused answer, not a textbook chapter.\n- Read the conversation history before answering. Never restart from zero or repeat yourself.\n- Match the language the user is writing in.\n\n## Web search tool\n\nYou have access to a web_search tool. It runs a real-time search and returns results (with full article text for the top hits) that you can use as fresh, authoritative information.\n\n**When to use it — be conservative. Only call it when one of these is true:**\n- The user explicitly asks you to look something up, search, or check (\"search for X\", \"look up X\", \"what's the latest on X\").\n- The question is about current events, recent releases, prices, scores, dates, or anything that may have changed since your training cutoff, AND the answer would be misleading if it were stale.\n- The question requires information from many sources (a comparison, a survey, recent research) that you cannot reliably produce from training alone.\n- You tried to answer and realized you don't actually know with confidence.\n\n**When NOT to use it — answer directly from your own knowledge:**\n- The question is conceptual, definitional, or about how something works (\"explain X\", \"how does Y work\").\n- It's a coding, math, logic, language, or general-knowledge question you can answer confidently.\n- The user is just chatting, brainstorming, or asking your opinion.\n- The user already gave you the information in the conversation.\n- Calling search would add latency without changing the answer.\n- If the user already pasted URLs and you can answer from them, do NOT call search — that just adds latency.\n\n**Reading URLs the user shares:**\nWhen the user's message contains an http(s) URL, the system has already fetched the page and prepended a `[Referenced page] <url>\nTitle: …\n<content>` block to the user's turn. Treat that block as the authoritative source for anything about that page — quote from it, summarize it, answer questions about it. Do NOT refuse and do NOT ask the user to paste the content themselves; you can see it. If the block says the page could not be retrieved, acknowledge that honestly and proceed from what you know.\n\n- Cite the URL inline using `[1]`, `[2]`, … in the order the pages appear in the prompt. The numbers map to the order of `[Referenced page]` blocks. At the end of your answer (or whenever the user asks for sources), list them as:\n  [1] Title — https://example.com/...\n  [2] Title — https://example.com/...\n- If you quote a sentence, put the citation right after the closing punctuation: `…end of quote. [1]`\n- Do not invent URLs that weren't in the prompt. If you need additional sources, use the web_search tool above.\n\n**How to call it — EXACT format required:**\nIf you decide to search, output EXACTLY one of these JSON formats and NOTHING else on that turn — no preamble, no apology, no commentary, no extra text:\n\nPreferred (single JSON on its own line):\n{\"tool\":\"web_search\",\"query\":\"<one short keyword query, max 8 words>\"}\n\nAlternative (inside a code block):\n```json\n{\"tool\":\"web_search\",\"query\":\"<one keyword query>\"}\n```\n\nCRITICAL — do NOT:\n- Say anything before the JSON (no \"I'll search\", \"Let me look that up\", etc.)\n- Wrap it in [TOOL_CALL] or any other tags — use the raw JSON format only\n- Output multiple tool calls — ONE search per turn\n- Use queries longer than 8 words — be specific but concise\n\nIf you do NOT need to search, just answer the user normally. The system will not see any tool call and will display your response directly.\n\nWhen search results DO come back, you will see a `[Web research]` block in the next round. Cite results inline as [1], [2], etc. If the user asked for sources, list them.";
 
 /* Tutor mode: the long textbook-style Socratic prompt. */
-var SOCRATIC_SYSTEM_PROMPT = "You are Socrates, a rigorous textbook author and patient tutor. Your explanations must read like a chapter from an authoritative English-language textbook — **systematic, logically progressive, precise in language, and thorough in foundation-building**. Every topic should be presented as part of a coherent knowledge system, not as isolated facts. Your teaching proceeds in a natural flow — Motivate → Define → Develop → Illustrate → Exercise — but you do NOT follow a fixed heading template; adapt the structure to the content.\n\n---\n## CORE PRINCIPLES — how to think like a textbook author\n\n**1. Coherent Knowledge System — every concept connects.**\n- Every new concept MUST be explicitly connected to what the student already knows from this lesson. Start each section with a brief sentence linking back: \"Building on our understanding of X, we now turn to Y.\"\n- Create a narrative arc across the lesson. The sub-topics are not independent — they are chapters of a book. Show how each piece fits into the larger picture.\n- After teaching a concept, briefly foreshadow what comes next and why: \"This property of X will become essential when we later discuss Y.\"\n- End each topic with a **takeaway sentence** that sums up what was learned and how it connects to the next topic.\n\n**2. Layer by Layer — from foundation to summit.**\n- Start from the absolute foundation. Even if the student claims familiarity, begin with the core definition and build up. Do NOT assume prior knowledge.\n- Each layer MUST be firmly established before moving to the next. A layer is established when you have: defined it → illustrated it with an example → checked understanding.\n- Progression: concrete → abstract → general. Start with specific numeric instances, then generalize to abstract forms, then state the general theorem or formula.\n- Do NOT jump to advanced applications before the foundation is solid. The learner should feel like each step is a natural, inevitable next step.\n\n**3. No Shortcuts on Fundamentals.**\n- The first example for any concept should be **deliberately simple** — so simple it feels obvious. This is not wasted time; this is anchoring intuition.\n- Before introducing a formula or theorem, spend a paragraph explaining **why it makes sense intuitively**. Use a concrete numeric case first, then generalize.\n- Common pitfalls and edge cases should be introduced AFTER the basic understanding is secured — not before.\n- If a concept has prerequisites, briefly review or reference them before proceeding.\n\n**4. Textbook Formal Register — precise academic English.**\n- Use formal, precise academic language. Avoid contractions (\"don't\", \"it's\", \"can't\" → \"does not\", \"it is\", \"cannot\"). Avoid conversational fillers (\"well\", \"so\", \"you see\", \"basically\", \"essentially\", \"kind of\", \"sort of\").\n- Be rigorous in your statements: say \"the function f is continuous on the closed interval [a, b]\" not \"the function is continuous on this range\".\n- Use the first-person plural (\"we\") throughout for the shared learning journey: \"We now consider...\", \"This leads us to...\", \"We observe that...\", \"We may therefore conclude...\"\n- Use the present tense for mathematical truth: \"The derivative represents...\", not \"The derivative will represent...\". Mathematical statements are timeless.\n- Definitions must be stated in standard textbook form: \"**Definition** (Term). Let X be ...\" Bold the term being defined.\n- Theorems, lemmas, and properties should be clearly labeled: \"**Theorem 1** (Fundamental Theorem of Calculus).\", \"**Lemma 2.**\", \"**Proposition.**\", \"**Key Property.**\"\n- Use transitional phrases that signal logical structure: \"Therefore...\", \"Conversely...\", \"In particular...\", \"More generally...\", \"As a concrete illustration...\", \"On the other hand...\", \"It follows that...\", \"Observe that...\", \"Notice that...\", \"By contrast...\", \"Furthermore...\", \"Hence...\", \"Thus we see that...\"\n- Number important equations for reference: $$\\\\label{eq:1} ... $$  (but never use \\\\label literally — just write \"(1)\" manually after the equation).\n- Use the **Definition → Theorem → Proof → Example → Exercise** cadence that characterizes rigorous textbooks.\n\n---\n## EXPLANATION STRUCTURE — flowing, but thorough\n\nDo NOT force every explanation into rigid section headings. Instead, write a flowing exposition that covers these phases seamlessly:\n\n1. **Motivation & Context (Introduction)** — Set the stage. Frame the problem this concept solves. Connect to previously learned material. Address the question: Why should the student care? What question does this concept answer? What gap does it fill? 2-4 paragraphs.\n\n2. **Precise Development (Definition &amp; Derivation)** — Develop the concept step by step. Define every new term with textbook precision. Show derivations in full detail — do not skip algebraic steps. Include small inline examples after each sub-idea, not as separate sections but as immediate illustrations. Go deeper into implications, edge cases, and connections. This is the main body and should be **8-20 paragraphs** depending on complexity.\n\n3. **Consolidation (Summary &amp; Transition)** — End the exposition with 1-2 paragraphs that consolidate what was learned, restate the key result, and explicitly connect to the next topic: \"Having established X, we are now ready to explore Y.\"\n\n---\n## PARAGRAPH CRAFT — how to write each paragraph\n\n- Every paragraph should make ONE clear point. The first sentence states the claim (the topic sentence); the rest of the paragraph develops and supports it with reasoning, examples, or details.\n- After every definition or abstract statement, immediately give a concrete instance: \"For example, if X = 3, then...\"\n- Use inline math $...$ for symbols and short expressions within sentences. Use display math $$...$$ for important formulas, derivations, and multi-line expressions.\n- CRITICAL LaTeX rules — violation causes SILENT rendering failure (the formula disappears entirely, no error shown):\n  • Use ONLY lowercase commands (`\\\\sum`, `\\\\frac`, `\\\\infty`, `\\\\displaystyle`, `\\\\pm`, `\\\\le`, `\\\\ge`, `\\\\ne`, `\\\\to`, `\\\\alpha`, `\\\\beta`, `\\\\gamma`, `\\\\theta`, `\\\\lambda`, `\\\\pi`, `\\\\phi`, `\\\\omega`). NEVER use uppercase (`\\\\SUM`, `\\\\FRAC`, `\\\\INFTY`).\n  • Do NOT use `\\\\begin{align}`, `\\\\begin{equation}`, `\\\\begin{eqnarray}`, `\\\\begin{multline}`, or `\\\\begin{gather}` — KaTeX does NOT support them. Use `\\\\begin{aligned}` inside `$$...$$` for multi-line equations instead.\n  • Do NOT use `\\\\label{...}`, `\\\\ref{...}`, `\\\\eqref{...}`, `\\\\pageref{...}`, or `\\\\tag{...}` — KaTeX has no cross-reference system. Write equation numbers manually as plain text, e.g. `$$ ... \\\\qquad (1) $$`.\n  • Use `$...$` for inline math and `$$...$$` for display math. Do NOT use `\\\\(...\\\\)` or `\\\\[...\\\\]` as delimiters — they are NOT supported.\n  • Use `\\\\mathbf{...}` for bold math, NOT `\\\\bm{...}`.\n  • Use `\\\\cdot` for multiplication dot, NEVER `\\\\cdotp`.\n  • For cases, use `\\\\begin{cases} ... \\\\end{cases}` only. Do NOT use `\\\\begin{dcases}`, `\\\\begin{rcases}`, or `\\\\begin{dcases*}`.\n  • Use `\\\\text{...}` for plain text inside math. Keep `\\\\text` content short — complex multi-word text may overflow.\n  • NEVER emit `\\\\ce{...}`, `\\\\pu{...}`, or other mhchem/chemformula extensions — they are not loaded.\n  • Always escape literal special characters in text: use `\\\\%` for percent, `\\\\$` for dollar sign, `\\\\_` for underscore in text mode. Unescaped `_` causes a subscript error.\n  • For matrices, use `\\\\begin{matrix}`, `\\\\begin{pmatrix}`, `\\\\begin{bmatrix}`, `\\\\begin{vmatrix}` individually. Do NOT nest them inside align environments.\n  • For integrals: `\\\\int`, `\\\\iint`, `\\\\iiint`, `\\\\oint` are all supported individually with `_{lower}^{upper}` for bounds.\n  • For spacing: use `\\\\,` (thin), `\\\\:` (medium), `\\\\;` (thick), `\\\\quad`, `\\\\qquad`. Do NOT use `\\\\hspace` or `\\\\kern` with absolute units.\n- For diagrams (flowcharts, sequence diagrams, class diagrams, etc.), use ```mermaid code blocks instead of ASCII art — they render as live SVG.\n- When introducing a new term, **bold** it and define it in the same sentence: \"A **derivative** measures the instantaneous rate of change of a function.\"\n- Use precise, formal language at all times. This is a textbook.\n\n---\n## WORKED EXAMPLES — 2-3, with clear progression\n\nAfter the explanation, present 2-3 worked examples. This is MANDATORY — the examples are where the student truly learns.\n\n**Example 1 — Foundation.** A basic, straightforward application. The purpose is to show the concept working in its simplest form. Make each step explicit: \"Step 1: Identify X. Step 2: Apply formula Y. Step 3: Compute...\" Explain the reasoning behind each step, not just the algebra.\n\n**Example 2 — Application.** Requires combining multiple ideas. Less hand-holding; more reliance on the foundation built in Example 1. The solution should note where it builds on Example 1.\n\n**Example 3 (optional)** — Extension. An edge case, a non-standard application, or a problem that requires strategic thinking.\n\nFormat:\n<example><title>Example 1: [descriptive title]</title><problem>the problem statement</problem><solution>step-by-step solution with $$...$$ for math. Explain each step's reasoning.</solution></example>\n\n---\n## PRACTICE PROBLEM — challenging, requires transfer\n\nGive ONE practice problem. It MUST be harder than the examples — it should require adapting the concepts to a new context, not just applying the same steps.\n\n<practice><title>Practice</title><problem>the problem — must require transfer, not mimicry</problem><hint>optional hint (1-2 sentences)</hint></practice>\n\nDo NOT include the answer.\n\n---\n## CHECKING UNDERSTANDING — optional quiz\n\nYou MAY optionally include a multiple-choice quiz after the explanation (before examples). Use when the concept has a common point of confusion worth testing immediately:\n\n<quiz><q>question</q><options><o letter=\"A\">option</o><o letter=\"B\">option</o><o letter=\"C\">option</o></options><correct>B</correct></quiz>\n\n3 options only. Distractors should be plausible misconceptions.\n\n---\n## RESPONDING TO THE STUDENT\n\nWhen the student attempts the practice problem:\n- **Correct** → affirm concisely, then present the next sub-topic as a natural progression.\n- **Partially correct** → point out exactly which part needs work. Let them try once more.\n- **Wrong** → walk through the correct approach, highlighting where their reasoning went off. Give a similar practice problem. Append:\n  <mistake type=\"practice\" correct=\"...the key insight the student missed...\"></mistake>\n\n---\n## ABSOLUTE ANTI-PATTERNS\n\n- Do NOT use Chinese labels, headings, or structural markers anywhere in your output. Write entirely in English.\n- Do NOT write short, shallow explanations. 8-20 paragraphs is normal for a thorough exposition.\n- Do NOT give fewer than 2 worked examples. Examples are where real learning happens.\n- Do NOT skip the foundation example (Example 1). Even if it seems too simple.\n- Do NOT make practice trivially solvable by copying an example. Require transfer.\n- Do NOT use casual or conversational language. Write in formal, precise textbook register.\n- Do NOT skip the motivation phase. Context and purpose are essential.\n- Do NOT present concepts in isolation. Every new idea must connect to the previous one.\n- Do NOT jump to advanced topics before the foundation is solidified.\n- Do NOT repeat explanations from the chat history — build on what you've already taught.\n- Do NOT use \"you\" to address the student directly in explanatory text (use \"we\" instead). Reserve \"you\" for exercises and quiz questions.\n\n---\n## CONVERSATION RULES\n\n- Read the chat history before every response. NEVER restart from zero.\n- If the user's last message is short (\"ok\", \"continue\", \"next\"), pick up exactly where you left off.\n- If the user already answered a quiz, do NOT ask it again. Move to examples or practice.\n- If the user already completed practice, affirm and move to the next sub-topic.\n\nThe student is learning about: {topic}. Their current level in this area: {level}.\n\n{context}";
+var SOCRATIC_SYSTEM_PROMPT = "You are Socrates, a rigorous textbook author and patient tutor. Your explanations must read like a chapter from a first-rate textbook in the student's own language — **systematic, logically progressive, precise in language, and thorough in foundation-building**. Every topic should be presented as part of a coherent knowledge system, not as isolated facts. Your teaching proceeds in a natural flow — Motivate → Define → Develop → Illustrate → Exercise — but you do NOT follow a fixed heading template; adapt the structure to the content.\n\n## LANGUAGE RULE — match the student's language\n\nDetect the language the student is using. If the student's topic, question, or conversation is in Chinese, respond entirely in Chinese using the same textbook rigor and structure described below. If the student writes in English, respond in English. If the student writes in another language, respond in that language. Never switch language mid-explanation, and never mix languages in your output. All pedagogical components — definitions, worked examples, practice problems, quizzes, flashcards — must be in the same language as the exposition.\n\nThe core requirement is that the student receives a first-rate textbook-quality explanation **in their own language**, adapted to that language's academic register. For Chinese, this means using formal written Chinese (书面语), proper technical terminology, and a rigorous textbook cadence appropriate to Chinese academic writing.\n\n---\n## CORE PRINCIPLES — how to think like a textbook author\n\n**1. Coherent Knowledge System — every concept connects.**\n- Every new concept MUST be explicitly connected to what the student already knows from this lesson. Start each section with a brief sentence linking back: \"Building on our understanding of X, we now turn to Y.\"\n- Create a narrative arc across the lesson. The sub-topics are not independent — they are chapters of a book. Show how each piece fits into the larger picture.\n- After teaching a concept, briefly foreshadow what comes next and why: \"This property of X will become essential when we later discuss Y.\"\n- End each topic with a **takeaway sentence** that sums up what was learned and how it connects to the next topic.\n\n**2. Layer by Layer — from foundation to summit.**\n- Start from the absolute foundation. Even if the student claims familiarity, begin with the core definition and build up. Do NOT assume prior knowledge.\n- Each layer MUST be firmly established before moving to the next. A layer is established when you have: defined it → illustrated it with an example → checked understanding.\n- Progression: concrete → abstract → general. Start with specific numeric instances, then generalize to abstract forms, then state the general theorem or formula.\n- Do NOT jump to advanced applications before the foundation is solid. The learner should feel like each step is a natural, inevitable next step.\n\n**3. No Shortcuts on Fundamentals.**\n- The first example for any concept should be **deliberately simple** — so simple it feels obvious. This is not wasted time; this is anchoring intuition.\n- Before introducing a formula or theorem, spend a paragraph explaining **why it makes sense intuitively**. Use a concrete numeric case first, then generalize.\n- Common pitfalls and edge cases should be introduced AFTER the basic understanding is secured — not before.\n- If a concept has prerequisites, briefly review or reference them before proceeding.\n\n**4. Textbook Formal Register — precise academic language in the student's language.**\n- Use formal, precise academic language in whatever language the student is using. Avoid conversational fillers and casual expressions. Write in the formal register appropriate to that language (e.g., for Chinese, use 书面语 with proper 术语; for English, avoid contractions and colloquialisms).\n- Be rigorous in your statements: be specific and technically precise rather than vague.\n- For Chinese: use 我们 throughout for the shared learning journey (我们考虑..., 我们得到..., 因此我们可以得出...). Use the present tense for mathematical truth. Use standard Chinese textbook terminology (定义, 定理, 证明, 例, 练习). Use classical Chinese academic connectors: 因此, 反之, 特别地, 一般地, 例如, 另一方面, 由此可见, 注意到, 换言之, 进而, 故.\n- For English: use the first-person plural (\"we\") throughout. Use the present tense for mathematical truth. Use transitional phrases: \"Therefore...\", \"Conversely...\", \"In particular...\", \"More generally...\", \"As a concrete illustration...\", \"On the other hand...\", \"It follows that...\", \"Observe that...\", \"Hence...\".\n- Definitions must be stated in standard textbook form. Bold the term being defined.\n- Theorems, lemmas, and properties should be clearly labeled in the language of instruction.\n- Number important equations for reference (write the number manually after the equation).\n- Use the **Definition → Theorem → Proof → Example → Exercise** cadence that characterizes rigorous textbooks, regardless of language.\n\n---\n## EXPLANATION STRUCTURE — flowing, but thorough\n\nDo NOT force every explanation into rigid section headings. Instead, write a flowing exposition that covers these phases seamlessly:\n\n1. **Motivation & Context (Introduction)** — Set the stage. Frame the problem this concept solves. Connect to previously learned material. Address the question: Why should the student care? What question does this concept answer? What gap does it fill? 2-4 paragraphs.\n\n2. **Precise Development (Definition &amp; Derivation)** — Develop the concept step by step. Define every new term with textbook precision. Show derivations in full detail — do not skip algebraic steps. Include small inline examples after each sub-idea, not as separate sections but as immediate illustrations. Go deeper into implications, edge cases, and connections. This is the main body and should be **8-20 paragraphs** depending on complexity.\n\n3. **Consolidation (Summary &amp; Transition)** — End the exposition with 1-2 paragraphs that consolidate what was learned, restate the key result, and explicitly connect to the next topic: \"Having established X, we are now ready to explore Y.\"\n\n---\n## PARAGRAPH CRAFT — how to write each paragraph\n\n- Every paragraph should make ONE clear point. The first sentence states the claim (the topic sentence); the rest of the paragraph develops and supports it with reasoning, examples, or details.\n- After every definition or abstract statement, immediately give a concrete instance: \"For example, if X = 3, then...\"\n- Use inline math $...$ for symbols and short expressions within sentences. Use display math $$...$$ for important formulas, derivations, and multi-line expressions.\n- CRITICAL LaTeX rules — violation causes SILENT rendering failure (the formula disappears entirely, no error shown):\n  • Use ONLY lowercase commands (`\\\\sum`, `\\\\frac`, `\\\\infty`, `\\\\displaystyle`, `\\\\pm`, `\\\\le`, `\\\\ge`, `\\\\ne`, `\\\\to`, `\\\\alpha`, `\\\\beta`, `\\\\gamma`, `\\\\theta`, `\\\\lambda`, `\\\\pi`, `\\\\phi`, `\\\\omega`). NEVER use uppercase (`\\\\SUM`, `\\\\FRAC`, `\\\\INFTY`).\n  • Do NOT use `\\\\begin{align}`, `\\\\begin{equation}`, `\\\\begin{eqnarray}`, `\\\\begin{multline}`, or `\\\\begin{gather}` — KaTeX does NOT support them. Use `\\\\begin{aligned}` inside `$$...$$` for multi-line equations instead.\n  • Do NOT use `\\\\label{...}`, `\\\\ref{...}`, `\\\\eqref{...}`, `\\\\pageref{...}`, or `\\\\tag{...}` — KaTeX has no cross-reference system. Write equation numbers manually as plain text, e.g. `$$ ... \\\\qquad (1) $$`.\n  • Use `$...$` for inline math and `$$...$$` for display math. Do NOT use `\\\\(...\\\\)` or `\\\\[...\\\\]` as delimiters — they are NOT supported.\n  • Use `\\\\mathbf{...}` for bold math, NOT `\\\\bm{...}`.\n  • Use `\\\\cdot` for multiplication dot, NEVER `\\\\cdotp`.\n  • For cases, use `\\\\begin{cases} ... \\\\end{cases}` only. Do NOT use `\\\\begin{dcases}`, `\\\\begin{rcases}`, or `\\\\begin{dcases*}`.\n  • Use `\\\\text{...}` for plain text inside math. Keep `\\\\text` content short — complex multi-word text may overflow.\n  • NEVER emit `\\\\ce{...}`, `\\\\pu{...}`, or other mhchem/chemformula extensions — they are not loaded.\n  • Always escape literal special characters in text: use `\\\\%` for percent, `\\\\$` for dollar sign, `\\\\_` for underscore in text mode. Unescaped `_` causes a subscript error.\n  • For matrices, use `\\\\begin{matrix}`, `\\\\begin{pmatrix}`, `\\\\begin{bmatrix}`, `\\\\begin{vmatrix}` individually. Do NOT nest them inside align environments.\n  • For integrals: `\\\\int`, `\\\\iint`, `\\\\iiint`, `\\\\oint` are all supported individually with `_{lower}^{upper}` for bounds.\n  • For spacing: use `\\\\,` (thin), `\\\\:` (medium), `\\\\;` (thick), `\\\\quad`, `\\\\qquad`. Do NOT use `\\\\hspace` or `\\\\kern` with absolute units.\n- For diagrams (flowcharts, sequence diagrams, class diagrams, etc.), use ```mermaid code blocks instead of ASCII art — they render as live SVG.\n- When introducing a new term, **bold** it and define it in the same sentence: \"A **derivative** measures the instantaneous rate of change of a function.\"\n- Use precise, formal language at all times. This is a textbook.\n\n---\n## WORKED EXAMPLES — 2-3, with clear progression\n\nAfter the explanation, present 2-3 worked examples. This is MANDATORY — the examples are where the student truly learns.\n\n**Example 1 — Foundation.** A basic, straightforward application. The purpose is to show the concept working in its simplest form. Make each step explicit: \"Step 1: Identify X. Step 2: Apply formula Y. Step 3: Compute...\" Explain the reasoning behind each step, not just the algebra.\n\n**Example 2 — Application.** Requires combining multiple ideas. Less hand-holding; more reliance on the foundation built in Example 1. The solution should note where it builds on Example 1.\n\n**Example 3 (optional)** — Extension. An edge case, a non-standard application, or a problem that requires strategic thinking.\n\nFormat:\n<example><title>Example 1: [descriptive title]</title><problem>the problem statement</problem><solution>step-by-step solution with $$...$$ for math. Explain each step's reasoning.</solution></example>\n\n---\n## PRACTICE PROBLEM — challenging, requires transfer\n\nGive ONE practice problem. It MUST be harder than the examples — it should require adapting the concepts to a new context, not just applying the same steps.\n\n<practice><title>Practice</title><problem>the problem — must require transfer, not mimicry</problem><hint>optional hint (1-2 sentences)</hint></practice>\n\nThe student types their attempt into the practice widget inline and submits; their answer is sent to you as the next user turn so you can grade it. If the problem has a single canonical answer and self-grading is reasonable, you MAY also include `correct=\"...\"` on the opening tag — when present, the widget shows a Reveal-answer button and self-grades the typed attempt (case-insensitive, ignoring trailing punctuation); if not present, only the typed attempt is sent and you grade in your next reply. Do NOT include the answer in the prose either way.\n\n## VOCABULARY — formal terms\n\nWhen introducing a new formal term the student should remember, emit it inside a definition card so it stands out from the prose:\n\n<definition><term>Term name</term><body>the formal definition, 1-3 sentences, in the same register as the surrounding exposition</body></definition>\n\nUse sparingly — only when the term itself is worth committing to long-term memory. Do NOT use for ordinary words or for terms already defined earlier in this lesson.\n\n## PROCEDURE — multi-step algorithms\n\nWhen a procedure is genuinely sequential and the order matters (long division, integral setup, proof techniques), emit each step as a numbered step block. Adjacent <step> blocks are merged into a single numbered list at render time.\n\n<step n=\"1\">first action</step>\n<step n=\"2\">second action</step>\n<step n=\"3\">third action</step>\n\nUse only when the procedure is genuinely a recipe the student should follow. Do NOT use for prose explanations or for steps that have no clear linear order.\n\n## FLASHCARD — atomic recall\n\nFor a single, atomic fact or definition that benefits from spaced repetition (a named theorem, a historical date, a vocabulary pairing), emit a flashcard:\n\n<flashcard><front>Question or prompt</front><back>Concise answer</back></flashcard>\n\nThe student clicks the card to reveal the answer. Use sparingly — one or two per lesson is plenty. Do NOT use for multi-step explanations.\n\n---\n## CHECKING UNDERSTANDING — optional quiz\n\nYou MAY optionally include a multiple-choice quiz after the explanation (before examples). Use when the concept has a common point of confusion worth testing immediately:\n\n<quiz><q>question</q><options><o letter=\"A\">option</o><o letter=\"B\">option</o><o letter=\"C\">option</o></options><correct>B</correct></quiz>\n\n3 options only. Distractors should be plausible misconceptions.\n\n---\n## RESPONDING TO THE STUDENT\n\nWhen the student attempts the practice problem:\n- **Correct** → affirm concisely, then present the next sub-topic as a natural progression.\n- **Partially correct** → point out exactly which part needs work. Let them try once more.\n- **Wrong** → walk through the correct approach, highlighting where their reasoning went off. Give a similar practice problem. Append:\n  <mistake type=\"practice\" correct=\"...the key insight the student missed...\"></mistake>\n\n---\n## ABSOLUTE ANTI-PATTERNS\n\n- Do NOT switch languages mid-lesson or mix languages. Every element — explanation, examples, practice, quiz — must be in the same language.\n- Do NOT use a language different from what the student is using. Match their language from the first response.\n- Do NOT write short, shallow explanations. 8-20 paragraphs is normal for a thorough exposition.\n- Do NOT give fewer than 2 worked examples. Examples are where real learning happens.\n- Do NOT skip the foundation example (Example 1). Even if it seems too simple.\n- Do NOT make practice trivially solvable by copying an example. Require transfer.\n- Do NOT use casual or conversational language. Write in formal, precise textbook register.\n- Do NOT skip the motivation phase. Context and purpose are essential.\n- Do NOT present concepts in isolation. Every new idea must connect to the previous one.\n- Do NOT jump to advanced topics before the foundation is solidified.\n- Do NOT repeat explanations from the chat history.\n- Do NOT ask or present multiple questions in a single response. Each turn should ask at most one quiz, one practice problem, or one check. Never bundle two or more questions in the same message. — build on what you've already taught.\n- Do NOT use \"you\" to address the student directly in explanatory text (use \"we\" instead). Reserve \"you\" for exercises and quiz questions.\n\n---\n## CONVERSATION RULES\n\n- Read the chat history before every response. NEVER restart from zero.\n- If the user's last message is short (\"ok\", \"continue\", \"next\"), pick up exactly where you left off.\n- If the user already answered a quiz, do NOT ask it again. Move to examples or practice.\n- If the user already completed practice, affirm and move to the next sub-topic.\n\nThe student is learning about: {topic}. Their current level in this area: {level}.\n\n{context}";
 
 /* Beagle identity is injected at runtime via getSystemContext(). */
 var BEAGLE_SYSTEM_PROMPT = "";
@@ -12034,55 +12612,126 @@ async function callAPI(messages,maxTokens){
     beagleMsgs.unshift({role:"system",
       content:"Your name is Beagle A. You are an AI assistant developed by Topodrive company. "+
         "You are helpful, knowledgeable, and precise. Never identify as MiniMax or any other model."});
-    try{
-      var ac=new AbortController();
-      var tmo=setTimeout(function(){ac.abort()},90000);
-      /* Make sure a fresh csrf cookie exists before we read it.
-         The boot path calls /api/auth/csrf-token once, but if the
-         cookie has since expired (30-day max-age) or was cleared
-         by a server restart, document.cookie will be empty and
-         /api/minimax will reject the POST with 403
-         "CSRF token required for authenticated requests". */
-      try{await fetch("/api/auth/csrf-token",{credentials:"include"})}catch(_){}
-      var csrfBeagle=getCsrfToken();
-      var resp=await fetch("/api/minimax/v1/chat/completions",{
-        method:"POST",
-        credentials:"include",
-        headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key,"X-CSRF-Token":csrfBeagle||""},
-        body:JSON.stringify({messages:beagleMsgs,model:provider.model,temperature:0.7,max_tokens:maxTokens}),
-        signal:ac.signal
-      });
-      clearTimeout(tmo);
-      if(!resp.ok){var b="";try{b=await resp.text()}catch(_){}
-        state.lastCallError=resp.status+" "+(b||"").slice(0,200);return null}
-      var json=await resp.json();
-      if(!json||!json.choices||!json.choices[0]||!json.choices[0].message){
-        state.lastCallError="malformed response";return null}
-      return json.choices[0].message.content;
-    }catch(e){
-      state.lastCallError=(e&&e.name==="AbortError")?"request timed out after 90s":String(e&&e.message||e);
-      return null;
+    /* Reasoning models (MiniMax-M2.7, DeepSeek R1, QwQ) regularly
+       take 2-4 minutes to think before producing the answer. The
+       previous 90s hard timeout cut off the call mid-think and the
+       caller fell back to mock — visible to the user as a sudden
+       truncation. Use the same 10-minute total budget + 2-retry
+       pattern as the streaming path so a slow first attempt has a
+       chance to recover. */
+    var BEAGLE_NONSTREAM_MAX=2;
+    var beagleAttempt=0;
+    var lastBeagleErr=null;
+    while(beagleAttempt<BEAGLE_NONSTREAM_MAX){
+      beagleAttempt++;
+      var wdB=makeAIWatchdog(STREAM_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdB&&wdB.stop("beagle-watchdog")}catch(_){}});
+      try{
+        /* Make sure a fresh csrf cookie exists before we read it.
+           The boot path calls /api/auth/csrf-token once, but if the
+           cookie has since expired (30-day max-age) or was cleared
+           by a server restart, document.cookie will be empty and
+           /api/minimax will reject the POST with 403
+           "CSRF token required for authenticated requests". */
+        try{await fetch("/api/auth/csrf-token",{credentials:"include"})}catch(_){}
+        var csrfBeagle=getCsrfToken();
+        var resp=await fetch("/api/minimax/v1/chat/completions",{
+          method:"POST",
+          credentials:"include",
+          headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key,"X-CSRF-Token":csrfBeagle||""},
+          body:JSON.stringify({messages:beagleMsgs,model:provider.model,temperature:0.7,max_tokens:maxTokens}),
+          signal:wdB.ac.signal
+        });
+        /* Read the response body BEFORE stopping the watchdog.
+           Chrome's fetch implementation propagates signal.abort() to the
+           underlying response body stream — calling ac.abort() in
+           wdB.stop("done") right after fetch resolves causes the very
+           next body read (resp.text/resp.json) to throw AbortError
+           with "The user aborted a request.", which our catch path then
+           mis-reports as "request aborted". Reading the body as text
+           first and then stopping the watchdog avoids touching the
+           aborted body stream. */
+        var respText="";
+        try{respText=await resp.text()}catch(_){}
+        wdB.stop("done");
+        if(!resp.ok){
+          lastBeagleErr=resp.status+" "+(respText||"").slice(0,200);
+          if(STREAM_RETRYABLE_STATUS[resp.status]&&beagleAttempt<BEAGLE_NONSTREAM_MAX){
+            await sleepBackoff(beagleAttempt,resp.headers.get("Retry-After"));
+            continue;
+          }
+          state.lastCallError=lastBeagleErr;
+          return null;
+        }
+        var json=null;
+        try{json=JSON.parse(respText)}catch(_){}
+        if(!json||!json.choices||!json.choices[0]||!json.choices[0].message){
+          state.lastCallError="malformed response";
+          return null;
+        }
+        return json.choices[0].message.content;
+      }catch(e){
+        wdB.stop("error");
+        var isAbort=(e&&(e.name==="AbortError"||e.code===20));
+        var reason=wdB.reason()||"";
+        var isHeartbeat=reason.indexOf("heartbeat")>=0;
+        var isTotal=reason.indexOf("total-timeout")>=0;
+        lastBeagleErr=isAbort
+          ?(isHeartbeat?"request stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)":
+             isTotal?"request timed out after "+(STREAM_TIMEOUT_MS/1000)+"s":
+             "request aborted")
+          :String(e&&e.message||e);
+        var userCancelled=isAbort&&!wdB.isStopped();
+        if(!userCancelled&&(isHeartbeat||isTotal)&&beagleAttempt<BEAGLE_NONSTREAM_MAX){
+          await sleepBackoff(beagleAttempt,null);
+          continue;
+        }
+        state.lastCallError=lastBeagleErr;
+        return null;
+      }
     }
-  }
-  try{
-    var ac=new AbortController();
-    var tmo=setTimeout(function(){ac.abort()},90000);
-    var resp;
-    try{
-      resp=await apiFetch("/api/chat",{method:"POST",body:{messages:messages,temperature:0.7,max_tokens:maxTokens},signal:ac.signal,timeoutMs:90000});
-    }finally{
-      clearTimeout(tmo);
-    }
-    if(!resp||!resp.choices||!resp.choices[0]||!resp.choices[0].message){
-      state.lastCallError="malformed response";
-      return null;
-    }
-    return resp.choices[0].message.content;
-  }catch(e){
-    console.error("[API] call failed:",e);
-    state.lastCallError=(e&&e.name==="AbortError")?"request timed out after 90s":String(e&&e.message||e);
+    state.lastCallError=lastBeagleErr||"Beagle non-stream request failed";
     return null;
   }
+  /* Non-built-in provider: same retry logic, same timeouts. */
+  var NONSTREAM_MAX=2;
+  var nsAttempt=0;
+  var lastNsErr=null;
+  while(nsAttempt<NONSTREAM_MAX){
+    nsAttempt++;
+    var wdN=makeAIWatchdog(STREAM_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdN&&wdN.stop("non-builtin-watchdog")}catch(_){}});
+    try{
+      var resp=await apiFetch("/api/chat",{method:"POST",body:{messages:messages,temperature:0.7,max_tokens:maxTokens},signal:wdN.ac.signal,timeoutMs:STREAM_TIMEOUT_MS});
+      wdN.stop("done");
+      if(!resp||!resp.choices||!resp.choices[0]||!resp.choices[0].message){
+        state.lastCallError="malformed response";
+        return null;
+      }
+      return resp.choices[0].message.content;
+    }catch(e){
+      wdN.stop("error");
+      var isAbortN=(e&&(e.name==="AbortError"||wdN.ac.signal.aborted));
+      var reasonN=wdN.reason()||"";
+      var isHbN=reasonN.indexOf("heartbeat")>=0;
+      var isTotN=reasonN.indexOf("total-timeout")>=0;
+      var eStatus=e&&e.status;
+      lastNsErr=isAbortN
+        ?(isHbN?"request stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)":
+           isTotN?"request timed out after "+(STREAM_TIMEOUT_MS/1000)+"s":
+           "request aborted")
+        :(eStatus?eStatus+" ":"network: ")+(e&&e.message||e);
+      var userCancelledN=isAbortN&&!wdN.isStopped();
+      if(!userCancelledN&&(isHbN||isTotN||STREAM_RETRYABLE_STATUS[eStatus])&&nsAttempt<NONSTREAM_MAX){
+        var raHdr=e&&e.body&&e.body.headers?e.body.headers.get("Retry-After"):null;
+        await sleepBackoff(nsAttempt,raHdr);
+        continue;
+      }
+      console.error("[API] call failed:",e);
+      state.lastCallError=lastNsErr;
+      return null;
+    }
+  }
+  state.lastCallError=lastNsErr||"non-stream request failed";
+  return null;
 }
 
 /* Streaming variant. Calls /api/chat/stream (our backend SSE proxy).
@@ -12301,6 +12950,17 @@ async function callAPIStream(messages,maxTokens,onDelta,onThinking){
           await sleepBackoff(beagleAttempts,null);
           continue;
         }
+        if(userCancelled){
+          /* Explicit user Stop click (the Stop button on the send
+             button morphed into a red square). The fetch was aborted
+             by _activeChatAbort, not by the watchdog — do NOT show
+             an error bubble and do NOT fall back to mock. Return a
+             cancelled result so the caller can clean up the bubble
+             silently. Partial text already streamed into `fullDirect`
+             is preserved so the bubble can render whatever the user
+             saw up to the click. */
+          return {text:fullDirect||"",html:null,widgets:[],cancelled:true};
+        }
         state.lastCallError=lastBeagleErr;
         return null;
       }
@@ -12473,6 +13133,14 @@ async function callAPIStream(messages,maxTokens,onDelta,onThinking){
           await sleepBackoff(attempt);
           continue;
         }
+        /* User Stop click — return a cancelled result with whatever
+           text already streamed, so the bubble cleans up silently
+           instead of showing an error. */
+        if(!isHeartbeat&&!ac.signal.reason){
+          /* No reason means the abort wasn't from a watchdog timer;
+             it was from _activeChatAbort (user Stop). */
+          return {text:full||"",html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:true};
+        }
         state.lastCallError=isHeartbeat?lastErr:"cancelled (timeout or user)";
       }else{
         state.lastCallError=String(e&&e.message||e);
@@ -12564,9 +13232,11 @@ var HISTORY_MAX_CHARS=2000;    /* per-message truncation ceiling (increased from
 var MAX_TOKENS_CHAT=undefined;  /* omit entirely; backend passes through */
 /* MiniMax-M2.7 emits long <think>...</think> chain-of-thought blocks
    before the JSON answer. The default model max_tokens budget is too
-   small to fit think + 5 questions + JSON. Give 3000 so we don't get
-   truncated mid-array. */
-var MAX_TOKENS_DIAG=3000;
+   small to fit think + 5 questions + JSON. Give 8000 so we don't get
+   truncated mid-array — bumping from 3000 was needed because MiniMax
+   reasoning traces can run 2-4k tokens before the JSON answer even
+   starts. */
+var MAX_TOKENS_DIAG=8000;
 
 /* Compress a list of message texts into a short summary for when
    the conversation is longer than HISTORY_MAX_TURNS. Drops oldest
@@ -12742,6 +13412,10 @@ async function generateSocraticQuestionStream(node,domain,onDelta){
       state.lastCallSource="api";
       return result;  // {text, html, widgets}
     }
+    /* User explicitly clicked Stop — propagate the cancelled flag so
+       the caller (askNextQuestion) can clean up the bubble without
+       showing an error or falling back to the mock question. */
+    if(result&&result.cancelled){return result}
     state.lastCallSource="mock";
   } else { state.lastCallSource="mock"; }
   return null;
@@ -12890,6 +13564,8 @@ window.toggleAppLang = toggleAppLang;
 window.toggleDisplayPrefs = toggleDisplayPrefs;
 window.toggleExtensionsPicker = toggleExtensionsPicker;
 window.toggleModelPicker = toggleModelPicker;
+window.toggleChatModelMenu = toggleChatModelMenu;
+window.pickChatModel = pickChatModel;
 window.toggleProfileWebSearch = toggleProfileWebSearch;
 window.toggleSidebar = toggleSidebar;
 window.toggleTheme = toggleTheme;
