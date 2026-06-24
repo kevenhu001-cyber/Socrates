@@ -2717,6 +2717,12 @@ async function startSession(){
      nothing usable. */
   var diagQs = null;
   var diagErr = null;
+  /* P_ui-tutor-diag-debug — log apiConfig so we can see why
+     getActiveProvider() might return null on cold boot. */
+  try{
+    var _ap=getActiveProvider();
+    console.log("[diag] apiConfig.activeId="+apiConfig.activeId+" providerCount="+apiConfig.providers.length+" activeProvider="+(_ap?(_ap.label||_ap.id):"null"));
+  }catch(_){}
   try {
     diagQs = await generateDiagnosticQuestions(topic, lang);
   } catch (e) {
@@ -2731,10 +2737,17 @@ async function startSession(){
     /* Fallback: built-in mock questions. callAPI() / generateDiagnosticQuestions
        have already populated state.lastCallError with the real reason
        (network, JSON parse, provider missing, etc.) — surface it on
-       the api-badge via updateChatStats(). */
+       the api-badge via updateChatStats(). If for some reason that
+       didn't happen (e.g. callAPI never ran because the user is on a
+       fresh page where state.lastCallError hasn't been initialised),
+       synthesise a clear reason from apiConfig. */
     state.diagQuestions = gen.diagQuestions;
     state.lastCallSource = 'mock';
-    if (diagErr && !state.lastCallError) state.lastCallError = diagErr;
+    if (!state.lastCallError) {
+      var ap = (typeof getActiveProvider === "function") ? getActiveProvider() : null;
+      state.lastCallError = diagErr
+        || (ap ? "Diag generator returned no questions" : "no provider configured");
+    }
   }
   updateChatStats();
 
