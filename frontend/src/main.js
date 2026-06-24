@@ -12013,9 +12013,11 @@ async function callAPI(messages,maxTokens){
   var provider=getActiveProvider();
   if(!provider){
     state.lastCallError="no provider";
+    console.log("[callAPI] no provider, apiConfig=",JSON.stringify({activeId:apiConfig.activeId,providers:apiConfig.providers.map(function(p){return{id:p.id,label:p.label,isBuiltIn:p.isBuiltIn,isActive:p.isActive}})}));
     return null; /* fall back to mock */
   }
   state.lastCallError=null;
+  console.log("[callAPI] provider="+(provider.label||provider.id)+" isBuiltIn="+(!!provider.isBuiltIn)+" model="+(provider.model||"<unset>")+" keyLen="+(provider.key||"").length);
   /* P1.3 — prepend the user's Custom Instructions to the
      system-context block. Loaded fresh on every call so changes
      from another tab (or a future Android device that syncs the
