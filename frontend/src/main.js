@@ -2266,7 +2266,7 @@ function detectLanguage(text){
   return'en';
 }
 
-var DIAG_SYSTEM_PROMPT = "You are a diagnostic engine. Generate exactly 5 multiple-choice questions to assess a learner's knowledge of {topic}.\n\nRules:\n- Write ALL questions and options in {language}\n- Use Markdown for formatting (bold, italic, code) and LaTeX ($...$ or $$...$$) for mathematical notation where applicable\n- Each question probes a different aspect: basic familiarity, applied understanding, conceptual depth, misconception awareness, and critical analysis\n- Each question must have exactly 3-4 options labeled A, B, C, D\n- Each option must include a level field: internalized (deep understanding), fuzzy (some knowledge but gaps), or blank (no knowledge)\n- Output ONLY a valid JSON array, no other text: [{\"q\":\"question text\", \"opts\":[{\"letter\":\"A\",\"text\":\"option text\",\"level\":\"internalized\"},...]}, ...]\n- Do NOT wrap the JSON in code fences. Just the raw JSON array.";
+var DIAG_SYSTEM_PROMPT = "You are a diagnostic engine. Generate exactly 5 multiple-choice questions to assess a learner's knowledge of {topic}.\n\nRules:\n- Write ALL questions and options in {language}\n- Use Markdown for formatting (bold, italic, code) and LaTeX ($...$ or $$...$$) for mathematical notation where applicable\n- Each question probes a different aspect: basic familiarity, applied understanding, conceptual depth, misconception awareness, and critical analysis\n- Each question must have exactly 3-4 options labeled A, B, C, D\n- Each option must include a level field: internalized (deep understanding), fuzzy (some knowledge but gaps), or blank (no knowledge)\n- Output ONLY a valid JSON array, no other text: [{\"q\":\"question text\", \"opts\":[{\"letter\":\"A\",\"text\":\"option text\",\"level\":\"internalized\"},...]}, ...]\n- Do NOT wrap the JSON in code fences. Just the raw JSON array.\n- CRITICAL: inside any Chinese / Japanese / Korean string value, NEVER use ASCII double quotes (\\\"...) to quote phrases. Use full-width quotation marks 「...」 or 『...』, or just plain text without any quotes. ASCII double quotes are reserved for JSON delimiters only. Same rule for English text — no inline \"quoted phrases\" inside the string values, otherwise the JSON breaks.";
 
 async function generateDiagnosticQuestions(topic,language){
   var langNames={zh:'Chinese',ja:'Japanese',ko:'Korean',ru:'Russian',ar:'Arabic',en:'English'};
@@ -2295,17 +2295,22 @@ async function generateDiagnosticQuestions(topic,language){
     var json=raw;
     var start=json.indexOf("["),end=json.lastIndexOf("]"); var match=start>=0&&end>start?[json.slice(start,end+1)]:null;
     if(match){
-      var parsed=JSON.parse(match[0]);
-      if(Array.isArray(parsed)&&parsed.length>=3&&parsed[0].q&&parsed[0].opts){
-        /* Normalize each question: fill in nodeIdx / subarea if missing. */
-        for(var i=0;i<parsed.length&&i<5;i++){
-          var q=parsed[i];
-          if(typeof q.nodeIdx!=="number"||q.nodeIdx<0||q.nodeIdx>4)q.nodeIdx=i;
-          if(!q.subarea||typeof q.subarea!=="string")q.subarea="Sub-area "+(i+1);
-          /* Ensure 3 options. */
-          if(!Array.isArray(q.opts))q.opts=[];
+      try{
+        var parsed=JSON.parse(match[0]);
+        if(Array.isArray(parsed)&&parsed.length>=3&&parsed[0].q&&parsed[0].opts){
+          return normalizeDiagQuestions(parsed);
         }
-        return parsed.slice(0,5);
+      }catch(parseErr){
+        /* JSON parse failed — usually because the model embedded
+           unescaped ASCII double quotes inside a Chinese / Japanese /
+           Korean string value (e.g. "q":"关于"同时性"...").
+           Fall back to a balanced-brace extractor so we can still
+           surface the questions instead of falling back to mock. */
+        var extracted=extractDiagQuestionsBalanced(match[0]);
+        if(extracted&&extracted.length>=3)return normalizeDiagQuestions(extracted);
+        /* Otherwise fall through to the catch block below for the
+           informative lastCallError. */
+        throw parseErr;
       }
       state.lastCallError='Diag response not a valid array of questions';
     }else{
@@ -2318,6 +2323,206 @@ async function generateDiagnosticQuestions(topic,language){
     state.lastCallError='Diag JSON parse failed: '+(e&&e.message?e.message:String(e));
   }
   return null;
+}
+
+/* Shared finalizer: takes an array of question objects (from either
+   JSON.parse or the balanced extractor), normalizes the shape, and
+   returns at most 5 questions. */
+function normalizeDiagQuestions(parsed){
+  if(!Array.isArray(parsed))return[];
+  var out=[];
+  for(var i=0;i<parsed.length&&out.length<5;i++){
+    var q=parsed[i];
+    if(!q||typeof q!=="object")continue;
+    var text=(typeof q.q==="string")?q.q.trim():"";
+    if(!text)continue;
+    var opts=Array.isArray(q.opts)?q.opts:[];
+    if(opts.length<3)continue;
+    var levels=["internalized","fuzzy","blank"];
+    var letters=["A","B","C","D"];
+    var fixedOpts=[];
+    for(var oi=0;oi<opts.length&&fixedOpts.length<4;oi++){
+      var src=opts[oi]||{};
+      var ot=(typeof src.text==="string")?src.text.trim():((levels[fixedOpts.length]==="internalized"?"I know this well":levels[fixedOpts.length]==="fuzzy"?"I have heard of this":"I do not know this"));
+      if(!ot)continue;
+      fixedOpts.push({
+        letter:letters[fixedOpts.length]||(fixedOpts.length+""),
+        text:ot,
+        level:levels[fixedOpts.length]||"fuzzy"
+      });
+    }
+    if(fixedOpts.length<3)continue;
+    var nodeIdx=parseInt(q.nodeIdx,10);
+    if(!isFinite(nodeIdx)||nodeIdx<0||nodeIdx>4)nodeIdx=out.length;
+    out.push({
+      q:text,
+      subarea:(typeof q.subarea==="string"&&q.subarea.trim())?q.subarea.trim():("Sub-area "+(out.length+1)),
+      nodeIdx:nodeIdx,
+      opts:fixedOpts.slice(0,3)
+    });
+  }
+  return out;
+}
+
+/* Last-resort extractor for diagnostic JSON that JSON.parse can't
+   handle (typically because the model put ASCII " inside Chinese
+   strings). Walks the source character by character with a tiny
+   state machine — tracking JSON-string boundaries, escapes, and
+   brace / bracket nesting — and pulls out each top-level object
+   inside the outer array. For each object, it scans for known
+   keys ("q", "subarea", "nodeIdx", "opts") and reads their values
+   with the same string-state-aware logic. Not a general JSON
+   parser; built specifically for the diag schema. */
+function extractDiagQuestionsBalanced(text){
+  var out=[];
+  if(!text)return out;
+  /* Walk past the opening '['. */
+  var i=0;var n=text.length;
+  while(i<n&&text[i]!=='[')i++;
+  if(i>=n)return out;
+  i++;
+  while(i<n&&out.length<5){
+    /* Skip whitespace + commas. */
+    while(i<n&&/\s|,/.test(text[i]))i++;
+    if(i>=n||text[i]===']')break;
+    if(text[i]!=='{')break;
+    /* Find the matching '}' using bracket/string awareness. */
+    var end=findMatchingClose(text,i,'{','}');
+    if(end<0)break;
+    var objText=text.slice(i,end+1);
+    var parsed=parseSingleDiagObject(objText);
+    if(parsed)out.push(parsed);
+    i=end+1;
+  }
+  return out;
+}
+
+/* Find the matching close bracket for the open at position `open`,
+   honoring JSON string boundaries and backslash escapes so we
+   don't get confused by a '}' inside a quoted string. */
+function findMatchingClose(text,open,openCh,closeCh){
+  var depth=0;var n=text.length;
+  for(var i=open;i<n;i++){
+    var c=text[i];
+    if(c==='\\'){i++;continue}
+    if(c==='"'){
+      i++;
+      while(i<n){
+        if(text[i]==='\\'){i+=2;continue}
+        if(text[i]==='"'){break}
+        i++;
+      }
+      continue;
+    }
+    if(c===openCh)depth++;
+    else if(c===closeCh){depth--;if(depth===0)return i}
+  }
+  return-1;
+}
+
+/* Parse one flat question object via per-key string-aware scan.
+   Returns null on failure. */
+function parseSingleDiagObject(objText){
+  var o={opts:[]};
+  var n=objText.length;var i=1;/* skip '{' */
+  while(i<n-1){
+    /* Find next key: a "...":" pattern. */
+    while(i<n&&/\s|,/.test(objText[i]))i++;
+    if(i>=n-1||objText[i]==='}')break;
+    if(objText[i]!=='"'){i++;continue}
+    /* Read key. */
+    var keyEnd=readJsonString(objText,i);
+    if(keyEnd<0){i++;continue}
+    var key=objText.slice(i+1,keyEnd).replace(/\\"/g,'"').replace(/\\\\/g,'\\');
+    i=keyEnd+1;
+    /* Skip ":". */
+    while(i<n&&/\s/.test(objText[i]))i++;
+    if(objText[i]!==':'){i++;continue}
+    i++;
+    while(i<n&&/\s/.test(objText[i]))i++;
+    if(i>=n)break;
+    if(objText[i]==='['){
+      /* opts array — read each {letter, text, level} object. */
+      var arrEnd=findMatchingClose(objText,i,'[',']');
+      if(arrEnd<0)break;
+      var arrText=objText.slice(i+1,arrEnd);
+      var opts=extractOptArray(arrText);
+      if(opts&&opts.length)o.opts=o.opts.concat(opts);
+      i=arrEnd+1;
+    }else if(objText[i]==='{'){
+      var objEnd=findMatchingClose(objText,i,'{','}');
+      if(objEnd<0)break;
+      i=objEnd+1;
+    }else if(objText[i]==='"'){
+      var valEnd=readJsonString(objText,i);
+      if(valEnd<0)break;
+      var val=objText.slice(i+1,valEnd).replace(/\\"/g,'"').replace(/\\\\/g,'\\');
+      if(key==='q')o.q=val;
+      else if(key==='subarea')o.subarea=val;
+      else if(key==='nodeIdx'){var ni=parseInt(val,10);if(isFinite(ni))o.nodeIdx=ni}
+      i=valEnd+1;
+    }else{
+      /* number / true / false / null — skip a run of token chars. */
+      while(i<n&&/[0-9eE+\-.]/.test(objText[i]))i++;
+    }
+  }
+  return(o.q||o.subarea)?o:null;
+}
+
+/* Read a JSON string starting at the opening quote. Returns the
+   position of the closing quote, or -1 if not found / unbalanced. */
+function readJsonString(text,openQuote){
+  var n=text.length;
+  if(text[openQuote]!=='"')return-1;
+  var i=openQuote+1;
+  while(i<n){
+    var c=text[i];
+    if(c==='\\'){i+=2;continue}
+    if(c==='"')return i;
+    i++;
+  }
+  return-1;
+}
+
+/* Pull option objects out of an opts array body (between [ and ]). */
+function extractOptArray(arrText){
+  var out=[];var i=0;var n=arrText.length;
+  while(i<n&&out.length<4){
+    while(i<n&&/\s|,/.test(arrText[i]))i++;
+    if(i>=n)break;
+    if(arrText[i]!=='{')break;
+    var end=findMatchingClose(arrText,i,'{','}');
+    if(end<0)break;
+    var obj=parseSingleOptObject(arrText.slice(i,end+1));
+    if(obj)out.push(obj);
+    i=end+1;
+  }
+  return out;
+}
+
+/* Parse one {"letter":"A","text":"...","level":"..."} object. */
+function parseSingleOptObject(objText){
+  var o={};var n=objText.length;var i=1;
+  while(i<n-1){
+    while(i<n&&/\s|,/.test(objText[i]))i++;
+    if(i>=n-1||objText[i]==='}')break;
+    if(objText[i]!=='"'){i++;continue}
+    var keyEnd=readJsonString(objText,i);
+    if(keyEnd<0){i++;continue}
+    var key=objText.slice(i+1,keyEnd);
+    i=keyEnd+1;
+    while(i<n&&/\s/.test(objText[i]))i++;
+    if(objText[i]!==':'){i++;continue}
+    i++;
+    while(i<n&&/\s/.test(objText[i]))i++;
+    if(objText[i]!=='"'){i++;continue}
+    var valEnd=readJsonString(objText,i);
+    if(valEnd<0)break;
+    var val=objText.slice(i+1,valEnd).replace(/\\"/g,'"').replace(/\\\\/g,'\\');
+    if(key==='letter'||key==='text'||key==='level')o[key]=val;
+    i=valEnd+1;
+  }
+  return(o.text||o.letter||o.level)?o:null;
 }
 
 function aiGenerate(topic){
