@@ -2282,8 +2282,17 @@ async function generateDiagnosticQuestions(topic,language){
   var resp=await callAPI(msgs,MAX_TOKENS_DIAG);
   if(!resp){console.log("Diag API: no response, falling back to mock");return null;}
   try{
-    /* Strip think blocks, code fences if present */
-    var json=resp.replace(/<think>[\s\S]*?<\/think>/gi,'').replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    /* Strip think blocks. The reasoning models emit
+        <think>...</think> which can be large. If the response was
+       truncated mid-think, there's no closing tag — in that case
+       discard everything from <think> onward so we don't accidentally
+       swallow the JSON array. */
+    var raw=String(resp||"");
+    raw=raw.replace(/<think>[\s\S]*?<\/think>/gi,'');
+    raw=raw.replace(/<think>[\s\S]*$/gi,'');
+    /* Strip code fences if present */
+    raw=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    var json=raw;
     var start=json.indexOf("["),end=json.lastIndexOf("]"); var match=start>=0&&end>start?[json.slice(start,end+1)]:null;
     if(match){
       var parsed=JSON.parse(match[0]);
@@ -2298,8 +2307,16 @@ async function generateDiagnosticQuestions(topic,language){
         }
         return parsed.slice(0,5);
       }
+      state.lastCallError='Diag response not a valid array of questions';
+    }else{
+      state.lastCallError='Diag response had no JSON array';
     }
-  }catch(e){console.log('Diag JSON parse failed:',e.message,'Raw:',resp.substring(0,200));}
+  }catch(e){
+    console.log('Diag JSON parse failed:',e.message,'Raw:',resp.substring(0,200));
+    /* Surface the parse failure on the api-badge so the user (and
+       we, debugging) can see why we fell back to mock. */
+    state.lastCallError='Diag JSON parse failed: '+(e&&e.message?e.message:String(e));
+  }
   return null;
 }
 
@@ -2500,12 +2517,16 @@ async function startSession(){
   if (diagQs && diagQs.length) {
     state.diagQuestions = diagQs;
     state.lastCallSource = 'real';
+    /* Don't overwrite lastCallError on success — callAPI() set it to
+       null on the way in and we want to leave it that way. */
   } else {
-    /* Fallback: built-in mock questions, marked so the timeout
-       banner can offer a "regenerate" action later. */
+    /* Fallback: built-in mock questions. callAPI() / generateDiagnosticQuestions
+       have already populated state.lastCallError with the real reason
+       (network, JSON parse, provider missing, etc.) — surface it on
+       the api-badge via updateChatStats(). */
     state.diagQuestions = gen.diagQuestions;
     state.lastCallSource = 'mock';
-    state.lastCallError = diagErr || 'no LLM response';
+    if (diagErr && !state.lastCallError) state.lastCallError = diagErr;
   }
   updateChatStats();
 
@@ -12288,7 +12309,11 @@ var HISTORY_MAX_CHARS=2000;    /* per-message truncation ceiling (increased from
 /* No max_tokens cap — let the model produce as much as it wants.
    Backend (server/src/routes/chat.js) defaults to its model max when omitted. */
 var MAX_TOKENS_CHAT=undefined;  /* omit entirely; backend passes through */
-var MAX_TOKENS_DIAG=undefined;
+/* MiniMax-M2.7 emits long <think>...</think> chain-of-thought blocks
+   before the JSON answer. The default model max_tokens budget is too
+   small to fit think + 5 questions + JSON. Give 3000 so we don't get
+   truncated mid-array. */
+var MAX_TOKENS_DIAG=3000;
 
 /* Compress a list of message texts into a short summary for when
    the conversation is longer than HISTORY_MAX_TURNS. Drops oldest
