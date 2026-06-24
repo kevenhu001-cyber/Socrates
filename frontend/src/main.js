@@ -10013,12 +10013,15 @@ window.addEventListener("popstate",function(e){
    encrypted and the chat proxy uses it from the per-user row in
    api_providers. The browser only sees {id, isActive, label, url, model}.
    ============================================================ */
-/* Initialize with the built-in Beagle provider so getActiveProvider()
-   always returns something usable even before refreshApiConfig()
-   completes its first run. The full refresh overwrites this with
-   server-side rows when available, but keeps BEAGLE_BUILT_IN in
-   providers[] if no row claims it. */
-var apiConfig={activeId:BEAGLE_BUILT_IN.id,providers:[Object.assign({},BEAGLE_BUILT_IN)]};
+/* Initialize empty so getActiveProvider() returns null until the
+   user explicitly picks a model. The built-in BEAGLE is offered as
+   a selectable option (it lives in providers[] after the first
+   refresh), but it is NOT auto-activated — choosing a model is the
+   user's call, and silently routing everything through a fallback
+   that the user never picked is misleading.
+   If the user has never added a provider, the Settings panel still
+   shows BEAGLE_BUILT_IN (and any other built-ins) for them to pick. */
+var apiConfig={activeId:null,providers:[]};
 
 
 /* P4.4 — encrypted provider-key cache. Old versions stored
@@ -10376,10 +10379,11 @@ async function loadSharedSession(token){
 
 async function refreshApiConfig(){
   if(!CURRENT_USER){
-    /* Cold-boot path — no user yet. Seed the built-in Beagle so the
-       very first Tutor / chat click has a provider even before
-       afterAuthEnter() finishes loading user-specific rows. */
-    apiConfig={activeId:BEAGLE_BUILT_IN.id,providers:[Object.assign({},BEAGLE_BUILT_IN)]};
+    /* Cold-boot path — no user yet. Leave apiConfig empty so the
+       user gets a clear "no provider" state until they sign in and
+       pick one. Auto-picking BEAGLE would route silently through a
+       model the user never chose. */
+    apiConfig={activeId:null,providers:[]};
     return apiConfig;
   }
   try{
@@ -10409,27 +10413,25 @@ async function refreshApiConfig(){
     if(act){
       apiConfig.activeId=act.id;
     }else if(apiConfig.providers.length){
-      /* No row is marked active. Pick built-in Beagle if available. */
-      var beagle=apiConfig.providers.find(function(p){return p.isBuiltIn});
-      var fallback=beagle||apiConfig.providers[apiConfig.providers.length-1];
-      fallback.isActive=true;
-      apiConfig.activeId=fallback.id;
+      /* No row is marked active. Prefer a user-configured provider
+         over a built-in fallback — picking BEAGLE silently when the
+         user has their own provider in the list would override their
+         explicit choice. If there is no user-configured provider at
+         all, leave activeId null so the UI can prompt the user to
+         pick one. */
+      var userProvider=apiConfig.providers.find(function(p){return!p.isBuiltIn});
+      var chosen=userProvider||null;
+      if(chosen){
+        chosen.isActive=true;
+        apiConfig.activeId=chosen.id;
+      }
     }
   }catch(e){
     console.warn("[api-key] refresh failed:",e.message);
-    /* Even if /api/api-key failed (401 on cold boot, network blip,
-       etc.), still surface the built-in Beagle provider so the user
-       doesn't get a "no provider" fallback on every Tutor session.
-       BEAGLE_BUILT_IN is frontend-only and proxies through the
-       nginx → server → MiniMax pipeline that doesn't need a
-       per-user api-key row. */
-    if(!apiConfig.providers.some(function(p){return p.isBuiltIn||p.id==="beagle-built-in"})){
-      apiConfig.providers.push(Object.assign({},BEAGLE_BUILT_IN));
-    }
-    if(!apiConfig.activeId){
-      var beagle=apiConfig.providers.find(function(p){return p.isBuiltIn||p.id==="beagle-built-in"});
-      if(beagle)apiConfig.activeId=beagle.id;
-    }
+    /* /api/api-key failed (cold-boot race, network blip). Don't
+       auto-pick a fallback model — that would silently route the
+       user's Tutor / chat through a provider they never chose.
+       Leave activeId as-is; the user can still pick one in Settings. */
   }
   return apiConfig;
 }
