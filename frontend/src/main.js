@@ -2280,7 +2280,10 @@ async function generateDiagnosticQuestions(topic,language){
   }
   var msgs=[{role:'system',content:prompt},{role:'user',content:'Topic: '+topic}];
   var resp=await callAPI(msgs,MAX_TOKENS_DIAG);
-  if(!resp){console.log("Diag API: no response, falling back to mock");return null;}
+  if(!resp){
+    console.log("Diag API: no response, falling back to mock. reason="+(state.lastCallError||"<unset>"));
+    return null;
+  }
   try{
     /* Strip think blocks. The reasoning models emit
         <think>...</think> which can be large. If the response was
@@ -12017,6 +12020,13 @@ async function callAPI(messages,maxTokens){
     try{
       var ac=new AbortController();
       var tmo=setTimeout(function(){ac.abort()},90000);
+      /* Make sure a fresh csrf cookie exists before we read it.
+         The boot path calls /api/auth/csrf-token once, but if the
+         cookie has since expired (30-day max-age) or was cleared
+         by a server restart, document.cookie will be empty and
+         /api/minimax will reject the POST with 403
+         "CSRF token required for authenticated requests". */
+      try{await fetch("/api/auth/csrf-token",{credentials:"include"})}catch(_){}
       var csrfBeagle=getCsrfToken();
       var resp=await fetch("/api/minimax/v1/chat/completions",{
         method:"POST",
