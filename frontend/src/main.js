@@ -2003,10 +2003,21 @@ function onProjectChipClick(projectId,ev){
     }else{
       state.session.activeProjectFilter=projectId;
     }
+  }else if(projectId===INBOX_PROJECT_ID){
+    /* P2.1 — Inbox is the "default" view, NOT a regular filter.
+       A plain click on Inbox should always take the user back
+       to "show everything that isn't assigned to a project"
+       (i.e. the unfiltered Recents list) — clearing whatever
+       custom-project filter was active. This matches the user
+       mental model: "Inbox = home", and avoids the trap where
+       the user clicks Inbox and still sees an empty list
+       because some other project's filter is still on. */
+    state.session.currentProjectId=null;
+    state.session.activeProjectFilter=null;
   }else{
-    /* Plain click: pin the active project to this one, and
-       scope Recents to it. */
-    state.session.currentProjectId=projectId===INBOX_PROJECT_ID?null:projectId;
+    /* Plain click on a custom project: pin the active project
+       to it, and scope Recents to it. */
+    state.session.currentProjectId=projectId;
     state.session.activeProjectFilter=projectId;
   }
   renderProjects();
