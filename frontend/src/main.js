@@ -706,17 +706,12 @@ function switchTab(tab){
   var tr=document.getElementById("tabRecents");if(tr)tr.classList.toggle("active",tab==="recents");
   var mt=document.getElementById("tabMistakes");
   if(mt)mt.classList.toggle("active",tab==="mistakes");
-  var at=document.getElementById("tabAgent");
-  if(at)at.classList.toggle("active",tab==="agent");
   var kp=document.getElementById("knowledgePanel");if(kp)kp.classList.toggle("hidden",tab!=="knowledge");
   var rp=document.getElementById("recentsPanel");if(rp)rp.classList.toggle("hidden",tab!=="recents");
   var mp=document.getElementById("mistakesPanel");
   if(mp)mp.classList.toggle("hidden",tab!=="mistakes");
-  var ap=document.getElementById("agentPanel");
-  if(ap)ap.classList.toggle("hidden",tab!=="agent");
   if(tab==="recents")renderRecents();
   if(tab==="mistakes")renderMistakes();
-  if(tab==="agent")renderAgentHistory();
   /* Task 3.3 — refresh the teaching-plan view whenever the
      Knowledge tab is shown, so the stage / current sub-topic
      stay in sync after in-chat advances. */
@@ -847,6 +842,11 @@ function deleteProject(id){
   }
   /* Same for in-memory active session. */
   if(state.session.currentProjectId===id)state.session.currentProjectId=null;
+  /* Clear the Recents filter too — otherwise the user is stuck
+     looking at an empty list filtered to a project that no longer
+     exists, with no chip to click to clear it (the project is gone
+     from PROJECTS). */
+  if(state.session.activeProjectFilter===id)state.session.activeProjectFilter=null;
   PROJECTS=PROJECTS.filter(function(p){return p.id!==id});
   saveProjects();
   renderProjects();
@@ -929,6 +929,11 @@ async function refreshServerSessions(){
     var r=await apiFetch("/api/sessions");
     SERVER_SESSIONS=Array.isArray(r&&r.sessions)?r.sessions:[];
   }catch(e){console.warn("[sessions] refresh failed:",e.message)}
+  /* Recompute the sidebar project counts now that the session
+     list is fresh. renderProjects reads SERVER_SESSIONS for the
+     per-project session-count badge, so without this re-render
+     the chip row stays at 0 even when sessions are present. */
+  try{renderProjects()}catch(_){}
   return SERVER_SESSIONS.slice();
 }
 function formatRelativeTime(ts){
@@ -1980,7 +1985,7 @@ function renderProjects(){
     var count=SERVER_SESSIONS.filter(function(s){return (s.projectId||INBOX_PROJECT_ID)===p.id;}).length;
     html.push(
       '<button class="sidebar-project-chip'+(isActive?" active":"")+(isFilter?" filter":"")+'" data-project-id="'+esc(p.id)+'" style="--chip-color:'+esc(p.color)+'" onclick="onProjectChipClick(\''+esc(p.id)+'\',event)" oncontextmenu="event.preventDefault();openProjectEditor(\''+esc(p.id)+'\')" title="'+esc(p.name)+(p.isSystem?"": " — right-click to edit")+'">'+
-        '<span class="sidebar-project-icon">'+esc(p.icon)+'</span>'+
+        '<span class="sidebar-project-icon" aria-hidden="true"></span>'+
         '<span class="sidebar-project-name">'+esc(p.name)+'</span>'+
         '<span class="sidebar-project-count">'+count+'</span>'+
       '</button>'
@@ -2121,11 +2126,24 @@ function getActiveProjectId(){return state.session.currentProjectId||null;}
 function renderRecents(){
   var cont=document.getElementById("recentsList");
   if(!cont)return;
+  /* Self-heal: if the active project filter points to a non-system
+     project id that's no longer in PROJECTS (e.g. the project was
+     deleted from another tab / by another client, or the local
+     project list was wiped), drop the filter so the user isn't
+     stuck on an empty list. The system Inbox project is the only
+     id that's always valid. */
+  var filter=state.session.activeProjectFilter;
+  if(filter&&filter!==INBOX_PROJECT_ID){
+    var stillExists=PROJECTS.some(function(p){return p.id===filter});
+    if(!stillExists){
+      state.session.activeProjectFilter=null;
+      filter=null;
+    }
+  }
   var recents=getRecents();
   /* P2.1 — apply the active project filter. `null` = show all.
      A project id (including INBOX_PROJECT_ID) scopes the list
      to that project. */
-  var filter=state.session.activeProjectFilter;
   if(filter){
     recents=recents.filter(function(s){
       var pid=s.projectId||INBOX_PROJECT_ID;
@@ -2150,7 +2168,7 @@ function renderRecents(){
     if(filter){
       var proj=getProjectById(filter);
       filterEl.innerHTML='<span class="recents-filter-chip" style="--chip-color:'+esc(proj.color)+'">'+
-        '<span class="recents-filter-icon">'+esc(proj.icon)+'</span>'+
+        '<span class="recents-filter-icon" aria-hidden="true"></span>'+
         '<span class="recents-filter-name">'+esc(proj.name)+'</span>'+
         '<button class="recents-filter-clear" onclick="clearProjectFilter()" title="Show all projects">×</button>'+
       '</span>';
@@ -5093,8 +5111,6 @@ function exitAgentMode(){
   var hint=document.getElementById("chatInputHint");
   if(hint)hint.textContent="Shift+Enter for new line";
   setAgentStopState(false);
-  /* Tell the user how to come back. */
-  switchTab("agent");
 }
 
 /* Re-render the sidebar Agent panel's run history. */
@@ -13054,9 +13070,14 @@ async function callAPIStream(messages,maxTokens,onDelta,onThinking){
        * to retry (transient 5xx/429) or fail terminally.
        * Pass body as an object so apiFetchRaw stringifies it and sets
        * Content-Type: application/json — pre-stringified bodies are skipped. */
+      var apiBody={messages:messages,temperature:0.7,max_tokens:maxTokens};
+      if(isReasoningProvider()){
+        apiBody.reasoning_effort="high";
+        apiBody.extra_body={thinking:{type:"enabled"}};
+      }
       resp=await apiFetchRaw("/api/chat/stream",{
         method:"POST",
-        body:{messages:messages,temperature:0.7,max_tokens:maxTokens},
+        body:apiBody,
         signal:ac.signal,
         timeoutMs:STREAM_TIMEOUT_MS
       });
