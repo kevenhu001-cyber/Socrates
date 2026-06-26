@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { messages, sessions } from '../db/schema.js';
+import { messages, sessions, usageEvents } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
@@ -41,7 +41,15 @@ router.get('/', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/* GET /api/usage/limits */
+/* Beagle per-tier monthly quotas. */
+const BEAGLE_TIER_QUOTAS = {
+  diophantus: 1_000_000,
+  riemann:    100_000_000,
+  descartes:  300_000_000,
+  euclid:     800_000_000,
+};
+
+/* GET /api/usage/limits — returns plan limits + Beagle monthly usage */
 router.get('/limits', async (req, res, next) => {
   try {
     const { tier } = req.user || {};
@@ -51,30 +59,60 @@ router.get('/limits', async (req, res, next) => {
       descartes: { tokenQuota: 10000000, hardLimit: false },
       euclid: { tokenQuota: null, hardLimit: false },
     };
-    return res.json({ plan: tier || 'diophantus', ...limits[tier] || limits.diophantus });
+    const tierKey = tier || 'diophantus';
+    const beagleLimit = BEAGLE_TIER_QUOTAS[tierKey] || BEAGLE_TIER_QUOTAS.diophantus;
+    let beagleUsed = 0;
+    const db = getDb();
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const [row] = await db.select({
+      used: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
+    }).from(usageEvents)
+      .where(and(eq(usageEvents.userId, req.userId), gte(usageEvents.createdAt, monthStart)));
+    beagleUsed = row?.used || 0;
+    return res.json({
+      plan: tierKey,
+      ...limits[tierKey] || limits.diophantus,
+      beagleLimit,
+      beagleUsed,
+    });
   } catch (err) { next(err); }
 });
 
-/* GET /api/usage/daily — daily token counts for heatmap (last 365 days) */
+/* GET /api/usage/daily — daily token counts for heatmap (last 365 days)
+
+   Two bugs were in the original implementation:
+   1. Date timezone: DATE(${messages.createdAt}) returns the date in the
+      Postgres session timezone (Asia/Shanghai on this server), but the
+      client builds the cell key via d.toISOString().slice(0,10) which
+      is UTC. Chats near 00:00 local time landed in the wrong bucket
+      and the heatmap showed 0 for those days. Fixed by using
+      to_char(..., AT TIME ZONE 'UTC', 'YYYY-MM-DD') so the server
+      always returns UTC dates the client can match.
+   2. Token source: messages.token_count was never populated for
+      existing rows (0/152 non-null), so SUM was always 0. The actual
+      billing/usage data lives in usageEvents. Switched to that table
+      and filtered to source='chat' so title-generation events
+      (small overhead) don't bloat the heatmap. */
 router.get('/daily', async (req, res, next) => {
   try {
     const db = getDb();
     const { days = '365' } = req.query;
     const since = new Date(Date.now() - parseInt(days, 10) * 86400000);
 
+    const dayExpr = sql`to_char(${usageEvents.createdAt} AT TIME ZONE 'UTC', 'YYYY-MM-DD')`;
+
     const rows = await db.select({
-      day: sql`DATE(${messages.createdAt})`,
-      tokens: sql`COALESCE(SUM(${messages.tokenCount}), 0)::int`,
+      day: dayExpr,
+      tokens: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
       messages: sql`COUNT(*)::int`,
-    }).from(messages)
-      .innerJoin(sessions, eq(messages.sessionId, sessions.id))
+    }).from(usageEvents)
       .where(and(
-        eq(messages.role, 'assistant'),
-        eq(sessions.userId, req.userId),
-        gte(messages.createdAt, since),
+        eq(usageEvents.userId, req.userId),
+        eq(usageEvents.source, 'chat'),
+        gte(usageEvents.createdAt, since),
       ))
-      .groupBy(sql`DATE(${messages.createdAt})`)
-      .orderBy(sql`DATE(${messages.createdAt})`);
+      .groupBy(dayExpr)
+      .orderBy(dayExpr);
 
     return res.json({ days: parseInt(days, 10), entries: rows });
   } catch (err) { next(err); }

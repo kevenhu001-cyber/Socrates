@@ -37,8 +37,8 @@ const LLM_SILENCE_TIMEOUT_MS = 120_000;
  * @param {function} onDone     - Called when streaming completes
  * @param {function} onError    - Called on error
  */
-export async function streamChatCompletion(opts, onChunk, onDone, onError) {
-  const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.7, signal } = opts;
+export async function streamChatCompletion(opts, onChunk, onDone, onError, onReasoning) {
+  const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.7, signal, reasoning_effort, extra_body } = opts;
 
   // P0.0 — when no maxTokens is set, default to a very high value so
   // the model is not silently truncated by the upstream provider's
@@ -82,6 +82,12 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError) {
         max_tokens: effectiveMaxTokens,
         temperature,
         stream: true,
+        /* P_deepseek-mode — forward the optional reasoning_effort
+           and extra_body flags. Non-DeepSeek upstreams silently
+           ignore unknown fields, so this is safe for every
+           provider. */
+        ...(reasoning_effort ? { reasoning_effort } : {}),
+        ...(extra_body ? { ...extra_body } : {}),
       }),
       signal: mergedSignal,
     });
@@ -124,7 +130,21 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError) {
 
         try {
           const json = JSON.parse(trimmed.slice(6));
-          const content = json.choices?.[0]?.delta?.content || '';
+          const delta = json.choices?.[0]?.delta;
+          if (!delta) continue;
+          /* P_deepseek-mode — reasoning_content arrives on a separate
+             field on DeepSeek-family models when the request included
+             `extra_body.thinking.type: enabled`. Surface it through a
+             dedicated callback so the client can render it as a
+             thinking pill and persist it on the assistant message
+             for the next turn. */
+          if (typeof onReasoning === 'function') {
+            const reasoning = delta.reasoning_content;
+            if (typeof reasoning === 'string' && reasoning.length > 0) {
+              try { onReasoning(reasoning); } catch { /* ignore */ }
+            }
+          }
+          const content = delta.content || '';
           if (content) onChunk(content);
         } catch {
           // Skip malformed frames
@@ -136,8 +156,17 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError) {
     if (buffer.trim() && buffer.startsWith('data: ')) {
       try {
         const json = JSON.parse(buffer.slice(6));
-        const content = json.choices?.[0]?.delta?.content || '';
-        if (content) onChunk(content);
+        const delta = json.choices?.[0]?.delta;
+        if (delta) {
+          if (typeof onReasoning === 'function') {
+            const reasoning = delta.reasoning_content;
+            if (typeof reasoning === 'string' && reasoning.length > 0) {
+              try { onReasoning(reasoning); } catch { /* ignore */ }
+            }
+          }
+          const content = delta.content || '';
+          if (content) onChunk(content);
+        }
       } catch { /* skip */ }
     }
 
@@ -169,7 +198,7 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError) {
  * Returns { content: string } or throws.
  */
 export async function callChatCompletion(opts) {
-  const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.3, signal } = opts;
+  const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.3, signal, reasoning_effort, extra_body } = opts;
   const effectiveMaxTokens = maxTokens || 32000;
 
   const mergedSignal = signal
@@ -188,6 +217,11 @@ export async function callChatCompletion(opts) {
       max_tokens: effectiveMaxTokens,
       temperature,
       stream: false,
+      /* P_deepseek-mode — forward the optional reasoning_effort
+         and extra_body flags so DeepSeek-family upstreams emit
+         reasoning_content in the final message. */
+      ...(reasoning_effort ? { reasoning_effort } : {}),
+      ...(extra_body ? { ...extra_body } : {}),
     }),
     signal: mergedSignal,
   });
@@ -198,5 +232,11 @@ export async function callChatCompletion(opts) {
   }
 
   const json = await response.json();
-  return { content: json.choices?.[0]?.message?.content || '' };
+  /* P_deepseek-mode — preserve reasoning_content on the final
+     message so the client can persist it for the next turn. */
+  const message = json.choices?.[0]?.message || {};
+  return {
+    content: message.content || '',
+    reasoning_content: typeof message.reasoning_content === 'string' ? message.reasoning_content : undefined,
+  };
 }

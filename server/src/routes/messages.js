@@ -1,11 +1,33 @@
 import { Router } from 'express';
-import { eq, and, asc } from 'drizzle-orm';
+import { eq, and, asc, gte, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { messages, feedback, sessions } from '../db/schema.js';
+import { messages, feedback, sessions, usageEvents } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
-import { NotFound, BadRequest } from '../lib/errors.js';
+import { NotFound, BadRequest, TooManyRequests } from '../lib/errors.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion } from '../services/llm.js';
+
+const BEAGLE_TIER_QUOTAS = {
+  diophantus: 1_000_000,
+  riemann:    100_000_000,
+  descartes:  300_000_000,
+  euclid:     800_000_000,
+};
+
+async function checkBeagleLimit(userId, tier) {
+  if (!userId) return null;
+  const quota = BEAGLE_TIER_QUOTAS[tier] || BEAGLE_TIER_QUOTAS.diophantus;
+  const db = getDb();
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const [row] = await db.select({
+    used: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
+  }).from(usageEvents)
+    .where(and(eq(usageEvents.userId, userId), gte(usageEvents.createdAt, monthStart)));
+  if ((row?.used || 0) >= quota) {
+    return new TooManyRequests(`Monthly Beagle limit (${quota.toLocaleString()}) reached. Add your own API key.`);
+  }
+  return null;
+}
 
 /* UUID format guard — the messages.id column is a Postgres uuid type
  * which rejects any non-UUID string with `invalid input syntax for
@@ -98,6 +120,10 @@ router.patch('/:id', async (req, res, next) => {
     const provider = await getActiveApiKey(req.userId);
     if (!provider) {
       return res.status(503).json({ code: 'NO_PROVIDER', message: 'No active LLM provider configured' });
+    }
+    if (provider.isBuiltIn) {
+      const limitErr = await checkBeagleLimit(req.userId, req.user?.tier);
+      if (limitErr) return res.status(429).json({ code: 'MONTHLY_LIMIT', message: limitErr.message });
     }
 
     res.writeHead(200, {

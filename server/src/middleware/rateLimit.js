@@ -6,9 +6,8 @@ import rateLimit from 'express-rate-limit';
  * Each limiter is mounted as Express middleware on a specific route. The
  * defaults below were chosen for a single-operator tutoring app:
  *   - authLimiter is tight (10 / 15min) to deter brute force on login,
- *     password reset, and verification code endpoints. The captcha on
- *     /register makes brute force impractical regardless, but a tight
- *     ceiling also prevents email-bombing from a single source.
+ *     password reset, and verification code endpoints. The tight ceiling
+ *     prevents email-bombing from a single source.
  *   - chatLimiter caps LLM-streaming cost per authenticated user (60 / hr).
  *   - searchLimiter caps web-search calls (Bing may charge per call).
  *   - fetchLimiter protects the unauthenticated /api/fetch-batch from

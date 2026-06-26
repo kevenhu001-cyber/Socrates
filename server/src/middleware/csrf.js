@@ -38,13 +38,23 @@ export function clearCsrfCookie(res, req) {
 }
 
 /**
+ * Set a fresh CSRF cookie on the response (without sending a response body).
+ * Used by login/register endpoints that need to seed the CSRF cookie
+ * alongside the session cookie so the first state-changing request
+ * from the freshly signed-in SPA doesn't get a 403 CSRF error.
+ */
+export function setCsrfCookie(res, req) {
+  clearCsrfCookie(res, req);
+  const token = crypto.randomBytes(32).toString('hex');
+  res.cookie('csrf', token, getCsrfCookieOptions(req));
+}
+
+/**
  * GET /api/auth/csrf-token — set a fresh CSRF cookie.
  * The front-end calls this on boot and on 403 retry.
  */
 export function setCsrfToken(req, res) {
-  clearCsrfCookie(res, req);
-  const token = crypto.randomBytes(32).toString('hex');
-  res.cookie('csrf', token, getCsrfCookieOptions(req));
+  setCsrfCookie(res, req);
   return res.json({ ok: true });
 }
 

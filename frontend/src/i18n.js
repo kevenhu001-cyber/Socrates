@@ -112,7 +112,24 @@ var I18N={
     "tutor.stageIllustrate":"Worked example",
     "tutor.stageExercise":"Practice",
     "tutor.stageCheck":"Check",
-    "tutor.done":"[done]"
+    "tutor.done":"[done]",
+    /* Scaffold widget strings — buttons, placeholders, feedback. */
+    "tutor.flashcardAria":"Flashcard — click to flip",
+    "tutor.hideHint":"Hide hint",
+    "tutor.hideSolution":"Hide solution",
+    "tutor.practiceEmpty":"Please type an answer first.",
+    "tutor.practicePlaceholder":"Type your answer…",
+    "tutor.practicePrefix":"[Practice attempt]\n",
+    "tutor.practiceSelfCorrect":"Correct!",
+    "tutor.practiceSelfWrong":"Not quite. The correct answer is:",
+    "tutor.practiceSent":"Sent for review.",
+    "tutor.quizCorrect":"Correct ({answer}).",
+    "tutor.quizRecorded":"Recorded: {letter}.",
+    "tutor.quizWrong":"Not quite. The correct answer is {answer}.",
+    "tutor.revealAnswer":"Reveal answer",
+    "tutor.showHint":"Show hint",
+    "tutor.showSolution":"Show solution",
+    "tutor.submitAnswer":"Submit"
   },
   zh:{
     "chat.placeholder":"输入你的想法...",
@@ -224,7 +241,24 @@ var I18N={
     "tutor.stageIllustrate":"应用示例",
     "tutor.stageExercise":"动手练习",
     "tutor.stageCheck":"阶段检查",
-    "tutor.done":"[已完成]"
+    "tutor.done":"[已完成]",
+    /* Scaffold widget strings — buttons, placeholders, feedback. */
+    "tutor.flashcardAria":"闪卡 — 点击翻转",
+    "tutor.hideHint":"隐藏提示",
+    "tutor.hideSolution":"隐藏答案",
+    "tutor.practiceEmpty":"请先输入答案。",
+    "tutor.practicePlaceholder":"输入你的答案…",
+    "tutor.practicePrefix":"[练习作答]\n",
+    "tutor.practiceSelfCorrect":"答对了！",
+    "tutor.practiceSelfWrong":"不太对，正确答案是：",
+    "tutor.practiceSent":"已发送，等待 AI 点评。",
+    "tutor.quizCorrect":"答对了（{answer}）。",
+    "tutor.quizRecorded":"已记录：{letter}。",
+    "tutor.quizWrong":"不太对，正确答案是 {answer}。",
+    "tutor.revealAnswer":"查看答案",
+    "tutor.showHint":"显示提示",
+    "tutor.showSolution":"显示答案",
+    "tutor.submitAnswer":"提交"
   }
 };
 var _currentLang="en";

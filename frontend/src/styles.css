@@ -16,14 +16,27 @@ a{color:inherit;text-decoration:none}
 .sidebar{width:var(--app-sidebar-width,18rem);min-width:var(--app-sidebar-width,18rem);display:flex;flex-direction:column;background:hsl(var(--bg-000));border-right:0.5px solid hsl(var(--border-300)/0.12);overflow:hidden;z-index:20;position:relative;will-change:width;transition:width .35s cubic-bezier(0.34,1.3,0.64,1),min-width .35s cubic-bezier(0.34,1.3,0.64,1),border-color .35s var(--ease-out)}
 .sidebar.collapsed{width:0;min-width:0;border-right-color:transparent}
 .sidebar-inner{min-width:0;width:100%;opacity:1;display:flex;flex-direction:column;flex:1;min-height:0;transition:opacity .25s var(--ease-out)}
-/* Draggable resize handle on the right edge of the sidebar. 4px wide
-   transparent strip; cursor:col-resize; the wider :hover stripe
-   gives a friendlier grab target without showing a visible bar when
-   the user isn't trying to resize. */
-.sidebar-resize-handle{position:absolute;top:0;right:-3px;bottom:0;width:7px;cursor:col-resize;z-index:25;background:transparent;transition:background .12s}
-.sidebar-resize-handle:hover,.sidebar-resize-handle.dragging{background:hsl(var(--accent-000)/0.35)}
-.sidebar-resize-handle::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:hsl(var(--border-300)/0);transition:background .12s;transform:translateX(-0.5px)}
-.sidebar-resize-handle:hover::after,.sidebar-resize-handle.dragging::after{background:hsl(var(--accent-000)/0.5)}
+/* Draggable resize handle on the sidebar's right edge — sits
+   exactly on the boundary line between the sidebar and the main
+   content (the topic-input area). The handle straddles the
+   boundary 5px inside the sidebar and 4px into main so the grab
+   target covers the divider. A small vertical "grip" pill in the
+   middle of the strip is always visible at low opacity so the
+   user can see the draggable boundary without it shouting. On
+   hover / drag the grip becomes accent-colored and slightly
+   larger, a hairline accent line runs the full height, and a
+   soft accent wash lights up the grab area. */
+.sidebar-resize-handle{position:absolute;top:0;right:-4px;bottom:0;width:9px;cursor:col-resize;z-index:25;background:transparent;transition:background .15s}
+/* Always-visible grip pill — centered exactly on the boundary line. */
+.sidebar-resize-handle::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:2px;height:40px;border-radius:2px;background:hsl(var(--text-400)/0.45);transition:background .15s,width .15s,height .15s;pointer-events:none}
+.sidebar-resize-handle:hover::before,.sidebar-resize-handle.dragging::before{background:hsl(var(--accent-000));width:3px;height:56px}
+/* Full-height hairline — invisible by default, lights up on hover
+   so the user sees the exact boundary line. */
+.sidebar-resize-handle::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:hsl(var(--border-300)/0);transition:background .15s;transform:translateX(-0.5px);pointer-events:none}
+.sidebar-resize-handle:hover::after,.sidebar-resize-handle.dragging::after{background:hsl(var(--accent-000)/0.55)}
+.sidebar-resize-handle:hover,.sidebar-resize-handle.dragging{background:hsl(var(--accent-000)/0.12)}
+.sidebar-resize-handle:focus-visible{outline:none}
+.sidebar-resize-handle:focus-visible::after{background:hsl(var(--accent-000))}
 body.sidebar-resizing{cursor:col-resize;user-select:none}
 .sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}
 .sidebar-header{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 8px 12px;flex-shrink:0}
@@ -47,32 +60,37 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .recents-panel.hidden{display:none}
 .recents-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
 
-/* P2.1 — project chip row at the top of the sidebar. Chips
-   are horizontally scrollable; the active chip has a coloured
-   left bar. The + chip is a static plus button that opens
-   the project editor. */
-.sidebar-projects{display:flex;align-items:center;gap:4px;padding:8px 8px 6px;overflow-x:auto;flex-shrink:0;border-bottom:0.5px solid hsl(var(--border-300)/0.08);scrollbar-width:thin}
-.sidebar-project-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 8px 4px 6px;border-radius:999px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.15);font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-300));cursor:pointer;flex-shrink:0;transition:all .12s;border-left:3px solid var(--chip-color,transparent);line-height:1.2}
+/* P2.1 — project chip row at the top of the sidebar. A clean
+   segmented row: a small color dot + project name + muted count.
+   The active chip gets a subtle background and a hairline accent
+   underline in the project color; the filter state (shift/cmd-
+   click) draws a thin outline so multi-select reads at a glance.
+   The + chip is a bare icon button — no chip chrome. */
+.sidebar-projects{display:flex;align-items:center;gap:2px;padding:6px 8px;overflow-x:auto;flex-shrink:0;scrollbar-width:thin}
+.sidebar-project-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:5px;background:transparent;border:0;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-400));cursor:pointer;flex-shrink:0;transition:color .1s,background .1s;line-height:1.2;position:relative}
 .sidebar-project-chip:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
-.sidebar-project-chip.active{background:hsl(var(--bg-200));color:hsl(var(--text-100));font-weight:500}
-.sidebar-project-chip.filter{box-shadow:0 0 0 1.5px var(--chip-color,transparent)}
-.sidebar-project-icon{font-size:13px;line-height:1}
-.sidebar-project-name{white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
-.sidebar-project-count{font-size:10px;color:hsl(var(--text-500));font-variant-numeric:tabular-nums;background:hsl(var(--bg-300));padding:1px 5px;border-radius:6px;min-width:18px;text-align:center}
-.sidebar-project-chip.active .sidebar-project-count{background:var(--chip-color);color:hsl(var(--always-white))}
-.sidebar-project-add{padding:4px 6px;color:hsl(var(--text-400))}
-.sidebar-project-add:hover{color:hsl(var(--text-100))}
+.sidebar-project-chip.active{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.sidebar-project-chip.active::after{content:"";position:absolute;left:8px;right:8px;bottom:1px;height:1.5px;border-radius:1px;background:var(--chip-color,hsl(var(--accent-000)));opacity:.85}
+.sidebar-project-chip.filter{box-shadow:0 0 0 1px var(--chip-color,hsl(var(--accent-000))/0.7);border-radius:5px}
+.sidebar-project-icon{width:8px;height:8px;border-radius:2px;background:var(--chip-color,hsl(var(--text-500)));flex-shrink:0;display:inline-block}
+.sidebar-project-name{white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.sidebar-project-count{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-variant-numeric:tabular-nums;margin-left:-2px}
+.sidebar-project-add{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:5px;background:transparent;border:0;color:hsl(var(--text-500));cursor:pointer;flex-shrink:0;transition:color .1s,background .1s;margin-left:2px}
+.sidebar-project-add:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
 
 /* P2.1 — Recents filter chip ("Showing: Math ›") */
 .recents-filter{padding:0 4px 6px;flex-shrink:0}
 
 /* P2.2 — secondary filter chip row. A horizontal scroll of
-   short tag/preset chips below the project filter. */
-.recents-filter-chips{display:flex;align-items:center;gap:4px;padding:0 4px 8px;flex-shrink:0;overflow-x:auto;scrollbar-width:thin}
-.recents-filter-chips-sep{width:1px;height:14px;background:hsl(var(--border-300)/0.3);flex-shrink:0;margin:0 2px}
-.recents-filter-chip-btn{padding:3px 8px;border-radius:999px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);color:hsl(var(--text-400));font-size:11px;cursor:pointer;flex-shrink:0;line-height:1.4;transition:all .1s;font-family:inherit}
+   short tag/preset chips below the project filter. Mirrors the
+   minimal project-chip style: small radius, no border, the
+   active chip gets a subtle bg + accent underline. */
+.recents-filter-chips{display:flex;align-items:center;gap:2px;padding:2px 4px 8px;flex-shrink:0;overflow-x:auto;scrollbar-width:thin}
+.recents-filter-chips-sep{width:1px;height:12px;background:hsl(var(--border-300)/0.25);flex-shrink:0;margin:0 4px}
+.recents-filter-chip-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:5px;background:transparent;border:0;color:hsl(var(--text-400));font-size:11px;cursor:pointer;flex-shrink:0;line-height:1.3;transition:color .1s,background .1s;font-family:inherit;position:relative}
 .recents-filter-chip-btn:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
-.recents-filter-chip-btn.active{background:hsl(var(--accent-900));color:hsl(var(--accent-100));border-color:hsl(var(--accent-000)/0.4)}
+.recents-filter-chip-btn.active{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.recents-filter-chip-btn.active::after{content:"";position:absolute;left:6px;right:6px;bottom:1px;height:1.5px;border-radius:1px;background:hsl(var(--accent-000));opacity:.85}
 
 /* P2.2 — recent-item layout: pin button on the left, mode
    badge + title/meta/tags in the middle, action buttons on
@@ -81,7 +99,7 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
    keeping the title visible at the same width. */
 .recent-item{display:grid;grid-template-columns:auto auto 1fr auto;align-items:start;gap:6px;padding:8px 8px 8px 4px;border-radius:8px;cursor:pointer;transition:background .1s;position:relative}
 .recent-item:hover{background:hsl(var(--bg-200))}
-.recent-item.active{background:hsl(var(--bg-200));box-shadow:inset 2px 0 0 hsl(var(--accent-000))}
+.recent-item.active{background:hsl(var(--bg-200))}
 .recent-item.pinned{background:hsl(var(--bg-100)/0.6)}
 .recent-item-pin{width:22px;height:22px;border-radius:4px;background:transparent;border:0;color:hsl(var(--text-500));cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:color .1s,background .1s;flex-shrink:0;margin-top:1px}
 .recent-item-pin:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
@@ -124,10 +142,14 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .tag-editor-foot{display:flex;justify-content:flex-end;padding-top:6px;border-top:0.5px solid hsl(var(--border-300)/0.15)}
 .tag-editor-done{padding:4px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:12px;cursor:pointer;font-family:inherit}
 .tag-editor-done:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.recents-filter-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 4px 3px 8px;border-radius:999px;background:hsl(var(--bg-200));border:0.5px solid var(--chip-color, hsl(var(--border-300)/0.3));font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-200));border-left:3px solid var(--chip-color,transparent)}
-.recents-filter-icon{font-size:12px;line-height:1}
+/* Recents scope chip ("Showing: Math ›"). Passive display, not
+   a toggle. Mirrors the project-chip style: small radius, a
+   coloured dot in place of the "in" text icon, no border, no
+   left colour bar. The × clear button is a bare icon. */
+.recents-filter-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 4px 3px 8px;border-radius:5px;background:hsl(var(--bg-200));border:0;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-200))}
+.recents-filter-icon{width:8px;height:8px;border-radius:2px;background:var(--chip-color,hsl(var(--text-500)));flex-shrink:0;display:inline-block}
 .recents-filter-name{font-weight:500}
-.recents-filter-clear{width:18px;height:18px;border-radius:50%;background:transparent;border:0;color:hsl(var(--text-400));font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.recents-filter-clear{width:18px;height:18px;border-radius:4px;background:transparent;border:0;color:hsl(var(--text-400));font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .1s,color .1s}
 .recents-filter-clear:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 
 /* P2.1 — Project editor modal */
@@ -230,17 +252,51 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .recents-new-btn svg{stroke:currentColor}
 .recent-item{display:flex;align-items:center;padding:8px 12px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));transition:background .06s,color .06s;cursor:pointer;gap:8px;position:relative}
 .recent-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.recent-item.active{border-left:2px solid hsl(var(--accent-000));padding-left:10px}
+.recent-item.active{background:hsl(var(--bg-300))}
 .recent-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .recent-item-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:hsl(var(--text-200))}
 .recent-item:hover .recent-item-text{color:hsl(var(--text-100))}
 .recent-item-meta{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));display:flex;gap:8px;align-items:center}
 .recent-item-meta .dot{width:3px;height:3px;border-radius:50%;background:hsl(var(--text-500)/0.4);display:inline-block}
-.recent-mode-badge{font-size:calc(9px * var(--app-font-scale, 1));font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:3px;margin-right:6px;vertical-align:middle;flex-shrink:0}
-.recent-mode-badge.mode-tutor{background:hsl(43 60% 92%);color:hsl(36 55% 32%);border:0.5px solid hsl(43 50% 70%/0.6)}
-.recent-mode-badge.mode-chat{background:hsl(200 60% 92%);color:hsl(200 60% 32%);border:0.5px solid hsl(200 50% 70%/0.6)}
-[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-tutor{background:hsl(43 40% 18%);color:hsl(43 70% 70%);border:0.5px solid hsl(43 40% 35%/0.6)}
-[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-chat{background:hsl(200 30% 18%);color:hsl(200 60% 75%);border:0.5px solid hsl(200 40% 35%/0.6)}
+/* Mode tag in the recent list — minimal: tiny colored dot + normal-case
+ * label. No background fill, no border, no uppercase letter-spacing.
+ * Two colors are enough to distinguish Chat (cool blue) from Tutor
+ * (warm amber) without dominating the row. */
+.recent-mode-badge{
+  font-size:calc(10.5px * var(--app-font-scale, 1));
+  font-weight:400;
+  color:hsl(var(--text-400));
+  margin-right:8px;
+  vertical-align:middle;
+  flex-shrink:0;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  line-height:1;
+  padding:0;
+  background:transparent;
+  border:0;
+  text-transform:none;
+  letter-spacing:0;
+}
+.recent-mode-badge::before{
+  content:'';
+  display:inline-block;
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:hsl(var(--text-400));
+  flex-shrink:0;
+}
+.recent-mode-badge.mode-tutor{color:hsl(var(--text-400))}
+.recent-mode-badge.mode-tutor::before{background:hsl(36 70% 55%)}
+.recent-mode-badge.mode-chat{color:hsl(var(--text-400))}
+.recent-mode-badge.mode-chat::before{background:hsl(200 60% 55%)}
+.recent-mode-badge.mode-exam{color:hsl(var(--text-400))}
+.recent-mode-badge.mode-exam::before{background:hsl(280 55% 60%)}
+[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-tutor::before{background:hsl(36 70% 60%)}
+[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-chat::before{background:hsl(200 70% 65%)}
+[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-exam::before{background:hsl(280 60% 70%)}
 .recent-item-del{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-500));opacity:0;transition:opacity .1s,background .1s,color .1s;flex-shrink:0;cursor:pointer}
 .recent-item:hover .recent-item-del{opacity:1}
 .recent-item-del:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
@@ -289,19 +345,21 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 [data-mode=light] .tier-badge.tier-euclid{background:hsl(43 40% 88%/0.8);color:hsl(43 65% 38%);border:0.5px solid hsl(43 50% 65%/0.5)}
 .main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;overflow:hidden}
 .main-bg{position:absolute;inset:0;pointer-events:none;z-index:0;background-color:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;clip-path:circle(150% at 50% 50%);opacity:0.5}
-.top-bar{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;flex-shrink:0;position:relative;z-index:5}
-.top-bar-left{display:flex;align-items:center;gap:6px}
-.toggle-sidebar{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .06s,background .06s}
+.top-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;flex-shrink:0;position:relative;z-index:5;min-height:44px}
+.top-bar-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1;overflow:hidden}
+.top-bar-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.toggle-sidebar{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .06s,background .06s;flex-shrink:0}
 .toggle-sidebar:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}.toggle-sidebar svg{width:16px;height:16px}
-.topic-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:16px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.1);max-width:calc(100vw - 180px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topic-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:16px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.1);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
 .topic-badge span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.topic-badge .tb-dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000))}
-.plan-badge{display:inline-flex;align-items:center}
-.plan-badge .share-btn{padding:3px 10px;font-size:calc(12px * var(--app-font-scale, 1))}
+.topic-badge .tb-dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000));flex-shrink:0}
+.share-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);transition:all .1s;cursor:pointer;line-height:1;flex-shrink:0}
+.share-btn:hover{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.06)}
+.share-btn svg{stroke:currentColor}
 /* Mobile: keep Share button visible; Free plan upgrade has been
    removed from this position (accessible via sidebar profile). */
 @media(max-width:768px){
-  .plan-badge .share-btn .share-btn-label{display:none}
+  .share-btn .share-btn-label{display:none}
 }
 
 /* P1.4 — "↓ new reply" pill shown when the user has scrolled up
@@ -340,16 +398,30 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
   /* The msg-list inside is the actual scroll container; this outer
      one does not scroll, so the absolutely-positioned input bar
      stays anchored to the visible area. */
-  overflow:visible;
+  overflow:hidden;
   min-height:0;
   display:flex;
   flex-direction:column;
 }
+/* P_exam-fill — the exam view uses `position:absolute; inset:0` so it
+   relies on the nearest positioned ancestor having a defined height.
+   `.main-content` is `flex:1; position:relative` BUT the exam view
+   was appearing smaller than the window because the parent's
+   intrinsic height was being driven by the (smaller) sibling
+   .main-inner, not the available flex space. Switching overflow to
+   `hidden` (was `visible`) so the absolute child is clipped to the
+   available area, plus giving the exam overlay a higher z-index
+   and explicit full-bleed sizing, ensures the exam view covers the
+   entire right pane from the top-bar down. */
+.main-content .exam-view{z-index:2;top:0;right:0;bottom:0;left:0;height:100%;width:100%}
 .main-inner{
   display:flex;
   flex-direction:column;
   align-items:center;
-  padding:6vh 16px 0;
+  /* Tight top padding so the chat header sits close to the top
+   * bar. The topic-setup view carries its own padding-top (10vh)
+   * so this only affects the chat / exam views. */
+  padding:0 16px;
   max-width:calc(720px * var(--app-width-scale, 1));
   margin:0 auto;
   width:100%;
@@ -365,17 +437,17 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
    extra bottom padding. */
 .topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:10vh;flex:1;min-height:0;overflow-y:auto}
 .topic-title{font-family:var(--font-display);font-size:clamp(1.5rem,1rem + 1.5vw,2rem);font-weight:500;color:hsl(var(--text-200));text-align:center;line-height:1.4}
-.topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:480px}
-.topic-input-wrap{width:100%;max-width:520px;background:hsl(var(--bg-000));border:1px solid transparent;border-radius:16px;box-shadow:0 .25rem 1.25rem hsl(var(--always-black)/3.5%),0 0 0 0.5px hsl(var(--border-300)/0.15);transition:box-shadow .2s,border-color .2s}
-.topic-input-wrap:focus-within{box-shadow:0 .25rem 1.25rem hsl(var(--always-black)/7.5%),0 0 0 0.5px hsl(var(--border-200)/0.3);border-color:hsl(var(--border-200)/0.15)}
-#topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(15px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));min-height:60px;max-height:120px;overflow-y:auto;font-family:var(--font-sans);padding:10px 14px}
+.topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:640px}
+.topic-input-wrap{width:100%;max-width:720px;background:hsl(var(--bg-000));border:1px solid transparent;border-radius:18px;box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/4%),0 0 0 0.5px hsl(var(--border-300)/0.15);transition:box-shadow .2s,border-color .2s}
+.topic-input-wrap:focus-within{box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/8%),0 0 0 0.5px hsl(var(--border-200)/0.3);border-color:hsl(var(--border-200)/0.15)}
+#topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(15.5px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-100));min-height:88px;max-height:320px;overflow-y:auto;font-family:var(--font-sans);padding:14px 20px}
 #topicInput::placeholder{color:hsl(var(--text-400))}
-.topic-footer{display:flex;align-items:center;justify-content:space-between;padding:0 14px 12px}
-.start-btn{padding:8px 20px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:all .1s}
+.topic-footer{display:flex;align-items:center;justify-content:space-between;padding:0 20px 16px}
+.start-btn{padding:10px 24px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:all .1s}
 .start-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}.start-btn.active:hover{background:hsl(var(--accent-100))}
 /* Model picker — a single pill with a dropdown menu of available models.
    Visually matches the .search-toggle row above it. */
-.model-picker{position:relative;max-width:520px;width:100%;display:flex;justify-content:center}
+.model-picker{position:relative;max-width:720px;width:100%;display:flex;justify-content:center}
 .model-picker-trigger{display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 14px;border-radius:999px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:transparent;cursor:pointer;transition:all .15s;font-family:var(--font-sans);line-height:1.2;max-width:100%}
 .model-picker-trigger:hover{border-color:hsl(var(--border-200)/0.4);color:hsl(var(--text-100))}
 .model-picker-trigger.has-model{background:hsl(var(--accent-000)/0.08);border-color:hsl(var(--accent-000)/0.25);color:hsl(var(--accent-000))}
@@ -399,7 +471,78 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .model-picker-add:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
 .model-picker-empty{padding:14px 12px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-align:center;line-height:1.4}
 
-.topic-setup-row{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:520px;width:100%;padding:0 4px;position:relative}
+/* Chat-header model picker — a compact pill that sits at the
+ * top-right of the chat view. Reuses .model-picker-item for the
+ * dropdown rows so the look is identical to the topic-setup
+ * picker, just with a different trigger position. */
+.chat-model-wrap{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  flex-shrink:0;
+}
+.chat-model-trigger{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 10px 4px 9px;
+  border-radius:999px;
+  border:0.5px solid hsl(var(--border-300)/0.25);
+  font-size:calc(12px * var(--app-font-scale, 1));
+  color:hsl(var(--text-300));
+  background:transparent;
+  cursor:pointer;
+  transition:all .12s;
+  font-family:var(--font-sans);
+  line-height:1.2;
+  max-width:200px;
+  flex-shrink:0;
+}
+.chat-model-trigger:hover{
+  border-color:hsl(var(--border-200)/0.4);
+  color:hsl(var(--text-100));
+  background:hsl(var(--bg-200)/0.5);
+}
+.chat-model-trigger.has-model{
+  background:hsl(var(--accent-000)/0.08);
+  border-color:hsl(var(--accent-000)/0.25);
+  color:hsl(var(--accent-000));
+}
+.chat-model-trigger>svg:first-child{width:13px;height:13px;flex-shrink:0}
+.chat-model-label{
+  max-width:140px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-weight:500;
+}
+.chat-model-caret{width:11px;height:11px;flex-shrink:0;transition:transform .12s}
+.chat-model-trigger.menu-open .chat-model-caret{transform:rotate(180deg)}
+.chat-model-menu{
+  position:absolute;
+  top:calc(100% + 6px);
+  right:0;
+  min-width:240px;
+  max-width:320px;
+  max-height:320px;
+  overflow-y:auto;
+  background:hsl(var(--bg-000));
+  border:0.5px solid hsl(var(--border-300)/0.25);
+  border-radius:10px;
+  box-shadow:0 8px 24px hsl(var(--always-black)/0.45);
+  padding:4px;
+  z-index:50;
+  /* Override the .model-picker-menu{display:none} rule above — the
+     chat-header menu is shown by toggling .hidden, not by setting
+     data-open on a parent. */
+  display:block;
+}
+.chat-model-menu.hidden{display:none}
+.chat-model-menu .model-picker-add{
+  margin-top:4px;
+  border-top:0.5px solid hsl(var(--border-300)/0.18);
+  padding-top:8px;
+}
+
+.topic-setup-row{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:720px;width:100%;padding:0 6px;position:relative}
 .topic-setup-row .model-picker,.topic-setup-row .extensions-picker{position:relative;max-width:none;width:auto}
 .extensions-picker{position:relative}
 .extensions-trigger{display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 14px;border-radius:999px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));background:transparent;cursor:pointer;transition:all .15s;font-family:var(--font-sans);line-height:1.2}
@@ -485,6 +628,26 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .diag-nav .diag-continue{background:hsl(var(--bg-300));font-weight:500}
 .diag-nav .diag-continue.enabled{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .diag-nav .diag-continue.enabled:hover{background:hsl(var(--accent-100))}
+/* P_test-interpretation — diagnostic results interpretation screen. */
+.diag-results{max-width:600px;margin:0 auto;padding:8px 4px;display:flex;flex-direction:column;gap:20px}
+.diag-results-title{font-size:calc(18px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100));text-align:center;margin-bottom:4px}
+.diag-results-notice{display:flex;gap:12px;padding:14px 16px;background:hsl(var(--accent-000)/0.06);border:0.5px solid hsl(var(--accent-000)/0.2);border-radius:12px}
+.diag-results-notice-icon{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-style:italic;font-family:Georgia,serif}
+.diag-results-notice-text{font-size:calc(13px * var(--app-font-scale, 1));line-height:1.6;color:hsl(var(--text-200))}
+.diag-results-notice-text strong{color:hsl(var(--text-100));font-weight:600}
+.diag-results-grid{display:flex;flex-direction:column;gap:8px}
+.diag-result-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-000))}
+.diag-result-card.fuzzy{border-color:hsl(38 60% 50%/0.25);background:hsl(38 60% 50%/0.05)}
+.diag-result-card.blank{border-color:hsl(var(--border-300)/0.15)}
+.diag-result-card-num{flex-shrink:0;width:28px;height:28px;border-radius:8px;background:hsl(var(--bg-300));color:hsl(var(--text-300));display:inline-flex;align-items:center;justify-content:center;font-size:calc(13px * var(--app-font-scale, 1));font-weight:600;font-family:var(--font-mono)}
+.diag-result-card.fuzzy .diag-result-card-num{background:hsl(38 60% 50%/0.15);color:hsl(38 60% 40%)}
+.diag-result-card-name{flex:1;font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-100));font-weight:500}
+.diag-result-card-status{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.diag-result-card.fuzzy .diag-result-card-status{color:hsl(38 60% 45%)}
+.diag-results-summary{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;padding:4px 0}
+.diag-results-actions{display:flex;justify-content:center;padding:8px 0 4px}
+.diag-results-continue{padding:12px 32px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:600;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border:0;cursor:pointer;transition:background .15s;font-family:inherit}
+.diag-results-continue:hover{background:hsl(var(--accent-100))}
 /* Task 3.4 — teaching-plan view in the Knowledge sidebar. Kept
    minimal and consistent with the .diag-* / .kb-* styles: same
    font-scale pattern, same colour tokens, text markers (no emoji). */
@@ -523,7 +686,11 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
   width:100%;
   display:flex;
   flex-direction:column;
-  gap:16px;
+  /* Tight gap so header and msg-list sit close together. The
+   * empty space between them and the docked input bar is the
+   * msg-list area itself, which the user reads as the
+   * "conversation canvas" — much friendlier than a separate gap. */
+  gap:4px;
   flex:1;
   min-height:0;
   /* Make the input bar behave like a docked chat input — always
@@ -552,10 +719,19 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .demo-banner-cta:hover{background:hsl(var(--accent-100))}
 .demo-banner-close{background:transparent;border:none;cursor:pointer;color:hsl(var(--text-300));font-size:calc(18px * var(--app-font-scale, 1));line-height:1;padding:0 4px;flex-shrink:0}
 .demo-banner-close:hover{color:hsl(var(--text-100))}
-.chat-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:8px}
-.chat-domain{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.05em}
-.chat-stats{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500))}.chat-api-badge{display:inline-block;font-size:calc(10px * var(--app-font-scale, 1));padding:1px 6px;border-radius:8px;margin-left:6px;font-weight:500;color:hsl(var(--text-500));background:hsl(var(--bg-300))}.chat-api-badge.on{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12)}.chat-api-badge.mocked{color:hsl(35 80% 55%);background:hsl(35 80% 50%/0.12);border:0.5px solid hsl(35 80% 50%/0.2)}
-.search-pill{display:inline-flex;align-items:center;gap:4px;margin-left:6px;font-size:calc(10px * var(--app-font-scale, 1));padding:1px 8px;border-radius:10px;font-weight:500;line-height:1.6}
+/* chat-header is now legacy — content lives in .top-bar. The rule
+   below is kept so old selectors don't break, but it's hidden. */
+.chat-header{display:none}
+/* chatDomain element was removed from index.html — topicBadge is the
+   sole session indicator now. Hide any stale nodes defensively. */
+.chat-domain{display:none !important}
+.chat-stats{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
+/* API status indicator — small colored dot in the top-bar; full
+   status text appears in the tooltip (title attr). */
+.chat-api-badge{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:hsl(var(--text-500));cursor:help;margin:0 4px;overflow:hidden;text-indent:-9999px;vertical-align:middle}
+.chat-api-badge.on{background:hsl(145 50% 45%);box-shadow:0 0 0 2px hsl(145 50% 45%/0.18)}
+.chat-api-badge.mocked{background:hsl(35 80% 55%);box-shadow:0 0 0 2px hsl(35 80% 55%/0.18)}
+.search-pill{display:inline-flex;align-items:center;gap:4px;font-size:calc(10px * var(--app-font-scale, 1));padding:1px 8px;border-radius:10px;font-weight:500;line-height:1.6}
 .search-pill.ok{background:hsl(200 50% 92%);color:hsl(200 60% 32%);border:0.5px solid hsl(200 50% 70%/0.6)}
 .search-pill.loading{background:hsl(45 50% 92%);color:hsl(36 55% 32%);border:0.5px solid hsl(45 50% 70%/0.6)}
 .search-pill.err{background:hsl(0 50% 92%);color:hsl(0 55% 35%);border:0.5px solid hsl(0 50% 70%/0.6)}
@@ -674,14 +850,12 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
   position:absolute;
   left:0;
   right:0;
-  /* 0px gap at the bottom edge; 24px top padding inside the bar
-     so the input field sits visually closer to the bottom of the
-     chat area, with the gradient fading messages above into the
-     bar background. */
+  /* Compact gradient (12px) so the input field sits close to the
+     * msg-list without a huge visual gap. */
   bottom:0;
   z-index:10;
   background:linear-gradient(to top,hsl(var(--bg-000)) 70%,hsla(var(--bg-000)/0) 100%);
-  padding-top:24px;
+  padding-top:12px;
   padding-bottom:env(safe-area-inset-bottom,0);
 }
 .chat-input-wrap{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.12);border-radius:14px;overflow:hidden;transition:border-color .15s,box-shadow .15s}
@@ -848,19 +1022,152 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 .usage-loading{display:flex;align-items:center;justify-content:center;padding:40px 20px;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale, 1));gap:8px}
 
 /* Exam view (standalone page within the SPA) */
-.exam-view{position:absolute;inset:0;display:flex;flex-direction:column;background:hsl(var(--bg-100))}
+.exam-view{position:absolute;inset:0;display:flex;flex-direction:column;background:hsl(var(--bg-000))}
 .exam-view.hidden{display:none}
-.exam-view-header{display:flex;align-items:center;gap:14px;padding:14px 24px;border-bottom:0.5px solid hsl(var(--border-300)/0.1);flex-shrink:0;background:hsl(var(--bg-000))}
-.exam-view-title{font-size:calc(18px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100));flex:1;text-align:center;margin:0}
-.exam-back-btn{display:flex;align-items:center;gap:6px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.15);color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:6px 12px;border-radius:8px;cursor:pointer;transition:all .1s;font-family:inherit}
-.exam-back-btn:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
-.exam-back-btn svg{width:16px;height:16px}
-.exam-view-spacer{width:90px}
-.exam-view-body{flex:1;overflow-y:auto;padding:24px;max-width:760px;margin:0 auto;width:100%;box-sizing:border-box}
-.exam-view-footer{flex-shrink:0;padding:14px 24px;border-top:0.5px solid hsl(var(--border-300)/0.1);background:hsl(var(--bg-000));display:flex;justify-content:center;gap:10px;max-width:760px;margin:0 auto;width:100%;box-sizing:border-box}
-.exam-q-card-streaming{opacity:0.7}
-.exam-q-card-streaming .exam-q-text{font-family:var(--font-mono);color:hsl(var(--text-400))}
-.exam-q-card-streaming::before{content:'Generating…';display:block;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--accent-000));text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+/* P_exam-spacing — the title row was sitting ~30px below the top of
+   the exam view because the header had 18px top padding + the back
+   button's 4px padding + the title was centered against it. The
+   title also had `flex:1` and was center-aligned, which left the
+   "Back to chat" button dangling on the left with empty air around
+   it. Compounded: 18px header padding + 16px body padding + 40px
+   .exam-loading padding = ~74px of dead space above the first
+   spinner.
+   Fix: kill the header's top padding, kill the back button's
+   internal padding, kill the body's top padding, kill the loading
+   block's top padding. Result: the title sits a few px below the
+   top edge of the view, the spinner sits a few px below the title,
+   and the back button is tight and compact. */
+.exam-view-header{display:flex;align-items:center;gap:8px;padding:6px 12px;flex-shrink:0;background:hsl(var(--bg-000));border-bottom:0.5px solid hsl(var(--border-300)/0.12)}
+.exam-view-title{font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-200));flex:1;text-align:center;margin:0;letter-spacing:.01em;line-height:1.2}
+.exam-back-btn{display:inline-flex;align-items:center;gap:3px;background:transparent;border:0;color:hsl(var(--text-400));font-size:calc(12.5px * var(--app-font-scale, 1));padding:0;border-radius:6px;cursor:pointer;transition:color .12s,background .12s;font-family:inherit;line-height:1}
+.exam-back-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200))}
+.exam-back-btn svg{width:12px;height:12px}
+.exam-view-spacer{width:48px;flex-shrink:0}
+.exam-view-header-spacer{width:90px;flex-shrink:0}
+.exam-view-body{flex:1;overflow-y:auto;padding:32px 48px 32px;width:100%;box-sizing:border-box}
+.exam-view-footer{flex-shrink:0;padding:20px 48px;background:hsl(var(--bg-000));display:flex;justify-content:flex-end;gap:12px;width:100%;box-sizing:border-box}
+.exam-q-card-streaming{opacity:0.55;border-top:0;padding-top:0}
+.exam-q-card-streaming .exam-q-text{font-family:var(--font-mono);color:hsl(var(--text-400));font-size:calc(12px * var(--app-font-scale, 1))}
+.exam-q-card-streaming .exam-q-num{color:hsl(var(--text-500))}
+.exam-q-card-streaming .exam-q-type{font-style:italic;color:hsl(var(--text-500))}
+
+/* P_exam-nav — bottom-anchored Prev / counter / Next bar plus a
+   row of "jump to question N" pills. Lives inside .exam-view-body
+   so it scrolls with the questions, but is always rendered first
+   so it sits at the top of the question list visually. The pills
+   turn green when answered, and the active pill (closest to the
+   top of the viewport) gets the accent border. */
+.exam-nav-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:0 0 18px;
+  padding:10px 14px;
+  background:hsl(var(--bg-200)/0.5);
+  border:0.5px solid hsl(var(--border-300)/0.18);
+  border-radius:10px;
+  position:sticky;
+  top:0;
+  z-index:2;
+  backdrop-filter:blur(6px);
+}
+.exam-nav-btn{
+  width:34px;
+  height:34px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:transparent;
+  border:0.5px solid hsl(var(--border-300)/0.3);
+  border-radius:8px;
+  color:hsl(var(--text-200));
+  font-size:18px;
+  line-height:1;
+  cursor:pointer;
+  font-family:inherit;
+  transition:background .12s,color .12s,border-color .12s;
+}
+.exam-nav-btn:hover:not(:disabled){
+  background:hsl(var(--bg-300));
+  color:hsl(var(--text-100));
+  border-color:hsl(var(--border-300)/0.5);
+}
+.exam-nav-btn:disabled{
+  opacity:0.35;
+  cursor:default;
+}
+.exam-nav-counter{
+  flex:1;
+  text-align:center;
+  font-size:calc(13px * var(--app-font-scale, 1));
+  color:hsl(var(--text-300));
+  display:flex;
+  align-items:baseline;
+  justify-content:center;
+  gap:6px;
+  font-variant-numeric:tabular-nums;
+}
+.exam-nav-current{font-weight:600;color:hsl(var(--text-100));font-size:calc(15px * var(--app-font-scale, 1))}
+.exam-nav-sep{color:hsl(var(--text-500))}
+.exam-nav-progress{color:hsl(var(--text-400));font-size:calc(11.5px * var(--app-font-scale, 1));margin-left:6px}
+.exam-nav-pills{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:0 0 22px;
+  padding:0;
+}
+.exam-nav-pill{
+  min-width:34px;
+  height:30px;
+  padding:0 10px;
+  background:transparent;
+  border:0.5px solid hsl(var(--border-300)/0.25);
+  border-radius:7px;
+  color:hsl(var(--text-300));
+  font-size:calc(12px * var(--app-font-scale, 1));
+  cursor:pointer;
+  font-family:inherit;
+  font-variant-numeric:tabular-nums;
+  transition:all .12s;
+}
+.exam-nav-pill:hover{
+  background:hsl(var(--bg-200));
+  color:hsl(var(--text-100));
+  border-color:hsl(var(--border-300)/0.45);
+}
+.exam-nav-pill.answered{
+  background:hsl(145 50% 50%/0.10);
+  border-color:hsl(145 50% 50%/0.45);
+  color:hsl(145 50% 45%);
+}
+.exam-nav-pill.current{
+  background:hsl(var(--accent-000)/0.10);
+  border-color:hsl(var(--accent-000)/0.55);
+  color:hsl(var(--text-100));
+  font-weight:600;
+}
+.exam-nav-pill.answered.current{
+  background:hsl(var(--accent-000)/0.14);
+  border-color:hsl(var(--accent-000)/0.6);
+}
+
+/* P_exam-share — the read-only pill shown in the footer when an
+   external visitor opens a shared exam. Matches the size of the
+   primary/secondary buttons so the footer stays balanced. */
+.exam-readonly-pill{
+  display:inline-flex;
+  align-items:center;
+  padding:8px 18px;
+  font-size:calc(12.5px * var(--app-font-scale, 1));
+  font-weight:500;
+  color:hsl(var(--text-400));
+  background:hsl(var(--bg-200)/0.5);
+  border:0.5px solid hsl(var(--border-300)/0.25);
+  border-radius:6px;
+  letter-spacing:.01em;
+}
 
 /* Exam modal */
 .exam-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
@@ -871,64 +1178,87 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 .exam-close{cursor:pointer;color:hsl(var(--text-500));padding:4px;border-radius:6px;transition:all .1s}
 .exam-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .exam-body{padding:16px 20px 20px;overflow-y:auto;flex:1}
-.exam-form-row{margin-bottom:14px}
-.exam-form-label{font-size:calc(12px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
-.exam-form-input{width:100%;padding:8px 12px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1));font-family:inherit;outline:none;transition:border-color .15s;box-sizing:border-box}
-.exam-form-input:focus{border-color:hsl(var(--accent-000)/0.5)}
-.exam-form-textarea{width:100%;padding:8px 12px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:calc(13px * var(--app-font-scale, 1));font-family:inherit;outline:none;transition:border-color .15s;resize:vertical;min-height:60px;box-sizing:border-box}
-.exam-form-textarea:focus{border-color:hsl(var(--accent-000)/0.5)}
-.exam-form-hint{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-top:4px}
-.exam-options-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px}
+.exam-form-container{max-width:560px;margin:0 auto}
+.exam-form-row{margin-bottom:28px}
+.exam-form-label{font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-300));margin-bottom:10px;display:block}
+.exam-form-input{width:100%;padding:12px 0;border-radius:0;border:0;border-bottom:0.5px solid hsl(var(--border-300)/0.3);background:transparent;color:hsl(var(--text-100));font-size:calc(15px * var(--app-font-scale, 1));font-family:inherit;outline:none;transition:border-color .15s;box-sizing:border-box}
+.exam-form-input:focus{border-color:hsl(var(--accent-000)/0.6)}
+.exam-form-input::placeholder{color:hsl(var(--text-500))}
+.exam-form-textarea{width:100%;padding:12px 0;border-radius:0;border:0;border-bottom:0.5px solid hsl(var(--border-300)/0.3);background:transparent;color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1));font-family:inherit;outline:none;transition:border-color .15s;resize:none;min-height:56px;box-sizing:border-box}
+.exam-form-textarea:focus{border-color:hsl(var(--accent-000)/0.6)}
+.exam-form-textarea::placeholder{color:hsl(var(--text-500))}
+.exam-form-hint{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-top:6px}
+.exam-options-row{display:flex;gap:32px;flex-wrap:wrap;margin-bottom:28px}
 .exam-opt-group{flex:1;min-width:140px}
-.exam-opt-label{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:4px}
-.exam-opt-select{padding:6px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:calc(13px * var(--app-font-scale, 1));font-family:inherit;outline:none;cursor:pointer}
-.exam-opt-select:focus{border-color:hsl(var(--accent-000)/0.5)}
-.exam-btn{padding:9px 22px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:all .1s;border:none;font-family:inherit}
-.exam-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
-.exam-btn.primary:hover{background:hsl(var(--accent-100))}
-.exam-btn.primary:disabled{opacity:0.4;cursor:default}
-.exam-btn.secondary{background:hsl(var(--bg-200));color:hsl(var(--text-300))}
-.exam-btn.secondary:hover{background:hsl(var(--bg-400));color:hsl(var(--text-100))}
-.exam-btn.success{background:hsl(145 50% 40%);color:#fff}
-.exam-btn.success:hover{background:hsl(145 50% 35%)}
-.exam-loading{display:flex;align-items:center;justify-content:center;padding:40px 20px;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale, 1));gap:10px;flex-direction:column;text-align:center}
+.exam-opt-label{font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-300));margin-bottom:8px;display:block}
+.exam-opt-select{padding:10px 0;border-radius:0;border:0;border-bottom:0.5px solid hsl(var(--border-300)/0.3);background:transparent;color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1));font-family:inherit;outline:none;cursor:pointer;width:100%}
+.exam-opt-select:focus{border-color:hsl(var(--accent-000)/0.6)}
+.exam-btn{padding:8px 20px;border-radius:6px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:all .12s;border:none;font-family:inherit}
+.exam-btn.primary{background:hsl(var(--text-100));color:hsl(var(--bg-000))}
+.exam-btn.primary:hover{opacity:0.85}
+.exam-btn.primary:disabled{opacity:0.3;cursor:default}
+.exam-btn.secondary{background:transparent;color:hsl(var(--text-300))}
+.exam-btn.secondary:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200))}
+.exam-btn.success{background:hsl(145 40% 45%);color:#fff}
+.exam-btn.success:hover{background:hsl(145 40% 40%)}
+/* P_exam-spacing — keep the loading block's vertical air tight too.
+   The previous 40px top padding plus the 16px body padding stacked
+   into 56px of whitespace above the spinner. 8px is enough to let
+   the spinner breathe without leaving a "title is floating" feel. */
+.exam-loading{display:flex;align-items:center;justify-content:center;padding:10px 20px;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale, 1));gap:10px;flex-direction:column;text-align:center}
 .exam-loading-sub{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
-.exam-q-card{background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:12px;padding:16px;margin-bottom:14px}
-.exam-q-num{font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--accent-000));text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
-.exam-q-type{font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-left:8px;font-weight:400}
-.exam-q-text{font-size:calc(14px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-100));margin-bottom:10px}
+/* P_exam-spacing — first question card used to add 24px top padding
+   (its own internal air) on top of the body's padding. With body
+   padding now 0, the first card still adds 24px above its content.
+   Trim to 18px so the title "Question 1 of N" sits a touch closer
+   to the page header. Subsequent cards keep the larger breathing
+   room (selector below) so question-to-question separation stays
+   clear. */
+.exam-q-card{background:transparent;border:0;border-top:0.5px solid hsl(var(--border-300)/0.15);border-radius:0;padding:18px 0 24px;margin-bottom:0}
+.exam-q-card + .exam-q-card{margin-top:0}
+.exam-q-num{font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.exam-q-type{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-weight:400}
+.exam-q-text{font-size:calc(15px * var(--app-font-scale, 1));line-height:1.65;color:hsl(var(--text-100));margin-bottom:16px}
 .exam-q-text p{margin-bottom:6px}.exam-q-text p:last-child{margin-bottom:0}
-.exam-q-opts{display:flex;flex-direction:column;gap:5px}
-.exam-q-opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.1);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));cursor:pointer;transition:all .1s;text-align:left;width:100%;background:none;font-family:inherit}
-.exam-q-opt:hover{border-color:hsl(var(--border-200)/0.3);background:hsl(var(--always-white)/0.03);color:hsl(var(--text-100))}
-.exam-q-opt.selected{border-color:hsl(var(--accent-000)/0.25);background:hsl(var(--accent-000)/0.06);color:hsl(var(--text-100))}
-.exam-q-opt-letter{width:22px;height:22px;border-radius:50%;border:1px solid hsl(var(--text-500));display:flex;align-items:center;justify-content:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-400));flex-shrink:0;transition:all .1s}
-.exam-q-opt.selected .exam-q-opt-letter{border-color:hsl(var(--accent-000));background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
-.exam-q-opt.correct{border-color:hsl(145 50% 40%/0.4);background:hsl(145 50% 40%/0.08)}
-.exam-q-opt.correct .exam-q-opt-letter{border-color:hsl(145 50% 40%);background:hsl(145 50% 40%);color:#fff}
-.exam-q-opt.wrong{border-color:hsl(0 60% 50%/0.4);background:hsl(0 60% 50%/0.08)}
-.exam-q-opt.wrong .exam-q-opt-letter{border-color:hsl(0 60% 50%);background:hsl(0 60% 50%);color:#fff}
-.exam-q-fill-input{width:100%;padding:8px 12px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-000));color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1));font-family:inherit;outline:none;transition:border-color .15s;box-sizing:border-box}
-.exam-q-fill-input:focus{border-color:hsl(var(--accent-000)/0.5)}
-.exam-q-fill-input.correct{border-color:hsl(145 50% 40%/0.6)}
-.exam-q-fill-input.wrong{border-color:hsl(0 60% 50%/0.6)}
-.exam-q-result{margin-top:10px;padding:10px 12px;border-radius:8px;font-size:calc(12px * var(--app-font-scale, 1));line-height:1.5}
-.exam-q-result.correct{background:hsl(145 50% 40%/0.06);border:0.5px solid hsl(145 50% 40%/0.15);color:hsl(var(--text-100))}
-.exam-q-result.wrong{background:hsl(0 60% 50%/0.06);border:0.5px solid hsl(0 60% 50%/0.15);color:hsl(var(--text-100))}
-.exam-q-result .label{font-weight:600}
-.exam-q-result .explain{margin-top:4px;color:hsl(var(--text-300));font-size:calc(11.5px * var(--app-font-scale, 1))}
-.exam-score{text-align:center;padding:20px 0 10px}
-.exam-score-val{font-size:calc(36px * var(--app-font-scale, 1));font-weight:700;color:hsl(var(--accent-000))}
-.exam-score-lbl{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-top:4px}
+.exam-q-opts{display:flex;flex-direction:column;gap:0}
+.exam-q-opt{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border:0;background:none;border-bottom:0.5px solid hsl(var(--border-300)/0.1);font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-200));cursor:pointer;transition:color .12s,background .12s;text-align:left;width:100%;font-family:inherit;line-height:1.5}
+.exam-q-opt:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200)/0.5)}
+.exam-q-opt:last-child{border-bottom:0}
+.exam-q-opt.selected{color:hsl(var(--text-100))}
+.exam-q-opt-letter{width:18px;height:18px;border-radius:3px;border:0.5px solid hsl(var(--text-500)/0.4);display:flex;align-items:center;justify-content:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));flex-shrink:0;transition:all .12s;margin-top:2px}
+.exam-q-opt:hover .exam-q-opt-letter{border-color:hsl(var(--text-400))}
+.exam-q-opt.selected .exam-q-opt-letter{border-color:hsl(var(--accent-000));background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border-width:0}
+.exam-q-opt.correct{border-color:hsl(var(--text-300)/0.3)}
+.exam-q-opt.correct .exam-q-opt-letter{border-color:hsl(145 50% 45%);background:hsl(145 50% 45%);color:#fff;border-width:0}
+.exam-q-opt.wrong{border-color:hsl(var(--text-300)/0.3)}
+.exam-q-opt.wrong .exam-q-opt-letter{border-color:hsl(0 60% 55%);background:hsl(0 60% 55%);color:#fff;border-width:0}
+.exam-q-fill-input{width:100%;padding:8px 0;border:0;border-bottom:0.5px solid hsl(var(--border-300)/0.3);background:transparent;color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1));font-family:inherit;outline:none;transition:border-color .15s;box-sizing:border-box;border-radius:0}
+.exam-q-fill-input:focus{border-color:hsl(var(--accent-000)/0.6)}
+.exam-q-fill-input.correct{border-color:hsl(145 50% 45%/0.6)}
+.exam-q-fill-input.wrong{border-color:hsl(0 60% 55%/0.6)}
+.exam-q-result{margin-top:12px;padding:10px 0;font-size:calc(13px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-300))}
+.exam-q-result.correct{color:hsl(var(--text-200))}
+.exam-q-result.wrong{color:hsl(var(--text-200))}
+.exam-q-result .label{font-weight:500;color:hsl(var(--text-400))}
+.exam-q-result .explain{margin-top:4px;color:hsl(var(--text-300))}
+.exam-score{text-align:left;padding:8px 0 28px;border-bottom:0.5px solid hsl(var(--border-300)/0.15);margin-bottom:8px}
+.exam-score-val{font-size:calc(28px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-100));letter-spacing:-.01em;display:inline-flex;align-items:baseline;gap:4px}
+.exam-score-val .score-correct{font-weight:500}
+.exam-score-val .score-total{font-size:calc(16px * var(--app-font-scale, 1));color:hsl(var(--text-400));font-weight:400}
+.exam-score-lbl{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-top:2px}
 .exam-footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0}
 .exam-actions{display:flex;justify-content:center;gap:10px;margin-top:10px}
-.exam-result-correct{color:hsl(145 55% 45%)}
-.exam-result-wrong{color:hsl(0 60% 55%)}
-.exam-type-picker{display:flex;gap:6px;flex-wrap:wrap}
-.exam-type-pill{padding:6px 14px;border-radius:20px;font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;transition:all .1s;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));color:hsl(var(--text-400));font-family:inherit;font-weight:500}
-.exam-type-pill:hover{border-color:hsl(var(--border-200)/0.3);color:hsl(var(--text-200))}
-.exam-type-pill.active{background:hsl(var(--accent-000)/0.12);border-color:hsl(var(--accent-000)/0.3);color:hsl(var(--accent-000))}
-[data-theme=socrates][data-mode=dark] .exam-type-pill.active{background:hsl(var(--accent-000)/0.1);border-color:hsl(var(--accent-000)/0.25);color:hsl(43 70% 65%)}
+.exam-result-correct{color:hsl(145 50% 45%);font-weight:500}
+.exam-result-wrong{color:hsl(0 60% 55%);font-weight:500}
+.exam-type-picker{display:flex;gap:0;flex-wrap:wrap;margin-bottom:4px}
+.exam-type-pill{padding:8px 18px 8px 0;margin-right:18px;border-radius:0;border:0;background:transparent;font-size:calc(13.5px * var(--app-font-scale, 1));cursor:pointer;transition:color .12s,border-color .12s;color:hsl(var(--text-400));font-family:inherit;font-weight:400;position:relative}
+.exam-type-pill::after{content:'';position:absolute;left:0;right:18px;bottom:0;height:1.5px;background:transparent;transition:background .12s}
+.exam-type-pill:hover{color:hsl(var(--text-200))}
+.exam-type-pill:hover::after{background:hsl(var(--border-300)/0.4)}
+.exam-type-pill.active{color:hsl(var(--text-100));font-weight:500}
+.exam-type-pill.active::after{background:hsl(var(--accent-000))}
+[data-theme=socrates][data-mode=dark] .exam-type-pill.active{color:hsl(var(--text-100))}
+[data-theme=socrates][data-mode=dark] .exam-type-pill.active::after{background:hsl(var(--accent-000))}
 
 /* Share modal */
 .share-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
@@ -955,9 +1285,7 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 .share-copy-btn.copied{background:hsl(145 50% 45%)}
 .share-revoke{display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(0 60% 55%);cursor:pointer;transition:color .1s;padding:4px 0}
 .share-revoke:hover{color:hsl(0 60% 70%)}
-.share-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);transition:all .1s;cursor:pointer;line-height:1}
-.share-btn:hover{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.06)}
-.share-btn svg{stroke:currentColor}
+/* .share-btn is defined in the top-bar section above */
 .share-error{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(0 60% 55%);margin-top:8px;text-align:center}
 .share-status{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-top:8px;text-align:center}
 /* Shared read-only banner */
@@ -1438,52 +1766,126 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .auth-view-separator::before{left:0}
 .auth-view-separator::after{right:0}
 .auth-msg{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.5;margin:4px 0 10px;text-align:center}
-.auth-captcha{display:flex;align-items:center;gap:10px;padding:10px 12px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.18);border-radius:10px;margin:6px 0 2px}
-.auth-captcha-question{font-family:var(--font-mono);font-size:calc(16px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-100));white-space:nowrap}
-.auth-captcha-input{width:64px;padding:6px 8px;background:hsl(var(--bg-300));border:0.5px solid hsl(var(--border-300)/0.18);border-radius:8px;font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-100));font-family:var(--font-mono);text-align:center;outline:none;transition:border-color .12s}
-.auth-captcha-input:focus{border-color:hsl(var(--accent-000)/0.5)}
-.auth-captcha-refresh{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-400));cursor:pointer;transition:color .06s,background .06s;margin-left:auto;flex-shrink:0}
-.auth-captcha-refresh:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
 
 /* "Jump to bottom" floating button. Shown whenever the user has
    scrolled away from the bottom of the chat — even mid-reveal. */
 
 
-/* Inline quiz widget (AI emits <quiz>...</quiz>; we render these as clickable cards) */
-.inline-quiz{margin:12px 0 6px;padding:14px 16px;background:hsl(var(--bg-200)/0.55);border:0.5px solid hsl(var(--border-300)/0.18);border-radius:12px}
-.inline-quiz-q{font-size:calc(14px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));margin-bottom:10px;font-weight:500}
-.inline-quiz-q .q-tag{display:inline-block;font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--accent-000));text-transform:uppercase;letter-spacing:.08em;margin-right:6px;vertical-align:middle}
-.inline-quiz-opts{display:flex;flex-direction:column;gap:6px}
-.inline-quiz-opt{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.18);background:transparent;font-size:calc(13.5px * var(--app-font-scale, 1));color:hsl(var(--text-200));text-align:left;width:100%;cursor:pointer;transition:all .12s;line-height:1.45}
-.inline-quiz-opt:hover:not(:disabled){border-color:hsl(var(--border-200)/0.35);background:hsl(var(--always-white)/0.03);color:hsl(var(--text-100))}
+/* ============================================================
+   Tutor scaffold widgets — modest visual language
+   ------------------------------------------------------------
+   All six scaffolds (quiz / example / practice / definition /
+   step / flashcard) share the same look so they read as a
+   cohesive family, but each gets a subtle "boxed" treatment so
+   the chat reader can tell scaffold widgets apart from prose:
+     - 0.5px rounded border in --border-300
+     - light background tint (--bg-200 at 40% alpha)
+     - 8px corner radius
+     - small quiet labels (when used at all)
+   Per-scaffold tweaks follow for any unique bits (e.g. quiz
+   option buttons need stronger selected/correct/wrong states;
+   practice needs a real submit button; example solution gets a
+   left rule for visual punctuation).
+   ============================================================ */
+.inline-quiz,
+.inline-example,
+.inline-practice,
+.inline-definition,
+.inline-step-list,
+.inline-flashcard,
+.inline-block-fallback{margin:14px 0;padding:10px 12px 12px;border:0.5px solid hsl(var(--border-300)/0.35);border-radius:8px;background:hsl(var(--bg-200)/0.4);font-size:calc(13.5px * var(--app-font-scale, 1));line-height:1.6;color:hsl(var(--text-100))}
+.inline-quiz:first-child,
+.inline-example:first-child,
+.inline-practice:first-child,
+.inline-definition:first-child,
+.inline-step-list:first-child,
+.inline-flashcard:first-child{margin-top:8px}
+
+/* Quiz: question line followed by tappable options. Options are
+   the only "buttony" thing in the card — give them real button
+   borders so selected / correct / wrong states are unmistakable. */
+.inline-quiz-q{font-weight:600;margin-bottom:8px;color:hsl(var(--text-100))}
+.inline-quiz-q .q-tag{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-right:4px;font-weight:400}
+.inline-quiz-opts{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.inline-quiz-opt{display:flex;align-items:flex-start;gap:8px;padding:7px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.25);background:hsl(var(--bg-100));font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));text-align:left;width:100%;cursor:pointer;transition:background .12s,border-color .12s,color .12s;line-height:1.45;font-family:inherit}
+.inline-quiz-opt:hover:not(:disabled){background:hsl(var(--bg-300));border-color:hsl(var(--border-300)/0.5);color:hsl(var(--text-100))}
 .inline-quiz-opt:disabled{cursor:default}
-.inline-quiz-opt-letter{flex-shrink:0;width:22px;height:22px;border-radius:50%;border:1px solid hsl(var(--text-500));display:flex;align-items:center;justify-content:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-400));margin-top:1px;transition:all .12s}
-.inline-quiz-opt.selected{border-color:hsl(var(--accent-000)/0.4);background:hsl(var(--accent-000)/0.08);color:hsl(var(--text-100))}
-.inline-quiz-opt.selected .inline-quiz-opt-letter{border-color:hsl(var(--accent-000));background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
-.inline-quiz-opt.correct{border-color:hsl(145 50% 45%/0.6);background:hsl(145 50% 45%/0.10);color:hsl(145 50% 75%)}
-.inline-quiz-opt.correct .inline-quiz-opt-letter{border-color:hsl(145 50% 50%);background:hsl(145 50% 50%);color:hsl(0 0% 100%)}
-.inline-quiz-opt.wrong{border-color:hsl(0 60% 50%/0.55);background:hsl(0 60% 50%/0.10);color:hsl(0 60% 75%)}
-.inline-quiz-opt.wrong .inline-quiz-opt-letter{border-color:hsl(0 60% 55%);background:hsl(0 60% 55%);color:hsl(0 0% 100%)}
-.inline-quiz-feedback{margin-top:10px;font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
-.inline-quiz-feedback.ok{color:hsl(145 50% 65%)}
-.inline-quiz-feedback.bad{color:hsl(0 60% 70%)}
+.inline-quiz-opt-letter{flex-shrink:0;min-width:18px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-weight:600;margin-top:1px;font-variant-numeric:tabular-nums}
+.inline-quiz-opt.selected{background:hsl(var(--accent-000)/0.10);border-color:hsl(var(--accent-000)/0.45);color:hsl(var(--text-100))}
+.inline-quiz-opt.selected .inline-quiz-opt-letter{color:hsl(var(--accent-000))}
+.inline-quiz-opt.correct{background:hsl(145 50% 50%/0.10);border-color:hsl(145 50% 55%/0.6);color:hsl(145 55% 50%)}
+.inline-quiz-opt.correct .inline-quiz-opt-letter{color:hsl(145 55% 45%)}
+.inline-quiz-opt.wrong{background:hsl(0 60% 50%/0.10);border-color:hsl(0 60% 55%/0.6);color:hsl(0 60% 55%)}
+.inline-quiz-opt.wrong .inline-quiz-opt-letter{color:hsl(0 60% 50%)}
+.inline-quiz-feedback{margin-top:8px;font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
+.inline-quiz-feedback.ok{color:hsl(145 55% 50%)}
+.inline-quiz-feedback.bad{color:hsl(0 60% 55%)}
 
-/* Worked example block */
-.inline-example{margin:14px 0;padding:14px 16px;background:hsl(220 30% 12%/0.5);border:0.5px solid hsl(220 30% 30%/0.4);border-radius:12px;border-left:3px solid hsl(220 60% 60%)}
-.inline-example-title{font-size:calc(12px * var(--app-font-scale, 1));font-weight:600;color:hsl(220 60% 70%);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.inline-example-title::before{content:'▸';color:hsl(220 60% 60%);font-size:calc(14px * var(--app-font-scale, 1))}
-.inline-example-problem{font-size:calc(14px * var(--app-font-scale, 1));line-height:1.6;color:hsl(var(--text-100));margin-bottom:10px;padding-bottom:10px;border-bottom:0.5px solid hsl(var(--border-300)/0.12)}
-.inline-example-problem .label{font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.06em;margin-right:8px}
-.inline-example-solution{font-size:calc(13.5px * var(--app-font-scale, 1));line-height:1.65;color:hsl(var(--text-200))}
-.inline-example-solution .label{font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;color:hsl(145 50% 60%);text-transform:uppercase;letter-spacing:.06em;margin-right:8px;display:block;margin-bottom:6px}
+/* Example: problem prose, then a "Show solution" button (no
+   longer a bare text link — students need to know it's
+   tappable). The solution block gets a left rule for visual
+   punctuation inside the card. */
+.inline-example-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
+.inline-example-problem{margin-bottom:8px}
+.inline-example-solution{margin-top:8px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0;color:hsl(var(--text-200))}
+.inline-example-solution .label,
+.inline-example-problem .label{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-right:4px;font-weight:500}
+.inline-example-reveal{display:inline-block;margin-top:8px;padding:5px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
+.inline-example-reveal:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
 
-/* Practice problem block */
-.inline-practice{margin:14px 0;padding:14px 16px;background:hsl(43 60% 12%/0.4);border:0.5px solid hsl(43 60% 35%/0.4);border-radius:12px;border-left:3px solid hsl(43 77% 55%)}
-.inline-practice-title{font-size:calc(12px * var(--app-font-scale, 1));font-weight:600;color:hsl(43 77% 65%);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.inline-practice-title::before{content:'';display:inline-block;width:calc(14px * var(--app-font-scale, 1));height:calc(14px * var(--app-font-scale, 1));background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.647a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.29 9.003l-.22.22-.122.611-.544 2.718a.5.5 0 0 0 .585.585l2.718-.544.61-.122.22-.22 6.503-6.503zM1.5 14a.5.5 0 1 0 0 1h13a.5.5 0 1 0 0-1h-13z' fill='%23d4a04a'/%3E%3C/svg%3E") center/contain no-repeat;flex-shrink:0}
-.inline-practice-problem{font-size:calc(14px * var(--app-font-scale, 1));line-height:1.6;color:hsl(var(--text-100));margin-bottom:8px}
-.inline-practice-hint{font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));font-style:italic;margin-top:6px;line-height:1.5}
-.inline-practice-hint .label{font-style:normal;font-weight:600;color:hsl(43 60% 65%);margin-right:4px;text-transform:uppercase;font-size:calc(10px * var(--app-font-scale, 1));letter-spacing:.06em}
+/* Practice: problem text + hint toggle + textarea + Reveal-answer
+   (optional) + Submit button row. Hint and answer text get the
+   same left-rule treatment as example-solution. The Reveal and
+   Submit buttons are real buttons, not links. */
+.inline-practice-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
+.inline-practice-problem{margin-bottom:8px}
+.inline-practice-hint{margin-top:6px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0;color:hsl(var(--text-200));font-size:calc(12.5px * var(--app-font-scale, 1))}
+.inline-practice-hint .label{color:hsl(var(--text-500));margin-right:4px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500}
+.inline-practice-hint-toggle{display:inline-block;margin-top:8px;padding:5px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
+.inline-practice-hint-toggle:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
+.inline-practice-form{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.inline-practice-textarea{width:100%;min-height:54px;padding:8px 10px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.35);border-radius:8px;color:hsl(var(--text-100));font-family:var(--font-sans);font-size:calc(13px * var(--app-font-scale, 1));line-height:1.5;resize:vertical;outline:none;box-sizing:border-box}
+.inline-practice-textarea:focus{border-color:hsl(var(--accent-000)/0.5)}
+.inline-practice-textarea:disabled{opacity:.6;cursor:default}
+.inline-practice-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.inline-practice-reveal{padding:5px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
+.inline-practice-reveal:hover:not(:disabled){background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
+.inline-practice-reveal:disabled{opacity:0.5;cursor:default}
+.inline-practice-submit{padding:5px 14px;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border:0;border-radius:6px;font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;font-family:inherit;transition:background .12s,opacity .12s}
+.inline-practice-submit:hover:not(:disabled){background:hsl(var(--accent-100))}
+.inline-practice-submit:disabled{opacity:0.5;cursor:default}
+.inline-practice-feedback{margin-top:4px;font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
+.inline-practice-feedback.ok{color:hsl(145 55% 50%)}
+.inline-practice-feedback.bad{color:hsl(0 60% 55%)}
+.inline-practice-feedback.recorded{color:hsl(var(--text-400))}
+
+/* Definition: a single quiet term-on-top line + body. The
+   term gets a hair more weight so you can scan a list of
+   definitions in a long answer. */
+.inline-definition-term{font-weight:600;color:hsl(var(--text-100));margin-bottom:4px;font-size:calc(14px * var(--app-font-scale, 1))}
+.inline-definition-body{color:hsl(var(--text-200))}
+
+/* Step list: just a numbered ordered list. No title, no card
+   chrome — the steps are inherently structured already. */
+.inline-step-list-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
+.inline-step{display:flex;gap:10px;margin:6px 0;line-height:1.55;align-items:flex-start}
+.inline-step-n{flex-shrink:0;color:hsl(var(--text-500));min-width:20px;font-variant-numeric:tabular-nums;font-weight:600;margin-top:1px}
+.inline-step-body{flex:1}
+
+/* Flashcard: front and back are just two stacked prose blocks.
+   The whole card is clickable; we add a faint separator between
+   sides. */
+.inline-flashcard{cursor:pointer;user-select:none;transition:background .12s}
+.inline-flashcard:hover{background:hsl(var(--bg-200)/0.55)}
+.inline-flashcard-front,
+.inline-flashcard-back{padding:2px 0}
+.inline-flashcard-back{margin-top:8px;padding-top:8px;border-top:0.5px dashed hsl(var(--border-300)/0.4);color:hsl(var(--text-200))}
+.inline-flashcard-tag{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-right:4px;font-weight:500}
+
+/* Fallback for malformed XML — show the raw content as muted
+   preformatted text. No warning banner. */
+.inline-block-fallback-label{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-bottom:4px}
+.inline-block-fallback-content{margin:0;padding:8px 10px;background:hsl(var(--bg-200)/0.4);border-radius:6px;color:hsl(var(--text-300));font-size:calc(12.5px * var(--app-font-scale, 1));white-space:pre-wrap;word-break:break-word}
 
 /* Knowledge boundary detail panel */
 .kb-node{cursor:pointer}
@@ -1874,31 +2276,10 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   text-align:right;
 }
 
-/* Mode banner — sits at the top of the chat list. Subtle by design;
- * audit U-H1/U-H2 noted that the tutor mode was invisible. */
-.mode-banner{
-  display:flex;align-items:center;gap:8px;
-  padding:4px 12px;
-  background:transparent;
-  border-bottom:0.5px solid hsl(var(--border-300)/0.12);
-  font-size:calc(11px * var(--app-font-scale, 1));
-  color:hsl(var(--text-300));
-  flex-wrap:wrap;
-  min-height:24px;
-}
-.mode-banner-dot{
-  display:inline-block;width:6px;height:6px;border-radius:50%;
-  background:hsl(var(--accent-000));flex-shrink:0;
-}
-.mode-banner-dot-chat{background:hsl(200 60% 55%)}
-.mode-banner-label{font-weight:500;color:hsl(var(--text-200))}
-.mode-banner-switch{
-  background:transparent;border:0;color:hsl(var(--text-400));
-  padding:1px 6px;border-radius:4px;
-  font-size:calc(11px * var(--app-font-scale, 1));
-  cursor:pointer;flex-shrink:0;margin-left:auto;
-}
-.mode-banner-switch:hover{color:hsl(var(--accent-000))}
+/* Mode chip — disabled. The Chat / Tutor switcher was removed from
+ * the UI (renderModeBanner in tutorSocratic.js is now a no-op).
+ * If any stale element still lives in the DOM we hide it. */
+.mode-chip,.mode-chip-sep,.mode-chip-dot,.mode-chip-label,.mode-chip-switch{display:none !important}
 
 /* Mistake book filter bar. */
 .mistake-filter-bar{
@@ -1927,10 +2308,10 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
  * ===================================================================== */
 
 .plan-setup{
-  max-width:680px;
+  max-width:720px;
   width:100%;
   margin:8px auto 0;
-  padding:0 4px;
+  padding:0 6px;
   text-align:left;
 }
 .plan-setup-toggle{
@@ -2045,16 +2426,15 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .ltp-day-review{color:hsl(var(--text-500));font-style:italic}
 .ltp-day-more{color:hsl(var(--text-500));font-size:calc(11px * var(--app-font-scale, 1))}
 
-/* §8.5 — practice progress chip (shown below the mode banner
- * during the exercise stage). Tiny, glanceable, no emoji. */
+/* §8.5 — practice progress chip. Now an inline span inside
+ * the chat header (sits next to the mode chip when the exercise
+ * stage is active). Tiny, glanceable, no emoji. */
 .practice-progress-chip{
-  display:flex;align-items:center;gap:6px;
-  padding:2px 12px 3px;
-  background:transparent;
+  display:inline-flex;align-items:center;gap:6px;
+  margin-left:6px;
   font-size:calc(10px * var(--app-font-scale, 1));
   color:hsl(var(--text-500));
-  flex-wrap:wrap;
-  min-height:18px;
+  flex-shrink:0;
 }
 .practice-progress-chip-phase{
   background:hsl(var(--accent-000)/0.10);

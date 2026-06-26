@@ -75,14 +75,13 @@
     <div class="auth-views">
       <!-- Sign in -->
       <form class="auth-view" id="authSigninView" onsubmit="event.preventDefault();submitAuthSignin()">
-        <label class="auth-label">Email</label>
-        <input class="auth-input" id="authSigninEmail" type="email" autocomplete="email" required placeholder="you@example.com">
-        <label class="auth-label">Password</label>
-        <input class="auth-input" id="authSigninPassword" type="password" autocomplete="current-password" required placeholder="••••••••">
+        <label class="auth-label" for="authSigninEmail">Email</label>
+        <input class="auth-input" id="authSigninEmail" name="authSigninEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+        <label class="auth-label" for="authSigninPassword">Password</label>
+        <input class="auth-input" id="authSigninPassword" name="authSigninPassword" type="password" autocomplete="current-password" required placeholder="••••••••">
         <a class="auth-inline-link" href="#" onclick="event.preventDefault();showAuthForgotPassword()" style="text-align:right;display:block">Forgot password?</a>
         <div class="auth-error" id="authSigninError"></div>
-        <div class="auth-captcha" id="authSigninCaptcha"><span class="auth-captcha-question" id="authSigninCaptchaQ">—</span><input class="auth-captcha-input" id="authSigninCaptchaA" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" required placeholder="?"><span class="auth-captcha-refresh" onclick="refreshCaptcha('authSigninCaptcha')" title="New challenge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span></div>
-        <label class="auth-guest-label"><input type="checkbox" id="authGuestCheckbox"> Guest mode</label>
+        <label class="auth-guest-label" for="authGuestCheckbox"><input type="checkbox" id="authGuestCheckbox" name="authGuestCheckbox"> Guest mode</label>
         <button class="auth-btn primary" id="authSigninBtn" type="submit">Sign in</button>
         <div class="auth-view-separator">or</div>
         <a class="auth-btn secondary" id="authGithubBtn" href="/api/auth/oauth/github/start?return_to=/" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>Continue with GitHub</a>
@@ -93,12 +92,11 @@
       <!-- Register -->
       <form class="auth-view hidden" id="authRegisterView" onsubmit="event.preventDefault();submitAuthRegister()">
         <p class="auth-lede">Sign up with your email. We'll send a verification link — no codes to memorize.</p>
-        <label class="auth-label">Email</label>
-        <input class="auth-input" id="authRegisterEmail" type="email" autocomplete="email" required placeholder="you@example.com">
-        <label class="auth-label">Password</label>
-        <input class="auth-input" id="authRegisterPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
+        <label class="auth-label" for="authRegisterEmail">Email</label>
+        <input class="auth-input" id="authRegisterEmail" name="authRegisterEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+        <label class="auth-label" for="authRegisterPassword">Password</label>
+        <input class="auth-input" id="authRegisterPassword" name="authRegisterPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
         <div class="auth-error" id="authRegisterError"></div>
-        <div class="auth-captcha" id="authRegisterCaptcha"><span class="auth-captcha-question" id="authRegisterCaptchaQ">—</span><input class="auth-captcha-input" id="authRegisterCaptchaA" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" required placeholder="?"><span class="auth-captcha-refresh" onclick="refreshCaptcha('authRegisterCaptcha')" title="New challenge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span></div>
         <button class="auth-btn primary" id="authRegisterBtn" type="submit">Send verification link</button>
         <div class="auth-foot">Already verified? <a href="#" onclick="event.preventDefault();switchAuthTab('signin')">Sign in</a></div>
       </form>
@@ -122,9 +120,9 @@
         <h2 class="auth-title" id="authVerifyFailedTitle">This link is invalid or expired</h2>
         <p class="auth-lede" id="authVerifyFailedMsg">Verification links expire after 24 hours. Enter your email and we'll send a fresh one.</p>
         <form onsubmit="event.preventDefault();resendVerification()">
-          <input class="auth-input" id="authResendEmail" type="email" required placeholder="you@example.com">
+          <label class="auth-label" for="authResendEmail">Email</label>
+          <input class="auth-input" id="authResendEmail" name="authResendEmail" type="email" required placeholder="you@example.com">
           <div class="auth-error" id="authVerifyFailedError"></div>
-          <div class="auth-captcha" id="authResendCaptcha"><span class="auth-captcha-question" id="authResendCaptchaQ">—</span><input class="auth-captcha-input" id="authResendCaptchaA" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" required placeholder="?"><span class="auth-captcha-refresh" onclick="refreshCaptcha('authResendCaptcha')" title="New challenge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span></div>
           <button class="auth-btn primary" type="submit">Send a new link</button>
         </form>
         <div class="auth-foot"><a href="#" onclick="event.preventDefault();showAuthSignin()">Back to sign in</a></div>
@@ -148,10 +146,9 @@
         </div>
         <h2 class="auth-title">Reset your password</h2>
         <p class="auth-lede">Enter your email and we'll send a reset link.</p>
-        <label class="auth-label">Email</label>
-        <input class="auth-input" id="authForgotEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+        <label class="auth-label" for="authForgotEmail">Email</label>
+        <input class="auth-input" id="authForgotEmail" name="authForgotEmail" type="email" autocomplete="email" required placeholder="you@example.com">
         <div class="auth-error" id="authForgotError"></div>
-        <div class="auth-captcha" id="authForgotCaptcha"><span class="auth-captcha-question" id="authForgotCaptchaQ">—</span><input class="auth-captcha-input" id="authForgotCaptchaA" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" required placeholder="?"><span class="auth-captcha-refresh" onclick="refreshCaptcha('authForgotCaptcha')" title="New challenge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span></div>
         <button class="auth-btn primary" id="authForgotBtn" type="submit">Send reset link</button>
       </form>
 
@@ -179,10 +176,10 @@
              still part of the form. -->
         <label class="auth-label" for="authResetEmail" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">Email</label>
         <input class="auth-input" id="authResetEmail" type="email" autocomplete="username" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
-        <label class="auth-label">New password</label>
-        <input class="auth-input" id="authResetPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
-        <label class="auth-label">Confirm password</label>
-        <input class="auth-input" id="authResetConfirm" type="password" autocomplete="new-password" minlength="8" required placeholder="Repeat your password">
+        <label class="auth-label" for="authResetPassword">New password</label>
+        <input class="auth-input" id="authResetPassword" name="authResetPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
+        <label class="auth-label" for="authResetConfirm">Confirm password</label>
+        <input class="auth-input" id="authResetConfirm" name="authResetConfirm" type="password" autocomplete="new-password" minlength="8" required placeholder="Repeat your password">
         <div class="auth-error" id="authResetError"></div>
         <button class="auth-btn primary" id="authResetBtn" type="submit">Reset password</button>
       </form>
@@ -205,16 +202,15 @@
         </div>
         <h2 class="auth-title">Email code login</h2>
         <p class="auth-lede">Enter your email to receive a 6-digit login code.</p>
-        <label class="auth-label">Email</label>
-        <input class="auth-input" id="authCodeEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+        <label class="auth-label" for="authCodeEmail">Email</label>
+        <input class="auth-input" id="authCodeEmail" name="authCodeEmail" type="email" autocomplete="email" required placeholder="you@example.com">
         <div id="authCodeCodeWrap" class="hidden">
-          <label class="auth-label">6-digit code</label>
-          <input class="auth-input auth-code-input" id="authCodeInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="000000">
+          <label class="auth-label" for="authCodeInput">6-digit code</label>
+          <input class="auth-input auth-code-input" id="authCodeInput" name="authCodeInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="000000">
           <p class="auth-msg hidden" id="authCodeSentMsg">We sent a code to <strong id="authCodeSentEmail"></strong>. It expires in 10 minutes.</p>
         </div>
         <div class="auth-error" id="authCodeError"></div>
-        <div class="auth-captcha" id="authCodeCaptcha"><span class="auth-captcha-question" id="authCodeCaptchaQ">—</span><input class="auth-captcha-input" id="authCodeCaptchaA" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" required placeholder="?"><span class="auth-captcha-refresh" onclick="refreshCaptcha('authCodeCaptcha')" title="New challenge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span></div>
-        <label class="auth-guest-label"><input type="checkbox" id="authCodeGuestCheckbox"> Guest mode</label>
+        <label class="auth-guest-label" for="authCodeGuestCheckbox"><input type="checkbox" id="authCodeGuestCheckbox" name="authCodeGuestCheckbox"> Guest mode</label>
         <button class="auth-btn primary" id="authCodeSendBtn" onclick="submitAuthSendCode()">Send code</button>
         <button class="auth-btn primary hidden" id="authCodeLoginBtn" onclick="submitAuthLoginWithCode()">Log in</button>
         <div class="auth-foot hidden" id="authCodeResendWrap"><a href="#" onclick="event.preventDefault();resendAuthCode()">Resend code</a></div>
@@ -255,7 +251,6 @@
       <div class="sidebar-tab active" id="tabKnowledge" onclick="switchTab('knowledge')">Knowledge</div>
       <div class="sidebar-tab" id="tabRecents" onclick="switchTab('recents')">Recents</div>
       <div class="sidebar-tab" id="tabMistakes" onclick="switchTab('mistakes')">Mistakes<span class="tab-badge" id="mistakesTabBadge"></span></div>
-      <div class="sidebar-tab" id="tabAgent" onclick="switchTab('agent')">Agent</div>
     </div>
     <div class="knowledge-panel tutor-only" id="knowledgePanel">
       <div id="teachingPlanContent"></div>
@@ -283,26 +278,6 @@
     <div class="recents-panel hidden tutor-only" id="mistakesPanel">
       <div class="recents-header"><span class="recents-title">Mistake Book</span></div>
       <div id="mistakesList"></div>
-    </div>
-    <div class="recents-panel hidden" id="agentPanel">
-      <div class="recents-header"><span class="recents-title">Agent</span></div>
-      <div id="agentPanelContent">
-        <div class="agent-intro">
-          <div class="agent-intro-title">Socrates-Agent</div>
-          <div class="agent-intro-desc">
-            Autonomous agent with file &amp; shell tools. Reads and writes files in your workspace
-            (<code>/tmp/agent-workspace/</code>) and the Socrates project; runs read-only shell commands;
-            fetches web pages.
-          </div>
-          <button class="agent-launch-btn" id="agentLaunchBtn" onclick="openAgentView()">
-            Open Agent workspace
-          </button>
-        </div>
-        <div class="agent-history">
-          <div class="agent-history-title">Recent runs</div>
-          <div id="agentHistoryList"><div class="recents-empty">No agent runs yet.</div></div>
-        </div>
-      </div>
     </div>
     <div class="sidebar-footer">
       <div class="user-row"><div class="user-avatar">JH</div><div><div class="user-name">Jiacheng Hu</div><div class="user-plan">Free plan</div></div></div>
@@ -354,9 +329,25 @@
       <button class="toggle-sidebar" id="sidebarOpenBtn" onclick="toggleSidebar()" title="Toggle sidebar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
       </button>
+      <button class="exam-back-btn hidden" id="examBackBtn" onclick="closeExamView()" title="Back to chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span>Back to chat</span>
+      </button>
       <div class="topic-badge hidden" id="topicBadge"><div class="tb-dot"></div><span id="topicBadgeText"></span></div>
+      <span class="chat-stats hidden" id="chatStats"></span>
+      <span class="exam-title-bar hidden" id="examTitleBar"></span>
     </div>
-    <div class="plan-badge hidden" id="planBadge">
+    <div class="top-bar-right">
+      <span class="chat-api-badge hidden" id="chatApiBadge"></span>
+      <span class="search-pill hidden" id="searchPill" title=""></span>
+      <div class="chat-model-wrap hidden" id="chatModelWrap">
+        <button class="chat-model-trigger" id="chatModel" type="button" onclick="toggleChatModelMenu()" aria-haspopup="listbox" aria-expanded="false" title="Pick or configure the model for this conversation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0-2 5v1a3 3 0 0 0 2 5v1a3 3 0 0 0 3 3 3 3 0 0 0 3-3v-1a3 3 0 0 0 2-5v-1a3 3 0 0 0-2-5V5a3 3 0 0 0-3-3z"/><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          <span class="chat-model-label" id="chatModelLabel">Model</span>
+          <svg class="chat-model-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="chat-model-menu model-picker-menu hidden" id="chatModelMenu" role="listbox" aria-label="Available models"></div>
+      </div>
       <button class="share-btn hidden" id="shareBtn" onclick="openShareModal()" title="Share this conversation" aria-label="Share this conversation">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         <span class="share-btn-label">Share</span>
@@ -370,7 +361,7 @@
         <h1 class="topic-title" id="topicTitle">What would you like to explore?</h1>
         <p class="topic-sub" id="topicSub">Describe what you want to learn. Socrates will ask you questions to help you think deeper about it.</p>
         <div class="topic-input-wrap">
-          <textarea id="topicInput" placeholder="e.g. I want to understand how machine learning works..." rows="2" oninput="autoResize(this);updateStartBtn()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startSession()}"></textarea>
+          <textarea id="topicInput" name="topicInput" aria-label="What would you like to explore?" placeholder="e.g. I want to understand how machine learning works..." rows="2" oninput="autoResize(this);updateStartBtn()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startSession()}"></textarea>
           <div class="topic-footer">
             <span style="font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))" id="topicHint">Be specific for better results</span>
             <button class="start-btn" id="startBtn" onclick="startSession()">Begin</button>
@@ -391,11 +382,11 @@
           <div class="plan-setup-fields" id="planSetupFields" hidden>
             <label class="plan-setup-field">
               <span class="plan-setup-field-label" data-i18n="tutor.planSetupTargetDate">Target date</span>
-              <input class="plan-setup-input" type="date" id="planTargetDateInput">
+              <input class="plan-setup-input" type="date" id="planTargetDateInput" name="planTargetDateInput">
             </label>
             <label class="plan-setup-field">
               <span class="plan-setup-field-label" data-i18n="tutor.planSetupDailyMinutes">Daily minutes</span>
-              <input class="plan-setup-input" type="number" id="planDailyMinutesInput" min="5" max="240" step="5" value="30">
+              <input class="plan-setup-input" type="number" id="planDailyMinutesInput" name="planDailyMinutesInput" min="5" max="240" step="5" value="30">
             </label>
             <div class="plan-setup-field plan-setup-field-rest">
               <span class="plan-setup-field-label" data-i18n="tutor.planSetupRestDays">Rest days</span>
@@ -435,29 +426,11 @@
 
       <div class="diagnostic-view hidden tutor-only" id="diagnosticView"></div>
 
-      <div class="exam-view hidden" id="examView">
-        <div class="exam-view-header">
-          <button class="exam-back-btn" onclick="closeExamView()" title="Back to chat">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            <span>Back to chat</span>
-          </button>
-          <h1 class="exam-view-title" id="examViewTitle">Generate Exam</h1>
-          <div class="exam-view-spacer"></div>
-        </div>
-        <div class="exam-view-body" id="examViewBody"></div>
-        <div class="exam-view-footer" id="examViewFooter"></div>
-      </div>
-
       <div class="shared-banner hidden" id="sharedBanner">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         <span>Read-only view — this is a shared conversation.</span>
       </div>
       <div class="chat-view hidden" id="chatView">
-        <div class="chat-header">
-          <span class="chat-domain" id="chatDomain"></span>
-            <span class="chat-stats hidden" id="chatStats"></span><span class="chat-api-badge" id="chatApiBadge"></span>
-          <span class="search-pill hidden" id="searchPill" title=""></span>
-        </div>
         <div class="agent-mode-banner hidden" id="agentModeBanner">
           <span class="agent-mode-dot"></span>
           <span class="agent-mode-label">Agent mode</span>
@@ -468,7 +441,7 @@
         <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
         <div class="chat-input-bar" id="chatInputBar">
           <div class="chat-input-wrap">
-            <textarea id="chatInputArea" placeholder="Type your thinking..." rows="1" oninput="autoResize(this);updateSendBtn()" onkeydown="handleChatKey(event)"></textarea>
+            <textarea id="chatInputArea" name="chatInputArea" aria-label="Type your thinking" placeholder="Type your thinking..." rows="1" oninput="autoResize(this);updateSendBtn()" onkeydown="handleChatKey(event)"></textarea>
             <div class="chat-input-footer">
               <span class="chat-input-hint" id="chatInputHint">Shift+Enter for new line</span>
               <button class="send-btn" id="sendBtn" onclick="submitChatMessage()">
@@ -482,6 +455,19 @@
       <p class="disclaimer" id="topicDisclaimer">Socrates asks questions to help you think. It does not judge your answers.</p>
 
     </div>
+
+    <div class="exam-view hidden" id="examView">
+      <div class="exam-view-header">
+        <button class="exam-back-btn" onclick="closeExamView()" title="Back to chat" aria-label="Back to chat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          <span>Back to chat</span>
+        </button>
+        <h2 class="exam-view-title" id="examViewTitle">Generate Exam</h2>
+        <div class="exam-view-header-spacer"></div>
+      </div>
+      <div class="exam-view-body" id="examViewBody"></div>
+      <div class="exam-view-footer" id="examViewFooter"></div>
+    </div>
   </div>
 
 </main>
@@ -493,7 +479,7 @@
 <script src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js" integrity="sha384-YTBHtsL8yVTHcLakYNyrOfK3K+QQcXiECuaALJ+3j7Mo681Rtzadt8NR6WrZH+eQ" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-ifpG+NlgMq0kvOSGqGQxW1mJKpjjMDmZdpKGq3tbvD3WPhyshCEEYClriK/wRVU0" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js" integrity="sha384-yQ4mmBBT+vhTAwjFH0toJXNYJ6O4usWnt6EPIdWwrRvx2V/n5lXuDZQwQFeSFydF" crossorigin="anonymous" onload="try{mermaid.initialize({startOnLoad:false})}catch(_){}"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js" integrity="sha384-T/0lMUdJpd2S1ZHtRiofG3htU3xPCrFVeAQ1UUE2TJwlEJSV5NUwn30kP28n238E" crossorigin="anonymous" onload="try{mermaid.initialize({startOnLoad:false})}catch(_){}"></script>
 <!-- highlight.js (code syntax highlighting). Optional: if the CDN is
      blocked, hljs is undefined and addStreamingMessage falls back to
      plain <pre><code> rendering. -->
@@ -521,7 +507,7 @@
   <div class="cmd-k-modal" onclick="event.stopPropagation()">
     <div class="cmd-k-input-row">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="cmd-k-icon"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input type="text" id="cmdKInput" placeholder="Search sessions and messages…" autocomplete="off" spellcheck="false" oninput="onCmdKInput(this.value)" onkeydown="onCmdKKey(event)">
+      <input type="text" id="cmdKInput" name="cmdKInput" aria-label="Search sessions and messages" placeholder="Search sessions and messages…" autocomplete="off" spellcheck="false" oninput="onCmdKInput(this.value)" onkeydown="onCmdKKey(event)">
       <kbd class="cmd-k-kbd">Esc</kbd>
     </div>
     <div class="cmd-k-results" id="cmdKResults"></div>
@@ -556,7 +542,7 @@
       </div>
     </div>
     <div id="shareLinkArea" class="share-link-area hidden">
-      <input class="share-link-input" id="shareLinkInput" type="text" readonly onclick="this.select()">
+      <input class="share-link-input" id="shareLinkInput" name="shareLinkInput" type="text" readonly onclick="this.select()" aria-label="Share link">
       <button class="share-copy-btn" id="shareCopyBtn" onclick="copyShareLink()">Copy</button>
     </div>
     <div id="shareRevokeArea" class="hidden" style="text-align:center">
@@ -659,9 +645,9 @@
              P1.3) is live, we sync to the server. -->
         <div class="profile-instructions">
           <label class="profile-instructions-label" for="profileInstResponse">How should I respond?</label>
-          <textarea id="profileInstResponse" class="profile-instructions-area" maxlength="4000" placeholder="e.g. Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language." oninput="onCustomInstructionsChange()"></textarea>
+          <textarea id="profileInstResponse" name="profileInstResponse" class="profile-instructions-area" maxlength="4000" placeholder="e.g. Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language." oninput="onCustomInstructionsChange()"></textarea>
           <label class="profile-instructions-label" for="profileInstAbout" style="margin-top:10px">What do you know about me?</label>
-          <textarea id="profileInstAbout" class="profile-instructions-area" maxlength="4000" placeholder="e.g. I'm a backend engineer working on a payments product. I'm allergic to puns." oninput="onCustomInstructionsChange()"></textarea>
+          <textarea id="profileInstAbout" name="profileInstAbout" class="profile-instructions-area" maxlength="4000" placeholder="e.g. I'm a backend engineer working on a payments product. I'm allergic to puns." oninput="onCustomInstructionsChange()"></textarea>
           <div class="profile-instructions-foot">
             <span id="profileInstSaveState" class="profile-instructions-state">Not yet saved</span>
           </div>
