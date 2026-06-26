@@ -50,6 +50,20 @@
       "when": 1782225554000,
       "tag": "0006_tutor_mistakes_kb",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782442391114,
+      "tag": "0007_complete_rictor",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785084400000,
+      "tag": "0008_reasoning_content",
+      "breakpoints": true
     }
   ]
 }

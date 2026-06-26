@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { apiKeys } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -40,6 +40,13 @@ router.post('/', async (req, res, next) => {
     const keyCiphertext = encrypt(key, ENCRYPTION_KEY);
     const db = getDb();
 
+    /* Deactivate all existing providers so the new one is the only
+       active provider. Without this, creating a new provider leaves
+       stale isActive=true rows and getActiveApiKey() returns the
+       wrong one. */
+    await db.update(apiKeys)
+      .set({ isActive: false })
+      .where(and(eq(apiKeys.userId, req.userId), eq(apiKeys.isActive, true)));
     const [result] = await db.insert(apiKeys).values({
       userId: req.userId,
       label: label || 'Default',
@@ -72,7 +79,19 @@ router.patch('/:id', async (req, res, next) => {
       patch.keyCiphertext = encrypt(req.body.key, ENCRYPTION_KEY);
       patch.keyHint = req.body.key.slice(0, 8);
     }
-    if (req.body.isActive !== undefined) patch.isActive = req.body.isActive;
+    if (req.body.isActive !== undefined) {
+      patch.isActive = req.body.isActive;
+      /* When activating a provider, deactivate every other provider
+         for the same user so getActiveApiKey() always returns the
+         right one. Without this, switching models leaves stale
+         isActive=true rows, and the LIMIT-1 lookup returns whichever
+         PostgreSQL picks first. */
+      if (req.body.isActive === true) {
+        await db.update(apiKeys)
+          .set({ isActive: false })
+          .where(and(eq(apiKeys.userId, req.userId), ne(apiKeys.id, req.params.id)));
+      }
+    }
 
     await db.update(apiKeys).set(patch).where(eq(apiKeys.id, req.params.id));
     const [updated] = await db.select().from(apiKeys).where(eq(apiKeys.id, req.params.id)).limit(1);

@@ -46,7 +46,7 @@
 <div class="page-header">
   <div class="section-eyebrow">Pricing</div>
   <h1>Choose your <strong>path</strong></h1>
-  <p>All plans include Socratic teaching, LaTeX rendering, real-time streaming, and full LLM model support. You bring your own API keys — we never charge for model inference. Upgrade, downgrade, or cancel anytime. Every tier starts with a 7-day free trial of the next tier up.</p>
+  <p>All plans include Socratic teaching, LaTeX rendering, real-time streaming, and full LLM model support. The built-in Beagle AI model works out of the box — no API key required. You can also bring your own API keys for additional providers. Upgrade, downgrade, or cancel anytime. Every tier starts with a 7-day free trial of the next tier up.</p>
 </div>
 
 <section style="padding-top:0">
@@ -63,6 +63,7 @@
         <div class="pricing-block-tags">
           <span class="pricing-block-tag">5 sessions</span>
           <span class="pricing-block-tag">1 key</span>
+          <span class="pricing-block-tag">Beagle tokens</span>
           <span class="pricing-block-tag">Standard</span>
           <span class="pricing-block-tag">Basic graph</span>
           <span class="pricing-block-tag">Community</span>
@@ -79,6 +80,7 @@
         <div class="pricing-block-tags">
           <span class="pricing-block-tag">50 sessions</span>
           <span class="pricing-block-tag">3 keys</span>
+          <span class="pricing-block-tag">Beagle tokens</span>
           <span class="pricing-block-tag">Advanced</span>
           <span class="pricing-block-tag">Full graph</span>
           <span class="pricing-block-tag">Web search</span>
@@ -97,6 +99,7 @@
         <div class="pricing-block-tags">
           <span class="pricing-block-tag">200 sessions</span>
           <span class="pricing-block-tag">5 keys</span>
+          <span class="pricing-block-tag">Beagle tokens</span>
           <span class="pricing-block-tag">Depth control</span>
           <span class="pricing-block-tag">Full graph</span>
           <span class="pricing-block-tag">Web search</span>
@@ -116,6 +119,7 @@
         <div class="pricing-block-tags">
           <span class="pricing-block-tag">Unlimited sessions</span>
           <span class="pricing-block-tag">Unlimited keys</span>
+          <span class="pricing-block-tag">Beagle tokens</span>
           <span class="pricing-block-tag">Max depth</span>
           <span class="pricing-block-tag">Graph + export</span>
           <span class="pricing-block-tag">Web search</span>
@@ -125,7 +129,7 @@
       </div>
     </div>
 
-    <p class="pricing-note">All prices in USD. Annual plans save ~17%. Cancel anytime — access continues through the end of your billing period. You bring your own API keys; we never charge for model usage. Each tier includes a 7-day free trial of the next tier up — no credit card required to start.</p>
+    <p class="pricing-note">All prices in USD. Annual plans save ~17%. Cancel anytime — access continues through the end of your billing period. The built-in Beagle model is included on every tier with monthly token quotas; you can also bring your own API keys for additional providers. We never charge for model usage. Each tier includes a 7-day free trial of the next tier up — no credit card required to start.</p>
 
     <div class="pricing-compare sr">
       <h3>Detailed comparison</h3>
@@ -152,11 +156,18 @@
           <td>Unlimited</td>
         </tr>
         <tr>
+          <td>Built-in Beagle model</td>
+          <td>1M tokens/mo</td>
+          <td>100M tokens/mo</td>
+          <td>300M tokens/mo</td>
+          <td>800M tokens/mo</td>
+        </tr>
+        <tr>
           <td>Supported providers</td>
-          <td>OpenAI, Anthropic, compatible</td>
-          <td>OpenAI, Anthropic, compatible</td>
-          <td>OpenAI, Anthropic, compatible</td>
-          <td>OpenAI, Anthropic, compatible</td>
+          <td>Beagle + BYO key</td>
+          <td>Beagle + BYO key</td>
+          <td>Beagle + BYO key</td>
+          <td>Beagle + BYO key</td>
         </tr>
         <tr>
           <td>Teaching quality</td>
@@ -164,6 +175,20 @@
           <td>Advanced</td>
           <td>Advanced + depth control</td>
           <td>Max depth + customization</td>
+        </tr>
+        <tr>
+          <td>Tutor mode</td>
+          <td>Enabled</td>
+          <td>Enabled</td>
+          <td>Enabled</td>
+          <td>Enabled</td>
+        </tr>
+        <tr>
+          <td>Exam & assessment</td>
+          <td>Enabled</td>
+          <td>Enabled</td>
+          <td>Enabled</td>
+          <td>Enabled</td>
         </tr>
         <tr>
           <td>Web search</td>
@@ -230,14 +255,14 @@
           Do I need my own API key?
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
-        <div class="faq-a">Yes — all tiers require you to bring your own LLM provider API key. Socrates works with OpenAI (GPT-5.5), Anthropic (Claude Opus 4.8, Sonnet 4.6), and any OpenAI-compatible endpoint (Together.ai, Groq, DeepSeek, vLLM, Ollama). You pay the provider directly for model usage; we never charge for inference. The free tier supports 1 key; premium tiers allow more.</div>
+        <div class="faq-a">No — Socrates comes with the built-in Beagle AI model that works out of the box on every tier with monthly token quotas. You can also bring your own API keys from OpenAI (GPT-5.5), Anthropic (Claude Opus 4.8, Sonnet 4.6), and any OpenAI-compatible endpoint (Together.ai, Groq, DeepSeek, vLLM, Ollama). We never charge for inference.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
           What's included in the free tier?
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
-        <div class="faq-a">Diophantus (free) gives you up to 5 saved sessions, 1 LLM provider key, standard teaching quality, a basic knowledge graph, and community support. All core features — LaTeX rendering, real-time streaming, diagnostic questions, the mistake book — are included. No credit card needed. Just bring your API key and start learning.</div>
+        <div class="faq-a">Diophantus (free) gives you up to 5 saved sessions, 1 LLM provider key, 1M Beagle tokens per month, standard teaching quality, a basic knowledge graph, and community support. All core features — LaTeX rendering, real-time streaming, tutor mode, exam & assessment, diagnostic questions, the mistake book — are included. No credit card needed. Just start learning immediately with Beagle.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { eq, count, sql } from 'drizzle-orm';
+import { eq, count, sql, and, gte } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { users, sessions, apiKeys, usageEvents } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -84,7 +84,25 @@ router.get('/usage', async (req, res, next) => {
       .where(eq(sessions.userId, req.userId));
     const graphNodes = nodeResult?.value ?? 0;
 
-    // 5) Determine plan details from user tier
+    // 5) Beagle monthly token usage — tier-based quota
+    const BEAGLE_QUOTAS = {
+      diophantus: 1_000_000,
+      riemann:    100_000_000,
+      descartes:  300_000_000,
+      euclid:     800_000_000,
+    };
+    const beagleLimit = BEAGLE_QUOTAS[user.tier] || BEAGLE_QUOTAS.diophantus;
+    let beagleUsed = 0;
+    {
+      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      const [beagleRow] = await db
+        .select({ value: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int` })
+        .from(usageEvents)
+        .where(and(eq(usageEvents.userId, req.userId), gte(usageEvents.createdAt, monthStart)));
+      beagleUsed = beagleRow?.value ?? 0;
+    }
+
+    // 6) Determine plan details from user tier
     const tier = user.tier || 'diophantus';
     const planDef = TIER_PLANS[tier] || TIER_PLANS.diophantus;
 
@@ -117,6 +135,8 @@ router.get('/usage', async (req, res, next) => {
         sessionCount,
         providerCount,
         graphNodes,
+        beagleUsed,
+        beagleLimit,
       },
     });
   } catch (err) { next(err); }

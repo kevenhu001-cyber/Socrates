@@ -72,6 +72,14 @@ export const sessions = pgTable('sessions', {
   topic: text('topic').notNull().default(''),
   mode: text('mode').notNull().default('tutor'),   // tutor | chat
   phase: text('phase').notNull().default('topic'), // topic | diagnostic | chat
+  /* P_exam-history — top-level session "shape". Default 'chat' so
+   * every existing row stays the same; the chat service still uses
+   * 'tutor' / 'chat'. Exam sessions carry their rendered questions,
+   * answers, and language in exam_data (jsonb). The CHECK constraint
+   * mirrors what the front-end passes so a typo like 'exmam' is
+   * rejected at the DB boundary. */
+  kind: text('kind').notNull().default('chat'),    // chat | tutor | exam
+  examData: jsonb('exam_data'),
   domain: text('domain'),
   projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
   pinned: boolean('pinned').notNull().default(false),
@@ -88,6 +96,7 @@ export const sessions = pgTable('sessions', {
   index('sessions_archived_at_idx').on(table.archivedAt),
   index('sessions_updated_at_idx').on(table.updatedAt),
   index('sessions_project_id_idx').on(table.projectId),
+  index('sessions_kind_idx').on(table.kind),
 ]);
 
 /* ──────────────────────────────────────────────
@@ -106,6 +115,11 @@ export const messages = pgTable('messages', {
   model: text('model'),
   tokenCount: integer('token_count'),
   clientId: text('client_id'),      // Front-end generated ID for DOM mapping
+  /* P_reasoning-persist — chain-of-thought text from DeepSeek / QwQ /
+     o1-style reasoning models. Stored alongside content so it survives
+     session save/load and is included in the LLM context on the next
+     chat turn. */
+  reasoningContent: text('reasoning_content'),
   editedAt: timestamp('edited_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

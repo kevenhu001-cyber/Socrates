@@ -535,12 +535,20 @@
   function renderPracticeProgress() {
     var cont = document.getElementById('practiceProgressChip');
     if (!cont) {
-      cont = document.createElement('div');
+      cont = document.createElement('span');
       cont.id = 'practiceProgressChip';
       cont.className = 'practice-progress-chip tutor-only';
-      var banner = document.getElementById('modeBanner');
-      if (banner && banner.parentNode) {
-        banner.parentNode.insertBefore(cont, banner.nextSibling);
+      var chatHeader = document.getElementById('chatHeader');
+      if (chatHeader) {
+        chatHeader.appendChild(cont);
+      } else {
+        /* Fallback: place inline in the top-bar next to the
+           session chip (topicBadge). This keeps the unified single
+           top row instead of leaking above the message list. */
+        var badge = document.getElementById('topicBadge');
+        if (badge && badge.parentNode) {
+          badge.parentNode.insertBefore(cont, badge.nextSibling);
+        }
       }
     }
     if (!window.state) { cont.innerHTML = ''; return; }
@@ -565,44 +573,18 @@
    * The audit noted that tutor mode is invisible from the main
    * chat. Show a subtle banner above the chat list that names the
    * current mode and lets the user switch with a single click.
-   * ---------------------------------------------------------------- */
+   *
+   * NOTE: The Chat / Tutor switcher is no longer rendered. The
+   * single-row top-bar (see top-bar layout in index.html) already
+   * shows everything the user needs. Adding a "Tutor · Chat" chip
+   * on top of that just clutters the header. If we ever want to
+   * re-introduce it, we should put it in the top-bar (not above the
+   * message list). For now, this is a no-op and any stale chip left
+   * over from earlier sessions is removed. */
   function renderModeBanner() {
-    var cont = document.getElementById('modeBanner');
-    if (!cont) {
-      cont = document.createElement('div');
-      cont.id = 'modeBanner';
-      cont.className = 'mode-banner tutor-only';
-      var msgList = document.getElementById('msgList');
-      if (msgList && msgList.parentNode) {
-        msgList.parentNode.insertBefore(cont, msgList);
-      }
-    }
-    var mode = (window.appMode === 'chat') ? 'chat' : 'tutor';
-    var label = (mode === 'chat')
-      ? ti('tutor.modeChat', currentLang() === 'zh' ? '对话' : 'Chat')
-      : ti('tutor.modeTutor', currentLang() === 'zh' ? '引导' : 'Tutor');
-    var other = (mode === 'chat') ? 'tutor' : 'chat';
-    var otherLabel = (other === 'tutor') ? 'Tutor' : 'Chat';
-    /* Slim one-line chip: dot · label · switch. The dot color
-       alone signals which mode is active; the switch button is
-       labelled with the *target* mode (e.g. "Tutor" when currently
-       in Chat) so it doubles as a mode indicator at a glance. */
-    cont.innerHTML =
-      '<span class="mode-banner-dot mode-banner-dot-' + mode + '"></span>' +
-      '<span class="mode-banner-label">' + esc(label) + '</span>' +
-      '<button class="mode-banner-switch" type="button" title="' + esc(otherLabel) + '">' + esc(otherLabel) + '</button>';
-    var btn = cont.querySelector('.mode-banner-switch');
-    if (btn) {
-      btn.onclick = function () {
-        if (typeof window.toggleAppMode === 'function') {
-          window.toggleAppMode();
-        } else if (typeof window.setAppMode === 'function') {
-          window.setAppMode(other);
-        } else {
-          try { window.appMode = other; } catch (_) {}
-        }
-        renderModeBanner();
-      };
+    var existing = document.getElementById('modeChip');
+    if (existing && existing.parentNode) {
+      existing.parentNode.removeChild(existing);
     }
   }
 

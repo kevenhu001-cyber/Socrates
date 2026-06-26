@@ -26,7 +26,7 @@ router.post('/v1/chat/completions', async (req, res, next) => {
       });
     }
 
-    const { messages, model, temperature, max_tokens, stream } = req.body;
+    const { messages, model, temperature, max_tokens, stream, reasoning_effort, extra_body } = req.body;
 
     if (stream) {
       // ── Streaming: SSE response ──
@@ -56,6 +56,10 @@ router.post('/v1/chat/completions', async (req, res, next) => {
           maxTokens: max_tokens,
           temperature: temperature ?? 0.7,
           signal: abortController.signal,
+          /* P_deepseek-mode — forward reasoning flags so the upstream
+             emits reasoning_content chunks. */
+          reasoning_effort,
+          extra_body,
         },
         // onChunk
         (chunk) => {
@@ -101,6 +105,13 @@ router.post('/v1/chat/completions', async (req, res, next) => {
             });
           }
         },
+        // P_deepseek-mode — forward reasoning_content deltas to the
+        // client so it can render the thinking pill.
+        (reasoning) => {
+          try {
+            res.write(`data: ${JSON.stringify({ choices: [{ delta: { reasoning_content: reasoning } }] })}\n\n`);
+          } catch { /* client disconnected */ }
+        },
       );
     } else {
       // ── Non-streaming: JSON response ──
@@ -113,10 +124,15 @@ router.post('/v1/chat/completions', async (req, res, next) => {
            silently truncated by a small per-model cap. */
         maxTokens: max_tokens,
         temperature: temperature ?? 0.3,
+        /* P_deepseek-mode — forward reasoning flags. */
+        reasoning_effort,
+        extra_body,
       });
 
       res.json({
-        choices: [{ message: { role: 'assistant', content: result.content } }],
+        /* P_deepseek-mode — preserve reasoning_content on the
+           response so the client can persist it for the next turn. */
+        choices: [{ message: { role: 'assistant', content: result.content, ...(result.reasoning_content ? { reasoning_content: result.reasoning_content } : {}) } }],
       });
     }
   } catch (err) {

@@ -27,12 +27,10 @@ import notificationRouter from './routes/notifications.js';
 import usageRouter from './routes/usage.js';
 import accountRouter from './routes/account.js';
 import importRouter from './routes/import.js';
-import agentRouter from './routes/agent.js';
 import classroomRouter from './routes/classroom.js';
 import minimaxRouter from './routes/minimaxProxy.js';
 import mistakesRouter from './routes/mistakes.js';
 import knowledgeBoundaryRouter from './routes/knowledgeBoundary.js';
-import { generateCaptcha } from './services/captcha.js';
 import { searchContent } from './services/search.js';
 import { webSearch, imageSearch } from './services/webSearch.js';
 import { fetchBatch } from './services/fetchBatch.js';
@@ -118,11 +116,6 @@ app.get('/api/health', async (_req, res) => {
   } catch {
     res.status(503).json({ ok: false, db: 'disconnected', uptime: process.uptime() });
   }
-});
-
-// Captcha
-app.get('/api/captcha/generate', (_req, res) => {
-  res.json(generateCaptcha());
 });
 
 // Public configuration endpoint (no auth required).
@@ -243,9 +236,6 @@ app.use('/api/account', accountRouter);
 // Import (Phase 5)
 app.use('/api/import', importRouter);
 
-// Agent (Phase 6)
-app.use('/api/agent', agentRouter);
-
 // Classroom (Phase 6)
 app.use('/api/classroom', classroomRouter);
 
@@ -256,6 +246,36 @@ app.use('/api/mistakes', mistakesRouter);
 
 // Knowledge boundary — aggregate kbNodes across sessions
 app.use('/api/knowledge-boundary', knowledgeBoundaryRouter);
+
+/* ────────────────────────────
+   Static SPA — serve the built frontend from frontend/dist/
+   ------------------------------------------------------------
+   Production runs behind nginx that serves /var/www/app.topodrive.top
+   and proxies /api/* to this process. For a self-contained "本机
+   部署" the backend also serves the SPA so a single port (PORT)
+   can host the whole app. Mounted AFTER all /api routes so the
+   static handler never wins over an API match.
+   ──────────────────────────── */
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const FRONTEND_DIST = path.resolve(__dirname, '../../frontend/dist');
+app.use(express.static(FRONTEND_DIST, {
+  // index.html is the SPA shell — let the route below handle
+  // history-mode navigations. Static assets (JS / CSS / images)
+  // still go through the default file lookup.
+  index: false,
+  fallthrough: true,
+  maxAge: '1h',
+}));
+// SPA fallback: any non-/api GET that didn't match a static file
+// returns index.html so client-side routing keeps working.
+app.get(/^\/(?!api\/).*/, (_req, res, next) => {
+  res.sendFile(path.join(FRONTEND_DIST, 'index.html'), (err) => {
+    if (err) next(err);
+  });
+});
 
 /* ────────────────────────────
    Error handling (must be LAST)

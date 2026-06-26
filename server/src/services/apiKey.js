@@ -53,6 +53,7 @@ function decryptProvider(key) {
     keyHint: key.keyHint,
     id: key.id,
     label: key.label,
+    isBuiltIn: key.isBuiltIn || false,
   };
 }
 

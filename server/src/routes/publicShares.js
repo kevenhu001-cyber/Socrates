@@ -42,6 +42,11 @@ router.get('/:token', async (req, res, next) => {
       topic: session.topic,
       domain: session.domain,
       mode: session.mode,
+      /* P_exam-share — shareable exam sessions need kind + exam_data
+       * so the read-only viewer can render the questions/answers
+       * instead of (or in addition to) the chat-style message list. */
+      kind: session.kind,
+      examData: session.examData,
       createdAt: session.createdAt,
       visibility: share.visibility,
       messages: msgs,

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { randomBytes } from 'node:crypto';
-import { setCsrfToken, clearCsrfCookie } from '../middleware/csrf.js';
+import { setCsrfToken, setCsrfCookie, clearCsrfCookie } from '../middleware/csrf.js';
 import { requireAuth } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import * as authService from '../services/auth.js';
@@ -60,8 +60,8 @@ router.get('/csrf-token', setCsrfToken);
 
 router.post('/register', async (req, res, next) => {
   try {
-    const { email, password, captchaToken, captchaAnswer } = req.body;
-    const result = await authService.register(email, password, captchaToken, captchaAnswer);
+    const { email, password } = req.body;
+    const result = await authService.register(email, password);
     return res.json(result);
   } catch (err) { next(err); }
 });
@@ -69,8 +69,8 @@ router.post('/register', async (req, res, next) => {
 /* ─── Resend verification email (no password required) ─── */
 router.post('/resend-verification', async (req, res, next) => {
   try {
-    const { email, captchaToken, captchaAnswer } = req.body;
-    const result = await authService.resendVerification(email, captchaToken, captchaAnswer);
+    const { email } = req.body;
+    const result = await authService.resendVerification(email);
     return res.json(result);
   } catch (err) { next(err); }
 });
@@ -78,11 +78,14 @@ router.post('/resend-verification', async (req, res, next) => {
 /* ─── Login ─── */
 router.post('/login', async (req, res, next) => {
   try {
-    const { email, password, captchaToken, captchaAnswer } = req.body;
-    const result = await authService.login(email, password, captchaToken, captchaAnswer);
+    const { email, password } = req.body;
+    const result = await authService.login(email, password);
     // Clear any stale cookie variants first to avoid duplicate-cookie conflicts
     clearSidCookie(res, req);
     res.cookie('sid', result.sid, getSessionCookieOptions(req));
+    // Seed the CSRF cookie so the first state-changing request after login
+    // doesn't fail with "CSRF token required".
+    setCsrfCookie(res, req);
     return res.json({ user: result.user });
   } catch (err) { next(err); }
 });
@@ -115,6 +118,7 @@ router.get('/verify', async (req, res, next) => {
     if (result && result.sid) {
       clearSidCookie(res, req);
       res.cookie('sid', result.sid, getSessionCookieOptions(req));
+      setCsrfCookie(res, req);
     }
     return res.json(result);
   } catch (err) { next(err); }
@@ -123,8 +127,8 @@ router.get('/verify', async (req, res, next) => {
 /* ─── Send login code ─── */
 router.post('/send-code', authLimiter, async (req, res, next) => {
   try {
-    const { email, captchaToken, captchaAnswer } = req.body;
-    await authService.sendCode(email, captchaToken, captchaAnswer);
+    const { email } = req.body;
+    await authService.sendCode(email);
     return res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -135,6 +139,7 @@ router.post('/guest', authLimiter, async (req, res, next) => {
     const result = await authService.loginAsGuest();
     clearSidCookie(res, req);
     res.cookie('sid', result.sid, getSessionCookieOptions(req));
+    setCsrfCookie(res, req);
     return res.status(201).json({ user: result.user });
   } catch (err) { next(err); }
 });
@@ -146,6 +151,7 @@ router.post('/login-with-code', authLimiter, async (req, res, next) => {
     const result = await authService.loginWithCode(email, code);
     clearSidCookie(res, req);
     res.cookie('sid', result.sid, getSessionCookieOptions(req));
+    setCsrfCookie(res, req);
     return res.json({ user: result.user });
   } catch (err) { next(err); }
 });
@@ -153,8 +159,8 @@ router.post('/login-with-code', authLimiter, async (req, res, next) => {
 /* ─── Forgot password ─── */
 router.post('/forgot-password', authLimiter, async (req, res, next) => {
   try {
-    const { email, captchaToken, captchaAnswer } = req.body;
-    await authService.forgotPassword(email, captchaToken, captchaAnswer);
+    const { email } = req.body;
+    await authService.forgotPassword(email);
     return res.json({ ok: true });
   } catch (err) { next(err); }
 });

@@ -6,7 +6,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 function isUuid(s) { return typeof s === 'string' && UUID_RE.test(s); }
 import { z } from 'zod';
 import { getDb } from '../db/index.js';
-import { sessions, messages, shares } from '../db/schema.js';
+import { sessions, messages, shares, sessionTags, tags as tagsTable } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { writeLimiter } from '../middleware/rateLimit.js';
 import { NotFound, Forbidden, BadRequest } from '../lib/errors.js';
@@ -20,6 +20,17 @@ const SessionPayloadSchema = z.object({
   domain: z.string().max(500).optional().nullable(),
   mode: z.enum(['tutor', 'chat']).optional().default('tutor'),
   phase: z.enum(['topic', 'diagnostic', 'chat']).optional().default('topic'),
+  /* P_exam-history — top-level session "shape". 'exam' is set by the
+   * front-end when saving a finished exam; the chat service still uses
+   * 'tutor' / 'chat'. Default 'chat' keeps every existing client call
+   * site working unchanged. */
+  kind: z.enum(['chat', 'tutor', 'exam']).optional().default('chat'),
+  /* P_exam-history — full rendered exam payload: {topic, difficulty,
+   * count, lang, types, questions:[...], answers:{...}, submitted, results?}.
+   * Lives on the same row as the session, so a single
+   * POST /api/sessions carries the exam to the server and a single
+   * GET /api/sessions/:id returns it for re-rendering. */
+  examData: z.any().optional().nullable(),
   projectId: z.string().uuid().optional().nullable(),
   messages: z.array(z.object({
     role: z.string(),
@@ -29,6 +40,9 @@ const SessionPayloadSchema = z.object({
     type: z.string().max(50).optional().nullable(),
     sources: z.array(z.any()).max(100).optional().nullable(),
     clientId: z.string().max(100).optional().nullable(),
+    /* P_reasoning-persist — chain-of-thought text from reasoning
+       models. Preserved so it survives session save/load. */
+    reasoningContent: z.string().max(500000).optional().nullable(),
   })).max(1000).optional(),
   kbNodes: z.array(z.any()).max(5000).optional(),
   mistakes: z.array(z.any()).max(1000).optional(),
@@ -63,7 +77,36 @@ router.get('/', async (req, res, next) => {
     const sessionList = hasMore ? rows.slice(0, maxLimit) : rows;
     const nextCursor = hasMore ? sessionList[sessionList.length - 1].updatedAt.toISOString() : null;
 
-    return res.json({ sessions: sessionList, nextCursor });
+    /* P2.2 — batch-load tag names for every returned session so the
+     * SPA's tag filter / chip row works after a reload. Without this
+     * join the front-end only knows about tags that were added in the
+     * current tab; any persisted tag filter that matched a tag would
+     * silently match nothing on next load, leaving the Recents list
+     * empty while the Inbox counter still showed the session count. */
+    const tagsBySession = new Map();
+    if (sessionList.length > 0) {
+      const sessionIds = sessionList.map(s => s.id);
+      const tagRows = await db.select({
+        sessionId: sessionTags.sessionId,
+        name: tagsTable.name,
+      })
+        .from(sessionTags)
+        .innerJoin(tagsTable, eq(tagsTable.id, sessionTags.tagId))
+        .where(and(
+          eq(tagsTable.userId, req.userId),
+          inArray(sessionTags.sessionId, sessionIds),
+        ));
+      for (const r of tagRows) {
+        if (!tagsBySession.has(r.sessionId)) tagsBySession.set(r.sessionId, []);
+        tagsBySession.get(r.sessionId).push(r.name);
+      }
+    }
+    const sessionListWithTags = sessionList.map(s => ({
+      ...s,
+      tags: tagsBySession.get(s.id) || [],
+    }));
+
+    return res.json({ sessions: sessionListWithTags, nextCursor });
   } catch (err) { next(err); }
 });
 
@@ -72,7 +115,8 @@ router.post('/', writeLimiter, async (req, res, next) => {
   try {
     const db = getDb();
     // zod throws ZodError on malformed input → errorHandler returns 400.
-    const { id, topic, title, domain, mode, phase, projectId,
+    const { id, topic, title, domain, mode, phase, kind, examData,
+            projectId,
             messages: msgs, kbNodes, mistakes, pinned, totalQ, currentNode } = SessionPayloadSchema.parse(req.body);
 
     /* P0.0 — accept a client-supplied id only if it looks like a real
@@ -155,6 +199,8 @@ router.post('/', writeLimiter, async (req, res, next) => {
       domain: domain || null,
       mode: mode || 'tutor',
       phase: phase || 'topic',
+      kind: kind || 'chat',
+      examData: examData || null,
       projectId: projectId || null,
       pinned: !!pinned,
       kbNodes: kbNodes || [],
@@ -169,6 +215,8 @@ router.post('/', writeLimiter, async (req, res, next) => {
         domain: sql`EXCLUDED.domain`,
         mode: sql`EXCLUDED.mode`,
         phase: sql`EXCLUDED.phase`,
+        kind: sql`EXCLUDED.kind`,
+        examData: sql`EXCLUDED.exam_data`,
         projectId: sql`EXCLUDED.project_id`,
         pinned: sql`EXCLUDED.pinned`,
         kbNodes: sql`EXCLUDED.kb_nodes`,
@@ -184,6 +232,15 @@ router.post('/', writeLimiter, async (req, res, next) => {
     // we need a way to avoid duplicating rows when (a) the user
     // already has the message saved, or (b) the back-end generated a
     // different UUID for the same logical message.
+    //
+    // P_streaming-save — also UPDATE messages whose clientId already
+    // exists in the database. Without this, if a save fires while
+    // streaming is in progress (before finish() replaces the
+    // placeholder with final content), the partial/empty content
+    // gets committed and the final version is never written —
+    // the dedup simply skips it. Updating here provides defense
+    // in depth alongside the frontend filter that excludes
+    // type: "streaming" messages from the save payload.
     if (Array.isArray(msgs) && msgs.length) {
       const clientIds = msgs.map(m => m.clientId).filter(Boolean);
       const existingClientIds = new Set();
@@ -207,9 +264,32 @@ router.post('/', writeLimiter, async (req, res, next) => {
           type: m.type || null,
           sources: m.sources || null,
           clientId: m.clientId || null,
+          /* P_reasoning-persist — chain-of-thought text from DeepSeek/
+             QwQ/o1-style reasoning models. The front-end sends it as
+             reasoningContent (camelCase). */
+          reasoningContent: m.reasoningContent || null,
         }));
       if (toInsert.length > 0) {
         await db.insert(messages).values(toInsert);
+      }
+
+      // P_streaming-save — update content for messages that were
+      // already saved with a previous (possibly partial) version.
+      const toUpdate = msgs.filter(m => m.clientId && existingClientIds.has(m.clientId));
+      for (const m of toUpdate) {
+        await db.update(messages)
+          .set({
+            content: m.rawText || m.content || '',
+            rawText: m.rawText || null,
+            html: m.html || null,
+            type: m.type || null,
+            /* P_reasoning-persist — preserve chain-of-thought text. */
+            reasoningContent: m.reasoningContent || null,
+          })
+          .where(and(
+            eq(messages.sessionId, sessionId),
+            eq(messages.clientId, m.clientId),
+          ));
       }
     }
 
@@ -244,7 +324,7 @@ router.patch('/:id', async (req, res, next) => {
       .limit(1);
     if (!existing) throw new NotFound('Session not found');
 
-    const allowed = ['title', 'topic', 'mode', 'phase', 'domain', 'pinned', 'projectId', 'kbNodes', 'mistakes', 'totalQ', 'currentNode'];
+    const allowed = ['title', 'topic', 'mode', 'phase', 'kind', 'examData', 'domain', 'pinned', 'projectId', 'kbNodes', 'mistakes', 'totalQ', 'currentNode'];
     const patch = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) patch[key] = req.body[key];

@@ -9,7 +9,6 @@ import {
 import {
   ApiError, BadRequest, Unauthorized, Forbidden, NotFound, Conflict,
 } from '../lib/errors.js';
-import { verifyCaptcha } from './captcha.js';
 import {
   sendVerificationEmail, sendPasswordResetEmail, sendLoginCode,
 } from './email.js';
@@ -111,12 +110,8 @@ async function createVerificationToken(userId, kind, ttlHours) {
  * pending_registrations and send a verification email. The user is only created
  * (and a session established) when they click the verification link.
  */
-export async function register(email, password, captchaToken, captchaAnswer) {
+export async function register(email, password) {
   if (!email || !password) throw new BadRequest('Email and password are required');
-
-  if (!verifyCaptcha(captchaToken, captchaAnswer)) {
-    throw new BadRequest('Invalid captcha');
-  }
 
   const normalizedEmail = email.toLowerCase().trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
@@ -166,15 +161,11 @@ export async function register(email, password, captchaToken, captchaAnswer) {
 
 /**
  * Re-send the verification email for an existing pending registration.
- * Does NOT take a password — the captcha is the only proof that the
- * requester is human. Always returns { ok: true } to avoid leaking
+ * Does NOT take a password. Always returns { ok: true } to avoid leaking
  * which emails have a pending registration.
  */
-export async function resendVerification(email, captchaToken, captchaAnswer) {
+export async function resendVerification(email) {
   if (!email) throw new BadRequest('Email is required');
-  if (!verifyCaptcha(captchaToken, captchaAnswer)) {
-    throw new BadRequest('Invalid captcha');
-  }
 
   const normalizedEmail = email.toLowerCase().trim();
   const db = getDb();
@@ -198,12 +189,8 @@ export async function resendVerification(email, captchaToken, captchaAnswer) {
 /**
  * POST /api/auth/login
  */
-export async function login(email, password, captchaToken, captchaAnswer) {
+export async function login(email, password) {
   if (!email || !password) throw new BadRequest('Email and password are required');
-
-  if (!verifyCaptcha(captchaToken, captchaAnswer)) {
-    throw new BadRequest('Invalid captcha');
-  }
 
   const normalizedEmail = email.toLowerCase().trim();
   const db = getDb();
@@ -306,12 +293,8 @@ export async function verifyEmail(token) {
 /**
  * POST /api/auth/send-code — send a 6-digit login code
  */
-export async function sendCode(email, captchaToken, captchaAnswer) {
+export async function sendCode(email) {
   if (!email) throw new BadRequest('Email is required');
-
-  if (!verifyCaptcha(captchaToken, captchaAnswer)) {
-    throw new BadRequest('Invalid captcha');
-  }
 
   const normalizedEmail = email.toLowerCase().trim();
   const db = getDb();
@@ -402,12 +385,8 @@ export async function loginWithCode(email, code) {
 /**
  * POST /api/auth/forgot-password
  */
-export async function forgotPassword(email, captchaToken, captchaAnswer) {
+export async function forgotPassword(email) {
   if (!email) throw new BadRequest('Email is required');
-
-  if (!verifyCaptcha(captchaToken, captchaAnswer)) {
-    throw new BadRequest('Invalid captcha');
-  }
 
   const normalizedEmail = email.toLowerCase().trim();
   const db = getDb();

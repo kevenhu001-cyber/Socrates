@@ -913,6 +913,12 @@ function setRecentsFilter(v){
   try{if(v)localStorage.setItem(RECENTS_FILTER_KEY,v);else localStorage.removeItem(RECENTS_FILTER_KEY)}catch(_){}
   renderRecents();
 }
+/* Drop the pinned/tag filter and re-render. Used by the empty-state
+   "Clear filter" link so a user who's stuck looking at an empty list
+   (because a stale filter matches nothing) can recover in one click. */
+function clearRecentsFilter(){
+  setRecentsFilter(null);
+}
 
 /* P2.2 — set of tag strings the user has ever used. Powers
    the autocomplete suggestions in the tag editor popover. */
@@ -1221,9 +1227,22 @@ function doSave(){
      streaming bubble (text content only, no KaTeX), and reading
      partial innerHTML was a known source of "messages got mangled"
      reports on reload. We render once at finish() time and store
-     both rawText and html. */
-  var messages=state.messages.map(function(m){
-    return {clientId:m.clientId||null,role:m.role,html:m.html,rawText:m.rawText||null,type:m.type||null};
+     both rawText and html.
+
+     P_streaming-save — EXCLUDE messages whose `type` is "streaming"
+     (the in-progress placeholder that addStreamingMessage pushes into
+     state.messages). If we save while a stream is in flight, the
+     placeholder gets committed to the messages table with an empty /
+     partial rawText. The server-side deduplication by clientId is
+     insert-only and has no update path, so the final content from
+     finish() never overwrites the placeholder — the AI response is
+     permanently lost on reload. Filtering streaming placeholders here
+     is the root fix; they are only persisted after finish() flips
+     type to "assistant". */
+  var messages=state.messages
+    .filter(function(m){return m.type!=="streaming"})
+    .map(function(m){
+    return {clientId:m.clientId||null,role:m.role,html:m.html,rawText:m.rawText||null,type:m.type||null,reasoningContent:m.reasoningContent||null};
   });
   var sessionId=state.session.currentSessionId||generateId();
   var payload={
@@ -1311,6 +1330,101 @@ function doSave(){
     }
   });
 }
+/* P_exam-history — open a previously-saved exam session. Re-uses
+ * openExamModal() to flip the visible view, then rehydrates the
+ * in-memory state (questions, answers, lang, etc.) and re-renders
+ * the question cards. If the saved exam was already submitted, jump
+ * straight to the results view; otherwise show the questions with
+ * the user's previous answers already selected/filled. */
+async function loadExamSession(s){
+  var ev=document.getElementById("examView");
+  var others=["topicSetup","diagnosticView","chatView"];
+  others.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.add("hidden");});
+  ev.classList.remove("hidden");
+  state._examInView=true;
+  state.currentSessionId=s.id;
+  state.examCancel=false;
+  state.examTopic=(s.examData&&s.examData.topic)||s.topic||"";
+  state.examCount=(s.examData&&s.examData.count)||((s.examData&&s.examData.questions&&s.examData.questions.length)||0);
+  state.examLang=(s.examData&&s.examData.lang)||"English";
+  state.examDifficulty=(s.examData&&s.examData.difficulty)||"intermediate";
+  state.examTypes=Array.isArray(s.examData&&s.examData.types)?s.examData.types:[];
+  state.examQuestions=Array.isArray(s.examData&&s.examData.questions)?s.examData.questions.map(function(q,i){
+    var c=Object.assign({},q);
+    c._idx=i;
+    return c;
+  }):[];
+  state.examAnswers=(s.examData&&s.examData.answers)||{};
+  state.examSubmitted=!!(s.examData&&s.examData.submitted);
+  _examTitle().textContent=state.examSubmitted?("Exam Results: "+state.examTopic):(state.examTopic);
+  var body=_examBody();
+  var footer=_examFooter();
+  /* Build the same DOM that generateNextQuestionStreaming() would
+   * build, but skip the streaming cards and use the saved data. */
+  body.innerHTML='<div id="examQuestionsContainer"></div>';
+  state.examQuestions.forEach(function(q,idx){
+    var card=document.createElement("div");
+    card.className="exam-q-card";
+    card.id="examQ"+idx;
+    card.setAttribute("data-idx",idx);
+    body.querySelector("#examQuestionsContainer").appendChild(card);
+    renderRestoredQuestionCard(idx,q);
+  });
+  /* Mount the nav bar (and make the active pill match whatever the
+   * first question is on load). */
+  renderExamNav();
+  /* Footer actions depend on whether the exam is already submitted. */
+  if(state.examSubmitted){
+    renderExamResults();
+  }else{
+    footer.innerHTML='<button class="exam-btn primary" onclick="submitExam()">Submit for Grading</button><button class="exam-btn secondary" onclick="closeExamView()">Close</button>';
+  }
+  toggleShareBtn();
+  renderRecents();
+  /* Wire the scroll listener once per open so the active nav pill
+   * tracks the viewport. */
+  if(!state._examScrollBound){
+    var bindCont=document.getElementById("examViewBody");
+    if(bindCont){
+      bindCont.addEventListener("scroll",function(){
+        if(state._examInView)syncExamNav();
+      });
+    }
+    state._examScrollBound=true;
+  }
+  var sc=document.getElementById("scrollContainer")||document.getElementById("msgScroll");
+  if(sc)sc.scrollTop=0;
+}
+
+/* Helper for loadExamSession — fill a single .exam-q-card with the
+ * saved question and the user's saved answer (option pre-selected for
+ * multiple-choice, value prefilled for fill-blank / short-answer). */
+function renderRestoredQuestionCard(idx,q){
+  var ph=document.getElementById("examQ"+idx);
+  if(!ph)return;
+  var html='<div class="exam-q-num">Question '+(idx+1)+' of '+state.examCount+' <span class="exam-q-type">'+q.type+'</span></div>';
+  html+='<div class="exam-q-text">'+formatMsg(q.q)+'</div>';
+  var saved=state.examAnswers&&state.examAnswers[idx];
+  if(q.type==="multiple-choice"&&q.opts){
+    html+='<div class="exam-q-opts">';
+    q.opts.forEach(function(o,oi){
+      var isSel=(saved===oi);
+      html+='<button class="exam-q-opt'+(isSel?" selected":"")+'" data-eidx="'+idx+'" data-oidx="'+oi+'" onclick="selectExamOpt('+idx+','+oi+')">';
+      html+='<span class="exam-q-opt-letter">'+o.letter+'</span>';
+      html+='<span class="exam-q-opt-text">'+formatMsg(o.text)+'</span>';
+      html+='</button>';
+    });
+    html+='</div>';
+  }else if(q.type==="fill-blank"){
+    var v=(typeof saved==="string")?saved:"";
+    html+='<input class="exam-q-fill-input" data-eidx="'+idx+'" name="examAnswer'+idx+'" aria-label="Answer for question '+idx+'" placeholder="Type your answer..." value="'+esc(v)+'" oninput="state.examAnswers['+idx+']=this.value;refreshExamNavTally();scheduleExamAnswerSave()">';
+  }else if(q.type==="short-answer"){
+    var vv=(typeof saved==="string")?saved:"";
+    html+='<textarea class="exam-q-fill-input" data-eidx="'+idx+'" name="examAnswer'+idx+'" aria-label="Answer for question '+idx+'" placeholder="Type your answer..." rows="3" oninput="state.examAnswers['+idx+']=this.value;refreshExamNavTally();scheduleExamAnswerSave()" style="min-height:60px;resize:vertical">'+esc(vv)+'</textarea>';
+  }
+  ph.innerHTML=html;
+}
+
 async function loadSession(id){
   try{
     var s=await apiFetch("/api/sessions/"+encodeURIComponent(id));
@@ -1363,12 +1477,22 @@ async function loadSession(id){
     appMode=(s.mode==="chat")?"chat":"tutor";
     syncAppModeUI();
     syncSidebarForMode();
+    /* P_exam-history — exam sessions are persisted to the same
+     * /api/sessions table but with kind='exam'. When the user clicks
+     * one in Recents, route them straight into the exam view with
+     * the saved questions, answers, and language restored — instead
+     * of the chat-view message renderer which would show nothing
+     * useful (exam sessions have no chat-style messages). */
+    if(s.kind==="exam"&&s.examData){
+      loadExamSession(s);
+      return;
+    }
     document.getElementById("topicSetup").classList.add("hidden");
     document.getElementById("diagnosticView").classList.add("hidden");
     document.getElementById("chatView").classList.remove("hidden");
     document.getElementById("topicBadge").classList.remove("hidden");
+    toggleChatTopBarEls(true);
     document.getElementById("topicBadgeText").textContent=state.domain;
-    document.getElementById("chatDomain").textContent=state.domain;
     syncChatModel();
     var msgList=document.getElementById("msgList");
     msgList.innerHTML="";
@@ -1437,8 +1561,19 @@ async function loadSession(id){
         rawText: m.rawText || "",
         html: renderHtml,
         type: m.type || null,
+        /* P_reasoning-persist — restore chain-of-thought text so it
+           can be passed back to the LLM on the next turn. */
+        reasoningContent: m.reasoning_content || null,
         actions: null
       });
+      /* P_reasoning-persist — render the thinking pill if the loaded
+         message has saved reasoning_content and thinking is on. */
+      if(m.role==="assistant" && m.reasoning_content && thinkingOn){
+        var tp=appendThinking(m.reasoning_content||"");
+        if(tp&&typeof tp.finalize==="function"){
+          try{setTimeout(function(){tp.finalize()},0)}catch(_){}
+        }
+      }
       div.appendChild(body);
       msgList.appendChild(div);
     });
@@ -1473,6 +1608,29 @@ async function loadSession(id){
     renderRecents();
     renderMistakes();
     updateMistakesBadge();
+    /* P_node-sync — rebuild the teaching plan from the restored kbNodes
+       so the sorted order matches the current node states. The saved
+       plan snapshot may be stale (e.g., nodes were internalized after
+       the plan was last saved). Then sync currentNode with the plan's
+       first non-internalized sub-topic, matching proceedToTeaching. */
+    if(appMode!=="chat"&&state.kbNodes&&state.kbNodes.length){
+      state.teachingPlan=buildTeachingPlanFromKB();
+      if(state.teachingPlan&&state.teachingPlan.subtopics.length){
+        var firstActive=-1;
+        for(var pi=0;pi<state.teachingPlan.subtopics.length;pi++){
+          if(state.teachingPlan.subtopics[pi].status!=="internalized"){firstActive=pi;break}
+        }
+        if(firstActive>=0){
+          state.teachingPlan.currentSubtopicIdx=firstActive;
+          var targetName=state.teachingPlan.subtopics[firstActive].name;
+          var matchedIdx=-1;
+          for(var kni=0;kni<state.kbNodes.length;kni++){
+            if(state.kbNodes[kni].name===targetName){matchedIdx=kni;break}
+          }
+          state.currentNode=matchedIdx>=0?matchedIdx:Math.min(firstActive,state.kbNodes.length-1);
+        }
+      }
+    }
     var sc=scrollContainer();
     sc.scrollTop=sc.scrollHeight;
   }catch(e){
@@ -1502,6 +1660,7 @@ async function loadSession(id){
         state.phase="topic";
         document.getElementById("chatView").classList.add("hidden");
         document.getElementById("topicBadge").classList.add("hidden");
+        toggleChatTopBarEls(false);
         document.getElementById("topicSetup").classList.remove("hidden");
         /* Friendly notice so the user knows what just happened. */
         try{
@@ -1947,6 +2106,7 @@ function bounceOutOfArchivedSession(){
   document.getElementById("diagnosticView").classList.add("hidden");
   document.getElementById("chatView").classList.add("hidden");
   document.getElementById("topicBadge").classList.add("hidden");
+  toggleChatTopBarEls(false);
   document.getElementById("msgList").innerHTML="";
   document.getElementById("topicInput").value="";
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">Set a learning topic to build your knowledge map.</div>';
@@ -2188,10 +2348,30 @@ function renderRecents(){
     }
   }
   if(recents.length===0){
-    var emptyMsg=filter?
-      '<div class="recents-empty">No sessions in this project yet.<br><a href="#" onclick="resetApp();return false">Start a new chat</a> in this project.</div>':
-      '<div class="recents-empty">No recent sessions yet.<br>Start a topic to begin.</div>';
+    /* Three distinct empty states so the user never sees a
+       misleading "No recent sessions yet." when the real cause
+       is an active pinned/tag filter that matches nothing:
+         1) project filter active, no sessions in that project
+         2) no project filter, but a pinned/tag filter is active
+            and matched zero rows — surface the filter name and a
+            one-click clear action so the user isn't left thinking
+            their data is gone (this is the root cause of the
+            "Inbox says 12 but list is empty" report).
+         3) no filter at all — the truly-empty state. */
+    var emptyMsg;
+    if(filter){
+      emptyMsg='<div class="recents-empty">No sessions in this project yet.<br><a href="#" onclick="resetApp();return false">Start a new chat</a> in this project.</div>';
+    }else if(recentsFilter){
+      var filterLabel=recentsFilter==="pinned"?"pinned":("#"+recentsFilter);
+      emptyMsg='<div class="recents-empty">No sessions match the <strong>'+esc(filterLabel)+'</strong> filter.<br>'+
+        '<a href="#" onclick="clearRecentsFilter();return false">Clear filter</a> to see all sessions.</div>';
+    }else{
+      emptyMsg='<div class="recents-empty">No recent sessions yet.<br>Start a topic to begin.</div>';
+    }
     cont.innerHTML=emptyMsg;
+    /* Still render the chip row so the active filter is visible
+       and dismissible even when the list is empty. */
+    renderRecentsFilterChips();
     return;
   }
   var html="";
@@ -2216,8 +2396,13 @@ function renderRecents(){
     if(active){
       resolvedMode=appMode;
     }
-    var modeLabel=resolvedMode==="chat"?"Chat":"Tutor";
-    var modeCls=resolvedMode==="chat"?"mode-chat":"mode-tutor";
+    /* P_exam-history — exam sessions get their own label and CSS
+     * class on the recent-row badge. We check s.kind first because
+     * a user-created exam session also has mode='chat' (the front-end
+     * used chat-mode for the underlying row) — kind is the truth. */
+    var isExam=s.kind==="exam";
+    var modeLabel=isExam?"Exam":(resolvedMode==="chat"?"Chat":"Tutor");
+    var modeCls=isExam?"mode-exam":(resolvedMode==="chat"?"mode-chat":"mode-tutor");
     var safeId="r-"+Math.abs((s.id||"").split("").reduce(function(a,b){a=(a<<5)-a+b.charCodeAt(0);return a&a},0));
     var pinned=!!(s.pinned);
     html+='<div class="recent-item'+(active?" active":"")+(pinned?" pinned":"")+'" data-recent-id="'+safeId+'" data-recent-actual="'+esc(s.id)+'" onclick="loadSession(\''+esc(s.id)+'\')">';
@@ -2225,7 +2410,7 @@ function renderRecents(){
        toggles the pinned state; pinned rows float to the top
        automatically because getRecents() sorts them first. */
     html+='<button class="recent-item-pin'+(pinned?" pinned":"")+'" title="'+(pinned?"Unpin":"Pin to top")+'" onclick="togglePinSession(\''+esc(s.id)+'\',event)">';
-    html+='<svg viewBox="0 0 24 24" fill="'+(pinned?"currentColor":"none")+'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.7 5.2L19 9l-5.3 1.8L12 16l-1.7-5.2L5 9l5.3-1.8L12 2z"/></svg>';
+    html+='<svg viewBox="0 0 24 24" fill="'+(pinned?"currentColor":"none")+'" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><line x1="12" y1="12" x2="12" y2="20"/></svg>';
     html+='</button>';
     html+='<span class="recent-mode-badge '+modeCls+'">'+modeLabel+'</span>';
     html+='<div class="recent-item-main">';
@@ -2275,7 +2460,22 @@ function renderRecentsFilterChips(){
   }
   html.push(chip("All",null,!cur));
   var pinActive=cur==="pinned";
-  html.push('<button class="recents-filter-chip-btn'+(pinActive?" active":"")+'" data-filter="pinned" onclick="onRecentsFilterChipClick(\'pinned\')"><svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .199 2.126c-.082.592-.356 1.055-.689 1.389a.5.5 0 0 1-.707 0L7.01 10.828l-3.88 3.88a.5.5 0 1 1-.707-.707l3.88-3.88L3.586 5.536a.5.5 0 0 1 .707-.707c.334-.333.797-.607 1.389-.689a5.927 5.927 0 0 1 2.126.199l3.134-3.134a1.4 1.4 0 0 1-.039-.46c0-.43.108-1.022.588-1.503a.5.5 0 0 1 .353-.146z"/></svg> Pinned</button>');
+  /* Pinned chip — minimal line-drawn bookmark. The previous
+     Bootstrap pushpin had 18 control points and read as busy at
+     11px; a 4-vertex bookmark is the universal "pinned / saved"
+     cue and matches the stroke style of the other sidebar icons. */
+  html.push('<button class="recents-filter-chip-btn'+(pinActive?" active":"")+'" data-filter="pinned" onclick="onRecentsFilterChipClick(\'pinned\')" title="Pinned"><svg class="icon-inline" viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2 H12 V14 L8 11 L4 14 Z"/></svg><span class="recents-filter-chip-label">Pinned</span></button>');
+  /* P2.2 — surface the tags currently in use, plus — crucially —
+     the active tag filter even if no session currently carries it.
+     Without this, an orphaned tag filter (e.g. the user removed the
+     tag from every session, or the tag was lost during a partial
+     sync) would be invisible AND match nothing, leaving the Recents
+     list empty with no way to clear the filter except clicking "All". */
+  var tagSet={};
+  tags.forEach(function(t){tagSet[t]=true});
+  if(cur&&cur!=="pinned"&&!tagSet[cur]){
+    tags.push(cur);
+  }
   if(tags.length){
     html.push('<span class="recents-filter-chips-sep"></span>');
     tags.forEach(function(t){
@@ -2304,19 +2504,27 @@ function detectLanguage(text){
   return'en';
 }
 
-var DIAG_SYSTEM_PROMPT = "You are a thoughtful diagnostic tutor. Generate exactly 1 multiple-choice question (this is question {questionNumber} of 5, focused on {aspect}) to assess a learner's grasp of {topic}.\n\n{previousQuestions}\n\nVoice and form:\n- Write the question and all options in {language}. The learner thinks in {language}; the text must read as native, not a translation. Match the learner's input language exactly.\n- Use academic but accessible language, like a kind teacher who is precise yet warm. Imagine a professor explaining to a curious student over tea.\n- Show depth and a small intellectual flavor (韵味) in the question. It should feel thoughtful, never mechanical. Probe what the learner truly understands, not just surface familiarity.\n- Avoid em-dashes (—, ——) where possible. Prefer periods, commas, colons, semicolons, or parentheses instead.\n- Use Markdown for formatting (bold, italic, code) and LaTeX ($...$ or $$...$$) for mathematical notation where applicable.\n\nStructure:\n- The question must probe {aspect} from a different angle than anything listed above.\n- Provide 3 to 4 options labeled A, B, C, D.\n- Each option includes a level field: internalized (deep grasp), fuzzy (some knowledge with gaps), or blank (no knowledge).\n- Output ONLY a single valid JSON object, no other text: {\"q\":\"question text\", \"opts\":[{\"letter\":\"A\",\"text\":\"option text\",\"level\":\"internalized\"}, ...]}\n- Do NOT wrap the JSON in code fences.\n- CRITICAL: inside any string value, NEVER use ASCII double quotes (\\\"...) to quote phrases. Use full-width quotation marks 「...」 or 『...』 for CJK text, or just plain text without quotes for English. ASCII double quotes are reserved for JSON delimiters only.";
+var DIAG_SYSTEM_PROMPT = "You are a thoughtful diagnostic tutor. Generate exactly 1 multiple-choice question (this is question {questionNumber} of 5, focused on {aspect}) to assess a learner's grasp of {topic}.\n\n{previousQuestions}\n\nVoice and form:\n- Write the question and all options in {language}. The learner thinks in {language}; the text must read as native, not a translation. Match the learner's input language exactly.\n- Use academic but accessible language, like a kind teacher who is precise yet warm. Imagine a professor explaining to a curious student over tea.\n- Show depth and a small intellectual flavor (韵味) in the question. It should feel thoughtful, never mechanical. Probe what the learner truly understands, not just surface familiarity.\n- Avoid em-dashes (—, ——) where possible. Prefer periods, commas, colons, semicolons, or parentheses instead.\n- Use Markdown for formatting (bold, italic, code) and LaTeX ($...$ or $$...$$) for mathematical notation where applicable.\n\nStructure:\n- The question must probe {aspect} from a different angle than anything listed above.\n- The question must target a SPECIFIC knowledge point within {aspect}. Name it in the knowledgePoint field (e.g. \"matrix multiplication rules\", \"Ohm's law derivation\", \"binary search edge cases\"). This maps the question to a concrete concept so the teaching plan can address it precisely.\n- Provide 3 to 4 options labeled A, B, C, D.\n- Each option includes a level field: internalized (deep grasp), fuzzy (some knowledge with gaps), or blank (no knowledge).\n- Output ONLY a single valid JSON object, no other text: {\"q\":\"question text\", \"knowledgePoint\":\"specific concept being tested\", \"opts\":[{\"letter\":\"A\",\"text\":\"option text\",\"level\":\"internalized\"}, ...]}\n- Do NOT wrap the JSON in code fences.\n- CRITICAL: inside any string value, NEVER use ASCII double quotes (\\\"...) to quote phrases. Use full-width quotation marks 「...」 or 『...』 for CJK text, or just plain text without quotes for English. ASCII double quotes are reserved for JSON delimiters only.";
 
 /* The five probe angles, one per question. Mapped 1:1 to the
    fixed KB nodes in aiGenerate() (0 Core concepts, 1 Key principles,
    2 Practical applications, 3 Common misconceptions, 4 Advanced).
    The descriptions are passed to the model so each call gets a
-   fresh, non-overlapping angle. */
+   fresh, non-overlapping angle.
+   P_cold-start-coverage — the five dimensions systematically cover:
+   0. Basic concepts (基础概念) — vocabulary, definitions, foundational terms
+   1. Core principles (核心原理) — underlying mechanisms, derivations, why-it-works
+   2. Application scenarios (应用场景) — concrete real-world cases, problem-solving
+   3. Common problem handling (常见问题处理) — pitfalls, misconceptions, edge cases
+   4. Critical analysis (批判性分析) — comparison, evaluation, deeper connections
+   This ensures the diagnostic probes multiple knowledge dimensions rather than
+   only surface familiarity, per the cold-start design requirement. */
 var DIAG_ASPECTS=[
-  "basic familiarity and vocabulary: what the learner already recognizes on sight",
-  "applied understanding: can the learner put the ideas to work in a concrete case",
-  "conceptual depth: does the learner see the underlying mechanism, not just the surface",
-  "common misconceptions: what the learner might wrongly assume, and why it would fail",
-  "critical analysis: can the learner weigh, compare, or judge a subtle claim"
+  "basic concepts and vocabulary: foundational definitions, key terms, and entry-level recognition of the topic's building blocks",
+  "core principles and mechanisms: the underlying logic, derivations, and causal relationships that govern the topic",
+  "application scenarios: concrete real-world cases where the topic's concepts are applied to solve problems",
+  "common problems and pitfalls: frequent mistakes, edge cases, and misconceptions that arise when working with the topic",
+  "critical analysis and synthesis: comparing alternatives, evaluating trade-offs, and connecting the topic to broader contexts"
 ];
 
 /* Build the 5-question diagnostic by calling the LLM once per
@@ -2450,6 +2658,7 @@ function normalizeDiagQuestions(parsed){
     if(!isFinite(nodeIdx)||nodeIdx<0||nodeIdx>4)nodeIdx=out.length;
     out.push({
       q:text,
+      knowledgePoint:(typeof q.knowledgePoint==="string"&&q.knowledgePoint.trim())?q.knowledgePoint.trim():"",
       subarea:(typeof q.subarea==="string"&&q.subarea.trim())?q.subarea.trim():("Sub-area "+(out.length+1)),
       nodeIdx:nodeIdx,
       opts:fixedOpts.slice(0,3)
@@ -2625,17 +2834,61 @@ function aiGenerate(topic){
   domain=domain.charAt(0).toUpperCase()+domain.slice(1);
 
   /* Fixed 5-node KB skeleton, each carries the rich metadata that
-     updateKB() / mountKBDetail() expects. */
+     updateKB() / mountKBDetail() expects.
+     P_cold-start-coverage — the five nodes map 1:1 to DIAG_ASPECTS:
+     0. Basic concepts (基础概念)
+     1. Core principles (核心原理)
+     2. Practical applications (应用场景)
+     3. Common problems & pitfalls (常见问题处理)
+     4. Critical analysis & advanced (批判性分析与进阶) */
   var nodes=[
-    {name:"Core concepts of "+domain,status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]},
-    {name:"Key principles",status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]},
-    {name:"Practical applications",status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]},
-    {name:"Common misconceptions",status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]},
-    {name:"Advanced topics",status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]}
+    {name:"Basic concepts of "+domain,status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]},
+    {name:"Core principles of "+domain,status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]},
+    {name:"Practical applications of "+domain,status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]},
+    {name:"Common problems and pitfalls in "+domain,status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]},
+    {name:"Critical analysis and advanced "+domain,status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]}
   ];
 
   var diagQs=generateMockDiagQs(domain);
   return {domain:domain,nodes:nodes,diagQuestions:diagQs};
+}
+
+/* P_cold-start-coverage — generate topic-specific KB node names via LLM
+   so the knowledge dimensions are tailored to the subject rather than
+   using generic placeholders. Called before diagnostic questions so
+   the question generation can reference the same node names. Falls
+   back to the fixed skeleton from aiGenerate() on any failure. */
+async function generateTopicKBNodes(topic,language){
+  var langNames={zh:'Chinese',ja:'Japanese',ko:'Korean',ru:'Russian',ar:'Arabic',en:'English'};
+  var langName=langNames[language]||'English';
+  var prompt="You are an expert curriculum designer. For the topic \""+topic+"\", generate exactly 5 knowledge dimensions that systematically cover the subject.\n"+
+    "The 5 dimensions MUST follow this structure (adapt the specific content to the topic):\n"+
+    "0. Basic concepts — foundational definitions, key terms, vocabulary\n"+
+    "1. Core principles — underlying mechanisms, derivations, causal logic\n"+
+    "2. Practical applications — concrete real-world cases, problem-solving scenarios\n"+
+    "3. Common problems and pitfalls — frequent mistakes, edge cases, misconceptions\n"+
+    "4. Critical analysis and advanced topics — comparison, synthesis, deeper connections\n"+
+    "Write ALL dimension names in "+langName+". Each name should be specific to the topic (not generic).\n"+
+    "Output ONLY a JSON array of 5 strings, no other text:\n"+
+    "[\"dimension 0 name\",\"dimension 1 name\",\"dimension 2 name\",\"dimension 3 name\",\"dimension 4 name\"]\n"+
+    "Do NOT wrap in code fences. Do NOT add explanation.";
+  var msgs=[{role:'system',content:prompt},{role:'user',content:'Topic: '+topic}];
+  try{
+    var resp=await callAPI(msgs,2000);
+    if(!resp)return null;
+    var raw=String(resp).replace(/<think>[\s\S]*?<\/think>/gi,'').replace(/<think>[\s\S]*$/gi,'');
+    raw=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    var start=raw.indexOf("["),end=raw.lastIndexOf("]");
+    if(start<0||end<=start)return null;
+    var arr=JSON.parse(raw.slice(start,end+1));
+    if(!Array.isArray(arr)||arr.length<3)return null;
+    /* Pad to 5 if the model returned fewer */
+    while(arr.length<5)arr.push("Dimension "+arr.length);
+    return arr.slice(0,5).map(function(s){return String(s).trim()}).filter(function(s){return s.length>0});
+  }catch(e){
+    console.log("[generateTopicKBNodes] failed: "+(e&&e.message?e.message:String(e)));
+    return null;
+  }
 }
 
 /* Generate varied mock diagnostic questions for fallback */
@@ -2644,10 +2897,11 @@ function aiGenerate(topic){
    skeleton in aiGenerate) and to a subarea label. */
 function generateMockDiagQs(domain){
   /* The 5 fixed mock KB node names — used both to name the subareas and
-     to seed the KB so the question's nodeIdx actually lines up. */
-  var subareaNames=["Core concepts of "+domain,"Key principles of "+domain,"Practical applications of "+domain,"Common misconceptions in "+domain,"Advanced "+domain];
+     to seed the KB so the question's nodeIdx actually lines up.
+     P_cold-start-coverage — aligned with the 5 knowledge dimensions. */
+  var subareaNames=["Basic concepts of "+domain,"Core principles of "+domain,"Practical applications of "+domain,"Common problems and pitfalls in "+domain,"Critical analysis and advanced "+domain];
   var templates=[
-    {subarea:subareaNames[0],nodeIdx:0,
+    {knowledgePoint:"core definitions and key vocabulary",subarea:subareaNames[0],nodeIdx:0,
      q:["How familiar are you with the core concepts of "+domain+"?","What is your current level of understanding of "+domain+"'s core ideas?"],
      opts:[
        [{letter:"A",text:"I have a clear mental model of the core concepts and can apply them independently",level:"internalized"},
@@ -2657,28 +2911,28 @@ function generateMockDiagQs(domain){
         {letter:"B",text:"I recognize the names but cannot define them",level:"fuzzy"},
         {letter:"C",text:"I have not encountered the core concepts",level:"blank"}]
      ]},
-    {subarea:subareaNames[1],nodeIdx:1,
+    {knowledgePoint:"underlying mechanisms and derivations",subarea:subareaNames[1],nodeIdx:1,
      q:["How well can you explain the key principles that govern "+domain+"?"],
      opts:[
        [{letter:"A",text:"I can state the principles and reason from them",level:"internalized"},
         {letter:"B",text:"I know some principles exist but cannot articulate them",level:"fuzzy"},
         {letter:"C",text:"I do not know which principles are central to "+domain,level:"blank"}]
      ]},
-    {subarea:subareaNames[2],nodeIdx:2,
+    {knowledgePoint:"real-world application cases",subarea:subareaNames[2],nodeIdx:2,
      q:["Can you give a concrete real-world example where "+domain+" is applied?"],
      opts:[
        [{letter:"A",text:"Yes, and I can describe how it works in detail",level:"internalized"},
         {letter:"B",text:"I have heard of applications but cannot describe one fully",level:"fuzzy"},
         {letter:"C",text:"I do not know any real applications of "+domain,level:"blank"}]
      ]},
-    {subarea:subareaNames[3],nodeIdx:3,
+    {knowledgePoint:"common mistakes and edge cases",subarea:subareaNames[3],nodeIdx:3,
      q:["Are you aware of common misconceptions or pitfalls in "+domain+"?"],
      opts:[
        [{letter:"A",text:"I can name several misconceptions and explain why they are wrong",level:"internalized"},
         {letter:"B",text:"I have a vague sense of what goes wrong but cannot name specifics",level:"fuzzy"},
         {letter:"C",text:"I have not thought about misconceptions in "+domain,level:"blank"}]
      ]},
-    {subarea:subareaNames[4],nodeIdx:4,
+    {knowledgePoint:"critical comparison and synthesis",subarea:subareaNames[4],nodeIdx:4,
      q:["How comfortable are you with the more advanced aspects of "+domain+"?"],
      opts:[
        [{letter:"A",text:"I have explored advanced material and feel comfortable",level:"internalized"},
@@ -2692,7 +2946,7 @@ function generateMockDiagQs(domain){
   return pool.map(function(t){
     var qi=Math.floor(Math.random()*t.q.length);
     var oi=Math.floor(Math.random()*t.opts.length);
-    return {q:t.q[qi],subarea:t.subarea,nodeIdx:t.nodeIdx,opts:t.opts[oi]};
+    return {q:t.q[qi],knowledgePoint:t.knowledgePoint,subarea:t.subarea,nodeIdx:t.nodeIdx,opts:t.opts[oi]};
   });
 }
 
@@ -2752,8 +3006,8 @@ async function startSession(){
     document.getElementById("diagnosticView").classList.add("hidden");
     document.getElementById("chatView").classList.remove("hidden");
     document.getElementById("topicBadge").classList.remove("hidden");
+    toggleChatTopBarEls(true);
     document.getElementById("topicBadgeText").textContent=state.domain;
-    document.getElementById("chatDomain").textContent=state.domain;
     document.getElementById("msgList").innerHTML="";
     /* Show the user's input as the first message in the chat. */
     addMessage("user",'<p>'+esc(state.topic)+'</p>');
@@ -2768,9 +3022,9 @@ async function startSession(){
   document.getElementById("topicSetup").classList.add("hidden");
   document.getElementById("diagnosticView").classList.remove("hidden");
   document.getElementById("chatView").classList.add("hidden");
+  toggleChatTopBarEls(false);
     document.getElementById("topicBadge").classList.remove("hidden");
     document.getElementById("topicBadgeText").textContent=state.domain;
-    document.getElementById("chatDomain").textContent=state.domain;
     syncChatModel();
   document.getElementById("diagnosticView").innerHTML='<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">'+(webSearchOn?t("tutor.loadingWeb"):t("tutor.loading"))+'</p></div>';
 
@@ -2798,6 +3052,23 @@ async function startSession(){
         diagSearchLog.finalize({state:"err",message:(sc&&sc.reason)||"no results"});
       }
     }catch(_){}
+  }
+
+  /* P_cold-start-coverage — generate topic-specific KB node names so
+     the knowledge dimensions are tailored to the subject. Falls back
+     to the generic skeleton from aiGenerate() on any failure. */
+  try{
+    var topicNodes=await generateTopicKBNodes(topic,lang);
+    if(topicNodes&&topicNodes.length>=3){
+      while(topicNodes.length<state.kbNodes.length)topicNodes.push(state.kbNodes[topicNodes.length].name);
+      for(var ni=0;ni<state.kbNodes.length;ni++){
+        if(topicNodes[ni])state.kbNodes[ni].name=topicNodes[ni];
+      }
+    }else{
+      console.log("[startSession] generateTopicKBNodes returned insufficient results, using generic KB node names");
+    }
+  }catch(e){
+    console.log("[startSession] generateTopicKBNodes failed, using generic KB node names:",e&&e.message?e.message:String(e));
   }
 
   /* Try the real LLM first (via the project's existing
@@ -2914,9 +3185,15 @@ function nextDiagQuestion(){
 function finishDiagnostic(){
   if(state.diagAnswers[state.diagIndex]===undefined)return;
 
-  /* Update KB based on diagnostic — every question's answer is now routed
-     to its declared nodeIdx, so the 5 questions actually populate 5
-     distinct KB nodes. No more "only first question matters" bug. */
+  /* P_test-interpretation — Update KB based on diagnostic.
+     CRITICAL CHANGE: "internalized" answers are mapped to "fuzzy" (NOT
+     "internalized") because passing a single multiple-choice question
+     only demonstrates surface recognition, not deep mastery. The cold-
+     start test establishes a baseline, not a verdict. True internalization
+     requires verification through the teaching phase (3 substantive
+     answers per node). This preserves room for further evaluation and
+     prevents the teaching plan from skipping knowledge points the user
+     merely recognized but does not truly understand. */
   state.diagQuestions.forEach(function(q,i){
     var ans=state.diagAnswers[i];
     if(ans===undefined)return;
@@ -2926,33 +3203,108 @@ function finishDiagnostic(){
     var nodeIdx=typeof q.nodeIdx==="number"?Math.max(0,Math.min(q.nodeIdx,state.kbNodes.length-1)):i;
     var node=state.kbNodes[nodeIdx];
     if(!node)return;
-    var newStatus=level==="internalized"?"internalized":level==="blank"?"blank":"fuzzy";
+    /* P_test-interpretation — downscale: internalized→fuzzy, fuzzy→fuzzy, blank→blank.
+       The diagnostic only establishes familiarity, not mastery. */
+    var newStatus=level==="blank"?"blank":"fuzzy";
     if(node.status!==newStatus){
       node.history=node.history||[];
-      node.history.push({date:new Date().toISOString().slice(0,10),from:node.status,to:newStatus,reason:"cold-start diagnostic"});
+      node.history.push({date:new Date().toISOString().slice(0,10),from:node.status,to:newStatus,reason:"cold-start diagnostic (baseline, not mastery)"});
       node.status=newStatus;
+    }
+    /* Record the specific knowledge point tested, so the teaching plan
+       can address it precisely. */
+    if(q.knowledgePoint){
+      var kpNote="Tested knowledge point: "+q.knowledgePoint+" (baseline: "+newStatus+"). ";
+      node.system_note=(node.system_note||"")+kpNote;
     }
     /* Use the AI-provided subarea label to refine the node's name on
        first encounter — but never overwrite a user-friendly domain-prefixed
        name if the AI didn't supply one. */
     if(q.subarea&&i<2&&node.name.indexOf(q.subarea)===-1&&q.subarea!=="Sub-area "+(i+1)){
-      /* Only adopt subarea as the node name if the node is still a generic
-         placeholder. Keep things simple: just record it in system_note. */
-      node.system_note="Sub-area: "+q.subarea+". ";
+      node.system_note=(node.system_note||"")+"Sub-area: "+q.subarea+". ";
     }
   });
 
+  /* P_test-interpretation — show a results interpretation screen before
+     starting teaching. This makes it clear to the user that the test
+     result is a baseline assessment, NOT a verdict of mastery. */
+  renderDiagResultsScreen();
+}
+
+/* P_test-interpretation — Render the diagnostic results interpretation
+   screen. Shows the user's baseline across all knowledge dimensions,
+   with an explicit message that passing the test only means reaching
+   the evaluation standard, not full mastery. The teaching will still
+   cover ALL dimensions from the basics. */
+function renderDiagResultsScreen(){
+  var view=document.getElementById("diagnosticView");
+  var isZh=_currentLang==="zh";
+  var summary={internalized:0,fuzzy:0,blank:0};
+  state.diagQuestions.forEach(function(q,i){
+    var ans=state.diagAnswers[i];
+    if(ans===undefined)return;
+    var level=q.opts[ans].level;
+    /* Use the downscaled status for display consistency */
+    var status=level==="blank"?"blank":"fuzzy";
+    summary[status]=(summary[status]||0)+1;
+  });
+
+  var html='<div class="diag-results">';
+  html+='<div class="diag-results-title">'+(isZh?"测试结果解读":"Diagnostic Results Interpretation")+'</div>';
+  html+='<div class="diag-results-notice">';
+  html+='<div class="diag-results-notice-icon">i</div>';
+  html+='<div class="diag-results-notice-text">';
+  html+=isZh
+    ?"<strong>重要提示：</strong>冷启动测试仅用于探测您的知识边界基线。通过测试仅代表您达到特定评估标准，<strong>不代表完全掌握</strong>相关主题。系统将针对所有知识维度从基础开始系统教学，确保知识体系的完整性和连贯性。"
+    :"<strong>Important:</strong> The cold-start test only establishes a baseline of your knowledge boundary. Passing the test means you reached a specific evaluation standard, <strong>NOT full mastery</strong> of the topic. The system will teach ALL knowledge dimensions from the fundamentals to ensure a complete and coherent knowledge system.";
+  html+='</div></div>';
+
+  html+='<div class="diag-results-grid">';
+  state.kbNodes.forEach(function(node,i){
+    var status=node.status||"blank";
+    var statusLabel=isZh
+      ?(status==="fuzzy"?"有一定基础":"未知/空白")
+      :(status==="fuzzy"?"Some familiarity":"Unknown/Blank");
+    var statusClass=status==="fuzzy"?"fuzzy":"blank";
+    html+='<div class="diag-result-card '+statusClass+'">';
+    html+='<div class="diag-result-card-num">'+(i+1)+'</div>';
+    html+='<div class="diag-result-card-name">'+esc(node.name)+'</div>';
+    html+='<div class="diag-result-card-status">'+statusLabel+'</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+
+  html+='<div class="diag-results-summary">';
+  html+=isZh
+    ?"基线评估："+summary.fuzzy+" 个维度有一定基础，"+summary.blank+" 个维度待探索"
+    :"Baseline: "+summary.fuzzy+" dimension(s) with some familiarity, "+summary.blank+" dimension(s) to explore";
+  html+='</div>';
+
+  html+='<div class="diag-results-actions">';
+  html+='<button class="diag-results-continue" onclick="proceedToTeaching()">'+(isZh?"开始系统学习":"Start Systematic Learning")+'</button>';
+  html+='</div>';
+  html+='</div>';
+
+  view.innerHTML=html;
+  scrollContainer().scrollTop=0;
+}
+
+/* P_test-interpretation — proceed from the results screen to the actual
+   teaching phase. Separated from finishDiagnostic so the user has a
+   moment to read the interpretation before teaching begins. */
+function proceedToTeaching(){
   document.getElementById("diagnosticView").classList.add("hidden");
   document.getElementById("chatView").classList.remove("hidden");
+  toggleChatTopBarEls(true);
   updateKB();
   updateChatStats();
 
-  /* Task 3.2 — generate the structured teaching plan from the
-     freshly-populated KB. Sub-topics are sorted so fuzzy nodes
-     come first (the user has some familiarity — quickest wins),
-     then blank nodes, with internalized nodes pushed to the end
-     as already-complete. currentSubtopicIdx points at the first
-     non-internalized sub-topic so teaching starts there. */
+  /* P_teaching-plan — generate the structured teaching plan from the
+     freshly-populated KB. Sub-topics are sorted so blank nodes come
+     first (teach the gaps), then fuzzy nodes, with all nodes taught
+     from basics regardless of diagnostic result. currentSubtopicIdx
+     always points to the first node so teaching starts from the
+     foundation. */
   state.teachingPlan=buildTeachingPlanFromKB();
   /* v3.0 design (§10) — overlay the long-term plan: target date,
      daily minutes, weekly rest days, day-by-day distribution with
@@ -2980,17 +3332,25 @@ function finishDiagnostic(){
       }
     }catch(_){}
   }
-  /* If the first sub-topic is already internalized (rare but
-     possible), advance currentNode to the first non-internalized
-     node so askNextQuestion below teaches the right thing. */
+  /* P_teaching-plan — sync state.currentNode with the teaching plan's
+     first sub-topic. The teaching plan subtopics are sorted (blank → fuzzy
+     → internalized), but state.currentNode indexes into the original
+     state.kbNodes array. Find the kbNode whose name matches the first
+     sub-topic in the sorted plan and set currentNode to that index. */
   if(state.teachingPlan&&state.teachingPlan.subtopics.length){
     var firstActive=-1;
     for(var pi=0;pi<state.teachingPlan.subtopics.length;pi++){
       if(state.teachingPlan.subtopics[pi].status!=="internalized"){firstActive=pi;break}
     }
-    if(firstActive>=0&&firstActive!==state.teachingPlan.currentSubtopicIdx){
+    if(firstActive>=0){
       state.teachingPlan.currentSubtopicIdx=firstActive;
-      state.currentNode=Math.min(firstActive,state.kbNodes.length-1);
+      /* Find the kbNode index that matches the first sub-topic's name */
+      var targetName=state.teachingPlan.subtopics[firstActive].name;
+      var matchedIdx=-1;
+      for(var kni=0;kni<state.kbNodes.length;kni++){
+        if(state.kbNodes[kni].name===targetName){matchedIdx=kni;break}
+      }
+      state.currentNode=matchedIdx>=0?matchedIdx:Math.min(firstActive,state.kbNodes.length-1);
     }
   }
   /* Task 2.1 — start the new session at the motivate stage. */
@@ -3007,9 +3367,12 @@ function finishDiagnostic(){
 }
 
 /* Task 3.2 — build a structured teaching plan from state.kbNodes.
-   Returns the plan object documented in state.js (Task 3.1).
-   Sub-topics are sorted fuzzy → blank → internalized so the
-   student tackles the most tractable material first. */
+   P_teaching-plan — CRITICAL CHANGE: Sub-topics are sorted blank → fuzzy
+   → internalized so the biggest knowledge gaps are addressed first.
+   ALL sub-topics are taught from basics regardless of diagnostic result,
+   because the cold-start test only establishes a baseline, not mastery.
+   currentSubtopicIdx always starts at 0 (the first/blank-est node) so
+   teaching always begins from the foundation. */
 function buildTeachingPlanFromKB(){
   var nodes=state.kbNodes||[];
   if(!nodes.length)return null;
@@ -3021,21 +3384,28 @@ function buildTeachingPlanFromKB(){
       exampleCount:2,
       practiceCount:1,
       inspectionType:"concept",
-      prerequisites:[]
+      prerequisites:[],
+      fromBasics:true
     };
   });
-  /* Sort: fuzzy first, then blank, then internalized last. The
-     sort is stable on the original index so equal-priority nodes
-     keep their AI-generated order. */
-  var rank={"fuzzy":0,"blank":1,"internalized":2};
+  /* P_teaching-plan — Sort: blank first (biggest gaps), then fuzzy, then
+     internalized last. The sort is stable on the original index so
+     equal-priority nodes keep their knowledge-dimension order
+     (basic concepts → core principles → applications → problems → analysis). */
+  var rank={"blank":0,"fuzzy":1,"internalized":2};
   subtopics=subtopics.map(function(s,i){return{s:s,i:i}})
     .sort(function(a,b){
-      var ra=rank[a.s.status]!=null?rank[a.s.status]:1;
-      var rb=rank[b.s.status]!=null?rank[b.s.status]:1;
+      var ra=rank[a.s.status]!=null?rank[a.s.status]:0;
+      var rb=rank[b.s.status]!=null?rank[b.s.status]:0;
       if(ra!==rb)return ra-rb;
       return a.i-b.i;
     })
     .map(function(x){return x.s});
+  /* P_teaching-plan — always start from the first sub-topic. Even if
+     some nodes were marked fuzzy by the diagnostic, we teach them from
+     basics. The only exception is if ALL nodes are internalized (which
+     shouldn't happen with the new downscaling logic, but kept as a
+     safety net). */
   var currentSubtopicIdx=0;
   for(var i=0;i<subtopics.length;i++){
     if(subtopics[i].status!=="internalized"){currentSubtopicIdx=i;break}
@@ -3817,9 +4187,17 @@ async function submitChatMessage(textOverride,opts){
       state.practiceAttempts=(state.practiceAttempts||0)+1;
     }
 
-    /* Check if the answer seems substantive */
+    /* Check if the answer seems substantive.
+       P_quiz-count — quiz-origin answers (synthesised by handleQuizPick
+       as "I chose A. ... (Result: correct.)") always exceed the length
+       threshold. If we count them toward substantiveCount, 3 quiz picks
+       would silently bring the user to the advance threshold, letting
+       them "master" a node by clicking quiz options without any real
+       free-form reasoning. Skip the count for quiz and practice-origin
+       answers; they have their own advancement paths (handleQuizPick
+       for quiz, the practice widget for practice). */
     var isSubstantive=text.length>40&&text.split(/\s+/).length>8;
-    if(isSubstantive)state.substantiveCount++;
+    if(isSubstantive&&opts.origin!=="quiz"&&opts.origin!=="practice")state.substantiveCount++;
 
     var ADVANCE_THRESHOLD=3;
 
@@ -3847,8 +4225,27 @@ async function submitChatMessage(textOverride,opts){
       try{tutorSocratic.renderPracticeProgress()}catch(_){}
     }
 
-    if(state.substantiveCount>=ADVANCE_THRESHOLD&&!opts.origin){
-      /* User has shown depth on this node — advance */
+    /* P_stage-gate — a node is only internalized when the user has
+       progressed far enough in the teaching stage machine AND shown
+       sustained engagement. The old logic (3 substantive answers
+       regardless of stage) let a user "master" a node during the
+       motivate phase — before any definition, example, or practice
+       was even presented. Now we require:
+       1. At least ADVANCE_THRESHOLD substantive free-form answers
+          (proves sustained engagement, not just a one-liner).
+       2. The teaching stage has reached at least "exercise" — meaning
+          the model has already motivated, defined, developed, and
+          illustrated the concept, AND the user has attempted a
+          practice problem.
+       3. Not a quiz-origin turn (quiz has its own advancement path).
+       This ensures the user actually went through the full teaching
+       arc before the node is marked internalized. */
+    var stageOrder=["motivate","define","develop","illustrate","exercise","check"];
+    var curStageIdx=stageOrder.indexOf(state.teachingStage||"motivate");
+    var reachedExercise=curStageIdx>=stageOrder.indexOf("exercise");
+    if(state.substantiveCount>=ADVANCE_THRESHOLD&&!opts.origin&&reachedExercise){
+      /* User has shown depth on this node AND reached the exercise
+         stage — advance to internalized. */
       node.status="internalized";
       node.questions=(node.questions||0)+1;
       state.substantiveCount=0;
@@ -3860,15 +4257,45 @@ async function submitChatMessage(textOverride,opts){
           window.tutorSocratic._invalidatePlanWarningCache();
         }
       }catch(_){}
-      var nextIdx=-1;
-      for(var i=state.currentNode+1;i<state.kbNodes.length;i++){
-        if(state.kbNodes[i].status!=="internalized"){nextIdx=i;break}
+      /* P_node-sync — find the next sub-topic using the teaching
+         plan's SORTED order, NOT the raw kbNodes order. The plan
+         sorts blank → fuzzy → internalized so we teach the biggest
+         gaps first. We also sync currentSubtopicIdx so the plan
+         sidebar stays consistent with what we're actually teaching. */
+      var nextKbIdx=-1;
+      var planSubs=(state.teachingPlan&&state.teachingPlan.subtopics)||[];
+      if(planSubs.length){
+        /* Find current sub-topic's position in the sorted plan */
+        var curPlanIdx=-1;
+        for(var pi=0;pi<planSubs.length;pi++){
+          if(planSubs[pi].name===node.name){curPlanIdx=pi;break}
+        }
+        /* Walk forward in the sorted plan to find the next non-internalized */
+        var nextPlanIdx=-1;
+        for(var pi2=curPlanIdx+1;pi2<planSubs.length;pi2++){
+          if(planSubs[pi2].status!=="internalized"){nextPlanIdx=pi2;break}
+        }
+        if(nextPlanIdx>=0){
+          var nextSub=planSubs[nextPlanIdx];
+          /* Find the kbNode index matching this sub-topic's name */
+          for(var kni=0;kni<state.kbNodes.length;kni++){
+            if(state.kbNodes[kni].name===nextSub.name){nextKbIdx=kni;break}
+          }
+          state.teachingPlan.currentSubtopicIdx=nextPlanIdx;
+        }
+      }
+      /* Fallback: if the plan-based lookup failed (no plan, or name
+         mismatch), use the old raw-order scan as a safety net. */
+      if(nextKbIdx<0){
+        for(var i=state.currentNode+1;i<state.kbNodes.length;i++){
+          if(state.kbNodes[i].status!=="internalized"){nextKbIdx=i;break}
+        }
       }
       updateKB();
-      if(nextIdx<0){
+      if(nextKbIdx<0){
         addMessage("assistant","Nice work — you've explored all the key areas of "+state.domain+". Feel free to revisit any node on the left, or start a new topic.");
       }else{
-        state.currentNode=nextIdx;
+        state.currentNode=nextKbIdx;
         state.stuckCount=0;
         /* Task 2.3 — reset the teaching-stage state machine for
            the new sub-topic. The new node starts at motivate with
@@ -3877,7 +4304,7 @@ async function submitChatMessage(textOverride,opts){
         state.currentExampleIdx=0;
         state.practiceAttempts=0;
         var prevName=node.name;
-        var nextName=state.kbNodes[nextIdx].name;
+        var nextName=state.kbNodes[nextKbIdx].name;
         addMessage("assistant","Good depth on **"+prevName+"**. Let's move to the next area: **"+nextName+"**.");
         setTimeout(function(){askNextQuestion()},900);
       }
@@ -4553,6 +4980,35 @@ function setLastToolOutput(text,isError){
   }
 }
 
+/* Phrases the model tends to echo verbatim from the system prompt's
+   "thinking off" / "thinking on" suffixes. If a streamed thinking
+   buffer contains any of these it has almost certainly drifted into
+   self-restraint meta-text, which is not useful to the user and is
+   the bug we are trying to prevent. Matched case-insensitively
+   against short phrases (3+ words) so a single passing word like
+   "reply" never trips the filter. */
+function looksLikeMetaInstruction(s){
+  if(!s)return false;
+  var t=s.toLowerCase();
+  var phrases=[
+    /* the OLD "thinking off" suffix (kept so historical build outputs
+       still get filtered) */
+    "do not output", "reply directly with", "in clean prose",
+    "do not narrate your thought process", "narrate your thought process",
+    "chain-of-thought", "internal reasoning",
+    /* the NEW "thinking off" suffix (must also be filtered — even
+       though we just rewrote it, the model may still echo it) */
+    "step-by-step scratch work", "exposing step-by-step",
+    "keep your reply focused on the final answer",
+    /* the "thinking on" suffix (less common but possible) */
+    "rendered as a collapsible section",
+  ];
+  for(var i=0;i<phrases.length;i++){
+    if(t.indexOf(phrases[i])>=0)return true;
+  }
+  return false;
+}
+
 /* Append a small "thinking" pill. The body is rendered through
    formatMsg (marked + KaTeX + highlight.js) so reasoning that
    contains code, math, lists, or links is typeset properly — not
@@ -4638,11 +5094,33 @@ function appendThinking(text){
   }
   /* First render so the user sees content immediately. */
   buffer+=text||"";
+  /* Meta-instruction filter: if a thinking delta looks like the model
+     parroting its own system-prompt constraints back (e.g. "Do NOT
+     output…", "Reply directly with the final answer in clean prose",
+     "Do not narrate your thought process", or our own current
+     "step-by-step scratch work" suffix), drop it instead of leaking
+     the meta-text into the UI. Self-restraint is a well-known LLM
+     pattern; the suffix above is the first line of defense, this is
+     the second. The check fires on each delta so a long valid
+     thinking trace that happens to mention the word "preamble" won't
+     be wiped just because that word appears in the buffer. */
+  if(looksLikeMetaInstruction(buffer)){
+    /* Hide the pill entirely — there is no longer useful content to
+       show. The caller can still call finalize()/remove() as normal. */
+    if(pill.parentNode)pill.parentNode.removeChild(pill);
+    buffer="";
+  }
   schedule();
   return {
     append:function(delta){
       if(!pill.isConnected)return;
       buffer+=delta||"";
+      if(looksLikeMetaInstruction(buffer)){
+        if(pill.parentNode)pill.parentNode.removeChild(pill);
+        buffer="";
+        schedule();
+        return;
+      }
       schedule();
     },
     finalize:function(){
@@ -5031,13 +5509,16 @@ function openAgentView(){
   document.getElementById("topicSetup").classList.add("hidden");
   document.getElementById("diagnosticView").classList.add("hidden");
   document.getElementById("chatView").classList.remove("hidden");
+  toggleChatTopBarEls(true);
   var banner=document.getElementById("agentModeBanner");
   if(banner)banner.classList.remove("hidden");
-  /* Update the chat header label to indicate the workspace. */
-  var dom=document.getElementById("chatDomain");
-  if(dom){
+  /* Update the top-bar session chip to indicate the workspace. */
+  var badge=document.getElementById("topicBadge");
+  var badgeText=document.getElementById("topicBadgeText");
+  if(badge&&badgeText){
+    badge.classList.remove("hidden");
     var uid=(CURRENT_USER&&CURRENT_USER.id)||"…";
-    dom.textContent="Agent · /tmp/agent-workspace/"+uid+"/";
+    badgeText.textContent="Agent · /tmp/agent-workspace/"+uid+"/";
   }
   /* Input placeholder + hint. */
   var ta=document.getElementById("chatInputArea");
@@ -5486,6 +5967,12 @@ function addStreamingMessage(opts){
     actions:null
   })-1;
   var full="";
+  /* P_reasoning-persist — accumulate reasoning_content deltas so we
+     can save them to state.messages at finish() and include them in
+     the session-save payload. Without this, chain-of-thought text
+     from DeepSeek / QwQ / o1-style models is rendered in the DOM
+     during streaming but lost on reload. */
+  var fullReasoning="";
   var finished=false;
   var pendingRender=null;
   /* Thinking pill (for chat-mode reasoning_content). Lazily created on
@@ -5887,6 +6374,7 @@ function teardownThinkStructure(){
        Markdown/LaTeX) and only when the user has thinking mode on. */
     appendThinking:function(delta){
       if(finished)return;
+      if(typeof delta==="string")fullReasoning+=delta;
       try{ensureThinkCtl().append(delta||"")}catch(_){}
     },
     finalizeThinking:function(){
@@ -5965,6 +6453,8 @@ function teardownThinkStructure(){
               if(msgIdx>=0&&state.messages[msgIdx]){
                 state.messages[msgIdx].html=finalHtml;
                 state.messages[msgIdx].type="assistant";
+                /* P_reasoning-persist — preserve chain-of-thought. */
+                state.messages[msgIdx].reasoningContent=fullReasoning||null;
               }
               finishAfterRender();
               return;
@@ -6024,12 +6514,18 @@ function teardownThinkStructure(){
           state.messages[msgIdx].html=finalHtml;
           state.messages[msgIdx].rawText=full;
           state.messages[msgIdx].type="assistant";
+          /* P_reasoning-persist — preserve chain-of-thought text so it
+             survives session save/load. */
+          state.messages[msgIdx].reasoningContent=fullReasoning||null;
         }
       }catch(e){
         console.warn("[finish] formatMsg error:",e&&e.message);
         var fb="<p>"+esc(full)+"</p>";
         body.innerHTML=fb;
-        if(msgIdx>=0&&state.messages[msgIdx]){state.messages[msgIdx].html=fb}
+        if(msgIdx>=0&&state.messages[msgIdx]){
+          state.messages[msgIdx].html=fb;
+          state.messages[msgIdx].reasoningContent=fullReasoning||null;
+        }
       }
       finishAfterRender();
 
@@ -6084,6 +6580,14 @@ function teardownThinkStructure(){
       if(window._activeChatCtl===ret){
         _chatStreaming=false;
         if(!_agentModeActive){try{setChatStopState(false)}catch(_){}}
+      }
+      /* Clean up incomplete placeholder message from state.messages
+       * to prevent saving empty/partial AI responses to the database.
+       * Only remove if still in streaming state with no content. */
+      if(msgIdx>=0&&state.messages[msgIdx]){
+        if(state.messages[msgIdx].type==="streaming"&&!state.messages[msgIdx].rawText){
+          state.messages.splice(msgIdx,1);
+        }
       }
       /* Delay remove so a pending rAF render doesn't throw on detached DOM */
       requestAnimationFrame(function(){div.remove()});
@@ -6194,10 +6698,27 @@ function renderAssistantHTML(rawText){
   var stepPH=[];
   var flashcardPH=[];
 
-  /* Pass 1: <quiz>…</quiz> → interactive multiple-choice widget. */
+  /* Pass 1: <quiz>…</quiz> → interactive multiple-choice widget.
+     One-question-per-turn rule: only the FIRST <quiz> block becomes a
+     tappable widget; any extra <quiz> blocks the model emitted are
+     stripped to escaped plain text so they read as prose instead of
+     trying to mount a second widget. */
   var quizRe=/<quiz\b[^>]*>([\s\S]*?)<\/quiz>/gi;
-  var m,qi=0;
+  var m,qi=0,quizCount=0;
   while((m=quizRe.exec(text))!==null){
+    var raw=m[0];
+    if(quizCount>=1){
+      /* Convert to escaped plain text — show the question stem, not
+         the answer options, so the user can read what the model said
+         without seeing answer choices hanging in the air. */
+      var parsedLate=parseQuizInner(m[1]);
+      var replacement=parsedLate&&parsedLate.q
+        ? esc(parsedLate.q)
+        : esc(raw);
+      text=text.slice(0,m.index)+"\n\n"+replacement+"\n\n"+text.slice(quizRe.lastIndex);
+      quizRe.lastIndex=m.index+replacement.length+4;
+      continue;
+    }
     var parsed=parseQuizInner(m[1]);
     if(!parsed){
       var fbHtml='<div class="inline-block-fallback"><div class="inline-block-fallback-label">'+t("tutor.fallbackWarn")+'</div><pre class="inline-block-fallback-content">'+esc(m[1])+'</pre></div>';
@@ -6210,6 +6731,7 @@ function renderAssistantHTML(rawText){
     text=text.slice(0,m.index)+"\n\n"+slot+"\n\n"+text.slice(quizRe.lastIndex);
     quizRe.lastIndex=m.index+slot.length+4;
     quizPH.push({id:id,parsed:parsed});
+    quizCount++;
   }
 
   /* Pass 2: <example>…</example> → worked-example card with hidden solution
@@ -6234,12 +6756,23 @@ function renderAssistantHTML(rawText){
   /* Pass 3: <practice>…</practice> → interactive practice card with a
      textarea + Submit button (added in change 2). The optional
      `correct="…"` attribute on the opening tag enables self-grading
-     and a Reveal-answer button. */
+     and a Reveal-answer button.
+     One-question-per-turn rule: only the FIRST <practice> block becomes
+     a tappable widget; extras are stripped to escaped plain text. */
   var practiceRe=/<practice\b([^>]*)>([\s\S]*?)<\/practice>/gi;
-  var pm,pi=0;
+  var pm,pi=0,practiceCount=0;
   while((pm=practiceRe.exec(text))!==null){
     var pAttrs=pm[1]||"";
     var pCorrectM=pAttrs.match(/correct="([^"]+)"/i);
+    if(practiceCount>=1){
+      var parsedLate=parsePracticeInner(pm[2]);
+      var replacement=parsedLate&&parsedLate.problem
+        ? esc(parsedLate.problem)
+        : esc(pm[0]);
+      text=text.slice(0,pm.index)+"\n\n"+replacement+"\n\n"+text.slice(practiceRe.lastIndex);
+      practiceRe.lastIndex=pm.index+replacement.length+4;
+      continue;
+    }
     var parsedPr=parsePracticeInner(pm[2]);
     if(!parsedPr){
       var fbHtml='<div class="inline-block-fallback"><div class="inline-block-fallback-label">'+t("tutor.fallbackWarn")+'</div><pre class="inline-block-fallback-content">'+esc(pm[2])+'</pre></div>';
@@ -6253,6 +6786,7 @@ function renderAssistantHTML(rawText){
     text=text.slice(0,pm.index)+"\n\n"+pSlot+"\n\n"+text.slice(practiceRe.lastIndex);
     practiceRe.lastIndex=pm.index+pSlot.length+4;
     practicePH.push({id:pId,parsed:parsedPr});
+    practiceCount++;
   }
 
   /* Pass 4: <mistake>…</mistake> → record to mistake book, strip from prose. */
@@ -6454,17 +6988,19 @@ function parseFlashcardInner(inner){
 function mountExampleWidget(slot,parsed){
   var el=document.createElement("div");
   el.className="inline-example";
-  var tEl=document.createElement("div");
-  tEl.className="inline-example-title";
-  tEl.innerHTML=formatMsg(parsed.title);
-  el.appendChild(tEl);
+  if(parsed.title){
+    var tEl=document.createElement("div");
+    tEl.className="inline-example-title";
+    tEl.textContent=parsed.title;
+    el.appendChild(tEl);
+  }
   if(parsed.problem){
     var pEl=document.createElement("div");
     pEl.className="inline-example-problem";
-    pEl.innerHTML='<span class="label">'+t("tutor.problem")+'</span>'+formatMsg(parsed.problem);
+    pEl.innerHTML=formatMsg(parsed.problem);
     el.appendChild(pEl);
   }
-  /* Hide the solution behind a reveal button so students can self-test
+  /* Hide the solution behind a reveal link so students can self-test
      before peeking. Persist the reveal state on parsed so subsequent
      re-renders (e.g. after Reload Session) keep the same view. */
   if(parsed.solution){
@@ -6476,7 +7012,7 @@ function mountExampleWidget(slot,parsed){
     var sEl=document.createElement("div");
     sEl.className="inline-example-solution";
     if(!parsed._revealed){sEl.setAttribute("hidden","")}
-    sEl.innerHTML='<span class="label">'+t("tutor.solution")+'</span>'+formatMsg(parsed.solution);
+    sEl.innerHTML=formatMsg(parsed.solution);
     el.appendChild(sEl);
     revealBtn.onclick=function(){
       var hidden=sEl.hasAttribute("hidden");
@@ -6510,10 +7046,6 @@ function mountExampleWidget(slot,parsed){
 function mountPracticeWidget(slot,parsed){
   var el=document.createElement("div");
   el.className="inline-practice";
-  var tEl=document.createElement("div");
-  tEl.className="inline-practice-title";
-  tEl.innerHTML=formatMsg(parsed.title);
-  el.appendChild(tEl);
   var pEl=document.createElement("div");
   pEl.className="inline-practice-problem";
   pEl.innerHTML=formatMsg(parsed.problem);
@@ -6528,7 +7060,7 @@ function mountPracticeWidget(slot,parsed){
     hEl=document.createElement("div");
     hEl.className="inline-practice-hint";
     hEl.setAttribute("hidden","");
-    hEl.innerHTML='<span class="label">'+t("tutor.hint")+'</span>'+formatMsg(parsed.hint);
+    hEl.innerHTML=formatMsg(parsed.hint);
     el.appendChild(hEl);
     hintToggle.onclick=function(){
       var hidden=hEl.hasAttribute("hidden");
@@ -6595,11 +7127,9 @@ function mountPracticeWidget(slot,parsed){
       var norm=function(s){return String(s).toLowerCase().replace(/[\s.,;:!?\(\)\[\]'"]/g,"").trim()};
       var isRight=norm(text)===norm(parsed.correct);
       feedbackEl.className="inline-practice-feedback "+(isRight?"ok":"bad");
-      feedbackEl.innerHTML=(isRight
-        ?('<svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"/></svg> '
-          +t("tutor.practiceSelfCorrect"))
-        :('<svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg> '
-          +t("tutor.practiceSelfWrong")+" ")+esc(parsed.correct));
+      feedbackEl.textContent=isRight
+        ? t("tutor.practiceSelfCorrect")
+        : (t("tutor.practiceSelfWrong")+" "+parsed.correct);
       if(isRight){
         /* Reset practiceAttempts to 0 (mirrors quiz-correct path at
            main.js ~6358). A future mistake book entry shouldn't pile up
@@ -6627,21 +7157,23 @@ function mountPracticeWidget(slot,parsed){
       submitBtn.disabled=true;
       taEl.disabled=true;
       feedbackEl.className="inline-practice-feedback recorded";
-      feedbackEl.innerHTML='<span class="label">'+t("tutor.answer")+'</span>'+formatMsg(parsed.correct);
+      feedbackEl.innerHTML=formatMsg(parsed.correct);
     };
   }
   slot.replaceWith(el);
 }
 
-/* Vocabulary card — purple-accented, term prominent, body in standard
-   reading weight. Mirrors the inline-example / inline-practice pattern. */
+/* Vocabulary card — term prominent, body in standard reading weight.
+   Mirrors the inline-example / inline-practice pattern. */
 function mountDefinitionWidget(slot,parsed){
   var el=document.createElement("div");
   el.className="inline-definition";
-  var tEl=document.createElement("div");
-  tEl.className="inline-definition-term";
-  tEl.innerHTML=formatMsg(parsed.term||t("tutor.definitionFallback"));
-  el.appendChild(tEl);
+  if(parsed.term){
+    var tEl=document.createElement("div");
+    tEl.className="inline-definition-term";
+    tEl.textContent=parsed.term;
+    el.appendChild(tEl);
+  }
   if(parsed.body){
     var bEl=document.createElement("div");
     bEl.className="inline-definition-body";
@@ -6652,22 +7184,18 @@ function mountDefinitionWidget(slot,parsed){
 }
 
 /* Stepped procedure list. Multiple <step> blocks are collected by
-   renderAssistantHTML into a single ordered list. We render them with
-   a numbered chip on the left. The first slot is replaced with the
-   list; subsequent slots are removed by renderAssistantHTML. */
+   renderAssistantHTML into a single ordered list. We render them as
+   a plain list of numbered rows. The first slot is replaced with
+   the list; subsequent slots are removed by renderAssistantHTML. */
 function mountStepList(slot,steps){
   var el=document.createElement("div");
   el.className="inline-step-list";
-  var titleEl=document.createElement("div");
-  titleEl.className="inline-step-list-title";
-  titleEl.textContent=t("tutor.stepsTitle");
-  el.appendChild(titleEl);
   steps.forEach(function(s){
     var row=document.createElement("div");
     row.className="inline-step";
     var nChip=document.createElement("span");
     nChip.className="inline-step-n";
-    nChip.textContent=String(s.n);
+    nChip.textContent=String(s.n)+".";
     row.appendChild(nChip);
     var body=document.createElement("div");
     body.className="inline-step-body";
@@ -6679,7 +7207,7 @@ function mountStepList(slot,steps){
 }
 
 /* Click-to-flip recall card. Front shows by default; clicking the card
-   swaps to the back. A small label chip makes the direction explicit. */
+   swaps to the back. Two quiet prose blocks — no extra chrome. */
 function mountFlashcardWidget(slot,parsed){
   var el=document.createElement("div");
   el.className="inline-flashcard";
@@ -6688,12 +7216,12 @@ function mountFlashcardWidget(slot,parsed){
   el.setAttribute("aria-label",t("tutor.flashcardAria"));
   var frontEl=document.createElement("div");
   frontEl.className="inline-flashcard-front";
-  frontEl.innerHTML='<span class="inline-flashcard-tag">'+t("tutor.flashcardFront")+'</span>'+formatMsg(parsed.front||"");
+  frontEl.innerHTML=formatMsg(parsed.front||"");
   el.appendChild(frontEl);
   var backEl=document.createElement("div");
   backEl.className="inline-flashcard-back";
   backEl.setAttribute("hidden","");
-  backEl.innerHTML='<span class="inline-flashcard-tag">'+t("tutor.flashcardBack")+'</span>'+formatMsg(parsed.back||"");
+  backEl.innerHTML=formatMsg(parsed.back||"");
   el.appendChild(backEl);
   function flip(){
     var showingBack=!backEl.hasAttribute("hidden");
@@ -6726,12 +7254,8 @@ function mountQuizWidget(slot,parsed){
   var qEl=document.createElement("div");
   qEl.className="inline-quiz-q";
   /* The question text may contain $...$ LaTeX, **bold**, *italic*, `code`,
-     etc. — run it through formatMsg so it actually renders. formatMsg
-     returns HTML and is safe for the AI's emitted subset (it never inserts
-     script tags). We pass it through esc() first as a hard guarantee
-     against the unparsed/malformed case, but in practice formatMsg
-     handles its own escaping. */
-  qEl.innerHTML='<span class="q-tag">'+t("tutor.quickCheck")+'</span>'+formatMsg(parsed.q);
+     etc. — run it through formatMsg so it actually renders. */
+  qEl.innerHTML=formatMsg(parsed.q);
   el.appendChild(qEl);
   var optsEl=document.createElement("div");
   optsEl.className="inline-quiz-opts";
@@ -6740,7 +7264,7 @@ function mountQuizWidget(slot,parsed){
     var b=document.createElement("button");
     b.className="inline-quiz-opt";
     b.setAttribute("data-letter",o.letter);
-    b.innerHTML='<span class="inline-quiz-opt-letter">'+o.letter+'</span><span class="inline-quiz-opt-text">'+formatMsg(o.text)+'</span>';
+    b.innerHTML='<span class="inline-quiz-opt-letter">'+o.letter+'.</span><span class="inline-quiz-opt-text">'+formatMsg(o.text)+'</span>';
     b.onclick=function(){handleQuizPick(el,optsEl,feedback,btns,o,parsed)};
     optsEl.appendChild(b);
     btns.push(b);
@@ -6768,11 +7292,11 @@ function handleQuizPick(cardEl,optsEl,feedback,btns,picked,parsed){
   if(correct){
     feedback.classList.add(isRight?"ok":"bad");
     var safeCor=esc(correct);
-    feedback.innerHTML=isRight
-      ?('<svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"/></svg> Correct ('+safeCor+').')
-      :('<svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg> Not quite. The correct answer is '+safeCor+'.');
+    feedback.textContent=isRight
+      ?t("tutor.quizCorrect").replace("{answer}",safeCor)
+      :t("tutor.quizWrong").replace("{answer}",safeCor);
   }else{
-    feedback.textContent="Recorded: "+picked.letter+".";
+    feedback.textContent=t("tutor.quizRecorded").replace("{letter}",picked.letter);
   }
   /* Record the mistake in the mistake book. */
   if(correct&&!isRight){
@@ -7284,8 +7808,8 @@ function renderKBDetailInner(node,idx){
   html+='<div class="kb-detail-row"><span class="kb-detail-label">System note</span>';
   html+='<div class="kb-system-note">'+(node.system_note?esc(node.system_note):'<em style="color:hsl(var(--text-500))">No system note yet.</em>')+'</div></div>';
   /* User note (editable). */
-  html+='<div class="kb-detail-row"><span class="kb-detail-label">Your note</span>';
-  html+='<textarea class="kb-user-note" rows="3" placeholder="Write anything you want to remember about this sub-topic...">'+esc(node.user_note||"")+'</textarea></div>';
+  html+='<div class="kb-detail-row"><label class="kb-detail-label" for="kbUserNote">Your note</label>';
+  html+='<textarea class="kb-user-note" id="kbUserNote" name="kbUserNote" rows="3" placeholder="Write anything you want to remember about this sub-topic...">'+esc(node.user_note||"")+'</textarea></div>';
   /* History list. */
   var hist=node.history||[];
   html+='<div class="kb-detail-row"><span class="kb-detail-label">History</span>';
@@ -8682,6 +9206,7 @@ async function resetApp(){
   document.getElementById("diagnosticView").classList.add("hidden");
   document.getElementById("chatView").classList.add("hidden");
   document.getElementById("topicBadge").classList.add("hidden");
+  toggleChatTopBarEls(false);
   document.getElementById("msgList").innerHTML="";
   document.getElementById("topicInput").value="";
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">Set a learning topic to build your knowledge map.</div>';
@@ -9015,9 +9540,11 @@ function hideGate(){
   try{document.documentElement.dataset.bootState="app"}catch(_){}
 }
 function showGate(){
+  // Flip bootState first so the CSS rule hiding #authGate while
+  // data-boot-state="checking" is removed before we try to show it.
+  try{document.documentElement.dataset.bootState="auth"}catch(_){}
   var g=document.getElementById("authGate");if(g)g.classList.remove("hidden");
   var s=document.getElementById("appShell");if(s)s.classList.add("hidden");
-  try{document.documentElement.dataset.bootState="auth"}catch(_){}
 }
 
 function showAuthView(id){
@@ -9031,58 +9558,11 @@ function showAuthRegister(){switchAuthTab("register")}
 function switchAuthTab(tab){
   document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.toggle("active",t.getAttribute("data-tab")===tab)});
   showAuthView(tab==="signin"?"authSigninView":"authRegisterView");
-  setTimeout(function(){
-    if(tab==="signin")refreshCaptcha("authSigninCaptcha");
-    else refreshCaptcha("authRegisterCaptcha");
-  },100);
 }
 
 function setAuthError(viewId,msg){
   var el=document.getElementById(viewId);
   if(el)el.textContent=msg||"";
-}
-
-/* ============================================================
-   CAPTCHA — client-side math challenge
-   ============================================================ */
-var captchaStore={};
-async function refreshCaptcha(prefix){
-  var container=document.getElementById(prefix);
-  if(!container)return;
-  var qEl=document.getElementById(prefix+"Q");
-  var aEl=document.getElementById(prefix+"A");
-  try{
-    var r=await apiFetch("/api/captcha/generate");
-    if(!r||!r.token)return;
-    captchaStore[prefix]={token:r.token};
-    if(qEl)qEl.textContent=r.question;
-    if(aEl){aEl.value="";aEl.focus()}
-  }catch(e){
-    console.warn("[captcha] refresh failed:", e.status, e.code, e.message);
-    if(qEl)qEl.textContent="—";
-    // Don't silently mark the captcha as "offline" — that allowed
-    // attackers to bypass the check by simply disabling the network
-    // for /api/captcha/generate. Surface a visible error to the user
-    // and leave `token` empty so submitAuth* refuses to submit.
-    captchaStore[prefix]={token:null, error: e.message||'captcha unavailable'};
-  }
-}
-function readCaptcha(prefix){
-  var entry=captchaStore[prefix];
-  if(!entry)return null;
-  // No more "skip" envelope. If the captcha failed to load,
-  // `token` is null and the caller must reject the submission.
-  if(!entry.token)return null;
-  var aEl=document.getElementById(prefix+"A");
-  if(!aEl||!aEl.value.trim())return null;
-  return{token:entry.token,answer:aEl.value.trim()};
-}
-function clearCaptcha(prefix){
-  delete captchaStore[prefix];
-  var qEl=document.getElementById(prefix+"Q");
-  if(qEl)qEl.textContent="—";
-  var aEl=document.getElementById(prefix+"A");
-  if(aEl)aEl.value="";
 }
 
 async function submitAuthSignin(){
@@ -9091,11 +9571,9 @@ async function submitAuthSignin(){
   var guest=document.getElementById("authGuestCheckbox").checked;
   setAuthError("authSigninError","");
   if(!email||!password)return setAuthError("authSigninError","Please enter your email and password.");
-  var captcha=readCaptcha("authSigninCaptcha");
-  if(!captcha)return setAuthError("authSigninError","Please solve the security check.");
   var btn=document.getElementById("authSigninBtn");btn.disabled=true;btn.textContent="Signing in…";
   try{
-    var r=await apiFetch("/api/auth/login",{method:"POST",_authEndpoint:true,body:{email,password,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
+    var r=await apiFetch("/api/auth/login",{method:"POST",_authEndpoint:true,body:{email,password}});
     if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){}
     // Build 2026-06-09b: /login now returns the full user shape (incl.
     // verifiedAt). Log it so a hard-refresh test can confirm the new
@@ -9131,11 +9609,9 @@ async function submitAuthSignin(){
       document.getElementById("authVerifyEmail").textContent=email;
       try{document.getElementById("authResendEmail").value=email}catch(_){}
       showAuthView("authVerifySentView");
-      setTimeout(function(){refreshCaptcha("authResendCaptcha")},100);
       return;
     }
     setAuthError("authSigninError",e.status===401?"Wrong email or password.":("Login failed: "+e.message));
-    setTimeout(function(){refreshCaptcha("authSigninCaptcha")},100);
   }finally{
     btn.disabled=false;btn.textContent="Sign in";
   }
@@ -9147,14 +9623,12 @@ async function submitAuthRegister(){
   setAuthError("authRegisterError","");
   if(!email)return setAuthError("authRegisterError","Please enter your email.");
   if(!password||password.length<8)return setAuthError("authRegisterError","Password must be at least 8 characters.");
-  var captcha=readCaptcha("authRegisterCaptcha");
-  if(!captcha)return setAuthError("authRegisterError","Please solve the security check.");
   var btn=document.getElementById("authRegisterBtn");btn.disabled=true;btn.textContent="Sending…";
   try{
     /* The server stores the registration as pending and sends a
        verification email. No account or session is created until
        the user clicks the link in the email. */
-    var r=await apiFetch("/api/auth/register",{method:"POST",_authEndpoint:true,body:{email,password,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
+    var r=await apiFetch("/api/auth/register",{method:"POST",_authEndpoint:true,body:{email,password}});
     /* Always show the "verification sent" view — no auto-login. */
     document.getElementById("authVerifyEmail").textContent=email;
     var resendEl=document.getElementById("authResendEmail");
@@ -9163,7 +9637,6 @@ async function submitAuthRegister(){
     document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
   }catch(e){
     setAuthError("authRegisterError",e.status===409?"That email is already registered. Try signing in.":e.message);
-    setTimeout(function(){refreshCaptcha("authRegisterCaptcha")},100);
   }finally{
     btn.disabled=false;btn.textContent="Send verification link";
   }
@@ -9174,19 +9647,16 @@ async function resendVerification(){
   var email=emailEl?emailEl.value.trim():"";
   if(!email)return;
   setAuthError("authVerifyFailedError","");
-  var captcha=readCaptcha("authResendCaptcha");
-  if(!captcha)return setAuthError("authVerifyFailedError","Please solve the security check.");
   try{
     /* Dedicated resend endpoint — never send a hard-coded password
        to /register (it would let anyone who knows the email log in
        with that password if the account is later activated). */
-    var body={email, captchaToken:captcha.token, captchaAnswer:captcha.answer};
+    var body={email};
     await apiFetch("/api/auth/resend-verification",{method:"POST",body:body});
     document.getElementById("authVerifyEmail").textContent=email;
     showAuthView("authVerifySentView");
   }catch(e){
     setAuthError("authVerifyFailedError",e.message);
-    setTimeout(function(){refreshCaptcha("authResendCaptcha")},100);
   }
 }
 
@@ -9225,7 +9695,6 @@ async function submitAuthVerify(token){
     document.getElementById("authVerifyFailedTitle").textContent=title;
     document.getElementById("authVerifyFailedMsg").textContent=msg;
     showAuthView("authVerifyFailedView");
-    setTimeout(function(){refreshCaptcha("authResendCaptcha")},100);
   }
 }
 
@@ -9297,7 +9766,6 @@ function showAuthForgotPassword(){
   document.getElementById("authForgotEmail").value=document.getElementById("authSigninEmail").value;
   showAuthView("authForgotPasswordView");
   document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
-  setTimeout(function(){refreshCaptcha("authForgotCaptcha")},100);
 }
 function showAuthCodeLogin(){
   document.getElementById("authCodeEmail").value=document.getElementById("authSigninEmail").value;
@@ -9308,23 +9776,19 @@ function showAuthCodeLogin(){
   document.getElementById("authCodeError").textContent="";
   showAuthView("authCodeLoginView");
   document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
-  setTimeout(function(){refreshCaptcha("authCodeCaptcha")},100);
 }
 
 async function submitAuthForgotPassword(){
   var email=document.getElementById("authForgotEmail").value.trim();
   setAuthError("authForgotError","");
   if(!email)return setAuthError("authForgotError","Please enter your email.");
-  var captcha=readCaptcha("authForgotCaptcha");
-  if(!captcha)return setAuthError("authForgotError","Please solve the security check.");
   var btn=document.getElementById("authForgotBtn");btn.disabled=true;btn.textContent="Sending…";
   try{
-    await apiFetch("/api/auth/forgot-password",{method:"POST",_authEndpoint:true,body:{email,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
+    await apiFetch("/api/auth/forgot-password",{method:"POST",_authEndpoint:true,body:{email}});
     document.getElementById("authForgotSentEmail").textContent=email;
     showAuthView("authForgotSentView");
   }catch(e){
     setAuthError("authForgotError",e.message);
-    setTimeout(function(){refreshCaptcha("authForgotCaptcha")},100);
   }finally{
     btn.disabled=false;btn.textContent="Send reset link";
   }
@@ -9351,11 +9815,9 @@ async function submitAuthSendCode(){
   var email=document.getElementById("authCodeEmail").value.trim();
   setAuthError("authCodeError","");
   if(!email)return setAuthError("authCodeError","Please enter your email.");
-  var captcha=readCaptcha("authCodeCaptcha");
-  if(!captcha)return setAuthError("authCodeError","Please solve the security check.");
   var btn=document.getElementById("authCodeSendBtn");btn.disabled=true;btn.textContent="Sending…";
   try{
-    await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:{email,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
+    await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:{email}});
     document.getElementById("authCodeCodeWrap").classList.remove("hidden");
     document.getElementById("authCodeSentEmail").textContent=email;
     document.getElementById("authCodeSentMsg").classList.remove("hidden");
@@ -9365,7 +9827,6 @@ async function submitAuthSendCode(){
     document.getElementById("authCodeInput").focus();
   }catch(e){
     setAuthError("authCodeError",e.message);
-    setTimeout(function(){refreshCaptcha("authCodeCaptcha")},100);
   }finally{
     btn.disabled=false;btn.textContent="Send code";
   }
@@ -9377,11 +9838,9 @@ async function submitAuthLoginWithCode(){
   var guest=document.getElementById("authCodeGuestCheckbox").checked;
   setAuthError("authCodeError","");
   if(!code||code.length!==6)return setAuthError("authCodeError","Please enter the 6-digit code.");
-  var captcha=readCaptcha("authCodeCaptcha");
-  if(!captcha)return setAuthError("authCodeError","Please solve the security check.");
   var btn=document.getElementById("authCodeLoginBtn");btn.disabled=true;btn.textContent="Logging in…";
   try{
-    var r=await apiFetch("/api/auth/login-with-code",{method:"POST",_authEndpoint:true,body:{email,code,captchaToken:captcha.token,captchaAnswer:captcha.answer}});
+    var r=await apiFetch("/api/auth/login-with-code",{method:"POST",_authEndpoint:true,body:{email,code}});
     markAuthSuccess();
     try{
       var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
@@ -9394,7 +9853,6 @@ async function submitAuthLoginWithCode(){
     hideGate();
   }catch(e){
     setAuthError("authCodeError",e.message);
-    setTimeout(function(){refreshCaptcha("authCodeCaptcha")},100);
   }finally{
     btn.disabled=false;btn.textContent="Log in";
   }
@@ -9403,25 +9861,9 @@ async function submitAuthLoginWithCode(){
 async function resendAuthCode(){
   var email=document.getElementById("authCodeEmail").value.trim();
   if(!email)return;
-  /* P1.2 — sendCode on the server now requires captcha. Refresh first
-   * to make sure the store has a fresh challenge, then include the
-   * token+answer in the body. The captcha is normally still valid from
-   * the original send, so we try readCaptcha first and only refresh if
-   * it's missing. */
-  var captcha=readCaptcha("authCodeCaptcha");
-  if(!captcha){
-    try{await refreshCaptcha("authCodeCaptcha")}catch(_){}
-    captcha=readCaptcha("authCodeCaptcha");
-  }
-  if(!captcha)return;
-  var body={email:email, captchaToken:captcha.token, captchaAnswer:captcha.answer};
   try{
-    await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:body});
-  }catch(e){
-    /* If the server rejected (e.g. captcha expired or already used),
-     * refresh the challenge so the user can retry from the UI. */
-    setTimeout(function(){refreshCaptcha("authCodeCaptcha")},100);
-  }
+    await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:{email}});
+  }catch(_){ /* swallow — user can retry from the UI */ }
 }
 
 function renderUserFooter(){
@@ -9494,20 +9936,54 @@ function openExamModal(){
   var others=["topicSetup","diagnosticView","chatView"];
   others.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.add("hidden");});
   ev.classList.remove("hidden");
+  /* P_exam-fullbleed — the chat-only top-bar (session chip, model
+   * picker, search, share) is empty in exam mode but still takes 44px
+   * of vertical space at the top of .main. Hide it so the exam-view
+   * header (which now lives inside #examView itself with its own back
+   * button + title) sits flush against the top of the chat pane. */
+  var tb=document.querySelector(".main > .top-bar");if(tb)tb.style.display="none";
+  toggleChatTopBarEls(false);
   /* Use the same render functions but referencing examViewBody/Footer */
   state._examInView=true;
+  /* Wire the scroll listener once per open so the active nav pill
+     tracks the viewport as the user scrolls between questions. */
+  if(!state._examScrollBound){
+    var cont=document.getElementById("examViewBody");
+    if(cont){
+      cont.addEventListener("scroll",function(){
+        if(state._examInView)syncExamNav();
+      });
+    }
+    /* Also track window scroll inside the central scroll container in
+       case the exam body itself doesn't scroll. */
+    var sc=document.getElementById("scrollContainer")||document.getElementById("msgScroll");
+    if(sc){
+      sc.addEventListener("scroll",function(){
+        if(state._examInView)syncExamNav();
+      });
+    }
+    state._examScrollBound=true;
+  }
   renderExamForm();
 }
 function closeExamView(){
   var ev=document.getElementById("examView");
   ev.classList.add("hidden");
+  /* P_exam-fullbleed — restore the chat-only top-bar that openExamModal
+   * hid. The exam-view header is gone with the exam view; chat-mode
+   * UI (session chip, model picker, share button) needs the top-bar
+   * to be visible again. */
+  var tb=document.querySelector(".main > .top-bar");if(tb)tb.style.display="";
   state.examCancel=true;
   state._examInView=false;
+  state.examReadOnly=false;
   /* Show the previous view — if there was an active chat, return to it */
   if(state.currentSessionId){
     document.getElementById("chatView").classList.remove("hidden");
+    toggleChatTopBarEls(true);
   }else{
     document.getElementById("topicSetup").classList.remove("hidden");
+    toggleChatTopBarEls(false);
   }
 }
 function closeExamModal(){
@@ -9527,14 +10003,14 @@ function renderExamForm(){
   state.examSubmitted=false;
   _examSelectedTypes={mc:true,fb:true,sa:false};
   _examStreamBuffer="";
-  var html='';
-  html+='<div class="exam-form-row"><div class="exam-form-label">'+t("exam.topic")+'</div>';
-  html+='<input class="exam-form-input" id="examTopic" placeholder="'+( _currentLang==="zh"?"如：线性代数、量子力学、二战…":"e.g. Linear Algebra, Quantum Mechanics, World War II..." )+'"></div>';
+  var html='<div class="exam-form-container">';
+  html+='<div class="exam-form-row"><label class="exam-form-label" for="examTopic">'+t("exam.topic")+'</label>';
+  html+='<input class="exam-form-input" id="examTopic" name="examTopic" placeholder="'+( _currentLang==="zh"?"如：线性代数、量子力学、二战…":"e.g. Linear Algebra, Quantum Mechanics, World War II..." )+'"></div>';
   html+='<div class="exam-options-row">';
-  html+='<div class="exam-opt-group" style="flex:2"><div class="exam-opt-label">'+t("exam.difficulty")+'</div>';
-  html+='<input class="exam-form-input" id="examDifficulty" placeholder="'+( _currentLang==="zh"?"入门 / 中级 / 困难 / 专家 / 自定义":"beginner / intermediate / hard / expert / custom" )+'" value="intermediate"></div>';
-  html+='<div class="exam-opt-group" style="flex:1"><div class="exam-opt-label">'+t("exam.count")+'</div>';
-  html+='<input class="exam-form-input" id="examCount" type="number" min="1" max="50" value="5"></div>';
+  html+='<div class="exam-opt-group" style="flex:2"><label class="exam-opt-label" for="examDifficulty">'+t("exam.difficulty")+'</label>';
+  html+='<input class="exam-form-input" id="examDifficulty" name="examDifficulty" placeholder="'+( _currentLang==="zh"?"入门 / 中级 / 困难 / 专家 / 自定义":"beginner / intermediate / hard / expert / custom" )+'" value="intermediate"></div>';
+  html+='<div class="exam-opt-group" style="flex:1"><label class="exam-opt-label" for="examCount">'+t("exam.count")+'</label>';
+  html+='<input class="exam-form-input" id="examCount" name="examCount" type="number" min="1" max="50" value="5"></div>';
   html+='</div>';
   html+='<div class="exam-form-row"><div class="exam-form-label">'+t("exam.types")+'</div>';
   html+='<div class="exam-type-picker" id="examTypePicker">';
@@ -9542,8 +10018,9 @@ function renderExamForm(){
   html+='<button class="exam-type-pill active" data-type="fb" onclick="toggleExamType(\'fb\')">Fill blank</button>';
   html+='<button class="exam-type-pill" data-type="sa" onclick="toggleExamType(\'sa\')">Short answer</button>';
   html+='</div></div>';
-  html+='<div class="exam-form-row"><div class="exam-form-label">'+t("exam.instructions")+'</div>';
-  html+='<textarea class="exam-form-textarea" id="examInstructions" placeholder="'+( _currentLang==="zh"?"具体说明要覆盖的知识点，留空则由 AI 决定…":"Specific topics to cover, or leave blank for AI to decide..." )+'"></textarea></div>';
+  html+='<div class="exam-form-row"><label class="exam-form-label" for="examInstructions">'+t("exam.instructions")+'</label>';
+  html+='<textarea class="exam-form-textarea" id="examInstructions" name="examInstructions" placeholder="'+( _currentLang==="zh"?"具体说明要覆盖的知识点，留空则由 AI 决定…":"Specific topics to cover, or leave blank for AI to decide..." )+'"></textarea></div>';
+  html+='</div>';
   body.innerHTML=html;
   footer.innerHTML='<button class="exam-btn secondary" onclick="closeExamView()">'+t("common.cancel")+'</button><button class="exam-btn primary" onclick="startExamGeneration()">'+t("exam.generate")+'</button>';
 }
@@ -9554,6 +10031,27 @@ function toggleExamType(type){
   if(btn.classList.contains("active")&&countActive<=1)return;
   btn.classList.toggle("active");
   _examSelectedTypes[type]=btn.classList.contains("active");
+}
+/* P_exam-lang — detect the language of the topic string so the LLM
+   generates questions in the user's own language. Defaults to English
+   when no CJK / Hangul / Kana / Cyrillic characters are present.
+   The result is also injected into the prompt to make it unambiguous
+   to the model that q/opts/answer/explanation MUST all be in lang. */
+function detectExamLang(topic){
+  if(!topic)return"English";
+  if(/[一-鿿]/.test(topic))return"Chinese";
+  if(/[぀-ゟ゠-ヿ]/.test(topic))return"Japanese";
+  if(/[가-힯]/.test(topic))return"Korean";
+  if(/[Ѐ-ӿ]/.test(topic))return"Russian";
+  if(/[؀-ۿ]/.test(topic))return"Arabic";
+  if(/[ऀ-ॿ]/.test(topic))return"Hindi";
+  if(/[Ͱ-Ͽ]/.test(topic))return"Greek";
+  if(/[֐-׿]/.test(topic))return"Hebrew";
+  if(/[฀-๿]/.test(topic))return"Thai";
+  /* Latin-script heuristic — if non-ASCII Latin is present (e.g. accented
+     characters) keep "English" but mark the prompt with the topic verbatim
+     so the LLM still mirrors the user's script. */
+  return"English";
 }
 function startExamGeneration(){
   var topic=document.getElementById("examTopic").value.trim();
@@ -9566,18 +10064,25 @@ function startExamGeneration(){
   if(_examSelectedTypes.fb)types.push("fill-blank");
   if(_examSelectedTypes.sa)types.push("short-answer");
   var typeStr=types.join(", ");
-  var lang="English";
+  var lang=detectExamLang(topic);
   state.examCancel=false;
   state.examQuestions=[];
   state.examAnswers={};
   state.examSubmitted=false;
   state.examTopic=topic;
   state.examCount=count;
+  state.examLang=lang;
+  state.examDifficulty=difficulty;
+  state.examInstructions=instructions;
+  state.examTypes=types.slice();
   _examTitle().textContent="Generating: "+topic;
   var body=_examBody();
-  body.innerHTML='<div class="exam-loading" id="examGenStatus"><span class="loading"><span></span><span></span><span></span></span><div id="examGenMsg">Preparing…</div></div><div id="examQuestionsContainer"></div><div id="examNextPlaceholder"></div>';
-  _examFooter().innerHTML='<button class="exam-btn secondary" onclick="closeExamView()">Cancel</button>';
-  /* Kick off question 1 — the placeholder will show the first streaming card */
+  body.innerHTML='<div class="exam-loading" id="examGenStatus"><span class="loading"><span></span><span></span><span></span></span><div id="examGenMsg">'+(lang==="Chinese"?"正在生成第一题…":"Generating the first question…")+'</div></div><div id="examQuestionsContainer"></div><div id="examNextPlaceholder"></div>';
+  _examFooter().innerHTML='<button class="exam-btn secondary" onclick="closeExamView()">'+(lang==="Chinese"?"取消":"Cancel")+'</button>';
+  /* Kick off question 1 — the placeholder will show the first streaming card.
+     While question 1 streams, the user sees a "Preparing…" mask; the question
+     card only becomes visible when its JSON parses successfully (see
+     replaceStreamingCardWithQuestion, which hides examGenStatus when idx===0). */
   window._examGenCtx={i:1,n:count,topic:topic,difficulty:difficulty,typeStr:typeStr,instructions:instructions,lang:lang};
   generateNextQuestionStreaming();
 }
@@ -9589,12 +10094,17 @@ function generateNextQuestionStreaming(){
     return;
   }
   var i=ctx.i, n=ctx.n, topic=ctx.topic, difficulty=ctx.difficulty, typeStr=ctx.typeStr, instructions=ctx.instructions, lang=ctx.lang;
-  /* Build a SHORT, focused prompt — long prompts make reasoning models slow. */
+  /* Build a SHORT, focused prompt — long prompts make reasoning models slow.
+     The Language directive is repeated and applied to every field the LLM
+     writes (q, opts.text, answer, explanation) so a Chinese topic stays in
+     Chinese end-to-end. */
   var prompt="Generate ONE exam question as a single JSON object.\n"+
     "Topic: "+topic+".\n"+
     "Difficulty: "+difficulty+".\n"+
     "Allowed types: "+typeStr+".\n"+
     "Language: "+lang+".\n"+
+    "CRITICAL: EVERY field of the JSON (q, opts[*].text, answer, answers[*], explanation) MUST be written in "+lang+".\n"+
+    "Do NOT translate the topic or the answer into English. Keep the original language of the topic.\n"+
     (instructions?"Specifics: "+instructions+"\n":"")+
     "Return ONLY the JSON — no markdown, no preamble. Required fields: q, type. "+
     "For multiple-choice add opts:[{letter,text}] (4 options) and answer (correct letter). "+
@@ -9605,7 +10115,13 @@ function generateNextQuestionStreaming(){
   /* Render a streaming placeholder card for this question */
   var ph=document.getElementById("examNextPlaceholder");
   if(ph){
-    ph.innerHTML='<div class="exam-q-card exam-q-card-streaming" id="examQ'+i+'"><div class="exam-q-num">Question '+i+' of '+n+' <span class="exam-q-type" id="examStreamType">thinking…</span></div><div class="exam-q-text" id="examStreamText"></div></div>';
+    /* P_exam-streaming — for question 1 we want to KEEP the user-facing
+       "Generating the first question…" mask visible until the JSON parses.
+       The streaming card is rendered hidden, then shown in
+       replaceStreamingCardWithQuestion. For subsequent questions the
+       streaming card is visible normally so the user sees progress. */
+    var hiddenAttr=(i===1)?' style="display:none"':"";
+    ph.innerHTML='<div class="exam-q-card exam-q-card-streaming" id="examQ'+i+'"'+hiddenAttr+'><div class="exam-q-num">Question '+i+' of '+n+' <span class="exam-q-type" id="examStreamType">thinking…</span></div><div class="exam-q-text" id="examStreamText"></div></div>';
   }
   _examStreamBuffer="";
   _examStreamStartTime=Date.now();
@@ -9664,6 +10180,9 @@ function replaceStreamingCardWithQuestion(i,q){
   var ph=document.getElementById("examQ"+i);
   if(!ph)return;
   ph.classList.remove("exam-q-card-streaming");
+  /* If the streaming card was hidden behind the "generating first question"
+     mask, unhide it now that the JSON parsed and we have a real question. */
+  ph.style.display="";
   ph.removeAttribute("id");
   var idx=q._idx;
   var html='<div class="exam-q-num">Question '+(idx+1)+' of '+state.examCount+' <span class="exam-q-type">'+q.type+'</span></div>';
@@ -9678,15 +10197,18 @@ function replaceStreamingCardWithQuestion(i,q){
     });
     html+='</div>';
   }else if(q.type==="fill-blank"){
-    html+='<input class="exam-q-fill-input" data-eidx="'+idx+'" placeholder="Type your answer..." oninput="state.examAnswers['+idx+']=this.value">';
+    html+='<input class="exam-q-fill-input" data-eidx="'+idx+'" name="examAnswer'+idx+'" aria-label="Answer for question '+idx+'" placeholder="Type your answer..." oninput="state.examAnswers['+idx+']=this.value;refreshExamNavTally();scheduleExamAnswerSave()">';
   }else if(q.type==="short-answer"){
-    html+='<textarea class="exam-q-fill-input" data-eidx="'+idx+'" placeholder="Type your answer..." rows="3" oninput="state.examAnswers['+idx+']=this.value" style="min-height:60px;resize:vertical"></textarea>';
+    html+='<textarea class="exam-q-fill-input" data-eidx="'+idx+'" name="examAnswer'+idx+'" aria-label="Answer for question '+idx+'" placeholder="Type your answer..." rows="3" oninput="state.examAnswers['+idx+']=this.value;refreshExamNavTally();scheduleExamAnswerSave()" style="min-height:60px;resize:vertical"></textarea>';
   }
   ph.innerHTML=html;
   ph.id="examQ"+idx;
   /* Hide the global "preparing" status now that the first question is on screen */
   var st=document.getElementById("examGenStatus");
   if(st&&idx===0)st.style.display="none";
+  /* Re-render the nav bar so the prev/next buttons reflect that we now
+     have a fully rendered first question. */
+  renderExamNav();
   /* Scroll the new question into view */
   setTimeout(function(){ph.scrollIntoView({behavior:"smooth",block:"nearest"})},50);
 }
@@ -9700,13 +10222,23 @@ function appendExamErrorCard(i,msg){
     if(cont)cont.appendChild(ph);
   }
   ph.classList.remove("exam-q-card-streaming");
+  ph.style.display="";
   ph.innerHTML='<div class="exam-q-num">Question '+i+' — <span class="exam-result-wrong">Failed</span></div><div class="exam-q-text" style="color:hsl(0 60% 55%)">'+esc(msg)+'</div>';
+  /* An error counts as a "question" in the nav bar so the user can still
+     jump to it. */
+  renderExamNav();
 }
 function selectExamOpt(qidx,oidx){
   if(state.examSubmitted)return;
   state.examAnswers[qidx]=oidx;
   var btns=document.querySelectorAll('.exam-q-opt[data-eidx="'+qidx+'"]');
   btns.forEach(function(b,i){b.classList.toggle("selected",i===oidx);});
+  /* Refresh the nav counter's "answered" tally and pill dots so the
+     user sees the question is now ticked off in the jump bar. */
+  renderExamNav();
+  /* P_exam-history — debounced save so a multi-choice click survives
+     a refresh. saveExamSession coalesces rapid saves. */
+  saveExamSession();
 }
 function finishExamGeneration(){
   var st=document.getElementById("examGenStatus");
@@ -9715,6 +10247,7 @@ function finishExamGeneration(){
   var footer=_examFooter();
   if(state.examCancel){
     footer.innerHTML='<button class="exam-btn primary" onclick="renderExamForm()">Start New Exam</button><button class="exam-btn secondary" onclick="closeExamView()">Close</button>';
+    renderExamNav();
     return;
   }
   if(valid.length>0){
@@ -9722,6 +10255,154 @@ function finishExamGeneration(){
   }else{
     footer.innerHTML='<button class="exam-btn primary" onclick="renderExamForm()">Try Again</button><button class="exam-btn secondary" onclick="closeExamView()">Close</button>';
   }
+  /* P_exam-nav — now that all questions are on screen, mount the
+     Prev/Next/jump bar so the user can leap between them. */
+  renderExamNav();
+  /* P_exam-history — persist the exam to the server so it appears in
+     Recents and is recoverable after a refresh. We always save at
+     generation finish (not just on Submit) so a half-finished exam is
+     also recoverable. */
+  saveExamSession({submitted:false});
+}
+
+/* P_exam-nav — render the Prev / question-counter / Next bar and a
+   "Jump to question N" pill row. Called every time a question is added
+   (replaceStreamingCardWithQuestion, appendExamErrorCard) and at
+   generation / submission finish.
+
+   The bar is inserted just above the footer inside #examViewBody, so it
+   stays anchored to the bottom of the question list rather than floating
+   with each individual question. */
+function renderExamNav(){
+  if(!state._examInView)return;
+  var body=_examBody();
+  if(!body)return;
+  var existing=document.getElementById("examNavBar");
+  if(existing)existing.parentNode.removeChild(existing);
+  var total=state.examQuestions.length;
+  if(total===0)return;
+  var isSubmitted=!!state.examSubmitted;
+  var answered=Object.keys(state.examAnswers||{}).filter(function(k){
+    var v=state.examAnswers[k];
+    if(v===undefined||v===null)return false;
+    if(typeof v==="string")return v.trim().length>0;
+    return true;
+  }).length;
+  var lang=state.examLang||"English";
+  var L=function(en,zh){
+    if(lang==="Chinese")return zh;
+    return en;
+  };
+  var html='<div class="exam-nav-bar" id="examNavBar">';
+  html+='<button class="exam-nav-btn" id="examNavPrev" onclick="examNavStep(-1)" aria-label="Previous question">‹</button>';
+  html+='<div class="exam-nav-counter" id="examNavCounter">';
+  html+='<span class="exam-nav-current" id="examNavCurrent">1</span>';
+  html+='<span class="exam-nav-sep">/</span>';
+  html+='<span class="exam-nav-total">'+total+'</span>';
+  if(!isSubmitted){
+    html+='<span class="exam-nav-progress" id="examNavProgress">· '+answered+' '+L("answered","已答")+'</span>';
+  }
+  html+='</div>';
+  html+='<button class="exam-nav-btn" id="examNavNext" onclick="examNavStep(1)" aria-label="Next question">›</button>';
+  html+='</div>';
+  html+='<div class="exam-nav-pills" id="examNavPills">';
+  for(var j=0;j<total;j++){
+    var isAns=answered.indexOf(String(j))>=0;
+    var isCur=(j===examNavCurrentIdx());
+    var cls="exam-nav-pill"+(isCur?" current":"")+(isAns?" answered":"");
+    var lbl=(j+1)+(isAns?" ✓":"");
+    html+='<button class="'+cls+'" data-nav-idx="'+j+'" onclick="examNavJump('+j+')">'+lbl+'</button>';
+  }
+  html+='</div>';
+  /* Insert before the first card so the nav bar lives between the
+     status/header area and the questions themselves. */
+  var first=body.firstChild;
+  var navWrap=document.createElement("div");
+  navWrap.innerHTML=html;
+  while(navWrap.firstChild)body.insertBefore(navWrap.firstChild,first);
+  syncExamNav();
+}
+
+/* Return the index of the question closest to the top of the viewport. */
+function examNavCurrentIdx(){
+  var cont=document.getElementById("examQuestionsContainer");
+  if(!cont)return 0;
+  var cards=cont.querySelectorAll(".exam-q-card[id^='examQ']");
+  if(!cards.length)return 0;
+  var closest=0,bestDist=Infinity;
+  var top0=cont.getBoundingClientRect().top;
+  cards.forEach(function(c,i){
+    var d=Math.abs(c.getBoundingClientRect().top-top0);
+    if(d<bestDist){bestDist=d;closest=i}
+  });
+  return closest;
+}
+function examNavJump(idx){
+  var el=document.getElementById("examQ"+idx);
+  if(!el)return;
+  el.scrollIntoView({behavior:"smooth",block:"start"});
+  setTimeout(syncExamNav,300);
+}
+function examNavStep(dir){
+  var i=examNavCurrentIdx();
+  var total=state.examQuestions.length;
+  if(total===0)return;
+  var next=Math.max(0,Math.min(total-1,i+dir));
+  examNavJump(next);
+}
+function syncExamNav(){
+  var i=examNavCurrentIdx();
+  var total=state.examQuestions.length;
+  var cur=document.getElementById("examNavCurrent");
+  if(cur)cur.textContent=(i+1);
+  var prev=document.getElementById("examNavPrev");
+  var next=document.getElementById("examNavNext");
+  if(prev)prev.disabled=(i<=0);
+  if(next)next.disabled=(i>=total-1);
+  var pills=document.querySelectorAll("#examNavPills .exam-nav-pill");
+  pills.forEach(function(p,j){
+    p.classList.toggle("current",j===i);
+  });
+}
+
+/* P_exam-nav — called from input/textarea oninput on every keystroke.
+   Updating only the "answered" label and pill classes (no full re-render)
+   keeps the nav bar visible while the user types, and avoids losing
+   focus or scroll position mid-answer. */
+function refreshExamNavTally(){
+  var total=state.examQuestions.length;
+  if(total===0)return;
+  var answered=Object.keys(state.examAnswers||{}).filter(function(k){
+    var v=state.examAnswers[k];
+    if(v===undefined||v===null)return false;
+    if(typeof v==="string")return v.trim().length>0;
+    return true;
+  });
+  var prog=document.getElementById("examNavProgress");
+  if(prog){
+    var lang=state.examLang||"English";
+    prog.textContent="· "+answered.length+" "+(lang==="Chinese"?"已答":"answered");
+  }
+  var pills=document.querySelectorAll("#examNavPills .exam-nav-pill");
+  pills.forEach(function(p){
+    var j=parseInt(p.getAttribute("data-nav-idx"),10);
+    var isAns=answered.indexOf(String(j))>=0;
+    p.classList.toggle("answered",isAns);
+    if(isAns&&p.textContent.indexOf("✓")<0)p.textContent=(j+1)+" ✓";
+  });
+}
+
+/* P_exam-history — debounce per-keystroke saves so we don't POST on
+   every character typed in a short-answer textarea. The trailing
+   call to saveExamSession (after 800ms of quiet) still lands within
+   a second of the last edit. */
+var _examAnswerSaveTimer=null;
+function scheduleExamAnswerSave(){
+  if(_examAnswerSaveTimer)clearTimeout(_examAnswerSaveTimer);
+  _examAnswerSaveTimer=setTimeout(function(){
+    _examAnswerSaveTimer=null;
+    saveExamSession();
+  },800);
 }
 function submitExam(){
   var qs=state.examQuestions;
@@ -9739,7 +10420,96 @@ function submitExam(){
     return;
   }
   state.examSubmitted=true;
+  /* P_exam-history — persist the submitted exam so the result is
+     visible in Recents and recoverable after a refresh. The render
+     follows so the user sees the score first. */
+  saveExamSession({submitted:true});
   renderExamResults();
+}
+
+/* P_exam-history — POST /api/sessions with kind='exam' and the full
+ * exam payload in examData. Reuses the existing session-save
+ * machinery (so the recents list updates automatically) but skips the
+ * message-write path because exams don't have chat-style messages.
+ *
+ * Called from finishExamGeneration (just-completed exam), submitExam
+ * (just-graded exam), and selectExamOpt / refreshExamNavTally debounced
+ * (every answer change) so progress is never lost to a refresh.
+ */
+var _examSaveInFlight=null;
+var _examSaveDirty=false;
+function saveExamSession(opts){
+  if(!CURRENT_USER)return;
+  if(!state.examTopic)return;
+  if(!state._examInView)return;
+  /* Don't write back when the viewer is reading someone else's
+   * shared exam — they're not signed in as the owner and the
+   * POST would 404 / 403. */
+  if(state.examReadOnly)return;
+  opts=opts||{};
+  /* Coalesce rapid-fire saves (typing in a textarea fires oninput on
+   * every keystroke) so we don't burn one POST per character. */
+  if(_examSaveInFlight){
+    _examSaveDirty=true;
+    return;
+  }
+  _examSaveDirty=false;
+  doSaveExamSession(opts);
+}
+function doSaveExamSession(opts){
+  var body={
+    kind:"exam",
+    topic:state.examTopic,
+    title:state.examTopic,
+    domain:state.examTopic,
+    mode:"chat",
+    phase:"chat",
+    examData:{
+      topic:state.examTopic,
+      difficulty:state.examDifficulty||"intermediate",
+      count:state.examCount,
+      lang:state.examLang||"English",
+      types:Array.isArray(state.examTypes)?state.examTypes:[],
+      questions:state.examQuestions.map(function(q){
+        /* Strip the client-only _idx before sending; the server only
+           needs the actual question content. */
+        var c={q:q.q,type:q.type,explanation:q.explanation||""};
+        if(q.opts)c.opts=q.opts;
+        if(q.answer!==undefined)c.answer=q.answer;
+        if(q.answers)c.answers=q.answers;
+        return c;
+      }),
+      answers:state.examAnswers||{},
+      submitted:!!state.examSubmitted,
+      generatedAt:Date.now(),
+    },
+  };
+  /* Use the existing currentSessionId if there is one (so this is an
+   * update), otherwise the server mints a new id. Either way the
+   * canonical id is captured on response and written back to state. */
+  if(state.currentSessionId){
+    body.id=state.currentSessionId;
+  }
+  _examSaveInFlight=apiFetch("/api/sessions",{method:"POST",body:body})
+    .then(function(r){
+      if(r&&r.id){
+        state.currentSessionId=r.id;
+        try{pushChatIdToURL(r.id)}catch(_){}
+      }
+      /* Re-render Recents so the new / updated exam row appears. */
+      try{renderRecents()}catch(_){}
+      try{toggleShareBtn()}catch(_){}
+    })
+    .catch(function(e){
+      console.warn("[exam] save failed:",e&&e.message);
+    })
+    .then(function(){
+      _examSaveInFlight=null;
+      if(_examSaveDirty){
+        _examSaveDirty=false;
+        doSaveExamSession({});
+      }
+    });
 }
 function renderExamResults(){
   var qs=state.examQuestions;
@@ -9769,7 +10539,7 @@ function renderExamResults(){
     resultDetails.push({q:q,ans:ans[i],isCorrect:isCorrect});
   });
   var pct=total>0?Math.round(correct/total*100):0;
-  var html='<div class="exam-score"><div class="exam-score-val">'+correct+'/'+total+'</div><div class="exam-score-lbl">'+pct+'% Correct</div></div>';
+  var html='<div class="exam-score"><div class="exam-score-val"><span class="score-correct">'+correct+'</span><span class="score-total">/ '+total+'</span></div><div class="exam-score-lbl">'+pct+'% correct</div></div>';
   resultDetails.forEach(function(rd,i){
     var q=rd.q;
     var isCorrect=rd.isCorrect;
@@ -10762,11 +11532,30 @@ async function clearCachedProviderKey(id){
    ============================================================ */
 function toggleShareBtn(){
   var btn=document.getElementById("shareBtn");
-  var container=document.getElementById("planBadge");
   if(!btn)return;
-  var show=CURRENT_USER&&state.currentSessionId&&state.topic;
+  /* P_exam-history — exam sessions are shareable too. We only need a
+   * currentSessionId and an authenticated user; the topic can be empty
+   * for a freshly-created session. The state.topic check is kept
+   * for chat sessions because those are the ones that need a topic
+   * to be meaningful when shared. */
+  var hasSess=CURRENT_USER&&state.currentSessionId;
+  var inExam=!!state._examInView;
+  var show=hasSess&&(inExam||!!state.topic);
   btn.classList.toggle("hidden",!show);
-  if(container)container.classList.toggle("hidden",!show);
+}
+/* Chat-only top-bar controls (session name, API dot, search pill,
+   model picker) live inside .top-bar which is always visible. They
+   must show only when chat/tutor is on-screen. Call this with
+   true/false whenever chatView is shown/hidden. */
+function toggleChatTopBarEls(show){
+  /* chatDomain is gone — topicBadge (set in index.html) is the only
+     session indicator in the top-bar. We only need to toggle the
+     chat/tutor controls (api dot, search pill, model picker). */
+  var ids=["chatApiBadge","searchPill","chatModelWrap"];
+  ids.forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.classList.toggle("hidden",!show);
+  });
 }
 var _shareVisibility="public";
 var _shareToken=null;  /* current share token for this session */
@@ -10871,7 +11660,18 @@ async function loadSharedSession(token){
     var r=await fetch("/api/shares/"+encodeURIComponent(token));
     if(!r.ok)throw new Error("HTTP "+r.status);
     var session=await r.json();
-    if(!session||!session.messages)throw new Error("empty session");
+    if(!session)throw new Error("empty session");
+    /* P_exam-share — a shared exam session carries kind='exam' and
+     * the rendered examData payload. The chat-style message list is
+     * empty for exams, so the message-renderer below would have
+     * nothing to show. Render the exam in read-only mode instead
+     * (a re-hydrated loadExamSession() with submission locked and
+     * no save). */
+    if(session.kind==="exam"&&session.examData){
+      await loadSharedExamSession(session,token);
+      return;
+    }
+    if(!session.messages)throw new Error("empty session");
     /* Render messages in read-only mode. */
     var msgList=document.getElementById("msgList");
     msgList.innerHTML="";
@@ -10931,7 +11731,17 @@ async function loadSharedSession(token){
     document.getElementById("chatView").classList.remove("hidden");
     document.getElementById("chatInputBar").classList.add("hidden");
     document.getElementById("shareBtn").classList.add("hidden");
-    document.getElementById("chatDomain").textContent=(session.topic||"Shared")+" · Read-only";
+    /* Shared read-only mode — keep the session-name visible but hide the
+       chat-only controls (model picker, search pill, api badge, share)
+       because none of them apply in a read-only view. The session name
+       is shown via topicBadge (the only session indicator left). */
+    var badge=document.getElementById("topicBadge");
+    var badgeText=document.getElementById("topicBadgeText");
+    if(badge)badge.classList.remove("hidden");
+    if(badgeText)badgeText.textContent=(session.topic||"Shared")+" · Read-only";
+    var mid=document.getElementById("chatModelWrap");if(mid)mid.classList.add("hidden");
+    var api=document.getElementById("chatApiBadge");if(api)api.classList.add("hidden");
+    var sp=document.getElementById("searchPill");if(sp)sp.classList.add("hidden");
     /* Hide sidebar controls that don't apply. */
     var sidebar=document.getElementById("sidebar");
     if(sidebar)sidebar.classList.add("collapsed");
@@ -10955,6 +11765,110 @@ async function loadSharedSession(token){
        auth gate on top of the "not found" message. */
     try{document.documentElement.dataset.bootState="app"}catch(_){}
   }
+}
+
+/* P_exam-share — render a shared exam session in read-only mode.
+ * Mirrors loadExamSession() but locks submission and the per-answer
+ * autosave (the viewer isn't signed in as the owner, so we must not
+ * POST back to /api/sessions). A small "Read-only" pill is added in
+ * the title area so the visitor knows they can't submit. */
+async function loadSharedExamSession(session,token){
+  state._examInView=true;
+  state.examCancel=false;
+  state.examReadOnly=true;
+  state.examTopic=(session.examData&&session.examData.topic)||session.topic||"";
+  state.examCount=(session.examData&&session.examData.count)||((session.examData&&session.examData.questions&&session.examData.questions.length)||0);
+  state.examLang=(session.examData&&session.examData.lang)||"English";
+  state.examDifficulty=(session.examData&&session.examData.difficulty)||"intermediate";
+  state.examTypes=Array.isArray(session.examData&&session.examData.types)?session.examData.types:[];
+  state.examQuestions=Array.isArray(session.examData&&session.examData.questions)?session.examData.questions.map(function(q,i){
+    var c=Object.assign({},q);
+    c._idx=i;
+    return c;
+  }):[];
+  state.examAnswers=(session.examData&&session.examData.answers)||{};
+  state.examSubmitted=!!(session.examData&&session.examData.submitted);
+  /* Hide all other top-level views. */
+  ["topicSetup","diagnosticView","chatView"].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.classList.add("hidden");
+  });
+  var ev=document.getElementById("examView");
+  ev.classList.remove("hidden");
+  var lang=state.examLang;
+  var readOnlyLabel=lang==="Chinese"?"只读":"Read-only";
+  _examTitle().textContent=state.examSubmitted?(state.examTopic+" — "+readOnlyLabel):(state.examTopic+" — "+readOnlyLabel);
+  /* If the exam was already submitted on the owner's side, jump to
+   * the results view. Otherwise show the questions with the answers
+   * the owner gave (read-only — the input/buttons are disabled). */
+  var body=_examBody();
+  body.innerHTML='<div id="examQuestionsContainer"></div>';
+  state.examQuestions.forEach(function(q,idx){
+    var card=document.createElement("div");
+    card.className="exam-q-card";
+    card.id="examQ"+idx;
+    card.setAttribute("data-idx",idx);
+    body.querySelector("#examQuestionsContainer").appendChild(card);
+    renderSharedQuestionCard(idx,q);
+  });
+  renderExamNav();
+  if(state.examSubmitted){
+    renderExamResults();
+  }else{
+    /* No submit in read-only mode — the visitor only sees the
+     * questions and the owner's previously-given answers. */
+    _examFooter().innerHTML='<div class="exam-readonly-pill">'+readOnlyLabel+'</div>';
+  }
+  /* Read-only banner. */
+  var banner=document.getElementById("sharedBanner");
+  if(banner)banner.classList.remove("hidden");
+  /* Hide chrome that doesn't apply in a public read-only view. */
+  var sb=document.getElementById("sidebar");
+  if(sb)sb.classList.add("collapsed");
+  sidebarOpen=false;
+  syncSidebarBtns();
+  document.getElementById("chatInputBar").classList.add("hidden");
+  document.getElementById("shareBtn").classList.add("hidden");
+  var badge=document.getElementById("topicBadge");
+  var badgeText=document.getElementById("topicBadgeText");
+  if(badge)badge.classList.remove("hidden");
+  if(badgeText)badgeText.textContent=state.examTopic+" · "+readOnlyLabel;
+  var mid=document.getElementById("chatModelWrap");if(mid)mid.classList.add("hidden");
+  var api=document.getElementById("chatApiBadge");if(api)api.classList.add("hidden");
+  var sp=document.getElementById("searchPill");if(sp)sp.classList.add("hidden");
+  document.getElementById("authGate").classList.add("hidden");
+  document.getElementById("appShell").classList.remove("hidden");
+  try{document.documentElement.dataset.bootState="app"}catch(_){}
+  renderUserFooter();
+}
+
+/* P_exam-share — render a single shared question card in read-only
+ * mode. Buttons / inputs are `disabled` so the visitor can't change
+ * the owner's answers. */
+function renderSharedQuestionCard(idx,q){
+  var ph=document.getElementById("examQ"+idx);
+  if(!ph)return;
+  var html='<div class="exam-q-num">Question '+(idx+1)+' of '+state.examCount+' <span class="exam-q-type">'+q.type+'</span></div>';
+  html+='<div class="exam-q-text">'+formatMsg(q.q)+'</div>';
+  var saved=state.examAnswers&&state.examAnswers[idx];
+  if(q.type==="multiple-choice"&&q.opts){
+    html+='<div class="exam-q-opts">';
+    q.opts.forEach(function(o,oi){
+      var isSel=(saved===oi);
+      html+='<div class="exam-q-opt'+(isSel?" selected":"")+'">';
+      html+='<span class="exam-q-opt-letter">'+o.letter+'</span>';
+      html+='<span class="exam-q-opt-text">'+formatMsg(o.text)+'</span>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }else if(q.type==="fill-blank"){
+    var v=(typeof saved==="string")?saved:"";
+    html+='<input class="exam-q-fill-input" value="'+esc(v)+'" readonly>';
+  }else if(q.type==="short-answer"){
+    var vv=(typeof saved==="string")?saved:"";
+    html+='<textarea class="exam-q-fill-input" readonly rows="3" style="min-height:60px;resize:vertical">'+esc(vv)+'</textarea>';
+  }
+  ph.innerHTML=html;
 }
 
 async function refreshApiConfig(){
@@ -11015,10 +11929,16 @@ async function refreshApiConfig(){
       if(lastProvider){
         apiConfig.activeId=lastProvider.id;
       }else{
-        /* Truly nothing usable. Leave activeId null so the user
-           gets a clear "no provider" state in the model picker,
-           rather than silently routing through BEAGLE. */
-        apiConfig.activeId=null;
+        /* First-time user with no prior pick. Default to the
+           built-in Beagle so the chat always has a model selected
+           out of the box (no unselected state in the UI). Only
+           leave activeId null if the server doesn't expose a
+           beagle key (self-hosted with no MINIMAX_API_KEY). */
+        if(SERVER_HAS_BEAGLE_KEY){
+          apiConfig.activeId=BEAGLE_BUILT_IN.id;
+        }else{
+          apiConfig.activeId=null;
+        }
       }
     }
   }catch(e){
@@ -11179,9 +12099,22 @@ document.addEventListener("keydown",function(e){
 function syncChatModel(){
   var label=document.getElementById("chatModelLabel");
   if(!label)return;
+  var trigger=document.getElementById("chatModel");
   var p=getActiveProvider();
-  label.textContent=p?(p.label||p.model||"Model"):(apiConfig.providers.length?"Pick a model":"Add a model");
+  /* Always show a model name. If somehow no provider is active
+     (e.g. self-hosted with no beagle key and no user keys), fall
+     back to the first available provider's label so the pill
+     still reads as "selected" rather than "Add a model". */
+  if(!p && (apiConfig.providers||[]).length){
+    p=apiConfig.providers[0];
+    apiConfig.activeId=p.id;
+  }
+  label.textContent=p?(p.label||p.model||"Model"):"Model";
   label.title=p&&!p.isBuiltIn?(p.model||""):"";
+  if(trigger){
+    if(p)trigger.classList.add("has-model");
+    else trigger.classList.remove("has-model");
+  }
 }
 function toggleChatModelMenu(){
   var menu=document.getElementById("chatModelMenu");
@@ -11213,7 +12146,12 @@ function toggleChatModelMenu(){
       html+='<svg class="model-picker-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
       html+='</button>';
     });
+    html+='<div class="model-picker-divider"></div>';
   }
+  html+='<button type="button" class="model-picker-add" onclick="closeChatModelMenu();openSettings()">';
+  html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+  html+=providers.length?'Manage models…':'Add a model…';
+  html+='</button>';
   menu.innerHTML=html;
   menu.classList.remove("hidden");
 }
@@ -12356,13 +13294,13 @@ function renderProviderList(){
     html+='<div class="provider-row'+(isActive?" active":"")+'" data-id="'+esc(p.id||"")+'">';
     html+='<button class="provider-active-btn" onclick="setActiveProvider(\''+esc(p.id||"")+'\')" title="'+(isActive?"Active model":"Set as active")+'">'+(isActive?"●":"○")+'</button>';
     html+='<div class="provider-fields">';
-    html+='<input class="settings-input" placeholder="Label (e.g. GPT-5.5)" value="'+esc(p.label||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'label\',this.value)">';
-    html+='<input class="settings-input" placeholder="Base URL  (https://api.openai.com/v1)" value="'+esc(p.url||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'url\',this.value)">';
+    html+='<input class="settings-input" name="providerLabel" aria-label="Provider label" placeholder="Label (e.g. GPT-5.5)" value="'+esc(p.label||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'label\',this.value)">';
+    html+='<input class="settings-input" name="providerUrl" aria-label="Provider base URL" placeholder="Base URL  (https://api.openai.com/v1)" value="'+esc(p.url||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'url\',this.value)">';
     /* The server list endpoint never returns the API key (it stays
        encrypted on the server). Render an empty string rather than the
        string "undefined". */
-    html+='<form style="display:contents" onsubmit="return false"><input type="text" name="username" autocomplete="username" style="display:none" aria-hidden="true"><input class="settings-input" type="password" autocomplete="new-password" placeholder="API key" value="'+esc(p.key||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'key\',this.value)"></form>';
-    html+='<input class="settings-input" placeholder="Model id  (e.g. gpt-5.5, claude-opus-4-8, sonnet-4-6)" value="'+esc(p.model||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'model\',this.value)">';
+    html+='<form style="display:contents" onsubmit="return false"><input type="text" name="username" autocomplete="username" style="display:none" aria-hidden="true"><input class="settings-input" name="providerKey" aria-label="Provider API key" type="password" autocomplete="new-password" placeholder="API key" value="'+esc(p.key||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'key\',this.value)"></form>';
+    html+='<input class="settings-input" name="providerModel" aria-label="Provider model ID" placeholder="Model id  (e.g. gpt-5.5, claude-opus-4-8, sonnet-4-6)" value="'+esc(p.model||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'model\',this.value)">';
     html+='</div>';
     html+='<button class="provider-del" onclick="removeProvider(\''+esc(p.id||"")+'\')" title="Remove">×</button>';
     html+='</div>';
@@ -13241,7 +14179,10 @@ async function callAPIStream(messages,maxTokens,onDelta,onThinking){
       }
       return null;
     }
-    if(cancelled)return null;
+    if(cancelled){
+      if(!state.lastCallError)state.lastCallError="Stream cancelled (parse error)";
+      return null;
+    }
     /* Empty stream — server returned 200 but no body. Treat as
        retriable (rare, but happens on flaky upstreams). */
     if(!gotAnyData&&!full&&!formattedHtml){
@@ -13260,8 +14201,12 @@ async function callAPIStream(messages,maxTokens,onDelta,onThinking){
     }
     return {text:full,html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:false};
   }
-  /* Both attempts failed with the same retryable condition */
-  if(lastErr){state.lastCallError=lastErr}
+  /* Both attempts failed with the same retryable condition.
+     Ensure lastCallError is always set even if lastErr is
+     falsy — otherwise the caller (generateFollowUpStream /
+     askChatTurn) falls through to a mock response, silently
+     replacing the AI reply with a generic question. */
+  state.lastCallError=lastErr||"Stream failed after all retries";
   return null;
 }
 
@@ -13290,12 +14235,19 @@ function beagleSuffix(){
    the model whether to emit visible thinking. When thinkingOn is
    false, we forbid <think> blocks and reasoning_content so the
    rendered output is clean prose. When on, we explicitly allow them
-   (some models are shy unless you ask). */
+   (some models are shy unless you ask).
+
+   IMPORTANT: phrasing matters. Models often parrot system instructions
+   back into their own thinking block (a well-known self-restraint
+   pattern), which then leaks the meta-instruction text into the
+   rendered UI. We avoid the obvious "Do NOT / Reply directly / clean
+   prose / chain-of-thought" phrasing the model tends to echo. The
+   appendThinking() front-end filter is a second line of defense. */
 function thinkingSuffix(){
   if(thinkingOn){
     return "\n\nYou MAY include a brief <think>…</think> block at the start of each reply showing your step-by-step reasoning. The block will be rendered as a collapsible section for the user.";
   }
-  return "\n\nDo NOT output <think>…</think> blocks, internal reasoning, or chain-of-thought. Reply directly with the final answer in clean prose. Do not narrate your thought process.";
+  return "\n\nKeep your reply focused on the final answer. Avoid exposing step-by-step scratch work to the reader.";
 }
 
 function buildSocraticPrompt(topic,level,context){
@@ -13376,7 +14328,14 @@ function extractHistory(){
       var txt=String(m.rawText).replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
       if(!txt)continue;
       if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";
-      out.push({role:m.role==="user"?"user":"assistant",content:txt});
+      /* P_reasoning-persist — include chain-of-thought text for
+         DeepSeek / QwQ / o1-style reasoning models that need their
+         own reasoning from the previous turn to continue coherently. */
+      var msg={role:m.role==="user"?"user":"assistant",content:txt};
+      if(m.reasoningContent){
+        msg.reasoning_content=m.reasoningContent;
+      }
+      out.push(msg);
     }
     if(out.length)return out;
   }
@@ -13441,9 +14400,43 @@ function buildSocraticMessages(node,domain,history,isFirst){
      specific directive that is injected into the system prompt. */
   var stage=state.teachingStage||"motivate";
   var stageInstr=stageInstruction(stage);
-  var prompt=buildSocraticPrompt(domain,node.status,
+  /* P_teaching-plan — Inject the "from basics" directive into every
+     teaching turn. The cold-start diagnostic only established a
+     baseline; it did NOT verify mastery. Every sub-topic must be
+     taught from the foundation, regardless of the node's status. */
+  var fromBasicsDirective="CRITICAL: The student's cold-start diagnostic result for this sub-topic is '"+node.status+"' (baseline only, NOT mastery). "+
+    "You MUST teach this sub-topic from the absolute fundamentals. Do NOT skip or accelerate past foundational material based on the diagnostic level. "+
+    "Even if the level is 'fuzzy' (some familiarity), start with the core definition and build up layer by layer. "+
+    "The diagnostic only probed surface recognition; true understanding must be built systematically.\n\n";
+  /* P_knowledge-point — pull the specific knowledge points that the
+     diagnostic tested for this node, so the model can address them
+     explicitly during teaching. This closes the loop: the diagnostic
+     identified what the user was tested on, and the teaching now
+     targets those exact points. */
+  var diagKps="";
+  if(Array.isArray(state.diagQuestions)){
+    var nodeKps=[];
+    state.diagQuestions.forEach(function(q){
+      if(q.knowledgePoint&&typeof q.nodeIdx==="number"&&q.nodeIdx===state.kbNodes.indexOf(node)){
+        var userAns=state.diagAnswers[state.diagQuestions.indexOf(q)];
+        var userLevel=userAns!==undefined&&q.opts[userAns]?q.opts[userAns].level:"unknown";
+        nodeKps.push(q.knowledgePoint+" (diagnostic result: "+userLevel+")");
+      }
+    });
+    if(nodeKps.length){
+      diagKps="Diagnostic knowledge points for this sub-topic:\n- "+nodeKps.join("\n- ")+"\n\n";
+    }
+  }
+  /* P_level-consistency — pass a level string that is consistent with
+     fromBasicsDirective. The old code passed node.status ("fuzzy"),
+     which could make the model think the student has some familiarity
+     and skip fundamentals. Now we pass a string that reinforces the
+     "teach from basics" directive. */
+  var levelForPrompt="baseline (not mastery) — teach from fundamentals";
+  var prompt=buildSocraticPrompt(domain,levelForPrompt,
     (isFirst
-      ? "You are beginning the '"+stage+"' stage for sub-topic: "+node.name+". "+
+      ? fromBasicsDirective+diagKps+
+        "You are beginning the '"+stage+"' stage for sub-topic: "+node.name+". "+
         "START at this stage — do not run earlier stages. "+stageInstr+"\n"+
         "Follow the textbook principles:\n"+
         "1) **Foundation-first**: Start with the core definition, build up layer by layer.\n"+
@@ -13453,7 +14446,8 @@ function buildSocraticMessages(node,domain,history,isFirst){
         "5) After examples, end with 1 <practice> block — harder than the examples, requiring transfer.\n"+
         "6) Optional <quiz> block after explanation (before examples) if there's a key point worth checking.\n"+
         "Write in formal, precise textbook language. Use bold for terms. Use LaTeX for math. Build a knowledge system, not isolated facts."
-      : "Current teaching stage: "+stage+". Sub-topic: "+node.name+". Advance the lesson according to the stage: "+stageInstr+" "+
+      : fromBasicsDirective+diagKps+
+        "Current teaching stage: "+stage+". Sub-topic: "+node.name+". Advance the lesson according to the stage: "+stageInstr+" "+
         "Connect new material to what was already taught. Do NOT restart from the beginning. "+
         "Always include 2-3 <example> blocks (with progression) before any new <practice> block. "+
         "Use <quiz>, <example>, and <practice> blocks per the system prompt. "+
@@ -13462,6 +14456,27 @@ function buildSocraticMessages(node,domain,history,isFirst){
   var msgs=[{role:"system",content:prompt}].concat(history);
   msgs.push({role:"user",content:isFirst?"I'm ready to begin. Please teach me about "+node.name+".":"Continue the lesson from where we left off."});
   return msgs;
+}
+
+/* P_knowledge-point — shared helper that collects the diagnostic
+   knowledge points for a given kbNode. Returns a string ready to
+   inject into a prompt, or "" if no diagnostic data is available. */
+function diagKnowledgePointsForNode(node){
+  var diagKps="";
+  if(!Array.isArray(state.diagQuestions)||!state.diagQuestions.length)return diagKps;
+  var nodeIdx=state.kbNodes.indexOf(node);
+  var nodeKps=[];
+  state.diagQuestions.forEach(function(q,qi){
+    if(q.knowledgePoint&&typeof q.nodeIdx==="number"&&q.nodeIdx===nodeIdx){
+      var userAns=state.diagAnswers[qi];
+      var userLevel=userAns!==undefined&&q.opts[userAns]?q.opts[userAns].level:"unknown";
+      nodeKps.push(q.knowledgePoint+" (diagnostic result: "+userLevel+")");
+    }
+  });
+  if(nodeKps.length){
+    diagKps="Diagnostic knowledge points for this sub-topic:\n- "+nodeKps.join("\n- ")+"\n\n";
+  }
+  return diagKps;
 }
 
 /* Task 2.2 — short per-stage directive used by buildSocraticMessages
@@ -13510,6 +14525,7 @@ async function generateSocraticQuestionStream(node,domain,onDelta){
        the caller (askNextQuestion) can clean up the bubble without
        showing an error or falling back to the mock question. */
     if(result&&result.cancelled){return result}
+    if(!state.lastCallError)state.lastCallError="Stream returned no content";
     state.lastCallSource="mock";
   } else { state.lastCallSource="mock"; }
   return null;
@@ -13600,6 +14616,10 @@ async function generateFollowUpStream(answer,node,domain,onDelta,onThinking){
       state.lastCallSource="api";
       return result.text.trim();
     }
+    /* Ensure lastCallError is set so the caller (submitChatMessage)
+       shows an error bubble instead of silently falling through to
+       a random mock question (_origGenerateFollowUp). */
+    if(!state.lastCallError)state.lastCallError="Stream returned no content";
     state.lastCallSource="mock";
   } else { state.lastCallSource="mock"; }
   return null;
@@ -13635,7 +14655,6 @@ window.openSettings = openSettings;
 window.openShareModal = openShareModal;
 window.openStorageModal = openStorageModal;
 window.openUsageModal = openUsageModal;
-window.refreshCaptcha = refreshCaptcha;
 window.resendAuthCode = resendAuthCode;
 window.resendVerification = resendVerification;
 window.resetApp = resetApp;
@@ -13680,6 +14699,7 @@ window.actuallyDeleteSession = actuallyDeleteSession;
 window.confirmPurgeSession = confirmPurgeSession;
 window.deleteAgentRun = deleteAgentRun;
 window.finishDiagnostic = finishDiagnostic;
+window.proceedToTeaching = proceedToTeaching;
 window.loadSession = loadSession;
 window.loadUsageData = loadUsageData;
 window.loadUsageMonth = loadUsageMonth;
@@ -13707,6 +14727,7 @@ window.restoreSession = restoreSession;
 window.selectDiag = selectDiag;
 window.setActiveProvider = setActiveProvider;
 window.setRecentsFilter = setRecentsFilter;
+window.clearRecentsFilter = clearRecentsFilter;
 window.submitExam = submitExam;
 window.toggleKBDetail = toggleKBDetail;
 window.togglePinSession = togglePinSession;
