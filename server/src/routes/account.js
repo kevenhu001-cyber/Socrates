@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { eq, count, sql, and, gte } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { users, sessions, apiKeys, usageEvents } from '../db/schema.js';
+import {
+  users, sessions, messages, apiKeys, usageEvents, tags, sessionTags,
+  projects, mistakes, memories, artifacts, artifactVersions, prompts,
+  files, workspaces, workspaceMembers,
+} from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
@@ -205,6 +209,188 @@ router.get('/usage-heatmap', async (req, res, next) => {
       p95,
       buckets: filled,
     });
+  } catch (err) { next(err); }
+});
+
+/**
+ * GET /api/account/export — download all user data as a JSON file.
+ * Returns a Content-Disposition: attachment response so the browser
+ * saves the file rather than displaying it inline.
+ */
+router.get('/export', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const userId = req.userId;
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!user) {
+      return res.status(404).json({ code: 'USER_NOT_FOUND', message: 'User not found' });
+    }
+    const {
+      passwordHash, verifyToken, verifyTokenExpiresAt,
+      resetToken, resetTokenExpiresAt,
+      ...safeUser
+    } = user;
+
+    const userSessions = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.userId, userId))
+      .orderBy(sessions.createdAt);
+
+    const sessionIds = userSessions.map((s) => s.id);
+    const allMessages = sessionIds.length > 0
+      ? await db
+          .select()
+          .from(messages)
+          .where(sql`${messages.sessionId} = ANY(ARRAY[${sql.join(sessionIds.map((id) => sql`${id}`), sql`, `)}]::uuid[])`)
+          .orderBy(messages.createdAt)
+      : [];
+
+    const userKeys = await db
+      .select({
+        id: apiKeys.id,
+        label: apiKeys.label,
+        url: apiKeys.url,
+        model: apiKeys.model,
+        keyHint: apiKeys.keyHint,
+        isActive: apiKeys.isActive,
+        isBuiltIn: apiKeys.isBuiltIn,
+        createdAt: apiKeys.createdAt,
+      })
+      .from(apiKeys)
+      .where(eq(apiKeys.userId, userId))
+      .orderBy(apiKeys.createdAt);
+
+    const userUsage = await db
+      .select()
+      .from(usageEvents)
+      .where(eq(usageEvents.userId, userId))
+      .orderBy(usageEvents.createdAt);
+
+    const userMistakes = await db
+      .select()
+      .from(mistakes)
+      .where(eq(mistakes.userId, userId))
+      .orderBy(mistakes.createdAt);
+
+    const userMemories = await db
+      .select()
+      .from(memories)
+      .where(eq(memories.userId, userId))
+      .orderBy(memories.createdAt);
+
+    const userTags = await db
+      .select()
+      .from(tags)
+      .where(eq(tags.userId, userId))
+      .orderBy(tags.name);
+
+    const userSessionTags = sessionIds.length > 0
+      ? await db
+          .select()
+          .from(sessionTags)
+          .where(sql`${sessionTags.sessionId} = ANY(ARRAY[${sql.join(sessionIds.map((id) => sql`${id}`), sql`, `)}]::uuid[])`)
+      : [];
+
+    const userProjects = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.userId, userId))
+      .orderBy(projects.createdAt);
+
+    const userPrompts = await db
+      .select()
+      .from(prompts)
+      .where(eq(prompts.userId, userId))
+      .orderBy(prompts.createdAt);
+
+    const userArtifacts = await db
+      .select()
+      .from(artifacts)
+      .where(eq(artifacts.userId, userId))
+      .orderBy(artifacts.createdAt);
+
+    const artifactIds = userArtifacts.map((a) => a.id);
+    const userArtifactVersions = artifactIds.length > 0
+      ? await db
+          .select()
+          .from(artifactVersions)
+          .where(sql`${artifactVersions.artifactId} = ANY(ARRAY[${sql.join(artifactIds.map((id) => sql`${id}`), sql`, `)}]::uuid[])`)
+          .orderBy(artifactVersions.createdAt)
+      : [];
+
+    const userFiles = await db
+      .select({
+        id: files.id,
+        name: files.name,
+        mimeType: files.mimeType,
+        size: files.size,
+        kind: files.kind,
+        width: files.width,
+        height: files.height,
+        pages: files.pages,
+        sha256: files.sha256,
+        sessionId: files.sessionId,
+        uploadedAt: files.uploadedAt,
+      })
+      .from(files)
+      .where(eq(files.userId, userId))
+      .orderBy(files.uploadedAt);
+
+    const userMemberships = await db
+      .select({
+        workspaceId: workspaceMembers.workspaceId,
+        userId: workspaceMembers.userId,
+        role: workspaceMembers.role,
+      })
+      .from(workspaceMembers)
+      .where(eq(workspaceMembers.userId, userId));
+
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      version: 1,
+      user: safeUser,
+      stats: {
+        sessionCount: userSessions.length,
+        messageCount: allMessages.length,
+        apiKeyCount: userKeys.length,
+        usageEventCount: userUsage.length,
+        mistakeCount: userMistakes.length,
+        memoryCount: userMemories.length,
+        tagCount: userTags.length,
+        projectCount: userProjects.length,
+        promptCount: userPrompts.length,
+        artifactCount: userArtifacts.length,
+        fileCount: userFiles.length,
+      },
+      sessions: userSessions,
+      messages: allMessages,
+      apiKeys: userKeys,
+      usage: userUsage,
+      mistakes: userMistakes,
+      memories: userMemories,
+      tags: userTags,
+      sessionTags: userSessionTags,
+      projects: userProjects,
+      prompts: userPrompts,
+      artifacts: userArtifacts,
+      artifactVersions: userArtifactVersions,
+      files: userFiles,
+      workspaceMemberships: userMemberships,
+    };
+
+    const json = JSON.stringify(exportData, null, 2);
+    const filename = `socrates-data-${userId.slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.json`;
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', Buffer.byteLength(json));
+    return res.end(json);
   } catch (err) { next(err); }
 });
 
