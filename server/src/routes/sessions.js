@@ -2,14 +2,21 @@ import { Router } from 'express';
 import { eq, and, desc, gt, isNull, sql, inArray } from 'drizzle-orm';
 import crypto from 'node:crypto';
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs/promises';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isUuid(s) { return typeof s === 'string' && UUID_RE.test(s); }
 import { z } from 'zod';
 import { getDb } from '../db/index.js';
-import { sessions, messages, shares, sessionTags, tags as tagsTable } from '../db/schema.js';
+import {
+  sessions, messages, mistakes, artifacts, artifactVersions,
+  agentRuns, usageEvents, files,
+  shares, sessionTags, tags as tagsTable,
+} from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { writeLimiter } from '../middleware/rateLimit.js';
 import { NotFound, Forbidden, BadRequest } from '../lib/errors.js';
+
+const UPLOAD_DIR = process.env.UPLOAD_DIR || '/tmp/socrates-uploads';
 
 // P6.x — zod schema caps field lengths and validates types; throws
 // ZodError → errorHandler returns 400 with the offending path.
@@ -253,10 +260,23 @@ router.post('/', writeLimiter, async (req, res, next) => {
           ));
         for (const row of existing) existingClientIds.add(row.clientId);
       }
-      const toInsert = msgs
-        .filter(m => !m.clientId || !existingClientIds.has(m.clientId))
-        .map(m => ({
-          sessionId,
+      // P_share-order — every message gets a strictly-increasing
+      // createdAt based on its position in the msgs array, so that
+      // ORDER BY createdAt returns the conversation in the exact order
+      // the user typed it. Without this, every row in a batch insert
+      // shares the same NOW() (Postgres NOW() is constant within a
+      // transaction) and the DB returns tied rows in unspecified
+      // order — frequently grouped by role, which scrambles the
+      // conversation order in shared links and on reload. Applying the
+      // timestamp on UPDATE as well self-heals sessions that were
+      // saved before this fix. Saves are serialized client-side via
+      // _saveInFlight, so a later batch's base always exceeds an
+      // earlier batch's last timestamp.
+      const _insertBase = Date.now();
+      const toInsert = [];
+      const toUpdate = [];
+      msgs.forEach((m, i) => {
+        const row = {
           role: m.role || 'user',
           content: m.rawText || m.content || '',
           rawText: m.rawText || null,
@@ -264,31 +284,27 @@ router.post('/', writeLimiter, async (req, res, next) => {
           type: m.type || null,
           sources: m.sources || null,
           clientId: m.clientId || null,
-          /* P_reasoning-persist — chain-of-thought text from DeepSeek/
-             QwQ/o1-style reasoning models. The front-end sends it as
-             reasoningContent (camelCase). */
           reasoningContent: m.reasoningContent || null,
-        }));
+          createdAt: new Date(_insertBase + i),
+        };
+        if (m.clientId && existingClientIds.has(m.clientId)) {
+          toUpdate.push({ row, clientId: m.clientId });
+        } else {
+          toInsert.push({ ...row, sessionId });
+        }
+      });
       if (toInsert.length > 0) {
         await db.insert(messages).values(toInsert);
       }
 
       // P_streaming-save — update content for messages that were
       // already saved with a previous (possibly partial) version.
-      const toUpdate = msgs.filter(m => m.clientId && existingClientIds.has(m.clientId));
-      for (const m of toUpdate) {
+      for (const u of toUpdate) {
         await db.update(messages)
-          .set({
-            content: m.rawText || m.content || '',
-            rawText: m.rawText || null,
-            html: m.html || null,
-            type: m.type || null,
-            /* P_reasoning-persist — preserve chain-of-thought text. */
-            reasoningContent: m.reasoningContent || null,
-          })
+          .set(u.row)
           .where(and(
             eq(messages.sessionId, sessionId),
-            eq(messages.clientId, m.clientId),
+            eq(messages.clientId, u.clientId),
           ));
       }
     }
@@ -338,53 +354,103 @@ router.patch('/:id', async (req, res, next) => {
 });
 
 /* ─── Delete / purge session ─── */
+/* P_data-removal — when a session is deleted, wipe every row that
+ * references its id so no conversation content lingers on the server.
+ * This covers mistakes (Q&A text), artifacts (source code generated
+ * in-chat), agent runs (task/plan), usage events, and file metadata
+ * + physical disk files. The transaction guard prevents a concurrent
+ * POST /api/sessions from resurrecting the id before the DELETE
+ * completes. Messages and sessionTags/shares are cleaned by FK
+ * cascade; we also delete them explicitly for clarity. */
 router.delete('/:id', async (req, res, next) => {
   try {
     if (!isUuid(req.params.id)) throw new NotFound('Session not found');
     const db = getDb();
-    /* P6.x — wrap ownership check + delete in a single transaction so
-     * a concurrent POST /api/sessions (the SPA's auto-save fires
-     * every few seconds) can't re-INSERT a row with the deleted id
-     * between our SELECT and DELETE. The DELETE also re-checks
-     * userId (defense in depth — the SELECT alone is enough to
-     * authorise, but the extra predicate guarantees a stolen cookie
-     * can't delete via a guessed id). Messages are deleted
-     * explicitly so any FK violation surfaces distinctly instead of
-     * relying on the implicit cascade. */
+    let deletedFilePaths = [];
+
     await db.transaction(async (tx) => {
       const [session] = await tx.select({ id: sessions.id })
         .from(sessions)
         .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId)))
         .limit(1);
       if (!session) throw new NotFound('Session not found');
+
+      const sessionArtifacts = await tx.select({ id: artifacts.id })
+        .from(artifacts)
+        .where(eq(artifacts.sessionId, req.params.id));
+      if (sessionArtifacts.length > 0) {
+        const artIds = sessionArtifacts.map(a => a.id);
+        await tx.delete(artifactVersions)
+          .where(inArray(artifactVersions.artifactId, artIds));
+      }
+      await tx.delete(artifacts).where(eq(artifacts.sessionId, req.params.id));
+
+      await tx.delete(mistakes).where(eq(mistakes.sessionId, req.params.id));
+      await tx.delete(agentRuns).where(eq(agentRuns.sessionId, req.params.id));
+      await tx.delete(usageEvents).where(eq(usageEvents.sessionId, req.params.id));
+
+      const sessionFiles = await tx.select({ storagePath: files.storagePath })
+        .from(files)
+        .where(eq(files.sessionId, req.params.id));
+      deletedFilePaths = sessionFiles.map(f => f.storagePath);
+      await tx.delete(files).where(eq(files.sessionId, req.params.id));
+
       await tx.delete(messages).where(eq(messages.sessionId, req.params.id));
       await tx.delete(sessions)
         .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId)));
     });
+
+    for (const fp of deletedFilePaths) {
+      await fs.unlink(fp).catch(() => {});
+    }
+
     return res.status(204).end();
   } catch (err) { next(err); }
 });
 
 /* ─── Bulk delete: clear every non-archived session for the caller ─── */
-/* P6.x — the SPA's Storage modal "Clear conversations" button used
- * to only wipe the localStorage cache and reload, leaving the server
- * rows in place; after a refresh /api/sessions would return them
- * again. Archived sessions are intentionally preserved so the user
- * can still recover them from the Archive / Trash UI. */
 router.delete('/', async (req, res, next) => {
   try {
     const db = getDb();
+    let allDeletedPaths = [];
+
     const deleted = await db.transaction(async (tx) => {
       const rows = await tx.select({ id: sessions.id })
         .from(sessions)
         .where(and(eq(sessions.userId, req.userId), isNull(sessions.archivedAt)));
       const ids = rows.map(r => r.id);
       if (ids.length === 0) return 0;
+
+      const bulkArtifacts = await tx.select({ id: artifacts.id })
+        .from(artifacts)
+        .where(inArray(artifacts.sessionId, ids));
+      if (bulkArtifacts.length > 0) {
+        const artIds = bulkArtifacts.map(a => a.id);
+        await tx.delete(artifactVersions)
+          .where(inArray(artifactVersions.artifactId, artIds));
+      }
+      await tx.delete(artifacts).where(inArray(artifacts.sessionId, ids));
+
+      await tx.delete(mistakes).where(inArray(mistakes.sessionId, ids));
+      await tx.delete(agentRuns).where(inArray(agentRuns.sessionId, ids));
+      await tx.delete(usageEvents).where(inArray(usageEvents.sessionId, ids));
+
+      const bulkFiles = await tx.select({ storagePath: files.storagePath })
+        .from(files)
+        .where(inArray(files.sessionId, ids));
+      allDeletedPaths = bulkFiles.map(f => f.storagePath);
+      await tx.delete(files).where(inArray(files.sessionId, ids));
+
       await tx.delete(messages).where(inArray(messages.sessionId, ids));
       await tx.delete(sessions)
         .where(and(eq(sessions.userId, req.userId), isNull(sessions.archivedAt)));
       return ids.length;
     });
+
+    for (const fp of allDeletedPaths) {
+      await fs.unlink(fp).catch(() => {});
+    }
+
     return res.json({ ok: true, deleted });
   } catch (err) { next(err); }
 });
