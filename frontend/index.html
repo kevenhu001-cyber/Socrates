@@ -248,9 +248,9 @@
     <div class="sidebar-projects" id="sidebarProjects"></div>
 
     <div class="sidebar-tabs">
-      <div class="sidebar-tab active" id="tabKnowledge" onclick="switchTab('knowledge')">Knowledge</div>
-      <div class="sidebar-tab" id="tabRecents" onclick="switchTab('recents')">Recents</div>
-      <div class="sidebar-tab" id="tabMistakes" onclick="switchTab('mistakes')">Mistakes<span class="tab-badge" id="mistakesTabBadge"></span></div>
+      <div class="sidebar-tab active" id="tabKnowledge" onclick="switchTab('knowledge')" data-i18n-key="sidebar.knowledge">Knowledge</div>
+      <div class="sidebar-tab" id="tabRecents" onclick="switchTab('recents')" data-i18n-key="sidebar.recents">Recents</div>
+      <div class="sidebar-tab" id="tabMistakes" onclick="switchTab('mistakes')"><span data-i18n-key="sidebar.mistakes">Mistakes</span><span class="tab-badge" id="mistakesTabBadge"></span></div>
     </div>
     <div class="knowledge-panel tutor-only" id="knowledgePanel">
       <div id="teachingPlanContent"></div>
@@ -258,10 +258,10 @@
     </div>
     <div class="recents-panel hidden" id="recentsPanel">
       <div class="recents-header">
-        <span class="recents-title">Recent Sessions</span>
+        <span class="recents-title" data-i18n-key="sidebar.recentSessions">Recent Sessions</span>
         <button class="recents-new-btn" id="newChatBtnRecents" title="Start a new chat" onclick="resetApp()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M12 5v14M5 12h14"/></svg>
-          <span>New</span>
+          <span data-i18n-key="sidebar.new">New</span>
         </button>
       </div>
       <!-- P2.1 — active project filter chip. Renders only when
@@ -276,7 +276,7 @@
       <div id="recentsList"></div>
     </div>
     <div class="recents-panel hidden tutor-only" id="mistakesPanel">
-      <div class="recents-header"><span class="recents-title">Mistake Book</span></div>
+      <div class="recents-header"><span class="recents-title" data-i18n-key="sidebar.mistakeBook">Mistake Book</span></div>
       <div id="mistakesList"></div>
     </div>
     <div class="sidebar-footer">
@@ -285,9 +285,6 @@
         <button class="icon-btn theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle theme">
           <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
           <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        </button>
-        <button class="icon-btn lang-toggle" id="langToggle" onclick="toggleAppLang()" title="Switch language" aria-label="Switch language">
-          <span class="lang-toggle-label" id="langToggleLabel">EN</span>
         </button>
         <button class="icon-btn" onclick="toggleDisplayPrefs()" title="Display settings" aria-label="Display settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="6" x2="14" y2="6"/><line x1="10" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="16" y2="18"/><line x1="12" y1="18" x2="3" y2="18"/></svg>
@@ -339,7 +336,6 @@
     </div>
     <div class="top-bar-right">
       <span class="chat-api-badge hidden" id="chatApiBadge"></span>
-      <span class="search-pill hidden" id="searchPill" title=""></span>
       <div class="chat-model-wrap hidden" id="chatModelWrap">
         <button class="chat-model-trigger" id="chatModel" type="button" onclick="toggleChatModelMenu()" aria-haspopup="listbox" aria-expanded="false" title="Pick or configure the model for this conversation">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0-2 5v1a3 3 0 0 0 2 5v1a3 3 0 0 0 3 3 3 3 0 0 0 3-3v-1a3 3 0 0 0 2-5v-1a3 3 0 0 0-2-5V5a3 3 0 0 0-3-3z"/><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -350,7 +346,7 @@
       </div>
       <button class="share-btn hidden" id="shareBtn" onclick="openShareModal()" title="Share this conversation" aria-label="Share this conversation">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        <span class="share-btn-label">Share</span>
+        <span class="share-btn-label" data-i18n-key="sidebar.share">Share</span>
       </button>
     </div>
   </div>
@@ -522,7 +518,7 @@
 <div class="share-overlay hidden" id="shareOverlay" onclick="if(event.target===this)closeShareModal()">
   <div class="share-modal" onclick="event.stopPropagation()">
     <div class="share-header">
-      <span class="share-title">Share conversation</span>
+      <span class="share-title" data-i18n-key="share.title">Share conversation</span>
       <button class="share-close" onclick="closeShareModal()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
@@ -530,28 +526,28 @@
     <div class="share-opt" id="shareOptPublic" onclick="selectShareVis('public')">
       <div class="share-opt-radio"></div>
       <div class="share-opt-body">
-        <div class="share-opt-title">Anyone with the link</div>
-        <div class="share-opt-desc">No sign-in required. Anyone who has the link can view this conversation.</div>
+        <div class="share-opt-title" data-i18n-key="share.publicTitle">Anyone with the link</div>
+        <div class="share-opt-desc" data-i18n-key="share.publicDesc">No sign-in required. Anyone who has the link can view this conversation.</div>
       </div>
     </div>
     <div class="share-opt" id="shareOptPrivate" onclick="selectShareVis('private')">
       <div class="share-opt-radio"></div>
       <div class="share-opt-body">
-        <div class="share-opt-title">Only you</div>
-        <div class="share-opt-desc">Must be logged into your account to view. Still shared via link.</div>
+        <div class="share-opt-title" data-i18n-key="share.privateTitle">Only you</div>
+        <div class="share-opt-desc" data-i18n-key="share.privateDesc">Must be logged into your account to view. Still shared via link.</div>
       </div>
     </div>
     <div id="shareLinkArea" class="share-link-area hidden">
       <input class="share-link-input" id="shareLinkInput" name="shareLinkInput" type="text" readonly onclick="this.select()" aria-label="Share link">
-      <button class="share-copy-btn" id="shareCopyBtn" onclick="copyShareLink()">Copy</button>
+      <button class="share-copy-btn" id="shareCopyBtn" onclick="copyShareLink()" data-i18n-key="share.copy">Copy</button>
     </div>
     <div id="shareRevokeArea" class="hidden" style="text-align:center">
-      <button class="share-revoke" onclick="revokeShareLink()">× Revoke share link</button>
+      <button class="share-revoke" onclick="revokeShareLink()" data-i18n-key="share.revoke">× Revoke share link</button>
     </div>
     <div class="share-error hidden" id="shareError"></div>
     <div class="share-status hidden" id="shareStatus"></div>
     <div id="shareCreateArea" style="text-align:center;margin-top:4px">
-      <button class="settings-btn primary" id="shareCreateBtn" onclick="createShareLink()" style="margin-top:8px">Create share link</button>
+      <button class="settings-btn primary" id="shareCreateBtn" onclick="createShareLink()" style="margin-top:8px" data-i18n-key="share.create">Create share link</button>
     </div>
   </div>
 </div>
@@ -598,41 +594,50 @@
     <div class="profile-body" id="profileBody">
       <!-- Account details section -->
       <div class="profile-section">
-        <div class="profile-section-title">Account</div>
+        <div class="profile-section-title" data-i18n-key="profile.account">Account</div>
         <div class="profile-row">
-          <span class="profile-row-label">Joined</span>
+          <span class="profile-row-label" data-i18n-key="profile.joined">Joined</span>
           <span class="profile-row-value" id="profileJoined">—</span>
         </div>
         <div class="profile-row">
-          <span class="profile-row-label">Email verified</span>
+          <span class="profile-row-label" data-i18n-key="profile.emailVerified">Email verified</span>
           <span class="profile-row-value" id="profileVerified">—</span>
         </div>
         <div class="profile-row">
-          <span class="profile-row-label">User ID</span>
+          <span class="profile-row-label" data-i18n-key="profile.userId">User ID</span>
           <span class="profile-row-value" id="profileUserId"><span class="profile-id-text"></span></span>
         </div>
       </div>
       <!-- Subscription section -->
       <div class="profile-section">
-        <div class="profile-section-title">Subscription</div>
+        <div class="profile-section-title" data-i18n-key="profile.subscription">Subscription</div>
         <div class="profile-row">
-          <span class="profile-row-label">Current plan</span>
+          <span class="profile-row-label" data-i18n-key="profile.currentPlan">Current plan</span>
           <span class="profile-row-value" id="profileTier" style="font-size:calc(13px * var(--app-font-scale, 1))"></span>
         </div>
         <div class="profile-row" id="profileSubEndRow">
-          <span class="profile-row-label">Renewal</span>
+          <span class="profile-row-label" data-i18n-key="profile.renewal">Renewal</span>
           <span class="profile-row-value" id="profileSubEnd">—</span>
         </div>
         <div style="margin-top:10px">
-          <a href="https://topodrive.top/#pricing" class="profile-btn close-btn" style="text-align:center;display:block;font-size:calc(12px * var(--app-font-scale, 1));padding:8px 0">Compare plans</a>
+          <a href="https://topodrive.top/#pricing" class="profile-btn close-btn" style="text-align:center;display:block;font-size:calc(12px * var(--app-font-scale, 1));padding:8px 0" data-i18n-key="profile.comparePlans">Compare plans</a>
         </div>
       </div>
       <!-- Preferences section -->
       <div class="profile-section">
-        <div class="profile-section-title">Preferences</div>
-        <div class="profile-toggle-desc">Enable web search to include real-time results in questions.</div>
+        <div class="profile-section-title" data-i18n-key="profile.preferences">Preferences</div>
+        <!-- Language toggle -->
+        <div class="profile-row">
+          <span class="profile-row-label" data-i18n-key="profile.language">Language</span>
+          <div class="profile-lang-toggle" id="profileLangToggle" onclick="toggleAppLang()">
+            <span class="profile-lang-option" id="profileLangEn">English</span>
+            <span class="profile-lang-divider">/</span>
+            <span class="profile-lang-option" id="profileLangZh">中文</span>
+          </div>
+        </div>
+        <div class="profile-toggle-desc" data-i18n-key="profile.webSearchDesc">Enable web search to include real-time results in questions.</div>
         <div class="profile-toggle" id="profileWebSearchToggle" onclick="toggleProfileWebSearch()">
-          <span class="profile-toggle-label">Web search</span>
+          <span class="profile-toggle-label" data-i18n-key="profile.webSearch">Web search</span>
           <div class="stg-toggle-track" id="profileWebSearchTrack"><div class="stg-toggle-knob"></div></div>
         </div>
         <!-- P1.3 — Custom Instructions. Two free-form textareas
@@ -644,25 +649,25 @@
              /api/users/me PATCH endpoint (docs/api/openapi.yaml
              P1.3) is live, we sync to the server. -->
         <div class="profile-instructions">
-          <label class="profile-instructions-label" for="profileInstResponse">How should I respond?</label>
+          <label class="profile-instructions-label" for="profileInstResponse" data-i18n-key="profile.howShouldIRespond">How should I respond?</label>
           <textarea id="profileInstResponse" name="profileInstResponse" class="profile-instructions-area" maxlength="4000" placeholder="e.g. Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language." oninput="onCustomInstructionsChange()"></textarea>
-          <label class="profile-instructions-label" for="profileInstAbout" style="margin-top:10px">What do you know about me?</label>
+          <label class="profile-instructions-label" for="profileInstAbout" style="margin-top:10px" data-i18n-key="profile.whatDoYouKnow">What do you know about me?</label>
           <textarea id="profileInstAbout" name="profileInstAbout" class="profile-instructions-area" maxlength="4000" placeholder="e.g. I'm a backend engineer working on a payments product. I'm allergic to puns." oninput="onCustomInstructionsChange()"></textarea>
           <div class="profile-instructions-foot">
-            <span id="profileInstSaveState" class="profile-instructions-state">Not yet saved</span>
+            <span id="profileInstSaveState" class="profile-instructions-state" data-i18n-key="profile.notYetSaved">Not yet saved</span>
           </div>
         </div>
       </div>
       <!-- Data management section -->
       <div class="profile-section">
-        <div class="profile-section-title">Data</div>
+        <div class="profile-section-title" data-i18n-key="profile.data">Data</div>
         <!-- Usage / heatmap entry -->
         <div class="profile-action-row">
           <div>
-            <div class="profile-action-label">Token usage</div>
-            <div class="profile-action-desc">View daily token usage heatmap and monthly breakdown.</div>
+            <div class="profile-action-label" data-i18n-key="profile.usage">Token usage</div>
+            <div class="profile-action-desc" data-i18n-key="profile.usage.desc">View daily token usage heatmap and monthly breakdown.</div>
           </div>
-          <button class="profile-btn" onclick="openUsageModal()" style="width:auto;padding:6px 14px;flex-shrink:0">View</button>
+          <button class="profile-btn" onclick="openUsageModal()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.view">View</button>
         </div>
         <!-- P2.3 — Storage entry. Opens a modal listing archived
              sessions with restore / delete controls. The button
@@ -670,57 +675,57 @@
              there's anything to act on. -->
         <div class="profile-action-row">
           <div>
-            <div class="profile-action-label">Archived sessions</div>
-            <div class="profile-action-desc">Sessions you deleted are kept here for 30 days before being permanently erased.</div>
+            <div class="profile-action-label" data-i18n-key="profile.archivedSessions">Archived sessions</div>
+            <div class="profile-action-desc" data-i18n-key="profile.archivedSessionsDesc">Sessions you deleted are kept here for 30 days before being permanently erased.</div>
           </div>
-          <button class="profile-btn" onclick="openStorageModal()" style="width:auto;padding:6px 14px;flex-shrink:0">Manage</button>
+          <button class="profile-btn" onclick="openStorageModal()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.manage">Manage</button>
         </div>
         <!-- P5.8 — Prompt templates. Opens a manager modal
              where the user can add / edit / delete custom
              templates. Built-ins are listed but read-only. -->
         <div class="profile-action-row">
           <div>
-            <div class="profile-action-label">Prompt templates</div>
-            <div class="profile-action-desc">Reusable prompts you can fire from the chat with <code>/shortcut</code>.</div>
+            <div class="profile-action-label" data-i18n-key="profile.promptTemplates">Prompt templates</div>
+            <div class="profile-action-desc" data-i18n-key="profile.promptTemplatesDesc">Reusable prompts you can fire from the chat with <code>/shortcut</code>.</div>
           </div>
-          <button class="profile-btn" onclick="openPromptTemplatesModal()" style="width:auto;padding:6px 14px;flex-shrink:0">Manage</button>
+          <button class="profile-btn" onclick="openPromptTemplatesModal()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.manage">Manage</button>
         </div>
         <div class="profile-action-row">
           <div>
-            <div class="profile-action-label">Clear conversations</div>
-            <div class="profile-action-desc">Remove all local chat history.</div>
+            <div class="profile-action-label" data-i18n-key="profile.clearConversations">Clear conversations</div>
+            <div class="profile-action-desc" data-i18n-key="profile.clearConversationsDesc">Remove all local chat history.</div>
           </div>
-          <button class="profile-btn warning" onclick="confirmClearCache()" style="width:auto;padding:6px 14px;flex-shrink:0">Clear</button>
+          <button class="profile-btn warning" onclick="confirmClearCache()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.clear">Clear</button>
         </div>
         <div class="profile-action-row">
           <div>
-            <div class="profile-action-label">Clear API settings</div>
-            <div class="profile-action-desc">Remove all configured API providers and keys.</div>
+            <div class="profile-action-label" data-i18n-key="profile.clearApiSettings">Clear API settings</div>
+            <div class="profile-action-desc" data-i18n-key="profile.clearApiSettingsDesc">Remove all configured API providers and keys.</div>
           </div>
-          <button class="profile-btn warning" onclick="confirmClearSettings()" style="width:auto;padding:6px 14px;flex-shrink:0">Clear</button>
+          <button class="profile-btn warning" onclick="confirmClearSettings()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.clear">Clear</button>
         </div>
       </div>
       <!-- Danger zone section -->
       <div class="profile-section">
-        <div class="profile-section-title" style="color:hsl(0 60% 55%)">Danger zone</div>
+        <div class="profile-section-title" style="color:hsl(0 60% 55%)" data-i18n-key="profile.dangerZone">Danger zone</div>
         <div class="profile-action-row">
           <div>
-            <div class="profile-action-label">Sign out</div>
-            <div class="profile-action-desc">End your session on this device.</div>
+            <div class="profile-action-label" data-i18n-key="profile.signOut">Sign out</div>
+            <div class="profile-action-desc" data-i18n-key="profile.signOutDesc">End your session on this device.</div>
           </div>
-          <button class="profile-btn signout" onclick="signOut();closeProfile()" style="width:auto;padding:6px 14px;flex-shrink:0">Sign out</button>
+          <button class="profile-btn signout" onclick="signOut();closeProfile()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.signOut">Sign out</button>
         </div>
         <div class="profile-action-row">
           <div>
-            <div class="profile-action-label" style="color:hsl(0 60% 55%)">Delete account</div>
-            <div class="profile-action-desc">Permanently delete your account and all data.</div>
+            <div class="profile-action-label" style="color:hsl(0 60% 55%)" data-i18n-key="profile.deleteAccount">Delete account</div>
+            <div class="profile-action-desc" data-i18n-key="profile.deleteAccountDesc">Permanently delete your account and all data.</div>
           </div>
-          <button class="profile-btn danger" onclick="confirmDeleteAccount()" style="width:auto;padding:6px 14px;flex-shrink:0">Delete</button>
+          <button class="profile-btn danger" onclick="confirmDeleteAccount()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.deleteAccount">Delete</button>
         </div>
       </div>
     </div>
     <div class="profile-actions" style="border-top:0.5px solid hsl(var(--border-300)/0.08);padding-top:12px">
-      <button class="profile-btn close-btn" onclick="closeProfile()">Close</button>
+      <button class="profile-btn close-btn" onclick="closeProfile()" data-i18n-key="common.close">Close</button>
     </div>
   </div>
 </div>

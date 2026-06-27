@@ -4427,6 +4427,7 @@ async function submitChatMessage(textOverride,opts){
 function buildMessageToolbar(opts){
   var role=opts.role;            /* "user" | "assistant" */
   var entry=opts.entry||null;    /* state.messages entry */
+  var readOnly=!!opts.readOnly;
   if(!entry)return null;
   var messageId=entry.id||entry.clientId;
   var bar=document.createElement("div");
@@ -4461,8 +4462,7 @@ function buildMessageToolbar(opts){
     }else{
       legacyCopy(txt);
     }
-    /* Best-effort telemetry — do not block on failure. */
-    fireFeedback(messageId,"copy",null);
+    if(!readOnly)fireFeedback(messageId,"copy",null);
   }
   function legacyCopy(txt){
     try{
@@ -4483,6 +4483,11 @@ function buildMessageToolbar(opts){
     '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
     doCopy
   );
+  /* Shared-view mode returns Copy only; edit/delete/regenerate have
+     no meaning on someone else's read-only session. */
+  if(readOnly){
+    return bar;
+  }
   if(role==="user"){
     /* Edit — switch the bubble into a contenteditable, save on
        blur or Cmd/Ctrl+Enter. On save, call PATCH
@@ -4504,6 +4509,14 @@ function buildMessageToolbar(opts){
       }
     );
   }else{
+    /* Share the conversation (not just this message) — reuses the
+       existing share modal. */
+    addBtn("share","Share conversation",
+      '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>',
+      function(){
+        if(typeof openShareModal==="function")openShareModal();
+      }
+    );
     /* Regenerate — re-run the model. POST
        /api/messages/<id>/regenerate streams a fresh reply. */
     addBtn("regenerate","Regenerate response",
@@ -6534,6 +6547,12 @@ function teardownThinkStructure(){
         if(hasSources){
           var card=renderSourcesCard(sourcesSnapshot);
           if(card)div.appendChild(card);
+        }
+        /* Streaming AI bubbles skip addMessage(), so attach the
+           toolbar here. Guarded against duplicate stacking. */
+        if(!div.querySelector(".msg-toolbar")&&msgIdx>=0&&state.messages[msgIdx]){
+          var toolbar=buildMessageToolbar({role:"assistant",entry:state.messages[msgIdx]});
+          if(toolbar)div.appendChild(toolbar);
         }
         try{appendLocalMemory("assistant",full)}catch(_){}
         requestAnimationFrame(function(){
@@ -11719,6 +11738,9 @@ async function loadSharedSession(token){
         actions: null
       });
       div.appendChild(body);
+      var sharedEntry = state.messages[state.messages.length - 1];
+      var sharedToolbar = buildMessageToolbar({role: m.role || "assistant", entry: sharedEntry, readOnly: true});
+      if(sharedToolbar) div.appendChild(sharedToolbar);
       msgList.appendChild(div);
     });
     /* Show read-only banner. */

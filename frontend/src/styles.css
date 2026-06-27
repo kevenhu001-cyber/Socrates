@@ -731,32 +731,22 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .chat-api-badge{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:hsl(var(--text-500));cursor:help;margin:0 4px;overflow:hidden;text-indent:-9999px;vertical-align:middle}
 .chat-api-badge.on{background:hsl(145 50% 45%);box-shadow:0 0 0 2px hsl(145 50% 45%/0.18)}
 .chat-api-badge.mocked{background:hsl(35 80% 55%);box-shadow:0 0 0 2px hsl(35 80% 55%/0.18)}
-.search-pill{display:inline-flex;align-items:center;gap:4px;font-size:calc(10px * var(--app-font-scale, 1));padding:1px 8px;border-radius:10px;font-weight:500;line-height:1.6}
-.search-pill.ok{background:hsl(200 50% 92%);color:hsl(200 60% 32%);border:0.5px solid hsl(200 50% 70%/0.6)}
-.search-pill.loading{background:hsl(45 50% 92%);color:hsl(36 55% 32%);border:0.5px solid hsl(45 50% 70%/0.6)}
-.search-pill.err{background:hsl(0 50% 92%);color:hsl(0 55% 35%);border:0.5px solid hsl(0 50% 70%/0.6)}
-[data-theme=socrates][data-mode=dark] .search-pill.ok{background:hsl(200 30% 18%);color:hsl(200 60% 75%);border-color:hsl(200 40% 38%/0.6)}
-[data-theme=socrates][data-mode=dark] .search-pill.loading{background:hsl(45 30% 18%);color:hsl(45 70% 70%);border-color:hsl(45 40% 38%/0.6)}
-[data-theme=socrates][data-mode=dark] .search-pill.err{background:hsl(0 30% 18%);color:hsl(0 55% 70%);border-color:hsl(0 40% 38%/0.6)}
 
 /* Sources card — appended under each AI bubble when web search was
    on. First source is always visible; remaining sources are hidden
    behind a "▾" toggle on the header. */
-.sources-card{margin-top:8px;font-size:calc(12px * var(--app-font-scale, 1));border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));border-radius:8px;background:hsl(var(--bg-100)/0.6);overflow:hidden}
-[data-theme=socrates][data-mode=dark] .sources-card{background:hsl(var(--bg-200)/0.5)}
-.sources-head{display:flex;align-items:center;gap:6px;padding:6px 10px;cursor:pointer;user-select:none;color:hsl(var(--text-400));transition:color .1s,background .1s}
-.sources-head:hover{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.05)}
-.sources-icon{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--accent-000));font-weight:600}
-.sources-label{font-weight:500;letter-spacing:.02em}
-.sources-count{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000));font-size:calc(10px * var(--app-font-scale, 1));font-weight:600}
-.sources-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-400));transition:transform .15s}
+.sources-card{margin-top:8px;font-size:calc(12px * var(--app-font-scale, 1));border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.5));border-radius:8px;background:hsl(var(--bg-100)/0.5);overflow:hidden}
+[data-theme=socrates][data-mode=dark] .sources-card{background:hsl(var(--bg-200)/0.4)}
+.sources-head{display:flex;align-items:center;padding:5px 12px;cursor:pointer;user-select:none;color:hsl(var(--text-500));transition:color .1s}
+.sources-head:hover{color:hsl(var(--accent-000))}
+.sources-label{font-weight:500}
+.sources-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .15s}
 .sources-card.open .sources-chev{transform:rotate(180deg)}
-.sources-rest{display:none;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6))}
+.sources-rest{display:none}
 .sources-card.open .sources-rest{display:block}
-.sources-row{display:flex;align-items:baseline;gap:8px;padding:5px 10px;color:hsl(var(--text-200));text-decoration:none;transition:background .1s,color .1s;line-height:1.4}
-.sources-row+a.sources-row{border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.4))}
-a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accent-100))}
-.sources-num{flex-shrink:0;color:hsl(var(--text-400));font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;min-width:22px}
+.sources-row{display:flex;align-items:baseline;gap:8px;padding:5px 12px;color:hsl(var(--text-200));text-decoration:none;transition:color .1s;line-height:1.4}
+a.sources-row:hover{color:hsl(var(--accent-100))}
+.sources-num{flex-shrink:0;color:hsl(var(--text-500));font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;min-width:22px}
 .sources-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sources-host{flex-shrink:0;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-family:var(--font-mono)}
 .sources-bad{flex-shrink:0;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(0 60% 50%)}
@@ -777,7 +767,7 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
    right-aligns). For assistant messages it sits indented under
    the bubble. */
 .msg-toolbar{display:flex;gap:2px;align-items:center;margin-top:4px;opacity:0;transition:opacity .15s;height:24px}
-.msg.assistant .msg-toolbar{justify-content:flex-start;margin-left:24px}
+.msg.assistant .msg-toolbar{justify-content:flex-start;margin-left:8px}
 .msg.user .msg-toolbar{justify-content:flex-end;margin-right:0}
 @media (hover:hover){.msg:hover .msg-toolbar{opacity:1}}
 @media (hover:none){.msg-toolbar{opacity:.7}}
@@ -947,6 +937,11 @@ a.sources-row:hover{background:hsl(var(--accent-000)/0.06);color:hsl(var(--accen
 .profile-toggle{display:flex;align-items:center;justify-content:space-between;padding:8px 0;cursor:pointer}
 .profile-toggle-label{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-100))}
 .profile-toggle-desc{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));padding:0 0 4px}
+.profile-lang-toggle{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;background:hsl(var(--surface-200));border:1px solid hsl(var(--border-300));cursor:pointer;font-size:calc(12px * var(--app-font-scale, 1));transition:all .15s}
+.profile-lang-toggle:hover{background:hsl(var(--surface-300));border-color:hsl(var(--accent-500))}
+.profile-lang-option{color:hsl(var(--text-400));transition:color .15s}
+.profile-lang-option.active{color:hsl(var(--accent-600));font-weight:600}
+.profile-lang-divider{color:hsl(var(--text-500));opacity:.5}
 .profile-action-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;gap:12px}
 .profile-action-label{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-100))}
 .profile-action-desc{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));flex:1}
