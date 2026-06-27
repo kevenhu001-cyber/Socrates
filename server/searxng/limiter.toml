@@ -1,0 +1,8 @@
+# SearXNG limiter config - internal agent usage, no rate limiting needed
+[botdetection.ip_limit]
+# Disable IP-based rate limiting for internal agent use
+link_token = false
+
+# Bypass all bot detection for local/internal IPs
+[botdetection.ip_lists]
+pass_secret_key = true
