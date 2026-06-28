@@ -1,6 +1,12 @@
 /* ─── Module imports (Phase 2 split) ─── */
 import './state.js';
 import './i18n.js';
+import { esc, escAttr, escHTML } from './render/helpers.js';
+import { processPendingMermaid, renderViz, renderVizLoading, renderMermaid } from './render/viz.js';
+import { formatTickSlice, formatMsgProgressive, formatMsg } from './render/markdown.js';
+import { callAPI, callAPIChat } from './chat/api.js';
+import { hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister, switchAuthTab, setAuthError, showAuthForgotPassword, showAuthCodeLogin, submitAuthSignin, submitAuthRegister, submitAuthVerify, submitAuthForgotPassword, submitAuthResetPassword, submitAuthSendCode, submitAuthLoginWithCode, resendVerification, resendAuthCode } from './auth/index.js';
+import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
 
 /* ============================================================
    SIDEBAR
@@ -70,7 +76,7 @@ var DISPLAY_FONT_STEPS  =[0.875, 1, 1.125, 1.25];
 var DISPLAY_WIDTH_STEPS =[0.85,  1, 1.3,   1.7];
 var FONT_LABELS  =["S","M","L","XL"];
 var WIDTH_LABELS =["S","M","L","XL"];
-var displayPrefs={font:1,width:1};
+var displayPrefs={font:1,width:1,darkBg:"",lightBg:""};
 
 function loadDisplayPrefs(){
   try{
@@ -79,6 +85,8 @@ function loadDisplayPrefs(){
       var p=JSON.parse(raw);
       if(typeof p.font==="number"&&p.font>0)displayPrefs.font=p.font;
       if(typeof p.width==="number"&&p.width>0)displayPrefs.width=p.width;
+      if(typeof p.darkBg==="string")displayPrefs.darkBg=p.darkBg;
+      if(typeof p.lightBg==="string")displayPrefs.lightBg=p.lightBg;
     }
   }catch(e){}
   applyDisplayPrefs();
@@ -86,6 +94,13 @@ function loadDisplayPrefs(){
 function applyDisplayPrefs(){
   document.documentElement.style.setProperty("--app-font-scale", String(displayPrefs.font));
   document.documentElement.style.setProperty("--app-width-scale", String(displayPrefs.width));
+  var mode=document.documentElement.getAttribute("data-mode")||"dark";
+  var customHex=mode==="dark"?displayPrefs.darkBg:displayPrefs.lightBg;
+  if(customHex){
+    applyCustomBg(customHex,mode);
+  }else{
+    removeCustomBg();
+  }
   syncDisplayPrefsUI();
   /* After font/width change, layout shifts. If the user was already
      pinned at the bottom of the chat scroller, keep them there so
@@ -118,7 +133,15 @@ function syncDisplayPrefsUI(){
   if(wWrap)Array.from(wWrap.children).forEach(function(b){
     b.classList.toggle("on", parseFloat(b.dataset.width)===displayPrefs.width);
   });
+  /* Sync background color inputs */
+  var darkInput=document.getElementById("displayPrefsBgDark");
+  if(darkInput)darkInput.value=displayPrefs.darkBg||"#252220";
+  var lightInput=document.getElementById("displayPrefsBgLight");
+  if(lightInput)lightInput.value=displayPrefs.lightBg||"#ded6c8";
 }
+var _BG_VARS=["--bg-000","--bg-100","--bg-200","--bg-300"];
+import { parseHexColor, applyCustomBg, removeCustomBg } from './util/colors.js';
+window.parseHexColor=parseHexColor;window.applyCustomBg=applyCustomBg;window.removeCustomBg=removeCustomBg;
 function setDisplayFont(step){
   displayPrefs.font=step;
   applyDisplayPrefs();
@@ -128,6 +151,52 @@ function setDisplayWidth(step){
   displayPrefs.width=step;
   applyDisplayPrefs();
   saveDisplayPrefs();
+}
+function setBackgroundColor(hex){
+  /* Kept for backward compat — sets dark mode bg */
+  displayPrefs.darkBg=hex||"";
+  applyDisplayPrefs();
+  saveDisplayPrefs();
+}
+function setBackgroundDark(hex){
+  displayPrefs.darkBg=hex||"";
+  applyDisplayPrefs();
+  saveDisplayPrefs();
+}
+function setBackgroundLight(hex){
+  displayPrefs.lightBg=hex||"";
+  applyDisplayPrefs();
+  saveDisplayPrefs();
+}
+function resetBackgroundColor(){
+  displayPrefs.darkBg="";
+  displayPrefs.lightBg="";
+  applyDisplayPrefs();
+  saveDisplayPrefs();
+}
+function resetBackgroundDark(){
+  displayPrefs.darkBg="";
+  applyDisplayPrefs();
+  saveDisplayPrefs();
+}
+function resetBackgroundLight(){
+  displayPrefs.lightBg="";
+  applyDisplayPrefs();
+  saveDisplayPrefs();
+}
+function setAccentColor(hue){
+  var num=parseInt(hue,10);
+  if(isNaN(num))return;
+  var root=document.documentElement;
+  var sat=num===0||num===0?"0%":"77%";
+  root.style.setProperty("--accent-000", num+" "+sat+" 62%");
+  root.style.setProperty("--accent-100", num+" "+sat+" 62%");
+  root.style.setProperty("--accent-900", num+" 40% 20%");
+  /* Persist */
+  try{localStorage.setItem("socrates-accent-hue",String(num))}catch(e){}
+  /* Update active swatch */
+  var swatches=document.querySelectorAll(".color-swatch");
+  swatches.forEach(function(s){s.classList.toggle("active", parseInt(s.dataset.hue,10)===num)});
 }
 function toggleDisplayPrefs(){
   var p=document.getElementById("displayPrefsPopover");
@@ -196,6 +265,8 @@ function toggleTheme(){
   var next=mode==="dark"?"light":"dark";
   html.setAttribute("data-mode",next);
   try{localStorage.setItem("socrates-theme",next)}catch(e){}
+  /* Re-apply display prefs so the correct mode palette is active */
+  applyDisplayPrefs();
 }
 function toggleAppLang(){
   var next=_currentLang==="en"?"zh":"en";
@@ -207,6 +278,11 @@ function toggleAppLang(){
 try{
   var savedTheme=localStorage.getItem("socrates-theme");
   if(savedTheme==="light"||savedTheme==="dark")document.documentElement.setAttribute("data-mode",savedTheme);
+}catch(e){}
+/* Restore saved accent hue */
+try{
+  var savedHue=localStorage.getItem("socrates-accent-hue");
+  if(savedHue)setAccentColor(parseInt(savedHue,10));
 }catch(e){}
 /* Apply text-size / content-width prefs (must run before any layout
    that depends on .main-inner max-width). */
@@ -1359,8 +1435,10 @@ async function loadExamSession(s){
   _examTitle().textContent=state.examSubmitted?("Exam Results: "+state.examTopic):(state.examTopic);
   var body=_examBody();
   var footer=_examFooter();
-  /* Build the same DOM that generateNextQuestionStreaming() would
-   * build, but skip the streaming cards and use the saved data. */
+  /* Build the same DOM that a fresh generation would build, but
+     skip the streaming cards and use the saved data. The unified
+     paintQuestionCard helper handles the option pre-selection /
+     answer pre-fill needed for restored sessions. */
   body.innerHTML='<div id="examQuestionsContainer"></div>';
   state.examQuestions.forEach(function(q,idx){
     var card=document.createElement("div");
@@ -1368,10 +1446,10 @@ async function loadExamSession(s){
     card.id="examQ"+idx;
     card.setAttribute("data-idx",idx);
     body.querySelector("#examQuestionsContainer").appendChild(card);
-    renderRestoredQuestionCard(idx,q);
+    paintRestoredQuestionCard(idx,q);
   });
   /* Mount the nav bar (and make the active pill match whatever the
-   * first question is on load). */
+     first question is on load). */
   renderExamNav();
   /* Footer actions depend on whether the exam is already submitted. */
   if(state.examSubmitted){
@@ -1382,7 +1460,7 @@ async function loadExamSession(s){
   toggleShareBtn();
   renderRecents();
   /* Wire the scroll listener once per open so the active nav pill
-   * tracks the viewport. */
+     tracks the viewport. */
   if(!state._examScrollBound){
     var bindCont=document.getElementById("examViewBody");
     if(bindCont){
@@ -1398,31 +1476,20 @@ async function loadExamSession(s){
 
 /* Helper for loadExamSession — fill a single .exam-q-card with the
  * saved question and the user's saved answer (option pre-selected for
- * multiple-choice, value prefilled for fill-blank / short-answer). */
-function renderRestoredQuestionCard(idx,q){
+ * multiple-choice, value prefilled for fill-blank / short-answer).
+ * Wraps paintQuestionCard and adds the "selected" / "value" overrides. */
+function paintRestoredQuestionCard(idx,q){
   var ph=document.getElementById("examQ"+idx);
   if(!ph)return;
-  var html='<div class="exam-q-num">Question '+(idx+1)+' of '+state.examCount+' <span class="exam-q-type">'+q.type+'</span></div>';
-  html+='<div class="exam-q-text">'+formatMsg(q.q)+'</div>';
+  paintQuestionCard(idx,q,ph);
   var saved=state.examAnswers&&state.examAnswers[idx];
-  if(q.type==="multiple-choice"&&q.opts){
-    html+='<div class="exam-q-opts">';
-    q.opts.forEach(function(o,oi){
-      var isSel=(saved===oi);
-      html+='<button class="exam-q-opt'+(isSel?" selected":"")+'" data-eidx="'+idx+'" data-oidx="'+oi+'" onclick="selectExamOpt('+idx+','+oi+')">';
-      html+='<span class="exam-q-opt-letter">'+o.letter+'</span>';
-      html+='<span class="exam-q-opt-text">'+formatMsg(o.text)+'</span>';
-      html+='</button>';
-    });
-    html+='</div>';
-  }else if(q.type==="fill-blank"){
-    var v=(typeof saved==="string")?saved:"";
-    html+='<input class="exam-q-fill-input" data-eidx="'+idx+'" name="examAnswer'+idx+'" aria-label="Answer for question '+idx+'" placeholder="Type your answer..." value="'+esc(v)+'" oninput="state.examAnswers['+idx+']=this.value;refreshExamNavTally();scheduleExamAnswerSave()">';
-  }else if(q.type==="short-answer"){
-    var vv=(typeof saved==="string")?saved:"";
-    html+='<textarea class="exam-q-fill-input" data-eidx="'+idx+'" name="examAnswer'+idx+'" aria-label="Answer for question '+idx+'" placeholder="Type your answer..." rows="3" oninput="state.examAnswers['+idx+']=this.value;refreshExamNavTally();scheduleExamAnswerSave()" style="min-height:60px;resize:vertical">'+esc(vv)+'</textarea>';
+  if(q.type==="multiple-choice"&&q.opts&&saved!==undefined){
+    var btns=ph.querySelectorAll(".exam-q-opt");
+    btns.forEach(function(b,i){if(i===saved)b.classList.add("selected")});
+  }else if(q.type==="fill-blank"||q.type==="short-answer"){
+    var input=ph.querySelector(".exam-q-fill-input");
+    if(input&&typeof saved==="string")input.value=saved;
   }
-  ph.innerHTML=html;
 }
 
 async function loadSession(id){
@@ -2412,7 +2479,10 @@ function renderRecents(){
     html+='<button class="recent-item-pin'+(pinned?" pinned":"")+'" title="'+(pinned?"Unpin":"Pin to top")+'" onclick="togglePinSession(\''+esc(s.id)+'\',event)">';
     html+='<svg viewBox="0 0 24 24" fill="'+(pinned?"currentColor":"none")+'" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><line x1="12" y1="12" x2="12" y2="20"/></svg>';
     html+='</button>';
-    html+='<span class="recent-mode-badge '+modeCls+'">'+modeLabel+'</span>';
+    /* P2.2 — mode-coloured dot. The visible text is hidden via CSS
+       (font-size:0; overflow:hidden) so the span is just a 6 px circle;
+       the title attribute provides a hover tooltip. */
+    html+='<span class="recent-mode-badge '+modeCls+'" title="'+modeLabel+'">'+modeLabel+'</span>';
     html+='<div class="recent-item-main">';
     html+='<div class="recent-item-text">'+esc(s.title||s.topic||"(untitled)")+'</div>';
     html+='<div class="recent-item-meta">'+meta.map(function(m){return"<span>"+esc(m)+"</span>"}).join('<span class="dot"></span>')+'</div>';
@@ -2531,7 +2601,7 @@ var DIAG_ASPECTS=[
    question, passing the previous questions so the model avoids
    repetition. Falls back to mock (caller side) if fewer than 3
    questions come back successfully. */
-async function generateDiagnosticQuestions(topic,language){
+async function generateDiagnosticQuestions(topic,language,onProgress){
   var langNames={zh:'Chinese',ja:'Japanese',ko:'Korean',ru:'Russian',ar:'Arabic',en:'English'};
   var langName=langNames[language]||'English';
   var all=[];
@@ -2559,6 +2629,7 @@ async function generateDiagnosticQuestions(topic,language){
         prompt+="\n\nNote: no [Web research] block is present. You do not have live web access for this turn — say so honestly rather than guessing about current events.";
       }
     }
+    if(onProgress)onProgress(i+1,5,null);
     var msgs=[{role:'system',content:prompt},{role:'user',content:'Topic: '+topic}];
     var resp=await callAPI(msgs,MAX_TOKENS_DIAG);
     if(!resp){
@@ -2573,6 +2644,7 @@ async function generateDiagnosticQuestions(topic,language){
     }
     all.push(q);
     previousTexts.push(q.q);
+    if(onProgress)onProgress(i+1,5,q);
   }
   /* If we got fewer than 3 of 5 questions, treat the whole call as
      failed and let the caller fall back to mock. The user gets a
@@ -3026,50 +3098,69 @@ async function startSession(){
     document.getElementById("topicBadge").classList.remove("hidden");
     document.getElementById("topicBadgeText").textContent=state.domain;
     syncChatModel();
-  document.getElementById("diagnosticView").innerHTML='<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">'+(webSearchOn?t("tutor.loadingWeb"):t("tutor.loading"))+'</p></div>';
+  document.getElementById("diagnosticView").innerHTML='<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">'+t("tutor.loading")+'</p><div class="diag-progress"><div class="diag-progress-bar"><div class="diag-progress-fill" id="diagProgressFill"></div></div><div class="diag-progress-step" id="diagProgressStep"><span class="diag-progress-spin"></span>'+(window._currentLang==="zh"?"正在分析主题…":"Analyzing topic…")+'</div></div></div>';
 
   /* Phase 3 — create the search-progress log up front so the user sees
-   * the activity feed next to the spinner while the search runs.
-   * Replay events into it as they arrive. */
+   * the activity feed while the search runs in the background.
+   * The fire-and-forget pattern avoids blocking diagnostic questions
+   * on the 12s search timeout — results arrive before teaching starts. */
   var diagSearchLog=null;
   if(webSearchOn){
     try{
       var diagLoading=document.querySelector("#diagnosticView .diag-loading");
       diagSearchLog=startSearchProgress(topic,{mount:diagLoading,collapsed:false});
+      /* Background search — don't await. Diagnostic questions start
+         immediately; search context is ready by the teaching phase. */
+      fetchWebContext(topic,{onStep:function(ev){if(diagSearchLog)diagSearchLog.onStep(ev)}}).then(function(sc){
+        state.searchContext=sc.context||"";
+        if(diagSearchLog){
+          try{
+            var finalEngines=sc&&sc.sources?sc.sources.reduce(function(acc,s){var k=s.source||"web";acc[k]=(acc[k]||0)+1;return acc;},{}):{};
+            var fetchedN=sc&&sc.sources?sc.sources.filter(function(x){return!!x.fullContent}).length:0;
+            if(sc&&sc.ok&&sc.results){
+              diagSearchLog.finalize({state:"ok",finalCount:sc.results,fetchedCount:fetchedN,engines:finalEngines});
+            }else{
+              diagSearchLog.finalize({state:"err",message:(sc&&sc.reason)||"no results"});
+            }
+          }catch(_){}
+        }
+      }).catch(function(){});
     }catch(_){diagSearchLog=null}
   }
 
-  /* Fetch web context if enabled (graceful degrade if backend down) */
-  var sc=await fetchWebContext(topic,{onStep:function(ev){if(diagSearchLog)diagSearchLog.onStep(ev)}});
-  state.searchContext=sc.context||"";
-  if(diagSearchLog){
-    try{
-      var finalEngines=sc&&sc.sources?sc.sources.reduce(function(acc,s){var k=s.source||"web";acc[k]=(acc[k]||0)+1;return acc;},{}):{};
-      var fetchedN=sc&&sc.sources?sc.sources.filter(function(x){return!!x.fullContent}).length:0;
-      if(sc&&sc.ok&&sc.results){
-        diagSearchLog.finalize({state:"ok",finalCount:sc.results,fetchedCount:fetchedN,engines:finalEngines});
-      }else{
-        diagSearchLog.finalize({state:"err",message:(sc&&sc.reason)||"no results"});
-      }
-    }catch(_){}
+  /* Progress bar helper — updates fill width and step text. */
+  function diagProgress(pct, label) {
+    var fill = document.getElementById('diagProgressFill');
+    var step = document.getElementById('diagProgressStep');
+    if (fill) fill.style.width = pct + '%';
+    if (step) step.innerHTML = '<span class="diag-progress-spin"></span>' + label;
   }
 
-  /* P_cold-start-coverage — generate topic-specific KB node names so
-     the knowledge dimensions are tailored to the subject. Falls back
-     to the generic skeleton from aiGenerate() on any failure. */
+/* P_cold-start-coverage — generate topic-specific KB node names so
+      the knowledge dimensions are tailored to the subject. Falls back
+      to the generic skeleton from aiGenerate() on any failure. */
   try{
+    diagProgress(10, window._currentLang==="zh"?"正在分析主题…":"Analyzing topic…");
     var topicNodes=await generateTopicKBNodes(topic,lang);
     if(topicNodes&&topicNodes.length>=3){
       while(topicNodes.length<state.kbNodes.length)topicNodes.push(state.kbNodes[topicNodes.length].name);
       for(var ni=0;ni<state.kbNodes.length;ni++){
         if(topicNodes[ni])state.kbNodes[ni].name=topicNodes[ni];
       }
+      diagProgress(15, (window._currentLang==="zh"
+        ? "已识别 "+state.kbNodes.length+" 个知识点"
+        : "Identified "+state.kbNodes.length+" knowledge points"));
     }else{
       console.log("[startSession] generateTopicKBNodes returned insufficient results, using generic KB node names");
+      diagProgress(15, (window._currentLang==="zh"?"已识别知识点":"Knowledge dimensions ready"));
     }
   }catch(e){
     console.log("[startSession] generateTopicKBNodes failed, using generic KB node names:",e&&e.message?e.message:String(e));
+    diagProgress(15, (window._currentLang==="zh"?"已识别知识点":"Knowledge dimensions ready"));
   }
+
+  /* KB nodes ready — advance to question generation */
+  diagProgress(20, window._currentLang==="zh"?"正在出诊断题…":"Generating questions…");
 
   /* Try the real LLM first (via the project's existing
      generateDiagnosticQuestions — it goes through callAPI() and
@@ -3087,7 +3178,18 @@ async function startSession(){
     console.log("[diag] apiConfig.activeId="+apiConfig.activeId+" providerCount="+apiConfig.providers.length+" activeProvider="+(_ap?(_ap.label||_ap.id):"null"));
   }catch(_){}
   try {
-    diagQs = await generateDiagnosticQuestions(topic, lang);
+    diagQs = await generateDiagnosticQuestions(topic, lang, function(step, total, q) {
+      var pct = 20 + Math.round(75 * step / total);
+      if (q) {
+        diagProgress(pct, (window._currentLang==="zh"
+          ? "已出 "+step+"/"+total+" 道题"
+          : "Generated "+step+"/"+total+" questions"));
+      } else {
+        diagProgress(pct, (window._currentLang==="zh"
+          ? "正在出题 "+step+"/"+total+"…"
+          : "Generating Q"+step+"/"+total+"…"));
+      }
+    });
   } catch (e) {
     diagErr = (e && e.message) || String(e);
   }
@@ -3134,6 +3236,9 @@ async function startSession(){
     }
   }
   updateChatStats();
+
+  /* Done — fill the bar before showing questions */
+  diagProgress(100, window._currentLang==="zh"?"准备就绪":"Ready");
 
   renderDiagQuestion();
   updateKB();
@@ -3615,7 +3720,7 @@ async function askChatTurn(userText){
    * round-1 + judge + (optional) round-2 loop. The first answer
    * token still arrives in <1 s because the main answer stream
    * runs in parallel (not awaiting the search). */
-  var SEARCH_CEILING_MS=12000;
+  var SEARCH_CEILING_MS=25000;
   var searchTimer=setTimeout(function(){
     try{searchCtl.abort("search-ceiling")}catch(_){}
   },SEARCH_CEILING_MS);
@@ -3708,61 +3813,6 @@ async function askChatTurn(userText){
 
 /* Non-streaming variant of callAPIStream for round-1 detection. Returns
    the same {text,html,widgets,cancelled} shape (or null on failure). */
-async function callAPIChat(messages,maxTokens,timeoutMs){
-  /* Reuse the streaming call but accumulate without rendering. We
-     don't have a non-streaming callAPI exposed, so do it inline. */
-  if(!getActiveProvider()){state.lastCallError="no provider";return null}
-  state.lastCallError=null;
-  var ac=new AbortController();
-  /* Caller-supplied timeout caps this round's wait. Default 15s —
-     long enough for the model to declare "I'll search" or "no I
-     won't", short enough that the user doesn't wait minutes for a
-     tool-detection phase. */
-  var tmo=setTimeout(function(){try{ac.abort("timeout")}catch(_){}},timeoutMs||15000);
-  var r;
-  try{
-    /* P0.3 — use apiFetchRaw so CSRF/credentials/401→handleAuthExpired
-     * are handled centrally. Throws on non-2xx. Pass body as an object so
-     * apiFetchRaw stringifies it and sets Content-Type: application/json.
-     * Pre-stringified bodies cause express.json() to skip parsing. */
-    r=await apiFetchRaw("/api/chat/stream",{
-      method:"POST",
-      body:{messages:messages,temperature:0.2,max_tokens:maxTokens},
-      signal:ac.signal
-    });
-  }catch(e){
-    clearTimeout(tmo);
-    state.lastCallError=(e&&e.status?e.status+" ":"")+(e&&e.message||e);
-    return null;
-  }
-  clearTimeout(tmo);
-  if(!r.body||!r.body.getReader){state.lastCallError="no stream body";return null}
-  var reader=r.body.getReader();
-  var decoder=new TextDecoder("utf-8");
-  var buf="";var full="";
-  while(true){
-    var step=await reader.read();
-    if(step.done)break;
-    buf+=decoder.decode(step.value,{stream:true});
-    var idx;
-    while((idx=buf.indexOf("\n\n"))>=0){
-      var frame=buf.slice(0,idx);buf=buf.slice(idx+2);
-      var lines=frame.split("\n");
-      for(var li=0;li<lines.length;li++){
-        var line=lines[li];
-        if(line.indexOf("data:")!==0)continue;
-        var payload=line.slice(5).trim();
-        if(!payload||payload==="[DONE]")continue;
-        try{
-          var obj=JSON.parse(payload);
-          var d=obj.choices&&obj.choices[0]&&obj.choices[0].delta&&obj.choices[0].delta.content;
-          if(typeof d==="string")full+=d;
-        }catch(_){}
-      }
-    }
-  }
-  return{text:full,html:null,widgets:[],cancelled:false};
-}
 
 /* Detect a tool envelope in the model's response. Returns:
      null — not a tool call
@@ -3823,13 +3873,32 @@ function parseToolCall(text){
 /* Format the search results into the same [Web research] block the
    system used to inject. Used by the round-2 message. */
 function formatSourcesBlock(sources,query){
+  /* Strip emojis from web search content so the model does not mimic
+     emoji-heavy style from page titles/snippets. Covers most emoji
+     ranges: pictographs, emoticons, symbols, dingbats, transport,
+     flags (paired regional indicators), variation selectors. */
+  function stripEmoji(s){
+    if(!s)return s;
+    return String(s)
+      .replace(/[\u{1F000}-\u{1FAFF}]/gu,"")
+      .replace(/[\u{2600}-\u{27BF}]/gu,"")
+      .replace(/[\u{2B00}-\u{2BFF}]/gu,"")
+      .replace(/[\u{FE00}-\u{FE0F}]/gu,"")
+      .replace(/[\u{1F1E6}-\u{1F1FF}]{2}/gu,"")
+      .replace(/[\u{1F900}-\u{1F9FF}]/gu,"")
+      .replace(/\u200D/g,"")
+      .replace(/\s{2,}/g," ")
+      .trim();
+  }
   var lines=sources.map(function(x,i){
-    var head="["+(i+1)+"] "+x.title;
-    if(x.snippet)head+=" — "+x.snippet;
+    var title=stripEmoji(x.title)||x.title;
+    var head="["+(i+1)+"] "+title;
+    if(x.snippet){var snip=stripEmoji(x.snippet);if(snip)head+=" — "+snip}
     head+=" ( "+x.url+" )";
     if(x.matchedQuery)head+="\n    Source query: \""+x.matchedQuery+"\"";
     if(x.fullContent){
-      var trimmed=(x.fullContent.length>3000)?x.fullContent.slice(0,3000)+"…":x.fullContent;
+      var fc=stripEmoji(x.fullContent);
+      var trimmed=(fc.length>3000)?fc.slice(0,3000)+"…":fc;
       head+="\n    Full text: "+trimmed;
     }else{
       head+="\n    (snippet only — full text unavailable)";
@@ -5079,7 +5148,7 @@ function appendThinking(text){
        pill doesn't look like an empty box. The actual content
        replaces this on the next render. */
     if(!buffer){
-      pill.innerHTML='<span class="thinking-pulse"></span> Thinking…';
+      pill.innerHTML='<span class="thinking-ring thinking-ring-sm"></span> Thinking…';
       pill.dataset.thinkingBuffer=buffer;
       scrollMainToBottom();
       return;
@@ -5162,7 +5231,7 @@ var SEARCH_PROGRESS_LABELS = {
   en: {
     started:    'Searching the web for "{topic}"',
     expanding:  'Tried {n} query variants',
-    querying:   '🔍 {query}',
+    querying:   'Q: {query}',
     got_results:'  · {n} results',
     retry:      '↻ First round was thin. Retrying with the original query…',
     fetching:   'Reading {n} pages…',
@@ -5173,7 +5242,7 @@ var SEARCH_PROGRESS_LABELS = {
     retry_low:  '↻ First round was thin. AI rewriting the query…',
     retry_rewrote:'↻ New query: {q}',
     retry_still_bad:'↻ Still thin. Proceeding with what we have.',
-    done:       '🔍 {n} sources · {engines} · {fetched} read',
+    done:       '{n} sources · {engines} · {fetched} read',
     error:      'Search failed: {msg}',
     warn:       '⚠ {msg}',
     cancelled:  'Search cancelled.',
@@ -5182,7 +5251,7 @@ var SEARCH_PROGRESS_LABELS = {
   zh: {
     started:    '正在搜索：“{topic}”',
     expanding:  '尝试了 {n} 个查询变体',
-    querying:   '🔍 {query}',
+    querying:   '{query}',
     got_results:'  · {n} 条结果',
     retry:      '↻ 第一轮结果偏少，正在用原查询重试…',
     fetching:   '正在阅读 {n} 个页面…',
@@ -5193,7 +5262,7 @@ var SEARCH_PROGRESS_LABELS = {
     retry_low:  '↻ 第一轮结果偏少，AI 正在改写查询…',
     retry_rewrote:'↻ 新查询：{q}',
     retry_still_bad:'↻ 仍不理想，继续。',
-    done:       '🔍 {n} 条来源 · {engines} · 已读 {fetched}',
+    done:       '{n} 条来源 · {engines} · 已读 {fetched}',
     error:      '搜索失败：{msg}',
     warn:       '⚠ {msg}',
     cancelled:  '搜索已取消。',
@@ -5584,7 +5653,7 @@ function setChatStopState(stopMode){
   var hint=document.getElementById("chatInputHint");
   if(hint){
     if(stopMode){
-      hint.innerHTML='<span class="thinking-pulse" style="width:6px;height:6px"></span> Streaming…  click <svg viewBox="0 0 24 24" fill="currentColor" width="9" height="9" style="vertical-align:-1px"><rect x="5" y="5" width="14" height="14" rx="2"/></svg> to stop';
+      hint.innerHTML='<span class="thinking-ring thinking-ring-xs"></span> Streaming…  click <svg viewBox="0 0 24 24" fill="currentColor" width="9" height="9" style="vertical-align:-1px"><rect x="5" y="5" width="14" height="14" rx="2"/></svg> to stop';
     }else if(!_agentModeActive){
       hint.textContent="Shift+Enter for new line";
     }
@@ -6017,7 +6086,7 @@ function addStreamingMessage(opts){
      more prominently (chat mode has no KB / diagnostic to give
      the user context that work is happening). */
   var FIRST_DELTA_TIMEOUT_MS=120000;
-  body.innerHTML='<span class="thinking-dot" data-mode="'+esc(appMode)+'"><span class="thinking-pulse"></span>'+(appMode==="chat"?"Thinking…":"Generating…")+'</span>';
+  body.innerHTML='<span class="thinking-dot" data-mode="'+esc(appMode)+'"><span class="thinking-ring thinking-ring-sm"></span>'+(appMode==="chat"?"Thinking…":"Generating…")+'</span>';
   /* Morph the send button into a red Stop so the user can abort
      the stream. Agent mode uses its own state; we only flip chat
      here. setChatStopState(false) on finish/abort. */
@@ -6029,7 +6098,7 @@ function addStreamingMessage(opts){
   _elapsedTick=setInterval(function(){
     if(finished||!firstDelta)return;
     var sec=Math.round((Date.now()-thinkStarted)/1000);
-    body.innerHTML='<span class="thinking-dot" data-mode="'+esc(appMode)+'"><span class="thinking-pulse"></span>'+(appMode==="chat"?"Thinking…":"Generating…")+' '+sec+'s</span>';
+    body.innerHTML='<span class="thinking-dot" data-mode="'+esc(appMode)+'"><span class="thinking-ring thinking-ring-sm"></span>'+(appMode==="chat"?"Thinking…":"Generating…")+' '+sec+'s</span>';
   },5000);
   var firstDeltaTimer=setTimeout(function(){
     if(finished||!firstDelta)return;
@@ -6046,7 +6115,7 @@ function addStreamingMessage(opts){
     var btn=body.querySelector("#"+retryBtnId);
     if(btn){
       btn.addEventListener("click",function(){
-        body.innerHTML='<span class="thinking-dot"><span class="thinking-pulse"></span>Retrying…</span>';
+        body.innerHTML='<span class="thinking-dot"><span class="thinking-ring thinking-ring-sm"></span>Retrying…</span>';
         setTimeout(function(){
           if(typeof onRetry==="function"){try{onRetry()}catch(e){console.warn("[retry] handler threw:",e)}}
         },120);
@@ -6131,7 +6200,7 @@ function addStreamingMessage(opts){
        reasoning is hidden. */
     var sum=document.createElement("summary");
     sum.className="think-summary";
-    sum.innerHTML='<span class="thinking-pulse"></span> Thinking…';
+    sum.innerHTML='<span class="thinking-ring thinking-ring-sm"></span> Thinking…';
     det.appendChild(sum);
 
     var td=document.createElement("div");
@@ -6294,7 +6363,7 @@ function teardownThinkStructure(){
       /* When </think> has been seen, swap the summary to a
          static label and drop the pulse — the model is done
          thinking. */
-      if(thinkClosed&&thinkState.summary.innerHTML.indexOf("thinking-pulse")!==-1){
+      if(thinkClosed&&thinkState.summary.innerHTML.indexOf("thinking-ring")!==-1){
         thinkState.summary.innerHTML="Thinking";
       }
       /* Re-render the think content only if it changed. The
@@ -6633,7 +6702,7 @@ function teardownThinkStructure(){
               /* Reset this bubble to thinking state, then retry.
                  The retried call writes to a new bubble via addStreamingMessage,
                  so we clean up this failed one. */
-              body.innerHTML='<span class="thinking-dot"><span class="thinking-pulse"></span>Retrying…</span>';
+body.innerHTML='<span class="thinking-dot"><span class="thinking-ring thinking-ring-sm"></span>Retrying…</span>';
               /* Small delay so the user can see the retry state before the
                  new bubble appears. */
              setTimeout(function(){
@@ -7920,7 +7989,6 @@ function updateChatStats(){
 /* ============================================================
    UTILS
    ============================================================ */
-function esc(s){if(s==null)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 
 /* The page's scrollable area is .msg-list (when chat/tutor is
    active) or #mainContent (for the start screen, settings, etc.).
@@ -7973,1240 +8041,6 @@ function scrollToBottomIfPinned(){
      renders it in a sandboxed iframe. */
 
 
-var _vizId=0;
-
-/* ============================================================
-   Canvas scaffold — the public API the markdown renderer calls.
-
-   Three entry points:
-     renderVizLoading()       — streaming placeholder (unclosed fence)
-     renderViz(htmlString)    — finalized viz block (closed fence)
-     renderVizError(html,msg) — AI returned HTML that won't run
-
-   All three return a self-contained markup string with no
-   shared IDs or global lookups. The host page just inserts the
-   string into the message body; the data-viz-state attribute
-   drives the visible state.
-
-   A small set of inline onclick handlers is wired inside the
-   markup (collapse, reload, expand) — keeping it self-contained.
-   ============================================================ */
-
-/* Icon SVGs as constants so the markup is short. */
-var VIZ_ICON_RENDER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>';
-var VIZ_ICON_RELOAD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
-var VIZ_ICON_EXPAND='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><path d="M9 21 3 21 3 15"/><path d="M21 3 14 10"/><path d="M3 21 10 14"/></svg>';
-var VIZ_ICON_COLLAPSE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><path d="M20 10 14 10 14 4"/><path d="M14 10 21 3"/><path d="M10 14 3 21"/></svg>';
-
-/* Theme reset baked into the srcdoc. The AI's content can write
-   bare HTML (no resets needed) and still render reasonably. */
-var VIZ_THEME_RESET=
-  '<style>'+
-    '*,*::before,*::after{box-sizing:border-box}'+
-    'html,body{margin:0;padding:0}'+
-    'body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.55;color:#3a3a3a;background:#fff}'+
-    '@media (prefers-color-scheme: dark){body{color:#e8e8ec;background:#16181d}}'+
-    'a{color:#5b6fdb}a:hover{color:#3f54c4}'+
-    'button{padding:6px 12px;border:0.5px solid #d0d2d9;border-radius:8px;background:#f6f7fa;color:#3a3a3a;cursor:pointer;font:inherit}'+
-    'button:hover{background:#eef0f4}'+
-    '@media (prefers-color-scheme: dark){button{background:#2a2c34;color:#e8e8ec;border-color:#3a3c44}button:hover{background:#34363f}}'+
-    'input,select,textarea{font:inherit;color:inherit;background:transparent;border:0.5px solid #d0d2d9;border-radius:6px;padding:4px 8px}'+
-    '@media (prefers-color-scheme: dark){input,select,textarea{border-color:#3a3c44;background:#22232a}}'+
-    'h1{font-size:1.4em}h2{font-size:1.2em}h3{font-size:1.05em}h1,h2,h3,h4{margin:8px 0 6px;line-height:1.3}'+
-    'p{margin:6px 0}'+
-    'code{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em;background:rgba(120,120,140,0.12);padding:1px 5px;border-radius:3px}'+
-    'pre{background:rgba(120,120,140,0.08);border-radius:8px;padding:10px 12px;overflow:auto;line-height:1.5}'+
-    'pre code{background:transparent;padding:0}'+
-    'table{border-collapse:collapse;width:100%;font-size:.92em;margin:6px 0}th,td{padding:6px 10px;border:0.5px solid rgba(120,120,140,0.3);text-align:left}'+
-    'th{background:rgba(120,120,140,0.08);font-weight:600}'+
-    'svg{max-width:100%}'+
-  '</style>'+
-  /* Force the iframe to match the app's current theme regardless of OS
-     setting. Without this the iframe can be dark-in-light or vice versa. */
-  '<script>document.documentElement.setAttribute("data-mode","'+
-    (document.documentElement.getAttribute("data-mode")||"dark")+'")<\/script>';
-
-/* Build the card shell. state is one of "loading" | "ready" | "error". */
-function vizCardShell(id,statusLabel,state,headActions,bodyHtml){
-  return '<div class="viz-card" id="'+id+'" data-viz-state="'+state+'">'+
-    '<div class="viz-card-head">'+
-      '<span class="viz-card-head-icon">'+VIZ_ICON_RENDER+'</span>'+
-      '<span class="viz-card-title">Canvas</span>'+
-      '<span class="viz-card-status">'+esc(statusLabel)+'</span>'+
-      headActions+
-    '</div>'+
-    '<div class="viz-card-body">'+bodyHtml+'</div>'+
-  '</div>';
-}
-
-/* Toolbar buttons — the SAME three buttons are reused in both the
-   inline card and the fullscreen modal so the affordances are
-   consistent. */
-function vizHeadActions(cardId,collapsePersistKey){
-  return '<div class="viz-card-actions">'+
-    /* Reload — re-issues the iframe srcdoc with a fresh timestamp to
-       bust any caching. */
-    '<button type="button" class="viz-card-btn" title="Reload" aria-label="Reload" '+
-      'onclick="var c=document.getElementById(\''+cardId+'\');var f=c.querySelector(\'iframe\');'+
-      'if(f){f.removeAttribute(\'srcdoc\');f.setAttribute(\'srcdoc\',f.dataset.srcdoc)}">'+
-      VIZ_ICON_RELOAD+'</button>'+
-    /* Expand — opens the fullscreen modal. */
-    '<button type="button" class="viz-card-btn" title="Expand" aria-label="Expand" '+
-      'onclick="window.__vizOpenModal(document.getElementById(\''+cardId+'\').dataset.srcdoc,document.getElementById(\''+cardId+'\').dataset.title)">'+
-      VIZ_ICON_EXPAND+'</button>'+
-    /* Collapse — toggle data-viz-state. Persisted in localStorage so
-       the user's preference survives reload. */
-    '<button type="button" class="viz-card-btn viz-collapse-btn" title="Collapse" aria-label="Collapse" aria-pressed="false" '+
-      'onclick="var c=document.getElementById(\''+cardId+'\');'+
-      'var collapsed=c.getAttribute(\'data-viz-state\')===\'collapsed\'||c.getAttribute(\'data-viz-collapsed\')===\'1\';'+
-      'c.setAttribute(\'data-viz-collapsed\',collapsed?\'0\':\'1\');'+
-      'c.setAttribute(\'data-viz-state\',collapsed?\'ready\':\'collapsed\');'+
-      'this.setAttribute(\'aria-pressed\',collapsed?\'false\':\'true\');'+
-      'this.title=collapsed?\'Collapse\':\'Expand\';'+
-      'try{localStorage.setItem(\''+collapsePersistKey+'\',collapsed?\'0\':\'1\')}catch(_){}'+
-      '">'+
-      VIZ_ICON_COLLAPSE+'</button>'+
-  '</div>';
-}
-
-/* Skeleton loading body — five gray bars in a generic layout, with
-   a single "Loading…" label. Calm, professional, not flashy. */
-function vizSkeletonHtml(){
-  /* The viz-card-body itself becomes the glowing canvas (see
-     viz-skeleton CSS). We just need to add the scan band and a
-     tiny status label. The dot grid, light orbs, and vignette are
-     drawn on the body's ::before/::after in pure CSS. */
-  return '<div class="viz-vignette"></div>'+
-    '<div class="viz-scan"></div>'+
-    '<div class="viz-loading-label">'+
-      '<span class="viz-loading-spinner"></span>'+
-      '<span>Compiling canvas…</span>'+
-    '</div>';
-}
-
-/* Error body — shown when the AI's HTML has a syntax error or the
-   srcdoc fails to load. We don't surface the raw HTML in the UI
-   (security: iframe could carry the user's cookies via injected
-   scripts). Instead we show the first 240 chars of the error
-   message and a "Copy source" button that pulls the HTML out
-   of the card's data-src attribute. */
-function vizErrorHtml(message){
-  var msg=esc((message||'Could not load canvas').slice(0,240));
-  return '<div class="viz-error">'+
-    '<div class="viz-error-title">Canvas failed to render</div>'+
-    '<div class="viz-error-detail">'+msg+'</div>'+
-    '<div class="viz-error-actions">'+
-      '<button type="button" class="viz-error-btn" data-viz-copy-source="1">Copy source</button>'+
-    '</div>'+
-  '</div>';
-}
-
-/* ── Mermaid diagram rendering ──
-   Pending mermaid diagrams registered during formatMsg().
-   Processed asynchronously in processPendingMermaid() after
-   the final innerHTML is set, because mermaid.render() is async. */
-var _pendingMermaid=[];
-
-function renderMermaid(code){
-  /* If mermaid failed to load, fall back to a code block */
-  if(typeof mermaid==="undefined"){
-    return'<pre><code class="language-mermaid">'+esc(code)+'</code></pre>';
-  }
-  var id="mermaid-card-"+(++_vizId);
-  _pendingMermaid.push({id:id,code:code});
-  return'<div class="viz-card" id="'+id+'" data-viz-state="loading">'+
-    '<div class="viz-card-head">'+
-      '<span class="viz-card-head-icon">'+VIZ_ICON_RENDER+'</span>'+
-      '<span class="viz-card-title">Diagram</span>'+
-      '<span class="viz-card-status">Rendering</span>'+
-      vizHeadActions(id,'socrates-mermaid-'+id)+
-    '</div>'+
-    '<div class="viz-card-body">'+vizSkeletonHtml()+'</div>'+
-  '</div>';
-}
-
-function processPendingMermaid(){
-  if(typeof mermaid==="undefined")return;
-  var pending=_pendingMermaid;
-  _pendingMermaid=[];
-  pending.forEach(function(item){
-    try{
-      mermaid.render('mermaid-svg-'+item.id,item.code)
-        .then(function(result){
-          var el=document.getElementById(item.id);
-          if(!el)return;
-          var body=el.querySelector('.viz-card-body');
-          if(!body)return;
-          body.innerHTML=result.svg;
-          el.setAttribute('data-viz-state','ready');
-          if(result.bindFunctions)result.bindFunctions(body);
-          /* Auto-size based on SVG dimensions */
-          var svg=body.querySelector('svg');
-          if(svg){
-            svg.style.maxWidth='100%';
-            svg.style.height='auto';
-          }
-        })
-        .catch(function(err){
-          var el=document.getElementById(item.id);
-          if(!el)return;
-          var body=el.querySelector('.viz-card-body');
-          if(!body)return;
-          body.innerHTML='<div class="viz-error">'+
-            '<div class="viz-error-icon">!</div>'+
-            '<div class="viz-error-detail">Mermaid error: '+esc(err.message||String(err))+'</div>'+
-          '</div>';
-          el.setAttribute('data-viz-state','error');
-        });
-    }catch(e){
-      var el=document.getElementById(item.id);
-      if(!el)return;
-      var body=el.querySelector('.viz-card-body');
-      if(!body)return;
-      body.innerHTML='<div class="viz-error">'+
-        '<div class="viz-error-icon">!</div>'+
-        '<div class="viz-error-detail">Mermaid error: '+esc(e.message||String(e))+'</div>'+
-      '</div>';
-      el.setAttribute('data-viz-state','error');
-    }
-  });
-}
-
-/* While the AI is still streaming, render the skeleton. The data-
-   viz-state is "loading". */
-function renderVizLoading(){
-  var id="viz-card-"+(++_vizId);
-  return vizCardShell(id,"Loading","loading",
-    '<div class="viz-card-actions"></div>',
-    vizSkeletonHtml()
-  );
-}
-
-/* Final, closed viz block. We embed the AI's HTML via srcdoc —
-   no Blob, no URL.createObjectURL, no manual revoke. The iframe
-   loads on demand, and onload flips data-viz-state to "ready"
-   which fades in the iframe and updates the status pill to "Live". */
-function renderViz(htmlStr){
-  var id="viz-card-"+(++_vizId);
-  var title=((typeof state!=="undefined"&&state&&state.topic)||"Canvas").toString().slice(0,40);
-  var doc='<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
-    VIZ_THEME_RESET+
-    '</head><body>'+htmlStr+'</body></html>';
-  /* srcdoc must be safe to embed in an HTML attribute. We escape all
-     characters that could break out of the attribute or close the
-     parent script tag prematurely. */
-  var srcdoc=doc
-    .replace(/&/g,'&amp;')
-    .replace(/"/g,'&quot;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;');
-  /* The iframe lives in the loading body at first; on load we
-     switch the data-viz-state. We also stash the srcdoc on the
-     iframe via data-srcdoc so the reload button can replay it. */
-  var bodyHtml=
-    vizSkeletonHtml()+
-    '<iframe data-srcdoc="'+srcdoc+'" srcdoc="'+srcdoc+
-    '" sandbox="allow-scripts" title="Canvas" '+
-    'style="width:100%;height:100%;min-height:160px;border:0;background:transparent" '+
-    'onload="try{var c=this.closest(\'.viz-card\');if(c){'+
-    'c.setAttribute(\'data-viz-state\',\'ready\');'+
-    'this.style.opacity=1;try{var d=this.contentDocument;var h=(d&&(d.documentElement.scrollHeight||d.body.scrollHeight))||0;'+
-    'if(h>16){this.style.height=h+\'px\';this.parentElement.classList.add(\'scrollable\')}}catch(_){}}catch(_){}"></iframe>';
-  return '<div class="viz-card" id="'+id+'" data-viz-state="loading" data-srcdoc="'+escAttr(srcdoc)+'" data-title="'+escAttr(title)+'">'+
-    '<div class="viz-card-head">'+
-      '<span class="viz-card-head-icon">'+VIZ_ICON_RENDER+'</span>'+
-      '<span class="viz-card-title">'+esc(title)+'</span>'+
-      '<span class="viz-card-status">Rendering</span>'+
-      vizHeadActions(id,'socrates-viz-collapsed-'+id)+
-    '</div>'+
-    '<div class="viz-card-body">'+bodyHtml+'</div>'+
-  '</div>';
-}
-
-/* HTML attribute escaper. Used to safely put strings inside
-   data-* attributes. */
-function escAttr(s){return String(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
-
-/* Public modal — opens a fullscreen view of the canvas. Bound to
-   the expand button via window.__vizOpenModal. */
-window.__vizOpenModal=function(srcdoc,title){
-  if(!srcdoc)return;
-  var modal=document.createElement("div");
-  modal.className="viz-modal-backdrop";
-  modal.onclick=function(e){if(e.target===modal)close()};
-  function close(){modal.remove();document.removeEventListener("keydown",onKey)};
-  function onKey(e){if(e.key==="Escape")close()};
-  document.addEventListener("keydown",onKey);
-  modal.innerHTML=
-    '<div class="viz-modal" role="dialog" aria-label="Canvas fullscreen">'+
-      '<div class="viz-modal-head">'+
-        '<span class="viz-card-head-icon">'+VIZ_ICON_RENDER+'</span>'+
-        '<span class="viz-modal-title">'+esc(title||"Canvas")+'</span>'+
-        '<div class="viz-card-actions" style="margin-left:auto">'+
-          '<button type="button" class="viz-card-btn" title="Close" aria-label="Close" onclick="this.closest(\'.viz-modal-backdrop\').remove()">'+
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>'+
-          '</button>'+
-        '</div>'+
-      '</div>'+
-      '<div class="viz-modal-body">'+
-        '<iframe srcdoc="'+srcdoc+'" sandbox="allow-scripts" title="Canvas fullscreen" style="width:100%;height:100%;border:0;background:transparent;display:block"></iframe>'+
-      '</div>'+
-    '</div>';
-  document.body.appendChild(modal);
-};
-
-/* Wire the "Copy source" buttons inside error states — delegated
-   once at boot. */
-document.addEventListener("click",function(e){
-  var btn=e.target.closest("[data-viz-copy-source]");
-  if(!btn)return;
-  var card=btn.closest(".viz-card");
-  if(!card)return;
-  var src=card.getAttribute("data-srcdoc")||"";
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(src).then(function(){
-      btn.textContent="Copied";
-      setTimeout(function(){btn.textContent="Copy source"},1400);
-    });
-  }else{
-    /* Fallback for older browsers / non-secure contexts */
-    var ta=document.createElement("textarea");
-    ta.value=src;document.body.appendChild(ta);
-    ta.select();try{document.execCommand("copy")}catch(_){}
-    ta.remove();
-  }
-});
-
-/* Render a Canvas card in error state with a copy-source button.
-   Called when the AI's HTML snippet fails to render. */
-function renderVizError(htmlStr,errorMsg){
-  var id="viz-card-"+(++_vizId);
-  var title=((typeof state!=="undefined"&&state&&state.topic)||"Canvas").toString().slice(0,40);
-  var msg=esc((errorMsg||'Could not load canvas').slice(0,240));
-  return vizCardShell(id,"Error","error",
-    vizHeadActions(id,'socrates-viz-collapsed-'+id),
-    '<div class="viz-error">'+
-      '<div class="viz-error-title">Canvas failed to render</div>'+
-      '<div class="viz-error-detail">'+msg+'</div>'+
-      '<div class="viz-error-actions">'+
-        '<button type="button" class="viz-error-btn" data-viz-copy-source="1">Copy source</button>'+
-      '</div>'+
-    '</div>'
-  );
-}
-
-function formatTickSlice(full,len){
-  return formatMsgProgressive(full.slice(0,len));
-}
-
-/* Strip chat-template artifacts that some reasoning / instruct-tuned
- * models leak into the stream. Shared between the streaming doRender
- * path and the final formatMsg pass so the user never sees
- * <|im_start|>...<|im_end|>, <|endoftext|>, [INST]...[/INST], <s>,
- * etc. as raw text — both in the live bubble and in the final
- * rendered output. */
-function stripChatArtifacts(t){
-  if(!t)return t;
-  /* Multi-line blocks first: <|im_start|>...<|im_end|> including any
-     system-prompt body the model also leaked. Non-greedy so the first
-     <|im_end|> closes the block. */
-  t=t.replace(/<\|im_start\|>[\s\S]*?<\|im_end\|>/g,"");
-  /* Standalone chat-template tokens (angle-pipe-word-pipe-angle). */
-  t=t.replace(/<\|[a-z_]+\|>/gi,"");
-  /* Llama 1 / SentencePiece boundary tokens. */
-  t=t.replace(/<\/?s>/g,"");
-  /* Llama 2 chat format markers. */
-  t=t.replace(/\[INST\]|\[\/INST\]|<<SYS>>|<<\/SYS>>/g,"");
-  /* Tidy whitespace the strip left behind: drop trailing spaces
-     before a newline, collapse 3+ consecutive newlines back to 2
-     so we don't get big blank paragraphs in the rendered output. */
-  t=t.replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n");
-  return t;
-}
-
-/* Progressive markdown renderer for streaming. Walks the
-   accumulated text line-by-line and emits real HTML structure
-   (headings, lists, code blocks, blockquotes, paragraphs) so the
-   user sees formatted output as the text streams in — not raw
-   markdown symbols with <br> for newlines.
-
-   The currently-being-typed line is treated the same as completed
-   lines: as soon as `# ` or `- ` appears at the start of a line,
-   the matching block element is emitted. This makes the H1/LI/etc.
-   appear the instant the model types the opener, instead of leaving
-   `# Title` visible as raw text for half a second.
-
-   Performance: O(n) per call. Called once per animation frame
-   (rAF, ~60 Hz), so even a 4000-char response renders in well
-   under 1 ms. */
-function escHTML(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
-
-/* ── KaTeX macros and config ──
-   Defined globally so both formatMsgProgressive and formatMsg can use them.
-   - \div → \operatorname{div}   (divergence, not ÷)
-   - \curl → \operatorname{curl} (curl)
-   - \grad → \operatorname{grad} (gradient)
-   - \laplacian → \nabla^2
-   - \R/\N/\Z/\Q/\C → \mathbb{...} (number sets) */
-var KATEX_MACROS={
-  "\\div":"\\operatorname{div}",
-  "\\curl":"\\operatorname{curl}",
-  "\\grad":"\\operatorname{grad}",
-  "\\laplacian":"\\nabla^2",
-  "\\R":"\\mathbb{R}",
-  "\\N":"\\mathbb{N}",
-  "\\Z":"\\mathbb{Z}",
-  "\\Q":"\\mathbb{Q}",
-  "\\C":"\\mathbb{C}",
-  "\\eps":"\\varepsilon",
-  "\\ve":"\\varepsilon",
-  "\\dd":"\\operatorname{d}",
-  "\\pd":"\\partial",
-  "\\T":"\\top",
-  "\\tr":"\\operatorname{tr}",
-  "\\rank":"\\operatorname{rank}",
-  "\\im":"\\operatorname{im}",
-  "\\re":"\\operatorname{Re}",
-  "\\Var":"\\operatorname{Var}",
-  "\\Cov":"\\operatorname{Cov}",
-  "\\argmin":"\\operatorname{argmin}",
-  "\\argmax":"\\operatorname{argmax}",
-  "\\sgn":"\\operatorname{sgn}",
-  "\\supp":"\\operatorname{supp}",
-  "\\Span":"\\operatorname{span}",
-  "\\diag":"\\operatorname{diag}",
-  "\\proj":"\\operatorname{proj}",
-  "\\per":"\\perp",
-   "\\U":"\\cup",
-   "\\union":"\\cup",
-   "\\intersection":"\\cap",
-};
-
-/* LaTeX command whitelist used by _autoWrapBareBracketMath to
-   distinguish math content from markdown links, list checkboxes,
-   citations, etc. Match any of these commands as a substring. */
-var LATEX_COMMANDS_RE = /\\(frac|int|sum|prod|partial|nabla|sqrt|mathcal|mathrm|mathbf|mathit|boldsymbol|text|textbf|textit|varepsilon|alpha|beta|gamma|delta|theta|lambda|mu|pi|sigma|phi|omega|tau|to|infty|cdot|times|div|pm|leq|geq|neq|approx|equiv|sim|propto|leftarrow|rightarrow|Leftarrow|Rightarrow|leftrightarrow|Leftrightarrow|in|notin|subset|supset|cup|cap|emptyset|mathbb|binom|over|underline|hat|bar|vec|tilde|dot|ddot)/;
-
-/* Heuristic: a block of text looks like LaTeX if it contains (a) any
-   LaTeX command, OR (b) at least one math operator (=, +, −, ×,
-   etc.) AND at least one letter. The second branch catches simple
-   expressions like "x = 1" that have no LaTeX commands but are
-   clearly math. */
-var MATH_OPERATOR_RE = /[=+\-×÷≤≥≠→←⇒⇔∫∑∏∂√∞∈∉⊂⊃±∓]/;
-var HAS_LETTER_RE = /[a-zA-Z\\]/;
-
-function _looksLikeLatex(s) {
-  if (LATEX_COMMANDS_RE.test(s)) return true;
-  if (MATH_OPERATOR_RE.test(s) && HAS_LETTER_RE.test(s)) return true;
-  return false;
-}
-
-/* Detect bare `[ ... ]` and `( ... )` math lines that weak models
-   frequently emit (e.g. `莱布尼兹法则：\n[\n\\frac{...}\n]\n`).
-   KaTeX does not recognize these as math delimiters, so the raw
-   bracketed text leaks into the rendered output. We wrap the
-   contents with `\[...\]` / `\(...\)` so the existing bracket-stash
-   pass above picks them up and converts to `$$...$$` / `$...$`.
-
-   Pattern requirements:
-     - `[` must be at line start (or string start) — prevents matching
-       `[click here](url)` markdown links.
-     - `]` must be at line end (or string end) — prevents matching
-       inline text like `see [section 2]`.
-     - Multi-line content is allowed via `[\s\S]+?` lazy match.
-
-   The function is idempotent: a second pass sees `\[...\]` already
-   escaped and the regex doesn't match. This is critical for the
-   streaming variant where preprocessMarkdownForStreaming is called
-   on every chunk arrival. */
-function _autoWrapBareBracketMath(s) {
-  /* Bracket-style display math: `[ ... ]` on its own lines. */
-  s = s.replace(/(^|\n)\[([\s\S]+?)\](?=\n|$)/g, function (m, lead, inner) {
-    if (!_looksLikeLatex(inner)) return m;
-    return lead + '\\[' + inner.trim() + '\\]';
-  });
-  /* Paren-style inline math: `( ... )` on a single line. We require
-     the content to be a single line so we don't break prose like
-     "see (note above)". The math heuristic gates further. */
-  s = s.replace(/(^|\n)\(([^()\n]+)\)(?=\n|$)/g, function (m, lead, inner) {
-    if (!_looksLikeLatex(inner)) return m;
-    return lead + '\\(' + inner.trim() + '\\)';
-  });
-  return s;
-}
-
-/* Pre-process raw assistant output to compensate for common
-   formatting sloppiness in weak / small models. Returns a string
-   with normalized delimiters and closed block structures so the
-   downstream renderer (formatMsg / formatMsgProgressive) sees
-   well-formed markdown + math.
-
-   What this fixes:
-   1. `$...$$...$` — model wrote a single `$` for display math
-      (then a stray `$$` or `$` somewhere else). We detect the
-      pattern and promote to `$$...$$`.
-   2. Stray unmatched `$` — if the count of `$` in `s` is odd, we
-      treat the last lone `$` as a literal dollar sign (escaped)
-      so the math regex below doesn't accidentally swallow half
-      a sentence.
-   3. Unclosed code fence ``` — append a closing ``` before the
-      end of `s` so the fence regex matches.
-   4. Stray HTML — `<br>` → `\n`, normalize `<p>...</p>` to plain
-      paragraphs. Models that wrap everything in `<p>...</p>`
-      confuse the markdown parser.
-   5. Windows line endings — normalize `\r\n` to `\n`.
-   6. Bullet character normalization — `• `, `‣ `, `◦ `, `・ ` at
-      line start → `- ` (marked's bullet). */
-function preprocessMarkdown(t){
-  if(!t)return t;
-  var s=String(t);
-  /* 5. CRLF → LF */
-  s=s.replace(/\r\n?/g,"\n");
-  /* 4. stray HTML — drop <p>/</p> wrappers so markdown isn't
-        double-parsed as both inline HTML and plain text. */
-  s=s.replace(/<p>\s*/gi,"").replace(/\s*<\/p>/gi,"\n");
-  s=s.replace(/<br\s*\/?>/gi,"\n");
-
-  /* ── Protect code blocks + inline code + raw math zones ──
-     The downstream $ / $...$ / $$...$$ heuristics must not act on
-     text inside code (e.g. `echo $PATH`, ```bash $PATH ```), so we
-     substitute those spans with neutral placeholders, run the
-     normalization passes, then restore the originals untouched.
-     The placeholder token is chosen to be both: a) unparseable by
-     marked (so it passes through as plain text in the markdown
-     source) and b) containing no `$`, so the dollar heuristics are
-     blind to it. */
-  var _ppStash = [];
-  function _stash(replacement) {
-    var id = _ppStash.length;
-    _ppStash.push(replacement);
-    return '\x01PP' + id + '\x01';
-  }
-  function _protectFences(s) {
-    return s.replace(/```([\w-]*)\n?([\s\S]*?)```/g, function (_, lang, body) {
-      return _stash('```' + lang + '\n' + body + '```');
-    });
-  }
-  function _protectInlineCode(s) {
-    return s.replace(/`[^`\n]+`/g, function (m) { return _stash(m); });
-  }
-
-  s = _protectFences(s);
-  s = _protectInlineCode(s);
-
-  /* ── Protect LaTeX bracket-delimiter math ──
-     Models routinely emit `\[ ... \]` and `\( ... \)` (the LaTeX
-     bracket-style display / inline math delimiters) instead of the
-     markdown-standard `$$...$$` / `$...$`. KaTeX understands both,
-     but our pipeline only knows about the `$` family — so `\[...\]`
-     would otherwise appear in the rendered output as raw
-     `[<br>\mathcal{E} = ...<br>]` text.
-
-     Stash them in placeholders (same mechanism as code blocks) so
-     the dollar heuristics below don't touch them, then convert
-     them to `$...$` / `$$...$$` AFTER the placeholder restore — at
-     that point they're safe to feed to KaTeX. */
-  s = s.replace(/\\\[([\s\S]+?)\\\]/g, function (m) {
-    /* store the inner content; the closing `\]` marker is preserved
-       in the comment but the actual placeholder text is what we'll
-       expand back. Format: a unique token with `DM` prefix so the
-       KaTeX block-substitution step can identify it later. */
-    return _stash('\\[' + m.slice(2, -2).trim() + '\\]');
-  });
-  s = s.replace(/\\\(([\s\S]+?)\\\)/g, function (m) {
-    return _stash('\\(' + m.slice(2, -2).trim() + '\\)');
-  });
-
-  /* Strip a leading whitespace inside $$..$$ captures ($$ x=1 $$ →
-     $$x=1$$) so trailing-whitespace before a Chinese character on the
-     next line doesn't produce a stray <br>. Also handles leading
-     whitespace. Only operates OUTSIDE code (which is stashed). */
-  s = s.replace(/\$\$\s+([\s\S]+?)\s+\$\$/g, '$$$$' + '$1' + '$$$$');
-
-  /* Promote lone `$...$` that contains a `\\` line-break (heuristic for
-     display math) to `$$...$$`. Only when the `$...$` is on its own
-     line / span. */
-  s = s.replace(/(^|\n)\$([^$\n]+(?:\\\\[^$\n]*)*)\$(\s*\n|$)/g, function (_, lead, math, tail) {
-    return lead + '$$' + math + '$$' + tail;
-  });
-
-  /* Stray unmatched `$`. Count UNESCAPED occurrences; if odd, the last
-     lone `$` is almost certainly punctuation ("$5", "$100") rather
-     than math. Escape it so the inline-math regex doesn't eat it.
-     Skip any `$` that's part of the placeholder token (none — the
-     placeholders contain no `$`).
-
-     CRITICAL for streaming: this function is called on the FULL
-     accumulated text on every chunk arrival. The previous
-     implementation counted ALL `$` characters — including those we
-     just escaped on the previous call — so each chunk arrival added
-     another `\` in front of the same stray `$`. After 5 chunks you'd
-     see `\\\\\\$5` instead of `\$5`. The fix: count only UNESCAPED
-     `$` (those not preceded by an odd number of backslashes). On a
-     second pass, the `\$` we wrote is already escaped and is no
-     longer counted, so the parity check stays stable. */
-  function _countUnescapedDollars(s) {
-    var n = 0;
-    for (var i = 0; i < s.length; i++) {
-      if (s.charAt(i) !== '$') continue;
-      var bs = 0;
-      var j = i - 1;
-      while (j >= 0 && s.charAt(j) === '\\') { bs++; j--; }
-      if (bs % 2 === 0) n++;
-    }
-    return n;
-  }
-  function _lastUnescapedDollar(s) {
-    for (var i = s.length - 1; i >= 0; i--) {
-      if (s.charAt(i) !== '$') continue;
-      var bs = 0;
-      var j = i - 1;
-      while (j >= 0 && s.charAt(j) === '\\') { bs++; j--; }
-      if (bs % 2 === 0) return i;
-    }
-    return -1;
-  }
-  if (_countUnescapedDollars(s) % 2 === 1) {
-    var idx = _lastUnescapedDollar(s);
-    if (idx >= 0) {
-      var prev = s.charAt(idx - 1), next = s.charAt(idx + 1);
-      if (prev !== '$' && next !== '$') {
-        s = s.slice(0, idx) + '\\$' + s.slice(idx + 1);
-      }
-    }
-  }
-
-  /* Auto-wrap bare `[ ... ]` (and `( ... )`) lines that contain LaTeX
-     content into proper `\[...\]` / `\(...\)` delimiters. Weak models
-     frequently emit display math wrapped in PLAIN square brackets
-     instead of `\[...\]` (e.g. "莱布尼兹法则：\n[\n\\frac{d}{dt} ...\n]")
-     because the markdown source is inside a code block or because
-     the user prompt was written with bare brackets for visual
-     separation. KaTeX does not recognize `[...]` as a math zone, so
-     the model emits what looks to us like "[<br>\frac{...}<br>]" in
-     the rendered output.
-
-     We detect LaTeX content with two heuristics:
-       1) The block contains any LaTeX command (\frac, \int, \sum,
-          Greek letters, etc.).
-       2) OR the block contains >= 1 math operator (=, +, −, ×, ÷,
-          ≤, ≥, etc.) AND at least one letter — this catches simple
-          expressions like "x = 1" that have no LaTeX commands.
-
-     The `[ ... ]` form requires `[` and `]` to be on their own
-     visual lines (line start, line end) so we don't accidentally
-     match markdown links like `[text](url)`, list items
-     `- [ ] task`, or inline citations `[1]`. */
-  s = _autoWrapBareBracketMath(s);
-
-  /* Unclosed code fence. Count the number of ``` that are NOT inside
-     a placeholder (placeholders never contain ```). The original
-     approach was a global `s.match(/```/g)` which would over-count
-     the fences inside the (then-stashed) code blocks — but those
-     were already correctly balanced by the protection pass, so the
-     only case we need to fix is when the model emits an odd number
-     of fences in the FREE text. The stashes each contain 1 pair of
-     ``` so they don't affect parity. Subtract 2 per placeholder to
-     get the "free" fence count. */
-  var fenceCount = (s.match(/```/g) || []).length;
-  fenceCount -= _ppStash.length * 2; /* each stash has 2 fences */
-  if (fenceCount % 2 === 1) {
-    if (!/```\s*$/.test(s)) s = s + '\n```';
-  }
-
-  /* Normalize bullet glyphs to `- ` so marked treats them as list items. */
-  s = s.replace(/(^|\n)\s*[•‣◦・·]\s+/g, '$1- ');
-
-  /* Normalize markdown table separator rows so marked.js doesn't drop
-     columns or refuse to render. The bug: a model writes
-        | A | B | C |
-        |---|---|---|
-     correctly, but sometimes also
-        | A | B | C |
-        |---|---|---
-     (last cell missing trailing `|`), or
-        | A | B |
-        |---|---|
-     with mismatched counts, or a separator without the leading `|`.
-     We rewrite the line directly after a header line. */
-  s = fixMarkdownTableSeparators(s);
-
-  /* Ensure a blank line AFTER a markdown table block so the following
-     paragraph isn't eaten as a new row.
-
-     A GFM table is:
-       - 1+ header lines starting with `|`
-       - 1 separator line `|---|---|...`
-       - 0+ data rows starting with `|`
-     followed by a non-table paragraph.
-
-     The bug we're fixing: when the model writes a table with NO blank
-     line after the last row, marked.js treats the next paragraph as
-     another table row.
-
-     Strategy: walk lines. When a line starts with `|` (a data row)
-     and is immediately followed by a non-blank, non-table line (a
-     paragraph), AND somewhere above (possibly after several other
-     table rows) there's a separator line — inject a blank line. */
-  s = (function () {
-    var lines = s.split('\n');
-    for (var i = 0; i < lines.length - 1; i++) {
-      var cur = lines[i];
-      var nxt = lines[i + 1];
-      if (!/^[ \t]*\|/.test(cur)) continue; /* not a table row */
-      if (nxt === '' || /^[ \t]*$/.test(nxt)) continue; /* next is blank — OK */
-      if (/^[ \t]*\|[^\n]/.test(nxt)) continue; /* next is another table row — still in table */
-      /* nxt is a non-blank, non-table line. Walk back over consecutive
-         table rows + the header to find a separator line. If found,
-         the current line is the last row of a table. */
-      var j = i;
-      while (j >= 0 && /^[ \t]*\|[^\n]/.test(lines[j])) j--;
-      /* `j` is now the line just before the header. The header line
-         is at j+1. The separator (if any) is at j+2. */
-      var sep = j + 2 < lines.length ? lines[j + 2] : '';
-      if (!/^\s*\|[\s:|-]+\s*\|?\s*$/.test(sep)) continue;
-      /* Inject a blank line at position i+1. */
-      lines.splice(i + 1, 0, '');
-      i++; /* skip the inserted blank */
-    }
-    return lines.join('\n');
-  })();
-
-  /* Restore protected code spans. */
-  s = s.replace(/\x01PP(\d+)\x01/g, function (_, id) { return _ppStash[parseInt(id)]; });
-
-  /* Convert any remaining `\[ ... \]` / `\( ... \]` bracket-style
-     LaTeX delimiters into their `$$...$$` / `$...$` equivalents so
-     the downstream KaTeX block-substitution step (which only matches
-     `$`) can pick them up. By the time we reach this line, the
-     dollar-parity rules above have already run, so we're not
-     disturbing their parity checks. */
-  s = s.replace(/\\\[([\s\S]+?)\\\]/g, '$$$$$1$$$$');
-  s = s.replace(/\\\(([\s\S]+?)\\\)/g, '$$$1$$');
-
-  return s;
-}
-
-/* Detect and fix a GFM table separator row that:
-   1) Has fewer cells than the header, OR
-   2) Has the same number of cells but the last cell is missing its
-      trailing `|`, OR
-   3) Is missing the leading `|` entirely.
-   Only fires on a line that contains `---` (or `:--:` / `--:` style
-   alignment markers) so we don't accidentally rewrite non-table lines.
-   Returns the separator line padded to match the header column count
-   and terminated with `|`. */
-function fixMarkdownTableSeparators(s) {
-  var lines = s.split('\n');
-  for (var i = 1; i < lines.length; i++) {
-    var prev = lines[i - 1];
-    var cur = lines[i];
-    if (!/\|/.test(prev)) continue;
-    /* Is `cur` a separator row? Allow leading/trailing spaces. */
-    if (!/^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(cur)) continue;
-    /* Count header cells: split on `|` and drop empties at the ends. */
-    var headerCells = prev.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').length;
-    /* Split the current separator on `|` similarly. */
-    var sepCells = cur.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|');
-    if (sepCells.length === headerCells) {
-      /* Length matches but no trailing pipe — just add it. */
-      if (!/\|/.test(cur.replace(/^\s*\|/, '').slice(-1)) || !/\|\s*$/.test(cur)) {
-        lines[i] = cur.replace(/\s*$/, '') + ' |';
-      }
-      continue;
-    }
-    if (sepCells.length < headerCells) {
-      /* Pad to match header. Each missing cell becomes `| --- |`. */
-      while (sepCells.length < headerCells) sepCells.push(' --- ');
-      lines[i] = '| ' + sepCells.join(' | ').trim() + ' |';
-      continue;
-    }
-    if (sepCells.length > headerCells) {
-      /* Truncate to header. */
-      lines[i] = '| ' + sepCells.slice(0, headerCells).join(' | ').trim() + ' |';
-    }
-  }
-  return lines.join('\n');
-}
-
-/* Streaming-safe variant of preprocessMarkdown. The full
-   preprocessMarkdown runs several rules that are NOT idempotent on
-   partial streaming text — when the same accumulated buffer is
-   re-processed on every chunk arrival, the output drifts:
-
-     - The stray-$ escape rule escaped the LAST lone `$` on every
-       pass, producing `\$` → `\\$` → `\\\$` after 3 chunks.
-     - The unclosed-fence append added `\n\`\`\`` whenever the
-       buffer ended with an odd fence count; when the model's real
-       closing ` ``` ` arrived later, the buffer was over-closed.
-     - The `$$ x=1 $$` whitespace trim only fires when whitespace is
-       present; the first pass produces `$$ x=1 $$` and the second
-       trims to `$$x=1 $$`, causing a flicker on every chunk that
-       adds more text inside the math.
-
-   The streaming path needs IDEMPOTENT and PARTIAL-STRING-SAFE rules.
-   We drop the three problematic rules above and keep the rest
-   (CRLF, stray HTML, code-block $ protection, table separator fix,
-   table blank-line injection, bullet glyph normalization). The
-   dropped rules are still applied in the FINAL formatMsg pass —
-   by then the buffer is complete so idempotency doesn't matter. */
-function preprocessMarkdownForStreaming(t){
-  if(!t)return t;
-  var s=String(t);
-  /* CRLF → LF */
-  s=s.replace(/\r\n?/g,"\n");
-  /* Stray HTML — drop <p>/</p> wrappers and <br/> tags. */
-  s=s.replace(/<p>\s*/gi,"").replace(/\s*<\/p>/gi,"\n");
-  s=s.replace(/<br\s*\/?>/gi,"\n");
-
-  /* ── Protect code blocks + inline code ──
-     Same stash+restore pattern as the full preprocessor, but we do
-     NOT add a placeholder for unclosed ``` — the streaming pass
-     must preserve whatever the model wrote verbatim, even mid-code-
-     block, because the closing ``` may arrive in a later chunk. */
-  var _ppStash = [];
-  function _stash(replacement) {
-    var id = _ppStash.length;
-    _ppStash.push(replacement);
-    return '\x01PP' + id + '\x01';
-  }
-  s = s.replace(/```([\w-]*)\n?([\s\S]*?)```/g, function (_, lang, body) {
-    return _stash('```' + lang + '\n' + body + '```');
-  });
-  s = s.replace(/`[^`\n]+`/g, function (m) { return _stash(m); });
-
-  /* Protect bracket-style LaTeX delimiters. Idempotent — already-
-     converted placeholders don't match again. */
-  s = s.replace(/\\\[([\s\S]+?)\\\]/g, function (m) {
-    return _stash('\\[' + m.slice(2, -2).trim() + '\\]');
-  });
-  s = s.replace(/\\\(([\s\S]+?)\\\)/g, function (m) {
-    return _stash('\\(' + m.slice(2, -2).trim() + '\\)');
-  });
-
-  /* NOTE: we intentionally skip:
-       - The lone-`$...$` → `$$...$$` promote rule (it depends on
-         a fully-closed `$...$` pair).
-       - The stray-`$` escape rule (non-idempotent; see comment at
-         top of file).
-       - The unclosed-fence append (non-idempotent; appended
-         fences fight with the model's real closing fence).
-       - The `$$ x=1 $$` whitespace trim (causes flicker between
-         consecutive chunks).
-     All four are applied in the FINAL preprocessMarkdown call from
-     formatMsg. */
-
-  /* Auto-wrap bare `[ ... ]` math. Idempotent: once `[ ... ]` has
-     been rewritten to `\[ ... \]` the regex won't match again on a
-     second pass, so repeatedly calling preprocessMarkdownForStreaming
-     on a growing buffer is safe. */
-  s = _autoWrapBareBracketMath(s);
-
-  /* Normalize bullet glyphs. */
-  s = s.replace(/(^|\n)\s*[•‣◦・·]\s+/g, '$1- ');
-
-  /* Table separator fix. Idempotent: a properly-formed separator is
-     unchanged on re-processing. */
-  s = fixMarkdownTableSeparators(s);
-
-  /* Table blank-line injection. Idempotent: once the blank line is
-     injected, the next pass sees it and skips the insertion. */
-  s = (function () {
-    var lines = s.split('\n');
-    for (var i = 0; i < lines.length - 1; i++) {
-      var cur = lines[i];
-      var nxt = lines[i + 1];
-      if (!/^[ \t]*\|/.test(cur)) continue;
-      if (nxt === '' || /^[ \t]*$/.test(nxt)) continue;
-      if (/^[ \t]*\|[^\n]/.test(nxt)) continue;
-      var j = i;
-      while (j >= 0 && /^[ \t]*\|[^\n]/.test(lines[j])) j--;
-      var sep = j + 2 < lines.length ? lines[j + 2] : '';
-      if (!/^\s*\|[\s:|-]+\s*\|?\s*$/.test(sep)) continue;
-      lines.splice(i + 1, 0, '');
-      i++;
-    }
-    return lines.join('\n');
-  })();
-
-  /* Restore protected code spans. */
-  s = s.replace(/\x01PP(\d+)\x01/g, function (_, id) { return _ppStash[parseInt(id)]; });
-  /* Convert bracket-style LaTeX delimiters to $$ / $ so KaTeX picks
-     them up. Same idempotency consideration: if the previous pass
-     already converted them, the source `\[...\]` is gone and the
-     regex won't match again. */
-  s = s.replace(/\\\[([\s\S]+?)\\\]/g, '$$$$$1$$$$');
-  s = s.replace(/\\\(([\s\S]+?)\\\)/g, '$$$1$$');
-  return s;
-}
-
-function formatMsgProgressive(t){
-  if(!t)return"";
-  var s=preprocessMarkdownForStreaming(String(t));
-  /* Drop a single trailing newline so the last split element is
-     not an empty line. Without this every chunk ending in \n would
-     add a phantom blank paragraph. */
-  if(s.charCodeAt(s.length-1)===10){s=s.slice(0,-1)}
-  if(!s)return"";
-
-  /* ── Progressive renderer using marked.parse + KaTeX ──
-     This mirrors formatMsg's approach so that formulas, tables, and
-     other rich content render correctly DURING streaming, not just
-     after finish(). The key difference from formatMsg is handling
-     of UNCLOSED blocks (partial $$, unclosed code fences, incomplete
-     tables) that exist mid-stream: we try to render them gracefully
-      or show a subtle placeholder instead of dumping raw LaTeX/markup. */
-
-  var blocks=[];
-  var pid=0;
-  function save(html){
-    var id=pid++;
-    blocks.push(html);
-    return'\x00BLOCK'+id+'\x00';
-  }
-
-  /* 1. Closed think blocks */
-  s=s.replace(/<think>([\s\S]*?)<\/think>/g,function(_,content){
-    var inner;
-    try{
-      inner=formatMsgProgressive(content.trim().replace(/<\/?think>/g,""));
-    }catch(_e){
-      inner=escHTML(content.trim());
-    }
-    return save('<details class="think-block"><summary class="think-summary">Thinking</summary><div class="think-content">'+inner+'</div></details>');
-  });
-  /* Unclosed <think> — show pulsing placeholder */
-  s=s.replace(/<think>([\s\S]*)$/g,function(_,content){
-    var inner="";
-    try{
-      var c=content.trim().replace(/<\/?think>/g,"");
-      inner=c?formatMsgProgressive(c):'<span class="thinking-pulse"></span> Thinking…';
-    }catch(_e){
-      inner=escHTML(content.trim());
-    }
-    return save('<details class="think-block"><summary class="think-summary"><span class="thinking-pulse"></span> Thinking…</summary><div class="think-content">'+inner+'</div></details>');
-  });
-
-  /* 1b. Tutor scaffold blocks — show text-only preview during streaming.
-         At finish time renderAssistantHTML replaces them with interactive widgets. */
-  function _scaffoldText(inner) {
-    var text = inner.replace(/<[^>]+>/g, '').trim();
-    return text.length > 200 ? text.slice(0, 200) + '…' : text;
-  }
-  s = s.replace(/<(quiz|example|practice|definition|flashcard)\b[^>]*>([\s\S]*?)<\/\1>/gi, function(_, tag, content) {
-    var label = tag === 'quiz'     ? '[Quick Check]'
-              : tag === 'example'  ? '[Example]'
-              : tag === 'practice' ? '[Practice]'
-              : tag === 'definition' ? '[Definition]'
-              : tag === 'flashcard'  ? '[Flashcard]'
-              : '[' + tag + ']';
-    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">' + label + '</span> ' + escHTML(_scaffoldText(content)) + '</div>');
-  });
-  s = s.replace(/<step\b[^>]*>([\s\S]*?)<\/step>/gi, function(_, content) {
-    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">[Step]</span> ' + escHTML(_scaffoldText(content)) + '</div>');
-  });
-  s = s.replace(/<(quiz|example|practice|definition|step|flashcard)\b[^>]*>([\s\S]*?)$/gi, function(_, tag) {
-    return save('<span class="scaffold-stream scaffold-stream-unclosed">…' + escHTML(tag) + '…</span>');
-  });
-
-  /* 2. Display math $$...$$ — CLOSED blocks render with KaTeX now.
-     Unclosed $$ (still streaming) are also rendered with KaTeX
-     (throwOnError:false means partial LaTeX degrades gracefully);
-     if KaTeX can't handle it at all, show a subtle placeholder. */
-  if(typeof katex!=="undefined"){
-    /* Closed $$...$$ — render immediately */
-    s=s.replace(/\$\$([\s\S]+?)\$\$/g,function(_,math){
-      try{
-        return save(katex.renderToString(math.trim(),{displayMode:true,throwOnError:false,macros:KATEX_MACROS}));
-      }catch(e){
-        return save('<pre>'+escHTML('$$'+math+'$$')+'</pre>');
-      }
-    });
-    /* Unclosed $$ — try KaTeX on the partial content; if it fails,
-       show a subtle placeholder so raw LaTeX source is hidden */
-    s=s.replace(/\$\$([\s\S]+)$/g,function(_,math){
-      try{
-        return save(katex.renderToString(math.trim(),{displayMode:true,throwOnError:false,macros:KATEX_MACROS}));
-      }catch(e){
-        return save('<span class="math-partial" style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
-      }
-    });
-  }
-
-  /* 3. Inline math $...$ — same as formatMsg.
-     Note: we allow newlines in the captured math (KaTeX handles
-     them as whitespace). The previous [^\$\n]+? pattern refused
-     to match streaming chunks where the boundary fell at a \n. */
-  if(typeof katex!=="undefined"){
-    s=s.replace(/\$(.+?)\$/g,function(_,math){
-      try{
-        return save(katex.renderToString(math.trim(),{displayMode:false,throwOnError:false,macros:KATEX_MACROS}));
-      }catch(e){
-        return save('<code>'+escHTML("$"+math+"$")+'</code>');
-      }
-    });
-  }
-
-  /* 4. Closed code fences ```lang\n...\n``` — render as <pre><code> */
-  s=s.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){
-    var trimmed=code.trim();
-    var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
-    return save('<pre><code'+langAttr+'>'+escHTML(trimmed)+'</code></pre>');
-  });
-
-  /* 5. Unclosed code fence — show what we have so far in a code
-     block rather than letting marked dump it as raw text */
-  s=s.replace(/```(\w*)\n?([\s\S]*)$/g,function(_,lang,body){
-    var trimmed=body.trim();
-    if(trimmed){
-      var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
-      return save('<pre><code'+langAttr+'>'+escHTML(trimmed)+'</code></pre>');
-    }
-    return save('<span style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
-  });
-
-  /* 6. Render Markdown via marked.parse — handles tables, lists,
-     headings, blockquotes, paragraphs, links, images, etc. with
-     full GFM support, matching the final formatMsg output.
-     This is the key change: we now use marked.parse during streaming
-     instead of a custom lightweight renderer, so tables and other
-     GFM features render correctly as they stream in. */
-  var html;
-  if(typeof marked!=="undefined"){
-    html=marked.parse(s,{breaks:true,gfm:true});
-  }else{
-    /* Fallback: very basic markdown if marked is unavailable */
-    html="<p>"+escHTML(s).replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>")+"</p>";
-  }
-
-  /* 7. Restore protected blocks */
-  html=html.replace(/\x00BLOCK(\d+)\x00/g,function(_,id){
-    return blocks[parseInt(id)];
-  });
-
-  return html;
-}
-
-function formatMsg(t){
-  /* Run the weak-model markdown preprocessor first — see its
-     definition just above formatMsgProgressive for the list of
-     fixes (CRLF normalization, stray-HTML unwrapping, unclosed
-     fence closure, stray-$ escaping, bullet-glyph normalization). */
-  if(typeof marked==="undefined"||typeof katex==="undefined"){return"<p>"+esc(preprocessMarkdown(t)).replace(/```(\w*)\r?\n?([\s\S]*?)```/g,function(_,l,c){return"<pre><code>"+esc(c.trim())+"</code></pre>"}).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>")+"</p>"}
-  var blocks=[];
-  var pid=0;
-  function save(html){
-    var id=pid++;
-    blocks.push(html);
-    return'\x00BLOCK'+id+'\x00';
-  }
-
-  /* 0. Normalize HTML-escaped think tags — some backends escape <think> to &lt;think&gt;
-       before JSON-serializing the SSE payload. Convert them back so the regex matches. */
-  t=t.replace(/&lt;think&gt;/g,'<think>').replace(/&lt;\/think&gt;/g,'</think>');
-
-  /* 0a. Strip chat-template artifacts (hoisted to top-level
-        stripChatArtifacts so the streaming doRender path can reuse
-        it — otherwise the user sees leaked <|im_start|>... etc. as
-        the text streams in, and only sees them disappear at the
-        final formatMsg pass). */
-  t=stripChatArtifacts(t);
-
-  /* 0a-weak. Weak-model preprocessor — see preprocessMarkdown above
-     for the full fix list (CRLF, stray HTML, lone-$ escaping,
-     unclosed-fence closure, bullet-glyph normalization, promote
-     single-$ display-math to $$). */
-  t=preprocessMarkdown(t);
-
-  /* 0a-tutor. Fallback safety: strip raw scaffold XML when formatMsg
-         is called standalone (renderAssistantHTML already replaced them
-         in the normal path). */
-  t=t.replace(/<(quiz|example|practice|definition|flashcard)\b[^>]*>([\s\S]*?)<\/\1>/gi,function(_,tag,content){
-    var label='['+(tag==='quiz'?'Quiz':tag==='example'?'Example':tag==='practice'?'Practice':tag==='definition'?'Definition':'Flashcard')+']';
-    var txt=content.replace(/<[^>]+>/g,'').trim();
-    if(txt.length>300)txt=txt.slice(0,300)+'…';
-    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">'+label+'</span>'+esc(txt)+'</div>');
-  });
-  t=t.replace(/<step\b[^>]*>([\s\S]*?)<\/step>/gi,function(_,content){
-    var txt=content.replace(/<[^>]+>/g,'').trim();
-    if(txt.length>300)txt=txt.slice(0,300)+'…';
-    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">[Step]</span>'+esc(txt)+'</div>');
-  });
-  t=t.replace(/<(quiz|example|practice|definition|step|flashcard)\b[^>]*>([\s\S]*?)$/gi,function(_,tag){
-    return save('<span class="scaffold-stream scaffold-stream-unclosed">…'+esc(tag)+'…</span>');
-  });
-
-  /* 0b. Pre-emptive viz detection.
-     As soon as the streamed text contains a ```viz or ```html fence
-     opener, replace the raw fence line itself with a hidden marker
-     so marked.js will not turn the accumulated HTML inside into a
-     <pre><code> block as it streams in. The full block is then
-     replaced with a viz-card below. This guarantees the user never
-     sees raw HTML character-by-character as it streams. */
-  t=t.replace(/^```(?:viz|html)\s*$/m,'```viz\n');
-
-  /* 1. Think blocks — collapsed by default; the user clicks the
-        summary to expand and read the reasoning. The content is
-        rendered through formatMsg itself (marked + KaTeX +
-        highlight.js) so markdown, inline code, lists, links,
-        and math in the reasoning are typeset properly instead
-        of being dumped as raw escaped text — and we strip any
-        stray <think>/</think> from the inner content first so
-        the recursive call can't spawn a nested think block. */
-  t=t.replace(/<think>([\s\S]*?)<\/think>/g,function(_,content){
-    var inner;
-    try{
-      inner=formatMsg(content.trim().replace(/<\/?think>/g,""));
-    }catch(_){
-      inner=esc(content.trim());
-    }
-    return save('<details class="think-block"><summary class="think-summary">Thinking</summary><div class="think-content">'+inner+'</div></details>');
-  });
-  /* 1b. Unclosed <think> — same collapsed rendering with a
-        pulsing "Thinking…" placeholder. The streaming state
-        machine in addStreamingMessage owns the live state; this
-        rule only fires on full formatMsg passes (e.g. the
-        typeTick animation at finish, or a backend that forgets
-        to close the tag). */
-  t=t.replace(/<think>([\s\S]*)$/g,function(_,content){
-    var inner="";
-    try{
-      var c=content.trim().replace(/<\/?think>/g,"");
-      inner=c?formatMsg(c):'<span class="thinking-pulse"></span> Thinking…';
-    }catch(_){
-      inner=esc(content.trim());
-    }
-    return save('<details class="think-block"><summary class="think-summary"><span class="thinking-pulse"></span> Thinking…</summary><div class="think-content">'+inner+'</div></details>');
-  });
-
-  /* 1c. Mermaid diagram blocks — render as SVG via mermaid.js.
-     Closed ```mermaid fences produce a viz-card that is filled
-     asynchronously by processPendingMermaid() after the innerHTML
-     is set. Unclosed fences show a loading skeleton. */
-  t=t.replace(/```mermaid\s*\n?([\s\S]*?)```/g,function(_,code){
-    var trimmed=code.trim();
-    return trimmed?save(renderMermaid(trimmed)):'';
-  });
-  t=t.replace(/```mermaid\s*\n?([\s\S]*?)$/g,function(_,body){
-    return save(renderVizLoading());
-  });
-
-  /* 1d. Viz blocks — AI-generated HTML in a sandboxed iframe.
-     ```viz <any HTML with inline CSS/JS> ``` or ```html <viz HTML> ```.
-     IMPORTANT: we replace BEFORE marked.js runs so that the raw
-     HTML inside a viz/html fence is never rendered as <pre><code>
-     character-by-character during streaming. */
-  t=t.replace(/```(?:viz|html)\s*\n?([\s\S]*?)```/g,function(_,json){
-    var trimmed=json.trim();
-    return trimmed?save(renderViz(trimmed)):'';
-  });
-  /* 1d. Unclosed ```viz or ```html during streaming — show loading
-     animation. This is the IMPORTANT one: the moment a viz/html
-     fence opener appears, we hide everything that follows it (until
-     a closing ``` arrives) and render a viz-card loading placeholder
-     instead, so the user never sees the raw HTML characters stream
-     into a <pre><code> block. The loading card is replaced by
-     renderViz() in rule 1c once the fence closes. */
-  t=t.replace(/```(?:viz|html)\s*\n?([\s\S]*?)$/g,function(_,body){
-    /* If the unclosed body already has some content, throw it away
-       — we keep no trace of the raw HTML in the DOM. The final,
-       closed viz block in rule 1c above will pick it up correctly
-       (it ran first because regex.exec is left-to-right, but matched
-       only closed blocks; this 1d picks up the trailing unclosed
-       fragment). To avoid the loading card being immediately
-       replaced by the rule-1c iframe, we wrap the body in a
-       sentinel that the later renderViz understands. Simpler: just
-       render loading. */
-    return save(renderVizLoading());
-  });
-
-  /* 2. Code blocks — including fallback for html/viz blocks that the
-        dedicated viz handler above may have missed (edge cases). */
-  t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){
-    var trimmed=code.trim();
-    /* Fallback: render HTML-like code blocks as viz iframes.
-       Triggers on html/viz language tags, OR on any block whose content
-       contains strong HTML indicators (actual closing tags or style elements). */
-    var looksLikeHtml=trimmed.length>30&&(
-      lang==="html"||lang==="viz"||
-      /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
-    );
-    if(looksLikeHtml&&trimmed.length>20){
-      return save(renderViz(trimmed));
-    }
-    var langAttr=lang?' class="language-'+esc(lang)+'"':'';
-    return save('<pre><code'+langAttr+'>'+esc(trimmed)+'</code></pre>');
-  });
-
-  /* 3. Display math $$...$$ */
-  t=t.replace(/\$\$([\s\S]*?)\$\$/g,function(_,math){
-    try{
-      return save(katex.renderToString(math.trim(),{displayMode:true,throwOnError:false,macros:KATEX_MACROS}));
-    }catch(e){
-      return save('<pre>'+esc('$$'+math+'$$')+'</pre>');
-    }
-  });
-  /* 3b. Unclosed $$...$ — try to render whatever KaTeX can from the
-     partial LaTeX source. If the slice ends mid-block (because the
-     chunk boundary fell inside the math), we still emit SOMETHING so
-     the user sees typeset math instead of raw `$$\begin{aligned}...`
-     streaming in as plain text. throwOnError:false means KaTeX
-     degrades gracefully on partial LaTeX. */
-  if(typeof katex!=="undefined"){
-    t=t.replace(/\$\$([\s\S]+?)$/g,function(_,math){
-      var src=math.trim();
-      /* Auto-close any matching \begin{...} environments that are
-         still open at the end of the slice. Without this, KaTeX
-         emits a katex-error span for partial aligned/array/cases
-         blocks (e.g. the user streamed `\begin{aligned}\n... \\`
-         without the closing \end{aligned} yet). */
-      var begins=src.match(/\\begin\{([^}]+)\}/g)||[];
-      var ends=src.match(/\\end\{([^}]+)\}/g)||[];
-      var openNames=[];
-      begins.forEach(function(b){openNames.push(b.slice(7,-1))});
-      ends.forEach(function(e){
-        var name=e.slice(5,-1);
-        for(var k=openNames.length-1;k>=0;k--){
-          if(openNames[k]===name){openNames.splice(k,1);break}
-        }
-      });
-      var closed=src;
-      for(var i=openNames.length-1;i>=0;i--){
-        closed+="\n\\end{"+openNames[i]+"}";
-      }
-      try{
-        return save(katex.renderToString(closed,{displayMode:true,throwOnError:false,macros:KATEX_MACROS}));
-      }catch(e){
-        return save('<span class="math-partial" style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
-      }
-    });
-  }
-
-  /* 4. Inline math $...$
-     IMPORTANT: this regex must allow newlines in the captured math
-     (KaTeX renders \n inside $...$ as a soft space). The previous
-     [^\$\n]+? pattern silently failed when a streaming chunk boundary
-     landed at a \n inside a formula — the user would see raw $x\n=1$
-     in the output until the closing $ arrived. Using [\s\S]+? (or .+?
-     with the s flag) is the fix. */
-  t=t.replace(/\$([\s\S]+?)\$/g,function(_,math){
-    try{
-      return save(katex.renderToString(math.trim(),{displayMode:false,throwOnError:false,macros:KATEX_MACROS}));
-    }catch(e){
-      return save('<code>'+esc('$'+math+'$')+'</code>');
-    }
-  });
-
-  /* 5. Render Markdown */
-  var html=marked.parse(t,{breaks:true,gfm:true});
-
-  /* 6. Restore protected blocks */
-  html=html.replace(/\x00BLOCK(\d+)\x00/g,function(_,id){
-    return blocks[parseInt(id)];
-  });
-
-  return html;
-}
 async function resetApp(){
   if(state.topic||state.kbNodes.length>0||document.getElementById("msgList").children.length>0){
     var ok=await showConfirm("Start a new session?","You have an active session. Starting a new one will save your progress to Recents.",false);
@@ -9278,79 +8112,11 @@ async function resetApp(){
    ============================================================ */
 var CURRENT_USER=null;
 
-/* P0.4 — unified ApiError. All apiFetch rejections are normalised
-   to this shape:
-     { status: Number,       // HTTP status, 0 for network/abort
-       code:   String|undef, // optional server "code" field
-       message:String,       // human-readable summary
-       body:   Object|undef  // parsed JSON body, if any
-       retried:Number }      // how many times retried before giving up
-   Callers can keep the legacy `err.status === 403` checks. */
-function makeApiError(status,message,body,code,retried){
-  var err=new Error(message);
-  err.status=status;err.code=code;err.body=body;err.retried=retried||0;
-  err.isApiError=true;
-  return err;
-}
-
-function getCsrfToken(){
-  /* Read the CSRF token from the cookie set by the backend. */
-  var m=document.cookie.match(/\bcsrf=([^;]+)/);
-  return m?m[1]:null;
-}
-
-/**
- * P0.3 — like apiFetch, but returns the raw Response so streaming
- * callers (SSE, chunked) can consume the body themselves. Adds the
- * same CSRF header, credentials, 401 → handleAuthExpired, and
- * 403 → refresh+yield+replay-once behaviour.
- *
- * Use this for /api/chat/stream, /api/agent/run, /api/search,
- * /api/fetch-batch. For ordinary JSON endpoints, use apiFetch.
- */
-async function apiFetchRaw(path, opts) {
-  opts = opts || {};
-  opts.credentials = "include";
-  if (!opts.headers) opts.headers = {};
-  if (opts.body && typeof opts.body !== "string") {
-    opts.body = JSON.stringify(opts.body);
-    opts.headers["Content-Type"] = "application/json";
-  }
-  var method = (opts.method || "GET").toUpperCase();
-  if (method !== "GET" && method !== "HEAD") {
-    var t = getCsrfToken();
-    if (t) opts.headers["X-CSRF-Token"] = t;
-  }
-  var controller = new AbortController();
-  var rawTimeoutMs = typeof opts.timeoutMs === "number" ? opts.timeoutMs : 30000;
-  var tmo = setTimeout(function () { try { controller.abort() } catch (_) {} }, rawTimeoutMs);
-  if (opts.signal) {
-    if (opts.signal.aborted) { try { controller.abort() } catch (_) {} }
-    else opts.signal.addEventListener("abort", function () { try { controller.abort() } catch (_) {} });
-  }
-  var r;
-  try {
-    r = await fetch(path, Object.assign({}, opts, { signal: controller.signal }));
-  } catch (e) {
-    clearTimeout(tmo);
-    throw makeApiError(0, "网络异常，请检查连接后重试", null, "NETWORK", 0);
-  }
-  clearTimeout(tmo);
-  if (!r.ok) {
-    if (r.status === 401 && !opts._authEndpoint && !isInAuthGraceWindow()) {
-      try { handleAuthExpired("apiFetchRaw:"+method+" "+path) } catch (_) {}
-    } else if (r.status === 403 && !opts._csrfRetried && method !== "GET" && method !== "HEAD") {
-      try { await fetch("/api/auth/csrf-token", { credentials: "include" }) } catch (_) {}
-      await new Promise(function (res) { setTimeout(res, 0) });
-      return apiFetchRaw(path, Object.assign({}, opts, { _csrfRetried: true }));
-    }
-    var txt = "";
-    try { txt = await r.text() } catch (_) {}
-    var msg = (txt || r.statusText || ("HTTP " + r.status)).slice(0, 200);
-    throw makeApiError(r.status, msg, null, null, 0);
-  }
-  return r;
-}
+/* P0.4 — apiFetch / apiFetchRaw / retryApiFetch / makeApiError are
+   imported from ./util/api.js. The handleAuthExpired hook is
+   installed once at boot via installAuthHooks() — see below. */
+import { apiFetch, apiFetchRaw, retryApiFetch, makeApiError, installAuthHooks } from './util/api.js';
+window.apiFetch=apiFetch;window.apiFetchRaw=apiFetchRaw;window.retryApiFetch=retryApiFetch;
 
 /* Post-auth grace window. Right after a successful register or
  * login the browser hasn't always written the new `sid` cookie to
@@ -9367,111 +8133,7 @@ function markAuthSuccess(){
 function isInAuthGraceWindow(){
   return (Date.now()-_lastAuthSuccessAt) < AUTH_GRACE_MS;
 }
-
-/**
- * P0.4 — single point of contact with the server.
- *
- *  - Always includes credentials so the sid cookie travels.
- *  - Attaches X-CSRF-Token for state-changing requests.
- *  - Wraps fetch in an AbortController with a default 30 s timeout
- *    (overridable via opts.timeoutMs).
- *  - Normalises both `fetch()` throws (network / CORS / offline) and
- *    non-2xx responses into a single ApiError shape.
- *  - Exposes opts.signal so callers can chain their own AbortController.
- *
- * Returns parsed JSON on success, throws ApiError on failure.
- */
-async function apiFetch(path,opts){
-  opts=opts||{};
-  opts.credentials="include";
-  if(!opts.headers)opts.headers={};
-  if(opts.body&&typeof opts.body!=="string"){
-    opts.body=JSON.stringify(opts.body);
-    opts.headers["Content-Type"]="application/json";
-  }
-  var method=(opts.method||"GET").toUpperCase();
-  if(method!=="GET"&&method!=="HEAD"){
-    var token=getCsrfToken();
-    if(token)opts.headers["X-CSRF-Token"]=token;
-  }
-  var timeoutMs=typeof opts.timeoutMs==="number"?opts.timeoutMs:30000;
-  var userSignal=opts.signal||null;
-  var controller=new AbortController();
-  var timer=setTimeout(function(){try{controller.abort()}catch(_){}},timeoutMs);
-  // Forward external aborts to the per-call controller.
-  if(userSignal){
-    if(userSignal.aborted){try{controller.abort()}catch(_){}}
-    else userSignal.addEventListener("abort",function(){
-      try{controller.abort()}catch(_){}
-    });
-  }
-  var r;
-  try{
-    r=await fetch(path,Object.assign({},opts,{signal:controller.signal}));
-  }catch(e){
-    clearTimeout(timer);
-    // P0.4 — fetch() can throw on DNS / offline / CORS / abort. Wrap
-    // in a normalised ApiError so callers can branch on `e.status`,
-    // `e.code`, etc. the same way as for HTTP errors.
-    var aborted=e&&(e.name==="AbortError"||controller.signal.aborted);
-    throw makeApiError(
-      0,
-      aborted?"请求被取消":"网络异常，请检查连接后重试",
-      null,
-      aborted?"ABORTED":"NETWORK",
-      0
-    );
-  }finally{
-    clearTimeout(timer);
-  }
-  var text;
-  try{text=await r.text()}catch(e){
-    throw makeApiError(r.status||0,"响应读取失败",null,"READ_BODY",0);
-  }
-  var json=null;
-  try{json=text?JSON.parse(text):null}catch(_){}
-  if(!r.ok){
-    var msg=(json&&(json.detail||json.title||json.error))||("HTTP "+r.status);
-    var err=makeApiError(r.status,msg,json,json&&json.code,0);
-    /* P4.5 — auto-handle 401 / 403 transparently:
-     *   401  → the session is gone; drop the in-memory CURRENT_USER
-     *          and show the auth gate so the user can re-login.
-     *          The original call's error is re-thrown so the caller's
-     *          catch site still fires (and can show a "please sign
-     *          in again" toast). This avoids the previous behaviour
-     *          where a 401 from any background call silently kept
-     *          the user "logged in" until they refreshed.
-     *          EXCEPTION: within the post-auth grace window (3s after
-     *          register/login), the Set-Cookie from the auth response
-     *          may not have propagated to the next request yet, so a
-     *          401 on a background call here is almost certainly a
-     *          race, not a real expiry. Ignore it and let the caller's
-     *          catch site handle it normally.
-     *   403  → almost always a missing/expired CSRF token on a
-     *          state-changing request. If we haven't already tried
-     *          `warmCsrf`, fetch a fresh token and replay the
-     *          request once. The replay path sets `_csrfRetried`
-     *          so we don't loop.
-     *   Other 4xx / 5xx → re-throw unchanged. */
-     if(r.status===401&&!opts._authEndpoint&&!isInAuthGraceWindow()){
-        try{handleAuthExpired("apiFetch:"+method+" "+path)}catch(_){}
-     }else if(r.status===403&&!opts._csrfRetried&&method!=="GET"&&method!=="HEAD"){
-      try{
-        await fetch("/api/auth/csrf-token",{credentials:"include",signal:controller.signal});
-      }catch(_){}
-      /* Set-Cookie from the refresh is committed to the outgoing cookie
-       * jar on a future tick. Yield once so the replay sends the new
-       * cookie value (both as the X-CSRF-Token header and in the
-       * Cookie: header). Without this, the replay 403s again on the
-       * same race and _csrfRetried blocks the loop. */
-      await new Promise(function(res){setTimeout(res,0)});
-      var replayOpts=Object.assign({},opts,{_csrfRetried:true});
-      return apiFetch(path,replayOpts);
-    }
-    throw err;
-  }
-  return json;
-}
+window.markAuthSuccess=markAuthSuccess;
 
 /* P4.5 — invoked from apiFetch when a 401 comes back. Clears
    in-memory user state, shows the auth gate, and emits a one-time
@@ -9515,375 +8177,13 @@ function handleAuthExpired(cause){
     },0);
   }catch(e){console.warn("[auth] handleAuthExpired failed:",e&&e.message)}
 }
+window.handleAuthExpired=handleAuthExpired;
 
-/**
- * P0.4 — retry wrapper. Retries on:
- *  - status 0 (network / abort)
- *  - status 408 / 429 / 5xx
- *  - status 0 with err.code === "NETWORK"
- * Linear backoff with light jitter. The caller can override retries
- * (default 2) and backoffMs (default 400). Aborted requests are NOT
- * retried.
- */
-async function retryApiFetch(path,opts,retryOpts){
-  retryOpts=retryOpts||{};
-  var retries=typeof retryOpts.retries==="number"?retryOpts.retries:2;
-  var backoffMs=typeof retryOpts.backoffMs==="number"?retryOpts.backoffMs:400;
-  var attempt=0;
-  // Honour an external abort: don't retry if the caller already cancelled.
-  var userSignal=opts&&opts.signal;
-  while(true){
-    try{
-      return await apiFetch(path,opts);
-    }catch(e){
-      var retryable=e&&(
-        e.status===0||e.status===408||e.status===429||
-        (e.status>=500&&e.status<600)
-      );
-      if(!retryable||attempt>=retries) throw e;
-      if(userSignal&&userSignal.aborted) throw e;
-      attempt++;
-      e.retried=attempt;
-      var wait=backoffMs*attempt+Math.floor(Math.random()*80);
-      await new Promise(function(res){setTimeout(res,wait)});
-    }
-  }
-}
+/* Wire the api module's 401 hook to our local handleAuthExpired +
+ * grace window. Done after both functions are defined so the closure
+ * captures the right references. */
+installAuthHooks({ on401: handleAuthExpired, isInGraceWindow: isInAuthGraceWindow });
 
-function hideGate(){
-  var g=document.getElementById("authGate");if(g)g.classList.add("hidden");
-  var s=document.getElementById("appShell");if(s)s.classList.remove("hidden");
-  /* P0.6 — also flip the pre-boot data attribute so the CSS rules
-     in <head> take over. From this point on, showGate()/hideGate()
-     are the single source of truth for which view is on top. */
-  try{document.documentElement.dataset.bootState="app"}catch(_){}
-}
-function showGate(){
-  // Flip bootState first so the CSS rule hiding #authGate while
-  // data-boot-state="checking" is removed before we try to show it.
-  try{document.documentElement.dataset.bootState="auth"}catch(_){}
-  var g=document.getElementById("authGate");if(g)g.classList.remove("hidden");
-  var s=document.getElementById("appShell");if(s)s.classList.add("hidden");
-}
-
-function showAuthView(id){
-  ["authSigninView","authRegisterView","authVerifySentView","authVerifyFailedView","authVerifiedView","authForgotPasswordView","authForgotSentView","authResetPasswordView","authResetSuccessView","authCodeLoginView"].forEach(function(v){
-    var el=document.getElementById(v);if(el)el.classList.add("hidden");
-  });
-  var el=document.getElementById(id);if(el)el.classList.remove("hidden");
-}
-function showAuthSignin(){switchAuthTab("signin")}
-function showAuthRegister(){switchAuthTab("register")}
-function switchAuthTab(tab){
-  document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.toggle("active",t.getAttribute("data-tab")===tab)});
-  showAuthView(tab==="signin"?"authSigninView":"authRegisterView");
-}
-
-function setAuthError(viewId,msg){
-  var el=document.getElementById(viewId);
-  if(el)el.textContent=msg||"";
-}
-
-async function submitAuthSignin(){
-  var email=document.getElementById("authSigninEmail").value.trim();
-  var password=document.getElementById("authSigninPassword").value;
-  var guest=document.getElementById("authGuestCheckbox").checked;
-  setAuthError("authSigninError","");
-  if(!email||!password)return setAuthError("authSigninError","Please enter your email and password.");
-  var btn=document.getElementById("authSigninBtn");btn.disabled=true;btn.textContent="Signing in…";
-  try{
-    var r=await apiFetch("/api/auth/login",{method:"POST",_authEndpoint:true,body:{email,password}});
-    if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){}
-    // Build 2026-06-09b: /login now returns the full user shape (incl.
-    // verifiedAt). Log it so a hard-refresh test can confirm the new
-    // payload is reaching the browser.
-    console.log("[boot/build 2026-06-09b] login.user =", JSON.stringify(r.user).substring(0, 300));
-    /* Start the post-auth grace window + adopt the canonical user
-       object from /me. This avoids the "Guest / Not signed in"
-       flash that happens when background calls hit the server
-       before the Set-Cookie has fully propagated. */
-    markAuthSuccess();
-    try{
-      var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
-      CURRENT_USER=(me&&me.user)?me.user:r.user;
-      console.log("[boot/build 2026-06-09b] /me.user =", JSON.stringify(me.user).substring(0, 300));
-    }catch(_){
-      // /me is the source of truth for the user object (tier,
-      // preferences, etc.). If it fails after a successful login,
-      // something is wrong with the new session — fall back to
-      // the login response but DON'T proceed into the app until
-      // we've at least confirmed the session is alive on a retry.
-      CURRENT_USER=r.user;
-      try{
-        await new Promise(function(r2){setTimeout(r2,150)});
-        var me2=await apiFetch("/api/auth/me",{_authEndpoint:true});
-        if(me2&&me2.user)CURRENT_USER=me2.user;
-      }catch(__){ /* still nothing — proceed with what we have */ }
-    }
-    await afterAuthEnter();
-    hideGate();
-  }catch(e){
-    showGate();
-    if(e.status===403 && e.code==="UNVERIFIED"){
-      document.getElementById("authVerifyEmail").textContent=email;
-      try{document.getElementById("authResendEmail").value=email}catch(_){}
-      showAuthView("authVerifySentView");
-      return;
-    }
-    setAuthError("authSigninError",e.status===401?"Wrong email or password.":("Login failed: "+e.message));
-  }finally{
-    btn.disabled=false;btn.textContent="Sign in";
-  }
-}
-
-async function submitAuthRegister(){
-  var email=document.getElementById("authRegisterEmail").value.trim();
-  var password=document.getElementById("authRegisterPassword").value;
-  setAuthError("authRegisterError","");
-  if(!email)return setAuthError("authRegisterError","Please enter your email.");
-  if(!password||password.length<8)return setAuthError("authRegisterError","Password must be at least 8 characters.");
-  var btn=document.getElementById("authRegisterBtn");btn.disabled=true;btn.textContent="Sending…";
-  try{
-    /* The server stores the registration as pending and sends a
-       verification email. No account or session is created until
-       the user clicks the link in the email. */
-    var r=await apiFetch("/api/auth/register",{method:"POST",_authEndpoint:true,body:{email,password}});
-    /* Always show the "verification sent" view — no auto-login. */
-    document.getElementById("authVerifyEmail").textContent=email;
-    var resendEl=document.getElementById("authResendEmail");
-    if(resendEl)resendEl.value=email;
-    showAuthView("authVerifySentView");
-    document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
-  }catch(e){
-    setAuthError("authRegisterError",e.status===409?"That email is already registered. Try signing in.":e.message);
-  }finally{
-    btn.disabled=false;btn.textContent="Send verification link";
-  }
-}
-
-async function resendVerification(){
-  var emailEl=document.getElementById("authResendEmail");
-  var email=emailEl?emailEl.value.trim():"";
-  if(!email)return;
-  setAuthError("authVerifyFailedError","");
-  try{
-    /* Dedicated resend endpoint — never send a hard-coded password
-       to /register (it would let anyone who knows the email log in
-       with that password if the account is later activated). */
-    var body={email};
-    await apiFetch("/api/auth/resend-verification",{method:"POST",body:body});
-    document.getElementById("authVerifyEmail").textContent=email;
-    showAuthView("authVerifySentView");
-  }catch(e){
-    setAuthError("authVerifyFailedError",e.message);
-  }
-}
-
-async function submitAuthVerify(token){
-  /* Show the "verifying…" state immediately, while we hit the API. */
-  showAuthView("authVerifiedView");
-  document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
-  try{
-    var r=await apiFetch("/api/auth/verify?token="+encodeURIComponent(token));
-    /* Verification creates the user account (from pending registration)
-       and starts a session. Adopt the canonical user object from the
-       response or /me to enter the app. */
-    markAuthSuccess();
-    try{
-      var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
-      CURRENT_USER=(me&&me.user)?me.user:((r&&r.user)?r.user:null);
-    }catch(_){
-      CURRENT_USER=(r&&r.user)?r.user:null;
-      if(CURRENT_USER){
-        try{
-          await new Promise(function(r2){setTimeout(r2,150)});
-          var me2=await apiFetch("/api/auth/me",{_authEndpoint:true});
-          if(me2&&me2.user)CURRENT_USER=me2.user;
-        }catch(__){ /* fall through with what we have */ }
-      }
-    }
-    await afterAuthEnter();
-    hideGate();
-  }catch(e){
-    var title="This link is invalid or expired";
-    var msg="Verification links expire after 24 hours. Enter your email and we'll send a fresh one.";
-    if(e.status===400&&e.code==="EXPIRED"){
-      title="This link has expired";
-      msg="Verification links expire after 24 hours. Enter your email and we'll send a fresh one.";
-    }
-    document.getElementById("authVerifyFailedTitle").textContent=title;
-    document.getElementById("authVerifyFailedMsg").textContent=msg;
-    showAuthView("authVerifyFailedView");
-  }
-}
-
-async function afterAuthEnter(){
-  toggleShareBtn();
-  /* P2.1 — hydrate the project list from localStorage and
-     paint the chip row. Server-side /api/projects is
-     fire-and-forget after this; local copy is the source of
-     truth until that endpoint is live. */
-  loadProjects();
-  renderProjects();
-  /* Run the localStorage -> server migration once if there's anything to bring. */
-  try{
-    var localApi=localStorage.getItem("socrates-api");
-    var localSessions=localStorage.getItem("socrates-sessions-v2");
-    var payload={};
-    var hasAny=false;
-    if(localSessions){try{var arr=JSON.parse(localSessions);if(Array.isArray(arr)&&arr.length){payload.localSessions=arr;hasAny=true}}catch(_){}}
-    if(localApi){try{var o=JSON.parse(localApi);if(o&&o.providers&&o.providers.length){var p=o.providers.find(function(x){return x.id===o.activeId})||o.providers[0];if(p&&p.key){payload.localApi={label:p.label,url:p.url,model:p.model,key:p.key};hasAny=true}}}catch(_){}}
-    if(hasAny){
-      try{
-        await apiFetch("/api/migrate",{method:"POST",body:payload});
-        try{localStorage.removeItem("socrates-sessions-v2")}catch(_){}
-        try{localStorage.removeItem("socrates-api")}catch(_){}
-        try{localStorage.removeItem("socrates-websearch")}catch(_){}
-      }catch(e){console.warn("[migrate]",e.message)}
-    }
-  }catch(e){console.warn("[migrate] setup",e.message)}
-  /* Pull the user's server-side chat sessions into the local cache. */
-  await refreshServerSessions();
-  /* Load the user's saved API providers and model configs. */
-  await refreshApiConfig();
-  /* Load the user's saved memories for long-term context. */
-  loadUserMemories();
-  /* Update sidebar footer with user info. */
-  renderUserFooter();
-  /* Re-render sidebar lists now that the cache is fresh. */
-  renderRecents();
-  renderMistakes();
-  updateMistakesBadge();
-  renderProviderList();
-  syncModelPills();
-  syncExtensionsUI();
-  syncAppModeUI();
-  syncSidebarForMode();
-  /* If the URL carries a chat session ID, load it. Otherwise, stay on the
-     main page (topic setup) — no session exists until the user clicks Begin. */
-  var chatId=getChatIdFromURL();
-  if(chatId){
-    try{await loadSession(chatId)}catch(e){
-      console.warn("[boot] failed to load session from URL:",chatId,e&&e.message);
-      state.currentSessionId=null;
-      setChatIdInURL(null);
-    }
-  }
-  /* Trigger initial data load. */
-  if(typeof initialLoad==="function")initialLoad();
-  else{
-    /* Fallback: re-render whatever the current view is. */
-    if(typeof renderRecents==="function")renderRecents();
-    if(typeof renderMistakes==="function"){renderMistakes();updateMistakesBadge()}
-  }
-}
-
-/* ============================================================
-   FORGOT PASSWORD + CODE LOGIN
-   ============================================================ */
-function showAuthForgotPassword(){
-  document.getElementById("authForgotEmail").value=document.getElementById("authSigninEmail").value;
-  showAuthView("authForgotPasswordView");
-  document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
-}
-function showAuthCodeLogin(){
-  document.getElementById("authCodeEmail").value=document.getElementById("authSigninEmail").value;
-  document.getElementById("authCodeCodeWrap").classList.add("hidden");
-  document.getElementById("authCodeSendBtn").classList.remove("hidden");
-  document.getElementById("authCodeLoginBtn").classList.add("hidden");
-  document.getElementById("authCodeResendWrap").classList.add("hidden");
-  document.getElementById("authCodeError").textContent="";
-  showAuthView("authCodeLoginView");
-  document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
-}
-
-async function submitAuthForgotPassword(){
-  var email=document.getElementById("authForgotEmail").value.trim();
-  setAuthError("authForgotError","");
-  if(!email)return setAuthError("authForgotError","Please enter your email.");
-  var btn=document.getElementById("authForgotBtn");btn.disabled=true;btn.textContent="Sending…";
-  try{
-    await apiFetch("/api/auth/forgot-password",{method:"POST",_authEndpoint:true,body:{email}});
-    document.getElementById("authForgotSentEmail").textContent=email;
-    showAuthView("authForgotSentView");
-  }catch(e){
-    setAuthError("authForgotError",e.message);
-  }finally{
-    btn.disabled=false;btn.textContent="Send reset link";
-  }
-}
-
-async function submitAuthResetPassword(){
-  var password=document.getElementById("authResetPassword").value;
-  var confirm=document.getElementById("authResetConfirm").value;
-  setAuthError("authResetError","");
-  if(!password||password.length<8)return setAuthError("authResetError","Password must be at least 8 characters.");
-  if(password!==confirm)return setAuthError("authResetError","Passwords don't match.");
-  var btn=document.getElementById("authResetBtn");btn.disabled=true;btn.textContent="Resetting…";
-  try{
-    await apiFetch("/api/auth/reset-password",{method:"POST",body:{token:window.__resetToken,password}});
-    showAuthView("authResetSuccessView");
-  }catch(e){
-    setAuthError("authResetError",e.message);
-  }finally{
-    btn.disabled=false;btn.textContent="Reset password";
-  }
-}
-
-async function submitAuthSendCode(){
-  var email=document.getElementById("authCodeEmail").value.trim();
-  setAuthError("authCodeError","");
-  if(!email)return setAuthError("authCodeError","Please enter your email.");
-  var btn=document.getElementById("authCodeSendBtn");btn.disabled=true;btn.textContent="Sending…";
-  try{
-    await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:{email}});
-    document.getElementById("authCodeCodeWrap").classList.remove("hidden");
-    document.getElementById("authCodeSentEmail").textContent=email;
-    document.getElementById("authCodeSentMsg").classList.remove("hidden");
-    document.getElementById("authCodeSendBtn").classList.add("hidden");
-    document.getElementById("authCodeLoginBtn").classList.remove("hidden");
-    document.getElementById("authCodeResendWrap").classList.remove("hidden");
-    document.getElementById("authCodeInput").focus();
-  }catch(e){
-    setAuthError("authCodeError",e.message);
-  }finally{
-    btn.disabled=false;btn.textContent="Send code";
-  }
-}
-
-async function submitAuthLoginWithCode(){
-  var email=document.getElementById("authCodeEmail").value.trim();
-  var code=document.getElementById("authCodeInput").value.trim();
-  var guest=document.getElementById("authCodeGuestCheckbox").checked;
-  setAuthError("authCodeError","");
-  if(!code||code.length!==6)return setAuthError("authCodeError","Please enter the 6-digit code.");
-  var btn=document.getElementById("authCodeLoginBtn");btn.disabled=true;btn.textContent="Logging in…";
-  try{
-    var r=await apiFetch("/api/auth/login-with-code",{method:"POST",_authEndpoint:true,body:{email,code}});
-    markAuthSuccess();
-    try{
-      var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
-      CURRENT_USER=(me&&me.user)?me.user:r.user;
-    }catch(_){
-      CURRENT_USER=r.user;
-    }
-    if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){}
-    await afterAuthEnter();
-    hideGate();
-  }catch(e){
-    setAuthError("authCodeError",e.message);
-  }finally{
-    btn.disabled=false;btn.textContent="Log in";
-  }
-}
-
-async function resendAuthCode(){
-  var email=document.getElementById("authCodeEmail").value.trim();
-  if(!email)return;
-  try{
-    await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:{email}});
-  }catch(_){ /* swallow — user can retry from the UI */ }
-}
 
 function renderUserFooter(){
   var row=document.querySelector(".sidebar-footer .user-row");
@@ -9996,6 +8296,9 @@ function closeExamView(){
   state.examCancel=true;
   state._examInView=false;
   state.examReadOnly=false;
+  /* Restore the active provider to whatever it was before the exam
+     started, even if the user just closes the view mid-generation. */
+  try{restoreExamActiveProvider()}catch(_){}
   /* Show the previous view — if there was an active chat, return to it */
   if(state.currentSessionId){
     document.getElementById("chatView").classList.remove("hidden");
@@ -10015,28 +8318,52 @@ function _examTitle(){return document.getElementById("examViewTitle");}
 function renderExamForm(){
   var body=_examBody();
   var footer=_examFooter();
-  _examTitle().textContent="Generate Exam";
+  _examTitle().textContent=(_currentLang==="zh"?"生成考卷":"Generate Exam");
+  var meta=document.getElementById("examViewMeta");
+  if(meta)meta.textContent="";
   state.examCancel=false;
   state.examQuestions=[];
   state.examAnswers={};
   state.examSubmitted=false;
   _examSelectedTypes={mc:true,fb:true,sa:false};
-  _examStreamBuffer="";
+  var L=function(en,zh){return _currentLang==="zh"?zh:en};
+  /* Provider picker — list every configured provider (built-in Beagle +
+     user keys) so the user can pick which model generates the exam.
+     Defaults to the currently active provider. */
+  var provOptions="";
+  if(Array.isArray(apiConfig.providers)){
+    apiConfig.providers.forEach(function(p){
+      if(!p||!p.id)return;
+      var label=p.label||p.model||p.id;
+      var selected=(p.id===apiConfig.activeId)?" selected":"";
+      provOptions+='<option value="'+esc(p.id)+'"'+selected+'>'+esc(label)+'</option>';
+    });
+  }
+  if(!provOptions){
+    provOptions='<option value="">'+(L("无可用模型","No models available"))+'</option>';
+  }
   var html='<div class="exam-form-container">';
+  /* Row 1 — topic (full width) */
   html+='<div class="exam-form-row"><label class="exam-form-label" for="examTopic">'+t("exam.topic")+'</label>';
   html+='<input class="exam-form-input" id="examTopic" name="examTopic" placeholder="'+( _currentLang==="zh"?"如：线性代数、量子力学、二战…":"e.g. Linear Algebra, Quantum Mechanics, World War II..." )+'"></div>';
-  html+='<div class="exam-options-row">';
-  html+='<div class="exam-opt-group" style="flex:2"><label class="exam-opt-label" for="examDifficulty">'+t("exam.difficulty")+'</label>';
+  /* Row 2 — model, difficulty, count (3-column grid) */
+  html+='<div class="exam-form-row">';
+  html+='<div class="exam-form-grid3">';
+  html+='<div class="exam-form-cell"><label class="exam-form-label" for="examModel">'+(L("生成模型","Model"))+'</label>';
+  html+='<select class="exam-form-input exam-form-select" id="examModel" name="examModel">'+provOptions+'</select></div>';
+  html+='<div class="exam-form-cell"><label class="exam-form-label" for="examDifficulty">'+t("exam.difficulty")+'</label>';
   html+='<input class="exam-form-input" id="examDifficulty" name="examDifficulty" placeholder="'+( _currentLang==="zh"?"入门 / 中级 / 困难 / 专家 / 自定义":"beginner / intermediate / hard / expert / custom" )+'" value="intermediate"></div>';
-  html+='<div class="exam-opt-group" style="flex:1"><label class="exam-opt-label" for="examCount">'+t("exam.count")+'</label>';
+  html+='<div class="exam-form-cell exam-form-cell-narrow"><label class="exam-form-label" for="examCount">'+t("exam.count")+'</label>';
   html+='<input class="exam-form-input" id="examCount" name="examCount" type="number" min="1" max="50" value="5"></div>';
-  html+='</div>';
+  html+='</div></div>';
+  /* Row 3 — question types */
   html+='<div class="exam-form-row"><div class="exam-form-label">'+t("exam.types")+'</div>';
   html+='<div class="exam-type-picker" id="examTypePicker">';
-  html+='<button class="exam-type-pill active" data-type="mc" onclick="toggleExamType(\'mc\')">Multiple choice</button>';
-  html+='<button class="exam-type-pill active" data-type="fb" onclick="toggleExamType(\'fb\')">Fill blank</button>';
-  html+='<button class="exam-type-pill" data-type="sa" onclick="toggleExamType(\'sa\')">Short answer</button>';
+  html+='<button class="exam-type-pill active" data-type="mc" onclick="toggleExamType(\'mc\')">'+L("选择题","Multiple choice")+'</button>';
+  html+='<button class="exam-type-pill active" data-type="fb" onclick="toggleExamType(\'fb\')">'+L("填空题","Fill blank")+'</button>';
+  html+='<button class="exam-type-pill" data-type="sa" onclick="toggleExamType(\'sa\')">'+L("简答题","Short answer")+'</button>';
   html+='</div></div>';
+  /* Row 4 — instructions */
   html+='<div class="exam-form-row"><label class="exam-form-label" for="examInstructions">'+t("exam.instructions")+'</label>';
   html+='<textarea class="exam-form-textarea" id="examInstructions" name="examInstructions" placeholder="'+( _currentLang==="zh"?"具体说明要覆盖的知识点，留空则由 AI 决定…":"Specific topics to cover, or leave blank for AI to decide..." )+'"></textarea></div>';
   html+='</div>';
@@ -10078,10 +8405,13 @@ function startExamGeneration(){
   var count=Math.max(1,Math.min(50,parseInt(document.getElementById("examCount").value,10)||5));
   var difficulty=document.getElementById("examDifficulty").value.trim()||"intermediate";
   var instructions=document.getElementById("examInstructions").value.trim()||"";
+  var modelSel=document.getElementById("examModel");
+  var chosenModel=modelSel?modelSel.value:"";
   var types=[];
   if(_examSelectedTypes.mc)types.push("multiple-choice");
   if(_examSelectedTypes.fb)types.push("fill-blank");
   if(_examSelectedTypes.sa)types.push("short-answer");
+  if(!types.length){types=["multiple-choice","fill-blank","short-answer"]}
   var typeStr=types.join(", ");
   var lang=detectExamLang(topic);
   state.examCancel=false;
@@ -10094,117 +8424,208 @@ function startExamGeneration(){
   state.examDifficulty=difficulty;
   state.examInstructions=instructions;
   state.examTypes=types.slice();
-  _examTitle().textContent="Generating: "+topic;
-  var body=_examBody();
-  body.innerHTML='<div class="exam-loading" id="examGenStatus"><span class="loading"><span></span><span></span><span></span></span><div id="examGenMsg">'+(lang==="Chinese"?"正在生成第一题…":"Generating the first question…")+'</div></div><div id="examQuestionsContainer"></div><div id="examNextPlaceholder"></div>';
-  _examFooter().innerHTML='<button class="exam-btn secondary" onclick="closeExamView()">'+(lang==="Chinese"?"取消":"Cancel")+'</button>';
-  /* Kick off question 1 — the placeholder will show the first streaming card.
-     While question 1 streams, the user sees a "Preparing…" mask; the question
-     card only becomes visible when its JSON parses successfully (see
-     replaceStreamingCardWithQuestion, which hides examGenStatus when idx===0). */
-  window._examGenCtx={i:1,n:count,topic:topic,difficulty:difficulty,typeStr:typeStr,instructions:instructions,lang:lang};
-  generateNextQuestionStreaming();
-}
-function generateNextQuestionStreaming(){
-  var ctx=window._examGenCtx;
-  if(!ctx)return;
-  if(state.examCancel||ctx.i>ctx.n){
-    finishExamGeneration();
-    return;
+  /* Temporarily switch the active provider so callAPI uses the model
+     the user picked in the exam form. Save the previous id so we can
+     restore it after generation finishes (success or failure). */
+  state._examPrevActiveId=apiConfig.activeId;
+  if(chosenModel&&Array.isArray(apiConfig.providers)){
+    var exists=apiConfig.providers.some(function(p){return p&&p.id===chosenModel});
+    if(exists){
+      apiConfig.activeId=chosenModel;
+      /* Tell the server too, but ignore failures — if the PATCH fails
+         the local switch still routes the in-flight callAPI to the
+         correct provider. */
+      try{apiFetch("/api/api-key/"+encodeURIComponent(chosenModel),{method:"PATCH",body:{isActive:true}}).catch(function(){})}catch(_){}
+    }
   }
-  var i=ctx.i, n=ctx.n, topic=ctx.topic, difficulty=ctx.difficulty, typeStr=ctx.typeStr, instructions=ctx.instructions, lang=ctx.lang;
-  /* Build a SHORT, focused prompt — long prompts make reasoning models slow.
-     The Language directive is repeated and applied to every field the LLM
-     writes (q, opts.text, answer, explanation) so a Chinese topic stays in
-     Chinese end-to-end. */
-  var prompt="Generate ONE exam question as a single JSON object.\n"+
+  _examTitle().textContent=topic;
+  var meta=document.getElementById("examViewMeta");
+  var provLabel=(Array.isArray(apiConfig.providers)?apiConfig.providers.find(function(p){return p&&p.id===apiConfig.activeId}):null)||{};
+  if(meta)meta.textContent=count+" "+(lang==="Chinese"?"题 · ":"questions · ")+(provLabel.label||provLabel.model||"")+" · "+difficulty;
+  var body=_examBody();
+  body.innerHTML='<div class="exam-loading" id="examGenStatus"><span class="loading"><span></span><span></span><span></span></span><div class="exam-loading-msg" id="examGenMsg">'+(lang==="Chinese"?"正在生成考卷…":"Generating your exam…")+'</div><div class="exam-loading-sub">'+(lang==="Chinese"?"AI 正在为您出题，请稍候片刻":"The AI is preparing your questions — this usually takes a few seconds.")+'</div></div>';
+  _examFooter().innerHTML='<button class="exam-btn secondary" onclick="cancelExamGeneration()">'+(lang==="Chinese"?"取消":"Cancel")+'</button>';
+  /* Kick off a SINGLE non-streaming call that returns all questions
+     as one JSON array. No more one-question-at-a-time streaming —
+     the user sees one clean loading state, then the whole exam. */
+  generateAllQuestions(topic,count,difficulty,typeStr,instructions,lang);
+}
+function restoreExamActiveProvider(){
+  /* Restore the active provider to whatever it was before the exam
+     started, so a quick switch doesn't leak into the regular chat. */
+  var prev=state._examPrevActiveId;
+  if(!prev)return;
+  if(apiConfig.activeId===prev)return;
+  if(Array.isArray(apiConfig.providers)&&apiConfig.providers.some(function(p){return p&&p.id===prev})){
+    apiConfig.activeId=prev;
+    try{apiFetch("/api/api-key/"+encodeURIComponent(prev),{method:"PATCH",body:{isActive:true}}).catch(function(){})}catch(_){}
+  }
+  state._examPrevActiveId=null;
+}
+function cancelExamGeneration(){
+  state.examCancel=true;
+  restoreExamActiveProvider();
+  var body=_examBody();
+  var lang=state.examLang||"English";
+  var L=function(en,zh){return lang==="Chinese"?zh:en};
+  body.innerHTML='<div class="exam-empty">'+(L("已取消出题","Generation cancelled")+'.</div>');
+  _examFooter().innerHTML='<button class="exam-btn primary" onclick="renderExamForm()">'+L("重新出题","Try again")+'</button><button class="exam-btn secondary" onclick="closeExamView()">'+L("关闭","Close")+'</button>';
+  _examTitle().textContent=L("已取消","Cancelled");
+}
+async function generateAllQuestions(topic,count,difficulty,typeStr,instructions,lang){
+  /* Build a prompt that asks for the whole exam as a JSON array.
+     Reasoning models (Beagle M2.7 / DeepSeek R1 / QwQ) can take a
+     couple of minutes for a 5-question exam; the longer single
+     response avoids the overhead of N separate round trips and the
+     JSON parsing failures that come from truncated streaming deltas. */
+  var prompt="Generate an exam of "+count+" questions as a single JSON object with shape {\"questions\":[ ... ]}.\n"+
     "Topic: "+topic+".\n"+
     "Difficulty: "+difficulty+".\n"+
-    "Allowed types: "+typeStr+".\n"+
+    "Allowed question types: "+typeStr+".\n"+
     "Language: "+lang+".\n"+
-    "CRITICAL: EVERY field of the JSON (q, opts[*].text, answer, answers[*], explanation) MUST be written in "+lang+".\n"+
-    "Do NOT translate the topic or the answer into English. Keep the original language of the topic.\n"+
+    "CRITICAL: EVERY field of every question (q, opts[*].text, answer, answers[*], explanation) MUST be written in "+lang+".\n"+
     (instructions?"Specifics: "+instructions+"\n":"")+
-    "Return ONLY the JSON — no markdown, no preamble. Required fields: q, type. "+
-    "For multiple-choice add opts:[{letter,text}] (4 options) and answer (correct letter). "+
+    "Return ONLY the JSON — no markdown, no preamble, no commentary. "+
+    "Each question object must have: q (string), type (one of \""+typeStr+"\"). "+
+    "For multiple-choice add opts:[{letter,text}] (4 options A-D) and answer (correct letter). "+
     "For fill-blank add answers:[string] (acceptable fills). "+
     "For short-answer add answer (key facts). "+
-    "Always add explanation. Use Markdown + $LaTeX$ in q text.";
-  var msgs=[{role:"system",content:prompt},{role:"user",content:"Question "+i+"/"+n+": generate now."}];
-  /* Render a streaming placeholder card for this question */
-  var ph=document.getElementById("examNextPlaceholder");
-  if(ph){
-    /* P_exam-streaming — for question 1 we want to KEEP the user-facing
-       "Generating the first question…" mask visible until the JSON parses.
-       The streaming card is rendered hidden, then shown in
-       replaceStreamingCardWithQuestion. For subsequent questions the
-       streaming card is visible normally so the user sees progress. */
-    var hiddenAttr=(i===1)?' style="display:none"':"";
-    ph.innerHTML='<div class="exam-q-card exam-q-card-streaming" id="examQ'+i+'"'+hiddenAttr+'><div class="exam-q-num">Question '+i+' of '+n+' <span class="exam-q-type" id="examStreamType">thinking…</span></div><div class="exam-q-text" id="examStreamText"></div></div>';
+    "Always add explanation (string). Use Markdown + $LaTeX$ in q text.";
+  var msgs=[{role:"system",content:prompt},{role:"user",content:"Generate "+count+" questions now."}];
+  /* callAPI is non-streaming and returns the full text at once, or
+     null if no provider is available (falls back to mock). For
+     long generations (reasoning models), the existing callAPI uses
+     the same 10-minute total budget + 2-retry pattern, so a slow
+     first attempt has a chance to recover. */
+  var tokens=Math.max(800,count*700);
+  var result=await callAPI(msgs,tokens);
+  restoreExamActiveProvider();
+  if(state.examCancel)return;
+  if(!result){
+    var langL=lang==="Chinese"?"生成失败：模型无响应":"Generation failed — no response from model";
+    var body=_examBody();
+    body.innerHTML='<div class="exam-empty"><strong>'+langL+'</strong><div style="margin-top:8px;font-size:13px;color:hsl(var(--text-500))">'+(lang==="Chinese"?"请稍后重试":"Please try again in a moment.")+'</div></div>';
+    _examFooter().innerHTML='<button class="exam-btn primary" onclick="renderExamForm()">'+(lang==="Chinese"?"重新出题":"Try again")+'</button><button class="exam-btn secondary" onclick="closeExamView()">'+(lang==="Chinese"?"关闭":"Close")+'</button>';
+    return;
   }
-  _examStreamBuffer="";
-  _examStreamStartTime=Date.now();
-  /* Use callAPIStream — the AI's response will appear token-by-token. */
-  callAPIStream(msgs,undefined,function(delta){
-    if(state.examCancel)return;
-    _examStreamBuffer+=delta;
-    /* Update the placeholder with the raw streamed text so the user sees progress. */
-    var streamText=document.getElementById("examStreamText");
-    if(streamText){
-      /* Strip partial markdown so it doesn't look ugly mid-stream */
-      var display=_examStreamBuffer.replace(/```/g,"").replace(/<think>[\s\S]*?(<\/think>|$)/gi,"");
-      streamText.textContent=display.length>400?(display.slice(-400)+"…"):display;
+  /* callAPI may return a string or an object; normalise to string. */
+  var text=typeof result==="string"?result:(result&&(result.text||result.content))||"";
+  if(!text||!text.trim()){
+    var langL2=lang==="Chinese"?"生成失败：模型返回为空":"Generation failed — empty response";
+    var body2=_examBody();
+    body2.innerHTML='<div class="exam-empty"><strong>'+langL2+'</strong></div>';
+    _examFooter().innerHTML='<button class="exam-btn primary" onclick="renderExamForm()">'+(lang==="Chinese"?"重新出题":"Try again")+'</button><button class="exam-btn secondary" onclick="closeExamView()">'+(lang==="Chinese"?"关闭":"Close")+'</button>';
+    return;
+  }
+  var parsed=parseExamArrayJSON(text);
+  if(!parsed||!Array.isArray(parsed.questions)||parsed.questions.length===0){
+    var langL3=lang==="Chinese"?"生成失败：无法解析返回的题目":"Generation failed — couldn't parse the exam response";
+    var body3=_examBody();
+    body3.innerHTML='<div class="exam-empty"><strong>'+langL3+'</strong><div style="margin-top:10px;font-size:12px;color:hsl(var(--text-500));max-width:480px;text-align:left;background:hsl(var(--bg-200));padding:10px 12px;border-radius:8px;word-break:break-word;line-height:1.5">'+(lang==="Chinese"?"原始返回（前 500 字）：":"Raw response (first 500 chars):")+"<br>"+esc(text.slice(0,500))+'</div></div>';
+    _examFooter().innerHTML='<button class="exam-btn primary" onclick="renderExamForm()">'+(lang==="Chinese"?"重新出题":"Try again")+'</button><button class="exam-btn secondary" onclick="closeExamView()">'+(lang==="Chinese"?"关闭":"Close")+'</button>';
+    return;
+  }
+  /* Sanitize each question and push to state. Coerce unknown types
+     to fill-blank as a graceful fallback. */
+  parsed.questions.forEach(function(q,qi){
+    if(!q||!q.q||!q.type)return;
+    if(q.type!=="multiple-choice"&&q.type!=="fill-blank"&&q.type!=="short-answer")q.type="fill-blank";
+    if(!q.explanation)q.explanation="";
+    q._idx=state.examQuestions.length;
+    state.examQuestions.push(q);
+  });
+  if(state.examQuestions.length===0){
+    var langL4=lang==="Chinese"?"生成失败：返回中没有有效题目":"Generation failed — no valid questions returned";
+    var body4=_examBody();
+    body4.innerHTML='<div class="exam-empty"><strong>'+langL4+'</strong></div>';
+    _examFooter().innerHTML='<button class="exam-btn primary" onclick="renderExamForm()">'+(lang==="Chinese"?"重新出题":"Try again")+'</button><button class="exam-btn secondary" onclick="closeExamView()">'+(lang==="Chinese"?"关闭":"Close")+'</button>';
+    return;
+  }
+  /* Render the questions container and mount the nav bar in one go. */
+  renderAllQuestions();
+  finishExamGeneration();
+}
+function parseExamArrayJSON(text){
+  /* Robustly parse an LLM response of shape {"questions":[...]} or a
+     bare [...]. Strategies, tried in order:
+       1) Strip markdown fences and <think> blocks, then try direct parse.
+       2) Pull the first balanced { ... } starting at the first { (skipping
+          any chars until we find one), or [ ... ] starting at the first [.
+       3) As a last resort, try a balanced scan where we walk character by
+          character tracking nesting depth.
+     Logs the raw text on failure so the user can see what the model
+     actually returned in the console. */
+  if(!text||typeof text!=="string")return null;
+  /* Strategy 1: clean fences / think blocks and parse the whole string. */
+  var clean=text.replace(/```(?:json|JSON)?\s*/g,"").replace(/\s*```/g,"").replace(/<(?:thinking|think)>[\s\S]*?(<\/(?:thinking|think)>|$)/gi,"").replace(/\[(?:thinking|think)\][\s\S]*?(\[\/(?:thinking|think)\]|$)/gi,"").trim();
+  try{
+    var direct=JSON.parse(clean);
+    if(direct&&Array.isArray(direct.questions))return direct;
+    if(Array.isArray(direct))return{questions:direct};
+  }catch(_){/* fall through */}
+  /* Strategy 2: balanced-brace scan starting from the first { or [. */
+  function findBalanced(s,openCh,closeCh){
+    var start=-1,depth=0,inStr=false,escape=false,quote=null;
+    for(var i=0;i<s.length;i++){
+      var ch=s[i];
+      if(inStr){
+        if(escape){escape=false;continue}
+        if(ch==="\\"){escape=true;continue}
+        if(ch===quote){inStr=false;quote=null}
+        continue;
+      }
+      if(ch==='"'||ch==="'"){inStr=true;quote=ch;continue}
+      if(ch===openCh){
+        if(depth===0)start=i;
+        depth++;
+      }else if(ch===closeCh){
+        depth--;
+        if(depth===0&&start>=0)return s.slice(start,i+1);
+      }
     }
-    /* Keep the next-placeholder card in view as it streams */
-    var ph=document.getElementById("examQ"+i);
-    if(ph)ph.scrollIntoView({behavior:"smooth",block:"nearest"});
-  },null).then(function(result){
-    if(state.examCancel)return;
-    /* callAPIStream resolves to {text, html, widgets, cancelled} or null */
-    var fullText=(result&&result.text)||_examStreamBuffer;
-    if(!fullText||typeof fullText!=="string"||!fullText.trim()){
-      /* No result — show error placeholder, still continue */
-      appendExamErrorCard(i, "Generation failed — model returned empty");
-      ctx.i++;generateNextQuestionStreaming();
-      return;
-    }
-    var parsed=parseExamQuestionJSON(fullText);
-    if(!parsed){
-      appendExamErrorCard(i, "Could not parse the AI's response as JSON");
-      ctx.i++;generateNextQuestionStreaming();
-      return;
-    }
-    parsed._idx=state.examQuestions.length;
-    state.examQuestions.push(parsed);
-    replaceStreamingCardWithQuestion(i,parsed);
-    ctx.i++;
-    /* Continue to the next question */
-    setTimeout(generateNextQuestionStreaming,150);
+    return null;
+  }
+  /* Prefer {...} shape since that's what the prompt asked for. */
+  var objSlice=findBalanced(clean,"{","}");
+  if(objSlice){
+    try{
+      var parsed=JSON.parse(objSlice);
+      if(parsed&&Array.isArray(parsed.questions))return parsed;
+      if(Array.isArray(parsed))return{questions:parsed};
+    }catch(_){}
+  }
+  /* Fallback to bare [...] array. */
+  var arrSlice=findBalanced(clean,"[","]");
+  if(arrSlice){
+    try{
+      var arr=JSON.parse(arrSlice);
+      if(Array.isArray(arr))return{questions:arr};
+    }catch(_){}
+  }
+  console.warn("[exam] parseExamArrayJSON failed. Raw response (first 800 chars):",text.slice(0,800));
+  return null;
+}
+function renderAllQuestions(){
+  /* Build the full exam body in one shot: questions container with
+     each rendered card, plus the prev/next nav bar at the top. */
+  var body=_examBody();
+  if(!body)return;
+  body.innerHTML='<div id="examQuestionsContainer"></div>';
+  var cont=document.getElementById("examQuestionsContainer");
+  if(!cont)return;
+  state.examQuestions.forEach(function(q,idx){
+    var ph=document.createElement("div");
+    ph.className="exam-q-card";
+    ph.id="examQ"+idx;
+    cont.appendChild(ph);
+    paintQuestionCard(idx,q,ph);
   });
 }
-function parseExamQuestionJSON(text){
-  try{
-    var clean=text.replace(/```(?:json)?\s*/g,"").replace(/\s*```/g,"").replace(/[\s\S]*?<\/think>/gi,"").trim();
-    var start=clean.indexOf("{"); var end=clean.lastIndexOf("}");
-    if(start<0||end<=start)return null;
-    var parsed=JSON.parse(clean.slice(start,end+1));
-    if(!parsed.q||!parsed.type)return null;
-    /* Coerce types */
-    if(parsed.type!=="multiple-choice"&&parsed.type!=="fill-blank"&&parsed.type!=="short-answer")return null;
-    if(!parsed.explanation)parsed.explanation="";
-    return parsed;
-  }catch(e){return null;}
-}
-function replaceStreamingCardWithQuestion(i,q){
-  var ph=document.getElementById("examQ"+i);
-  if(!ph)return;
-  ph.classList.remove("exam-q-card-streaming");
-  /* If the streaming card was hidden behind the "generating first question"
-     mask, unhide it now that the JSON parsed and we have a real question. */
-  ph.style.display="";
-  ph.removeAttribute("id");
-  var idx=q._idx;
-  var html='<div class="exam-q-num">Question '+(idx+1)+' of '+state.examCount+' <span class="exam-q-type">'+q.type+'</span></div>';
+function paintQuestionCard(idx,q,container){
+  /* Render the content of one question card into the given container
+     element. Used both for fresh rendering and for restoring a saved
+     session. */
+  var html='<div class="exam-q-num">Question '+(idx+1)+' of '+state.examQuestions.length+' <span class="exam-q-type">'+q.type+'</span></div>';
   html+='<div class="exam-q-text">'+formatMsg(q.q)+'</div>';
   if(q.type==="multiple-choice"&&q.opts){
     html+='<div class="exam-q-opts">';
@@ -10216,35 +8637,28 @@ function replaceStreamingCardWithQuestion(i,q){
     });
     html+='</div>';
   }else if(q.type==="fill-blank"){
-    html+='<input class="exam-q-fill-input" data-eidx="'+idx+'" name="examAnswer'+idx+'" aria-label="Answer for question '+idx+'" placeholder="Type your answer..." oninput="state.examAnswers['+idx+']=this.value;refreshExamNavTally();scheduleExamAnswerSave()">';
+    html+='<input class="exam-q-fill-input" data-eidx="'+idx+'" name="examAnswer'+idx+'" aria-label="Answer for question '+(idx+1)+'" placeholder="'+(state.examLang==="Chinese"?"输入你的答案…":"Type your answer…")+'" oninput="state.examAnswers['+idx+']=this.value;refreshExamNavTally();scheduleExamAnswerSave()">';
   }else if(q.type==="short-answer"){
-    html+='<textarea class="exam-q-fill-input" data-eidx="'+idx+'" name="examAnswer'+idx+'" aria-label="Answer for question '+idx+'" placeholder="Type your answer..." rows="3" oninput="state.examAnswers['+idx+']=this.value;refreshExamNavTally();scheduleExamAnswerSave()" style="min-height:60px;resize:vertical"></textarea>';
+    html+='<textarea class="exam-q-fill-input" data-eidx="'+idx+'" name="examAnswer'+idx+'" aria-label="Answer for question '+(idx+1)+'" placeholder="'+(state.examLang==="Chinese"?"输入你的答案…":"Type your answer…")+'" rows="3" oninput="state.examAnswers['+idx+']=this.value;refreshExamNavTally();scheduleExamAnswerSave()" style="min-height:80px;resize:vertical"></textarea>';
   }
-  ph.innerHTML=html;
-  ph.id="examQ"+idx;
-  /* Hide the global "preparing" status now that the first question is on screen */
-  var st=document.getElementById("examGenStatus");
-  if(st&&idx===0)st.style.display="none";
-  /* Re-render the nav bar so the prev/next buttons reflect that we now
-     have a fully rendered first question. */
+  container.innerHTML=html;
+}
+function replaceStreamingCardWithQuestion(i,q){
+  /* Kept as a stub for any callers that may still reference it —
+     delegates to the unified paintQuestionCard renderer. */
+  var ph=document.getElementById("examQ"+i);
+  if(!ph)return;
+  paintQuestionCard(q._idx,q,ph);
   renderExamNav();
-  /* Scroll the new question into view */
-  setTimeout(function(){ph.scrollIntoView({behavior:"smooth",block:"nearest"})},50);
 }
 function appendExamErrorCard(i,msg){
-  var ph=document.getElementById("examQ"+i);
-  if(!ph){
-    ph=document.createElement("div");
-    ph.className="exam-q-card";
-    ph.id="examQ"+i;
-    var cont=document.getElementById("examQuestionsContainer");
-    if(cont)cont.appendChild(ph);
-  }
-  ph.classList.remove("exam-q-card-streaming");
-  ph.style.display="";
-  ph.innerHTML='<div class="exam-q-num">Question '+i+' — <span class="exam-result-wrong">Failed</span></div><div class="exam-q-text" style="color:hsl(0 60% 55%)">'+esc(msg)+'</div>';
-  /* An error counts as a "question" in the nav bar so the user can still
-     jump to it. */
+  var ph=document.createElement("div");
+  ph.className="exam-q-card";
+  ph.id="examQ"+i;
+  ph.innerHTML='<div class="exam-q-num">Question '+(i+1)+' — <span class="exam-result-wrong">Failed</span></div><div class="exam-q-text" style="color:hsl(0 60% 55%)">'+esc(msg)+'</div>';
+  state.examQuestions.push({q:"[failed]",type:"error",explanation:"",_idx:i});
+  var cont=document.getElementById("examQuestionsContainer");
+  if(cont)cont.appendChild(ph);
   renderExamNav();
 }
 function selectExamOpt(qidx,oidx){
@@ -10300,19 +8714,21 @@ function renderExamNav(){
   if(existing)existing.parentNode.removeChild(existing);
   var total=state.examQuestions.length;
   if(total===0)return;
+  console.log("[exam] renderExamNav total:", total);
   var isSubmitted=!!state.examSubmitted;
-  var answered=Object.keys(state.examAnswers||{}).filter(function(k){
+  var answeredKeys=Object.keys(state.examAnswers||{}).filter(function(k){
     var v=state.examAnswers[k];
     if(v===undefined||v===null)return false;
     if(typeof v==="string")return v.trim().length>0;
     return true;
-  }).length;
+  });
+  var answered=answeredKeys.length;
   var lang=state.examLang||"English";
   var L=function(en,zh){
     if(lang==="Chinese")return zh;
     return en;
   };
-  var html='<div class="exam-nav-bar" id="examNavBar">';
+  var html='<div class="exam-nav-bar" id="examNavBar" style="display:flex;">';
   html+='<button class="exam-nav-btn" id="examNavPrev" onclick="examNavStep(-1)" aria-label="Previous question">‹</button>';
   html+='<div class="exam-nav-counter" id="examNavCounter">';
   html+='<span class="exam-nav-current" id="examNavCurrent">1</span>';
@@ -10326,7 +8742,7 @@ function renderExamNav(){
   html+='</div>';
   html+='<div class="exam-nav-pills" id="examNavPills">';
   for(var j=0;j<total;j++){
-    var isAns=answered.indexOf(String(j))>=0;
+    var isAns=answeredKeys.indexOf(String(j))>=0;
     var isCur=(j===examNavCurrentIdx());
     var cls="exam-nav-pill"+(isCur?" current":"")+(isAns?" answered":"");
     var lbl=(j+1)+(isAns?" ✓":"");
@@ -10509,15 +8925,18 @@ function doSaveExamSession(opts){
   if(state.currentSessionId){
     body.id=state.currentSessionId;
   }
-  _examSaveInFlight=apiFetch("/api/sessions",{method:"POST",body:body})
+_examSaveInFlight=apiFetch("/api/sessions",{method:"POST",body:body})
     .then(function(r){
       if(r&&r.id){
         state.currentSessionId=r.id;
         try{pushChatIdToURL(r.id)}catch(_){}
       }
-      /* Re-render Recents so the new / updated exam row appears. */
-      try{renderRecents()}catch(_){}
-      try{toggleShareBtn()}catch(_){}
+      /* Refresh the session list from server so the new/updated exam
+         row appears in Recents. Then re-render. */
+      return refreshServerSessions().then(function(){
+        try{renderRecents()}catch(_){}
+        try{toggleShareBtn()}catch(_){}
+      });
     })
     .catch(function(e){
       console.warn("[exam] save failed:",e&&e.message);
@@ -11152,7 +9571,12 @@ function confirmDeleteAccount(){
     })();
   });
 }
-function escapeHtml(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+/* escapeHtml / sanitizeUrl / sanitizeUrls are imported from
+ * ./util/safe.js. The window aliases are kept so any on-page
+ * debug console (or older hot-reload tab) that still references
+ * window.sanitizeUrl / window.escapeHtml keeps working. */
+import { escapeHtml, sanitizeUrl, sanitizeUrls } from './util/safe.js';
+window.escapeHtml=escapeHtml;window.sanitizeUrl=sanitizeUrl;window.sanitizeUrls=sanitizeUrls;
 
 async function signOut(){
   try{await apiFetch("/api/auth/logout",{method:"POST"})}catch(_){}
@@ -11200,167 +9624,10 @@ var BEAGLE_BUILT_IN={
   isBuiltIn:true
 };
 
-/* Set to true by authBoot() after /api/config confirms the server
-   exposes a built-in MiniMax key (MINIMAX_API_KEY env var). Consumed
-   by refreshApiConfig() to decide whether to auto-activate BEAGLE
-   on cold start when the user has no provider of their own.
-   Hoisted as `var` so both authBoot and refreshApiConfig see the
-   same binding regardless of execution order. */
-var SERVER_HAS_BEAGLE_KEY=false;
-
 /* On boot: try /api/auth/me. If the URL has ?token=… it's a verification
    link, so consume that first. If ?reset_token=… it's a password reset. */
-(async function authBoot(){
-  /* Prime the CSRF cookie before any API calls. */
-  try{await fetch("/api/auth/csrf-token",{credentials:"include"})}catch(_){}
-  /* Kick off geolocation fetch in background (cached for reuse). */
-  fetchGeoInfo();
-
-  var params=new URLSearchParams(location.search);
-  var oauthError=params.get("oauth_error");
-  if(oauthError){
-    history.replaceState(null,"",location.pathname);
-    showGate();
-    showAuthSignin();
-    var msg="GitHub login failed: "+decodeURIComponent(oauthError)+".";
-    setTimeout(function(){try{showToast(msg,5000)}catch(_){}},500);
-    return;
-  }
-  /* Also handle plain ?error= for backward compatibility. */
-  var plainError=params.get("error");
-  if(plainError){
-    history.replaceState(null,"",location.pathname);
-    showGate();
-    showAuthSignin();
-  }
-
-  var shareToken=params.get("share");
-  if(shareToken){
-    /* Shared session view — load immediately, no auth needed for public. */
-    history.replaceState(null,"",location.pathname);
-    loadSharedSession(shareToken);
-    return;
-  }
-
-  var token=params.get("token");
-  var resetToken=params.get("reset_token");
-  /* Verification link — consume token first. */
-  if(token){
-    history.replaceState(null,"",location.pathname+(params.get("redirect")?"?redirect="+encodeURIComponent(params.get("redirect")):""));
-    showGate();
-    await submitAuthVerify(token);
-    return;
-  }
-  /* Password reset link — show the reset form immediately. */
-  if(resetToken){
-    history.replaceState(null,"",location.pathname);
-    showGate();
-    window.__resetToken=resetToken;
-    showAuthView("authResetPasswordView");
-    document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
-    /* Prefill the hidden email field by asking the server which
-       account this token belongs to. The hidden field exists so
-       password managers + screen readers see a username on the same
-       form as the password fields (a11y requirement). */
-    (async function(){
-      try{
-        var info=await apiFetch("/api/auth/reset-info?token="+encodeURIComponent(resetToken));
-        var el=document.getElementById("authResetEmail");
-        if(el&&info&&info.email)el.value=info.email;
-      }catch(_){ /* leave empty; form still works */ }
-    })();
-    return;
-  }
-  /* Fetch the built-in Beagle API key from the server's public config
-     endpoint so the key lives in the server environment, not the source. */
-  var cfgOk=false;
-  try{
-    var cfg=await fetch("/api/config",{credentials:"include"}).then(function(r){return r.json()}).catch(function(){return{}});
-    if(cfg&&cfg.hasBeagleKey){
-      /* The server proxies Beagle requests using its own env key
-         (MINIMAX_API_KEY). The raw key is never sent to the client,
-         so cfg.beagleKey is intentionally absent. Only update model
-         when the server explicitly provides one. */
-      if(typeof cfg.beagleKey==="string")BEAGLE_BUILT_IN.key=cfg.beagleKey;
-      if(typeof cfg.beagleModel==="string")BEAGLE_BUILT_IN.model=cfg.beagleModel;
-      cfgOk=true;
-    }
-  }catch(_){console.warn("[boot] config fetch failed")}
-  /* `cfgOk` is local to this IIFE; promote it to the module-level
-     flag so refreshApiConfig() — which runs after we return — can
-     decide whether to fall back to BEAGLE on cold start. */
-  SERVER_HAS_BEAGLE_KEY=cfgOk;
-  console.log("[boot] config hasBeagleKey="+cfgOk+", BEAGLE_BUILT_IN.key.length="+(BEAGLE_BUILT_IN.key||"").length);
-
-  /* P0.0 — only route the user to the auth gate when the server
-   * explicitly says 401. Network blips, 5xx, and a missing
-   * `/api/auth/me` response must NOT silently log the user out, or
-   * a transient hiccup on a refresh will force them back through
-   * the sign-in flow. We retry once after 500ms on transient
-   * failures, then show a "couldn't reach the server" toast and
-   * stop on the topic-setup shell so the user can try again. */
-  var me=null;
-  var meLastErr=null;
-  for(var meAttempt=1;meAttempt<=3;meAttempt++){
-    try{
-      me=await apiFetch("/api/auth/me",{_authEndpoint:true});
-      break;
-    }catch(e){
-      meLastErr=e;
-      console.warn("[boot] /me attempt "+meAttempt+" failed:",e&&e.message,e&&e.status);
-      if(e&&e.status===401){
-        /* Genuine session expiry. Don't immediately kick to the gate on the
-         * very first 401 — a transient race or a Set-Cookie propagation
-         * delay can produce a 401 even when the session is still valid.
-         * Retry once more after a short delay before declaring the user
-         * logged out, so a single bad response doesn't force a re-login. */
-        if(meAttempt<3){
-          await new Promise(function(r){setTimeout(r,500)});
-          continue;
-        }
-        showGate();
-        showAuthSignin();
-        return;
-      }
-      if(meAttempt<3)await new Promise(function(r){setTimeout(r,500)});
-    }
-  }
-  if(me&&me.user){
-    CURRENT_USER=me.user;
-    console.log("[boot] /me succeeded: user="+(me.user&&me.user.email)+
-      " verifiedAt="+(me.user&&me.user.verifiedAt)+
-      " plan="+(me.user&&me.user.plan));
-    /* Grace window for the Set-Cookie to settle (see notes in
-     * markAuthSuccess). */
-    markAuthSuccess();
-    await afterAuthEnter();
-    hideGate();
-    return;
-  }
-  /* /me never resolved with a user — surface a visible error and
-   * leave the user on the existing app shell so they can retry,
-   * rather than yanking them to the sign-in form. */
-  console.warn("[boot] /me unresolved after retries:",meLastErr&&meLastErr.message);
-  /* P0.6 — pre-boot used to silently fall through to the auth gate
-   * (which was the default visible element), but with the new
-   * data-boot-state="checking" shell, doing nothing leaves the
-   * user on the spinner forever. Show the sign-in form so they
-   * have a way forward; the toast still surfaces the underlying
-   * reason. */
-  showGate();
-  showAuthSignin();
-  try{showToast("Couldn't reach the server. Check your connection and retry.",5000)}catch(_){}
-  if(typeof renderUserFooter==="function")renderUserFooter();
-})().catch(function(e){
-  /* Catch any unhandled error from the boot IIFE so the page isn't
-     left in a broken state. The gate may already be showing (from the
-     /me catch above) — ensure it is. */
-  console.error("[boot] unhandled error:",e&&e.message);
-  try{
-    if(typeof showGate==="function")showGate();
-    if(typeof showAuthSignin==="function")showAuthSignin();
-  }catch(_){}
-});
+/* The auth boot sequence (csrf priming, /me retry, gate routing)
+   runs in auth/boot.js — imported at the top of this file. */
 
 /* Listen for browser back/forward and load the corresponding chat. */
 window.addEventListener("popstate",function(e){
@@ -12139,11 +10406,15 @@ function syncChatModel(){
   }
 }
 function toggleChatModelMenu(){
+  var wrap=document.getElementById("chatModelWrap");
+  if(!wrap)return;
+  if(wrap.getAttribute("data-open")==="true"){closeChatModelMenu();return}
   var menu=document.getElementById("chatModelMenu");
   if(!menu)return;
-  if(!menu.classList.contains("hidden")){closeChatModelMenu();return}
+  wrap.setAttribute("data-open","true");
   var trigger=document.getElementById("chatModel");
   if(trigger)trigger.classList.add("menu-open");
+  if(trigger)trigger.setAttribute("aria-expanded","true");
   /* Build the list */
   var providers=apiConfig.providers||[];
   var sorted=providers.slice().sort(function(a,b){
@@ -12176,12 +10447,24 @@ function toggleChatModelMenu(){
   html+='</button>';
   menu.innerHTML=html;
   menu.classList.remove("hidden");
+  /* Force visibility via inline style as a belt-and-suspenders measure. */
+  menu.style.setProperty("display","block","important");
+  menu.style.setProperty("opacity","1","important");
+  menu.style.setProperty("visibility","visible","important");
 }
 function closeChatModelMenu(){
+  var wrap=document.getElementById("chatModelWrap");
+  if(wrap)wrap.setAttribute("data-open","false");
   var menu=document.getElementById("chatModelMenu");
-  if(menu)menu.classList.add("hidden");
+  if(menu){
+    menu.classList.add("hidden");
+    menu.style.removeProperty("display");
+    menu.style.removeProperty("opacity");
+    menu.style.removeProperty("visibility");
+  }
   var trigger=document.getElementById("chatModel");
   if(trigger)trigger.classList.remove("menu-open");
+  if(trigger)trigger.setAttribute("aria-expanded","false");
 }
 function pickChatModel(id){
   if(!id)return;
@@ -12193,10 +10476,27 @@ function pickChatModel(id){
 document.addEventListener("click",function(e){
   var wrap=document.getElementById("chatModelWrap");
   if(!wrap)return;
-  var menu=document.getElementById("chatModelMenu");
-  if(!menu||menu.classList.contains("hidden"))return;
+  if(wrap.getAttribute("data-open")!=="true")return;
   if(!wrap.contains(e.target))closeChatModelMenu();
 });
+/* Bind the chat model trigger via JS (not inline onclick) so it's not
+   dependent on window-scoped function resolution in the built bundle. */
+(function(){
+  var btn=document.getElementById("chatModel");
+  if(btn)btn.addEventListener("click",function(e){
+    console.log("[chatModel] clicked",Date.now());
+    /* Visual test: flash the button red so we know the click fired. */
+    btn.style.transition="background 0.15s";
+    btn.style.background="rgba(255,0,0,0.3)";
+    setTimeout(function(){btn.style.background=""},300);
+    try{
+      toggleChatModelMenu();
+      console.log("[chatModel] toggleChatModelMenu returned OK");
+    }catch(x){
+      console.error("[chatModel] ERROR:",x&&x.message||x);
+    }
+  });
+})();
 
 /* ============================================================
    EXTENSIONS PICKER - a multi-select dropdown that bundles the
@@ -13319,9 +11619,11 @@ function renderProviderList(){
     html+='<input class="settings-input" name="providerLabel" aria-label="Provider label" placeholder="Label (e.g. GPT-5.5)" value="'+esc(p.label||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'label\',this.value)">';
     html+='<input class="settings-input" name="providerUrl" aria-label="Provider base URL" placeholder="Base URL  (https://api.openai.com/v1)" value="'+esc(p.url||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'url\',this.value)">';
     /* The server list endpoint never returns the API key (it stays
-       encrypted on the server). Render an empty string rather than the
-       string "undefined". */
-    html+='<form style="display:contents" onsubmit="return false"><input type="text" name="username" autocomplete="username" style="display:none" aria-hidden="true"><input class="settings-input" name="providerKey" aria-label="Provider API key" type="password" autocomplete="new-password" placeholder="API key" value="'+esc(p.key||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'key\',this.value)"></form>';
+       encrypted on the server). For existing saved providers, show a
+       masked placeholder so the user knows a key is configured. */
+    var displayKey=p.key;
+    if(!displayKey&&p.id.indexOf("new-")!==0)displayKey="••••••••";
+    html+='<form style="display:contents" onsubmit="return false"><input type="text" name="username" autocomplete="username" style="display:none" aria-hidden="true"><input class="settings-input" name="providerKey" aria-label="Provider API key" type="password" autocomplete="new-password" placeholder="API key" value="'+esc(displayKey)+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'key\',this.value)"></form>';
     html+='<input class="settings-input" name="providerModel" aria-label="Provider model ID" placeholder="Model id  (e.g. gpt-5.5, claude-opus-4-8, sonnet-4-6)" value="'+esc(p.model||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'model\',this.value)">';
     html+='</div>';
     html+='<button class="provider-del" onclick="removeProvider(\''+esc(p.id||"")+'\')" title="Remove">×</button>';
@@ -13329,7 +11631,23 @@ function renderProviderList(){
   });
   cont.innerHTML=html;
 }
+/* Tier-based API key limits, mirroring server/src/routes/apiKeys.js */
+var TIER_KEY_LIMITS={diophantus:2,riemann:10,descartes:50,euclid:999};
+
 function addProvider(){
+  /* Enforce tier-based API key limit before inserting a new row. */
+  var tier=CURRENT_USER&&CURRENT_USER.tier||"diophantus";
+  var maxKeys=TIER_KEY_LIMITS[tier]||TIER_KEY_LIMITS.diophantus;
+  var existingNonBuiltin=apiConfig.providers.filter(function(p){return !p.isBuiltIn});
+  var existingSaved=existingNonBuiltin.filter(function(p){return p.id.indexOf("new-")!==0});
+  if(existingSaved.length>=maxKeys){
+    var status=document.getElementById("stgStatus");
+    if(status){
+      status.className="settings-status warn";
+      status.textContent="API key limit reached for "+tier+" plan ("+maxKeys+" keys). Upgrade your plan to add more.";
+    }
+    return;
+  }
   /* Insert a placeholder row locally so the user can fill in the form,
      then commit to the server on Save. The placeholder carries the
      fields label / url / model + a temporary key the user types. */
@@ -13369,18 +11687,18 @@ function setActiveProvider(id){
   if(!CURRENT_USER)return;
   var target=apiConfig.providers.find(function(p){return p.id===id});
   if(!target)return;
+  /* Save the choice locally FIRST so it survives a page reload even
+     if the server PATCH hasn't completed yet. */
+  apiConfig.activeId=id;
+  saveLastActiveId(id);
   if(target.isBuiltIn){
-    /* Built-in provider: update local state only, no server roundtrip. */
+    /* Built-in provider: update isActive flags, no server roundtrip. */
     apiConfig.providers.forEach(function(p){p.isActive=(p.id===id)});
-    apiConfig.activeId=id;
-    saveLastActiveId(id);
     renderProviderList();syncModelPills();syncSettingsUI();
     return;
   }
   apiFetch("/api/api-key/"+encodeURIComponent(id),{method:"PATCH",body:{isActive:true}}).then(function(){
     apiConfig.providers.forEach(function(p){p.isActive=(p.id===id)});
-    apiConfig.activeId=id;
-    saveLastActiveId(id);
     renderProviderList();syncModelPills();syncSettingsUI();
   }).catch(function(e){console.warn("[api-key] set active failed:",e.message)});
 }
@@ -13393,10 +11711,19 @@ function setActiveProvider(id){
 var LAST_ACTIVE_ID_KEY="socrates-last-active-id";
 function saveLastActiveId(id){
   if(!id)return;
-  try{localStorage.setItem(LAST_ACTIVE_ID_KEY,id)}catch(_){}
+  try{localStorage.setItem(LAST_ACTIVE_ID_KEY,id);console.log("[last-active] saved via localStorage:",id)}catch(e){
+    console.warn("[last-active] localStorage save failed, trying cookie:",e&&e.message);
+    try{document.cookie=LAST_ACTIVE_ID_KEY+"="+encodeURIComponent(id)+";path=/;max-age=31536000"}catch(_){}
+  }
 }
 function loadLastActiveId(){
-  try{return localStorage.getItem(LAST_ACTIVE_ID_KEY)||null}catch(_){return null}
+  try{var v=localStorage.getItem(LAST_ACTIVE_ID_KEY);if(v)return v}catch(_){}
+  /* Fallback: try cookie (works in Chrome incognito / strict partitioning). */
+  try{
+    var m=document.cookie.match(new RegExp("(?:^|; )"+LAST_ACTIVE_ID_KEY+"=([^;]*)"));
+    if(m)return decodeURIComponent(m[1]);
+  }catch(_){}
+  return null;
 }
 function updateProviderField(id,field,value){
   var p=apiConfig.providers.find(function(x){return x.id===id});
@@ -13429,6 +11756,13 @@ function saveSettings(){
         deduped.push(p);
       });
       apiConfig.providers=deduped;
+
+      /* Drop entirely empty new rows (user clicked "+ Add" but never
+         filled in model / key). These would fail validation with a
+         confusing "missing URL or model" message. */
+      apiConfig.providers=apiConfig.providers.filter(function(p){
+        return !(p.id.indexOf("new-")===0 && !p.model && !p.key);
+      });
 
       /* Validate every row. */
       for(var i=0;i<apiConfig.providers.length;i++){
@@ -13625,163 +11959,33 @@ function getSystemContext(){
    no Socratic questioning, no knowledge-graph awareness. Used when
    the user picks "Chat mode" on the topic-setup screen. */
 
-var CHAT_SYSTEM_PROMPT = "You are a helpful, knowledgeable assistant having a plain conversation with the user. Answer their questions directly and conversationally.\n\n- Use Markdown for structure (headings, lists, **bold**, *italic*, `code`).\n- Use LaTeX for math: $...$ for inline and $$...$$ for display. The renderer uses KaTeX (not full LaTeX), so ALL KaTeX compatibility rules below are MANDATORY.\n- KaTeX CRITICAL rules — violations cause SILENT rendering failures (the formula disappears entirely, no error shown):\n  • Use ONLY lowercase LaTeX commands: \\\\sum, \\\\frac, \\\\infty, \\\\displaystyle, \\\\pm, \\\\le, \\\\ge, \\\\ne, \\\\to, \\\\alpha, \\\\beta, etc. NEVER use uppercase (\\\\SUM, \\\\FRAC, \\\\INFTY).\n  • Do NOT use \\\\begin{align}, \\\\begin{equation}, \\\\begin{eqnarray}, \\\\begin{multline}, \\\\begin{gather}, \\\\begin{flalign} — KaTeX does NOT support them. Use \\\\begin{aligned} inside $$...$$ instead for multi-line equations.\n  • Do NOT use \\\\label{...}, \\\\ref{...}, \\\\eqref{...}, \\\\pageref{...}, \\\\tag{...} — KaTeX has no cross-reference system. Write equation numbers manually as text, e.g. \"(1)\".\n  • Use $...$ for inline math and $$...$$ for display math. Do NOT use \\\\(...\\\\) or \\\\[...\\\\] as delimiters — they are NOT supported.\n  • Use \\\\mathbf{...} for bold math, NOT \\\\bm{...}.\n  • Use \\\\cdot for multiplication dot, NOT \\\\cdotp.\n  • For cases/environments, use \\\\begin{cases} ... \\\\end{cases} only. Do NOT use \\\\begin{dcases}, \\\\begin{rcases}, etc.\n  • Use \\\\text{...} for plain text inside math. Keep \\\\text content short.\n  • NEVER use \\\\ce{...}, \\\\pu{...}, or other mhchem extensions unless you are certain they are loaded.\n  • Always escape special chars in text that should be literal: use \\\\% for percent, \\\\$ for dollar sign, \\\\_ for underscore in text mode.\n  • For matrices, use \\\\begin{matrix}, \\\\begin{pmatrix}, \\\\begin{bmatrix}, \\\\begin{vmatrix} — all supported individually, but NOT inside \\\\begin{align}.\n- For diagrams (flowcharts, sequence diagrams, class diagrams, etc.), use ```mermaid code blocks instead of ASCII art — they render as live SVG.\n- Do NOT emit `<quiz>`, `<example>`, `<practice>`, or `<mistake>` blocks. They are tutor-mode constructs and will not be rendered here.\n- Keep responses proportionate to the question. A one-line question deserves a focused answer, not a textbook chapter.\n- Read the conversation history before answering. Never restart from zero or repeat yourself.\n- Match the language the user is writing in.\n\n## Web search tool\n\nYou have access to a web_search tool. It runs a real-time search and returns results (with full article text for the top hits) that you can use as fresh, authoritative information.\n\n**When to use it — be conservative. Only call it when one of these is true:**\n- The user explicitly asks you to look something up, search, or check (\"search for X\", \"look up X\", \"what's the latest on X\").\n- The question is about current events, recent releases, prices, scores, dates, or anything that may have changed since your training cutoff, AND the answer would be misleading if it were stale.\n- The question requires information from many sources (a comparison, a survey, recent research) that you cannot reliably produce from training alone.\n- You tried to answer and realized you don't actually know with confidence.\n\n**When NOT to use it — answer directly from your own knowledge:**\n- The question is conceptual, definitional, or about how something works (\"explain X\", \"how does Y work\").\n- It's a coding, math, logic, language, or general-knowledge question you can answer confidently.\n- The user is just chatting, brainstorming, or asking your opinion.\n- The user already gave you the information in the conversation.\n- Calling search would add latency without changing the answer.\n- If the user already pasted URLs and you can answer from them, do NOT call search — that just adds latency.\n\n**Reading URLs the user shares:**\nWhen the user's message contains an http(s) URL, the system has already fetched the page and prepended a `[Referenced page] <url>\nTitle: …\n<content>` block to the user's turn. Treat that block as the authoritative source for anything about that page — quote from it, summarize it, answer questions about it. Do NOT refuse and do NOT ask the user to paste the content themselves; you can see it. If the block says the page could not be retrieved, acknowledge that honestly and proceed from what you know.\n\n- Cite the URL inline using `[1]`, `[2]`, … in the order the pages appear in the prompt. The numbers map to the order of `[Referenced page]` blocks. At the end of your answer (or whenever the user asks for sources), list them as:\n  [1] Title — https://example.com/...\n  [2] Title — https://example.com/...\n- If you quote a sentence, put the citation right after the closing punctuation: `…end of quote. [1]`\n- Do not invent URLs that weren't in the prompt. If you need additional sources, use the web_search tool above.\n\n**How to call it — EXACT format required:**\nIf you decide to search, output EXACTLY one of these JSON formats and NOTHING else on that turn — no preamble, no apology, no commentary, no extra text:\n\nPreferred (single JSON on its own line):\n{\"tool\":\"web_search\",\"query\":\"<one short keyword query, max 8 words>\"}\n\nAlternative (inside a code block):\n```json\n{\"tool\":\"web_search\",\"query\":\"<one keyword query>\"}\n```\n\nCRITICAL — do NOT:\n- Say anything before the JSON (no \"I'll search\", \"Let me look that up\", etc.)\n- Wrap it in [TOOL_CALL] or any other tags — use the raw JSON format only\n- Output multiple tool calls — ONE search per turn\n- Use queries longer than 8 words — be specific but concise\n\nIf you do NOT need to search, just answer the user normally. The system will not see any tool call and will display your response directly.\n\nWhen search results DO come back, you will see a `[Web research]` block in the next round. Cite results inline as [1], [2], etc. If the user asked for sources, list them.";
+var CHAT_SYSTEM_PROMPT = `You are a helpful, knowledgeable assistant having a natural conversation with the user. Answer directly and conversationally.
+
+Write like a real person talking to another person. Avoid the telltale patterns that make text sound like it came from an AI: don't use bullet points or numbered lists unless the user specifically asks for one, don't use em dashes, don't start sentences with "Here are...", "There are...", "In summary...", or "It's important to note...". Don't structure your answer as "First... Second... Finally...". Just write in flowing paragraphs with varied sentence length. Use contractions. Be concise. If you only need a sentence or two, that's fine.
+
+Use Markdown only when it genuinely helps, like code blocks or the occasional heading. For math, use $...$ inline and $$...$$ for display. The renderer uses KaTeX so stick to lowercase LaTeX commands and use \\begin{aligned} inside $$ for multi-line equations instead of \\begin{align}. For diagrams, use mermaid.
+
+Keep responses proportionate to the question. Read the conversation history and don't repeat yourself. Match the user's language.
+
+You have access to a web_search tool for real-time information. Only use it when the user explicitly asks you to search, when the topic is time-sensitive and your knowledge might be stale, when you need multiple sources you can't reliably synthesize, or when you genuinely don't know. Don't search for conceptual questions, coding help, general knowledge, casual chat, or when the user already provided the info.
+
+When the user shares a URL, the system has already fetched it and prepended a [Referenced page] block. Use that as your source. Cite inline with [1], [2] matching the order of referenced pages. At the end, list sources in the format: [1] Title — URL.
+
+To search, output exactly this JSON on its own line and nothing else:
+{"tool":"web_search","query":"<short keyword query, max 8 words>"}
+
+No preamble before the JSON. One search per turn.
+
+Do NOT use emojis in your responses. Web search results may contain emojis in titles or snippets — never reproduce or mimic them. Write in plain prose.`;
 
 /* Tutor mode: the long textbook-style Socratic prompt. */
-var SOCRATIC_SYSTEM_PROMPT = "You are Socrates, a rigorous textbook author and patient tutor. Your explanations must read like a chapter from a first-rate textbook in the student's own language — **systematic, logically progressive, precise in language, and thorough in foundation-building**. Every topic should be presented as part of a coherent knowledge system, not as isolated facts. Your teaching proceeds in a natural flow — Motivate → Define → Develop → Illustrate → Exercise — but you do NOT follow a fixed heading template; adapt the structure to the content.\n\n## LANGUAGE RULE — match the student's language\n\nDetect the language the student is using. If the student's topic, question, or conversation is in Chinese, respond entirely in Chinese using the same textbook rigor and structure described below. If the student writes in English, respond in English. If the student writes in another language, respond in that language. Never switch language mid-explanation, and never mix languages in your output. All pedagogical components — definitions, worked examples, practice problems, quizzes, flashcards — must be in the same language as the exposition.\n\nThe core requirement is that the student receives a first-rate textbook-quality explanation **in their own language**, adapted to that language's academic register. For Chinese, this means using formal written Chinese (书面语), proper technical terminology, and a rigorous textbook cadence appropriate to Chinese academic writing.\n\n---\n## CORE PRINCIPLES — how to think like a textbook author\n\n**1. Coherent Knowledge System — every concept connects.**\n- Every new concept MUST be explicitly connected to what the student already knows from this lesson. Start each section with a brief sentence linking back: \"Building on our understanding of X, we now turn to Y.\"\n- Create a narrative arc across the lesson. The sub-topics are not independent — they are chapters of a book. Show how each piece fits into the larger picture.\n- After teaching a concept, briefly foreshadow what comes next and why: \"This property of X will become essential when we later discuss Y.\"\n- End each topic with a **takeaway sentence** that sums up what was learned and how it connects to the next topic.\n\n**2. Layer by Layer — from foundation to summit.**\n- Start from the absolute foundation. Even if the student claims familiarity, begin with the core definition and build up. Do NOT assume prior knowledge.\n- Each layer MUST be firmly established before moving to the next. A layer is established when you have: defined it → illustrated it with an example → checked understanding.\n- Progression: concrete → abstract → general. Start with specific numeric instances, then generalize to abstract forms, then state the general theorem or formula.\n- Do NOT jump to advanced applications before the foundation is solid. The learner should feel like each step is a natural, inevitable next step.\n\n**3. No Shortcuts on Fundamentals.**\n- The first example for any concept should be **deliberately simple** — so simple it feels obvious. This is not wasted time; this is anchoring intuition.\n- Before introducing a formula or theorem, spend a paragraph explaining **why it makes sense intuitively**. Use a concrete numeric case first, then generalize.\n- Common pitfalls and edge cases should be introduced AFTER the basic understanding is secured — not before.\n- If a concept has prerequisites, briefly review or reference them before proceeding.\n\n**4. Textbook Formal Register — precise academic language in the student's language.**\n- Use formal, precise academic language in whatever language the student is using. Avoid conversational fillers and casual expressions. Write in the formal register appropriate to that language (e.g., for Chinese, use 书面语 with proper 术语; for English, avoid contractions and colloquialisms).\n- Be rigorous in your statements: be specific and technically precise rather than vague.\n- For Chinese: use 我们 throughout for the shared learning journey (我们考虑..., 我们得到..., 因此我们可以得出...). Use the present tense for mathematical truth. Use standard Chinese textbook terminology (定义, 定理, 证明, 例, 练习). Use classical Chinese academic connectors: 因此, 反之, 特别地, 一般地, 例如, 另一方面, 由此可见, 注意到, 换言之, 进而, 故.\n- For English: use the first-person plural (\"we\") throughout. Use the present tense for mathematical truth. Use transitional phrases: \"Therefore...\", \"Conversely...\", \"In particular...\", \"More generally...\", \"As a concrete illustration...\", \"On the other hand...\", \"It follows that...\", \"Observe that...\", \"Hence...\".\n- Definitions must be stated in standard textbook form. Bold the term being defined.\n- Theorems, lemmas, and properties should be clearly labeled in the language of instruction.\n- Number important equations for reference (write the number manually after the equation).\n- Use the **Definition → Theorem → Proof → Example → Exercise** cadence that characterizes rigorous textbooks, regardless of language.\n\n---\n## EXPLANATION STRUCTURE — flowing, but thorough\n\nDo NOT force every explanation into rigid section headings. Instead, write a flowing exposition that covers these phases seamlessly:\n\n1. **Motivation & Context (Introduction)** — Set the stage. Frame the problem this concept solves. Connect to previously learned material. Address the question: Why should the student care? What question does this concept answer? What gap does it fill? 2-4 paragraphs.\n\n2. **Precise Development (Definition &amp; Derivation)** — Develop the concept step by step. Define every new term with textbook precision. Show derivations in full detail — do not skip algebraic steps. Include small inline examples after each sub-idea, not as separate sections but as immediate illustrations. Go deeper into implications, edge cases, and connections. This is the main body and should be **8-20 paragraphs** depending on complexity.\n\n3. **Consolidation (Summary &amp; Transition)** — End the exposition with 1-2 paragraphs that consolidate what was learned, restate the key result, and explicitly connect to the next topic: \"Having established X, we are now ready to explore Y.\"\n\n---\n## PARAGRAPH CRAFT — how to write each paragraph\n\n- Every paragraph should make ONE clear point. The first sentence states the claim (the topic sentence); the rest of the paragraph develops and supports it with reasoning, examples, or details.\n- After every definition or abstract statement, immediately give a concrete instance: \"For example, if X = 3, then...\"\n- Use inline math $...$ for symbols and short expressions within sentences. Use display math $$...$$ for important formulas, derivations, and multi-line expressions.\n- CRITICAL LaTeX rules — violation causes SILENT rendering failure (the formula disappears entirely, no error shown):\n  • Use ONLY lowercase commands (`\\\\sum`, `\\\\frac`, `\\\\infty`, `\\\\displaystyle`, `\\\\pm`, `\\\\le`, `\\\\ge`, `\\\\ne`, `\\\\to`, `\\\\alpha`, `\\\\beta`, `\\\\gamma`, `\\\\theta`, `\\\\lambda`, `\\\\pi`, `\\\\phi`, `\\\\omega`). NEVER use uppercase (`\\\\SUM`, `\\\\FRAC`, `\\\\INFTY`).\n  • Do NOT use `\\\\begin{align}`, `\\\\begin{equation}`, `\\\\begin{eqnarray}`, `\\\\begin{multline}`, or `\\\\begin{gather}` — KaTeX does NOT support them. Use `\\\\begin{aligned}` inside `$$...$$` for multi-line equations instead.\n  • Do NOT use `\\\\label{...}`, `\\\\ref{...}`, `\\\\eqref{...}`, `\\\\pageref{...}`, or `\\\\tag{...}` — KaTeX has no cross-reference system. Write equation numbers manually as plain text, e.g. `$$ ... \\\\qquad (1) $$`.\n  • Use `$...$` for inline math and `$$...$$` for display math. Do NOT use `\\\\(...\\\\)` or `\\\\[...\\\\]` as delimiters — they are NOT supported.\n  • Use `\\\\mathbf{...}` for bold math, NOT `\\\\bm{...}`.\n  • Use `\\\\cdot` for multiplication dot, NEVER `\\\\cdotp`.\n  • For cases, use `\\\\begin{cases} ... \\\\end{cases}` only. Do NOT use `\\\\begin{dcases}`, `\\\\begin{rcases}`, or `\\\\begin{dcases*}`.\n  • Use `\\\\text{...}` for plain text inside math. Keep `\\\\text` content short — complex multi-word text may overflow.\n  • NEVER emit `\\\\ce{...}`, `\\\\pu{...}`, or other mhchem/chemformula extensions — they are not loaded.\n  • Always escape literal special characters in text: use `\\\\%` for percent, `\\\\$` for dollar sign, `\\\\_` for underscore in text mode. Unescaped `_` causes a subscript error.\n  • For matrices, use `\\\\begin{matrix}`, `\\\\begin{pmatrix}`, `\\\\begin{bmatrix}`, `\\\\begin{vmatrix}` individually. Do NOT nest them inside align environments.\n  • For integrals: `\\\\int`, `\\\\iint`, `\\\\iiint`, `\\\\oint` are all supported individually with `_{lower}^{upper}` for bounds.\n  • For spacing: use `\\\\,` (thin), `\\\\:` (medium), `\\\\;` (thick), `\\\\quad`, `\\\\qquad`. Do NOT use `\\\\hspace` or `\\\\kern` with absolute units.\n- For diagrams (flowcharts, sequence diagrams, class diagrams, etc.), use ```mermaid code blocks instead of ASCII art — they render as live SVG.\n- When introducing a new term, **bold** it and define it in the same sentence: \"A **derivative** measures the instantaneous rate of change of a function.\"\n- Use precise, formal language at all times. This is a textbook.\n\n---\n## WORKED EXAMPLES — 2-3, with clear progression\n\nAfter the explanation, present 2-3 worked examples. This is MANDATORY — the examples are where the student truly learns.\n\n**Example 1 — Foundation.** A basic, straightforward application. The purpose is to show the concept working in its simplest form. Make each step explicit: \"Step 1: Identify X. Step 2: Apply formula Y. Step 3: Compute...\" Explain the reasoning behind each step, not just the algebra.\n\n**Example 2 — Application.** Requires combining multiple ideas. Less hand-holding; more reliance on the foundation built in Example 1. The solution should note where it builds on Example 1.\n\n**Example 3 (optional)** — Extension. An edge case, a non-standard application, or a problem that requires strategic thinking.\n\nFormat:\n<example><title>Example 1: [descriptive title]</title><problem>the problem statement</problem><solution>step-by-step solution with $$...$$ for math. Explain each step's reasoning.</solution></example>\n\n---\n## PRACTICE PROBLEM — challenging, requires transfer\n\nGive ONE practice problem. It MUST be harder than the examples — it should require adapting the concepts to a new context, not just applying the same steps.\n\n<practice><title>Practice</title><problem>the problem — must require transfer, not mimicry</problem><hint>optional hint (1-2 sentences)</hint></practice>\n\nThe student types their attempt into the practice widget inline and submits; their answer is sent to you as the next user turn so you can grade it. If the problem has a single canonical answer and self-grading is reasonable, you MAY also include `correct=\"...\"` on the opening tag — when present, the widget shows a Reveal-answer button and self-grades the typed attempt (case-insensitive, ignoring trailing punctuation); if not present, only the typed attempt is sent and you grade in your next reply. Do NOT include the answer in the prose either way.\n\n## VOCABULARY — formal terms\n\nWhen introducing a new formal term the student should remember, emit it inside a definition card so it stands out from the prose:\n\n<definition><term>Term name</term><body>the formal definition, 1-3 sentences, in the same register as the surrounding exposition</body></definition>\n\nUse sparingly — only when the term itself is worth committing to long-term memory. Do NOT use for ordinary words or for terms already defined earlier in this lesson.\n\n## PROCEDURE — multi-step algorithms\n\nWhen a procedure is genuinely sequential and the order matters (long division, integral setup, proof techniques), emit each step as a numbered step block. Adjacent <step> blocks are merged into a single numbered list at render time.\n\n<step n=\"1\">first action</step>\n<step n=\"2\">second action</step>\n<step n=\"3\">third action</step>\n\nUse only when the procedure is genuinely a recipe the student should follow. Do NOT use for prose explanations or for steps that have no clear linear order.\n\n## FLASHCARD — atomic recall\n\nFor a single, atomic fact or definition that benefits from spaced repetition (a named theorem, a historical date, a vocabulary pairing), emit a flashcard:\n\n<flashcard><front>Question or prompt</front><back>Concise answer</back></flashcard>\n\nThe student clicks the card to reveal the answer. Use sparingly — one or two per lesson is plenty. Do NOT use for multi-step explanations.\n\n---\n## CHECKING UNDERSTANDING — optional quiz\n\nYou MAY optionally include a multiple-choice quiz after the explanation (before examples). Use when the concept has a common point of confusion worth testing immediately:\n\n<quiz><q>question</q><options><o letter=\"A\">option</o><o letter=\"B\">option</o><o letter=\"C\">option</o></options><correct>B</correct></quiz>\n\n3 options only. Distractors should be plausible misconceptions.\n\n---\n## RESPONDING TO THE STUDENT\n\nWhen the student attempts the practice problem:\n- **Correct** → affirm concisely, then present the next sub-topic as a natural progression.\n- **Partially correct** → point out exactly which part needs work. Let them try once more.\n- **Wrong** → walk through the correct approach, highlighting where their reasoning went off. Give a similar practice problem. Append:\n  <mistake type=\"practice\" correct=\"...the key insight the student missed...\"></mistake>\n\n---\n## ABSOLUTE ANTI-PATTERNS\n\n- Do NOT switch languages mid-lesson or mix languages. Every element — explanation, examples, practice, quiz — must be in the same language.\n- Do NOT use a language different from what the student is using. Match their language from the first response.\n- Do NOT write short, shallow explanations. 8-20 paragraphs is normal for a thorough exposition.\n- Do NOT give fewer than 2 worked examples. Examples are where real learning happens.\n- Do NOT skip the foundation example (Example 1). Even if it seems too simple.\n- Do NOT make practice trivially solvable by copying an example. Require transfer.\n- Do NOT use casual or conversational language. Write in formal, precise textbook register.\n- Do NOT skip the motivation phase. Context and purpose are essential.\n- Do NOT present concepts in isolation. Every new idea must connect to the previous one.\n- Do NOT jump to advanced topics before the foundation is solidified.\n- Do NOT repeat explanations from the chat history.\n- Do NOT ask or present multiple questions in a single response. Each turn should ask at most one quiz, one practice problem, or one check. Never bundle two or more questions in the same message. — build on what you've already taught.\n- Do NOT use \"you\" to address the student directly in explanatory text (use \"we\" instead). Reserve \"you\" for exercises and quiz questions.\n\n---\n## CONVERSATION RULES\n\n- Read the chat history before every response. NEVER restart from zero.\n- If the user's last message is short (\"ok\", \"continue\", \"next\"), pick up exactly where you left off.\n- If the user already answered a quiz, do NOT ask it again. Move to examples or practice.\n- If the user already completed practice, affirm and move to the next sub-topic.\n\nThe student is learning about: {topic}. Their current level in this area: {level}.\n\n{context}";
+var SOCRATIC_SYSTEM_PROMPT = "You are Socrates, a rigorous textbook author and patient tutor. Your explanations must read like a chapter from a first-rate textbook in the student's own language — **systematic, logically progressive, precise in language, and thorough in foundation-building**. Every topic should be presented as part of a coherent knowledge system, not as isolated facts. Your teaching proceeds in a natural flow — Motivate → Define → Develop → Illustrate → Exercise — but you do NOT follow a fixed heading template; adapt the structure to the content.\n\n## LANGUAGE RULE — match the student's language\n\nDetect the language the student is using. If the student's topic, question, or conversation is in Chinese, respond entirely in Chinese using the same textbook rigor and structure described below. If the student writes in English, respond in English. If the student writes in another language, respond in that language. Never switch language mid-explanation, and never mix languages in your output. All pedagogical components — definitions, worked examples, practice problems, quizzes, flashcards — must be in the same language as the exposition.\n\nThe core requirement is that the student receives a first-rate textbook-quality explanation **in their own language**, adapted to that language's academic register. For Chinese, this means using formal written Chinese (书面语), proper technical terminology, and a rigorous textbook cadence appropriate to Chinese academic writing.\n\n---\n## CORE PRINCIPLES — how to think like a textbook author\n\n**1. Coherent Knowledge System — every concept connects.**\n- Every new concept MUST be explicitly connected to what the student already knows from this lesson. Start each section with a brief sentence linking back: \"Building on our understanding of X, we now turn to Y.\"\n- Create a narrative arc across the lesson. The sub-topics are not independent — they are chapters of a book. Show how each piece fits into the larger picture.\n- After teaching a concept, briefly foreshadow what comes next and why: \"This property of X will become essential when we later discuss Y.\"\n- End each topic with a **takeaway sentence** that sums up what was learned and how it connects to the next topic.\n\n**2. Layer by Layer — from foundation to summit.**\n- Start from the absolute foundation. Even if the student claims familiarity, begin with the core definition and build up. Do NOT assume prior knowledge.\n- Each layer MUST be firmly established before moving to the next. A layer is established when you have: defined it → illustrated it with an example → checked understanding.\n- Progression: concrete → abstract → general. Start with specific numeric instances, then generalize to abstract forms, then state the general theorem or formula.\n- Do NOT jump to advanced applications before the foundation is solid. The learner should feel like each step is a natural, inevitable next step.\n\n**3. No Shortcuts on Fundamentals.**\n- The first example for any concept should be **deliberately simple** — so simple it feels obvious. This is not wasted time; this is anchoring intuition.\n- Before introducing a formula or theorem, spend a paragraph explaining **why it makes sense intuitively**. Use a concrete numeric case first, then generalize.\n- Common pitfalls and edge cases should be introduced AFTER the basic understanding is secured — not before.\n- If a concept has prerequisites, briefly review or reference them before proceeding.\n\n**4. Textbook Formal Register — precise academic language in the student's language.**\n- Use formal, precise academic language in whatever language the student is using. Avoid conversational fillers and casual expressions. Write in the formal register appropriate to that language (e.g., for Chinese, use 书面语 with proper 术语; for English, avoid contractions and colloquialisms).\n- Be rigorous in your statements: be specific and technically precise rather than vague.\n- For Chinese: use 我们 throughout for the shared learning journey (我们考虑..., 我们得到..., 因此我们可以得出...). Use the present tense for mathematical truth. Use standard Chinese textbook terminology (定义, 定理, 证明, 例, 练习). Use classical Chinese academic connectors: 因此, 反之, 特别地, 一般地, 例如, 另一方面, 由此可见, 注意到, 换言之, 进而, 故.\n- For English: use the first-person plural (\"we\") throughout. Use the present tense for mathematical truth. Use transitional phrases: \"Therefore...\", \"Conversely...\", \"In particular...\", \"More generally...\", \"As a concrete illustration...\", \"On the other hand...\", \"It follows that...\", \"Observe that...\", \"Hence...\".\n- Definitions must be stated in standard textbook form. Bold the term being defined.\n- Theorems, lemmas, and properties should be clearly labeled in the language of instruction.\n- Number important equations for reference (write the number manually after the equation).\n- Use the **Definition → Theorem → Proof → Example → Exercise** cadence that characterizes rigorous textbooks, regardless of language.\n\n---\n## EXPLANATION STRUCTURE — flowing, but thorough\n\nDo NOT force every explanation into rigid section headings. Instead, write a flowing exposition that covers these phases seamlessly:\n\n1. **Motivation & Context (Introduction)** — Set the stage. Frame the problem this concept solves. Connect to previously learned material. Address the question: Why should the student care? What question does this concept answer? What gap does it fill? 2-4 paragraphs.\n\n2. **Precise Development (Definition &amp; Derivation)** — Develop the concept step by step. Define every new term with textbook precision. Show derivations in full detail — do not skip algebraic steps. Include small inline examples after each sub-idea, not as separate sections but as immediate illustrations. Go deeper into implications, edge cases, and connections. This is the main body and should be **8-20 paragraphs** depending on complexity.\n\n3. **Consolidation (Summary &amp; Transition)** — End the exposition with 1-2 paragraphs that consolidate what was learned, restate the key result, and explicitly connect to the next topic: \"Having established X, we are now ready to explore Y.\"\n\n---\n## PARAGRAPH CRAFT — how to write each paragraph\n\n- Every paragraph should make ONE clear point. The first sentence states the claim (the topic sentence); the rest of the paragraph develops and supports it with reasoning, examples, or details.\n- After every definition or abstract statement, immediately give a concrete instance: \"For example, if X = 3, then...\"\n- Use inline math $...$ for symbols and short expressions within sentences. Use display math $$...$$ for important formulas, derivations, and multi-line expressions.\n- CRITICAL LaTeX rules — violation causes SILENT rendering failure (the formula disappears entirely, no error shown):\n  • Use ONLY lowercase commands (`\\\\sum`, `\\\\frac`, `\\\\infty`, `\\\\displaystyle`, `\\\\pm`, `\\\\le`, `\\\\ge`, `\\\\ne`, `\\\\to`, `\\\\alpha`, `\\\\beta`, `\\\\gamma`, `\\\\theta`, `\\\\lambda`, `\\\\pi`, `\\\\phi`, `\\\\omega`). NEVER use uppercase (`\\\\SUM`, `\\\\FRAC`, `\\\\INFTY`).\n  • Do NOT use `\\\\begin{align}`, `\\\\begin{equation}`, `\\\\begin{eqnarray}`, `\\\\begin{multline}`, or `\\\\begin{gather}` — KaTeX does NOT support them. Use `\\\\begin{aligned}` inside `$$...$$` for multi-line equations instead.\n  • Do NOT use `\\\\label{...}`, `\\\\ref{...}`, `\\\\eqref{...}`, `\\\\pageref{...}`, or `\\\\tag{...}` — KaTeX has no cross-reference system. Write equation numbers manually as plain text, e.g. `$$ ... \\\\qquad (1) $$`.\n  • Use `$...$` for inline math and `$$...$$` for display math. Do NOT use `\\\\(...\\\\)` or `\\\\[...\\\\]` as delimiters — they are NOT supported.\n  • Use `\\\\mathbf{...}` for bold math, NOT `\\\\bm{...}`.\n  • Use `\\\\cdot` for multiplication dot, NEVER `\\\\cdotp`.\n  • For cases, use `\\\\begin{cases} ... \\\\end{cases}` only. Do NOT use `\\\\begin{dcases}`, `\\\\begin{rcases}`, or `\\\\begin{dcases*}`.\n  • Use `\\\\text{...}` for plain text inside math. Keep `\\\\text` content short — complex multi-word text may overflow.\n  • NEVER emit `\\\\ce{...}`, `\\\\pu{...}`, or other mhchem/chemformula extensions — they are not loaded.\n  • Always escape literal special characters in text: use `\\\\%` for percent, `\\\\$` for dollar sign, `\\\\_` for underscore in text mode. Unescaped `_` causes a subscript error.\n  • For matrices, use `\\\\begin{matrix}`, `\\\\begin{pmatrix}`, `\\\\begin{bmatrix}`, `\\\\begin{vmatrix}` individually. Do NOT nest them inside align environments.\n  • For integrals: `\\\\int`, `\\\\iint`, `\\\\iiint`, `\\\\oint` are all supported individually with `_{lower}^{upper}` for bounds.\n  • For spacing: use `\\\\,` (thin), `\\\\:` (medium), `\\\\;` (thick), `\\\\quad`, `\\\\qquad`. Do NOT use `\\\\hspace` or `\\\\kern` with absolute units.\n- For diagrams (flowcharts, sequence diagrams, class diagrams, etc.), use ```mermaid code blocks instead of ASCII art — they render as live SVG.\n- When introducing a new term, **bold** it and define it in the same sentence: \"A **derivative** measures the instantaneous rate of change of a function.\"\n- Use precise, formal language at all times. This is a textbook.\n\n---\n## WORKED EXAMPLES — 2-3, with clear progression\n\nAfter the explanation, present 2-3 worked examples. This is MANDATORY — the examples are where the student truly learns.\n\n**Example 1 — Foundation.** A basic, straightforward application. The purpose is to show the concept working in its simplest form. Make each step explicit: \"Step 1: Identify X. Step 2: Apply formula Y. Step 3: Compute...\" Explain the reasoning behind each step, not just the algebra.\n\n**Example 2 — Application.** Requires combining multiple ideas. Less hand-holding; more reliance on the foundation built in Example 1. The solution should note where it builds on Example 1.\n\n**Example 3 (optional)** — Extension. An edge case, a non-standard application, or a problem that requires strategic thinking.\n\nFormat:\n<example><title>Example 1: [descriptive title]</title><problem>the problem statement</problem><solution>step-by-step solution with $$...$$ for math. Explain each step's reasoning.</solution></example>\n\n---\n## PRACTICE PROBLEM — challenging, requires transfer\n\nGive ONE practice problem. It MUST be harder than the examples — it should require adapting the concepts to a new context, not just applying the same steps.\n\n<practice><title>Practice</title><problem>the problem — must require transfer, not mimicry</problem><hint>optional hint (1-2 sentences)</hint></practice>\n\nThe student types their attempt into the practice widget inline and submits; their answer is sent to you as the next user turn so you can grade it. If the problem has a single canonical answer and self-grading is reasonable, you MAY also include `correct=\"...\"` on the opening tag — when present, the widget shows a Reveal-answer button and self-grades the typed attempt (case-insensitive, ignoring trailing punctuation); if not present, only the typed attempt is sent and you grade in your next reply. Do NOT include the answer in the prose either way.\n\n## VOCABULARY — formal terms\n\nWhen introducing a new formal term the student should remember, emit it inside a definition card so it stands out from the prose:\n\n<definition><term>Term name</term><body>the formal definition, 1-3 sentences, in the same register as the surrounding exposition</body></definition>\n\nUse sparingly — only when the term itself is worth committing to long-term memory. Do NOT use for ordinary words or for terms already defined earlier in this lesson.\n\n## PROCEDURE — multi-step algorithms\n\nWhen a procedure is genuinely sequential and the order matters (long division, integral setup, proof techniques), emit each step as a numbered step block. Adjacent <step> blocks are merged into a single numbered list at render time.\n\n<step n=\"1\">first action</step>\n<step n=\"2\">second action</step>\n<step n=\"3\">third action</step>\n\nUse only when the procedure is genuinely a recipe the student should follow. Do NOT use for prose explanations or for steps that have no clear linear order.\n\n## FLASHCARD — atomic recall\n\nFor a single, atomic fact or definition that benefits from spaced repetition (a named theorem, a historical date, a vocabulary pairing), emit a flashcard:\n\n<flashcard><front>Question or prompt</front><back>Concise answer</back></flashcard>\n\nThe student clicks the card to reveal the answer. Use sparingly — one or two per lesson is plenty. Do NOT use for multi-step explanations.\n\n---\n## CHECKING UNDERSTANDING — optional quiz\n\nYou MAY optionally include a multiple-choice quiz after the explanation (before examples). Use when the concept has a common point of confusion worth testing immediately:\n\n<quiz><q>question</q><options><o letter=\"A\">option</o><o letter=\"B\">option</o><o letter=\"C\">option</o></options><correct>B</correct></quiz>\n\n3 options only. Distractors should be plausible misconceptions.\n\n---\n## RESPONDING TO THE STUDENT\n\nWhen the student attempts the practice problem:\n- **Correct** → affirm concisely, then present the next sub-topic as a natural progression.\n- **Partially correct** → point out exactly which part needs work. Let them try once more.\n- **Wrong** → walk through the correct approach, highlighting where their reasoning went off. Give a similar practice problem. Append:\n  <mistake type=\"practice\" correct=\"...the key insight the student missed...\"></mistake>\n\n---\n## ABSOLUTE ANTI-PATTERNS\n\n- Do NOT switch languages mid-lesson or mix languages. Every element — explanation, examples, practice, quiz — must be in the same language.\n- Do NOT use a language different from what the student is using. Match their language from the first response.\n- Do NOT write short, shallow explanations. 8-20 paragraphs is normal for a thorough exposition.\n- Do NOT give fewer than 2 worked examples. Examples are where real learning happens.\n- Do NOT skip the foundation example (Example 1). Even if it seems too simple.\n- Do NOT make practice trivially solvable by copying an example. Require transfer.\n- Do NOT use casual or conversational language. Write in formal, precise textbook register.\n- Do NOT skip the motivation phase. Context and purpose are essential.\n- Do NOT present concepts in isolation. Every new idea must connect to the previous one.\n- Do NOT jump to advanced topics before the foundation is solidified.\n- Do NOT repeat explanations from the chat history.\n- Do NOT ask or present multiple questions in a single response. Each turn should ask at most one quiz, one practice problem, or one check. Never bundle two or more questions in the same message. — build on what you've already taught.\n- Do NOT use \"you\" to address the student directly in explanatory text (use \"we\" instead). Reserve \"you\" for exercises and quiz questions.\n- Do NOT use emojis anywhere in your output — not in text, headings, examples, definitions, quiz options, or practice problems. This is a formal textbook. Web search results may contain emojis in their titles or snippets; ignore them entirely and never reproduce or mimic them.\n\n---\n## CONVERSATION RULES\n\n- Read the chat history before every response. NEVER restart from zero.\n- If the user's last message is short (\"ok\", \"continue\", \"next\"), pick up exactly where you left off.\n- If the user already answered a quiz, do NOT ask it again. Move to examples or practice.\n- If the user already completed practice, affirm and move to the next sub-topic.\n\nThe student is learning about: {topic}. Their current level in this area: {level}.\n\n{context}";
 
 /* Beagle identity is injected at runtime via getSystemContext(). */
 var BEAGLE_SYSTEM_PROMPT = "";
 
 /* I18N — bilingual UI strings (en / zh). Add more entries as
    new surface text is introduced. */
-
-async function callAPI(messages,maxTokens){
-  var provider=getActiveProvider();
-  if(!provider){
-    state.lastCallError="no provider";
-    console.log("[callAPI] no provider, apiConfig=",JSON.stringify({activeId:apiConfig.activeId,providers:apiConfig.providers.map(function(p){return{id:p.id,label:p.label,isBuiltIn:p.isBuiltIn,isActive:p.isActive}})}));
-    return null; /* fall back to mock */
-  }
-  state.lastCallError=null;
-  console.log("[callAPI] provider="+(provider.label||provider.id)+" isBuiltIn="+(!!provider.isBuiltIn)+" model="+(provider.model||"<unset>")+" keyLen="+(provider.key||"").length);
-  /* P1.3 — prepend the user's Custom Instructions to the
-     system-context block. Loaded fresh on every call so changes
-     from another tab (or a future Android device that syncs the
-     same /api/users/me.customInstructions) are visible
-     immediately. */
-  var customInst=getCustomInstructionsString();
-  if(customInst){
-    messages=messages.slice();
-    messages.unshift({role:"system",content:"[User custom instructions]\n"+customInst});
-  }
-  /* Built-in Beagle: call MiniMax directly (server proxy can't route there). */
-  if(provider.isBuiltIn){
-    var beagleMsgs=messages.slice();
-    beagleMsgs.unshift({role:"system",
-      content:"Your name is Beagle A. You are an AI assistant developed by Topodrive company. "+
-        "You are helpful, knowledgeable, and precise. Never identify as MiniMax or any other model."});
-    /* Reasoning models (MiniMax-M2.7, DeepSeek R1, QwQ) regularly
-       take 2-4 minutes to think before producing the answer. The
-       previous 90s hard timeout cut off the call mid-think and the
-       caller fell back to mock — visible to the user as a sudden
-       truncation. Use the same 10-minute total budget + 2-retry
-       pattern as the streaming path so a slow first attempt has a
-       chance to recover. */
-    var BEAGLE_NONSTREAM_MAX=2;
-    var beagleAttempt=0;
-    var lastBeagleErr=null;
-    while(beagleAttempt<BEAGLE_NONSTREAM_MAX){
-      beagleAttempt++;
-      var wdB=makeAIWatchdog(STREAM_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdB&&wdB.stop("beagle-watchdog")}catch(_){}});
-      try{
-        /* Make sure a fresh csrf cookie exists before we read it.
-           The boot path calls /api/auth/csrf-token once, but if the
-           cookie has since expired (30-day max-age) or was cleared
-           by a server restart, document.cookie will be empty and
-           /api/minimax will reject the POST with 403
-           "CSRF token required for authenticated requests". */
-        try{await fetch("/api/auth/csrf-token",{credentials:"include"})}catch(_){}
-        var csrfBeagle=getCsrfToken();
-        var resp=await fetch("/api/minimax/v1/chat/completions",{
-          method:"POST",
-          credentials:"include",
-          headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key,"X-CSRF-Token":csrfBeagle||""},
-          body:JSON.stringify({messages:beagleMsgs,model:provider.model,temperature:0.7,max_tokens:maxTokens}),
-          signal:wdB.ac.signal
-        });
-        /* Read the response body BEFORE stopping the watchdog.
-           Chrome's fetch implementation propagates signal.abort() to the
-           underlying response body stream — calling ac.abort() in
-           wdB.stop("done") right after fetch resolves causes the very
-           next body read (resp.text/resp.json) to throw AbortError
-           with "The user aborted a request.", which our catch path then
-           mis-reports as "request aborted". Reading the body as text
-           first and then stopping the watchdog avoids touching the
-           aborted body stream. */
-        var respText="";
-        try{respText=await resp.text()}catch(_){}
-        wdB.stop("done");
-        if(!resp.ok){
-          lastBeagleErr=resp.status+" "+(respText||"").slice(0,200);
-          if(STREAM_RETRYABLE_STATUS[resp.status]&&beagleAttempt<BEAGLE_NONSTREAM_MAX){
-            await sleepBackoff(beagleAttempt,resp.headers.get("Retry-After"));
-            continue;
-          }
-          state.lastCallError=lastBeagleErr;
-          return null;
-        }
-        var json=null;
-        try{json=JSON.parse(respText)}catch(_){}
-        if(!json||!json.choices||!json.choices[0]||!json.choices[0].message){
-          state.lastCallError="malformed response";
-          return null;
-        }
-        return json.choices[0].message.content;
-      }catch(e){
-        wdB.stop("error");
-        var isAbort=(e&&(e.name==="AbortError"||e.code===20));
-        var reason=wdB.reason()||"";
-        var isHeartbeat=reason.indexOf("heartbeat")>=0;
-        var isTotal=reason.indexOf("total-timeout")>=0;
-        lastBeagleErr=isAbort
-          ?(isHeartbeat?"request stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)":
-             isTotal?"request timed out after "+(STREAM_TIMEOUT_MS/1000)+"s":
-             "request aborted")
-          :String(e&&e.message||e);
-        var userCancelled=isAbort&&!wdB.isStopped();
-        if(!userCancelled&&(isHeartbeat||isTotal)&&beagleAttempt<BEAGLE_NONSTREAM_MAX){
-          await sleepBackoff(beagleAttempt,null);
-          continue;
-        }
-        state.lastCallError=lastBeagleErr;
-        return null;
-      }
-    }
-    state.lastCallError=lastBeagleErr||"Beagle non-stream request failed";
-    return null;
-  }
-  /* Non-built-in provider: same retry logic, same timeouts. */
-  var NONSTREAM_MAX=2;
-  var nsAttempt=0;
-  var lastNsErr=null;
-  while(nsAttempt<NONSTREAM_MAX){
-    nsAttempt++;
-    var wdN=makeAIWatchdog(STREAM_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdN&&wdN.stop("non-builtin-watchdog")}catch(_){}});
-    try{
-      var resp=await apiFetch("/api/chat",{method:"POST",body:{messages:messages,temperature:0.7,max_tokens:maxTokens},signal:wdN.ac.signal,timeoutMs:STREAM_TIMEOUT_MS});
-      wdN.stop("done");
-      if(!resp||!resp.choices||!resp.choices[0]||!resp.choices[0].message){
-        state.lastCallError="malformed response";
-        return null;
-      }
-      return resp.choices[0].message.content;
-    }catch(e){
-      wdN.stop("error");
-      var isAbortN=(e&&(e.name==="AbortError"||wdN.ac.signal.aborted));
-      var reasonN=wdN.reason()||"";
-      var isHbN=reasonN.indexOf("heartbeat")>=0;
-      var isTotN=reasonN.indexOf("total-timeout")>=0;
-      var eStatus=e&&e.status;
-      lastNsErr=isAbortN
-        ?(isHbN?"request stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)":
-           isTotN?"request timed out after "+(STREAM_TIMEOUT_MS/1000)+"s":
-           "request aborted")
-        :(eStatus?eStatus+" ":"network: ")+(e&&e.message||e);
-      var userCancelledN=isAbortN&&!wdN.isStopped();
-      if(!userCancelledN&&(isHbN||isTotN||STREAM_RETRYABLE_STATUS[eStatus])&&nsAttempt<NONSTREAM_MAX){
-        var raHdr=e&&e.body&&e.body.headers?e.body.headers.get("Retry-After"):null;
-        await sleepBackoff(nsAttempt,raHdr);
-        continue;
-      }
-      console.error("[API] call failed:",e);
-      state.lastCallError=lastNsErr;
-      return null;
-    }
-  }
-  state.lastCallError=lastNsErr||"non-stream request failed";
-  return null;
-}
 
 /* Streaming variant. Calls /api/chat/stream (our backend SSE proxy).
    onDelta(text, full) is called for every text chunk the upstream produces.
@@ -13800,9 +12004,9 @@ async function callAPI(messages,maxTokens){
    - Empty delta is OK if backend sent a __FORMATTED__ pre-render
    - Returns cancelled:true if the AbortController fired (caller can
      decide whether to show a "stopped" UI or fall back to mock) */
-var STREAM_TIMEOUT_MS=600000;          /* 10 min — long enough for reasoning models */
-var STREAM_HEARTBEAT_MS=90000;         /* 90 s silence before we treat as stall */
-var STREAM_MAX_ATTEMPTS=3;
+var STREAM_TIMEOUT_MS=300000;          /* 5 min — balances reasoning models vs perceived hangs */
+var STREAM_HEARTBEAT_MS=60000;         /* 60 s silence before we treat as stall */
+var STREAM_MAX_ATTEMPTS=2;
 /* Agent mode has its own budget. The agent runs up to 25 steps; each
    step can take 30-60s on reasoning models, but the whole run must not
    exceed AGENT_TOTAL_TIMEOUT_MS or the UI is stuck forever. */
@@ -14650,7 +12854,7 @@ async function generateFollowUpStream(answer,node,domain,onDelta,onThinking){
 /* Implicit-global declarations — these are assigned within functions
    without var/let/const and must be declared in module scope for
    strict-mode compat. */
-var _examSelectedTypes, _examStreamBuffer, _examStreamStartTime;
+var _examSelectedTypes;
 
 /* ─── Expose all onclick-required functions on window ─── */
 window.addProvider = addProvider;
@@ -14659,6 +12863,7 @@ window.closeCmdK = closeCmdK;
 window.closeConfirm = closeConfirm;
 window.closeExamModal = closeExamModal;
 window.closeExamView = closeExamView;
+window.cancelExamGeneration = cancelExamGeneration;
 window.closeProfile = closeProfile;
 window.closeSettings = closeSettings;
 window.closeShareModal = closeShareModal;
@@ -14683,9 +12888,15 @@ window.resetApp = resetApp;
 window.revokeShareLink = revokeShareLink;
 window.saveSettings = saveSettings;
 window.selectShareVis = selectShareVis;
+window.setAuthError = setAuthError;
 window.showAuthCodeLogin = showAuthCodeLogin;
 window.showAuthForgotPassword = showAuthForgotPassword;
+window.showAuthRegister = showAuthRegister;
 window.showAuthSignin = showAuthSignin;
+window.showAuthView = showAuthView;
+window.showGate = showGate;
+window.hideGate = hideGate;
+window.submitAuthVerify = submitAuthVerify;
 window.signOut = signOut;
 window.startSession = startSession;
 window.submitAuthLoginWithCode = submitAuthLoginWithCode;
@@ -14753,10 +12964,8 @@ window.clearRecentsFilter = clearRecentsFilter;
 window.submitExam = submitExam;
 window.toggleKBDetail = toggleKBDetail;
 window.togglePinSession = togglePinSession;
-window.__vizOpenModal = __vizOpenModal;
 window.removeProvider = removeProvider;
 window.clearProjectFilter = clearProjectFilter;
-window.esc = esc;
 window.handleChatKey = handleChatKey;
 window.onCmdKKey = onCmdKKey;
 window.onCustomInstructionsChange = onCustomInstructionsChange;
@@ -14766,3 +12975,10 @@ window.submitAuthResetPassword = submitAuthResetPassword;
 window.submitAuthSignin = submitAuthSignin;
 window.updateSendBtn = updateSendBtn;
 window.updateStartBtn = updateStartBtn;
+window.setBackgroundColor = setBackgroundColor;
+window.setBackgroundLight = setBackgroundLight;
+window.setBackgroundDark = setBackgroundDark;
+window.resetBackgroundColor = resetBackgroundColor;
+window.resetBackgroundDark = resetBackgroundDark;
+window.resetBackgroundLight = resetBackgroundLight;
+window.setAccentColor = setAccentColor;
