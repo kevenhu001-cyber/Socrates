@@ -29,6 +29,7 @@ const jsonLimit = (code, message) => ({
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  keyGenerator: (req) => req.ip,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many auth attempts; try again later.'),

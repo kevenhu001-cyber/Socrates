@@ -11,11 +11,12 @@
     "db:migrate": "node src/db/migrate.js",
     "db:seed": "node src/db/seed.js",
     "lint": "find src/ -name '*.js' -exec node --check {} \\;",
-    "test": "echo 'No tests configured yet' && exit 0"
+    "test": "node --test test/*.test.js test/*.test.mjs"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
     "bcrypt": "^5.1.1",
+    "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
@@ -28,6 +29,10 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/compression": "^1.8.1",
     "drizzle-kit": "^0.30.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

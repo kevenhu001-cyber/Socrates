@@ -35,7 +35,8 @@ router.get('/:token', async (req, res, next) => {
 
     const msgs = await db.select().from(messages)
       .where(eq(messages.sessionId, session.id))
-      .orderBy(messages.createdAt);
+      .orderBy(messages.createdAt)
+      .limit(200);
 
     return res.json({
       title: session.title,

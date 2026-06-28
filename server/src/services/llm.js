@@ -228,7 +228,11 @@ export async function callChatCompletion(opts) {
 
   if (!response.ok) {
     const errBody = await response.text().catch(() => '');
-    throw new Error(`LLM API error ${response.status}: ${errBody.slice(0, 200)}`);
+    const { ApiError } = await import('../lib/errors.js');
+    /* Forward the upstream status code so the client sees 429 (quota),
+       401 (bad key), etc. instead of a generic 500. The error handler
+       serialises ApiError with the correct HTTP status. */
+    throw new ApiError(response.status, 'LLM_API_ERROR', `LLM API error ${response.status}: ${errBody.slice(0, 200)}`);
   }
 
   const json = await response.json();

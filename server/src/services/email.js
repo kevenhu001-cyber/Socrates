@@ -78,13 +78,20 @@ function shell({ preheader, title, body }) {
     <td align="center" style="padding:32px 16px">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:100%;width:100%">
 
-        <!-- Brand wordmark -->
+        <!-- Brand wordmark. Nested table keeps the wordmark centered
+             on every client; iOS Gmail ignores display:inline-block
+             on a div, which made the previous layout stretch full-
+             width on mobile. -->
         <tr>
           <td align="center" style="padding:0 0 24px">
-            <div style="display:inline-block;font-family:'Lora',Georgia,serif;font-size:24px;font-weight:600;letter-spacing:0.5px;color:#2c2c2a">
-              <span style="color:#b8955a">S</span>ocrates
-            </div>
-            <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#9c9c98;margin-top:4px">Learn anything, step by step</div>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto">
+              <tr>
+                <td align="center" style="font-family:'Lora',Georgia,serif;font-size:24px;font-weight:600;letter-spacing:0.5px;color:#2c2c2a;mso-line-height-rule:exactly;line-height:28px">
+                  <span style="color:#b8955a">S</span>ocrates
+                </td>
+              </tr>
+            </table>
+            <div style="font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#9c9c98;margin-top:6px;line-height:14px">Learn anything, step by step</div>
           </td>
         </tr>
 
@@ -113,12 +120,19 @@ function shell({ preheader, title, body }) {
 </html>`;
 }
 
-/* Reusable "icon badge" — a small circular emblem with a stroke
-   icon. Pass an SVG (24x24) and a background tint. */
-function iconBadge(svg, bg = '#f5ede0') {
-  return `<div style="width:56px;height:56px;border-radius:50%;background:${bg};display:inline-flex;align-items:center;justify-content:center;margin:0 auto 20px">
-    ${svg}
-  </div>`;
+/* Reusable "icon badge" — a small circular emblem with a centered
+   text character. Uses a <table> layout instead of flexbox so it
+   renders correctly in every email client (Gmail strips inline-flex;
+   SVG icons are not supported in Gmail/Outlook/Yahoo). The character
+   is vertically centered via line-height matching the cell height. */
+function iconBadge(ch, bg = '#f5ede0') {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 20px">
+    <tr>
+      <td align="center" valign="middle" style="width:56px;height:56px;border-radius:50%;background:${bg};font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:56px;font-weight:400;color:#b8955a;mso-line-height-rule:exactly;padding:0">
+        ${ch}
+      </td>
+    </tr>
+  </table>`;
 }
 
 /* Big primary button — call to action. */
@@ -144,10 +158,9 @@ export async function sendVerificationEmail(email, token) {
   const baseUrl = process.env.APP_URL || 'https://app.topodrive.top';
   const link = `${baseUrl}?token=${token}`;
 
-  const checkSvg = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#b8955a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
   const body = `
-    <div style="padding:40px 40px 8px;text-align:center">
-      ${iconBadge(checkSvg, '#f5ede0')}
+    <div style="padding:36px 24px 8px;text-align:center">
+      ${iconBadge('\u2713', '#f5ede0')}
       <h1 style="margin:0 0 10px;font-family:'Lora',Georgia,serif;font-size:24px;font-weight:600;color:#2c2c2a;line-height:1.3">Verify your email</h1>
       <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#6b6b68">
         Welcome to Socrates. Confirm this address and we'll unlock your account — including saving sessions across devices and using your own API keys.
@@ -158,7 +171,7 @@ export async function sendVerificationEmail(email, token) {
         <a href="${link}" style="color:#b8955a;word-break:break-all;text-decoration:none">${link}</a>
       </p>
     </div>
-    <div style="padding:24px 40px 36px;border-top:1px solid #efe9dd;margin-top:32px">
+    <div style="padding:24px 24px 36px;border-top:1px solid #efe9dd;margin-top:32px">
       <p style="margin:0;font-size:12px;line-height:1.6;color:#9c9c98;text-align:center">
         This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.
       </p>
@@ -189,10 +202,9 @@ export async function sendPasswordResetEmail(email, token) {
   const baseUrl = process.env.APP_URL || 'https://app.topodrive.top';
   const link = `${baseUrl}/reset-password?token=${token}`;
 
-  const keySvg = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#b8955a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>`;
   const body = `
-    <div style="padding:40px 40px 8px;text-align:center">
-      ${iconBadge(keySvg, '#f5ede0')}
+    <div style="padding:36px 24px 8px;text-align:center">
+      ${iconBadge('\u2726', '#f5ede0')}
       <h1 style="margin:0 0 10px;font-family:'Lora',Georgia,serif;font-size:24px;font-weight:600;color:#2c2c2a;line-height:1.3">Reset your password</h1>
       <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#6b6b68">
         Someone — hopefully you — asked to reset the password for <strong style="color:#2c2c2a">${email}</strong>. Click the button below to choose a new one.
@@ -203,7 +215,7 @@ export async function sendPasswordResetEmail(email, token) {
         <a href="${link}" style="color:#b8955a;word-break:break-all;text-decoration:none">${link}</a>
       </p>
     </div>
-    <div style="padding:24px 40px 36px;border-top:1px solid #efe9dd;margin-top:32px">
+    <div style="padding:24px 24px 36px;border-top:1px solid #efe9dd;margin-top:32px">
       <p style="margin:0;font-size:12px;line-height:1.6;color:#9c9c98;text-align:center">
         This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email — your account is still secure.
       </p>
@@ -232,8 +244,6 @@ export async function sendPasswordResetEmail(email, token) {
  * Send an 8-character login code (passwordless sign-in).
  */
 export async function sendLoginCode(email, code) {
-  const lockSvg = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#b8955a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
-
   // Render each character as its own box for a more polished look.
   const boxes = code.split('').map((d) => `
     <td align="center" style="width:42px;height:54px;background:#faf6ef;border:1px solid #e8e0d0;border-radius:8px;font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-size:24px;font-weight:600;color:#2c2c2a;letter-spacing:0">${d}</td>
@@ -241,8 +251,8 @@ export async function sendLoginCode(email, code) {
   `).join('');
 
   const body = `
-    <div style="padding:40px 40px 8px;text-align:center">
-      ${iconBadge(lockSvg, '#f5ede0')}
+    <div style="padding:36px 24px 8px;text-align:center">
+      ${iconBadge('\u25C9', '#f5ede0')}
       <h1 style="margin:0 0 10px;font-family:'Lora',Georgia,serif;font-size:24px;font-weight:600;color:#2c2c2a;line-height:1.3">Your login code</h1>
       <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#6b6b68">
         Enter this code on the sign-in screen to access <strong style="color:#2c2c2a">${email}</strong>.
@@ -257,7 +267,7 @@ export async function sendLoginCode(email, code) {
         Didn't request this? You can safely ignore this email.
       </p>
     </div>
-    <div style="padding:24px 40px 36px;border-top:1px solid #efe9dd;margin-top:32px">
+    <div style="padding:24px 24px 36px;border-top:1px solid #efe9dd;margin-top:32px">
       <p style="margin:0;font-size:12px;line-height:1.6;color:#9c9c98;text-align:center">
         This code expires in 10 minutes. For your security, never share it with anyone.
       </p>
