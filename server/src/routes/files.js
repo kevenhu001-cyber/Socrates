@@ -9,7 +9,12 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || '/tmp/socrates-uploads';
+import os from 'node:os';
+
+const UPLOAD_DIR = process.env.UPLOAD_DIR
+  || (process.env.NODE_ENV === 'production'
+    ? '/var/lib/socrates/uploads'
+    : path.join(os.tmpdir(), 'socrates-uploads'));
 const MAX_SIZE = 25 * 1024 * 1024; // 25 MB
 
 // Ensure upload dir exists
@@ -31,6 +36,15 @@ const upload = multer({
       'application/pdf', 'text/plain', 'text/csv',
       'video/mp4', 'audio/mpeg', 'audio/wav', 'audio/webm',
       'application/json'];
+    // text/html and application/xhtml+xml are explicitly blocked:
+    // a malicious upload labelled as HTML would render in the
+    // browser when /api/files/:id/raw is hit, opening an XSS
+    // surface. SVG is allowed (image rendering) but flagged for
+    // content-sniffing at the raw endpoint via no-sniff header.
+    if (file.mimetype === 'text/html' || file.mimetype === 'application/xhtml+xml') {
+      cb(new BadRequest(`Unsupported file type: ${file.mimetype}`));
+      return;
+    }
     if (allowed.includes(file.mimetype) || file.mimetype.startsWith('text/')) {
       cb(null, true);
     } else {
@@ -89,6 +103,16 @@ router.get('/:id/raw', async (req, res, next) => {
       .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId)))
       .limit(1);
     if (!file) throw new NotFound('File not found');
+    // X-Content-Type-Options: nosniff — prevents the browser from
+    // guessing a different content type than the one we send.
+    // Critical for SVG (which can contain JS) and for any file
+    // whose on-disk extension doesn't match its MIME.
+    res.set('X-Content-Type-Options', 'nosniff');
+    if (file.mimeType === 'image/svg+xml') {
+      // Force-download SVG instead of letting the browser render
+      // it inline — inline SVG can carry JavaScript.
+      res.set('Content-Disposition', 'attachment');
+    }
     return res.sendFile(file.storagePath);
   } catch (err) { next(err); }
 });

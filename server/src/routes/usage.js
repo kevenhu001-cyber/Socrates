@@ -1,13 +1,21 @@
 import { Router } from 'express';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { messages, sessions, usageEvents } from '../db/schema.js';
+import { usageEvents } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { getBeagleQuota } from '../lib/tiers.js';
 
 const router = Router();
 router.use(requireAuth);
 
-/* GET /api/usage */
+/* GET /api/usage
+ *
+ * Aggregate token usage over a recent time window. The previous
+ * implementation summed `messages.tokenCount` which is NEVER
+ * populated by the current chat pipeline (token accounting lives
+ * in `usage_events`). Switched to `usageEvents` so the endpoint
+ * returns real numbers.
+ */
 router.get('/', async (req, res, next) => {
   try {
     const db = getDb();
@@ -20,34 +28,22 @@ router.get('/', async (req, res, next) => {
     else if (period === 'month') since = new Date(now.getTime() - 30 * 86400000);
     else since = new Date(0);
 
-    // Scope to the current user's messages via their sessions.
-    // (messages.session_id -> sessions.user_id)
     const [result] = await db.select({
-      totalTokens: sql`COALESCE(SUM(${messages.tokenCount}), 0)::int`,
+      totalTokens: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
       messageCount: sql`COUNT(*)::int`,
-    }).from(messages)
-      .innerJoin(sessions, eq(messages.sessionId, sessions.id))
+    }).from(usageEvents)
       .where(and(
-        eq(messages.role, 'assistant'),
-        eq(sessions.userId, req.userId),
-        gte(messages.createdAt, since),
+        eq(usageEvents.userId, req.userId),
+        gte(usageEvents.createdAt, since),
       ));
 
     return res.json({
       period,
-      totalTokens: result.totalTokens,
-      messageCount: result.messageCount,
+      totalTokens: result.totalTokens || 0,
+      messageCount: result.messageCount || 0,
     });
   } catch (err) { next(err); }
 });
-
-/* Beagle per-tier monthly quotas. */
-const BEAGLE_TIER_QUOTAS = {
-  diophantus: 1_000_000,
-  riemann:    100_000_000,
-  descartes:  300_000_000,
-  euclid:     800_000_000,
-};
 
 /* GET /api/usage/limits — returns plan limits + Beagle monthly usage */
 router.get('/limits', async (req, res, next) => {
@@ -60,7 +56,7 @@ router.get('/limits', async (req, res, next) => {
       euclid: { tokenQuota: null, hardLimit: false },
     };
     const tierKey = tier || 'diophantus';
-    const beagleLimit = BEAGLE_TIER_QUOTAS[tierKey] || BEAGLE_TIER_QUOTAS.diophantus;
+    const beagleLimit = getBeagleQuota(tierKey);
     let beagleUsed = 0;
     const db = getDb();
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -71,7 +67,7 @@ router.get('/limits', async (req, res, next) => {
     beagleUsed = row?.used || 0;
     return res.json({
       plan: tierKey,
-      ...limits[tierKey] || limits.diophantus,
+      ...(limits[tierKey] || limits.diophantus),
       beagleLimit,
       beagleUsed,
     });

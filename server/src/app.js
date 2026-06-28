@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
@@ -7,7 +8,6 @@ import { requireAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { searchLimiter, fetchLimiter } from './middleware/rateLimit.js';
 import crypto from 'node:crypto';
-import { shouldUseSharedDomain } from './lib/cookieEnv.js';
 import authRouter from './routes/auth.js';
 import sessionRouter from './routes/sessions.js';
 import chatRouter from './routes/chat.js';
@@ -37,6 +37,7 @@ import { fetchBatch } from './services/fetchBatch.js';
 import { getActiveApiKey } from './services/apiKey.js';
 import { getDb } from './db/index.js';
 import { sql } from 'drizzle-orm';
+import { startScheduledRefresh, refreshCache, getStatus } from './services/productContext.js';
 
 const app = express();
 
@@ -62,6 +63,9 @@ app.use(function requestId(req, res, next){
   next();
 });
 
+// Response compression (gzip/brotli) — before body parsing
+app.use(compression({ level: 6 }));
+
 // Body parsing
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -73,6 +77,23 @@ app.use(cookieParser());
 // We key off the actual request's Host header (rather than NODE_ENV) so
 // dev requests from 127.0.0.1 work even when the server is started with
 // `NODE_ENV=production` (the default in .env).
+//
+// The dev hosts are hard-coded because they're the only origins
+// Vite / `python3 -m http.server` will ever serve from. Production
+// hosts are read from CORS_ALLOWED_HOSTS (comma-separated env var)
+// so an operator can add / remove hosts without redeploying the
+// server.
+const DEFAULT_CORS_HOSTS = [
+  'app.topodrive.top', 'topodrive.top', 'www.topodrive.top',
+  'localhost:8080', 'localhost:3000', 'localhost:5173', 'localhost:5174', 'localhost:5175',
+  '127.0.0.1:8080', '127.0.0.1:3000', '127.0.0.1:5173', '127.0.0.1:5174', '127.0.0.1:5175',
+];
+const CORS_ALLOWED_HOSTS = (process.env.CORS_ALLOWED_HOSTS || '')
+  .split(',')
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
+const ALLOWED_HOSTS = new Set([...DEFAULT_CORS_HOSTS, ...CORS_ALLOWED_HOSTS]);
+
 app.use(cors({
   origin(origin, cb) {
     // Same-origin (no Origin header) is always allowed — covers direct
@@ -80,13 +101,7 @@ app.use(cors({
     if (!origin) return cb(null, true);
     try {
       const host = new URL(origin).host.toLowerCase();
-      const allowed = [
-        'app.topodrive.top', 'topodrive.top', 'www.topodrive.top',
-        // Dev hosts
-        'localhost:8080', 'localhost:3000', 'localhost:5173', 'localhost:5174', 'localhost:5175',
-        '127.0.0.1:8080', '127.0.0.1:3000', '127.0.0.1:5173', '127.0.0.1:5174', '127.0.0.1:5175',
-      ];
-      if (allowed.includes(host)) return cb(null, true);
+      if (ALLOWED_HOSTS.has(host)) return cb(null, true);
     } catch (_) { /* fall through */ }
     cb(null, false);
   },
@@ -118,11 +133,43 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
+/* ─── Product Context (topodrive.top knowledge) ─── */
+/* GET  — status (auth required, admin only) */
+/* POST — manual refresh (auth required, admin only) */
+app.get('/api/product-context/status', requireAuth, (_req, res) => {
+  res.json(getStatus());
+});
+
+app.post('/api/product-context/refresh', requireAuth, async (req, res) => {
+  // Only admin users can trigger a manual refresh.
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ code: 'FORBIDDEN', message: 'Admin access required' });
+  }
+  try {
+    const result = await refreshCache({ force: true });
+    res.json({
+      ok: true,
+      fetchedAt: result.fetchedAt,
+      pageCount: Object.keys(result.pages).length,
+      totalChars: Object.values(result.pages).reduce((sum, p) => sum + (p.length || 0), 0),
+    });
+  } catch (err) {
+    console.error('[product-context] manual refresh failed:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // Public configuration endpoint (no auth required).
 // Tells the SPA whether the built-in Beagle provider is available.
 // The raw key is NEVER sent to the client — the server proxies
 // all Beagle requests via /api/minimax/v1/chat/completions.
 app.get('/api/config', (_req, res) => {
+  // hasBeagleKey reflects the env var at process start. The SPA
+  // calls this on every boot to decide whether to surface the
+  // built-in provider — disabling the cache headers ensures a
+  // server restart (which can change MINIMAX_API_KEY) is visible
+  // on the next page load.
+  res.set('Cache-Control', 'no-store');
   res.json({
     hasBeagleKey: !!process.env.MINIMAX_API_KEY,
   });
@@ -165,7 +212,7 @@ app.post('/api/search', requireAuth, async (req, res, next) => {
 // (fetchWebContext in the SPA). Returns {results: [{title,url,snippet},…]},
 // the shape the client already expects. Requires auth so we can rate-limit
 // per user and surface 429 if needed in the future.
-app.post('/api/web-search', searchLimiter, requireAuth, async (req, res, next) => {
+app.post('/api/web-search', requireAuth, searchLimiter, async (req, res, next) => {
   try {
     const { query, count, enrich } = req.body || {};
     // Resolve the user's active LLM key hint so the cross-request
@@ -185,7 +232,7 @@ app.post('/api/web-search', searchLimiter, requireAuth, async (req, res, next) =
 
 // Image search — live image results from Bing Images. Returns
 // { results: [{ title, url, thumbnailUrl, sourceUrl }] }.
-app.post('/api/image-search', searchLimiter, requireAuth, async (req, res, next) => {
+app.post('/api/image-search', requireAuth, searchLimiter, async (req, res, next) => {
   try {
     const { query, count } = req.body || {};
     const results = await imageSearch(query, count);
@@ -205,11 +252,19 @@ app.use('/api/files', fileRouter);
 // Migrate (Phase 4)
 app.use('/api/migrate', migrateRouter);
 
-// Fetch-batch (Phase 4)
-app.post('/api/fetch-batch', fetchLimiter, async (req, res, next) => {
+// Fetch-batch (Phase 4) — requires auth to prevent use as SSRF proxy
+app.post('/api/fetch-batch', requireAuth, fetchLimiter, async (req, res, next) => {
   try {
     const { urls } = req.body;
     if (!Array.isArray(urls)) return res.status(400).json({ code: 'BAD_REQUEST', message: 'urls must be an array' });
+    // SSRF protection is handled by fetchBatch.js (DNS resolution,
+    // private IP check, redirect validation). Allow http(s) here so
+    // search results with http:// URLs are not blocked.
+    for (const url of urls) {
+      if (typeof url !== 'string' || (!url.startsWith('https://') && !url.startsWith('http://'))) {
+        return res.status(400).json({ code: 'BAD_REQUEST', message: 'Only http(s):// URLs are allowed' });
+      }
+    }
     const result = await fetchBatch(urls);
     return res.json(result);
   } catch (err) { next(err); }
@@ -282,5 +337,14 @@ app.get(/^\/(?!api\/).*/, (_req, res, next) => {
    ──────────────────────────── */
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+/* ─── Product Context: boot-time refresh + 6h cycle ───
+   Fire-and-forget: the first chat request after boot will either
+   have a ready cache (most cases) or will block briefly on the
+   first buildSystemContextBlock call while the initial refresh
+   completes.  Subsequent refreshes are truly background. */
+try { startScheduledRefresh(); } catch (e) {
+  console.error('[product-context] startScheduledRefresh failed:', e.message);
+}
 
 export default app;
