@@ -3,8 +3,19 @@ var I18N={
     "chat.placeholder":"Type your thinking...",
     "chat.hint":"Shift+Enter for new line",
     "chat.send":"Send",
+    /* P_lang-slogans — the topic-setup hero slogan ("What would
+       you like to explore?" / "What can I help you with?") is
+       intentionally hardcoded English in BOTH i18n blocks so the
+       language toggle never affects it. The slogan is mode-
+       dependent (tutor vs chat) and managed by syncAppModeUI()
+       in main.js, which writes the right hardcoded English
+       slogan after applyI18n runs. Other topic-setup lines
+       (subtitle / disclaimer) are likewise mode-dependent and
+       pinned English so the hero stays consistent across the
+       two modes. */
     "topic.title":"What would you like to explore?",
     "topic.subtitle":"Describe what you want to learn. Socrates will ask you questions to help you think deeper about it.",
+    "topic.inputPlaceholder":"e.g. I want to understand how machine learning works...",
     "topic.start":"Begin",
     "topic.hint":"Be specific for better results",
     "topic.model":"Model",
@@ -230,8 +241,13 @@ var I18N={
     "chat.placeholder":"输入你的想法...",
     "chat.hint":"Shift+Enter 换行",
     "chat.send":"发送",
-    "topic.title":"想学什么？",
-    "topic.subtitle":"描述你想学的内容。苏格拉底会通过提问帮你深入理解。",
+    /* P_lang-slogans — see the matching en block: the hero
+       slogan/subtitle are intentionally pinned English so they
+       stay consistent regardless of language toggle or saved
+       preference. Only the topic input placeholder translates. */
+    "topic.title":"What would you like to explore?",
+    "topic.subtitle":"Describe what you want to learn. Socrates will ask you questions to help you think deeper about it.",
+    "topic.inputPlaceholder":"例如：我想了解机器学习是怎么工作的...",
     "topic.start":"开始",
     "topic.hint":"描述越具体效果越好",
     "topic.model":"模型",
@@ -459,6 +475,11 @@ function setLang(lang){
   window._currentLang=lang;
   try{localStorage.setItem("socrates-lang-app",lang)}catch(_){}
   applyI18n();
+  /* Update language toggle active state */
+  var en=document.getElementById("profileLangEn");
+  var zh=document.getElementById("profileLangZh");
+  if(en)en.classList.toggle("active",lang==="en");
+  if(zh)zh.classList.toggle("active",lang==="zh");
 }
 function applyI18n(){
   /* Translate all elements with data-i18n-key attribute */
@@ -467,6 +488,14 @@ function applyI18n(){
     var key=els[i].getAttribute("data-i18n-key");
     var val=t(key);
     if(val&&val!==key)els[i].textContent=val;
+  }
+  /* Translate all elements with data-i18n-placeholder attribute
+     (used on <input>/<textarea> where textContent doesn't apply). */
+  var phs=document.querySelectorAll("[data-i18n-placeholder]");
+  for(var j=0;j<phs.length;j++){
+    var ph=phs[j].getAttribute("data-i18n-placeholder");
+    var phv=t(ph);
+    if(phv&&phv!==ph)phs[j].setAttribute("placeholder",phv);
   }
   /* Placeholder / value updates — done selectively for now. */
   var ci=document.getElementById("chatInputArea");
@@ -477,6 +506,14 @@ function applyI18n(){
   if(tt)tt.textContent=t("topic.title");
   var ts=document.getElementById("topicSub");
   if(ts)ts.textContent=t("topic.subtitle");
+  /* P_lang-slogans — the hero slogan is mode-dependent English
+     written by syncAppModeUI() (tutor: "What would you like to
+     explore?", chat: "What can I help you with?"). Pinning
+     topic.title to English in both i18n blocks above means
+     applyI18n() can't change the slogan — even if a future
+     caller invokes it before syncAppModeUI runs. */
+  var tp=document.getElementById("topicInput");
+  if(tp)tp.placeholder=t("topic.inputPlaceholder");
   var sb=document.getElementById("startBtn");
   if(sb)sb.textContent=t("topic.start");
   var el=document.getElementById("extensionsLabel");
@@ -484,15 +521,42 @@ function applyI18n(){
   var ev=document.getElementById("examViewTitle");
   if(ev&&window.state&&window.state._examInView)ev.textContent=ev.textContent; /* already localized by render */
 }
-/* Load saved language preference */
-try{var s=localStorage.getItem("socrates-lang-app");if(s&&I18N[s])_currentLang=s;}catch(_){}
-/* Update the language toggle label on load */
+/* Load saved language preference. _currentLang is the single source
+   of truth at runtime; setLang() persists changes and applyI18n()
+   pushes them onto the DOM.
+   P_lang-persist — defensive dual-write on read: when the saved
+   value resolves to a known language, we write it back to
+   localStorage as well. Some browser flows (Safari private mode,
+   cookie-expiry redirects, third-party-script-injected storage
+   clears) can leave the entry null between sessions. Re-writing
+   it here makes the preference resilient to a transient missing
+   entry and gives a single load() call a self-healing behavior. */
 try{
-  setTimeout(function(){
-    var lbl=document.getElementById("langToggleLabel");
-    if(lbl)lbl.textContent=_currentLang==="en"?"EN":"中";
-    applyI18n();
-  },0);
+  var s=localStorage.getItem("socrates-lang-app");
+  if(s&&I18N[s]){
+    _currentLang=s;
+  }else if(!s){
+    /* No preference recorded yet — persist the default so the
+       next load picks up the same value instead of leaving the
+       slot empty. */
+    try{localStorage.setItem("socrates-lang-app",_currentLang)}catch(_){}
+  }else{
+    /* Stale value (e.g. user downgraded and we removed a locale) —
+     * overwrite with the default so the entry stays canonical. */
+    try{localStorage.removeItem("socrates-lang-app");localStorage.setItem("socrates-lang-app",_currentLang)}catch(_){}
+  }
+}catch(_){}
+/* P_lang-init — run applyI18n SYNCHRONOUSLY at module load so every
+   data-i18n-key element is in the saved language BEFORE main.js
+   finishes initializing (syncAppModeUI, renderRecents, etc.). The
+   previous setTimeout(0) deferred translation to the next event-loop
+   tick, which meant main.js rendered a flash of English first —
+   and the partial re-render that followed left the page in a
+   mixed-language state. */
+try{
+  var lbl=document.getElementById("langToggleLabel");
+  if(lbl)lbl.textContent=_currentLang==="en"?"EN":"中";
+  applyI18n();
 }catch(_){}
 
 /* Expose i18n functions as globals for main.js and other modules. */
