@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { apiKeys } from '../db/schema.js';
 import { encrypt, decrypt, deriveEncryptionKey } from '../lib/crypto.js';
@@ -71,7 +71,7 @@ export async function seedBuiltInProvider() {
 
   try {
     const db = getDb();
-    const model = process.env.MINIMAX_MODEL || 'MiniMax-M2.7';
+    const model = process.env.MINIMAX_MODEL || 'MiniMax-M3';
     const url = (process.env.MINIMAX_BASE_URL || 'https://api.minimax.io/v1').replace(/\/+$/, '');
     const keyCiphertext = encrypt(apiKey, ENCRYPTION_KEY);
 
@@ -99,6 +99,51 @@ export async function seedBuiltInProvider() {
     }
   } catch (err) {
     console.error('[seed] Failed to seed built-in provider:', err.message);
+  }
+}
+
+/**
+ * Validate all API keys on startup. If any key fails to decrypt,
+ * log a warning and clear the corrupted ciphertext so the user
+ * sees a clear "re-enter your key" message instead of a confusing
+ * 401 error from the upstream LLM API.
+ */
+export async function validateApiKeys() {
+  try {
+    const db = getDb();
+    const allKeys = await db.select().from(apiKeys);
+    let corruptedCount = 0;
+
+    for (const key of allKeys) {
+      if (!key.keyCiphertext) continue;
+
+      try {
+        decrypt(key.keyCiphertext, ENCRYPTION_KEY);
+      } catch (err) {
+        console.warn('[validateApiKeys] Corrupted key detected:', {
+          id: key.id,
+          label: key.label,
+          userId: key.userId,
+          error: err.message,
+        });
+
+        /* Clear the corrupted ciphertext so decryptProvider() returns
+           keyPlaintext=null, which chat.js surfaces as a clear error. */
+        await db.update(apiKeys)
+          .set({ keyCiphertext: null, keyHint: null })
+          .where(eq(apiKeys.id, key.id));
+
+        corruptedCount++;
+      }
+    }
+
+    if (corruptedCount > 0) {
+      console.warn(`[validateApiKeys] Cleared ${corruptedCount} corrupted key(s). Users must re-enter their API keys.`);
+    } else {
+      console.log('[validateApiKeys] All API keys validated successfully.');
+    }
+  } catch (err) {
+    console.error('[validateApiKeys] Validation failed:', err.message);
   }
 }
 

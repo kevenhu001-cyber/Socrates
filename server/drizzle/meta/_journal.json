@@ -64,6 +64,20 @@
       "when": 1785084400000,
       "tag": "0008_reasoning_content",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782558765924,
+      "tag": "0009_many_talon",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782654907417,
+      "tag": "0010_massive_tag",
+      "breakpoints": true
     }
   ]
 }

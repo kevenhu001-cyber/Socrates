@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion, callChatCompletion } from '../services/llm.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
+import { buildSystemContextBlock } from '../services/productContext.js';
 
 const router = Router();
 
@@ -27,8 +28,34 @@ router.post('/v1/chat/completions', async (req, res, next) => {
     }
 
     const { messages, model, temperature, max_tokens, stream, reasoning_effort, extra_body } = req.body;
+    /* OpenAI-compatible endpoints also accept ?stream=true as a
+       query parameter. Honour it so the built-in proxy matches
+       the spec — this matters for any client that toggles streaming
+       via the URL rather than the body. */
+    const wantStream = stream === true || req.query.stream === 'true' || req.query.stream === '1';
 
-    if (stream) {
+    /* P_PRODUCT_CONTEXT — inject topodrive.top product knowledge so
+       the built-in Beagle can answer company/product questions. Insert
+       before the last user message (or at end) just like chat.js.
+       Calling buildSystemContextBlock on every request is cheap because
+       the service memoises by fetchedAt — see chat.js for the
+       rationale. */
+    let finalMessages = messages;
+    try {
+      const ctxBlock = await buildSystemContextBlock({ allowStale: true });
+      if (ctxBlock) {
+        const productMsg = { role: 'system', content: ctxBlock };
+        const last = finalMessages[finalMessages.length - 1];
+        if (last && last.role === 'user') {
+          finalMessages = finalMessages.slice();
+          finalMessages.splice(finalMessages.length - 1, 0, productMsg);
+        } else {
+          finalMessages = [...finalMessages, productMsg];
+        }
+      }
+    } catch (_) { /* best-effort — don't break the chat */ }
+
+    if (wantStream) {
       // ── Streaming: SSE response ──
       res.writeHead(200, {
         'Content-Type': 'text/event-stream',
@@ -50,7 +77,7 @@ router.post('/v1/chat/completions', async (req, res, next) => {
           apiBase: provider.url,
           apiKey: provider.keyPlaintext,
           model: model || provider.model,
-          messages,
+          messages: finalMessages,
           /* undefined → llm.js default (32 K) so a long streamed
              answer isn't silently truncated by a small per-model cap. */
           maxTokens: max_tokens,
@@ -67,6 +94,7 @@ router.post('/v1/chat/completions', async (req, res, next) => {
           completionTokens = estimateTokens(fullText);
           try {
             res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`);
+            try { res.flush?.(); } catch {}
           } catch { /* client disconnected */ }
         },
         // onDone
@@ -110,6 +138,7 @@ router.post('/v1/chat/completions', async (req, res, next) => {
         (reasoning) => {
           try {
             res.write(`data: ${JSON.stringify({ choices: [{ delta: { reasoning_content: reasoning } }] })}\n\n`);
+            try { res.flush?.(); } catch {}
           } catch { /* client disconnected */ }
         },
       );
@@ -119,7 +148,7 @@ router.post('/v1/chat/completions', async (req, res, next) => {
         apiBase: provider.url,
         apiKey: provider.keyPlaintext,
         model: model || provider.model,
-        messages,
+        messages: finalMessages,
         /* undefined → llm.js default (32 K) so a long response isn't
            silently truncated by a small per-model cap. */
         maxTokens: max_tokens,

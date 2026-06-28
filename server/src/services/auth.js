@@ -121,19 +121,21 @@ export async function register(email, password) {
 
   const db = getDb();
 
-  // Check for existing user (already verified)
+  // Check for existing user (already verified) — silently no-op
+  // instead of leaking which emails are registered. The email is
+  // logged (masked) for operational debugging.
   const [existing] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   if (existing) {
-    throw new Conflict('An account with this email already exists');
+    console.log(`[auth] register: user already exists for ${maskEmail(normalizedEmail)}`);
+    return { ok: true };
   }
 
-  // Check for existing pending registration
+  // Check for existing pending registration — re-send or silently no-op
   const [existingPending] = await db.select().from(pendingRegistrations)
     .where(eq(pendingRegistrations.email, normalizedEmail)).limit(1);
   if (existingPending) {
     if (existingPending.expiresAt < new Date()) {
       // Expired — clear it so we can re-create below with a fresh token.
-      // Prevents indefinite "resend" abuse and stale-token accumulation.
       await db.delete(pendingRegistrations).where(eq(pendingRegistrations.id, existingPending.id));
     } else {
       // Still valid — re-send the verification email with the existing token.

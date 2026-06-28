@@ -1,10 +1,36 @@
 import { Router } from 'express';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
 import { setCsrfToken, setCsrfCookie, clearCsrfCookie } from '../middleware/csrf.js';
 import { requireAuth } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import * as authService from '../services/auth.js';
+import { audit, recordAudit } from '../middleware/audit.js';
 import { shouldUseSharedDomain, SHARED_COOKIE_DOMAIN } from '../lib/cookieEnv.js';
+
+/* HMAC key for signing OAuth state parameters — derived from
+   SESSION_SECRET so it stays consistent across restarts without
+   introducing a separate env var. */
+const OAUTH_STATE_KEY = process.env.SESSION_SECRET || 'dev-secret';
+function signOAuthState(payload) {
+  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = createHmac('sha256', OAUTH_STATE_KEY).update(encoded).digest('base64url');
+  return `${encoded}.${sig}`;
+}
+function verifyOAuthState(state) {
+  if (typeof state !== 'string') return null;
+  const dot = state.lastIndexOf('.');
+  if (dot < 0) return null;
+  const encoded = state.slice(0, dot);
+  const sig = state.slice(dot + 1);
+  const expected = createHmac('sha256', OAUTH_STATE_KEY).update(encoded).digest('base64url');
+  // Constant-time comparison to prevent timing attacks
+  if (sig.length !== expected.length) return null;
+  const valid = timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+  if (!valid) return null;
+  try {
+    return JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+  } catch { return null; }
+}
 
 const router = Router();
 
@@ -58,7 +84,7 @@ function clearSidCookie(res, req) {
 
 router.get('/csrf-token', setCsrfToken);
 
-router.post('/register', async (req, res, next) => {
+router.post('/register', authLimiter, audit('register'), async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const result = await authService.register(email, password);
@@ -67,7 +93,7 @@ router.post('/register', async (req, res, next) => {
 });
 
 /* ─── Resend verification email (no password required) ─── */
-router.post('/resend-verification', async (req, res, next) => {
+router.post('/resend-verification', authLimiter, async (req, res, next) => {
   try {
     const { email } = req.body;
     const result = await authService.resendVerification(email);
@@ -76,7 +102,7 @@ router.post('/resend-verification', async (req, res, next) => {
 });
 
 /* ─── Login ─── */
-router.post('/login', async (req, res, next) => {
+router.post('/login', authLimiter, audit('login', (req) => ({ email: req.body?.email })), async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const result = await authService.login(email, password);
@@ -99,7 +125,7 @@ router.get('/me', requireAuth, async (req, res, next) => {
 });
 
 /* ─── Logout ─── */
-router.post('/logout', async (req, res, next) => {
+router.post('/logout', audit('logout'), async (req, res, next) => {
   try {
     const sid = req.cookies?.sid;
     await authService.logout(sid);
@@ -130,17 +156,6 @@ router.post('/send-code', authLimiter, async (req, res, next) => {
     const { email } = req.body;
     await authService.sendCode(email);
     return res.json({ ok: true });
-  } catch (err) { next(err); }
-});
-
-/* ─── Guest login ─── */
-router.post('/guest', authLimiter, async (req, res, next) => {
-  try {
-    const result = await authService.loginAsGuest();
-    clearSidCookie(res, req);
-    res.cookie('sid', result.sid, getSessionCookieOptions(req));
-    setCsrfCookie(res, req);
-    return res.status(201).json({ user: result.user });
   } catch (err) { next(err); }
 });
 
@@ -221,7 +236,7 @@ router.get('/oauth/github/start', (_req, res) => {
     return res.redirect('/?oauth_error=' + encodeURIComponent('github_not_configured'));
   }
   const returnTo = safeReturnTo(_req.query.return_to);
-  const state = Buffer.from(JSON.stringify({ returnTo })).toString('base64url');
+  const state = signOAuthState({ returnTo });
   const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(process.env.GITHUB_CALLBACK_URL || '')}&state=${state}&scope=user:email`;
   return res.redirect(url);
 });
@@ -248,8 +263,8 @@ router.get('/oauth/github/callback', async (req, res, next) => {
 
   let returnTo = '/';
   if (state) {
-    try { returnTo = JSON.parse(Buffer.from(String(state), 'base64url').toString('utf8')).returnTo || '/'; }
-    catch { /* ignore malformed state */ }
+    const parsed = verifyOAuthState(state);
+    if (parsed && parsed.returnTo) returnTo = safeReturnTo(parsed.returnTo);
   }
 
   try {
