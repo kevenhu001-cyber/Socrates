@@ -19,9 +19,15 @@ export function initDb(databaseUrl) {
     max: 20,
     min: 2,
     idleTimeoutMillis: 30000,
-    maxLifetimeMillis: 30 * 60 * 1000,
     connectionTimeoutMillis: 5000,
-    statement_timeout: 30_000,
+  });
+
+  // Set per-connection PostgreSQL session parameters (statement_timeout
+  // et al.) so a runaway query doesn't hold the connection forever.
+  // These are NOT pool‑level constructor options in pg — they must be
+  // applied via the 'connect' event on the pool.
+  pool.on('connect', async (client) => {
+    try { await client.query('SET statement_timeout = 30000'); } catch {}
   });
 
   db = drizzle(pool, { schema });

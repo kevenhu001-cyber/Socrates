@@ -394,4 +394,41 @@ router.get('/export', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * GET /api/account/usage-trend — daily token totals for a line chart.
+ * Returns an array of {day, tokens, calls} for each day in the last N days
+ * (default 30). Days with no usage still appear with tokens=0 so the
+ * front-end can draw a continuous line. */
+router.get('/usage-trend', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const daysNum = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 7), 90);
+    const since = new Date(Date.now() - daysNum * 86400000);
+    const dayExpr = sql`to_char(${usageEvents.createdAt} AT TIME ZONE 'UTC', 'YYYY-MM-DD')`;
+    const rows = await db
+      .select({
+        day: dayExpr,
+        tokens: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
+        calls: sql`COUNT(*)::int`,
+      })
+      .from(usageEvents)
+      .where(sql`${usageEvents.userId} = ${req.userId} AND ${usageEvents.source} = 'chat' AND ${usageEvents.createdAt} >= ${since}`)
+      .groupBy(dayExpr)
+      .orderBy(dayExpr);
+    /* Fill in zero-days so the chart is continuous. */
+    const byDay = new Map();
+    for (const r of rows) byDay.set(r.day, { day: r.day, tokens: r.tokens, calls: r.calls });
+    const filled = [];
+    const startMs = new Date(since);
+    startMs.setUTCHours(0, 0, 0, 0);
+    for (let t = startMs.getTime(), end = Date.now(); t <= end; t += 86400000) {
+      const key = new Date(t).toISOString().slice(0, 10);
+      filled.push(byDay.get(key) || { day: key, tokens: 0, calls: 0 });
+    }
+    const totalTokens = filled.reduce((s, b) => s + b.tokens, 0);
+    const totalCalls = filled.reduce((s, b) => s + b.calls, 0);
+    return res.json({ days: daysNum, entries: filled, totalTokens, totalCalls });
+  } catch (err) { next(err); }
+});
+
 export default router;

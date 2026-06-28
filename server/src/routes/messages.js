@@ -4,19 +4,14 @@ import { getDb } from '../db/index.js';
 import { messages, feedback, sessions, usageEvents } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest, TooManyRequests } from '../lib/errors.js';
+import { getBeagleQuota } from '../lib/tiers.js';
+import { isUuid } from '../lib/validate.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion } from '../services/llm.js';
 
-const BEAGLE_TIER_QUOTAS = {
-  diophantus: 1_000_000,
-  riemann:    100_000_000,
-  descartes:  300_000_000,
-  euclid:     800_000_000,
-};
-
 async function checkBeagleLimit(userId, tier) {
   if (!userId) return null;
-  const quota = BEAGLE_TIER_QUOTAS[tier] || BEAGLE_TIER_QUOTAS.diophantus;
+  const quota = getBeagleQuota(tier);
   const db = getDb();
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const [row] = await db.select({
@@ -34,11 +29,8 @@ async function checkBeagleLimit(userId, tier) {
  * type uuid`. The SPA generates client-side IDs like
  * "msg-b749937d-7ff1-4999-8752-cf043f5c3c3a" that are NOT UUIDs, so
  * when the user tries to edit / delete a message the query blew up
- * with a 500. Reject early with a clean 400 instead. The same
- * helper is used by /api/sessions routes; copy the regex rather
- * than introduce a circular import. */
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function isUuid(s) { return typeof s === 'string' && UUID_RE.test(s); }
+ * with a 500. Reject early with a clean 400 instead. Shared
+ * helper from lib/validate.js. */
 
 const router = Router();
 router.use(requireAuth);

@@ -4,6 +4,7 @@ import { getDb } from '../db/index.js';
 import { memories } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
+import { isUuid } from '../lib/validate.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -50,6 +51,7 @@ router.post('/', async (req, res, next) => {
 /* PATCH /api/memory/:id */
 router.patch('/:id', async (req, res, next) => {
   try {
+    if (!isUuid(req.params.id)) throw new NotFound('Memory not found');
     const db = getDb();
     const [m] = await db.select().from(memories)
       .where(and(eq(memories.id, req.params.id), eq(memories.userId, req.userId))).limit(1);
@@ -66,6 +68,7 @@ router.patch('/:id', async (req, res, next) => {
 /* DELETE /api/memory/:id */
 router.delete('/:id', async (req, res, next) => {
   try {
+    if (!isUuid(req.params.id)) throw new NotFound('Memory not found');
     const db = getDb();
     await db.delete(memories)
       .where(and(eq(memories.id, req.params.id), eq(memories.userId, req.userId)));
@@ -76,6 +79,7 @@ router.delete('/:id', async (req, res, next) => {
 /* POST /api/memory/:id/enable */
 router.post('/:id/enable', async (req, res, next) => {
   try {
+    if (!isUuid(req.params.id)) throw new NotFound('Memory not found');
     const db = getDb();
     const [m] = await db.select().from(memories)
       .where(and(eq(memories.id, req.params.id), eq(memories.userId, req.userId)))
@@ -90,6 +94,7 @@ router.post('/:id/enable', async (req, res, next) => {
 /* POST /api/memory/:id/disable */
 router.post('/:id/disable', async (req, res, next) => {
   try {
+    if (!isUuid(req.params.id)) throw new NotFound('Memory not found');
     const db = getDb();
     const [m] = await db.select().from(memories)
       .where(and(eq(memories.id, req.params.id), eq(memories.userId, req.userId)))

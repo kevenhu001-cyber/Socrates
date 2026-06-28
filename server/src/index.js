@@ -5,6 +5,7 @@
  */
 import 'dotenv/config';
 import { initDb, closeDb } from './db/index.js';
+import { startExpiredCleanup, stopExpiredCleanup } from './services/cleanupDb.js';
 import app from './app.js';
 
 const PORT = parseInt(process.env.PORT || '8080', 10);
@@ -42,6 +43,17 @@ async function main() {
     console.warn('[seed] Beagle provider skipped:', err.message);
   }
 
+  // ── Validate all API keys (detect corrupted ciphertext) ──
+  try {
+    const { validateApiKeys } = await import('./services/apiKey.js');
+    await validateApiKeys();
+  } catch (err) {
+    console.warn('[validate] API key validation skipped:', err.message);
+  }
+
+  // ── Start periodic DB cleanup ──
+  startExpiredCleanup();
+
   // ── Start HTTP server ──
   const server = app.listen(PORT, () => {
     console.log(`[server] Listening on http://0.0.0.0:${PORT} (${process.env.NODE_ENV || 'development'})`);
@@ -50,14 +62,21 @@ async function main() {
   // ── Graceful shutdown ──
   const shutdown = async (signal) => {
     console.log(`[server] Received ${signal}, shutting down…`);
+    // Stop accepting new connections immediately. Active SSE streams
+    // and in-flight LLM calls get a 30s grace period to finish before
+    // the process force-exits.
     server.close(async () => {
-      console.log('[server] HTTP server closed');
+      console.log('[server] HTTP server closed — draining connections');
+      stopExpiredCleanup();
       await closeDb().catch(() => {});
       console.log('[db] Pool closed');
       process.exit(0);
     });
-    // Force exit after 8s if cleanup hangs
-    setTimeout(() => process.exit(1), 8000);
+    // Grace period for active streams before force exit
+    setTimeout(() => {
+      console.error('[server] Graceful shutdown timeout — force exiting');
+      process.exit(1);
+    }, 30000);
   };
 
   process.on('SIGINT', () => shutdown('SIGINT'));

@@ -126,6 +126,12 @@ export const messages = pgTable('messages', {
   index('messages_session_id_idx').on(table.sessionId),
   index('messages_parent_id_idx').on(table.parentId),
   index('messages_created_at_idx').on(table.createdAt),
+  /* P_message-dedup — unique constraint on (sessionId, clientId) so
+     concurrent POST /api/sessions cannot create duplicate rows for the
+     same logical message. clientId can be NULL (messages without a
+     front-end generated id), and Postgres treats NULLs as distinct
+     in unique indexes, so multiple NULL-clientId messages coexist. */
+  uniqueIndex('messages_session_client_id_idx').on(table.sessionId, table.clientId),
 ]);
 
 /* ──────────────────────────────────────────────
@@ -435,4 +441,23 @@ export const mistakes = pgTable('mistakes', {
 }, (table) => [
   index('mistakes_user_id_idx').on(table.userId),
   index('mistakes_user_resolved_idx').on(table.userId, table.isResolved),
+]);
+
+/* ──────────────────────────────────────────────
+   Audit Events — user action log
+   Tracks who did what and when. Insert-only;
+   records are never updated or deleted.
+   ────────────────────────────────────────────── */
+export const auditEvents = pgTable('audit_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  action: text('action').notNull(),         // register | login | logout | chat | create_api_key | delete_api_key | etc.
+  detail: jsonb('detail').default({}),       // request-specific metadata
+  ip: text('ip'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('audit_events_user_id_idx').on(table.userId),
+  index('audit_events_created_at_idx').on(table.createdAt),
+  index('audit_events_action_idx').on(table.action),
 ]);
