@@ -282,7 +282,7 @@
     <div class="sidebar-footer">
       <div class="user-row"><div class="user-avatar">JH</div><div><div class="user-name">Jiacheng Hu</div><div class="user-plan">Free plan</div></div></div>
       <div style="display:flex;align-items:center;gap:2px;margin-left:auto;position:relative">
-        <button class="icon-btn theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle theme">
+        <button class="icon-btn theme-toggle" id="themeToggle" onclick="toggleTheme(event)" title="Toggle theme">
           <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
           <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
@@ -311,6 +311,33 @@
               <button class="display-prefs-seg" data-width="1.7" title="Full width">XL</button>
             </div>
           </div>
+          <!-- Accent color picker — Ant Design ColorPicker-inspired -->
+          <div class="display-prefs-row">
+            <div class="display-prefs-label"><span>Accent color</span></div>
+            <div class="display-prefs-colors" id="displayAccentColors">
+              <button class="color-swatch" data-hue="35" style="--swatch:hsl(35 80% 50%)" title="Gold" onclick="setAccentColor(35)"></button>
+              <button class="color-swatch" data-hue="160" style="--swatch:hsl(160 70% 45%)" title="Teal" onclick="setAccentColor(160)"></button>
+              <button class="color-swatch" data-hue="210" style="--swatch:hsl(210 80% 50%)" title="Blue" onclick="setAccentColor(210)"></button>
+              <button class="color-swatch" data-hue="270" style="--swatch:hsl(270 70% 55%)" title="Purple" onclick="setAccentColor(270)"></button>
+              <button class="color-swatch" data-hue="330" style="--swatch:hsl(330 75% 50%)" title="Rose" onclick="setAccentColor(330)"></button>
+              <button class="color-swatch active" data-hue="40" style="--swatch:hsl(40 75% 50%)" title="Amber (default)" onclick="setAccentColor(40)"></button>
+            </div>
+          </div>
+          <!-- Background color pickers — separate per mode -->
+          <div class="display-prefs-row">
+            <div class="display-prefs-label"><span>Dark mode BG</span></div>
+            <div class="display-prefs-bg-picker">
+              <input type="color" id="displayPrefsBgDark" value="#252220" title="Dark mode page background" oninput="setBackgroundDark(this.value)">
+              <button class="display-prefs-bg-reset" onclick="resetBackgroundDark()" title="Reset dark mode to theme default">↺</button>
+            </div>
+          </div>
+          <div class="display-prefs-row">
+            <div class="display-prefs-label"><span>Light mode BG</span></div>
+            <div class="display-prefs-bg-picker">
+              <input type="color" id="displayPrefsBgLight" value="#ded6c8" title="Light mode page background" oninput="setBackgroundLight(this.value)">
+              <button class="display-prefs-bg-reset" onclick="resetBackgroundLight()" title="Reset light mode to theme default">↺</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -337,7 +364,7 @@
     <div class="top-bar-right">
       <span class="chat-api-badge hidden" id="chatApiBadge"></span>
       <div class="chat-model-wrap hidden" id="chatModelWrap">
-        <button class="chat-model-trigger" id="chatModel" type="button" onclick="toggleChatModelMenu()" aria-haspopup="listbox" aria-expanded="false" title="Pick or configure the model for this conversation">
+        <button class="chat-model-trigger" id="chatModel" type="button" aria-haspopup="listbox" aria-expanded="false" title="Pick or configure the model for this conversation">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0-2 5v1a3 3 0 0 0 2 5v1a3 3 0 0 0 3 3 3 3 0 0 0 3-3v-1a3 3 0 0 0 2-5v-1a3 3 0 0 0-2-5V5a3 3 0 0 0-3-3z"/><path d="M5 12h14"/><path d="M12 5v14"/></svg>
           <span class="chat-model-label" id="chatModelLabel">Model</span>
           <svg class="chat-model-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -357,7 +384,7 @@
         <h1 class="topic-title" id="topicTitle">What would you like to explore?</h1>
         <p class="topic-sub" id="topicSub">Describe what you want to learn. Socrates will ask you questions to help you think deeper about it.</p>
         <div class="topic-input-wrap">
-          <textarea id="topicInput" name="topicInput" aria-label="What would you like to explore?" placeholder="e.g. I want to understand how machine learning works..." rows="2" oninput="autoResize(this);updateStartBtn()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startSession()}"></textarea>
+          <textarea id="topicInput" name="topicInput" aria-label="What would you like to explore?" placeholder="e.g. I want to understand how machine learning works..." data-i18n-placeholder="topic.inputPlaceholder" rows="2" oninput="autoResize(this);updateStartBtn()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startSession()}"></textarea>
           <div class="topic-footer">
             <span style="font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))" id="topicHint">Be specific for better results</span>
             <button class="start-btn" id="startBtn" onclick="startSession()">Begin</button>
@@ -453,14 +480,18 @@
     </div>
 
     <div class="exam-view hidden" id="examView">
-      <div class="exam-view-header">
+      <header class="exam-view-header">
         <button class="exam-back-btn" onclick="closeExamView()" title="Back to chat" aria-label="Back to chat">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          <span>Back to chat</span>
+          <span>Back</span>
         </button>
-        <h2 class="exam-view-title" id="examViewTitle">Generate Exam</h2>
-        <div class="exam-view-header-spacer"></div>
-      </div>
+        <div class="exam-view-title-wrap">
+          <h2 class="exam-view-title" id="examViewTitle">Generate Exam</h2>
+        </div>
+        <div class="exam-view-header-right">
+          <span class="exam-view-meta" id="examViewMeta"></span>
+        </div>
+      </header>
       <div class="exam-view-body" id="examViewBody"></div>
       <div class="exam-view-footer" id="examViewFooter"></div>
     </div>
@@ -574,6 +605,17 @@
         <div class="provider-list" id="providerList"></div>
       </div>
       <div id="stgStatus"></div>
+
+      <!-- Product Info panel (admin only — populated by JS) -->
+      <div class="settings-section" id="productInfoSection" style="display:none">
+        <div class="settings-label-row" style="margin-bottom:6px">
+          <span class="settings-label" data-i18n-key="settings.productInfo">Product Info</span>
+          <button class="settings-btn-mini" onclick="refreshProductInfo()" id="productInfoRefreshBtn">Refresh now</button>
+        </div>
+        <span class="settings-hint" data-i18n-key="settings.productInfoHint">topodrive.top product knowledge injected into the built-in Beagle model. Refreshes every 6 hours.</span>
+        <div class="product-info-status" id="productInfoStatus" style="margin-top:6px;font-size:12px;color:hsl(var(--text-400))">Loading…</div>
+      </div>
+
       <div class="settings-actions">
         <button class="settings-btn danger" onclick="clearSettings()">Clear all</button>
         <button class="settings-btn secondary" onclick="closeSettings()">Cancel</button>
@@ -629,10 +671,9 @@
         <!-- Language toggle -->
         <div class="profile-row">
           <span class="profile-row-label" data-i18n-key="profile.language">Language</span>
-          <div class="profile-lang-toggle" id="profileLangToggle" onclick="toggleAppLang()">
-            <span class="profile-lang-option" id="profileLangEn">English</span>
-            <span class="profile-lang-divider">/</span>
-            <span class="profile-lang-option" id="profileLangZh">中文</span>
+          <div class="profile-lang-toggle" id="profileLangToggle">
+            <span class="profile-lang-option active" id="profileLangEn" onclick="setLang('en')">English</span>
+            <span class="profile-lang-option" id="profileLangZh" onclick="setLang('zh')">中文</span>
           </div>
         </div>
         <div class="profile-toggle-desc" data-i18n-key="profile.webSearchDesc">Enable web search to include real-time results in questions.</div>

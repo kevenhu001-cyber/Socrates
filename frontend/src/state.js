@@ -73,7 +73,7 @@ var state={
   /* ui: ephemeral UI state (per-tab, never persisted). */
   ui:{_userScrolledAway:false,_examInView:false},
   /* exam: exam-mode state (ephemeral, never persisted). */
-  exam:{cancel:false,questions:[],answers:{},submitted:false,topic:"",count:0}
+  exam:{cancel:false,questions:[],answers:{},submitted:false,topic:"",count:0,_examScrollBound:false,readOnly:false,lang:"",difficulty:"intermediate",instructions:"",types:[],_examPrevActiveId:null}
 };
 
 /* P1.5 — flat-name lookup table for the Proxy. Maps a legacy
@@ -116,7 +116,11 @@ var STATE_FLAT_TO_NS={
   /* exam */
   examCancel:"exam.cancel",examQuestions:"exam.questions",
   examAnswers:"exam.answers",examSubmitted:"exam.submitted",
-  examTopic:"exam.topic",examCount:"exam.count"
+  examTopic:"exam.topic",examCount:"exam.count",
+  _examScrollBound:"exam._examScrollBound",examReadOnly:"exam.readOnly",
+  examLang:"exam.lang",examDifficulty:"exam.difficulty",
+  examInstructions:"exam.instructions",examTypes:"exam.types",
+  _examPrevActiveId:"exam._examPrevActiveId"
 };
 
 /* P1.5 — Proxy that translates flat legacy reads/writes into
@@ -125,7 +129,16 @@ var STATE_FLAT_TO_NS={
    always return the live sub-namespace value (so `state.topic`
    and `state.session.topic` see the same data). Writes update
    the sub-namespace. Deletes are no-ops (legacy code never
-   `delete state.<x>`). */
+   `delete state.<x>`).
+   ─────────────────────────────────────────────────────────────────
+   The flat-namespace compat shim is preserved by design:
+   main.js has ~200 references to `state.topic`, `state.messages`,
+   `state.kbNodes` etc. that all flow through this Proxy. Removing
+   the shim is a single-shot full rewrite of those call sites,
+   which belongs in a dedicated refactor PR. Until then the
+   Proxy is the contract: any new field MUST be added to
+   STATE_FLAT_TO_NS below (or live on the `state` root directly)
+   for the legacy `state.<name>` form to work. */
 (function(){
   function resolve(path){
     var parts=path.split(".");
@@ -387,6 +400,20 @@ function resetState(){
   state.call.source=null;
   state.call.error=null;
   state.ui._userScrolledAway=false;
+  /* Clear exam-mode fields so a fresh session doesn't inherit stale
+     topic / language / difficulty / instructions / types from a prior
+     exam. */
+  try{state.exam.cancel=false}catch(_){}
+  try{state.exam.questions=[]}catch(_){}
+  try{state.exam.answers={}}catch(_){}
+  try{state.exam.submitted=false}catch(_){}
+  try{state.exam.topic=""}catch(_){}
+  try{state.exam.count=0}catch(_){}
+  try{state.exam.readOnly=false}catch(_){}
+  try{state.exam.lang=""}catch(_){}
+  try{state.exam.difficulty="intermediate"}catch(_){}
+  try{state.exam.instructions=""}catch(_){}
+  try{state.exam.types=[]}catch(_){}
   /* P_dup-session — also clear the top-level mirror so a follow-up
      call to saveCurrentSession doesn't read a stale id and try to
      re-open a session that was just deleted / reset. Without this,

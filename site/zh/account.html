@@ -86,6 +86,17 @@
 .acct-heatmap-summary{display:flex;gap:24px;margin-bottom:14px;font-size:13px;color:hsl(var(--text-400))}
 .acct-heatmap-summary strong{color:hsl(var(--text-100));font-weight:500}
 .acct-heatmap-empty{text-align:center;color:hsl(var(--text-500));font-size:13px;padding:24px 0}
+/* Token 用量趋势 — 平滑折线图 */
+.trend-chart-wrap{position:relative;width:100%;overflow:hidden}
+.trend-chart-wrap svg{display:block;width:100%;height:auto}
+.trend-chart-wrap .trend-line{fill:none;stroke:hsl(var(--accent-000));stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.trend-chart-wrap .trend-area{fill:url(#trendGrad);opacity:0.25}
+.trend-chart-wrap .trend-dot{fill:hsl(var(--accent-000));r:3;opacity:0;transition:opacity .15s}
+.trend-chart-wrap:hover .trend-dot{opacity:1}
+.trend-chart-wrap .trend-dot:hover{r:5}
+.trend-chart-wrap .trend-grid{stroke:hsl(var(--text-500));stroke-width:0.5;opacity:0.15}
+.trend-chart-wrap .trend-axis-label{fill:hsl(var(--text-500));font-size:10px;text-anchor:middle}
+.trend-chart-wrap .trend-y-label{fill:hsl(var(--text-500));font-size:10px;text-anchor:end}
 
 /* Danger zone */
 .acct-danger{padding:20px 24px;border-radius:12px;border:0.5px solid hsl(0 60% 50%/0.15);background:hsl(0 60% 50%/0.03)}
@@ -358,6 +369,12 @@ var srObs = new IntersectionObserver(function(entries) {
         '<div class="acct-heatmap-summary" id="usageHeatmapSummary"></div>' +
         '<div id="usageHeatmapBody"><div class="acct-heatmap-empty">正在加载 Token 活跃度…</div></div>' +
       '</div>' +
+      /* Token 用量趋势图 — 30天折线图 */
+      '<div class="acct-card full sr sr-d2" id="usageTrendCard">' +
+        '<div class="acct-card-header"><div class="acct-card-title">Token 用量趋势</div><span style="font-size:12px;color:hsl(var(--text-500))">最近 30 天</span></div>' +
+        '<div id="usageTrendSummary" style="display:flex;gap:20px;margin-bottom:10px;font-size:13px;color:hsl(var(--text-400))"></div>' +
+        '<div id="usageTrendBody"><div class="acct-heatmap-empty">正在加载趋势数据…</div></div>' +
+      '</div>' +
 
       /* 危险区域 — 取消订阅（付费）+ 删除账号（始终） */
       '<div class="acct-card full sr sr-d3">' +
@@ -407,6 +424,7 @@ var srObs = new IntersectionObserver(function(entries) {
           grid.innerHTML = buildCards(data);
           document.querySelectorAll('.sr').forEach(function(el) { srObs.observe(el); });
           loadUsageHeatmap();
+          if(typeof loadUsageTrend==='function')loadUsageTrend();
         } catch(e) {
           console.error('渲染错误:', e);
           grid.innerHTML = errHTML;
@@ -458,37 +476,39 @@ var srObs = new IntersectionObserver(function(entries) {
       '<div><strong>' + data.totalCalls + '</strong> 次调用</div>' +
       '<div>峰值（P95）：<strong>' + fmtTokens(data.p95) + '</strong> / 小时</div>';
 
-    /* 使用与英文版一致的 UTC 日期+小时分组查询方式 */
+    /* 使用本地时区进行日期+小时分组 */
     var buckets = data.buckets || [];
     var p95 = Math.max(data.p95 || 0, 1);
     var byDayHour = {};
     for (var i = 0; i < buckets.length; i++) {
       var d = new Date(buckets[i].hour);
-      var dateKey = d.toISOString().slice(0, 10);
+      var y = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), da = String(d.getDate()).padStart(2,'0');
+      var dateKey = y+'-'+mo+'-'+da;
       if (!byDayHour[dateKey]) byDayHour[dateKey] = {};
-      byDayHour[dateKey][d.getUTCHours()] = buckets[i];
+      byDayHour[dateKey][d.getHours()] = buckets[i];
     }
 
     var days = ['日', '一', '二', '三', '四', '五', '六'];
     var today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
     var dayList = [];
     for (var off = 6; off >= 0; off--) {
       var dt = new Date(today.getTime() - off * 86400000);
-      dayList.push({ date: dt, key: dt.toISOString().slice(0, 10) });
+      var y2 = dt.getFullYear(), m2 = String(dt.getMonth()+1).padStart(2,'0'), d2 = String(dt.getDate()).padStart(2,'0');
+      dayList.push({ date: dt, key: y2+'-'+m2+'-'+d2 });
     }
 
     var html = '<div class="acct-heatmap-grid">';
     for (var di = 0; di < dayList.length; di++) {
       var dInfo = dayList[di];
-      var dow = dInfo.date.getUTCDay();
+      var dow = dInfo.date.getDay();
       var isToday = (di === dayList.length - 1);
 
       html += '<div class="acct-heatmap-day-label">';
       if (isToday) {
         html += '今天';
       } else {
-        html += '周' + days[dow] + ' ' + (dInfo.date.getUTCMonth() + 1) + '/' + dInfo.date.getUTCDate();
+        html += '周' + days[dow] + ' ' + (dInfo.date.getMonth() + 1) + '/' + dInfo.date.getDate();
       }
       html += '</div>';
 

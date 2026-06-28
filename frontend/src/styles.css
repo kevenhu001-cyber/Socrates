@@ -1,40 +1,49 @@
 :root{--always-white:0 0% 100%;--always-black:0 0% 0%}
 [data-theme=socrates][data-mode=dark]{--bg-000:42 4% 18%;--bg-100:40 3.3% 14.5%;--bg-200:36 3.6% 11.8%;--bg-300:39 3.2% 7.8%;--bg-400:0 0% 0%;--text-000:45 30% 96%;--text-100:45 30% 96%;--text-200:45 8% 72%;--text-300:45 8% 72%;--text-400:44 4.5% 58%;--text-500:44 4.5% 58%;--border-100:45 20% 82%;--border-200:45 20% 82%;--border-300:45 20% 82%;--border-400:45 20% 82%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
-[data-theme=socrates][data-mode=light]{--bg-000:40 24% 97%;--bg-100:40 18% 94%;--bg-200:40 14% 89%;--bg-300:40 10% 83%;--bg-400:0 0% 100%;--text-000:40 12% 10%;--text-100:40 10% 16%;--text-200:40 8% 32%;--text-300:40 8% 32%;--text-400:40 6% 48%;--text-500:40 6% 48%;--border-100:40 10% 72%;--border-200:40 10% 72%;--border-300:40 10% 72%;--border-400:40 10% 72%;--accent-000:43 65% 42%;--accent-100:43 65% 38%;--accent-900:43 40% 90%;--brand-000:36 55% 42%;--brand-100:36 60% 47%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.6}
+[data-theme=socrates][data-mode=light]{--bg-000:40 24% 91%;--bg-100:40 18% 87%;--bg-200:40 14% 81%;--bg-300:40 10% 73%;--bg-400:0 0% 100%;--text-000:40 12% 10%;--text-100:40 10% 16%;--text-200:40 8% 32%;--text-300:40 8% 32%;--text-400:40 6% 38%;--text-500:40 6% 38%;--border-100:40 10% 62%;--border-200:40 10% 62%;--border-300:40 10% 62%;--border-400:40 10% 62%;--accent-000:43 65% 42%;--accent-100:43 65% 38%;--accent-900:43 40% 90%;--brand-000:36 55% 42%;--brand-100:36 60% 47%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.6}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
-*,*::before,*::after{transition:background .2s,background-color .2s,border-color .2s,box-shadow .2s}
+/* ─── View Transition — cross-browser consistent ── */
+::view-transition-old(root){animation:.3s ease-out vt-fade-out;z-index:1}
+::view-transition-new(root){animation:.3s ease-out vt-fade-in;z-index:2}
+@keyframes vt-fade-out{from{opacity:1}to{opacity:0}}
+@keyframes vt-fade-in{from{opacity:0}to{opacity:1}}
+:root{--surface-page:var(--bg-100);--surface-raised:var(--bg-200);--surface-overlay:var(--bg-000);--surface-hover:var(--bg-300);--surface-input:var(--bg-000);--text-primary:var(--text-100);--text-secondary:var(--text-400);--text-tertiary:var(--text-500);--border-default:var(--border-300);--border-subtle:var(--border-300);--accent:var(--accent-000);--accent-bg:var(--accent-900);--font-scale:var(--app-font-scale,1);--sidebar-width:var(--app-sidebar-width,18rem)}
 body{font-family:var(--font-sans);font-size:calc(14px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));background:hsl(var(--bg-100));-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.01em}
 button,input,textarea{font-family:inherit;font-size:inherit;color:inherit;letter-spacing:inherit}
 button{border:none;background:none;cursor:pointer;outline:none;font-weight:inherit}
 a{color:inherit;text-decoration:none}
 ::selection{background:hsl(var(--accent-000)/0.3);color:hsl(var(--text-000))}
+/* ─── Scrollbar — cross-browser ── */
+/* WebKit (Chrome, Edge, Safari) */
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:hsl(var(--always-white)/0.12);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:hsl(var(--always-white)/0.22)}
+/* Firefox */
+*{scrollbar-width:thin;scrollbar-color:hsl(var(--always-white)/0.12) transparent}
 .app{display:flex;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none}
-.sidebar{width:var(--app-sidebar-width,18rem);min-width:var(--app-sidebar-width,18rem);display:flex;flex-direction:column;background:hsl(var(--bg-000));border-right:0.5px solid hsl(var(--border-300)/0.12);overflow:hidden;z-index:20;position:relative;will-change:width;transition:width .35s cubic-bezier(0.34,1.3,0.64,1),min-width .35s cubic-bezier(0.34,1.3,0.64,1),border-color .35s var(--ease-out)}
+.sidebar{width:var(--app-sidebar-width,18rem);min-width:var(--app-sidebar-width,18rem);display:flex;flex-direction:column;background:hsl(var(--bg-000));border-right:0.5px solid hsl(var(--border-300)/0.12);overflow:hidden;z-index:20;position:relative;transition:width .35s cubic-bezier(0.34,1.3,0.64,1),min-width .35s cubic-bezier(0.34,1.3,0.64,1),border-color .35s var(--ease-out)}
+/* P_recent-smooth — promote the sidebar to its own compositor
+ * layer ONLY while the user is actively dragging the resize
+ * handle. Keeping `will-change:width` permanently (the previous
+ * state) made the sidebar a permanent layer, which is the wrong
+ * trade-off for a panel that sits idle 99% of the time. */
+body.sidebar-resizing .sidebar{will-change:width;transition:none!important}
 .sidebar.collapsed{width:0;min-width:0;border-right-color:transparent}
 .sidebar-inner{min-width:0;width:100%;opacity:1;display:flex;flex-direction:column;flex:1;min-height:0;transition:opacity .25s var(--ease-out)}
-/* Draggable resize handle on the sidebar's right edge — sits
-   exactly on the boundary line between the sidebar and the main
-   content (the topic-input area). The handle straddles the
-   boundary 5px inside the sidebar and 4px into main so the grab
-   target covers the divider. A small vertical "grip" pill in the
-   middle of the strip is always visible at low opacity so the
-   user can see the draggable boundary without it shouting. On
-   hover / drag the grip becomes accent-colored and slightly
-   larger, a hairline accent line runs the full height, and a
-   soft accent wash lights up the grab area. */
-.sidebar-resize-handle{position:absolute;top:0;right:-4px;bottom:0;width:9px;cursor:col-resize;z-index:25;background:transparent;transition:background .15s}
-/* Always-visible grip pill — centered exactly on the boundary line. */
-.sidebar-resize-handle::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:2px;height:40px;border-radius:2px;background:hsl(var(--text-400)/0.45);transition:background .15s,width .15s,height .15s;pointer-events:none}
-.sidebar-resize-handle:hover::before,.sidebar-resize-handle.dragging::before{background:hsl(var(--accent-000));width:3px;height:56px}
-/* Full-height hairline — invisible by default, lights up on hover
-   so the user sees the exact boundary line. */
-.sidebar-resize-handle::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:hsl(var(--border-300)/0);transition:background .15s;transform:translateX(-0.5px);pointer-events:none}
-.sidebar-resize-handle:hover::after,.sidebar-resize-handle.dragging::after{background:hsl(var(--accent-000)/0.55)}
-.sidebar-resize-handle:hover,.sidebar-resize-handle.dragging{background:hsl(var(--accent-000)/0.12)}
+/* P_recent-list-resize — drag the recent-list column's right edge
+   to resize the sidebar (the recents panel sits inside the sidebar
+   with flex:1, so resizing the sidebar IS resizing the recents
+   column from the user's perspective). The hit area lives ENTIRELY
+   inside the sidebar (right:0, width:10px) so the col-resize cursor
+   never appears over the chat (main) pane. The visible affordance
+   is a 1px accent hairline flush against the recent panel's inner
+   right edge that lights up on hover / drag — no central pill, no
+   floating grip widget, just the edge itself. */
+.sidebar-resize-handle{position:absolute;top:0;right:0;bottom:0;width:10px;cursor:col-resize;z-index:25;background:transparent;transition:background .15s}
+.sidebar-resize-handle::after{content:"";position:absolute;right:0;top:0;bottom:0;width:1px;background:transparent;transition:background .15s;pointer-events:none}
+.sidebar-resize-handle:hover::after,.sidebar-resize-handle.dragging::after{background:hsl(var(--accent-000)/0.8)}
+.sidebar-resize-handle:hover,.sidebar-resize-handle.dragging{background:hsl(var(--accent-000)/0.08)}
 .sidebar-resize-handle:focus-visible{outline:none}
 .sidebar-resize-handle:focus-visible::after{background:hsl(var(--accent-000))}
 body.sidebar-resizing{cursor:col-resize;user-select:none}
@@ -47,7 +56,7 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .sidebar-tabs{display:flex;border-bottom:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0;padding:0 8px}
 .sidebar-tab{flex:1;text-align:center;padding:8px 0;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));border-bottom:2px solid transparent;transition:color .1s,border-color .1s;cursor:pointer;font-weight:500}
 .sidebar-tab:hover{color:hsl(var(--text-200))}.sidebar-tab.active{color:hsl(var(--text-100));border-bottom-color:hsl(var(--accent-000))}
-.knowledge-panel{flex:1;overflow-y:auto;padding:12px 8px;display:flex;flex-direction:column;gap:6px}
+.knowledge-panel{flex:1;overflow-y:auto;padding:12px 8px;display:flex;flex-direction:column;gap:6px;opacity:1;transition:opacity .15s ease}
 .knowledge-panel.hidden{display:none}
 .kb-section-title{font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 2px}
 .kb-node{display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));transition:background .06s;cursor:pointer}
@@ -56,8 +65,8 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .kb-dot.internalized{background:hsl(145 50% 50%)}.kb-dot.fuzzy{background:hsl(var(--accent-000))}.kb-dot.blank{background:hsl(var(--text-500))}
 .kb-name{flex:1;color:hsl(var(--text-200))}.kb-count{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
 .kb-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(13px * var(--app-font-scale, 1));padding:32px 12px;line-height:1.6}
-.recents-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px}
-.recents-panel.hidden{display:none}
+.recents-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
+.recents-panel.hidden{display:none}.panel-enter{animation:panelFadeIn .15s ease}
 .recents-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
 
 /* P2.1 — project chip row at the top of the sidebar. A clean
@@ -262,41 +271,33 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
  * label. No background fill, no border, no uppercase letter-spacing.
  * Two colors are enough to distinguish Chat (cool blue) from Tutor
  * (warm amber) without dominating the row. */
+/* P_recent-minimal-badge — the colored dot is enough to identify
+ * the row type at a glance; the text label used to eat ~40px of
+ * horizontal space and clip the title. Now the badge is just a 6px
+ * dot. The full text label still ships in `data-mode-label` so the
+ * native title tooltip on hover still shows "Chat" / "Tutor" / "Exam"
+ * for users who want it. */
 .recent-mode-badge{
-  font-size:calc(10.5px * var(--app-font-scale, 1));
-  font-weight:400;
-  color:hsl(var(--text-400));
-  margin-right:8px;
-  vertical-align:middle;
-  flex-shrink:0;
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-  line-height:1;
-  padding:0;
-  background:transparent;
-  border:0;
-  text-transform:none;
-  letter-spacing:0;
-}
-.recent-mode-badge::before{
-  content:'';
-  display:inline-block;
-  width:5px;
-  height:5px;
+  width:6px;
+  height:6px;
   border-radius:50%;
-  background:hsl(var(--text-400));
+  margin-right:6px;
   flex-shrink:0;
+  background:hsl(var(--text-400));
+  display:inline-block;
+  cursor:help;
+  transition:transform .12s ease;
+  overflow:hidden;
+  font-size:0;
+  line-height:0;
 }
-.recent-mode-badge.mode-tutor{color:hsl(var(--text-400))}
-.recent-mode-badge.mode-tutor::before{background:hsl(36 70% 55%)}
-.recent-mode-badge.mode-chat{color:hsl(var(--text-400))}
-.recent-mode-badge.mode-chat::before{background:hsl(200 60% 55%)}
-.recent-mode-badge.mode-exam{color:hsl(var(--text-400))}
-.recent-mode-badge.mode-exam::before{background:hsl(280 55% 60%)}
-[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-tutor::before{background:hsl(36 70% 60%)}
-[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-chat::before{background:hsl(200 70% 65%)}
-[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-exam::before{background:hsl(280 60% 70%)}
+.recent-item:hover .recent-mode-badge{transform:scale(1.35)}
+.recent-mode-badge.mode-tutor{background:hsl(36 70% 55%)}
+.recent-mode-badge.mode-chat{background:hsl(200 60% 55%)}
+.recent-mode-badge.mode-exam{background:hsl(280 55% 60%)}
+[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-tutor{background:hsl(36 70% 60%)}
+[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-chat{background:hsl(200 70% 65%)}
+[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-exam{background:hsl(280 60% 70%)}
 .recent-item-del{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-500));opacity:0;transition:opacity .1s,background .1s,color .1s;flex-shrink:0;cursor:pointer}
 .recent-item:hover .recent-item-del{opacity:1}
 .recent-item-del:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
@@ -330,6 +331,19 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .display-prefs-seg{flex:1 1 0;min-width:0;padding:4px 6px;border-radius:4px;border:0;background:transparent;color:hsl(var(--text-400));font-size:calc(11.5px * var(--app-font-scale, 1));cursor:pointer;transition:all .1s;font-family:inherit;white-space:nowrap;text-align:center}
 .display-prefs-seg:hover{color:hsl(var(--text-200))}
 .display-prefs-seg.on{background:hsl(var(--bg-100));color:hsl(var(--text-100));box-shadow:0 0 0 0.5px hsl(var(--border-300)/0.6)}
+
+/* Accent color swatches — Ant Design ColorPicker-inspired */
+.display-prefs-colors{display:flex;gap:5px;flex-wrap:wrap}
+.color-swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;background:var(--swatch);cursor:pointer;transition:all .15s;padding:0;position:relative}
+.color-swatch:hover{transform:scale(1.18);box-shadow:0 2px 8px hsl(var(--always-black)/0.25)}
+.color-swatch.active{border-color:hsl(var(--text-100))}
+.color-swatch.active::after{content:"";position:absolute;inset:3px;border-radius:50%;border:1.5px solid hsl(var(--bg-000))}
+.display-prefs-bg-picker{display:flex;align-items:center;gap:6px}
+.display-prefs-bg-picker input[type=color]{width:28px;height:28px;padding:0;border:1.5px solid hsl(var(--border-300)/0.3);border-radius:6px;cursor:pointer;background:none;flex-shrink:0}
+.display-prefs-bg-picker input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+.display-prefs-bg-picker input[type=color]::-webkit-color-swatch{border:none;border-radius:3px}
+.display-prefs-bg-reset{width:22px;height:22px;border-radius:4px;font-size:13px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-400));transition:color .1s,background .1s;padding:0;flex-shrink:0}
+.display-prefs-bg-reset:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
 .display-prefs-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;border:0;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:all .1s;flex-shrink:0}
 .display-prefs-btn:hover{color:hsl(var(--text-200));background:hsl(var(--bg-300))}
 .display-prefs-btn svg{width:14px;height:14px}
@@ -343,7 +357,7 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 [data-mode=light] .tier-badge.tier-riemann{background:hsl(200 40% 90%/0.8);color:hsl(200 50% 35%);border:0.5px solid hsl(200 40% 70%/0.5)}
 [data-mode=light] .tier-badge.tier-descartes{background:hsl(270 40% 90%/0.8);color:hsl(270 50% 40%);border:0.5px solid hsl(270 40% 70%/0.5)}
 [data-mode=light] .tier-badge.tier-euclid{background:hsl(43 40% 88%/0.8);color:hsl(43 65% 38%);border:0.5px solid hsl(43 50% 65%/0.5)}
-.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;overflow:hidden}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
 .main-bg{position:absolute;inset:0;pointer-events:none;z-index:0;background-color:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;clip-path:circle(150% at 50% 50%);opacity:0.5}
 .top-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;flex-shrink:0;position:relative;z-index:5;min-height:44px}
 .top-bar-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1;overflow:hidden}
@@ -368,7 +382,7 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .new-reply-pill{
   position:absolute;
   right:20px;
-  bottom:14px;
+  bottom:120px;
   padding:6px 12px;
   border-radius:999px;
   background:hsl(var(--accent-500));
@@ -449,15 +463,16 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
    Visually matches the .search-toggle row above it. */
 .model-picker{position:relative;max-width:720px;width:100%;display:flex;justify-content:center}
 .model-picker-trigger{display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 14px;border-radius:999px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:transparent;cursor:pointer;transition:all .15s;font-family:var(--font-sans);line-height:1.2;max-width:100%}
-.model-picker-trigger:hover{border-color:hsl(var(--border-200)/0.4);color:hsl(var(--text-100))}
+.model-picker-trigger:focus-visible{outline:2px solid hsl(var(--accent-000)/0.5);outline-offset:2px}
+.model-picker-trigger:hover{border-color:hsl(var(--border-200)/0.5);color:hsl(var(--text-100))}
 .model-picker-trigger.has-model{background:hsl(var(--accent-000)/0.08);border-color:hsl(var(--accent-000)/0.25);color:hsl(var(--accent-000))}
 .model-picker-trigger svg.model-picker-caret{width:12px;height:12px;flex-shrink:0;margin-left:2px;transition:transform .15s}
 .model-picker[data-open="true"] .model-picker-trigger{border-color:hsl(var(--accent-000)/0.4)}
 .model-picker[data-open="true"] .model-picker-caret{transform:rotate(180deg)}
 .model-picker-label{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .model-picker-trigger>svg:first-child{width:14px;height:14px;flex-shrink:0}
-.model-picker-menu{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%) translateY(-4px);min-width:240px;max-width:360px;max-height:280px;overflow-y:auto;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.25);border-radius:10px;box-shadow:0 8px 24px hsl(var(--always-black)/0.45);padding:4px;display:none;z-index:50}
-.model-picker[data-open="true"] .model-picker-menu{display:block;transform:translateX(-50%) translateY(0)}
+.model-picker-menu{position:absolute;top:calc(100% + 6px);left:50%;min-width:240px;max-width:360px;max-height:280px;overflow-y:auto;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.25);border-radius:12px;box-shadow:0 8px 24px hsl(var(--always-black)/0.45);padding:4px;display:none;z-index:50;opacity:0;transform:translateX(-50%) translateY(-4px) scale(.96);transition:opacity .15s var(--ease-out),transform .15s var(--ease-out)}
+.model-picker[data-open="true"] .model-picker-menu{display:block;opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
 .model-picker-item{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));line-height:1.3;transition:background .08s}
 .model-picker-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .model-picker-item.active{background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000))}
@@ -467,6 +482,11 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .model-picker-item-check{flex-shrink:0;width:14px;height:14px;opacity:0;color:hsl(var(--accent-000))}
 .model-picker-item.active .model-picker-item-check{opacity:1}
 .model-picker-divider{height:0.5px;background:hsl(var(--border-300)/0.18);margin:4px 0}
+.model-picker-filter{display:flex;align-items:center;gap:6px;padding:6px 8px 4px;border-bottom:0.5px solid hsl(var(--border-300)/0.18);margin-bottom:4px;color:hsl(var(--text-500))}
+.model-picker-filter svg{width:13px;height:13px;flex-shrink:0}
+.model-picker-filter-input{flex:1;min-width:0;padding:4px 6px;border:0.5px solid hsl(var(--border-300)/0.3);border-radius:6px;background:transparent;color:hsl(var(--text-100));font-family:var(--font-sans);font-size:calc(12.5px * var(--app-font-scale, 1));outline:none}
+.model-picker-filter-input:focus{border-color:hsl(var(--accent-000)/0.5)}
+.model-picker-item:focus-visible{outline:2px solid hsl(var(--accent-000)/0.5);outline-offset:-2px}
 .model-picker-add{display:flex;align-items:center;gap:6px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-400));font-size:calc(12.5px * var(--app-font-scale, 1))}
 .model-picker-add:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
 .model-picker-empty{padding:14px 12px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-align:center;line-height:1.4}
@@ -516,7 +536,7 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 }
 .chat-model-caret{width:11px;height:11px;flex-shrink:0;transition:transform .12s}
 .chat-model-trigger.menu-open .chat-model-caret{transform:rotate(180deg)}
-.chat-model-menu{
+.chat-model-menu.model-picker-menu{
   position:absolute;
   top:calc(100% + 6px);
   right:0;
@@ -530,12 +550,19 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
   box-shadow:0 8px 24px hsl(var(--always-black)/0.45);
   padding:4px;
   z-index:50;
-  /* Override the .model-picker-menu{display:none} rule above — the
-     chat-header menu is shown by toggling .hidden, not by setting
-     data-open on a parent. */
   display:block;
 }
-.chat-model-menu.hidden{display:none}
+.chat-model-menu.model-picker-menu.hidden{display:none}
+/* Support data-open mechanism on the chat-model-wrap for the unified picker module. */
+.chat-model-wrap[data-open="true"] .chat-model-trigger{border-color:hsl(var(--accent-000)/0.4)}
+.chat-model-wrap[data-open="true"] .chat-model-caret{transform:rotate(180deg)}
+/* When the unified picker sets data-open="true" on the wrap, hide the
+.hidden fallback so the menu shows. The .hidden utility class is
+defined later in the file as `display:none !important`, so this
+override must also use !important to win the cascade. Without it
+the chat-header picker appears "open" (caret rotated, aria-expanded
+true) but the dropdown never shows — see commit history. */
+.chat-model-wrap[data-open="true"] .chat-model-menu.hidden{display:block !important;opacity:1;transform:translateY(0) scale(1)}
 .chat-model-menu .model-picker-add{
   margin-top:4px;
   border-top:0.5px solid hsl(var(--border-300)/0.18);
@@ -553,8 +580,8 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .extensions-picker[data-open="true"] .extensions-trigger{border-color:hsl(var(--accent-000)/0.4)}
 .extensions-picker[data-open="true"] .extensions-caret{transform:rotate(180deg)}
 .extensions-label{white-space:nowrap}
-.extensions-menu{position:absolute;top:calc(100% + 6px);right:0;transform:translateY(-4px);min-width:240px;max-width:340px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.25);border-radius:10px;box-shadow:0 8px 24px hsl(var(--always-black)/0.45);padding:4px;display:none;z-index:50}
-.extensions-picker[data-open="true"] .extensions-menu{display:block;transform:translateY(0)}
+.extensions-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:240px;max-width:340px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.25);border-radius:12px;box-shadow:0 8px 24px hsl(var(--always-black)/0.45);padding:4px;display:none;z-index:50;opacity:0;transform:translateY(-4px) scale(.96);transition:opacity .15s var(--ease-out),transform .15s var(--ease-out)}
+.extensions-picker[data-open="true"] .extensions-menu{display:block;opacity:1;transform:translateY(0) scale(1)}
 .extensions-item{display:flex;align-items:flex-start;gap:10px;width:100%;padding:9px 10px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));line-height:1.35;transition:background .08s}
 .extensions-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .extensions-item.on{color:hsl(var(--text-100))}
@@ -593,6 +620,14 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .diag-actions{margin-top:auto;padding-top:18px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
 .diag-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px}
 .diag-loading-text{color:hsl(var(--text-400));font-size:calc(14px * var(--app-font-scale, 1));text-align:center}
+
+/* Diagnostic progress bar — shows the user which stage the
+   loading is at and how far through it is. */
+.diag-progress{width:100%;max-width:300px;margin:4px auto 0}
+.diag-progress-bar{width:100%;height:3px;border-radius:2px;background:hsl(var(--border-300)/0.15);overflow:hidden;position:relative}
+.diag-progress-fill{height:100%;border-radius:2px;background:hsl(var(--accent-000));transition:width .45s cubic-bezier(.4,0,.2,1);width:0%}
+.diag-progress-step{font-size:calc(12px * var(--app-font-scale,1));color:hsl(var(--text-400));margin-top:8px;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;transition:color .3s}
+.diag-progress-step .diag-progress-spin{display:inline-block;width:10px;height:10px;border:1.5px solid hsl(var(--border-300)/0.2);border-top-color:hsl(var(--accent-000));border-radius:50%;animation:loadingSpin .8s linear infinite;flex-shrink:0}
 .diag-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.12);border-radius:16px;padding:24px;transition:opacity .3s,transform .3s}
 .diag-num{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
 .diag-text{font-size:calc(16px * var(--app-font-scale, 1));color:hsl(var(--text-100));line-height:1.55;margin-bottom:18px}
@@ -777,9 +812,41 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .msg-toolbar-btn svg{width:14px;height:14px}
 /* Edit-in-place textarea */
 .msg-edit-area{width:100%;min-height:60px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);border-radius:6px;padding:6px 8px;font:inherit;color:inherit;resize:vertical}
-/* Toast for Copy/Feedback confirmations */
-.msg-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(8px);background:hsl(var(--bg-300));color:hsl(var(--text-100));padding:8px 14px;border-radius:8px;font-size:13px;border:0.5px solid hsl(var(--border-300)/0.3);box-shadow:0 4px 16px hsl(var(--always-black)/0.2);opacity:0;transition:opacity .2s,transform .2s;z-index:1000;pointer-events:none}
-.msg-toast.visible{opacity:1;transform:translateX(-50%) translateY(0)}
+/* Alert notifications — Ant Design-inspired toast system.
+   Types: success / info / warning / error. Each uses the app's
+   design tokens for colors so dark/light mode is automatic.
+   Alerts stack upward from the bottom-right. */
+.alert-container{position:fixed;bottom:24px;right:24px;z-index:2000;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;max-width:400px}
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:10px;border:1px solid;box-shadow:0 6px 20px hsl(var(--always-black)/0.25);pointer-events:auto;animation:alertSlideIn .3s var(--ease-out);transition:opacity .2s,transform .2s;max-width:100%;font-size:calc(13px * var(--app-font-scale, 1));line-height:1.5;word-break:break-word}
+.alert-item.alert-exit{opacity:0;transform:translateX(40px)}
+.alert-icon{flex-shrink:0;width:18px;height:18px;margin-top:1px}
+.alert-msg{flex:1;min-width:0}
+.alert-close{flex-shrink:0;width:18px;height:18px;border:none;background:none;cursor:pointer;opacity:.5;padding:0;border-radius:4px;color:inherit;display:flex;align-items:center;justify-content:center;transition:opacity .12s;margin:-2px -2px 0 0}
+.alert-close:hover{opacity:1}
+.alert-close svg{width:14px;height:14px;display:block}
+
+/* Type-specific colors (automatic dark mode via design tokens) */
+.alert-success{background:hsl(152 55% 42%/0.12);border-color:hsl(152 55% 42%/0.3);color:hsl(152 50% 35%)}
+.alert-success .alert-icon{color:hsl(152 55% 42%)}
+[data-mode=dark] .alert-success{background:hsl(152 50% 40%/0.12);border-color:hsl(152 50% 40%/0.25);color:hsl(152 60% 65%)}
+[data-mode=dark] .alert-success .alert-icon{color:hsl(152 60% 60%)}
+
+.alert-info{background:hsl(210 90% 50%/0.10);border-color:hsl(210 90% 50%/0.25);color:hsl(210 80% 38%)}
+.alert-info .alert-icon{color:hsl(210 90% 50%)}
+[data-mode=dark] .alert-info{background:hsl(210 70% 55%/0.10);border-color:hsl(210 70% 55%/0.2);color:hsl(210 70% 65%)}
+[data-mode=dark] .alert-info .alert-icon{color:hsl(210 70% 60%)}
+
+.alert-warning{background:hsl(38 92% 50%/0.12);border-color:hsl(38 92% 50%/0.3);color:hsl(38 80% 38%)}
+.alert-warning .alert-icon{color:hsl(38 92% 50%)}
+[data-mode=dark] .alert-warning{background:hsl(38 90% 55%/0.12);border-color:hsl(38 90% 55%/0.25);color:hsl(38 80% 65%)}
+[data-mode=dark] .alert-warning .alert-icon{color:hsl(38 90% 60%)}
+
+.alert-error{background:hsl(0 75% 50%/0.10);border-color:hsl(0 75% 50%/0.25);color:hsl(0 70% 40%)}
+.alert-error .alert-icon{color:hsl(0 75% 50%)}
+[data-mode=dark] .alert-error{background:hsl(0 70% 55%/0.10);border-color:hsl(0 70% 55%/0.2);color:hsl(0 70% 65%)}
+[data-mode=dark] .alert-error .alert-icon{color:hsl(0 70% 60%)}
+
+@keyframes alertSlideIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
 
 /* P1.2 — global search modal. Mac-style centered overlay with
    a single input + scrollable results column. */
@@ -871,10 +938,49 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 [data-theme=socrates][data-mode=dark] .send-btn.chat-stop{background:hsl(0 60% 45%);color:hsl(0 0% 100%)}
 [data-theme=socrates][data-mode=dark] .send-btn.chat-stop:hover{background:hsl(0 65% 38%)}
 @keyframes agent-stop-pulse{0%,100%{box-shadow:0 0 0 0 hsl(0 70% 50%/0.4)}50%{box-shadow:0 0 0 6px hsl(0 70% 50%/0)}}
-.loading{display:flex;gap:4px;padding:4px 0}
-.loading span{width:5px;height:5px;border-radius:50%;background:hsl(var(--text-500));animation:loadBounce 1.4s infinite}
-.loading span:nth-child(2){animation-delay:.2s}.loading span:nth-child(3){animation-delay:.4s}
-@keyframes loadBounce{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+/* Loading animations — rotating ring spinner.
+   Uses a simple border-based ring (no mask) for reliable rendering
+   across all browsers. The inner spans (from the old 3-dot pattern)
+   are hidden; no markup changes needed. */
+.loading{display:block;width:16px;height:16px;position:relative;margin:0 auto}
+.loading span{display:none}
+.loading::before{content:"";display:block;width:100%;height:100%;border-radius:50%;border:2px solid hsl(var(--border-300)/0.20);border-top-color:hsl(var(--accent-000));animation:loadingSpin 1.2s cubic-bezier(.65,0,.35,1) infinite;will-change:transform;box-sizing:border-box}
+
+/* Pulse-ring variant — concentric expanding rings, good for larger
+   loading blocks that need a bolder visual. */
+.loading-pulse{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;position:relative}
+.loading-pulse::before,.loading-pulse::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid hsl(var(--accent-000)/0.4)}
+.loading-pulse::before{animation:pulseRing 1.6s cubic-bezier(.4,0,.2,1) infinite}
+.loading-pulse::after{animation:pulseRing 1.6s cubic-bezier(.4,0,.2,1) infinite .8s}
+@keyframes pulseRing{0%{transform:scale(.6);opacity:.8}100%{transform:scale(1.4);opacity:0}}
+
+/* Concentric ring rotation — new "thinking" animation system.
+   Replaces the old flashing/pulsing dot with smooth rotating rings.
+   Usage: <span class="thinking-ring"></span> or add .thinking-ring to any inline element. */
+.thinking-ring{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;position:relative;vertical-align:middle;flex-shrink:0}
+.thinking-ring::before,.thinking-ring::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid transparent;box-sizing:border-box}
+.thinking-ring::before{border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--accent-000)/0.6);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite}
+.thinking-ring::after{inset:3px;border-top-color:hsl(var(--accent-000)/0.7);border-left-color:hsl(var(--accent-000)/0.4);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite reverse}
+@keyframes ringSpin{to{transform:rotate(360deg)}}
+
+/* Smaller variant for inline thinking pills and summaries */
+.thinking-ring-sm{width:12px;height:12px}
+.thinking-ring-sm::before{border-width:1.5px}
+.thinking-ring-sm::after{inset:2px;border-width:1.5px}
+
+/* Tiny variant for very compact spaces */
+.thinking-ring-xs{width:10px;height:10px}
+.thinking-ring-xs::before{border-width:1px}
+.thinking-ring-xs::after{inset:1.5px;border-width:1px}
+
+/* Skeleton shimmer — a moving highlight bar for content placeholders. */
+.shimmer{position:relative;overflow:hidden;background:hsl(var(--bg-200));border-radius:6px}
+.shimmer::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,hsla(var(--accent-000)/0.08) 50%,transparent 100%);animation:shimmerSweep 2s ease-in-out infinite;transform:translateX(-100%)}
+.shimmer-line{height:12px;margin-bottom:8px;width:100%}
+.shimmer-line:last-child{width:65%}
+@keyframes shimmerSweep{100%{transform:translateX(100%)}}
+
+@keyframes loadingSpin{to{transform:rotate(360deg)}}
 .disclaimer{text-align:center;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));padding:6px 0 4px;line-height:1.4}
 
 /* settings modal */
@@ -937,11 +1043,10 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .profile-toggle{display:flex;align-items:center;justify-content:space-between;padding:8px 0;cursor:pointer}
 .profile-toggle-label{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-100))}
 .profile-toggle-desc{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));padding:0 0 4px}
-.profile-lang-toggle{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;background:hsl(var(--surface-200));border:1px solid hsl(var(--border-300));cursor:pointer;font-size:calc(12px * var(--app-font-scale, 1));transition:all .15s}
-.profile-lang-toggle:hover{background:hsl(var(--surface-300));border-color:hsl(var(--accent-500))}
-.profile-lang-option{color:hsl(var(--text-400));transition:color .15s}
-.profile-lang-option.active{color:hsl(var(--accent-600));font-weight:600}
-.profile-lang-divider{color:hsl(var(--text-500));opacity:.5}
+.profile-lang-toggle{display:inline-flex;padding:2px;border-radius:8px;background:hsl(var(--bg-300));cursor:pointer;font-size:calc(12px * var(--app-font-scale, 1));transition:all .15s;gap:0;border:0.5px solid hsl(var(--border-300)/0.15)}
+.profile-lang-toggle:hover{background:hsl(var(--bg-200))}
+.profile-lang-option{padding:4px 12px;border-radius:6px;color:hsl(var(--text-400));transition:all .12s;font-weight:500;line-height:1.3;border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:inherit}
+.profile-lang-option.active{color:hsl(var(--text-100));background:hsl(var(--bg-000));box-shadow:0 1px 3px hsl(var(--always-black)/0.15)}
 .profile-action-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;gap:12px}
 .profile-action-label{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-100))}
 .profile-action-desc{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));flex:1}
@@ -1019,28 +1124,21 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 /* Exam view (standalone page within the SPA) */
 .exam-view{position:absolute;inset:0;display:flex;flex-direction:column;background:hsl(var(--bg-000))}
 .exam-view.hidden{display:none}
-/* P_exam-spacing — the title row was sitting ~30px below the top of
-   the exam view because the header had 18px top padding + the back
-   button's 4px padding + the title was centered against it. The
-   title also had `flex:1` and was center-aligned, which left the
-   "Back to chat" button dangling on the left with empty air around
-   it. Compounded: 18px header padding + 16px body padding + 40px
-   .exam-loading padding = ~74px of dead space above the first
-   spinner.
-   Fix: kill the header's top padding, kill the back button's
-   internal padding, kill the body's top padding, kill the loading
-   block's top padding. Result: the title sits a few px below the
-   top edge of the view, the spinner sits a few px below the title,
-   and the back button is tight and compact. */
-.exam-view-header{display:flex;align-items:center;gap:8px;padding:6px 12px;flex-shrink:0;background:hsl(var(--bg-000));border-bottom:0.5px solid hsl(var(--border-300)/0.12)}
-.exam-view-title{font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-200));flex:1;text-align:center;margin:0;letter-spacing:.01em;line-height:1.2}
-.exam-back-btn{display:inline-flex;align-items:center;gap:3px;background:transparent;border:0;color:hsl(var(--text-400));font-size:calc(12.5px * var(--app-font-scale, 1));padding:0;border-radius:6px;cursor:pointer;transition:color .12s,background .12s;font-family:inherit;line-height:1}
-.exam-back-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200))}
-.exam-back-btn svg{width:12px;height:12px}
-.exam-view-spacer{width:48px;flex-shrink:0}
-.exam-view-header-spacer{width:90px;flex-shrink:0}
-.exam-view-body{flex:1;overflow-y:auto;padding:32px 48px 32px;width:100%;box-sizing:border-box}
-.exam-view-footer{flex-shrink:0;padding:20px 48px;background:hsl(var(--bg-000));display:flex;justify-content:flex-end;gap:12px;width:100%;box-sizing:border-box}
+/* Exam view header — three-region layout (left | center | right)
+   with generous vertical padding so the back button, title, and
+   optional meta line up cleanly. The title is left-aligned within
+   its center region; the right region hosts a meta chip (e.g. the
+   topic name) when in the exam view. */
+.exam-view-header{display:flex;align-items:center;gap:24px;padding:18px 28px;flex-shrink:0;background:hsl(var(--bg-000));border-bottom:0.5px solid hsl(var(--border-300)/0.12)}
+.exam-view-title-wrap{flex:1;min-width:0;display:flex;align-items:baseline;gap:12px}
+.exam-view-title{font-size:calc(16px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-100));margin:0;letter-spacing:-.01em;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.exam-view-meta{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));letter-spacing:.02em;flex-shrink:0;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exam-view-header-right{flex-shrink:0;min-width:80px;display:flex;justify-content:flex-end;align-items:center;gap:8px}
+.exam-back-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.25);color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:7px 14px;border-radius:8px;cursor:pointer;transition:color .12s,background .12s,border-color .12s;font-family:inherit;line-height:1;flex-shrink:0}
+.exam-back-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200));border-color:hsl(var(--border-300)/0.5)}
+.exam-back-btn svg{width:14px;height:14px}
+.exam-view-body{flex:1;overflow-y:auto;padding:48px 56px 48px;width:100%;box-sizing:border-box;display:flex;flex-direction:column}
+.exam-view-footer{flex-shrink:0;padding:24px 56px;background:hsl(var(--bg-000));border-top:0.5px solid hsl(var(--border-300)/0.12);display:flex;justify-content:flex-end;gap:12px;width:100%;box-sizing:border-box}
 .exam-q-card-streaming{opacity:0.55;border-top:0;padding-top:0}
 .exam-q-card-streaming .exam-q-text{font-family:var(--font-mono);color:hsl(var(--text-400));font-size:calc(12px * var(--app-font-scale, 1))}
 .exam-q-card-streaming .exam-q-num{color:hsl(var(--text-500))}
@@ -1103,7 +1201,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
   gap:6px;
   font-variant-numeric:tabular-nums;
 }
-.exam-nav-current{font-weight:600;color:hsl(var(--text-100));font-size:calc(15px * var(--app-font-scale, 1))}
+.exam-nav-current{font-weight:600;color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1))}
 .exam-nav-sep{color:hsl(var(--text-500))}
 .exam-nav-progress{color:hsl(var(--text-400));font-size:calc(11.5px * var(--app-font-scale, 1));margin-left:6px}
 .exam-nav-pills{
@@ -1169,39 +1267,56 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .exam-overlay.hidden{display:none}
 .exam-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:min(680px,94vw);max-height:90vh;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out);display:flex;flex-direction:column}
 .exam-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0}
-.exam-title{font-size:calc(16px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
+.exam-title{font-size:calc(15px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
 .exam-close{cursor:pointer;color:hsl(var(--text-500));padding:4px;border-radius:6px;transition:all .1s}
 .exam-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .exam-body{padding:16px 20px 20px;overflow-y:auto;flex:1}
-.exam-form-container{max-width:560px;margin:0 auto}
+.exam-form-container{max-width:640px;margin:0 auto;padding:8px 0 16px}
 .exam-form-row{margin-bottom:28px}
+.exam-form-row:last-child{margin-bottom:0}
 .exam-form-label{font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-300));margin-bottom:10px;display:block}
-.exam-form-input{width:100%;padding:12px 0;border-radius:0;border:0;border-bottom:0.5px solid hsl(var(--border-300)/0.3);background:transparent;color:hsl(var(--text-100));font-size:calc(15px * var(--app-font-scale, 1));font-family:inherit;outline:none;transition:border-color .15s;box-sizing:border-box}
-.exam-form-input:focus{border-color:hsl(var(--accent-000)/0.6)}
+.exam-form-input{width:100%;padding:13px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.25);background:hsl(var(--bg-000));color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1));font-family:inherit;outline:none;transition:border-color .15s,background .15s;box-sizing:border-box}
+.exam-form-input:focus{border-color:hsl(var(--accent-000)/0.6);background:hsl(var(--bg-100))}
 .exam-form-input::placeholder{color:hsl(var(--text-500))}
-.exam-form-textarea{width:100%;padding:12px 0;border-radius:0;border:0;border-bottom:0.5px solid hsl(var(--border-300)/0.3);background:transparent;color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1));font-family:inherit;outline:none;transition:border-color .15s;resize:none;min-height:56px;box-sizing:border-box}
-.exam-form-textarea:focus{border-color:hsl(var(--accent-000)/0.6)}
+.exam-form-textarea{width:100%;padding:13px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.25);background:hsl(var(--bg-000));color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1));font-family:inherit;outline:none;transition:border-color .15s,background .15s;resize:vertical;min-height:88px;box-sizing:border-box}
+.exam-form-textarea:focus{border-color:hsl(var(--accent-000)/0.6);background:hsl(var(--bg-100))}
 .exam-form-textarea::placeholder{color:hsl(var(--text-500))}
-.exam-form-hint{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-top:6px}
-.exam-options-row{display:flex;gap:32px;flex-wrap:wrap;margin-bottom:28px}
-.exam-opt-group{flex:1;min-width:140px}
+.exam-form-select{padding-right:32px;appearance:none;-webkit-appearance:none;-moz-appearance:none;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:12px;cursor:pointer}
+.exam-form-hint{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-top:8px;line-height:1.5}
+/* Three-column grid for model / difficulty / count. Cell widths use
+   fr units so the row stays balanced on desktop and stacks on narrow
+   screens via the media query below. */
+.exam-form-grid3{display:grid;grid-template-columns:1.6fr 1.5fr 0.8fr;gap:20px;align-items:end}
+.exam-form-cell{display:flex;flex-direction:column;min-width:0}
+.exam-form-cell-narrow .exam-form-input{text-align:center;font-variant-numeric:tabular-nums;padding-left:8px;padding-right:8px}
+@media(max-width:720px){
+  .exam-form-grid3{grid-template-columns:1fr;gap:18px}
+}
 .exam-opt-label{font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-300));margin-bottom:8px;display:block}
-.exam-opt-select{padding:10px 0;border-radius:0;border:0;border-bottom:0.5px solid hsl(var(--border-300)/0.3);background:transparent;color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1));font-family:inherit;outline:none;cursor:pointer;width:100%}
+.exam-opt-select{padding:10px 0;border-radius:0;border:0;border-bottom:0.5px solid hsl(var(--border-300)/0.3);background:transparent;color:hsl(var(--text-100));font-size:calc(13.5px * var(--app-font-scale, 1));font-family:inherit;outline:none;cursor:pointer;width:100%}
 .exam-opt-select:focus{border-color:hsl(var(--accent-000)/0.6)}
-.exam-btn{padding:8px 20px;border-radius:6px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:all .12s;border:none;font-family:inherit}
-.exam-btn.primary{background:hsl(var(--text-100));color:hsl(var(--bg-000))}
-.exam-btn.primary:hover{opacity:0.85}
-.exam-btn.primary:disabled{opacity:0.3;cursor:default}
-.exam-btn.secondary{background:transparent;color:hsl(var(--text-300))}
-.exam-btn.secondary:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200))}
-.exam-btn.success{background:hsl(145 40% 45%);color:#fff}
-.exam-btn.success:hover{background:hsl(145 40% 40%)}
+.exam-btn{padding:11px 24px;border-radius:10px;font-size:calc(13.5px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:all .12s;border:none;font-family:inherit;letter-spacing:-.01em}
+.exam-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))}
+.exam-btn.primary:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 4px 14px hsl(var(--accent-000)/0.25)}
+.exam-btn.primary:disabled{opacity:0.3;cursor:default;transform:none;box-shadow:none;filter:none}
+.exam-btn.secondary{background:transparent;color:hsl(var(--text-300));border:0.5px solid hsl(var(--border-300)/0.25)}
+.exam-btn.secondary:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200));border-color:hsl(var(--border-300)/0.5)}
+.exam-btn.success{background:hsl(145 50% 45%);color:#fff}
+.exam-btn.success:hover{background:hsl(145 50% 40%);transform:translateY(-1px);box-shadow:0 4px 14px hsl(145 50% 45%/0.25)}
 /* P_exam-spacing — keep the loading block's vertical air tight too.
    The previous 40px top padding plus the 16px body padding stacked
    into 56px of whitespace above the spinner. 8px is enough to let
    the spinner breathe without leaving a "title is floating" feel. */
-.exam-loading{display:flex;align-items:center;justify-content:center;padding:10px 20px;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale, 1));gap:10px;flex-direction:column;text-align:center}
-.exam-loading-sub{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
+.exam-loading{display:flex;align-items:center;justify-content:center;padding:80px 20px;color:hsl(var(--text-400));font-size:calc(14px * var(--app-font-scale, 1));gap:16px;flex-direction:column;text-align:center;flex:1;min-height:300px}
+.exam-loading .loading{display:inline-flex;gap:6px}
+.exam-loading .loading span{width:8px;height:8px;border-radius:50%;background:hsl(var(--accent-000));animation:examDotPulse 1.4s infinite ease-in-out}
+.exam-loading .loading span:nth-child(2){animation-delay:.2s}
+.exam-loading .loading span:nth-child(3){animation-delay:.4s}
+@keyframes examDotPulse{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+.exam-loading-msg{font-weight:500;color:hsl(var(--text-200))}
+.exam-loading-sub{font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));max-width:420px;line-height:1.6}
+.exam-empty{display:flex;align-items:center;justify-content:center;padding:100px 20px;flex:1;min-height:300px;text-align:center;color:hsl(var(--text-400));font-size:calc(14px * var(--app-font-scale, 1));flex-direction:column;gap:8px}
+.exam-empty strong{color:hsl(var(--text-200));font-weight:500;font-size:calc(14px * var(--app-font-scale, 1))}
 /* P_exam-spacing — first question card used to add 24px top padding
    (its own internal air) on top of the body's padding. With body
    padding now 0, the first card still adds 24px above its content.
@@ -1209,16 +1324,17 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
    to the page header. Subsequent cards keep the larger breathing
    room (selector below) so question-to-question separation stays
    clear. */
-.exam-q-card{background:transparent;border:0;border-top:0.5px solid hsl(var(--border-300)/0.15);border-radius:0;padding:18px 0 24px;margin-bottom:0}
+.exam-q-card{background:transparent;border:0;border-top:0.5px solid hsl(var(--border-300)/0.15);border-radius:0;padding:28px 0 32px;margin-bottom:0;scroll-margin-top:80px}
+.exam-q-card:first-of-type{border-top:0}
 .exam-q-card + .exam-q-card{margin-top:0}
-.exam-q-num{font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.exam-q-num{font-size:calc(12px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--accent-000));margin-bottom:12px;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:.06em}
 .exam-q-type{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-weight:400}
-.exam-q-text{font-size:calc(15px * var(--app-font-scale, 1));line-height:1.65;color:hsl(var(--text-100));margin-bottom:16px}
+.exam-q-text{font-size:calc(14px * var(--app-font-scale, 1));line-height:1.65;color:hsl(var(--text-100));margin-bottom:16px}
 .exam-q-text p{margin-bottom:6px}.exam-q-text p:last-child{margin-bottom:0}
-.exam-q-opts{display:flex;flex-direction:column;gap:0}
-.exam-q-opt{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border:0;background:none;border-bottom:0.5px solid hsl(var(--border-300)/0.1);font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-200));cursor:pointer;transition:color .12s,background .12s;text-align:left;width:100%;font-family:inherit;line-height:1.5}
-.exam-q-opt:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200)/0.5)}
-.exam-q-opt:last-child{border-bottom:0}
+.exam-q-opts{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.exam-q-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:0.5px solid hsl(var(--border-300)/0.2);border-radius:10px;background:hsl(var(--bg-000));font-size:calc(13.5px * var(--app-font-scale, 1));color:hsl(var(--text-200));cursor:pointer;transition:color .12s,background .12s,border-color .12s;text-align:left;width:100%;font-family:inherit;line-height:1.5}
+.exam-q-opt:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200));border-color:hsl(var(--border-300)/0.4)}
+.exam-q-opt:last-child{border-bottom:0.5px solid hsl(var(--border-300)/0.2)}
 .exam-q-opt.selected{color:hsl(var(--text-100))}
 .exam-q-opt-letter{width:18px;height:18px;border-radius:3px;border:0.5px solid hsl(var(--text-500)/0.4);display:flex;align-items:center;justify-content:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));flex-shrink:0;transition:all .12s;margin-top:2px}
 .exam-q-opt:hover .exam-q-opt-letter{border-color:hsl(var(--text-400))}
@@ -1227,7 +1343,8 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .exam-q-opt.correct .exam-q-opt-letter{border-color:hsl(145 50% 45%);background:hsl(145 50% 45%);color:#fff;border-width:0}
 .exam-q-opt.wrong{border-color:hsl(var(--text-300)/0.3)}
 .exam-q-opt.wrong .exam-q-opt-letter{border-color:hsl(0 60% 55%);background:hsl(0 60% 55%);color:#fff;border-width:0}
-.exam-q-fill-input{width:100%;padding:8px 0;border:0;border-bottom:0.5px solid hsl(var(--border-300)/0.3);background:transparent;color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1));font-family:inherit;outline:none;transition:border-color .15s;box-sizing:border-box;border-radius:0}
+.exam-q-fill-input{width:100%;padding:12px 14px;border:0.5px solid hsl(var(--border-300)/0.25);border-radius:10px;background:hsl(var(--bg-000));color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1));font-family:inherit;outline:none;transition:border-color .15s,background .15s;box-sizing:border-box}
+.exam-q-fill-input:focus{border-color:hsl(var(--accent-000)/0.6);background:hsl(var(--bg-100))}
 .exam-q-fill-input:focus{border-color:hsl(var(--accent-000)/0.6)}
 .exam-q-fill-input.correct{border-color:hsl(145 50% 45%/0.6)}
 .exam-q-fill-input.wrong{border-color:hsl(0 60% 55%/0.6)}
@@ -1237,7 +1354,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .exam-q-result .label{font-weight:500;color:hsl(var(--text-400))}
 .exam-q-result .explain{margin-top:4px;color:hsl(var(--text-300))}
 .exam-score{text-align:left;padding:8px 0 28px;border-bottom:0.5px solid hsl(var(--border-300)/0.15);margin-bottom:8px}
-.exam-score-val{font-size:calc(28px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-100));letter-spacing:-.01em;display:inline-flex;align-items:baseline;gap:4px}
+.exam-score-val{font-size:calc(24px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-100));letter-spacing:-.01em;display:inline-flex;align-items:baseline;gap:4px}
 .exam-score-val .score-correct{font-weight:500}
 .exam-score-val .score-total{font-size:calc(16px * var(--app-font-scale, 1));color:hsl(var(--text-400));font-weight:400}
 .exam-score-lbl{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-top:2px}
@@ -1246,12 +1363,9 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .exam-result-correct{color:hsl(145 50% 45%);font-weight:500}
 .exam-result-wrong{color:hsl(0 60% 55%);font-weight:500}
 .exam-type-picker{display:flex;gap:0;flex-wrap:wrap;margin-bottom:4px}
-.exam-type-pill{padding:8px 18px 8px 0;margin-right:18px;border-radius:0;border:0;background:transparent;font-size:calc(13.5px * var(--app-font-scale, 1));cursor:pointer;transition:color .12s,border-color .12s;color:hsl(var(--text-400));font-family:inherit;font-weight:400;position:relative}
-.exam-type-pill::after{content:'';position:absolute;left:0;right:18px;bottom:0;height:1.5px;background:transparent;transition:background .12s}
-.exam-type-pill:hover{color:hsl(var(--text-200))}
-.exam-type-pill:hover::after{background:hsl(var(--border-300)/0.4)}
-.exam-type-pill.active{color:hsl(var(--text-100));font-weight:500}
-.exam-type-pill.active::after{background:hsl(var(--accent-000))}
+.exam-type-pill{padding:9px 18px;border-radius:999px;border:0.5px solid hsl(var(--border-300)/0.25);background:hsl(var(--bg-000));font-size:calc(13px * var(--app-font-scale, 1));cursor:pointer;transition:color .12s,background .12s,border-color .12s;color:hsl(var(--text-400));font-family:inherit;font-weight:400;margin-right:8px}
+.exam-type-pill:hover{color:hsl(var(--text-200));background:hsl(var(--bg-200));border-color:hsl(var(--border-300)/0.4)}
+.exam-type-pill.active{color:hsl(var(--bg-400));background:hsl(var(--accent-000));border-color:hsl(var(--accent-000));font-weight:500}
 [data-theme=socrates][data-mode=dark] .exam-type-pill.active{color:hsl(var(--text-100))}
 [data-theme=socrates][data-mode=dark] .exam-type-pill.active::after{background:hsl(var(--accent-000))}
 
@@ -1667,9 +1781,16 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .think-block{margin:6px 0;border:0.5px solid hsl(var(--border-300)/0.12);border-radius:10px;overflow:hidden;background:hsl(var(--bg-200)/0.5)}
 .think-summary{display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));cursor:pointer;user-select:none;list-style:none;transition:color .08s}
 .think-summary::-webkit-details-marker{display:none}
-.think-summary::before{content:'';display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid hsl(var(--text-500));transition:transform .15s;flex-shrink:0}
+/* P_think-chevron — explicit rotate-90 SVG arrow instead of CSS
+   borders. Browsers drop the border-triangle when flexbox squeezes
+   the summary (notably on Windows + some Linux font stacks), and the
+   text-500 color was so close to bg-200 the chevron was effectively
+   invisible. The SVG arrow renders identically everywhere and uses
+   text-300 (one shade brighter) so it is always visible. */
+.think-summary::before{content:'';width:10px;height:10px;flex-shrink:0;background:currentColor;-webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><path d='M2 3.5l3 3 3-3' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/contain no-repeat;mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><path d='M2 3.5l3 3 3-3' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/contain no-repeat;transition:transform .15s;opacity:.85}
 .think-block[open] .think-summary::before{transform:rotate(-180deg)}
 .think-summary:hover{color:hsl(var(--text-200))}
+.think-summary:hover::before{opacity:1}
 .think-content{padding:6px 14px 12px;font-size:calc(13px * var(--app-font-scale, 1));line-height:1.6;color:hsl(var(--text-400));white-space:pre-wrap;font-family:var(--font-sans);border-top:0.5px solid hsl(var(--border-300)/0.06)}
 
 /* KaTeX dark theme overrides */
@@ -1704,10 +1825,11 @@ html[data-boot-state="app"] .boot-loading,
 html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .boot-loading-logo{display:flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-weight:600;font-size:calc(15px * var(--app-font-scale,1));letter-spacing:-.02em}
 .boot-loading-logo svg{flex-shrink:0;color:hsl(var(--brand-000))}
-.boot-loading-dots{display:inline-flex;gap:5px;margin-left:2px}
-.boot-loading-dots span{width:5px;height:5px;border-radius:50%;background:hsl(var(--text-500));animation:loadBounce 1.4s infinite}
-.boot-loading-dots span:nth-child(2){animation-delay:.2s}
-.boot-loading-dots span:nth-child(3){animation-delay:.4s}
+.boot-loading-dots{display:inline-flex;align-items:center;margin-left:6px;width:16px;height:16px;position:relative}
+.boot-loading-dots span{display:none}
+.boot-loading-dots::before{content:"";display:block;width:100%;height:100%;border-radius:50%;border:2px solid hsl(var(--border-300)/0.3);border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--brand-000));animation:bootSpin 1s cubic-bezier(.4,0,.2,1) infinite;box-sizing:border-box}
+.boot-loading-dots::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1px solid hsl(var(--accent-000)/0.2);animation:bootSpin 2s linear infinite reverse;opacity:.5}
+@keyframes bootSpin{to{transform:rotate(360deg)}}
 .auth-card{width:100%;max-width:420px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.18);border-radius:18px;padding:32px 28px;box-shadow:0 12px 48px hsl(var(--always-black)/0.5)}
 /* P4.5 — transient banner shown at the top of the auth gate when a
    401 from any background apiFetch triggers handleAuthExpired(). */
@@ -1916,8 +2038,12 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .kb-history-empty{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
 
 /* Tab badge for mistakes */
-.tab-badge{display:inline-block;min-width:16px;height:16px;line-height:14px;padding:0 4px;margin-left:4px;border-radius:8px;background:hsl(0 60% 50%/0.18);color:hsl(0 60% 70%);font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;text-align:center;vertical-align:middle}
+.tab-badge{display:inline-block;min-width:16px;height:16px;line-height:14px;padding:0 4px;margin-left:4px;border-radius:8px;background:hsl(0 60% 50%/0.18);color:hsl(0 60% 70%);font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;text-align:center;vertical-align:middle;transition:background .15s,color .15s}
 .tab-badge:empty{display:none}
+.tab-badge.badge-flash{background:hsl(0 60% 50%/0.35);color:hsl(0 60% 85%)}
+
+/* Panel enter animation */
+@keyframes panelFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
 /* Mistake book */
 .mistake-card{margin:0 4px 8px;padding:10px 12px;background:hsl(0 60% 12%/0.35);border:0.5px solid hsl(0 60% 30%/0.4);border-radius:10px;border-left:3px solid hsl(0 60% 55%)}
@@ -1943,10 +2069,20 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    whether the request is in flight or the page is hung. We make it
    slightly bolder than the default and add a subtle background so
    it reads as a "live indicator" rather than a stray inline label. */
-.thinking-dot{display:inline-flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:6px 10px;border-radius:999px;background:hsl(var(--accent-000)/0.08);border:0.5px solid hsl(var(--accent-000)/0.18)}
-.thinking-pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:hsl(var(--accent-000));animation:thinking-pulse 1.2s ease-in-out infinite;flex-shrink:0}
-.thinking-dot[data-mode="chat"]{font-weight:500;color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.1);border-color:hsl(var(--accent-000)/0.25)}
-@keyframes thinking-pulse{0%,100%{transform:scale(0.6);opacity:0.4}50%{transform:scale(1);opacity:1}}
+.thinking-dot{display:inline-flex;align-items:center;gap:6px;color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:4px 0;line-height:1.3}
+.thinking-dot[data-mode="chat"]{color:hsl(var(--accent-000))}
+.thinking-dot .loading{width:14px;height:14px}
+/* Restore the small inline spinner used inside .thinking-dot,
+   .think-summary, .chat-hint, .appendThinking pill, and the
+   streaming body. Was deleted when the diff renamed every
+   "thinking-pulse" span to "loading" — but .loading is a centered
+   16px block spinner meant for full-card states (diag-loading /
+   usage-loading / exam-loading), so forcing it inline broke the
+   stream cursor and thinking pill layout. */
+.thinking-pulse{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;position:relative;vertical-align:middle;flex-shrink:0}
+.thinking-pulse::before,.thinking-pulse::after{content:"";position:absolute;inset:0;border-radius:50%;border:1.5px solid transparent;box-sizing:border-box}
+.thinking-pulse::before{border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--accent-000)/0.6);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite}
+.thinking-pulse::after{inset:2.5px;border-top-color:hsl(var(--accent-000)/0.7);border-left-color:hsl(var(--accent-000)/0.4);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite reverse}
 
 /* P_chunked-fade — animated reveal of streamed text. Each "chunk"
    is a <div class="stream-chunk"> produced by addStreamingMessage
@@ -1994,6 +2130,11 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .msg-retry-btn:hover:not(:disabled){background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .msg-retry-btn:disabled{opacity:0.5;cursor:wait}
 
+/* Inline "(stopped by user)" marker — appended at the bottom of a
+   partially streamed chat bubble when the user clicks Stop. Visually
+   muted so it doesn't compete with the actual reply content. */
+.msg-stopped-marker{font-style:italic;color:hsl(var(--text-400));font-size:calc(12px * var(--app-font-scale, 1));margin-top:8px;opacity:.8}
+
 /* ── Agent (mode banner + tool module cards + stop button) ── */
 .agent-intro{padding:12px;display:flex;flex-direction:column;gap:10px}
 .agent-intro-title{font-size:calc(13px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
@@ -2013,7 +2154,10 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-mode-banner{display:flex;align-items:center;gap:10px;padding:8px 14px;background:hsl(280 30% 95%);border-bottom:0.5px solid hsl(280 40% 85%/0.6);font-size:calc(12px * var(--app-font-scale, 1));color:hsl(280 50% 30%);flex-shrink:0}
 .agent-mode-banner.hidden{display:none}
 [data-theme=socrates][data-mode=dark] .agent-mode-banner{background:hsl(280 30% 14%);border-bottom-color:hsl(280 30% 30%/0.6);color:hsl(280 60% 80%)}
-.agent-mode-dot{width:7px;height:7px;border-radius:50%;background:hsl(280 60% 60%);flex-shrink:0;animation:thinking-pulse 1.5s ease-in-out infinite}
+.agent-mode-dot{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;position:relative;vertical-align:middle;flex-shrink:0}
+.agent-mode-dot::before,.agent-mode-dot::after{content:"";position:absolute;inset:0;border-radius:50%;border:1.5px solid transparent;box-sizing:border-box}
+.agent-mode-dot::before{border-top-color:hsl(280 60% 60%);border-right-color:hsl(280 60% 60%/0.6);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite}
+.agent-mode-dot::after{inset:2.5px;border-top-color:hsl(280 60% 60%/0.7);border-left-color:hsl(280 60% 60%/0.4);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite reverse}
 .agent-mode-label{font-weight:600;letter-spacing:.02em}
 .agent-mode-hint{flex:1;color:inherit;opacity:0.75;font-size:calc(11.5px * var(--app-font-scale, 1))}
 .agent-mode-exit{padding:3px 10px;border-radius:6px;background:transparent;border:0.5px solid currentColor;color:inherit;font-size:calc(11px * var(--app-font-scale, 1));cursor:pointer;font-weight:500;transition:background .1s,color .1s;opacity:0.85}
@@ -2070,9 +2214,18 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .link-card-title:hover{text-decoration:underline}
 .link-card-excerpt{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5;margin-top:2px;max-height:3.6em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 
-/* Thinking pill — collapsed by default; expands on click. */
-.agent-thinking{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));font-style:italic;line-height:1.5;padding:4px 0 4px 6px;margin-top:4px;border-left:2px solid hsl(var(--border-300)/0.4);max-height:40px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;transition:max-height .2s var(--ease-out),white-space .1s}
-.agent-thinking.expanded{max-height:none;white-space:pre-wrap;overflow:visible}
+/* Thinking pill — collapsed by default; expands on click.
+   The pill has no visible "expand" affordance otherwise (just a
+   pointer cursor), which made the click-to-expand behaviour easy to
+   miss. A small chevron is appended via ::after so the user always
+   knows the truncated preview is interactive. The chevron rotates
+   180° when .expanded is added. */
+.agent-thinking{position:relative;font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));font-style:italic;line-height:1.5;padding:0 22px 0 6px;margin-top:4px;border-left:2px solid hsl(var(--border-300)/0.4);max-height:calc(1em * 1.5);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;transition:max-height .2s var(--ease-out),white-space .1s,padding .2s var(--ease-out)}
+.agent-thinking.expanded{padding:4px 6px;max-height:none;white-space:pre-wrap;overflow:visible}
+.agent-thinking::after{content:'';position:absolute;top:50%;right:6px;width:9px;height:9px;transform:translateY(-50%) rotate(0deg);background:currentColor;opacity:.7;-webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><path d='M2 3.5l3 3 3-3' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/contain no-repeat;mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><path d='M2 3.5l3 3 3-3' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/contain no-repeat;transition:transform .15s var(--ease-out),opacity .15s}
+.agent-thinking:hover::after{opacity:1}
+.agent-thinking.expanded{max-height:none;white-space:pre-wrap;overflow:visible;padding-right:6px}
+.agent-thinking.expanded::after{transform:translateY(-50%) rotate(-180deg)}
 
 /* Final run footer — small status chip below the last assistant
    message. */
@@ -2126,15 +2279,13 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 }
 .search-progress.open .search-progress-chev{transform:rotate(180deg)}
 
-/* The pulsing dot in the header — reuses the .thinking-pulse keyframe
- * defined earlier in this stylesheet. */
 .search-progress-pulse{
-  display:inline-block;
-  width:8px;height:8px;border-radius:50%;
-  background:hsl(var(--accent-000));
-  animation:thinking-pulse 1.2s ease-in-out infinite;
-  flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:12px;height:12px;position:relative;vertical-align:middle;flex-shrink:0;
 }
+.search-progress-pulse::before,.search-progress-pulse::after{content:"";position:absolute;inset:0;border-radius:50%;border:1.5px solid transparent;box-sizing:border-box}
+.search-progress-pulse::before{border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--accent-000)/0.6);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite}
+.search-progress-pulse::after{inset:2.5px;border-top-color:hsl(var(--accent-000)/0.7);border-left-color:hsl(var(--accent-000)/0.4);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite reverse}
 .search-progress.ok .search-progress-pulse,
 .search-progress.warn .search-progress-pulse,
 .search-progress.err .search-progress-pulse{display:none}
@@ -2498,4 +2649,40 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 [data-theme=socrates][data-mode=dark] .mistake-resolved-tag{
   background:hsl(145 50% 50%/0.22);
   color:hsl(145 50% 70%);
+}
+
+/* ────── Responsive: small screens ≤ 480 px ────── */
+@media(max-width:480px){
+  .main-inner{padding:2vh 8px 20px}
+  .topic-title{font-size:calc(1.05rem * var(--app-font-scale, 1));padding:16px 4px 0}
+  .topic-sub{font-size:calc(12.5px * var(--app-font-scale, 1));padding:0 4px}
+  .chat-messages{padding:8px 4px}
+  .msg-body{padding:10px 12px;font-size:calc(13px * var(--app-font-scale, 1))}
+  .msg.user .msg-body{font-size:calc(13px * var(--app-font-scale, 1))}
+  .chat-input-wrap{padding:8px}
+  .chat-input-bar textarea{font-size:calc(13px * var(--app-font-scale, 1));padding:8px 36px 8px 12px;min-height:40px}
+  .msg-toolbar{opacity:.6;gap:2px}
+  .msg-toolbar button{padding:4px 6px;font-size:calc(11px * var(--app-font-scale, 1))}
+  .diag-card{padding:16px;margin:0 4px}
+  .diag-text{font-size:calc(14px * var(--app-font-scale, 1))}
+  .diag-opt{padding:9px 10px;font-size:calc(13px * var(--app-font-scale, 1))}
+  .diag-opt-letter{width:20px;height:20px;font-size:calc(10px * var(--app-font-scale, 1))}
+  .auth-gate{padding:24px 12px}
+  .auth-card{padding:24px 16px}
+  .profile-overlay{padding:20px 12px}
+  .sidebar{width:16rem;min-width:16rem}
+  .new-reply-pill{right:10px;bottom:100px;font-size:11px;padding:4px 10px}
+}
+
+/* ────── Responsive: large screens ≥ 1200 px ────── */
+@media(min-width:1200px){
+  .main-inner{max-width:900px;padding:5vh 20px 32px}
+  .topic-title{font-size:calc(1.75rem * var(--app-font-scale, 1));padding:40px 20px 0}
+  .chat-messages{padding:12px 20px}
+  .msg-body{padding:14px 20px;font-size:calc(15px * var(--app-font-scale, 1))}
+  .msg.user .msg-body{font-size:calc(15px * var(--app-font-scale, 1))}
+  .chat-input-bar textarea{font-size:calc(14px * var(--app-font-scale, 1));padding:10px 48px 10px 16px}
+  .diag-card{padding:32px}
+  .diag-text{font-size:calc(17px * var(--app-font-scale, 1))}
+  .sidebar{width:20rem;min-width:20rem}
 }
