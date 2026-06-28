@@ -1,10 +1,8 @@
 import { Router } from 'express';
-import { eq, and, desc, gt, isNull, sql, inArray } from 'drizzle-orm';
+import { eq, and, desc, gt, isNull, sql, inArray, count } from 'drizzle-orm';
 import crypto from 'node:crypto';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function isUuid(s) { return typeof s === 'string' && UUID_RE.test(s); }
 import { z } from 'zod';
 import { getDb } from '../db/index.js';
 import {
@@ -15,6 +13,8 @@ import {
 import { requireAuth } from '../middleware/auth.js';
 import { writeLimiter } from '../middleware/rateLimit.js';
 import { NotFound, Forbidden, BadRequest } from '../lib/errors.js';
+import { getSessionLimit } from '../lib/tiers.js';
+import { isUuid } from '../lib/validate.js';
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || '/tmp/socrates-uploads';
 
@@ -197,6 +197,25 @@ router.post('/', writeLimiter, async (req, res, next) => {
       sessionId = randomUUID();
     }
 
+    /* Tier-based session limit — only enforce when creating a NEW
+     * session. Updates to existing sessions are always allowed. */
+    const [existingSession] = await db.select({ id: sessions.id })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId))
+      .limit(1);
+    if (!existingSession) {
+      const tier = req.user?.tier || 'diophantus';
+      const maxSessions = getSessionLimit(tier);
+      if (maxSessions > 0) {
+        const [sessCount] = await db.select({ value: count() })
+          .from(sessions)
+          .where(eq(sessions.userId, req.userId));
+        if ((sessCount?.value || 0) >= maxSessions) {
+          throw new Forbidden('FORBIDDEN', `Session limit reached for ${tier} plan (${maxSessions} sessions). Upgrade your plan to create more.`);
+        }
+      }
+    }
+
     // Upsert
     await db.insert(sessions).values({
       id: sessionId,
@@ -234,79 +253,41 @@ router.post('/', writeLimiter, async (req, res, next) => {
       },
     });
 
-    // Save messages — use clientId as a soft idempotency key.
-    // The front-end re-sends the full message list on every save, so
-    // we need a way to avoid duplicating rows when (a) the user
-    // already has the message saved, or (b) the back-end generated a
-    // different UUID for the same logical message.
-    //
-    // P_streaming-save — also UPDATE messages whose clientId already
-    // exists in the database. Without this, if a save fires while
-    // streaming is in progress (before finish() replaces the
-    // placeholder with final content), the partial/empty content
-    // gets committed and the final version is never written —
-    // the dedup simply skips it. Updating here provides defense
-    // in depth alongside the frontend filter that excludes
-    // type: "streaming" messages from the save payload.
+    // P_message-dedup — atomic upsert using the (sessionId, clientId)
+    // unique constraint instead of the previous SELECT-then-INSERT-or-UPDATE
+    // race-prone pattern. Messages without a clientId (clientId IS NULL)
+    // always insert because Postgres treats NULLs as distinct in unique
+    // indexes. Messages with a matching clientId get an UPDATE that
+    // replaces content/html/type with the latest value — this is the
+    // defense-in-depth for streaming save: if a save fires mid-stream
+    // the partial placeholder is safely overwritten by finish().
     if (Array.isArray(msgs) && msgs.length) {
-      const clientIds = msgs.map(m => m.clientId).filter(Boolean);
-      const existingClientIds = new Set();
-      if (clientIds.length > 0) {
-        const existing = await db.select({ clientId: messages.clientId })
-          .from(messages)
-          .where(and(
-            eq(messages.sessionId, sessionId),
-            inArray(messages.clientId, clientIds),
-          ));
-        for (const row of existing) existingClientIds.add(row.clientId);
-      }
-      // P_share-order — every message gets a strictly-increasing
-      // createdAt based on its position in the msgs array, so that
-      // ORDER BY createdAt returns the conversation in the exact order
-      // the user typed it. Without this, every row in a batch insert
-      // shares the same NOW() (Postgres NOW() is constant within a
-      // transaction) and the DB returns tied rows in unspecified
-      // order — frequently grouped by role, which scrambles the
-      // conversation order in shared links and on reload. Applying the
-      // timestamp on UPDATE as well self-heals sessions that were
-      // saved before this fix. Saves are serialized client-side via
-      // _saveInFlight, so a later batch's base always exceeds an
-      // earlier batch's last timestamp.
       const _insertBase = Date.now();
-      const toInsert = [];
-      const toUpdate = [];
-      msgs.forEach((m, i) => {
-        const row = {
-          role: m.role || 'user',
-          content: m.rawText || m.content || '',
-          rawText: m.rawText || null,
-          html: m.html || null,
-          type: m.type || null,
-          sources: m.sources || null,
-          clientId: m.clientId || null,
-          reasoningContent: m.reasoningContent || null,
-          createdAt: new Date(_insertBase + i),
-        };
-        if (m.clientId && existingClientIds.has(m.clientId)) {
-          toUpdate.push({ row, clientId: m.clientId });
-        } else {
-          toInsert.push({ ...row, sessionId });
-        }
+      const rows = msgs.map((m, i) => ({
+        role: m.role || 'user',
+        content: m.rawText || m.content || '',
+        rawText: m.rawText || null,
+        html: m.html || null,
+        type: m.type || null,
+        sources: m.sources || null,
+        clientId: m.clientId || null,
+        reasoningContent: m.reasoningContent || null,
+        sessionId,
+        createdAt: new Date(_insertBase + i),
+      }));
+      await db.insert(messages).values(rows).onConflictDoUpdate({
+        target: [messages.sessionId, messages.clientId],
+        set: {
+          role: sql`EXCLUDED.role`,
+          content: sql`EXCLUDED.content`,
+          rawText: sql`EXCLUDED.raw_text`,
+          html: sql`EXCLUDED.html`,
+          type: sql`EXCLUDED.type`,
+          sources: sql`EXCLUDED.sources`,
+          reasoningContent: sql`EXCLUDED.reasoning_content`,
+          createdAt: sql`EXCLUDED.created_at`,
+        },
       });
-      if (toInsert.length > 0) {
-        await db.insert(messages).values(toInsert);
-      }
-
-      // P_streaming-save — update content for messages that were
-      // already saved with a previous (possibly partial) version.
-      for (const u of toUpdate) {
-        await db.update(messages)
-          .set(u.row)
-          .where(and(
-            eq(messages.sessionId, sessionId),
-            eq(messages.clientId, u.clientId),
-          ));
-      }
     }
 
     const [session] = await db.select().from(sessions).where(eq(sessions.id, sessionId)).limit(1);

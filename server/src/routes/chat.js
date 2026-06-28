@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { and, eq, gte, sql } from 'drizzle-orm';
 import fs from 'node:fs/promises';
-import { readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getDb } from '../db/index.js';
@@ -12,7 +11,11 @@ import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion, callChatCompletion } from '../services/llm.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
 import { usageEvents } from '../db/schema.js';
+import { audit } from '../middleware/audit.js';
 import { BadRequest, TooManyRequests } from '../lib/errors.js';
+import { getBeagleQuota } from '../lib/tiers.js';
+import { isUuid } from '../lib/validate.js';
+import { buildSystemContextBlock } from '../services/productContext.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,15 +27,16 @@ let teacherModeCache = null; // { mtime, content }
 
 /* Cached loader for prompts/teacher-mode.md — re-reads only when the
    file's mtime changes, so edits are picked up without restarting and
-   we don't touch disk on every request. */
-export function getTeacherModePrompt() {
+   we don't touch disk on every request. Uses async fs.promises to avoid
+   blocking the event loop on file I/O. */
+export async function getTeacherModePrompt() {
   try {
-    const stat = statSync(TEACHER_MODE_PROMPT_PATH);
+    const stat = await fs.stat(TEACHER_MODE_PROMPT_PATH);
     const mtime = stat.mtimeMs;
     if (teacherModeCache && teacherModeCache.mtime === mtime) {
       return teacherModeCache.content;
     }
-    const content = readFileSync(TEACHER_MODE_PROMPT_PATH, 'utf8');
+    const content = await fs.readFile(TEACHER_MODE_PROMPT_PATH, 'utf8');
     teacherModeCache = { mtime, content };
     return content;
   } catch (err) {
@@ -44,8 +48,8 @@ export function getTeacherModePrompt() {
 /* Prepends the teacher-mode system prompt unless the frontend already
    sent a system message containing the teacher-mode marker (in which
    case it may have layered dynamic context on top — leave it alone). */
-function prependTeacherModePrompt(messages) {
-  const prompt = getTeacherModePrompt();
+async function prependTeacherModePrompt(messages) {
+  const prompt = await getTeacherModePrompt();
   if (!prompt) return messages;
   const first = messages[0];
   if (
@@ -59,17 +63,92 @@ function prependTeacherModePrompt(messages) {
   return [{ role: 'system', content: prompt }, ...messages];
 }
 
-/* Per-tier monthly Beagle token quotas. */
-const BEAGLE_TIER_QUOTAS = {
-  diophantus: 1_000_000,
-  riemann:    100_000_000,
-  descartes:  300_000_000,
-  euclid:     800_000_000,
-};
+/* ─────────────────────────────────────────────────────────────────
+   P_USER_CONTEXT — inject real-time user context into the first
+   system message so the LLM always knows who it's talking to, the
+   current time, and the user's account details.
+   ───────────────────────────────────────────────────────────────── */
+function injectUserContext(messages, user) {
+  if (!user) return messages;
 
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+  const timeStr = now.toLocaleTimeString('en-US', {
+    hour: '2-digit', minute: '2-digit',
+  });
+
+  let userCtx = `[System context — auto-injected]\nCurrent date: ${dateStr}\nCurrent time: ${timeStr}`;
+
+  /* User profile */
+  if (user.displayName) userCtx += `\nUser display name: ${user.displayName}`;
+  if (user.email) userCtx += `\nUser email: ${user.email}`;
+  if (user.tier) userCtx += `\nUser plan tier: ${user.tier}`;
+  if (user.plan) userCtx += `\nUser subscription: ${user.plan}`;
+  if (user.isGuest) userCtx += '\nUser account type: Guest';
+  if (user.createdAt) {
+    try {
+      const created = new Date(user.createdAt);
+      userCtx += `\nUser account created: ${created.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+    } catch (_) {}
+  }
+  userCtx += '\n[/System context]';
+
+  /* Find the first system message and merge context into it, or
+     prepend a new system message if none exists. */
+  const first = messages[0];
+  if (first && first.role === 'system' && typeof first.content === 'string') {
+    /* Inject after the first existing system message content — preserve
+       the original system prompt but add the dynamic context. */
+    const cloned = messages.slice();
+    cloned[0] = { ...first, content: userCtx + '\n\n' + first.content };
+    return cloned;
+  }
+  return [{ role: 'system', content: userCtx }, ...messages];
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   P_PRODUCT_CONTEXT — inject topodrive.top product knowledge as a
+   system message so the model can answer company/product questions
+   with accurate, sourced information.  The Markdown is pre-computed
+   by the productContext service (fetched + cached server-side every
+   6h) and is capped at 20k chars to protect the prompt budget.
+   ───────────────────────────────────────────────────────────────── */
+// We previously cached the rendered block in a module-level
+// `_productContextBlock` string. That made the cache "stuck" — a
+// background 6h refresh inside productContext.js never propagated
+// to the chat path, and the only way to get a fresh block was to
+// restart the process. The service itself already memoises the
+// cache entry by fetchedAt, so calling buildSystemContextBlock on
+// every chat turn is cheap: it returns the cached Markdown unless
+// stale, in which case it returns the stale block AND kicks off a
+// background refresh. Calling it on every turn is the right
+// trade-off — staleness window stays at 6h and we never serve
+// genuinely outdated data.
+async function injectProductContext(messages) {
+  let ctxBlock = '';
+  try {
+    ctxBlock = await buildSystemContextBlock({ allowStale: true });
+  } catch (err) {
+    console.warn('[chat] productContext build failed:', err.message);
+  }
+  if (!ctxBlock) return messages;
+
+  const productMsg = { role: 'system', content: ctxBlock };
+  const last = messages[messages.length - 1];
+  if (last && last.role === 'user') {
+    const cloned = messages.slice();
+    cloned.splice(cloned.length - 1, 0, productMsg);
+    return cloned;
+  }
+  return [...messages, productMsg];
+}
+
+/* Per-tier monthly Beagle token quotas are now in lib/tiers.js. */
 async function checkBeagleMonthlyLimit(userId, tier) {
   if (!userId) return null;
-  const quota = BEAGLE_TIER_QUOTAS[tier] || BEAGLE_TIER_QUOTAS.diophantus;
+  const quota = getBeagleQuota(tier);
   const db = getDb();
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -145,14 +224,25 @@ const ChatPayloadSchema = z.object({
    attacker could trivially bypass it. The client now creates a
    guest account via /api/auth/guest before the first chat turn,
    matching the auth model used by the rest of /api/*. */
-router.post('/', chatLimiter, requireAuth, async (req, res, next) => {
+router.post('/', chatLimiter, requireAuth, audit('chat:sync'), async (req, res, next) => {
   try {
     const { messages, temperature = 0.3, max_tokens, mode = 'chat', reasoning_effort, extra_body } = ChatPayloadSchema.parse(req.body);
-    const finalMessages = mode === 'tutor' ? prependTeacherModePrompt(messages) : messages;
+    /* P_USER_CONTEXT — inject real-time user context (time, profile)
+       first, then prepend teacher-mode prompt if applicable. */
+    let finalMessages = injectUserContext(messages, req.user);
+    if (mode === 'tutor') finalMessages = await prependTeacherModePrompt(finalMessages);
+    finalMessages = await injectProductContext(finalMessages);
 
     const provider = await getActiveApiKey(req.userId);
     if (!provider) {
       return res.status(503).json({ code: 'NO_PROVIDER', message: 'No active LLM provider configured' });
+    }
+    if (!provider.keyPlaintext) {
+      console.error('[chat] Provider key decryption failed for provider:', provider.id, provider.label);
+      return res.status(503).json({
+        code: 'KEY_DECRYPT_FAILED',
+        message: 'API key decryption failed. Please re-enter your API key in Settings.',
+      });
     }
 
     /* Beagle monthly token cap for free-tier users */
@@ -178,20 +268,43 @@ router.post('/', chatLimiter, requireAuth, async (req, res, next) => {
     return res.json({
       choices: [{ message: { role: 'assistant', content: result.content } }],
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    /* LLM upstream returned 401/403 (bad key) or 429 (quota).
+       Translate to 502 so the frontend apiFetch doesn't confuse
+       it with the user's own auth session expiring (which also
+       uses 401). */
+    if (err.status && (err.status === 401 || err.status === 403 || err.status === 429)) {
+      return res.status(502).json({
+        code: 'LLM_PROVIDER_ERROR',
+        message: err.message || 'LLM provider returned ' + err.status,
+      });
+    }
+    next(err);
+  }
 });
 
 /* ─── SSE streaming chat ─── */
 /* Audit S-H3 (P0) — same change for the streaming endpoint. See
    the comment on the non-streaming route for the rationale. */
-router.post('/stream', chatLimiter, requireAuth, async (req, res, next) => {
+router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (req, res, next) => {
   try {
     const { messages, temperature = 0.7, max_tokens, mode = 'chat', reasoning_effort, extra_body } = ChatPayloadSchema.parse(req.body);
-    const finalMessages = mode === 'tutor' ? prependTeacherModePrompt(messages) : messages;
+    /* P_USER_CONTEXT — inject real-time user context (time, profile)
+       first, then prepend teacher-mode prompt if applicable. */
+    let finalMessages = injectUserContext(messages, req.user);
+    if (mode === 'tutor') finalMessages = await prependTeacherModePrompt(finalMessages);
+    finalMessages = await injectProductContext(finalMessages);
 
     const provider = await getActiveApiKey(req.userId);
     if (!provider) {
       return res.status(503).json({ code: 'NO_PROVIDER', message: 'No active LLM provider configured' });
+    }
+    if (!provider.keyPlaintext) {
+      console.error('[chat/stream] Provider key decryption failed for provider:', provider.id, provider.label);
+      return res.status(503).json({
+        code: 'KEY_DECRYPT_FAILED',
+        message: 'API key decryption failed. Please re-enter your API key in Settings.',
+      });
     }
 
     /* Beagle monthly token cap for free-tier users */
@@ -210,7 +323,7 @@ router.post('/stream', chatLimiter, requireAuth, async (req, res, next) => {
 
     // Heartbeat keepalive
     const heartbeat = setInterval(() => {
-      try { res.write(': keepalive\n\n'); } catch { clearInterval(heartbeat); }
+      try { res.write(': keepalive\n\n'); try { res.flush?.(); } catch {} } catch { clearInterval(heartbeat); }
     }, 10_000);
 
     let fullText = '';
@@ -227,7 +340,7 @@ router.post('/stream', chatLimiter, requireAuth, async (req, res, next) => {
       abortController.abort();
     });
 
-    const sessionIdFromQuery = typeof req.query.sessionId === 'string'
+    const sessionIdFromQuery = typeof req.query.sessionId === 'string' && isUuid(req.query.sessionId)
       ? req.query.sessionId
       : null;
 
@@ -251,6 +364,7 @@ router.post('/stream', chatLimiter, requireAuth, async (req, res, next) => {
         completionTokens = estimateTokens(fullText);
         try {
           res.write(`data: {"choices":[{"delta":{"content":${JSON.stringify(chunk)}}}]}\n\n`);
+          try { res.flush?.(); } catch {}
         } catch { /* client disconnected */ }
       },
       // onDone
@@ -299,6 +413,7 @@ router.post('/stream', chatLimiter, requireAuth, async (req, res, next) => {
       (reasoning) => {
         try {
           res.write(`data: {"choices":[{"delta":{"reasoning_content":${JSON.stringify(reasoning)}}}]}\n\n`);
+          try { res.flush?.(); } catch {}
         } catch { /* client disconnected */ }
       },
     );

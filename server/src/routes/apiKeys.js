@@ -1,16 +1,18 @@
 import { Router } from 'express';
-import { eq, and, ne } from 'drizzle-orm';
+import { eq, and, ne, count } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { apiKeys } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
-import { NotFound, BadRequest } from '../lib/errors.js';
+import { NotFound, BadRequest, Forbidden } from '../lib/errors.js';
+import { audit } from '../middleware/audit.js';
 import { encrypt, decrypt, deriveEncryptionKey } from '../lib/crypto.js';
+import { getApiKeyLimit } from '../lib/tiers.js';
+import { isUuid } from '../lib/validate.js';
 
 const ENCRYPTION_KEY = deriveEncryptionKey(process.env.SESSION_SECRET || 'dev-secret');
 const router = Router();
 
 // Reject malformed ids before they reach the DB. The `apiKeys.id` column is a UUID, so anything else would otherwise trigger a Postgres "invalid input syntax for type uuid" error, which the error middleware surfaces as a generic 500. NotFound is the honest answer.
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 router.use(requireAuth);
 
 /* ─── List API keys ─── */
@@ -25,6 +27,7 @@ router.get('/', async (req, res, next) => {
       keyHint: apiKeys.keyHint,
       isActive: apiKeys.isActive,
       isBuiltIn: apiKeys.isBuiltIn,
+      hasKey: apiKeys.keyCiphertext,  /* boolean: true if key is stored */
       createdAt: apiKeys.createdAt,
     }).from(apiKeys).where(eq(apiKeys.userId, req.userId));
     return res.json({ providers: keys });
@@ -32,13 +35,23 @@ router.get('/', async (req, res, next) => {
 });
 
 /* ─── Create API key ─── */
-router.post('/', async (req, res, next) => {
+router.post('/', audit('create_api_key', (req) => ({ label: req.body?.label, url: req.body?.url, model: req.body?.model })), async (req, res, next) => {
   try {
     const { label, url, model, key } = req.body;
     if (!url || !model || !key) throw new BadRequest('url, model, and key are required');
 
-    const keyCiphertext = encrypt(key, ENCRYPTION_KEY);
+    /* Enforce tier-based API key limit. */
+    const tier = req.user?.tier || 'diophantus';
+    const maxKeys = getApiKeyLimit(tier);
     const db = getDb();
+    const [keyCount] = await db.select({ value: count() })
+      .from(apiKeys)
+      .where(eq(apiKeys.userId, req.userId));
+    if ((keyCount?.value || 0) >= maxKeys) {
+      throw new Forbidden('FORBIDDEN', `API key limit reached for ${tier} plan (${maxKeys} keys). Upgrade your plan to add more.`);
+    }
+
+    const keyCiphertext = encrypt(key, ENCRYPTION_KEY);
 
     /* Deactivate all existing providers so the new one is the only
        active provider. Without this, creating a new provider leaves
@@ -64,7 +77,7 @@ router.post('/', async (req, res, next) => {
 /* ─── Update API key ─── */
 router.patch('/:id', async (req, res, next) => {
   try {
-    if (!UUID_RE.test(req.params.id)) throw new NotFound('API key not found');
+    if (!isUuid(req.params.id)) throw new NotFound('API key not found');
     const db = getDb();
     const [existing] = await db.select().from(apiKeys)
       .where(and(eq(apiKeys.id, req.params.id), eq(apiKeys.userId, req.userId)))
@@ -100,9 +113,9 @@ router.patch('/:id', async (req, res, next) => {
 });
 
 /* ─── Delete API key ─── */
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', audit('delete_api_key'), async (req, res, next) => {
   try {
-    if (!UUID_RE.test(req.params.id)) throw new NotFound('API key not found');
+    if (!isUuid(req.params.id)) throw new NotFound('API key not found');
     const db = getDb();
     const [existing] = await db.select().from(apiKeys)
       .where(and(eq(apiKeys.id, req.params.id), eq(apiKeys.userId, req.userId)))

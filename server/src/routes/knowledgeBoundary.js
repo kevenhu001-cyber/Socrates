@@ -4,9 +4,7 @@ import { getDb } from '../db/index.js';
 import { sessions } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { BadRequest } from '../lib/errors.js';
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function isUuid(s) { return typeof s === 'string' && UUID_RE.test(s); }
+import { isUuid } from '../lib/validate.js';
 
 const VALID_STATUSES = new Set(['fuzzy', 'internalized', 'blank']);
 
