@@ -8,6 +8,7 @@ import { callAPI, callAPIChat } from './chat/api.js';
 import { callAPIStream } from './chat/stream.js';
 import { hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister, switchAuthTab, setAuthError, showAuthForgotPassword, showAuthCodeLogin, submitAuthSignin, submitAuthRegister, submitAuthVerify, submitAuthForgotPassword, submitAuthResetPassword, submitAuthSendCode, submitAuthLoginWithCode, resendVerification, resendAuthCode } from './auth/index.js';
 import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
+import { toggleSidebar, getRecentsFilter, setRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
 
 /* ============================================================
    SIDEBAR
@@ -237,20 +238,6 @@ function syncSidebarBtns(){
   var cb=document.getElementById("sidebarCloseBtn");
   if(ob)ob.style.display=sidebarOpen?"none":"";
   if(cb)cb.style.display=sidebarOpen?"":"none";
-}
-function toggleSidebar(){
-  sidebarOpen=!sidebarOpen;
-  var s=document.getElementById("sidebar");
-  var bd=document.getElementById("sidebarBackdrop");
-  if(sidebarOpen){
-    s.classList.remove("collapsed");
-    if(bd&&window.innerWidth<768)bd.classList.add("show");
-  }else{
-    s.classList.add("collapsed");
-    if(bd)bd.classList.remove("show");
-  }
-  syncSidebarBtns();
-  try{localStorage.setItem("socrates-sb",sidebarOpen?"1":"0")}catch(e){}
 }
 try{
   var sbPref=localStorage.getItem("socrates-sb");
@@ -983,19 +970,6 @@ function setRecents(arr){SERVER_SESSIONS=Array.isArray(arr)?arr.slice(0,RECENTS_
    "pinned" or a tag string. Persisted in localStorage so
    the user's last filter survives a reload. */
 var RECENTS_FILTER_KEY="socrates-recents-filter";
-function getRecentsFilter(){
-  try{return localStorage.getItem(RECENTS_FILTER_KEY)||null}catch(_){return null}
-}
-function setRecentsFilter(v){
-  try{if(v)localStorage.setItem(RECENTS_FILTER_KEY,v);else localStorage.removeItem(RECENTS_FILTER_KEY)}catch(_){}
-  renderRecents();
-}
-/* Drop the pinned/tag filter and re-render. Used by the empty-state
-   "Clear filter" link so a user who's stuck looking at an empty list
-   (because a stale filter matches nothing) can recover in one click. */
-function clearRecentsFilter(){
-  setRecentsFilter(null);
-}
 
 /* P2.2 — set of tag strings the user has ever used. Powers
    the autocomplete suggestions in the tag editor popover. */
@@ -2556,12 +2530,6 @@ function renderRecentsFilterChips(){
   el.innerHTML=html.join("");
 }
 
-function onRecentsFilterChipClick(val){
-  var cur=getRecentsFilter();
-  if(val==="all"){setRecentsFilter(null)}
-  else if(cur===val){setRecentsFilter(null)}  /* toggle off */
-  else{setRecentsFilter(val)}
-}
 /* =============================================================
    In production, this would call an LLM API.
    ============================================================ */
