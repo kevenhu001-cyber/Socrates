@@ -11,7 +11,15 @@ export function errorHandler(err, req, res, _next) {
   // grep one ID and find the matching client-side console error.
   const rid = req && req.id ? req.id : 'no-id';
   const meta = req ? `${req.method} ${req.originalUrl}` : '';
-  console.error('[error]', `req=${rid}`, meta, err.stack ? err.stack.slice(0, 1200) : err);
+  // In production we MUST NOT print full stack traces: they leak
+  // internal paths, file layout, and (occasionally) secrets embedded
+  // in error messages. Operators can still find the matching request
+  // id and look up the structured fields in the database.
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[error]', `req=${rid}`, meta, err && err.message ? err.message : err);
+  } else {
+    console.error('[error]', `req=${rid}`, meta, err.stack ? err.stack.slice(0, 1200) : err);
+  }
 
   // Echo the request id back so the browser can correlate too —
   // the SPA's apiFetch wrapper surfaces this header in error toasts.

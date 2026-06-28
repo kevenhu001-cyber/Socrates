@@ -7,34 +7,33 @@ import { requireAuth } from '../middleware/auth.js';
 const router = Router();
 router.use(requireAuth);
 
-/* POST /api/import — create import job */
+/* POST /api/import — create import job
+ *
+ * The previous implementation queued a job, then 100 ms later
+ * flipped the status to "completed" with `processed = total` while
+ * never persisting any sessions / messages. The UI then rendered a
+ * green "imported N items" toast that was a lie. We now surface the
+ * real state: status='not_implemented' so the front-end can show a
+ * clear "this feature is not yet wired up" notice instead of a
+ * misleading success.
+ */
 router.post('/', async (req, res, next) => {
   try {
     const { source, payload } = req.body;
     if (!source || !payload) return res.status(400).json({ code: 'BAD_REQUEST', message: 'source and payload required' });
-    // Count items so the progress object reflects real work. The
-    // previous version always wrote total=1 and then immediately
-    // flipped to "completed" — making the UI look like a real import
-    // had happened when in fact nothing was persisted.
     const total = Array.isArray(payload) ? payload.length
       : Array.isArray(payload?.sessions) ? payload.sessions.length
       : 1;
     const db = getDb();
     const [job] = await db.insert(importJobs).values({
-      userId: req.userId, source, status: 'queued',
+      userId: req.userId,
+      source,
+      // P0 honesty: don't claim a job is completed when the
+      // pipeline isn't wired up.  The previous value was
+      // 'completed' which silently mis-led the front-end.
+      status: 'not_implemented',
       progress: { total, processed: 0, errors: 0 },
     }).returning();
-    // Process async (for MVP, mark as completed immediately but
-    // include the real total in progress so the UI is honest).
-    setTimeout(async () => {
-      try {
-        await db.update(importJobs).set({
-          status: 'completed',
-          completedAt: new Date(),
-          progress: { total, processed: total, errors: 0 },
-        }).where(eq(importJobs.id, job.id));
-      } catch {}
-    }, 100);
     return res.status(202).json(job);
   } catch (err) { next(err); }
 });

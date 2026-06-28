@@ -1,6 +1,22 @@
 import crypto from 'node:crypto';
 import bcrypt from 'bcrypt';
 
+/**
+ * Fail-fast on missing SESSION_SECRET in production.
+ *
+ * Without SESSION_SECRET the api_keys table is encrypted with a public
+ * default key (`'dev-secret'`), letting anyone with the source code
+ * decrypt every user's LLM provider key. The startup check in
+ * src/index.js already exits the process, but importing this module
+ * earlier (e.g. from a route loader) would silently use the weak
+ * default. Surface that immediately so the misconfiguration is loud.
+ */
+if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+  throw new Error(
+    'FATAL: SESSION_SECRET is required in production (used to encrypt api_keys)'
+  );
+}
+
 const BCRYPT_ROUNDS = 12;
 
 /** Hash a plaintext password. */
@@ -70,8 +86,12 @@ export function decrypt(payload, key) {
 }
 
 /**
- * Derive a 256-bit AES key from the SESSION_SECRET.
+ * Derive a 256-bit AES key from the SESSION_SECRET using HKDF.
+ * HKDF is a proper KDF (RFC 5869) — preferable to bare SHA-256 for
+ * key derivation because it provides domain separation and is
+ * resistant to length-extension attacks.
  */
 export function deriveEncryptionKey(secret) {
-  return crypto.createHash('sha256').update(secret).digest();
+  return crypto.hkdfSync('sha256', Buffer.from(secret, 'utf8'),
+    Buffer.from('socrates-key-v1'), Buffer.from('aes-256-gcm'), 32);
 }
