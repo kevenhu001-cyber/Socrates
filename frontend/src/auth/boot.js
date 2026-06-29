@@ -132,7 +132,8 @@ export async function authBoot(){
     }
   }
   if(me&&me.user){
-    window.CURRENT_USER=me.user;
+    if(typeof window.setCurrentUser==="function")window.setCurrentUser(me.user);
+    else window.CURRENT_USER=me.user;
     console.log("[boot] /me succeeded: user="+(me.user&&me.user.email)+
       " verifiedAt="+(me.user&&me.user.verifiedAt)+
       " plan="+(me.user&&me.user.plan));
