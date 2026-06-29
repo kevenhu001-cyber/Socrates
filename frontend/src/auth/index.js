@@ -147,7 +147,6 @@ export async function submitAuthSignin(){
   if(!email||!password)return setAuthError("authSigninError","Please enter your email and password.");
   var btn=document.getElementById("authSigninBtn");btn.disabled=true;btn.textContent="Signing in…";
   var markAuthSuccess=window.markAuthSuccess;
-  var CURRENT_USER_REF=window;
   try{
     var r=await apiFetch("/api/auth/login",{method:"POST",_authEndpoint:true,body:{email,password}});
     if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){}
@@ -162,7 +161,7 @@ export async function submitAuthSignin(){
     markAuthSuccess&&markAuthSuccess();
     try{
       var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
-      CURRENT_USER_REF.CURRENT_USER=(me&&me.user)?me.user:r.user;
+      window.setCurrentUser((me&&me.user)?me.user:r.user);
       console.log("[boot/build 2026-06-09b] /me.user =", JSON.stringify(me.user).substring(0, 300));
     }catch(_){
       /* /me is the source of truth for the user object (tier,
@@ -170,11 +169,11 @@ export async function submitAuthSignin(){
          something is wrong with the new session — fall back to
          the login response but DON'T proceed into the app until
          we've at least confirmed the session is alive on a retry. */
-      CURRENT_USER_REF.CURRENT_USER=r.user;
+      window.setCurrentUser(r.user);
       try{
         await new Promise(function(r2){setTimeout(r2,150)});
         var me2=await apiFetch("/api/auth/me",{_authEndpoint:true});
-        if(me2&&me2.user)CURRENT_USER_REF.CURRENT_USER=me2.user;
+        if(me2&&me2.user)window.setCurrentUser(me2.user);
       }catch(__){ /* still nothing — proceed with what we have */ }
     }
     await afterAuthEnter();
@@ -241,7 +240,6 @@ export async function submitAuthVerify(token){
   showAuthView("authVerifiedView");
   document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
   var markAuthSuccess=window.markAuthSuccess;
-  var CURRENT_USER_REF=window;
   try{
     var r=await apiFetch("/api/auth/verify?token="+encodeURIComponent(token));
     /* Verification creates the user account (from pending registration)
@@ -250,14 +248,14 @@ export async function submitAuthVerify(token){
     markAuthSuccess&&markAuthSuccess();
     try{
       var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
-      CURRENT_USER_REF.CURRENT_USER=(me&&me.user)?me.user:((r&&r.user)?r.user:null);
+      window.setCurrentUser((me&&me.user)?me.user:((r&&r.user)?r.user:null));
     }catch(_){
-      CURRENT_USER_REF.CURRENT_USER=(r&&r.user)?r.user:null;
-      if(CURRENT_USER_REF.CURRENT_USER){
+      window.setCurrentUser((r&&r.user)?r.user:null);
+      if(window.CURRENT_USER){
         try{
           await new Promise(function(r2){setTimeout(r2,150)});
           var me2=await apiFetch("/api/auth/me",{_authEndpoint:true});
-          if(me2&&me2.user)CURRENT_USER_REF.CURRENT_USER=me2.user;
+          if(me2&&me2.user)window.setCurrentUser(me2.user);
         }catch(__){ /* fall through with what we have */ }
       }
     }
@@ -338,15 +336,14 @@ export async function submitAuthLoginWithCode(){
   if(!code||code.length!==6)return setAuthError("authCodeError","Please enter the 6-digit code.");
   var btn=document.getElementById("authCodeLoginBtn");btn.disabled=true;btn.textContent="Logging in…";
   var markAuthSuccess=window.markAuthSuccess;
-  var CURRENT_USER_REF=window;
   try{
     var r=await apiFetch("/api/auth/login-with-code",{method:"POST",_authEndpoint:true,body:{email,code}});
     markAuthSuccess&&markAuthSuccess();
     try{
       var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
-      CURRENT_USER_REF.CURRENT_USER=(me&&me.user)?me.user:r.user;
+      window.setCurrentUser((me&&me.user)?me.user:r.user);
     }catch(_){
-      CURRENT_USER_REF.CURRENT_USER=r.user;
+      window.setCurrentUser(r.user);
     }
     if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){}
     await afterAuthEnter();
