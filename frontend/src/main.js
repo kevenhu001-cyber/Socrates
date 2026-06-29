@@ -10291,6 +10291,7 @@ function syncModelPills(){
   var trigger=document.getElementById("modelPickerTrigger");
   if(!picker||!label||!menu||!trigger)return;
   var providers=apiConfig.providers||[];
+  console.log("[syncModelPills] providers.length=", providers.length, "activeId=", apiConfig.activeId);
   var active=providers.find(function(p){return p&&p.id===apiConfig.activeId});
   /* Update the trigger label. If there's a real provider, show its
      display name and apply the .has-model accent. */
