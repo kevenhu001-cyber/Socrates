@@ -103,7 +103,8 @@ export async function afterAuthEnter(){
   /* Pull the user's server-side chat sessions into the local cache. */
   await window.refreshServerSessions&&window.refreshServerSessions();
   /* Load the user's saved API providers and model configs. */
-  await window.refreshApiConfig&&window.refreshApiConfig();
+  var _r=await window.refreshApiConfig&&window.refreshApiConfig();
+  console.log("[afterAuthEnter] refreshApiConfig returned:", _r && _r.providers && _r.providers.length, "providers, activeId=", _r && _r.activeId);
   /* Load the user's saved memories for long-term context. */
   window.loadUserMemories&&window.loadUserMemories();
   /* Update sidebar footer with user info. */
