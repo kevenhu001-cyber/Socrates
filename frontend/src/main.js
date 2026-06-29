@@ -10136,25 +10136,21 @@ function renderSharedQuestionCard(idx,q){
 }
 
 async function refreshApiConfig(){
+  console.log("[refreshApiConfig] ENTRY, CURRENT_USER=", CURRENT_USER && CURRENT_USER.email);
   if(!CURRENT_USER){
-    /* Cold-boot path — no user yet. Leave apiConfig empty so the
-       user gets a clear "no provider" state until they sign in and
-       pick one. Auto-picking BEAGLE would route silently through a
-       model the user never chose. */
+    console.log("[refreshApiConfig] EARLY RETURN: no CURRENT_USER");
     apiConfig={activeId:null,providers:[]};
     return apiConfig;
   }
   try{
-    /* On fresh page load the in-memory apiConfig.providers is empty, so we
-       also try the localStorage cache — the server does not return the key.
-       P4.4 — loadCachedProviderKeys is now async (decrypts the AES-GCM
-       envelope), so we `await` it. */
     var existingKeys=await loadCachedProviderKeys();
     apiConfig.providers.forEach(function(p){
       if(p.key)existingKeys[p.id]=p.key;
     });
     var r=await apiFetch("/api/api-key");
+    console.log("[refreshApiConfig] /api/api-key response:", r);
     var rows=Array.isArray(r&&r.providers)?r.providers:[];
+    console.log("[refreshApiConfig] rows count:", rows.length, "rows:", rows.map(function(x){return{x:x&&x.label,y:x&&x.isActive,z:x&&x.hasKey?'Y':'N'}}));
     /* Filter out any stale Beagle providers that were registered server-side
        by a previous version of the code — the built-in BEAGLE_BUILT_IN
        constant handles Beagle now via the nginx reverse proxy. */
@@ -10212,6 +10208,7 @@ async function refreshApiConfig(){
        user's Tutor / chat through a provider they never chose.
        Leave activeId as-is; the user can still pick one in Settings. */
   }
+  console.log("[refreshApiConfig] EXIT, providers.length=", apiConfig.providers.length, "activeId=", apiConfig.activeId, "list:", apiConfig.providers.map(function(p){return p.label;}));
   return apiConfig;
 }
 
