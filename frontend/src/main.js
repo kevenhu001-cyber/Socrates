@@ -6,7 +6,7 @@ import { processPendingMermaid, renderViz, renderVizLoading, renderMermaid } fro
 import { formatTickSlice, formatMsgProgressive, formatMsg } from './render/markdown.js';
 import { callAPI, callAPIChat } from './chat/api.js';
 import { callAPIStream } from './chat/stream.js';
-import { hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister, switchAuthTab, setAuthError, showAuthForgotPassword, showAuthCodeLogin, submitAuthSignin, submitAuthRegister, submitAuthVerify, submitAuthForgotPassword, submitAuthResetPassword, submitAuthSendCode, submitAuthLoginWithCode, resendVerification, resendAuthCode } from './auth/index.js';
+import { hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister, switchAuthTab, setAuthError, showAuthForgotPassword, showAuthCodeLogin, submitAuthSignin, submitAuthRegister, submitAuthVerify, submitAuthForgotPassword, submitAuthResetPassword, submitAuthSendCode, submitAuthLoginWithCode, resendVerification, resendAuthCode, afterAuthEnter } from './auth/index.js';
 import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
 import { toggleSidebar, getRecentsFilter, setRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
 
@@ -8081,11 +8081,17 @@ async function resetApp(){
    ============================================================ */
 var CURRENT_USER=null;
 
+/* Cross-module CURRENT_USER setter — boot.js and auth/index.js
+   set window.CURRENT_USER, but main.js functions read the local
+   `var CURRENT_USER`. This setter keeps both in sync. */
+function setCurrentUser(user){ CURRENT_USER = user; window.CURRENT_USER = user; }
+window.setCurrentUser = setCurrentUser;
+
 /* P0.4 — apiFetch / apiFetchRaw / retryApiFetch / makeApiError are
    imported from ./util/api.js. The handleAuthExpired hook is
    installed once at boot via installAuthHooks() — see below. */
-import { apiFetch, apiFetchRaw, retryApiFetch, makeApiError, installAuthHooks } from './util/api.js';
-window.apiFetch=apiFetch;window.apiFetchRaw=apiFetchRaw;window.retryApiFetch=retryApiFetch;
+import { apiFetch, apiFetchRaw, retryApiFetch, makeApiError, installAuthHooks, getCsrfToken } from './util/api.js';
+window.apiFetch=apiFetch;window.apiFetchRaw=apiFetchRaw;window.retryApiFetch=retryApiFetch;window.getCsrfToken=getCsrfToken;
 
 /* Post-auth grace window. Right after a successful register or
  * login the browser hasn't always written the new `sid` cookie to
@@ -10154,7 +10160,7 @@ async function refreshApiConfig(){
        constant handles Beagle now via the nginx reverse proxy. */
     rows=rows.filter(function(p){return p.label!==BEAGLE_BUILT_IN.label});
     apiConfig={activeId:null,providers:rows.map(function(p){
-      return{id:p.id,isActive:p.isActive,isBuiltIn:p.isBuiltIn,label:p.label,url:p.url,model:p.model,key:existingKeys[p.id]||p.key||""};
+      return{id:p.id,isActive:p.isActive,isBuiltIn:p.isBuiltIn,label:p.label,url:p.url,model:p.model,hasKey:!!p.hasKey,key:existingKeys[p.id]||p.key||""};
     })};
     /* Merge the built-in Beagle provider (frontend-only, no server registration). */
     var hasBeagle=apiConfig.providers.some(function(p){return p.isBuiltIn||p.id==="beagle-built-in"});
@@ -10166,7 +10172,7 @@ async function refreshApiConfig(){
        from rows the user added but never finished configuring, or from
        stale rows whose plaintext key is no longer in localStorage. */
     function providerUsable(p){
-      return !!(p && (p.isBuiltIn || (p.key && p.key.length > 0)));
+      return !!(p && (p.isBuiltIn || p.hasKey || (p.key && p.key.length > 0)));
     }
     /* Cold-start: honour the user's persisted active provider first. The
        server's `isActive` flag is the source of truth for what the user
@@ -12595,3 +12601,50 @@ window.resetBackgroundColor = resetBackgroundColor;
 window.resetBackgroundDark = resetBackgroundDark;
 window.resetBackgroundLight = resetBackgroundLight;
 window.setAccentColor = setAccentColor;
+window.afterAuthEnter = afterAuthEnter;
+window.markAuthSuccess = markAuthSuccess;
+window.loadProjects = loadProjects;
+window.renderProjects = renderProjects;
+window.refreshServerSessions = refreshServerSessions;
+window.refreshApiConfig = refreshApiConfig;
+window.loadUserMemories = loadUserMemories;
+window.renderUserFooter = renderUserFooter;
+window.renderRecents = renderRecents;
+window.renderMistakes = renderMistakes;
+window.updateMistakesBadge = updateMistakesBadge;
+window.renderProviderList = renderProviderList;
+window.syncModelPills = syncModelPills;
+window.syncExtensionsUI = syncExtensionsUI;
+window.syncAppModeUI = syncAppModeUI;
+window.syncSidebarForMode = syncSidebarForMode;
+window.getChatIdFromURL = getChatIdFromURL;
+window.setChatIdInURL = setChatIdInURL;
+window.syncSettingsUI = syncSettingsUI;
+window.toggleShareBtn = toggleShareBtn;
+window.getActiveProvider = getActiveProvider;
+window.getCustomInstructionsString = getCustomInstructionsString;
+window.makeAIWatchdog = makeAIWatchdog;
+window.isReasoningProvider = isReasoningProvider;
+window.apiConfig = apiConfig;
+window.offlineGuard = offlineGuard;
+window.sleepBackoff = sleepBackoff;
+window.STREAM_TIMEOUT_MS = STREAM_TIMEOUT_MS;
+window.STREAM_HEARTBEAT_MS = STREAM_HEARTBEAT_MS;
+window.STREAM_MAX_ATTEMPTS = STREAM_MAX_ATTEMPTS;
+window.STREAM_RETRYABLE_STATUS = STREAM_RETRYABLE_STATUS;
+window.esc = esc;
+window.addMessage = addMessage;
+window.showToast = showToast;
+window.saveCurrentSession = saveCurrentSession;
+window.fetchGeoInfo = fetchGeoInfo;
+window.loadSharedSession = loadSharedSession;
+window.BEAGLE_BUILT_IN = BEAGLE_BUILT_IN;
+window.RECENTS_FILTER_KEY = RECENTS_FILTER_KEY;
+window.updateProviderField = updateProviderField;
+window.closeChatModelMenu = closeChatModelMenu;
+window.offlineGuard = offlineGuard;
+window.sleepBackoff = sleepBackoff;
+window.STREAM_TIMEOUT_MS = STREAM_TIMEOUT_MS;
+window.STREAM_HEARTBEAT_MS = STREAM_HEARTBEAT_MS;
+window.STREAM_MAX_ATTEMPTS = STREAM_MAX_ATTEMPTS;
+window.STREAM_RETRYABLE_STATUS = STREAM_RETRYABLE_STATUS;
