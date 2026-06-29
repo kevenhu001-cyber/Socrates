@@ -46,7 +46,7 @@ export function makeApiError(status, message, body, code, retried) {
   return err;
 }
 
-function getCsrfToken() {
+export function getCsrfToken() {
   const m = document.cookie.match(/\bcsrf=([^;]+)/);
   return m ? m[1] : null;
 }
