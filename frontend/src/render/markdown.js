@@ -12,6 +12,56 @@ import { preprocessMarkdown, preprocessMarkdownForStreaming } from './preprocess
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
 import { sanitizeUrls } from '../util/safe.js';
 
+/* Stream-time scaffold plugins.
+   main.js registers (parser, renderer) pairs here so the streaming
+   pass can render widgets inline instead of falling back to a
+   plain-text "[Quick Check] body…" preview. The plugin format:
+     { name: 'theorem', parse: (inner) => parsedOrNull,
+       render: (parsed) => htmlString }
+   If `parse` returns null, the streaming pass falls back to a labelled
+   plain-text preview so the user still sees the content, just not in
+   its final styled form. */
+var STREAM_SCAFFOLD_PLUGINS = [];
+
+/* Lightweight plain-text fallback used when no plugin is registered OR
+   when the plugin returns null. The streaming pass should never block
+   on a missing plugin — at minimum we surface the scaffold as readable
+   labelled text. */
+var STREAM_SCAFFOLD_FALLBACK = {
+  quiz:      '[Quick Check]',
+  example:   '[Example]',
+  practice:  '[Practice]',
+  definition:'[Definition]',
+  step:      '[Step]',
+  flashcard: '[Flashcard]',
+  proof:     '[Proof]',
+  theorem:   '[Theorem]',
+  'key-point':'[Key Point]',
+  derivation:'[Derivation]'
+};
+
+export function registerStreamScaffold(name, parse, render) {
+  /* Replace existing plugin with the same name so the latest call
+     wins. main.js re-registers on every module load. */
+  STREAM_SCAFFOLD_PLUGINS = STREAM_SCAFFOLD_PLUGINS.filter(function(p){
+    return p.name !== name;
+  });
+  STREAM_SCAFFOLD_PLUGINS.push({ name: name, parse: parse, render: render });
+}
+
+export function clearStreamScaffolds() {
+  STREAM_SCAFFOLD_PLUGINS = [];
+}
+
+/* Lookup helper — returns the plugin object for a given tag name, or
+   null. Used by formatMsgProgressive. */
+function findStreamScaffold(name) {
+  for (var i = 0; i < STREAM_SCAFFOLD_PLUGINS.length; i++) {
+    if (STREAM_SCAFFOLD_PLUGINS[i].name === name) return STREAM_SCAFFOLD_PLUGINS[i];
+  }
+  return null;
+}
+
 export function formatTickSlice(full,len){
   return formatMsgProgressive(full.slice(0,len));
 }
@@ -38,7 +88,7 @@ export function formatMsgProgressive(t){
     }catch(_e){
       inner=escHTML(content.trim());
     }
-    return save('<details class="think-block"><summary class="think-summary">Thinking</summary><div class="think-content">'+inner+'</div></details>');
+    return save('<details class="think-block" open><summary class="think-summary">Thinking</summary><div class="think-content">'+inner+'</div></details>');
   });
   /* Unclosed thinking — show pulsing placeholder */
   s=s.replace(/<think>([\s\S]*)$/g,function(_,content){
@@ -49,27 +99,65 @@ export function formatMsgProgressive(t){
     }catch(_e){
       inner=escHTML(content.trim());
     }
-    return save('<details class="think-block"><summary class="think-summary"><span class="thinking-ring thinking-ring-sm"></span> Thinking\u2026</summary><div class="think-content">'+inner+'</div></details>');
+    return save('<details class="think-block" open><summary class="think-summary"><span class="thinking-ring thinking-ring-sm"></span> Thinking\u2026</summary><div class="think-content">'+inner+'</div></details>');
   });
 
-  /* 1b. Tutor scaffold blocks — show text-only preview during streaming. */
+  /* 1b. Tutor scaffold blocks — try the stream-time plugin first;
+     fall back to a labelled plain-text preview if no plugin is
+     registered or the parser returns null. The plugin path lets
+     theorem / proof / key-point / derivation (and others, if
+     registered) appear as their full styled widget as soon as
+     </tag> lands during streaming. */
   function _scaffoldText(inner) {
     var text = inner.replace(/<[^>]+>/g, '').trim();
     return text.length > 200 ? text.slice(0, 200) + '\u2026' : text;
   }
-  s = s.replace(/<(quiz|example|practice|definition|flashcard)\b[^>]*>([\s\S]*?)<\/\1>/gi, function(_, tag, content) {
-    var label = tag === 'quiz'     ? '[Quick Check]'
-              : tag === 'example'  ? '[Example]'
-              : tag === 'practice' ? '[Practice]'
-              : tag === 'definition' ? '[Definition]'
-              : '[Flashcard]';
-    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">' + label + '</span> ' + escHTML(_scaffoldText(content)) + '</div>');
+  function _streamScaffoldFallback(tag, content) {
+    var label = STREAM_SCAFFOLD_FALLBACK[tag] || '[' + tag + ']';
+    var txt = _scaffoldText(content);
+    /* Render LaTeX inside the fallback text so $...$ and $$...$$
+       are processed by KaTeX even before a proper scaffold plugin
+       is registered. Without this, theorem/proof/key-point/derivation
+       blocks show literal dollar signs during streaming. */
+    if(typeof katex!=="undefined"){
+      txt=txt.replace(/\$\$([\s\S]*?)\$\$/g,function(_,math){
+        try{return save(katex.renderToString(math.trim(),{displayMode:true,throwOnError:false,macros:KATEX_MACROS}))}
+        catch(e){return save('<pre>$$'+escHTML(math)+'$$</pre>')}
+      });
+      txt=txt.replace(/\$(.+?)\$/g,function(_,math){
+        try{return save(katex.renderToString(math.trim(),{displayMode:false,throwOnError:false,macros:KATEX_MACROS}))}
+        catch(e){return save('<code>$'+escHTML(math)+'$</code>')}
+      });
+    }
+    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">'
+                + label + '</span> ' + escHTML(txt) + '</div>');
+  }
+  function _streamScaffold(tag, content) {
+    var plugin = findStreamScaffold(tag);
+    if (plugin) {
+      try {
+        var parsed = plugin.parse(content);
+        if (parsed) {
+          var html = plugin.render(parsed);
+          if (html) return save(html);
+        }
+      } catch (e) {
+        /* Plugin threw \u2014 fall through to plain-text preview. */
+      }
+    }
+    return _streamScaffoldFallback(tag, content);
+  }
+  s = s.replace(/<(quiz|example|practice|definition|flashcard|proof|theorem|key-point|derivation)\b[^>]*>([\s\S]*?)<\/\1>/gi, function(_, tag, content) {
+    return _streamScaffold(tag, content);
   });
   s = s.replace(/<step\b[^>]*>([\s\S]*?)<\/step>/gi, function(_, content) {
-    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">[Step]</span> ' + escHTML(_scaffoldText(content)) + '</div>');
+    return _streamScaffold('step', content);
   });
-  s = s.replace(/<(quiz|example|practice|definition|step|flashcard)\b[^>]*>([\s\S]*?)$/gi, function(_, tag) {
-    return save('<span class="scaffold-stream scaffold-stream-unclosed">\u2026' + escHTML(tag) + '\u2026</span>');
+  /* Unclosed scaffold tag \u2014 show a labelled pulsing pill so the user
+     sees the model mid-scaffold without leaking raw XML. */
+  s = s.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b[^>]*>([\s\S]*?)$/gi, function(_, tag) {
+    var label = STREAM_SCAFFOLD_FALLBACK[tag] || '[' + tag + ']';
+    return save('<span class="scaffold-stream scaffold-stream-unclosed"><span class="scaffold-stream-label">' + label + '</span> <span class="thinking-ring thinking-ring-sm"></span></span>');
   });
 
   /* 2. Display math $$...$$ — CLOSED blocks render with KaTeX now. */
@@ -162,7 +250,28 @@ export function formatMsg(t){
     if(txt.length>300)txt=txt.slice(0,300)+'\u2026';
     return save('<div class="scaffold-stream"><span class="scaffold-stream-label">[Step]</span>'+esc(txt)+'</div>');
   });
-  t=t.replace(/<(quiz|example|practice|definition|step|flashcard)\b[^>]*>([\s\S]*?)$/gi,function(_,tag){
+  /* Math-flavored scaffolds (proof / theorem / key-point / derivation) */
+  t=t.replace(/<(proof|theorem|key-point|derivation)\b[^>]*>([\s\S]*?)<\/\1>/gi,function(_,tag,content){
+    var label='['+(tag==='proof'?'Proof':tag==='theorem'?'Theorem':tag==='key-point'?'Key Point':'Derivation')+']';
+    var txt=content.replace(/<[^>]+>/g,'').trim();
+    if(txt.length>300)txt=txt.slice(0,300)+'\u2026';
+    /* Render LaTeX inside the content before saving the scaffold block,
+       so $...$ and $$...$$ are processed by KaTeX instead of appearing
+       as literal text. We use the same save() pattern so inner math
+       blocks are restored alongside the outer scaffold block. */
+    if(typeof katex!=="undefined"){
+      txt=txt.replace(/\$\$([\s\S]*?)\$\$/g,function(_,math){
+        try{return save(katex.renderToString(math.trim(),{displayMode:true,throwOnError:false,macros:KATEX_MACROS}))}
+        catch(e){return save('<pre>'+esc('$$'+math+'$$')+'</pre>')}
+      });
+      txt=txt.replace(/\$(.+?)\$/g,function(_,math){
+        try{return save(katex.renderToString(math.trim(),{displayMode:false,throwOnError:false,macros:KATEX_MACROS}))}
+        catch(e){return save('<code>'+esc('$'+math+'$')+'</code>')}
+      });
+    }
+    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">'+label+'</span>'+esc(txt)+'</div>');
+  });
+  t=t.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b[^>]*>([\s\S]*?)$/gi,function(_,tag){
     return save('<span class="scaffold-stream scaffold-stream-unclosed">\u2026'+esc(tag)+'\u2026</span>');
   });
 
@@ -176,7 +285,7 @@ export function formatMsg(t){
     }catch(_){
       inner=esc(content.trim());
     }
-    return save('<details class="think-block"><summary class="think-summary">Thinking</summary><div class="think-content">'+inner+'</div></details>');
+    return save('<details class="think-block" open><summary class="think-summary">Thinking</summary><div class="think-content">'+inner+'</div></details>');
   });
   t=t.replace(/<think>([\s\S]*)$/g,function(_,content){
     var inner="";
@@ -186,7 +295,7 @@ export function formatMsg(t){
     }catch(_){
       inner=esc(content.trim());
     }
-    return save('<details class="think-block"><summary class="think-summary"><span class="thinking-ring thinking-ring-sm"></span> Thinking\u2026</summary><div class="think-content">'+inner+'</div></details>');
+    return save('<details class="think-block" open><summary class="think-summary"><span class="thinking-ring thinking-ring-sm"></span> Thinking\u2026</summary><div class="think-content">'+inner+'</div></details>');
   });
 
   /* Mermaid diagram blocks */

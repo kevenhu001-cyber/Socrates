@@ -86,6 +86,7 @@ export async function callAPI(messages,maxTokens){
   var makeAIWatchdog=window.makeAIWatchdog;
   var getCsrfToken=window.getCsrfToken;
   var sleepBackoff=window.sleepBackoff;
+  var apiFetch=window.apiFetch;
   var STREAM_TIMEOUT_MS=window.STREAM_TIMEOUT_MS;
   var STREAM_HEARTBEAT_MS=window.STREAM_HEARTBEAT_MS;
   var STREAM_RETRYABLE_STATUS=window.STREAM_RETRYABLE_STATUS;
@@ -171,11 +172,11 @@ export async function callAPI(messages,maxTokens){
         }
         return json.choices[0].message.content;
       }catch(e){
+        var wdReason=wdB.reason()||"";
         wdB.stop("error");
         var isAbort=(e&&(e.name==="AbortError"||e.code===20));
-        var reason=wdB.reason()||"";
-        var isHeartbeat=reason.indexOf("heartbeat")>=0;
-        var isTotal=reason.indexOf("total-timeout")>=0;
+        var isHeartbeat=wdReason.indexOf("heartbeat")>=0;
+        var isTotal=wdReason.indexOf("total-timeout")>=0;
         lastBeagleErr=isAbort
           ?(isHeartbeat?"request stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)":
              isTotal?"request timed out after "+(STREAM_TIMEOUT_MS/1000)+"s":
@@ -209,11 +210,11 @@ export async function callAPI(messages,maxTokens){
       }
       return resp.choices[0].message.content;
     }catch(e){
+      var wdReasonN=wdN.reason()||"";
       wdN.stop("error");
       var isAbortN=(e&&(e.name==="AbortError"||wdN.ac.signal.aborted));
-      var reasonN=wdN.reason()||"";
-      var isHbN=reasonN.indexOf("heartbeat")>=0;
-      var isTotN=reasonN.indexOf("total-timeout")>=0;
+      var isHbN=wdReasonN.indexOf("heartbeat")>=0;
+      var isTotN=wdReasonN.indexOf("total-timeout")>=0;
       var eStatus=e&&e.status;
       lastNsErr=isAbortN
         ?(isHbN?"request stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)":

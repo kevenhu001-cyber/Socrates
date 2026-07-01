@@ -2,6 +2,7 @@ import express from 'express';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import helmet from 'helmet';
 
 import { csrfProtection } from './middleware/csrf.js';
 import { requireAuth } from './middleware/auth.js';
@@ -19,6 +20,7 @@ import userRouter from './routes/users.js';
 import projectRouter from './routes/projects.js';
 import tagRouter from './routes/tags.js';
 import fileRouter from './routes/files.js';
+import fileExtractRouter from './routes/fileExtract.js';
 import migrateRouter from './routes/migrate.js';
 import artifactRouter from './routes/artifacts.js';
 import memoryRouter from './routes/memory.js';
@@ -49,10 +51,121 @@ const app = express();
  * ERR_ERL_PERMISSIVE_TRUST_PROXY warning while still letting
  * req.protocol / req.ip see the real client values. */
 app.set('trust proxy', 2);
+// Don't advertise the framework in the X-Powered-By header.
+app.disable('x-powered-by');
 
 /* ────────────────────────────
    Global middleware
    ──────────────────────────── */
+
+// CSP source list — keep this minimal and reviewed. Anything that
+// appears here is a deliberate allow-list entry, not a wildcard.
+//
+//   cdn.jsdelivr.net    — third-party JS/CSS we ship with SRI:
+//                          marked, katex (+ mhchem), mermaid, highlight.js,
+//                          fuse.js. All pinned with `integrity=` so the
+//                          browser still refuses a tampered file.
+//   fonts.googleapis.com — Google Fonts CSS API.
+//   fonts.gstatic.com    — Google Fonts woff2 binary CDN.
+//   'sha256-FUWgNE60…'   — the inline pre-boot script in index.html that
+//                          flips document.documentElement.dataset.bootState
+//                          to "checking" before main.js loads. CSP3
+//                          accepts hash-based per-script allow-listing in
+//                          place of `'unsafe-inline'`, which is safer.
+const CSP_SCRIPT_SOURCES = [
+  "'self'",
+  'https://cdn.jsdelivr.net',
+];
+const CSP_SCRIPT_HASHES = [
+  // Pre-boot inline script in frontend/index.html (no <script> tags).
+  // If you edit that script you MUST recompute the hash here or the
+  // page will fail to load with "Refused to execute inline script".
+  "'sha256-FUWgNE60lf0IIcMKXL3LpcSKKY9E3uXAiD7xZUcUuQo='",
+];
+const CSP_STYLE_SOURCES = [
+  "'self'",
+  "'unsafe-inline'",        // Vite emits a small inline style block
+  'https://cdn.jsdelivr.net',
+  'https://fonts.googleapis.com',
+];
+const CSP_FONT_SOURCES = [
+  "'self'",
+  'data:',
+  'https://fonts.gstatic.com',
+];
+const CSP_IMG_SOURCES = [
+  "'self'",
+  'data:',
+  'https:',
+  'blob:',
+];
+const CSP_CONNECT_SOURCES = [
+  "'self'",
+  // SSE EventSource goes through connect-src. We allow only our own
+  // origin; outbound LLM calls are server-side.
+];
+
+// Security headers (helmet) — applied first so every response carries
+// the baseline headers. CSP is set to a strict policy that allows our
+// own origins, the pinned CDN scripts, and the hash of the inline
+// pre-boot script. HSTS is 2 years + preload + subdomains so the
+// browser refuses to ever speak plain HTTP to *.topodrive.top.
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'self'"],
+      // Inline scripts are gated by hash; the dev-only 'unsafe-eval'
+      // is required for Vite HMR. Production emits NO inline scripts
+      // (Vite bundles to /assets/index-*.js).
+      scriptSrc: [
+        ...CSP_SCRIPT_SOURCES,
+        ...CSP_SCRIPT_HASHES,
+        ...(process.env.NODE_ENV === 'production' ? [] : ["'unsafe-eval'"]),
+      ],
+      styleSrc: CSP_STYLE_SOURCES,
+      fontSrc: CSP_FONT_SOURCES,
+      imgSrc: CSP_IMG_SOURCES,
+      // SSE streams from /api/chat/stream and web-search/image-search hit
+      // our own origin. 'connect-src' covers fetch / XHR / EventSource.
+      connectSrc: CSP_CONNECT_SOURCES,
+      // SSE needs the worker/blob sources for streaming.
+      workerSrc: ["'self'", "blob:"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      manifestSrc: ["'self'"],
+    },
+  },
+  // 2 years, includeSubDomains, eligible for the HSTS preload list.
+  // Once a browser sees this it refuses plain HTTP for the entire domain.
+  strictTransportSecurity: {
+    maxAge: 63072000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  // API/SPA should never be framed.
+  frameguard: { action: 'deny' },
+  // Block MIME sniffing.
+  noSniff: true,
+  // Don't allow the browser to send the full URL as Referer; we don't
+  // need that and it can leak query-string tokens.
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  // Restrict powerful APIs the SPA doesn't need.
+  permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+  // Cross-Origin-Embedder-Policy defaults to "require-corp" in helmet,
+  // which would force every cross-origin script to opt-in via CORP
+  // headers — including cdn.jsdelivr.net. Disable COEP entirely; we
+  // don't need SharedArrayBuffer / cross-origin isolation for the SPA.
+  crossOriginEmbedderPolicy: false,
+  // CORP must be "cross-origin" so the SPA can still load SRI-pinned
+  // scripts from cdn.jsdelivr.net (without this, the browser refuses
+  // them under same-site policy).
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  // Same-origin opener — prevents window.opener leaks.
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
+}));
 
 // Request id — set before anything else so downstream middleware
 // (csrf, auth, error handler) can include it in logs / headers for
@@ -200,7 +313,7 @@ app.use('/api/messages', messageRouter);
 app.use('/api/users', userRouter);
 
 // Search (Phase 3) — local content (sessions + messages), used by Cmd-K.
-app.post('/api/search', requireAuth, async (req, res, next) => {
+app.post('/api/search', requireAuth, searchLimiter, async (req, res, next) => {
   try {
     const { q, scope, limit } = req.body;
     const result = await searchContent(req.userId, { q, scope, limit });
@@ -246,7 +359,9 @@ app.use('/api/projects', projectRouter);
 // Tags (Phase 4)
 app.use('/api', tagRouter);
 
-// Files (Phase 4)
+// Files (Phase 4) — PDF text extraction is mounted FIRST so its
+// `/extract` path doesn't get swallowed by fileRouter's `/:id` lookup.
+app.use('/api/files', fileExtractRouter);
 app.use('/api/files', fileRouter);
 
 // Migrate (Phase 4)

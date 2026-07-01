@@ -1,5 +1,7 @@
 import dns from 'node:dns/promises';
 import net from 'node:net';
+import http from 'node:http';
+import https from 'node:https';
 import { extractArticle } from './contentExtractor.js';
 import * as urlCache from '../lib/urlCache.js';
 
@@ -35,6 +37,11 @@ import * as urlCache from '../lib/urlCache.js';
  *     Acceptable staleness window: topic-refresh within ~6 hours.
  */
 function isPrivateIp(addr) {
+  // Normalise IPv4-mapped IPv6 (::ffff:x.x.x.x) to plain IPv4
+  if (addr.includes('.')) {
+    const ipv4Match = addr.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
+    if (ipv4Match) addr = ipv4Match[1];
+  }
   if (net.isIP(addr) === 4) {
     const parts = addr.split('.').map(Number);
     if (parts[0] === 10) return true;
@@ -50,55 +57,48 @@ function isPrivateIp(addr) {
     if (lower === '::1' || lower === '::') return true;
     if (lower.startsWith('fc') || lower.startsWith('fd')) return true;     // ULA
     if (lower.startsWith('fe80')) return true;                             // link-local
+    if (lower.startsWith('2002:')) return true;                            // 6to4 (2002::/16)
+    if (lower.startsWith('64:ff9b:')) return true;                         // NAT64
+    if (lower.startsWith('100:')) return true;                             // discard-only (100::/64)
   }
   return false;
 }
 
 /**
- * Validate a URL is safe to fetch:
- *   - http(s) scheme only
- *   - host is not a private IP literal
- *   - every resolved DNS record for the host is public
- *
- * @param {string} rawUrl
- * @returns {Promise<boolean>}
+ * Resolve a hostname and return a lookup function that pins the resolved
+ * IP address, preventing DNS rebinding between validation and connection.
+ * Returns { lookup, addresses } where `addresses` is the list of resolved
+ * IPs (for logging) and `lookup` is the function to pass to `agent`.
  */
-async function isSafeUrl(rawUrl) {
-  let parsed;
-  try {
-    parsed = new URL(rawUrl);
-  } catch {
-    return false;
-  }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
-  const host = parsed.hostname;
-  if (!host) return false;
-  if (net.isIP(host) && isPrivateIp(host)) return false;
-  try {
-    // Hard-cap DNS lookups so blocked hosts (e.g. en.wikipedia.org
-    // from some datacenters) don't stall the whole batch.
-    const records = await Promise.race([
-      dns.lookup(host, { all: true }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('dns-timeout')), 3000)),
-    ]);
-    for (const r of records) {
-      if (isPrivateIp(r.address)) return false;
+async function resolveAndPin(hostname) {
+  const records = await Promise.race([
+    dns.lookup(hostname, { all: true }),
+    new Promise((_, rej) => setTimeout(() => rej(new Error('dns-timeout')), 3000)),
+  ]);
+  for (const r of records) {
+    if (isPrivateIp(r.address)) {
+      throw new Error(`Blocked: ${hostname} resolves to private IP ${r.address}`);
     }
-  } catch {
-    return false;
   }
-  return true;
+  return records;
 }
 
 /**
- * Re-validate the FINAL URL of a redirect chain. If the server
- * redirects to a private IP, this catches it before we send any bytes.
- * Node's built-in fetch follows redirects automatically and we set
- * `redirect: 'follow'`; we cannot inspect each hop, but we CAN inspect
- * the final URL via `response.url` once the chain completes.
+ * Create an http.Agent that pins DNS to pre-resolved addresses.
+ * This prevents the TOCTOU race where an attacker changes DNS between
+ * our validation lookup and the actual fetch connection.
  */
-async function isSafeFinalUrl(finalUrl) {
-  return isSafeUrl(finalUrl);
+function createPinnedAgent(protocol, addresses) {
+  const lookup = (_hostname, _opts, cb) => {
+    // Return the first resolved address; for agents with multiple A
+    // records we round-robin across them (fetch will retry on failure).
+    const idx = Math.floor(Math.random() * addresses.length);
+    cb(null, addresses[idx].address, addresses[idx].family);
+  };
+  if (protocol === 'https:') {
+    return new https.Agent({ lookup, rejectUnauthorized: true });
+  }
+  return new http.Agent({ lookup });
 }
 
 export async function fetchBatch(urls) {
@@ -109,8 +109,15 @@ export async function fetchBatch(urls) {
 
   const results = await Promise.allSettled(
     urls.slice(0, maxUrls).map(async (url) => {
-      if (!(await isSafeUrl(url))) {
-        return { ok: false, url, reason: 'Blocked: private or invalid URL' };
+      // Validate URL scheme and parse.
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(url);
+      } catch {
+        return { ok: false, url, reason: 'Blocked: invalid URL' };
+      }
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        return { ok: false, url, reason: 'Blocked: non-http(s) URL' };
       }
 
       // Phase 2: build conditional-GET headers from the URL cache.
@@ -121,120 +128,164 @@ export async function fetchBatch(urls) {
         if (cached.lastModified) headers['If-Modified-Since'] = cached.lastModified;
       }
 
+      // Resolve DNS and pin the IP to prevent DNS rebinding.
+      let pinnedRecords;
+      try {
+        pinnedRecords = await resolveAndPin(parsedUrl.hostname);
+      } catch (err) {
+        return { ok: false, url, reason: err.message };
+      }
+      const agent = createPinnedAgent(parsedUrl.protocol, pinnedRecords);
+
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeout);
 
       try {
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers,
-          // 30x redirects are followed by `fetch`. We re-validate the
-          // final URL via isSafeFinalUrl below. (Node's fetch does NOT
-          // expose per-hop URLs to JS.)
-          redirect: 'follow',
-        });
+        // Manual redirect walk — validate each hop to prevent redirect-
+        // based SSRF that carries the request body (POST/GET) to an
+        // internal endpoint after an initial public redirect.
+        let currentUrl = url;
+        let redirectCount = 0;
+        const maxRedirects = 10;
 
-        // Phase 2: 304 Not Modified — rebuild from cached entry.
-        if (response.status === 304 && cached) {
-          let extracted = null;
-          try { extracted = extractArticle(cached.html, url); } catch { extracted = null; }
-          if (extracted) {
+        while (redirectCount <= maxRedirects) {
+          const currentParsed = new URL(currentUrl);
+          const response = await fetch(currentUrl, {
+            signal: controller.signal,
+            headers,
+            agent,
+            redirect: 'manual',
+          });
+
+          // 30x: validate the Location header before following.
+          if (response.status >= 300 && response.status < 400) {
+            const location = response.headers.get('location');
+            if (!location) {
+              return { ok: false, url, reason: 'Redirect with no Location header' };
+            }
+            const nextUrl = new URL(location, currentUrl).href;
+            const nextParsed = new URL(nextUrl);
+            if (nextParsed.protocol !== 'http:' && nextParsed.protocol !== 'https:') {
+              return { ok: false, url, reason: 'Blocked: redirect to non-http(s) URL' };
+            }
+            // Re-resolve if the hostname changed.
+            if (nextParsed.hostname !== currentParsed.hostname) {
+              try {
+                const nextRecords = await resolveAndPin(nextParsed.hostname);
+                Object.assign(agent, createPinnedAgent(nextParsed.protocol, nextRecords));
+              } catch (err) {
+                return { ok: false, url, reason: `Blocked: redirect to ${nextParsed.hostname} — ${err.message}` };
+              }
+            }
+            currentUrl = nextUrl;
+            redirectCount++;
+            continue;
+          }
+
+          // Too many redirects.
+          if (redirectCount === maxRedirects) {
+            return { ok: false, url, reason: 'Too many redirects' };
+          }
+
+          // Phase 2: 304 Not Modified — rebuild from cached entry.
+          if (response.status === 304 && cached) {
+            let extracted = null;
+            try { extracted = extractArticle(cached.html, url); } catch { extracted = null; }
+            if (extracted) {
+              return {
+                ok: true,
+                url,
+                title: extracted.title || '',
+                content: extracted.content,
+                excerpt: extracted.excerpt,
+                wordCount: extracted.length,
+                pageDate: extracted.date,
+                method: extracted.method,
+                rawHtml: cached.html,
+                truncated: cached.truncated || false,
+                chars: cached.html.length,
+                fromCache: true,
+              };
+            }
             return {
               ok: true,
               url,
-              title: extracted.title || '',
-              content: extracted.content,
-              excerpt: extracted.excerpt,
-              wordCount: extracted.length,
-              pageDate: extracted.date,
-              method: extracted.method,
-              rawHtml: cached.html,
+              title: '',
+              content: cached.html,
               truncated: cached.truncated || false,
               chars: cached.html.length,
               fromCache: true,
             };
           }
+
+          if (!response.ok) {
+            return { ok: false, url, reason: `HTTP ${response.status}` };
+          }
+
+          const contentType = response.headers.get('content-type') || '';
+          if (!contentType.includes('text') && !contentType.includes('json') && !contentType.includes('html')) {
+            return { ok: false, url, reason: `Unsupported content type: ${contentType}` };
+          }
+
+          let text = await response.text();
+          const truncated = text.length > maxSize;
+          if (truncated) text = text.slice(0, maxSize);
+
+          // Phase 2: write to URL cache with validator headers for
+          // future conditional GETs.
+          const etag = response.headers.get('etag') || undefined;
+          const lastModified = response.headers.get('last-modified') || undefined;
+          if (etag || lastModified) {
+            urlCache.set(url, {
+              url,
+              status: response.status,
+              etag,
+              lastModified,
+              contentType,
+              html: text,
+              bytes: text.length,
+              fetchedAt: Date.now(),
+              truncated,
+            });
+          }
+
+          // Extract title from HTML
+          let title = '';
+          const titleMatch = text.match(/<title[^>]*>([^<]+)<\/title>/i);
+          if (titleMatch) title = titleMatch[1].trim();
+
+          // Run main-content extraction (Readability + heuristic fallback).
+          let extracted = null;
+          try { extracted = extractArticle(text, url); } catch { extracted = null; }
+
+          if (extracted) {
+            return {
+              ok: true,
+              url,
+              title: extracted.title || title,
+              content: extracted.content,
+              excerpt: extracted.excerpt,
+              wordCount: extracted.length,
+              pageDate: extracted.date,
+              method: extracted.method,
+              rawHtml: text,
+              truncated,
+              chars: text.length,
+            };
+          }
+
           return {
             ok: true,
             url,
-            title: '',
-            content: cached.html,
-            truncated: cached.truncated || false,
-            chars: cached.html.length,
-            fromCache: true,
-          };
-        }
-
-        // Re-validate the post-redirect final URL.
-        const finalUrl = response.url || url;
-        if (finalUrl !== url && !(await isSafeFinalUrl(finalUrl))) {
-          return { ok: false, url, reason: 'Blocked: redirect to private/invalid URL' };
-        }
-
-        if (!response.ok) {
-          return { ok: false, url, reason: `HTTP ${response.status}` };
-        }
-
-        const contentType = response.headers.get('content-type') || '';
-        if (!contentType.includes('text') && !contentType.includes('json') && !contentType.includes('html')) {
-          return { ok: false, url, reason: `Unsupported content type: ${contentType}` };
-        }
-
-        let text = await response.text();
-        const truncated = text.length > maxSize;
-        if (truncated) text = text.slice(0, maxSize);
-
-        // Phase 2: write to URL cache with validator headers for
-        // future conditional GETs.
-        const etag = response.headers.get('etag') || undefined;
-        const lastModified = response.headers.get('last-modified') || undefined;
-        if (etag || lastModified) {
-          urlCache.set(url, {
-            url,
-            status: response.status,
-            etag,
-            lastModified,
-            contentType,
-            html: text,
-            bytes: text.length,
-            fetchedAt: Date.now(),
-            truncated,
-          });
-        }
-
-        // Extract title from HTML
-        let title = '';
-        const titleMatch = text.match(/<title[^>]*>([^<]+)<\/title>/i);
-        if (titleMatch) title = titleMatch[1].trim();
-
-        // Run main-content extraction (Readability + heuristic fallback).
-        let extracted = null;
-        try { extracted = extractArticle(text, url); } catch { extracted = null; }
-
-        if (extracted) {
-          return {
-            ok: true,
-            url,
-            title: extracted.title || title,
-            content: extracted.content,
-            excerpt: extracted.excerpt,
-            wordCount: extracted.length,
-            pageDate: extracted.date,
-            method: extracted.method,
-            rawHtml: text,
+            title,
+            content: text,
             truncated,
             chars: text.length,
           };
         }
 
-        return {
-          ok: true,
-          url,
-          title,
-          content: text,
-          truncated,
-          chars: text.length,
-        };
+        // Unreachable — but satisfy the linter.
+        return { ok: false, url, reason: 'Unexpected loop exit' };
       } finally {
         clearTimeout(timer);
       }

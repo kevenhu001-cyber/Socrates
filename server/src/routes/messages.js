@@ -3,9 +3,11 @@ import { eq, and, asc, gte, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { messages, feedback, sessions, usageEvents } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { chatLimiter, writeLimiter } from '../middleware/rateLimit.js';
 import { NotFound, BadRequest, TooManyRequests } from '../lib/errors.js';
 import { getBeagleQuota } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
+import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion } from '../services/llm.js';
 
@@ -39,11 +41,23 @@ router.use(requireAuth);
  *
  * When `regenerate=true` the route streams a fresh assistant reply in SSE
  * format. Otherwise it just persists the edit and returns { ok: true }.
+ *
+ * Rate limits:
+ *   - writeLimiter is applied to the whole route (covers cheap edits).
+ *   - chatLimiter is applied when regenerate=true: regenerating hits
+ *     the LLM and costs tokens, so it shares the same 60/hr/user
+ *     budget as new chat messages. Without this, an attacker with
+ *     a valid sid could cycle "regenerate" on a long conversation
+ *     and burn through the operator's LLM budget.
  */
-router.patch('/:id', async (req, res, next) => {
+const regenerateLimiter = (req, res, next) => {
+  if (req.body?.regenerate === true) return chatLimiter(req, res, next);
+  return next();
+};
+router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => {
   try {
     const db = getDb();
-    const { content, regenerate, discardFollowing } = req.body;
+    const { content, regenerate, discardFollowing, attachments } = req.body;
     if (!content) throw new BadRequest('content is required');
 
     /* P10.x — reject client-generated non-UUID ids with a 400 instead
@@ -61,8 +75,29 @@ router.patch('/:id', async (req, res, next) => {
       .limit(1);
     if (!sess) throw new NotFound('Message not found');
 
-    await db.update(messages).set({ content, rawText: content, editedAt: new Date() })
-      .where(eq(messages.id, req.params.id));
+    /* SECURITY: sanitise both the rendered content (HTML) and the
+     * rawText (plain markdown source). The browser normally runs
+     * DOMPurify before send, but defence-in-depth: a misconfigured
+     * client / extension / replay tool shouldn't be able to inject
+     * raw <script> / onload= handlers into a stored message that
+     * another browser will then render. */
+    const safeContent = sanitizeStoredHtml(content);
+    const safeRaw = sanitizePlainText(content);
+    /* P_attachments — when the client explicitly sends `attachments`,
+     * overwrite the stored array; otherwise keep the existing one so
+     * a plain text-edit doesn't drop the thumbnails. We cap to 20 and
+     * require the same shape SessionPayloadSchema enforces (loose
+     * check here because the row is already validated by Zod upstream
+     * for session saves; PATCH trusts the SPA + same auth). */
+    const updateSet = {
+      content: safeContent,
+      rawText: safeRaw,
+      editedAt: new Date(),
+    };
+    if (Array.isArray(attachments)) {
+      updateSet.attachments = attachments.slice(0, 20);
+    }
+    await db.update(messages).set(updateSet).where(eq(messages.id, req.params.id));
 
     /* P_edit — when the client passes `discardFollowing`, drop every
      * assistant message that was authored AFTER the edited user turn
@@ -148,11 +183,16 @@ router.patch('/:id', async (req, res, next) => {
       async () => {
         clearInterval(hb);
         try {
+          // Sanitise on write too — the LLM response can (rarely)
+          // contain raw HTML or odd control chars that would
+          // confuse downstream markdown rendering.
+          const safeContent = sanitizeStoredHtml(fullText);
+          const safeRaw = sanitizePlainText(fullText);
           const [inserted] = await db.insert(messages).values({
             sessionId: msg.sessionId,
             role: 'assistant',
-            content: fullText,
-            rawText: fullText,
+            content: safeContent,
+            rawText: safeRaw,
           }).returning();
           try {
             res.write(`data: ${JSON.stringify({ done: true, messageId: inserted.id })}\n\n`);

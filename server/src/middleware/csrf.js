@@ -2,6 +2,14 @@ import crypto from 'node:crypto';
 import { Forbidden } from '../lib/errors.js';
 import { shouldUseSharedDomain, SHARED_COOKIE_DOMAIN } from '../lib/cookieEnv.js';
 
+function timingSafeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const bufA = Buffer.from(a, 'utf8');
+  const bufB = Buffer.from(b, 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 /**
  * Returns cookie options for CSRF cookies.
  *
@@ -96,7 +104,7 @@ export function csrfProtection(req, res, next) {
   // and the csrf cookie — including forged requests from a malicious
   // origin that triggered a top-level navigation but never received
   // the csrf cookie (because it's set on .topodrive.top).
-  if (sidCookie && (!headerToken || !cookieToken || headerToken !== cookieToken)) {
+  if (sidCookie && (!headerToken || !cookieToken || !timingSafeEqual(headerToken, cookieToken))) {
     return next(new Forbidden('CSRF_TOKEN_MISMATCH', 'CSRF token required for authenticated requests'));
   }
 
@@ -106,7 +114,7 @@ export function csrfProtection(req, res, next) {
     return next();
   }
 
-  if (!headerToken || !cookieToken || headerToken !== cookieToken) {
+  if (!headerToken || !cookieToken || !timingSafeEqual(headerToken, cookieToken)) {
     return next(new Forbidden('CSRF_TOKEN_MISMATCH', 'CSRF token mismatch'));
   }
 

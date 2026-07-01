@@ -1,4 +1,5 @@
 import { ApiError } from '../lib/errors.js';
+import { safeUrl } from '../lib/log.js';
 
 /**
  * Global error-handling middleware.
@@ -10,7 +11,10 @@ export function errorHandler(err, req, res, _next) {
   // early in app.js. Including it in the log line lets an operator
   // grep one ID and find the matching client-side console error.
   const rid = req && req.id ? req.id : 'no-id';
-  const meta = req ? `${req.method} ${req.originalUrl}` : '';
+  // Strip tokens from the logged URL — share / verify / reset links
+  // carry long-lived credentials in the query string and we don't
+  // want those landing in operator log streams.
+  const meta = req ? `${req.method} ${safeUrl(req.originalUrl)}` : '';
   // In production we MUST NOT print full stack traces: they leak
   // internal paths, file layout, and (occasionally) secrets embedded
   // in error messages. Operators can still find the matching request
@@ -34,12 +38,16 @@ export function errorHandler(err, req, res, _next) {
     });
   }
 
-  // Zod validation errors
+  // Zod validation errors — strip issues in production to avoid
+  // leaking schema details or user input through error messages.
   if (err.name === 'ZodError') {
+    const detail = process.env.NODE_ENV === 'production'
+      ? undefined
+      : (err.issues || err.errors);
     return res.status(400).json({
       code: 'VALIDATION_ERROR',
       message: 'Request validation failed',
-      detail: err.issues || err.errors,
+      detail,
     });
   }
 

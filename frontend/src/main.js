@@ -2,13 +2,14 @@
 import './state.js';
 import './i18n.js';
 import { esc, escAttr, escHTML } from './render/helpers.js';
-import { processPendingMermaid, renderViz, renderVizLoading, renderMermaid } from './render/viz.js';
+import { processPendingMermaid, renderViz, renderVizLoading, renderMermaid, openVizModal } from './render/viz.js';
 import { formatTickSlice, formatMsgProgressive, formatMsg } from './render/markdown.js';
 import { callAPI, callAPIChat } from './chat/api.js';
 import { callAPIStream } from './chat/stream.js';
 import { hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister, switchAuthTab, setAuthError, showAuthForgotPassword, showAuthCodeLogin, submitAuthSignin, submitAuthRegister, submitAuthVerify, submitAuthForgotPassword, submitAuthResetPassword, submitAuthSendCode, submitAuthLoginWithCode, resendVerification, resendAuthCode, afterAuthEnter } from './auth/index.js';
 import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
 import { toggleSidebar, getRecentsFilter, setRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
+import { stripChatArtifacts } from './util/stripChatArtifacts.js';
 
 /* ============================================================
    SIDEBAR
@@ -236,8 +237,29 @@ function toggleDisplayPrefs(){
 function syncSidebarBtns(){
   var ob=document.getElementById("sidebarOpenBtn");
   var cb=document.getElementById("sidebarCloseBtn");
-  if(ob)ob.style.display=sidebarOpen?"none":"";
-  if(cb)cb.style.display=sidebarOpen?"":"none";
+  /* Derive from the DOM (.collapsed) — toggleSidebar() lives in
+     sidebar/index.js and can't write this module's `sidebarOpen`
+     var, so reading the var here would desync after the first toggle. */
+  var s=document.getElementById("sidebar");
+  var open=s?!s.classList.contains("collapsed"):sidebarOpen;
+  /* Keep the top-bar toggle button hidden when sidebar is open
+     (the close button inside the sidebar header is visible then).
+     Show the toggle button only when sidebar is collapsed so the
+     user always has an obvious way to re-open it. */
+  if(ob){
+    ob.style.display=open?"none":"";
+    ob.setAttribute("aria-expanded",open?"true":"false");
+    ob.setAttribute("aria-label",open?"Collapse sidebar":"Expand sidebar");
+    ob.setAttribute("title",open?"Collapse sidebar (⌘B)":"Expand sidebar (⌘B)");
+  }
+  /* The close button inside the sidebar header is only useful when
+     the sidebar is open. Hidden when collapsed so it drops out of
+     the tab order. */
+  if(cb){
+    cb.style.display=open?"":"none";
+    if(open)cb.removeAttribute("aria-hidden");
+    else cb.setAttribute("aria-hidden","true");
+  }
 }
 try{
   var sbPref=localStorage.getItem("socrates-sb");
@@ -246,6 +268,7 @@ try{
   }
 }catch(e){}
 syncSidebarBtns();
+window.sidebarOpen=sidebarOpen;
 /* Theme toggle */
 function toggleTheme(){
   var html=document.documentElement;
@@ -289,8 +312,9 @@ loadDisplayPrefs();
 
 /* ============================================================
    SIDEBAR DRAG-TO-RESIZE
-   Drag the 4px-wide strip on the right edge of the sidebar to
+   Drag the 10px-wide strip on the right edge of the sidebar to
    change its width. Range: 200–480 px. Persists in localStorage.
+   The sidebar overlays the main content when wider than 18rem.
    ============================================================ */
 var SIDEBAR_MIN_PX=200;
 var SIDEBAR_MAX_PX=480;
@@ -366,8 +390,11 @@ function saveSidebarWidth(){
 /* Auto-collapse on viewport shrink to mobile width, expand on grow to desktop */
 window.addEventListener("resize",function(){
   var bd=document.getElementById("sidebarBackdrop");
-  if(window.innerWidth<768&&sidebarOpen){
-    sidebarOpen=false;document.getElementById("sidebar").classList.add("collapsed");
+  var s=document.getElementById("sidebar");
+  var open=s&&!s.classList.contains("collapsed");
+  if(window.innerWidth<768&&open){
+    if(s)s.classList.add("collapsed");
+    sidebarOpen=false;
     if(bd)bd.classList.remove("show");
   }else if(window.innerWidth>=768&&bd){
     bd.classList.remove("show");
@@ -700,15 +727,15 @@ function closeCheatsheet(){
   var overlay=document.getElementById("cheatsheetOverlay");
   if(overlay)overlay.classList.add("hidden");
 }
-/* Mobile: tap anywhere outside the sidebar (and outside the toggle button)
-   to close it. On desktop the sidebar is a permanent fixture, so we skip
-   the handler when the viewport is wider than 768px. The backdrop is a
-   sibling of the sidebar in the DOM and z-index 25; tapping it always
-   closes the drawer on mobile. */
+/* Mobile only: tap anywhere outside the sidebar (and outside the toggle
+   button) to close it. On desktop the user controls the sidebar with the
+   toggle button / ⌘B, and closing it on a click-outside would be
+   unexpected. The backdrop is a sibling of the sidebar in the DOM and
+   z-index 25; tapping it always closes the drawer on mobile. */
 function isMobileViewport(){return window.innerWidth<768;}
 document.addEventListener("click",function(e){
-  if(!isMobileViewport())return;
-  if(!sidebarOpen)return;
+  var sbEl=document.getElementById("sidebar");
+  if(!sbEl||sbEl.classList.contains("collapsed"))return;
   /* Clicks inside the sidebar or on the toggle button are not "outside". */
   if(e.target.closest("#sidebar"))return;
   if(e.target.closest(".toggle-sidebar"))return;
@@ -725,18 +752,15 @@ document.addEventListener("click",function(e){
        it. The sidebar will close naturally if the tap ends up doing nothing. */
     return;
   }
-  toggleSidebar();
+  if(isMobileViewport())toggleSidebar();
 });
-/* Backdrop tap on mobile also closes. */
+/* Backdrop tap on mobile also closes. The document-level handler above
+   already handles backdrop clicks (the backdrop is outside #sidebar, not
+   a form control, and is inside the mobile viewport's click region), so
+   this listener is intentionally a no-op for non-backdrop targets and
+   simply guarded against double-firing. */
 var sbBackdrop=document.getElementById("sidebarBackdrop");
-if(sbBackdrop)sbBackdrop.addEventListener("click",function(){if(isMobileViewport()&&sidebarOpen)toggleSidebar();});
-/* Click outside sidebar to close — disabled. Sidebar now stays open until the user
-   explicitly toggles it (toggle button, Ctrl+\, or mobile breakpoint). */
-/* document.querySelector(".main").addEventListener("click",function(e){
-  if(sidebarOpen&&window.innerWidth>=768&&!e.target.closest(".toggle-sidebar")){
-    toggleSidebar();
-  }
-}); */
+if(sbBackdrop)sbBackdrop.addEventListener("click",function(e){e.stopPropagation();var sbEl=document.getElementById("sidebar");if(isMobileViewport()&&sbEl&&!sbEl.classList.contains("collapsed"))toggleSidebar();});
 
 /* Mobile keyboard avoidance: when the keyboard opens on mobile, the browser
    scrolls the page to keep the focused textarea visible. This pushes the AI
@@ -785,7 +809,11 @@ function switchTab(tab){
 /* ============================================================
    TOPIC SETUP
    ============================================================ */
-function autoResize(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight,el.id==="chatInputArea"?120:160)+"px"}
+function autoResize(el){
+  var maxH=el.id==="chatInputArea"?120:160;
+  el.style.height="auto";
+  el.style.height=Math.min(el.scrollHeight,maxH)+"px";
+}
 function updateStartBtn(){
   var v=document.getElementById("topicInput").value.trim();
   var b=document.getElementById("startBtn");
@@ -794,8 +822,302 @@ function updateStartBtn(){
 function updateSendBtn(){
   var v=document.getElementById("chatInputArea").value.trim();
   var b=document.getElementById("sendBtn");
-  if(v)b.classList.add("active");else b.classList.remove("active");
+  /* P_attachments — also light up the send button when there are
+   * pending attachments but no text yet. Otherwise the user can
+   * attach an image, leave the textarea empty, and the send button
+   * stays dim — they'll think their attach didn't register. */
+  var hasAtt = typeof window.attachments !== "undefined"
+    && Array.isArray(window.attachments)
+    && window.attachments.length > 0;
+  if(v || hasAtt) b.classList.add("active"); else b.classList.remove("active");
 }
+
+/* ============================================================
+   P_ATTACHMENTS — chip strip + button + drag/drop
+   The pending attachments live in frontend/src/attachments.js as
+   module-level state; we just mirror them into DOM here and wire
+   the attach button + drag/drop listeners.
+   ============================================================ */
+import {
+  attachments, addFiles, removeAttachment, resetAttachments,
+  buildMessageContent, MAX_TOTAL_ATTACHMENTS,
+} from './attachments.js';
+
+// Expose the imported store on `window` so legacy code paths
+// (e.g. `window.updateSendBtn`) and the `attachBtn` handler can
+// reach it without juggling imports.
+window.attachments = attachments;
+window.removeAttachment = removeAttachment;
+window.buildMessageContent = buildMessageContent;
+
+/* Render the pending-attachment chip strip above the textarea.
+ * Called after addFiles / removeAttachment / resetAttachments. */
+function renderAttachmentChips(){
+  var wrap=document.getElementById("attachmentChips");
+  if(!wrap)return;
+  // Clear previous chips.
+  while(wrap.firstChild) wrap.removeChild(wrap.firstChild);
+  if(!attachments.length){
+    wrap.classList.add("hidden");
+    return;
+  }
+  wrap.classList.remove("hidden");
+
+  attachments.forEach(function(a){
+    var chip=document.createElement("div");
+    chip.className="attachment-chip"+(a.error?" error":"");
+    chip.dataset.id=a.id;
+
+    if(a.kind==="image"&&a.dataUrl){
+      var img=document.createElement("img");
+      img.className="attachment-chip-thumb";
+      img.src=a.dataUrl;
+      img.alt=a.name||"";
+      chip.appendChild(img);
+    }else{
+      // File-type icon — generic doc glyph for text / pdf.
+      var icon=document.createElement("span");
+      icon.className="attachment-chip-icon";
+      icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+      chip.appendChild(icon);
+    }
+
+    var name=document.createElement("span");
+    name.className="attachment-chip-name";
+    name.textContent=a.name||"file";
+    chip.appendChild(name);
+
+    if(a.truncated){
+      var meta=document.createElement("span");
+      meta.className="attachment-chip-meta";
+      meta.textContent="(truncated)";
+      chip.appendChild(meta);
+    }
+
+    var rm=document.createElement("button");
+    rm.type="button";
+    rm.className="attachment-chip-remove";
+    rm.setAttribute("aria-label","Remove attachment");
+    rm.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+    rm.onclick=function(){
+      removeAttachment(a.id);
+      renderAttachmentChips();
+      if(typeof updateSendBtn==="function")updateSendBtn();
+    };
+    chip.appendChild(rm);
+
+    wrap.appendChild(chip);
+  });
+}
+window.renderAttachmentChips = renderAttachmentChips;
+
+/* Wire up the paperclip button → hidden <input type="file">, plus
+ * drag-and-drop on the input wrap. Called once on boot. */
+function setupAttachmentInput(){
+  var btn=document.getElementById("attachBtn");
+  var input=document.getElementById("attachInput");
+  var wrap=document.getElementById("chatInputWrap");
+  var textarea=document.getElementById("chatInputArea");
+  if(!btn||!input||!wrap)return;
+
+  btn.onclick=function(){
+    /* Reset value first so re-selecting the same file fires `change`. */
+    input.value="";
+    input.click();
+  };
+  input.onchange=async function(){
+    if(!input.files||!input.files.length)return;
+    var res=await addFiles(input.files);
+    renderAttachmentChips();
+    if(typeof updateSendBtn==="function")updateSendBtn();
+    if(res.rejected&&res.rejected.length){
+      console.warn("[attachments] rejected:",res.rejected);
+      // Light up the button as an error indicator; the rejected
+      // reasons are also surfaced via console for the user to see.
+      btn.classList.add("has-error");
+      setTimeout(function(){btn.classList.remove("has-error");},1500);
+      /* P_attachments-multimodal — surface the rejection via toast
+       * too, so the user sees why the file wasn't added. If the
+       * reason is the multimodal gate, use the dedicated i18n key;
+       * otherwise fall back to the first rejected reason verbatim. */
+      var hasNonMm = res.rejected.some(function(r){return r.indexOf("not multimodal") === -1;});
+      if(!hasNonMm && res.rejected.length){
+        showToast((typeof t==="function"?t("attach.notMultimodal"):null)
+          || "The active model can't view images. Add a multimodal provider or remove image attachments.");
+      } else {
+        showToast(res.rejected[0]);
+      }
+    }
+  };
+
+  // Drag-and-drop: visual hint + accept drops on the input wrap.
+  ["dragenter","dragover"].forEach(function(evt){
+    wrap.addEventListener(evt,function(e){
+      e.preventDefault();e.stopPropagation();
+      wrap.classList.add("drag-over");
+    });
+  });
+  ["dragleave","drop"].forEach(function(evt){
+    wrap.addEventListener(evt,function(e){
+      e.preventDefault();e.stopPropagation();
+      wrap.classList.remove("drag-over");
+    });
+  });
+  wrap.addEventListener("drop",async function(e){
+    var dt=e.dataTransfer;
+    if(!dt||!dt.files||!dt.files.length)return;
+    var res=await addFiles(dt.files);
+    renderAttachmentChips();
+    if(typeof updateSendBtn==="function")updateSendBtn();
+    if(res.rejected&&res.rejected.length){
+      console.warn("[attachments] rejected:",res.rejected);
+      /* P_attachments-multimodal — same toast logic as the click
+       * path above: prefer the i18n-aware multimodal-gate message
+       * when every rejection is from the gate. */
+      var hasNonMm = res.rejected.some(function(r){return r.indexOf("not multimodal") === -1;});
+      if(!hasNonMm){
+        showToast((typeof t==="function"?t("attach.notMultimodal"):null)
+          || "The active model can't view images. Add a multimodal provider or remove image attachments.");
+      } else {
+        showToast(res.rejected[0]);
+      }
+    }
+  });
+
+  /* P_paste-attach — clipboard paste handler for the chat input.
+   * When the user pastes an image (e.g. screenshot from clipboard),
+   * intercept it and send through addFiles() instead of dropping raw
+   * base64 text into the textarea. Text-only pastes pass through
+   * unchanged. */
+  if(textarea){
+    textarea.addEventListener("paste",async function(e){
+      var items=e.clipboardData&&e.clipboardData.items;
+      if(!items||!items.length)return;
+      var files=[];
+      for(var i=0;i<items.length;i++){
+        var item=items[i];
+        if(item.kind==="file"&&item.getAsFile){
+          var f=item.getAsFile();
+          if(f)files.push(f);
+        }
+      }
+      if(!files.length)return;
+      e.preventDefault();
+      e.stopPropagation();
+      var res=await addFiles(files);
+      renderAttachmentChips();
+      if(typeof updateSendBtn==="function")updateSendBtn();
+      if(res.added>0){
+        showToast(res.added+" file"+(res.added>1?"s":"")+" pasted");
+      }
+      if(res.rejected&&res.rejected.length){
+        var hasNonMm2 = res.rejected.some(function(r){return r.indexOf("not multimodal") === -1;});
+        if(!hasNonMm2){
+          showToast((typeof t==="function"?t("attach.notMultimodal"):null)
+            || "The active model can't view images. Add a multimodal provider or remove image attachments.");
+        } else {
+          showToast(res.rejected[0]);
+        }
+      }
+    });
+  }
+
+  /* P_drag-drop-document — also accept file drag-and-drop on the full
+   * document body so dragging files from outside the browser onto the
+   * page shows visual feedback near the input bar. The wrap's own
+   * handlers above still fire for direct drops on the input bar. */
+  var docDragCount=0;
+  document.addEventListener("dragenter",function(e){
+    if(!e.dataTransfer||!e.dataTransfer.types)return;
+    var hasFile=false;
+    for(var di=0;di<e.dataTransfer.types.length;di++){
+      if(e.dataTransfer.types[di]==="Files"){hasFile=true;break}
+    }
+    if(!hasFile)return;
+    docDragCount++;
+    if(docDragCount===1){
+      wrap.classList.add("drag-over");
+      /* Also add a subtle backdrop hint. */
+      var hint=document.getElementById("chatInputBar");
+      if(hint)hint.classList.add("drag-over-doc");
+    }
+  });
+  document.addEventListener("dragleave",function(e){
+    if(!e.dataTransfer||!e.dataTransfer.types)return;
+    var hasFile=false;
+    for(var di=0;di<e.dataTransfer.types.length;di++){
+      if(e.dataTransfer.types[di]==="Files"){hasFile=true;break}
+    }
+    if(!hasFile)return;
+    docDragCount--;
+    if(docDragCount<=0){
+      docDragCount=0;
+      wrap.classList.remove("drag-over");
+      var hint=document.getElementById("chatInputBar");
+      if(hint)hint.classList.remove("drag-over-doc");
+    }
+  });
+  document.addEventListener("dragover",function(e){
+    /* Check if the drag carries files. */
+    if(!e.dataTransfer||!e.dataTransfer.types)return;
+    var hasFile=false;
+    for(var di=0;di<e.dataTransfer.types.length;di++){
+      if(e.dataTransfer.types[di]==="Files"){hasFile=true;break}
+    }
+    if(hasFile){e.preventDefault()}
+  });
+  document.addEventListener("drop",async function(e){
+    docDragCount=0;
+    wrap.classList.remove("drag-over");
+    var hint=document.getElementById("chatInputBar");
+    if(hint)hint.classList.remove("drag-over-doc");
+    /* If the drop target is inside the wrap, the wrap's own handler
+       already processed it — skip to avoid double-processing. */
+    if(wrap&&wrap.contains(e.target))return;
+    var dt=e.dataTransfer;
+    if(!dt||!dt.files||!dt.files.length)return;
+    e.preventDefault();
+    e.stopPropagation();
+    var res=await addFiles(dt.files);
+    renderAttachmentChips();
+    if(typeof updateSendBtn==="function")updateSendBtn();
+    if(res.rejected&&res.rejected.length){
+      var hasNonMm3 = res.rejected.some(function(r){return r.indexOf("not multimodal") === -1;});
+      if(!hasNonMm3){
+        showToast((typeof t==="function"?t("attach.notMultimodal"):null)
+          || "The active model can't view images. Add a multimodal provider or remove image attachments.");
+      } else {
+        showToast(res.rejected[0]);
+      }
+    }
+  });
+}
+window.setupAttachmentInput = setupAttachmentInput;
+
+/* Hook into module load — call once at boot. */
+if(typeof window!=="undefined"){
+  window.addEventListener("DOMContentLoaded",function(){
+    setupAttachmentInput();
+  });
+  /* If the script runs after DOMContentLoaded (Vite HMR or inline
+   * execution), still attempt to wire it. */
+  if(document.readyState!=="loading"){
+    setupAttachmentInput();
+  }
+}
+
+/* Scrollbar fade — hide msg-list scrollbar by default, show it
+   during scroll and fade out after 1.5s of inactivity. */
+(function initMsgScrollbar(){
+  var ml=document.getElementById("msgList");
+  if(!ml)return;
+  var timer=null;
+  ml.addEventListener("scroll",function(){
+    ml.classList.add("scrollbar-visible");
+    clearTimeout(timer);
+    timer=setTimeout(function(){ml.classList.remove("scrollbar-visible")},1500);
+  });
+})();
 
 /* ============================================================
    STATE
@@ -1272,6 +1594,13 @@ function saveCurrentSession(){
 }
 
 function doSave(){
+  /* Guard against saving after state has been reset — the
+     _saveDirty cascade in saveCurrentSession bypasses the
+     state.topic check after the first in-flight save finishes.
+     Without this guard, deleting a session while a save is
+     in-flight causes the queued doSave() to POST empty state
+     to the server, creating a ghost session. */
+  if(!state.topic)return;
   var now=Date.now();
   /* P1.1 — read from the authoritative state.messages list, NOT
      from the live DOM. The DOM may still hold a half-rendered
@@ -1293,7 +1622,19 @@ function doSave(){
   var messages=state.messages
     .filter(function(m){return m.type!=="streaming"})
     .map(function(m){
-    return {clientId:m.clientId||null,role:m.role,html:m.html,rawText:m.rawText||null,type:m.type||null,reasoningContent:m.reasoningContent||null};
+    return {
+      clientId:m.clientId||null,
+      role:m.role,
+      html:m.html,
+      rawText:m.rawText||null,
+      type:m.type||null,
+      reasoningContent:m.reasoningContent||null,
+      /* P_attachments — round-trip the inlined image dataUrl /
+       * parsed text body so reloads restore thumbnails without a
+       * re-upload. The server caps to 20 in sessions.js; we
+       * trim here too to keep payloads small. */
+      attachments:Array.isArray(m.attachments)?m.attachments.slice(0,20):[],
+    };
   });
   var sessionId=state.session.currentSessionId||generateId();
   var payload={
@@ -1468,6 +1809,21 @@ function paintRestoredQuestionCard(idx,q){
 }
 
 async function loadSession(id){
+  /* Abort any active chat stream so its onDelta/finish callbacks
+     don't write to state.messages after we replace them. */
+  if(window._activeChatAbort){try{window._activeChatAbort("session-switch")}catch(_){}}
+  if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+  window._activeChatCtl=null;
+  window._activeChatAbort=null;
+  /* Reset agent state so a running agent doesn't complete into the
+     newly loaded session. */
+  if(_agentAbortCtl){try{_agentAbortCtl.abort()}catch(_){};_agentAbortCtl=null}
+  _agentModeActive=false;
+  _agentCurrentRun=null;
+  AGENT_RUNS=[];
+  _chatStreaming=false;
+  _agentStopMode=false;
+  _chatStopMode=false;
   try{
     var s=await apiFetch("/api/sessions/"+encodeURIComponent(id));
     ensureSessionShape(s);
@@ -1606,8 +1962,57 @@ async function loadSession(id){
         /* P_reasoning-persist — restore chain-of-thought text so it
            can be passed back to the LLM on the next turn. */
         reasoningContent: m.reasoning_content || null,
+        /* P_attachments — restore the persisted array so the bubble
+         * re-renders the chip strip AND so a future save round-trips
+         * them again. */
+        attachments: Array.isArray(m.attachments) ? m.attachments : [],
         actions: null
       });
+
+      /* P_attachments — render the chip strip below the text body
+       * so reloads show the same thumbnails the user saw originally.
+       * Same shape as addMessage()'s renderer; lives here so legacy
+       * history reloads don't go through addMessage (which would
+       * also append to state.messages and double-count). */
+      if(m.role === "user" && Array.isArray(m.attachments) && m.attachments.length){
+        var strip=document.createElement("div");
+        strip.className="msg-attachments";
+        m.attachments.forEach(function(a){
+          if(!a)return;
+          var chip=document.createElement("div");
+          chip.className="msg-attachment";
+          if(a.kind==="image" && a.dataUrl){
+            var img=document.createElement("img");
+            img.className="msg-attachment-thumb";
+            img.src=a.dataUrl;
+            img.alt=a.name||"";
+            chip.appendChild(img);
+          }else{
+            var icon=document.createElement("span");
+            icon.className="msg-attachment-thumb";
+            icon.style.display="inline-flex";
+            icon.style.alignItems="center";
+            icon.style.justifyContent="center";
+            icon.style.borderRadius="12px";
+            icon.style.background="hsl(var(--bg-300))";
+            icon.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+            chip.appendChild(icon);
+          }
+          var nm=document.createElement("span");
+          nm.className="msg-attachment-name";
+          nm.textContent=a.name||"file";
+          chip.appendChild(nm);
+          if(a.error){
+            var err=document.createElement("span");
+            err.className="msg-attachment-error";
+            err.textContent="!";
+            err.title=a.error;
+            chip.appendChild(err);
+          }
+          strip.appendChild(chip);
+        });
+        body.appendChild(strip);
+      }
       /* P_reasoning-persist — render the thinking pill if the loaded
          message has saved reasoning_content and thinking is on. */
       if(m.role==="assistant" && m.reasoning_content && thinkingOn){
@@ -1677,14 +2082,21 @@ async function loadSession(id){
     sc.scrollTop=sc.scrollHeight;
   }catch(e){
     console.warn("[sessions] load failed:",e.message);
+    showToast("Session not found or could not be loaded.");
     /* The URL had ?chat=<id> pointing to a session that doesn't exist
        on the server (404). This happens when the user bookmarks a
        chat link on one device, then opens it on another device where
        the session never synced; or after a long absence, server-side
        pruning, or DB reset. Either way, the URL is now stale and
        confusing the user — clear it and let them start a new topic
-       rather than showing a blank chat panel. */
-    if(state.currentSessionId===id||!state.currentSessionId){
+       rather than showing a blank chat panel.
+       
+       P_loadSession-404 — also clean up when the failing session
+       matches the URL even if another session is already loaded,
+       so clicking a stale/deleted entry in Recents gives visual
+       feedback instead of silently doing nothing. */
+    var isUrlMatch=typeof location!=="undefined"&&location.search.indexOf("chat="+encodeURIComponent(id))>=0;
+    if(state.currentSessionId===id||!state.currentSessionId||isUrlMatch){
       /* Only if no other session was loaded in the meantime. */
       try{
         if(/[?&]chat=/i.test(location.search)){
@@ -2101,6 +2513,17 @@ function confirmPurgeSession(id){
       method:"DELETE",
       timeoutMs:8000
     }).then(function(){
+      /* P_purge-bounce — if the purged session is the active one,
+         bounce out to the topic-setup screen so stale content isn't
+         shown. without this, the chat view continues displaying the
+         deleted session's messages, topic badge, and knowledge
+         graph until the user manually navigates away. */
+      var wasActive=state.session.currentSessionId===id||state.currentSessionId===id;
+      if(wasActive){
+        if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+        if(window._activeChatAbort){try{window._activeChatAbort("session-purged")}catch(_){}}
+        bounceOutOfArchivedSession();
+      }
       SERVER_SESSIONS=SERVER_SESSIONS.filter(function(r){return r.id!==id});
       clearLocalMemory(id);
       renderArchivedList();
@@ -3568,6 +3991,16 @@ async function askChatTurn(userText){
      chat and hasn't typed anything, synthesize a short opener so the
      model has something to greet them with. */
   var userMsg=userText||("Let's talk about "+state.topic+".");
+  /* P_attachments — submitChatMessage stores the assembled LLM
+   * content (text string OR multimodal parts array) on
+   * window._pendingChatContent. Prefer it when present so images
+   * flow through to vision-capable upstreams. */
+  var pendingContent = window._pendingChatContent;
+  /* The fallback `userMsg` (synthesized opener) is plain text — if
+   * there's no pending content we keep using it. */
+  var userContent = (pendingContent !== undefined && pendingContent !== null)
+    ? pendingContent
+    : userMsg;
   /* If the user's message contains any http(s) URL, fetch each one and
      append the page text to the prompt as a [Referenced page] block.
      This gives the assistant the ability to read links the user
@@ -3610,20 +4043,33 @@ async function askChatTurn(userText){
   }
   var sysCtx=getSystemContext();
   var msgs=[{role:"system",content:sysCtx+"\n\n"+CHAT_SYSTEM_PROMPT+beagleSuffix()+thinkingSuffix()+memoriesSuffix()}];
+  /* Skip a trailing user message in history — `state.messages` already
+     holds the just-added (or just-edited) user entry, and the explicit
+     `msgs.push({role:"user",content:userMsg})` below carries it. Without
+     this filter the model sees the user message twice on every turn
+     (and again on every edit-and-resend). */
+  if(history.length&&history[history.length-1].role==="user"){
+    history=history.slice(0,-1);
+  }
   msgs=msgs.concat(history);
+  /* P_attachments — append the user turn using userContent (which is
+   * the multimodal parts array when attachments are present, or the
+   * plain text otherwise). Page blocks and the URL-mention hint are
+   * appended as additional text parts so multimodal content stays
+   * a flat array of parts rather than getting coerced back to a
+   * string (which would drop the image parts). */
   if(pageBlocks.length){
-    /* Append a single user turn carrying both the original text and the
-       page blocks. Keeping it as a user message (not system) preserves
-       ordering with subsequent rounds. */
-    msgs.push({role:"user",content:userMsg+"\n\n"+pageBlocks.join("\n\n")});
+    var pagesText=userMsg+"\n\n"+pageBlocks.join("\n\n");
+    msgs.push({role:"user",content:Array.isArray(userContent)?userContent.concat({type:"text",text:pagesText}):pagesText});
   }else if(looksLikeUserMentionedSite(userMsg)){
     /* The user said something like "look up topodrive.top" or "看看
        example.com 的首页" but we couldn't extract a URL. Inject a
        short hint to the model so it asks for the full URL with an
        http(s):// prefix instead of guessing. */
-    msgs.push({role:"user",content:userMsg+"\n\n[System] The user appears to be referring to a website, but no complete URL was provided in this turn (the system only auto-fetches text that contains a full http(s):// link or a recognizable bare domain like example.com / www.foo.bar). Reply briefly asking them to paste the full URL — including the https:// prefix — so you can read the page. Do NOT invent or guess the page contents."});
+    var hintText=userMsg+"\n\n[System] The user appears to be referring to a website, but no complete URL was provided in this turn (the system only auto-fetches text that contains a full http(s):// link or a recognizable bare domain like example.com / www.foo.bar). Reply briefly asking them to paste the full URL — including the https:// prefix — so you can read the page. Do NOT invent or guess the page contents.";
+    msgs.push({role:"user",content:Array.isArray(userContent)?userContent.concat({type:"text",text:hintText}):hintText});
   }else{
-    msgs.push({role:"user",content:userMsg});
+    msgs.push({role:"user",content:userContent});
   }
 
   /* Round 1: let the model decide whether to call web_search. We use
@@ -3770,7 +4216,7 @@ async function askChatTurn(userText){
   var round2Msgs=[
     {role:"system",content:getSystemContext()+"\n\n"+CHAT_SYSTEM_PROMPT+"\n\n"+sourcesBlock+beagleSuffix()+thinkingSuffix()+memoriesSuffix()}
   ].concat(history).concat([
-    {role:"user",content:userMsg},
+    {role:"user",content:userContent},
     {role:"assistant",content:r1.text},
     {role:"user",content:"[Web research results for query: \""+toolCall.query+"\"]\n"+sourcesBlock+"\n\nPlease answer the user's original question using these results. Cite inline as [1], [2], etc."}
   ]);
@@ -4190,15 +4636,35 @@ async function submitChatMessage(textOverride,opts){
   opts=opts||{};
   var input=document.getElementById("chatInputArea");
   var text=(textOverride!=null?textOverride:input.value).trim();
-  if(!text)return;
+  /* P_attachments — allow sending if there are attachments even when
+   * the text is empty (e.g. just a single image with no caption). */
+  var hasAtt = Array.isArray(window.attachments) && window.attachments.length>0;
+  if(!text && !hasAtt)return;
+  /* P_attachments — assemble the multimodal content (parts array)
+   * and the persistence list before we add the user bubble. */
+  var built = (typeof buildMessageContent==="function")
+    ? buildMessageContent(text)
+    : { rawText: text, parts: text, attachmentList: [] };
+  var chatContent = built.parts;       // string OR parts array — what the LLM sees
+  var persistText = built.rawText;     // user-visible bubble text (with placeholders)
+  var attList = built.attachmentList;   // what we save to the DB
+  /* Stash the chat content for askChatTurn to pick up. askChatTurn is
+   * not parameterized; this is the lowest-friction wiring. */
+  window._pendingChatContent = chatContent;
+  window._pendingAttachments = attList;
   if(textOverride==null){
-    addMessage("user",text);
+    addMessage("user",persistText,null,null,attList);
     input.value="";autoResize(input);updateSendBtn();
     input.focus();
   }else{
     /* Origin: quiz — synthetic message from a quiz pick. */
-    addMessage("user",text);
+    addMessage("user",persistText,null,null,attList);
   }
+  /* P_attachments — clear the pending chips after the message is
+   * committed to the DOM. Render an empty strip so the UI updates. */
+  if(typeof resetAttachments==="function")resetAttachments();
+  if(typeof renderAttachmentChips==="function")renderAttachmentChips();
+  if(typeof updateSendBtn==="function")updateSendBtn();
 
   /* AI processes the answer */
   /* Background web-search refresh for tutor follow-ups. Same 5-turn
@@ -4790,7 +5256,7 @@ function showToast(msg){
   }catch(_){}
 }
 
-function addMessage(role,text,type,actions){
+function addMessage(role,text,type,actions,attachmentsArg){
   /* User sending a message = explicitly wants to follow the conversation. */
   if(role==="user"){state._userScrolledAway=false;hideNewReplyPill()}
   /* P1.1 — push to the authoritative state.messages first; the DOM
@@ -4810,7 +5276,11 @@ function addMessage(role,text,type,actions){
     var mp=getActiveProvider();
     if(mp)modelInfo={label:mp.label||mp.model||"",model:mp.model||""};
   }
-  var entry={clientId:clientId,role:role,rawText:String(text||""),html:html,type:type||null,actions:actions||null,modelInfo:modelInfo};
+  /* P_attachments — keep the attachments array on the in-memory entry
+   * so saveCurrentSession round-trips it. We normalise to the same
+   * shape persistMessageList() expects. */
+  var atts = Array.isArray(attachmentsArg) ? attachmentsArg.slice(0, 20) : [];
+  var entry={clientId:clientId,role:role,rawText:String(text||""),html:html,type:type||null,actions:actions||null,modelInfo:modelInfo,attachments:atts};
   state.messages.push(entry);
 
   var list=document.getElementById("msgList");
@@ -4835,6 +5305,51 @@ function addMessage(role,text,type,actions){
     body.appendChild(optsDiv);
   }else{
     body.innerHTML=html;
+  }
+
+  /* P_attachments — render the chip strip inside the user bubble so
+   * the user sees what they attached. Image thumbnails use the
+   * inlined dataUrl; text/PDF chips show the filename and (for
+   * PDFs) the page count. Pure presentation; never replaces
+   * body.innerHTML. */
+  if(role==="user" && atts.length){
+    var strip=document.createElement("div");
+    strip.className="msg-attachments";
+    atts.forEach(function(a){
+      if(!a)return;
+      var chip=document.createElement("div");
+      chip.className="msg-attachment";
+      if(a.kind==="image" && a.dataUrl){
+        var img=document.createElement("img");
+        img.className="msg-attachment-thumb";
+        img.src=a.dataUrl;
+        img.alt=a.name||"";
+        chip.appendChild(img);
+      }else{
+        var icon=document.createElement("span");
+        icon.className="msg-attachment-thumb";
+        icon.style.display="inline-flex";
+        icon.style.alignItems="center";
+        icon.style.justifyContent="center";
+        icon.style.borderRadius="12px";
+        icon.style.background="hsl(var(--bg-300))";
+        icon.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+        chip.appendChild(icon);
+      }
+      var nm=document.createElement("span");
+      nm.className="msg-attachment-name";
+      nm.textContent=a.name||"file";
+      chip.appendChild(nm);
+      if(a.error){
+        var err=document.createElement("span");
+        err.className="msg-attachment-error";
+        err.textContent="!";
+        err.title=a.error;
+        chip.appendChild(err);
+      }
+      strip.appendChild(chip);
+    });
+    body.appendChild(strip);
   }
 
   div.appendChild(body);
@@ -8016,6 +8531,19 @@ async function resetApp(){
     if(!ok)return;
   }
   saveCurrentSession();
+  /* Abort any in-flight chat stream so its callbacks don't write to
+     state.messages after we reset them. */
+  if(window._activeChatAbort){try{window._activeChatAbort("session-reset")}catch(_){}}
+  if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+  window._activeChatCtl=null;
+  window._activeChatAbort=null;
+  if(_agentAbortCtl){try{_agentAbortCtl.abort()}catch(_){};_agentAbortCtl=null}
+  _agentModeActive=false;
+  _agentCurrentRun=null;
+  AGENT_RUNS=[];
+  _chatStreaming=false;
+  _agentStopMode=false;
+  _chatStopMode=false;
   _shareToken=null;
   resetState();
   /* P2.1 — preserve the project binding so a new chat in the
@@ -8167,7 +8695,11 @@ function renderUserFooter(){
     row.innerHTML='<div class="user-avatar">?</div><div><div class="user-name">Guest</div><div class="user-plan">Not signed in</div></div>';
     return;
   }
-  var initials=(CURRENT_USER.displayName||CURRENT_USER.email||"?").slice(0,2).toUpperCase();
+  var name=CURRENT_USER.displayName||CURRENT_USER.email||"?";
+  var parts=name.trim().split(/\s+/);
+  var initials=parts.length>1
+    ? (parts[0][0]+parts[parts.length-1][0]).toUpperCase()
+    : name.slice(0,2).toUpperCase();
   var tier=CURRENT_USER.tier||'diophantus';
   // Tier is server-controlled and known-safe, but escape anyway in case
   // a future tier value (e.g. "tier-<script>") is ever introduced.
@@ -8418,11 +8950,14 @@ function startExamGeneration(){
   var provLabel=(Array.isArray(apiConfig.providers)?apiConfig.providers.find(function(p){return p&&p.id===apiConfig.activeId}):null)||{};
   if(meta)meta.textContent=count+" "+(lang==="Chinese"?"题 · ":"questions · ")+(provLabel.label||provLabel.model||"")+" · "+difficulty;
   var body=_examBody();
-  body.innerHTML='<div class="exam-loading" id="examGenStatus"><span class="loading"><span></span><span></span><span></span></span><div class="exam-loading-msg" id="examGenMsg">'+(lang==="Chinese"?"正在生成考卷…":"Generating your exam…")+'</div><div class="exam-loading-sub">'+(lang==="Chinese"?"AI 正在为您出题，请稍候片刻":"The AI is preparing your questions — this usually takes a few seconds.")+'</div></div>';
+  body.innerHTML='<div class="exam-loading" id="examGenStatus">'+
+    '<span class="loading"><span></span><span></span><span></span></span>'+
+    '<div class="exam-loading-msg" id="examGenMsg">'+(lang==="Chinese"?"正在生成考卷…":"Generating your exam…")+'</div>'+
+    '<div class="exam-progress"><div class="exam-progress-bar"><div class="exam-progress-fill" id="examGenProgressFill"></div></div>'+
+    '<div class="exam-progress-step" id="examGenProgressStep"><span class="exam-progress-spin"></span>'+(lang==="Chinese"?"准备出题…":"Preparing…")+'</div></div>'+
+    '<div class="exam-loading-sub" id="examGenSubMsg">'+(lang==="Chinese"?"AI 正在为您出题，请稍候片刻":"The AI is preparing your questions — this usually takes a few seconds.")+'</div>'+
+  '</div>';
   _examFooter().innerHTML='<button class="exam-btn secondary" onclick="cancelExamGeneration()">'+(lang==="Chinese"?"取消":"Cancel")+'</button>';
-  /* Kick off a SINGLE non-streaming call that returns all questions
-     as one JSON array. No more one-question-at-a-time streaming —
-     the user sees one clean loading state, then the whole exam. */
   generateAllQuestions(topic,count,difficulty,typeStr,instructions,lang);
 }
 function restoreExamActiveProvider(){
@@ -8448,77 +8983,119 @@ function cancelExamGeneration(){
   _examTitle().textContent=L("已取消","Cancelled");
 }
 async function generateAllQuestions(topic,count,difficulty,typeStr,instructions,lang){
-  /* Build a prompt that asks for the whole exam as a JSON array.
-     Reasoning models (Beagle M2.7 / DeepSeek R1 / QwQ) can take a
-     couple of minutes for a 5-question exam; the longer single
-     response avoids the overhead of N separate round trips and the
-     JSON parsing failures that come from truncated streaming deltas. */
-  var prompt="Generate an exam of "+count+" questions as a single JSON object with shape {\"questions\":[ ... ]}.\n"+
-    "Topic: "+topic+".\n"+
-    "Difficulty: "+difficulty+".\n"+
-    "Allowed question types: "+typeStr+".\n"+
-    "Language: "+lang+".\n"+
-    "CRITICAL: EVERY field of every question (q, opts[*].text, answer, answers[*], explanation) MUST be written in "+lang+".\n"+
-    (instructions?"Specifics: "+instructions+"\n":"")+
-    "Return ONLY the JSON — no markdown, no preamble, no commentary. "+
-    "Each question object must have: q (string), type (one of \""+typeStr+"\"). "+
-    "For multiple-choice add opts:[{letter,text}] (4 options A-D) and answer (correct letter). "+
-    "For fill-blank add answers:[string] (acceptable fills). "+
-    "For short-answer add answer (key facts). "+
-    "Always add explanation (string). Use Markdown + $LaTeX$ in q text.";
-  var msgs=[{role:"system",content:prompt},{role:"user",content:"Generate "+count+" questions now."}];
-  /* callAPI is non-streaming and returns the full text at once, or
-     null if no provider is available (falls back to mock). For
-     long generations (reasoning models), the existing callAPI uses
-     the same 10-minute total budget + 2-retry pattern, so a slow
-     first attempt has a chance to recover. */
-  var tokens=Math.max(800,count*700);
-  var result=await callAPI(msgs,tokens);
+  var allowedTypes=typeStr.split(", ");
+  var questions=[];
+  var previousTexts=[];
+
+  function updateProgress(i,msg){
+    var fill=document.getElementById("examGenProgressFill");
+    var stepEl=document.getElementById("examGenProgressStep");
+    var subEl=document.getElementById("examGenSubMsg");
+    var pct=count>0?Math.round(92*i/count):0;
+    if(fill)fill.style.width=pct+"%";
+    if(stepEl)stepEl.innerHTML='<span class="exam-progress-spin"></span>'+msg;
+    if(subEl&&i<count){
+      subEl.textContent=lang==="Chinese"
+        ?"正在生成第 "+(i+1)+" / "+count+" 题…"
+        :"Generating question "+(i+1)+" of "+count+"…";
+    }
+  }
+
+  function failExam(errMsg,detail){
+    restoreExamActiveProvider();
+    var bodyE=_examBody();
+    bodyE.innerHTML='<div class="exam-empty"><strong>'+esc(errMsg)+'</strong>'+(detail?'<div style="margin-top:10px;font-size:13px;color:hsl(var(--text-500));line-height:1.5">'+esc(detail)+'</div>':'')+'</div>';
+    _examFooter().innerHTML='<button class="exam-btn primary" onclick="renderExamForm()">'+(lang==="Chinese"?"重新出题":"Try again")+'</button><button class="exam-btn secondary" onclick="closeExamView()">'+(lang==="Chinese"?"关闭":"Close")+'</button>';
+  }
+
+  for(var i=0;i<count;i++){
+    if(state.examCancel){restoreExamActiveProvider();return;}
+    var qType=allowedTypes[i%allowedTypes.length]||"multiple-choice";
+    updateProgress(i,lang==="Chinese"
+      ?"正在生成第 "+(i+1)+" 题…"
+      :"Generating question "+(i+1)+"…");
+
+    var prevBlock=previousTexts.length
+      ?"Already generated:\n"+previousTexts.map(function(t,idx){return(idx+1)+". "+t}).join("\n")
+      :"This is the first question.";
+
+    var prompt="Generate ONE exam question as a JSON object.\n"+
+      "Topic: "+topic+".\n"+
+      "Difficulty: "+difficulty+".\n"+
+      "Question type: "+qType+".\n"+
+      "Language: "+lang+".\n"+
+      "This is question "+(i+1)+" of "+count+".\n"+
+      "CRITICAL: EVERY field (q, opts[*].text, answer, answers[*], explanation) MUST be written in "+lang+".\n"+
+      "Return ONLY the JSON — no markdown, no preamble, no commentary.\n"+
+      "The question object must have: q (string), type (\""+qType+"\").\n"+
+      "For multiple-choice add opts:[{letter,text}] (4 options A-D) and answer (correct letter).\n"+
+      "For fill-blank add answers:[string] (acceptable fills).\n"+
+      "For short-answer add answer (key facts).\n"+
+      "Always add explanation (string). Use Markdown + $LaTeX$ in q text.\n\n"+
+      (instructions?"Specifics: "+instructions+"\n":"")+
+      "Previously generated questions (DO NOT repeat the same topic angle):\n"+prevBlock;
+    var msgs=[{role:"system",content:prompt},{role:"user",content:"Generate question "+(i+1)+" now."}];
+    var tokens=Math.max(400,600);
+    var result=await callAPI(msgs,tokens);
+    if(state.examCancel)return;
+    var text=typeof result==="string"?result:(result&&(result.text||result.content))||"";
+    if(!text||!text.trim()){
+      var errReason=state.lastCallError||(lang==="Chinese"?"模型无响应":"no response");
+      if(i===0){
+        failExam(lang==="Chinese"?"生成失败：模型无响应":"Generation failed — no response",errReason);
+        return;
+      }
+      updateProgress(i,lang==="Chinese"?"生成失败":"Failed");
+      await new Promise(function(r){setTimeout(r,300)});
+      continue;
+    }
+    var q=parseSingleExamQuestion(text);
+    if(!q){
+      if(i===0){
+        failExam(lang==="Chinese"?"解析失败：模型返回格式异常":"Parse failed — unexpected format",lang==="Chinese"?"请重试或更换模型":"Try again or switch model");
+        return;
+      }
+      updateProgress(i,lang==="Chinese"?"解析失败":"Parse failed");
+      await new Promise(function(r){setTimeout(r,300)});
+      continue;
+    }
+    q._idx=questions.length;
+    questions.push(q);
+    previousTexts.push(q.q);
+  }
   restoreExamActiveProvider();
   if(state.examCancel)return;
-  if(!result){
-    var langL=lang==="Chinese"?"生成失败：模型无响应":"Generation failed — no response from model";
-    var body=_examBody();
-    body.innerHTML='<div class="exam-empty"><strong>'+langL+'</strong><div style="margin-top:8px;font-size:13px;color:hsl(var(--text-500))">'+(lang==="Chinese"?"请稍后重试":"Please try again in a moment.")+'</div></div>';
-    _examFooter().innerHTML='<button class="exam-btn primary" onclick="renderExamForm()">'+(lang==="Chinese"?"重新出题":"Try again")+'</button><button class="exam-btn secondary" onclick="closeExamView()">'+(lang==="Chinese"?"关闭":"Close")+'</button>';
-    return;
-  }
-  /* callAPI may return a string or an object; normalise to string. */
-  var text=typeof result==="string"?result:(result&&(result.text||result.content))||"";
-  if(!text||!text.trim()){
-    var langL2=lang==="Chinese"?"生成失败：模型返回为空":"Generation failed — empty response";
-    var body2=_examBody();
-    body2.innerHTML='<div class="exam-empty"><strong>'+langL2+'</strong></div>';
-    _examFooter().innerHTML='<button class="exam-btn primary" onclick="renderExamForm()">'+(lang==="Chinese"?"重新出题":"Try again")+'</button><button class="exam-btn secondary" onclick="closeExamView()">'+(lang==="Chinese"?"关闭":"Close")+'</button>';
-    return;
-  }
-  var parsed=parseExamArrayJSON(text);
-  if(!parsed||!Array.isArray(parsed.questions)||parsed.questions.length===0){
-    var langL3=lang==="Chinese"?"生成失败：无法解析返回的题目":"Generation failed — couldn't parse the exam response";
-    var body3=_examBody();
-    body3.innerHTML='<div class="exam-empty"><strong>'+langL3+'</strong><div style="margin-top:10px;font-size:12px;color:hsl(var(--text-500));max-width:480px;text-align:left;background:hsl(var(--bg-200));padding:10px 12px;border-radius:8px;word-break:break-word;line-height:1.5">'+(lang==="Chinese"?"原始返回（前 500 字）：":"Raw response (first 500 chars):")+"<br>"+esc(text.slice(0,500))+'</div></div>';
-    _examFooter().innerHTML='<button class="exam-btn primary" onclick="renderExamForm()">'+(lang==="Chinese"?"重新出题":"Try again")+'</button><button class="exam-btn secondary" onclick="closeExamView()">'+(lang==="Chinese"?"关闭":"Close")+'</button>';
-    return;
-  }
-  /* Sanitize each question and push to state. Coerce unknown types
-     to fill-blank as a graceful fallback. */
-  parsed.questions.forEach(function(q,qi){
-    if(!q||!q.q||!q.type)return;
-    if(q.type!=="multiple-choice"&&q.type!=="fill-blank"&&q.type!=="short-answer")q.type="fill-blank";
-    if(!q.explanation)q.explanation="";
-    q._idx=state.examQuestions.length;
+  questions.forEach(function(q){
     state.examQuestions.push(q);
   });
   if(state.examQuestions.length===0){
-    var langL4=lang==="Chinese"?"生成失败：返回中没有有效题目":"Generation failed — no valid questions returned";
-    var body4=_examBody();
-    body4.innerHTML='<div class="exam-empty"><strong>'+langL4+'</strong></div>';
-    _examFooter().innerHTML='<button class="exam-btn primary" onclick="renderExamForm()">'+(lang==="Chinese"?"重新出题":"Try again")+'</button><button class="exam-btn secondary" onclick="closeExamView()">'+(lang==="Chinese"?"关闭":"Close")+'</button>';
+    failExam(lang==="Chinese"?"生成失败：没有成功生成任何题目":"Generation failed — no questions");
     return;
   }
-  /* Render the questions container and mount the nav bar in one go. */
   renderAllQuestions();
   finishExamGeneration();
+}
+function parseSingleExamQuestion(text){
+  try{
+    var raw=String(text||"").replace(/```(?:json|JSON)?\s*/g,"").replace(/\s*```/g,"").replace(/<(?:thinking|think)>[\s\S]*?(<\/(?:thinking|think)>|$)/gi,"").replace(/\[(?:thinking|think)\][\s\S]*?(\[\/(?:thinking|think)\]|$)/gi,"").trim();
+    var idx=0,end=raw.lastIndexOf("}");
+    if(end<0)return null;
+    while(idx<=end){
+      var start=raw.indexOf("{",idx);
+      if(start<0||start>=end)return null;
+      var jsonStr=raw.slice(start,end+1);
+      try{
+        var parsed=JSON.parse(jsonStr);
+        if(parsed&&typeof parsed.q==="string"&&parsed.type){
+          if(parsed.type!=="multiple-choice"&&parsed.type!=="fill-blank"&&parsed.type!=="short-answer")parsed.type="fill-blank";
+          if(!parsed.explanation)parsed.explanation="";
+          return parsed;
+        }
+      }catch(_){}
+      idx=start+1;
+    }
+    return null;
+  }catch(_){return null}
 }
 function parseExamArrayJSON(text){
   /* Robustly parse an LLM response of shape {"questions":[...]} or a
@@ -9552,6 +10129,7 @@ function confirmDeleteAccount(){
  * window.sanitizeUrl / window.escapeHtml keeps working. */
 import { escapeHtml, sanitizeUrl, sanitizeUrls } from './util/safe.js';
 window.escapeHtml=escapeHtml;window.sanitizeUrl=sanitizeUrl;window.sanitizeUrls=sanitizeUrls;
+window.__vizOpenModal=openVizModal;
 
 async function signOut(){
   try{await apiFetch("/api/auth/logout",{method:"POST"})}catch(_){}
@@ -9596,7 +10174,10 @@ var BEAGLE_BUILT_IN={
   url:"/api/minimax/v1",
   model:"MiniMax-M2.7",
   key:"",
-  isBuiltIn:true
+  isBuiltIn:true,
+  /* P_attachments-multimodal — built-in Beagle is a vision model;
+   * matches the server-side seeder which forces isMultimodal=true. */
+  isMultimodal:true
 };
 
 /* On boot: try /api/auth/me. If the URL has ?token=… it's a verification
@@ -9965,8 +10546,11 @@ async function loadSharedSession(token){
         renderHtml = formatMsg(m.rawText);
       } else if(m.html){
         renderHtml = m.html;
-      } else {
-        renderHtml = m.content||"";
+      } else if(m.content) {
+        // Content could be pre-rendered HTML (from session save) or raw
+        // text (from streaming). Detect by checking for block-level HTML.
+        renderHtml = /<(p|div|h[1-6]|table|ul|ol|li|blockquote|pre|figure)\b/i.test(m.content)
+          ? m.content : formatMsg(m.content);
       }
       body.innerHTML = renderHtml;
       var clientId = m.id || ("shared-"+generateId());
@@ -10156,7 +10740,7 @@ async function refreshApiConfig(){
        constant handles Beagle now via the nginx reverse proxy. */
     rows=rows.filter(function(p){return p.label!==BEAGLE_BUILT_IN.label});
     apiConfig={activeId:null,providers:rows.map(function(p){
-      return{id:p.id,isActive:p.isActive,isBuiltIn:p.isBuiltIn,label:p.label,url:p.url,model:p.model,hasKey:!!p.hasKey,key:existingKeys[p.id]||p.key||""};
+      return{id:p.id,isActive:p.isActive,isBuiltIn:p.isBuiltIn,label:p.label,url:p.url,model:p.model,hasKey:!!p.hasKey,key:existingKeys[p.id]||p.key||"",isMultimodal:!!p.isMultimodal};
     })};
     /* Merge the built-in Beagle provider (frontend-only, no server registration). */
     var hasBeagle=apiConfig.providers.some(function(p){return p.isBuiltIn||p.id==="beagle-built-in"});
@@ -10624,11 +11208,10 @@ function syncWebSearchUI(){
 
 /* ============================================================
    APP MODE — "tutor" (Socratic + KB + diagnostic) or "chat" (plain).
-   Default "tutor" preserves the existing behavior. Per-session:
-   switching mid-conversation saves the current session to Recents
-   and resets the app, just like clicking "New" manually.
+   Default "chat". Per-session: switching mid-conversation saves
+   the current session to Recents and resets the app.
    ============================================================ */
-var appMode="tutor";
+var appMode="chat";
 try{
   var savedMode=localStorage.getItem("socrates-appmode");
   if(savedMode==="chat"||savedMode==="tutor")appMode=savedMode;
@@ -11457,7 +12040,15 @@ function generateSessionTitle(){
       .replace(/^["']+|["']+$/g,"")
       .replace(/^[\s\-•·—:]+/,"")
       .slice(0,60);
-    if(title&&title.length>2){state.sessionTitle=title;saveCurrentSession()}
+    if(title&&title.length>2){
+      /* P_title-save-race — only save the title if the session is
+         still active. A previous session may have been deleted or
+         reset while the title generation was in-flight, and calling
+         saveCurrentSession() would either resurrect the deleted
+         session or attach a stale title to the wrong session. */
+      if(state.session.currentSessionId)state.sessionTitle=title;
+      saveCurrentSession();
+    }
   }).catch(function(e){
     _titleGenQueued=false;
     console.warn("[title gen] failed:",e&&e.message);
@@ -11554,14 +12145,64 @@ syncExtensionsUI();
 syncAppModeUI();
 syncSidebarForMode();
 
+async function refreshProductInfo(){
+  var section=document.getElementById("productInfoSection");
+  var statusEl=document.getElementById("productInfoStatus");
+  if(!section||!statusEl)return;
+  try{
+    var r=await apiFetch("/api/product-context/status");
+    section.style.display="";
+    var pages=r.pages||[];
+    var okPages=pages.filter(function(p){return !p.error});
+    var errPages=pages.filter(function(p){return p.error});
+    var ago=r.fetchedAt?Math.round((Date.now()-r.fetchedAt)/60000)+" min ago":"never";
+    var next=r.nextRefreshIn||"unknown";
+    var html="<div>Fetched: "+ago+"</div>"+
+      "<div>Next refresh: "+next+"</div>"+
+      "<div>"+okPages.length+"/"+pages.length+" pages ok";
+    if(errPages.length){
+      html+=", <span style='color:hsl(0 70% 50%)'>"+errPages.length+" failed</span>";
+    }
+    html+="</div>";
+    if(errPages.length){
+      html+='<details style="margin-top:4px;font-size:11px;color:hsl(var(--text-400))"><summary>Errors</summary>';
+      errPages.forEach(function(p){
+        html+='<div>'+esc(p.url||"")+': '+(p.error||"unknown")+'</div>';
+      });
+      html+='</details>';
+    }
+    statusEl.innerHTML=html;
+  }catch(e){
+    if(e&&e.status===403){
+      section.style.display="none";
+    }else{
+      section.style.display="";
+      statusEl.innerHTML='<span style="color:hsl(0 70% 50%)">Error: '+(e&&e.message||"unknown")+'</span>';
+    }
+  }
+}
+window.refreshProductInfo = refreshProductInfo;
+window.handleRefreshProductInfo = handleRefreshProductInfo;
+
+async function handleRefreshProductInfo(){
+  var statusEl=document.getElementById("productInfoStatus");
+  if(statusEl)statusEl.innerHTML="Refreshing…";
+  try{
+    await apiFetch("/api/product-context/refresh",{method:"POST"});
+    await refreshProductInfo();
+  }catch(e){
+    if(statusEl)statusEl.innerHTML='<span style="color:hsl(0 70% 50%)">Refresh failed: '+(e&&e.message||"unknown")+'</span>';
+  }
+}
+
 function openSettings(){
   document.getElementById("settingsOverlay").classList.remove("hidden");
   renderProviderList();
   syncSettingsUI();
-  /* Clear any leftover status from a previous save — both content and class. */
   var stgEl=document.getElementById("stgStatus");
   stgEl.innerHTML="";
   stgEl.className="settings-status";
+  refreshProductInfo();
 }
 function closeSettings(){
   document.getElementById("settingsOverlay").classList.add("hidden");
@@ -11598,6 +12239,18 @@ function renderProviderList(){
     if(!displayKey&&p.id.indexOf("new-")!==0)displayKey="••••••••";
     html+='<form style="display:contents" onsubmit="return false"><input type="text" name="username" autocomplete="username" style="display:none" aria-hidden="true"><input class="settings-input" name="providerKey" aria-label="Provider API key" type="password" autocomplete="new-password" placeholder="API key" value="'+esc(displayKey)+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'key\',this.value)"></form>';
     html+='<input class="settings-input" name="providerModel" aria-label="Provider model ID" placeholder="Model id  (e.g. gpt-5.5, claude-opus-4-8, sonnet-4-6)" value="'+esc(p.model||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'model\',this.value)">';
+    /* P_attachments-multimodal — checkbox toggling the
+     * user-controlled vision flag. Only renders for non-built-in
+     * providers; the built-in Beagle row is filtered out above.
+     * Uses data-i18n-* so the label switches with the language
+     * toggle. The change handler mutates `p.isMultimodal` via the
+     * existing updateProviderField() mutator. */
+    html+='<label class="provider-multimodal" title="'+esc(t("provider.multimodalHint")||"")+'">'
+       +'<input type="checkbox" name="providerMultimodal" aria-label="'+esc(t("provider.multimodal")||"Multimodal")+'"'
+       +(p.isMultimodal?' checked':'')
+       +' onchange="updateProviderField(\''+esc(p.id||"")+'\',\'isMultimodal\',this.checked)">'
+       +'<span data-i18n-key="provider.multimodal">Multimodal (vision-capable)</span>'
+       +'</label>';
     html+='</div>';
     html+='<button class="provider-del" onclick="removeProvider(\''+esc(p.id||"")+'\')" title="Remove">×</button>';
     html+='</div>';
@@ -11630,6 +12283,9 @@ function addProvider(){
     url:"https://api.openai.com/v1",
     key:"",
     model:"",
+    /* P_attachments-multimodal — default off for new custom
+     * providers; user opts in via the checkbox below. */
+    isMultimodal:false,
     isPending:true
   };
   apiConfig.providers.push(p);
@@ -11665,7 +12321,13 @@ function setActiveProvider(id){
   apiConfig.activeId=id;
   saveLastActiveId(id);
   if(target.isBuiltIn){
-    /* Built-in provider: update isActive flags, no server roundtrip. */
+    /* Deactivate any user-controlled active providers on the server
+       so a page refresh doesn't re-activate a stale isActive flag
+       and silently switch back from Beagle. */
+    apiConfig.providers.forEach(function(p){
+      if(p.id.indexOf("new-")===0||p.isBuiltIn||!p.isActive)return;
+      apiFetch("/api/api-key/"+encodeURIComponent(p.id),{method:"PATCH",body:{isActive:false}}).catch(function(){});
+    });
     apiConfig.providers.forEach(function(p){p.isActive=(p.id===id)});
     renderProviderList();syncModelPills();syncSettingsUI();
     return;
@@ -11756,11 +12418,20 @@ function saveSettings(){
         /* Skip built-in providers (Beagle) — they are not stored server-side. */
         if(p.isBuiltIn)continue;
         if(p.id.indexOf("new-")===0){
-          var body={label:p.label||p.model,url:p.url,model:p.model,key:p.key||""};
+          /* P_attachments-multimodal — include the user-controlled
+           * vision flag in the create payload so the API key is
+           * persisted with the user's preference from the start.
+           * Coerce to strict boolean so the server-side `=== true`
+           * check in routes/apiKeys.js accepts it. */
+          var body={label:p.label||p.model,url:p.url,model:p.model,key:p.key||"",isMultimodal:p.isMultimodal===true};
           var r=await apiFetch("/api/api-key",{method:"POST",body:body});
           p.id=r.id;p.isActive=true;
         }else{
-          var patch={label:p.label||p.model,url:p.url,model:p.model};
+          /* P_attachments-multimodal — include the flag in the
+           * PATCH so editing the checkbox and clicking Save
+           * persists the change. Server guards built-in rows so
+           * it's safe to send unconditionally. */
+          var patch={label:p.label||p.model,url:p.url,model:p.model,isMultimodal:p.isMultimodal===true};
           if(p.key){patch.key=p.key}
           await apiFetch("/api/api-key/"+encodeURIComponent(p.id),{method:"PATCH",body:patch});
         }
@@ -12169,12 +12840,59 @@ function extractHistory(){
       var m=state.messages[i];
       if(!m||!m.rawText)continue;
       var txt=String(m.rawText).replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
-      if(!txt)continue;
-      if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";
-      /* P_reasoning-persist — include chain-of-thought text for
-         DeepSeek / QwQ / o1-style reasoning models that need their
-         own reasoning from the previous turn to continue coherently. */
-      var msg={role:m.role==="user"?"user":"assistant",content:txt};
+      /* P_regen-empty-stream — strip embedded <think>…</think> blocks
+       * from assistant messages before sending them back to the model.
+       * MiniMax M3 (and other reasoning models) sometimes emit a
+       * `<think>…</think>` block inline in their content text instead
+       * of (or in addition to) a separate reasoning_content channel.
+       * When that raw text is sent back as assistant context on a
+       * later turn (regenerate, edit-and-resend, or a long
+       * conversation), the model sometimes interprets the trailing
+       * </think> as "thinking complete, return [DONE]" and emits
+       * zero content deltas — which the client surfaces as
+       * "No response: empty stream". The reasoning content is
+       * preserved separately in m.reasoningContent and re-sent as a
+       * dedicated reasoning_content field below, so stripping the
+       * inline copy is loss-free for the model context. */
+      if(m.role==="assistant"||m.role==="system"){
+        txt=txt.replace(/<think>[\s\S]*?<\/think>/g,"").replace(/<\/?think>/g,"").trim();
+      }
+      if(!txt&&!(m.role==="user"&&Array.isArray(m.attachments)&&m.attachments.length))continue;
+      /* P_attachments-extractHistory — for user messages with stored
+       * image/text/PDF attachments, reconstruct a proper multimodal
+       * content parts array so the LLM receives the actual image data
+       * (not just the rawText string) on every turn. Without this, the
+       * image is only sent on the first turn (via _pendingChatContent)
+       * and subsequent history turns degrade to text-only. */
+      var content;
+      if(m.role==="user" && Array.isArray(m.attachments) && m.attachments.length){
+        var hasMultimodal=m.attachments.some(function(att){return att&&((att.kind==="image"&&att.dataUrl)||((att.kind==="text"||att.kind==="pdf")&&att.text));});
+        if(hasMultimodal){
+          var parts=[];
+          if(txt)parts.push({type:"text",text:txt.length>HISTORY_MAX_CHARS?txt.slice(0,HISTORY_MAX_CHARS)+"…":txt});
+          for(var ai=0;ai<m.attachments.length;ai++){
+            var att=m.attachments[ai];
+            if(!att)continue;
+            if(att.kind==="image"&&att.dataUrl){
+              parts.push({type:"image_url",image_url:{url:att.dataUrl,detail:"auto"}});
+            }else if(att.kind==="text"&&att.text){
+              var attTxt=att.text.length>HISTORY_MAX_CHARS?att.text.slice(0,HISTORY_MAX_CHARS)+"…":att.text;
+              parts.push({type:"text",text:"[Parsed file: "+att.name+"]\n"+attTxt});
+            }else if(att.kind==="pdf"&&att.text){
+              var pdfTxt=att.text.length>HISTORY_MAX_CHARS?att.text.slice(0,HISTORY_MAX_CHARS)+"…":att.text;
+              parts.push({type:"text",text:"[Parsed PDF: "+att.name+"]\n"+pdfTxt});
+            }
+          }
+          content=parts;
+        }else{
+          if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";
+          content=txt;
+        }
+      }else{
+        if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";
+        content=txt;
+      }
+      var msg={role:m.role==="user"?"user":"assistant",content:content};
       if(m.reasoningContent){
         msg.reasoning_content=m.reasoningContent;
       }
@@ -12519,6 +13237,7 @@ window.startSession = startSession;
 window.submitAuthLoginWithCode = submitAuthLoginWithCode;
 window.submitAuthSendCode = submitAuthSendCode;
 window.submitChatMessage = submitChatMessage;
+window.askChatTurn = askChatTurn;
 window.switchAuthTab = switchAuthTab;
 window.switchTab = switchTab;
 window.syncSidebarBtns = syncSidebarBtns;

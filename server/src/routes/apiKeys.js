@@ -27,6 +27,8 @@ router.get('/', async (req, res, next) => {
       keyHint: apiKeys.keyHint,
       isActive: apiKeys.isActive,
       isBuiltIn: apiKeys.isBuiltIn,
+      /* P_attachments-multimodal — user-controlled vision flag. */
+      isMultimodal: apiKeys.isMultimodal,
       hasKey: apiKeys.keyCiphertext,  /* boolean: true if key is stored */
       createdAt: apiKeys.createdAt,
     }).from(apiKeys).where(eq(apiKeys.userId, req.userId));
@@ -60,6 +62,10 @@ router.post('/', audit('create_api_key', (req) => ({ label: req.body?.label, url
     await db.update(apiKeys)
       .set({ isActive: false })
       .where(and(eq(apiKeys.userId, req.userId), eq(apiKeys.isActive, true)));
+    /* P_attachments-multimodal — accept the user-controlled flag.
+     * Coerce to strict boolean so a forged payload can't smuggle a
+     * truthy non-boolean that survives JSON.parse in the client. */
+    const isMultimodal = req.body.isMultimodal === true;
     const [result] = await db.insert(apiKeys).values({
       userId: req.userId,
       label: label || 'Default',
@@ -68,6 +74,7 @@ router.post('/', audit('create_api_key', (req) => ({ label: req.body?.label, url
       keyCiphertext,
       keyHint: key.slice(0, 8),
       isActive: true,
+      isMultimodal,
     }).returning();
 
     return res.status(201).json(result);
@@ -91,6 +98,16 @@ router.patch('/:id', async (req, res, next) => {
     if (req.body.key !== undefined) {
       patch.keyCiphertext = encrypt(req.body.key, ENCRYPTION_KEY);
       patch.keyHint = req.body.key.slice(0, 8);
+    }
+    /* P_attachments-multimodal — accept the user-controlled flag.
+     * Built-in rows (Beagle) are read-only with respect to
+     * isMultimodal: a forged PATCH that tries to clear the flag on
+     * a built-in row is silently dropped, preserving the server-
+     * enforced "Beagle is multimodal" invariant. */
+    if (req.body.isMultimodal !== undefined) {
+      if (!existing.isBuiltIn) {
+        patch.isMultimodal = req.body.isMultimodal === true;
+      }
     }
     if (req.body.isActive !== undefined) {
       patch.isActive = req.body.isActive;

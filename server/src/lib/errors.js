@@ -56,3 +56,9 @@ export class TooManyRequests extends ApiError {
     super(429, 'TOO_MANY_REQUESTS', message);
   }
 }
+
+export class PayloadTooLarge extends ApiError {
+  constructor(message = 'Payload too large') {
+    super(413, 'PAYLOAD_TOO_LARGE', message);
+  }
+}

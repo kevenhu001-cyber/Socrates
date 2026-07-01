@@ -18,6 +18,7 @@
  */
 import { getDb } from '../db/index.js';
 import { auditEvents } from '../db/schema.js';
+import { safeUrl } from '../lib/log.js';
 
 /**
  * Create an audit-logging middleware for a specific action.
@@ -31,10 +32,13 @@ export function audit(action, getDetail) {
         const detail = typeof getDetail === 'function' ? getDetail(req) : {};
         try {
           const db = getDb();
+          // Strip tokens from the recorded URL — share / password-reset
+          // tokens end up in `req.originalUrl` and would otherwise
+          // give anyone with DB access a long-lived credential.
           db.insert(auditEvents).values({
             userId: req.userId,
             action,
-            detail: { ...detail, method: req.method, path: req.originalUrl },
+            detail: { ...detail, method: req.method, path: safeUrl(req.originalUrl) },
             ip: req.ip,
             userAgent: (req.headers['user-agent'] || '').slice(0, 500),
           }).catch((err) => {

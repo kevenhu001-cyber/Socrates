@@ -1,4 +1,4 @@
-import { eq, and, gte, desc, sql } from 'drizzle-orm';
+import { eq, and, gte, ne, desc, sql } from 'drizzle-orm';
 import crypto from 'node:crypto';
 import { getDb } from '../db/index.js';
 import { users, authSessions, verificationTokens, pendingRegistrations } from '../db/schema.js';
@@ -12,6 +12,9 @@ import {
 import {
   sendVerificationEmail, sendPasswordResetEmail, sendLoginCode,
 } from './email.js';
+import {
+  checkLockout, recordFailure, recordSuccess,
+} from './loginLockout.js';
 
 /**
  * Mask an email for log output — enough context to correlate log
@@ -197,16 +200,33 @@ export async function login(email, password) {
   const normalizedEmail = email.toLowerCase().trim();
   const db = getDb();
 
+  // Throws TooManyRequests if this email has hit the failure
+  // threshold within the lockout window. Checking BEFORE bcrypt
+  // also saves CPU under sustained attack.
+  checkLockout(normalizedEmail);
+
   const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
-  if (!user) throw new Unauthorized('Invalid email or password');
+  if (!user) {
+    // Count the attempt against the email even though no user
+    // exists — otherwise an attacker can probe "is X registered?"
+    // by measuring when the lockout kicks in.
+    recordFailure(normalizedEmail);
+    throw new Unauthorized('Invalid email or password');
+  }
 
   const valid = await comparePassword(password, user.passwordHash);
-  if (!valid) throw new Unauthorized('Invalid email or password');
+  if (!valid) {
+    recordFailure(normalizedEmail);
+    throw new Unauthorized('Invalid email or password');
+  }
 
   // Reject unverified accounts
   if (!user.verifiedAt) {
     throw new Forbidden('UNVERIFIED', 'Please verify your email before signing in.');
   }
+
+  // Successful login — wipe any prior failure count for this email.
+  recordSuccess(normalizedEmail);
 
   const sid = await createSession(user.id);
 
@@ -428,6 +448,13 @@ export async function getResetInfo(token) {
 
 /**
  * POST /api/auth/reset-password
+ *
+ * SECURITY: invalidating all sessions on reset is intentional. The
+ * forgot-password flow is the recovery path for a user who *thinks*
+ * their account may be compromised — leaving the attacker's session
+ * alive would defeat the purpose of the reset. We can't identify
+ * "the attacker's session" so we nuke them all; the resetting user
+ * will need to sign in again, which is the expected UX.
  */
 export async function resetPassword(token, newPassword) {
   if (!token || !newPassword) throw new BadRequest('Token and new password are required');
@@ -447,13 +474,21 @@ export async function resetPassword(token, newPassword) {
   const passwordHash = await hashPassword(newPassword);
   await db.update(users).set({ passwordHash }).where(eq(users.id, vt.userId));
   await db.delete(verificationTokens).where(eq(verificationTokens.token, token));
+  // Invalidate every session for this user. The user will need to
+  // sign back in (the standard "you've been signed out for security"
+  // flow) but no attacker who may have had a session can continue.
+  await db.delete(authSessions).where(eq(authSessions.userId, vt.userId));
 }
 
 /**
  * POST /api/auth/password — change password while authenticated.
  * Requires oldPassword for verification, then sets newPassword.
+ *
+ * SECURITY: invalidate every OTHER session (keep the one currently
+ * changing the password). A compromised device or stolen cookie
+ * therefore can't outlive a legitimate password change.
  */
-export async function changePassword(userId, oldPassword, newPassword) {
+export async function changePassword(userId, oldPassword, newPassword, currentSid) {
   if (!oldPassword || !newPassword) throw new BadRequest('Current password and new password are required');
   if (newPassword.length < MIN_PASSWORD_LENGTH) throw new BadRequest('Password must be at least 8 characters');
 
@@ -466,6 +501,21 @@ export async function changePassword(userId, oldPassword, newPassword) {
 
   const passwordHash = await hashPassword(newPassword);
   await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
+  // Drop every session for this user EXCEPT the one making the
+  // change — that session is the user's own browser, which we
+  // want to keep logged in.
+  if (currentSid) {
+    await db.delete(authSessions).where(and(
+      eq(authSessions.userId, userId),
+      // Drizzle's `ne` is the NOT-EQUALS operator; imported below.
+      ne(authSessions.token, currentSid),
+    ));
+  } else {
+    // Fallback: we don't know the calling sid (defensive). Drop
+    // everything — the client will get a 401 on the next request
+    // and have to log in again.
+    await db.delete(authSessions).where(eq(authSessions.userId, userId));
+  }
 }
 
 /**

@@ -33,7 +33,23 @@ router.get('/:token', async (req, res, next) => {
       return res.status(404).json({ code: 'NOT_FOUND', message: 'Session not found' });
     }
 
-    const msgs = await db.select().from(messages)
+    /* P_share-attachments-privacy — public share tokens must NOT leak
+     * private attachment data (base64 image dataUrls, extracted PDF
+     * text, etc.) to anyone holding the link. Select an explicit
+     * projection that omits the `attachments` jsonb column along with
+     * other implementation-detail fields (rawText, sources, html) that
+     * could leak PII or be used to re-derive the user's input style. */
+    const msgs = await db.select({
+      id: messages.id,
+      sessionId: messages.sessionId,
+      role: messages.role,
+      content: messages.content,
+      model: messages.model,
+      tokenCount: messages.tokenCount,
+      reasoningContent: messages.reasoningContent,
+      parentId: messages.parentId,
+      createdAt: messages.createdAt,
+    }).from(messages)
       .where(eq(messages.sessionId, session.id))
       .orderBy(messages.createdAt)
       .limit(200);
@@ -45,7 +61,11 @@ router.get('/:token', async (req, res, next) => {
       mode: session.mode,
       /* P_exam-share — shareable exam sessions need kind + exam_data
        * so the read-only viewer can render the questions/answers
-       * instead of (or in addition to) the chat-style message list. */
+       * instead of (or in addition to) the chat-style message list.
+       * exam_data itself may carry per-question attachments via
+       * question stems; we keep it for now because it does not (yet)
+       * store image dataUrls, only text. Re-evaluate if a future
+       * question author uploads a figure. */
       kind: session.kind,
       examData: session.examData,
       createdAt: session.createdAt,

@@ -6,6 +6,7 @@ import { authLimiter } from '../middleware/rateLimit.js';
 import * as authService from '../services/auth.js';
 import { audit, recordAudit } from '../middleware/audit.js';
 import { shouldUseSharedDomain, SHARED_COOKIE_DOMAIN } from '../lib/cookieEnv.js';
+import { generateSessionToken } from '../lib/crypto.js';
 
 /* HMAC key for signing OAuth state parameters — derived from
    SESSION_SECRET so it stays consistent across restarts without
@@ -199,16 +200,19 @@ router.post('/reset-password', authLimiter, async (req, res, next) => {
 });
 
 /* ─── Change password (authenticated) ─── */
-router.post('/password', requireAuth, async (req, res, next) => {
+router.post('/password', requireAuth, authLimiter, async (req, res, next) => {
   try {
     const { oldPassword, newPassword } = req.body;
-    await authService.changePassword(req.userId, oldPassword, newPassword);
+    // Pass the caller's sid so the service can keep THIS session
+    // alive while invalidating every other device/browser for the
+    // user. If the sid is missing for any reason we drop them all.
+    await authService.changePassword(req.userId, oldPassword, newPassword, req.cookies?.sid);
     return res.json({ ok: true });
   } catch (err) { next(err); }
 });
 
 /* ─── Delete account ─── */
-router.delete('/account', requireAuth, async (req, res, next) => {
+router.delete('/account', requireAuth, authLimiter, async (req, res, next) => {
   try {
     await authService.deleteAccount(req.userId);
     clearSidCookie(res, req);
@@ -318,7 +322,7 @@ router.get('/oauth/github/callback', async (req, res, next) => {
       }).returning();
     }
 
-    const token = randomBytes(32).toString('hex');
+    const token = generateSessionToken();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await db.insert(authSessions).values({ token, userId: user.id, expiresAt });
 

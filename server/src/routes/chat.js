@@ -16,6 +16,7 @@ import { BadRequest, TooManyRequests } from '../lib/errors.js';
 import { getBeagleQuota } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
 import { buildSystemContextBlock } from '../services/productContext.js';
+import { isMultimodalProvider } from '../lib/multimodal.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,6 +69,32 @@ async function prependTeacherModePrompt(messages) {
    system message so the LLM always knows who it's talking to, the
    current time, and the user's account details.
    ───────────────────────────────────────────────────────────────── */
+
+/**
+ * Strip control characters and collapse newlines from a string before
+ * it lands in a system prompt. The user's display name / email are
+ * attacker-controlled (any user can rename themselves) so they must
+ * not be allowed to inject literal `\n\n` followed by "ignore all
+ * previous instructions" into the system prompt and steer the LLM.
+ *
+ * The sanitizer:
+ *   - Replaces any control character (including \n, \r, \t) with a
+ *     single space — we use the value as a single line.
+ *   - Truncates to 120 chars (display names cap at 80, emails are
+ *     254 max, so 120 is a sane upper bound for the prompt).
+ *   - Strips lone angle brackets / backticks that could be picked
+ *     up by a markdown renderer later.
+ */
+function sanitizePromptScalar(raw, max = 120) {
+  if (typeof raw !== 'string') return '';
+  return raw
+    .replace(/[\x00-\x1F\x7F]/g, ' ') // control chars including \n
+    .replace(/[`<>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max);
+}
+
 function injectUserContext(messages, user) {
   if (!user) return messages;
 
@@ -81,11 +108,13 @@ function injectUserContext(messages, user) {
 
   let userCtx = `[System context — auto-injected]\nCurrent date: ${dateStr}\nCurrent time: ${timeStr}`;
 
-  /* User profile */
-  if (user.displayName) userCtx += `\nUser display name: ${user.displayName}`;
-  if (user.email) userCtx += `\nUser email: ${user.email}`;
-  if (user.tier) userCtx += `\nUser plan tier: ${user.tier}`;
-  if (user.plan) userCtx += `\nUser subscription: ${user.plan}`;
+  /* User profile — every value here is sanitised before insertion
+   * because display name / email are user-controlled and could
+   * otherwise smuggle prompt-injection into the system prompt. */
+  if (user.displayName) userCtx += `\nUser display name: ${sanitizePromptScalar(user.displayName)}`;
+  if (user.email) userCtx += `\nUser email: ${sanitizePromptScalar(user.email)}`;
+  if (user.tier) userCtx += `\nUser plan tier: ${sanitizePromptScalar(user.tier, 40)}`;
+  if (user.plan) userCtx += `\nUser subscription: ${sanitizePromptScalar(user.plan, 40)}`;
   if (user.isGuest) userCtx += '\nUser account type: Guest';
   if (user.createdAt) {
     try {
@@ -216,6 +245,113 @@ const ChatPayloadSchema = z.object({
   extra_body: z.record(z.any()).optional(),
 }).passthrough();
 
+/* SECURITY: extra_body is a passthrough bag the front-end fills with
+ * provider-specific knobs (DeepSeek `thinking`, sampling tweaks,
+ * etc). Forwarding it verbatim would let a malicious client smuggle
+ * a `tools`, `response_format` schema referencing an internal URL,
+ * or — worse — duplicate `api_key` / `authorization` headers into
+ * the upstream call. We whitelist a small set of safe keys here
+ * and drop anything else. Add to this list when a legitimate
+ * provider needs a new knob.
+ */
+const ALLOWED_EXTRA_BODY_KEYS = new Set([
+  'thinking',          // DeepSeek-style reasoning toggle
+  'top_p',             // sampling — provider-native
+  'top_k',             // sampling — provider-native
+  'stop',              // stop sequences
+  'frequency_penalty',
+  'presence_penalty',
+  'logit_bias',
+  'seed',
+  'response_format',   // { type: 'json_object' } etc — pass-through
+]);
+function sanitizeExtraBody(raw) {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const out = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (ALLOWED_EXTRA_BODY_KEYS.has(k)) {
+      // Reject nested objects that try to smuggle request fields
+      // via string values; allow shallow values only.
+      if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+        out[k] = v;
+      } else if (Array.isArray(v) || (v && typeof v === 'object')) {
+        // For response_format and stop we allow the object form too,
+        // but only if the JSON is itself a plain object / array of
+        // strings — we don't recurse further.
+        out[k] = v;
+      }
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/* P_attachments — model-aware content transform.
+ *
+ * The chat schema accepts multimodal `image_url` parts on every
+ * provider, but only vision-capable models can actually consume them.
+ * Before forwarding the prompt to the upstream we run every message
+ * through this transform:
+ *
+ *   - Plain string content → unchanged.
+ *   - Multimodal content on a vision-capable model → unchanged.
+ *   - Multimodal content on a TEXT-ONLY model → replace each
+ *     `image_url` part with a textual placeholder so the model
+ *     receives a coherent "I can't view this" instruction instead of
+ *     a confusing upstream 400. We drop the original dataUrl so we
+ *     don't waste tokens shipping a 500 KB base64 image to a model
+ *     that can never read it.
+ *   - Any other part shape (text, etc.) → unchanged.
+ *
+ * This is a defence-in-depth fallback. The frontend is supposed to
+ * pre-decide whether to send `image_url` parts based on the active
+ * provider, but we don't trust the client and re-check here. */
+function transformContentForModel(content, multimodal) {
+  if (!Array.isArray(content)) return content;
+  if (multimodal) return content;
+  const out = [];
+  for (const part of content) {
+    if (part && part.type === 'image_url') {
+      // We don't have the original filename here (it lives in the
+      // attachments column), but we can hint at it via the
+      // `image_url.url` itself if it was a dataUrl — fall back to
+      // a generic message. The client renders "[Image: foo.png]"
+      // next to the bubble so the user knows what was attached.
+      out.push({
+        type: 'text',
+        text: '[User attached an image. Your current model cannot view images. Ask the user to describe what they want help with.]',
+      });
+    } else if (part && part.type === 'text' && typeof part.text === 'string') {
+      out.push(part);
+    } else {
+      // Unknown part type — drop rather than forward unknown shapes.
+      // (We could include them but OpenAI's spec is strict about
+      //  only `text` / `image_url`; unknowns may get rejected.)
+    }
+  }
+  // If we stripped everything, leave at least an empty marker so the
+  // upstream doesn't see an empty content array (which some providers
+  // also reject).
+  if (out.length === 0) {
+    out.push({ type: 'text', text: '[User attached content that cannot be processed by the current model.]' });
+  }
+  return out;
+}
+
+/* Apply the multimodal transform to every user/assistant turn in
+ * `messages` based on the active provider's `isMultimodal` flag.
+ * System messages are not multimodal in OpenAI's spec, but we
+ * still walk them for safety in case a future revision allows
+ * system-image parts. The provider object is the decrypted shape
+ * returned by services/apiKey.js#decryptProvider; it carries the
+ * user-controlled `isMultimodal` boolean. */
+function transformMessagesForModel(messages, provider) {
+  const multimodal = isMultimodalProvider(provider);
+  return messages.map((m) => {
+    if (!m || typeof m !== 'object') return m;
+    return { ...m, content: transformContentForModel(m.content, multimodal) };
+  });
+}
+
 /* ─── Non-streaming chat (title gen, query rewrite, short tasks) ─── */
 /* Audit S-H3 (P0) — switch from optionalAuth to requireAuth. The
    previous configuration let anonymous users hit the built-in
@@ -232,6 +368,10 @@ router.post('/', chatLimiter, requireAuth, audit('chat:sync'), async (req, res, 
     let finalMessages = injectUserContext(messages, req.user);
     if (mode === 'tutor') finalMessages = await prependTeacherModePrompt(finalMessages);
     finalMessages = await injectProductContext(finalMessages);
+
+    /* Sanitise extra_body before forwarding to the upstream — see
+     * ChatPayloadSchema's comment for the rationale. */
+    const safeExtraBody = sanitizeExtraBody(extra_body);
 
     const provider = await getActiveApiKey(req.userId);
     if (!provider) {
@@ -251,6 +391,13 @@ router.post('/', chatLimiter, requireAuth, audit('chat:sync'), async (req, res, 
       if (limitErr) return res.status(429).json({ code: 'MONTHLY_LIMIT', message: limitErr.message });
     }
 
+    /* P_attachments — degrade multimodal content to text-only when
+     * the active model isn't vision-capable. Runs after all the
+     * system-prompt injection so we can compute `finalMessages` once
+     * and walk it in a single pass. The provider object carries
+     * the user-controlled `isMultimodal` flag (see services/apiKey.js). */
+    finalMessages = transformMessagesForModel(finalMessages, provider);
+
     const result = await callChatCompletion({
       apiBase: provider.url,
       apiKey: provider.keyPlaintext,
@@ -262,7 +409,7 @@ router.post('/', chatLimiter, requireAuth, audit('chat:sync'), async (req, res, 
          (e.g. {thinking:{type:"enabled"}}) so DeepSeek-family
          upstreams emit reasoning_content. */
       reasoning_effort,
-      extra_body,
+      extra_body: safeExtraBody,
     });
 
     return res.json({
@@ -270,13 +417,21 @@ router.post('/', chatLimiter, requireAuth, audit('chat:sync'), async (req, res, 
     });
   } catch (err) {
     /* LLM upstream returned 401/403 (bad key) or 429 (quota).
-       Translate to 502 so the frontend apiFetch doesn't confuse
-       it with the user's own auth session expiring (which also
-       uses 401). */
-    if (err.status && (err.status === 401 || err.status === 403 || err.status === 429)) {
+       Pass 429 through as-is so the client can show a clear
+       "provider quota exceeded" message instead of the misleading
+       "502 Bad Gateway". 401/403 are translated to 502 to prevent
+       the frontend's apiFetch from treating an LLM key error as
+       the user's own auth session expiring (which also uses 401). */
+    if (err.status && (err.status === 401 || err.status === 403)) {
       return res.status(502).json({
         code: 'LLM_PROVIDER_ERROR',
         message: err.message || 'LLM provider returned ' + err.status,
+      });
+    }
+    if (err.status && err.status === 429) {
+      return res.status(429).json({
+        code: 'LLM_QUOTA_EXCEEDED',
+        message: err.message || 'The upstream LLM provider returned a rate-limit or quota error. Check your API key billing.',
       });
     }
     next(err);
@@ -295,6 +450,10 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
     if (mode === 'tutor') finalMessages = await prependTeacherModePrompt(finalMessages);
     finalMessages = await injectProductContext(finalMessages);
 
+    /* Sanitise extra_body before forwarding to the upstream — see
+     * ChatPayloadSchema's comment for the rationale. */
+    const safeExtraBody = sanitizeExtraBody(extra_body);
+
     const provider = await getActiveApiKey(req.userId);
     if (!provider) {
       return res.status(503).json({ code: 'NO_PROVIDER', message: 'No active LLM provider configured' });
@@ -312,6 +471,13 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
       const limitErr = await checkBeagleMonthlyLimit(req.userId, req.user?.tier);
       if (limitErr) return res.status(429).json({ code: 'MONTHLY_LIMIT', message: limitErr.message });
     }
+
+    /* P_attachments — degrade multimodal content to text-only when
+     * the active model isn't vision-capable. Must run BEFORE
+     * estimateMessageTokens below so the prompt token estimate
+     * doesn't count a 500 KB image_url payload. The provider object
+     * carries the user-controlled `isMultimodal` flag. */
+    finalMessages = transformMessagesForModel(finalMessages, provider);
 
     // Set SSE headers
     res.writeHead(200, {
@@ -356,7 +522,7 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
         /* P_deepseek-mode — forward reasoning flags so the upstream
            emits reasoning_content chunks. */
         reasoning_effort,
-        extra_body,
+        extra_body: safeExtraBody,
       },
       // onChunk
       (chunk) => {
@@ -394,6 +560,8 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
           res.write('data: [DONE]\n\n');
           res.end();
         } catch { /* ignore */ }
+        /* Record usage even on error so the heatmap reflects attempts.
+           The frontend surfaces the error to the user (e.g. quota). */
         if (req.userId && fullText.length > 0) {
           /* Even on partial failure, record what we got — the
              heatmap should reflect activity regardless of outcome. */

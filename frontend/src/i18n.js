@@ -3,6 +3,25 @@ var I18N={
     "chat.placeholder":"Type your thinking...",
     "chat.hint":"Shift+Enter for new line",
     "chat.send":"Send",
+    /* P_attachments — UI strings for the chat-input attachment chip
+     * strip, paperclip button, and toast feedback. Kept short so
+     * the chips don't wrap. */
+    "chat.attach":"Attach files",
+    "chat.attach.aria":"Attach files",
+    "chat.attach.remove.aria":"Remove attachment",
+    "chat.attach.maxReached":"You can attach up to 6 files per turn.",
+    "chat.attach.imageTooLarge":"Image exceeds the {size} MB limit.",
+    "chat.attach.pdfTooLarge":"PDF exceeds the 25 MB limit.",
+    "chat.attach.unsupported":"Only images, text files, and PDFs are supported.",
+    "chat.attach.truncated":"(truncated)",
+    /* P_attachments-multimodal — UI strings for the user-controlled
+     * multimodal checkbox on the API key editor row (provider.*) and
+     * the rejected-image toast in the chat composer (attach.*). The
+     * checkbox label is consumed by data-i18n-key="provider.multimodal"
+     * and switched by applyI18n on language toggle. */
+    "provider.multimodal":"Multimodal (vision-capable)",
+    "provider.multimodalHint":"Allow image attachments to be sent to this model",
+    "attach.notMultimodal":"The active model can't view images. Add a multimodal provider or remove image attachments.",
     /* P_lang-slogans — the topic-setup hero slogan ("What would
        you like to explore?" / "What can I help you with?") is
        intentionally hardcoded English in BOTH i18n blocks so the
@@ -193,6 +212,15 @@ var I18N={
     "tutor.modeTutorDesc":"AI asks, follows up, and tracks what you know",
     "tutor.modeSwitchToTutor":"Switch to Tutor",
     "tutor.modeSwitchToChat":"Switch to Chat",
+    /* Math-textbook scaffold blocks (proof / theorem / key-point / derivation) */
+    "tutor.proofLabel":"Proof",
+    "tutor.theoremLabel":"Theorem",
+    "tutor.keyPointLabel":"Key Point",
+    "tutor.derivationLabel":"Derivation",
+    "tutor.theoremStatementLabel":"Statement",
+    "tutor.theoremProofLabel":"Proof",
+    "tutor.showProof":"Show proof",
+    "tutor.hideProof":"Hide proof",
     /* v3.0 design — mistake book filter (§9.4). */
     "tutor.mistakeFilterAll":"All",
     "tutor.mistakeFilterUnresolved":"Unresolved",
@@ -241,6 +269,19 @@ var I18N={
     "chat.placeholder":"输入你的想法...",
     "chat.hint":"Shift+Enter 换行",
     "chat.send":"发送",
+    /* P_attachments — see matching en block. */
+    "chat.attach":"附加文件",
+    "chat.attach.aria":"附加文件",
+    "chat.attach.remove.aria":"移除附件",
+    "chat.attach.maxReached":"每次最多附加 6 个文件。",
+    "chat.attach.imageTooLarge":"图片超过 {size} MB 上限。",
+    "chat.attach.pdfTooLarge":"PDF 超过 25 MB 上限。",
+    "chat.attach.unsupported":"仅支持图片、文本文件和 PDF。",
+    "chat.attach.truncated":"（已截断）",
+    /* P_attachments-multimodal — see matching en block. */
+    "provider.multimodal":"多模态（支持图像理解）",
+    "provider.multimodalHint":"允许将图片附件发送给此模型",
+    "attach.notMultimodal":"当前模型无法理解图像。请添加多模态提供方或移除图片附件。",
     /* P_lang-slogans — see the matching en block: the hero
        slogan/subtitle are intentionally pinned English so they
        stay consistent regardless of language toggle or saved
@@ -422,6 +463,15 @@ var I18N={
     "tutor.modeTutorDesc":"AI 主动提问并跟踪你的学习",
     "tutor.modeSwitchToTutor":"切换到引导模式",
     "tutor.modeSwitchToChat":"切换到对话模式",
+    /* Math-textbook scaffold blocks (zh) */
+    "tutor.proofLabel":"证明",
+    "tutor.theoremLabel":"定理",
+    "tutor.keyPointLabel":"要点",
+    "tutor.derivationLabel":"推导",
+    "tutor.theoremStatementLabel":"陈述",
+    "tutor.theoremProofLabel":"证明",
+    "tutor.showProof":"展开证明",
+    "tutor.hideProof":"收起证明",
     /* v3.0 design — mistake book filter (zh) */
     "tutor.mistakeFilterAll":"全部",
     "tutor.mistakeFilterUnresolved":"未攻克",
@@ -496,6 +546,21 @@ function applyI18n(){
     var ph=phs[j].getAttribute("data-i18n-placeholder");
     var phv=t(ph);
     if(phv&&phv!==ph)phs[j].setAttribute("placeholder",phv);
+  }
+  /* Translate elements with data-i18n-title / data-i18n-aria — used
+   * by the attachment paperclip button. Same pattern as the
+   * placeholder block above. */
+  var titles=document.querySelectorAll("[data-i18n-title]");
+  for(var ti=0;ti<titles.length;ti++){
+    var tk=titles[ti].getAttribute("data-i18n-title");
+    var tv=t(tk);
+    if(tv&&tv!==tk)titles[ti].setAttribute("title",tv);
+  }
+  var arias=document.querySelectorAll("[data-i18n-aria]");
+  for(var ai=0;ai<arias.length;ai++){
+    var ak=arias[ai].getAttribute("data-i18n-aria");
+    var av=t(ak);
+    if(av&&av!==ak)arias[ai].setAttribute("aria-label",av);
   }
   /* Placeholder / value updates — done selectively for now. */
   var ci=document.getElementById("chatInputArea");
