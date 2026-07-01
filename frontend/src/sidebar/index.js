@@ -7,22 +7,28 @@
    syncSidebarBtns, renderRecents, getRecentsFilter, etc.). */
 
 /* Persisted sidebar collapsed/expanded state. main.js sets up
-   sidebarOpen=true and reads the persisted pref on boot. */
+   sidebarOpen=true and reads the persisted pref on boot.
+   State is derived from the DOM (#sidebar .collapsed class) so
+   it never desyncs from main.js's module-scoped `sidebarOpen` —
+   that variable was unreachable from here and the two diverged
+   after the first toggle, leaving syncSidebarBtns() showing the
+   wrong button. */
 export function toggleSidebar(){
-  var sidebarOpen=window.sidebarOpen;
-  sidebarOpen=!sidebarOpen;
-  window.sidebarOpen=sidebarOpen;
   var s=document.getElementById("sidebar");
+  if(!s)return;
   var bd=document.getElementById("sidebarBackdrop");
-  if(sidebarOpen){
+  var wasCollapsed=s.classList.contains("collapsed");
+  if(wasCollapsed){
     s.classList.remove("collapsed");
     if(bd&&window.innerWidth<768)bd.classList.add("show");
   }else{
     s.classList.add("collapsed");
     if(bd)bd.classList.remove("show");
   }
+  var nowOpen=!s.classList.contains("collapsed");
+  window.sidebarOpen=nowOpen;
   window.syncSidebarBtns&&window.syncSidebarBtns();
-  try{localStorage.setItem("socrates-sb",sidebarOpen?"1":"0")}catch(e){}
+  try{localStorage.setItem("socrates-sb",nowOpen?"1":"0")}catch(e){}
 }
 
 /* Recents filter is a project-tag chip the user picked to narrow the

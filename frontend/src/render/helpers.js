@@ -16,28 +16,42 @@ export function escHTML(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"
    \curl → \operatorname{curl} (curl)
    \grad → \operatorname{grad} (gradient)
    \laplacian → \nabla^2
-   \R/\N/\Z/\Q/\C → \mathbb{...} (number sets) */
+   \R/\N/\Z/\Q/\C → \mathbb{...} (number sets)
+   Plus math-textbook shorthands: \norm, \inner, \abs, \set, \d, \e, \i,
+   \O, \st, \iff, \Pr, \sd, etc. */
 export var KATEX_MACROS={
+  /* divergence / grad / curl / set operators */
   "\\div":"\\operatorname{div}",
   "\\curl":"\\operatorname{curl}",
   "\\grad":"\\operatorname{grad}",
   "\\laplacian":"\\nabla^2",
+  /* number sets */
   "\\R":"\\mathbb{R}",
   "\\N":"\\mathbb{N}",
   "\\Z":"\\mathbb{Z}",
   "\\Q":"\\mathbb{Q}",
   "\\C":"\\mathbb{C}",
+  /* differential / calculus glyphs */
   "\\eps":"\\varepsilon",
   "\\ve":"\\varepsilon",
   "\\dd":"\\operatorname{d}",
+  "\\d":"\\operatorname{d}",
+  "\\e":"\\mathrm{e}",
+  "\\i":"\\mathrm{i}",
   "\\pd":"\\partial",
+  /* matrix / tensor algebra */
   "\\T":"\\top",
   "\\tr":"\\operatorname{tr}",
   "\\rank":"\\operatorname{rank}",
   "\\im":"\\operatorname{im}",
   "\\re":"\\operatorname{Re}",
+  /* statistics */
   "\\Var":"\\operatorname{Var}",
   "\\Cov":"\\operatorname{Cov}",
+  "\\sd":"\\operatorname{sd}",
+  "\\Pr":"\\operatorname{Pr}",
+  "\\E":"\\operatorname{\\mathbb{E}}",
+  /* optimization / set notation */
   "\\argmin":"\\operatorname{argmin}",
   "\\argmax":"\\operatorname{argmax}",
   "\\sgn":"\\operatorname{sgn}",
@@ -49,6 +63,24 @@ export var KATEX_MACROS={
    "\\U":"\\cup",
    "\\union":"\\cup",
    "\\intersection":"\\cap",
+  /* math-textbook shorthands added for Tutor mode */
+  "\\norm":"\\lVert #1 \\rVert",
+  "\\inner":"\\langle #1, #2 \\rangle",
+  "\\abs":"\\lvert #1 \\rvert",
+  "\\set":"\\{ #1 \\}",
+  "\\seq":"(#1)_{#2}",
+  "\\st":"\\text{ s.t. }",
+  "\\suchthat":"\\text{ s.t. }",
+  "\\iff":"\\Leftrightarrow",
+  "\\mapsfrom":"\\mapsfrom",
+  "\\O":"\\mathcal{O}",
+  "\\bigO":"\\mathcal{O}",
+  "\\land":"\\wedge",
+  "\\lor":"\\vee",
+  /* common log / trig operators (text form so they read consistently) */
+  "\\exp":"\\operatorname{exp}",
+  "\\ln":"\\operatorname{ln}",
+  "\\log":"\\operatorname{log}",
 };
 
 /* LaTeX command whitelist used by _autoWrapBareBracketMath to

@@ -102,8 +102,13 @@ export async function afterAuthEnter(){
   }catch(e){console.warn("[migrate] setup",e.message)}
   /* Pull the user's server-side chat sessions into the local cache. */
   await window.refreshServerSessions&&window.refreshServerSessions();
-  /* Load the user's saved API providers and model configs. */
-  var _r=await window.refreshApiConfig&&window.refreshApiConfig();
+  /* Load the user's saved API providers and model configs.
+     Wrap the conditional call in parens so the `await` waits for
+     the returned Promise; without parens, `await X && Y()` parses
+     as `(await X) && Y()` and the inner Promise is never awaited —
+     so the subsequent syncModelPills() runs before the API call
+     finishes, leaving the model picker empty on the home page. */
+  var _r=await (window.refreshApiConfig&&window.refreshApiConfig());
   console.log("[afterAuthEnter] refreshApiConfig returned:", _r && _r.providers && _r.providers.length, "providers, activeId=", _r && _r.activeId);
   /* Load the user's saved memories for long-term context. */
   window.loadUserMemories&&window.loadUserMemories();

@@ -13,6 +13,7 @@ import {
 import { requireAuth } from '../middleware/auth.js';
 import { writeLimiter } from '../middleware/rateLimit.js';
 import { NotFound, Forbidden, BadRequest } from '../lib/errors.js';
+import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
 import { getSessionLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
 
@@ -50,6 +51,20 @@ const SessionPayloadSchema = z.object({
     /* P_reasoning-persist — chain-of-thought text from reasoning
        models. Preserved so it survives session save/load. */
     reasoningContent: z.string().max(500000).optional().nullable(),
+    /* P_attachments — array of {id, kind, name, mime, dataUrl?, text?,
+       size, truncated?} representing user-supplied files for this
+       message. Persisted so a session reload restores thumbnails
+       and parsed text. dataUrl is capped at 2 MB per attachment. */
+    attachments: z.array(z.object({
+      id: z.string().max(100),
+      kind: z.enum(['image', 'text', 'pdf']),
+      name: z.string().max(500),
+      mime: z.string().max(200),
+      dataUrl: z.string().max(2_000_000).optional(),
+      text: z.string().max(500_000).optional(),
+      truncated: z.boolean().optional(),
+      size: z.number().int().nonnegative().max(50 * 1024 * 1024),
+    })).max(20).optional(),
   })).max(1000).optional(),
   kbNodes: z.array(z.any()).max(5000).optional(),
   mistakes: z.array(z.any()).max(1000).optional(),
@@ -126,172 +141,153 @@ router.post('/', writeLimiter, async (req, res, next) => {
             projectId,
             messages: msgs, kbNodes, mistakes, pinned, totalQ, currentNode } = SessionPayloadSchema.parse(req.body);
 
-    /* P0.0 — accept a client-supplied id only if it looks like a real
-     * UUID. The front-end used to generate short non-UUID identifiers
-     * like "mq61wc16-ayb8j6" which the database rejected, returning
-     * 500 INTERNAL_ERROR on every save. We silently swap in a fresh
-     * UUID when the input is missing or malformed, then return the
-     * canonical id in the response so the client can update its
-     * in-memory state.currentSessionId. */
-    let sessionId;
-
-    /* P10.x — defense-in-depth against resurrection of deleted
-     * sessions. We will only adopt the client-supplied UUID if it
-     * currently exists AND belongs to this user. Otherwise we mint a
-     * fresh server-side UUID and return it (the SPA adopts it on
-     * response). The previous logic accepted any UUID that didn't
-     * exist — which is true both for "never existed" AND for "just
-     * hard-deleted" — so a deleted conversation could silently come
-     * back to life on the user's next chat turn if any code path
-     * leaked the stale id into POST /api/sessions.
+    /* ─── Atomic transaction ───
+     * Wraps the existence check + upsert in a transaction to prevent a
+     * race with the DELETE handler. Without this, a DELETE transaction
+     * that fires between the POST's SELECT (line ~181) and its INSERT
+     * (line ~235) causes the POST to see a missing row, generate a
+     * fresh UUID, and INSERT a new session — resurrecting a deleted
+     * conversation with the same content under a new ID.
      *
-     * P_dup-session-race — when multiple POSTs arrive in flight from
-     * the same client (because the SPA calls saveCurrentSession from
-     * several call sites within one chat turn), each one carries the
-     * same client-side UUID. The first POST to land inserts the row
-     * and returns its canonical id. Subsequent POSTs — arriving
-     * before the SPA has had time to adopt that canonical id —
-     * also miss the existence check (because the previous row was
-     * minted under a different UUID) and each mints a fresh row.
-     * The user then sees the same chat appear twice in Recents.
-     *
-     * Defensive fix: when the client-supplied id is a UUID that does
-     * NOT exist, look up a recently-created sibling session for the
-     * SAME user with the SAME topic+title (the same logical chat
-     * the SPA is trying to upsert) and adopt its id instead of
-     * minting yet another one. The 5-second window is wide enough
-     * to absorb a racing burst but narrow enough that legitimate
-     * distinct sessions for the same topic won't collide. */
-    if (isUuid(id)) {
-      const [owner] = await db.select({ userId: sessions.userId })
-        .from(sessions)
-        .where(eq(sessions.id, id))
-        .limit(1);
-      if (owner && owner.userId === req.userId) {
-        sessionId = id;
-      } else {
-        // No row yet for this UUID — try to find a recent sibling.
-        const safeTopic = (topic || '').trim();
-        const safeTitle = (title || topic || '').trim();
-        if (safeTopic || safeTitle) {
-          const recent = await db.select({ id: sessions.id })
-            .from(sessions)
-            .where(and(
-              eq(sessions.userId, req.userId),
-              eq(sessions.topic, safeTopic),
-              eq(sessions.title, safeTitle),
-              gt(sessions.createdAt, sql`NOW() - INTERVAL '5 seconds'`),
-            ))
-            .orderBy(sql`${sessions.createdAt} DESC`)
-            .limit(1);
-          if (recent.length > 0) {
-            sessionId = recent[0].id;
-          } else {
-            sessionId = randomUUID();
-          }
-        } else {
-          sessionId = randomUUID();
-        }
-      }
-    } else {
-      sessionId = randomUUID();
-    }
+     * Within the transaction we use FOR UPDATE on the existence check
+     * so the DELETE's locking delete transaction (which awaits the
+     * same row lock) serialises after our check. */
+    const sessionId = await db.transaction(async (tx) => {
+      let sid;
 
-    /* Tier-based session limit — only enforce when creating a NEW
-     * session. Updates to existing sessions are always allowed. */
-    const [existingSession] = await db.select({ id: sessions.id })
-      .from(sessions)
-      .where(eq(sessions.id, sessionId))
-      .limit(1);
-    if (!existingSession) {
-      const tier = req.user?.tier || 'diophantus';
-      const maxSessions = getSessionLimit(tier);
-      if (maxSessions > 0) {
-        const [sessCount] = await db.select({ value: count() })
+      if (isUuid(id)) {
+        const [owner] = await tx.select({ userId: sessions.userId })
           .from(sessions)
-          .where(eq(sessions.userId, req.userId));
-        if ((sessCount?.value || 0) >= maxSessions) {
-          throw new Forbidden('FORBIDDEN', `Session limit reached for ${tier} plan (${maxSessions} sessions). Upgrade your plan to create more.`);
+          .where(eq(sessions.id, id))
+          .for('update')
+          .limit(1);
+        if (owner && owner.userId === req.userId) {
+          sid = id;
+        } else {
+          // No row yet for this UUID — try to find a recent sibling.
+          const safeTopic = (topic || '').trim();
+          const safeTitle = (title || topic || '').trim();
+          if (safeTopic || safeTitle) {
+            const recent = await tx.select({ id: sessions.id })
+              .from(sessions)
+              .where(and(
+                eq(sessions.userId, req.userId),
+                eq(sessions.topic, safeTopic),
+                eq(sessions.title, safeTitle),
+                gt(sessions.createdAt, sql`NOW() - INTERVAL '5 seconds'`),
+              ))
+              .orderBy(sql`${sessions.createdAt} DESC`)
+              .limit(1);
+            if (recent.length > 0) {
+              sid = recent[0].id;
+            } else {
+              sid = randomUUID();
+            }
+          } else {
+            sid = randomUUID();
+          }
+        }
+      } else {
+        sid = randomUUID();
+      }
+
+      /* Tier-based session limit — only enforce when creating a NEW
+       * session. Updates to existing sessions are always allowed. */
+      const [existingSession] = await tx.select({ id: sessions.id })
+        .from(sessions)
+        .where(eq(sessions.id, sid))
+        .limit(1);
+      if (!existingSession) {
+        const tier = req.user?.tier || 'diophantus';
+        const maxSessions = getSessionLimit(tier);
+        if (maxSessions > 0) {
+          const [sessCount] = await tx.select({ value: count() })
+            .from(sessions)
+            .where(eq(sessions.userId, req.userId));
+          if ((sessCount?.value || 0) >= maxSessions) {
+            throw new Forbidden('FORBIDDEN', `Session limit reached for ${tier} plan (${maxSessions} sessions). Upgrade your plan to create more.`);
+          }
         }
       }
-    }
 
-    // Upsert
-    await db.insert(sessions).values({
-      id: sessionId,
-      userId: req.userId,
-      topic: topic || '',
-      title: title || topic || null,
-      domain: domain || null,
-      mode: mode || 'tutor',
-      phase: phase || 'topic',
-      kind: kind || 'chat',
-      examData: examData || null,
-      projectId: projectId || null,
-      pinned: !!pinned,
-      kbNodes: kbNodes || [],
-      mistakes: mistakes || [],
-      totalQ: totalQ || 0,
-      currentNode: currentNode || 0,
-    }).onConflictDoUpdate({
-      target: sessions.id,
-      set: {
-        topic: sql`EXCLUDED.topic`,
-        title: sql`EXCLUDED.title`,
-        domain: sql`EXCLUDED.domain`,
-        mode: sql`EXCLUDED.mode`,
-        phase: sql`EXCLUDED.phase`,
-        kind: sql`EXCLUDED.kind`,
-        examData: sql`EXCLUDED.exam_data`,
-        projectId: sql`EXCLUDED.project_id`,
-        pinned: sql`EXCLUDED.pinned`,
-        kbNodes: sql`EXCLUDED.kb_nodes`,
-        mistakes: sql`EXCLUDED.mistakes`,
-        totalQ: sql`EXCLUDED.total_q`,
-        currentNode: sql`EXCLUDED.current_node`,
-        updatedAt: sql`NOW()`,
-      },
-    });
-
-    // P_message-dedup — atomic upsert using the (sessionId, clientId)
-    // unique constraint instead of the previous SELECT-then-INSERT-or-UPDATE
-    // race-prone pattern. Messages without a clientId (clientId IS NULL)
-    // always insert because Postgres treats NULLs as distinct in unique
-    // indexes. Messages with a matching clientId get an UPDATE that
-    // replaces content/html/type with the latest value — this is the
-    // defense-in-depth for streaming save: if a save fires mid-stream
-    // the partial placeholder is safely overwritten by finish().
-    if (Array.isArray(msgs) && msgs.length) {
-      const _insertBase = Date.now();
-      const rows = msgs.map((m, i) => ({
-        role: m.role || 'user',
-        content: m.rawText || m.content || '',
-        rawText: m.rawText || null,
-        html: m.html || null,
-        type: m.type || null,
-        sources: m.sources || null,
-        clientId: m.clientId || null,
-        reasoningContent: m.reasoningContent || null,
-        sessionId,
-        createdAt: new Date(_insertBase + i),
-      }));
-      await db.insert(messages).values(rows).onConflictDoUpdate({
-        target: [messages.sessionId, messages.clientId],
+      // Upsert session
+      await tx.insert(sessions).values({
+        id: sid,
+        userId: req.userId,
+        topic: topic || '',
+        title: title || topic || null,
+        domain: domain || null,
+        mode: mode || 'tutor',
+        phase: phase || 'topic',
+        kind: kind || 'chat',
+        examData: examData || null,
+        projectId: projectId || null,
+        pinned: !!pinned,
+        kbNodes: kbNodes || [],
+        mistakes: mistakes || [],
+        totalQ: totalQ || 0,
+        currentNode: currentNode || 0,
+      }).onConflictDoUpdate({
+        target: sessions.id,
         set: {
-          role: sql`EXCLUDED.role`,
-          content: sql`EXCLUDED.content`,
-          rawText: sql`EXCLUDED.raw_text`,
-          html: sql`EXCLUDED.html`,
-          type: sql`EXCLUDED.type`,
-          sources: sql`EXCLUDED.sources`,
-          reasoningContent: sql`EXCLUDED.reasoning_content`,
-          createdAt: sql`EXCLUDED.created_at`,
+          topic: sql`EXCLUDED.topic`,
+          title: sql`EXCLUDED.title`,
+          domain: sql`EXCLUDED.domain`,
+          mode: sql`EXCLUDED.mode`,
+          phase: sql`EXCLUDED.phase`,
+          kind: sql`EXCLUDED.kind`,
+          examData: sql`EXCLUDED.exam_data`,
+          projectId: sql`EXCLUDED.project_id`,
+          pinned: sql`EXCLUDED.pinned`,
+          kbNodes: sql`EXCLUDED.kb_nodes`,
+          mistakes: sql`EXCLUDED.mistakes`,
+          totalQ: sql`EXCLUDED.total_q`,
+          currentNode: sql`EXCLUDED.current_node`,
+          updatedAt: sql`NOW()`,
         },
       });
-    }
 
-    const [session] = await db.select().from(sessions).where(eq(sessions.id, sessionId)).limit(1);
-    return res.status(id ? 200 : 201).json(session);
+      // P_message-dedup — atomic upsert using the (sessionId, clientId)
+      // unique constraint.
+      if (Array.isArray(msgs) && msgs.length) {
+        const _insertBase = Date.now();
+        const rows = msgs.map((m, i) => {
+          const contentRaw = m.rawText || m.content || '';
+          return {
+            role: m.role || 'user',
+            content: sanitizeStoredHtml(m.html || contentRaw),
+            rawText: sanitizePlainText(contentRaw),
+            html: m.html ? sanitizeStoredHtml(m.html) : null,
+            type: m.type || null,
+            sources: m.sources || null,
+            clientId: m.clientId || null,
+            reasoningContent: m.reasoningContent || null,
+            attachments: Array.isArray(m.attachments) ? m.attachments.slice(0, 20) : [],
+            sessionId: sid,
+            createdAt: new Date(_insertBase + i),
+          };
+        });
+        await tx.insert(messages).values(rows).onConflictDoUpdate({
+          target: [messages.sessionId, messages.clientId],
+          set: {
+            role: sql`EXCLUDED.role`,
+            content: sql`EXCLUDED.content`,
+            rawText: sql`EXCLUDED.raw_text`,
+            html: sql`EXCLUDED.html`,
+            type: sql`EXCLUDED.type`,
+            sources: sql`EXCLUDED.sources`,
+            reasoningContent: sql`EXCLUDED.reasoning_content`,
+            attachments: sql`EXCLUDED.attachments`,
+            createdAt: sql`EXCLUDED.created_at`,
+          },
+        });
+      }
+
+      const [session] = await tx.select().from(sessions).where(eq(sessions.id, sid)).limit(1);
+      return { session, wasNew: !existingSession };
+    });
+
+    return res.status(id ? 200 : 201).json(sessionId.session);
   } catch (err) { next(err); }
 });
 

@@ -120,6 +120,11 @@ export const messages = pgTable('messages', {
      session save/load and is included in the LLM context on the next
      chat turn. */
   reasoningContent: text('reasoning_content'),
+  /* P_attachments — array of {id, kind, name, mime, dataUrl?, text?, size, truncated?}
+     representing images (dataUrl inlined), text files (text body), and PDFs
+     (server-extracted text). Persisted so a session reload restores the
+     thumbnails and parsed text without re-uploading. */
+  attachments: jsonb('attachments').default([]),
   editedAt: timestamp('edited_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
@@ -197,6 +202,12 @@ export const apiKeys = pgTable('api_keys', {
   keyHint: text('key_hint'),                // First 8 chars for UI display
   isActive: boolean('is_active').notNull().default(false),
   isBuiltIn: boolean('is_built_in').notNull().default(false),
+  /* P_attachments-multimodal — user-controlled flag marking this
+   * provider as vision-capable. Replaces the previous regex-based
+   * detection in lib/multimodal.js. Built-in Beagle rows are seeded
+   * with true; custom providers default to false and the user opts
+   * in via the API key editor. */
+  isMultimodal: boolean('is_multimodal').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('api_keys_user_id_idx').on(table.userId),

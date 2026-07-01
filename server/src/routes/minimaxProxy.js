@@ -3,6 +3,8 @@ import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion, callChatCompletion } from '../services/llm.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
 import { buildSystemContextBlock } from '../services/productContext.js';
+import { requireAuth } from '../middleware/auth.js';
+import { chatLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -16,8 +18,14 @@ const router = Router();
  *
  * Supports both streaming (?stream=true in body → SSE) and
  * non-streaming (regular JSON) modes — same contract as the MiniMax API.
+ *
+ * SECURITY: previously this endpoint had no auth and no rate limit,
+ * so any anonymous caller could drain the server's MiniMax budget.
+ * We now require an authenticated session and apply the standard
+ * chatLimiter (60/hr/user). The built-in provider cost is paid by
+ * the operator, so anonymous access is abuse.
  */
-router.post('/v1/chat/completions', async (req, res, next) => {
+router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, next) => {
   try {
     const provider = await getActiveApiKey(null); // null userId → built-in
     if (!provider || !provider.keyPlaintext) {

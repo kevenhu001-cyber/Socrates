@@ -1,109 +1,63 @@
-/* ── Viz / Mermaid rendering subsystem ──
-   Formats AI-generated HTML / Mermaid diagrams as sandboxed iframe
-   cards. Imported by render/markdown.js for use inside formatMsg. */
-
 var _vizId=0;
 var _pendingMermaid=[];
 
 export var VIZ_ICON_RENDER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>';
 export var VIZ_ICON_RELOAD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
 export var VIZ_ICON_EXPAND='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><path d="M9 21 3 21 3 15"/><path d="M21 3 14 10"/><path d="M3 21 10 14"/></svg>';
-export var VIZ_ICON_COLLAPSE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><path d="M20 10 14 10 14 4"/><path d="M14 10 21 3"/><path d="M10 14 3 21"/></svg>';
 
 export var VIZ_THEME_RESET=
   '<style>'+
     '*,*::before,*::after{box-sizing:border-box}'+
     'html,body{margin:0;padding:0}'+
-    'body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.55;color:#3a3a3a;background:#fff}'+
-    '@media (prefers-color-scheme: dark){body{color:#e8e8ec;background:#16181d}}'+
-    'a{color:#5b6fdb}a:hover{color:#3f54c4}'+
-    'button{padding:6px 12px;border:0.5px solid #d0d2d9;border-radius:8px;background:#f6f7fa;color:#3a3a3a;cursor:pointer;font:inherit}'+
-    'button:hover{background:#eef0f4}'+
-    '@media (prefers-color-scheme: dark){button{background:#2a2c34;color:#e8e8ec;border-color:#3a3c44}button:hover{background:#34363f}}'+
-    'input,select,textarea{font:inherit;color:inherit;background:transparent;border:0.5px solid #d0d2d9;border-radius:6px;padding:4px 8px}'+
-    '@media (prefers-color-scheme: dark){input,select,textarea{border-color:#3a3c44;background:#22232a}}'+
-    'h1{font-size:1.4em}h2{font-size:1.2em}h3{font-size:1.05em}h1,h2,h3,h4{margin:8px 0 6px;line-height:1.3}'+
-    'p{margin:6px 0}'+
-    'code{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em;background:rgba(120,120,140,0.12);padding:1px 5px;border-radius:3px}'+
-    'pre{background:rgba(120,120,140,0.08);border-radius:8px;padding:10px 12px;overflow:auto;line-height:1.5}'+
-    'pre code{background:transparent;padding:0}'+
-    'table{border-collapse:collapse;width:100%;font-size:.92em;margin:6px 0}th,td{padding:6px 10px;border:0.5px solid rgba(120,120,140,0.3);text-align:left}'+
-    'th{background:rgba(120,120,140,0.08);font-weight:600}'+
-    'svg{max-width:100%}'+
+    'body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.55}'+
+    'body{color:var(--text-100,#3a3a3a);background:transparent}'+
+    '[data-mode=dark] body{color:var(--text-100,#e8e8ec)}'+
+    'a{color:var(--accent-000,#5b6fdb)}'+
+    'svg{max-width:100%;height:auto;display:block}'+
+    'pre{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em;background:rgba(120,120,140,0.08);border-radius:8px;padding:8px 10px;overflow:auto}'+
+    'code{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em}'+
   '</style>'+
-  '<script>document.documentElement.setAttribute("data-mode","'+
-    (document.documentElement.getAttribute("data-mode")||"dark")+'")<\/script>';
+  '<script>'+
+    'var m=document.documentElement.getAttribute("data-mode");if(m)document.documentElement.setAttribute("data-mode",m);'+
+    'var root=getComputedStyle(document.documentElement);'+
+    '["--text-100","--accent-000"].forEach(function(k){var v=root.getPropertyValue(k).trim();if(v)document.body.style.setProperty(k,v)});'+
+  '<\/script>';
 
 import { esc } from './helpers.js';
 
-function vizCardShell(id,statusLabel,state,headActions,bodyHtml){
-  return '<div class="viz-card" id="'+id+'" data-viz-state="'+state+'">'+
-    '<div class="viz-card-head">'+
-      '<span class="viz-card-head-icon">'+VIZ_ICON_RENDER+'</span>'+
-      '<span class="viz-card-title">Canvas</span>'+
-      '<span class="viz-card-status">'+esc(statusLabel)+'</span>'+
-      headActions+
-    '</div>'+
-    '<div class="viz-card-body">'+bodyHtml+'</div>'+
-  '</div>';
-}
-
-function vizHeadActions(cardId,collapsePersistKey){
-  return '<div class="viz-card-actions">'+
-    '<button type="button" class="viz-card-btn" title="Reload" aria-label="Reload" '+
-      'onclick="var c=document.getElementById(\''+cardId+'\');var f=c.querySelector(\'iframe\');'+
-      'if(f){f.removeAttribute(\'srcdoc\');f.setAttribute(\'srcdoc\',f.dataset.srcdoc)}">'+
+function vizActions(cardId){
+  return '<div class="viz-actions">'+
+    '<button type="button" class="viz-btn" title="Reload" aria-label="Reload" '+
+      'onclick="(function(){var c=document.getElementById(\''+cardId+'\');var f=c&&c.querySelector(\'iframe\');if(f){f.removeAttribute(\'srcdoc\');var d=f.dataset.srcdoc;if(d)f.setAttribute(\'srcdoc\',d)}})()">'+
       VIZ_ICON_RELOAD+'</button>'+
-    '<button type="button" class="viz-card-btn" title="Expand" aria-label="Expand" '+
-      'onclick="window.__vizOpenModal(document.getElementById(\''+cardId+'\').dataset.srcdoc,document.getElementById(\''+cardId+'\').dataset.title)">'+
+    '<button type="button" class="viz-btn" title="Expand" aria-label="Expand" '+
+      'onclick="window.__vizOpenModal&&window.__vizOpenModal('+
+        '(document.getElementById(\''+cardId+'\').querySelector(\'iframe\')||{}).dataset.srcdoc||\'\','+
+        'document.getElementById(\''+cardId+'\').dataset.title||\'Canvas\')">'+
       VIZ_ICON_EXPAND+'</button>'+
-    '<button type="button" class="viz-card-btn viz-collapse-btn" title="Collapse" aria-label="Collapse" aria-pressed="false" '+
-      'onclick="var c=document.getElementById(\''+cardId+'\');'+
-      'var collapsed=c.getAttribute(\'data-viz-state\')===\'collapsed\'||c.getAttribute(\'data-viz-collapsed\')===\'1\';'+
-      'c.setAttribute(\'data-viz-collapsed\',collapsed?\'0\':\'1\');'+
-      'c.setAttribute(\'data-viz-state\',collapsed?\'ready\':\'collapsed\');'+
-      'this.setAttribute(\'aria-pressed\',collapsed?\'false\':\'true\');'+
-      'this.title=collapsed?\'Collapse\':\'Expand\';'+
-      'try{localStorage.setItem(\''+collapsePersistKey+'\',collapsed?\'0\':\'1\')}catch(_){}'+
-      '">'+
-      VIZ_ICON_COLLAPSE+'</button>'+
   '</div>';
 }
 
-function vizSkeletonHtml(){
-  return '<div class="viz-vignette"></div>'+
-    '<div class="viz-scan"></div>'+
-    '<div class="viz-loading-label">'+
-      '<span class="viz-loading-spinner"></span>'+
-      '<span>Compiling canvas…</span>'+
-    '</div>';
+function vizLoadingHtml(){
+  return '<div class="viz-loading"><span class="viz-spinner"></span><span>Rendering…</span></div>';
 }
 
-function vizErrorHtml(message){
-  var msg=esc((message||'Could not load canvas').slice(0,240));
-  return '<div class="viz-error">'+
-    '<div class="viz-error-title">Canvas failed to render</div>'+
-    '<div class="viz-error-detail">'+msg+'</div>'+
-    '<div class="viz-error-actions">'+
-      '<button type="button" class="viz-error-btn" data-viz-copy-source="1">Copy source</button>'+
-    '</div>'+
-  '</div>';
+function validMermaid(code){
+  try{return typeof mermaid.parse==="function"?mermaid.parse(code,{suppressErrors:true}):true}catch(_){return false}
 }
 
 export function renderMermaid(code){
   if(typeof mermaid==="undefined"){
     return'<pre><code class="language-mermaid">'+esc(code)+'</code></pre>';
   }
+  if(!validMermaid(code)){
+    return'<div class="viz" data-viz-state="error"><div class="viz-body"><div class="viz-error"><span class="viz-error-icon">!</span><span>Diagram syntax error</span><button class="viz-error-btn" onclick="var n=this.nextElementSibling;n.hidden=!n.hidden">Show source</button><pre class="viz-error-source" hidden>'+esc(code)+'</pre></div></div></div>';
+  }
   var id="mermaid-card-"+(++_vizId);
   _pendingMermaid.push({id:id,code:code});
-  return'<div class="viz-card" id="'+id+'" data-viz-state="loading">'+
-    '<div class="viz-card-head">'+
-      '<span class="viz-card-head-icon">'+VIZ_ICON_RENDER+'</span>'+
-      '<span class="viz-card-title">Diagram</span>'+
-      '<span class="viz-card-status">Rendering</span>'+
-      vizHeadActions(id,'socrates-mermaid-'+id)+
-    '</div>'+
-    '<div class="viz-card-body">'+vizSkeletonHtml()+'</div>'+
+  return '<div class="viz" id="'+id+'" data-viz-state="loading">'+
+    vizActions(id)+
+    '<div class="viz-body">'+vizLoadingHtml()+'</div>'+
   '</div>';
 }
 
@@ -112,44 +66,46 @@ export function processPendingMermaid(){
   var pending=_pendingMermaid;
   _pendingMermaid=[];
   pending.forEach(function(item){
+    if(!validMermaid(item.code)){
+      var el=document.getElementById(item.id);
+      if(!el)return;
+      var body=el.querySelector('.viz-body');
+      if(!body)return;
+      body.innerHTML='<div class="viz-error"><span class="viz-error-icon">!</span><span>Diagram syntax error</span><button class="viz-error-btn" onclick="var n=this.nextElementSibling;n.hidden=!n.hidden">Show source</button><pre class="viz-error-source" hidden>'+esc(item.code)+'</pre></div>';
+      el.setAttribute('data-viz-state','error');
+      return;
+    }
     try{
       mermaid.render('mermaid-svg-'+item.id,item.code)
         .then(function(result){
           var el=document.getElementById(item.id);
           if(!el)return;
-          var body=el.querySelector('.viz-card-body');
+          var body=el.querySelector('.viz-body');
           if(!body)return;
           body.innerHTML=result.svg;
           el.setAttribute('data-viz-state','ready');
           if(result.bindFunctions)result.bindFunctions(body);
           var svg=body.querySelector('svg');
-          if(svg){
-            svg.style.maxWidth='100%';
-            svg.style.height='auto';
-          }
+          if(svg){svg.style.maxWidth='100%';svg.style.height='auto'}
         })
         .catch(function(err){
           var el=document.getElementById(item.id);
           if(!el)return;
-          var body=el.querySelector('.viz-card-body');
+          var body=el.querySelector('.viz-body');
           if(!body)return;
-          var errMsg=esc(err.message||String(err));
-          body.innerHTML='<div class="viz-error">'+
-            '<div class="viz-error-icon">!</div>'+
-            '<div class="viz-error-detail">Mermaid error: '+errMsg+'</div>'+
-          '</div>';
+          var msg=esc(err.message||String(err)).slice(0,300);
+          var src=esc(item.code||'');
+          body.innerHTML='<div class="viz-error"><span class="viz-error-icon">!</span><span>'+msg+'</span><button class="viz-error-btn" onclick="var n=this.nextElementSibling;n.hidden=!n.hidden">Show source</button><pre class="viz-error-source" hidden>'+src+'</pre></div>';
           el.setAttribute('data-viz-state','error');
         });
     }catch(e){
       var el=document.getElementById(item.id);
       if(!el)return;
-      var body=el.querySelector('.viz-card-body');
+      var body=el.querySelector('.viz-body');
       if(!body)return;
-      var errMsg=esc(e.message||String(e));
-      body.innerHTML='<div class="viz-error">'+
-        '<div class="viz-error-icon">!</div>'+
-        '<div class="viz-error-detail">Mermaid error: '+errMsg+'</div>'+
-      '</div>';
+      var msg=esc(e.message||String(e)).slice(0,300);
+      var src=esc(item.code||'');
+      body.innerHTML='<div class="viz-error"><span class="viz-error-icon">!</span><span>'+msg+'</span><button class="viz-error-btn" onclick="var n=this.nextElementSibling;n.hidden=!n.hidden">Show source</button><pre class="viz-error-source" hidden>'+src+'</pre></div>';
       el.setAttribute('data-viz-state','error');
     }
   });
@@ -157,10 +113,9 @@ export function processPendingMermaid(){
 
 export function renderVizLoading(){
   var id="viz-card-"+(++_vizId);
-  return vizCardShell(id,"Loading","loading",
-    '<div class="viz-card-actions"></div>',
-    vizSkeletonHtml()
-  );
+  return '<div class="viz" id="'+id+'" data-viz-state="loading">'+
+    '<div class="viz-body">'+vizLoadingHtml()+'</div>'+
+  '</div>';
 }
 
 export function renderViz(htmlStr){
@@ -175,45 +130,31 @@ export function renderViz(htmlStr){
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;');
   var bodyHtml=
-    vizSkeletonHtml()+
+    vizLoadingHtml()+
     '<iframe data-srcdoc="'+srcdoc+'" srcdoc="'+srcdoc+
     '" sandbox="allow-scripts" title="Canvas" '+
-    'style="width:100%;height:100%;min-height:160px;border:0;background:transparent" '+
-    'onload="try{var c=this.closest(\'.viz-card\');if(c){'+
-    'c.setAttribute(\'data-viz-state\',\'ready\');'+
-    'this.style.opacity=1;try{var d=this.contentDocument;var h=(d&&(d.documentElement.scrollHeight||d.body.scrollHeight))||0;'+
-    'if(h>16){this.style.height=h+\'px\';this.parentElement.classList.add(\'scrollable\')}}catch(_){}}catch(_){}"></iframe>';
-  return '<div class="viz-card" id="'+id+'" data-viz-state="loading" data-srcdoc="'+srcdoc+'" data-title="'+esc(title)+'">'+
-    '<div class="viz-card-head">'+
-      '<span class="viz-card-head-icon">'+VIZ_ICON_RENDER+'</span>'+
-      '<span class="viz-card-title">'+esc(title)+'</span>'+
-      '<span class="viz-card-status">Rendering</span>'+
-      vizHeadActions(id,'socrates-viz-collapsed-'+id)+
-    '</div>'+
-    '<div class="viz-card-body">'+bodyHtml+'</div>'+
+    'style="width:100%;border:0;background:transparent;display:block;min-height:120px" '+
+    'onload="'+
+      'try{var w=this;var c=w.closest(\'.viz\');if(c)c.setAttribute(\'data-viz-state\',\'ready\');'+
+      'var d=w.contentDocument;var h=d&&(d.documentElement.scrollHeight||d.body.scrollHeight)||0;'+
+      'if(h>16){w.style.height=h+\'px\'}'+
+      'var p=w.previousElementSibling;if(p&&p.classList.contains(\'viz-loading\'))p.style.display=\'none\''+
+    '}catch(_){}'+
+    '"></iframe>';
+  return '<div class="viz" id="'+id+'" data-viz-state="loading" data-title="'+esc(title)+'">'+
+    vizActions(id)+
+    '<div class="viz-body">'+bodyHtml+'</div>'+
   '</div>';
 }
 
 export function renderVizError(htmlStr,errorMsg){
   var id="viz-card-"+(++_vizId);
-  var title=(window.state&&window.state.topic||"Canvas").toString().slice(0,40);
   var msg=esc((errorMsg||'Could not load canvas').slice(0,240));
-  return vizCardShell(id,"Error","error",
-    vizHeadActions(id,'socrates-viz-collapsed-'+id),
-    '<div class="viz-error">'+
-      '<div class="viz-error-title">Canvas failed to render</div>'+
-      '<div class="viz-error-detail">'+msg+'</div>'+
-      '<div class="viz-error-actions">'+
-        '<button type="button" class="viz-error-btn" data-viz-copy-source="1">Copy source</button>'+
-      '</div>'+
-    '</div>'
-  );
+  return '<div class="viz" id="'+id+'" data-viz-state="error">'+
+    '<div class="viz-body"><div class="viz-error"><span class="viz-error-icon">!</span><span>'+msg+'</span></div></div>'+
+  '</div>';
 }
 
-/* Public modal — opens a fullscreen view of the canvas. Bound to
-   the expand button via window.__vizOpenModal from the inline
-   onclick handler. Must be a named export so main.js can re-export
-   it to window. */
 export function openVizModal(srcdoc,title){
   if(!srcdoc)return;
   var modal=document.createElement("div");
@@ -225,13 +166,10 @@ export function openVizModal(srcdoc,title){
   modal.innerHTML=
     '<div class="viz-modal" role="dialog" aria-label="Canvas fullscreen">'+
       '<div class="viz-modal-head">'+
-        '<span class="viz-card-head-icon">'+VIZ_ICON_RENDER+'</span>'+
         '<span class="viz-modal-title">'+esc(title||"Canvas")+'</span>'+
-        '<div class="viz-card-actions" style="margin-left:auto">'+
-          '<button type="button" class="viz-card-btn" title="Close" aria-label="Close" onclick="this.closest(\'.viz-modal-backdrop\').remove()">'+
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>'+
-          '</button>'+
-        '</div>'+
+        '<button type="button" class="viz-modal-close" aria-label="Close" onclick="this.closest(\'.viz-modal-backdrop\').remove()">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>'+
+        '</button>'+
       '</div>'+
       '<div class="viz-modal-body">'+
         '<iframe srcdoc="'+srcdoc+'" sandbox="allow-scripts" title="Canvas fullscreen" style="width:100%;height:100%;border:0;background:transparent;display:block"></iframe>'+

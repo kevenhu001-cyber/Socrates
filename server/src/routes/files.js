@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { files } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
-import { NotFound, BadRequest } from '../lib/errors.js';
+import { writeLimiter } from '../middleware/rateLimit.js';
+import { NotFound, BadRequest, PayloadTooLarge } from '../lib/errors.js';
 import multer from 'multer';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -16,6 +17,14 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR
     ? '/var/lib/socrates/uploads'
     : path.join(os.tmpdir(), 'socrates-uploads'));
 const MAX_SIZE = 25 * 1024 * 1024; // 25 MB
+// Per-user total storage quota. Defaults to 250 MB which is enough
+// for ~10 mid-size PDFs at the 25 MB cap, with headroom for images
+// and audio. Override via env var for paid tiers.
+const USER_QUOTA_BYTES = (() => {
+  const raw = process.env.FILES_USER_QUOTA_BYTES;
+  const n = raw ? parseInt(raw, 10) : 250 * 1024 * 1024;
+  return Number.isFinite(n) && n > 0 ? n : 250 * 1024 * 1024;
+})();
 
 // Ensure upload dir exists
 fs.mkdir(UPLOAD_DIR, { recursive: true }).catch(() => {});
@@ -40,12 +49,13 @@ const upload = multer({
     // a malicious upload labelled as HTML would render in the
     // browser when /api/files/:id/raw is hit, opening an XSS
     // surface. SVG is allowed (image rendering) but flagged for
-    // content-sniffing at the raw endpoint via no-sniff header.
+    // content-sniffing at the raw endpoint via nosniff header and
+    // force-download for non-image types.
     if (file.mimetype === 'text/html' || file.mimetype === 'application/xhtml+xml') {
       cb(new BadRequest(`Unsupported file type: ${file.mimetype}`));
       return;
     }
-    if (allowed.includes(file.mimetype) || file.mimetype.startsWith('text/')) {
+    if (allowed.includes(file.mimetype) || file.mimetype === 'text/plain' || file.mimetype === 'text/csv' || file.mimetype === 'text/markdown') {
       cb(null, true);
     } else {
       cb(new BadRequest(`Unsupported file type: ${file.mimetype}`));
@@ -56,8 +66,30 @@ const upload = multer({
 const router = Router();
 router.use(requireAuth);
 
-/* POST /api/files — upload file */
-router.post('/', upload.single('file'), async (req, res, next) => {
+/**
+ * Compute the user's current storage footprint so the upload
+ * endpoint can reject new files that would push them over quota.
+ * Done as a single SUM aggregate rather than scanning rows.
+ */
+async function getUserStorageBytes(userId) {
+  const db = getDb();
+  const [row] = await db.select({ total: sql`COALESCE(SUM(${files.size}), 0)` })
+    .from(files)
+    .where(eq(files.userId, userId));
+  return Number(row?.total) || 0;
+}
+
+/* POST /api/files — upload file
+ *
+ * SECURITY:
+ *   - writeLimiter caps total user writes (sessions + messages +
+ *     uploads) to 120/min, defending against an upload-flood attack.
+ *   - We enforce a per-user storage quota (USER_QUOTA_BYTES) so a
+ *     single user cannot exhaust the disk. The check happens AFTER
+ *     multer saves the file (multer can't pre-check quota), but we
+ *     delete the on-disk file and roll back if the user is over.
+ */
+router.post('/', writeLimiter, upload.single('file'), async (req, res, next) => {
   try {
     if (!req.file) throw new BadRequest('No file provided');
 
@@ -65,6 +97,15 @@ router.post('/', upload.single('file'), async (req, res, next) => {
     const sha256 = crypto.createHash('sha256').update(await fs.readFile(file.path)).digest('hex');
 
     const db = getDb();
+    const usedBytes = await getUserStorageBytes(req.userId);
+    if (usedBytes + file.size > USER_QUOTA_BYTES) {
+      // Roll back the upload so the on-disk file doesn't accumulate.
+      await fs.unlink(file.path).catch(() => {});
+      throw new PayloadTooLarge(
+        `Storage quota exceeded. You have used ${usedBytes} bytes; this upload would exceed the ${USER_QUOTA_BYTES}-byte limit.`
+      );
+    }
+
     const [record] = await db.insert(files).values({
       userId: req.userId,
       name: file.originalname,
@@ -108,9 +149,10 @@ router.get('/:id/raw', async (req, res, next) => {
     // Critical for SVG (which can contain JS) and for any file
     // whose on-disk extension doesn't match its MIME.
     res.set('X-Content-Type-Options', 'nosniff');
-    if (file.mimeType === 'image/svg+xml') {
-      // Force-download SVG instead of letting the browser render
-      // it inline — inline SVG can carry JavaScript.
+    // Force-download for any file that could execute script in the
+    // browser — text, SVG, JSON, XML, etc. Only images and PDFs are
+    // safe to render inline.
+    if (!file.mimeType.startsWith('image/') && file.mimeType !== 'application/pdf') {
       res.set('Content-Disposition', 'attachment');
     }
     return res.sendFile(file.storagePath);

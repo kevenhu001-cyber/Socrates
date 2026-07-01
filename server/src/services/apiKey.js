@@ -1,4 +1,4 @@
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, isNotNull, isNull } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { apiKeys } from '../db/schema.js';
 import { encrypt, decrypt, deriveEncryptionKey } from '../lib/crypto.js';
@@ -14,22 +14,24 @@ export async function getActiveApiKey(userId) {
     // Anonymous users: check for built-in Beagle provider (global)
     const db = getDb();
     const [globalKey] = await db.select().from(apiKeys)
-      .where(and(eq(apiKeys.isActive, true), eq(apiKeys.isBuiltIn, true)))
+      .where(and(eq(apiKeys.isActive, true), eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
       .limit(1);
     if (globalKey) return decryptProvider(globalKey);
     return null;
   }
 
   const db = getDb();
-  // First try user's active key
+  // First try user's active key (must have a ciphertext — a row without
+  // one can't produce a usable provider and would otherwise short-circuit
+  // the built-in fallback, causing a 503 KEY_DECRYPT_FAILED).
   let [key] = await db.select().from(apiKeys)
-    .where(and(eq(apiKeys.userId, userId), eq(apiKeys.isActive, true)))
+    .where(and(eq(apiKeys.userId, userId), eq(apiKeys.isActive, true), isNotNull(apiKeys.keyCiphertext)))
     .limit(1);
 
   if (!key) {
-    // Fall back to built-in
+    // Fall back to built-in (must also have a ciphertext)
     [key] = await db.select().from(apiKeys)
-      .where(and(eq(apiKeys.isActive, true), eq(apiKeys.isBuiltIn, true)))
+      .where(and(eq(apiKeys.isActive, true), eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
       .limit(1);
   }
 
@@ -54,6 +56,11 @@ function decryptProvider(key) {
     id: key.id,
     label: key.label,
     isBuiltIn: key.isBuiltIn || false,
+    /* P_attachments-multimodal — propagate the user-controlled
+     * vision-capable flag so chat.js can decide whether to forward
+     * image_url parts. Defaults to false for older rows that
+     * pre-date the column. */
+    isMultimodal: key.isMultimodal === true,
   };
 }
 
@@ -81,12 +88,19 @@ export async function seedBuiltInProvider() {
       .limit(1);
 
     if (existing) {
-      await db.update(apiKeys)
-        .set({ keyCiphertext, keyHint: apiKey.slice(0, 8), url, model })
-        .where(eq(apiKeys.id, existing.id));
+      /* P_diag-seed — surface the resolved env values so a silent
+       * regression (env not loaded, env file in wrong path, typo)
+       * shows up in the boot log instead of getting masked by the
+       * "Updated" line that fires unconditionally. */
+      console.log('[seed] resolved env: model=' + JSON.stringify(model) + ' url=' + JSON.stringify(url));
+      const upd = await db.update(apiKeys)
+        .set({ keyCiphertext, keyHint: apiKey.slice(0, 8), url, model, isMultimodal: true })
+        .where(eq(apiKeys.id, existing.id))
+        .returning({ id: apiKeys.id, model: apiKeys.model, url: apiKeys.url });
+      console.log('[seed] update returned: ' + JSON.stringify(upd));
       console.log('[seed] Updated built-in Beagle A provider');
     } else {
-      await db.insert(apiKeys).values({
+      const ins = await db.insert(apiKeys).values({
         label: 'Beagle A',
         url,
         model,
@@ -94,7 +108,12 @@ export async function seedBuiltInProvider() {
         keyHint: apiKey.slice(0, 8),
         isBuiltIn: true,
         isActive: true,
-      });
+        /* P_attachments-multimodal — built-in Beagle is a vision
+         * model (MiniMax-M3). Force the flag on insert so chat.js
+         * forwards image_url parts without any user setup. */
+        isMultimodal: true,
+      }).returning({ id: apiKeys.id, model: apiKeys.model });
+      console.log('[seed] inserted row: ' + JSON.stringify(ins));
       console.log('[seed] Created built-in Beagle A provider');
     }
   } catch (err) {
@@ -147,7 +166,7 @@ export async function validateApiKeys() {
   }
 }
 
-export async function createApiKey(userId, { label, url, model, key }) {
+export async function createApiKey(userId, { label, url, model, key, isMultimodal }) {
   const keyCiphertext = key ? encrypt(key, ENCRYPTION_KEY) : null;
   const keyHint = key ? key.slice(0, 8) : null;
 
@@ -160,6 +179,10 @@ export async function createApiKey(userId, { label, url, model, key }) {
     keyCiphertext,
     keyHint,
     isActive: true,
+    /* P_attachments-multimodal — user-controlled vision flag.
+     * Coerced to a strict boolean so a malicious client can't
+     * smuggle a non-boolean through zod's passthrough. */
+    isMultimodal: isMultimodal === true,
   }).returning();
 
   return result;

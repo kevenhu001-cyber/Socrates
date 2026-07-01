@@ -14,6 +14,20 @@
 import { getDb } from '../db/index.js';
 import { usageEvents } from '../db/schema.js';
 
+/* P_attachments — rough token estimate for a single image part.
+ *
+ * OpenAI's documented cost for `gpt-4o` image inputs is "765 tokens
+ * for low-detail, ~85 tokens per 512px tile at high-detail". The
+ * `gpt-4-vision-preview` docs cite "roughly 85 tokens per 512×512
+ * tile + 170 base tokens". For a "low" detail image this comes out
+ * to ~765 tokens total — which is also the figure commonly cited
+ * for Claude 3 (Sonnet/Opus/Haiku). We use this as a single
+ * round-number estimate so the heatmap doesn't understate usage
+ * when a user attaches multiple images, while keeping the math
+ * simple. Real per-image cost varies by provider and detail mode;
+ * the heatmap only needs magnitude, not exactness. */
+export const IMAGE_TOKEN_ESTIMATE = 765;
+
 export function estimateTokens(text) {
   if (!text) return 0;
   return Math.max(1, Math.round(String(text).length / 4));
@@ -27,7 +41,18 @@ export function estimateMessageTokens(messages) {
     if (typeof c === 'string') total += estimateTokens(c);
     else if (Array.isArray(c)) {
       for (const part of c) {
-        if (part && typeof part.text === 'string') total += estimateTokens(part.text);
+        if (part && typeof part.text === 'string') {
+          total += estimateTokens(part.text);
+        } else if (part && part.type === 'image_url') {
+          /* P_attachments — count each image_url part as ~765
+           * tokens so the heatmap accurately reflects the cost of
+           * multimodal messages. If the upstream degraded the
+           * image to a textual placeholder (see
+           * transformMessagesForModel in routes/chat.js), the
+           * `text` branch above already counted the placeholder's
+           * text — so we don't double-count in that case. */
+          total += IMAGE_TOKEN_ESTIMATE;
+        }
       }
     }
   }
