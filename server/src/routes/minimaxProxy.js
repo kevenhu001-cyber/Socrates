@@ -67,13 +67,34 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       // ── Streaming: SSE response ──
       res.writeHead(200, {
         'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
         'Connection': 'keep-alive',
         'X-Accel-Buffering': 'no',
       });
 
+      /* Prime the stream — see chat.js for the rationale.
+         EdgeOne and nginx both apply a first-chunk buffer (~8 KB)
+         to upstream responses, which can swallow an entire short
+         LLM answer and surface it to the browser as a single
+         read. flushHeaders() + a sentinel SSE comment frame both
+         (a) push the proxy past its first-chunk threshold so
+         deltas flow through as soon as the upstream emits them,
+         and (b) make Safari commit the initial fetch() chunk to
+         the body stream instead of holding it for one more
+         coalesced read. */
+      try {
+        res.flushHeaders();
+        res.write(': open\n\n');
+        try { res.flush?.(); } catch {}
+      } catch { /* socket already closed */ }
+
       const abortController = new AbortController();
-      req.on('close', () => abortController.abort());
+      const proxyHeartbeat = setInterval(() => {
+        try { res.write(': keepalive\n\n'); try { res.flush?.(); } catch {} } catch { clearInterval(proxyHeartbeat); }
+      }, 10_000);
+      req.on('close', () => { clearInterval(proxyHeartbeat); abortController.abort(); });
 
       /* Token accounting for the built-in MiniMax provider. */
       const promptTokens = estimateMessageTokens(messages);
@@ -107,6 +128,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         },
         // onDone
         () => {
+          clearInterval(proxyHeartbeat);
           try {
             res.write('data: [DONE]\n\n');
             res.end();
@@ -124,6 +146,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         },
         // onError
         (err) => {
+          clearInterval(proxyHeartbeat);
           console.error('[minimax] stream error:', err.message);
           try {
             res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);

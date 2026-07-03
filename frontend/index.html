@@ -20,6 +20,13 @@
 <script>
 (function(){
   try{document.documentElement.dataset.bootState="checking"}catch(_){}
+  /* P_grid — restore grid preference before first paint so the
+     boot-loading screen respects the user's choice immediately. */
+  try{
+    var _g=JSON.parse(localStorage.getItem("socrates-display"));
+    if(_g&&_g.showGrid===false)document.documentElement.dataset.showGrid="false";
+  }catch(_){}
+  /* If no preference stored, grid is on by default (no attribute needed). */
   /* Safety net: if authBoot() never replaces bootState within 12s
    * (offline / backend hung / unexpected error), default to the
    * sign-in form so the user always has a way out. */
@@ -323,6 +330,13 @@
               <button class="color-swatch active" data-hue="40" style="--swatch:hsl(40 75% 50%)" title="Amber (default)" onclick="setAccentColor(40)"></button>
             </div>
           </div>
+          <!-- Grid background toggle -->
+          <div class="display-prefs-row display-prefs-toggle-row">
+            <div class="display-prefs-label"><span>Background grid</span></div>
+            <button class="grid-toggle on" id="gridToggle" type="button" onclick="toggleGrid()" title="Toggle background grid" aria-label="Toggle background grid">
+              <div class="toggle-knob"></div>
+            </button>
+          </div>
           <!-- Background color pickers — separate per mode -->
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span>Dark mode BG</span></div>
@@ -468,6 +482,11 @@
                  chip is rendered by renderAttachmentChips() in main.js;
                  this is just the empty container. -->
             <div class="attachment-chips hidden" id="attachmentChips"></div>
+            <!-- P5.8 — template mode chip. Hidden by default;
+                 surfaces when a prompt template is active so the
+                 user knows the system is in a specialized mode.
+                 Click × (rendered inline) to exit. -->
+            <div class="template-mode-chip hidden" id="templateModeChip" aria-live="polite"></div>
             <textarea id="chatInputArea" name="chatInputArea" aria-label="Type your thinking" placeholder="Type your thinking..." rows="1" oninput="autoResize(this);updateSendBtn()" onkeydown="handleChatKey(event)"></textarea>
             <div class="chat-input-footer">
               <button class="attach-btn" id="attachBtn" type="button" data-i18n-aria="chat.attach.aria" data-i18n-title="chat.attach" aria-label="Attach files" title="Attach files">
@@ -514,8 +533,24 @@
      `marked/marked.min.js` with no version — that resolves to
      latest, which can break the chat UI silently). -->
 <script src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js" integrity="sha384-YTBHtsL8yVTHcLakYNyrOfK3K+QQcXiECuaALJ+3j7Mo681Rtzadt8NR6WrZH+eQ" crossorigin="anonymous"></script>
+<!-- P5.1 — DOMPurify 3.2.4 — required to sanitise the HTML output
+     of marked.parse() before it reaches innerHTML. marked passes
+     raw HTML through by default; without this, an attacker who
+     can inject content (prompt injection, malicious share view,
+     XSS in upstream model) can run arbitrary JavaScript via
+     <img onerror=…>, <svg onload=…>, etc. SRI-pinned so a CDN
+     compromise cannot swap the library out from under us. -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-ifpG+NlgMq0kvOSGqGQxW1mJKpjjMDmZdpKGq3tbvD3WPhyshCEEYClriK/wRVU0" crossorigin="anonymous"></script>
+<!-- KaTeX auto-render — catches math the explicit $...$/$$...$$ pass
+     misses (e.g. model emits \(x+y\) with extra whitespace, or an
+     unclosed \( at end of stream). Loaded after katex.min.js since it
+     depends on the global `katex` symbol.
+     Note: KaTeX 0.16 dropped contrib/cancel; strikethrough macros
+     (\cancel, \bcancel, \xcancel) are emulated in KATEX_MACROS
+     instead. See frontend/src/render/helpers.js for details. -->
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js" integrity="sha384-T/0lMUdJpd2S1ZHtRiofG3htU3xPCrFVeAQ1UUE2TJwlEJSV5NUwn30kP28n238E" crossorigin="anonymous" onload="try{mermaid.initialize({startOnLoad:false})}catch(_){}"></script>
 <!-- highlight.js (code syntax highlighting). Optional: if the CDN is
      blocked, hljs is undefined and addStreamingMessage falls back to

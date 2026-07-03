@@ -43,7 +43,7 @@ import { startScheduledRefresh, refreshCache, getStatus } from './services/produ
 
 const app = express();
 
-/* Trust nginx (and any CDN hop in front of nginx). With Edgio +
+/* Trust nginx (and any CDN hop in front of nginx). With EdgeOne +
  * nginx in front of us, the client IP arrives in X-Forwarded-For
  * after two hops — the left-most untrusted proxy entry is the real
  * client. Setting trust proxy to `2` (or a numeric count) instead of
@@ -177,7 +177,16 @@ app.use(function requestId(req, res, next){
 });
 
 // Response compression (gzip/brotli) — before body parsing
-app.use(compression({ level: 6 }));
+// SSE (text/event-stream) must NOT be compressed — compression
+// buffers small frames and prevents incremental delivery through
+// nginx/proxies/CDNs, which breaks streaming output on mobile.
+app.use(compression({
+  level: 6,
+  filter: (req, res) => {
+    if (res.getHeader && res.getHeader('Content-Type') === 'text/event-stream') return false;
+    return compression.filter(req, res);
+  }
+}));
 
 // Body parsing
 app.use(express.json({ limit: '2mb' }));

@@ -33,12 +33,21 @@ const LLM_SILENCE_TIMEOUT_MS = 120_000;
  * @param {number} opts.maxTokens
  * @param {number} opts.temperature
  * @param {AbortSignal} opts.signal - Optional abort signal
- * @param {function} onChunk    - Called with each text chunk
- * @param {function} onDone     - Called when streaming completes
- * @param {function} onError    - Called on error
+ * @param {Array}  [opts.tools]       - OpenAI-style tool definitions
+ * @param {string} [opts.tool_choice] - 'auto' | 'none' | 'required' | {type:'function', function:{name}}
+ * @param {function} onChunk     - Called with each text chunk
+ * @param {function} onDone      - Called when streaming completes; receives { finishReason } so the
+ *                                  caller can decide whether to dispatch tool calls
+ * @param {function} onError     - Called on error
+ * @param {function} onReasoning - Called with each reasoning_content chunk (DeepSeek-style)
+ * @param {function} onToolUse   - Called once per fully streamed tool_call when finish_reason
+ *                                  is 'tool_calls'. Each callback receives
+ *                                  { id, type:'function', function:{ name, arguments } }.
+ *                                  Arguments is the raw JSON string the upstream streamed —
+ *                                  callers must parse it themselves.
  */
-export async function streamChatCompletion(opts, onChunk, onDone, onError, onReasoning) {
-  const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.7, signal, reasoning_effort, extra_body } = opts;
+export async function streamChatCompletion(opts, onChunk, onDone, onError, onReasoning, onToolUse) {
+  const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.7, signal, reasoning_effort, extra_body, tools, tool_choice } = opts;
 
   // P0.0 — when no maxTokens is set, default to a very high value so
   // the model is not silently truncated by the upstream provider's
@@ -88,6 +97,11 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
            provider. */
         ...(reasoning_effort ? { reasoning_effort } : {}),
         ...(extra_body ? { ...extra_body } : {}),
+        /* Tool calling — when tools is set, the upstream may stream
+           `delta.tool_calls` arrays indexed by `index`. The accumulator
+           below joins them into fully-formed tool_call objects. */
+        ...(Array.isArray(tools) && tools.length > 0 ? { tools } : {}),
+        ...(tool_choice ? { tool_choice } : {}),
       }),
       signal: mergedSignal,
     });
@@ -106,6 +120,12 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let finishReason = null;
+    /* tool_call deltas arrive indexed by `index`. We accumulate them
+       into full {id, type, function:{name, arguments}} objects that
+       mirror what the model would have produced in a non-streaming
+       response. */
+    const toolCallAcc = new Map();
     /* Arm the silence watchdog before the first read. We re-arm it
        after every chunk arrives so a healthy stream never trips it. */
     armSilenceTimer();
@@ -144,6 +164,31 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
               try { onReasoning(reasoning); } catch { /* ignore */ }
             }
           }
+          /* Tool-call deltas. Each entry carries a partial id/name/
+             arguments; we accumulate by `index` and flush once the
+             upstream signals finish_reason='tool_calls'. */
+          if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
+            for (const tc of delta.tool_calls) {
+              const i = tc.index ?? 0;
+              const prev = toolCallAcc.get(i) || {
+                id: undefined,
+                type: 'function',
+                function: { name: '', arguments: '' },
+              };
+              toolCallAcc.set(i, {
+                id: tc.id || prev.id,
+                type: 'function',
+                function: {
+                  name: (tc.function && tc.function.name) || prev.function.name,
+                  arguments: prev.function.arguments + ((tc.function && tc.function.arguments) || ''),
+                },
+              });
+            }
+          }
+          /* finish_reason only appears on the last chunk of a stream.
+             Capture it so onDone can dispatch the tool loop. */
+          const choice = json.choices?.[0];
+          if (choice && choice.finish_reason) finishReason = choice.finish_reason;
           const content = delta.content || '';
           if (content) onChunk(content);
         } catch {
@@ -164,6 +209,26 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
               try { onReasoning(reasoning); } catch { /* ignore */ }
             }
           }
+          if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
+            for (const tc of delta.tool_calls) {
+              const i = tc.index ?? 0;
+              const prev = toolCallAcc.get(i) || {
+                id: undefined,
+                type: 'function',
+                function: { name: '', arguments: '' },
+              };
+              toolCallAcc.set(i, {
+                id: tc.id || prev.id,
+                type: 'function',
+                function: {
+                  name: (tc.function && tc.function.name) || prev.function.name,
+                  arguments: prev.function.arguments + ((tc.function && tc.function.arguments) || ''),
+                },
+              });
+            }
+          }
+          const choice = json.choices?.[0];
+          if (choice && choice.finish_reason) finishReason = choice.finish_reason;
           const content = delta.content || '';
           if (content) onChunk(content);
         }
@@ -171,7 +236,17 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
     }
 
     if (silenceTimer) clearTimeout(silenceTimer);
-    onDone();
+
+    /* Dispatch accumulated tool calls when the model decided to call
+       a tool. The chat route listens for these in its tool-execution
+       loop (Phase 3). */
+    if (finishReason === 'tool_calls' && typeof onToolUse === 'function') {
+      for (const tc of toolCallAcc.values()) {
+        try { onToolUse(tc); } catch { /* ignore listener errors */ }
+      }
+    }
+
+    onDone({ finishReason });
   } catch (err) {
     if (silenceTimer) clearTimeout(silenceTimer);
     if (err.name === 'AbortError') {
@@ -181,7 +256,7 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
       // silence timer fires when no bytes arrive for
       // LLM_SILENCE_TIMEOUT_MS.
       if (signal && signal.aborted) {
-        onDone(); // Client disconnected — clean close
+        onDone({ finishReason: null }); // Client disconnected — clean close
       } else if (err.message && err.message.indexOf('silence-timeout') >= 0) {
         onError(new Error(`LLM stream stalled: no data for ${LLM_SILENCE_TIMEOUT_MS / 1000} s`));
       } else {
@@ -195,10 +270,15 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
 
 /**
  * Make a non-streaming chat completion call.
- * Returns { content: string } or throws.
+ * Returns { content, reasoning_content?, tool_calls? } or throws.
+ *
+ * When `tools` is provided, the upstream may return tool_calls instead of
+ * (or alongside) text content. The caller drives the next hop; this
+ * function does NOT execute tools or loop — it only forwards the request
+ * and returns the raw upstream payload.
  */
 export async function callChatCompletion(opts) {
-  const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.3, signal, reasoning_effort, extra_body } = opts;
+  const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.3, signal, reasoning_effort, extra_body, tools, tool_choice } = opts;
   const effectiveMaxTokens = maxTokens || 32000;
 
   const mergedSignal = signal
@@ -222,6 +302,8 @@ export async function callChatCompletion(opts) {
          reasoning_content in the final message. */
       ...(reasoning_effort ? { reasoning_effort } : {}),
       ...(extra_body ? { ...extra_body } : {}),
+      ...(Array.isArray(tools) && tools.length > 0 ? { tools } : {}),
+      ...(tool_choice ? { tool_choice } : {}),
     }),
     signal: mergedSignal,
   });
@@ -239,8 +321,11 @@ export async function callChatCompletion(opts) {
   /* P_deepseek-mode — preserve reasoning_content on the final
      message so the client can persist it for the next turn. */
   const message = json.choices?.[0]?.message || {};
+  const finishReason = json.choices?.[0]?.finish_reason || null;
   return {
     content: message.content || '',
     reasoning_content: typeof message.reasoning_content === 'string' ? message.reasoning_content : undefined,
+    tool_calls: Array.isArray(message.tool_calls) ? message.tool_calls : undefined,
+    finish_reason: finishReason,
   };
 }

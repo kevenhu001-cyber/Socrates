@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "playwright": "^1.61.1"
+    "playwright": "^1.61.1",
+    "pyodide": "^0.26.4"
   }
 }

@@ -11,6 +11,7 @@ import {
 } from '../lib/errors.js';
 import {
   sendVerificationEmail, sendPasswordResetEmail, sendLoginCode,
+  sendDuplicateRegistrationEmail,
 } from './email.js';
 import {
   checkLockout, recordFailure, recordSuccess,
@@ -124,12 +125,15 @@ export async function register(email, password) {
 
   const db = getDb();
 
-  // Check for existing user (already verified) — silently no-op
-  // instead of leaking which emails are registered. The email is
-  // logged (masked) for operational debugging.
+  // Check for existing user (already verified) — silently no-op to
+  // the requester (we still return { ok: true } so an attacker can't
+  // enumerate which emails are on file), but DO notify the address
+  // owner so they can act if it wasn't them. Same shape from the
+  // caller's perspective as a fresh registration.
   const [existing] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   if (existing) {
-    console.log(`[auth] register: user already exists for ${maskEmail(normalizedEmail)}`);
+    console.log(`[auth] register: user already exists for ${maskEmail(normalizedEmail)} — sending duplicate-registration notice`);
+    try { await sendDuplicateRegistrationEmail(normalizedEmail); } catch (e) { console.warn('[auth] duplicate-registration notice failed:', e.message); }
     return { ok: true };
   }
 
@@ -178,12 +182,29 @@ export async function resendVerification(email) {
   const [pending] = await db.select().from(pendingRegistrations)
     .where(eq(pendingRegistrations.email, normalizedEmail)).limit(1);
 
-  // Silently no-op if no pending registration — don't leak which emails
-  // are registered or pending. Also no-op if the user is already verified.
+  // Don't reveal registration state. Two distinct no-op paths:
+  //   - existing verified user → notify them of the attempt;
+  //   - no pending registration → still notify so the user understands
+  //     something was sent.
+  // We send the duplicate-registration notice on EITHER path so the
+  // owner is always told an attempt happened; the only difference is
+  // whether a fresh verification link is in flight.
   const [existing] = await db.select().from(users)
     .where(eq(users.email, normalizedEmail)).limit(1);
-  if (!pending || existing) {
-    console.log(`[auth] resend-verification: nothing to do for ${maskEmail(normalizedEmail)}`);
+  if (!pending && !existing) {
+    console.log(`[auth] resend-verification: no pending or existing user for ${maskEmail(normalizedEmail)}`);
+    return { ok: true };
+  }
+  if (existing) {
+    // Already verified — send the duplicate-registration notice so
+    // the address owner is informed.
+    console.log(`[auth] resend-verification: existing verified user for ${maskEmail(normalizedEmail)} — sending duplicate-registration notice`);
+    try { await sendDuplicateRegistrationEmail(normalizedEmail); } catch (e) { console.warn('[auth] duplicate-registration notice failed:', e.message); }
+    return { ok: true };
+  }
+  if (!pending) {
+    // Defensive: shouldn't reach here given the early return above,
+    // but keep the guard explicit.
     return { ok: true };
   }
 
@@ -342,35 +363,25 @@ export async function sendCode(email) {
   await sendLoginCode(normalizedEmail, code);
 }
 
-/**
- * POST /api/auth/guest — create an anonymous guest account and start a session.
- * The guest gets a placeholder email (random) and a random password hash they
- * will never use. The frontend stores `socrates-guest` so the user is recognised
- * on subsequent visits.
- */
-export async function loginAsGuest() {
-  const db = getDb();
-  // Random unguessable email so two guest accounts never collide.
-  const id = crypto.randomBytes(16).toString('hex');
-  const email = `guest-${id}@guest.socrates.local`;
-  // Random password hash — guests never log in again, only the sid cookie matters.
-  const passwordHash = await hashPassword(crypto.randomBytes(32).toString('hex'));
+/* loginAsGuest was REMOVED in the security hardening pass.
+   Reason: the function was dead code — it was exported but no
+   router ever mounted a `/api/auth/guest` route, and the front-end
+   never called it. The "Guest mode" checkbox at sign-in is purely
+   a localStorage flag set after a real authenticated login; it
+   does not create an anonymous guest account.
 
-  const [user] = await db.insert(users).values({
-    email,
-    passwordHash,
-    displayName: 'Guest',
-    isGuest: true,
-    tier: 'diophantus',
-  }).returning();
+   If a future feature genuinely needs anonymous guest sessions,
+   the correct path is:
+     1. Add `router.post('/guest', authLimiter, audit('login:guest'),
+        async (req, res) => loginAsGuest())` to routes/auth.js.
+     2. Add a CAPTCHA or IP-based captcha so the endpoint cannot be
+        abused to mass-create disposable accounts (DB bloat, cost
+        abuse via the built-in LLM provider).
+     3. Schedule a periodic GC job that hard-deletes guest accounts
+        older than 7 days so the users table does not grow unbounded.
 
-  const sid = await createSession(user.id);
-
-  return {
-    user: publicUser({ ...user, isGuest: true }),
-    sid,
-  };
-}
+   Until then, prefer keeping every chat caller behind a full
+   authenticated account. */
 
 /**
  * POST /api/auth/login-with-code

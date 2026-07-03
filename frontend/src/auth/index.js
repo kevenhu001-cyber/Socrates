@@ -100,15 +100,48 @@ export async function afterAuthEnter(){
       }catch(e){console.warn("[migrate]",e.message)}
     }
   }catch(e){console.warn("[migrate] setup",e.message)}
+  /* Boot-time data fetch helper — calls a `fn` once; if it throws
+     an ApiError(401) DURING the post-login grace window
+     (isInAuthGraceWindow), the brand-new `sid` cookie may not have
+     reached the browser's cookie jar yet, which would silently
+     leave the model picker and Recents list empty. Retry once
+     after ~500 ms to give the cookie time to commit. Outside the
+     grace window, a 401 means the session is genuinely gone and
+     we let the error bubble so handleAuthExpired() can show the
+     sign-in gate.
+
+     Reused for any future "data needed immediately after sign-in"
+     endpoint (mistakes, memories, projects, …). */
+  async function bootFetch(label, fn){
+    if(typeof fn!=="function")return null;
+    try{
+      var r=await fn();
+      return r;
+    }catch(e){
+      var isGrace=typeof window.isInAuthGraceWindow==="function" && window.isInAuthGraceWindow();
+      if(!isGrace || !e || e.status!==401) throw e;
+      console.warn("[boot]", label, "401 during grace window — retrying after 500ms");
+      await new Promise(function(res){setTimeout(res,500)});
+      try{
+        var r2=await fn();
+        console.log("[boot]", label, "retry succeeded");
+        return r2;
+      }catch(e2){
+        console.warn("[boot]", label, "retry failed:", e2 && e2.message);
+        /* Re-throw so handleAuthExpired() can take over — better
+           than showing the user an empty picker while their real
+           session is still alive. */
+        throw e2;
+      }
+    }
+  }
   /* Pull the user's server-side chat sessions into the local cache. */
-  await window.refreshServerSessions&&window.refreshServerSessions();
+  await bootFetch("refreshServerSessions", window.refreshServerSessions);
   /* Load the user's saved API providers and model configs.
-     Wrap the conditional call in parens so the `await` waits for
-     the returned Promise; without parens, `await X && Y()` parses
-     as `(await X) && Y()` and the inner Promise is never awaited —
-     so the subsequent syncModelPills() runs before the API call
-     finishes, leaving the model picker empty on the home page. */
-  var _r=await (window.refreshApiConfig&&window.refreshApiConfig());
+     Wrap the call so the `await` waits for the returned Promise;
+     bootFetch retries 401s during the grace window so the model
+     picker isn't left empty when the sid cookie is still settling. */
+  var _r=await bootFetch("refreshApiConfig", window.refreshApiConfig);
   console.log("[afterAuthEnter] refreshApiConfig returned:", _r && _r.providers && _r.providers.length, "providers, activeId=", _r && _r.activeId);
   /* Load the user's saved memories for long-term context. */
   window.loadUserMemories&&window.loadUserMemories();

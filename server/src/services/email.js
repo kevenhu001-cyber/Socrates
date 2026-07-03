@@ -48,20 +48,26 @@ export async function sendEmail({ to, subject, text, html }) {
 /* ──────────────────────────────────────────────
    Email layout
    ──────────────────────────────────────────────
-   Shared shell used by every transactional email. The body slot is
-   rendered as raw HTML and must be self-contained (no <html>/<body>).
+   Elegant monochrome transactional style.
 
-   Design notes:
-   - Warm paper palette (#faf6ef, #2c2c2a) to mirror the SPA.
-   - Lora (serif) for the brand wordmark, Inter for body — both
-     loaded from Google Fonts (email clients that block webfonts
-     fall back to the system stack).
-   - 560 px max width, mobile-friendly.
-   - Footer includes the company address placeholder + unsubscribe
-     line to satisfy CAN-SPAM / GDPR-style expectations.
+   Palette (strict greyscale; no accent color, no card):
+     page bg     #ffffff
+     ink         #111111  (headings, button)
+     body        #4a4a4a  (paragraphs)
+     muted       #8a8a8a  (secondary)
+     hairline    #ececec  (1px rules)
+
+   Typography:
+     wordmark    Inter 17 / 600, tight tracking
+     heading     Inter 26 / 600, tight tracking, -0.02em
+     body        Inter 15 / 400, line-height 1.6, color #4a4a4a
+     micro       Inter 12 / 400, color #8a8a8a, used for footer + helper
+
+   Single-column 540px stack. Generous vertical rhythm. No card,
+   no shadows, no icons, no badges — only typography, white
+   space, and a single hairline divider near the bottom.
    ────────────────────────────────────────────── */
 function shell({ preheader, title, body }) {
-  // Preheader is hidden preview text shown in the inbox list.
   const pre = preheader || '';
   return `<!DOCTYPE html>
 <html lang="en">
@@ -70,44 +76,40 @@ function shell({ preheader, title, body }) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>${title}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+</style>
 </head>
-<body style="margin:0;padding:0;background:#f1ece3;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#2c2c2a;-webkit-font-smoothing:antialiased">
+<body style="margin:0;padding:0;background:#ffffff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility">
 <span style="display:none!important;opacity:0;color:transparent;height:0;width:0;overflow:hidden">${pre}</span>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1ece3">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff">
   <tr>
-    <td align="center" style="padding:32px 16px">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:100%;width:100%">
+    <td align="center" style="padding:64px 16px 48px">
+      <table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" style="max-width:100%;width:100%">
 
-        <!-- Brand wordmark. Nested table keeps the wordmark centered
-             on every client; iOS Gmail ignores display:inline-block
-             on a div, which made the previous layout stretch full-
-             width on mobile. -->
+        <!-- Wordmark — small, tight, left-aligned.
+             No icon. -->
         <tr>
-          <td align="center" style="padding:0 0 24px">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto">
-              <tr>
-                <td align="center" style="font-family:'Lora',Georgia,serif;font-size:24px;font-weight:600;letter-spacing:0.5px;color:#2c2c2a;mso-line-height-rule:exactly;line-height:28px">
-                  <span style="color:#b8955a">S</span>ocrates
-                </td>
-              </tr>
-            </table>
-            <div style="font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#9c9c98;margin-top:6px;line-height:14px">Learn anything, step by step</div>
+          <td align="left" style="padding:0 0 56px">
+            <div style="font-family:'Inter',-apple-system,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.025em;color:#111;line-height:20px">
+              Socrates
+            </div>
           </td>
         </tr>
 
-        <!-- Card -->
+        <!-- Body slot -->
         <tr>
-          <td style="background:#ffffff;border-radius:14px;box-shadow:0 1px 2px rgba(28,25,23,.04),0 8px 24px -8px rgba(28,25,23,.08);overflow:hidden">
+          <td style="font-size:15px;line-height:1.6;color:#4a4a4a">
             ${body}
           </td>
         </tr>
 
-        <!-- Footer -->
+        <!-- Hairline + footer -->
         <tr>
-          <td align="center" style="padding:24px 8px 0">
-            <div style="font-size:12px;line-height:1.6;color:#8a8a86">
-              Sent by Socrates · <a href="https://topodrive.top" style="color:#8a8a86;text-decoration:underline">topodrive.top</a><br>
-              You receive this because you have an active Socrates account.
+          <td style="padding:48px 0 0">
+            <div style="height:1px;background:#ececec;line-height:1px;font-size:1px">&nbsp;</div>
+            <div style="padding-top:20px;font-size:12px;line-height:1.5;color:#8a8a8a;letter-spacing:-0.005em">
+              <a href="https://topodrive.top" style="color:#8a8a8a;text-decoration:none">Socrates</a> · an AI tutor that asks questions to help you think.
             </div>
           </td>
         </tr>
@@ -120,33 +122,33 @@ function shell({ preheader, title, body }) {
 </html>`;
 }
 
-/* Reusable "icon badge" — a small circular emblem with a centered
-   text character. Uses a <table> layout instead of flexbox so it
-   renders correctly in every email client (Gmail strips inline-flex;
-   SVG icons are not supported in Gmail/Outlook/Yahoo). The character
-   is vertically centered via line-height matching the cell height. */
-function iconBadge(ch, bg = '#f5ede0') {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 20px">
-    <tr>
-      <td align="center" valign="middle" style="width:56px;height:56px;border-radius:50%;background:${bg};font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:56px;font-weight:400;color:#b8955a;mso-line-height-rule:exactly;padding:0">
-        ${ch}
-      </td>
-    </tr>
-  </table>`;
-}
-
-/* Big primary button — call to action. */
+/* Primary button. Solid ink, white label, 8 px radius, weight 500. */
 function ctaButton(label, href) {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:8px auto 4px">
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:32px 0 8px">
     <tr>
-      <td align="center" bgcolor="#2c2c2a" style="border-radius:10px">
-        <a href="${href}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:'Inter',-apple-system,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.01em">${label}</a>
+      <td align="center" bgcolor="#111111" style="border-radius:8px">
+        <a href="${href}" target="_blank" style="display:inline-block;padding:13px 26px;font-family:'Inter',-apple-system,sans-serif;font-size:15px;font-weight:500;color:#ffffff;text-decoration:none;letter-spacing:-0.01em">${label}</a>
       </td>
     </tr>
   </table>`;
 }
 
-/* Fallback URL for clients that don't render HTML — short text version. */
+/* Hairline-divider helper — pure 1 px rule, no decoration. */
+function hairline() {
+  return `<div style="height:1px;background:#ececec;line-height:1px;font-size:1px;margin:24px 0">&nbsp;</div>`;
+}
+
+/* Fallback URL — quiet, monospaced, sits below the button. */
+function fallbackLink(link) {
+  return `<p style="margin:8px 0 0;font-size:12px;line-height:1.6;color:#8a8a8a;word-break:break-all">
+    Or paste this link into your browser:
+  </p>
+  <p style="margin:4px 0 0;font-family:'SF Mono',Menlo,Consolas,ui-monospace,monospace;font-size:12px;line-height:1.6;color:#4a4a4a;word-break:break-all">
+    <a href="${link}" style="color:#4a4a4a;text-decoration:underline;text-decoration-color:#ececec">${link}</a>
+  </p>`;
+}
+
+/* Plain-text joiner for the no-HTML / log-only fallback. */
 function textWrap(parts) {
   return parts.filter(Boolean).join('\n\n');
 }
@@ -159,23 +161,17 @@ export async function sendVerificationEmail(email, token) {
   const link = `${baseUrl}?token=${token}`;
 
   const body = `
-    <div style="padding:36px 24px 8px;text-align:center">
-      ${iconBadge('\u2713', '#f5ede0')}
-      <h1 style="margin:0 0 10px;font-family:'Lora',Georgia,serif;font-size:24px;font-weight:600;color:#2c2c2a;line-height:1.3">Verify your email</h1>
-      <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#6b6b68">
-        Welcome to Socrates. Confirm this address and we'll unlock your account — including saving sessions across devices and using your own API keys.
-      </p>
-      ${ctaButton('Verify email', link)}
-      <p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#9c9c98">
-        Or paste this link in your browser:<br>
-        <a href="${link}" style="color:#b8955a;word-break:break-all;text-decoration:none">${link}</a>
-      </p>
-    </div>
-    <div style="padding:24px 24px 36px;border-top:1px solid #efe9dd;margin-top:32px">
-      <p style="margin:0;font-size:12px;line-height:1.6;color:#9c9c98;text-align:center">
-        This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.
-      </p>
-    </div>
+    <h1 style="margin:0 0 16px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#111;line-height:1.25;letter-spacing:-0.02em">
+      Verify your email
+    </h1>
+    <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#4a4a4a">
+      Welcome to Socrates. Confirm this address to activate your account and save sessions across devices.
+    </p>
+    ${ctaButton('Verify email', link)}
+    ${fallbackLink(link)}
+    <p style="margin:32px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#8a8a8a">
+      This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.
+    </p>
   `;
 
   await sendEmail({
@@ -183,7 +179,7 @@ export async function sendVerificationEmail(email, token) {
     subject: 'Verify your Socrates account',
     text: textWrap([
       'Welcome to Socrates!',
-      'Please verify your email by clicking this link:',
+      'Verify your email by opening this link:',
       link,
       'This link expires in 24 hours. If you did not create an account, you can ignore this email.',
     ]),
@@ -200,26 +196,28 @@ export async function sendVerificationEmail(email, token) {
  */
 export async function sendPasswordResetEmail(email, token) {
   const baseUrl = process.env.APP_URL || 'https://app.topodrive.top';
-  const link = `${baseUrl}/reset-password?token=${token}`;
+  /* IMPORTANT: URL param is `reset_token` (NOT `token`). The SPA's
+     boot.js distinguishes email-verification from password-reset by
+     the param name — `token` triggers /api/auth/verify, `reset_token`
+     triggers the reset-password view. Sending `?token=` here would
+     route reset clicks through the verification endpoint, which
+     looks up `pendingRegistrations` (not the reset table) and returns
+     "Invalid or expired verification token" even though the reset
+     row itself is fresh. */
+  const link = `${baseUrl}/reset-password?reset_token=${token}`;
 
   const body = `
-    <div style="padding:36px 24px 8px;text-align:center">
-      ${iconBadge('\u2726', '#f5ede0')}
-      <h1 style="margin:0 0 10px;font-family:'Lora',Georgia,serif;font-size:24px;font-weight:600;color:#2c2c2a;line-height:1.3">Reset your password</h1>
-      <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#6b6b68">
-        Someone — hopefully you — asked to reset the password for <strong style="color:#2c2c2a">${email}</strong>. Click the button below to choose a new one.
-      </p>
-      ${ctaButton('Choose a new password', link)}
-      <p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#9c9c98">
-        Or paste this link in your browser:<br>
-        <a href="${link}" style="color:#b8955a;word-break:break-all;text-decoration:none">${link}</a>
-      </p>
-    </div>
-    <div style="padding:24px 24px 36px;border-top:1px solid #efe9dd;margin-top:32px">
-      <p style="margin:0;font-size:12px;line-height:1.6;color:#9c9c98;text-align:center">
-        This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email — your account is still secure.
-      </p>
-    </div>
+    <h1 style="margin:0 0 16px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#111;line-height:1.25;letter-spacing:-0.02em">
+      Reset your password
+    </h1>
+    <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#4a4a4a">
+      Someone — hopefully you — asked to reset the password for <strong style="color:#111;font-weight:500">${email}</strong>. Click below to choose a new one.
+    </p>
+    ${ctaButton('Choose a new password', link)}
+    ${fallbackLink(link)}
+    <p style="margin:32px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#8a8a8a">
+      This link expires in 1 hour. If you didn't request a reset, you can safely ignore this email — your account is still secure.
+    </p>
   `;
 
   await sendEmail({
@@ -228,7 +226,7 @@ export async function sendPasswordResetEmail(email, token) {
     text: textWrap([
       'You requested a password reset for your Socrates account.',
       `Account: ${email}`,
-      'Click this link to choose a new password:',
+      'Open this link to choose a new password:',
       link,
       'This link expires in 1 hour. If you did not request a reset, ignore this email.',
     ]),
@@ -244,34 +242,23 @@ export async function sendPasswordResetEmail(email, token) {
  * Send an 8-character login code (passwordless sign-in).
  */
 export async function sendLoginCode(email, code) {
-  // Render each character as its own box for a more polished look.
-  const boxes = code.split('').map((d) => `
-    <td align="center" style="width:42px;height:54px;background:#faf6ef;border:1px solid #e8e0d0;border-radius:8px;font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-size:24px;font-weight:600;color:#2c2c2a;letter-spacing:0">${d}</td>
-    <td style="width:6px"></td>
-  `).join('');
-
   const body = `
-    <div style="padding:36px 24px 8px;text-align:center">
-      ${iconBadge('\u25C9', '#f5ede0')}
-      <h1 style="margin:0 0 10px;font-family:'Lora',Georgia,serif;font-size:24px;font-weight:600;color:#2c2c2a;line-height:1.3">Your login code</h1>
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#6b6b68">
-        Enter this code on the sign-in screen to access <strong style="color:#2c2c2a">${email}</strong>.
-      </p>
+    <h1 style="margin:0 0 16px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#111;line-height:1.25;letter-spacing:-0.02em">
+      Your login code
+    </h1>
+    <p style="margin:0 0 32px;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#4a4a4a">
+      Enter this code on the sign-in screen to access <strong style="color:#111;font-weight:500">${email}</strong>.
+    </p>
 
-      <!-- Code display -->
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 8px">
-        <tr>${boxes}</tr>
-      </table>
+    <!-- Code rendered in a wide-tracked monospace block. No chip /
+         box decoration — typography does the work. -->
+    <div style="font-family:'SF Mono',Menlo,Consolas,ui-monospace,monospace;font-size:32px;font-weight:500;color:#111;letter-spacing:0.4em;line-height:1.4">
+      ${code}
+    </div>
 
-      <p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#9c9c98">
-        Didn't request this? You can safely ignore this email.
-      </p>
-    </div>
-    <div style="padding:24px 24px 36px;border-top:1px solid #efe9dd;margin-top:32px">
-      <p style="margin:0;font-size:12px;line-height:1.6;color:#9c9c98;text-align:center">
-        This code expires in 10 minutes. For your security, never share it with anyone.
-      </p>
-    </div>
+    <p style="margin:40px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#8a8a8a">
+      This code expires in 10 minutes. For your security, never share it with anyone.
+    </p>
   `;
 
   await sendEmail({
@@ -285,6 +272,48 @@ export async function sendLoginCode(email, code) {
     html: shell({
       preheader: `Your sign-in code is ${code}.`,
       title: 'Your Socrates login code',
+      body,
+    }),
+  });
+}
+
+/**
+ * Send a duplicate-registration warning.
+ *
+ * Triggered when someone tries to register with an email that's
+ * already on file. We intentionally do NOT reveal registration
+ * state to the requester — the API still returns 200 OK with the
+ * same success shape as a fresh registration — but the registered
+ * owner of the email DOES get this email so they can act if it
+ * wasn't them.
+ */
+export async function sendDuplicateRegistrationEmail(email) {
+  const body = `
+    <h1 style="margin:0 0 16px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#111;line-height:1.25;letter-spacing:-0.02em">
+      New registration attempt
+    </h1>
+    <p style="margin:0 0 12px;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#4a4a4a">
+      Someone — possibly you — just tried to create a Socrates account using <strong style="color:#111;font-weight:500">${email}</strong>. The address is already registered, so no new account was created.
+    </p>
+    <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#4a4a4a">
+      If this was you trying to sign back in, use the sign-in screen or request a password reset from the auth page. If this wasn't you, you can safely ignore this email — your account is still secure.
+    </p>
+    <p style="margin:32px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#8a8a8a">
+      You're receiving this because your email is on a Socrates account.
+    </p>
+  `;
+
+  await sendEmail({
+    to: email,
+    subject: 'New registration attempt on your Socrates account',
+    text: textWrap([
+      'Someone just tried to register with ' + email + ' on Socrates.',
+      'The address is already on file, so no account was created.',
+      "If this was you trying to sign back in, use the sign-in screen or request a password reset. If it wasn't you, you can safely ignore this email — your account is still secure.",
+    ]),
+    html: shell({
+      preheader: 'A registration was attempted with your email address.',
+      title: 'New registration attempt on your Socrates account',
       body,
     }),
   });

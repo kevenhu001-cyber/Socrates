@@ -79,7 +79,7 @@ var DISPLAY_FONT_STEPS  =[0.875, 1, 1.125, 1.25];
 var DISPLAY_WIDTH_STEPS =[0.85,  1, 1.3,   1.7];
 var FONT_LABELS  =["S","M","L","XL"];
 var WIDTH_LABELS =["S","M","L","XL"];
-var displayPrefs={font:1,width:1,darkBg:"",lightBg:""};
+var displayPrefs={font:1,width:1,darkBg:"",lightBg:"",showGrid:true};
 
 function loadDisplayPrefs(){
   try{
@@ -90,6 +90,7 @@ function loadDisplayPrefs(){
       if(typeof p.width==="number"&&p.width>0)displayPrefs.width=p.width;
       if(typeof p.darkBg==="string")displayPrefs.darkBg=p.darkBg;
       if(typeof p.lightBg==="string")displayPrefs.lightBg=p.lightBg;
+      if(p.showGrid===false)displayPrefs.showGrid=false;
     }
   }catch(e){}
   applyDisplayPrefs();
@@ -104,6 +105,8 @@ function applyDisplayPrefs(){
   }else{
     removeCustomBg();
   }
+  /* Grid toggle */
+  document.documentElement.dataset.showGrid=displayPrefs.showGrid===false?"false":"true";
   syncDisplayPrefsUI();
   /* After font/width change, layout shifts. If the user was already
      pinned at the bottom of the chat scroller, keep them there so
@@ -141,6 +144,9 @@ function syncDisplayPrefsUI(){
   if(darkInput)darkInput.value=displayPrefs.darkBg||"#252220";
   var lightInput=document.getElementById("displayPrefsBgLight");
   if(lightInput)lightInput.value=displayPrefs.lightBg||"#ded6c8";
+  /* Sync grid toggle */
+  var gt=document.getElementById("gridToggle");
+  if(gt)gt.classList.toggle("on",displayPrefs.showGrid!==false);
 }
 var _BG_VARS=["--bg-000","--bg-100","--bg-200","--bg-300"];
 import { parseHexColor, applyCustomBg, removeCustomBg } from './util/colors.js';
@@ -184,6 +190,11 @@ function resetBackgroundDark(){
 }
 function resetBackgroundLight(){
   displayPrefs.lightBg="";
+  applyDisplayPrefs();
+  saveDisplayPrefs();
+}
+function toggleGrid(){
+  displayPrefs.showGrid=displayPrefs.showGrid===false?true:false;
   applyDisplayPrefs();
   saveDisplayPrefs();
 }
@@ -2415,8 +2426,18 @@ function findServerSessionIndex(id){
   return -1;
 }
 
-function actuallyDeleteSession(id){
+function actuallyDeleteSession(id,ev){
   if(!CURRENT_USER)return;
+  /* P_delete-stale-click — the trash button lives inside
+     `.recent-item` which has onclick="loadSession(...)". Without
+     stopping propagation here, clicking delete would ALSO trigger
+     loadSession(deletedId): state.currentSessionId would flip to the
+     about-to-be-deleted id, the chat panel would re-render its
+     messages, and the user would see "the deleted session's records"
+     (verbatim bug report) until the async GET returned 404 and the
+     cleanup branch fired. */
+  if(ev&&ev.stopPropagation)ev.stopPropagation();
+  if(ev&&ev.preventDefault)ev.preventDefault();
   /* P_delete-stale — bounce the user out of the chat view if the
      deleted session is EITHER (a) the one currently on screen
      (state.session.currentSessionId) OR (b) referenced by the
@@ -4043,6 +4064,10 @@ async function askChatTurn(userText){
   }
   var sysCtx=getSystemContext();
   var msgs=[{role:"system",content:sysCtx+"\n\n"+CHAT_SYSTEM_PROMPT+beagleSuffix()+thinkingSuffix()+memoriesSuffix()}];
+  /* P5.8 — active prompt template: inject the template's
+     specialized system prompt as a fresh system message so
+     the model commits to that role for this turn. */
+  msgs=injectTemplateSystemPrompt(msgs);
   /* Skip a trailing user message in history — `state.messages` already
      holds the just-added (or just-edited) user entry, and the explicit
      `msgs.push({role:"user",content:userMsg})` below carries it. Without
@@ -4082,7 +4107,13 @@ async function askChatTurn(userText){
        answer. This is the fast path users get when they don't want
        search at all. */
     var ctl=addStreamingMessage({onRetry:function(){askChatTurn(userText)}});
-    var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)});
+    var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)},{
+      onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];appendToolModule(c.name,c.input||{})}},
+      onToolResult:function(r){
+        setLastToolOutput(r.ok===false?("[error] "+(r.error||r.output||"failed")):(r.output||"(no output)"),r.ok===false);
+        if(Array.isArray(r.artifacts)){for(var i=0;i<r.artifacts.length;i++){var a=r.artifacts[i];appendInlineArtifact(a.id,a.mimeType)}}
+      }
+    });
     handleChatApiResult(result,ctl,userText);
     updateChatStats();
     if(state.phase==="chat"||(state.topic&&state.kbNodes.length))saveCurrentSession();
@@ -4185,7 +4216,13 @@ async function askChatTurn(userText){
       {role:"assistant",content:r1.text},
       {role:"user",content:"[System] The web_search tool returned no results (error: "+(searchRes&&searchRes.reason||"empty")+"). Please answer the user's question from your own knowledge, or say honestly that you don't have current information."}
     ]);
-    var result=await callAPIStream(fallbackMsgs,MAX_TOKENS_CHAT,function(delta){ctl4.append(delta)},function(t){ctl4.appendThinking(t)});
+    var result=await callAPIStream(fallbackMsgs,MAX_TOKENS_CHAT,function(delta){ctl4.append(delta)},function(t){ctl4.appendThinking(t)},{
+      onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];appendToolModule(c.name,c.input||{})}},
+      onToolResult:function(r){
+        setLastToolOutput(r.ok===false?("[error] "+(r.error||r.output||"failed")):(r.output||"(no output)"),r.ok===false);
+        if(Array.isArray(r.artifacts)){for(var i=0;i<r.artifacts.length;i++){var a=r.artifacts[i];appendInlineArtifact(a.id,a.mimeType)}}
+      }
+    });
     handleChatApiResult(result,ctl4,userText);
     updateChatStats();
     if(state.phase==="chat"||(state.topic&&state.kbNodes.length))saveCurrentSession();
@@ -4220,7 +4257,18 @@ async function askChatTurn(userText){
     {role:"assistant",content:r1.text},
     {role:"user",content:"[Web research results for query: \""+toolCall.query+"\"]\n"+sourcesBlock+"\n\nPlease answer the user's original question using these results. Cite inline as [1], [2], etc."}
   ]);
-  var result2=await callAPIStream(round2Msgs,MAX_TOKENS_CHAT,function(delta){ctl4.append(delta)},function(t){ctl4.appendThinking(t)});
+  /* P5.8 — keep the template's specialized system prompt
+     active into round 2 (web-search follow-up) so the
+     final answer is still in template mode, not a generic
+     response. */
+  round2Msgs=injectTemplateSystemPrompt(round2Msgs);
+  var result2=await callAPIStream(round2Msgs,MAX_TOKENS_CHAT,function(delta){ctl4.append(delta)},function(t){ctl4.appendThinking(t)},{
+    onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];appendToolModule(c.name,c.input||{})}},
+    onToolResult:function(r){
+      setLastToolOutput(r.ok===false?("[error] "+(r.error||r.output||"failed")):(r.output||"(no output)"),r.ok===false);
+      if(Array.isArray(r.artifacts)){for(var i=0;i<r.artifacts.length;i++){var a=r.artifacts[i];appendInlineArtifact(a.id,a.mimeType)}}
+    }
+  });
   handleChatApiResult(result2,ctl4,userText);
   updateChatStats();
   if(state.phase==="chat"||(state.topic&&state.kbNodes.length))saveCurrentSession();
@@ -4451,25 +4499,13 @@ function handleChatKey(e){
     submitChatMessage();
     return;
   }
-  /* P5.8 — Slash-command palette. Typing `/` as the only
-     content in the input opens a Spotlight-style picker of
-     prompt templates; arrow keys navigate, Enter inserts the
-     template body (with the cursor on the placeholder line
-     so the user can immediately type), Esc closes.
-     Backspacing to an empty input also closes the palette
-     so we don't shadow what the user is trying to type. */
-  var t=e.target;
-  if(t&&t.id==="chatInputArea"){
-    if(e.key==="/"){
-      /* Defer to next tick so the new `/` is in the value
-         before we read it. */
-      setTimeout(function(){
-        if(t.value==="/")openSlashCommandPalette();
-      },0);
-    }else if(isSlashCommandPaletteOpen()&&t.value===""){
-      closeSlashCommandPalette();
-    }
-  }
+  /* P5.8 — Slash-command palette. The heavy lifting (open,
+     filter, close on leading-slash removal) lives in the
+     input-event listener attached below. This keydown path
+     is a fast path for the Enter key so the palette doesn't
+     swallow the send action — Enter closes the palette
+     first and the subsequent submitChatMessage() runs
+     against the (unchanged) textarea value. */
 }
 
 /* P5.8 — Prompt templates. Six built-ins plus any user
@@ -4482,13 +4518,46 @@ function handleChatKey(e){
    API contract: docs/api/openapi.yaml P5.8 — these mirror
    the server shape; when the backend lands /api/prompts
    the local array becomes the offline cache. */
+/* P5.8 — Icon set. Each template has a 16×16 outline icon
+   rendered as inline SVG so it inherits `currentColor`. The
+   style is consistent across the set: 1.2–1.3px stroke,
+   rounded line caps/joins, filled accents (bullets / dots)
+   only where small, solid shapes are needed. Defined as
+   local constants so the BUILTIN_TEMPLATES array stays
+   readable. */
+var ICON_SUMMARIZE='<svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="3" cy="4" r="1.1"/><circle cx="3" cy="8" r="1.1"/><circle cx="3" cy="12" r="1.1"/><rect x="5.5" y="3.4" width="8" height="1.2" rx="0.6"/><rect x="5.5" y="7.4" width="8" height="1.2" rx="0.6"/><rect x="5.5" y="11.4" width="6" height="1.2" rx="0.6"/></svg>';
+var ICON_TRANSLATE='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><ellipse cx="8" cy="8" rx="2.5" ry="6"/><line x1="2" y1="8" x2="14" y2="8"/></svg>';
+var ICON_EXPLAIN_CODE='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6,4.5 2.5,8 6,11.5"/><polyline points="10,4.5 13.5,8 10,11.5"/><line x1="9.2" y1="3.5" x2="6.8" y2="12.5"/></svg>';
+var ICON_DEBUG='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="8" cy="9.5" rx="3.2" ry="3.8"/><line x1="4.8" y1="9.5" x2="11.2" y2="9.5"/><line x1="6.5" y1="6" x2="5.5" y2="3.8"/><line x1="9.5" y1="6" x2="10.5" y2="3.8"/><line x1="5" y1="12" x2="3" y2="13.2"/><line x1="11" y1="12" x2="13" y2="13.2"/><line x1="3.2" y1="9.5" x2="1.4" y2="9.5"/><line x1="12.8" y1="9.5" x2="14.6" y2="9.5"/></svg>';
+var ICON_QUIZ='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M5.7 6.3a2.3 2.3 0 0 1 4.5.7c0 1.1-.9 1.5-1.5 1.8-.4.2-.5.6-.5 1.1"/><circle cx="8.2" cy="11.8" r="0.7" fill="currentColor" stroke="none"/></svg>';
+var ICON_SOCRATIC='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h10a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H7l-3 3v-3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><circle cx="5.5" cy="6.5" r="0.6" fill="currentColor" stroke="none"/><circle cx="8" cy="6.5" r="0.6" fill="currentColor" stroke="none"/><circle cx="10.5" cy="6.5" r="0.6" fill="currentColor" stroke="none"/></svg>';
+
+/* P5.8 — Specialized system prompts. One per built-in template.
+   These get injected as an EXTRA system message in front of the
+   user's turn when a template is active. They are deliberately
+   short and role-specific so the model commits to one mode (no
+   drift back to "be a helpful assistant"). The base system
+   prompt stays intact; the template prompt stacks on top. The
+   user never sees these.
+
+   Each prompt follows the same shape so the model can pattern-
+   match: ROLE → INPUT CONTRACT → OUTPUT CONTRACT → CONSTRAINTS.
+   This consistency matters more than any single template's
+   wording. */
+var SYSTEM_PROMPT_SUMMARIZE="You are a precise summarization specialist. The user will paste a passage; condense it into clear bullet points that preserve the key facts, names, numbers, dates, and conclusions. Rules:\n- Match the source language exactly — do NOT translate.\n- Length: target ~5 bullets for a paragraph, scaling up for long inputs (one bullet per paragraph or per key idea); never exceed what the source actually supports.\n- Preserve technical terms, proper nouns, numbers, and units verbatim.\n- Each bullet stands alone — no \"this/that\" references that need the original context.\n- Output only the bullets. No preamble, no \"Here is a summary:\", no meta-commentary.";
+var SYSTEM_PROMPT_TRANSLATE="You are a professional English translator. The user will paste text in another language; produce a natural English translation that preserves tone, register, and meaning. Rules:\n- Adapt idioms — find English equivalents instead of literal translations (\"avoir le cafard\" → \"to feel down\", not \"to have the cockroach\").\n- Keep proper nouns, brand names, and technical terms in their original form when English usage keeps them (e.g. \"déjà vu\", \"tsunami\").\n- Preserve the source register: casual stays casual, formal stays formal, technical stays technical.\n- Do NOT add explanations, footnotes, or alternatives. Output only the translation.\n- If the source is already English, say \"This is already English.\" and offer to refine instead.";
+var SYSTEM_PROMPT_EXPLAIN_CODE="You are a patient code mentor. The user will paste a code snippet; walk through it line-by-line, explaining what each line does, the data flow, and the design choices. Rules:\n- Lead with a one-sentence TL;DR of what the code does.\n- Then a section-by-section walkthrough. Group related lines; don't narrate every single statement if the structure is obvious.\n- Call out anything non-obvious: subtle bugs, surprising behaviors, edge cases the code does or doesn't handle, performance gotchas, security smells.\n- Match the user's apparent level. If the snippet is simple, don't pad; if it's advanced, skip basics and dive into the interesting parts.\n- Use markdown: headings for sections, inline code for symbols, fenced blocks for the snippet under discussion. No emojis.";
+var SYSTEM_PROMPT_DEBUG="You are a senior debugger. The user will paste code that is misbehaving, plus the expected vs. actual behavior. Work through this systematically:\n1. State your best-guess root cause in one sentence up front — don't bury the answer.\n2. Quote the specific line(s) that cause the issue, with line numbers if the snippet is numbered.\n3. Explain WHY the line fails (the mental model the code is encoding, and the gap between that model and reality).\n4. Propose the minimal fix. Show the corrected snippet; explain why this fix resolves the issue.\n5. Suggest a quick verification — a test, a print, or a mental check — the user can run to confirm.\nRules:\n- If the snippet has multiple plausible bugs, address the most likely one first; mention the rest only if they're independent.\n- If the bug is in third-party code or environment rather than the snippet itself, say so explicitly.\n- No fluff, no reassurance — be direct. The user came here to find the bug.";
+var SYSTEM_PROMPT_QUIZ="You are a quiz master. The user will give you a topic; generate exactly 5 questions of varying difficulty:\n- 1 easy (recall / definition).\n- 2 medium (apply / compare).\n- 2 hard (analyze / synthesize / edge case).\nFor each question:\n- State the question clearly.\n- Give exactly 3 options labeled A, B, C. Distractors should be plausible misconceptions, not obvious wrong answers.\n- Mark the correct option (e.g. \"Correct: B\") and add a one-sentence explanation of why it's right and why the distractors fail.\nFormat each question as:\nQ1. <question>\nA) ...  B) ...  C) ...\nCorrect: <letter> — <one-sentence reason>\nAfter all 5 questions, stop. Do NOT ask the user to begin — they'll respond when ready. Match the user's language.";
+var SYSTEM_PROMPT_SOCRATIC="You are a Socratic tutor. The user will give you a problem or concept. Your job is NOT to solve it — it's to guide them to the answer through questions. Rules:\n- Never reveal the answer, the formula, or the next step. If they ask directly, redirect with a question: \"What do you think happens when...?\".\n- Start by clarifying what they already know. Ask one question at a time.\n- After each of their responses, identify the gap in their reasoning and ask the next question that targets exactly that gap.\n- Build from concrete to abstract: anchor with a specific case before generalizing.\n- Be patient. If they're stuck, give a smaller, related problem — still as a question.\n- Only confirm or correct AFTER they've worked out the key insight themselves. When you do, briefly state what they got right and what was still off.\n- Match their language. Use their technical vocabulary, not textbook jargon they haven't seen.\n- One question per turn. Never bundle two or more questions in the same message.";
+
 var BUILTIN_TEMPLATES=[
-  {id:"tpl-summarize",title:"Summarize",description:"Condense the pasted text into bullet points.",icon:"no",category:"writing",shortcut:"/summarize",body:"Please summarize the following text in concise bullet points (≤ 5):\n\n",isBuiltin:true},
-  {id:"tpl-translate",title:"Translate to English",description:"Translate the input into natural English.",icon:'<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.74 3.74 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.06 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75Zm7.251 10.324.004-5.073H4.75a.75.75 0 0 1 0-1.5h2.5l.005-4.243H4.75a.75.75 0 0 1 0-1.5h2.5V.75a.75.75 0 0 1 1.5 0v1.008h2.5a.75.75 0 0 1 0 1.5h-2.5l-.004 4.243H11.5a.75.75 0 0 1 0 1.5H9.255l-.004 5.072Z"/></svg>',category:"writing",shortcut:"/translate",body:"Translate the following into natural English, preserving tone:\n\n",isBuiltin:true},
-  {id:"tpl-explain-code",title:"Explain this code",description:"Walk through the snippet line by line.",icon:'<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M5.854 4.854a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708l3.5 3.5a.5.5 0 0 1 0 .708"/><path d="M2.5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-1a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1V3a1 1 0 0 0-1-1z"/></svg>',category:"code",shortcut:"/explain",body:"Walk me through this code line by line, calling out anything surprising or worth refactoring:\n\n```\n\n```",isBuiltin:true},
-  {id:"tpl-debug",title:"Debug this",description:"Find the bug, propose a fix, explain why it worked.",icon:'<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M4.978.855a.5.5 0 1 0-.956.29l.41 1.367A4.98 4.98 0 0 0 3 6h10a4.98 4.98 0 0 0-1.432-3.488l.41-1.367a.5.5 0 1 0-.956-.29l-.291.972A5 5 0 0 0 8 1a5 5 0 0 0-2.731.827l-.291-.972z"/><path d="M13 6.5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-.021A2.5 2.5 0 0 1 11 11h-.5a.5.5 0 0 1-.5-.5V8h-4v2.5a.5.5 0 0 1-.5.5H5a2.5 2.5 0 0 1-1.979-1H3a.5.5 0 0 1-.5-.5V7a.5.5 0 0 1 .5-.5z"/></svg>',category:"code",shortcut:"/debug",body:"This code is misbehaving. Find the bug, propose a minimal fix, and explain the root cause:\n\n```\n\n```\n\nExpected behavior:\nActual behavior:\n",isBuiltin:true},
-  {id:"tpl-quiz",title:"Quiz me",description:"Generate 5 questions on a topic.",icon:'<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M5.5 13.5a.5.5 0 0 1 0 1H2a.5.5 0 0 1-.5-.5V2a.5.5 0 0 1 .5-.5h5.5a.5.5 0 0 1 0 1H3v10.5zm3-12a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v12a.5.5 0 0 1-.5.5H9a.5.5 0 0 1-.5-.5zm1.5.5v11h4v-11z"/><path d="M11 3a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 11 3m-1.5.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm1 2.5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m-1.5.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5z"/></svg>',category:"learning",shortcut:"/quiz",body:"Quiz me with 5 questions on the following topic. Mix difficulty levels and tell me the answer only after I've answered:\n\nTopic: ",isBuiltin:true},
-  {id:"tpl-socratic",title:"Socratic me",description:"Don't tell me the answer — ask me leading questions.",icon:'<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a1 1 0 0 1 .707.293l2.853 2.853a.5.5 0 0 0 .854-.353V2a1 1 0 0 0-1-1zm4 3.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m-2.5.5a.5.5 0 0 1 .5-.5h.5a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h.5a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.5-.5"/></svg>',category:"learning",shortcut:"/socratic",body:"Help me work through this with questions, not answers. Don't reveal the solution until I've reasoned it out:\n\nProblem: ",isBuiltin:true}
+  {id:"tpl-summarize",title:"Summarize",description:"Condense the pasted text into bullet points.",icon:ICON_SUMMARIZE,category:"writing",shortcut:"/summarize",body:"Paste the text you want summarized:\n\n",systemPrompt:SYSTEM_PROMPT_SUMMARIZE,isBuiltin:true},
+  {id:"tpl-translate",title:"Translate to English",description:"Translate the input into natural English.",icon:ICON_TRANSLATE,category:"writing",shortcut:"/translate",body:"Paste the text to translate into English:\n\n",systemPrompt:SYSTEM_PROMPT_TRANSLATE,isBuiltin:true},
+  {id:"tpl-explain-code",title:"Explain this code",description:"Walk through the snippet line by line.",icon:ICON_EXPLAIN_CODE,category:"code",shortcut:"/explain",body:"Paste the code you want explained:\n\n```\n\n```\n",systemPrompt:SYSTEM_PROMPT_EXPLAIN_CODE,isBuiltin:true},
+  {id:"tpl-debug",title:"Debug this",description:"Find the bug, propose a fix, explain why it worked.",icon:ICON_DEBUG,category:"code",shortcut:"/debug",body:"Paste the misbehaving code:\n\n```\n\n```\n\nExpected behavior:\nActual behavior:\n",systemPrompt:SYSTEM_PROMPT_DEBUG,isBuiltin:true},
+  {id:"tpl-quiz",title:"Quiz me",description:"Generate 5 questions on a topic.",icon:ICON_QUIZ,category:"learning",shortcut:"/quiz",body:"Topic to be quizzed on:\n",systemPrompt:SYSTEM_PROMPT_QUIZ,isBuiltin:true},
+  {id:"tpl-socratic",title:"Socratic me",description:"Don't tell me the answer — ask me leading questions.",icon:ICON_SOCRATIC,category:"learning",shortcut:"/socratic",body:"Problem to work through:\n",systemPrompt:SYSTEM_PROMPT_SOCRATIC,isBuiltin:true}
 ];
 var PROMPT_TEMPLATES_KEY="socrates-prompt-templates";
 function loadPromptTemplates(){
@@ -4537,9 +4606,128 @@ function deleteCustomTemplate(id){
    cursor position; Esc closes. */
 var _slashSelected=0;
 var _slashList=[];
-function isSlashCommandPaletteOpen(){
-  var p=document.getElementById("slashCommandPalette");
-  return p&&p.classList.contains("visible");
+var _slashQuery="";
+/* P5.8 — Active template state. When the user picks a template
+   from the palette we stash it here so the chat pipeline can
+   inject the template's `systemPrompt` as a fresh system message
+   on every turn while the template is active. The chip in the
+   input bar shows the current mode; clicking × clears it. */
+var _activeTemplate=null;
+function isActiveTemplate(){return !!_activeTemplate;}
+function getActiveTemplateSystemPrompt(){
+  return(_activeTemplate&&_activeTemplate.systemPrompt)||"";
+}
+/* Strip the template body's leading prefix from the user-typed
+   text, so the LLM sees only the user's actual content instead
+   of "Paste the text you want summarized:\n\n<their text>".
+   Whitespace-trimmed comparison so a stray newline from the
+   cursor position doesn't throw the match off. */
+function stripTemplateBodyPrefix(text){
+  if(!_activeTemplate||!_activeTemplate.body)return text;
+  var body=(_activeTemplate.body||"").replace(/\s+$/,"");
+  if(!body)return text;
+  /* Try to find the body's end, accounting for the user having
+     deleted some chars from the start. We match the LARGEST
+     prefix of the body that's still present at the start of
+     the typed text, then drop everything up to the user's
+     first non-body character. */
+  var i=0;
+  while(i<body.length && i<text.length && text.charAt(i)===body.charAt(i)) i++;
+  if(i===0)return text; // user has wiped the placeholder
+  return text.slice(i).replace(/^\s+/,"");
+}
+function setActiveTemplate(t){
+  _activeTemplate=t?{
+    id:t.id,title:t.title,shortcut:t.shortcut,
+    systemPrompt:t.systemPrompt||"",body:t.body||"",
+    icon:t.icon
+  }:null;
+  renderTemplateModeChip();
+}
+function clearActiveTemplate(){setActiveTemplate(null);}
+/* Surface the active template as a chip above the input so
+   the user always knows the system is in a specialized mode.
+   Clicking × clears it; the click handler is wired inline. */
+function renderTemplateModeChip(){
+  var chip=document.getElementById("templateModeChip");
+  if(!chip)return;
+  if(!_activeTemplate){
+    chip.classList.add("hidden");
+    chip.innerHTML="";
+    return;
+  }
+  var iconHtml=_activeTemplate.icon&&_activeTemplate.icon.indexOf("<svg")===0
+    ? _activeTemplate.icon
+    : esc(_activeTemplate.icon||"");
+  chip.innerHTML=
+    '<span class="template-mode-chip-icon">'+iconHtml+'</span>'+
+    '<span class="template-mode-chip-label">Mode: <strong>'+esc(_activeTemplate.title)+'</strong></span>'+
+    '<span class="template-mode-chip-hint">System prompt is set for this turn</span>'+
+    '<button class="template-mode-chip-close" type="button" onclick="clearActiveTemplate()" aria-label="Exit template mode" title="Exit template mode">×</button>';
+  chip.classList.remove("hidden");
+}
+/* Inject the active template's system prompt as a fresh
+   system message right after the base system message.
+   Returns the original array unchanged if no template is
+   active. Idempotent — calling this twice doesn't stack
+   the prompt (we tag it with a marker so the second call
+   is a no-op). */
+function injectTemplateSystemPrompt(messages){
+  if(!_activeTemplate||!_activeTemplate.systemPrompt)return messages;
+  var marker="[template:"+_activeTemplate.id+"]";
+  /* If we already injected this template's prompt on a
+     prior call in the same array, skip — keeps the
+     conversation history from getting polluted with
+     duplicate system messages. */
+  for(var i=0;i<messages.length;i++){
+    var m=messages[i];
+    if(m&&m.role==="system"&&typeof m.content==="string"&&m.content.indexOf(marker)>=0){
+      return messages;
+    }
+  }
+  var stamped=_activeTemplate.systemPrompt+"\n\n"+marker;
+  var cloned=messages.slice();
+  /* Find first system message and inject after it; if no
+     system message, prepend. */
+  for(var j=0;j<cloned.length;j++){
+    if(cloned[j]&&cloned[j].role==="system"){
+      cloned.splice(j+1,0,{role:"system",content:stamped});
+      return cloned;
+    }
+  }
+  cloned.unshift({role:"system",content:stamped});
+  return cloned;
+}
+/* Parse the slash command from the input. Returns null if
+   the input doesn't start with `/`, otherwise:
+     { raw: "/sum",    — the `/query` chunk we will replace
+       query:"sum",    — lowercased, no leading slash
+       tail: " foo",   — what comes after the first whitespace
+       end:  4 }       — character index where tail begins
+   Used both for filtering and for the insert step (so the
+   user's ` foo` argument survives the click). */
+function _currentSlashQuery(){
+  var input=document.getElementById("chatInputArea");
+  if(!input) return null;
+  var v=input.value;
+  if(!v || v.charAt(0)!=="/") return null;
+  var i=1;
+  while(i<v.length && !/\s/.test(v.charAt(i))) i++;
+  return { raw:v.slice(0,i), query:v.slice(1,i).toLowerCase(), tail:v.slice(i), end:i };
+}
+/* Filter templates by the current query. Substring match
+   against shortcut, title, and description — shortcut first
+   because that's the fastest / most expected match (typing
+   `sum` should land on `/summarize`). */
+function _filterSlashList(query){
+  var list=loadPromptTemplates();
+  if(!query) return list;
+  return list.filter(function(t){
+    var s=(t.shortcut||"").toLowerCase();
+    var title=(t.title||"").toLowerCase();
+    var desc=(t.description||"").toLowerCase();
+    return s.indexOf(query)>=0 || title.indexOf(query)>=0 || desc.indexOf(query)>=0;
+  });
 }
 function openSlashCommandPalette(){
   var p=document.getElementById("slashCommandPalette");
@@ -4549,22 +4737,81 @@ function openSlashCommandPalette(){
     p.className="slash-command-palette";
     document.body.appendChild(p);
   }
-  _slashList=loadPromptTemplates();
+  var q=_currentSlashQuery();
+  _slashQuery=q?q.query:"";
+  _slashList=_filterSlashList(_slashQuery);
   _slashSelected=0;
   renderSlashCommandPalette();
+  positionSlashCommandPalette();
   p.classList.add("visible");
+}
+function isSlashCommandPaletteOpen(){
+  var p=document.getElementById("slashCommandPalette");
+  return !!(p && p.classList && p.classList.contains("visible"));
 }
 function closeSlashCommandPalette(){
   var p=document.getElementById("slashCommandPalette");
   if(p)p.classList.remove("visible");
 }
+/* Anchor the palette to the chat input bar. Computing on
+   open + on every filter change means the palette stays
+   flush against the textarea even if the user resizes the
+   window or scrolls. Falls back to the original centred-
+   bottom layout if the input element can't be measured. */
+function positionSlashCommandPalette(){
+  var p=document.getElementById("slashCommandPalette");
+  if(!p) return;
+  var anchor=document.getElementById("chatInputWrap")||document.getElementById("chatInputArea");
+  if(!anchor){
+    p.style.left="50%";
+    p.style.right="";
+    p.style.width="";
+    p.style.bottom="120px";
+    p.style.transform="translateX(-50%)";
+    return;
+  }
+  var rect=anchor.getBoundingClientRect();
+  p.style.left=rect.left+"px";
+  p.style.right="";
+  p.style.width=rect.width+"px";
+  p.style.bottom=(window.innerHeight-rect.top+6)+"px";
+  p.style.transform="translateY(0)";
+}
+/* Re-filter without closing. Called on every input event
+   while the palette is open. Tries to keep the current
+   selection stable if the highlighted template still
+   matches, so arrow-keys feel natural while typing. */
+function updateSlashCommandPaletteFilter(){
+  if(!isSlashCommandPaletteOpen()) return;
+  var q=_currentSlashQuery();
+  _slashQuery=q?q.query:"";
+  var prevShortcut=(_slashList[_slashSelected]||{}).shortcut||"";
+  _slashList=_filterSlashList(_slashQuery);
+  if(prevShortcut){
+    var newIdx=-1;
+    for(var i=0;i<_slashList.length;i++){
+      if(_slashList[i].shortcut===prevShortcut){ newIdx=i; break; }
+    }
+    if(newIdx>=0) _slashSelected=newIdx;
+    else _slashSelected=Math.min(_slashSelected,Math.max(0,_slashList.length-1));
+  }else{
+    _slashSelected=0;
+  }
+  renderSlashCommandPalette();
+  positionSlashCommandPalette();
+}
 function renderSlashCommandPalette(){
   var p=document.getElementById("slashCommandPalette");
   if(!p)return;
   var html=[];
-  html.push('<div class="slash-command-head">Prompt templates</div>');
+  html.push('<div class="slash-command-head">Prompt templates'
+             +(_slashQuery?' — filter: /'+esc(_slashQuery):"")
+             +'</div>');
   if(!_slashList.length){
-    html.push('<div class="slash-command-empty">No templates yet. Add one from the Profile → Data section.</div>');
+    var emptyMsg=_slashQuery
+      ? 'No templates matching "/'+esc(_slashQuery)+'". Press Esc to close.'
+      : 'No templates yet. Add one from the Profile → Data section.';
+    html.push('<div class="slash-command-empty">'+emptyMsg+'</div>');
   }else{
     _slashList.forEach(function(t,i){
       html.push(
@@ -4595,17 +4842,29 @@ function insertSelectedSlashTemplate(){
   if(!t)return;
   var input=document.getElementById("chatInputArea");
   if(!input)return;
-  /* Replace the leading `/` with the template body, then
-     put the cursor on a blank line so the user can type
-     the topic / code / etc. immediately. If the body ends
-     with a newline, the cursor lands on the next line
-     naturally; if not, we add a trailing newline. */
+  /* Replace ONLY the leading `/query` chunk with the
+     template body, preserving any text the user typed
+     after the first whitespace. This matters because
+     users often type `/explain this code` and expect
+     ` this code` to survive the click. */
   var body=t.body||"";
-  input.value=body;
+  var q=_currentSlashQuery();
+  var tail=q?q.tail:"";
+  input.value=body+tail;
   input.focus();
-  /* Place cursor at end. */
-  var end=input.value.length;
+  /* Place cursor at end of body, so the user lands on
+     the placeholder line (e.g. just before the code
+     fence of /explain) instead of at the end of the
+     pasted tail. */
+  var end=body.length;
   try{input.setSelectionRange(end,end)}catch(_){}
+  /* Activate the template so the next LLM call gets the
+     specialized system prompt. The chip surfaces the
+     mode so the user can see (and dismiss) what's
+     happening — without the chip, the model would
+     silently switch modes and the user would have no
+     idea why the response shape changed. */
+  setActiveTemplate(t);
   /* Trigger autoResize so the textarea grows. */
   if(typeof autoResize==="function")autoResize(input);
   if(typeof updateSendBtn==="function")updateSendBtn();
@@ -4631,11 +4890,50 @@ document.addEventListener("keydown",function(e){
     closeSlashCommandPalette();
   }
 });
+/* Re-filter the palette on every input change. Catches
+   the common case of typing `/sum` and expecting the
+   list to narrow live. Also closes the palette when the
+   leading `/` is gone (e.g. user backspaces past it or
+   pastes over it). */
+document.addEventListener("input",function(e){
+  var t=e.target;
+  if(!t || t.id!=="chatInputArea") return;
+  var v=t.value;
+  if(v.charAt(0)==="/"){
+    if(!isSlashCommandPaletteOpen()) openSlashCommandPalette();
+    else updateSlashCommandPaletteFilter();
+  }else if(isSlashCommandPaletteOpen()){
+    closeSlashCommandPalette();
+  }
+});
+/* Reposition on resize/scroll so the palette stays flush
+   with the input bar. */
+window.addEventListener("resize",function(){
+  if(isSlashCommandPaletteOpen()) positionSlashCommandPalette();
+});
 
 async function submitChatMessage(textOverride,opts){
   opts=opts||{};
   var input=document.getElementById("chatInputArea");
-  var text=(textOverride!=null?textOverride:input.value).trim();
+  var rawText=(textOverride!=null?textOverride:input.value);
+  var text=rawText.trim();
+  /* P5.8 — if a template is active, strip its body prefix
+     from the user text. The body is a placeholder the user
+     sees in the input ("Paste the text you want summarized:
+     ") but should NOT be sent to the LLM or shown in the
+     user bubble. We strip on the WAY in so both paths see
+     the cleaned text. The template itself stays active so
+     the system prompt keeps injecting on follow-up turns. */
+  if(_activeTemplate && textOverride==null){
+    text=stripTemplateBodyPrefix(rawText).trim();
+    if(!text){
+      /* User sent the placeholder without typing anything
+         real. Bail with a hint instead of firing an empty
+         request at the model. */
+      try{showToast("Type or paste the text to process, then send.");}catch(_){}
+      return;
+    }
+  }
   /* P_attachments — allow sending if there are attachments even when
    * the text is empty (e.g. just a single image with no caption). */
   var hasAtt = Array.isArray(window.attachments) && window.attachments.length>0;
@@ -4954,9 +5252,29 @@ function buildMessageToolbar(opts){
     return b;
   }
   /* Copy — works for both roles. Uses navigator.clipboard with a
-     legacy fallback to a hidden textarea + execCommand. */
+     legacy fallback to a hidden textarea + execCommand.
+
+     P_copy-strip-html — prefer the plain `entry.rawText` (what the
+     user actually typed or what the model emitted before being
+     markdown-rendered). Fall back to `entry.html` ONLY by parsing
+     it through a detached DOM node and taking textContent — never
+     copying the HTML string verbatim. The previous fallback
+     `entry.rawText || entry.html` would dump marked's `<p>...</p>`
+     wrapper into the clipboard whenever rawText happened to be
+     empty (a real occurrence on session reload of older payloads
+     and on any entry that round-tripped through the server without
+     a rawText column populated). */
   function doCopy(){
-    var txt=entry.rawText||entry.html||"";
+    var txt="";
+    if(typeof entry.rawText==="string"&&entry.rawText.length>0){
+      txt=entry.rawText;
+    }else if(typeof entry.html==="string"&&entry.html.length>0){
+      txt=stripHtmlToText(entry.html);
+    }
+    if(!txt){
+      showToast("Nothing to copy");
+      return;
+    }
     if(navigator.clipboard&&navigator.clipboard.writeText){
       navigator.clipboard.writeText(txt).then(function(){
         showToast("Copied to clipboard");
@@ -4966,7 +5284,44 @@ function buildMessageToolbar(opts){
     }else{
       legacyCopy(txt);
     }
-    if(!readOnly)fireFeedback(messageId,"copy",null);
+    /* P1.1 — copy is a purely local action (clipboard write + toast).
+       It used to also fireFeedback(messageId, "copy", null), but the
+       /api/messages/<id>/feedback endpoint expects rating in
+       {up, down, none} — sending "copy" produced a 400 with the
+       unhelpful message "rating must be up/down/none" in the console.
+       The two thumbs buttons (line ~5037 / ~5043) remain the only
+       callers of fireFeedback. */
+  }
+  /* Parse an HTML fragment and return its visible text. Used by the
+     copy handler when rawText is unavailable so the clipboard doesn't
+     pick up `<p>`, `<br>`, `<strong>` and other markup as literal
+     angle-bracket noise. */
+  function stripHtmlToText(html){
+    try{
+      var d=document.implementation.createHTMLDocument("");
+      var c=d.createElement("div");
+      c.innerHTML=html;
+      /* <br> → newline so multi-paragraph content pastes with
+         paragraph breaks preserved; block elements get a trailing
+         newline by appendChild below. */
+      var brs=c.querySelectorAll("br");
+      for(var i=0;i<brs.length;i++){
+        brs[i].parentNode.replaceChild(d.createTextNode("\n"),brs[i]);
+      }
+      var blocks=c.querySelectorAll("p,div,li,h1,h2,h3,h4,h5,h6,blockquote,pre,tr");
+      for(var j=blocks.length-1;j>=0;j--){
+        /* Append a trailing newline text node to each block-level
+           element so paragraph / list / heading boundaries survive
+           the textContent flatten. Without this, "<p>a</p><p>b</p>"
+           pastes as "ab" instead of "a\nb". */
+        el.appendChild(d.createTextNode("\n"));
+      }
+      return (c.textContent||"").replace(/\n{3,}/g,"\n\n").trim();
+    }catch(e){
+      /* Last-ditch: strip tags with a regex so the user still gets
+         something rather than seeing "<p>...</p>" verbatim. */
+      return String(html||"").replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ").trim();
+    }
   }
   function legacyCopy(txt){
     try{
@@ -5434,7 +5789,8 @@ var AGENT_TOOL_META={
   Glob:    {letter:"G", cls:"glob",    label:"Find"},
   Grep:    {letter:"F", cls:"grep",    label:"Search"},
   Bash:    {letter:"$", cls:"bash",    label:"Bash"},
-  WebFetch:{letter:"↗", cls:"webfetch",label:"Fetch"}
+  WebFetch:{letter:"↗", cls:"webfetch",label:"Fetch"},
+  Code:    {letter:"λ", cls:"code",    label:"Python"}
 };
 
 var AGENT_RUNS=[];
@@ -5464,6 +5820,7 @@ function agentFormatInput(name,inp){
   if(name==="Grep")    return (inp.path||"workspace")+"  /  "+inp.pattern;
   if(name==="Bash")    return inp.command;
   if(name==="WebFetch")return inp.url;
+  if(name==="Code")    return (inp.language||"python")+"  ·  "+((inp.code||"").split("\n")[0]||"").slice(0,80);
   return JSON.stringify(inp).slice(0,200);
 }
 
@@ -5543,6 +5900,37 @@ function setLastToolOutput(text,isError){
   if(text&&text.length>200){
     var card=last.parentElement;
     if(card)card.classList.add("open");
+  }
+}
+
+/* Append an inline artifact (matplotlib PNG, CSV download link, etc.)
+   produced by the code interpreter to the last tool card's output.
+   Images render inline; everything else becomes a [download <mime>]
+   link. The /api/files/:id/raw endpoint is shared with the file-upload
+   pipeline, so the X-Content-Type-Options: nosniff header from
+   server/src/routes/files.js:151-157 already protects against content
+   sniffing. */
+function appendInlineArtifact(fileId,mimeType){
+  var out=document.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
+  if(!out)return;
+  var url="/api/files/"+encodeURIComponent(fileId)+"/raw";
+  if((mimeType||"").indexOf("image/")===0){
+    var img=document.createElement("img");
+    img.src=url;
+    img.alt="execution artifact";
+    img.className="exec-artifact-image";
+    img.loading="lazy";
+    out.appendChild(img);
+    var card=out.closest(".agent-tool-card");
+    if(card)card.classList.add("open");
+  }else{
+    var a=document.createElement("a");
+    a.href=url;
+    a.textContent="[download "+(mimeType||"file")+"]";
+    a.target="_blank";
+    a.rel="noopener";
+    a.className="exec-artifact-link";
+    out.appendChild(a);
   }
 }
 
@@ -6568,9 +6956,42 @@ function addStreamingMessage(opts){
      up to 120s to start generating without a false expiry. The
      data-mode attribute lets CSS style the chat-mode placeholder
      more prominently (chat mode has no KB / diagnostic to give
-     the user context that work is happening). */
+     the user context that work is happening).
+
+     P_paint-race — the placeholder used to be installed by setting
+     body.innerHTML = "<span class=thinking-dot>...</span>" in the
+     same task that called append(). On a fast path (cached response,
+     healthy proxy, hot upstream) the first onDelta could fire before
+     the browser had a chance to commit a paint, in which case the
+     placeholder text never actually appeared on screen — the user
+     would see only the streamed content, looking exactly like "no
+     streaming, no thinking pill, just the answer".
+
+     Switching to a real child node created via createElement gives
+     us a guaranteed paint opportunity for the placeholder before
+     any future mutation can race with it. The 5-second elapsed tick
+     now mutates only the placeholder's text node (not the whole
+     body's innerHTML), which has the side benefit of NOT clobbering
+     the .agent-thinking pill if a reasoning model emits
+     reasoning_content before the first text delta. The 120 s
+     timeout swaps placeholder for the error block via replaceChild
+     so other children survive. */
   var FIRST_DELTA_TIMEOUT_MS=120000;
-  body.innerHTML='<span class="thinking-dot" data-mode="'+esc(appMode)+'"><span class="thinking-ring thinking-ring-sm"></span>'+(appMode==="chat"?"Thinking…":"Generating…")+'</span>';
+  var placeholder=document.createElement("span");
+  placeholder.className="thinking-dot";
+  placeholder.setAttribute("data-mode",appMode);
+  var placeholderRing=document.createElement("span");
+  placeholderRing.className="thinking-ring thinking-ring-sm";
+  var placeholderText=document.createTextNode(appMode==="chat"?"Thinking…":"Generating…");
+  placeholder.appendChild(placeholderRing);
+  placeholder.appendChild(placeholderText);
+  body.appendChild(placeholder);
+  function setPlaceholderText(label){
+    /* Fast text-node rewrite — no DOM rebuild, no parse, no
+       layout reflow beyond the badge's own intrinsic box. Safe to
+       call many times per second. */
+    placeholderText.data=label;
+  }
   /* Morph the send button into a red Stop so the user can abort
      the stream. Agent mode uses its own state; we only flip chat
      here. setChatStopState(false) on finish/abort. */
@@ -6582,7 +7003,7 @@ function addStreamingMessage(opts){
   _elapsedTick=setInterval(function(){
     if(finished||!firstDelta)return;
     var sec=Math.round((Date.now()-thinkStarted)/1000);
-    body.innerHTML='<span class="thinking-dot" data-mode="'+esc(appMode)+'"><span class="thinking-ring thinking-ring-sm"></span>'+(appMode==="chat"?"Thinking…":"Generating…")+' '+sec+'s</span>';
+    setPlaceholderText((appMode==="chat"?"Thinking…":"Generating…")+" "+sec+"s");
   },5000);
   var firstDeltaTimer=setTimeout(function(){
     if(finished||!firstDelta)return;
@@ -6590,15 +7011,37 @@ function addStreamingMessage(opts){
     finished=true;
     if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
     state.lastCallError="No response for "+Math.round(FIRST_DELTA_TIMEOUT_MS/1000)+"s";
-    body.innerHTML=
-      '<div class="msg-error">'+
-        '<span class="msg-error-icon">!</span>'+
-        '<span class="msg-error-text">No response for '+(FIRST_DELTA_TIMEOUT_MS/1000)+'s — check API availability</span>'+
-        '<button type="button" class="msg-retry-btn" id="'+retryBtnId+'">Retry</button>'+
-      '</div>';
+    /* P_paint-race — swap placeholder for the error block via
+       replaceChild so other children (in practice the reasoning
+       pill if reasoning_content arrived first) survive. */
+    var err=document.createElement("div");
+    err.className="msg-error";
+    var errIcon=document.createElement("span");
+    errIcon.className="msg-error-icon";
+    errIcon.textContent="!";
+    var errText=document.createElement("span");
+    errText.className="msg-error-text";
+    errText.textContent="No response for "+(FIRST_DELTA_TIMEOUT_MS/1000)+"s — check API availability";
+    var errBtn=document.createElement("button");
+    errBtn.type="button";
+    errBtn.className="msg-retry-btn";
+    errBtn.id=retryBtnId;
+    errBtn.textContent="Retry";
+    err.appendChild(errIcon);
+    err.appendChild(errText);
+    err.appendChild(errBtn);
+    if(placeholder.parentNode===body){
+      body.replaceChild(err,placeholder);
+    }else{
+      body.appendChild(err);
+    }
     var btn=body.querySelector("#"+retryBtnId);
     if(btn){
       btn.addEventListener("click",function(){
+        /* Replacing the error block with a simple "Retrying…" pill
+           before invoking onRetry is fine via innerHTML here: at
+           this point we want a fresh, intentional transition and
+           there are no other children to preserve. */
         body.innerHTML='<span class="thinking-dot"><span class="thinking-ring thinking-ring-sm"></span>Retrying…</span>';
         setTimeout(function(){
           if(typeof onRetry==="function"){try{onRetry()}catch(e){console.warn("[retry] handler threw:",e)}}
@@ -6802,6 +7245,21 @@ function teardownThinkStructure(){
              (text appears char-by-char as deltas arrive) while making
              sure markdown and math render correctly in real time. */
       if(!streamContent){
+        /* Save the thinking pill before clearing — body.innerHTML=""
+           destroys all children, including .agent-thinking. We re-insert
+           it after setting up the streaming DOM so the pill survives in
+           browsers that deliver all SSE data in one synchronous chunk.
+
+           P_paint-race — also remove the "Thinking…" placeholder
+           surgically. It has already been painted at least once (we
+           only get here after firstDelta flips, which only happens
+           after at least one delta callback runs, which can only
+           happen after the placeholder has been on screen for the
+           first SSE round-trip). Detaching it via remove() — rather
+           than letting body.innerHTML="" garbage-collect it — makes
+           the detach explicit and lets the closure check it later. */
+        var savedPill=body.querySelector('.agent-thinking');
+        try{placeholder.remove()}catch(_){}
         body.innerHTML="";
         streamContent=document.createElement("div");
         streamContent.className="stream-content";
@@ -6810,6 +7268,7 @@ function teardownThinkStructure(){
         cursor.className="stream-cursor";
         cursor.textContent="▍";
         body.appendChild(cursor);
+        if(savedPill)body.insertBefore(savedPill,body.firstChild);
       }
       /* Skip the DOM write if the rendered HTML hasn't changed —
          the most common case once the cursor blinks and the model
@@ -6983,17 +7442,15 @@ function teardownThinkStructure(){
            single rAF loop with a 16ms budget per frame. Replaces
            the recursive setTimeout(typeTick, 10) which could
            build a long task queue. */
-        body.innerHTML="";
+        var savedPill3=body.querySelector('.agent-thinking');
+body.innerHTML="";
         streamContent=document.createElement("div");
         streamContent.className="stream-content";
         cursor=document.createElement("span");
         cursor.className="stream-cursor";
         cursor.textContent="▍";
         body.appendChild(streamContent);
-        /* Cursor is a child of streamContent so subsequent
-           insertBefore(chunk, cursor) calls succeed (see the
-           corresponding comments in the other appendChild(cursor)
-           callsites for the full story). */
+        if(savedPill3)body.insertBefore(savedPill3,body.firstChild);
         streamContent.appendChild(cursor);
         var pos=0;
         var CHARS_PER_TICK=4;        /* P1.3 — wider slice per rAF */
@@ -7074,7 +7531,12 @@ function teardownThinkStructure(){
           console.warn("[finish] renderAssistantHTML error:",e&&e.message);
           finalHtml="<p>"+esc(full)+"</p>";
         }
+        /* Save the thinking pill before body.innerHTML replacement —
+           same rationale as doRender(): synchronously arriving chunks
+           cause the pill to be erased before paint. */
+        var savedPill=body.querySelector('.agent-thinking');
         body.innerHTML=finalHtml;
+        if(savedPill)body.insertBefore(savedPill,body.firstChild);
         if(cursor){cursor.remove();cursor=null}
         if(msgIdx>=0&&state.messages[msgIdx]){
           state.messages[msgIdx].html=finalHtml;
@@ -7087,7 +7549,9 @@ function teardownThinkStructure(){
       }catch(e){
         console.warn("[finish] formatMsg error:",e&&e.message);
         var fb="<p>"+esc(full)+"</p>";
+        var savedPill2=body.querySelector('.agent-thinking');
         body.innerHTML=fb;
+        if(savedPill2)body.insertBefore(savedPill2,body.firstChild);
         if(msgIdx>=0&&state.messages[msgIdx]){
           state.messages[msgIdx].html=fb;
           state.messages[msgIdx].reasoningContent=fullReasoning||null;
@@ -8531,6 +8995,11 @@ async function resetApp(){
     if(!ok)return;
   }
   saveCurrentSession();
+  /* P5.8 — clear the active prompt template. A new session
+     is a fresh context; carrying over "summarize mode" from
+     the previous chat would silently shape the first
+     response of the new session. */
+  clearActiveTemplate();
   /* Abort any in-flight chat stream so its callbacks don't write to
      state.messages after we reset them. */
   if(window._activeChatAbort){try{window._activeChatAbort("session-reset")}catch(_){}}
@@ -8637,6 +9106,7 @@ function isInAuthGraceWindow(){
   return (Date.now()-_lastAuthSuccessAt) < AUTH_GRACE_MS;
 }
 window.markAuthSuccess=markAuthSuccess;
+window.isInAuthGraceWindow=isInAuthGraceWindow;
 
 /* P4.5 — invoked from apiFetch when a 401 comes back. Clears
    in-memory user state, shows the auth gate, and emits a one-time
@@ -9856,7 +10326,7 @@ function onPromptRowDelete(id){
 function openPromptTemplateEditor(existing){
   var body=document.querySelector("#promptTemplatesOverlay .prompt-templates-modal");
   if(!body)return;
-  var t=existing||{id:"tpl-"+Date.now().toString(36),title:"",description:"",body:"",icon:"pg",category:"writing",shortcut:"/my-template"};
+  var t=existing||{id:"tpl-"+Date.now().toString(36),title:"",description:"",body:"",systemPrompt:"",icon:"pg",category:"writing",shortcut:"/my-template"};
   /* Save on Enter inside title field; Cmd/Ctrl+Enter inside
      body. */
   body.innerHTML=
@@ -9880,7 +10350,8 @@ function openPromptTemplateEditor(existing){
           '</select>'+
         '</label>'+
       '</div>'+
-      '<label class="prompt-editor-label">Body<textarea class="prompt-editor-textarea" id="ptBody" rows="6" placeholder="The text inserted into the chat. Leave a blank line at the end so the user can type below.">'+esc(t.body||"")+'</textarea></label>'+
+      '<label class="prompt-editor-label">Body<textarea class="prompt-editor-textarea" id="ptBody" rows="4" placeholder="The text inserted into the chat as a placeholder. The user types or pastes the real content below; this prefix is stripped before the message is sent to the LLM.">'+esc(t.body||"")+'</textarea></label>'+
+      '<label class="prompt-editor-label">System prompt<textarea class="prompt-editor-textarea" id="ptSystemPrompt" rows="6" placeholder="Optional. The invisible instruction injected as a system message whenever this template is active. Tell the model what role to play, what the input contract is, what the output should look like, and any constraints. Leave empty to send the body as a plain user message with no role switch.">'+esc(t.systemPrompt||"")+'</textarea></label>'+
     '</div>'+
     '<div class="project-editor-foot">'+
       '<div class="project-editor-spacer"></div>'+
@@ -9897,11 +10368,12 @@ function onPromptTemplateEditorSave(id,wasExisting){
   var icon=((document.getElementById("ptIcon")||{}).value||"pg").trim();
   var category=((document.getElementById("ptCategory")||{}).value||"other");
   var body=((document.getElementById("ptBody")||{}).value||"");
+  var systemPrompt=((document.getElementById("ptSystemPrompt")||{}).value||"");
   if(!title){showToast("Title is required");return}
   if(!/^\/[a-z0-9-]+$/.test(shortcut)){showToast("Shortcut must look like /my-template");return}
   var existing=findTemplateByShortcut(shortcut);
   if(existing&&existing.id!==id){showToast("That shortcut is already in use");return}
-  upsertCustomTemplate({id:id,title:title,description:description,icon:icon||"pg",category:category,shortcut:shortcut,body:body,isBuiltin:false});
+  upsertCustomTemplate({id:id,title:title,description:description,icon:icon||"pg",category:category,shortcut:shortcut,body:body,systemPrompt:systemPrompt,isBuiltin:false});
   renderPromptTemplatesModal();
   showToast("Template saved");
 }
@@ -10233,142 +10705,53 @@ var apiConfig={activeId:null,providers:[]};
 var PK_CACHE_KEY="socrates-provider-keys";
 var PK_PASSPHRASE_KEY="socrates-pk-passphrase";
 var PK_SALT_KEY="socrates-pk-salt";
-var PK_PBKDF2_ITERATIONS=200000;
 var _pkCryptoKeyPromise=null;
 
-function _getOrCreatePassphrase(){
-  try{
-    var existing=localStorage.getItem(PK_PASSPHRASE_KEY);
-    if(existing)return existing;
-    /* 256 bits of entropy, base64. Generated once per
-       installation; lives alongside the encrypted ciphertext. */
-    var bytes=new Uint8Array(32);
-    crypto.getRandomValues(bytes);
-    var b64=btoa(String.fromCharCode.apply(null,bytes));
-    localStorage.setItem(PK_PASSPHRASE_KEY,b64);
-    return b64;
-  }catch(e){
-    /* If localStorage is unavailable we cannot persist keys. */
-    return null;
-  }
-}
-function _getOrCreateSalt(){
-  try{
-    var existing=localStorage.getItem(PK_SALT_KEY);
-    if(existing)return _b64ToBytes(existing);
-    var bytes=new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-    localStorage.setItem(PK_SALT_KEY,_bytesToB64(bytes));
-    return bytes;
-  }catch(e){return new Uint8Array(16)}
-}
-function _bytesToB64(bytes){
-  var s="";
-  for(var i=0;i<bytes.length;i++)s+=String.fromCharCode(bytes[i]);
-  return btoa(s);
-}
-function _b64ToBytes(b64){
-  var bin=atob(b64);
-  var out=new Uint8Array(bin.length);
-  for(var i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);
-  return out;
-}
-async function _getCryptoKey(){
-  if(_pkCryptoKeyPromise)return _pkCryptoKeyPromise;
-  var pass=_getOrCreatePassphrase();
-  if(!pass)return null;
-  var salt=_getOrCreateSalt();
-  var enc=new TextEncoder();
-  _pkCryptoKeyPromise=crypto.subtle.importKey(
-    "raw",enc.encode(pass),{name:"PBKDF2"},false,["deriveKey"]
-  ).then(function(baseKey){
-    return crypto.subtle.deriveKey(
-      {name:"PBKDF2",salt:salt,iterations:PK_PBKDF2_ITERATIONS,hash:"SHA-256"},
-      baseKey,
-      {name:"AES-GCM",length:256},
-      false,            /* non-extractable */
-      ["encrypt","decrypt"]
-    );
-  }).catch(function(e){
-    console.warn("[pk-cache] PBKDF2 derive failed:",e&&e.message);
-    return null;
-  });
-  return _pkCryptoKeyPromise;
-}
+/* P4.4 — Provider-key storage was REMOVED in the security
+   hardening pass. The previous build stored LLM provider API keys
+   in localStorage (encrypted with AES-GCM-256 derived from a
+   per-installation passphrase). This was a defence against
+   "casual profile sync / devtools snooping" but NOT against an
+   attacker with code execution on the page (XSS via markdown
+   injection): both the ciphertext AND the decryption passphrase
+   sat in the same localStorage, so a single XSS payload could
+   read both and walk away with the user's LLM credentials and
+   burn their API budget.
 
+   New behaviour: provider keys never live on the client. The
+   server stores them encrypted at rest (AES-256-GCM with a key
+   derived from SESSION_SECRET via HKDF), and the list endpoint
+   only returns a `hasKey` boolean. The "usability" check uses
+   that boolean instead of looking up the key locally.
+
+   The user re-enters their API key after a sign-out / clear-cache,
+   which is the expected UX for any sensitive credential. The PK_*
+   localStorage entries from older builds are wiped on next boot.
+
+   The legacy `cacheProviderKeys / loadCachedProviderKeys /
+   clearCachedProviderKey` exports are kept as no-ops so any
+   remaining call-sites do not blow up — they just return empty
+   objects and do not touch storage. */
+
+/* Wipe legacy PK_* entries from older builds. Idempotent. */
+function _purgeLegacyProviderKeyCache(){
+  try{ localStorage.removeItem(PK_CACHE_KEY); }catch(_){}
+  try{ localStorage.removeItem(PK_PASSPHRASE_KEY); }catch(_){}
+  try{ localStorage.removeItem(PK_SALT_KEY); }catch(_){}
+}
+_purgeLegacyProviderKeyCache();
+
+/* No-op shims — kept so the call-sites compile and silently do the
+   right thing (nothing). The server is the source of truth. */
 async function cacheProviderKeys(){
-  var keys={};
-  apiConfig.providers.forEach(function(p){
-    if(p.key)keys[p.id]=p.key;
-  });
-  if(!Object.keys(keys).length){
-    try{localStorage.removeItem(PK_CACHE_KEY)}catch(e){}
-    return;
-  }
-  var cryptoKey=await _getCryptoKey();
-  if(!cryptoKey){
-    /* Fall back to plaintext (very old browsers, private mode
-       disabling crypto, etc). Logged so a user with restricted
-       crypto support knows their keys are at-rest in cleartext. */
-    console.warn("[pk-cache] crypto unavailable; storing keys in plaintext");
-    try{localStorage.setItem(PK_CACHE_KEY,JSON.stringify({v:1,keys:keys}))}catch(e){}
-    return;
-  }
-  try{
-    var iv=crypto.getRandomValues(new Uint8Array(12));
-    var plaintext=enc.encode(JSON.stringify(keys));
-    var ctBuf=await crypto.subtle.encrypt({name:"AES-GCM",iv:iv},cryptoKey,plaintext);
-    var payload={v:2,salt:_bytesToB64(_getOrCreateSalt()),iv:_bytesToB64(iv),ct:_bytesToB64(new Uint8Array(ctBuf))};
-    localStorage.setItem(PK_CACHE_KEY,JSON.stringify(payload));
-  }catch(e){
-    console.warn("[pk-cache] encrypt failed; falling back to plaintext:",e&&e.message);
-    try{localStorage.setItem(PK_CACHE_KEY,JSON.stringify({v:1,keys:keys}))}catch(_){}
-  }
+  _purgeLegacyProviderKeyCache();
 }
 async function loadCachedProviderKeys(){
-  try{
-    var raw=localStorage.getItem(PK_CACHE_KEY);
-    if(!raw)return{};
-    var obj=JSON.parse(raw);
-    if(!obj)return{};
-    if(obj.v===2){
-      var cryptoKey=await _getCryptoKey();
-      if(!cryptoKey)return{};
-      try{
-        var iv=_b64ToBytes(obj.iv);
-        var ct=_b64ToBytes(obj.ct);
-        var plainBuf=await crypto.subtle.decrypt({name:"AES-GCM",iv:iv},cryptoKey,ct);
-        var decoded=new TextDecoder().decode(plainBuf);
-        return JSON.parse(decoded);
-      }catch(e){
-        console.warn("[pk-cache] decrypt failed; key may have been rotated. Falling back to {}.");
-        return{};
-      }
-    }
-    if(obj.v===1&&obj.keys){
-      /* Legacy plaintext — migrate on the fly, then wipe the
-         plaintext entry. We re-encrypt via cacheProviderKeys()
-         so subsequent loads use the encrypted path. */
-      try{
-        localStorage.removeItem(PK_CACHE_KEY);
-      }catch(_){}
-      cacheProviderKeys();
-      return obj.keys;
-    }
-    return{};
-  }catch(e){return{}}
+  return {};
 }
-
-/* Convenience: clear the cached key for a single provider. */
-async function clearCachedProviderKey(id){
-  var keys=await loadCachedProviderKeys();
-  if(keys[id]){delete keys[id]}
-  apiConfig.providers.forEach(function(p){
-    if(p.id===id)p.key="";
-  });
-  await cacheProviderKeys();
+async function clearCachedProviderKey(_id){
+  _purgeLegacyProviderKeyCache();
 }
-
 /* ============================================================
    SHARE LINK — create / revoke / view shared sessions
    ============================================================ */
@@ -10727,10 +11110,12 @@ async function refreshApiConfig(){
     return apiConfig;
   }
   try{
-    var existingKeys=await loadCachedProviderKeys();
-    apiConfig.providers.forEach(function(p){
-      if(p.key)existingKeys[p.id]=p.key;
-    });
+    /* P4.4 — Provider keys are NEVER read from localStorage anymore.
+       The server is the source of truth: it stores keys encrypted at
+       rest (AES-256-GCM via HKDF(SESSION_SECRET)) and the list
+       endpoint returns `hasKey: true/false`. We populate the local
+       `key` field only with the user-typed value from the form, which
+       is sent to the server on save and then wiped from the client. */
     var r=await apiFetch("/api/api-key");
     console.log("[refreshApiConfig] /api/api-key response:", r);
     var rows=Array.isArray(r&&r.providers)?r.providers:[];
@@ -10740,7 +11125,10 @@ async function refreshApiConfig(){
        constant handles Beagle now via the nginx reverse proxy. */
     rows=rows.filter(function(p){return p.label!==BEAGLE_BUILT_IN.label});
     apiConfig={activeId:null,providers:rows.map(function(p){
-      return{id:p.id,isActive:p.isActive,isBuiltIn:p.isBuiltIn,label:p.label,url:p.url,model:p.model,hasKey:!!p.hasKey,key:existingKeys[p.id]||p.key||"",isMultimodal:!!p.isMultimodal};
+      /* `key` is only ever set by the user's typed input in the
+         settings form. For saved providers we leave it empty and
+         rely on the masked placeholder + `hasKey` for usability. */
+      return{id:p.id,isActive:p.isActive,isBuiltIn:p.isBuiltIn,label:p.label,url:p.url,model:p.model,hasKey:!!p.hasKey,key:"",isMultimodal:!!p.isMultimodal};
     })};
     /* Merge the built-in Beagle provider (frontend-only, no server registration). */
     var hasBeagle=apiConfig.providers.some(function(p){return p.isBuiltIn||p.id==="beagle-built-in"});
@@ -10748,11 +11136,12 @@ async function refreshApiConfig(){
       apiConfig.providers.push(Object.assign({},BEAGLE_BUILT_IN));
     }
     /* A provider is "usable" if it is a built-in (server has the key)
-       or if it has a non-empty key in the local cache. Empty keys come
-       from rows the user added but never finished configuring, or from
-       stale rows whose plaintext key is no longer in localStorage. */
+       or if the server reports `hasKey: true`. The local `key` field is
+       never populated by the cache — it only contains what the user has
+       typed into the form this session, before the value is sent to the
+       server and cleared. */
     function providerUsable(p){
-      return !!(p && (p.isBuiltIn || p.hasKey || (p.key && p.key.length > 0)));
+      return !!(p && (p.isBuiltIn || p.hasKey));
     }
     /* Cold-start: honour the user's persisted active provider first. The
        server's `isActive` flag is the source of truth for what the user
@@ -12436,9 +12825,11 @@ function saveSettings(){
           await apiFetch("/api/api-key/"+encodeURIComponent(p.id),{method:"PATCH",body:patch});
         }
       }
-      /* After saving, cache all keys to localStorage so they survive
-         page refreshes. The server does not return keys, so this is the
-         only way to keep them between sessions without re-entering. */
+      /* P4.4 — After saving, the old code cached keys to localStorage.
+         That cache has been REMOVED in the security hardening pass; the
+         server is now the sole store. cacheProviderKeys() is a no-op
+         kept for compatibility, and the API key input is intentionally
+         cleared on next refresh so the user must re-enter to change it. */
       cacheProviderKeys();
       /* Refresh from server and mark the most-recently-saved one as active. */
       var savedIds=apiConfig.providers.filter(function(p){return p.id.indexOf("new-")!==0}).map(function(p){return p.id});
@@ -13016,7 +13407,7 @@ function buildSocraticMessages(node,domain,history,isFirst){
   );
   var msgs=[{role:"system",content:prompt}].concat(history);
   msgs.push({role:"user",content:isFirst?"I'm ready to begin. Please teach me about "+node.name+".":"Continue the lesson from where we left off."});
-  return msgs;
+  return injectTemplateSystemPrompt(msgs);
 }
 
 /* P_knowledge-point — shared helper that collects the diagnostic
@@ -13104,7 +13495,9 @@ async function getExplanation(status){
        "Use the chat history above to ground your explanation in what the user has already explored — do not restart from definitions. "+
        "Write a textbook-quality explanation: systematic, formal, layer-by-layer. Use bold for key terms. Use LaTeX for math. Build from foundation to advanced. Include at least one concrete example inline."
     );
-    var msgs=[{role:"system",content:prompt}].concat(history).concat([{role:"user",content:"Please explain this concept, taking into account what we've already discussed."}]);
+    var msgs=injectTemplateSystemPrompt(
+      [{role:"system",content:prompt}].concat(history).concat([{role:"user",content:"Please explain this concept, taking into account what we've already discussed."}])
+    );
     var apiResp=await callAPI(msgs,MAX_TOKENS_CHAT);
     if(apiResp){
       state.lastCallSource="api";
@@ -13151,7 +13544,9 @@ function buildFollowUpMessages(answer,node,domain,history){
     "- If the student just asked a free-form question, briefly answer it (1-2 paragraphs) and continue the loop.\n"+
     "Always use the appropriate <quiz> / <example> / <practice> blocks per the system prompt. Do NOT restart the topic or re-explain from scratch."
   );
-  return [{role:"system",content:prompt}].concat(history).concat([{role:"user",content:answer}]);
+  return injectTemplateSystemPrompt(
+    [{role:"system",content:prompt}].concat(history).concat([{role:"user",content:answer}])
+  );
 }
 
 async function generateFollowUp(answer,node,domain){
@@ -13282,6 +13677,17 @@ window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
 window.onRecentsFilterChipClick = onRecentsFilterChipClick;
 window.onSlashRowClick = onSlashRowClick;
 window.updateSlashSelected = updateSlashSelected;
+window.updateSlashCommandPaletteFilter = updateSlashCommandPaletteFilter;
+window.isSlashCommandPaletteOpen = isSlashCommandPaletteOpen;
+window.openSlashCommandPalette = openSlashCommandPalette;
+window.closeSlashCommandPalette = closeSlashCommandPalette;
+window.setActiveTemplate = setActiveTemplate;
+window.clearActiveTemplate = clearActiveTemplate;
+window.isActiveTemplate = isActiveTemplate;
+window.getActiveTemplateSystemPrompt = getActiveTemplateSystemPrompt;
+window.stripTemplateBodyPrefix = stripTemplateBodyPrefix;
+window.renderTemplateModeChip = renderTemplateModeChip;
+window.injectTemplateSystemPrompt = injectTemplateSystemPrompt;
 window.updateCmdKSelected = updateCmdKSelected;
 window.openCmdKResult = openCmdKResult;
 window.openProjectEditor = openProjectEditor;
@@ -13317,6 +13723,7 @@ window.setBackgroundDark = setBackgroundDark;
 window.resetBackgroundColor = resetBackgroundColor;
 window.resetBackgroundDark = resetBackgroundDark;
 window.resetBackgroundLight = resetBackgroundLight;
+window.toggleGrid = toggleGrid;
 window.setAccentColor = setAccentColor;
 window.afterAuthEnter = afterAuthEnter;
 window.markAuthSuccess = markAuthSuccess;

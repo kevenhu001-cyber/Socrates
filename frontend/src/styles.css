@@ -22,7 +22,7 @@ a{color:inherit;text-decoration:none}
 /* Firefox */
 *{scrollbar-width:thin;scrollbar-color:hsl(var(--always-white)/0.12) transparent}
 .app{display:flex;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none;position:relative}
-.sidebar{width:var(--app-sidebar-width,18rem);min-width:var(--app-sidebar-width,18rem);display:flex;flex-direction:column;background:hsl(var(--bg-000));border-right:0.5px solid hsl(var(--border-300)/0.12);overflow:hidden;z-index:30;position:absolute;left:0;top:0;bottom:0;transform:translateX(0);transition:transform .35s cubic-bezier(0.34,1.3,0.64,1),border-color .35s var(--ease-out)}
+.sidebar{width:var(--app-sidebar-width,18rem);min-width:var(--app-sidebar-width,18rem);display:flex;flex-direction:column;background:hsl(var(--bg-000));border-right:0.5px solid hsl(var(--border-300)/0.12);overflow:hidden;z-index:30;position:absolute;left:0;top:0;bottom:0;transform:translateX(0);transition:transform .35s cubic-bezier(0.34,1.3,0.64,1),border-color .35s var(--ease-out);will-change:transform}
 body.sidebar-resizing .sidebar{will-change:width;transition:none!important}
 .sidebar.collapsed{width:var(--app-sidebar-width,18rem);min-width:var(--app-sidebar-width,18rem);transform:translateX(-100%);border-right-color:transparent}
 .sidebar-inner{min-width:0;width:100%;opacity:1;display:flex;flex-direction:column;flex:1;min-height:0;transition:opacity .25s var(--ease-out)}
@@ -116,7 +116,7 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .recent-tag-pill:hover{background:hsl(var(--accent-900));color:hsl(var(--accent-100))}
 .recent-item-actions{display:flex;align-items:center;gap:2px;opacity:0;transition:opacity .1s;flex-shrink:0;margin-top:1px}
 .recent-item:hover .recent-item-actions{opacity:1}
-.recent-item-tag-btn{width:22px;height:22px;border-radius:4px;background:transparent;border:0;color:hsl(var(--text-500));cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:all .1s}
+.recent-item-tag-btn{width:22px;height:22px;border-radius:4px;background:transparent;border:0;color:hsl(var(--text-500));cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:background-color .1s,color .1s}
 .recent-item-tag-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
 .recent-item-tag-btn svg{width:12px;height:12px}
 .recent-item-del{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-500));opacity:1;transition:opacity .1s,background .1s,color .1s;flex-shrink:0;background:transparent;border:0;cursor:pointer;padding:0}
@@ -196,6 +196,20 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .slash-command-foot{display:flex;gap:14px;padding:6px 14px;border-top:0.5px solid hsl(var(--border-300)/0.15);font-size:10px;color:hsl(var(--text-500))}
 .slash-command-foot kbd{font-family:var(--font-mono);font-size:10px;padding:1px 4px;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:3px;background:transparent;margin-right:3px}
 
+/* P5.8 — Template mode chip. Renders above the textarea
+   when a prompt template is active. Pinned to the top of
+   the input wrap so it sits between the attachment chips
+   and the textarea. Uses the accent palette to read as a
+   state badge, not a generic tag. */
+.template-mode-chip{display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:6px;background:hsl(var(--accent-900)/0.35);border:0.5px solid hsl(var(--accent-000)/0.35);border-radius:8px;font-size:12px;color:hsl(var(--text-100));animation:template-chip-in .18s ease-out}
+.template-mode-chip-icon{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;color:hsl(var(--accent-000));flex-shrink:0}
+.template-mode-chip-label{font-weight:500;color:hsl(var(--text-100))}
+.template-mode-chip-label strong{color:hsl(var(--accent-000));font-weight:600;margin-left:2px}
+.template-mode-chip-hint{color:hsl(var(--text-400));font-size:11px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.template-mode-chip-close{margin-left:auto;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:0;font-size:18px;line-height:1;color:hsl(var(--text-400));cursor:pointer;border-radius:5px;padding:0;font-family:inherit;flex-shrink:0}
+.template-mode-chip-close:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+@keyframes template-chip-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
 /* P5.8 — Prompt templates manager + editor */
 .prompt-templates-modal{width:min(620px,92vw);max-height:80vh;display:flex;flex-direction:column}
 .prompt-templates-body{padding:14px 18px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
@@ -250,7 +264,7 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .project-editor-delete{background:transparent;color:hsl(0 60% 70%);border-color:hsl(0 60% 30%/0.5)}
 .project-editor-delete:hover{background:hsl(0 60% 30%/0.4)}
 .recents-title{font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
-.recents-new-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-300));background:transparent;border:0.5px solid hsl(var(--border-300)/0.5);transition:all .12s;cursor:pointer;line-height:1}
+.recents-new-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-300));background:transparent;border:0.5px solid hsl(var(--border-300)/0.5);transition:background-color .12s,color .12s,border-color .12s;cursor:pointer;line-height:1}
 .recents-new-btn:hover{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.08)}
 .recents-new-btn svg{stroke:currentColor}
 .recent-item{display:flex;align-items:center;padding:8px 12px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));transition:background .06s,color .06s;cursor:pointer;gap:8px;position:relative}
@@ -322,13 +336,13 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .display-prefs-label{display:flex;justify-content:space-between;align-items:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em}
 .display-prefs-label .value{color:hsl(var(--text-200));font-weight:600;text-transform:none;letter-spacing:0}
 .display-prefs-segs{display:flex;gap:2px;background:hsl(var(--bg-300));border-radius:6px;padding:2px}
-.display-prefs-seg{flex:1 1 0;min-width:0;padding:4px 6px;border-radius:4px;border:0;background:transparent;color:hsl(var(--text-400));font-size:calc(11.5px * var(--app-font-scale, 1));cursor:pointer;transition:all .1s;font-family:inherit;white-space:nowrap;text-align:center}
+.display-prefs-seg{flex:1 1 0;min-width:0;padding:4px 6px;border-radius:4px;border:0;background:transparent;color:hsl(var(--text-400));font-size:calc(11.5px * var(--app-font-scale, 1));cursor:pointer;transition:background-color .1s,color .1s,box-shadow .1s;font-family:inherit;white-space:nowrap;text-align:center}
 .display-prefs-seg:hover{color:hsl(var(--text-200))}
 .display-prefs-seg.on{background:hsl(var(--bg-100));color:hsl(var(--text-100));box-shadow:0 0 0 0.5px hsl(var(--border-300)/0.6)}
 
 /* Accent color swatches — Ant Design ColorPicker-inspired */
 .display-prefs-colors{display:flex;gap:5px;flex-wrap:wrap}
-.color-swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;background:var(--swatch);cursor:pointer;transition:all .15s;padding:0;position:relative}
+.color-swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;background:var(--swatch);cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;padding:0;position:relative}
 .color-swatch:hover{transform:scale(1.18);box-shadow:0 2px 8px hsl(var(--always-black)/0.25)}
 .color-swatch.active{border-color:hsl(var(--text-100))}
 .color-swatch.active::after{content:"";position:absolute;inset:3px;border-radius:50%;border:1.5px solid hsl(var(--bg-000))}
@@ -338,7 +352,15 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .display-prefs-bg-picker input[type=color]::-webkit-color-swatch{border:none;border-radius:3px}
 .display-prefs-bg-reset{width:22px;height:22px;border-radius:4px;font-size:13px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-400));transition:color .1s,background .1s;padding:0;flex-shrink:0}
 .display-prefs-bg-reset:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
-.display-prefs-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;border:0;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:all .1s;flex-shrink:0}
+
+/* Grid toggle switch */
+.display-prefs-toggle-row{display:flex;flex-direction:row;align-items:center;justify-content:space-between;padding:2px 0}
+.display-prefs-toggle-row .display-prefs-label{margin-bottom:0}
+.grid-toggle{position:relative;width:36px;height:20px;border-radius:10px;background:hsl(var(--bg-300));cursor:pointer;transition:background-color .15s;flex-shrink:0;border:0.5px solid hsl(var(--border-300)/0.3);padding:0}
+.grid-toggle.on{background:hsl(var(--accent-500)/0.35);border-color:hsl(var(--accent-500)/0.4)}
+.grid-toggle .toggle-knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:hsl(var(--text-400));transition:transform .15s,background .15s;box-shadow:0 1px 2px hsl(0 0% 0%/0.15)}
+.grid-toggle.on .toggle-knob{transform:translateX(16px);background:hsl(var(--accent-000));box-shadow:0 1px 3px hsl(var(--accent-500)/0.3)}
+.display-prefs-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;border:0;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:background-color .1s,color .1s;flex-shrink:0}
 .display-prefs-btn:hover{color:hsl(var(--text-200));background:hsl(var(--bg-300))}
 .display-prefs-btn svg{width:14px;height:14px}
 .user-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:calc(13px * var(--app-font-scale, 1));font-weight:600;background:hsl(var(--text-200));color:hsl(var(--bg-100))}
@@ -351,10 +373,24 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 [data-mode=light] .tier-badge.tier-riemann{background:hsl(200 40% 90%/0.8);color:hsl(200 50% 35%);border:0.5px solid hsl(200 40% 70%/0.5)}
 [data-mode=light] .tier-badge.tier-descartes{background:hsl(270 40% 90%/0.8);color:hsl(270 50% 40%);border:0.5px solid hsl(270 40% 70%/0.5)}
 [data-mode=light] .tier-badge.tier-euclid{background:hsl(43 40% 88%/0.8);color:hsl(43 65% 38%);border:0.5px solid hsl(43 50% 65%/0.5)}
-.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;transition:padding-left .35s cubic-bezier(0.34,1.3,0.64,1)}
+/* P_perf-sidebar — The sidebar's collapse animation already runs on
+   `transform: translateX` (compositor-only, no layout). Animating
+   `.main`'s padding-left at the same time re-laid-out the chat panel,
+   the message list, and the input bar every frame for 350ms — the
+   dominant source of "sidebar toggle feels janky". Drop the padding
+   transition; final state via `.sidebar.collapsed~.main{padding-left:0}`
+   snaps instantly while the sidebar's transform still glides smoothly.
+   Sidebar drag-resize is unaffected: body.sidebar-resizing .main still
+   pins transition: none. */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
 body.sidebar-resizing .main{transition:none!important}
 @media(min-width:769px){.main{padding-left:var(--app-sidebar-width,18rem)}.sidebar.collapsed~.main{padding-left:0}}
-.main-bg{position:absolute;inset:0;pointer-events:none;z-index:0;background-color:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;clip-path:circle(150% at 50% 50%);opacity:0.5}
+/* P_perf-main-bg — Promote the chat-area background to its own
+   composited layer so the clip-path circle(150%) rasterizes once
+   and isn't invalidated alongside .main's layout passes (e.g. during
+   sidebar collapse). */
+.main-bg{position:absolute;inset:0;pointer-events:none;z-index:0;background-color:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;clip-path:circle(150% at 50% 50%);opacity:0.5;will-change:transform;transform:translateZ(0)}
+html[data-show-grid="false"] .main-bg{background-image:none}
 .top-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;flex-shrink:0;position:relative;z-index:5;min-height:44px}
 .top-bar-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1;overflow:hidden}
 .top-bar-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
@@ -363,7 +399,7 @@ body.sidebar-resizing .main{transition:none!important}
 .topic-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:16px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.1);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
 .topic-badge span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topic-badge .tb-dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000));flex-shrink:0}
-.share-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);transition:all .1s;cursor:pointer;line-height:1;flex-shrink:0}
+.share-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);transition:background-color .1s,color .1s,border-color .1s;cursor:pointer;line-height:1;flex-shrink:0}
 .share-btn:hover{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.06)}
 .share-btn svg{stroke:currentColor}
 /* Mobile: keep Share button visible; Free plan upgrade has been
@@ -453,12 +489,15 @@ body.sidebar-resizing .main{transition:none!important}
 #topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(15.5px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-100));min-height:88px;max-height:320px;overflow-y:auto;font-family:var(--font-sans);padding:14px 20px}
 #topicInput::placeholder{color:hsl(var(--text-400))}
 .topic-footer{display:flex;align-items:center;justify-content:space-between;padding:0 20px 16px}
-.start-btn{padding:10px 24px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:all .1s}
+/* .start-btn has no :hover rule — drop transition: all (was paying compositor
+   cost watching properties that never animate). Active state still flips
+   color/background instantly. */
+.start-btn{padding:10px 24px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .1s,color .1s}
 .start-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}.start-btn.active:hover{background:hsl(var(--accent-100))}
 /* Model picker — a single pill with a dropdown menu of available models.
    Visually matches the .search-toggle row above it. */
 .model-picker{position:relative;max-width:720px;width:100%;display:flex;justify-content:center}
-.model-picker-trigger{display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 14px;border-radius:999px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:transparent;cursor:pointer;transition:all .15s;font-family:var(--font-sans);line-height:1.2;max-width:100%}
+.model-picker-trigger{display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 14px;border-radius:999px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:transparent;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s;font-family:var(--font-sans);line-height:1.2;max-width:100%}
 .model-picker-trigger:focus-visible{outline:2px solid hsl(var(--accent-000)/0.5);outline-offset:2px}
 .model-picker-trigger:hover{border-color:hsl(var(--border-200)/0.5);color:hsl(var(--text-100))}
 .model-picker-trigger.has-model{background:hsl(var(--accent-000)/0.08);border-color:hsl(var(--accent-000)/0.25);color:hsl(var(--accent-000))}
@@ -506,7 +545,7 @@ body.sidebar-resizing .main{transition:none!important}
   color:hsl(var(--text-300));
   background:transparent;
   cursor:pointer;
-  transition:all .12s;
+  transition:background-color .12s,color .12s,border-color .12s;
   font-family:var(--font-sans);
   line-height:1.2;
   max-width:200px;
@@ -568,7 +607,7 @@ true) but the dropdown never shows — see commit history. */
 .topic-setup-row{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:720px;width:100%;padding:0 6px;position:relative}
 .topic-setup-row .model-picker,.topic-setup-row .extensions-picker{position:relative;max-width:none;width:auto}
 .extensions-picker{position:relative}
-.extensions-trigger{display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 14px;border-radius:999px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));background:transparent;cursor:pointer;transition:all .15s;font-family:var(--font-sans);line-height:1.2}
+.extensions-trigger{display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 14px;border-radius:999px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));background:transparent;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s;font-family:var(--font-sans);line-height:1.2}
 .extensions-trigger:hover{border-color:hsl(var(--border-200)/0.4);color:hsl(var(--text-200))}
 .extensions-trigger.has-active{background:hsl(var(--accent-000)/0.08);border-color:hsl(var(--accent-000)/0.25);color:hsl(var(--accent-000))}
 .extensions-trigger>svg:first-child{width:14px;height:14px;flex-shrink:0}
@@ -586,7 +625,7 @@ true) but the dropdown never shows — see commit history. */
 .extensions-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .extensions-item-name{font-weight:500;display:flex;align-items:center;gap:6px}
 .extensions-item-desc{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));line-height:1.35}
-.extensions-item-check{flex-shrink:0;width:16px;height:16px;border-radius:4px;border:1.5px solid hsl(var(--text-500));display:flex;align-items:center;justify-content:center;transition:all .12s;margin-top:1px;background:transparent}
+.extensions-item-check{flex-shrink:0;width:16px;height:16px;border-radius:4px;border:1.5px solid hsl(var(--text-500));display:flex;align-items:center;justify-content:center;transition:background-color .12s,border-color .12s;margin-top:1px;background:transparent}
 .extensions-item.on .extensions-item-check{background:hsl(var(--accent-000));border-color:hsl(var(--accent-000))}
 .extensions-item-check svg{width:11px;height:11px;stroke:hsl(var(--oncolor-100));opacity:0}
 .extensions-item.on .extensions-item-check svg{opacity:1}
@@ -595,11 +634,11 @@ true) but the dropdown never shows — see commit history. */
 @media (max-width:768px){.model-picker-menu{left:0;right:auto;transform:translateY(-4px);min-width:200px;max-width:calc(100vw - 24px)}.model-picker[data-open="true"] .model-picker-menu{transform:translateY(0)}}
 
 .settings-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.settings-btn-mini{padding:4px 10px;border-radius:8px;font-size:calc(12px * var(--app-font-scale, 1));background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);color:hsl(var(--text-200));cursor:pointer;transition:all .1s}
+.settings-btn-mini{padding:4px 10px;border-radius:8px;font-size:calc(12px * var(--app-font-scale, 1));background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);color:hsl(var(--text-200));cursor:pointer;transition:background-color .1s,border-color .1s}
 .settings-btn-mini:hover{background:hsl(var(--bg-300));border-color:hsl(var(--border-200)/0.5)}
 .provider-list{display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto;padding:2px}
 .provider-empty{padding:12px;text-align:center;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));border:1px dashed hsl(var(--border-300)/0.3);border-radius:10px}
-.provider-row{display:flex;gap:8px;align-items:flex-start;padding:10px;border:0.5px solid hsl(var(--border-300)/0.2);border-radius:10px;background:hsl(var(--bg-100));transition:all .15s}
+.provider-row{display:flex;gap:8px;align-items:flex-start;padding:10px;border:0.5px solid hsl(var(--border-300)/0.2);border-radius:10px;background:hsl(var(--bg-100));transition:background-color .15s,border-color .15s}
 .provider-row.active{border-color:hsl(var(--accent-000)/0.4);background:hsl(var(--accent-000)/0.05)}
 .provider-active-btn{background:transparent;border:none;cursor:pointer;font-size:calc(18px * var(--app-font-scale, 1));line-height:1;color:hsl(var(--text-300));padding:2px 4px;flex-shrink:0;transition:color .1s}
 .provider-row.active .provider-active-btn{color:hsl(var(--accent-000))}
@@ -613,7 +652,7 @@ true) but the dropdown never shows — see commit history. */
 .provider-multimodal{display:flex;align-items:center;gap:6px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-300));cursor:pointer;user-select:none;padding:2px 2px 0}
 .provider-multimodal input[type="checkbox"]{cursor:pointer;accent-color:hsl(var(--accent-000));transform:scale(1.05)}
 .provider-multimodal:hover{color:hsl(var(--text-100))}
-.provider-del{background:transparent;border:none;cursor:pointer;color:hsl(var(--text-400));font-size:calc(18px * var(--app-font-scale, 1));line-height:1;padding:2px 6px;flex-shrink:0;border-radius:6px;transition:all .1s}
+.provider-del{background:transparent;border:none;cursor:pointer;color:hsl(var(--text-400));font-size:calc(18px * var(--app-font-scale, 1));line-height:1;padding:2px 6px;flex-shrink:0;border-radius:6px;transition:background-color .1s,color .1s}
 .provider-del:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
 .diagnostic-view{width:100%;display:flex;flex-direction:column;gap:24px;flex:1;min-height:0;overflow-y:auto;padding-right:4px;max-height:100%}
 /* When the diagnostic card is very tall (long question + long
@@ -635,10 +674,10 @@ true) but the dropdown never shows — see commit history. */
 .diag-num{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
 .diag-text{font-size:calc(16px * var(--app-font-scale, 1));color:hsl(var(--text-100));line-height:1.55;margin-bottom:18px}
 .diag-opts{display:flex;flex-direction:column;gap:6px}
-.diag-opt{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.1);font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-200));transition:all .1s;cursor:pointer;text-align:left;width:100%}
+.diag-opt{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.1);font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-200));transition:background-color .1s,color .1s,border-color .1s;cursor:pointer;text-align:left;width:100%}
 .diag-opt:hover{border-color:hsl(var(--border-200)/0.3);background:hsl(var(--always-white)/0.03);color:hsl(var(--text-100))}
 .diag-opt.selected{border-color:hsl(var(--accent-000)/0.25);background:hsl(var(--accent-000)/0.06);color:hsl(var(--text-100))}
-.diag-opt-letter{width:22px;height:22px;border-radius:50%;border:1px solid hsl(var(--text-500));display:flex;align-items:center;justify-content:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-400));flex-shrink:0;transition:all .1s}
+.diag-opt-letter{width:22px;height:22px;border-radius:50%;border:1px solid hsl(var(--text-500));display:flex;align-items:center;justify-content:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-400));flex-shrink:0;transition:background-color .1s,color .1s,border-color .1s}
 .diag-opt.selected .diag-opt-letter{border-color:hsl(var(--accent-000));background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .diag-opt-text{font-size:calc(14px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-200))}
 .diag-opt-text p{margin-bottom:4px}.diag-opt-text p:last-child{margin-bottom:0}
@@ -661,7 +700,7 @@ true) but the dropdown never shows — see commit history. */
 .diag-text td{color:hsl(var(--text-200))}
 .diag-text a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
 .diag-nav{display:flex;justify-content:space-between;align-items:center}
-.diag-nav button{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));padding:8px 14px;border-radius:6px;transition:all .1s}
+.diag-nav button{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));padding:8px 14px;border-radius:6px;transition:background-color .1s,color .1s}
 .diag-nav button:hover{color:hsl(var(--text-200));background:hsl(var(--bg-300))}
 .diag-nav .diag-continue{background:hsl(var(--bg-300));font-weight:500}
 .diag-nav .diag-continue.enabled{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
@@ -805,7 +844,11 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
  * the right edge. This keeps the bubble flush-right while putting
  * the action row in a clean horizontal strip under the text. */
 .msg.user{display:flex;flex-direction:column;align-items:flex-end}
-.msg.user .msg-body{max-width:75%;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:16px 16px 4px 16px;padding:12px 16px}
+/* P_bubble — user bubbles fill the chat column, no manual width cap.
+ * Previously capped at max-width:75%, which created visible asymmetry with
+ * assistant bubbles (max-width:100% at line 855). The column itself is
+ * bounded by .main-inner, which the user can adjust via --app-width-scale. */
+.msg.user .msg-body{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:16px 16px 4px 16px;padding:12px 16px}
 /* P_attachments — attachment chip strip inside a user bubble. Sits
    below the text body, same horizontal padding so it lines up. */
 .msg.user .msg-attachments{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
@@ -919,7 +962,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .msg-body code{font-family:var(--font-mono);font-size:.9em;background:hsl(var(--always-white)/0.06);padding:2px 5px;border-radius:3px}
 .msg-body pre code{background:none;padding:0}
 .quick-opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.quick-opt{padding:6px 14px;border-radius:16px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));transition:all .1s;cursor:pointer}
+.quick-opt{padding:6px 14px;border-radius:16px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));transition:background-color .1s,color .1s,border-color .1s;cursor:pointer}
 .quick-opt:hover{border-color:hsl(var(--border-200)/0.4);background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .quick-opt.primary{background:hsl(var(--accent-000)/0.1);border-color:hsl(var(--accent-000)/0.25);color:hsl(var(--accent-000))}
 .chat-input-bar{
@@ -951,7 +994,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 /* P_attachments — paperclip button to the left of the hint. Same
    circle footprint as the send button so the footer stays balanced
    regardless of attach state. */
-.attach-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:transparent;color:hsl(var(--text-400));transition:all .08s;flex-shrink:0;cursor:pointer;border:none;padding:0}
+.attach-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:transparent;color:hsl(var(--text-400));transition:background-color .08s,color .08s;flex-shrink:0;cursor:pointer;border:none;padding:0}
 .attach-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
 .attach-btn svg{width:16px;height:16px}
 .attach-btn.has-error{color:hsl(0 70% 50%)}
@@ -973,7 +1016,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
    user drags files over the input. */
 .chat-input-wrap.drag-over{border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.2)}
 .chat-input-bar.drag-over-doc{position:relative}.chat-input-bar.drag-over-doc::after{content:'';position:absolute;inset:4px;border:2px dashed hsl(var(--accent-000)/0.4);border-radius:18px;pointer-events:none;z-index:20}
-.send-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:all .08s;flex-shrink:0}
+.send-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .08s,color .08s;flex-shrink:0}
 .send-btn:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
 .send-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}.send-btn.active:hover{background:hsl(var(--accent-100))}
 .send-btn svg{width:16px;height:16px}
@@ -1058,7 +1101,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .settings-status.warn{color:hsl(39 70% 50%);background:hsl(39 30% 10%/0.6);border:0.5px solid hsl(39 40% 30%/0.4)}
 .settings-status.warn::before{content:'';display:inline-block;width:calc(13px * var(--app-font-scale, 1));height:calc(13px * var(--app-font-scale, 1));background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5a.75.75 0 0 1 .65.375l6.25 11.25a.75.75 0 0 1-.65 1.125H1.75a.75.75 0 0 1-.65-1.125L7.35 1.875A.75.75 0 0 1 8 1.5zM8 5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 1 0v-3A.5.5 0 0 0 8 5zm0 5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z' fill='%23d97706'/%3E%3C/svg%3E") center/contain no-repeat;flex-shrink:0}
 .settings-actions{display:flex;gap:8px;justify-content:flex-end}
-.settings-btn{padding:8px 18px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;transition:all .1s;cursor:pointer}
+.settings-btn{padding:8px 18px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;transition:background-color .1s;cursor:pointer}
 .settings-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .settings-btn.primary:hover{background:hsl(var(--accent-100))}
 .settings-btn.secondary{background:hsl(var(--bg-300));color:hsl(var(--text-300))}
@@ -1080,7 +1123,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .profile-row-label{color:hsl(var(--text-500))}
 .profile-row-value{color:hsl(var(--text-100));font-weight:500}
 .profile-actions{display:flex;flex-direction:column;gap:6px;padding:0 20px 20px}
-.profile-btn{width:100%;padding:10px;border-radius:10px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;text-align:center;cursor:pointer;transition:all .1s}
+.profile-btn{width:100%;padding:10px;border-radius:10px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;text-align:center;cursor:pointer;transition:background-color .1s,color .1s}
 .profile-btn.signout{background:hsl(var(--bg-300));color:hsl(0 60% 55%)}
 .profile-btn.signout:hover{background:hsl(0 60% 15%)}
 .profile-btn.close-btn{background:hsl(var(--bg-200));color:hsl(var(--text-300))}
@@ -1095,9 +1138,9 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .profile-toggle{display:flex;align-items:center;justify-content:space-between;padding:8px 0;cursor:pointer}
 .profile-toggle-label{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-100))}
 .profile-toggle-desc{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));padding:0 0 4px}
-.profile-lang-toggle{display:inline-flex;padding:2px;border-radius:8px;background:hsl(var(--bg-300));cursor:pointer;font-size:calc(12px * var(--app-font-scale, 1));transition:all .15s;gap:0;border:0.5px solid hsl(var(--border-300)/0.15)}
+.profile-lang-toggle{display:inline-flex;padding:2px;border-radius:8px;background:hsl(var(--bg-300));cursor:pointer;font-size:calc(12px * var(--app-font-scale, 1));transition:background-color .15s;gap:0;border:0.5px solid hsl(var(--border-300)/0.15)}
 .profile-lang-toggle:hover{background:hsl(var(--bg-200))}
-.profile-lang-option{padding:4px 12px;border-radius:6px;color:hsl(var(--text-400));transition:all .12s;font-weight:500;line-height:1.3;border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:inherit}
+.profile-lang-option{padding:4px 12px;border-radius:6px;color:hsl(var(--text-400));transition:background-color .12s,color .12s,box-shadow .12s;font-weight:500;line-height:1.3;border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:inherit}
 .profile-lang-option.active{color:hsl(var(--text-100));background:hsl(var(--bg-000));box-shadow:0 1px 3px hsl(var(--always-black)/0.15)}
 .profile-action-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;gap:12px}
 .profile-action-label{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-100))}
@@ -1114,7 +1157,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .confirm-title{font-size:calc(15px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100));margin-bottom:8px;text-align:center}
 .confirm-msg{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.5;margin-bottom:16px;text-align:center}
 .confirm-actions{display:flex;gap:8px;justify-content:center}
-.confirm-btn{padding:8px 20px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:all .1s}
+.confirm-btn{padding:8px 20px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:background-color .1s}
 .confirm-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .confirm-btn.primary:hover{background:hsl(var(--accent-100))}
 .confirm-btn.danger{background:hsl(0 60% 15%);color:hsl(0 60% 55%)}
@@ -1133,7 +1176,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .usage-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:min(720px,94vw);max-height:88vh;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out);display:flex;flex-direction:column}
 .usage-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0}
 .usage-title{font-size:calc(16px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
-.usage-close{cursor:pointer;color:hsl(var(--text-500));padding:4px;border-radius:6px;transition:all .1s}
+.usage-close{cursor:pointer;color:hsl(var(--text-500));padding:4px;border-radius:6px;transition:background-color .1s,color .1s}
 .usage-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .usage-body{padding:18px 22px 22px;overflow-y:auto;flex:1}
 .usage-summary{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}
@@ -1142,7 +1185,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .usage-stat-lbl{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-top:2px}
 .usage-section-title{font-size:calc(12px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
 .usage-period-tabs{display:flex;gap:4px;margin-bottom:14px}
-.usage-period-tab{padding:5px 12px;border-radius:6px;font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;background:hsl(var(--bg-200));color:hsl(var(--text-400));transition:all .1s;border:none;font-family:inherit}
+.usage-period-tab{padding:5px 12px;border-radius:6px;font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;background:hsl(var(--bg-200));color:hsl(var(--text-400));transition:background-color .1s,color .1s;border:none;font-family:inherit}
 .usage-period-tab.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .usage-calendar-wrap{overflow-x:auto;padding:4px 0 8px}
 .usage-calendar{display:grid;grid-template-columns:auto repeat(53,1fr);gap:2px;font-size:calc(10px * var(--app-font-scale, 1));min-width:560px}
@@ -1276,7 +1319,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
   cursor:pointer;
   font-family:inherit;
   font-variant-numeric:tabular-nums;
-  transition:all .12s;
+  transition:background-color .12s,color .12s,border-color .12s;
 }
 .exam-nav-pill:hover{
   background:hsl(var(--bg-200));
@@ -1321,7 +1364,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .exam-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:min(680px,94vw);max-height:90vh;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out);display:flex;flex-direction:column}
 .exam-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0}
 .exam-title{font-size:calc(15px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
-.exam-close{cursor:pointer;color:hsl(var(--text-500));padding:4px;border-radius:6px;transition:all .1s}
+.exam-close{cursor:pointer;color:hsl(var(--text-500));padding:4px;border-radius:6px;transition:background-color .1s,color .1s}
 .exam-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .exam-body{padding:16px 20px 20px;overflow-y:auto;flex:1}
 .exam-form-container{max-width:640px;margin:0 auto;padding:8px 0 16px}
@@ -1348,7 +1391,10 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .exam-opt-label{font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-300));margin-bottom:8px;display:block}
 .exam-opt-select{padding:10px 0;border-radius:0;border:0;border-bottom:0.5px solid hsl(var(--border-300)/0.3);background:transparent;color:hsl(var(--text-100));font-size:calc(13.5px * var(--app-font-scale, 1));font-family:inherit;outline:none;cursor:pointer;width:100%}
 .exam-opt-select:focus{border-color:hsl(var(--accent-000)/0.6)}
-.exam-btn{padding:11px 24px;border-radius:10px;font-size:calc(13.5px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:all .12s;border:none;font-family:inherit;letter-spacing:-.01em}
+/* .exam-btn primary animates transform + box-shadow + filter — explicit
+   list keeps the compositor from watching properties the rule doesn't
+   touch (padding/font-size/letter-spacing). */
+.exam-btn{padding:11px 24px;border-radius:10px;font-size:calc(13.5px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:background-color .12s,color .12s,border-color .12s,transform .12s,box-shadow .12s,filter .12s;border:none;font-family:inherit;letter-spacing:-.01em}
 .exam-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))}
 .exam-btn.primary:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 4px 14px hsl(var(--accent-000)/0.25)}
 .exam-btn.primary:disabled{opacity:0.3;cursor:default;transform:none;box-shadow:none;filter:none}
@@ -1394,7 +1440,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .exam-q-opt:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200));border-color:hsl(var(--border-300)/0.4)}
 .exam-q-opt:last-child{border-bottom:0.5px solid hsl(var(--border-300)/0.2)}
 .exam-q-opt.selected{color:hsl(var(--text-100))}
-.exam-q-opt-letter{width:18px;height:18px;border-radius:3px;border:0.5px solid hsl(var(--text-500)/0.4);display:flex;align-items:center;justify-content:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));flex-shrink:0;transition:all .12s;margin-top:2px}
+.exam-q-opt-letter{width:18px;height:18px;border-radius:3px;border:0.5px solid hsl(var(--text-500)/0.4);display:flex;align-items:center;justify-content:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));flex-shrink:0;transition:background-color .12s,color .12s,border-color .12s;margin-top:2px}
 .exam-q-opt:hover .exam-q-opt-letter{border-color:hsl(var(--text-400))}
 .exam-q-opt.selected .exam-q-opt-letter{border-color:hsl(var(--accent-000));background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border-width:0}
 .exam-q-opt.correct{border-color:hsl(var(--text-300)/0.3)}
@@ -1435,10 +1481,10 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .share-title{font-size:calc(16px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
 .share-close{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:hsl(var(--text-400));cursor:pointer;transition:color .1s,background .1s}
 .share-close:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
-.share-opt{display:flex;align-items:flex-start;gap:12px;padding:12px;border:0.5px solid hsl(var(--border-300)/0.15);border-radius:10px;cursor:pointer;transition:all .12s;margin-bottom:8px;background:hsl(var(--bg-100))}
+.share-opt{display:flex;align-items:flex-start;gap:12px;padding:12px;border:0.5px solid hsl(var(--border-300)/0.15);border-radius:10px;cursor:pointer;transition:background-color .12s,border-color .12s;margin-bottom:8px;background:hsl(var(--bg-100))}
 .share-opt:hover{border-color:hsl(var(--accent-000)/0.4)}
 .share-opt.selected{border-color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.06)}
-.share-opt-radio{width:18px;height:18px;border-radius:50%;border:2px solid hsl(var(--text-400));flex-shrink:0;margin-top:1px;transition:all .12s;display:flex;align-items:center;justify-content:center}
+.share-opt-radio{width:18px;height:18px;border-radius:50%;border:2px solid hsl(var(--text-400));flex-shrink:0;margin-top:1px;transition:border-color .12s;display:flex;align-items:center;justify-content:center}
 .share-opt.selected .share-opt-radio{border-color:hsl(var(--accent-000))}
 .share-opt.selected .share-opt-radio::after{content:'';width:10px;height:10px;border-radius:50%;background:hsl(var(--accent-000))}
 .share-opt-body{flex:1;min-width:0}
@@ -1447,7 +1493,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .share-link-area{display:flex;gap:8px;margin-top:12px;align-items:center}
 .share-link-input{flex:1;padding:8px 10px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-200));color:hsl(var(--text-100));font-size:calc(12px * var(--app-font-scale, 1));font-family:var(--font-mono);outline:none}
 .share-link-input:focus{border-color:hsl(var(--accent-000)/0.5)}
-.share-copy-btn{padding:8px 14px;border-radius:8px;font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));cursor:pointer;transition:all .1s;white-space:nowrap}
+.share-copy-btn{padding:8px 14px;border-radius:8px;font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));cursor:pointer;transition:background-color .1s;white-space:nowrap}
 .share-copy-btn:hover{background:hsl(var(--accent-100))}
 .share-copy-btn.copied{background:hsl(145 50% 45%)}
 .share-revoke{display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(0 60% 55%);cursor:pointer;transition:color .1s;padding:4px 0}
@@ -1654,6 +1700,7 @@ html[data-boot-state="auth"] #appShell{display:none !important}
    is in flight. Uses the same dotted background as the auth gate so
    the transition is invisible when /me resolves to "auth". */
 .boot-loading{position:fixed;inset:0;z-index:190;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;opacity:1;transition:opacity .25s var(--ease-out)}
+html[data-show-grid="false"] .boot-loading{background-image:none}
 html[data-boot-state="app"] .boot-loading,
 html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .boot-loading-logo{display:flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-weight:600;font-size:calc(15px * var(--app-font-scale,1));letter-spacing:-.02em}
@@ -1897,12 +1944,12 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .kb-detail-status-internalized{background:hsl(145 50% 50%/0.18);color:hsl(145 50% 65%)}
 .kb-detail-status-fuzzy{background:hsl(43 77% 62%/0.18);color:hsl(43 77% 70%)}
 .kb-detail-status-blank{background:hsl(var(--bg-300));color:hsl(var(--text-400))}
-.kb-go-btn{font-size:calc(11px * var(--app-font-scale, 1));padding:3px 9px;border-radius:6px;background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.3);cursor:pointer;transition:all .1s}
+.kb-go-btn{font-size:calc(11px * var(--app-font-scale, 1));padding:3px 9px;border-radius:6px;background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.3);cursor:pointer;transition:background-color .1s,color .1s}
 .kb-go-btn:hover{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .kb-detail-row{display:flex;flex-direction:column;gap:4px}
 .kb-detail-label{font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
 .kb-conf-row{display:flex;gap:4px;align-items:center}
-.kb-conf-dot{width:14px;height:14px;border-radius:50%;background:transparent;border:1.5px solid hsl(var(--text-500));cursor:pointer;padding:0;transition:all .12s}
+.kb-conf-dot{width:14px;height:14px;border-radius:50%;background:transparent;border:1.5px solid hsl(var(--text-500));cursor:pointer;padding:0;transition:background-color .12s,border-color .12s}
 .kb-conf-dot:hover{border-color:hsl(var(--accent-000))}
 .kb-conf-dot.on{background:hsl(var(--accent-000));border-color:hsl(var(--accent-000))}
 .kb-system-note{font-size:calc(12.5px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-300));padding:6px 0}
@@ -1943,7 +1990,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .mistake-opt.correct-tag .mistake-opt-letter{border-color:hsl(145 50% 55%);background:hsl(145 50% 55%);color:white}
 .mistake-opt.wrong-tag .mistake-opt-letter{border-color:hsl(0 60% 60%);background:hsl(0 60% 60%);color:white}
 .mistake-redo-count{font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-bottom:6px}
-.mistake-redo-btn{width:100%;padding:6px 10px;border-radius:6px;background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.3);font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:all .1s}
+.mistake-redo-btn{width:100%;padding:6px 10px;border-radius:6px;background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.3);font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:background-color .1s,color .1s}
 .mistake-redo-btn:hover{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 
 /* Thinking dot — shown until the first stream delta arrives.
@@ -2009,7 +2056,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .msg-error{display:flex;align-items:center;gap:10px;padding:10px 14px;border:0.5px solid hsl(0 60% 50%/0.3);border-radius:10px;background:hsl(0 60% 30%/0.1);color:hsl(0 60% 75%);font-size:calc(13px * var(--app-font-scale, 1));flex-wrap:wrap}
 .msg-error-icon{flex-shrink:0;width:18px;height:18px;border-radius:50%;background:hsl(0 60% 50%);color:hsl(0 0% 100%);font-size:calc(12px * var(--app-font-scale, 1));font-weight:700;line-height:18px;text-align:center;font-family:var(--font-sans)}
 .msg-error-text{flex:1;min-width:0;word-break:break-word}
-.msg-retry-btn{flex-shrink:0;padding:5px 12px;border-radius:8px;background:hsl(var(--accent-000)/0.15);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.4);font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:all .12s}
+.msg-retry-btn{flex-shrink:0;padding:5px 12px;border-radius:8px;background:hsl(var(--accent-000)/0.15);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.4);font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:background-color .12s,color .1s,opacity .12s}
 .msg-retry-btn:hover:not(:disabled){background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .msg-retry-btn:disabled{opacity:0.5;cursor:wait}
 
@@ -2060,6 +2107,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-card.glob    .agent-tool-icon{background:hsl(180 40% 92%);color:hsl(180 50% 32%)}
 .agent-tool-card.grep    .agent-tool-icon{background:hsl(180 40% 92%);color:hsl(180 50% 32%)}
 .agent-tool-card.webfetch .agent-tool-icon{background:hsl(20 50% 92%);color:hsl(20 60% 32%)}
+.agent-tool-card.code    .agent-tool-icon{background:hsl(220 45% 92%);color:hsl(220 55% 38%);font-size:calc(13px * var(--app-font-scale, 1))}
 [data-theme=socrates][data-mode=dark] .agent-tool-icon{background:hsl(var(--bg-200));color:hsl(var(--text-400))}
 [data-theme=socrates][data-mode=dark] .agent-tool-card.read    .agent-tool-icon{background:hsl(200 30% 18%);color:hsl(200 60% 75%)}
 [data-theme=socrates][data-mode=dark] .agent-tool-card.write   .agent-tool-icon{background:hsl(145 30% 18%);color:hsl(145 60% 70%)}
@@ -2068,6 +2116,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 [data-theme=socrates][data-mode=dark] .agent-tool-card.glob    .agent-tool-icon,
 [data-theme=socrates][data-mode=dark] .agent-tool-card.grep    .agent-tool-icon{background:hsl(180 30% 18%);color:hsl(180 60% 70%)}
 [data-theme=socrates][data-mode=dark] .agent-tool-card.webfetch .agent-tool-icon{background:hsl(20 30% 18%);color:hsl(20 60% 70%)}
+[data-theme=socrates][data-mode=dark] .agent-tool-card.code    .agent-tool-icon{background:hsl(220 30% 18%);color:hsl(220 60% 78%)}
 .agent-tool-name{font-weight:600;color:hsl(var(--text-100));font-size:calc(11.5px * var(--app-font-scale, 1));flex-shrink:0}
 .agent-tool-input{flex:1;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .agent-tool-chev{margin-left:auto;font-size:calc(9px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .15s;flex-shrink:0}
@@ -2076,6 +2125,14 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-card.open .agent-tool-out{display:block}
 .agent-tool-out.error{color:hsl(0 60% 50%);background:hsl(0 50% 95%)}
 [data-theme=socrates][data-mode=dark] .agent-tool-out.error{background:hsl(0 30% 18%);color:hsl(0 55% 70%)}
+
+/* Inline artifacts produced by the code interpreter (matplotlib PNGs,
+   CSV exports, etc.). Images stay inside the tool-out's overflow:auto
+   and the 280px max-height so a tall PNG scrolls instead of pushing
+   the page around. The download link sits on a new line below the
+   stdout. */
+.exec-artifact-image{display:block;max-width:100%;max-height:240px;margin-top:8px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-200))}
+.exec-artifact-link{display:inline-block;margin-top:6px;font-family:var(--font-mono);font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
 
 /* Link previews — rendered inside the user's chat bubble when their
    message contains URLs we successfully fetched. Compact, single-line
