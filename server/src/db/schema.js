@@ -234,7 +234,7 @@ export const files = pgTable('files', {
   name: text('name').notNull(),
   mimeType: text('mime_type').notNull(),
   size: integer('size').notNull(),
-  kind: text('kind').notNull(),             // image | video | audio | pdf | text | code | csv | other
+  kind: text('kind').notNull(),             // image | video | audio | pdf | text | code | csv | chart | other
   width: integer('width'),
   height: integer('height'),
   pages: integer('pages'),
@@ -242,11 +242,16 @@ export const files = pgTable('files', {
   storagePath: text('storage_path').notNull(),
   thumbnailPath: text('thumbnail_path'),
   sessionId: uuid('session_id'),
+  /* P_code_interpreter — null for user uploads; set for files produced by the
+     code-interpreter tool (PNG charts, CSV exports, etc). ON DELETE CASCADE
+     so reaping an execution row drops its artifacts too. */
+  executionId: uuid('execution_id').references(() => executions.id, { onDelete: 'cascade' }),
   uploadedAt: timestamp('uploaded_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('files_user_id_idx').on(table.userId),
   index('files_sha256_idx').on(table.sha256),
   index('files_session_id_idx').on(table.sessionId),
+  index('files_execution_id_idx').on(table.executionId),
 ]);
 
 /* ──────────────────────────────────────────────
@@ -386,6 +391,36 @@ export const agentRuns = pgTable('agent_runs', {
 }, (table) => [
   index('agent_runs_user_id_idx').on(table.userId),
   index('agent_runs_session_id_idx').on(table.sessionId),
+]);
+
+/* ──────────────────────────────────────────────
+   Executions — Code Interpreter sandbox runs
+   One row per code_interpreter tool call. Captures the source code, the
+   status, stdout/stderr, exit code, runtime duration, and how many
+   artifact files (charts, CSVs, etc) were emitted. Artifact files are
+   stored in the `files` table with executionId set so they cascade-
+   delete with this row and so the existing /api/files serving path
+   picks them up unchanged.
+   ────────────────────────────────────────────── */
+export const executions = pgTable('executions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
+  language: text('language').notNull().default('python'),
+  code: text('code').notNull(),
+  /* running | completed | failed | timeout | cancelled | skipped */
+  status: text('status').notNull().default('running'),
+  exitCode: integer('exit_code'),
+  durationMs: integer('duration_ms'),
+  stdout: text('stdout'),
+  stderr: text('stderr'),
+  artifactCount: integer('artifact_count').notNull().default(0),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+}, (table) => [
+  index('executions_user_id_idx').on(table.userId),
+  index('executions_session_id_idx').on(table.sessionId),
+  index('executions_started_at_idx').on(table.startedAt),
 ]);
 
 /* ──────────────────────────────────────────────

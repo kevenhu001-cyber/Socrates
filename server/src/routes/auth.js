@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
 import { setCsrfToken, setCsrfCookie, clearCsrfCookie } from '../middleware/csrf.js';
 import { requireAuth } from '../middleware/auth.js';
-import { authLimiter } from '../middleware/rateLimit.js';
+import { authLimiter, codeLoginLimiter, resetLimiter } from '../middleware/rateLimit.js';
 import * as authService from '../services/auth.js';
 import { audit, recordAudit } from '../middleware/audit.js';
 import { shouldUseSharedDomain, SHARED_COOKIE_DOMAIN } from '../lib/cookieEnv.js';
@@ -161,7 +161,7 @@ router.post('/send-code', authLimiter, async (req, res, next) => {
 });
 
 /* ─── Login with code ─── */
-router.post('/login-with-code', authLimiter, async (req, res, next) => {
+router.post('/login-with-code', codeLoginLimiter, async (req, res, next) => {
   try {
     const { email, code } = req.body;
     const result = await authService.loginWithCode(email, code);
@@ -191,7 +191,7 @@ router.get('/reset-info', async (req, res, next) => {
 });
 
 /* ─── Reset password ─── */
-router.post('/reset-password', authLimiter, async (req, res, next) => {
+router.post('/reset-password', resetLimiter, async (req, res, next) => {
   try {
     const { token, password } = req.body;
     await authService.resetPassword(token, password);

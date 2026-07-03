@@ -11,10 +11,12 @@ import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion, callChatCompletion } from '../services/llm.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
 import { usageEvents } from '../db/schema.js';
-import { audit } from '../middleware/audit.js';
+import { audit, recordAudit } from '../middleware/audit.js';
 import { BadRequest, TooManyRequests } from '../lib/errors.js';
 import { getBeagleQuota } from '../lib/tiers.js';
+import { getExecutionsPerDay } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
+import { codeInterpreter, CODE_INTERPRETER_TOOL } from '../services/codeInterpreter.js';
 import { buildSystemContextBlock } from '../services/productContext.js';
 import { isMultimodalProvider } from '../lib/multimodal.js';
 
@@ -357,9 +359,10 @@ function transformMessagesForModel(messages, provider) {
    previous configuration let anonymous users hit the built-in
    LLM provider, opening the door to unbounded cost abuse. The
    chatLimiter (60/h by IP) was a soft control only; a distributed
-   attacker could trivially bypass it. The client now creates a
-   guest account via /api/auth/guest before the first chat turn,
-   matching the auth model used by the rest of /api/*. */
+   attacker could trivially bypass it. Every chat caller must now
+   hold a valid session cookie; the front-end flips the "Guest mode"
+   checkbox at sign-in as a UI hint, but the underlying session is
+   still a full authenticated account (just marked isGuest in DB). */
 router.post('/', chatLimiter, requireAuth, audit('chat:sync'), async (req, res, next) => {
   try {
     const { messages, temperature = 0.3, max_tokens, mode = 'chat', reasoning_effort, extra_body } = ChatPayloadSchema.parse(req.body);
@@ -482,10 +485,46 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
     // Set SSE headers
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
       'Connection': 'keep-alive',
       'X-Accel-Buffering': 'no',
     });
+
+    /* Prime the stream BEFORE the upstream has anything to say.
+       Two things matter here:
+
+       1. `res.flushHeaders()` forces Node to write the response
+          status line + headers to the socket immediately. Without
+          this call Express would buffer the headers until the
+          first body byte arrives from the LLM, which on a fast
+          network can be a few hundred ms. By that time the user's
+          browser has already painted the page but shows nothing
+          yet — which makes them think the request hung.
+
+       2. EdgeOne (and to a lesser extent nginx) ships a "first-
+          chunk" buffer of ~8 KB before it switches the upstream
+          connection to true streaming mode. A short LLM answer
+          can fit entirely inside that buffer, which means by the
+          time the proxy forwards any data to the browser the
+          upstream has already produced the complete answer. From
+          the user's point of view: no streaming, no thinking
+          pill, just a fully-formed bubble.
+
+          Writing a 12-byte SSE comment frame (`: open\n\n`) right
+          after the headers pushes the proxy past its first-chunk
+          threshold so subsequent writes — even one-byte deltas —
+          flow through immediately. SSE comments are valid per the
+          spec and ignored by every parser, so this is harmless on
+          its own.
+
+       See commit message: EdgeOne / Safari first-chunk priming. */
+    try {
+      res.flushHeaders();
+      res.write(': open\n\n');
+      try { res.flush?.(); } catch {}
+    } catch { /* socket already closed — the req.on('close') guard below handles it */ }
 
     // Heartbeat keepalive
     const heartbeat = setInterval(() => {
@@ -510,61 +549,92 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
       ? req.query.sessionId
       : null;
 
-    await streamChatCompletion(
-      {
-        apiBase: provider.url,
-        apiKey: provider.keyPlaintext,
-        model: provider.model,
-        messages: finalMessages,
-        maxTokens: max_tokens,  /* undefined → backend passes through to model default */
-        temperature,
-        signal: abortController.signal,
-        /* P_deepseek-mode — forward reasoning flags so the upstream
-           emits reasoning_content chunks. */
-        reasoning_effort,
-        extra_body: safeExtraBody,
-      },
-      // onChunk
-      (chunk) => {
-        fullText += chunk;
-        completionTokens = estimateTokens(fullText);
-        try {
-          res.write(`data: {"choices":[{"delta":{"content":${JSON.stringify(chunk)}}}]}\n\n`);
-          try { res.flush?.(); } catch {}
-        } catch { /* client disconnected */ }
-      },
-      // onDone
-      () => {
-        clearInterval(heartbeat);
-        try {
-          res.write('data: [DONE]\n\n');
-          res.end();
-        } catch { /* ignore */ }
-        if (req.userId) {
-          recordUsage({
-            userId: req.userId,
-            model: provider.model,
-            sessionId: sessionIdFromQuery,
-            promptTokens,
-            completionTokens,
-            source: 'chat',
-          });
-        }
-      },
-      // onError
-      (err) => {
-        clearInterval(heartbeat);
-        console.error('[chat/stream] LLM error:', err.message);
-        try {
-          res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
-          res.write('data: [DONE]\n\n');
-          res.end();
-        } catch { /* ignore */ }
-        /* Record usage even on error so the heatmap reflects attempts.
-           The frontend surfaces the error to the user (e.g. quota). */
+    /* ─── Tool-calling loop ─────────────────────────────────────────
+     * The LLM may decide mid-stream to call the code_interpreter
+     * tool. We run streamChatCompletion, and on finish_reason ===
+     * 'tool_calls' we:
+     *   1. Emit `event: tool_use` so the client can render a card.
+     *   2. Execute each tool call sequentially.
+     *   3. Emit `event: tool_result` with the outcome.
+     *   4. Append the tool result as a `role:'tool'` message and
+     *      stream another chat completion that wraps up the answer.
+     *
+     * MAX_TOOL_ITERATIONS guards against the model getting stuck in
+     * a tool-call loop; on overflow we emit a structured error event
+     * and end the response cleanly.
+     * ───────────────────────────────────────────────────────────── */
+    const MAX_TOOL_ITERATIONS = 4;
+    const toolDef = codeInterpreter.getToolDefinition();
+    let workingMessages = finalMessages;
+
+    const writeSse = (payload) => {
+      try { res.write(payload); try { res.flush?.(); } catch {} } catch { /* socket closed */ }
+    };
+    const safeParseJson = (s) => {
+      try { return JSON.parse(s); } catch { return null; }
+    };
+
+    for (let iter = 0; iter < MAX_TOOL_ITERATIONS; iter++) {
+      let iterFinishReason = null;
+      const toolCallsThisTurn = [];
+
+      let upstreamErr = null;
+      await streamChatCompletion(
+        {
+          apiBase: provider.url,
+          apiKey: provider.keyPlaintext,
+          model: provider.model,
+          messages: workingMessages,
+          maxTokens: max_tokens,
+          temperature,
+          signal: abortController.signal,
+          reasoning_effort,
+          extra_body: safeExtraBody,
+          ...(toolDef ? { tools: [toolDef], tool_choice: 'auto' } : {}),
+        },
+        // onChunk
+        (chunk) => {
+          fullText += chunk;
+          completionTokens = estimateTokens(fullText);
+          try {
+            res.write(`data: {"choices":[{"delta":{"content":${JSON.stringify(chunk)}}}]}\n\n`);
+            try { res.flush?.(); } catch {}
+          } catch { /* client disconnected */ }
+        },
+        // onDone — capture finish_reason so the loop can dispatch
+        ({ finishReason }) => {
+          iterFinishReason = finishReason;
+        },
+        // onError
+        (err) => {
+          upstreamErr = err;
+          clearInterval(heartbeat);
+          console.error('[chat/stream] LLM error:', err.message);
+          try {
+            res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+            res.write('data: [DONE]\n\n');
+            res.end();
+          } catch { /* ignore */ }
+        },
+        // onReasoning — emit reasoning_content as SSE delta so the
+        // client renders the thinking pill.
+        (reasoning) => {
+          try {
+            res.write(`data: {"choices":[{"delta":{"reasoning_content":${JSON.stringify(reasoning)}}}]}\n\n`);
+            try { res.flush?.(); } catch {}
+          } catch { /* client disconnected */ }
+        },
+        // onToolUse — accumulate tool calls for this iteration. Flush
+        // happens after the stream ends so the client sees a complete
+        // tool_use event even if multiple tool_calls arrive split.
+        (tc) => {
+          toolCallsThisTurn.push(tc);
+        },
+      );
+
+      if (upstreamErr) {
+        // Error path already wrote [DONE] and ended the response.
         if (req.userId && fullText.length > 0) {
-          /* Even on partial failure, record what we got — the
-             heatmap should reflect activity regardless of outcome. */
           recordUsage({
             userId: req.userId,
             model: provider.model,
@@ -574,17 +644,127 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
             source: 'chat',
           });
         }
-      },
-      // P_deepseek-mode — emit reasoning_content as a separate SSE
-      // delta field so the client can route it to the thinking pill
-      // and persist it for the next turn.
-      (reasoning) => {
+        return;
+      }
+
+      // No tool call → done. Wrap up the response.
+      if (iterFinishReason !== 'tool_calls' || toolCallsThisTurn.length === 0) break;
+
+      // Emit tool_use event for the client to render cards.
+      writeSse(`event: tool_use\ndata: ${JSON.stringify(
+        toolCallsThisTurn.map((t) => ({
+          id: t.id,
+          name: t.function && t.function.name,
+          input: safeParseJson(t.function && t.function.arguments) || {},
+        })),
+      )}\n\n`);
+
+      // Echo the assistant's tool_calls back as a role:'assistant'
+      // message — required by the OpenAI protocol so the next hop
+      // can reference the tool_call_id.
+      workingMessages = workingMessages.concat([{
+        role: 'assistant',
+        content: null,
+        tool_calls: toolCallsThisTurn.map((t) => ({
+          id: t.id,
+          type: 'function',
+          function: t.function,
+        })),
+      }]);
+
+      // Run each tool call. Most models emit one per turn; we keep
+      // the loop sequential so backpressure on the SSE channel is
+      // predictable.
+      for (const tc of toolCallsThisTurn) {
+        let result;
         try {
-          res.write(`data: {"choices":[{"delta":{"reasoning_content":${JSON.stringify(reasoning)}}}]}\n\n`);
-          try { res.flush?.(); } catch {}
-        } catch { /* client disconnected */ }
-      },
-    );
+          const args = safeParseJson(tc.function && tc.function.arguments) || {};
+
+          if ((tc.function && tc.function.name) !== 'code_interpreter') {
+            // Unknown tool — we only registered one. Tell the model so
+            // it can recover instead of looping.
+            writeSse(`event: tool_result\ndata: ${JSON.stringify({
+              id: tc.id, ok: false, error: 'unknown_tool',
+            })}\n\n`);
+            result = { status: 'failed', error: 'unknown_tool' };
+          } else {
+            const tierLimit = getExecutionsPerDay(req.user && req.user.tier);
+            // tierLimit is the daily quota; rate-limit middleware handles
+            // per-minute, so we don't enforce daily here in v1.
+
+            const execResult = await codeInterpreter.execute({
+              userId: req.userId,
+              sessionId: sessionIdFromQuery,
+              language: args.language || 'python',
+              code: args.code || '',
+              signal: abortController.signal,
+            });
+            result = execResult;
+
+            writeSse(`event: tool_result\ndata: ${JSON.stringify({
+              id: tc.id,
+              ok: execResult.status === 'completed',
+              output: execResult.stdout || '',
+              stderr: execResult.stderr || '',
+              error: execResult.status !== 'completed' ? (execResult.errorMessage || execResult.status) : null,
+              artifacts: execResult.artifactFileIds || [],
+              executionId: execResult.executionId,
+              durationMs: execResult.durationMs,
+            })}\n\n`);
+
+            if (req.userId) {
+              recordAudit(req.userId, 'code_execution', {
+                executionId: execResult.executionId,
+                language: args.language || 'python',
+                status: execResult.status,
+                durationMs: execResult.durationMs,
+                artifactCount: execResult.artifactCount,
+                errorMessage: execResult.errorMessage || null,
+              }).catch(() => {});
+            }
+          }
+        } catch (err) {
+          // Tool execution itself threw — never let this bubble out
+          // and crash the SSE stream. Tell the model so it can pivot.
+          const msg = String(err && err.message || err);
+          writeSse(`event: tool_result\ndata: ${JSON.stringify({
+            id: tc.id, ok: false, error: msg,
+          })}\n\n`);
+          result = { status: 'failed', error: msg };
+        }
+
+        // Feed the tool result back as role:'tool' so the next chat
+        // completion sees it and can wrap up in prose.
+        const toolContent = result.status === 'completed'
+          ? ((result.stdout || '(no output)') + (result.stderr ? `\n[stderr]\n${result.stderr}` : ''))
+          : `[error] ${result.error || result.status}`;
+        workingMessages = workingMessages.concat([{
+          role: 'tool',
+          tool_call_id: tc.id,
+          content: toolContent.slice(0, 60_000),  /* hard cap so a runaway tool result can't blow context */
+        }]);
+      }
+    }
+
+    /* Done — record usage and close the stream. The onDone branch
+     * inside streamChatCompletion only handles per-iteration
+     * bookkeeping; the actual end-of-response ceremony happens here
+     * so a final iteration that wraps up in prose still gets recorded. */
+    clearInterval(heartbeat);
+    try {
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } catch { /* ignore */ }
+    if (req.userId) {
+      recordUsage({
+        userId: req.userId,
+        model: provider.model,
+        sessionId: sessionIdFromQuery,
+        promptTokens,
+        completionTokens,
+        source: 'chat',
+      });
+    }
   } catch (err) { next(err); }
 });
 

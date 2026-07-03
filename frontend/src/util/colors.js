@@ -38,14 +38,34 @@ export function applyCustomBg(hex, mode) {
   var b000, b100, b200, b300;
   if (mode === 'light') {
     b100 = _hslStr(h, s, l);
-    b000 = _hslStr(h, Math.min(s * 1.4, 20), Math.min(l + 4, 97));
-    b200 = _hslStr(h, Math.max(s * 0.7, 0), Math.max(l - 6, 3));
-    b300 = _hslStr(h, Math.max(s * 0.5, 0), Math.max(l - 14, 0));
+    /* When the user picks near-white (l >= 95), the standard
+       +4/-6/-14 offsets collapse to ~97/94/86 — barely distinguishable
+       from a pure-white page. Branch to fixed gaps that always give
+       readable contrast, regardless of how saturated the pick is. */
+    if (l >= 95) {
+      b000 = _hslStr(h, Math.min(s * 1.4, 12), 96);
+      b200 = _hslStr(h, Math.max(s * 0.7, 0), 88);
+      b300 = _hslStr(h, Math.max(s * 0.5, 0), 76);
+    } else {
+      b000 = _hslStr(h, Math.min(s * 1.4, 20), Math.min(l + 4, 97));
+      b200 = _hslStr(h, Math.max(s * 0.7, 0), Math.max(l - 6, 3));
+      b300 = _hslStr(h, Math.max(s * 0.5, 0), Math.max(l - 14, 0));
+    }
   } else {
     b100 = _hslStr(h, s, l);
-    b000 = _hslStr(h, Math.min(s * 1.2, 15), Math.min(l + 3.5, 95));
-    b200 = _hslStr(h, Math.max(s * 0.8, 0), Math.max(l - 2.7, 0));
-    b300 = _hslStr(h, Math.max(s * 0.6, 0), Math.max(l - 6.7, 0));
+    /* Same idea for near-black picks (l <= 5): the standard +3.5/-2.7/-6.7
+       offsets clamp so all four surfaces land between 0 and 3.5 — the
+       sidebar / raised / hover states are indistinguishable. Branch
+       to fixed gaps that always keep the surface tints visible. */
+    if (l <= 5) {
+      b000 = _hslStr(h, Math.min(s * 1.2, 8), 8);
+      b200 = _hslStr(h, Math.max(s * 0.8, 0), 14);
+      b300 = _hslStr(h, Math.max(s * 0.6, 0), 22);
+    } else {
+      b000 = _hslStr(h, Math.min(s * 1.2, 15), Math.min(l + 3.5, 95));
+      b200 = _hslStr(h, Math.max(s * 0.8, 0), Math.max(l - 2.7, 0));
+      b300 = _hslStr(h, Math.max(s * 0.6, 0), Math.max(l - 6.7, 0));
+    }
   }
   var root = document.documentElement;
   root.style.setProperty('--bg-000', b000);

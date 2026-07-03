@@ -18,7 +18,7 @@ import { apiFetchRaw } from '../util/api.js';
      after STREAM_HEARTBEAT_MS, not after STREAM_TIMEOUT_MS.
    - 1 retry on transient 5xx/429/heartbeat/total-timeout.
    - User Stop click returns cancelled:true (not an error). */
-export async function callAPIStream(messages,maxTokens,onDelta,onThinking){
+export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   /* Read main.js globals via window — this module stays independent. */
   var state=window.state;
   var getActiveProvider=window.getActiveProvider;
@@ -272,6 +272,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking){
           buf=buf.slice(idx+2);
           var lines=frame.split("\n");
           var dataParts=[];
+          var evName=null;
           for(var li=0;li<lines.length;li++){
             var line=lines[li];
             if(line.indexOf("data:")===0){
@@ -279,7 +280,22 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking){
             }else if(line.indexOf("event:")===0){
               /* event: error surfaces failures */
               if(/error/i.test(line))state.lastCallError="upstream error event";
+              /* Capture the named event so we can route tool_use / tool_result
+                 frames to the caller's callbacks (Phase 4: code interpreter). */
+              var ev=line.slice(6).trim();
+              if(ev)evName=ev;
             }
+          }
+          /* Route tool-calling events before touching the data: payload.
+             The backend emits `event: tool_use` and `event: tool_result`
+             with a single JSON data: line per frame. */
+          if(evName==="tool_use"&&opts&&typeof opts.onToolUse==="function"&&dataParts.length){
+            try{opts.onToolUse(JSON.parse(dataParts.join("\n")))}catch(_){}
+            continue;
+          }
+          if(evName==="tool_result"&&opts&&typeof opts.onToolResult==="function"&&dataParts.length){
+            try{opts.onToolResult(JSON.parse(dataParts.join("\n")))}catch(_){}
+            continue;
           }
           if(dataParts.length===0)continue;
           var payload=dataParts.join("\n");

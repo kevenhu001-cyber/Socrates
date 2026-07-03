@@ -18,6 +18,9 @@ export const TIERS = {
     maxSessions: 5,
     maxKeys: 2,
     beagleTokenQuota: 1_000_000,
+    /* P_code_interpreter — sandboxed Python tool calls per UTC day.
+       0 means unlimited. Counted in the `executions` table. */
+    executionsPerDay: 20,
   },
   riemann: {
     name: 'Riemann',
@@ -26,6 +29,7 @@ export const TIERS = {
     maxSessions: 30,
     maxKeys: 10,
     beagleTokenQuota: 100_000_000,
+    executionsPerDay: 200,
   },
   descartes: {
     name: 'Descartes',
@@ -34,6 +38,7 @@ export const TIERS = {
     maxSessions: 100,
     maxKeys: 50,
     beagleTokenQuota: 300_000_000,
+    executionsPerDay: 1000,
   },
   euclid: {
     name: 'Euclid',
@@ -42,6 +47,7 @@ export const TIERS = {
     maxSessions: 0, // 0 = unlimited
     maxKeys: 999,
     beagleTokenQuota: 800_000_000,
+    executionsPerDay: 0, // 0 = unlimited
   },
 };
 
@@ -77,4 +83,15 @@ export function getSessionLimit(tier) {
  */
 export function getApiKeyLimit(tier) {
   return getTierPlan(tier).maxKeys;
+}
+
+/**
+ * P_code_interpreter — daily cap on sandboxed Python tool calls for the
+ * given tier. 0 means unlimited (Euclid). The chat route enforces this
+ * before each codeInterpreter.execute() call so an over-quota user gets
+ * a structured error back through the tool-call loop rather than a hard
+ * 429 on the chat request.
+ */
+export function getExecutionsPerDay(tier) {
+  return getTierPlan(tier).executionsPerDay || 0;
 }

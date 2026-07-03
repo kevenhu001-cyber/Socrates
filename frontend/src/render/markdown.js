@@ -12,6 +12,82 @@ import { preprocessMarkdown, preprocessMarkdownForStreaming } from './preprocess
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
 import { sanitizeUrls } from '../util/safe.js';
 
+/* ── DOMPurify configuration ──────────────────────────────────────
+   Used by both formatMsg and formatMsgProgressive to sanitise the
+   rendered HTML before it reaches the DOM.
+
+   marked.parse() passes raw HTML through by default; the previous
+   build relied on sanitizeUrls() alone, which only filtered URL
+   schemes (javascript:, data:text/html, …). It did NOT block
+   inline event handlers (onerror, onclick, onload, …) or other
+   vectors like <form action>, <base href>, <meta http-equiv>.
+
+   DOMPurify closes that gap with a defense-in-depth pass:
+
+   Allowed tags
+   ------------
+   - Standard markdown output (p, h1-h6, ul/ol/li, pre/code, …)
+   - Think-block widgets (details/summary) for reasoning models
+   - KaTeX output (math, semantics, mrow, mfrac, …, span with
+     inline styles)
+   - Mermaid SVG output (svg, g, path, rect, line, polygon, …)
+   - Custom scaffold tags (theorem, proof, key-point, derivation)
+
+   Forbidden by default
+   --------------------
+   - <script>, <style>, <iframe>, <form>, <object>, <embed>
+   - All on* event handlers (onclick, onerror, onload, onmouseover, …)
+   - javascript:, vbscript:, data:text/html in href/src
+
+   KaTeX legitimately uses the `style` attribute for math layout
+   (margin-right, vertical-align, etc.); allowing it here is a
+   necessary trade-off. The risk is limited: CSS itself can't
+   execute JavaScript, and KaTeX styles are static strings emitted
+   by a vetted library, not user-controlled input.
+
+   The ALLOWED_URI_REGEXP permits http(s), mailto, relative URLs,
+   and data: only on image sources (the second regexp below). */
+var PURIFY_CONFIG = {
+  ADD_TAGS: ['theorem', 'proof', 'key-point', 'derivation'],
+  ADD_ATTR: ['target', 'rel'],
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+  /* Keep the entire tree intact (don't drop tags but keep content). */
+  KEEP_CONTENT: true,
+  /* Don't return a DocumentFragment — return a string for innerHTML. */
+  RETURN_DOM_FRAGMENT: false,
+  RETURN_DOM: false,
+  /* Forbid dangerous tags even if marked somehow lets them through. */
+  FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form',
+                'meta', 'link', 'base', 'frame', 'frameset', 'noframes',
+                'noscript', 'html', 'head', 'body'],
+  /* Forbid all on* event handlers. DOMPurify's default already strips
+     these; the explicit list documents intent. */
+  FORBID_ATTR: ['onerror', 'onclick', 'onload', 'onmouseover', 'onfocus',
+                'onblur', 'onchange', 'onsubmit', 'onkeydown', 'onkeyup',
+                'onkeypress', 'onmousedown', 'onmouseup', 'onmousemove',
+                'onmouseout', 'onmouseenter', 'onmouseleave', 'oninput',
+                'onpointerdown', 'onpointerup', 'onanimationend',
+                'onanimationstart', 'ontransitionend'],
+};
+
+/* Apply DOMPurify if available; fall back to sanitizeUrls only. The
+   CSP already mitigates remote script loading (no 'unsafe-inline'
+   in script-src), but inline event handlers in the rendered HTML
+   bypass CSP entirely — DOMPurify is the only line of defense. */
+function sanitizeHtml(html) {
+  if (typeof DOMPurify !== 'undefined') {
+    try {
+      return DOMPurify.sanitize(html, PURIFY_CONFIG);
+    } catch (e) {
+      // If DOMPurify fails for any reason, fall back to sanitizeUrls
+      // so we don't drop the entire message.
+      console.warn('[sanitizeHtml] DOMPurify failed, falling back:', e && e.message);
+      return sanitizeUrls(html);
+    }
+  }
+  return sanitizeUrls(html);
+}
+
 /* Stream-time scaffold plugins.
    main.js registers (parser, renderer) pairs here so the streaming
    pass can render widgets inline instead of falling back to a
@@ -219,7 +295,12 @@ export function formatMsgProgressive(t){
     return blocks[parseInt(id)];
   });
 
-  return html;
+  /* 8. Sanitise the final HTML with DOMPurify.
+     marked.parse() passes raw HTML through by default — this is
+     the only line of defense against XSS via injected HTML. The
+     `sanitizeUrls` pass earlier only filtered URL schemes; it did
+     not strip inline event handlers (onerror, onclick, onload). */
+  return sanitizeHtml(html);
 }
 
 export function formatMsg(t){
@@ -384,5 +465,62 @@ export function formatMsg(t){
     return blocks[parseInt(id)];
   });
 
-  return html;
+  /* P_latex-auto-render — safety net for math the explicit
+     $/$$/\[/\]/\\(/\\) regex pass above missed. Auto-render
+     (`renderMathInElement`, loaded as a KaTeX contrib from index.html)
+     scans text nodes for delimited math and calls katex.render on
+     each match. Common cases it catches:
+       - `\( x + y \)` with extra whitespace inside the delimiters
+       - `$x$` adjacent to other punctuation the regex tripped over
+       - math inside an attribute / table cell the regex skipped
+     We round-trip through a transient DOM node so the scan has a
+     real Element to walk. KaTeX is idempotent — already-rendered
+     spans carry a `data-mathml` attribute that auto-render skips,
+     so calling it after our explicit pass is safe.
+
+     We MUST forward KATEX_MACROS to renderMathInElement: without it,
+     auto-render calls katex.render with an empty macro table, so our
+     custom commands like \ket, \pdv, \comm would be
+     rendered as red error text. Verified against
+     node_modules/katex/dist/contrib/auto-render.min.js: `n.macros =
+     n.macros || {}; f(e, n)` — auto-render reads `macros` from the
+     per-call option and forwards it to katex.render.
+
+     Skipped if `renderMathInElement` is not loaded (e.g. CDN was
+     blocked) — falls back to whatever the regex pass produced. */
+  if(typeof window !== "undefined" && typeof window.renderMathInElement === "function"
+     && typeof document !== "undefined"){
+    try{
+      var _arHost=document.createElement("div");
+      _arHost.innerHTML=html;
+      window.renderMathInElement(_arHost,{
+        delimiters:[
+          {left:'$$', right:'$$', display:true},
+          {left:'$',  right:'$',  display:false},
+          {left:'\\(', right:'\\)', display:false},
+          {left:'\\[', right:'\\]', display:true}
+        ],
+        throwOnError:false,
+        /* Forward the same macro table the explicit KaTeX passes use,
+           so \ket, \pdv, \comm, etc. expand identically in
+           both passes. The KATEX_MACROS object is module-scoped and
+           never mutated by KaTeX — safe to share by reference. */
+        macros:KATEX_MACROS,
+        /* trust:false (default) — KaTeX will refuse to expand
+           \href / \url into <a href> tags, so an LLM that emits
+           \href{javascript:...}{x} renders as red error text, not
+           an XSS vector. */
+        ignoredTags:['script','noscript','style','textarea','pre','code']
+      });
+      html=_arHost.innerHTML;
+    }catch(_arErr){
+      // Don't let a transient DOM failure poison the message — fall
+      // back to the pre-auto-render HTML.
+      console.warn('[formatMsg] auto-render pass skipped:',_arErr&&_arErr.message);
+    }
+  }
+
+  /* Sanitise the final HTML with DOMPurify. See note in
+     formatMsgProgressive for rationale. */
+  return sanitizeHtml(html);
 }
