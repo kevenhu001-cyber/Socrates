@@ -1657,145 +1657,26 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
      streaming completes) so chain-of-thought doesn't push the real
      answer down the page.
    - A 3px gold left stripe gives the block its own visual identity
-     without competing with the assistant message body.
-   - The summary carries a sparkle icon, a serif label, and a
-     word-count meta; the chevron animates open/closed.
-   - Streaming blocks keep the spinner and a soft pulse so the user
-     can see thinking is in progress. */
-.think-block{
-  position:relative;
-  margin:8px 0;
-  border-radius:10px;
-  overflow:hidden;
-  background:linear-gradient(180deg,
-              hsl(var(--bg-200)/0.55) 0%,
-              hsl(var(--bg-200)/0.30) 100%);
-  border:0.5px solid hsl(var(--accent-000)/0.18);
-  box-shadow:0 1px 2px hsl(var(--accent-000)/0.05);
-  transition:border-color .15s ease, box-shadow .15s ease;
-}
-.think-block::before{
-  /* Gold left accent stripe — the block's visual signature. */
-  content:"";
-  position:absolute;
-  left:0;top:0;bottom:0;
-  width:3px;
-  background:linear-gradient(180deg,
-              hsl(var(--accent-000)/0.85) 0%,
-              hsl(var(--accent-000)/0.35) 100%);
-  border-radius:10px 0 0 10px;
-  pointer-events:none;
-}
-.think-block:hover{border-color:hsl(var(--accent-000)/0.32)}
+      Minimal think-block: thin border, neutral colours, no accent stripe,
+      no gradient, no animations, no decorative icons. */
+.think-block{margin:8px 0;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.1);background:hsl(var(--bg-200)/0.15)}
+.think-block-streaming{}
 
-/* Streaming variant — soft pulse to indicate live activity. */
-@keyframes thinkPulse{
-  0%,100%{box-shadow:0 1px 2px hsl(var(--accent-000)/0.05),0 0 0 0 hsl(var(--accent-000)/0.10)}
-  50%{box-shadow:0 1px 2px hsl(var(--accent-000)/0.10),0 0 0 4px hsl(var(--accent-000)/0)}
-}
-.think-block-streaming{animation:thinkPulse 2.4s ease-in-out infinite}
-
-/* P_ios_details — older iOS Safari (15-16) drops the default disclosure
-   triangle when a <summary> is a flex container and `list-style:none`
-   is used. Switch to display:list-item + [hidden] to keep the marker
-   hidden reliably across webkit versions while preserving the click
-   hit-area on touch. The explicit min-height also prevents the row
-   from collapsing to a sub-30px tappable target on small phones. */
-.think-summary{
-  display:list-item;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  min-height:38px;
-  padding:9px 14px 9px 16px;
-  font-size:calc(12.5px * var(--app-font-scale, 1));
-  font-weight:500;
-  color:hsl(var(--text-300));
-  cursor:pointer;
-  user-select:none;
-  list-style:none;
-  list-style-position:outside;
-  transition:color .12s ease, background-color .12s ease;
-  position:relative;
-}
+.think-summary{display:flex;align-items:center;gap:6px;min-height:32px;padding:6px 10px;font-size:calc(12px * var(--app-font-scale,1));font-weight:400;color:hsl(var(--text-400));cursor:pointer;user-select:none;list-style:none}
 .think-summary::-webkit-details-marker{display:none}
 .think-summary::marker{display:none;content:""}
-.think-summary:hover{color:hsl(var(--text-100));background:hsl(var(--accent-000)/0.05)}
-.think-summary:focus-visible{outline:2px solid hsl(var(--accent-000)/0.5);outline-offset:-2px;border-radius:8px}
+.think-summary:hover{color:hsl(var(--text-300))}
+.think-summary:focus-visible{outline:1.5px solid hsl(var(--text-500)/0.3);outline-offset:-1px;border-radius:4px}
 
-.think-icon{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:18px;height:18px;
-  flex-shrink:0;
-  color:hsl(var(--accent-000));
-  opacity:.85;
-  transition:opacity .12s ease, transform .25s var(--ease-spring, ease);
-}
-.think-summary:hover .think-icon{opacity:1;transform:scale(1.08) rotate(-6deg)}
+.think-summary-label{font-family:var(--font-sans);font-style:normal;font-weight:400;color:hsl(var(--text-300))}
 
-.think-summary-label{
-  font-family:var(--font-display);
-  font-style:italic;
-  font-weight:500;
-  letter-spacing:.01em;
-  color:hsl(var(--text-200));
-}
+.think-summary-meta{font-size:calc(11px * var(--app-font-scale,1));color:hsl(var(--text-500))}
+.think-summary-meta::before{content:"·";margin:0 4px}
 
-.think-summary-meta{
-  font-family:var(--font-mono);
-  font-size:calc(11px * var(--app-font-scale, 1));
-  font-weight:400;
-  font-style:normal;
-  color:hsl(var(--text-400));
-  margin-left:2px;
-  opacity:.85;
-}
-.think-summary-meta::before{content:"·";margin-right:6px;color:hsl(var(--text-500))}
+.think-summary-chevron{margin-left:auto;width:6px;height:6px;flex-shrink:0;border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:rotate(45deg);opacity:.45;color:hsl(var(--text-500))}
+.think-block[open]>.think-summary .think-summary-chevron{transform:rotate(-135deg)}
 
-/* P_think-chevron — explicit chevron drawn in CSS instead of a
-   ::before mask. We keep the chevron as the LAST summary child so
-   flexbox pushes it to the right edge regardless of label length. */
-.think-summary-chevron{
-  margin-left:auto;
-  width:8px;height:8px;
-  flex-shrink:0;
-  border-right:1.5px solid currentColor;
-  border-bottom:1.5px solid currentColor;
-  transform:rotate(45deg);
-  transition:transform .2s var(--ease-out, cubic-bezier(.16,1,.3,1));
-  opacity:.65;
-  color:hsl(var(--text-400));
-}
-.think-summary:hover .think-summary-chevron{opacity:1;color:hsl(var(--text-200))}
-.think-block[open] > .think-summary .think-summary-chevron{transform:rotate(-135deg)}
-
-.think-summary-streaming .think-summary-label{
-  /* Pulsing label color while a model is mid-thought. */
-  animation:thinkLabelPulse 1.6s ease-in-out infinite;
-}
-@keyframes thinkLabelPulse{
-  0%,100%{color:hsl(var(--text-300))}
-  50%{color:hsl(var(--accent-000))}
-}
-
-.think-content{
-  padding:4px 16px 14px;
-  margin-left:0;
-  font-size:calc(13px * var(--app-font-scale, 1));
-  line-height:1.65;
-  color:hsl(var(--text-300));
-  white-space:pre-wrap;
-  font-family:var(--font-sans);
-  border-top:0.5px solid hsl(var(--accent-000)/0.10);
-  background:hsl(var(--bg-000)/0.25);
-  animation:thinkContentIn .22s var(--ease-out, cubic-bezier(.16,1,.3,1));
-}
-@keyframes thinkContentIn{
-  from{opacity:0;transform:translateY(-2px)}
-  to{opacity:1;transform:translateY(0)}
-}
+.think-content{padding:2px 10px 10px;font-size:calc(12.5px * var(--app-font-scale,1));line-height:1.6;color:hsl(var(--text-400));white-space:pre-wrap}
 
 /* KaTeX dark theme overrides */
 .katex{font-size:1.05em}

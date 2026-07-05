@@ -141,16 +141,9 @@ function findStreamScaffold(name) {
 /* --------------------------------------------------------------
  * Think-block builder — shared by the streaming and final renderers.
  *
- * Old design: every think block started OPEN with a bare "Thinking"
- * label and a thin neutral border. Long chains-of-thought pushed the
- * real answer down the page and looked like debug output.
- *
- * New design: collapsed-by-default with a left gold accent stripe, a
- * sparkle icon, and a word-count meta on the summary line. The
- * streaming variant keeps the spinner but stays open so the user
- * can watch the chain-of-thought forming.
+ * Minimal think summary: streaming shows a spinner, finalized shows
+ * just the label + word count. No decorative icons, no animations.
  * -------------------------------------------------------------- */
-var THINK_SPARK_PATH = "M8 1.5l1.05 3.15L12.2 5.7l-3.15 1.05L8 9.9 6.95 6.75 3.8 5.7l3.15-1.05L8 1.5zM3 11.2l.6 1.8 1.8.6-1.8.6L3 16l-.6-1.8-1.8-.6 1.8-.6L3 11.2zm10 0l.6 1.8 1.8.6-1.8.6L13 16l-.6-1.8-1.8-.6 1.8-.6L13 11.2z";
 
 function _thinkUnitCount(s){
   if(!s)return 0;
@@ -184,11 +177,7 @@ function _thinkSummary(opts){
     : '';
   var icon = opts.streaming
     ? '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>'
-    : '<span class="think-icon" aria-hidden="true">' +
-        '<svg viewBox="0 0 16 16" width="14" height="14">' +
-          '<path d="' + THINK_SPARK_PATH + '" fill="currentColor"/>' +
-        '</svg>' +
-      '</span>';
+    : '';
   return '<summary class="think-summary">' +
     icon +
     '<span class="think-summary-label">' + esc(label) + '</span>' +
