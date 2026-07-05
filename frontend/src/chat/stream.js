@@ -27,8 +27,14 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   var sleepBackoff=window.sleepBackoff;
   var offlineGuard=window.offlineGuard;
   var isReasoningProvider=window.isReasoningProvider;
-  var STREAM_TIMEOUT_MS=window.STREAM_TIMEOUT_MS;
-  var STREAM_HEARTBEAT_MS=window.STREAM_HEARTBEAT_MS;
+  /* P_reasoning_budget — pick the silence/total budget per provider.
+     Reasoning models stream 30-90s of sparse thinking tokens; a 60s
+     heartbeat on them would falsely trip "stalled" and waste a retry. */
+  var _budget=(typeof window.pickStreamBudgets==="function"
+    ? window.pickStreamBudgets()
+    : { timeoutMs: window.STREAM_TIMEOUT_MS||240000, heartbeatMs: window.STREAM_HEARTBEAT_MS||45000 });
+  var STREAM_TIMEOUT_MS=_budget.timeoutMs;
+  var STREAM_HEARTBEAT_MS=_budget.heartbeatMs;
   var STREAM_RETRYABLE_STATUS=window.STREAM_RETRYABLE_STATUS;
   var STREAM_MAX_ATTEMPTS=window.STREAM_MAX_ATTEMPTS;
 
@@ -39,138 +45,22 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   }
   state.lastCallError=null;
 
-  /* Built-in Beagle: call MiniMax through the nginx reverse proxy at
-     /api/minimax/ (same origin, no CORS/CSP issues). */
+  /* Built-in Beagle: route through the Express backend's /api/chat/stream
+     so tool definitions (web_search, code_interpreter) are sent and tool
+     calls are handled server-side, just like external providers. */
   if(provider.isBuiltIn){
-    var beagleMsgs=messages.slice();
-    /* Append identity as the LAST system message so it takes precedence. */
+    /* Prepend the Beagle A identity system message. */
     var hasIdentity=false;
-    for(var bi=0;bi<beagleMsgs.length;bi++){
-      if(beagleMsgs[bi].role==="system"&&beagleMsgs[bi].content.indexOf("Beagle A")>=0)hasIdentity=true;
+    for(var bi=0;bi<messages.length;bi++){
+      if(messages[bi].role==="system"&&messages[bi].content.indexOf("Beagle A")>=0)hasIdentity=true;
     }
     if(!hasIdentity){
-      beagleMsgs.unshift({role:"system",
+      messages=messages.slice();
+      messages.unshift({role:"system",
         content:"Your name is Beagle A. You are an AI assistant developed by Topodrive company. "+
           "You are helpful, knowledgeable, and precise. Never identify as MiniMax or any other model."});
     }
-    var body=JSON.stringify({messages:beagleMsgs,model:provider.model,temperature:0.7,max_tokens:maxTokens,stream:true});
-    /* Built-in Beagle path: previously had only a single 120s total
-       timeout and no heartbeat / retry, so a MiniMax stall would hang
-       the chat forever. Now uses the universal watchdog + 1 retry. */
-    if(offlineGuard()){
-      state.lastCallError="offline: you appear to be offline";
-      return null;
-    }
-    var beagleAttempts=0;
-    var BEAGLE_MAX=2;
-    var lastBeagleErr=null;
-    while(beagleAttempts<BEAGLE_MAX){
-      beagleAttempts++;
-      var wdBeagle=makeAIWatchdog(STREAM_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdBeagle&&wdBeagle.stop("beagle-watchdog")}catch(_){}});
-      var acDirect=wdBeagle.ac;
-      window._activeChatAbort=function(reason){try{acDirect.abort(reason||"superseded")}catch(_){}};
-      try{
-        var csrfDirect=getCsrfToken();
-        var respDirect=await fetch("/api/minimax/v1/chat/completions",{
-          method:"POST",
-          credentials:"include",
-          headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key,"X-CSRF-Token":csrfDirect||""},
-          body:body,
-          signal:acDirect.signal
-        });
-        wdBeagle.touch();
-        if(!respDirect.ok){
-          var errBody="";try{errBody=await respDirect.text()}catch(_){}
-          lastBeagleErr=respDirect.status+" "+(errBody||respDirect.statusText||"").slice(0,200);
-          /* Retry on transient 5xx / 429 only. */
-          if(STREAM_RETRYABLE_STATUS[respDirect.status]&&beagleAttempts<BEAGLE_MAX){
-            wdBeagle.stop("retryable-http");
-            await sleepBackoff(beagleAttempts,respDirect.headers.get("Retry-After"));
-            continue;
-          }
-          state.lastCallError=lastBeagleErr;
-          wdBeagle.stop("done");
-          return null;
-        }
-        if(!respDirect.body||!respDirect.body.getReader){
-          state.lastCallError="no stream body";
-          wdBeagle.stop("done");
-          return null;
-        }
-        var readerDirect=respDirect.body.getReader();
-        var decoderDirect=new TextDecoder("utf-8");
-        var bufDirect="";var fullDirect="";
-        var gotAny= false;
-        while(true){
-          var stepDirect=await readerDirect.read();
-          if(stepDirect.done)break;
-          wdBeagle.touch();
-          if(stepDirect.value&&stepDirect.value.byteLength>0)gotAny=true;
-          bufDirect+=decoderDirect.decode(stepDirect.value,{stream:true});
-          var idxDirect;
-          while((idxDirect=bufDirect.indexOf("\n\n"))>=0){
-            var frameDirect=bufDirect.slice(0,idxDirect);bufDirect=bufDirect.slice(idxDirect+2);
-            var linesDirect=frameDirect.split("\n");
-            for(var liD=0;liD<linesDirect.length;liD++){
-              var lineD=linesDirect[liD];
-              if(lineD.indexOf("data:")!==0)continue;
-              var payloadD=lineD.slice(5).trim();
-              if(!payloadD||payloadD==="[DONE]")continue;
-              try{
-                var objD=JSON.parse(payloadD);
-                var deltaD=objD.choices&&objD.choices[0]&&objD.choices[0].delta&&objD.choices[0].delta.content;
-                var reasoningD=objD.choices&&objD.choices[0]&&objD.choices[0].delta&&objD.choices[0].delta.reasoning_content;
-                if(typeof reasoningD==="string"&&reasoningD.length>0&&typeof onThinking==="function"){
-                  try{onThinking(reasoningD)}catch(_){}
-                }
-                if(typeof deltaD==="string"){
-                  fullDirect+=deltaD;
-                  try{onDelta(deltaD,fullDirect)}catch(_){}
-                }
-              }catch(_){}
-            }
-          }
-        }
-        bufDirect+=decoderDirect.decode();
-        wdBeagle.stop("done");
-        return {text:fullDirect,html:null,widgets:[],cancelled:false};
-      }catch(e){
-        wdBeagle.stop("error");
-        var isAbort=(e&&(e.name==="AbortError"||e.code===20));
-        var reason=wdBeagle.reason()||"";
-        var isHeartbeat=reason.indexOf("heartbeat")>=0;
-        var isTotal=reason.indexOf("total-timeout")>=0;
-        lastBeagleErr=isAbort
-          ?(isHeartbeat?"stream stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)":
-             isTotal?"request timed out after "+(STREAM_TIMEOUT_MS/1000)+"s":
-             "cancelled (timeout or user)")
-          :String(e&&e.message||e);
-        /* Retriable: heartbeat (silence) or total timeout. The user
-           cancellation path (window._activeChatAbort("superseded"))
-           has reason="" so watchdog.isStopped() is true, and we don't
-           retry in that case. */
-        var userCancelled=isAbort&&!wdBeagle.isStopped();
-        if(!userCancelled&&(isHeartbeat||isTotal)&&beagleAttempts<BEAGLE_MAX){
-          await sleepBackoff(beagleAttempts,null);
-          continue;
-        }
-        if(userCancelled){
-          /* Explicit user Stop click (the Stop button on the send
-             button morphed into a red square). The fetch was aborted
-             by _activeChatAbort, not by the watchdog — do NOT show
-             an error bubble and do NOT fall back to mock. Return a
-             cancelled result so the caller can clean up the bubble
-             silently. Partial text already streamed into `fullDirect`
-             is preserved so the bubble can render whatever the user
-             saw up to the click. */
-          return {text:fullDirect||"",html:null,widgets:[],cancelled:true};
-        }
-        state.lastCallError=lastBeagleErr;
-        return null;
-      }
-    }
-    state.lastCallError=lastBeagleErr||"Beagle request failed";
-    return null;
+    /* Fall through to the general /api/chat/stream path below. */
   }
 
   var attempt=0;
@@ -186,6 +76,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     attempt++;
     var ac=new AbortController();
     window._activeChatAbort=function(reason){try{ac.abort(reason||"superseded")}catch(_){}};
+    window._activeChatAbort._fromThisCall=true;
     var tmo=setTimeout(function(){try{ac.abort("timeout")}catch(_){}},STREAM_TIMEOUT_MS);
     var hbTmo=null;
     var resp=null;
@@ -246,6 +137,17 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     var buf="";
     var full="";
     var formattedHtml=null;
+    /* P_inline_think — M3 (the default built-in provider) emits chain-of-
+       thought as inline <think>...</think> tags inside delta.content,
+       NOT as a separate reasoning_content field. Without this parser
+       the thinking pill would never light up for the default provider.
+       The state machine holds a tail buffer (thinkTail) so a tag split
+       across two chunks ("<th" + "ink>...") is reassembled before
+       we decide where the content belongs. */
+    var thinkOpen=false;        // currently inside a <think> block
+    var thinkTail="";           // unflushed tail of the current delta
+    var thinkBuf="";            // accumulated think content since the last flush
+    var hasWarnedMissingThinking=false;  // one-shot warn when onThinking is missing
     var cancelled=false;
     var bytesReceived=0;
     var gotAnyData=false;
@@ -297,6 +199,22 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             try{opts.onToolResult(JSON.parse(dataParts.join("\n")))}catch(_){}
             continue;
           }
+          /* P_progress — incremental tool events. The backend emits
+             these between tool_use and tool_result to stream
+             stdout/stderr and phase markers. Routing is per-call so
+             the caller can update the matching .agent-tool-card
+             with a spinner + live text. */
+          if(evName==="tool_progress"&&opts&&typeof opts.onToolProgress==="function"&&dataParts.length){
+            try{opts.onToolProgress(JSON.parse(dataParts.join("\n")))}catch(_){}
+            continue;
+          }
+          /* P_execution_sse — execution_start carries the executionId
+             that the frontend uses to connect to the independent
+             execution SSE endpoint for real-time progress. */
+          if(evName==="execution_start"&&opts&&typeof opts.onExecutionStart==="function"&&dataParts.length){
+            try{opts.onExecutionStart(JSON.parse(dataParts.join("\n")))}catch(_){}
+            continue;
+          }
           if(dataParts.length===0)continue;
           var payload=dataParts.join("\n");
           if(!payload||payload==="[DONE]")continue;
@@ -321,12 +239,149 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             if(typeof reasoning==="string"&&reasoning.length>0&&typeof onThinking==="function"){
               try{onThinking(reasoning)}catch(_){}
             }
+            /* P_inline_think — split delta on <think>/</think> boundaries.
+               The default built-in provider (M3) puts its chain-of-thought
+               inside the content stream as inline <think>...</think>
+               tags. We scan the accumulated delta (thinkTail + delta)
+               for these tags and route only the content OUTSIDE the
+               tags to onDelta. Inside-tag content goes to onThinking so
+               the thinking pill lights up on every device, not just
+               ones that happen to use DeepSeek-style reasoning_content. */
             if(typeof delta==="string"&&delta.length>0){
-              full+=delta;
-              try{if(onDelta){onDelta(delta,full)}}catch(deltaErr){
-                /* Swallow render errors so the stream survives a bad formatMsg. */
-                console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
+              if(!thinkOpen){
+                /* Not currently inside a think block. Look for the
+                   opening tag. thinkTail holds any partial tag that
+                   might be split between this chunk and the next. */
+                var probe=thinkTail+delta;
+                var openIdx=probe.indexOf("<think>");
+                if(openIdx===-1){
+                  /* No opening tag in sight. Flush probe-minus-tail
+                     to onDelta and shrink tail to the last 7 chars
+                     ("<think>" is 7 chars — anything shorter cannot
+                     start a tag in the next chunk). */
+                  var safeLen=Math.max(0,probe.length-7);
+                  var safeStr=probe.slice(0,safeLen);
+                  thinkTail=probe.slice(safeLen);
+                  if(safeStr.length>0){
+                    full+=safeStr;
+                    try{if(onDelta){onDelta(safeStr,full)}}catch(deltaErr){
+                      console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
+                    }
+                  }
+                }else{
+                  /* Found <think>. Flush everything BEFORE it via
+                     onDelta, then mark thinkOpen and start buffering
+                     the content AFTER <think> for onThinking. */
+                  var before=probe.slice(0,openIdx);
+                  var afterOpen=probe.slice(openIdx+"<think>".length);
+                  thinkTail="";
+                  if(before.length>0){
+                    full+=before;
+                    try{if(onDelta){onDelta(before,full)}}catch(deltaErr){
+                      console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
+                    }
+                  }
+                  thinkOpen=true;
+                  thinkBuf="";
+                  /* Now process the afterOpen tail through the
+                     thinkOpen branch below by re-entering with
+                     thinkOpen=true. We do that by appending
+                     afterOpen to thinkBuf and falling through. */
+                  delta=afterOpen;
+                  /* Fall through to the thinkOpen block. */
+                }
               }
+              if(thinkOpen){
+                /* Inside a think block. Scan for the closing tag,
+                   flushing thinkBuf to onThinking in slices between
+                   tags. */
+                var probe2=thinkTail+delta;
+                var closeIdx=probe2.indexOf("</think>");
+                while(closeIdx!==-1){
+                  var inside=probe2.slice(0,closeIdx);
+                  thinkBuf+=inside;
+                  if(thinkBuf.length>0&&typeof onThinking==="function"){
+                    try{onThinking(thinkBuf)}catch(_){}
+                  }
+                  thinkBuf="";
+                  thinkOpen=false;
+                  /* Everything after </think> is normal content. */
+                  var after=probe2.slice(closeIdx+"</think>".length);
+                  /* Keep a 7-char tail in case <think> starts again
+                     in the same chunk (unusual but possible). */
+                  var keepLen=Math.min(after.length,7);
+                  thinkTail=after.slice(after.length-keepLen);
+                  var bodyStr=after.slice(0,after.length-keepLen);
+                  if(bodyStr.length>0){
+                    full+=bodyStr;
+                    try{if(onDelta){onDelta(bodyStr,full)}}catch(deltaErr){
+                      console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
+                    }
+                  }
+                  /* Check whether the remaining tail also opens a
+                     new think block. If so, loop again. Otherwise
+                     break. */
+                  if(thinkTail.indexOf("<think>")!==-1||bodyStr.indexOf("<think>")!==-1){
+                    /* Re-enter the outer if-block by appending tail+body
+                       to a fresh probe. Simpler: just keep going. */
+                    var remaining=thinkTail+bodyStr;
+                    thinkTail="";
+                    if(remaining.length>0){
+                      /* Recurse into the "not in think" branch. */
+                      var oi2=remaining.indexOf("<think>");
+                      if(oi2===-1){
+                        var sl2=Math.max(0,remaining.length-7);
+                        var sf2=remaining.slice(0,sl2);
+                        thinkTail=remaining.slice(sl2);
+                        if(sf2.length>0){
+                          full+=sf2;
+                          try{if(onDelta){onDelta(sf2,full)}}catch(deltaErr){
+                            console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
+                          }
+                        }
+                      }else{
+                        var bf=remaining.slice(0,oi2);
+                        var ao=remaining.slice(oi2+"<think>".length);
+                        if(bf.length>0){
+                          full+=bf;
+                          try{if(onDelta){onDelta(bf,full)}}catch(deltaErr){
+                            console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
+                          }
+                        }
+                        thinkOpen=true;
+                        thinkBuf="";
+                        delta=ao;
+                        probe2=thinkTail+delta;
+                        closeIdx=probe2.indexOf("</think>");
+                        continue;
+                      }
+                    }
+                  }
+                  break;
+                }
+                if(thinkOpen){
+                  /* No closing tag yet in this chunk. Buffer the
+                     full probe into thinkBuf but keep a 7-char
+                     tail in case </think> arrives split.
+                     Flush thinkBuf to onThinking every ~200 chars
+                     so the user sees live progress instead of
+                     waiting for the full think block to close. */
+                  thinkBuf+=probe2.slice(0,Math.max(0,probe2.length-7));
+                  thinkTail=probe2.slice(Math.max(0,probe2.length-7));
+                  if(typeof onThinking==="function"&&thinkBuf.length>=200){
+                    try{onThinking(thinkBuf)}catch(_){}
+                  }
+                }
+              }
+            }
+            /* P_fix_think_warn — surface misconfigured callers. The
+               main chat path passes onThinking to light up the
+               thinking pill; if it is missing while we are clearly
+               receiving reasoning content, warn once per stream so
+               the bug shows up in the console without flooding it. */
+            if(!hasWarnedMissingThinking&&typeof delta==="string"&&(thinkOpen||thinkBuf.length>0)&&typeof onThinking!=="function"){
+              hasWarnedMissingThinking=true;
+              try{console.warn("[API stream] inline <think> detected but caller did not provide onThinking; thinking pill will not light up. Pass an onThinking callback in callAPIStream(...,onThinking,opts).")}catch(_){}
             }
           }catch(parseErr){
             /* Could be a final [DONE] or unknown frame; ignore unless it
@@ -343,8 +398,48 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       }
       /* Clear heartbeat — stream ended naturally. */
       if(hbTmo){clearTimeout(hbTmo);hbTmo=null}
+      /* P_tmo_cleanup — also clear the total-timeout watchdog on the
+         happy path. Without this, `tmo` keeps a closure (capturing
+         `ac`, the abort listener, and STREAM_TIMEOUT_MS) alive for
+         up to the full budget AFTER the stream completed. Over many
+         turns this pins the previous AbortController + Response
+         state, increasing GC pressure and — on some browsers — the
+         chance that a stale watchdog fires during the next call. */
+      if(tmo){clearTimeout(tmo);tmo=null}
+      /* P_reader_release — explicitly release the reader so the
+         underlying HTTP/2 stream can be returned to the connection
+         pool. Without this, the browser keeps the stream counted
+         against its per-host concurrent-stream limit (Chrome 256,
+         Firefox 100), and a long chat session can exhaust it. */
+      try{reader.releaseLock()}catch(_){}
       /* Flush any trailing UTF-8 bytes that didn't have a closing chunk. */
       buf+=decoder.decode();
+      /* P_inline_think — if the stream ended mid-think (e.g. truncated
+         by max_tokens), flush whatever thinking content we accumulated
+         so the user at least sees the partial reasoning rather than
+         silently dropping it. */
+      if(thinkOpen&&thinkBuf.length>0&&typeof onThinking==="function"){
+        try{onThinking(thinkBuf)}catch(_){}
+        thinkBuf="";
+        thinkOpen=false;
+      }else if(thinkOpen&&thinkTail.length>0&&typeof onThinking==="function"){
+        try{onThinking(thinkTail)}catch(_){}
+        thinkTail="";
+        thinkOpen=false;
+      }else if(!thinkOpen&&thinkTail.length>0){
+        /* P_truncation_fix — when the stream ends and we're NOT inside
+           a think block, thinkTail holds up to 7 unflushed chars
+           (held back so a split <think> across chunks would still be
+           reassembled). With no think block to flush into, those chars
+           are real response content that would otherwise be silently
+           dropped — and they compound across every chunk, so a long
+           non-thinking response can lose its last 7 chars. Forward
+           them to full + onDelta so the saved message + UI bubble
+           both contain the complete answer. */
+        full+=thinkTail;
+        try{if(onDelta){onDelta(thinkTail,full)}}catch(_){}
+        thinkTail="";
+      }
     }catch(e){
       console.error("[API stream] read error:",e);
       if(hbTmo){clearTimeout(hbTmo);hbTmo=null}
@@ -376,6 +471,14 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       if(!state.lastCallError)state.lastCallError="Stream cancelled (parse error)";
       return null;
     }
+    /* P_final_cleanup — drop refs to the read-side resources so the
+       per-turn HTTP/2 stream and underlying buffers can be GC'd
+       promptly. This is the path that runs on a clean DONE; the
+       earlier `releaseLock` is for the path where the reader is
+       still bound to a writable variable. */
+    try{resp.body&&resp.body.cancel&&resp.body.cancel().catch(function(){})}catch(_){}
+    resp=null;
+    reader=null;
     /* Empty stream — server returned 200 but no body. Treat as
        retriable (rare, but happens on flaky upstreams). */
     if(!gotAnyData&&!full&&!formattedHtml){
@@ -391,6 +494,13 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     if(!full&&!formattedHtml){
       state.lastCallError="empty stream";
       return null;
+    }
+    /* P_global_handle_cleanup — drop the global abort handle so
+       a future "session-switch" or "user-stop" call doesn't fire
+       a closure that pins this call's AbortController for the
+       remaining watchdog window. */
+    if(window._activeChatAbort&&window._activeChatAbort._fromThisCall){
+      window._activeChatAbort=null;
     }
     return {text:full,html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:false};
   }

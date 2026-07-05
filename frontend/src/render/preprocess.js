@@ -83,6 +83,27 @@ export function preprocessMarkdown(t){
 
   s = _autoWrapBareBracketMath(s);
 
+  /* Promote a "---" / "----" / "-----" line that is *directly* preceded
+     by non-blank text into a clearly-bounded horizontal rule. Without
+     this padding, marked's setext-h2 rule fires first — the 3-or-more
+     `-` row is interpreted as the underline of the preceding line and
+     that line is silently promoted to <h2>, swallowing the `---`. The
+     behaviour is intermittent because it hinges on whether the prior
+     token had a blank line by the time the streaming buffer is
+     committed; the user-facing symptom is "the model's `---` divider
+     is sometimes a horizontal rule and sometimes gone." Padding the
+     divider with a leading blank line forces marked into the thematic
+     break path deterministically. We only touch ≥3 dashes (the bare
+     minimum for a thematic break) and we only pad when the prior
+     line is non-blank, so any existing properly-bounded `---` keeps
+     its exact form. Side effect: a `text\n---` pair that the model
+     genuinely intended as a setext h2 (3+ dashes is unusual for setext
+     — usually a single `-` or `=`) gets the same padding and ends up
+     as plain text followed by a horizontal rule; the trade-off favours
+     the overwhelmingly common `--- = divider` case over the rare
+     setext-with-3-dashes case. */
+  s = s.replace(/([^\n])\n(-{3,})\s*(?=\n|$)/g, '$1\n\n$2');
+
   var fenceCount = (s.match(/```/g) || []).length;
   fenceCount -= _ppStash.length * 2;
   if (fenceCount % 2 === 1) {
@@ -147,6 +168,13 @@ export function preprocessMarkdownForStreaming(t){
   });
 
   s = _autoWrapBareBracketMath(s);
+  /* Mirror the `---` horizontal-rule fix from preprocessMarkdown.
+     Streaming buffers concatenate partial tokens, so a "first
+     paragraph / `---` / next paragraph" sequence often shows up
+     in the partial buffer as `<paragraph>\n---\n<next>` instead
+     of the well-bounded `\n\n---\n\n` the model actually emitted.
+     Pad the rule line so marked picks the thematic-break path. */
+  s = s.replace(/([^\n])\n(-{3,})\s*(?=\n|$)/g, '$1\n\n$2');
   s = s.replace(/(^|\n)\s*[•‣◦・·]\s+/g, '$1- ');
   s = fixMarkdownTableSeparators(s);
 

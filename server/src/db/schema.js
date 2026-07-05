@@ -70,7 +70,7 @@ export const sessions = pgTable('sessions', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   title: text('title'),
   topic: text('topic').notNull().default(''),
-  mode: text('mode').notNull().default('tutor'),   // tutor | chat
+  mode: text('mode').notNull().default('chat'),    // tutor | chat
   phase: text('phase').notNull().default('topic'), // topic | diagnostic | chat
   /* P_exam-history — top-level session "shape". Default 'chat' so
    * every existing row stays the same; the chat service still uses
@@ -125,6 +125,13 @@ export const messages = pgTable('messages', {
      (server-extracted text). Persisted so a session reload restores the
      thumbnails and parsed text without re-uploading. */
   attachments: jsonb('attachments').default([]),
+  /* P_tool-history — array of {id, name, input, output, isError, artifacts}
+     representing tool calls the assistant made on this turn (web_search,
+     code_interpreter, etc). Persisted so a session reload re-renders the
+     tool cards under the message instead of silently dropping them after
+     the live stream ends. Default to [] so existing rows read back as
+     "no tool calls" without a migration rewrite. */
+  toolCalls: jsonb('tool_calls').default([]),
   editedAt: timestamp('edited_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

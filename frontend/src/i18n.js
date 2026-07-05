@@ -22,16 +22,15 @@ var I18N={
     "provider.multimodal":"Multimodal (vision-capable)",
     "provider.multimodalHint":"Allow image attachments to be sent to this model",
     "attach.notMultimodal":"The active model can't view images. Add a multimodal provider or remove image attachments.",
-    /* P_lang-slogans — the topic-setup hero slogan ("What would
-       you like to explore?" / "What can I help you with?") is
-       intentionally hardcoded English in BOTH i18n blocks so the
-       language toggle never affects it. The slogan is mode-
-       dependent (tutor vs chat) and managed by syncAppModeUI()
-       in main.js, which writes the right hardcoded English
-       slogan after applyI18n runs. Other topic-setup lines
-       (subtitle / disclaimer) are likewise mode-dependent and
-       pinned English so the hero stays consistent across the
-       two modes. */
+    /* P_lang-slogans — the topic-setup hero slogan was previously
+       pinned English in BOTH i18n blocks (with a comment claiming
+       this was intentional). That made the Tutor-mode hero stay
+       English even when the user switched the whole app to 中文,
+       which read as broken localization rather than a design
+       choice. Chat-mode slogans are translated (`topic.titleChat`),
+       so for symmetry we now translate these too. The hero is
+       still managed by syncAppModeUI() in main.js — only the
+       zh-side strings change. */
     "topic.title":"What would you like to explore?",
     "topic.subtitle":"Describe what you want to learn. Socrates will ask you questions to help you think deeper about it.",
     "topic.inputPlaceholder":"e.g. I want to understand how machine learning works...",
@@ -263,7 +262,143 @@ var I18N={
     "tutor.revealAnswer":"Reveal answer",
     "tutor.showHint":"Show hint",
     "tutor.showSolution":"Show solution",
-    "tutor.submitAnswer":"Submit"
+    "tutor.submitAnswer":"Submit",
+    "chat.thinking":"Thinking…",
+    "chat.generating":"Generating…",
+    "chat.generatingQuestions":"Generating questions…",
+    "chat.generatingQ":"Generating Q {n}/{total}…",
+    "chat.generatedQ":"Generated {n}/{total} questions",
+    "chat.knowledgeReady":"Knowledge dimensions ready",
+    "common.loading":"Loading…",
+    "common.saving":"Saving…",
+    "common.thinking":"Thinking…",
+    "common.generating":"Generating…",
+    "common.ok":"OK",
+    "chat.webSearchLabel":"Web search:",
+    "chat.webSearchSources":"{n} sources",
+    "chat.webSearchRefreshTimeout":"Search refresh timed out",
+    "chat.webSearchResults":"Latest web search results",
+    "chat.webSearchFailed":"Search failed",
+    "auth.sessionExpired":"Your session has expired. Please sign in again.",
+    "auth.checkInbox":"Check your inbox",
+    "auth.verificationLinkSent":"We sent a verification link to <strong>{email}</strong>. Click the button in the email to start learning with Socrates. The link expires in 24 hours.",
+    "auth.resetLinkSent":"If an account exists for <strong>{email}</strong>, we sent a password reset link. The link expires in 1 hour.",
+    "auth.verifiedTitle":"Email verified",
+    "auth.verifiedMsg":"You're signed in. Taking you to your dashboard…",
+    "auth.signinError":"Sign-in failed",
+    "auth.signupError":"Sign-up failed",
+    "auth.codeSentMsg":"We sent a code to <strong>{email}</strong>. It expires in 10 minutes.",
+    "auth.signIn":"Sign in",
+    "auth.sending":"Sending…",
+    "auth.resetting":"Resetting…",
+    "auth.resetPassword":"Reset password",
+    "auth.passwordTooShort":"Password must be at least 8 characters.",
+    "auth.passwordsDontMatch":"Passwords don't match.",
+    "auth.pleaseEnterEmail":"Please enter your email.",
+    "auth.wrongCredentials":"Wrong email or password.",
+    "auth.loginFailedPrefix":"Login failed: ",
+    "auth.sendVerificationLink":"Send verification link",
+    "auth.sendResetLink":"Send reset link",
+    "auth.sendCode":"Send code",
+    "auth.logIn":"Log in",
+    "exam.generating":"Generating your exam…",
+    "exam.generatingQ":"Generating question {n} of {total}…",
+    "exam.generatingQSimple":"Generating question {n}…",
+    "exam.cancel":"Cancel",
+    "exam.preparing":"Preparing…",
+    "exam.preparingSubtitle":"The AI is preparing your questions — this usually takes a few seconds.",
+    "exam.tryAgain":"Try again",
+    "exam.close":"Close",
+    "exam.cancelled":"Generation cancelled.",
+    "exam.noModelsAvailable":"No models available",
+    "exam.modelLabel":"Model",
+    "exam.typeMc":"Multiple choice",
+    "exam.typeFb":"Fill blank",
+    "exam.typeSa":"Short answer",
+    "exam.cancelledTitle":"Cancelled",
+    "exam.answered":"answered",
+    "exam.results":"Exam Results: {topic}",
+    "exam.placeholderTopic":"e.g. Linear Algebra, Quantum Mechanics, World War II...",
+    "exam.placeholderDifficulty":"beginner / intermediate / hard / expert / custom",
+    "exam.placeholderInstructions":"Specific topics to cover, or leave blank for AI to decide...",
+    "exam.placeholderAnswer":"Type your answer…",
+    "exam.placeholderTopicZh":"如：线性代数、量子力学、二战…",
+    "exam.placeholderDifficultyZh":"入门 / 中级 / 困难 / 专家 / 自定义",
+    "exam.placeholderInstructionsZh":"具体说明要覆盖的知识点，留空则由 AI 决定…",
+    "exam.placeholderAnswerZh":"输入你的答案…",
+    "settings.saved":"Saved. Active: {name}.",
+    "settings.savedFallback":"Saved. Active provider is missing model — using mock engine as fallback.",
+    "settings.noModels":"No models configured — using mock engine.",
+    "settings.saveFailed":"Save failed: {msg}",
+    "settings.unknownError":"unknown error",
+    "settings.cleared":"Cleared. Built-in Beagle A is still available — pick a model to start.",
+    "settings.signInFirst":"Please sign in to save API keys.",
+    "settings.rowMissing":"Row #{n} is missing URL or model. Fix it and try again.",
+    "settings.rowMissingKey":"New row #{n} needs an API key.",
+    "settings.apiKeyLimit":"API key limit reached for {tier} plan ({max} keys). Upgrade your plan to add more.",
+    "settings.refresh":"Refreshing…",
+    "settings.action.deleteAccount":"Failed to delete account: {msg}",
+    "common.thinkingLabel":"Thinking",
+    "common.dayShort.sun":"Sun",
+    "common.dayShort.mon":"Mon",
+    "common.dayShort.tue":"Tue",
+    "common.dayShort.wed":"Wed",
+    "common.dayShort.thu":"Thu",
+    "common.dayShort.fri":"Fri",
+    "common.dayShort.sat":"Sat",
+    "think.title":"Thought",
+    "think.thinking":"Thinking…",
+    "think.wordCount":"{n} words",
+    "think.wordCountOne":"1 word",
+    "think.toggle":"Toggle thinking",
+    "profile.disclaimerTutor":"Socrates asks questions to help you think. It does not judge your answers.",
+    "tag.placeholder":"Add a tag and press Enter",
+    "project.placeholderName":"e.g. Linear Algebra",
+    "project.placeholderDesc":"Optional. Helps the tutor tailor its style.",
+    "kb.placeholderNote":"Write anything you want to remember about this sub-topic...",
+    "prompt.placeholderTitle":"e.g. Code review",
+    "prompt.placeholderShortcut":"/my-template",
+    "prompt.placeholderDesc":"One-line summary",
+    "prompt.placeholderBody":"The text inserted into the chat as a placeholder. The user types or pastes the real content below; this prefix is stripped before the message is sent to the LLM.",
+    "prompt.placeholderSystem":"Optional. The invisible instruction injected as a system message whenever this template is active. Tell the model what role to play, what the input contract is, what the output should look like, and any constraints. Leave empty to send the body as a plain user message with no role switch.",
+    "provider.placeholderLabel":"Label (e.g. GPT-5.5)",
+    "provider.placeholderUrl":"Base URL  (https://api.openai.com/v1)",
+    "provider.placeholderKey":"API key",
+    "provider.placeholderModel":"Model id  (e.g. gpt-5.5, claude-opus-4-8, sonnet-4-6)",
+    "usage.failed":"Failed to load usage data. Make sure you are signed in.",
+    "usage.failedGeneric":"Failed to load usage data.",
+    "usage.loading":"Loading usage data…",
+    "exam.noResponse":"no response",
+    "exam.failNoResponse":"Generation failed — no response",
+    "exam.failed":"Failed",
+    "exam.failParse":"Parse failed — unexpected format",
+    "exam.failParseHint":"Try again or switch model",
+    "exam.parseFailed":"Parse failed",
+    "exam.failNone":"Generation failed — no questions",
+    "exam.questionsLabel":"questions ·",
+    "exam.answeredLabel":"answered",
+    "diag.analyzingTopic":"Analyzing topic…",
+    "diag.ready":"Ready",
+    "common.noResponseTimeout":"No response for {sec}s — check API availability",
+    "common.retry":"Retry",
+    "common.truncated":"(truncated)",
+    "common.downloadFile":"[download {type}]",
+    "share.linkExpired":"Link expired — start a new topic.",
+    "share.creatingLink":"Creating link…",
+    "share.failedCreate":"Failed to create link: {msg}",
+    "share.failedRevoke":"Failed to revoke: {msg}",
+    "share.copied":"Copied!",
+    "share.copy":"Copy",
+    "share.errorUnknown":"unknown error",
+    "share.notFoundTitle":"Shared conversation not found",
+    "share.notFoundMsg":"The link may be expired or invalid.",
+    "share.readOnly":"Read-only",
+    "topic.titleChat":"What can I help you with?",
+    "topic.subChat":"Ask me anything. Plain conversation — no diagnostic, no lesson plan.",
+    "topic.disclaimerChat":"Chat mode is a plain conversation.",
+    "profile.savedAt":"Saved at {hh}:{mm}",
+    "profile.instructionsSavedPlaceholder":"Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language.",
+    "profile.instructionsAboutPlaceholder":"e.g. I'm a backend engineer working on a payments product. I'm allergic to puns."
   },
   zh:{
     "chat.placeholder":"输入你的想法...",
@@ -282,12 +417,12 @@ var I18N={
     "provider.multimodal":"多模态（支持图像理解）",
     "provider.multimodalHint":"允许将图片附件发送给此模型",
     "attach.notMultimodal":"当前模型无法理解图像。请添加多模态提供方或移除图片附件。",
-    /* P_lang-slogans — see the matching en block: the hero
-       slogan/subtitle are intentionally pinned English so they
-       stay consistent regardless of language toggle or saved
-       preference. Only the topic input placeholder translates. */
-    "topic.title":"What would you like to explore?",
-    "topic.subtitle":"Describe what you want to learn. Socrates will ask you questions to help you think deeper about it.",
+    /* P_lang-slogans — Tutor-mode hero was pinned English before; now
+       translated so the whole app reads consistently in 中文.
+       The chat-mode equivalents (`topic.titleChat` / `topic.subChat`)
+       above are already localized, so Tutor now mirrors that. */
+    "topic.title":"今天想探索什么？",
+    "topic.subtitle":"描述你想学习的主题，Socrates 会通过提问引导你深入思考。",
     "topic.inputPlaceholder":"例如：我想了解机器学习是怎么工作的...",
     "topic.start":"开始",
     "topic.hint":"描述越具体效果越好",
@@ -514,8 +649,144 @@ var I18N={
     "tutor.revealAnswer":"查看答案",
     "tutor.showHint":"显示提示",
     "tutor.showSolution":"显示答案",
-    "tutor.submitAnswer":"提交"
-  }
+    "tutor.submitAnswer":"提交",
+    "chat.thinking":"思考中…",
+    "chat.generating":"正在生成…",
+    "chat.generatingQuestions":"正在生成问题…",
+    "chat.generatingQ":"正在出第 {n}/{total} 题…",
+    "chat.generatedQ":"已生成 {n}/{total} 题",
+    "chat.knowledgeReady":"知识点已就绪",
+    "common.loading":"加载中…",
+    "common.saving":"保存中…",
+    "common.thinking":"思考中…",
+    "common.generating":"正在生成…",
+    "common.ok":"确定",
+    "chat.webSearchLabel":"网络搜索：",
+    "chat.webSearchSources":"{n} 个来源",
+    "chat.webSearchRefreshTimeout":"搜索刷新超时",
+    "chat.webSearchResults":"最新网络搜索结果",
+    "chat.webSearchFailed":"搜索失败",
+    "auth.sessionExpired":"会话已过期，请重新登录。",
+    "auth.checkInbox":"请检查邮箱",
+    "auth.verificationLinkSent":"我们已向 <strong>{email}</strong> 发送验证链接。点击邮件中的按钮即可开始。链接 24 小时内有效。",
+    "auth.resetLinkSent":"如果该邮箱存在账户，我们已发送重置链接。链接 1 小时内有效。",
+    "auth.verifiedTitle":"邮箱已验证",
+    "auth.verifiedMsg":"已登录，正在跳转到主页…",
+    "auth.signinError":"登录失败",
+    "auth.signupError":"注册失败",
+    "auth.codeSentMsg":"验证码已发送到 <strong>{email}</strong>。10 分钟内有效。",
+    "auth.signIn":"登录",
+    "auth.sending":"发送中…",
+    "auth.resetting":"重置中…",
+    "auth.resetPassword":"重置密码",
+    "auth.passwordTooShort":"密码至少需要 8 个字符。",
+    "auth.passwordsDontMatch":"两次输入的密码不一致。",
+    "auth.pleaseEnterEmail":"请输入您的邮箱。",
+    "auth.wrongCredentials":"邮箱或密码错误。",
+    "auth.loginFailedPrefix":"登录失败：",
+    "auth.sendVerificationLink":"发送验证链接",
+    "auth.sendResetLink":"发送重置链接",
+    "auth.sendCode":"发送验证码",
+    "auth.logIn":"登录",
+    "exam.generating":"正在生成考卷…",
+    "exam.generatingQ":"正在生成第 {n}/{total} 题…",
+    "exam.generatingQSimple":"正在生成第 {n} 题…",
+    "exam.cancel":"取消",
+    "exam.preparing":"准备出题…",
+    "exam.preparingSubtitle":"AI 正在为您出题，请稍候片刻",
+    "exam.tryAgain":"重新出题",
+    "exam.close":"关闭",
+    "exam.cancelled":"已取消出题。",
+    "exam.noModelsAvailable":"无可用模型",
+    "exam.modelLabel":"生成模型",
+    "exam.typeMc":"选择题",
+    "exam.typeFb":"填空题",
+    "exam.typeSa":"简答题",
+    "exam.cancelledTitle":"已取消",
+    "exam.answered":"已答",
+    "exam.results":"考试成绩：{topic}",
+    "exam.placeholderTopic":"e.g. Linear Algebra, Quantum Mechanics, World War II...",
+    "exam.placeholderDifficulty":"beginner / intermediate / hard / expert / custom",
+    "exam.placeholderInstructions":"Specific topics to cover, or leave blank for AI to decide...",
+    "exam.placeholderAnswer":"Type your answer…",
+    "exam.placeholderTopicZh":"如：线性代数、量子力学、二战…",
+    "exam.placeholderDifficultyZh":"入门 / 中级 / 困难 / 专家 / 自定义",
+    "exam.placeholderInstructionsZh":"具体说明要覆盖的知识点，留空则由 AI 决定…",
+    "exam.placeholderAnswerZh":"输入你的答案…",
+    "settings.saved":"已保存。当前激活：{name}。",
+    "settings.savedFallback":"已保存。当前激活的提供商缺少模型——临时使用 mock 引擎。",
+    "settings.noModels":"尚未配置任何模型——已使用 mock 引擎。",
+    "settings.saveFailed":"保存失败：{msg}",
+    "settings.unknownError":"未知错误",
+    "settings.cleared":"已清空。内置的 Beagle A 仍可用——选择一个模型即可开始。",
+    "settings.signInFirst":"请先登录再保存 API 密钥。",
+    "settings.rowMissing":"第 {n} 行缺少 URL 或模型。请修改后再试。",
+    "settings.rowMissingKey":"新增的第 {n} 行需要 API 密钥。",
+    "settings.apiKeyLimit":"您的 {tier} 计划已达 API 密钥上限（{max} 个）。请升级计划后继续添加。",
+    "settings.refresh":"刷新中…",
+    "settings.action.deleteAccount":"删除账户失败：{msg}",
+    "common.thinkingLabel":"思考",
+    "common.dayShort.sun":"日",
+    "common.dayShort.mon":"一",
+    "common.dayShort.tue":"二",
+    "common.dayShort.wed":"三",
+    "common.dayShort.thu":"四",
+    "common.dayShort.fri":"五",
+    "common.dayShort.sat":"六",
+    "think.title":"思考过程",
+    "think.thinking":"正在思考…",
+    "think.wordCount":"{n} 字",
+    "think.wordCountOne":"1 字",
+    "think.toggle":"展开或收起思考过程",
+    "profile.disclaimerTutor":"Socrates 通过提问帮助你思考，不会评判你的回答。",
+    "tag.placeholder":"输入标签后按回车",
+    "project.placeholderName":"如：线性代数",
+    "project.placeholderDesc":"可选。帮助 AI 调整讲解风格。",
+    "kb.placeholderNote":"写下你对本主题想记住的任何内容...",
+    "prompt.placeholderTitle":"如：代码审查",
+    "prompt.placeholderShortcut":"/my-template",
+    "prompt.placeholderDesc":"一行简介",
+    "prompt.placeholderBody":"插入到聊天输入框中的提示文本。用户在下方输入或粘贴真实内容，发送时会自动移除此前缀。",
+    "prompt.placeholderSystem":"可选。每次启用该模板时作为隐藏的系统消息注入。告诉模型扮演什么角色、输入约定是什么、输出应该长什么样以及任何约束。留空则仅以普通用户消息发送模板正文。",
+    "provider.placeholderLabel":"显示名（如：GPT-5.5）",
+    "provider.placeholderUrl":"Base URL  (https://api.openai.com/v1)",
+    "provider.placeholderKey":"API 密钥",
+    "provider.placeholderModel":"模型 ID  (如：gpt-5.5、claude-opus-4-8、sonnet-4-6)",
+    "usage.failed":"加载用量数据失败，请确认已登录。",
+    "usage.failedGeneric":"加载用量数据失败。",
+    "usage.loading":"加载用量数据…",
+    "exam.noResponse":"模型无响应",
+    "exam.failNoResponse":"生成失败：模型无响应",
+    "exam.failed":"生成失败",
+    "exam.failParse":"解析失败：模型返回格式异常",
+    "exam.failParseHint":"请重试或更换模型",
+    "exam.parseFailed":"解析失败",
+    "exam.failNone":"生成失败：没有成功生成任何题目",
+    "exam.questionsLabel":"题 ·",
+    "exam.answeredLabel":"已答",
+    "diag.analyzingTopic":"正在分析主题…",
+    "diag.ready":"准备就绪",
+    "common.noResponseTimeout":"已等待 {sec} 秒未响应 — 请检查 API 可用性",
+    "common.retry":"重试",
+    "common.truncated":"（已截断）",
+    "common.downloadFile":"[下载 {type}]",
+    "share.linkExpired":"链接已过期 — 请开启新的会话。",
+    "share.creatingLink":"正在创建链接…",
+    "share.failedCreate":"创建链接失败：{msg}",
+    "share.failedRevoke":"撤销链接失败：{msg}",
+    "share.copied":"已复制！",
+    "share.copy":"复制",
+    "share.errorUnknown":"未知错误",
+    "share.notFoundTitle":"未找到该共享会话",
+    "share.notFoundMsg":"链接可能已过期或无效。",
+    "share.readOnly":"只读",
+    "topic.titleChat":"我能帮你什么？",
+    "topic.subChat":"随便聊 — 没有诊断，没有学习计划。",
+    "topic.disclaimerChat":"聊天模式为普通对话。",
+    "profile.savedAt":"已保存 {hh}:{mm}",
+    "profile.instructionsSavedPlaceholder":"例如：用简洁的项目符号回复。引用来源标为 [1]、[2]。避免模棱两可的措辞。",
+    "profile.instructionsAboutPlaceholder":"例如：我是一名后端工程师，正在做支付产品。我讨厌双关语。"
+  },
 };
 var _currentLang="en";
 function t(key){return (I18N[_currentLang]&&I18N[_currentLang][key])||I18N.en[key]||key;}
@@ -525,11 +796,30 @@ function setLang(lang){
   window._currentLang=lang;
   try{localStorage.setItem("socrates-lang-app",lang)}catch(_){}
   applyI18n();
-  /* Update language toggle active state */
-  var en=document.getElementById("profileLangEn");
-  var zh=document.getElementById("profileLangZh");
-  if(en)en.classList.toggle("active",lang==="en");
-  if(zh)zh.classList.toggle("active",lang==="zh");
+  /* P_tutor-leak — applyI18n() rewrites #topicTitle / #topicSub /
+     #topicDisclaimer using the current appMode. Without this call
+     the topic-setup copy could drift if anything else touched those
+     elements between mode-sync ticks. Cheap and idempotent. */
+  try{if(typeof syncAppModeUI==="function")syncAppModeUI()}catch(_){}
+  /* Update language toggle active state. Only en + zh are supported;
+     removing ja/ko from this iteration avoids keeping dead UI states
+     if the toggle HTML reverts. */
+  var optionIds=["profileLangEn","profileLangZh"];
+  for(var i=0;i<optionIds.length;i++){
+    var el=document.getElementById(optionIds[i]);
+    if(!el)continue;
+    var optLang=optionIds[i].replace("profileLang","").toLowerCase();
+    el.classList.toggle("active",optLang===lang);
+  }
+  /* Update the small "EN/中" label in the sidebar header so the
+     quick-toggle button reflects the active language. */
+  try{
+    var lbl=document.getElementById("langToggleLabel");
+    if(lbl){
+      if(lang==="zh")lbl.textContent="中";
+      else lbl.textContent="EN";
+    }
+  }catch(_){}
 }
 function applyI18n(){
   /* Translate all elements with data-i18n-key attribute */
@@ -567,16 +857,25 @@ function applyI18n(){
   if(ci)ci.placeholder=t("chat.placeholder");
   var ch=document.getElementById("chatInputHint");
   if(ch)ch.textContent=t("chat.hint");
+  /* Topic-setup title/sub/disclaimer. syncAppModeUI() rewrote these
+     as either the tutor-mode or chat-mode versions; re-route through
+     t() but keep the mode-aware mapping so toggling the language
+     doesn't revert them to the wrong mode's text.
+     P_tutor-leak — appMode is a top-level `var` in main.js and is
+     mirrored onto `window.appMode` at boot (see main.js:13243). It is
+     NOT a field on `window.state` (state.js has no `appMode`), so
+     reading `window.state.appMode` was always undefined and we fell
+     back to "tutor" — silently flipping a chat-mode user into tutor
+     copy on every language toggle. Read the real global and default
+     to "chat" so a fresh page (window.appMode not yet set) doesn't
+     paint tutor text. */
+  var appMode=(typeof window!=="undefined"&&window.appMode)||"chat";
   var tt=document.getElementById("topicTitle");
-  if(tt)tt.textContent=t("topic.title");
+  if(tt)tt.textContent=t(appMode==="chat"?"topic.titleChat":"topic.title");
   var ts=document.getElementById("topicSub");
-  if(ts)ts.textContent=t("topic.subtitle");
-  /* P_lang-slogans — the hero slogan is mode-dependent English
-     written by syncAppModeUI() (tutor: "What would you like to
-     explore?", chat: "What can I help you with?"). Pinning
-     topic.title to English in both i18n blocks above means
-     applyI18n() can't change the slogan — even if a future
-     caller invokes it before syncAppModeUI runs. */
+  if(ts)ts.textContent=t(appMode==="chat"?"topic.subChat":"topic.subtitle");
+  var tdisc=document.getElementById("topicDisclaimer");
+  if(tdisc)tdisc.textContent=t(appMode==="chat"?"topic.disclaimerChat":"profile.disclaimerTutor");
   var tp=document.getElementById("topicInput");
   if(tp)tp.placeholder=t("topic.inputPlaceholder");
   var sb=document.getElementById("startBtn");

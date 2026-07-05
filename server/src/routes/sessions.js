@@ -26,7 +26,7 @@ const SessionPayloadSchema = z.object({
   topic: z.string().max(10000).optional().default(''),
   title: z.string().max(500).optional(),
   domain: z.string().max(500).optional().nullable(),
-  mode: z.enum(['tutor', 'chat']).optional().default('tutor'),
+  mode: z.enum(['tutor', 'chat']).optional().default('chat'),
   phase: z.enum(['topic', 'diagnostic', 'chat']).optional().default('topic'),
   /* P_exam-history — top-level session "shape". 'exam' is set by the
    * front-end when saving a finished exam; the chat service still uses
@@ -64,6 +64,23 @@ const SessionPayloadSchema = z.object({
       text: z.string().max(500_000).optional(),
       truncated: z.boolean().optional(),
       size: z.number().int().nonnegative().max(50 * 1024 * 1024),
+    })).max(20).optional(),
+    /* P_tool-history — tool calls the assistant made on this turn
+     * (web_search, code_interpreter, etc). Each entry is rendered as
+     * a collapsible card under the message on reload so the user can
+     * see what tools ran. Capped to 20 calls per message and each
+     * output field is bounded so a runaway tool can't bloat the
+     * session row. */
+    toolCalls: z.array(z.object({
+      id: z.string().max(200),
+      name: z.string().max(100),
+      input: z.any().optional().nullable(),
+      output: z.string().max(500_000).optional().nullable(),
+      isError: z.boolean().optional().nullable(),
+      artifacts: z.array(z.object({
+        id: z.string().max(100),
+        mimeType: z.string().max(200).optional().nullable(),
+      })).max(20).optional(),
     })).max(20).optional(),
   })).max(1000).optional(),
   kbNodes: z.array(z.any()).max(5000).optional(),
@@ -217,7 +234,7 @@ router.post('/', writeLimiter, async (req, res, next) => {
         topic: topic || '',
         title: title || topic || null,
         domain: domain || null,
-        mode: mode || 'tutor',
+        mode: mode || 'chat',
         phase: phase || 'topic',
         kind: kind || 'chat',
         examData: examData || null,
@@ -263,6 +280,25 @@ router.post('/', writeLimiter, async (req, res, next) => {
             clientId: m.clientId || null,
             reasoningContent: m.reasoningContent || null,
             attachments: Array.isArray(m.attachments) ? m.attachments.slice(0, 20) : [],
+            /* P_tool-history — persist the tool-calls log so reload
+             * re-renders the cards. Normalise to plain values so the
+             * jsonb payload is deterministic across clients. */
+            toolCalls: Array.isArray(m.toolCalls)
+              ? m.toolCalls.slice(0, 20).map(function(tc) {
+                  return {
+                    id: String(tc.id || ''),
+                    name: String(tc.name || ''),
+                    input: tc.input == null ? null : tc.input,
+                    output: tc.output == null ? null : String(tc.output),
+                    isError: tc.isError === true,
+                    artifacts: Array.isArray(tc.artifacts)
+                      ? tc.artifacts.slice(0, 20).map(function(a) {
+                          return { id: String(a.id || ''), mimeType: a.mimeType || null };
+                        })
+                      : [],
+                  };
+                })
+              : [],
             sessionId: sid,
             createdAt: new Date(_insertBase + i),
           };
@@ -278,6 +314,7 @@ router.post('/', writeLimiter, async (req, res, next) => {
             sources: sql`EXCLUDED.sources`,
             reasoningContent: sql`EXCLUDED.reasoning_content`,
             attachments: sql`EXCLUDED.attachments`,
+            toolCalls: sql`EXCLUDED.tool_calls`,
             createdAt: sql`EXCLUDED.created_at`,
           },
         });

@@ -1,5 +1,4 @@
 import { BadRequest } from '../lib/errors.js';
-import { expandQuery } from './queryExpander.js';
 import { detectLanguageCluster } from './scoring.js';
 import * as searchResultCache from '../lib/searchResultCache.js';
 import { searchMinimax } from './searchEngines/minimax.js';
@@ -35,6 +34,35 @@ import { searchSearxng } from './searchEngines/searxng.js';
  * @param {string} [opts.apiKeyHint]  API key hint for cache key.
  */
 
+/* ─── Tool definition (sent to upstream on every chat turn) ─── */
+export const WEB_SEARCH_TOOL = {
+  type: 'function',
+  function: {
+    name: 'web_search',
+    description:
+      'Search the web for current information. Use for any factual question about the present-day world, ' +
+      'including current events, prices, roles, policies, products, and recent news. ' +
+      'Returns up to 10 results with title, URL, snippet, and date. ' +
+      'Search queries should be short (1-6 words) and specific.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'The search query (1-6 words, specific and concise).',
+        },
+        count: {
+          type: 'number',
+          default: 10,
+          description: 'Number of results to return (1-12).',
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+  },
+};
+
 /* ─── Configuration ─── */
 
 const MAX_RESULTS = 12;           // final merged count / per-source limit
@@ -60,16 +88,13 @@ export async function webSearch(query, count = 10, opts = {}) {
     return cacheHit;
   }
 
-  // 1. Query expansion (cached, 6s timeout, falls back to [query])
-  const queries = await expandQuery(query, { userId: opts.userId });
-
-  // 2. MiniMax priority search — if it returns results, short-circuit
+  // 1. MiniMax priority search — if it returns results, short-circuit
   //    the entire pipeline (skip searXNG, skip fetchBatch content extraction).
   const minimaxResults = await searchMinimax(query, limit);
   if (minimaxResults && minimaxResults.length > 0) {
     try {
       Object.defineProperty(minimaxResults, 'expandedQueries', {
-        value: queries, enumerable: false, configurable: true, writable: false,
+        value: [query], enumerable: false, configurable: true, writable: false,
       });
       Object.defineProperty(minimaxResults, 'language', {
         value: langCluster, enumerable: false, configurable: true, writable: false,
@@ -88,7 +113,7 @@ export async function webSearch(query, count = 10, opts = {}) {
     return minimaxResults;
   }
 
-  // 3. Fallback to searXNG (self-hosted metasearch)
+  // 2. Fallback to searXNG (self-hosted metasearch)
   const searxngResults = await searchSearxng(query, limit);
   const finalResults = searxngResults || [];
 
@@ -98,10 +123,10 @@ export async function webSearch(query, count = 10, opts = {}) {
     r.matchedQueries = [query];
   }
 
-  // 4. Surface expanded queries and language cluster (non-enumerable).
+  // 3. Surface language cluster (non-enumerable).
   try {
     Object.defineProperty(finalResults, 'expandedQueries', {
-      value: queries,
+      value: [query],
       enumerable: false,
       configurable: true,
       writable: false,
@@ -114,7 +139,7 @@ export async function webSearch(query, count = 10, opts = {}) {
     });
   } catch { /* metadata is best-effort */ }
 
-  // 5. Cache the result (5 min TTL) and return
+  // 4. Cache the result (5 min TTL) and return
   try {
     searchResultCache.set({
       userId: opts.userId, query, count: limit, locale, apiKeyHint,

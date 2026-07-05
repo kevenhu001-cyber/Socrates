@@ -18,11 +18,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.socrates.app.R
 import com.socrates.app.data.AppContainer
 import com.socrates.app.data.local.MistakeRow
 import com.socrates.app.data.local.SessionRow
@@ -204,37 +206,11 @@ private fun SocratesClockIcon(
     size: androidx.compose.ui.unit.Dp = 20.dp,
     tint: Color = SocratesTheme.colors.accent000,
 ) {
-    Canvas(modifier = Modifier.size(size)) {
-        val strokeW = size.toPx() * 0.07f
-        val c = center
-        val outerR = size.toPx() / 2f - strokeW
-        // Outer circle
-        drawCircle(color = tint, radius = outerR, style = Stroke(width = strokeW * 1.4f))
-        // Minute hand (~2 o'clock)
-        val angle = Math.toRadians(30.0)
-        val handLen = outerR * 0.6f
-        drawLine(
-            color = tint,
-            start = c,
-            end = androidx.compose.ui.geometry.Offset(
-                c.x + handLen * kotlin.math.sin(angle).toFloat(),
-                c.y - handLen * kotlin.math.cos(angle).toFloat()
-            ),
-            strokeWidth = strokeW * 0.7f,
-            cap = androidx.compose.ui.graphics.StrokeCap.Round
-        )
-        // Hour hand (12 o'clock)
-        val hourLen = outerR * 0.4f
-        drawLine(
-            color = tint,
-            start = c,
-            end = androidx.compose.ui.geometry.Offset(c.x, c.y - hourLen),
-            strokeWidth = strokeW * 1.3f,
-            cap = StrokeCap.Round
-        )
-        // Inner circle
-        drawCircle(color = tint, radius = outerR * 0.25f, style = Stroke(width = strokeW))
-    }
+    Image(
+        painter = painterResource(id = R.drawable.logo),
+        contentDescription = "Socrates",
+        modifier = Modifier.size(size),
+    )
 }
 
 @Composable

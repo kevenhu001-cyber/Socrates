@@ -255,8 +255,11 @@ export async function fetchBatch(urls) {
           if (titleMatch) title = titleMatch[1].trim();
 
           // Run main-content extraction (Readability + heuristic fallback).
+          // Runs in a worker thread so a stuck parse can't pin the main
+          // event loop (the 2026-07-04 incident). 5s timeout via the
+          // extractor pool — null on timeout/failure, caller falls back.
           let extracted = null;
-          try { extracted = extractArticle(text, url); } catch { extracted = null; }
+          try { extracted = await extractArticle(text, url); } catch { extracted = null; }
 
           if (extracted) {
             return {

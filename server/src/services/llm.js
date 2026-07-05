@@ -79,6 +79,9 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
   };
 
   try {
+    if (Array.isArray(tools) && tools.length > 0) {
+      console.log('[DEBUG-LLM] Sending tools to upstream:', JSON.stringify(tools.map(t => t.function?.name)), 'model:', model, 'stream:', true);
+    }
     const response = await fetch(`${apiBase}/chat/completions`, {
       method: 'POST',
       headers: {

@@ -32,10 +32,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.socrates.app.R
 import com.socrates.app.data.AppContainer
 import com.socrates.app.model.User
 import com.socrates.app.ui.auth.AuthGate
@@ -128,18 +130,11 @@ private fun BootLoading() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Canvas(modifier = Modifier.size(48.dp).alpha(pulseAlpha)) {
-                val strokeW = size.minDimension * 0.07f
-                val c = center
-                val outerR = size.minDimension / 2f - strokeW
-                val clockColor = SocratesTheme.colors.accent000
-                drawCircle(color = clockColor, radius = outerR, style = Stroke(width = strokeW * 1.4f))
-                val angle = Math.toRadians(30.0)
-                val handLen = outerR * 0.6f
-                drawLine(clockColor, c, Offset(c.x + handLen * sin(angle).toFloat(), c.y - handLen * cos(angle).toFloat()), strokeW * 0.7f, StrokeCap.Round)
-                drawLine(clockColor, c, Offset(c.x, c.y - outerR * 0.4f), strokeW * 1.3f, StrokeCap.Round)
-                drawCircle(color = clockColor, radius = outerR * 0.25f, style = Stroke(width = strokeW))
-            }
+            Image(
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "Socrates",
+                modifier = Modifier.size(48.dp).alpha(pulseAlpha),
+            )
             Spacer(Modifier.height(12.dp))
             Text(
                 "Socrates",

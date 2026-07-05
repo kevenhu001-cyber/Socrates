@@ -1,215 +1,269 @@
 /**
- * Main-content extractor for fetched pages.
+ * contentExtractor.js — public API for main-content extraction.
  *
- * Primary: Mozilla Readability (the same algorithm Firefox Reader View
- * uses). Fallback: a hand-rolled text-density heuristic that scores
- * DOM blocks by (text density) − 2 × (link density) and picks the
- * highest-scoring <div>-containing-cluster.
+ * Wraps the underlying JSDOM + Readability parse in a small
+ * `worker_threads` pool so the CPU-bound parse can never block
+ * the main Node event loop.
  *
- * Strips heavy noise (script, style, nav, footer, aside, svg, form)
- * before running Readability — pre-stripping noticeably improves
- * extraction quality on news sites that bury the article under sticky
- * navs and "related stories" rail.
+ * Why a worker:
+ *   - jsdom + @mozilla/readability are synchronous CPU work inside
+ *     the JS engine. On 2026-07-04 one malformed marketing page
+ *     pinned the main thread at 96.9% CPU for ~9 hours because the
+ *     parse took longer than any watchdog.
+ *   - Running in a worker means a stuck parse is bounded to one
+ *     worker (which we can kill on timeout). The HTTP server stays
+ *     responsive even if Readability wedges.
  *
- * Hard caps:
- *   - cleaned text < 250 chars → treat as fetch failure (return null)
- *   - cleaned text > 8000 chars → keep first 8000 (most relevant
- *     answers live in opening paragraphs; protects the LLM context)
+ * Pool size:
+ *   - 2 workers by default (HTML extraction is CPU-heavy; 2 lets us
+ *     overlap with the fetch stage of the next URL).
+ *   - Tunable via CONTENT_EXTRACT_POOL_SIZE.
+ *
+ * Timeout:
+ *   - 5 s per extraction by default. JSDOM/Readability on the
+ *     marketing-site URLs we tested complete in <500 ms; 5 s is a
+ *     10× safety margin. On timeout we kill the worker, spawn a
+ *     replacement, and return null so the caller falls back to raw
+ *     HTML.
+ *
+ * Concurrency:
+ *   - Each `extractArticle()` call is dispatched round-robin to an
+ *     idle worker. If all workers are busy the call queues.
+ *   - The worker is terminated + replaced if it crashes or times out.
  */
 
-import { Readability } from '@mozilla/readability';
-import { JSDOM, VirtualConsole } from 'jsdom';
+import { Worker } from 'node:worker_threads';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import crypto from 'node:crypto';
 
-const HARD_MIN_CHARS = 250;
-const HARD_MAX_CHARS = 8000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const NOISE_SELECTORS = [
-  'script', 'style', 'noscript', 'svg', 'iframe',
-  'nav', 'header', 'footer', 'aside', 'form',
-  '[role="navigation"]', '[role="banner"]', '[role="contentinfo"]',
-  '[aria-hidden="true"]',
-];
+const POOL_SIZE = Math.max(1, parseInt(process.env.CONTENT_EXTRACT_POOL_SIZE || '2', 10));
+const EXTRACT_TIMEOUT_MS = Math.max(500, parseInt(process.env.CONTENT_EXTRACT_TIMEOUT_MS || '5000', 10));
 
-/**
- * Run extraction.
- * @param {string} html
- * @param {string} url
- * @returns {object|null}  {title, byline, siteName, excerpt, content,
- *                          length, date, method} or null on failure.
- */
-export function extractArticle(html, url) {
-  if (!html || !url) return null;
-
-  let dom;
-  try {
-    dom = new JSDOM(html, {
-      url,
-      virtualConsole: new VirtualConsole(), // silence CSS parse errors
-      // Don't execute scripts; keep cookie/storage behavior default-off.
-      runScripts: 'outside-only',
+class WorkerSlot {
+  constructor({ index, pool }) {
+    this.index = index;
+    this.pool = pool;
+    this.busy = false;
+    this.terminated = false;
+    this.worker = null;
+    this._nextRelease = null;
+    this._claimChain = Promise.resolve();
+    this._inflightReject = null;
+    this.failedBoots = 0;
+  }
+  spawn() {
+    const workerFile = path.join(__dirname, 'contentExtractorWorker.js');
+    const w = new Worker(workerFile, {
+      resourceLimits: {
+        maxOldGenerationSizeMb: 512,
+        maxYoungGenerationSizeMb: 64,
+      },
     });
-  } catch (e) {
-    return null;
+    this.worker = w;
+    w.on('exit', (code) => {
+      this.worker = null;
+      this.busy = false;
+      if (this._inflightReject) {
+        const r = this._inflightReject;
+        this._inflightReject = null;
+        r(new Error('content_extractor_worker_exited: code=' + code));
+      }
+      if (code !== 0) this.failedBoots++;
+      if (this._nextRelease) {
+        const r = this._nextRelease;
+        this._nextRelease = null;
+        r();
+      }
+    });
+    w.on('error', (err) => {
+      if (this._inflightReject) {
+        const r = this._inflightReject;
+        this._inflightReject = null;
+        r(err);
+      }
+    });
   }
-
-  const doc = dom.window.document;
-  stripJunk(doc);
-
-  // Try Readability first.
-  let article = null;
-  try {
-    article = new Readability(doc, { debug: false, charThreshold: HARD_MIN_CHARS }).parse();
-  } catch {
-    article = null;
+  tryClaim() {
+    if (this.failedBoots > 3) return false;
+    if (this.busy || this.terminated || !this.worker) return false;
+    this.busy = true;
+    let resolveNext;
+    this._claimChain = new Promise((resolve) => { resolveNext = resolve; });
+    this._nextRelease = resolveNext;
+    return true;
   }
-
-  if (article && article.textContent && article.textContent.trim().length >= HARD_MIN_CHARS) {
-    return shape(article, doc, 'readability');
+  async claim() {
+    while (true) {
+      if (this.failedBoots > 3) {
+        throw new Error('content_extractor_disabled: too many boot failures');
+      }
+      if (this.tryClaim()) return;
+      // Busy — wait for the in-flight claim to release, then re-check.
+      await this._claimChain;
+    }
   }
-
-  // Fallback: text-density heuristic.
-  return extractByTextDensity(doc, url);
+  release() {
+    if (this._nextRelease) {
+      const r = this._nextRelease;
+      this._nextRelease = null;
+      r();
+    }
+    // Clear busy BEFORE resolving the chain so the next claim() that
+    // wakes up sees this slot as free. Without this, the busy flag
+    // stays set from the previous claim, and the next tryClaim() call
+    // returns false even though the chain is resolved — spinning
+    // forever. (Found this on 2026-07-04: 3rd concurrent extraction
+    // hung because slot 0's release() never reset busy=true.)
+    this.busy = false;
+  }
+  terminate() {
+    this.terminated = true;
+    this.busy = false;
+    if (this.worker) {
+      try { this.worker.terminate(); } catch {}
+    }
+    if (this._inflightReject) {
+      const r = this._inflightReject;
+      this._inflightReject = null;
+      r(new Error('content_extractor_timeout'));
+    }
+    if (this._nextRelease) {
+      const r = this._nextRelease;
+      this._nextRelease = null;
+      r();
+    }
+  }
 }
 
-/* ─── Helpers ─── */
-
-function shape(article, doc, method) {
-  const cleaned = cleanText(article.textContent || '');
-  const truncated = cleaned.length > HARD_MAX_CHARS;
-  const content = truncated ? cleaned.slice(0, HARD_MAX_CHARS) : cleaned;
-  const excerptSrc = (article.excerpt || content).replace(/\s+/g, ' ').trim();
-  const excerpt = excerptSrc.length > 320 ? excerptSrc.slice(0, 317) + '…' : excerptSrc;
-  return {
-    title: (article.title || '').trim(),
-    byline: article.byline || null,
-    siteName: article.siteName || null,
-    excerpt,
-    content,
-    length: content.length,
-    date: extractDateFromMeta(doc) || null,
-    method,
-  };
+class ExtractorPool {
+  constructor({ size }) {
+    this.slots = Array.from({ length: size }, (_, i) => {
+      const s = new WorkerSlot({ index: i, pool: this });
+      s.spawn();
+      return s;
+    });
+    this._nextStart = 0;
+  }
+  async acquireSlot() {
+    const startIdx = this._nextStart;
+    for (let i = 0; i < this.slots.length; i++) {
+      const idx = (startIdx + i) % this.slots.length;
+      const slot = this.slots[idx];
+      if (slot.tryClaim()) {
+        this._nextStart = (idx + 1) % this.slots.length;
+        return slot;
+      }
+    }
+    const slot = this.slots[startIdx];
+    this._nextStart = (startIdx + 1) % this.slots.length;
+    await slot.claim();
+    return slot;
+  }
+  _reapDeadSlots() {
+    for (const slot of this.slots) {
+      if (slot.terminated && slot.failedBoots <= 3) {
+        slot.terminated = false;
+        slot.spawn();
+      }
+    }
+  }
 }
 
-function stripJunk(doc) {
-  for (const sel of NOISE_SELECTORS) {
+let pool = null;
+function getPool() {
+  if (!pool) {
+    pool = new ExtractorPool({ size: POOL_SIZE });
+    console.log(`[content-extractor] pool ready (${POOL_SIZE} workers, ${EXTRACT_TIMEOUT_MS}ms timeout)`);
+  }
+  return pool;
+}
+
+async function runOne(html, url) {
+  const p = getPool();
+  p._reapDeadSlots();
+  const slot = await p.acquireSlot();
+  const id = crypto.randomUUID();
+  const worker = slot.worker;
+  return await new Promise((resolve) => {
+    let settled = false;
+    const finish = (val) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutTimer);
+      worker.off('message', onMessage);
+      slot.release();
+      resolve(val);
+    };
+    const onMessage = (msg) => {
+      if (!msg || msg.id !== id) return;
+      if (msg.type === 'result') {
+        finish(msg.payload);
+      } else if (msg.type === 'error') {
+        finish(null);
+      }
+    };
+    worker.on('message', onMessage);
+    slot._inflightReject = (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutTimer);
+      worker.off('message', onMessage);
+      slot.terminated = true;
+      slot.failedBoots++;
+      resolve(null);
+    };
+    const timeoutTimer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      worker.off('message', onMessage);
+      slot.terminate();
+      resolve(null);
+    }, EXTRACT_TIMEOUT_MS);
     try {
-      doc.querySelectorAll(sel).forEach((el) => el.remove());
-    } catch {
-      /* selector may be unsupported in some jsdom versions — skip */
-    }
-  }
-  // Also strip elements whose computed styles say "display:none" — we
-  // can't read CSS, so use a class-name heuristic for common ad slots.
-  doc.querySelectorAll('[id*="ad-" i], [class*="ad-" i], [class*="advert" i], [id*="-banner" i]')
-    .forEach((el) => el.remove());
-}
-
-function cleanText(s) {
-  if (!s) return '';
-  return String(s)
-    .replace(/ /g, ' ')
-    .replace(/[ \t]+/g, ' ')
-    .replace(/ ?\n ?/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    // Drop Read more / Continue reading / "…" tails
-    .replace(/\s*(Read more|Continue reading|Continue reading…|More info|Read full article)[\s\S]*$/i, '')
-    .trim();
-}
-
-/**
- * Look for a publish date in <meta> / <time> / schema.org JSON-LD.
- * Returns ISO YYYY-MM-DD or null.
- */
-function extractDateFromMeta(doc) {
-  // <meta property="article:published_time">  /  og:article:published_time
-  const meta = doc.querySelector(
-    'meta[property="article:published_time"], meta[property="og:article:published_time"], ' +
-    'meta[name="pubdate"], meta[name="publishdate"], meta[name="date"], ' +
-    'meta[itemprop="datePublished"]'
-  );
-  if (meta && meta.content) {
-    const iso = normalizeDate(meta.content);
-    if (iso) return iso;
-  }
-  // <time datetime="...">
-  const t = doc.querySelector('time[datetime]');
-  if (t) {
-    const iso = normalizeDate(t.getAttribute('datetime'));
-    if (iso) return iso;
-  }
-  return null;
-}
-
-function normalizeDate(s) {
-  if (!s) return null;
-  const d = new Date(s);
-  if (isNaN(d)) return null;
-  // Reject obviously wrong dates (year 1900, year > now+1day)
-  const yr = d.getUTCFullYear();
-  if (yr < 1990 || yr > new Date().getUTCFullYear() + 1) return null;
-  return d.toISOString().slice(0, 10);
-}
-
-/* ─── Text-density fallback ─── */
-
-function extractByTextDensity(doc, url) {
-  // Build candidate blocks: every <div> and <article> with at least
-  // one <p> or <li> child, excluding ones inside <main> ancestors
-  // already (Readability should have caught them — but if we're
-  // here, Readability failed, so cast a wider net).
-  const candidates = doc.querySelectorAll('article, main, div, section');
-  let best = null;
-  let bestScore = 0;
-
-  for (const el of candidates) {
-    const text = (el.textContent || '').trim();
-    if (text.length < HARD_MIN_CHARS) continue;
-    const links = el.querySelectorAll('a').length;
-    const textLen = text.length;
-    // Penalize link-heavy blocks (nav, table of contents).
-    const score = textLen - links * 50;
-    if (score > bestScore) {
-      bestScore = score;
-      best = el;
-    }
-  }
-
-  if (!best) return null;
-
-  // Within the best block, walk <p>/<li>/<h2>/<h3> in document order
-  // and concatenate. This is a crude approximation of Readability but
-  // recovers a usable body on simpler pages.
-  const parts = [];
-  best.querySelectorAll('p, li, h2, h3, blockquote, pre').forEach((el) => {
-    const t = (el.textContent || '').trim();
-    if (!t) return;
-    if (el.tagName === 'P' || el.tagName === 'BLOCKQUOTE' || el.tagName === 'PRE') {
-      parts.push(t);
-    } else if (el.tagName === 'H2' || el.tagName === 'H3') {
-      parts.push('\n\n## ' + t);
-    } else {
-      parts.push('• ' + t);
+      worker.postMessage({ id, type: 'extract', html, url });
+    } catch (e) {
+      finish(null);
     }
   });
+}
 
-  const joined = parts.join('\n\n');
-  if (joined.length < HARD_MIN_CHARS) return null;
+/**
+ * Run extraction. Returns null on timeout, parse failure, or if the
+ * input HTML is too small to be useful. Safe to call from any code
+ * path — never throws and never blocks the main event loop.
+ */
+export async function extractArticle(html, url) {
+  if (!html || !url) return null;
+  try {
+    return await runOne(html, url);
+  } catch {
+    return null;
+  }
+}
 
-  const title = (doc.querySelector('title') || {}).textContent || '';
-  const cleaned = cleanText(joined);
-  const content = cleaned.length > HARD_MAX_CHARS ? cleaned.slice(0, HARD_MAX_CHARS) : cleaned;
-  const excerptSrc = content.replace(/\s+/g, ' ').trim();
-  const excerpt = excerptSrc.length > 320 ? excerptSrc.slice(0, 317) + '…' : excerptSrc;
-
-  return {
-    title: title.trim(),
-    byline: null,
-    siteName: (() => { try { return new URL(url).hostname; } catch { return null; } })(),
-    excerpt,
-    content,
-    length: content.length,
-    date: extractDateFromMeta(doc) || null,
-    method: 'heuristic',
-  };
+/* Internal: synchronous direct call (no worker). Useful as a fallback
+   in tests where spawning a worker is overkill. NEVER call from a
+   request hot-path — that's what `extractArticle` above is for. */
+export function extractArticleSync(html, url) {
+  let article = null;
+  try {
+    const { Readability } = require('@mozilla/readability');
+    const { JSDOM, VirtualConsole } = require('jsdom');
+    const dom = new JSDOM(html, { url, virtualConsole: new VirtualConsole(), runScripts: 'outside-only' });
+    const doc = dom.window.document;
+    article = new Readability(doc, { debug: false, charThreshold: 250 }).parse();
+    if (article && article.textContent && article.textContent.trim().length >= 250) {
+      return {
+        title: (article.title || '').trim(),
+        content: article.textContent.slice(0, 8000),
+        length: Math.min(article.textContent.length, 8000),
+        method: 'readability',
+      };
+    }
+  } catch {}
+  return null;
 }

@@ -57,8 +57,8 @@ export function getCsrfToken() {
  * CSRF header, credentials, 401 → on401, and 403 → refresh+yield+
  * replay-once behaviour.
  *
- * Use this for /api/chat/stream, /api/agent/run, /api/search,
- * /api/fetch-batch. For ordinary JSON endpoints, use apiFetch.
+ * Use this for /api/chat/stream, /api/search, /api/fetch-batch.
+ * For ordinary JSON endpoints, use apiFetch.
  */
 export async function apiFetchRaw(path, opts = {}) {
   opts.credentials = 'include';
@@ -75,18 +75,34 @@ export async function apiFetchRaw(path, opts = {}) {
   const controller = new AbortController();
   const rawTimeoutMs = typeof opts.timeoutMs === 'number' ? opts.timeoutMs : 30000;
   const tmo = setTimeout(() => { try { controller.abort(); } catch (_) {} }, rawTimeoutMs);
+  /* P_abort_listener_cleanup — the listener we add to opts.signal
+     captures `controller`. After the fetch returns the listener is
+     dead weight; in the streaming path the caller's signal is a
+     per-call ac that goes out of scope, but in apiFetch / retryApiFetch
+     callers can re-use a long-lived signal and the listener chain
+     grows. Track the listener so we can detach it once the call ends. */
+  let onCallerAbort = null;
   if (opts.signal) {
     if (opts.signal.aborted) { try { controller.abort(); } catch (_) {} }
-    else opts.signal.addEventListener('abort', () => { try { controller.abort(); } catch (_) {} });
+    else {
+      onCallerAbort = () => { try { controller.abort(); } catch (_) {} };
+      opts.signal.addEventListener('abort', onCallerAbort);
+    }
   }
   let r;
   try {
     r = await fetch(path, Object.assign({}, opts, { signal: controller.signal }));
   } catch (e) {
     clearTimeout(tmo);
+    if (opts.signal && onCallerAbort) {
+      try { opts.signal.removeEventListener('abort', onCallerAbort); } catch (_) {}
+    }
     throw makeApiError(0, '网络异常，请检查连接后重试', null, 'NETWORK', 0);
   }
   clearTimeout(tmo);
+  if (opts.signal && onCallerAbort) {
+    try { opts.signal.removeEventListener('abort', onCallerAbort); } catch (_) {}
+  }
   if (!r.ok) {
     if (r.status === 401 && !opts._authEndpoint && !_isInGraceWindow()) {
       try { _on401 && _on401('apiFetchRaw:' + method + ' ' + path); } catch (_) {}

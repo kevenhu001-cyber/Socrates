@@ -51,6 +51,21 @@ async function main() {
     console.warn('[validate] API key validation skipped:', err.message);
   }
 
+  // ── Warm up Pyodide code-interpreter pool ──
+  // Pay the ~3-5 s cold-start cost at boot so the first user request
+  // doesn't block on loading the WASM interpreter. Non-blocking —
+  // the server accepts requests while this runs; the first few calls
+  // will be queued until the pool is ready.
+  (async () => {
+    try {
+      const { codeInterpreter } = await import('./services/codeInterpreter.js');
+      await codeInterpreter.warm();
+      console.log('[code-interpreter] Pyodide pool warmed');
+    } catch (err) {
+      console.warn('[code-interpreter] warmup skipped:', err.message);
+    }
+  })();
+
   // ── Start periodic DB cleanup ──
   startExpiredCleanup();
 

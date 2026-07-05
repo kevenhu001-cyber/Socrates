@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Socrates</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d8a85b' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M12 6v6l4 2'/><circle cx='12' cy='12' r='3'/></svg>">
+<link rel="icon" type="image/png" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- P5.1 — Google Fonts CSS is intentionally NOT SRI-pinned: the CSS
      response is generated per-user-agent and is tiny; the actual
@@ -53,7 +53,7 @@
      flips to "auth" or "app", so the transition is smooth. -->
 <div class="boot-loading" id="bootLoading" aria-hidden="true">
   <div class="boot-loading-logo">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="3"/></svg>
+    <img src="/logo.png" width="20" height="20" alt="" style="border-radius:4px;flex-shrink:0">
     <span>Socrates</span>
     <span class="boot-loading-dots" aria-hidden="true"><span></span><span></span><span></span></span>
   </div>
@@ -70,7 +70,7 @@
 <div class="auth-gate" id="authGate">
   <div class="auth-card">
     <div class="auth-brand">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="3"/></svg>
+      <img src="/logo.png" width="22" height="22" alt="" style="border-radius:4px">
       <span>Socrates</span>
     </div>
 
@@ -234,10 +234,10 @@
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-inner">
     <div class="sidebar-header">
-      <a class="sidebar-logo" onclick="event.preventDefault();resetApp()" title="New session">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="3"/></svg>
+      <div class="sidebar-logo">
+        <img src="/logo.png" width="18" height="18" alt="" style="border-radius:3px;flex-shrink:0">
         <span>Socrates</span>
-      </a>
+      </div>
       <div style="display:flex;align-items:center;gap:2px">
         <button class="icon-btn" id="newChatBtn" title="Start a new chat" onclick="event.preventDefault();resetApp()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -261,7 +261,7 @@
     </div>
     <div class="knowledge-panel tutor-only" id="knowledgePanel">
       <div id="teachingPlanContent"></div>
-      <div id="kbContent"><div class="kb-empty">Set a learning topic to build your knowledge map.</div></div>
+      <div id="kbContent"><div class="kb-empty" data-i18n-key="tutor.kbTopicFirst">Set a topic to build your knowledge map.</div></div>
     </div>
     <div class="recents-panel hidden" id="recentsPanel">
       <div class="recents-header">
@@ -414,27 +414,27 @@
         <div class="plan-setup" id="planSetup">
           <button class="plan-setup-toggle" id="planSetupToggle" type="button" aria-expanded="false" aria-controls="planSetupFields">
             <span class="plan-setup-caret" aria-hidden="true">›</span>
-            <span class="plan-setup-label" data-i18n="tutor.planSetupToggle">Optional: set a target date and daily time</span>
+            <span class="plan-setup-label" data-i18n-key="tutor.planSetupToggle">Optional: set a target date and daily time</span>
           </button>
           <div class="plan-setup-fields" id="planSetupFields" hidden>
             <label class="plan-setup-field">
-              <span class="plan-setup-field-label" data-i18n="tutor.planSetupTargetDate">Target date</span>
+              <span class="plan-setup-field-label" data-i18n-key="tutor.planSetupTargetDate">Target date</span>
               <input class="plan-setup-input" type="date" id="planTargetDateInput" name="planTargetDateInput">
             </label>
             <label class="plan-setup-field">
-              <span class="plan-setup-field-label" data-i18n="tutor.planSetupDailyMinutes">Daily minutes</span>
+              <span class="plan-setup-field-label" data-i18n-key="tutor.planSetupDailyMinutes">Daily minutes</span>
               <input class="plan-setup-input" type="number" id="planDailyMinutesInput" name="planDailyMinutesInput" min="5" max="240" step="5" value="30">
             </label>
             <div class="plan-setup-field plan-setup-field-rest">
-              <span class="plan-setup-field-label" data-i18n="tutor.planSetupRestDays">Rest days</span>
-              <div class="plan-setup-restdays" id="planRestDays" role="group" aria-label="Rest days of the week">
-                <button type="button" class="plan-restday" data-day="0">Sun</button>
-                <button type="button" class="plan-restday" data-day="1">Mon</button>
-                <button type="button" class="plan-restday" data-day="2">Tue</button>
-                <button type="button" class="plan-restday" data-day="3">Wed</button>
-                <button type="button" class="plan-restday" data-day="4">Thu</button>
-                <button type="button" class="plan-restday" data-day="5">Fri</button>
-                <button type="button" class="plan-restday" data-day="6">Sat</button>
+              <span class="plan-setup-field-label" data-i18n-key="tutor.planSetupRestDays">Rest days</span>
+              <div class="plan-setup-restdays" id="planRestDays" role="group" data-i18n-aria="tutor.planSetupRestDays" aria-label="Rest days of the week">
+                <button type="button" class="plan-restday" data-day="0" data-i18n-key="common.dayShort.sun">Sun</button>
+                <button type="button" class="plan-restday" data-day="1" data-i18n-key="common.dayShort.mon">Mon</button>
+                <button type="button" class="plan-restday" data-day="2" data-i18n-key="common.dayShort.tue">Tue</button>
+                <button type="button" class="plan-restday" data-day="3" data-i18n-key="common.dayShort.wed">Wed</button>
+                <button type="button" class="plan-restday" data-day="4" data-i18n-key="common.dayShort.thu">Thu</button>
+                <button type="button" class="plan-restday" data-day="5" data-i18n-key="common.dayShort.fri">Fri</button>
+                <button type="button" class="plan-restday" data-day="6" data-i18n-key="common.dayShort.sat">Sat</button>
               </div>
             </div>
           </div>
@@ -468,12 +468,6 @@
         <span>Read-only view — this is a shared conversation.</span>
       </div>
       <div class="chat-view hidden" id="chatView">
-        <div class="agent-mode-banner hidden" id="agentModeBanner">
-          <span class="agent-mode-dot"></span>
-          <span class="agent-mode-label">Agent mode</span>
-          <span class="agent-mode-hint">Claude can read &amp; write files, run shell commands, and fetch web pages in your workspace.</span>
-          <button class="agent-mode-exit" onclick="exitAgentMode()">Exit</button>
-        </div>
         <div class="msg-list" id="msgList"></div>
         <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
         <div class="chat-input-bar" id="chatInputBar">
@@ -713,7 +707,11 @@
       <!-- Preferences section -->
       <div class="profile-section">
         <div class="profile-section-title" data-i18n-key="profile.preferences">Preferences</div>
-        <!-- Language toggle -->
+        <!-- Language toggle — order matches the chat language directive's
+             detection order in main.js (zh / ja / ko / en). The label
+             text inside each option is intentionally not localized: the
+             button shows the language's own native name so a user can
+             find their own language regardless of UI state. -->
         <div class="profile-row">
           <span class="profile-row-label" data-i18n-key="profile.language">Language</span>
           <div class="profile-lang-toggle" id="profileLangToggle">
@@ -851,7 +849,7 @@
       </span>
     </div>
     <div class="usage-body" id="usageBody">
-      <div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> Loading usage data…</div>
+      <div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> <span data-i18n-key="usage.loading">Loading usage data…</span></div>
     </div>
   </div>
 </div>

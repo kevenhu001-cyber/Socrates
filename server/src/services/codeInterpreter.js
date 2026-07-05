@@ -25,12 +25,51 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import os from 'node:os';
+import { EventEmitter } from 'node:events';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { executions, files } from '../db/schema.js';
 import { recordAudit } from '../middleware/audit.js';
 import { persistArtifact } from './fileArtifacts.js';
 import { TooManyRequests } from '../lib/errors.js';
+
+/* ─── Execution progress EventEmitter ───
+ * Allows external consumers (e.g. SSE endpoints) to subscribe to
+ * execution progress events without being coupled to the execute()
+ * call chain. Events emitted:
+ *   'progress:{executionId}' — { phase, stream, chunk, elapsedMs, executionId }
+ *   'result:{executionId}'   — final { status, executionId, stdout, stderr, ... }
+ * Consumers call subscribe(executionId, listener) and
+ * unsubscribe(executionId, listener).
+ */
+const _progressEmitter = new EventEmitter();
+_progressEmitter.setMaxListeners(500); // accommodate concurrent SSE clients
+
+export function subscribeExecution(executionId, listener) {
+  _progressEmitter.on(`progress:${executionId}`, listener);
+}
+
+export function unsubscribeExecution(executionId, listener) {
+  _progressEmitter.off(`progress:${executionId}`, listener);
+}
+
+/* Same for final result events. */
+export function subscribeExecutionResult(executionId, listener) {
+  _progressEmitter.on(`result:${executionId}`, listener);
+}
+
+export function unsubscribeExecutionResult(executionId, listener) {
+  _progressEmitter.off(`result:${executionId}`, listener);
+}
+
+/* Internal helper: emit a progress event to all subscribers and
+   also forward to the call-site onProgress callback. */
+function emitProgress(executionId, event, onProgress) {
+  _progressEmitter.emit(`progress:${executionId}`, event);
+  if (typeof onProgress === 'function') {
+    try { onProgress(event); } catch (_) {}
+  }
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -92,11 +131,23 @@ class WorkerSlot {
     this.index = index;
     this.pool = pool;
     this.busy = false;
-    this.queue = [];
     this.worker = null;
     this.ready = null;
     this.failedBoots = 0;
     this.terminated = false;
+    this._readyResolved = false;
+    this._inflightReject = null; // per-slot reject handler (avoids pool-level race)
+    // Promise chain that serializes all async claims on this slot. Each
+    // claim atomically replaces _claimChain with a fresh pending link;
+    // the next claim awaits the previous one. The chain advances when
+    // the in-flight claim's release trap resolves its link. This avoids
+    // the race in the original queue+busy-flag design where two callers
+    // could both observe busy=false after a release and both return the
+    // same slot to their callers.
+    this._claimChain = Promise.resolve();
+    // Resolver for the in-flight claim's release promise. release()
+    // calls this to clear busy and unblock the next queued claim.
+    this._releaseCurrent = null;
   }
   spawn() {
     const workerFile = path.join(__dirname, 'pyodideWorker.js');
@@ -107,12 +158,15 @@ class WorkerSlot {
       },
     });
     this.worker = w;
+    this._readyResolved = false;
     this.ready = new Promise((resolve, reject) => {
       const onMessage = (msg) => {
         if (msg && msg.id === 'boot') {
           w.off('message', onMessage);
-          if (msg.type === 'ready') resolve();
-          else reject(new Error(msg.error || 'pyodide boot failed'));
+          if (msg.type === 'ready') {
+            this._readyResolved = true;
+            resolve();
+          } else reject(new Error(msg.error || 'pyodide boot failed'));
         }
       };
       w.on('message', onMessage);
@@ -122,88 +176,214 @@ class WorkerSlot {
       const wasBusy = this.busy;
       this.worker = null;
       this.ready = null;
+      this._readyResolved = false;
       this.busy = false;
-      // Drain queued waiters with a structured failure.
-      while (this.queue.length) {
-        const waiter = this.queue.shift();
-        if (typeof waiter === 'function') waiter();
-      }
       // Reject any in-flight promise if we were killed mid-run.
-      if (wasBusy && this.pool) this.pool._onSlotDied(this, code);
+      // Use per-slot _inflightReject (not pool-level) to avoid
+      // race conditions with concurrent executions on other slots.
+      if (this._inflightReject) {
+        const r = this._inflightReject;
+        this._inflightReject = null;
+        r(new Error(`pyodide_worker_exited: code=${code}`));
+      }
+      // Unblock any in-flight claim so the chain advances.  If
+      // terminated, the chain was already resolved; null check
+      // prevents double-resolve.
+      if (this._releaseCurrent) {
+        const r = this._releaseCurrent;
+        this._releaseCurrent = null;
+        r();
+      }
       if (code !== 0) this.failedBoots++;
     });
   }
-  async acquire() {
-    if (this.failedBoots > 3) {
-      throw new Error('pyodide_worker_disabled: too many boot failures');
-    }
-    if (!this.worker || this.terminated) {
+  /**
+   * Synchronous fast-path claim. Atomic in the Node.js event loop:
+   * between the busy check and the set, no other JS runs. Returns true
+   * iff we successfully claimed the slot. Returns false if the slot is
+   * busy, terminated, the worker hasn't booted, or the boot-failure
+   * threshold was hit. Callers should fall back to claim() on false.
+   */
+  tryClaim() {
+    if (this.failedBoots > 3) return false;
+    if (this.busy) return false;
+    // Auto-respawn terminated workers so the pool is self-healing.
+    // Without this, after POOL_SIZE consecutive timeouts all slots
+    // become dead and the pool hangs forever.
+    if (this.terminated) {
       this.terminated = false;
+      this.failedBoots = 0;
       this.spawn();
+      return false; // caller will queue via claim() and wait for boot
     }
-    await this.ready;
-    if (this.busy) {
-      await new Promise((resolve) => this.queue.push(resolve));
-    }
+    if (!this.worker || !this._readyResolved) return false;
     this.busy = true;
-    return this.worker;
+    // Update the chain link so any concurrent claim() (which captured
+    // the old resolved _claimChain) now queues behind us instead of
+    // racing past busy=true.
+    let resolveNextRelease;
+    this._claimChain = new Promise((resolve) => { resolveNextRelease = resolve; });
+    this._installReleaseTrap(resolveNextRelease);
+    return true;
   }
+  /**
+   * Async claim. Tries tryClaim() first; if the slot is busy or unbooted,
+   * awaits _claimChain and retries. Concurrent claim()s serialize via
+   * _claimChain so there's no race on the busy flag (only one claim
+   * resolves at a time per slot). The returned promise resolves with
+   * this slot's worker once claimed; the caller MUST call release()
+   * when done.
+   *
+   * Rejects if boot has failed too many times on this slot.
+   */
+  async claim() {
+    while (true) {
+      if (this.failedBoots > 3) {
+        throw new Error('pyodide_worker_disabled: too many boot failures');
+      }
+      if (this.tryClaim()) return this.worker;
+      // If the worker hasn't booted yet, await the ready promise
+      // instead of spinning on _claimChain (which is initialized to
+      // Promise.resolve() and would resolve immediately in a tight
+      // loop, burning CPU until the worker boots).
+      if (!this._readyResolved && this.ready) {
+        await this.ready;
+        continue;
+      }
+      // Worker is ready but busy (or respawning) — wait for the
+      // in-flight claim to release, then re-check.
+      await this._claimChain;
+    }
+  }
+  /**
+   * Internal: install the release trap. When release() is called, this
+   * clears busy and resolves the chain link (if provided) so the next
+   * queued claim can proceed.
+   */
+  _installReleaseTrap(resolveNextRelease) {
+    let resolveRelease;
+    const myRelease = new Promise((resolve) => { resolveRelease = resolve; });
+    this._releaseCurrent = resolveRelease;
+    myRelease.then(() => {
+      this.busy = false;
+      this._releaseCurrent = null;
+      if (resolveNextRelease) resolveNextRelease();
+    }).catch(() => {});
+  }
+  /**
+   * Release the slot. Resolves the in-flight claim's release promise so
+   * its hold completes and the next queued claim can proceed.
+   */
   release() {
-    this.busy = false;
-    const next = this.queue.shift();
-    if (next) next();
+    if (this._releaseCurrent) {
+      const r = this._releaseCurrent;
+      this._releaseCurrent = null;
+      r();
+    }
   }
+  /**
+   * Terminate the worker. Used on timeout to break CPU-bound pure-Python
+   * loops that the SIGINT interrupt buffer can't break. The exit handler
+   * clears worker/busy; we also release any in-flight claim here in case
+   * the exit is delayed, so the chain advances promptly.
+   */
   terminate() {
     this.terminated = true;
     if (this.worker) {
       try { this.worker.terminate(); } catch (_) {}
+    }
+    if (this._releaseCurrent) {
+      const r = this._releaseCurrent;
+      this._releaseCurrent = null;
+      r();
     }
   }
 }
 
 class PyodidePool {
   constructor({ size }) {
-    this.slots = Array.from({ length: size }, (_, i) => new WorkerSlot({ index: i, pool: this }));
-    this._inflightReject = null;
+    this.slots = Array.from({ length: size }, (_, i) => {
+      const s = new WorkerSlot({ index: i, pool: this });
+      s.spawn();
+      return s;
+    });
+    this._nextStart = 0;
   }
   /**
-   * Round-robin across idle slots. If all slots are busy, queue on slot 0
-   * (simplest possible scheduler — adequate for the 2-worker default).
+   * Acquire a slot for a new run. Round-robin start for fairness and
+   * load balance under contention.
+   *
+   * Phase 1 — synchronous fast path: try tryClaim() on each slot in
+   * round-robin order. tryClaim() is atomic in the event loop, so
+   * concurrent acquireSlot() calls can't both grab the same slot.
+   * Returns immediately on the first idle slot.
+   *
+   * Phase 2 — async queue: if all slots are busy or unbooted, queue
+   * on the round-robin slot (not always slot 0) via claim().
+   * claim() serializes waiters via _claimChain (FIFO, no race on
+   * busy). Picking the round-robin slot distributes queued callers
+   * across both slots — otherwise a single hot slot ends up doing
+   * all the work while the other sits idle.
    */
   async acquireSlot() {
-    for (const slot of this.slots) {
-      if (!slot.busy && slot.worker && !slot.terminated) return slot;
+    const startIdx = this._nextStart;
+    for (let i = 0; i < this.slots.length; i++) {
+      const idx = (startIdx + i) % this.slots.length;
+      const slot = this.slots[idx];
+      if (slot.tryClaim()) {
+        this._nextStart = (idx + 1) % this.slots.length;
+        return slot;
+      }
     }
-    // All busy → wait on slot 0.
-    const slot = this.slots[0];
-    await slot.acquire();
-    slot.release();
-    return this.slots.find((s) => !s.busy) || slot;
+    // All busy (or unbooted). Queue on the round-robin slot (not
+    // always slot 0) so queued callers distribute across both slots
+    // — otherwise a single hot slot ends up doing all the work while
+    // the other sits idle. claim() serializes waiters FIFO via
+    // _claimChain so concurrent async claimers don't race on busy.
+    const slot = this.slots[startIdx];
+    this._nextStart = (startIdx + 1) % this.slots.length;
+    await slot.claim();
+    return slot;
   }
   _onSlotDied(slot, code) {
-    if (this._inflightReject) {
-      const reject = this._inflightReject;
-      this._inflightReject = null;
-      reject(new Error(`pyodide_worker_exited: code=${code}`));
-    }
+    // Rejection is now handled per-slot in the WorkerSlot exit handler.
+    // The pool-level _inflightReject was removed because concurrent
+    // executions on different slots could overwrite each other's
+    // reject handler. Each WorkerSlot tracks its own _inflightReject.
   }
 }
 
 let pool = null;
-function getPool() {
-  if (!pool) {
-    if (EXEC_RUNNER === 'disabled') return null;
-    pool = new PyodidePool({ size: POOL_SIZE });
-    console.log(`[code-interpreter] pool ready (${POOL_SIZE} workers, pyodide ${PYODIDE_VERSION})`);
+let _poolInitLock = null;
+async function getPool() {
+  if (pool) return pool;
+  if (EXEC_RUNNER === 'disabled') return null;
+  if (!_poolInitLock) {
+    _poolInitLock = (async () => {
+      pool = new PyodidePool({ size: POOL_SIZE });
+      console.log(`[code-interpreter] pool ready (${POOL_SIZE} workers, pyodide ${PYODIDE_VERSION})`);
+    })();
   }
+  // Wait for the init to complete (in case another fiber started it)
+  await _poolInitLock;
   return pool;
 }
 
 /* ─── Single execution through one worker ─── */
-async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, maxOutputBytes }) {
-  const pool = getPool();
-  const slot = await pool.acquireSlot();
-  const worker = await slot.acquire();
+async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, maxOutputBytes, onProgress }) {
+  /* P_progress — safe noop default so existing callers (tests, direct
+     execute()) work without changes. */
+  const emit = (typeof onProgress === 'function')
+    ? (p) => { try { onProgress(p); } catch (_) {} }
+    : () => {};
+    const pool = await getPool();
+    /* P_progress — surface the wait while a worker is busy/booting. */
+    emitProgress(executionId, { phase: 'queued', executionId }, onProgress);
+    const slot = await pool.acquireSlot();
+    emitProgress(executionId, { phase: 'ready', executionId }, onProgress);
+  // slot.tryClaim()/claim() already returned a fully-claimed slot with
+  // a booted worker, so slot.worker is ready — no second await needed.
+  const worker = slot.worker;
   const id = crypto.randomUUID();
   const interruptBuffer = new SharedArrayBuffer(8);
 
@@ -211,6 +391,27 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
 
   // SIGINT path: works for I/O-bound code (time.sleep, file reads, etc).
   // Doesn't work for CPU-bound pure-Python loops — those need termination.
+  // Progressive timeout warnings — notify listeners at 50%, 80%, and 95%
+  // of the budget so the UI can show "still running…" instead of silence.
+  const timeoutCheckpoints = [
+    { at: 0.50, label: '50%' },
+    { at: 0.80, label: '80%' },
+    { at: 0.95, label: '95%' },
+  ];
+  const timeoutWarnings = [];
+  for (const cp of timeoutCheckpoints) {
+    const t = setTimeout(() => {
+      emitProgress(executionId, {
+        phase: 'timeout_warning',
+        stream: null,
+        chunk: `Execution at ${cp.label} of timeout (${(timeout / 1000).toFixed(0)}s)`,
+        executionId,
+        elapsedMs: Math.round(timeout * cp.at),
+      }, onProgress);
+    }, Math.round(timeout * cp.at));
+    timeoutWarnings.push(t);
+  }
+
   const sigintTimer = setTimeout(() => {
     try { new Uint8Array(interruptBuffer)[0] = 0x02; } catch (_) {}
   }, timeout);
@@ -224,7 +425,7 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
 
   try {
     const result = await new Promise((resolve, reject) => {
-      pool._inflightReject = reject;
+      slot._inflightReject = reject; // per-slot, not pool._inflightReject
       const onAbort = () => {
         try { new Uint8Array(interruptBuffer)[0] = 0x02; } catch (_) {}
       };
@@ -233,10 +434,35 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
         else signal.addEventListener('abort', onAbort, { once: true });
       }
       const onMessage = (msg) => {
-        if (msg && msg.id === id) {
+        if (!msg || msg.id !== id) return;
+        /* P_progress — forward incremental stdout/stderr from the
+           worker so the chat route can stream them as
+           `tool_progress` SSE events. The terminal `result` message
+           has type='result'; everything else is incremental output. */
+        if (msg.type === 'stdout' || msg.type === 'stderr' || msg.type === 'phase') {
+          emitProgress(executionId, {
+            phase: msg.type,
+            stream: msg.type,
+            chunk: msg.chunk || '',
+            executionId,
+            elapsedMs: msg.elapsedMs,
+          }, onProgress);
+          return;
+        }
+        if (msg.type === 'result' || msg.status) {
           worker.off('message', onMessage);
           if (signal) signal.removeEventListener('abort', onAbort);
-          pool._inflightReject = null;
+          slot._inflightReject = null;
+          // Emit final result to EventEmitter subscribers (SSE clients)
+          _progressEmitter.emit(`result:${executionId}`, {
+            phase: 'completed',
+            executionId,
+            status: msg.status,
+            stdout: msg.stdout || '',
+            stderr: msg.stderr || '',
+            durationMs: msg.durationMs || 0,
+            artifactCount: (msg.artifacts || []).length,
+          });
           resolve(msg);
         }
       };
@@ -253,7 +479,7 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
         });
       } catch (err) {
         if (signal) signal.removeEventListener('abort', onAbort);
-        pool._inflightReject = null;
+        slot._inflightReject = null;
         reject(err);
       }
     });
@@ -261,6 +487,7 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
   } finally {
     clearTimeout(sigintTimer);
     clearTimeout(terminateTimer);
+    for (const t of timeoutWarnings) clearTimeout(t);
     slot.release();
   }
 }
@@ -278,6 +505,11 @@ export const codeInterpreter = {
    */
   async execute(opts) {
     if (EXEC_RUNNER === 'disabled') {
+      /* P_progress — still emit a terminal so the chat route can
+         clear its "queued" spinner even on the disabled path. */
+      if (typeof opts.onProgress === 'function') {
+        try { opts.onProgress({ phase: 'skipped', reason: 'runner_disabled' }); } catch (_) {}
+      }
       return { status: 'skipped', errorMessage: 'code_interpreter_disabled', artifactFileIds: [], artifactCount: 0 };
     }
     const userId = opts.userId || null;
@@ -286,8 +518,9 @@ export const codeInterpreter = {
     const language = opts.language || 'python';
     const timeoutMs = opts.timeoutMs || DEFAULT_TIMEOUT_MS;
     const signal = opts.signal || null;
+    const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
 
-    const pool = getPool();
+    const pool = await getPool();
     if (!pool) {
       return { status: 'skipped', errorMessage: 'code_interpreter_disabled', artifactFileIds: [], artifactCount: 0 };
     }
@@ -318,26 +551,37 @@ export const codeInterpreter = {
         signal,
         scratchDir: executionScratchDir,
         maxOutputBytes: MAX_OUTPUT_BYTES,
+        onProgress,
       });
-    } catch (err) {
-      // Two paths bubble out of runOnWorker:
-      //   1. SIGINT path: worker returned status='timeout' normally — handled above.
-      //   2. Hard termination path: worker process exited (code != 0) without
-      //      delivering a result, typically because the run was CPU-bound and
-      //      the SIGINT couldn't break the loop. Map this to 'timeout' so
-      //      callers see the same status as the cooperative case.
-      const msg = String(err && err.message || err);
-      const isWorkerCrash = /pyodide_worker_exited/.test(msg);
-      result = {
-        status: isWorkerCrash ? 'timeout' : 'failed',
-        errorMessage: isWorkerCrash ? 'timeout' : `pool_error: ${msg}`,
-        stdout: '',
-        stderr: '',
-        exitCode: isWorkerCrash ? 124 : 1,
-        durationMs: 0,
-        artifacts: [],
-      };
-    }
+  } catch (err) {
+    // Two paths bubble out of runOnWorker:
+    //   1. SIGINT path: worker returned status='timeout' normally — handled above.
+    //   2. Hard termination path: worker process exited (code != 0) without
+    //      delivering a result, typically because the run was CPU-bound and
+    //      the SIGINT couldn't break the loop. Map this to 'timeout' so
+    //      callers see the same status as the cooperative case.
+    const msg = String(err && err.message || err);
+    const isWorkerCrash = /pyodide_worker_exited/.test(msg);
+    result = {
+      status: isWorkerCrash ? 'timeout' : 'failed',
+      errorMessage: isWorkerCrash ? 'timeout' : `pool_error: ${msg}`,
+      stdout: '',
+      stderr: '',
+      exitCode: isWorkerCrash ? 124 : 1,
+      durationMs: 0,
+      artifacts: [],
+    };
+    // Emit failure result to EventEmitter subscribers
+    _progressEmitter.emit(`result:${executionId}`, {
+      phase: 'failed',
+      executionId,
+      status: result.status,
+      errorMessage: result.errorMessage,
+      stdout: '',
+      stderr: '',
+      durationMs: 0,
+    });
+  }
 
     // Persist artifacts. Each file in result.artifacts is something the
     // user's Python wrote into the artifacts/ subdir.
@@ -424,7 +668,13 @@ export const codeInterpreter = {
    * execute().
    */
   async warm() {
-    return getPool();
+    const p = await getPool();
+    // Wait for all workers in the pool to finish booting so the first
+    // user request doesn't pay the 3-5s warm-up cost inline.
+    if (p && p.slots) {
+      await Promise.allSettled(p.slots.map((s) => s.ready));
+    }
+    return p;
   },
 
   /* ─── Internal hooks for tests / dev ─── */

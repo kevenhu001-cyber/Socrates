@@ -8,6 +8,14 @@ import { chatLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
+/* SSE_PRIME — 32 KB comment-padding frame that flushes EdgeOne CDN's first-
+   chunk buffer (expected ~8 KB but may be configured larger) and Safari's ~1
+   KB fetch ReadableStream buffer so the built-in Beagle stream also delivers
+   deltas immediately. 32 KB provides ~4× margin over the assumed ~8 KB
+   threshold. See chat.js for the full rationale. Comment lines (leading `:`)
+   are spec-valid and ignored by the frontend parser. */
+const SSE_PRIME = ': open\n' + Array.from({ length: 32 }, () => ':' + 'o'.repeat(1022)).join('\n') + '\n\n';
+
 /**
  * Proxy for the built-in Beagle (MiniMax) provider.
  *
@@ -74,19 +82,13 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         'X-Accel-Buffering': 'no',
       });
 
-      /* Prime the stream — see chat.js for the rationale.
-         EdgeOne and nginx both apply a first-chunk buffer (~8 KB)
-         to upstream responses, which can swallow an entire short
-         LLM answer and surface it to the browser as a single
-         read. flushHeaders() + a sentinel SSE comment frame both
-         (a) push the proxy past its first-chunk threshold so
-         deltas flow through as soon as the upstream emits them,
-         and (b) make Safari commit the initial fetch() chunk to
-         the body stream instead of holding it for one more
-         coalesced read. */
+      /* Prime the stream — see chat.js for the full rationale.
+         SSE_PRIME (32 KB of `:` comment lines) overflows buffers
+         and Safari's ~1 KB first-chunk buffers so deltas reach the browser
+         as soon as the upstream emits them, not in one coalesced blob. */
       try {
         res.flushHeaders();
-        res.write(': open\n\n');
+        res.write(SSE_PRIME);
         try { res.flush?.(); } catch {}
       } catch { /* socket already closed */ }
 

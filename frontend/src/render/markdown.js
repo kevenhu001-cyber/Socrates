@@ -138,6 +138,75 @@ function findStreamScaffold(name) {
   return null;
 }
 
+/* --------------------------------------------------------------
+ * Think-block builder — shared by the streaming and final renderers.
+ *
+ * Old design: every think block started OPEN with a bare "Thinking"
+ * label and a thin neutral border. Long chains-of-thought pushed the
+ * real answer down the page and looked like debug output.
+ *
+ * New design: collapsed-by-default with a left gold accent stripe, a
+ * sparkle icon, and a word-count meta on the summary line. The
+ * streaming variant keeps the spinner but stays open so the user
+ * can watch the chain-of-thought forming.
+ * -------------------------------------------------------------- */
+var THINK_SPARK_PATH = "M8 1.5l1.05 3.15L12.2 5.7l-3.15 1.05L8 9.9 6.95 6.75 3.8 5.7l3.15-1.05L8 1.5zM3 11.2l.6 1.8 1.8.6-1.8.6L3 16l-.6-1.8-1.8-.6 1.8-.6L3 11.2zm10 0l.6 1.8 1.8.6-1.8.6L13 16l-.6-1.8-1.8-.6 1.8-.6L13 11.2z";
+
+function _thinkUnitCount(s){
+  if(!s)return 0;
+  /* CJK characters count individually; for Latin/other scripts
+     split on whitespace. This gives a sensible "thought size" for
+     both Chinese reasoning (e.g. 思考了 412 字) and English
+     reasoning (e.g. Thought · 412 words). */
+  var cjk = (s.match(/[㐀-鿿豈-﫿]/g) || []).length;
+  var rest = s.replace(/[㐀-鿿豈-﫿]/g, " ").trim();
+  var words = rest ? rest.split(/\s+/).filter(Boolean).length : 0;
+  return cjk + words;
+}
+
+function _formatThinkMeta(n){
+  if(!n) return "";
+  var key = n === 1 ? "think.wordCountOne" : "think.wordCount";
+  var tmpl = (typeof window !== "undefined" && window.t) ? window.t(key) : "";
+  /* t() supports {n} substitution via .replace; do the same. */
+  if(tmpl && tmpl.indexOf("{n}") !== -1) return tmpl.replace("{n}", n);
+  /* Fallback if i18n key is missing for some reason. */
+  return (n === 1 ? "1 word" : n + " words");
+}
+
+function _thinkSummary(opts){
+  /* opts: { streaming: bool, count: number } */
+  var label = opts.streaming
+    ? ((typeof window !== "undefined" && window.t) ? window.t("think.thinking") : "Thinking…")
+    : ((typeof window !== "undefined" && window.t) ? window.t("think.title") : "Thought");
+  var meta  = (!opts.streaming && opts.count > 0)
+    ? '<span class="think-summary-meta">' + esc(_formatThinkMeta(opts.count)) + '</span>'
+    : '';
+  var icon = opts.streaming
+    ? '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>'
+    : '<span class="think-icon" aria-hidden="true">' +
+        '<svg viewBox="0 0 16 16" width="14" height="14">' +
+          '<path d="' + THINK_SPARK_PATH + '" fill="currentColor"/>' +
+        '</svg>' +
+      '</span>';
+  return '<summary class="think-summary">' +
+    icon +
+    '<span class="think-summary-label">' + esc(label) + '</span>' +
+    meta +
+    '<span class="think-summary-chevron" aria-hidden="true"></span>' +
+  '</summary>';
+}
+
+function _thinkDetails(inner, opts){
+  /* opts: { streaming: bool, count: number } */
+  var cls = 'think-block' + (opts.streaming ? ' think-block-streaming' : '');
+  var openAttr = opts.streaming ? ' open' : '';
+  return '<details class="' + cls + '"' + openAttr + '>' +
+    _thinkSummary(opts) +
+    '<div class="think-content">' + inner + '</div>' +
+  '</details>';
+}
+
 export function formatTickSlice(full,len){
   return formatMsgProgressive(full.slice(0,len));
 }
@@ -164,7 +233,7 @@ export function formatMsgProgressive(t){
     }catch(_e){
       inner=escHTML(content.trim());
     }
-    return save('<details class="think-block" open><summary class="think-summary">Thinking</summary><div class="think-content">'+inner+'</div></details>');
+    return save(_thinkDetails(inner,{streaming:false,count:_thinkUnitCount(content.trim().replace(/<\/?think>/g,""))}));
   });
   /* Unclosed thinking — show pulsing placeholder */
   s=s.replace(/<think>([\s\S]*)$/g,function(_,content){
@@ -175,7 +244,7 @@ export function formatMsgProgressive(t){
     }catch(_e){
       inner=escHTML(content.trim());
     }
-    return save('<details class="think-block" open><summary class="think-summary"><span class="thinking-ring thinking-ring-sm"></span> Thinking\u2026</summary><div class="think-content">'+inner+'</div></details>');
+    return save(_thinkDetails(inner,{streaming:true,count:_thinkUnitCount(content.trim().replace(/<\/?think>/g,""))}));
   });
 
   /* 1b. Tutor scaffold blocks — try the stream-time plugin first;
@@ -366,7 +435,7 @@ export function formatMsg(t){
     }catch(_){
       inner=esc(content.trim());
     }
-    return save('<details class="think-block" open><summary class="think-summary">Thinking</summary><div class="think-content">'+inner+'</div></details>');
+    return save(_thinkDetails(inner,{streaming:false,count:_thinkUnitCount(content.trim().replace(/<\/?think>/g,""))}));
   });
   t=t.replace(/<think>([\s\S]*)$/g,function(_,content){
     var inner="";
@@ -376,7 +445,7 @@ export function formatMsg(t){
     }catch(_){
       inner=esc(content.trim());
     }
-    return save('<details class="think-block" open><summary class="think-summary"><span class="thinking-ring thinking-ring-sm"></span> Thinking\u2026</summary><div class="think-content">'+inner+'</div></details>');
+    return save(_thinkDetails(inner,{streaming:true,count:_thinkUnitCount(content.trim().replace(/<\/?think>/g,""))}));
   });
 
   /* Mermaid diagram blocks */

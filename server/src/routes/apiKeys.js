@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { eq, and, ne, count } from 'drizzle-orm';
+import { eq, and, ne, count, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { apiKeys } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -19,7 +19,13 @@ router.use(requireAuth);
 router.get('/', async (req, res, next) => {
   try {
     const db = getDb();
-    const keys = await db.select({
+    /* P_apikey-list-leak — select `keyCiphertext` under the alias `hasKey`
+       and coerce it to a real boolean in SQL so the AES-GCM ciphertext is
+       never returned to the browser. Previously this projection passed the
+       raw TEXT column through, so every signed-in client received the
+       encrypted-at-rest key material on every refresh. Frontend coerces
+       with `!!p.hasKey`, so the shape change is transparent. */
+    const rows = await db.select({
       id: apiKeys.id,
       label: apiKeys.label,
       url: apiKeys.url,
@@ -29,9 +35,12 @@ router.get('/', async (req, res, next) => {
       isBuiltIn: apiKeys.isBuiltIn,
       /* P_attachments-multimodal — user-controlled vision flag. */
       isMultimodal: apiKeys.isMultimodal,
-      hasKey: apiKeys.keyCiphertext,  /* boolean: true if key is stored */
+      hasKey: sql`(${apiKeys.keyCiphertext} IS NOT NULL)`,
       createdAt: apiKeys.createdAt,
     }).from(apiKeys).where(eq(apiKeys.userId, req.userId));
+    /* Drizzle returns the boolean expression as a JS boolean already, but
+       normalise to be defensive against future driver changes. */
+    const keys = rows.map((r) => ({ ...r, hasKey: r.hasKey === true }));
     return res.json({ providers: keys });
   } catch (err) { next(err); }
 });
