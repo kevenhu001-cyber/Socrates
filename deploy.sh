@@ -79,6 +79,14 @@ else
   $SUDO mkdir -p "$APP_WEB_ROOT/assets"
   $SUDO install -m 644 -o www-data -g www-data "$DIST_DIR"/assets/* "$APP_WEB_ROOT/assets/"
 
+  # Copy static files from Vite's public/ directory (logo, favicon, etc.)
+  for f in "$DIST_DIR"/*; do
+    [[ -f "$f" ]] || continue
+    fname=$(basename "$f")
+    [[ "$fname" == "index.html" ]] && continue
+    $SUDO install -m 644 -o www-data -g www-data "$f" "$APP_WEB_ROOT/$fname"
+  done
+
   SRC_DESC="vite build → $APP_WEB_ROOT/"
   SRC_SIZE=$(stat -c%s "$APP_WEB_ROOT/index.html")
   SRC_MD5=$(md5sum "$APP_WEB_ROOT/index.html" | cut -d' ' -f1)

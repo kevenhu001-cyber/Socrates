@@ -77,6 +77,18 @@ export function showAuthCodeLogin(){
    main.js globals via window. */
 export async function afterAuthEnter(){
   window.toggleShareBtn&&window.toggleShareBtn();
+  /* P_bleed-v2 — wipe the previous user's module-level caches
+     BEFORE we start fetching the new user's data. Without this,
+     the brief window between hideGate() and the completion of
+     refreshServerSessions / refreshApiConfig / loadProjects would
+     show the previous user's sessions in the sidebar, providers
+     in the model picker, and custom projects above Recents.
+     clearPerUserClientState also re-renders the affected UI
+     surfaces (renderRecents, renderProviderList, renderProjects)
+     so the empty state appears immediately. */
+  if(typeof window.clearPerUserClientState==="function"){
+    try{window.clearPerUserClientState()}catch(e){console.warn("[afterAuthEnter] clearPerUserClientState threw:",e&&e.message)}
+  }
   /* P2.1 — hydrate the project list from localStorage and
      paint the chip row. Server-side /api/projects is
      fire-and-forget after this; local copy is the source of
@@ -143,8 +155,13 @@ export async function afterAuthEnter(){
      picker isn't left empty when the sid cookie is still settling. */
   var _r=await bootFetch("refreshApiConfig", window.refreshApiConfig);
   console.log("[afterAuthEnter] refreshApiConfig returned:", _r && _r.providers && _r.providers.length, "providers, activeId=", _r && _r.activeId);
-  /* Load the user's saved memories for long-term context. */
-  window.loadUserMemories&&window.loadUserMemories();
+  /* Load the user's saved memories for long-term context. AWAIT this
+     so the first chat request the user fires after sign-in sees their
+     own memories (and not the previous user's, which would otherwise
+     be visible during the fire-and-forget window). loadUserMemories
+     also clears _userMemories before fetching, so awaiting is safe
+     even if the request fails. */
+  try{await window.loadUserMemories()}catch(_){/* handled inside */}
   /* Update sidebar footer with user info. */
   window.renderUserFooter&&window.renderUserFooter();
   /* Re-render sidebar lists now that the cache is fresh. */
@@ -225,9 +242,9 @@ export async function submitAuthSignin(){
       showAuthView("authVerifySentView");
       return;
     }
-    setAuthError("authSigninError",e.status===401?"Wrong email or password.":("Login failed: "+e.message));
+    setAuthError("authSigninError",e.status===401?t("auth.wrongCredentials"):(t("auth.loginFailedPrefix")+e.message));
   }finally{
-    btn.disabled=false;btn.textContent="Sign in";
+    btn.disabled=false;btn.textContent=t("auth.signIn");
   }
 }
 
@@ -235,9 +252,9 @@ export async function submitAuthRegister(){
   var email=document.getElementById("authRegisterEmail").value.trim();
   var password=document.getElementById("authRegisterPassword").value;
   setAuthError("authRegisterError","");
-  if(!email)return setAuthError("authRegisterError","Please enter your email.");
-  if(!password||password.length<8)return setAuthError("authRegisterError","Password must be at least 8 characters.");
-  var btn=document.getElementById("authRegisterBtn");btn.disabled=true;btn.textContent="Sending…";
+  if(!email)return setAuthError("authRegisterError",t("auth.pleaseEnterEmail"));
+  if(!password||password.length<8)return setAuthError("authRegisterError",t("auth.passwordTooShort"));
+  var btn=document.getElementById("authRegisterBtn");btn.disabled=true;btn.textContent=t("auth.sending");
   try{
     /* The server stores the registration as pending and sends a
        verification email. No account or session is created until
@@ -252,7 +269,7 @@ export async function submitAuthRegister(){
   }catch(e){
     setAuthError("authRegisterError",e.status===409?"That email is already registered. Try signing in.":e.message);
   }finally{
-    btn.disabled=false;btn.textContent="Send verification link";
+    btn.disabled=false;btn.textContent=t("auth.sendVerificationLink");
   }
 }
 
@@ -316,8 +333,8 @@ export async function submitAuthVerify(token){
 export async function submitAuthForgotPassword(){
   var email=document.getElementById("authForgotEmail").value.trim();
   setAuthError("authForgotError","");
-  if(!email)return setAuthError("authForgotError","Please enter your email.");
-  var btn=document.getElementById("authForgotBtn");btn.disabled=true;btn.textContent="Sending…";
+  if(!email)return setAuthError("authForgotError",t("auth.pleaseEnterEmail"));
+  var btn=document.getElementById("authForgotBtn");btn.disabled=true;btn.textContent=t("auth.sending");
   try{
     await apiFetch("/api/auth/forgot-password",{method:"POST",_authEndpoint:true,body:{email}});
     document.getElementById("authForgotSentEmail").textContent=email;
@@ -325,7 +342,7 @@ export async function submitAuthForgotPassword(){
   }catch(e){
     setAuthError("authForgotError",e.message);
   }finally{
-    btn.disabled=false;btn.textContent="Send reset link";
+    btn.disabled=false;btn.textContent=t("auth.sendResetLink");
   }
 }
 
@@ -333,24 +350,24 @@ export async function submitAuthResetPassword(){
   var password=document.getElementById("authResetPassword").value;
   var confirm=document.getElementById("authResetConfirm").value;
   setAuthError("authResetError","");
-  if(!password||password.length<8)return setAuthError("authResetError","Password must be at least 8 characters.");
-  if(password!==confirm)return setAuthError("authResetError","Passwords don't match.");
-  var btn=document.getElementById("authResetBtn");btn.disabled=true;btn.textContent="Resetting…";
+  if(!password||password.length<8)return setAuthError("authResetError",t("auth.passwordTooShort"));
+  if(password!==confirm)return setAuthError("authResetError",t("auth.passwordsDontMatch"));
+  var btn=document.getElementById("authResetBtn");btn.disabled=true;btn.textContent=t("auth.resetting");
   try{
     await apiFetch("/api/auth/reset-password",{method:"POST",body:{token:window.__resetToken,password}});
     showAuthView("authResetSuccessView");
   }catch(e){
     setAuthError("authResetError",e.message);
   }finally{
-    btn.disabled=false;btn.textContent="Reset password";
+    btn.disabled=false;btn.textContent=t("auth.resetPassword");
   }
 }
 
 export async function submitAuthSendCode(){
   var email=document.getElementById("authCodeEmail").value.trim();
   setAuthError("authCodeError","");
-  if(!email)return setAuthError("authCodeError","Please enter your email.");
-  var btn=document.getElementById("authCodeSendBtn");btn.disabled=true;btn.textContent="Sending…";
+  if(!email)return setAuthError("authCodeError",t("auth.pleaseEnterEmail"));
+  var btn=document.getElementById("authCodeSendBtn");btn.disabled=true;btn.textContent=t("auth.sending");
   try{
     await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:{email}});
     document.getElementById("authCodeCodeWrap").classList.remove("hidden");
@@ -363,7 +380,7 @@ export async function submitAuthSendCode(){
   }catch(e){
     setAuthError("authCodeError",e.message);
   }finally{
-    btn.disabled=false;btn.textContent="Send code";
+    btn.disabled=false;btn.textContent=t("auth.sendCode");
   }
 }
 
@@ -390,7 +407,7 @@ export async function submitAuthLoginWithCode(){
   }catch(e){
     setAuthError("authCodeError",e.message);
   }finally{
-    btn.disabled=false;btn.textContent="Log in";
+    btn.disabled=false;btn.textContent=t("auth.logIn");
   }
 }
 

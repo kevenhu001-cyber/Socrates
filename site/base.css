@@ -15,8 +15,9 @@ a:hover{color:hsl(var(--accent-100))}
 /* Nav - fixed position with frosted glass effect */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:center;padding:18px 32px;background:hsl(var(--bg-100)/0.72);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border-bottom:0.5px solid hsl(var(--border-300)/0.06)}
 nav .nav-inner{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:1040px}
-.nav-logo{font-family:var(--font-display);font-size:24px;font-weight:400;color:hsl(var(--text-000));letter-spacing:-.03em;transition:opacity .15s}
+.nav-logo{font-family:var(--font-display);font-size:24px;font-weight:400;color:hsl(var(--text-000));letter-spacing:-.03em;transition:opacity .15s;display:inline-flex;align-items:center}
 .nav-logo:hover{opacity:.7}
+.nav-logo img{vertical-align:middle;margin-right:6px;border-radius:4px}
 .nav-logo em{font-style:italic;color:hsl(var(--accent-000))}
 .nav-links{display:flex;align-items:center;gap:28px;font-size:13px}
 .nav-links a{color:hsl(var(--text-400));transition:color .1s;position:relative}

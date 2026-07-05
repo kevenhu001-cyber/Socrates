@@ -255,6 +255,13 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
+/* ─── Hello (smoke-test / connectivity check) ─── */
+/* Simple GET returning a static greeting. No auth, no DB, no state. */
+app.get('/api/hello', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ message: 'hello' });
+});
+
 /* ─── Product Context (topodrive.top knowledge) ─── */
 /* GET  — status (auth required, admin only) */
 /* POST — manual refresh (auth required, admin only) */
@@ -303,8 +310,12 @@ app.use('/api/auth', authRouter);
 // Sessions (Phase 2)
 app.use('/api/sessions', sessionRouter);
 
-// Chat (Phase 2)
+// Chat (Phase 2) — includes execution SSE stream at /api/chat/executions/:id/stream
 app.use('/api/chat', chatRouter);
+
+// Execution SSE stream — standalone endpoint for real-time code execution progress
+// Mounted at /api/executions/:id/stream for frontend EventSource consumption.
+app.use('/api/executions', chatRouter);
 
 // API keys (Phase 3)
 app.use('/api/api-key', apiKeyRouter);

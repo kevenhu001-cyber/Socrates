@@ -43,8 +43,8 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .sidebar.collapsed .sidebar-resize-handle{opacity:0;pointer-events:none}
 .sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}
 .sidebar-header{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 8px 12px;flex-shrink:0}
-.sidebar-logo{display:flex;align-items:center;gap:6px;padding:3px 8px;font-weight:600;font-size:calc(16px * var(--app-font-scale, 1));letter-spacing:-.02em;white-space:nowrap;border-radius:6px;transition:background .06s;color:hsl(var(--text-100));cursor:pointer}
-.sidebar-logo:hover{background:hsl(var(--always-white)/0.05)}.sidebar-logo svg{flex-shrink:0}
+.sidebar-logo{display:flex;align-items:center;gap:6px;padding:3px 8px;font-weight:600;font-size:calc(16px * var(--app-font-scale, 1));letter-spacing:-.02em;white-space:nowrap;border-radius:6px;color:hsl(var(--text-100))}
+.sidebar-logo img{flex-shrink:0}
 .icon-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .06s,background .06s}
 .icon-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}.icon-btn svg{width:16px;height:16px}
 .sidebar-tabs{display:flex;border-bottom:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0;padding:0 8px}
@@ -482,7 +482,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
    affecting other views. The .main-inner itself doesn't need
    extra bottom padding. */
 .topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:10vh;flex:1;min-height:0;overflow-y:auto}
-.topic-title{font-family:var(--font-display);font-size:calc(clamp(1.5rem,1rem + 1.5vw,2rem) * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-200));text-align:center;line-height:1.4}
+.topic-title{font-family:var(--font-display);font-size:calc(clamp(1.75rem,1.25rem + 1.8vw,2.4rem) * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-200));text-align:center;line-height:1.4}
 .topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:640px}
 .topic-input-wrap{width:100%;max-width:720px;background:hsl(var(--bg-000));border:1px solid transparent;border-radius:18px;box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/4%),0 0 0 0.5px hsl(var(--border-300)/0.15);transition:box-shadow .2s,border-color .2s}
 .topic-input-wrap:focus-within{box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/8%),0 0 0 0.5px hsl(var(--border-200)/0.3);border-color:hsl(var(--border-200)/0.15)}
@@ -763,18 +763,9 @@ true) but the dropdown never shows — see commit history. */
   width:100%;
   display:flex;
   flex-direction:column;
-  /* Tight gap so header and msg-list sit close together. The
-   * empty space between them and the docked input bar is the
-   * msg-list area itself, which the user reads as the
-   * "conversation canvas" — much friendlier than a separate gap. */
   gap:4px;
   flex:1;
   min-height:0;
-  /* Make the input bar behave like a docked chat input — always
-     visible at the bottom of the scroll container, regardless of
-     how long the message list gets. The msg-list is the only
-     flex child that scrolls; the input bar is taken out of the
-     flex flow with position:absolute (relative to .chat-view). */
   position:relative;
 }
 .chat-view>.msg-list{
@@ -783,12 +774,6 @@ true) but the dropdown never shows — see commit history. */
   overflow-y:auto;
   scrollbar-width:thin;
   scrollbar-color:transparent transparent;
-  /* Bottom padding so the user can scroll the last AI message
-     above the docked input bar. Roughly = input bar height
-     (~80-100px) + the visual gap above it (16px). The actual
-     docked bar has bottom:8px; this padding lives inside the
-     scroll container so scrolling reveals the previously-hidden
-     last message instead of leaving it stranded under the bar. */
   padding-bottom:calc(120px + env(safe-area-inset-bottom,0));
 }
 .chat-view>.msg-list.scrollbar-visible{
@@ -1656,21 +1641,150 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .stream-cursor{display:inline-block;animation:blink 1s step-end infinite;color:hsl(var(--text-400));font-size:calc(14px * var(--app-font-scale, 1));margin-left:1px;vertical-align:baseline}
 @keyframes blink{50%{opacity:0}}
 
-/* Think block */
-.think-block{margin:6px 0;border:0.5px solid hsl(var(--border-300)/0.12);border-radius:10px;overflow:hidden;background:hsl(var(--bg-200)/0.5)}
-.think-summary{display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));cursor:pointer;user-select:none;list-style:none;transition:color .08s}
+/* Think block — cream/gold redesign.
+   - Collapsed by default (the markup no longer carries `open` once
+     streaming completes) so chain-of-thought doesn't push the real
+     answer down the page.
+   - A 3px gold left stripe gives the block its own visual identity
+     without competing with the assistant message body.
+   - The summary carries a sparkle icon, a serif label, and a
+     word-count meta; the chevron animates open/closed.
+   - Streaming blocks keep the spinner and a soft pulse so the user
+     can see thinking is in progress. */
+.think-block{
+  position:relative;
+  margin:8px 0;
+  border-radius:10px;
+  overflow:hidden;
+  background:linear-gradient(180deg,
+              hsl(var(--bg-200)/0.55) 0%,
+              hsl(var(--bg-200)/0.30) 100%);
+  border:0.5px solid hsl(var(--accent-000)/0.18);
+  box-shadow:0 1px 2px hsl(var(--accent-000)/0.05);
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.think-block::before{
+  /* Gold left accent stripe — the block's visual signature. */
+  content:"";
+  position:absolute;
+  left:0;top:0;bottom:0;
+  width:3px;
+  background:linear-gradient(180deg,
+              hsl(var(--accent-000)/0.85) 0%,
+              hsl(var(--accent-000)/0.35) 100%);
+  border-radius:10px 0 0 10px;
+  pointer-events:none;
+}
+.think-block:hover{border-color:hsl(var(--accent-000)/0.32)}
+
+/* Streaming variant — soft pulse to indicate live activity. */
+@keyframes thinkPulse{
+  0%,100%{box-shadow:0 1px 2px hsl(var(--accent-000)/0.05),0 0 0 0 hsl(var(--accent-000)/0.10)}
+  50%{box-shadow:0 1px 2px hsl(var(--accent-000)/0.10),0 0 0 4px hsl(var(--accent-000)/0)}
+}
+.think-block-streaming{animation:thinkPulse 2.4s ease-in-out infinite}
+
+/* P_ios_details — older iOS Safari (15-16) drops the default disclosure
+   triangle when a <summary> is a flex container and `list-style:none`
+   is used. Switch to display:list-item + [hidden] to keep the marker
+   hidden reliably across webkit versions while preserving the click
+   hit-area on touch. The explicit min-height also prevents the row
+   from collapsing to a sub-30px tappable target on small phones. */
+.think-summary{
+  display:list-item;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:38px;
+  padding:9px 14px 9px 16px;
+  font-size:calc(12.5px * var(--app-font-scale, 1));
+  font-weight:500;
+  color:hsl(var(--text-300));
+  cursor:pointer;
+  user-select:none;
+  list-style:none;
+  list-style-position:outside;
+  transition:color .12s ease, background-color .12s ease;
+  position:relative;
+}
 .think-summary::-webkit-details-marker{display:none}
-/* P_think-chevron — explicit rotate-90 SVG arrow instead of CSS
-   borders. Browsers drop the border-triangle when flexbox squeezes
-   the summary (notably on Windows + some Linux font stacks), and the
-   text-500 color was so close to bg-200 the chevron was effectively
-   invisible. The SVG arrow renders identically everywhere and uses
-   text-300 (one shade brighter) so it is always visible. */
-.think-summary::before{content:'';width:10px;height:10px;flex-shrink:0;background:currentColor;-webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><path d='M2 3.5l3 3 3-3' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/contain no-repeat;mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><path d='M2 3.5l3 3 3-3' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/contain no-repeat;transition:transform .15s;opacity:.85}
-.think-block[open] .think-summary::before{transform:rotate(-180deg)}
-.think-summary:hover{color:hsl(var(--text-200))}
-.think-summary:hover::before{opacity:1}
-.think-content{padding:6px 14px 12px;font-size:calc(13px * var(--app-font-scale, 1));line-height:1.6;color:hsl(var(--text-400));white-space:pre-wrap;font-family:var(--font-sans);border-top:0.5px solid hsl(var(--border-300)/0.06)}
+.think-summary::marker{display:none;content:""}
+.think-summary:hover{color:hsl(var(--text-100));background:hsl(var(--accent-000)/0.05)}
+.think-summary:focus-visible{outline:2px solid hsl(var(--accent-000)/0.5);outline-offset:-2px;border-radius:8px}
+
+.think-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;height:18px;
+  flex-shrink:0;
+  color:hsl(var(--accent-000));
+  opacity:.85;
+  transition:opacity .12s ease, transform .25s var(--ease-spring, ease);
+}
+.think-summary:hover .think-icon{opacity:1;transform:scale(1.08) rotate(-6deg)}
+
+.think-summary-label{
+  font-family:var(--font-display);
+  font-style:italic;
+  font-weight:500;
+  letter-spacing:.01em;
+  color:hsl(var(--text-200));
+}
+
+.think-summary-meta{
+  font-family:var(--font-mono);
+  font-size:calc(11px * var(--app-font-scale, 1));
+  font-weight:400;
+  font-style:normal;
+  color:hsl(var(--text-400));
+  margin-left:2px;
+  opacity:.85;
+}
+.think-summary-meta::before{content:"·";margin-right:6px;color:hsl(var(--text-500))}
+
+/* P_think-chevron — explicit chevron drawn in CSS instead of a
+   ::before mask. We keep the chevron as the LAST summary child so
+   flexbox pushes it to the right edge regardless of label length. */
+.think-summary-chevron{
+  margin-left:auto;
+  width:8px;height:8px;
+  flex-shrink:0;
+  border-right:1.5px solid currentColor;
+  border-bottom:1.5px solid currentColor;
+  transform:rotate(45deg);
+  transition:transform .2s var(--ease-out, cubic-bezier(.16,1,.3,1));
+  opacity:.65;
+  color:hsl(var(--text-400));
+}
+.think-summary:hover .think-summary-chevron{opacity:1;color:hsl(var(--text-200))}
+.think-block[open] > .think-summary .think-summary-chevron{transform:rotate(-135deg)}
+
+.think-summary-streaming .think-summary-label{
+  /* Pulsing label color while a model is mid-thought. */
+  animation:thinkLabelPulse 1.6s ease-in-out infinite;
+}
+@keyframes thinkLabelPulse{
+  0%,100%{color:hsl(var(--text-300))}
+  50%{color:hsl(var(--accent-000))}
+}
+
+.think-content{
+  padding:4px 16px 14px;
+  margin-left:0;
+  font-size:calc(13px * var(--app-font-scale, 1));
+  line-height:1.65;
+  color:hsl(var(--text-300));
+  white-space:pre-wrap;
+  font-family:var(--font-sans);
+  border-top:0.5px solid hsl(var(--accent-000)/0.10);
+  background:hsl(var(--bg-000)/0.25);
+  animation:thinkContentIn .22s var(--ease-out, cubic-bezier(.16,1,.3,1));
+}
+@keyframes thinkContentIn{
+  from{opacity:0;transform:translateY(-2px)}
+  to{opacity:1;transform:translateY(0)}
+}
 
 /* KaTeX dark theme overrides */
 .katex{font-size:1.05em}
@@ -1680,7 +1794,7 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 .katex .mord{color:hsl(var(--text-100))}
 .katex .mbin{color:hsl(var(--accent-000))}
 .katex .mrel{color:hsl(var(--accent-000))}
-@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .35s cubic-bezier(0.34,1.3,0.64,1),box-shadow .35s var(--ease-out);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4vh 12px 24px}.topic-title{font-size:calc(1.25rem * var(--app-font-scale, 1))}.chat-input-bar{bottom:0;padding-top:20px}}
+@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .35s cubic-bezier(0.34,1.3,0.64,1),box-shadow .35s var(--ease-out);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4vh 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{bottom:0;padding-top:20px}}
 .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:25;animation:fadeIn .15s}
 .sidebar-backdrop.show{display:block}
 
@@ -1704,7 +1818,7 @@ html[data-show-grid="false"] .boot-loading{background-image:none}
 html[data-boot-state="app"] .boot-loading,
 html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .boot-loading-logo{display:flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-weight:600;font-size:calc(15px * var(--app-font-scale,1));letter-spacing:-.02em}
-.boot-loading-logo svg{flex-shrink:0;color:hsl(var(--brand-000))}
+.boot-loading-logo svg,.boot-loading-logo img{flex-shrink:0;color:hsl(var(--brand-000))}
 .boot-loading-dots{display:inline-flex;align-items:center;margin-left:6px;width:16px;height:16px;position:relative}
 .boot-loading-dots span{display:none}
 .boot-loading-dots::before{content:"";display:block;width:100%;height:100%;border-radius:50%;border:2px solid hsl(var(--border-300)/0.3);border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--brand-000));animation:bootSpin 1s cubic-bezier(.4,0,.2,1) infinite;box-sizing:border-box}
@@ -1804,10 +1918,19 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .inline-quiz-q{font-weight:600;margin-bottom:8px;color:hsl(var(--text-100))}
 .inline-quiz-q .q-tag{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-right:4px;font-weight:400}
 .inline-quiz-opts{display:flex;flex-direction:column;gap:5px;margin-top:6px}
-.inline-quiz-opt{display:flex;align-items:flex-start;gap:8px;padding:7px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.25);background:hsl(var(--bg-100));font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));text-align:left;width:100%;cursor:pointer;transition:background .12s,border-color .12s,color .12s;line-height:1.45;font-family:inherit}
+.inline-quiz-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.25);background:hsl(var(--bg-100));font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));text-align:left;width:100%;cursor:pointer;transition:background .12s,border-color .12s,color .12s;line-height:1.45;font-family:inherit}
 .inline-quiz-opt:hover:not(:disabled){background:hsl(var(--bg-300));border-color:hsl(var(--border-300)/0.5);color:hsl(var(--text-100))}
 .inline-quiz-opt:disabled{cursor:default}
-.inline-quiz-opt-letter{flex-shrink:0;min-width:18px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-weight:600;margin-top:1px;font-variant-numeric:tabular-nums}
+/* The "A." / "B." chip needs to sit on the same baseline as the option
+   text — but KaTeX renders inline math with its own vertical-align that
+   pushes the .katex span off the text baseline. Without these two
+   adjustments, an option like "A. $\sin x = 0$" shows the A. floating
+   at the top of the row while the formula sits at the middle, and the
+   two read as misaligned. `align-items:center` on the row + resetting
+   `.katex` vertical-align keeps them on a single horizontal line. */
+.inline-quiz-opt-letter{flex-shrink:0;min-width:18px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-weight:600;line-height:1;align-self:center;font-variant-numeric:tabular-nums}
+.inline-quiz-opt-text{display:inline-block;line-height:1.55}
+.inline-quiz-opt-text .katex{vertical-align:baseline}
 .inline-quiz-opt.selected{background:hsl(var(--accent-000)/0.10);border-color:hsl(var(--accent-000)/0.45);color:hsl(var(--text-100))}
 .inline-quiz-opt.selected .inline-quiz-opt-letter{color:hsl(var(--accent-000))}
 .inline-quiz-opt.correct{background:hsl(145 50% 50%/0.10);border-color:hsl(145 50% 55%/0.6);color:hsl(145 55% 50%)}
@@ -2099,7 +2222,8 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-card:hover{border-color:hsl(var(--border-300))}
 .agent-tool-head{display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;user-select:none;transition:background .1s}
 .agent-tool-head:hover{background:hsl(var(--accent-000)/0.05)}
-.agent-tool-icon{flex-shrink:0;width:20px;height:20px;border-radius:5px;background:hsl(var(--bg-300));color:hsl(var(--text-300));display:flex;align-items:center;justify-content:center;font-size:calc(10px * var(--app-font-scale, 1));font-weight:700;font-family:var(--font-mono)}
+.agent-tool-icon{flex-shrink:0;width:20px;height:20px;border-radius:5px;background:hsl(var(--bg-300));color:hsl(var(--text-300));display:flex;align-items:center;justify-content:center}
+.agent-tool-icon svg{display:block;width:14px;height:14px}
 .agent-tool-card.read    .agent-tool-icon{background:hsl(200 50% 90%);color:hsl(200 60% 32%)}
 .agent-tool-card.write   .agent-tool-icon{background:hsl(145 50% 90%);color:hsl(145 60% 28%)}
 .agent-tool-card.edit    .agent-tool-icon{background:hsl(45 50% 90%);color:hsl(36 60% 32%)}
@@ -2107,7 +2231,34 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-card.glob    .agent-tool-icon{background:hsl(180 40% 92%);color:hsl(180 50% 32%)}
 .agent-tool-card.grep    .agent-tool-icon{background:hsl(180 40% 92%);color:hsl(180 50% 32%)}
 .agent-tool-card.webfetch .agent-tool-icon{background:hsl(20 50% 92%);color:hsl(20 60% 32%)}
-.agent-tool-card.code    .agent-tool-icon{background:hsl(220 45% 92%);color:hsl(220 55% 38%);font-size:calc(13px * var(--app-font-scale, 1))}
+/* Code card — Python brand palette: deep blue (#306998) on a
+   lighter blue chip with a thin yellow rule along the card edge
+   so it reads as "the Python card" at a glance even when collapsed.
+   The icon text ">_" mirrors a terminal prompt and signals "type
+   code here" — universally legible without needing a Greek letter. */
+.agent-tool-card.code .agent-tool-icon{
+  background:linear-gradient(135deg,#306998 0%,#4584b6 100%);
+  color:#ffe873;
+  box-shadow:inset 0 0 0 0.5px rgba(255,232,115,0.25);
+}
+.agent-tool-card.websearch .agent-tool-icon{background:hsl(190 50% 90%);color:hsl(190 60% 30%)}
+.agent-tool-card.codeint  .agent-tool-icon{background:hsl(270 40% 92%);color:hsl(270 55% 40%)}
+.agent-tool-card.code{
+  border-left:2px solid #ffe873;
+  background:hsl(48 60% 97%/0.6);
+}
+[data-theme=socrates][data-mode=dark] .agent-tool-card.code{
+  background:hsl(220 25% 14%/0.55);
+}
+.agent-tool-card.code .agent-tool-name::after{
+  /* "py" tag after the label, mimicking the Python wordmark style */
+  content:" · py";
+  color:hsl(220 30% 55%);
+  font-weight:500;
+  font-size:calc(10px * var(--app-font-scale, 1));
+  letter-spacing:0.5px;
+  margin-left:2px;
+}
 [data-theme=socrates][data-mode=dark] .agent-tool-icon{background:hsl(var(--bg-200));color:hsl(var(--text-400))}
 [data-theme=socrates][data-mode=dark] .agent-tool-card.read    .agent-tool-icon{background:hsl(200 30% 18%);color:hsl(200 60% 75%)}
 [data-theme=socrates][data-mode=dark] .agent-tool-card.write   .agent-tool-icon{background:hsl(145 30% 18%);color:hsl(145 60% 70%)}
@@ -2116,7 +2267,8 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 [data-theme=socrates][data-mode=dark] .agent-tool-card.glob    .agent-tool-icon,
 [data-theme=socrates][data-mode=dark] .agent-tool-card.grep    .agent-tool-icon{background:hsl(180 30% 18%);color:hsl(180 60% 70%)}
 [data-theme=socrates][data-mode=dark] .agent-tool-card.webfetch .agent-tool-icon{background:hsl(20 30% 18%);color:hsl(20 60% 70%)}
-[data-theme=socrates][data-mode=dark] .agent-tool-card.code    .agent-tool-icon{background:hsl(220 30% 18%);color:hsl(220 60% 78%)}
+[data-theme=socrates][data-mode=dark] .agent-tool-card.websearch .agent-tool-icon{background:hsl(190 30% 18%);color:hsl(190 60% 70%)}
+[data-theme=socrates][data-mode=dark] .agent-tool-card.codeint .agent-tool-icon{background:hsl(270 30% 18%);color:hsl(270 60% 75%)}
 .agent-tool-name{font-weight:600;color:hsl(var(--text-100));font-size:calc(11.5px * var(--app-font-scale, 1));flex-shrink:0}
 .agent-tool-input{flex:1;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .agent-tool-chev{margin-left:auto;font-size:calc(9px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .15s;flex-shrink:0}
@@ -2124,7 +2276,34 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-out{display:none;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-000));padding:8px 10px;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));white-space:pre-wrap;word-break:break-word;line-height:1.5;max-height:280px;overflow-y:auto}
 .agent-tool-card.open .agent-tool-out{display:block}
 .agent-tool-out.error{color:hsl(0 60% 50%);background:hsl(0 50% 95%)}
+.agent-tool-code{margin:0 0 6px;padding:8px 10px;background:hsl(var(--bg-200)/0.6);border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));line-height:1.45;white-space:pre;overflow-x:auto;color:hsl(var(--text-200))}
+/* P_progress — live execution block. The badge is a small pill
+   in the top-left with the current phase + elapsed seconds; the
+   <pre> underneath streams stdout/stderr as it arrives. We cap
+   height at 200px so a runaway print loop scrolls instead of
+   pushing the page. */
+.agent-tool-progress{margin:4px 0 6px;padding:6px 8px;background:hsl(var(--bg-000)/0.6);border-radius:6px;border-left:2px solid hsl(220 60% 60%)}
+.agent-tool-progress-badge{display:inline-block;font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;letter-spacing:0.4px;color:hsl(220 60% 60%);padding:2px 6px;border-radius:4px;background:hsl(220 60% 95%);font-variant-numeric:tabular-nums}
+[data-theme=socrates][data-mode=dark] .agent-tool-progress-badge{background:hsl(220 30% 22%);color:hsl(220 60% 78%)}
+[data-theme=socrates][data-mode=dark] .agent-tool-progress{background:hsl(220 25% 14%/0.6);border-left-color:hsl(220 60% 55%)}
+.agent-tool-stream{margin:4px 0 0;padding:6px 8px;background:hsl(var(--bg-200)/0.5);border-radius:4px;font-family:var(--font-mono);font-size:calc(10.5px * var(--app-font-scale, 1));line-height:1.4;color:hsl(var(--text-300));white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;margin:0}
+.agent-tool-out-sep{height:1px;background:hsl(var(--border-300)/0.15);margin:4px 0 6px}
 [data-theme=socrates][data-mode=dark] .agent-tool-out.error{background:hsl(0 30% 18%);color:hsl(0 55% 70%)}
+
+/* Status badge: small monospaced glyph in the card header next to the
+   chevron. Empty by default (display:none) so other tool cards pay no
+   visual cost. The 4 runtime statuses map to ✓ / ✗ / ⏱ / – with a
+   color cue that survives on both cream and dark backgrounds. */
+.agent-tool-status{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:6px;border-radius:3px;font-size:calc(9.5px * var(--app-font-scale, 1));font-family:var(--font-mono);font-weight:700;line-height:1}
+.agent-tool-status:empty{display:none}
+.agent-tool-status.ok   {background:hsl(145 50% 90%);color:hsl(145 60% 28%)}
+.agent-tool-status.err  {background:hsl(0 60% 92%);color:hsl(0 60% 42%)}
+.agent-tool-status.warn {background:hsl(35 80% 90%);color:hsl(28 70% 35%)}
+.agent-tool-status.mute {background:hsl(220 10% 88%);color:hsl(220 15% 45%)}
+[data-theme=socrates][data-mode=dark] .agent-tool-status.ok   {background:hsl(145 35% 22%);color:hsl(145 60% 75%)}
+[data-theme=socrates][data-mode=dark] .agent-tool-status.err  {background:hsl(0 40% 22%);color:hsl(0 60% 78%)}
+[data-theme=socrates][data-mode=dark] .agent-tool-status.warn {background:hsl(35 40% 22%);color:hsl(35 70% 78%)}
+[data-theme=socrates][data-mode=dark] .agent-tool-status.mute {background:hsl(220 15% 22%);color:hsl(220 15% 70%)}
 
 /* Inline artifacts produced by the code interpreter (matplotlib PNGs,
    CSV exports, etc.). Images stay inside the tool-out's overflow:auto
@@ -2594,7 +2773,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 /* ────── Responsive: small screens ≤ 480 px ────── */
 @media(max-width:480px){
   .main-inner{padding:2vh 8px 20px}
-  .topic-title{font-size:calc(1.05rem * var(--app-font-scale, 1));padding:16px 4px 0}
+  .topic-title{font-size:calc(1.25rem * var(--app-font-scale, 1));padding:16px 4px 0}
   .topic-sub{font-size:calc(12.5px * var(--app-font-scale, 1));padding:0 4px}
   .chat-messages{padding:8px 4px}
   .msg-body{padding:10px 12px;font-size:calc(13px * var(--app-font-scale, 1))}
@@ -2617,7 +2796,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 /* ────── Responsive: large screens ≥ 1200 px ────── */
 @media(min-width:1200px){
   .main-inner{max-width:calc(900px * var(--app-width-scale, 1));padding:5vh 20px 32px}
-  .topic-title{font-size:calc(1.75rem * var(--app-font-scale, 1));padding:40px 20px 0}
+  .topic-title{font-size:calc(2.1rem * var(--app-font-scale, 1));padding:40px 20px 0}
   .chat-messages{padding:12px 20px}
   .msg-body{padding:14px 20px;font-size:calc(15px * var(--app-font-scale, 1))}
   .msg.user .msg-body{font-size:calc(15px * var(--app-font-scale, 1))}

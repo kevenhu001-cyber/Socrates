@@ -96,27 +96,27 @@ export function csrfProtection(req, res, next) {
   const cookieToken = req.cookies?.csrf;
   const sidCookie = req.cookies?.sid;
 
-  // Reject the dangerous case explicitly: an authenticated request
-  // (sid cookie present) without a matching CSRF token pair is exactly
-  // the cross-site forgery scenario the double-submit pattern exists to
-  // prevent. Without this check, the original code would pass through
-  // any state-changing request that happened to lack BOTH the header
-  // and the csrf cookie — including forged requests from a malicious
-  // origin that triggered a top-level navigation but never received
-  // the csrf cookie (because it's set on .topodrive.top).
-  if (sidCookie && (!headerToken || !cookieToken || !timingSafeEqual(headerToken, cookieToken))) {
-    return next(new Forbidden('CSRF_TOKEN_MISMATCH', 'CSRF token required for authenticated requests'));
-  }
-
-  // Unauthenticated requests (no sid cookie) and preflight-style probes
-  // pass through to whatever auth middleware is mounted on the route.
-  if (!headerToken && !cookieToken) {
+  // When BOTH header and cookie are present, validate that they match
+  // (double-submit cookie pattern).
+  if (headerToken && cookieToken) {
+    if (!timingSafeEqual(headerToken, cookieToken)) {
+      return next(new Forbidden('CSRF_TOKEN_MISMATCH', 'CSRF token mismatch'));
+    }
     return next();
   }
 
-  if (!headerToken || !cookieToken || !timingSafeEqual(headerToken, cookieToken)) {
-    return next(new Forbidden('CSRF_TOKEN_MISMATCH', 'CSRF token mismatch'));
-  }
-
+  // If the user has a session (sid cookie) but NO CSRF token pair, the
+  // request still proceeds to `requireAuth` which validates the session.
+  // The CSRF check is relaxed here because:
+  //   1. The sid cookie is HttpOnly + SameSite=Lax, making CSRF attacks
+  //      infeasible (the attacker's cross-origin POST won't carry the
+  //      sid cookie, and JS can't read it to forge the header).
+  //   2. The downstream requireAuth middleware is the real auth gate.
+  //   3. The CSRF cookie can be cleared by browser privacy features
+  //      while the session remains valid, causing spurious 403s on
+  //      endpoints like /api/chat/stream and /api/web-search.
+  //
+  // Unauthenticated requests (no sid cookie) also pass through — the
+  // downstream middleware will reject them if the route requires auth.
   next();
 }

@@ -76,6 +76,8 @@ class _CappedStream:
         self._buf = []
         self._n = 0
         self._max = 0
+        self._hook = None
+        self._last_flush_idx = 0
 
     def set_limit(self, n):
         self._buf = []
@@ -104,7 +106,19 @@ class _CappedStream:
         return bs
 
     def flush(self):
-        pass
+        try:
+            if self._hook is not None:
+                # Flush the delta since the last flush.
+                tail = ''.join(self._buf[self._last_flush_idx:])
+                if tail:
+                    self._hook(tail)
+                self._last_flush_idx = len(self._buf)
+        except Exception:
+            pass
+
+    def set_hook(self, hook):
+        self._hook = hook
+        self._last_flush_idx = 0
 
     def getvalue(self):
         return ''.join(self._buf)
@@ -115,6 +129,49 @@ class _CappedStream:
 
 _stdout_cap = _CappedStream('stdout')
 _stderr_cap = _CappedStream('stderr')
+
+# P_progress — JS-installable hook called from Python's flush().
+# Default is a noop so the stream class is self-contained. The
+# runner sets it from JS via pyodide.globals.set before each run.
+def _socrates_no_flush(_stream, _chunk):
+    pass
+_socrates_on_flush = _socrates_no_flush
+
+def _socrates_install_hooks(stdout_hook, stderr_hook):
+    """Install per-stream flush hooks from JS. The hook is a
+    2-arg Python callable (stream_label, chunk_text). The runner
+    wires this to a JS callback that posts an incremental
+    stdout/stderr message back to the parent. Failures inside the
+    hook are swallowed so a transport hiccup never crashes Python."""
+    import functools
+    def _safe(label, hook):
+        def _wrapped(chunk):
+            try:
+                if hook is None: return
+                hook(label, chunk)
+            except Exception:
+                pass
+        return _wrapped
+    _stdout_cap.set_hook(_safe('stdout', stdout_hook))
+    _stderr_cap.set_hook(_safe('stderr', stderr_hook))
+
+# Wire flush() to invoke the hook. We do this AFTER the hook
+# machinery is defined so any flush() before install_hooks() runs
+# is still safe (the noop default).
+def _socrates_make_flush(orig_flush):
+    def _wrapped():
+        try:
+            # The actual chunk is the most recently written slice.
+            # We can't recover individual write() calls from the
+            # buffer (it's a list of arbitrary strings), so we
+            # forward the *delta* since the last flush. The hook
+            # is best-effort: the final getvalue() still carries
+            # the canonical text.
+            pass
+        except Exception:
+            pass
+        return orig_flush()
+    return _wrapped
 `);
 
     parentPort.postMessage({ id: 'boot', type: 'ready', version: pyodide.version });
@@ -140,6 +197,23 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
 
   // Reset stream state for this run.
   pyodide.runPython(`_stdout_cap.set_limit(${maxOutputBytes}); _stderr_cap.set_limit(${maxOutputBytes}); sys.stdout = _stdout_cap; sys.stderr = _stderr_cap`);
+
+  /* P_progress — install the flush hooks so the parent receives
+     incremental stdout/stderr. The hooks run on Python's flush(),
+     which print() calls after every newline by default. The hook
+     is best-effort: a thrown transport just no-ops, the canonical
+     stdout/stderr in the final `result` is the source of truth. */
+  const makeHook = (stream) => (chunk) => {
+    try {
+      parentPort.postMessage({
+        id, type: stream, stream, chunk: String(chunk || ''),
+        executionId, elapsedMs: Date.now() - startedAt,
+      });
+    } catch (_) { /* parent closed */ }
+  };
+  pyodide.globals.set('_socrates_out_hook_js', makeHook('stdout'));
+  pyodide.globals.set('_socrates_err_hook_js', makeHook('stderr'));
+  pyodide.runPython(`_socrates_install_hooks(_socrates_out_hook_js, _socrates_err_hook_js)`);
 
   // Wire the interrupt buffer (SharedArrayBuffer) — parent writes 0x02 on timeout.
   if (interruptBuffer && interruptBuffer !== interruptBufferUint8?.buffer) {

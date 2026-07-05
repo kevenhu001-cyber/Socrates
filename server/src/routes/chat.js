@@ -10,13 +10,14 @@ import { chatLimiter } from '../middleware/rateLimit.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion, callChatCompletion } from '../services/llm.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
-import { usageEvents } from '../db/schema.js';
-import { audit, recordAudit } from '../middleware/audit.js';
-import { BadRequest, TooManyRequests } from '../lib/errors.js';
+import { usageEvents, executions } from '../db/schema.js';
+import { audit } from '../middleware/audit.js';
+import { BadRequest, TooManyRequests, NotFound } from '../lib/errors.js';
 import { getBeagleQuota } from '../lib/tiers.js';
 import { getExecutionsPerDay } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
-import { codeInterpreter, CODE_INTERPRETER_TOOL } from '../services/codeInterpreter.js';
+import { codeInterpreter, CODE_INTERPRETER_TOOL, subscribeExecution, unsubscribeExecution, subscribeExecutionResult, unsubscribeExecutionResult } from '../services/codeInterpreter.js';
+import { webSearch, WEB_SEARCH_TOOL } from '../services/webSearch.js';
 import { buildSystemContextBlock } from '../services/productContext.js';
 import { isMultimodalProvider } from '../lib/multimodal.js';
 
@@ -175,6 +176,33 @@ async function injectProductContext(messages) {
   }
   return [...messages, productMsg];
 }
+
+/* SSE_PRIME — 32 KB comment-padding frame written immediately after the
+   response headers to flush first-chunk buffers that sit between Node and
+   the browser:
+
+   • EdgeOne CDN applies a first-chunk buffer (typically ~8 KB, but
+     production configurations may use larger thresholds or per-chunk
+     minimum sizes). A short LLM answer fits entirely inside that buffer,
+     so the CDN holds the whole response until the stream ends and then
+     forwards it in one shot — the user sees a fully-formed bubble with
+     no progressive streaming and no Thinking pill.
+   • Safari's fetch ReadableStream coalesces the first ~1 KB of body data
+     before releasing the first chunk to reader.read(), so even on a direct
+     origin connection Safari paints nothing until enough bytes accumulate.
+
+   8 bytes (the previous `: open\n\n`) is far below both thresholds, so the
+   priming never actually flushed either buffer. 32 KB provides ~4× margin
+   margin but might not be sufficient if EdgeOne's buffer is configured
+   larger than the documented default. 32 KB provides ~4× margin over the
+   assumed 8 KB threshold, covering most real-world EdgeOne configurations.
+
+   Comment lines (leading `:`) are valid per the SSE spec and ignored by
+   every parser, including ours (the frontend skips frames that contain no
+   `data:` line). Split into 33 short lines so no single line exceeds ~1 KB,
+   staying under any intermediary line-length limit. Precomputed once at
+   module load — zero per-request cost. */
+const SSE_PRIME = ': open\n' + Array.from({ length: 32 }, () => ':' + 'o'.repeat(1022)).join('\n') + '\n\n';
 
 /* Per-tier monthly Beagle token quotas are now in lib/tiers.js. */
 async function checkBeagleMonthlyLimit(userId, tier) {
@@ -493,36 +521,28 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
     });
 
     /* Prime the stream BEFORE the upstream has anything to say.
-       Two things matter here:
 
-       1. `res.flushHeaders()` forces Node to write the response
-          status line + headers to the socket immediately. Without
-          this call Express would buffer the headers until the
-          first body byte arrives from the LLM, which on a fast
-          network can be a few hundred ms. By that time the user's
-          browser has already painted the page but shows nothing
-          yet — which makes them think the request hung.
+       1. `res.flushHeaders()` forces Node to write the response status
+          line + headers to the socket immediately. Without this, Express
+          buffers the headers until the first body byte arrives from the
+          LLM, which on a fast network can be a few hundred ms — the
+          browser has painted the page but shows nothing yet, making the
+          request look hung.
 
-       2. EdgeOne (and to a lesser extent nginx) ships a "first-
-          chunk" buffer of ~8 KB before it switches the upstream
-          connection to true streaming mode. A short LLM answer
-          can fit entirely inside that buffer, which means by the
-          time the proxy forwards any data to the browser the
-          upstream has already produced the complete answer. From
-          the user's point of view: no streaming, no thinking
-          pill, just a fully-formed bubble.
+       2. EdgeOne CDN (~8 KB) and Safari's fetch ReadableStream (~1 KB)
+          both apply a first-chunk buffer: they hold the start of the
+          body until enough bytes accumulate, then switch to streaming
+          mode. A short LLM answer fits entirely inside that buffer, so
+          the client receives the whole response in one shot at the end
+          — no progressive streaming, no Thinking pill.
 
-          Writing a 12-byte SSE comment frame (`: open\n\n`) right
-          after the headers pushes the proxy past its first-chunk
-          threshold so subsequent writes — even one-byte deltas —
-          flow through immediately. SSE comments are valid per the
-          spec and ignored by every parser, so this is harmless on
-          its own.
-
-       See commit message: EdgeOne / Safari first-chunk priming. */
+          SSE_PRIME (32 KB of `:` comment lines) overflows both buffers
+          so subsequent writes — even one-byte deltas — flow through
+          immediately. Comment lines are valid per the SSE spec and
+          ignored by every parser, including ours. */
     try {
       res.flushHeaders();
-      res.write(': open\n\n');
+      res.write(SSE_PRIME);
       try { res.flush?.(); } catch {}
     } catch { /* socket already closed — the req.on('close') guard below handles it */ }
 
@@ -564,7 +584,10 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
      * and end the response cleanly.
      * ───────────────────────────────────────────────────────────── */
     const MAX_TOOL_ITERATIONS = 4;
-    const toolDef = codeInterpreter.getToolDefinition();
+    const codeInterpreterToolDef = codeInterpreter.getToolDefinition();
+    const toolDefs = [];
+    if (codeInterpreterToolDef) toolDefs.push(codeInterpreterToolDef);
+    toolDefs.push(WEB_SEARCH_TOOL);
     let workingMessages = finalMessages;
 
     const writeSse = (payload) => {
@@ -590,7 +613,7 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
           signal: abortController.signal,
           reasoning_effort,
           extra_body: safeExtraBody,
-          ...(toolDef ? { tools: [toolDef], tool_choice: 'auto' } : {}),
+          ...(toolDefs.length > 0 ? { tools: toolDefs, tool_choice: 'auto' } : {}),
         },
         // onChunk
         (chunk) => {
@@ -680,30 +703,83 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
         try {
           const args = safeParseJson(tc.function && tc.function.arguments) || {};
 
-          if ((tc.function && tc.function.name) !== 'code_interpreter') {
-            // Unknown tool — we only registered one. Tell the model so
-            // it can recover instead of looping.
-            writeSse(`event: tool_result\ndata: ${JSON.stringify({
-              id: tc.id, ok: false, error: 'unknown_tool',
-            })}\n\n`);
-            result = { status: 'failed', error: 'unknown_tool' };
-          } else {
+          const toolName = tc.function && tc.function.name;
+          if (toolName === 'code_interpreter') {
             const tierLimit = getExecutionsPerDay(req.user && req.user.tier);
-            // tierLimit is the daily quota; rate-limit middleware handles
-            // per-minute, so we don't enforce daily here in v1.
+            if (tierLimit > 0 && req.userId) {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const db = getDb();
+              const [countRow] = await db.select({
+                count: sql`COUNT(*)::int`,
+              }).from(executions)
+                .where(and(
+                  eq(executions.userId, req.userId),
+                  gte(executions.startedAt, today),
+                ));
+              const usedToday = countRow?.count || 0;
+              if (usedToday >= tierLimit) {
+                writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                  id: tc.id, ok: false, status: 'failed',
+                  output: '', stderr: '',
+                  error: `daily_execution_limit_reached: ${tierLimit} executions per day`,
+                  artifacts: [],
+                  executionId: null,
+                  durationMs: 0,
+                })}\n\n`);
+                result = { status: 'failed', error: 'daily_execution_limit_reached' };
+                workingMessages = workingMessages.concat([{
+                  role: 'tool',
+                  tool_call_id: tc.id,
+                  content: `[error] daily execution limit of ${tierLimit} reached. The user needs to wait until tomorrow or upgrade their plan.`,
+                }]);
+                continue;
+              }
+            }
 
+            /* P_progress — onProgress emits incremental events
+               back to the browser as `event: tool_progress` SSE
+               frames. The frontend routes them to the matching
+               .agent-tool-card so the user sees a live spinner +
+               streaming stdout while the Python code is running.
+               The callback MUST be safe to call from a worker
+               thread (codeInterpreter wraps it in try/catch). */
+            let _emittedExecStart = false;
+            const onProgress = (p) => {
+              try {
+                if(!_emittedExecStart&&p.executionId){
+                  _emittedExecStart=true;
+                  writeSse(`event: execution_start\ndata: ${JSON.stringify({
+                    id: tc.id,
+                    executionId: p.executionId,
+                  })}\n\n`);
+                }
+                writeSse(`event: tool_progress
+data: ${JSON.stringify({
+                  id: tc.id,
+                  phase: p.phase || null,
+                  stream: p.stream || null,
+                  chunk: p.chunk || '',
+                  elapsedMs: p.elapsedMs || 0,
+                })}
+
+`);
+              } catch (_) { /* client closed */ }
+            };
             const execResult = await codeInterpreter.execute({
               userId: req.userId,
               sessionId: sessionIdFromQuery,
               language: args.language || 'python',
               code: args.code || '',
               signal: abortController.signal,
+              onProgress,
             });
             result = execResult;
 
             writeSse(`event: tool_result\ndata: ${JSON.stringify({
               id: tc.id,
               ok: execResult.status === 'completed',
+              status: execResult.status,
               output: execResult.stdout || '',
               stderr: execResult.stderr || '',
               error: execResult.status !== 'completed' ? (execResult.errorMessage || execResult.status) : null,
@@ -711,24 +787,52 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
               executionId: execResult.executionId,
               durationMs: execResult.durationMs,
             })}\n\n`);
-
-            if (req.userId) {
-              recordAudit(req.userId, 'code_execution', {
-                executionId: execResult.executionId,
-                language: args.language || 'python',
-                status: execResult.status,
-                durationMs: execResult.durationMs,
-                artifactCount: execResult.artifactCount,
-                errorMessage: execResult.errorMessage || null,
-              }).catch(() => {});
+          } else if (toolName === 'web_search') {
+            // Execute web search as an LLM tool.
+            const searchQuery = args.query || '';
+            const searchCount = Math.min(args.count || 10, 12);
+            let searchResults;
+            try {
+              searchResults = await webSearch(searchQuery, searchCount, {
+                userId: req.userId,
+                locale: (req.headers['accept-language'] || '').split(',')[0].trim() || null,
+              });
+            } catch (err) {
+              searchResults = null;
+              result = { status: 'failed', error: String(err && err.message || err) };
             }
+            if (searchResults && searchResults.length > 0) {
+              const output = searchResults.map((r) => `${r.title}\n${r.url}\n${r.snippet}`).join('\n\n');
+              result = { status: 'completed', output, results: searchResults };
+              writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                id: tc.id, ok: true, status: 'completed',
+                output,
+                results: searchResults.map((r) => ({ title: r.title, url: r.url, snippet: r.snippet, date: r.date })),
+              })}\n\n`);
+            } else {
+              result = { status: 'completed', output: 'No search results found.', results: [] };
+              writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                id: tc.id, ok: true, status: 'completed',
+                output: 'No search results found.', results: [],
+              })}\n\n`);
+            }
+          } else {
+            // Unknown tool — tell the model so it can recover instead of looping.
+            writeSse(`event: tool_result\ndata: ${JSON.stringify({
+              id: tc.id, ok: false, status: 'failed',
+              output: '', stderr: '', artifacts: [],
+              error: 'unknown_tool',
+            })}\n\n`);
+            result = { status: 'failed', error: 'unknown_tool' };
           }
         } catch (err) {
           // Tool execution itself threw — never let this bubble out
           // and crash the SSE stream. Tell the model so it can pivot.
           const msg = String(err && err.message || err);
           writeSse(`event: tool_result\ndata: ${JSON.stringify({
-            id: tc.id, ok: false, error: msg,
+            id: tc.id, ok: false, status: 'failed',
+            output: '', stderr: '', artifacts: [],
+            error: msg,
           })}\n\n`);
           result = { status: 'failed', error: msg };
         }
@@ -736,7 +840,7 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
         // Feed the tool result back as role:'tool' so the next chat
         // completion sees it and can wrap up in prose.
         const toolContent = result.status === 'completed'
-          ? ((result.stdout || '(no output)') + (result.stderr ? `\n[stderr]\n${result.stderr}` : ''))
+          ? (result.output || result.stdout || '(no output)')
           : `[error] ${result.error || result.status}`;
         workingMessages = workingMessages.concat([{
           role: 'tool',
@@ -765,6 +869,205 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
         source: 'chat',
       });
     }
+  } catch (err) { next(err); }
+});
+
+/* ─── Execution progress SSE endpoint ───
+ * GET /api/executions/:id/stream
+ *
+ * Streams real-time execution progress via Server-Sent Events.
+ * The execution row is looked up by ID (scoped to the current user)
+ * and progress events are emitted as they arrive from the worker.
+ * This endpoint works INDEPENDENTLY of the chat SSE stream — the
+ * frontend connects to it when a tool_use event is received, and
+ * it continues to stream even if the main chat stream completes.
+ *
+ * SSE event types:
+ *   event: progress — { phase, stream, chunk, elapsedMs, executionId }
+ *   event: result   — { status, executionId, stdout, stderr, durationMs }
+ *   event: error    — error description
+ */
+router.get('/executions/:id/stream', requireAuth, async (req, res, next) => {
+  try {
+    const executionId = req.params.id;
+    if (!isUuid(executionId)) {
+      return res.status(400).json({ code: 'BAD_REQUEST', message: 'Invalid execution ID format' });
+    }
+
+    // Verify the execution exists and belongs to this user
+    const db = getDb();
+    const [exec] = await db.select().from(executions)
+      .where(and(eq(executions.id, executionId), eq(executions.userId, req.userId)))
+      .limit(1);
+    if (!exec) throw new NotFound('Execution not found');
+
+    // Set SSE headers
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+
+    // Flush headers immediately
+    try { res.flushHeaders(); } catch {}
+
+    // Heartbeat keepalive
+    const heartbeat = setInterval(() => {
+      try { res.write(': keepalive\n\n'); try { res.flush?.(); } catch {} } catch {}
+    }, 10_000);
+
+    // If execution is already in a terminal state, emit the stored result immediately
+    if (exec.status === 'completed' || exec.status === 'failed' || exec.status === 'timeout' || exec.status === 'cancelled') {
+      res.write(`event: result\ndata: ${JSON.stringify({
+        status: exec.status,
+        executionId: exec.id,
+        stdout: exec.stdout || '',
+        stderr: exec.stderr || '',
+        durationMs: exec.durationMs || 0,
+        exitCode: exec.exitCode,
+        errorMessage: exec.errorMessage || null,
+      })}\n\n`);
+      try { res.flush?.(); } catch {}
+      clearInterval(heartbeat);
+      try { res.end(); } catch {}
+      return;
+    }
+
+    // Subscribe to progress events for this execution
+    const onProgress = (event) => {
+      try {
+        res.write(`event: progress\ndata: ${JSON.stringify({
+          phase: event.phase,
+          stream: event.stream,
+          chunk: event.chunk || '',
+          executionId: event.executionId,
+          elapsedMs: event.elapsedMs || 0,
+        })}\n\n`);
+        try { res.flush?.(); } catch {}
+      } catch { /* client disconnected */ }
+    };
+
+    const onResult = (event) => {
+      try {
+        res.write(`event: result\ndata: ${JSON.stringify(event)}\n\n`);
+        try { res.flush?.(); } catch {}
+      } catch { /* client disconnected */ }
+    };
+
+    const onError = (event) => {
+      try {
+        res.write(`event: error\ndata: ${JSON.stringify({ error: event.errorMessage || event })}\n\n`);
+        try { res.flush?.(); } catch {}
+      } catch { /* client disconnected */ }
+    };
+
+    subscribeExecution(executionId, onProgress);
+    subscribeExecutionResult(executionId, onResult);
+
+    // Clean up on client disconnect
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      unsubscribeExecution(executionId, onProgress);
+      unsubscribeExecutionResult(executionId, onResult);
+    });
+
+  } catch (err) { next(err); }
+});
+
+/* Execution SSE stream — also mount at /:id/stream so the
+   frontend's EventSource connection to /api/executions/:id/stream
+   resolves correctly. The same route is registered under
+   /executions/:id/stream for the /api/chat prefix. */
+router.get('/:id/stream', requireAuth, async (req, res, next) => {
+  try {
+    const executionId = req.params.id;
+    if (!isUuid(executionId)) {
+      return res.status(400).json({ code: 'BAD_REQUEST', message: 'Invalid execution ID format' });
+    }
+
+    // Verify the execution exists and belongs to this user
+    const db = getDb();
+    const [exec] = await db.select().from(executions)
+      .where(and(eq(executions.id, executionId), eq(executions.userId, req.userId)))
+      .limit(1);
+    if (!exec) throw new NotFound('Execution not found');
+
+    // Set SSE headers
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+
+    // Flush headers immediately
+    try { res.flushHeaders(); } catch {}
+
+    // Heartbeat keepalive
+    const heartbeat = setInterval(() => {
+      try { res.write(': keepalive\n\n'); try { res.flush?.(); } catch {} } catch {}
+    }, 10_000);
+
+    // If execution is already in a terminal state, emit the stored result immediately
+    if (exec.status === 'completed' || exec.status === 'failed' || exec.status === 'timeout' || exec.status === 'cancelled') {
+      res.write(`event: result\ndata: ${JSON.stringify({
+        status: exec.status,
+        executionId: exec.id,
+        stdout: exec.stdout || '',
+        stderr: exec.stderr || '',
+        durationMs: exec.durationMs || 0,
+        exitCode: exec.exitCode,
+        errorMessage: exec.errorMessage || null,
+      })}\n\n`);
+      try { res.flush?.(); } catch {}
+      clearInterval(heartbeat);
+      try { res.end(); } catch {}
+      return;
+    }
+
+    // Subscribe to progress events for this execution
+    const onProgress = (event) => {
+      try {
+        res.write(`event: progress\ndata: ${JSON.stringify({
+          phase: event.phase,
+          stream: event.stream,
+          chunk: event.chunk || '',
+          executionId: event.executionId,
+          elapsedMs: event.elapsedMs || 0,
+        })}\n\n`);
+        try { res.flush?.(); } catch {}
+      } catch { /* client disconnected */ }
+    };
+
+    const onResult = (event) => {
+      try {
+        res.write(`event: result\ndata: ${JSON.stringify(event)}\n\n`);
+        try { res.flush?.(); } catch {}
+      } catch { /* client disconnected */ }
+    };
+
+    const onError = (event) => {
+      try {
+        res.write(`event: error\ndata: ${JSON.stringify({ error: event.errorMessage || event })}\n\n`);
+        try { res.flush?.(); } catch {}
+      } catch { /* client disconnected */ }
+    };
+
+    subscribeExecution(executionId, onProgress);
+    subscribeExecutionResult(executionId, onResult);
+
+    // Clean up on client disconnect
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      unsubscribeExecution(executionId, onProgress);
+      unsubscribeExecutionResult(executionId, onResult);
+    });
+
   } catch (err) { next(err); }
 });
 

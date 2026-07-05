@@ -14,21 +14,21 @@ let db = null;
 export function initDb(databaseUrl) {
   if (db) return db;
 
+  // Set statement_timeout on every connection via PostgreSQL connection
+  // parameters. This avoids the deprecated pattern of calling
+  // client.query() inside the pool.on('connect') handler, which in
+  // pg@8.13+ triggers a DeprecationWarning. The ?options= parameter
+  // applies to every connection the pool creates, so all connections
+  // inherit the timeout without any per-connect setup.
+  const separator = databaseUrl.includes('?') ? '&' : '?';
   pool = new Pool({
-    connectionString: databaseUrl,
+    connectionString: `${databaseUrl}${separator}options=--statement_timeout%3D30000`,
     max: 20,
     min: 2,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
   });
 
-  // Set per-connection PostgreSQL session parameters (statement_timeout
-  // et al.) so a runaway query doesn't hold the connection forever.
-  // These are NOT pool‑level constructor options in pg — they must be
-  // applied via the 'connect' event on the pool.
-  pool.on('connect', async (client) => {
-    try { await client.query('SET statement_timeout = 30000'); } catch {}
-  });
 
   db = drizzle(pool, { schema });
   return db;
