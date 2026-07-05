@@ -659,7 +659,18 @@ true) but the dropdown never shows — see commit history. */
    options), pin the action row to the bottom of the visible area
    so the Next / Submit button is always reachable. */
 .diag-card{display:flex;flex-direction:column}
-.diag-actions{margin-top:auto;padding-top:18px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.diag-actions{margin-top:auto;padding-top:20px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.diag-actions-right{display:flex;gap:8px;align-items:center;margin-left:auto}
+.diag-btn{padding:9px 20px;border-radius:9px;font-size:calc(13px * var(--app-font-scale,1));font-weight:500;cursor:pointer;transition:all .12s;border:none;line-height:1.4;display:inline-flex;align-items:center;gap:4px}
+.diag-btn-back{color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.12)}
+.diag-btn-back:hover{color:hsl(var(--text-200));background:hsl(var(--bg-300));border-color:hsl(var(--border-200)/0.25)}
+.diag-btn-back.hidden{opacity:0;pointer-events:none}
+.diag-btn-skip{color:hsl(var(--text-400));background:transparent}
+.diag-btn-skip:hover{color:hsl(var(--text-200));background:hsl(var(--bg-300)/0.5)}
+.diag-btn-continue{color:hsl(var(--text-400));background:hsl(var(--bg-300))}
+.diag-btn-continue.enabled{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.diag-btn-continue.enabled:hover{background:hsl(var(--accent-100))}
+.diag-btn-continue:disabled{cursor:default;opacity:.45}
 .diag-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px}
 .diag-loading-text{color:hsl(var(--text-400));font-size:calc(14px * var(--app-font-scale, 1));text-align:center}
 
@@ -2339,12 +2350,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    miss. A small chevron is appended via ::after so the user always
    knows the truncated preview is interactive. The chevron rotates
    180° when .expanded is added. */
-.agent-thinking{position:relative;font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));font-style:italic;line-height:1.5;padding:0 22px 0 6px;margin-top:4px;border-left:2px solid hsl(var(--border-300)/0.4);max-height:calc(1em * 1.5);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;transition:max-height .2s var(--ease-out),white-space .1s,padding .2s var(--ease-out)}
-.agent-thinking.expanded{padding:4px 6px;max-height:none;white-space:pre-wrap;overflow:visible}
-.agent-thinking::after{content:'';position:absolute;top:50%;right:6px;width:9px;height:9px;transform:translateY(-50%) rotate(0deg);background:currentColor;opacity:.7;-webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><path d='M2 3.5l3 3 3-3' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/contain no-repeat;mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><path d='M2 3.5l3 3 3-3' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/contain no-repeat;transition:transform .15s var(--ease-out),opacity .15s}
-.agent-thinking:hover::after{opacity:1}
-.agent-thinking.expanded{max-height:none;white-space:pre-wrap;overflow:visible;padding-right:6px}
-.agent-thinking.expanded::after{transform:translateY(-50%) rotate(-180deg)}
+/* agent-thinking was merged into .think-block — see details/summary widget below */
 
 /* Final run footer — small status chip below the last assistant
    message. */
