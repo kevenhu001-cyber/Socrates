@@ -3654,6 +3654,7 @@ async function startSession(){
 function renderDiagQuestion(){
   var q=state.diagQuestions[state.diagIndex];
   var sel=state.diagAnswers[state.diagIndex];
+  var isSkipped=(sel===-1);
   var view=document.getElementById("diagnosticView");
 
   var html='<div class="diag-card">';
@@ -3668,17 +3669,30 @@ function renderDiagQuestion(){
   });
   html+='</div>';  /* close .diag-opts */
   html+='<div class="diag-actions">';
-  html+='<button onclick="prevDiagQuestion()"'+(state.diagIndex===0?' style="visibility:hidden"':'')+'>'+t("tutor.back")+'</button>';
+  html+='<button class="diag-btn diag-btn-back'+(state.diagIndex===0?' hidden':'')+'" onclick="prevDiagQuestion()">'+t("tutor.back")+'</button>';
+  html+='<div class="diag-actions-right">';
+  html+='<button class="diag-btn diag-btn-skip" onclick="skipDiagQuestion()">'+t("tutor.diagSkip")+'</button>';
   if(state.diagIndex<state.diagQuestions.length-1){
-    html+='<button class="diag-continue'+(sel!==undefined?' enabled':'')+'" onclick="nextDiagQuestion()"'+(sel===undefined?' disabled':'')+'>'+t("tutor.next")+'</button>';
+    html+='<button class="diag-btn diag-btn-continue'+(sel!==undefined&&!isSkipped?' enabled':'')+'" onclick="nextDiagQuestion()"'+(sel===undefined||isSkipped?' disabled':'')+'>'+t("tutor.next")+'</button>';
   }else{
-    html+='<button class="diag-continue'+(sel!==undefined?' enabled':'')+'" onclick="finishDiagnostic()"'+(sel===undefined?' disabled':'')+'>'+t("tutor.begin")+'</button>';
+    html+='<button class="diag-btn diag-btn-continue'+(sel!==undefined&&!isSkipped?' enabled':'')+'" onclick="finishDiagnostic()"'+(sel===undefined||isSkipped?' disabled':'')+'>'+t("tutor.begin")+'</button>';
   }
+  html+='</div>';  /* close .diag-actions-right */
   html+='</div>';  /* close .diag-actions */
   html+='</div>';  /* close .diag-card */
 
   view.innerHTML=html;
   scrollContainer().scrollTop=0;
+}
+
+function skipDiagQuestion(){
+  state.diagAnswers[state.diagIndex]=-1;
+  if(state.diagIndex<state.diagQuestions.length-1){
+    state.diagIndex++;
+    renderDiagQuestion();
+  }else{
+    finishDiagnostic();
+  }
 }
 
 function selectDiag(idx){
@@ -3708,7 +3722,7 @@ function finishDiagnostic(){
      merely recognized but does not truly understand. */
   state.diagQuestions.forEach(function(q,i){
     var ans=state.diagAnswers[i];
-    if(ans===undefined)return;
+    if(ans===undefined||ans===-1)return;
     var level=q.opts[ans].level;
     /* Clamp nodeIdx to a valid index in case the AI returned something
        out of range. Default to question index if missing. */
@@ -3754,7 +3768,7 @@ function renderDiagResultsScreen(){
   var summary={internalized:0,fuzzy:0,blank:0};
   state.diagQuestions.forEach(function(q,i){
     var ans=state.diagAnswers[i];
-    if(ans===undefined)return;
+    if(ans===undefined||ans===-1)return;
     var level=q.opts[ans].level;
     /* Use the downscaled status for display consistency */
     var status=level==="blank"?"blank":"fuzzy";
@@ -5806,89 +5820,72 @@ function appendThinking(text){
     div.appendChild(body);
     list.appendChild(div);
   }
-  /* Dedupe consecutive thinking: append to existing pill if the
-     last thing inside the body is also a thinking pill. */
+  /* Dedupe consecutive thinking: reuse existing think-block if present. */
   var existing=body.lastElementChild;
-  var pill,buffer,pending;
-  if(existing&&existing.classList&&existing.classList.contains("agent-thinking")){
-    pill=existing;
-    /* The text content of the pill is also our render cache. When the
-       first append happened, we stored the raw buffer as a
-       data- attribute. Read it back, append, schedule a re-render. */
-    buffer=pill.dataset.thinkingBuffer||pill.textContent||"";
+  var details, thinkContent, buffer, pending;
+  function _summarize(streaming){
+    var label=streaming
+      ?((typeof window.t==="function")?window.t("think.thinking"):"Thinking\u2026")
+      :((typeof window.t==="function")?window.t("think.title"):"Thought");
+    var icon=streaming
+      ?'<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>'
+      :'<span class="think-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1.5l1.05 3.15L12.2 5.7l-3.15 1.05L8 9.9 6.95 6.75 3.8 5.7l3.15-1.05L8 1.5zM3 11.2l.6 1.8 1.8.6-1.8.6L3 16l-.6-1.8-1.8-.6 1.8-.6L3 11.2zm10 0l.6 1.8 1.8.6-1.8.6L13 16l-.6-1.8-1.8-.6 1.8-.6L13 11.2z" fill="currentColor"/></svg></span>';
+    return icon+'<span class="think-summary-label">'+esc(label)+'</span><span class="think-summary-chevron" aria-hidden="true"></span>';
+  }
+  if(existing&&existing.classList&&existing.classList.contains("think-block")){
+    details=existing;
+    thinkContent=details.querySelector(".think-content");
+    buffer=thinkContent?thinkContent.textContent||"":"";
   }else{
-    pill=document.createElement("div");
-    /* Collapsed by default — small preview with ellipsis, click to
-       expand and read the full reasoning. The .expanded class is
-       only added by the click handler once the buffer is long
-       enough that the preview is genuinely a preview. */
-    pill.className="agent-thinking";
-    pill.addEventListener("click",function(){
-      if(!buffer||buffer.length<200)return;  /* tiny thoughts: don't bother */
-      pill.classList.toggle("expanded");
-    });
+    details=document.createElement("details");
+    details.className="think-block think-block-streaming";
+    details.open=true;
+    var sum=document.createElement("summary");
+    sum.className="think-summary think-summary-streaming";
+    sum.innerHTML=_summarize(true);
+    details.appendChild(sum);
+    thinkContent=document.createElement("div");
+    thinkContent.className="think-content";
+    details.appendChild(thinkContent);
+    body.appendChild(details);
     buffer="";
     pending=null;
-    body.appendChild(pill);
   }
   function doRender(){
     pending=null;
-    if(!pill.isConnected)return;
-    /* Empty buffer — show a pulsing "Thinking…" placeholder so the
-       pill doesn't look like an empty box. The actual content
-       replaces this on the next render. */
-    if(!buffer){
-      pill.innerHTML='<span class="thinking-ring thinking-ring-sm"></span> Thinking…';
-      pill.dataset.thinkingBuffer=buffer;
-      scrollMainToBottom();
-      return;
-    }
-    try{
-      pill.innerHTML=formatMsg(buffer);
-      /* Highlight any closed code blocks (the formatMsg helper doesn't
-         auto-highlight because it doesn't know where it'll be mounted). */
-      if(typeof hljs!=="undefined"){
-        pill.querySelectorAll("pre code").forEach(function(c){
-          if(c.dataset&&c.dataset.hljsDone)return;
-          if(/```\s*$/.test(c.textContent||""))return;
-          try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
-        });
+    if(!details.isConnected)return;
+    if(buffer){
+      try{
+        thinkContent.innerHTML=formatMsg(buffer);
+        if(typeof hljs!=="undefined"){
+          thinkContent.querySelectorAll("pre code").forEach(function(c){
+            if(c.dataset&&c.dataset.hljsDone)return;
+            if(/```\s*$/.test(c.textContent||""))return;
+            try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
+          });
+        }
+      }catch(e){
+        thinkContent.innerHTML='<pre style="white-space:pre-wrap;margin:0">'+esc(buffer)+'</pre>';
       }
-    }catch(e){
-      pill.innerHTML='<pre style="white-space:pre-wrap;margin:0">'+esc(buffer)+'</pre>';
     }
-    pill.dataset.thinkingBuffer=buffer;
     scrollMainToBottom();
   }
   function schedule(){
     if(pending)return;
     pending=requestAnimationFrame(doRender);
   }
-  /* First render so the user sees content immediately. */
   buffer+=text||"";
-  /* Meta-instruction filter: if a thinking delta looks like the model
-     parroting its own system-prompt constraints back (e.g. "Do NOT
-     output…", "Reply directly with the final answer in clean prose",
-     "Do not narrate your thought process", or our own current
-     "step-by-step scratch work" suffix), drop it instead of leaking
-     the meta-text into the UI. Self-restraint is a well-known LLM
-     pattern; the suffix above is the first line of defense, this is
-     the second. The check fires on each delta so a long valid
-     thinking trace that happens to mention the word "preamble" won't
-     be wiped just because that word appears in the buffer. */
   if(looksLikeMetaInstruction(buffer)){
-    /* Hide the pill entirely — there is no longer useful content to
-       show. The caller can still call finalize()/remove() as normal. */
-    if(pill.parentNode)pill.parentNode.removeChild(pill);
+    if(details.parentNode)details.parentNode.removeChild(details);
     buffer="";
   }
   schedule();
   return {
     append:function(delta){
-      if(!pill.isConnected)return;
+      if(!details.isConnected)return;
       buffer+=delta||"";
       if(looksLikeMetaInstruction(buffer)){
-        if(pill.parentNode)pill.parentNode.removeChild(pill);
+        if(details.parentNode)details.parentNode.removeChild(details);
         buffer="";
         schedule();
         return;
@@ -5898,10 +5895,32 @@ function appendThinking(text){
     finalize:function(){
       if(pending){cancelAnimationFrame(pending);pending=null}
       doRender();
+      details.open=false;
+      details.classList.remove("think-block-streaming");
+      var sum=details.querySelector("summary");
+      if(sum){
+        var count=0;
+        if(buffer){
+          var cjk=(buffer.match(/[㐀-鿿豈-﫿]/g)||[]).length;
+          var rest=buffer.replace(/[㐀-鿿豈-﫿]/g," ").trim();
+          var words=rest?rest.split(/\s+/).filter(Boolean).length:0;
+          count=cjk+words;
+        }
+        var label=(typeof window.t==="function")?window.t("think.title"):"Thought";
+        var meta=count>0?'<span class="think-summary-meta">· '+
+          (count===1
+            ?((typeof window.t==="function")?window.t("think.wordCountOne"):"1 word")
+            :(((typeof window.t==="function")?window.t("think.wordCount"):"{n} words").replace("{n}",count)))
+          +'</span>':'';
+        sum.innerHTML='<span class="think-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1.5l1.05 3.15L12.2 5.7l-3.15 1.05L8 9.9 6.95 6.75 3.8 5.7l3.15-1.05L8 1.5zM3 11.2l.6 1.8 1.8.6-1.8.6L3 16l-.6-1.8-1.8-.6 1.8-.6L3 11.2zm10 0l.6 1.8 1.8.6-1.8.6L13 16l-.6-1.8-1.8-.6 1.8-.6L13 11.2z" fill="currentColor"/></svg></span>'+
+          '<span class="think-summary-label">'+esc(label)+'</span>'+
+          meta+
+          '<span class="think-summary-chevron" aria-hidden="true"></span>';
+      }
     },
     remove:function(){
       if(pending){cancelAnimationFrame(pending);pending=null}
-      if(pill&&pill.parentNode)pill.parentNode.removeChild(pill);
+      if(details&&details.parentNode)details.parentNode.removeChild(details);
     }
   };
 }
@@ -6369,7 +6388,7 @@ function addStreamingMessage(opts){
      any future mutation can race with it. The 5-second elapsed tick
      now mutates only the placeholder's text node (not the whole
      body's innerHTML), which has the side benefit of NOT clobbering
-     the .agent-thinking pill if a reasoning model emits
+     the .think-block pill if a reasoning model emits
      reasoning_content before the first text delta. The 120 s
      timeout swaps placeholder for the error block via replaceChild
      so other children survive. */
@@ -6645,7 +6664,7 @@ function teardownThinkStructure(){
              sure markdown and math render correctly in real time. */
       if(!streamContent){
         /* Save the thinking pill before clearing — body.innerHTML=""
-           destroys all children, including .agent-thinking. We re-insert
+           destroys all children, including .think-block. We re-insert
            it after setting up the streaming DOM so the pill survives in
            browsers that deliver all SSE data in one synchronous chunk.
 
@@ -6657,7 +6676,7 @@ function teardownThinkStructure(){
            first SSE round-trip). Detaching it via remove() — rather
            than letting body.innerHTML="" garbage-collect it — makes
            the detach explicit and lets the closure check it later. */
-        var savedPill=body.querySelector('.agent-thinking');
+        var savedPill=body.querySelector('.think-block');
         try{placeholder.remove()}catch(_){}
         body.innerHTML="";
         streamContent=document.createElement("div");
@@ -7134,8 +7153,8 @@ function teardownThinkStructure(){
            single rAF loop with a 16ms budget per frame. Replaces
            the recursive setTimeout(typeTick, 10) which could
            build a long task queue. */
-        var savedPill3=body.querySelector('.agent-thinking');
-body.innerHTML="";
+        var savedPill3=body.querySelector('.think-block');
+        body.innerHTML="";
         streamContent=document.createElement("div");
         streamContent.className="stream-content";
         cursor=document.createElement("span");
@@ -7228,7 +7247,7 @@ body.innerHTML="";
            re-insert them after the formatted HTML. Without this,
            the final render wipes the Python tool card and the
            user sees an empty card when they click to expand. */
-        var savedPill=body.querySelector('.agent-thinking');
+        var savedPill=body.querySelector('.think-block');
         var savedToolCards=body.querySelectorAll('.agent-tool-card');
         var savedToolCardArr=[];
         for(var sci=0;sci<savedToolCards.length;sci++){
@@ -7252,7 +7271,7 @@ body.innerHTML="";
       }catch(e){
         console.warn("[finish] formatMsg error:",e&&e.message);
         var fb="<p>"+esc(full)+"</p>";
-        var savedPill2=body.querySelector('.agent-thinking');
+        var savedPill2=body.querySelector('.think-block');
         body.innerHTML=fb;
         if(savedPill2)body.insertBefore(savedPill2,body.firstChild);
         if(msgIdx>=0&&state.messages[msgIdx]){
