@@ -5829,7 +5829,7 @@ function appendThinking(text){
       :((typeof window.t==="function")?window.t("think.title"):"Thought");
     var icon=streaming
       ?'<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>'
-      :'<span class="think-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1.5l1.05 3.15L12.2 5.7l-3.15 1.05L8 9.9 6.95 6.75 3.8 5.7l3.15-1.05L8 1.5zM3 11.2l.6 1.8 1.8.6-1.8.6L3 16l-.6-1.8-1.8-.6 1.8-.6L3 11.2zm10 0l.6 1.8 1.8.6-1.8.6L13 16l-.6-1.8-1.8-.6 1.8-.6L13 11.2z" fill="currentColor"/></svg></span>';
+      :'';
     return icon+'<span class="think-summary-label">'+esc(label)+'</span><span class="think-summary-chevron" aria-hidden="true"></span>';
   }
   if(existing&&existing.classList&&existing.classList.contains("think-block")){
@@ -5907,13 +5907,12 @@ function appendThinking(text){
           count=cjk+words;
         }
         var label=(typeof window.t==="function")?window.t("think.title"):"Thought";
-        var meta=count>0?'<span class="think-summary-meta">· '+
+        var meta=count>0?'<span class="think-summary-meta">'+
           (count===1
             ?((typeof window.t==="function")?window.t("think.wordCountOne"):"1 word")
             :(((typeof window.t==="function")?window.t("think.wordCount"):"{n} words").replace("{n}",count)))
           +'</span>':'';
-        sum.innerHTML='<span class="think-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1.5l1.05 3.15L12.2 5.7l-3.15 1.05L8 9.9 6.95 6.75 3.8 5.7l3.15-1.05L8 1.5zM3 11.2l.6 1.8 1.8.6-1.8.6L3 16l-.6-1.8-1.8-.6 1.8-.6L3 11.2zm10 0l.6 1.8 1.8.6-1.8.6L13 16l-.6-1.8-1.8-.6 1.8-.6L13 11.2z" fill="currentColor"/></svg></span>'+
-          '<span class="think-summary-label">'+esc(label)+'</span>'+
+        sum.innerHTML='<span class="think-summary-label">'+esc(label)+'</span>'+
           meta+
           '<span class="think-summary-chevron" aria-hidden="true"></span>';
       }
