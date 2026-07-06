@@ -3,6 +3,7 @@ import { detectLanguageCluster } from './scoring.js';
 import * as searchResultCache from '../lib/searchResultCache.js';
 import { searchMinimax } from './searchEngines/minimax.js';
 import { searchSearxng } from './searchEngines/searxng.js';
+import { searchBing } from './searchEngines/bing.js';
 
 /**
  * Web search backend — MiniMax priority + searXNG fallback.
@@ -71,6 +72,8 @@ const MAX_RESULTS = 12;           // final merged count / per-source limit
    Web search — MiniMax priority, searXNG fallback
    ═══════════════════════════════════════════════════════════════════ */
 
+const TOTAL_SEARCH_TIMEOUT = 30_000;  // 硬性上限，覆盖 s 链全部尝试（MiniMax + searXNG）
+
 export async function webSearch(query, count = 10, opts = {}) {
   if (!query || !String(query).trim()) {
     throw new BadRequest('Query is required');
@@ -88,34 +91,41 @@ export async function webSearch(query, count = 10, opts = {}) {
     return cacheHit;
   }
 
-  // 1. MiniMax priority search — if it returns results, short-circuit
-  //    the entire pipeline (skip searXNG, skip fetchBatch content extraction).
-  const minimaxResults = await searchMinimax(query, limit);
-  if (minimaxResults && minimaxResults.length > 0) {
-    try {
-      Object.defineProperty(minimaxResults, 'expandedQueries', {
-        value: [query], enumerable: false, configurable: true, writable: false,
-      });
-      Object.defineProperty(minimaxResults, 'language', {
-        value: langCluster, enumerable: false, configurable: true, writable: false,
-      });
-      for (const r of minimaxResults) {
-        r.matchedQuery = query;
-        r.matchedQueries = [query];
-      }
-    } catch { /* metadata is best-effort */ }
-    try {
-      searchResultCache.set({
-        userId: opts.userId, query, count: limit, locale, apiKeyHint,
-        result: minimaxResults,
-      });
-    } catch { /* cache is best-effort */ }
-    return minimaxResults;
-  }
+  // Wrap the entire search in a total timeout so the tool loop never
+  // gets stuck if both engines hang.
+  const ac = new AbortController();
+  const totalTimer = setTimeout(() => ac.abort('total_timeout'), TOTAL_SEARCH_TIMEOUT);
+  let finalResults = [];
+  try {
+    // 1. searXNG first (self-hosted metasearch, China-friendly engines)
+    const searxngResults = await searchSearxng(query, limit, ac.signal);
+    finalResults = searxngResults || [];
 
-  // 2. Fallback to searXNG (self-hosted metasearch)
-  const searxngResults = await searchSearxng(query, limit);
-  const finalResults = searxngResults || [];
+    if (finalResults.length === 0) {
+      // 2. Fallback to MiniMax search (if key configured)
+      const minimaxKey = process.env.MINIMAX_SEARCH_KEY || process.env.MINIMAX_API_KEY || '';
+      if (minimaxKey) {
+        const minimaxResults = await searchMinimax(query, limit, ac.signal);
+        if (minimaxResults && minimaxResults.length > 0) {
+          finalResults = minimaxResults;
+        }
+      }
+    }
+    if (finalResults.length === 0) {
+      // 3. Final fallback: Bing HTML scrape (no API key needed)
+      const bingResults = await searchBing(query, limit, ac.signal);
+      finalResults = bingResults || [];
+    }
+  } catch (e) {
+    if (e && e.name === 'AbortError') {
+      console.warn('[webSearch] Total search timeout exceeded');
+    } else {
+      console.warn('[webSearch] Search failed:', e && e.message ? e.message : e);
+    }
+    finalResults = [];
+  } finally {
+    clearTimeout(totalTimer);
+  }
 
   // Tag results with matched query info
   for (const r of finalResults) {

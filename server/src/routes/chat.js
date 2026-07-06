@@ -562,7 +562,9 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
     const abortController = new AbortController();
     req.on('close', () => {
       clearInterval(heartbeat);
-      abortController.abort();
+      if (!abortController.signal.aborted) {
+        abortController.abort('client_disconnected');
+      }
     });
 
     const sessionIdFromQuery = typeof req.query.sessionId === 'string' && isUuid(req.query.sessionId)
@@ -591,7 +593,8 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
     let workingMessages = finalMessages;
 
     const writeSse = (payload) => {
-      try { res.write(payload); try { res.flush?.(); } catch {} } catch { /* socket closed */ }
+      if (abortController.signal.aborted) return;
+      try { res.write(payload); try { res.flush?.(); } catch {} } catch { /* socket closed — abortController handles cleanup */ }
     };
     const safeParseJson = (s) => {
       try { return JSON.parse(s); } catch { return null; }
@@ -694,6 +697,10 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
           function: t.function,
         })),
       }]);
+
+      // Abort guard — if the client disconnected during this turn's
+      // LLM streaming, skip tool execution and terminate the loop.
+      if (abortController.signal.aborted) break;
 
       // Run each tool call. Most models emit one per turn; we keep
       // the loop sequential so backpressure on the SSE channel is
@@ -848,6 +855,29 @@ data: ${JSON.stringify({
           content: toolContent.slice(0, 60_000),  /* hard cap so a runaway tool result can't blow context */
         }]);
       }
+    }
+
+    /* Abort guard — if the client disconnected during tool execution,
+     * skip the finalisation (writing [DONE] to a closed socket would
+     * throw, and the recordUsage below would charge for an incomplete
+     * response). The req.on('close') handler already stopped the
+     * upstream LLM call; we just need to avoid touching the response
+     * object. */
+    if (abortController.signal.aborted) {
+      clearInterval(heartbeat);
+      /* Still record partial usage so the operator can see incomplete
+       * responses in the heatmap and diagnose client-drop patterns. */
+      if (req.userId && fullText.length > 0) {
+        recordUsage({
+          userId: req.userId,
+          model: provider.model,
+          sessionId: sessionIdFromQuery,
+          promptTokens,
+          completionTokens: estimateTokens(fullText),
+          source: 'chat',
+        });
+      }
+      return;
     }
 
     /* Done — record usage and close the stream. The onDone branch

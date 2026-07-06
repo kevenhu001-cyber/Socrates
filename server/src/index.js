@@ -105,10 +105,24 @@ async function main() {
     // (systemd/pm2) starts a clean process.
     process.exit(1);
   });
-  process.on('unhandledRejection', (reason) => {
+  process.on('unhandledRejection', (reason, promise) => {
     console.error('[fatal] unhandledRejection:', reason && reason.stack || reason);
-    // Promise rejections are recoverable; let route-level handlers
-    // surface them and only crash if the bug is truly systemic.
+    // Promise rejections are not always fatal — route-level error
+    // handlers may have already caught and logged the rejection.
+    // Only crash if the rejection is truly fatal:
+    //   - ERR_SOCKET_BAD_PORT or ERR_INVALID_ARG_TYPE → bad config
+    //   - ERR_MEMORY_ALLOCATION_FAILED → OOM
+    // Otherwise log, let the process continue, and rely on the
+    // uncaughtException handler for truly terminal states.
+    const errMsg = reason && (reason.message || String(reason));
+    if (errMsg && (
+      errMsg.includes('ERR_SOCKET_BAD_PORT') ||
+      errMsg.includes('ERR_INVALID_ARG_TYPE') ||
+      errMsg.includes('ERR_MEMORY_ALLOCATION_FAILED')
+    )) {
+      console.error('[fatal] Non-recoverable unhandled rejection — terminating');
+      process.exit(1);
+    }
   });
 }
 

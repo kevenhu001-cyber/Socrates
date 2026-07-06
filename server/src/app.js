@@ -6,7 +6,7 @@ import helmet from 'helmet';
 
 import { csrfProtection } from './middleware/csrf.js';
 import { requireAuth } from './middleware/auth.js';
-import { errorHandler, notFoundHandler } from './middleware/error.js';
+import { errorHandler, notFoundHandler, timeoutMiddleware } from './middleware/error.js';
 import { searchLimiter, fetchLimiter } from './middleware/rateLimit.js';
 import crypto from 'node:crypto';
 import authRouter from './routes/auth.js';
@@ -194,6 +194,11 @@ app.use(express.urlencoded({ extended: true }));
 
 // Cookie parsing (required for auth / CSRF)
 app.use(cookieParser());
+
+// Global request timeout — mounted after body parsing so slow requests
+// have a hard cap. SSE and chat have their own per-stream timeout via
+// AbortController; this catches everything else (DB, file I/O, etc.).
+app.use(timeoutMiddleware);
 
 // CORS — allow same-origin (app behind same-domain nginx) + dev.
 // We key off the actual request's Host header (rather than NODE_ENV) so

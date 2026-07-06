@@ -26,6 +26,29 @@ import {
   toggleWebSearch, syncWebSearchUI,
 } from './pickers.js';
 
+/* P_batch-storage — coalesce multiple localStorage writes within the
+   same microtask tick. During a chat turn, saveCurrentSession and
+   various settings toggles can fire 3-5 independent setItem calls.
+   Each one blocks the main thread for synchronous I/O; batching them
+   into a single write reduces cumulative latency. */
+var _batchStoragePending = null;
+function batchSetItem(key, value) {
+  if (!_batchStoragePending) {
+    _batchStoragePending = {};
+    queueMicrotask(function () {
+      var batch = _batchStoragePending;
+      _batchStoragePending = null;
+      for (var k in batch) {
+        try { localStorage.setItem(k, batch[k]); } catch (_) {}
+      }
+    });
+  }
+  _batchStoragePending[key] = value;
+}
+function batchRemoveItem(key) {
+  try { localStorage.removeItem(key); } catch (_) {}
+}
+
 /* ============================================================
    SIDEBAR
    ============================================================ */
@@ -1918,7 +1941,7 @@ async function loadSession(id){
           if(!txt)return;
           rec.messages.push({role:m.role,content:txt});
         });
-        if(rec.messages.length)localStorage.setItem(_memKey(s.id),JSON.stringify(rec));
+        if(rec.messages.length)batchSetItem(_memKey(s.id),JSON.stringify(rec));
       }catch(e){console.warn("[sessions] mirror to local memory failed:",e.message)}
     }
     updateKB();
@@ -2053,7 +2076,7 @@ function appendLocalMemory(role,content){
        the new session. Re-reading ensures we write to the correct key. */
     var currentSid=state.currentSessionId;
     if(!currentSid||currentSid!==sid)return;
-    localStorage.setItem(_memKey(currentSid),JSON.stringify(rec));
+    batchSetItem(_memKey(currentSid),JSON.stringify(rec));
   }catch(e){
     /* QuotaExceeded or private-mode: drop silently. */
   }
@@ -2647,7 +2670,21 @@ function closeProjectEditor(){
    binding to the new session record. Called from resetApp(). */
 function getActiveProjectId(){return state.session.currentProjectId||null;}
 
+/* P_render-throttle — coalesce rapid renderRecents() calls into a
+   single animation frame. Without this, saveCurrentSession (called
+   3-5x per chat turn) triggers 3-5 full list rebuilds, causing
+   visible stutter with 20+ sessions. */
+var _renderRecentsPending = false;
+var _renderRecentsLastHTML = null;
 function renderRecents(){
+  if (_renderRecentsPending) return;
+  _renderRecentsPending = true;
+  requestAnimationFrame(function () {
+    _renderRecentsPending = false;
+    doRenderRecents();
+  });
+}
+function doRenderRecents(){
   var cont=document.getElementById("recentsList");
   if(!cont)return;
   /* Self-heal: if the active project filter points to a non-system
@@ -3781,8 +3818,8 @@ function renderDiagResultsScreen(){
   html+='<div class="diag-results-notice-icon">i</div>';
   html+='<div class="diag-results-notice-text">';
   html+=isZh
-    ?"<strong>重要提示：</strong>冷启动测试仅用于探测您的知识边界基线。通过测试仅代表您达到特定评估标准，<strong>不代表完全掌握</strong>相关主题。系统将针对所有知识维度从基础开始系统教学，确保知识体系的完整性和连贯性。"
-    :"<strong>Important:</strong> The cold-start test only establishes a baseline of your knowledge boundary. Passing the test means you reached a specific evaluation standard, <strong>NOT full mastery</strong> of the topic. The system will teach ALL knowledge dimensions from the fundamentals to ensure a complete and coherent knowledge system.";
+    ?"<strong>重要提示：</strong>冷启动测试仅用于探测您的知识边界基线——<strong>无论答题结果如何</strong>（\"有一定基础\"或\"待探索\"），系统都会<strong>从最本质、最基础的核心定义开始</strong>讲解。诊断结果只用来决定讲解的<strong>详细程度</strong>：掌握较好的维度讲得更简略、例子更少；尚未接触的维度讲得更详细、例子更多、铺垫更充分。"
+    :"<strong>Important:</strong> The cold-start test only establishes a baseline of your knowledge boundary. <strong>Regardless of how you answered</strong> (\"some familiarity\" or \"to explore\"), the system will always begin each topic <strong>from the most essential, foundational core definition</strong>. The diagnostic result is used <strong>only</strong> to modulate the depth of the explanation: topics you know better are taught more concisely with fewer examples; topics you have not seen are taught in greater detail with more examples and scaffolding.";
   html+='</div></div>';
 
   html+='<div class="diag-results-grid">';
@@ -5720,17 +5757,22 @@ function appendToolModule(toolName,toolInput,body){
   return card.querySelector(".agent-tool-out");
 }
 
-/* Update the most recently appended tool card's output. */
-function setLastToolOutput(text,isError){
-  var list=document.getElementById("msgList");
-  if(!list)return;
-  var last=list.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
-  if(!last)return;
-  last.textContent=text||"";
-  if(isError)last.classList.add("error");else last.classList.remove("error");
+/* Update the most recently appended tool card's output.
+   When outEl is provided, write directly to it (avoids the
+   fragile last-card selector). */
+function setLastToolOutput(text,isError,outEl){
+  var out=outEl||null;
+  if(!out){
+    var list=document.getElementById("msgList");
+    if(!list)return;
+    out=list.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
+  }
+  if(!out)return;
+  out.textContent=text||"";
+  if(isError)out.classList.add("error");else out.classList.remove("error");
   /* If the text is long, open the card by default so the user sees it. */
   if(text&&text.length>200){
-    var card=last.parentElement;
+    var card=out.parentElement;
     if(card)card.classList.add("open");
   }
 }
@@ -5742,8 +5784,8 @@ function setLastToolOutput(text,isError){
    pipeline, so the X-Content-Type-Options: nosniff header from
    server/src/routes/files.js:151-157 already protects against content
    sniffing. */
-function appendInlineArtifact(fileId,mimeType){
-  var out=document.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
+function appendInlineArtifact(fileId,mimeType,outEl){
+  var out=outEl||document.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
   if(!out)return;
   var url="/api/files/"+encodeURIComponent(fileId)+"/raw";
   if((mimeType||"").indexOf("image/")===0){
@@ -6343,15 +6385,91 @@ function addStreamingMessage(opts){
      during streaming but lost on reload. */
   var fullReasoning="";
   var finished=false;
+  /* P_session-stream-dispose — when resetApp() or loadSession() aborts
+     an in-flight stream, already-queued delta chunks from the response
+     body can still reach append()/finish() callbacks via stream.js's
+     ReadableStream reader (AbortController only aborts the fetch, not
+     chunks already buffered in the reader's queue). Without this flag,
+     those stale callbacks would write `state.messages[msgIdx].rawText =
+     full` into whatever object now sits at the same numeric index in
+     the cleared/replaced array — polluting the new session's slot
+     ("会话串台": AI answers based on the previous session's content).
+
+     abort() and finish() flip this to true; every public entry point
+     and every `state.messages[msgIdx]` write site checks it before
+     touching state. _disposed is sticky (no resurrection) so even if
+     abort races with a late finish callback, the writes stay inert. */
+  var _disposed=false;
   var pendingRender=null;
   /* Thinking pill (for chat-mode reasoning_content). Lazily created on
      the first onThinking(delta) callback so we don't add a pill for
      models that don't produce reasoning. Hidden when the user has
      toggled "Show AI thinking" off. */
   var thinkCtl=null;
+  /* P_tool_in_think — cached container for tool cards inside
+     the think-block. Lazily created by _ensureToolContainer(). */
+  var _toolCardContainer=null;
+  function _ensureToolContainer(){
+    if(_toolCardContainer&&_toolCardContainer.isConnected)return _toolCardContainer;
+    var tb=body.querySelector('.think-block');
+    if(tb){
+      _toolCardContainer=tb.querySelector('.think-tools');
+      if(!_toolCardContainer){
+        _toolCardContainer=document.createElement("div");
+        _toolCardContainer.className="think-tools";
+        var tc=tb.querySelector('.think-content');
+        if(tc)tc.parentNode.appendChild(_toolCardContainer);
+        else tb.appendChild(_toolCardContainer);
+      }
+    }else{
+      tb=document.createElement("details");
+      tb.className="think-block think-block-streaming";
+      tb.open=true;
+      var sum=document.createElement("summary");
+      sum.className="think-summary think-summary-streaming";
+      sum.innerHTML='<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span><span class="think-summary-label">'+esc(t("think.thinking"))+'</span><span class="think-summary-chevron" aria-hidden="true"></span>';
+      tb.appendChild(sum);
+      var tc=document.createElement("div");
+      tc.className="think-content";
+      tb.appendChild(tc);
+      _toolCardContainer=document.createElement("div");
+      _toolCardContainer.className="think-tools";
+      tb.appendChild(_toolCardContainer);
+      body.appendChild(tb);
+    }
+    return _toolCardContainer;
+  }
   function ensureThinkCtl(){
     if(thinkCtl)return thinkCtl;
-    if(!thinkingOn){thinkCtl={append:function(){},finalize:function(){},remove:function(){}};return thinkCtl}
+    /* P0.8 — The placeholder ("正在思考…") is no longer needed once
+       real reasoning_content arrives. Remove it here so the user
+       sees only the thinking pill ("正在思考"), not both. */
+    try{placeholder.remove()}catch(_){}
+    if(!thinkingOn){
+      /* P_thinking-off-indicator — even when "Show AI thinking" is
+         off, show a minimal "正在思考…" badge so the user knows the
+         AI is reasoning. When thinking finishes it switches to
+         "思考过程" (static, no spinner). */
+      var _dot=document.createElement("span");
+      _dot.className="thinking-dot thinking-off-indicator";
+      _dot.style.cssText="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;margin:2px 0;border-radius:6px;background:hsl(var(--bg-200)/0.3);font-size:calc(12px * var(--app-font-scale,1));color:hsl(var(--text-400))";
+      _dot.innerHTML='<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>'+esc(t("think.thinking"));
+      body.appendChild(_dot);
+      thinkCtl={
+        append:function(){},
+        finalize:function(){
+          try{
+            _dot.innerHTML=esc(t("think.title"));
+            _dot.style.background="transparent";
+            _dot.style.padding="2px 10px";
+          }catch(_){}
+        },
+        remove:function(){
+          try{if(_dot.parentNode)_dot.parentNode.removeChild(_dot)}catch(_){}
+        }
+      };
+      return thinkCtl;
+    }
     thinkCtl=appendThinking("");
     /* If appendThinking returned null (DOM not ready), fall back to no-op. */
     if(!thinkCtl)thinkCtl={append:function(){},finalize:function(){},remove:function(){}};
@@ -6397,7 +6515,7 @@ function addStreamingMessage(opts){
   placeholder.setAttribute("data-mode",appMode);
   var placeholderRing=document.createElement("span");
   placeholderRing.className="thinking-ring thinking-ring-sm";
-  var placeholderText=document.createTextNode(appMode==="chat"?t("common.thinking"):t("common.generating"));
+  var placeholderText=document.createTextNode(appMode==="chat"?t("think.thinking"):t("common.generating"));
   placeholder.appendChild(placeholderRing);
   placeholder.appendChild(placeholderText);
   body.appendChild(placeholder);
@@ -6417,7 +6535,7 @@ function addStreamingMessage(opts){
   _elapsedTick=setInterval(function(){
     if(finished||!firstDelta)return;
     var sec=Math.round((Date.now()-thinkStarted)/1000);
-    setPlaceholderText((appMode==="chat"?t("common.thinking"):t("common.generating"))+" "+sec+"s");
+    setPlaceholderText((appMode==="chat"?t("think.thinking"):t("common.generating"))+" "+sec+"s");
   },5000);
   var firstDeltaTimer=setTimeout(function(){
     if(finished||!firstDelta)return;
@@ -6521,6 +6639,11 @@ function addStreamingMessage(opts){
 
   function ensureThinkStructure(){
     if(thinkState.beforeNode)return;
+    /* P_tool_preserve — save tool cards before body.innerHTML=""
+       wipes them, so tools called before the <think> marker are
+       preserved inside the new think-block structure. */
+    var _savedTools=body.querySelector('.think-tools');
+    if(_savedTools)_savedTools.parentNode.removeChild(_savedTools);
     body.innerHTML="";
     /* P1.4 — pre-think text is a block-level container that holds
        rendered markdown HTML, NOT a text node. The previous design
@@ -6535,10 +6658,10 @@ function addStreamingMessage(opts){
 
     var det=document.createElement("details");
     det.className="think-block think-block-streaming";
-    /* P0.7 — start collapsed. The user clicks the summary to
-       expand. The stream-cursor is NOT inside the details so the
-       pulsing "Thinking…" indicator stays visible even while the
-       reasoning is hidden. */
+    det.open=!!thinkingOn;
+    /* Open by default when Show AI Thinking is ON so the user
+       sees reasoning content without clicking. When OFF, the
+       thinking-off-indicator (ensureThinkCtl) handles display. */
     var sum=document.createElement("summary");
     sum.className="think-summary think-summary-streaming";
     var _streamingLabel=(typeof window!=="undefined"&&window.t)?window.t("think.thinking"):"Thinking…";
@@ -6568,6 +6691,12 @@ function addStreamingMessage(opts){
     thinkState.summary=sum;
     thinkState.thinkDiv=td;
     thinkState.cursorNode=cur;
+    /* Re-insert saved tool cards after the think-content so they
+       appear inside the collapsible thinking block. */
+    if(_savedTools)td.parentNode.appendChild(_savedTools);
+    /* Clear the cached tool container — the think-block was rebuilt
+       and _toolCardContainer points to the old disconnected element. */
+    _toolCardContainer=null;
     /* The old single-text-node + cursor are no longer in use. */
     streamContent=null;
     cursor=null;
@@ -6608,7 +6737,10 @@ function teardownThinkStructure(){
 
   function doRender(){
     pendingRender=null;
-    if(finished)return;
+    /* P_session-stream-dispose — rAF guard. cancelAnimationFrame in
+       abort()/finish() usually wins, but a doRender body may already
+       be running on this very tick. Bail before touching state.messages. */
+    if(finished||_disposed)return;
 
     /* P0 — chat-template artifact strip. The upstream LLM (Beagle,
      * DeepSeek, MiniMax M2, etc.) can leak <|im_start|>...<|im_end|>,
@@ -6662,20 +6794,25 @@ function teardownThinkStructure(){
              (text appears char-by-char as deltas arrive) while making
              sure markdown and math render correctly in real time. */
       if(!streamContent){
-        /* Save the thinking pill before clearing — body.innerHTML=""
-           destroys all children, including .think-block. We re-insert
-           it after setting up the streaming DOM so the pill survives in
-           browsers that deliver all SSE data in one synchronous chunk.
-
-           P_paint-race — also remove the "Thinking…" placeholder
-           surgically. It has already been painted at least once (we
-           only get here after firstDelta flips, which only happens
-           after at least one delta callback runs, which can only
-           happen after the placeholder has been on screen for the
-           first SSE round-trip). Detaching it via remove() — rather
-           than letting body.innerHTML="" garbage-collect it — makes
-           the detach explicit and lets the closure check it later. */
+        /* Save the thinking pill AND any tool cards before clearing —
+           body.innerHTML="" destroys all children. We re-insert them
+           after setting up the streaming DOM so the pill and tool
+           cards survive when the first text delta arrives (including
+           the case where the LLM called a tool before producing any
+           text — the tool cards were added during SSE parsing and
+           must not be wiped). */
         var savedPill=body.querySelector('.think-block');
+        var savedToolCards=body.querySelectorAll('.agent-tool-card');
+        var savedToolCardArr=[];
+        /* If cards live inside the think-block (the normal case now),
+           saving the pill already captures them. Only extract individual
+           cards when there's no pill to host them. */
+        if(!savedPill){
+          for(var sci=0;sci<savedToolCards.length;sci++){
+            savedToolCardArr.push(savedToolCards[sci]);
+            savedToolCards[sci].parentNode.removeChild(savedToolCards[sci]);
+          }
+        }
         try{placeholder.remove()}catch(_){}
         body.innerHTML="";
         streamContent=document.createElement("div");
@@ -6686,6 +6823,9 @@ function teardownThinkStructure(){
         cursor.textContent="▍";
         body.appendChild(cursor);
         if(savedPill)body.insertBefore(savedPill,body.firstChild);
+        for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
+          body.appendChild(savedToolCardArr[sci2]);
+        }
       }
       /* Skip the DOM write if the rendered HTML hasn't changed —
          the most common case once the cursor blinks and the model
@@ -6724,7 +6864,8 @@ function teardownThinkStructure(){
          static label and drop the pulse — the model is done
          thinking. */
       if(thinkClosed&&thinkState.summary.innerHTML.indexOf("thinking-ring")!==-1){
-        thinkState.summary.innerHTML=t("common.thinkingLabel");
+        var _doneLabel=(typeof window!=="undefined"&&window.t)?window.t("think.title"):"Thought";
+        thinkState.summary.innerHTML='<span class="think-summary-label">'+esc(_doneLabel)+'</span><span class="think-summary-chevron" aria-hidden="true"></span>';
       }
       /* Re-render the think content only if it changed. The
          recursive formatMsg call is the same code path used by
@@ -6800,6 +6941,12 @@ function teardownThinkStructure(){
      appends stdout/stderr chunks. The node lives inside
      .agent-tool-out so it disappears when the card is collapsed. */
   function _toolProgressToCard(p){
+    /* P_session-stream-dispose — defense in depth. _executionSSESources
+       EventSource keeps dispatching events for a tick or two after
+       abort()/finish() flips _disposed; even with the close() added
+       in those paths, a queued event in the EventSource dispatch loop
+       can still land here. Bail before any state.messages writes. */
+    if(_disposed)return;
     if(!p||!p.id)return;
     var entry=null;
     if(msgIdx>=0&&state.messages[msgIdx]&&Array.isArray(state.messages[msgIdx].toolCalls)){
@@ -6808,7 +6955,7 @@ function teardownThinkStructure(){
       }
     }
     if(!entry)return;
-    var card=body.querySelector(".agent-tool-card[data-tcid=\""+cssEscape(p.id)+"\"]");
+    var card=body.querySelector('.think-tools .agent-tool-card[data-tcid="'+cssEscape(p.id)+'"]');
     if(!card){
       entry._pendingProgress=entry._pendingProgress||[];
       entry._pendingProgress.push(p);
@@ -6929,7 +7076,24 @@ function teardownThinkStructure(){
        recordToolResult. The card is stamped with data-tcid=<id> so
        recordToolProgress can find it by selector. */
     recordToolUse:function(call){
+      /* P_session-stream-dispose — guard the public API so a late
+         tool_use callback after abort() can't push a stale entry
+         into the new session's toolCalls array. */
+      if(_disposed)return null;
       if(!call||!call.name)return null;
+      /* P_tool_first_delta — when the LLM calls a tool before
+         producing any text content, firstDelta is still true and
+         the streaming DOM hasn't been set up yet. Flip firstDelta
+         here so the placeholder is removed and the bubble enters
+         streaming mode immediately, preventing the firstDeltaTimer
+         from firing during tool execution. */
+      if(firstDelta&&!finished){
+        firstDelta=false;
+        clearTimeout(firstDeltaTimer);
+        if(_elapsedTick)clearInterval(_elapsedTick);
+        if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
+        pendingRender=requestAnimationFrame(function(){doRender()});
+      }
       var entry={
         id:String(call.id||("tc-"+Date.now()+"-"+Math.random().toString(36).slice(2,8))),
         name:String(call.name),
@@ -6944,7 +7108,7 @@ function teardownThinkStructure(){
         }
         state.messages[msgIdx].toolCalls.push(entry);
       }
-      var cardOut=appendToolModule(entry.name,entry.input||{},body);
+      var cardOut=appendToolModule(entry.name,entry.input||{},_ensureToolContainer());
       if(cardOut){
         var cardEl=cardOut.closest(".agent-tool-card");
         if(cardEl)cardEl.setAttribute("data-tcid",entry.id);
@@ -6966,9 +7130,18 @@ function teardownThinkStructure(){
        stdout/stderr + a phase timer instead of staring at a
        frozen card for 30s. Delegates to the hoisted helper. */
     recordToolProgress:function(p){
+      /* P_session-stream-dispose — same guard. Without this, a late
+         progress chunk could find a toolCalls[i] entry that now
+         belongs to the new session and mutate its executionId or
+         _pendingProgress, leaking old tool state across the boundary. */
+      if(_disposed)return;
       _toolProgressToCard(p);
     },
     recordExecutionStart:function(ev){
+      /* P_session-stream-dispose — same guard; also avoids
+         _connectExecutionSSE which opens a long-lived EventSource
+         that would otherwise keep streaming after a session switch. */
+      if(_disposed)return;
       if(!ev||!ev.executionId||!ev.id)return;
       if(msgIdx>=0&&state.messages[msgIdx]&&Array.isArray(state.messages[msgIdx].toolCalls)){
         for(var ti=0;ti<state.messages[msgIdx].toolCalls.length;ti++){
@@ -6987,6 +7160,8 @@ function teardownThinkStructure(){
        backend emits tool_result without a tool_use), a synthetic
        entry is created so the result is still visible. */
     recordToolResult:function(result){
+      /* P_session-stream-dispose — same guard as recordToolUse. */
+      if(_disposed)return;
       if(!result||!result.id)return;
       var out=null;
       var entry=null;
@@ -7013,16 +7188,14 @@ function teardownThinkStructure(){
           }
           state.messages[msgIdx].toolCalls.push(entry);
         }
-        out=appendToolModule(entry.name,{},body);
+        out=appendToolModule(entry.name,{},_ensureToolContainer());
       }else{
-        var cards=body.querySelectorAll(".agent-tool-card");
-        if(entry._cardIdx===undefined){
-          var all=state.messages[msgIdx].toolCalls;
-          for(var j=0;j<all.length;j++){
-            if(all[j]===entry){entry._cardIdx=j;break}
-          }
-        }
-        if(cards[entry._cardIdx])out=cards[entry._cardIdx].querySelector(".agent-tool-out");
+        /* Find the card by its data-tcid attribute (set in recordToolUse)
+           instead of index-based lookup — the card's position may shift
+           if the think-block was rebuilt between tool_use and tool_result. */
+        var _escId=entry.id.replace(/["\\]/g,'');
+        var card=body.querySelector('[data-tcid="'+_escId+'"]');
+        if(card)out=card.querySelector(".agent-tool-out");
       }
 
       var statusIcon="";
@@ -7056,12 +7229,14 @@ function teardownThinkStructure(){
       }
       if(out){
         /* P_progress — clear the live progress block before writing
-           the canonical output. The terminal stdout/stderr arrive
-           in `display` and are visible in the .agent-tool-output-text
-           slot, so the live preview is no longer needed. */
+           the canonical output. */
         var liveProg=out.querySelector(".agent-tool-progress");
         if(liveProg)liveProg.parentNode.removeChild(liveProg);
-        setLastToolOutput(display,entry.isError,out,result&&result.status||null);
+        /* Direct write to the output element — always targets the
+           correct card (found by index above), independent of the
+           global selector in setLastToolOutput. */
+        out.textContent=display||"";
+        if(entry.isError)out.classList.add("error");else out.classList.remove("error");
         var card=out.closest(".agent-tool-card");
         if(card){
           var existingBadge=card.querySelector(".agent-tool-status");
@@ -7072,6 +7247,9 @@ function teardownThinkStructure(){
             var nameEl=card.querySelector(".agent-tool-name");
             if(nameEl&&nameEl.parentNode)nameEl.parentNode.insertBefore(badge,nameEl.nextSibling);
           }
+          /* Auto-open the card so the user sees the result without
+             having to click the header. Long results auto-open too. */
+          if(display&&display.length>0)card.classList.add("open");
           if(result.ok===false)card.classList.add("open");
         }
         if(entry.artifacts&&entry.artifacts.length){
@@ -7082,7 +7260,14 @@ function teardownThinkStructure(){
       }
     },
     append:function(delta){
-      if(finished)return;
+      /* P_session-stream-dispose — primary entry-point guard. The
+         stream.js reader keeps draining already-buffered SSE chunks
+         for one or two ticks after AbortController.abort(); without
+         this check, late append() callbacks would push `full += delta`
+         into a stream that no longer owns this `msgIdx` slot, then
+         write the polluted text to state.messages[msgIdx].rawText
+         (which now belongs to the new session). */
+      if(finished||_disposed)return;
       var wasFirst=firstDelta;
       if(wasFirst){
         firstDelta=false;
@@ -7103,7 +7288,8 @@ function teardownThinkStructure(){
        reasoning_content). Routed to a thinking pill (rendered with
        Markdown/LaTeX) and only when the user has thinking mode on. */
     appendThinking:function(delta){
-      if(finished)return;
+      /* P_session-stream-dispose — same guard as append(). */
+      if(finished||_disposed)return;
       if(typeof delta==="string")fullReasoning+=delta;
       try{ensureThinkCtl().append(delta||"")}catch(_){}
     },
@@ -7113,8 +7299,17 @@ function teardownThinkStructure(){
       }
     },
     finish:function(){
+      /* P_session-stream-dispose — once an abort() has fired, never
+         let a late natural-finish callback (the LLM may flush a
+         final "data: [DONE]" right before ac.abort propagates) write
+         to state.messages. Set _disposed=true on natural completion
+         too, so any queued microtask racing the close can't sneak in
+         a stale write between finish()'s reads of `full` and the
+         actual state.messages[msgIdx].html assignment. */
+      if(_disposed)return;
       if(finished)return;
       finished=true;
+      _disposed=true;
       /* Close any active execution SSE connections */
       for(var esi=0;esi<_executionSSESources.length;esi++){
         try{_executionSSESources[esi].close()}catch(_){}
@@ -7241,17 +7436,26 @@ function teardownThinkStructure(){
           console.warn("[finish] renderAssistantHTML error:",e&&e.message);
           finalHtml="<p>"+esc(full)+"</p>";
         }
+        /* P_stop-spinner — finalize the thinking pill BEFORE saving
+           it so the spinner stops spinning once the response is
+           complete. Without this, the pill is re-inserted with its
+           streaming summary (thinking-ring) and keeps animating. */
+        if(thinkCtl&&typeof thinkCtl.finalize==="function"){
+          try{thinkCtl.finalize()}catch(_){}
+        }
         /* P_tool_card_preserve — save BOTH the thinking pill and
            any tool cards we appended via recordToolUse, then
-           re-insert them after the formatted HTML. Without this,
-           the final render wipes the Python tool card and the
-           user sees an empty card when they click to expand. */
+           re-insert them after the formatted HTML. Cards now live
+           inside the pill, so saving the pill is sufficient — only
+           extract individual cards when there's no pill to host them. */
         var savedPill=body.querySelector('.think-block');
         var savedToolCards=body.querySelectorAll('.agent-tool-card');
         var savedToolCardArr=[];
-        for(var sci=0;sci<savedToolCards.length;sci++){
-          savedToolCardArr.push(savedToolCards[sci]);
-          savedToolCards[sci].parentNode.removeChild(savedToolCards[sci]);
+        if(!savedPill){
+          for(var sci=0;sci<savedToolCards.length;sci++){
+            savedToolCardArr.push(savedToolCards[sci]);
+            savedToolCards[sci].parentNode.removeChild(savedToolCards[sci]);
+          }
         }
         body.innerHTML=finalHtml;
         if(savedPill)body.insertBefore(savedPill,body.firstChild);
@@ -7271,8 +7475,19 @@ function teardownThinkStructure(){
         console.warn("[finish] formatMsg error:",e&&e.message);
         var fb="<p>"+esc(full)+"</p>";
         var savedPill2=body.querySelector('.think-block');
+        var savedTC2=body.querySelectorAll('.agent-tool-card');
+        var savedTCArr2=[];
+        if(!savedPill2){
+          for(var sci3=0;sci3<savedTC2.length;sci3++){
+            savedTCArr2.push(savedTC2[sci3]);
+            savedTC2[sci3].parentNode.removeChild(savedTC2[sci3]);
+          }
+        }
         body.innerHTML=fb;
         if(savedPill2)body.insertBefore(savedPill2,body.firstChild);
+        for(var sci4=0;sci4<savedTCArr2.length;sci4++){
+          body.appendChild(savedTCArr2[sci4]);
+        }
         if(msgIdx>=0&&state.messages[msgIdx]){
           state.messages[msgIdx].html=fb;
           state.messages[msgIdx].reasoningContent=fullReasoning||null;
@@ -7322,8 +7537,16 @@ function teardownThinkStructure(){
       }
     },
     abort:function(){
+      /* P_session-stream-dispose — flip the sticky flag FIRST so any
+         in-flight append()/recordToolUse()/finish() callbacks that
+         are already scheduled in the microtask queue (the stream.js
+         reader keeps draining the SSE buffer for one or two ticks
+         after AbortController.abort()) will short-circuit on their
+         own _disposed checks and never touch state.messages. */
+      if(_disposed)return;
       if(finished)return;
       finished=true;
+      _disposed=true;
       clearTimeout(firstDeltaTimer);
       if(_elapsedTick)clearInterval(_elapsedTick);
       if(pendingRender){
@@ -7338,6 +7561,19 @@ function teardownThinkStructure(){
         _chatStreaming=false;
         try{setChatStopState(false)}catch(_){}
       }
+      /* P_session-stream-dispose — code_interpreter opens a SEPARATE
+         EventSource on /api/executions/:id/stream that keeps streaming
+         progress events INDEPENDENTLY of the main chat SSE. Ac.abort()
+         only stops the main stream; this EventSource would otherwise
+         keep dispatching progress events into _toolProgressToCard →
+         state.messages[msgIdx].toolCalls[i] after a session switch,
+         polluting the new session. Close them here. finish() already
+         does the same in its first few lines, so this covers the
+         user-stopped / superseded path. */
+      for(var esi=0;esi<_executionSSESources.length;esi++){
+        try{_executionSSESources[esi].close()}catch(_){}
+      }
+      _executionSSESources.length=0;
       /* Clean up incomplete placeholder message from state.messages
        * to prevent saving empty/partial AI responses to the database.
        * Only remove if still in streaming state with no content. */
@@ -13203,10 +13439,7 @@ function buildSocraticMessages(node,domain,history,isFirst){
      teaching turn. The cold-start diagnostic only established a
      baseline; it did NOT verify mastery. Every sub-topic must be
      taught from the foundation, regardless of the node's status. */
-  var fromBasicsDirective="CRITICAL: The student's cold-start diagnostic result for this sub-topic is '"+node.status+"' (baseline only, NOT mastery). "+
-    "You MUST teach this sub-topic from the absolute fundamentals. Do NOT skip or accelerate past foundational material based on the diagnostic level. "+
-    "Even if the level is 'fuzzy' (some familiarity), start with the core definition and build up layer by layer. "+
-    "The diagnostic only probed surface recognition; true understanding must be built systematically.\n\n";
+  var fromBasicsTxt=fromBasicsDirective(node);
   /* P_knowledge-point — pull the specific knowledge points that the
      diagnostic tested for this node, so the model can address them
      explicitly during teaching. This closes the loop: the diagnostic
@@ -13231,10 +13464,10 @@ function buildSocraticMessages(node,domain,history,isFirst){
      which could make the model think the student has some familiarity
      and skip fundamentals. Now we pass a string that reinforces the
      "teach from basics" directive. */
-  var levelForPrompt="baseline (not mastery) — teach from fundamentals";
+  var levelForPrompt=BASELINE_LEVEL;
   var prompt=buildSocraticPrompt(domain,levelForPrompt,
     (isFirst
-      ? fromBasicsDirective+diagKps+
+      ? fromBasicsTxt+diagKps+
         "You are beginning the '"+stage+"' stage for sub-topic: "+node.name+". "+
         "START at this stage — do not run earlier stages. "+stageInstr+"\n"+
         "Follow the textbook principles:\n"+
@@ -13245,7 +13478,7 @@ function buildSocraticMessages(node,domain,history,isFirst){
         "5) After examples, end with 1 <practice> block — harder than the examples, requiring transfer.\n"+
         "6) Optional <quiz> block after explanation (before examples) if there's a key point worth checking.\n"+
         "Write in formal, precise textbook language. Use bold for terms. Use LaTeX for math. Build a knowledge system, not isolated facts."
-      : fromBasicsDirective+diagKps+
+      : fromBasicsTxt+diagKps+
         "Current teaching stage: "+stage+". Sub-topic: "+node.name+". Advance the lesson according to the stage: "+stageInstr+" "+
         "Connect new material to what was already taught. Do NOT restart from the beginning. "+
         "Always include 2-3 <example> blocks (with progression) before any new <practice> block. "+
@@ -13293,6 +13526,27 @@ function stageInstruction(stage){
   }
 }
 
+/* Shared "from basics" directive — used by all three prompt paths so
+   the wording stays identical. The cold-start diagnostic only sets
+   DEPTH (how detailed / how many examples); it never changes WHERE
+   we start — we always begin from the most essential core definition.
+   Reference: P_teaching-plan, P_level-consistency, P_knowledge-point. */
+var BASELINE_LEVEL = "baseline (not mastery) — depth cue only, always start from the core definition";
+
+function fromBasicsDirective(node){
+  var status=(node&&node.status)||"unknown";
+  return "CRITICAL — TWO PRINCIPLES YOU MUST FOLLOW FOR THIS SUB-TOPIC:\n"+
+    "Principle 1 (DEPTH ONLY): The cold-start diagnostic for this sub-topic is '"+status+
+      "'. This result tells you ONLY how detailed your explanation should be:\n"+
+    "  - 'fuzzy' / 'internalized' (some familiarity): fewer examples (1-2), less scaffolding, faster pace, less repetition of basics.\n"+
+    "  - 'blank' (no familiarity): more examples (3+), more analogies, more scaffolding, slower pace, more emphasis on definitions.\n"+
+    "  The diagnostic does NOT mean the student has mastered anything.\n"+
+    "Principle 2 (ALWAYS START FROM THE FOUNDATION): Regardless of the diagnostic result — fuzzy, blank, or skipped — "+
+      "you MUST begin this sub-topic from the most essential, foundational core definition and build up layer by layer. "+
+      "Never start from a mid-level detail, application, or shortcut. Never assume the student already knows the core definition "+
+      "even if the diagnostic said 'fuzzy'.\n\n";
+}
+
 async function generateSocraticQuestion(node,domain){
   if(hasUsableActive()){
     console.log("%c[Socratic] non-stream for: "+node.name,"color:#4af");
@@ -13335,12 +13589,21 @@ async function getExplanation(status){
   if(hasUsableActive()){
     var node=state.kbNodes[state.currentNode];
     var domain=state.domain;
-    var levelDesc=status==='internalized'?'has solid knowledge':status==='blank'?'is completely new':'has some familiarity';
+    /* Depth hint — modulates how detailed the re-explain is, but still
+       mandates starting from the core definition per Principle 2. */
+    var depthHint=(status==='internalized'||status==='fuzzy')
+      ?"The user has some surface familiarity with this topic, so you can move with less scaffolding and fewer examples, but you MUST still begin from the core definition."
+      :"The user is encountering this topic for the first time, so use more examples, more analogies, and more scaffolding, and you MUST still begin from the core definition.";
     var history=extractHistory();
-    var prompt=buildSocraticPrompt(domain,status,
-      "The user asked for an explanation about: "+node.name+". The user "+levelDesc+" of this topic. "+
-       "Use the chat history above to ground your explanation in what the user has already explored — do not restart from definitions. "+
-       "Write a textbook-quality explanation: systematic, formal, layer-by-layer. Use bold for key terms. Use LaTeX for math. Build from foundation to advanced. Include at least one concrete example inline."
+    var prompt=buildSocraticPrompt(domain,BASELINE_LEVEL,
+      fromBasicsDirective({status:status})+
+      "The user clicked 'Explain this' on: "+node.name+". "+depthHint+"\n"+
+      "This is a RE-EXPLAIN of material the user has seen before — do not pad it with greetings or meta-commentary, "+
+      "but DO re-ground the explanation in the most essential, foundational core definition before moving to anything advanced. "+
+      "You may reference earlier examples from the chat history briefly, but the explanation itself must stand on its own "+
+      "starting from the foundation.\n"+
+      "Write a textbook-quality explanation: systematic, formal, layer-by-layer. Use bold for key terms. Use LaTeX for math. "+
+      "Build from foundation to advanced. Include 1-3 concrete examples inline, scaled by the depth hint above."
     );
     var msgs=injectTemplateSystemPrompt(
       [{role:"system",content:prompt}].concat(history).concat([{role:"user",content:"Please explain this concept, taking into account what we've already discussed."}])
@@ -13382,14 +13645,16 @@ function buildFollowUpMessages(answer,node,domain,history){
   }else{
     stageGuidance="Advance the lesson one stage: "+stageInstr;
   }
-  var prompt=buildSocraticPrompt(domain,node.status,
+  var prompt=buildSocraticPrompt(domain,BASELINE_LEVEL,
+    fromBasicsDirective(node)+
     "Current teaching stage: "+stage+". Sub-topic: "+node.name+". "+
     "The student just said: \""+answer+"\". "+stageGuidance+"\n"+
-    "Your job is to advance the lesson:\n"+
-    "- If the student just answered a <quiz>, acknowledge (right/wrong) and move to the next stage (a worked <example> or a <practice> problem).\n"+
-    "- If the student just attempted a <practice> problem, evaluate their work: if correct, affirm and present the next sub-topic; if wrong or partial, point out the gap, walk through the correct approach briefly, and give a similar practice problem.\n"+
-    "- If the student just asked a free-form question, briefly answer it (1-2 paragraphs) and continue the loop.\n"+
-    "Always use the appropriate <quiz> / <example> / <practice> blocks per the system prompt. Do NOT restart the topic or re-explain from scratch."
+    "Your job is to advance the lesson — stay anchored to the two principles above:\n"+
+    "- If the student just answered a <quiz>, acknowledge (right/wrong) and move to the next stage (a worked <example> or a <practice> problem). When introducing the next stage's content, re-ground it briefly in the core definition you established earlier — do NOT introduce new symbols, formulas, or terms without that anchor.\n"+
+    "- If the student just attempted a <practice> problem, evaluate their work: if correct, affirm and present the next sub-topic; if wrong or partial, point out the gap by re-walking from the core definition outward, then give a similar practice problem. Never patch a wrong answer by jumping ahead — re-anchor at the foundation first.\n"+
+    "- If the student just asked a free-form question, answer it briefly (1-2 paragraphs) and then return to the current stage of the loop, still rooted in the foundational definition.\n"+
+    "Always use the appropriate <quiz> / <example> / <practice> blocks per the system prompt. "+
+    "Do NOT restart the entire topic from scratch on every turn — instead, advance the lesson while keeping the foundation as the persistent anchor for any new material."
   );
   return injectTemplateSystemPrompt(
     [{role:"system",content:prompt}].concat(history).concat([{role:"user",content:answer}])
@@ -13512,6 +13777,7 @@ window.loadSession = loadSession;
 window.loadUsageData = loadUsageData;
 window.loadUsageMonth = loadUsageMonth;
 window.nextDiagQuestion = nextDiagQuestion;
+window.skipDiagQuestion = skipDiagQuestion;
 window.onCmdKInput = onCmdKInput;
 window.onProjectChipClick = onProjectChipClick;
 window.onProjectDelete = onProjectDelete;

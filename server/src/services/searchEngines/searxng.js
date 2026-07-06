@@ -12,7 +12,7 @@
  * This is the fallback when MiniMax search returns no results.
  */
 
-const REQUEST_TIMEOUT = 25_000;
+const REQUEST_TIMEOUT = 25_000;  // 国内上行引擎慢，需要更长的超时
 const SEARXNG_BASE = process.env.SEARXNG_BASE_URL || 'http://127.0.0.1:8888';
 
 /**
@@ -38,17 +38,21 @@ function extractDate(publishedDate, snippet) {
  * @param {number} [limit=10]
  * @returns {Promise<Array<{title:string, url:string, snippet:string, date:string|null, authority:string, source:'searxng'}>>}
  */
-export async function searchSearxng(query, limit = 10) {
+export async function searchSearxng(query, limit = 10, signal = null) {
   if (!query || !String(query).trim()) return [];
 
   const url = `${SEARXNG_BASE}/search?q=${encodeURIComponent(query)}&format=json&pageno=1`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+  // Combine internal timeout with the external total-timeout signal
+  const fetchSignal = signal
+    ? (typeof AbortSignal.any === 'function' ? AbortSignal.any([controller.signal, signal]) : signal)
+    : controller.signal;
 
   try {
     const r = await fetch(url, {
       method: 'GET',
-      signal: controller.signal,
+      signal: fetchSignal,
       headers: { 'Accept': 'application/json' },
     });
     clearTimeout(timer);

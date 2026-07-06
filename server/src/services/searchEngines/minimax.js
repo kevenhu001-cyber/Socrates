@@ -49,7 +49,7 @@ function getApiKey() {
  * @param {number} [limit=10]  Max results to return (API max is 10)
  * @returns {Promise<Array<{title:string, url:string, snippet:string, date:string|null, authority:string, source:'minimax'}>>}
  */
-export async function searchMinimax(query, limit = 10) {
+export async function searchMinimax(query, limit = 10, signal = null) {
   if (!query || !String(query).trim()) return [];
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -60,11 +60,15 @@ export async function searchMinimax(query, limit = 10) {
   const endpoint = buildEndpoint();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+  // Combine internal timeout with the external total-timeout signal
+  const fetchSignal = signal
+    ? (typeof AbortSignal.any === 'function' ? AbortSignal.any([controller.signal, signal]) : signal)
+    : controller.signal;
 
   try {
     const r = await fetch(endpoint, {
       method: 'POST',
-      signal: controller.signal,
+      signal: fetchSignal,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,

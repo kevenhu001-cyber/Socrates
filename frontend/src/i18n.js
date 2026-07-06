@@ -555,7 +555,7 @@ var I18N={
     "tutor.hint":"提示",
     "tutor.explain":"给我讲解一下这个概念",
     "tutor.skip":"换一道题",
-    "tutor.diagSkip":"不会 · 跳过",
+    "tutor.diagSkip":"跳过",
     "tutor.thinkMore":"我再想想",
     "tutor.takeTime":"慢慢来，不着急。",
     "tutor.fallbackWarn":"该内容格式异常，已原样展示",

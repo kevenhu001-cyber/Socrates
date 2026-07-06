@@ -86,7 +86,7 @@ export async function apiFetchRaw(path, opts = {}) {
     if (opts.signal.aborted) { try { controller.abort(); } catch (_) {} }
     else {
       onCallerAbort = () => { try { controller.abort(); } catch (_) {} };
-      opts.signal.addEventListener('abort', onCallerAbort);
+      opts.signal.addEventListener('abort', onCallerAbort, { once: true });
     }
   }
   let r;

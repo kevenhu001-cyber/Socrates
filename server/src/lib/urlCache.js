@@ -72,11 +72,23 @@ export function set(url, entry) {
   entry.fetchedAt = entry.fetchedAt || Date.now();
   _cache.set(url, entry);
   _totalBytes += bytes;
-  while (_totalBytes > MAX_BYTES && _cache.size > 1) {
-    const oldestKey = _cache.keys().next().value;
-    const oldest = _cache.get(oldestKey);
-    _totalBytes -= oldest.bytes;
-    _cache.delete(oldestKey);
+  // Evict oldest entries as needed.  We collect keys to remove in a
+  // single pass *before* mutating the map so we avoid repeatedly
+  // creating MapIterator objects inside the while condition.
+  if (_totalBytes > MAX_BYTES && _cache.size > 1) {
+    const targetBytes = MAX_BYTES;
+    let excess = _totalBytes - targetBytes;
+    const toEvict = [];
+    for (const [key, entry] of _cache) {
+      if (excess <= 0) break;
+      excess -= entry.bytes;
+      toEvict.push(key);
+    }
+    for (let i = 0; i < toEvict.length; i++) {
+      const k = toEvict[i];
+      _totalBytes -= _cache.get(k).bytes;
+      _cache.delete(k);
+    }
   }
 }
 
