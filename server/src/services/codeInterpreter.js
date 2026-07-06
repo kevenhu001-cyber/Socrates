@@ -478,6 +478,7 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
           interruptBuffer,
         });
       } catch (err) {
+        worker.off('message', onMessage);
         if (signal) signal.removeEventListener('abort', onAbort);
         slot._inflightReject = null;
         reject(err);

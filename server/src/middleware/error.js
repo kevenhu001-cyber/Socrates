@@ -2,6 +2,37 @@ import { ApiError } from '../lib/errors.js';
 import { safeUrl } from '../lib/log.js';
 
 /**
+ * Global request timeout middleware.
+ * Mounted early in the middleware chain so every route has a maximum
+ * execution time. When a request times out, the middleware sends a
+ * 504 response and aborts the downstream pipeline (no more middleware
+ * or route handlers run).
+ *
+ * The chat SSE endpoint (/api/chat/stream) has its own per-LLM-call
+ * AbortController with a longer timeout; this is a safety net for
+ * everything else (DB queries, file I/O, web fetches, etc.).
+ */
+export function timeoutMiddleware(req, res, next) {
+  const TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS || '120000', 10);
+  const timer = setTimeout(() => {
+    if (res.headersSent) {
+      /* Headers already sent — we can't change the status code, but
+       * destroying the socket still stops the downstream handler from
+       * consuming resources indefinitely. */
+      try { res.destroy(); } catch (_) {}
+      return;
+    }
+    res.status(504).json({
+      code: 'REQUEST_TIMEOUT',
+      message: 'Request timed out',
+    });
+  }, TIMEOUT_MS);
+  res.on('finish', () => { clearTimeout(timer); });
+  res.on('close', () => { clearTimeout(timer); });
+  next();
+}
+
+/**
  * Global error-handling middleware.
  * Must have 4 parameters (err, req, res, next) for Express to treat it
  * as an error handler rather than normal middleware.

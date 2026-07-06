@@ -1678,6 +1678,11 @@ a.sources-row:hover{color:hsl(var(--accent-100))}
 
 .think-content{padding:2px 10px 10px;font-size:calc(12.5px * var(--app-font-scale,1));line-height:1.6;color:hsl(var(--text-400));white-space:pre-wrap}
 
+/* Tool cards area inside think-block — collapses/expands with the
+   thinking block and appears after the reasoning text. */
+.think-tools{padding:2px 10px 10px}
+.think-tools .agent-tool-card{margin-top:4px}
+
 /* KaTeX dark theme overrides */
 .katex{font-size:1.05em}
 .katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0;margin:8px 0}
