@@ -178,6 +178,22 @@ var STATE_FLAT_TO_NS={
       target[prop]=value;
       return true;
     },
+    deleteProperty:function(target,prop){
+      if(typeof prop!=="string")return Reflect.deleteProperty(target,prop);
+      // Flat-namespace keys: resolve to the sub-namespace path and delete there.
+      if(Object.prototype.hasOwnProperty.call(STATE_FLAT_TO_NS,prop)){
+        var path=STATE_FLAT_TO_NS[prop].split(".");
+        var cur=state;
+        for(var i=0;i<path.length-1;i++){
+          if(cur[path[i]]==null)return true;
+          cur=cur[path[i]];
+        }
+        delete cur[path[path.length-1]];
+        return true;
+      }
+      // Unknown property — no-op (don't delete from root to preserve Proxy integrity).
+      return true;
+    },
     has:function(target,prop){
       if(typeof prop!=="string")return Reflect.has(target,prop);
       if(prop in target)return true;

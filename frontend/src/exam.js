@@ -142,6 +142,17 @@ function detectExamLang(topic) {
 export function startExamGeneration() {
   var topic = document.getElementById("examTopic").value.trim();
   if (!topic) { document.getElementById("examTopic").focus(); return; }
+  /* P_exam-noprovider — 생성 전에 활성 모델이 있는지 확인. 없으면 로딩만 보여주고 실패하는 것보다 여기서 바로 알림. */
+  var _activeProvider = typeof window.getActiveProvider === "function" ? window.getActiveProvider() : null;
+  if (!_activeProvider) {
+    var _lang = detectExamLang(topic);
+    var _msg = _lang === "Chinese" ? "请先在设置中添加并选择一个模型" : "Add and select a model in Settings first";
+    var body = _examBody();
+    if (body) body.innerHTML = '<div class="exam-empty" style="padding:40px;text-align:center;color:hsl(var(--text-500))">' + window.esc(_msg) + '</div>';
+    var footer = _examFooter();
+    if (footer) footer.innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + (_lang === "Chinese" ? "返回" : "Back") + '</button>';
+    return;
+  }
   var count = Math.max(1, Math.min(50, parseInt(document.getElementById("examCount").value, 10) || 5));
   var difficulty = document.getElementById("examDifficulty").value.trim() || "intermediate";
   var instructions = document.getElementById("examInstructions").value.trim() || "";
