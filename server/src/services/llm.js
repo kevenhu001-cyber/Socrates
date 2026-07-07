@@ -9,18 +9,15 @@
  *
  * LLM_TOTAL_TIMEOUT_MS — hard ceiling on the entire request. Reasoning
  *   models (DeepSeek R1, QwQ, MiniMax reasoning variants) routinely
- *   stream chain-of-thought for 2-4 minutes, then continue with the
- *   final answer. 120 s was too aggressive; bumped to 600 s so a long
- *   reasoning trace does not get cut off mid-stream.
+ *   stream chain-of-thought for 2-3 minutes, then continue with the
+ *   final answer. 180 s covers that while still failing fast on a
+ *   hung upstream.
  *
  * LLM_SILENCE_TIMEOUT_MS — separate watchdog that aborts the upstream
- *   fetch if NO bytes arrive for this many ms (i.e. the connection
- *   is genuinely stalled, not just thinking). Implemented as a
- *   setTimeout that we reset on every `reader.read()` returning
- *   data. This replaces the previous "fixed total timeout" which
- *   fired even on a healthy but slow stream. */
-const LLM_TOTAL_TIMEOUT_MS = 600_000;
-const LLM_SILENCE_TIMEOUT_MS = 120_000;
+ * fetch if NO bytes arrive for this many ms. Reset on every chunk so
+ * a healthy but slow stream (long thinking) never trips it. */
+const LLM_TOTAL_TIMEOUT_MS = 180_000;
+const LLM_SILENCE_TIMEOUT_MS = 60_000;
 
 /**
  * Stream a chat completion from an external LLM provider.
@@ -59,24 +56,18 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
   // budget, but the final answer can still run long.
   const effectiveMaxTokens = maxTokens || 32000;
 
-  // Merge external signal with the LLM total-timeout so a hung provider
-  // doesn't hold the request open forever. The silence watchdog below
-  // (reset on every chunk) catches stalls independently.
   const totalSignal = AbortSignal.timeout(LLM_TOTAL_TIMEOUT_MS);
-  const mergedSignal = signal
-    ? AbortSignal.any([signal, totalSignal])
-    : totalSignal;
-
+  const silenceController = new AbortController();
   let silenceTimer = null;
-  let silenceController = null;
   const armSilenceTimer = () => {
     if (silenceTimer) clearTimeout(silenceTimer);
-    silenceController = new AbortController();
     silenceTimer = setTimeout(() => {
       try { silenceController.abort('silence-timeout'); } catch { /* ignore */ }
     }, LLM_SILENCE_TIMEOUT_MS);
-    return silenceController.signal;
   };
+  const mergedSignal = signal
+    ? AbortSignal.any([signal, totalSignal, silenceController.signal])
+    : AbortSignal.any([totalSignal, silenceController.signal]);
 
   try {
     if (Array.isArray(tools) && tools.length > 0) {

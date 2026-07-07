@@ -648,7 +648,7 @@ router.post('/stream', chatLimiter, requireAuth, audit('chat:stream'), async (re
           clearInterval(heartbeat);
           console.error('[chat/stream] LLM error:', err.message);
           try {
-            res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+            res.write(`event: error\ndata: ${JSON.stringify({ error: err.message, message: err.message })}\n\n`);
             res.write('data: [DONE]\n\n');
             res.end();
           } catch { /* ignore */ }
