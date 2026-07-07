@@ -76,7 +76,7 @@ const __dirname = path.dirname(__filename);
 
 /* ─── Configuration (env-driven, defaults match .env.example) ─── */
 const EXEC_RUNNER = process.env.EXEC_RUNNER || 'pyodide';
-const POOL_SIZE = parseInt(process.env.EXEC_WORKER_POOL_SIZE || '2', 10);
+const POOL_SIZE = parseInt(process.env.EXEC_WORKER_POOL_SIZE || '1', 10);
 const PYODIDE_VERSION = process.env.EXEC_PYODIDE_VERSION || '0.26.4';
 const DEFAULT_TIMEOUT_MS = parseInt(process.env.EXEC_TIMEOUT_MS_DEFAULT || '30000', 10);
 const MAX_OUTPUT_BYTES = parseInt(process.env.EXEC_MAX_OUTPUT_BYTES || '65536', 10);
@@ -153,7 +153,7 @@ class WorkerSlot {
     const workerFile = path.join(__dirname, 'pyodideWorker.js');
     const w = new Worker(workerFile, {
       resourceLimits: {
-        maxOldGenerationSizeMb: 256,
+        maxOldGenerationSizeMb: 128,
         maxYoungGenerationSizeMb: 32,
       },
     });

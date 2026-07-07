@@ -23,8 +23,8 @@ export function initDb(databaseUrl) {
   const separator = databaseUrl.includes('?') ? '&' : '?';
   pool = new Pool({
     connectionString: `${databaseUrl}${separator}options=--statement_timeout%3D30000`,
-    max: 20,
-    min: 2,
+    max: 8,
+    min: 1,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
   });
