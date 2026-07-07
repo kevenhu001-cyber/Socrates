@@ -1045,6 +1045,13 @@ var _saveDirty=false;
    loadSession() is in progress could capture mismatched state
    (new session ID + old or partially-rebuilt messages). */
 var _loadingSession=false;
+/* P_stale-loadSession — tracks the most recently requested
+   loadSession target ID. When multiple loadSession() calls race
+   (user clicks several sessions in quick succession), the earlier
+   fetch may complete AFTER the later one and overwrite state with
+   stale data. We check this at the point where state would be
+   mutated and skip if another, newer load was already requested. */
+var _loadSessionId=null;
 /* P_delete-resurrect — every session id the user deleted in the
    current page load. doSave() refuses to POST any payload whose
    sessionId is in here, regardless of state.topic/state.session.
@@ -1366,9 +1373,21 @@ async function loadSession(id){
      loading. Event handlers that fire during the async loading window
      could otherwise capture mismatched state. */
   _loadingSession=true;
+  /* P_stale-loadSession — record the target id before the async
+     fetch. If another loadSession() call races ahead and completes
+     first, _loadSessionId will have moved past ours; we check
+     below and bail before touching state. */
+  _loadSessionId=id;
   try{
     var s=await apiFetch("/api/sessions/"+encodeURIComponent(id));
     ensureSessionShape(s);
+    /* P_stale-loadSession — if a newer loadSession() was already
+       requested while this fetch was in-flight, skip the stale
+       response so we don't overwrite the newer session's state. */
+    if(_loadSessionId!==id){
+      console.debug("[sessions] loadSession stale — skip",{completed:id, latest:_loadSessionId});
+      return;
+    }
     state.topic=s.topic;
     state.domain=s.domain;
     state.kbNodes=s.kbNodes||[];
@@ -1645,6 +1664,13 @@ async function loadSession(id){
     var sc=scrollContainer();
     sc.scrollTop=sc.scrollHeight;
   }catch(e){
+    /* P_stale-loadSession — if a newer loadSession was requested
+       while this one was in-flight, the error (if any) belongs to
+       the stale request; don't disrupt the newer session's state. */
+    if(_loadSessionId!==id){
+      console.debug("[sessions] loadSession error stale — skip",{failed:id, latest:_loadSessionId});
+      return;
+    }
     console.warn("[sessions] load failed:",e.message);
     showToast("Session not found or could not be loaded.");
     /* The URL had ?chat=<id> pointing to a session that doesn't exist
