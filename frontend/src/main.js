@@ -762,7 +762,7 @@ async function refreshServerSessions(){
      console.debug so they stay available under Verbose level without
      polluting the default console. */
   try{
-    var r=await apiFetch("/api/sessions");
+    var r=await apiFetch("/api/sessions?limit=200");
     SERVER_SESSIONS=Array.isArray(r&&r.sessions)?r.sessions:[];
     console.debug("[sessions] refreshServerSessions result",{count:SERVER_SESSIONS.length});
   }catch(e){console.warn("[sessions] refresh failed:",e.message)}
@@ -1254,6 +1254,23 @@ function doSave(){
     return refreshServerSessions();
   }).then(function(){renderRecents()}).catch(function(e){
     console.warn("[sessions] save failed:",e.message);
+    /* F1a — surface the save failure so the user knows their
+       conversation isn't being persisted. Without this the recent
+       list can silently lose new entries (Bug1). showToast lives at
+       main.js:5226 (signature: msg only); t() is window.t set by
+       i18n.js. The default 1800ms timeout is too short for an error
+       toast, so we re-implement a longer-lived variant inline. */
+    try{
+      var el=document.createElement("div");
+      el.className="msg-toast msg-toast-error";
+      el.textContent=t("sessions.save_failed","Save failed")+": "+e.message;
+      document.body.appendChild(el);
+      requestAnimationFrame(function(){el.classList.add("visible")});
+      setTimeout(function(){
+        el.classList.remove("visible");
+        setTimeout(function(){if(el&&el.parentNode)el.parentNode.removeChild(el)},300);
+      },5000);
+    }catch(_){}
   }).then(function(){
     /* Clear the in-flight flag BEFORE re-checking dirty so a
        queued save picks up the latest state (and the just-adopted
@@ -1351,6 +1368,51 @@ function paintRestoredQuestionCard(idx,q){
   }
 }
 
+/* F2c — clear every cross-round transient so a previous session's
+   web-search cache, call metadata, composer draft, plan fields, or
+   pending-chat payload cannot leak into the next one. Called from
+   loadSession() (server-driven switch) and startSession() (user
+   clicks Begin with a new topic). */
+function resetSessionTransients(s){
+  s.search.context=null;
+  s.search.results=[];
+  s.search.contextAt=0;
+  s.search.contextCount=0;
+  s.search.contextQuery=null;
+  s.search.error=null;
+  s.call.source=null;
+  s.call.error=null;
+  s.session.sessionTitle=null;
+  s.session.planTargetDate=null;
+  s.session.planDailyMinutes=30;
+  s.session.planWeeklyRestDays=[];
+  s.session.planStartedAt=null;
+  s.session.planLastWarnedAt=0;
+  try{var ci=document.getElementById("chatInputArea");if(ci){ci.value="";autoResize(ci);}}catch(_){}
+  try{updateSendBtn();}catch(_){}
+  try{if(window._pendingChatContent!==undefined)window._pendingChatContent=null;}catch(_){}
+  try{if(window._pendingAttachments!==undefined)window._pendingAttachments=null;}catch(_){}
+  /* F2a-ext — clear the active template so a slash-command template
+     (/quiz, /summarize, etc.) from the previous session doesn't
+     inject its systemPrompt into the new session's LLM call via
+     injectTemplateSystemPrompt (main.js:3910). The template is a
+     user-level tool, not a session-scoped state; resetting it on
+     session switch prevents the #1 cross-session context leak. */
+  try{if(typeof clearActiveTemplate==="function")clearActiveTemplate()}catch(_){}
+}
+
+/* F2d — write the active session id to every place it's mirrored
+   (state.currentSessionId, state.session.currentSessionId, window
+   mirror). The Proxy state.js already syncs the top-level ↔ namespace
+   via the lookup table, but the explicit triple-write keeps window
+   readers in lock-step and removes the four manual duplications
+   scattered through loadSession / startSession / resetState. */
+function setCurrentSessionId(id){
+  state.currentSessionId=id;
+  state.session.currentSessionId=id;
+  try{window._currentSessionId=id;}catch(_){}
+}
+
 async function loadSession(id){
   /* P_context-race — wait for any in-flight save to complete before
      switching sessions. Without this, doSave() captures the snapshot
@@ -1405,6 +1467,12 @@ async function loadSession(id){
     // state.currentSessionId = s.id; ← MOVED DOWN
     toggleShareBtn();
     state.mistakes=s.mistakes||[];
+    /* F2a — flush transients BEFORE setting sessionTitle so the
+       helper's reset (sessionTitle=null) can't race with the assignment
+       below. Order matters: resetSessionTransients clears
+       search/call/composer/plan, then this block restores sessionTitle
+       + teachingStage + plan fields from the loaded session. */
+    resetSessionTransients(state);
     state.sessionTitle=s.title||null;
     /* Update the URL to reflect the current chat session.
        MOVED DOWN — see comment above. */
@@ -1604,8 +1672,7 @@ async function loadSession(id){
        state.session.currentSessionId pointed to the new session but
        state.messages still held old data — any saveCurrentSession()
        firing in that window would cross-contaminate contexts. */
-    state.currentSessionId = s.id;
-    state.session.currentSessionId = s.id;
+    setCurrentSessionId(s.id);
     pushChatIdToURL(s.id);
     /* Mirror the server history into the localStorage cache so the
        next chat turn can read it via extractHistory() (fast path) instead
@@ -3178,12 +3245,12 @@ async function startSession(){
 
   /* User clicked Begin — this is when the session officially starts. */
   var newSessId=generateId();
-  state.currentSessionId=newSessId;
   /* P_dup-session — mirror into the namespaced field too so the
      first saveCurrentSession after Begin uses this id rather than
      re-generating its own (which the previous code did, creating
-     a duplicate session on the server). */
-  state.session.currentSessionId=newSessId;
+     a duplicate session on the server). setCurrentSessionId writes
+     to both fields + window mirror in one call. */
+  setCurrentSessionId(newSessId);
   pushChatIdToURL(state.currentSessionId);
   /* P_new-session-context-leak — startSession() must NOT inherit the
      previous session's message history. The Begin button calls
@@ -3205,6 +3272,12 @@ async function startSession(){
   state.session.stuckCheckOffered=false;
   state.session.stuckCheckRejected=0;
   state.session.fourOptionDialog=null;
+  /* F2b — flush cross-round transients (search cache, call metadata,
+     composer draft, plan fields, _pendingChat*). Placed BEFORE the
+     new-session abort so even if the abort fires during the helper,
+     we never carry the previous session's web-search result into the
+     new chat. */
+  resetSessionTransients(state);
   /* P_new-session-context-leak — also abort any in-flight stream from
      a previous session so its late onDelta/finish callbacks can't
      write into the freshly-cleared state.messages. */
@@ -4016,14 +4089,26 @@ function handleChatApiResult(result,ctl,userText){
     state.lastCallSource="api";
     ctl.finish();
   }else{
-    state.lastCallSource="mock";
-    if(state.lastCallError){
-      ctl.replaceWithError("No response: "+state.lastCallError,function(){
+    /* F3a — distinguish a deliberate stop click from a real stream
+       truncation. The previous "(no response — check your API
+       settings)" was misleading users with valid API keys and
+       sufficient balance; the actual cause is almost always a
+       stream abort (session switch / new-session / watchdog
+       timeout / browser-side fetch cancel). */
+    var reason=state.lastCallError||"stream interrupted before completion";
+    var isCancel=/cancel|user-stop|superseded|new-session|session-switch|session-deleted|session-purged|session-reset|msg-edit/i.test(reason);
+    if(isCancel){
+      state.lastCallSource="cancelled";
+      ctl.abort();
+    }else if(state.lastCallError){
+      state.lastCallSource="error";
+      ctl.replaceWithError("(response interrupted: "+reason+" — tap Retry to resume)",function(){
         askChatTurn(userText);
       });
     }else{
+      state.lastCallSource="error";
       ctl.abort();
-      addMessage("assistant","(no response — check your API settings)");
+      addMessage("assistant","(response interrupted: "+reason+" — tap Retry to resend)");
     }
   }
 }
@@ -9411,9 +9496,9 @@ function renderExamForm(){
   footer.innerHTML='<button class="exam-btn secondary" onclick="closeExamView()">'+t("common.cancel")+'</button><button class="exam-btn primary" onclick="startExamGeneration()">'+t("exam.generate")+'</button>';
 }
 function toggleExamType(type){
-  var btn=document.querySelector('.exam-type-pill[data-type="'+type+'"]');
+  var btn=document.querySelector('.exam-form-toggle-card[data-type="'+type+'"]');
   if(!btn)return;
-  var countActive=document.querySelectorAll('.exam-type-pill.active').length;
+  var countActive=document.querySelectorAll('.exam-form-toggle-card.active').length;
   if(btn.classList.contains("active")&&countActive<=1)return;
   btn.classList.toggle("active");
   _examSelectedTypes[type]=btn.classList.contains("active");
@@ -13262,9 +13347,6 @@ window.addProvider = addProvider;
 window.clearSettings = clearSettings;
 window.closeCmdK = closeCmdK;
 window.closeConfirm = closeConfirm;
-window.closeExamModal = closeExamModal;
-window.closeExamView = closeExamView;
-window.cancelExamGeneration = cancelExamGeneration;
 window.closeProfile = closeProfile;
 window.closeSettings = closeSettings;
 window.closeShareModal = closeShareModal;
@@ -13275,7 +13357,6 @@ window.confirmDeleteAccount = confirmDeleteAccount;
 window.copyShareLink = copyShareLink;
 window.createShareLink = createShareLink;
 window.openProfile = openProfile;
-window.startExamGeneration = startExamGeneration;
 window.openPromptTemplatesModal = openPromptTemplatesModal;
 window.openSettings = openSettings;
 window.openShareModal = openShareModal;
@@ -13316,9 +13397,6 @@ window.toggleProfileWebSearch = toggleProfileWebSearch;
 window.toggleSidebar = toggleSidebar;
 window.toggleTheme = toggleTheme;
 
-/* exam/quiz dynamic handlers */
-window.selectExamOpt = selectExamOpt;
-window.toggleExamType = toggleExamType;
 window.showUsageTip = showUsageTip;
 window.hideUsageTip = hideUsageTip;
 window.closeCheatsheet = closeCheatsheet;
@@ -13377,9 +13455,6 @@ window.addProvider = addProvider;
 window.clearSettings = clearSettings;
 window.closeCmdK = closeCmdK;
 window.closeConfirm = closeConfirm;
-window.closeExamModal = closeExamModal;
-window.closeExamView = closeExamView;
-window.cancelExamGeneration = cancelExamGeneration;
 window.closeProfile = closeProfile;
 window.closeSettings = closeSettings;
 window.closeShareModal = closeShareModal;
@@ -13397,7 +13472,6 @@ window.createShareLink = createShareLink;
 // window.openAgentView  = openAgentView;  // unimplemented
 // window.deleteAgentRun = deleteAgentRun; // unimplemented
 window.openProfile = openProfile;
-window.startExamGeneration = startExamGeneration;
 window.openPromptTemplatesModal = openPromptTemplatesModal;
 window.openSettings = openSettings;
 window.openShareModal = openShareModal;
@@ -13414,8 +13488,6 @@ window.syncSidebarBtns = syncSidebarBtns;
 window.toggleAPI = toggleAPI;
 window.toggleAppLang = toggleAppLang;
 window.toggleProfileWebSearch = toggleProfileWebSearch;
-window.selectExamOpt = selectExamOpt;
-window.toggleExamType = toggleExamType;
 window.closeProjectEditor = closeProjectEditor;
 window.closePromptTemplatesModal = closePromptTemplatesModal;
 window.closeStorageModal = closeStorageModal;
@@ -13444,12 +13516,10 @@ window.openPromptTemplateEditor = openPromptTemplateEditor;
 window.openTagEditor = openTagEditor;
 window.pickProjectColor = pickProjectColor;
 window.prevDiagQuestion = prevDiagQuestion;
-window.renderExamForm = renderExamForm;
 window.renderPromptTemplatesModal = renderPromptTemplatesModal;
 window.restoreSession = restoreSession;
 window.selectDiag = selectDiag;
 window.setActiveProvider = setActiveProvider;
-window.submitExam = submitExam;
 window.toggleKBDetail = toggleKBDetail;
 window.togglePinSession = togglePinSession;
 window.removeProvider = removeProvider;
@@ -13474,6 +13544,8 @@ window.getChatIdFromURL = getChatIdFromURL;
 window.setChatIdInURL = setChatIdInURL;
 window.syncSettingsUI = syncSettingsUI;
 window.toggleShareBtn = toggleShareBtn;
+window.pushChatIdToURL = pushChatIdToURL;
+window.toggleChatTopBarEls = toggleChatTopBarEls;
 /* Init UI sync — runs after window.apiConfig is set (above) so
    syncModelPills() can safely read the provider config. Moving
    this earlier would throw and halt the entire boot sequence. */
