@@ -437,8 +437,10 @@ function resetState(){
      at the deleted session, which (a) confused renderRecents about
      which row was active and (b) made the chat view briefly show
      stale content if any code path looked at the top-level field
-     instead of state.session.currentSessionId. */
-  try{if("currentSessionId" in state)state.currentSessionId=null}catch(_){}
+     instead of state.session.currentSessionId. setCurrentSessionId
+     lives in main.js to keep the helper co-located with the other
+     loadSession / startSession call sites that need it. */
+  try{if(typeof setCurrentSessionId==="function"){setCurrentSessionId(null)}else if("currentSessionId" in state){state.currentSessionId=null}}catch(_){}
 }
 /* Expose for modules that reference resetState via onclick handlers. */
 window.resetState = resetState;

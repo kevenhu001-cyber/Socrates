@@ -209,3 +209,41 @@ window.loadUsageData = loadUsageData;
 window.loadUsageMonth = loadUsageMonth;
 window.showUsageTip = showUsageTip;
 window.hideUsageTip = hideUsageTip;
+
+/* ─── render/helpers.js (esc alias) ─── */
+import { esc } from './render/helpers.js';
+window.esc = esc;
+
+/* ─── exam.js — Generate Exam extension ───
+   exam.js is a standalone module with its own imports (esc, formatMsg,
+   callAPI). It renders inline onclick="..." handlers that reference
+   functions on window.* — all of them must be bridged here. */
+import {
+  openExamModal, closeExamModal, closeExamView,
+  renderExamForm, toggleExamType,
+  startExamGeneration, cancelExamGeneration,
+  parseExamArrayJSON,
+  paintQuestionCard, replaceStreamingCardWithQuestion, appendExamErrorCard,
+  selectExamOpt,
+  examNavJump, examNavStep, refreshExamNavTally,
+  scheduleExamAnswerSave,
+  submitExam, renderExamResults,
+} from './exam.js';
+window.openExamModal = openExamModal;
+window.closeExamModal = closeExamModal;
+window.closeExamView = closeExamView;
+window.renderExamForm = renderExamForm;
+window.toggleExamType = toggleExamType;
+window.startExamGeneration = startExamGeneration;
+window.cancelExamGeneration = cancelExamGeneration;
+window.parseExamArrayJSON = parseExamArrayJSON;
+window.paintQuestionCard = paintQuestionCard;
+window.replaceStreamingCardWithQuestion = replaceStreamingCardWithQuestion;
+window.appendExamErrorCard = appendExamErrorCard;
+window.selectExamOpt = selectExamOpt;
+window.examNavJump = examNavJump;
+window.examNavStep = examNavStep;
+window.refreshExamNavTally = refreshExamNavTally;
+window.scheduleExamAnswerSave = scheduleExamAnswerSave;
+window.submitExam = submitExam;
+window.renderExamResults = renderExamResults;
