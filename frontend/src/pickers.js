@@ -6,6 +6,12 @@
 
 import { esc } from './render/helpers.js';
 
+/* P_init-sync — providers가 서버에서 로드되었는지 추적.
+   syncModelPills()가 providers=[] 상태에서 "Add a model"을 렌더링하지 않고
+   중립 상태를 표시하도록 함. refreshApiConfig()가 완료되면 true 설정. */
+var _providersFetched=false;
+function markProvidersFetched(){_providersFetched=true;}
+
 /* ── getActiveProvider — closely tied to model picker ── */
 function getActiveProvider(){
   if(!window.apiConfig||!window.apiConfig.activeId)return null;
@@ -19,6 +25,7 @@ function pickActiveProviderById(id){
   if(!id)return;
   window.setActiveProvider(id);
   closeModelPicker();
+  syncChatModel();
 }
 function toggleModelPicker(){
   var p=document.getElementById("modelPicker");
@@ -50,7 +57,17 @@ function syncModelPills(){
      (main.js exports it after calling syncModelPills during module
      init). Guard against undefined so a missing config doesn't blow
      up the entire boot sequence. */
+  /* P_init-sync — providers가 아직 로드되지 않았으면 중립 상태 표시.
+     "Add a model"은 서버 응답 후 진짜 빈 상태일 때만 노출. */
   var providers=(window.apiConfig&&window.apiConfig.providers)||[];
+  if(!_providersFetched && !providers.length){
+    label.textContent="Model";
+    label.title="";
+    trigger.classList.remove("has-model");
+    menu.innerHTML='<div class="model-picker-empty" style="opacity:0.5">Loading…</div>';
+    syncChatModel();
+    return;
+  }
   var active=providers.find(function(p){return p&&p.id===window.apiConfig.activeId});
   if(active){
     label.textContent=(active.label||active.model||"Model");
@@ -117,10 +134,6 @@ function syncChatModel(){
   if(!label)return;
   var trigger=document.getElementById("chatModel");
   var p=getActiveProvider();
-  if(!p && (window.apiConfig.providers||[]).length){
-    p=window.apiConfig.providers[0];
-    window.apiConfig.activeId=p.id;
-  }
   label.textContent=p?(p.label||p.model||"Model"):"Model";
   label.title=p&&!p.isBuiltIn?(p.model||""):"";
   if(trigger){
@@ -215,7 +228,20 @@ var EXTENSIONS=[
   {key:"webSearch",   name:"Web search",
    on:window.webSearchOn, onChange:function(v){window.webSearchOn=v;try{localStorage.setItem("socrates-websearch",JSON.stringify(window.webSearchOn))}catch(e){} syncExtensionsUI();}},
   {key:"tutorMode",   name:"Tutor mode",
-   on:window.appMode==="tutor", onChange:function(v){window.appMode=v?"tutor":"chat";try{localStorage.setItem("socrates-appmode",window.appMode)}catch(e){} window.syncAppModeUI(); window.syncSidebarForMode(); syncExtensionsUI();}},
+   on:window.appMode==="tutor", onChange:function(v){
+     /* P_tutor-toggle — Extensions 메뉴에서 Tutor 모드를 토글할 때
+        toggleAppMode()를 통해 세션 저장/확인 로직을 거치도록 함.
+        직접 appMode를 변경하면 진행 중인 세션 데이터가 손실됨. */
+     if(typeof window.toggleAppMode==="function"){
+       window.toggleAppMode();
+     }else{
+       window.appMode=v?"tutor":"chat";
+       try{localStorage.setItem("socrates-appmode",window.appMode)}catch(e){}
+       window.syncAppModeUI();
+       window.syncSidebarForMode();
+     }
+     syncExtensionsUI();
+   }},
   {key:"thinkingMode",name:"Show AI thinking",
    on:window.thinkingOn, onChange:function(v){window.thinkingOn=v;try{localStorage.setItem("socrates-thinking",JSON.stringify(window.thinkingOn))}catch(e){} syncExtensionsUI();}},
   {key:"exam",         name:"Generate exam",
@@ -346,5 +372,6 @@ export {
   closeExtensionsPicker,
   toggleWebSearch,
   syncWebSearchUI,
+  markProvidersFetched,
 };
 export { EXTENSIONS };

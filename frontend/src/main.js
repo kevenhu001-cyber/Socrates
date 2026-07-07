@@ -1,9 +1,28 @@
 /* ─── Module imports (Phase 2 split) ─── */
+/* Side-effect import: forces Vite/esbuild to keep windowExports.js
+   (which re-exposes ~75 inline-handler-needed functions on window)
+   in the bundle. Without this, esbuild's tree-shaking would drop
+   the file because main.js never references its named exports. */
+import './windowExports.js';
 import './state.js';
 import './i18n.js';
+import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
+import { scrollContainer, scrollToBottomIfPinned } from './ui/scroll.js';
+import { initSidebarDrag, onViewportResize } from './ui/sidebarResize.js';
+import { showNewReplyPill, hideNewReplyPill, wireScrollPill } from './ui/scrollPill.js';
+import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
+import { renderAttachmentChips, setupAttachmentInput } from './attachments/render.js';
+import {
+  STREAM_TIMEOUT_MS, STREAM_HEARTBEAT_MS, STREAM_MAX_ATTEMPTS, STREAM_RETRYABLE_STATUS,
+  offlineGuard, sleepBackoff, makeAIWatchdog,
+} from './chat/offline.js';
+import { openUsageModal, closeUsageModal, loadUsageData, loadUsageMonth, renderUsageHeatmap, showUsageTip, hideUsageTip } from './ui/usage.js';
+import { batchSetItem, batchRemoveItem } from './batchStorage.js';
+import { LOCAL_MEMORY_MAX, loadLocalMemory, appendLocalMemory, clearLocalMemory } from './storage/localMemory.js';
+import { formatTickSlice, formatMsgProgressive, formatMsg, stripMarkdown, findLastUserMessage } from './render/markdown.js';
+import { SOCRATIC_SYSTEM_PROMPT } from './prompts/socratic.js';
 import { esc, escAttr, escHTML } from './render/helpers.js';
 import { processPendingMermaid, renderViz, renderVizLoading, renderMermaid, openVizModal } from './render/viz.js';
-import { formatTickSlice, formatMsgProgressive, formatMsg } from './render/markdown.js';
 import { callAPI, callAPIChat } from './chat/api.js';
 import { callAPIStream } from './chat/stream.js';
 import { hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister, switchAuthTab, setAuthError, showAuthForgotPassword, showAuthCodeLogin, submitAuthSignin, submitAuthRegister, submitAuthVerify, submitAuthForgotPassword, submitAuthResetPassword, submitAuthSendCode, submitAuthLoginWithCode, resendVerification, resendAuthCode, afterAuthEnter } from './auth/index.js';
@@ -26,86 +45,19 @@ import {
   toggleWebSearch, syncWebSearchUI,
 } from './pickers.js';
 
-/* P_batch-storage — coalesce multiple localStorage writes within the
-   same microtask tick. During a chat turn, saveCurrentSession and
-   various settings toggles can fire 3-5 independent setItem calls.
-   Each one blocks the main thread for synchronous I/O; batching them
-   into a single write reduces cumulative latency. */
-var _batchStoragePending = null;
-function batchSetItem(key, value) {
-  if (!_batchStoragePending) {
-    _batchStoragePending = {};
-    queueMicrotask(function () {
-      var batch = _batchStoragePending;
-      _batchStoragePending = null;
-      for (var k in batch) {
-        try { localStorage.setItem(k, batch[k]); } catch (_) {}
-      }
-    });
-  }
-  _batchStoragePending[key] = value;
-}
-function batchRemoveItem(key) {
-  try { localStorage.removeItem(key); } catch (_) {}
-}
+/* P_batch-storage & localMemory — 已抽到 src/batchStorage.js 与
+   src/storage/localMemory.js(顶部 import)。 */
 
 /* ============================================================
    SIDEBAR
    ============================================================ */
 var sidebarOpen=true;
 
-/* P1.4 — scroll state lives on `state` so the value is scoped per
-   page-load and can be reset cleanly by `addStreamingMessage` on
-   each new bubble. The `newReplyPill` is a small "↓ new response"
-   affordance shown when the user has scrolled up and a new delta
-   arrives — clicking it scrolls to bottom and hides the pill. */
-function showNewReplyPill(){
-  var pill=document.getElementById("newReplyPill");
-  if(pill){pill.classList.add("visible")}
-}
-function hideNewReplyPill(){
-  var pill=document.getElementById("newReplyPill");
-  if(pill){pill.classList.remove("visible")}
-}
-
-/* Listen for manual scrolls: any wheel, touch, or keyboard scroll that
-   moves the user away from the bottom turns off auto-scroll. The flag
-   resets when the user sends a new message (in addStreamingMessage) or
-   scrolls back to bottom. */
-(function(){
-  var tmo=null;
-  var SCROLL_SLACK=64;
-  document.addEventListener("scroll",function(){
-    var sc=scrollContainer();
-    if(!sc)return;
-    var atBottom=sc.scrollHeight-sc.scrollTop-sc.clientHeight<=SCROLL_SLACK;
-    if(atBottom){
-      state._userScrolledAway=false;
-      hideNewReplyPill();
-    }else if(!state._userScrolledAway){
-      /* Debounce: only set _userScrolledAway once per scroll burst. */
-      if(!tmo){
-        state._userScrolledAway=true;
-        tmo=setTimeout(function(){tmo=null},300);
-      }
-    }
-  },true);  /* useCapture so we catch scroll on any child element */
-  /* Pill click handler — wire once, attached to the static element
-     rendered by index.html (or lazily created below). */
-  document.addEventListener("click",function(ev){
-    var t=ev.target;
-    while(t&&t!==document.body){
-      if(t.id==="newReplyPill"){
-        var sc=scrollContainer();
-        if(sc){sc.scrollTop=sc.scrollHeight}
-        state._userScrolledAway=false;
-        hideNewReplyPill();
-        return;
-      }
-      t=t.parentNode;
-    }
-  });
-})();
+/* P1.4 — showNewReplyPill / hideNewReplyPill + scroll listener
+   extracted to src/ui/scrollPill.js. wireScrollPill() registers
+   the global scroll + click listeners; main.js's addStreamingMessage
+   (and friends) call show/hide as needed. */
+wireScrollPill();
 
 /* ─── DISPLAY PREFERENCES — imported from displayPrefs.js ─── */
 /* (functions defined in src/displayPrefs.js — window exports below) */
@@ -493,118 +445,13 @@ function cycleActiveProject(){
    state.session.messages. Used by the Up-arrow-in-empty-input
    shortcut to pop the previous prompt back into the input
    for editing. */
-/* Strip markdown formatting symbols from text so the user sees clean
-   plain text when editing or resending a message. Removes **bold**,
-   *italic*, `code`, $math$, [links](url), # headings, > blockquotes,
-   and code fences — keeping only the visible content. */
-function stripMarkdown(s){
-  if(!s)return"";
-  return String(s)
-    /* Strip any HTML tags first — older server payloads sometimes
-       stored the rendered <p>foo</p> rather than the plain text.
-       Editing a user message must never expose raw <p>/<br>/etc. */
-    .replace(/<\/?[a-zA-Z][^>]*>/g,"")
-    .replace(/<!--[\s\S]*?-->/g,"")
-    .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g,"")
-    /* Remove fenced code blocks (```...``` or ~~~...~~~) */
-    .replace(/```[\s\S]*?```/g,"")
-    .replace(/~~~[\s\S]*?~~~/g,"")
-    /* Remove inline code and math: $...$, $$...$$, `...` */
-    .replace(/\$\$[^$]*\$\$/g,"")
-    .replace(/\$[^$]*\$/g,"")
-    .replace(/`[^`]*`/g,"")
-    /* Remove images: ![alt](url) */
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g,"$1")
-    /* Replace links: [text](url) → text */
-    .replace(/\[([^\]]*)\]\([^)]*\)/g,"$1")
-    /* Strip bold/italic markers */
-    .replace(/\*\*([^*]*)\*\*/g,"$1")
-    .replace(/__([^_]*)__/g,"$1")
-    .replace(/\*([^*]*)\*/g,"$1")
-    .replace(/_([^_]*)_/g,"$1")
-    /* Remove heading markers */
-    .replace(/^#{1,6}\s+/gm,"")
-    /* Remove blockquote markers */
-    .replace(/^>\s+/gm,"")
-    /* Remove horizontal rules */
-    .replace(/^[-*_]{3,}\s*$/gm,"")
-    /* Remove list markers (-, *, +, 1.) */
-    .replace(/^[-*+]\s+/gm,"")
-    .replace(/^\d+\.\s+/gm,"")
-    /* Collapse multiple newlines into one */
-    .replace(/\n{3,}/g,"\n\n")
-    .trim();
-}
+/* D 区段(stripMarkdown / findLastUserMessage) 已抽到 src/render/markdown.js,
+   顶部 import。 */
 
-function findLastUserMessage(){
-  var list=state.session.messages||[];
-  for(var i=list.length-1;i>=0;i--){
-    if(list[i].role==="user"&&list[i].rawText)return stripMarkdown(list[i].rawText);
-  }
-  return null;
-}
 
-/* P5.6 — open / close the shortcut cheatsheet modal. The
-   content is a small static table so the user can learn the
-   shortcuts without leaving the app. */
-function openCheatsheet(){
-  var overlay=document.getElementById("cheatsheetOverlay");
-  if(!overlay){
-    overlay=document.createElement("div");
-    overlay.id="cheatsheetOverlay";
-    overlay.className="cmd-k-overlay hidden";
-    overlay.onclick=function(ev){if(ev.target===overlay)closeCheatsheet()};
-    overlay.innerHTML='<div class="cmd-k-modal cheatsheet" onclick="event.stopPropagation()"></div>';
-    document.body.appendChild(overlay);
-  }
-  var body=overlay.querySelector(".cheatsheet");
-  body.innerHTML=
-    '<div class="project-editor-head">'+
-      '<span class="project-editor-title">Keyboard shortcuts</span>'+
-      '<button class="project-editor-close" onclick="closeCheatsheet()">×</button>'+
-    '</div>'+
-    '<div class="cheatsheet-body">'+
-      buildCheatsheetSection("Navigation",[
-        ["Open search",        ["⌘","K"]],
-        ["Toggle sidebar",     ["⌘","B"]],
-        ["Open settings",      ["⌘","."]],
-        ["New chat",           ["⌘","⇧","O"]],
-        ["Cycle project",      ["⌘","⇧","P"]]
-      ])+
-      buildCheatsheetSection("Sharing & search",[
-        ["Share current chat",["⌘","⇧","S"]],
-        ["Open project picker",["⌘","⇧","A"]]
-      ])+
-      buildCheatsheetSection("Toggles",[
-        ["Toggle theme",       ["⌘","⇧","T"]],
-        ["Toggle web search",  ["⌘","⇧","F"]],
-        ["Toggle thinking pill",["⌘","⇧","M"]]
-      ])+
-      buildCheatsheetSection("Composing",[
-        ["Send (alternative)", ["⌘","⏎"]],
-        ["Edit last prompt",   ["↑","(empty input)"]],
-        ["New line",           ["⇧","⏎"]]
-      ])+
-    '</div>';
-  overlay.classList.remove("hidden");
-}
-function buildCheatsheetSection(title,rows){
-  var html='<div class="cheatsheet-section"><div class="cmd-k-section-label">'+esc(title)+'</div>';
-  rows.forEach(function(row){
-    html+='<div class="cheatsheet-row">';
-    for(var i=0;i<row[1].length;i++){
-      html+='<kbd class="cheatsheet-kbd">'+esc(row[1][i])+'</kbd>';
-    }
-    html+='<span class="cheatsheet-desc">'+esc(row[0])+'</span>';
-    html+='</div>';
-  });
-  html+='</div>';
-  return html;
-}
-function closeCheatsheet(){
-  var overlay=document.getElementById("cheatsheetOverlay");
-  if(overlay)overlay.classList.add("hidden");
-}
+/* E 区段(openCheatsheet / buildCheatsheetSection / closeCheatsheet)已抽到
+   src/ui/cheatsheet.js,顶部 import。 window.closeCheatsheet = closeCheatsheet
+   仍由 main.js 末尾的 window.* 导出块承担,Phase B 会集中到 windowExports.js。 */
 /* Mobile only: tap anywhere outside the sidebar (and outside the toggle
    button) to close it. On desktop the user controls the sidebar with the
    toggle button / ⌘B, and closing it on a click-outside would be
@@ -687,28 +534,8 @@ function switchTab(tab){
 /* ============================================================
    TOPIC SETUP
    ============================================================ */
-function autoResize(el){
-  var maxH=el.id==="chatInputArea"?120:160;
-  el.style.height="auto";
-  el.style.height=Math.min(el.scrollHeight,maxH)+"px";
-}
-function updateStartBtn(){
-  var v=document.getElementById("topicInput").value.trim();
-  var b=document.getElementById("startBtn");
-  if(v)b.classList.add("active");else b.classList.remove("active");
-}
-function updateSendBtn(){
-  var v=document.getElementById("chatInputArea").value.trim();
-  var b=document.getElementById("sendBtn");
-  /* P_attachments — also light up the send button when there are
-   * pending attachments but no text yet. Otherwise the user can
-   * attach an image, leave the textarea empty, and the send button
-   * stays dim — they'll think their attach didn't register. */
-  var hasAtt = typeof window.attachments !== "undefined"
-    && Array.isArray(window.attachments)
-    && window.attachments.length > 0;
-  if(v || hasAtt) b.classList.add("active"); else b.classList.remove("active");
-}
+// autoResize / updateStartBtn / updateSendBtn extracted to
+// src/ui/topicSetup.js (Phase C-2.3).
 
 /* ============================================================
    P_ATTACHMENTS — chip strip + button + drag/drop
@@ -716,273 +543,19 @@ function updateSendBtn(){
    module-level state; we just mirror them into DOM here and wire
    the attach button + drag/drop listeners.
    ============================================================ */
+
+// renderAttachmentChips / setupAttachmentInput extracted to
+// src/attachments/render.js. The module auto-wires itself on
+// DOMContentLoaded (and on script load if DOM is already ready).
+// The attach button + drag/drop + paste handlers all live there now.
+
 import {
   attachments, addFiles, removeAttachment, resetAttachments,
   buildMessageContent, MAX_TOTAL_ATTACHMENTS,
 } from './attachments.js';
 
-// Expose the imported store on `window` so legacy code paths
-// (e.g. `window.updateSendBtn`) and the `attachBtn` handler can
-// reach it without juggling imports.
-window.attachments = attachments;
-window.removeAttachment = removeAttachment;
-window.buildMessageContent = buildMessageContent;
-
-/* Render the pending-attachment chip strip above the textarea.
- * Called after addFiles / removeAttachment / resetAttachments. */
-function renderAttachmentChips(){
-  var wrap=document.getElementById("attachmentChips");
-  if(!wrap)return;
-  // Clear previous chips.
-  while(wrap.firstChild) wrap.removeChild(wrap.firstChild);
-  if(!attachments.length){
-    wrap.classList.add("hidden");
-    return;
-  }
-  wrap.classList.remove("hidden");
-
-  attachments.forEach(function(a){
-    var chip=document.createElement("div");
-    chip.className="attachment-chip"+(a.error?" error":"");
-    chip.dataset.id=a.id;
-
-    if(a.kind==="image"&&a.dataUrl){
-      var img=document.createElement("img");
-      img.className="attachment-chip-thumb";
-      img.src=a.dataUrl;
-      img.alt=a.name||"";
-      chip.appendChild(img);
-    }else{
-      // File-type icon — generic doc glyph for text / pdf.
-      var icon=document.createElement("span");
-      icon.className="attachment-chip-icon";
-      icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
-      chip.appendChild(icon);
-    }
-
-    var name=document.createElement("span");
-    name.className="attachment-chip-name";
-    name.textContent=a.name||"file";
-    chip.appendChild(name);
-
-    if(a.truncated){
-      var meta=document.createElement("span");
-      meta.className="attachment-chip-meta";
-      meta.textContent="(truncated)";
-      chip.appendChild(meta);
-    }
-
-    var rm=document.createElement("button");
-    rm.type="button";
-    rm.className="attachment-chip-remove";
-    rm.setAttribute("aria-label","Remove attachment");
-    rm.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
-    rm.onclick=function(){
-      removeAttachment(a.id);
-      renderAttachmentChips();
-      if(typeof updateSendBtn==="function")updateSendBtn();
-    };
-    chip.appendChild(rm);
-
-    wrap.appendChild(chip);
-  });
-}
-window.renderAttachmentChips = renderAttachmentChips;
-
-/* Wire up the paperclip button → hidden <input type="file">, plus
- * drag-and-drop on the input wrap. Called once on boot. */
-function setupAttachmentInput(){
-  var btn=document.getElementById("attachBtn");
-  var input=document.getElementById("attachInput");
-  var wrap=document.getElementById("chatInputWrap");
-  var textarea=document.getElementById("chatInputArea");
-  if(!btn||!input||!wrap)return;
-
-  btn.onclick=function(){
-    /* Reset value first so re-selecting the same file fires `change`. */
-    input.value="";
-    input.click();
-  };
-  input.onchange=async function(){
-    if(!input.files||!input.files.length)return;
-    var res=await addFiles(input.files);
-    renderAttachmentChips();
-    if(typeof updateSendBtn==="function")updateSendBtn();
-    if(res.rejected&&res.rejected.length){
-      console.warn("[attachments] rejected:",res.rejected);
-      // Light up the button as an error indicator; the rejected
-      // reasons are also surfaced via console for the user to see.
-      btn.classList.add("has-error");
-      setTimeout(function(){btn.classList.remove("has-error");},1500);
-      /* P_attachments-multimodal — surface the rejection via toast
-       * too, so the user sees why the file wasn't added. If the
-       * reason is the multimodal gate, use the dedicated i18n key;
-       * otherwise fall back to the first rejected reason verbatim. */
-      var hasNonMm = res.rejected.some(function(r){return r.indexOf("not multimodal") === -1;});
-      if(!hasNonMm && res.rejected.length){
-        showToast((typeof t==="function"?t("attach.notMultimodal"):null)
-          || "The active model can't view images. Add a multimodal provider or remove image attachments.");
-      } else {
-        showToast(res.rejected[0]);
-      }
-    }
-  };
-
-  // Drag-and-drop: visual hint + accept drops on the input wrap.
-  ["dragenter","dragover"].forEach(function(evt){
-    wrap.addEventListener(evt,function(e){
-      e.preventDefault();e.stopPropagation();
-      wrap.classList.add("drag-over");
-    });
-  });
-  ["dragleave","drop"].forEach(function(evt){
-    wrap.addEventListener(evt,function(e){
-      e.preventDefault();e.stopPropagation();
-      wrap.classList.remove("drag-over");
-    });
-  });
-  wrap.addEventListener("drop",async function(e){
-    var dt=e.dataTransfer;
-    if(!dt||!dt.files||!dt.files.length)return;
-    var res=await addFiles(dt.files);
-    renderAttachmentChips();
-    if(typeof updateSendBtn==="function")updateSendBtn();
-    if(res.rejected&&res.rejected.length){
-      console.warn("[attachments] rejected:",res.rejected);
-      /* P_attachments-multimodal — same toast logic as the click
-       * path above: prefer the i18n-aware multimodal-gate message
-       * when every rejection is from the gate. */
-      var hasNonMm = res.rejected.some(function(r){return r.indexOf("not multimodal") === -1;});
-      if(!hasNonMm){
-        showToast((typeof t==="function"?t("attach.notMultimodal"):null)
-          || "The active model can't view images. Add a multimodal provider or remove image attachments.");
-      } else {
-        showToast(res.rejected[0]);
-      }
-    }
-  });
-
-  /* P_paste-attach — clipboard paste handler for the chat input.
-   * When the user pastes an image (e.g. screenshot from clipboard),
-   * intercept it and send through addFiles() instead of dropping raw
-   * base64 text into the textarea. Text-only pastes pass through
-   * unchanged. */
-  if(textarea){
-    textarea.addEventListener("paste",async function(e){
-      var items=e.clipboardData&&e.clipboardData.items;
-      if(!items||!items.length)return;
-      var files=[];
-      for(var i=0;i<items.length;i++){
-        var item=items[i];
-        if(item.kind==="file"&&item.getAsFile){
-          var f=item.getAsFile();
-          if(f)files.push(f);
-        }
-      }
-      if(!files.length)return;
-      e.preventDefault();
-      e.stopPropagation();
-      var res=await addFiles(files);
-      renderAttachmentChips();
-      if(typeof updateSendBtn==="function")updateSendBtn();
-      if(res.added>0){
-        showToast(res.added+" file"+(res.added>1?"s":"")+" pasted");
-      }
-      if(res.rejected&&res.rejected.length){
-        var hasNonMm2 = res.rejected.some(function(r){return r.indexOf("not multimodal") === -1;});
-        if(!hasNonMm2){
-          showToast((typeof t==="function"?t("attach.notMultimodal"):null)
-            || "The active model can't view images. Add a multimodal provider or remove image attachments.");
-        } else {
-          showToast(res.rejected[0]);
-        }
-      }
-    });
-  }
-
-  /* P_drag-drop-document — also accept file drag-and-drop on the full
-   * document body so dragging files from outside the browser onto the
-   * page shows visual feedback near the input bar. The wrap's own
-   * handlers above still fire for direct drops on the input bar. */
-  var docDragCount=0;
-  document.addEventListener("dragenter",function(e){
-    if(!e.dataTransfer||!e.dataTransfer.types)return;
-    var hasFile=false;
-    for(var di=0;di<e.dataTransfer.types.length;di++){
-      if(e.dataTransfer.types[di]==="Files"){hasFile=true;break}
-    }
-    if(!hasFile)return;
-    docDragCount++;
-    if(docDragCount===1){
-      wrap.classList.add("drag-over");
-      /* Also add a subtle backdrop hint. */
-      var hint=document.getElementById("chatInputBar");
-      if(hint)hint.classList.add("drag-over-doc");
-    }
-  });
-  document.addEventListener("dragleave",function(e){
-    if(!e.dataTransfer||!e.dataTransfer.types)return;
-    var hasFile=false;
-    for(var di=0;di<e.dataTransfer.types.length;di++){
-      if(e.dataTransfer.types[di]==="Files"){hasFile=true;break}
-    }
-    if(!hasFile)return;
-    docDragCount--;
-    if(docDragCount<=0){
-      docDragCount=0;
-      wrap.classList.remove("drag-over");
-      var hint=document.getElementById("chatInputBar");
-      if(hint)hint.classList.remove("drag-over-doc");
-    }
-  });
-  document.addEventListener("dragover",function(e){
-    /* Check if the drag carries files. */
-    if(!e.dataTransfer||!e.dataTransfer.types)return;
-    var hasFile=false;
-    for(var di=0;di<e.dataTransfer.types.length;di++){
-      if(e.dataTransfer.types[di]==="Files"){hasFile=true;break}
-    }
-    if(hasFile){e.preventDefault()}
-  });
-  document.addEventListener("drop",async function(e){
-    docDragCount=0;
-    wrap.classList.remove("drag-over");
-    var hint=document.getElementById("chatInputBar");
-    if(hint)hint.classList.remove("drag-over-doc");
-    /* If the drop target is inside the wrap, the wrap's own handler
-       already processed it — skip to avoid double-processing. */
-    if(wrap&&wrap.contains(e.target))return;
-    var dt=e.dataTransfer;
-    if(!dt||!dt.files||!dt.files.length)return;
-    e.preventDefault();
-    e.stopPropagation();
-    var res=await addFiles(dt.files);
-    renderAttachmentChips();
-    if(typeof updateSendBtn==="function")updateSendBtn();
-    if(res.rejected&&res.rejected.length){
-      var hasNonMm3 = res.rejected.some(function(r){return r.indexOf("not multimodal") === -1;});
-      if(!hasNonMm3){
-        showToast((typeof t==="function"?t("attach.notMultimodal"):null)
-          || "The active model can't view images. Add a multimodal provider or remove image attachments.");
-      } else {
-        showToast(res.rejected[0]);
-      }
-    }
-  });
-}
-window.setupAttachmentInput = setupAttachmentInput;
-
-/* Hook into module load — call once at boot. */
-if(typeof window!=="undefined"){
-  window.addEventListener("DOMContentLoaded",function(){
-    setupAttachmentInput();
-  });
-  /* If the script runs after DOMContentLoaded (Vite HMR or inline
-   * execution), still attempt to wire it. */
-  if(document.readyState!=="loading"){
-    setupAttachmentInput();
-  }
-}
+/* attachments bridge + renderAttachmentChips + setupAttachmentInput + DOMContentLoaded
+   moved to src/attachments/render.js (Phase C-2.4). */
 
 /* Scrollbar fade — hide msg-list scrollbar by default, show it
    during scroll and fade out after 1.5s of inactivity. */
@@ -1182,9 +755,16 @@ function getKnownTags(){
 }
 async function refreshServerSessions(){
   if(!CURRENT_USER)return[];
+  /* P_delbug-cleanup — the previous `console.warn("[DEL-BUG] ...")`
+     tracing logs (incl. a `new Error().stack` capture on every call)
+     were left over from a delete-flow debugging session and flooded
+     the console on every login / save / delete. Demoted to
+     console.debug so they stay available under Verbose level without
+     polluting the default console. */
   try{
     var r=await apiFetch("/api/sessions");
     SERVER_SESSIONS=Array.isArray(r&&r.sessions)?r.sessions:[];
+    console.debug("[sessions] refreshServerSessions result",{count:SERVER_SESSIONS.length});
   }catch(e){console.warn("[sessions] refresh failed:",e.message)}
   /* Recompute the sidebar project counts now that the session
      list is fresh. renderProjects reads SERVER_SESSIONS for the
@@ -1459,6 +1039,30 @@ function onCmdKKey(ev){
    the server adopted on the first response). */
 var _saveInFlight=null;
 var _saveDirty=false;
+/* P_delete-resurrect — every session id the user deleted in the
+   current page load. doSave() refuses to POST any payload whose
+   sessionId is in here, regardless of state.topic/state.session.
+   The server's POST /api/sessions is an UPSERT keyed by id, so
+   a stray POST carrying a "deleted" id would silently re-insert
+   the row — that's exactly the "deleted session comes back"
+   repro. We also drop the entry on a successful refresh after
+   deletion (in actuallyDeleteSession's then-callback) so the
+   guard doesn't permanently block re-saving a new session with
+   a coincidentally-similar id. */
+var _deletedIds=Object.create(null);
+function rememberDeletedSession(id){
+  if(!id)return;
+  _deletedIds[id]=Date.now();
+  /* Cap to last 50 so the set can't grow unbounded if some
+     pathological flow keeps deleting without clearing. */
+  var keys=Object.keys(_deletedIds);
+  if(keys.length>50){
+    keys.sort(function(a,b){return _deletedIds[a]-_deletedIds[b]});
+    var toDrop=keys.length-50;
+    for(var i=0;i<toDrop;i++)delete _deletedIds[keys[i]];
+  }
+}
+function forgetDeletedSession(id){delete _deletedIds[id]}
 function saveCurrentSession(){
   if(!state.topic)return;
   if(!CURRENT_USER)return; /* not signed in; do nothing */
@@ -1478,6 +1082,21 @@ function doSave(){
      Without this guard, deleting a session while a save is
      in-flight causes the queued doSave() to POST empty state
      to the server, creating a ghost session. */
+  /* P_delete-resurrect — refuse to POST a session the user has
+     already deleted on this page. The check fires BEFORE the
+     state.topic guard (which is the original guard) because a
+     session whose topic was retained after delete (e.g. the
+     "give it back so the user can re-create it" UX I'd half-
+     designed at one point) would otherwise bypass the topic
+     check and silently re-insert the deleted row. */
+  var sid=state.session.currentSessionId;
+  if(sid&&_deletedIds[sid]){
+    console.debug("[sessions] doSave BLOCKED — id was deleted",{sid,ageMs:Date.now()-_deletedIds[sid]});
+    _saveInFlight=null;
+    _saveDirty=false;
+    return;
+  }
+  console.debug("[sessions] doSave called",{topic:state.topic,cur:state.session.currentSessionId,_saveDirty,_saveInFlight:!!_saveInFlight});
   if(!state.topic)return;
   var now=Date.now();
   /* P1.1 — read from the authoritative state.messages list, NOT
@@ -2025,67 +1644,10 @@ async function loadSession(id){
 
 /* ============================================================
    CLIENT-SIDE CONVERSATION MEMORY
-   The server stores the rendered HTML of each message, but on a hard
-   refresh the assistant text can drift (formatting changes, code-block
-   re-render, etc.) and we lose the *raw* text we actually sent the
-   model. To keep the model grounded in what it has seen, we also keep
-   a localStorage copy of the last 200 plain-text messages per session.
-
-   - key:  socrates-memory-<sessionId>
-   - value: { topic, ts, messages:[{role, content}] }
-   - capacity: 200 messages / 1MB; older entries are dropped.
-   - If localStorage is full or unavailable, every write is silently
-     dropped — never throws.
+   K 区段(LOCAL_MEMORY_MAX / _memKey / loadLocalMemory /
+   appendLocalMemory / clearLocalMemory) 已抽到 src/storage/localMemory.js,
+   顶部 import。
    ============================================================ */
-var LOCAL_MEMORY_MAX=200;
-
-function _memKey(sid){return "socrates-memory-"+(sid||"default")}
-
-function loadLocalMemory(sid){
-  if(!sid)return null;
-  try{
-    var raw=localStorage.getItem(_memKey(sid));
-    if(!raw)return null;
-    var parsed=JSON.parse(raw);
-    if(!parsed||!Array.isArray(parsed.messages))return null;
-    return parsed;
-  }catch(e){
-    return null;
-  }
-}
-
-function appendLocalMemory(role,content){
-  var sid=state.currentSessionId;
-  if(!sid)return;
-  /* Skip "suggest" placeholders — they are UI, not dialogue. */
-  if(!content||(typeof content==="string"&&!content.trim()))return;
-  try{
-    var rec=loadLocalMemory(sid)||{topic:state.topic||"",ts:Date.now(),messages:[]};
-    rec.topic=state.topic||rec.topic;
-    rec.ts=Date.now();
-    rec.messages.push({role:role,content:String(content)});
-    if(rec.messages.length>LOCAL_MEMORY_MAX){
-      /* Keep the most recent LOCAL_MEMORY_MAX; drop the oldest 50% to
-         avoid trimming on every single message. */
-      rec.messages=rec.messages.slice(-LOCAL_MEMORY_MAX);
-    }
-    /* P_context-race — re-read the session ID right before writing to
-       localStorage. If the user switched sessions between the initial
-       `sid` read and this write, we'd be appending to the OLD session's
-       cache — the next load of the old session would show messages from
-       the new session. Re-reading ensures we write to the correct key. */
-    var currentSid=state.currentSessionId;
-    if(!currentSid||currentSid!==sid)return;
-    batchSetItem(_memKey(currentSid),JSON.stringify(rec));
-  }catch(e){
-    /* QuotaExceeded or private-mode: drop silently. */
-  }
-}
-
-function clearLocalMemory(sid){
-  if(!sid)return;
-  try{localStorage.removeItem(_memKey(sid))}catch(_){}
-}
 
 /* P4.1 — two-step delete to prevent accidental loss of a session.
    The user must press-and-hold the delete button for 600ms (mouse
@@ -2318,6 +1880,8 @@ function findServerSessionIndex(id){
 
 function actuallyDeleteSession(id,ev){
   if(!CURRENT_USER)return;
+  /* Helper declared first so the click-log below can read it. */
+  function inFlightId(){try{return _saveInFlight?"in-flight":null}catch(e){return null}}
   /* P_delete-stale-click — the trash button lives inside
      `.recent-item` which has onclick="loadSession(...)". Without
      stopping propagation here, clicking delete would ALSO trigger
@@ -2338,6 +1902,7 @@ function actuallyDeleteSession(id,ev){
      messages because the bounce never fired. Also cancel any
      in-flight chat stream so a half-written reply doesn't
      resurface after the delete. */
+  console.debug("[sessions] delete click",{id,cur:state.session.currentSessionId,sessCount:SERVER_SESSIONS.length,wasActive:state.session.currentSessionId===id||state.currentSessionId===id});
   var wasActive=state.session.currentSessionId===id||state.currentSessionId===id;
   if(wasActive){
     if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
@@ -2350,6 +1915,17 @@ function actuallyDeleteSession(id,ev){
   SERVER_SESSIONS=SERVER_SESSIONS.filter(function(s){return s.id!==id;});
   clearLocalMemory(id);
   renderRecents();
+  console.debug("[sessions] delete after local filter",{sessCount:SERVER_SESSIONS.length,id});
+  /* P_delete-resurrect — register this id with the doSave()
+     tombstone set BEFORE the network round-trip. Any POST that
+     arrives during the flight window, or any post-flight
+     `_saveDirty` cascade triggered by a streaming callback, will
+     see the tombstone and bail instead of re-inserting the row.
+     We register both the canonical id and any alias we may have
+     had for it (defence against the duplicate-session drift that
+     made state.session.currentSessionId / state.currentSessionId
+     disagree in past incidents). */
+  rememberDeletedSession(id);
   /* Single-step: server's DELETE /api/sessions/:id now deletes
      directly without requiring archive first. */
   apiFetch("/api/sessions/"+encodeURIComponent(id),{
@@ -2357,11 +1933,21 @@ function actuallyDeleteSession(id,ev){
     timeoutMs:8000
   }).then(function(){
     showToast("Session deleted");
+    console.debug("[sessions] DELETE 200",{id});
     /* P_delete-stale — if no sessions remain, make sure the
        chat view is hidden and the topic-setup is showing so the
        user lands on a clean "start a new conversation" surface
        instead of a blank / stale chat panel. */
     refreshServerSessions().then(function(){
+      console.debug("[sessions] delete after refreshServerSessions",{sessCount:SERVER_SESSIONS.length});
+      /* P_delete-resurrect — the server has now confirmed the
+         row is gone. From this point on, a streaming-callback
+         POST that happens to carry this same id is no longer
+         a "resurrection" risk (the row is genuinely deleted),
+         and the very next saveCurrentSession() that creates a
+         NEW session with a coincidentally-equivalent id would
+         be falsely blocked. Lift the tombstone. */
+      forgetDeletedSession(id);
       var remaining=getRecents().length;
       if(remaining===0){
         bounceOutOfArchivedSession();
@@ -2372,7 +1958,16 @@ function actuallyDeleteSession(id,ev){
   }).catch(function(err){
     console.warn("[delete] server sync failed:",err&&err.message);
     try{showToast("Delete failed: "+(err&&err.message||"server error")+" - refreshing.",4000)}catch(_){}
-    refreshServerSessions();
+    /* P_delete-resurrect — keep the tombstone on failure. The
+       local mirror no longer has the row (we filtered it at
+       t≈0) and the server claim is "404 / error", so any
+       pending POST is at best a useless retry and at worst a
+       resurrection. Lift it only after a refresh confirms the
+       server really is consistent. */
+    refreshServerSessions().then(function(){
+      var idx=findServerSessionIndex(id);
+      if(idx<0)forgetDeletedSession(id);
+    });
   });
 }
 
@@ -2675,7 +2270,6 @@ function getActiveProjectId(){return state.session.currentProjectId||null;}
    3-5x per chat turn) triggers 3-5 full list rebuilds, causing
    visible stutter with 20+ sessions. */
 var _renderRecentsPending = false;
-var _renderRecentsLastHTML = null;
 function renderRecents(){
   if (_renderRecentsPending) return;
   _renderRecentsPending = true;
@@ -3512,14 +3106,45 @@ async function startSession(){
      a duplicate session on the server). */
   state.session.currentSessionId=newSessId;
   pushChatIdToURL(state.currentSessionId);
+  /* P_new-session-context-leak — startSession() must NOT inherit the
+     previous session's message history. The Begin button calls
+     startSession() directly (no resetApp() in between when the user
+     just edits the topic input and clicks Begin again from the
+     topic-setup screen), so state.messages can still hold the prior
+     chat's turns. extractHistory() in askChatTurn() would then feed
+     the LLM the old conversation + the new topic, producing the
+     "AI kept answering along the old session's context" cross-talk.
+     Clear messages (and the diagnostic/teaching accumulators) here
+     so every startSession() begins from a clean slate regardless of
+     how we got here. The DOM msgList is cleared per-branch below. */
+  state.session.messages=[];
+  state.diagQuestions=[];
+  state.diagAnswers=[];
+  state.diagIndex=0;
+  state.substantiveCount=0;
+  state.stuckCount=0;
+  state.session.stuckCheckOffered=false;
+  state.session.stuckCheckRejected=0;
+  state.session.fourOptionDialog=null;
+  /* P_new-session-context-leak — also abort any in-flight stream from
+     a previous session so its late onDelta/finish callbacks can't
+     write into the freshly-cleared state.messages. */
+  if(window._activeChatAbort){try{window._activeChatAbort("new-session")}catch(_){}}
+  if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+  window._activeChatCtl=null;
+  window._activeChatAbort=null;
+  _chatStreaming=false;
+  _chatStopMode=false;
 
   /* Chat mode: skip diagnostic, KB, mistake book. Go straight to chat
      with a plain-conversation prompt. The first AI turn is a greeting
      so the user sees something without having to type. */
   if(appMode==="chat"){
+    /* P_crosstalk-diag — capture state at chat-mode session start. */
+    try{console.warn("[CTX-DIAG] startSession chat-mode",{msgCountBefore:Array.isArray(state.messages)?state.messages.length:-1,sid:state.session.currentSessionId,topic:state.topic})}catch(_){}
     state.kbNodes=[];
-    state.diagQuestions=[];state.diagAnswers=[];state.diagIndex=0;
-    state.substantiveCount=0;
+    /* diagQuestions/diagAnswers/diagIndex/substantiveCount already
+       cleared by the P_new-session-context-leak block above. */
     state.domain=state.topic;
     state.phase="chat";
     document.getElementById("topicSetup").classList.add("hidden");
@@ -4053,6 +3678,23 @@ async function askChatTurn(userText){
     return;
   }
   var history=extractHistory();
+  /* P_crosstalk-diag — temporary diagnostic for "new session inherits
+     old context" bug. Logs the history length, state.messages length,
+     current session id, and a short preview of each history entry so
+     we can see exactly where the stale context comes from. */
+  try{
+    console.warn("[CTX-DIAG] askChatTurn",{
+      sid:state.session.currentSessionId,
+      topic:state.topic,
+      msgCount:Array.isArray(state.messages)?state.messages.length:-1,
+      histLen:history?history.length:0,
+      histPreview:(history||[]).map(function(h,i){
+        var c=typeof h.content==="string"?h.content:(JSON.stringify(h.content)||"");
+        return i+":"+h.role+":"+c.slice(0,60);
+      }),
+      msgListKids:document.getElementById("msgList")?document.getElementById("msgList").children.length:-1
+    });
+  }catch(_){}
   /* The "user" message we feed the model: if the user just opened the
      chat and hasn't typed anything, synthesize a short opener so the
      model has something to greet them with. */
@@ -4153,6 +3795,22 @@ async function askChatTurn(userText){
   /* Unified streaming path with native tool-calling. The former
      legacy round-1 text-parsing branch was removed because it
      conflicted with the backend's function-calling tool interface. */
+  /* P_crosstalk-diag — log the FULL message array sent to the LLM so
+     we can see exactly what context the model receives. If the model
+     "continues an old session", the stale content must be in here.
+     Spread the preview as individual console.warn lines so they show
+     in the text output without needing to expand Array(2). */
+  try{
+    console.warn("[CTX-DIAG] callAPIStream msgs",{
+      sid:state.session.currentSessionId,
+      topic:state.topic,
+      msgsLen:msgs.length
+    });
+    for(var _di=0;_di<msgs.length;_di++){
+      var _mc=typeof msgs[_di].content==="string"?msgs[_di].content:(JSON.stringify(msgs[_di].content)||"");
+      console.warn("[CTX-DIAG]   msg["+_di+"] role="+msgs[_di].role+" content="+_mc.slice(0,300));
+    }
+  }catch(_){}
   var ctl=addStreamingMessage({onRetry:function(){askChatTurn(userText)}});
   var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)},{
     onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];ctl.recordToolUse(c)}},
@@ -6021,9 +5679,15 @@ var SEARCH_PROGRESS_LABELS = {
 };
 
 /* Tiny tr(key, vars) for the search-progress labels. Picks language
-   from state.locale; falls back to en for any missing key. */
+   from window._currentLang (the i18n.js source of truth, kept in sync
+   by setLang()); falls back to en for any missing key.
+   P_locale-ghost — previously this read `state.locale`, but that field
+   was never actually written anywhere (the only write site was a
+   `state.locale=null` in clearPerUserClientState, which just triggered
+   the state.js Proxy's "unknown flat key" warning). The real language
+   selector lives in i18n.js as `_currentLang` / `window._currentLang`. */
 function trSearchLabel(key, vars) {
-  var lang = (state && state.locale === 'zh') ? 'zh' : 'en';
+  var lang = (typeof window !== "undefined" && window._currentLang === 'zh') ? 'zh' : 'en';
   var labels = SEARCH_PROGRESS_LABELS[lang] || SEARCH_PROGRESS_LABELS.en;
   var tpl = labels[key] || (SEARCH_PROGRESS_LABELS.en[key] || key);
   if (!vars) return tpl;
@@ -6400,6 +6064,28 @@ function addStreamingMessage(opts){
      touching state. _disposed is sticky (no resurrection) so even if
      abort races with a late finish callback, the writes stay inert. */
   var _disposed=false;
+  /* P_session-cross-talk — capture the session identity at the moment
+     this streaming bubble is created (synchronously, before any await).
+     All async callbacks (onDelta / onThinking / doRender / finish /
+     recordToolUse ...) hold this closure; if the user switches sessions
+     mid-stream, state.session.currentSessionId flips to the new session
+     while the old stream's reader is still draining its SSE buffer.
+     _disposed blocks most late writes, but abort() and the natural
+     [DONE] frame can race: a finish() that already passed its _disposed
+     check, or an abort()'s splice, can still land on state.messages[msgIdx]
+     — and msgIdx is a numeric index that the new session may now reuse
+     for a different message. stillOwnsSlot() verifies BOTH that we're
+     still on the same session AND that the slot at msgIdx still holds
+     OUR placeholder (by clientId), so no cross-session pollution is
+     possible even in the race window. */
+  var ownerSessionId=state.session.currentSessionId||null;
+  function stillOwnsSlot(){
+    if(_disposed||finished)return false;
+    if(state.session.currentSessionId!==ownerSessionId)return false;
+    if(msgIdx<0||!state.messages[msgIdx])return false;
+    if(state.messages[msgIdx].clientId!==clientId)return false;
+    return true;
+  }
   var pendingRender=null;
   /* Thinking pill (for chat-mode reasoning_content). Lazily created on
      the first onThinking(delta) callback so we don't add a pill for
@@ -6895,8 +6581,12 @@ function teardownThinkStructure(){
     /* P1.1 — mirror rawText to state.messages so extractHistory
        and saveCurrentSession see the latest text. html is left
        null until finish() so the saved session never holds a
-       half-rendered string. */
-    if(msgIdx>=0&&state.messages[msgIdx]){
+       half-rendered string.
+       P_session-cross-talk — stillOwnsSlot() guards the write so a
+       late doRender (rAF queued before abort() but firing after a
+       session switch) can't smear the old stream's `full` into the
+       new session's messages[msgIdx]. */
+    if(stillOwnsSlot()){
       state.messages[msgIdx].rawText=full;
     }
     /* Only auto-scroll if the user has NOT manually scrolled away and
@@ -7078,8 +6768,11 @@ function teardownThinkStructure(){
     recordToolUse:function(call){
       /* P_session-stream-dispose — guard the public API so a late
          tool_use callback after abort() can't push a stale entry
-         into the new session's toolCalls array. */
-      if(_disposed)return null;
+         into the new session's toolCalls array.
+         P_session-cross-talk — also verify slot ownership so the
+         race window between abort() and a late tool_use frame can't
+         push into the new session's reused msgIdx slot. */
+      if(!stillOwnsSlot())return null;
       if(!call||!call.name)return null;
       /* P_tool_first_delta — when the LLM calls a tool before
          producing any text content, firstDelta is still true and
@@ -7133,15 +6826,18 @@ function teardownThinkStructure(){
       /* P_session-stream-dispose — same guard. Without this, a late
          progress chunk could find a toolCalls[i] entry that now
          belongs to the new session and mutate its executionId or
-         _pendingProgress, leaking old tool state across the boundary. */
-      if(_disposed)return;
+         _pendingProgress, leaking old tool state across the boundary.
+         P_session-cross-talk — stillOwnsSlot() also blocks the race
+         window where abort() hasn't fired yet but the session already
+         switched. */
+      if(!stillOwnsSlot())return;
       _toolProgressToCard(p);
     },
     recordExecutionStart:function(ev){
       /* P_session-stream-dispose — same guard; also avoids
          _connectExecutionSSE which opens a long-lived EventSource
          that would otherwise keep streaming after a session switch. */
-      if(_disposed)return;
+      if(!stillOwnsSlot())return;
       if(!ev||!ev.executionId||!ev.id)return;
       if(msgIdx>=0&&state.messages[msgIdx]&&Array.isArray(state.messages[msgIdx].toolCalls)){
         for(var ti=0;ti<state.messages[msgIdx].toolCalls.length;ti++){
@@ -7161,7 +6857,7 @@ function teardownThinkStructure(){
        entry is created so the result is still visible. */
     recordToolResult:function(result){
       /* P_session-stream-dispose — same guard as recordToolUse. */
-      if(_disposed)return;
+      if(!stillOwnsSlot())return;
       if(!result||!result.id)return;
       var out=null;
       var entry=null;
@@ -7266,8 +6962,13 @@ function teardownThinkStructure(){
          this check, late append() callbacks would push `full += delta`
          into a stream that no longer owns this `msgIdx` slot, then
          write the polluted text to state.messages[msgIdx].rawText
-         (which now belongs to the new session). */
-      if(finished||_disposed)return;
+         (which now belongs to the new session).
+         P_session-cross-talk — stillOwnsSlot() supersedes the bare
+         _disposed check: it also returns false when the session has
+         switched (state.session.currentSessionId !== ownerSessionId)
+         even if abort() hasn't propagated yet, closing the race
+         window where a delta lands between session-switch and abort. */
+      if(!stillOwnsSlot())return;
       var wasFirst=firstDelta;
       if(wasFirst){
         firstDelta=false;
@@ -7288,8 +6989,9 @@ function teardownThinkStructure(){
        reasoning_content). Routed to a thinking pill (rendered with
        Markdown/LaTeX) and only when the user has thinking mode on. */
     appendThinking:function(delta){
-      /* P_session-stream-dispose — same guard as append(). */
-      if(finished||_disposed)return;
+      /* P_session-stream-dispose — same guard as append().
+         P_session-cross-talk — stillOwnsSlot() closes the race window. */
+      if(!stillOwnsSlot())return;
       if(typeof delta==="string")fullReasoning+=delta;
       try{ensureThinkCtl().append(delta||"")}catch(_){}
     },
@@ -7307,6 +7009,32 @@ function teardownThinkStructure(){
          a stale write between finish()'s reads of `full` and the
          actual state.messages[msgIdx].html assignment. */
       if(_disposed)return;
+      /* P_session-cross-talk — verify slot ownership BEFORE flipping
+         _disposed/finished. If the user switched sessions while the
+         stream was wrapping up, the natural [DONE] frame would
+         otherwise: (1) write the old session's `full` into the new
+         session's state.messages[msgIdx].html, (2) call
+         saveCurrentSession() which persists the old answer under the
+         NEW session's id, and (3) appendLocalMemory("assistant", full)
+         polluting the new session's memory. Abandon silently instead.
+         We don't call abort() here because loadSession already called
+         it; we just refuse to commit the stale write. */
+      if(state.session.currentSessionId!==ownerSessionId
+         || msgIdx<0
+         || !state.messages[msgIdx]
+         || state.messages[msgIdx].clientId!==clientId){
+        finished=true;
+        _disposed=true;
+        /* Still tear down timers / SSE so nothing leaks. */
+        clearTimeout(firstDeltaTimer);
+        if(_elapsedTick)clearInterval(_elapsedTick);
+        if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
+        for(var esi2=0;esi2<_executionSSESources.length;esi2++){
+          try{_executionSSESources[esi2].close()}catch(_){}
+        }
+        _executionSSESources.length=0;
+        return;
+      }
       if(finished)return;
       finished=true;
       _disposed=true;
@@ -7576,8 +7304,14 @@ function teardownThinkStructure(){
       _executionSSESources.length=0;
       /* Clean up incomplete placeholder message from state.messages
        * to prevent saving empty/partial AI responses to the database.
-       * Only remove if still in streaming state with no content. */
-      if(msgIdx>=0&&state.messages[msgIdx]){
+       * Only remove if still in streaming state with no content.
+       * P_session-cross-talk — verify the slot still holds OUR placeholder
+       * (by clientId) before splicing. If the user switched sessions,
+       * state.messages was replaced and msgIdx now points at the new
+       * session's message — splicing here would delete the new session's
+       * message. The abandoned placeholder is harmless (it's not in the
+       * new session's array), so just skip the splice. */
+      if(msgIdx>=0&&state.messages[msgIdx]&&state.messages[msgIdx].clientId===clientId){
         if(state.messages[msgIdx].type==="streaming"&&!state.messages[msgIdx].rawText){
           state.messages.splice(msgIdx,1);
         }
@@ -9198,43 +8932,10 @@ function updateChatStats(){
    UTILS
    ============================================================ */
 
-/* The page's scrollable area is .msg-list (when chat/tutor is
-   active) or #mainContent (for the start screen, settings, etc.).
-   Return whichever is currently scrollable. This centralises the
-   "where do I scroll" question so we don't have to chase it every
-   time we add a new auto-scroll point. */
-function scrollContainer(){
-  var ml=document.getElementById("msgList");
-  if(ml&&ml.offsetParent!==null&&ml.scrollHeight>ml.clientHeight+2){
-    return ml;
-  }
-  return document.getElementById("mainContent");
-}
-
-/* If the chat scroller is currently pinned near the bottom, snap it
-   back to the new bottom after the next layout pass. Used after the
-   user changes font-size / content-width — otherwise the same
-   content recomputes to a larger/smaller height and the user's
-   visible window ends up somewhere in the middle of the list. */
-function scrollToBottomIfPinned(){
-  var sc=scrollContainer();
-  if(!sc)return;
-  var slack=80; /* pixels from bottom considered "pinned" */
-  var wasPinned=(sc.scrollHeight-sc.scrollTop-sc.clientHeight)<=slack;
-  /* Do the scroll on the next frame so the new font-size / width has
-     been applied to the layout. */
-  requestAnimationFrame(function(){
-    var sc2=scrollContainer();
-    if(!sc2)return;
-    if(wasPinned){
-      sc2.scrollTop=sc2.scrollHeight;
-    }else{
-      /* Even if not pinned, keep the relative position stable. */
-      var ratio=sc.scrollTop/Math.max(1,sc.scrollHeight-sc.clientHeight);
-      sc2.scrollTop=Math.round(ratio*(sc2.scrollHeight-sc2.clientHeight));
-    }
-  });
-}
+/* V 区段(scrollContainer / scrollToBottomIfPinned)已抽到 src/ui/scroll.js,
+   顶部 import。两个 ID fallback (#msgList + #mainContent) 是契约,
+   保留行为不变。 window.scrollContainer 仍由 main.js 末尾 window.* 桥接
+   (Phase B 接管)。 */
 
 /* Format just a prefix of the text — used during the typing
    animation to reveal one chunk at a time. The full formatMsg
@@ -9278,6 +8979,8 @@ async function resetApp(){
   _chatStopMode=false;
   _shareToken=null;
   resetState();
+  /* P_crosstalk-diag — confirm resetState actually cleared messages. */
+  try{console.warn("[CTX-DIAG] resetApp after resetState",{msgCount:Array.isArray(state.messages)?state.messages.length:-1,sid:state.session.currentSessionId,topic:state.session.topic})}catch(_){}
   /* P2.1 — preserve the project binding so a new chat in the
      same project keeps the user in their context. */
   state.session.currentProjectId=getActiveProjectId();
@@ -10314,201 +10017,7 @@ function renderExamResults(){
 }
 
 /* Usage modal — token heatmap & monthly breakdown. */
-function openUsageModal(){
-  document.getElementById("usageOverlay").classList.remove("hidden");
-  loadUsageData();
-}
-function closeUsageModal(){
-  document.getElementById("usageOverlay").classList.add("hidden");
-}
-function loadUsageData(){
-  var body=document.getElementById("usageBody");
-  body.innerHTML='<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> '+t("usage.loading")+'</div>';
-  Promise.all([
-    apiFetch("/api/usage/daily?days=365"),
-    apiFetch("/api/usage/limits"),
-  ]).then(function(results){
-    renderUsageHeatmap(results[0],body,results[1]);
-  }).catch(function(){
-    body.innerHTML='<div class="usage-loading" style="color:hsl(0 60% 55%)">'+t("usage.failed")+'</div>';
-  });
-}
-function renderUsageHeatmap(data,body,limits){
-  var entries=data.entries||[];
-  var lookup={};
-  var totalTokens=0,totalMsgs=0;
-  entries.forEach(function(e){
-    lookup[e.day]=e;
-    totalTokens+=parseInt(e.tokens,10)||0;
-    totalMsgs+=parseInt(e.messages,10)||0;
-  });
-  /* Compute max daily tokens for color scaling */
-  var maxDay=entries.reduce(function(m,e){return Math.max(m,parseInt(e.tokens,10)||0)},1);
-  function level(t){var v=parseInt(t,10)||0;if(v===0)return 0;var r=v/maxDay;return r>0.8?5:r>0.6?4:r>0.4?3:r>0.2?2:1;}
-
-  /* Build date grid for last 365 days (or up to today) */
-  var now=new Date();
-  var end=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  var start=new Date(end);start.setDate(start.getDate()-364);
-  /* Align start to Sunday */
-  var startDow=start.getDay();
-  start.setDate(start.getDate()-startDow);
-
-  var days=[];
-  var cursor=new Date(start);
-  while(cursor<=end){
-    days.push(new Date(cursor));
-    cursor.setDate(cursor.getDate()+1);
-  }
-
-  /* Build weeks array: array of 7-element arrays */
-  var weeks=[];
-  var curWeek=[];
-  days.forEach(function(d,y){
-    var key=d.toISOString().slice(0,10);
-    var e=lookup[key];
-    curWeek.push({date:key,tokens:e?parseInt(e.tokens,10):0,msgs:e?parseInt(e.messages,10):0,day:d.getDay()});
-    if(curWeek.length===7){weeks.push(curWeek);curWeek=[];}
-  });
-  if(curWeek.length){weeks.push(curWeek);}
-
-  /* Month labels */
-  var monthLabels=[];
-  var lastMth="";
-  weeks.forEach(function(w,i){
-    if(!w.length)return;
-    var d=new Date(w[0].date);
-    var mth=d.toLocaleDateString("en-US",{month:"short"});
-    if(mth!==lastMth){monthLabels.push({col:i,label:mth});lastMth=mth;}
-  });
-
-  /* Build HTML */
-  var html='';
-
-  /* Beagle monthly usage bar (only shown when usage > 0 or user is free tier) */
-  if(limits&&limits.beagleLimit){
-    var beagleUsed=parseInt(limits.beagleUsed,10)||0;
-    var beagleLimit=limits.beagleLimit;
-    var beaglePct=Math.min(100,Math.round(beagleUsed/beagleLimit*100));
-    var barColor=beaglePct>=90?'hsl(0 65% 55%)':beaglePct>=70?'hsl(35 80% 55%)':'hsl(var(--accent-000))';
-    html+='<div class="usage-beagle-section" style="margin-bottom:20px;padding:14px 16px;background:hsl(var(--bg-100));border-radius:10px">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
-    html+='<div style="font-size:calc(13px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-000))">Beagle Monthly Usage</div>';
-    html+='<div style="font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))">'+beagleUsed.toLocaleString()+' / '+beagleLimit.toLocaleString()+' tokens</div>';
-    html+='</div>';
-    html+='<div style="height:8px;background:hsl(var(--bg-300));border-radius:4px;overflow:hidden">';
-    html+='<div style="height:100%;width:'+beaglePct+'%;background:'+barColor+';border-radius:4px;transition:width .3s ease"></div>';
-    html+='</div>';
-    if(beaglePct>=100){
-      html+='<div style="margin-top:6px;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(0 65% 55%);font-weight:500">Limit reached. Add your own API key in Account → API Keys to continue using Beagle.</div>';
-    }else if(beaglePct>=80){
-      html+='<div style="margin-top:6px;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(35 80% 55%)">Approaching monthly limit ('+beaglePct+'% used).</div>';
-    }
-    html+='</div>';
-  }
-
-  /* Summary stats */
-  html+='<div class="usage-summary">';
-  html+='<div class="usage-stat"><div class="usage-stat-val">'+totalTokens.toLocaleString()+'</div><div class="usage-stat-lbl">Total tokens</div></div>';
-  html+='<div class="usage-stat"><div class="usage-stat-val">'+totalMsgs.toLocaleString()+'</div><div class="usage-stat-lbl">Messages</div></div>';
-  var dayCount=entries.length;
-  html+='<div class="usage-stat"><div class="usage-stat-val">'+(dayCount>0?Math.round(totalTokens/dayCount).toLocaleString():0)+'</div><div class="usage-stat-lbl">Avg tokens / active day</div></div>';
-  html+='<div class="usage-stat"><div class="usage-stat-val">'+(dayCount>0?Math.round(totalMsgs/dayCount).toLocaleString():0)+'</div><div class="usage-stat-lbl">Avg msgs / active day</div></div>';
-  html+='</div>';
-
-  /* Period tabs */
-  html+='<div class="usage-section-title">Daily Activity</div>';
-  html+='<div class="usage-period-tabs">';
-  html+='<button class="usage-period-tab active" onclick="loadUsageData()">Last 12 months</button>';
-  html+='<button class="usage-period-tab" onclick="loadUsageMonth()">This month</button>';
-  html+='</div>';
-
-  /* Heatmap grid */
-  html+='<div class="usage-calendar-wrap"><div class="usage-calendar">';
-
-  /* Day-of-week labels */
-  var dowLbl=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  weeks.forEach(function(w,wi){
-    /* Month label row for first week only */
-    if(wi===0){
-      html+='<div class="usage-cal-day-lbl"></div>';
-      var mthIdx=0;
-      for(var c=0;c<weeks.length;c++){
-        var lbl="";
-        if(mthIdx<monthLabels.length&&monthLabels[mthIdx].col===c){
-          lbl=monthLabels[mthIdx].label;mthIdx++;
-        }
-        html+='<div style="font-size:calc(8px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-align:center">'+lbl+'</div>';
-      }
-    }
-  });
-  /* Day rows */
-  for(var row=0;row<7;row++){
-    html+='<div class="usage-cal-day-lbl">'+dowLbl[row]+'</div>';
-    weeks.forEach(function(w){
-      if(row<w.length){
-        var d=w[row];
-        var lv=d.tokens>0?level(d.tokens):0;
-        html+='<div class="usage-cal-day lv'+lv+'" data-date="'+d.date+'" data-tokens="'+d.tokens+'" data-msgs="'+d.msgs+'" onmouseenter="showUsageTip(event)" onmouseleave="hideUsageTip()"></div>';
-      }else{
-        html+='<div></div>';
-      }
-    });
-  }
-
-  html+='</div></div>';
-
-  /* Legend */
-  html+='<div class="usage-legend">Less<div class="usage-legend-cell usage-cal-day lv0"></div><div class="usage-legend-cell usage-cal-day lv1"></div><div class="usage-legend-cell usage-cal-day lv2"></div><div class="usage-legend-cell usage-cal-day lv3"></div><div class="usage-legend-cell usage-cal-day lv4"></div><div class="usage-legend-cell usage-cal-day lv5"></div>More</div>';
-  html+='<div class="usage-tooltip" id="usageTooltip"></div>';
-
-  /* Monthly breakdown */
-  html+='<div class="usage-breakdown"><div class="usage-section-title">Monthly Summary</div><table><thead><tr><th>Month</th><th>Days active</th><th>Tokens</th><th>Messages</th></tr></thead><tbody>';
-  var monthMap={};
-  entries.forEach(function(e){
-    var m=e.day.slice(0,7);
-    if(!monthMap[m])monthMap[m]={days:{},tokens:0,msgs:0};
-    monthMap[m].days[e.day]=true;
-    monthMap[m].tokens+=parseInt(e.tokens,10)||0;
-    monthMap[m].msgs+=parseInt(e.messages,10)||0;
-  });
-  var mKeys=Object.keys(monthMap).sort().reverse();
-  mKeys.forEach(function(m){
-    var d=new Date(m+"-01");
-    var lbl=d.toLocaleDateString("en-US",{year:"numeric",month:"long"});
-    var mm=monthMap[m];
-    html+='<tr><td>'+lbl+'</td><td>'+Object.keys(mm.days).length+'</td><td>'+mm.tokens.toLocaleString()+'</td><td>'+mm.msgs.toLocaleString()+'</td></tr>';
-  });
-  html+='</tbody></table></div>';
-
-  body.innerHTML=html;
-}
-function showUsageTip(ev){
-  var el=ev.currentTarget;
-  var tip=document.getElementById("usageTooltip");
-  if(!tip){tip=document.createElement("div");tip.id="usageTooltip";tip.className="usage-tooltip";document.body.appendChild(tip);}
-  var date=el.dataset.date;
-  var tokens=parseInt(el.dataset.tokens,10)||0;
-  var msgs=parseInt(el.dataset.msgs,10)||0;
-  tip.innerHTML='<strong>'+date+'</strong> — '+tokens.toLocaleString()+' tokens, '+msgs+' messages';
-  tip.style.display="block";
-  var rect=el.getBoundingClientRect();
-  tip.style.left=Math.min(rect.left+rect.width/2-tip.offsetWidth/2,window.innerWidth-tip.offsetWidth-10)+"px";
-  tip.style.top=(rect.top-tip.offsetHeight-6)+"px";
-}
-function hideUsageTip(){var tip=document.getElementById("usageTooltip");if(tip)tip.style.display="none";}
-function loadUsageMonth(){
-  var body=document.getElementById("usageBody");
-  body.innerHTML='<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> '+t("usage.loading")+'</div>';
-  Promise.all([
-    apiFetch("/api/usage/daily?days=31"),
-    apiFetch("/api/usage/limits"),
-  ]).then(function(results){
-    renderUsageHeatmap(results[0],body,results[1]);
-  }).catch(function(){
-    body.innerHTML='<div class="usage-loading" style="color:hsl(0 60% 55%)">'+t("usage.failedGeneric")+'</div>';
-  });
-}
+/* Usage modal — openUsageModal / closeUsageModal / loadUsageData / loadUsageMonth / renderUsageHeatmap / showUsageTip / hideUsageTip — extracted to src/ui/usage.js (Phase C-3.5). */
 
 /* P2.3 — Storage modal. Lists archived sessions with the
    days-remaining countdown, plus a Restore / Delete-forever
@@ -10910,7 +10419,11 @@ function clearPerUserClientState(){
   try{_geoInfo={country:"",region:"",city:"",tz:""}}catch(_){}
   try{_geoFetched=false}catch(_){}
   try{if(window._pendingChatContent!==undefined)window._pendingChatContent=null}catch(_){}
-  try{if(window.state)window.state.locale=null}catch(_){}
+  /* P_locale-ghost — `state.locale` was never a real field (the real
+     language selector is window._currentLang, managed by i18n.js).
+     The previous `window.state.locale=null` here only triggered the
+     state.js Proxy's "unknown flat key, setting on root: locale"
+     warning on every signin / user switch. Removed. */
   /* Persisted caches. */
   try{localStorage.removeItem("socrates-sessions-v2")}catch(_){}
   try{localStorage.removeItem("socrates-api")}catch(_){}
@@ -11458,6 +10971,15 @@ async function refreshApiConfig(){
     /* Mutate in place — see comment above the apiConfig export. */
     apiConfig.activeId=null;
     apiConfig.providers=[];
+    /* P_init-sync — even on the empty/no-user path, the picker must
+       escape the "Loading…" holding pattern. Otherwise syncModelPills
+       (which is gated on _providersFetched) keeps showing the loading
+       placeholder forever, leaving the user with no signal that they
+       need to add a model. Mark fetched so the next syncModelPills()
+       shows the genuine "Add a model" empty state. */
+    try{typeof window.markProvidersFetched==="function"&&window.markProvidersFetched()}catch(_){}
+    try{syncModelPills()}catch(_){}
+    try{renderProviderList()}catch(_){}
     return apiConfig;
   }
   try{
@@ -11474,7 +10996,8 @@ async function refreshApiConfig(){
     /* Filter out any stale Beagle providers that were registered server-side
        by a previous version of the code — the built-in BEAGLE_BUILT_IN
        constant handles Beagle now via the nginx reverse proxy. */
-    rows=rows.filter(function(p){return p.label!==BEAGLE_BUILT_IN.label});
+    /* P_beagle-dedup — label 대신 id로 필터링하여 서버 label이 다를 때 중복 등록 방지 */
+    rows=rows.filter(function(p){return p.id!==BEAGLE_BUILT_IN.id});
     /* Mutate in place — see comment above the apiConfig export. */
     apiConfig.activeId=null;
     apiConfig.providers=rows.map(function(p){
@@ -11529,12 +11052,27 @@ async function refreshApiConfig(){
     }
   }catch(e){
     console.warn("[api-key] refresh failed:",e.message);
-    /* /api/api-key failed (cold-boot race, network blip). Don't
-       auto-pick a fallback model — that would silently route the
-       user's Tutor / chat through a provider they never chose.
-       Leave activeId as-is; the user can still pick one in Settings. */
+    if(!apiConfig.providers.length && !apiConfig.providers.some(function(p){return p.isBuiltIn||p.id==="beagle-built-in"})){
+      apiConfig.providers.push(Object.assign({},BEAGLE_BUILT_IN));
+    }
   }
   console.log("[refreshApiConfig] EXIT, providers.length=", apiConfig.providers.length, "activeId=", apiConfig.activeId, "list:", apiConfig.providers.map(function(p){return p.label;}));
+  /* P_picker-stale — after refreshing providers, force-sync the model
+     picker UI. Without this, the picker still shows "Add a model" /
+     "Pick a model" from the boot-time syncModelPills() call that ran
+     BEFORE refreshApiConfig populated the list. The afterAuthEnter
+     boot chain ALSO calls syncModelPills, but other refresh paths
+     (Settings "Add provider" form onSubmit, the /api/api-key POST
+     response, the settings-clear handler, sign-out → sign-in cycle
+     where the user keeps the same tab) never call afterAuthEnter and
+     would silently leave the picker stale. One source of truth for
+     "after refresh, the UI matches the cache". */
+  /* P_init-sync — providers가 처음 로드되었음을 표시하여 syncModelPills가
+     더 이상 "Loading…" 중립 상태 대신 실제 데이터를 표시하도록 함. */
+  try{typeof window.markProvidersFetched==="function"&&window.markProvidersFetched()}catch(_){}
+  try{syncModelPills()}catch(e){console.warn("[refreshApiConfig] syncModelPills threw:",e&&e.message)}
+  try{renderProviderList()}catch(e){console.warn("[refreshApiConfig] renderProviderList threw:",e&&e.message)}
+  try{syncChatModel&&syncChatModel()}catch(e){console.warn("[refreshApiConfig] syncChatModel threw:",e&&e.message)}
   return apiConfig;
 }
 
@@ -11553,10 +11091,7 @@ function isReasoningProvider(){
 
 function hasUsableActive(){
   var p=getActiveProvider();
-  /* The key itself lives on the server, so we just need to know there is
-     a selected provider with a model. The server will reject the call if
-     the key is missing. */
-  return!!(p&&p.model);
+  return !!(p && p.model && (p.isBuiltIn || p.hasKey));
 }
 
 /* ============================================================
@@ -12714,12 +12249,12 @@ function setActiveProvider(id){
       apiFetch("/api/api-key/"+encodeURIComponent(p.id),{method:"PATCH",body:{isActive:false}}).catch(function(){});
     });
     apiConfig.providers.forEach(function(p){p.isActive=(p.id===id)});
-    renderProviderList();syncModelPills();syncSettingsUI();
+    renderProviderList();syncModelPills();syncSettingsUI();syncChatModel();
     return;
   }
   apiFetch("/api/api-key/"+encodeURIComponent(id),{method:"PATCH",body:{isActive:true}}).then(function(){
     apiConfig.providers.forEach(function(p){p.isActive=(p.id===id)});
-    renderProviderList();syncModelPills();syncSettingsUI();
+    renderProviderList();syncModelPills();syncSettingsUI();syncChatModel();
   }).catch(function(e){console.warn("[api-key] set active failed:",e.message)});
 }
 
@@ -13097,9 +12632,7 @@ You have access to tools (web_search, code_interpreter) that the system provides
 
 - When the user shares a URL, the system prepends a [Referenced page] block. Use it as your source. Cite inline with [1], [2] matching the order of referenced pages. End with sources in the format [1] Title (URL).`;
 
-/* Tutor mode: the long textbook-style Socratic prompt. */
-var SOCRATIC_SYSTEM_PROMPT = "You are Socrates, a rigorous textbook author and patient tutor. Your explanations must read like a chapter from a first-rate textbook in the student's own language — **systematic, logically progressive, precise in language, and thorough in foundation-building**. Every topic should be presented as part of a coherent knowledge system, not as isolated facts. Your teaching proceeds in a natural flow — Motivate → Define → Develop → Illustrate → Exercise — but you do NOT follow a fixed heading template; adapt the structure to the content.\n\n## LANGUAGE RULE — match the student's language\n\nDetect the language the student is using. If the student's topic, question, or conversation is in Chinese, respond entirely in Chinese using the same textbook rigor and structure described below. If the student writes in English, respond in English. If the student writes in another language, respond in that language. Never switch language mid-explanation, and never mix languages in your output. All pedagogical components — definitions, worked examples, practice problems, quizzes, flashcards — must be in the same language as the exposition.\n\nThe core requirement is that the student receives a first-rate textbook-quality explanation **in their own language**, adapted to that language's academic register. For Chinese, this means using formal written Chinese (书面语), proper technical terminology, and a rigorous textbook cadence appropriate to Chinese academic writing.\n\n---\n## CORE PRINCIPLES — how to think like a textbook author\n\n**1. Coherent Knowledge System — every concept connects.**\n- Every new concept MUST be explicitly connected to what the student already knows from this lesson. Start each section with a brief sentence linking back: \"Building on our understanding of X, we now turn to Y.\"\n- Create a narrative arc across the lesson. The sub-topics are not independent — they are chapters of a book. Show how each piece fits into the larger picture.\n- After teaching a concept, briefly foreshadow what comes next and why: \"This property of X will become essential when we later discuss Y.\"\n- End each topic with a **takeaway sentence** that sums up what was learned and how it connects to the next topic.\n\n**2. Layer by Layer — from foundation to summit.**\n- Start from the absolute foundation. Even if the student claims familiarity, begin with the core definition and build up. Do NOT assume prior knowledge.\n- Each layer MUST be firmly established before moving to the next. A layer is established when you have: defined it → illustrated it with an example → checked understanding.\n- Progression: concrete → abstract → general. Start with specific numeric instances, then generalize to abstract forms, then state the general theorem or formula.\n- Do NOT jump to advanced applications before the foundation is solid. The learner should feel like each step is a natural, inevitable next step.\n\n**3. No Shortcuts on Fundamentals.**\n- The first example for any concept should be **deliberately simple** — so simple it feels obvious. This is not wasted time; this is anchoring intuition.\n- Before introducing a formula or theorem, spend a paragraph explaining **why it makes sense intuitively**. Use a concrete numeric case first, then generalize.\n- Common pitfalls and edge cases should be introduced AFTER the basic understanding is secured — not before.\n- If a concept has prerequisites, briefly review or reference them before proceeding.\n\n**4. Textbook Formal Register — precise academic language in the student's language.**\n- Use formal, precise academic language in whatever language the student is using. Avoid conversational fillers and casual expressions. Write in the formal register appropriate to that language (e.g., for Chinese, use 书面语 with proper 术语; for English, avoid contractions and colloquialisms).\n- Be rigorous in your statements: be specific and technically precise rather than vague.\n- For Chinese: use 我们 throughout for the shared learning journey (我们考虑..., 我们得到..., 因此我们可以得出...). Use the present tense for mathematical truth. Use standard Chinese textbook terminology (定义, 定理, 证明, 例, 练习). Use classical Chinese academic connectors: 因此, 反之, 特别地, 一般地, 例如, 另一方面, 由此可见, 注意到, 换言之, 进而, 故.\n- For English: use the first-person plural (\"we\") throughout. Use the present tense for mathematical truth. Use transitional phrases: \"Therefore...\", \"Conversely...\", \"In particular...\", \"More generally...\", \"As a concrete illustration...\", \"On the other hand...\", \"It follows that...\", \"Observe that...\", \"Hence...\".\n- Definitions must be stated in standard textbook form. Bold the term being defined.\n- Theorems, lemmas, and properties should be clearly labeled in the language of instruction.\n- Number important equations for reference (write the number manually after the equation).\n- Use the **Definition → Theorem → Proof → Example → Exercise** cadence that characterizes rigorous textbooks, regardless of language.\n- **Punctuation is restrained.** Reach for periods, commas, semicolons, and parentheses. The em dash (Unicode U+2014) and the en dash (Unicode U+2013) are forbidden in your prose output — replace a clause break with a new sentence or parentheses, replace a parenthetical with a comma pair or parentheses, replace a range (1990 to 2000) with \"to\" or a hyphen. The colon is acceptable inside technical notation, math, code, file paths, and LaTeX, but in running prose the colon almost always reads as a small announcement (\"here is what I am about to say\") instead of letting the next sentence stand on its own — restructure so the same content flows without the colon. A serious textbook does not lean on dashes or colons to organize its prose.\n\n---\n## EXPLANATION STRUCTURE — flowing, but thorough\n\nDo NOT force every explanation into rigid section headings. Instead, write a flowing exposition that covers these phases seamlessly:\n\n1. **Motivation & Context (Introduction)** — Set the stage. Frame the problem this concept solves. Connect to previously learned material. Address the question: Why should the student care? What question does this concept answer? What gap does it fill? 2-4 paragraphs.\n\n2. **Precise Development (Definition &amp; Derivation)** — Develop the concept step by step. Define every new term with textbook precision. Show derivations in full detail — do not skip algebraic steps. Include small inline examples after each sub-idea, not as separate sections but as immediate illustrations. Go deeper into implications, edge cases, and connections. This is the main body should span **at least 8-20 verbose paragraphs** for a typical lesson and should run substantially longer for a deep topic — see the DESCRIPTIVE &amp; THOROUGH DEPTH section below, which sets the real floor at roughly 1500 words of running prose. The paragraph count above is a minimum, not a target.\n\n3. **Consolidation (Summary &amp; Transition)** — End the exposition with 1-2 paragraphs that consolidate what was learned, restate the key result, and explicitly connect to the next topic: \"Having established X, we are now ready to explore Y.\"\n\n---\n## DESCRIPTIVE &amp; THOROUGH DEPTH — the most important rule in this prompt\n\nThis section overrides the temptation toward brevity that the model otherwise gravitates to. Read it carefully and treat every bullet as non-negotiable.\n\n**1. Verbosity floor for every response.** A short response is a failed response. The exposition must be **verbose by default** in the sense that every claim is unpacked, every definition is followed by its intuition, every formula is followed by what each symbol contributes, and every step of a derivation is followed by a sentence of plain-language explanation of what the algebra just did. Aim for an answer that a serious undergraduate textbook chapter would devote 4-6 printed pages to. If you find yourself below roughly 1500 words of prose in the main exposition, you have not yet written enough — keep going.\n\n**2. Density requirement — explain what the words mean.** Every paragraph must do real descriptive work, not just announce a topic. A paragraph that consists of a single declarative sentence and then a blank line is **explicitly forbidden**; so is a bullet list of one-line items with no prose around it. Each paragraph should be 4-8 sentences in its language of exposition (Chinese academic prose is denser than English — for Chinese, 3-5 sentences of 书面语 per paragraph is the equivalent). The point is that the student reading the paragraph comes away knowing more about the world than they did going in.\n\n**3. Render every technical term.** The first time you use a term in the lesson, spend a full sentence defining it in plain words (then bold the term itself). Do not assume the student has met it before. Do not refer to a concept by name without first unpacking the intuition behind it. A reader who knows nothing about the topic should be able to follow the exposition by reading it straight through.\n\n**4. Show the worked intuition, not just the math.** For every definition, give a concrete numeric example immediately afterward and walk through what each step produces. For every theorem or identity, state in words what is being claimed before presenting the formula. For every formula, narrate (in prose) what each symbol on the page is doing — what it represents, why it appears there, what would change if it were omitted. Never let the math stand alone without a paragraph of plain-language interpretation around it.\n\n**5. Make connections explicit.** Each new idea should be tied back to the previous idea with a sentence of context, and each derivation step should be linked to the next with a sentence of motivation. The chapter reads as a continuous stream of reasoning, not as a stack of unrelated pieces. When a result has multiple consequences, spell them out — do not just list them. When a step in a derivation resembles an earlier step, say so out loud so the student can see the structural similarity.\n\n**6. Comparisons, contrasts, edge cases.** For any new concept, briefly contrast it with the closest related concept the student already knows (e.g. \"this differs from X in that ... while sharing the property that ...\"). Surface the common pitfall or boundary case explicitly and explain why it is a pitfall rather than just warning that it exists.\n\n**7. Length is not the same as verbosity.** The model sometimes writes a paragraph that fills a page by repeating the same idea with synonyms. That is not the goal. The goal is a paragraph that contains new information per sentence — new concrete content, a new example, a new nuance — so that re-reading the paragraph a second time teaches the student something they did not catch the first time. Quantity follows quality.\n\n**8. Worked examples must also be verbose.** Solutions are not \"apply formula, get answer.\" Each step is preceded or followed by a sentence explaining why we are doing this step, what alternative we could have taken, and how this step interacts with the earlier derivation. A multi-step solution should look more like a paragraph of running reasoning than like a sequence of equation-only lines.\n\n**9. The skip-is-failure rule.** If you find yourself about to skip an algebraic step with \"it is easy to verify that ...\" or \"by a standard calculation ...\", STOP and instead write out the skipped step explicitly. The reader of this prompt is a student; the model is not allowed to play the role of an expert who can skip the work. The cost of explicitness is a few extra sentences; the cost of skipping is that the student cannot follow.\n\n**10. Self-check before finalizing.** Before you produce the final response, mentally scan it for any sentence that does not add explanatory content. Either expand it into a fuller explanation or remove it entirely. A response with fewer but denser paragraphs is better than a response that pads length with redundant phrasings — but it is much worse than the opposite failure (a response that hits the word count by leaving gaps the student cannot fill on their own).\n\n---\n## PARAGRAPH CRAFT — how to write each paragraph\n\n- Every paragraph should make ONE clear point. The first sentence states the claim (the topic sentence); the rest of the paragraph develops and supports it with reasoning, examples, or details.\n- After every definition or abstract statement, immediately give a concrete instance: \"For example, if X = 3, then...\"\n- Use inline math $...$ for symbols and short expressions within sentences. Use display math $$...$$ for important formulas, derivations, and multi-line expressions.\n- CRITICAL LaTeX rules — violation causes SILENT rendering failure (the formula disappears entirely, no error shown):\n  • Use ONLY lowercase commands (`\\\\sum`, `\\\\frac`, `\\\\infty`, `\\\\displaystyle`, `\\\\pm`, `\\\\le`, `\\\\ge`, `\\\\ne`, `\\\\to`, `\\\\alpha`, `\\\\beta`, `\\\\gamma`, `\\\\theta`, `\\\\lambda`, `\\\\pi`, `\\\\phi`, `\\\\omega`). NEVER use uppercase (`\\\\SUM`, `\\\\FRAC`, `\\\\INFTY`).\n  • Do NOT use `\\\\begin{align}`, `\\\\begin{equation}`, `\\\\begin{eqnarray}`, `\\\\begin{multline}`, or `\\\\begin{gather}` — KaTeX does NOT support them. Use `\\\\begin{aligned}` inside `$$...$$` for multi-line equations instead.\n  • Do NOT use `\\\\label{...}`, `\\\\ref{...}`, `\\\\eqref{...}`, `\\\\pageref{...}`, or `\\\\tag{...}` — KaTeX has no cross-reference system. Write equation numbers manually as plain text, e.g. `$$ ... \\\\qquad (1) $$`.\n  • Use `$...$` for inline math and `$$...$$` for display math. Do NOT use `\\\\(...\\\\)` or `\\\\[...\\\\]` as delimiters — they are NOT supported.\n  • Use `\\\\mathbf{...}` for bold math, NOT `\\\\bm{...}`.\n  • Use `\\\\cdot` for multiplication dot, NEVER `\\\\cdotp`.\n  • For cases, use `\\\\begin{cases} ... \\\\end{cases}` only. Do NOT use `\\\\begin{dcases}`, `\\\\begin{rcases}`, or `\\\\begin{dcases*}`.\n  • Use `\\\\text{...}` for plain text inside math. Keep `\\\\text` content short — complex multi-word text may overflow.\n  • NEVER emit `\\\\ce{...}`, `\\\\pu{...}`, or other mhchem/chemformula extensions — they are not loaded.\n  • Always escape literal special characters in text: use `\\\\%` for percent, `\\\\$` for dollar sign, `\\\\_` for underscore in text mode. Unescaped `_` causes a subscript error.\n  • For matrices, use `\\\\begin{matrix}`, `\\\\begin{pmatrix}`, `\\\\begin{bmatrix}`, `\\\\begin{vmatrix}` individually. Do NOT nest them inside align environments.\n  • For integrals: `\\\\int`, `\\\\iint`, `\\\\iiint`, `\\\\oint` are all supported individually with `_{lower}^{upper}` for bounds.\n  • For spacing: use `\\\\,` (thin), `\\\\:` (medium), `\\\\;` (thick), `\\\\quad`, `\\\\qquad`. Do NOT use `\\\\hspace` or `\\\\kern` with absolute units.\n- For diagrams (flowcharts, sequence diagrams, class diagrams, etc.), use ```mermaid code blocks instead of ASCII art — they render as live SVG.\n- When introducing a new term, **bold** it and define it in the same sentence: \"A **derivative** measures the instantaneous rate of change of a function.\"\n- Use precise, formal language at all times. This is a textbook.\n\n---\n## WORKED EXAMPLES — 2-3, with clear progression\n\nAfter the explanation, present 2-3 worked examples. This is MANDATORY — the examples are where the student truly learns.\n\n**Example 1 — Foundation.** A basic, straightforward application. The purpose is to show the concept working in its simplest form. Make each step explicit: \"Step 1: Identify X. Step 2: Apply formula Y. Step 3: Compute...\" Explain the reasoning behind each step, not just the algebra.\n\n**Example 2 — Application.** Requires combining multiple ideas. Less hand-holding; more reliance on the foundation built in Example 1. The solution should note where it builds on Example 1.\n\n**Example 3 (optional)** — Extension. An edge case, a non-standard application, or a problem that requires strategic thinking.\n\nFormat:\n<example><title>Example 1: [descriptive title]</title><problem>the problem statement</problem><solution>step-by-step solution with $$...$$ for math. Explain each step's reasoning.</solution></example>\n\n---\n## PRACTICE PROBLEM — challenging, requires transfer\n\nGive ONE practice problem. It MUST be harder than the examples — it should require adapting the concepts to a new context, not just applying the same steps.\n\n<practice><title>Practice</title><problem>the problem — must require transfer, not mimicry</problem><hint>optional hint (1-2 sentences)</hint></practice>\n\nThe student types their attempt into the practice widget inline and submits; their answer is sent to you as the next user turn so you can grade it. If the problem has a single canonical answer and self-grading is reasonable, you MAY also include `correct=\"...\"` on the opening tag — when present, the widget shows a Reveal-answer button and self-grades the typed attempt (case-insensitive, ignoring trailing punctuation); if not present, only the typed attempt is sent and you grade in your next reply. Do NOT include the answer in the prose either way.\n\n## VOCABULARY — formal terms\n\nWhen introducing a new formal term the student should remember, emit it inside a definition card so it stands out from the prose:\n\n<definition><term>Term name</term><body>the formal definition, 1-3 sentences, in the same register as the surrounding exposition</body></definition>\n\nUse sparingly — only when the term itself is worth committing to long-term memory. Do NOT use for ordinary words or for terms already defined earlier in this lesson.\n\n## PROCEDURE — multi-step algorithms\n\nWhen a procedure is genuinely sequential and the order matters (long division, integral setup, proof techniques), emit each step as a numbered step block. Adjacent <step> blocks are merged into a single numbered list at render time.\n\n<step n=\"1\">first action</step>\n<step n=\"2\">second action</step>\n<step n=\"3\">third action</step>\n\nUse only when the procedure is genuinely a recipe the student should follow. Do NOT use for prose explanations or for steps that have no clear linear order.\n\n## FLASHCARD — atomic recall\n\nFor a single, atomic fact or definition that benefits from spaced repetition (a named theorem, a historical date, a vocabulary pairing), emit a flashcard:\n\n<flashcard><front>Question or prompt</front><back>Concise answer</back></flashcard>\n\nThe student clicks the card to reveal the answer. Use sparingly — one or two per lesson is plenty. Do NOT use for multi-step explanations.\n\n---\n## CHECKING UNDERSTANDING — optional quiz\n\nYou MAY optionally include a multiple-choice quiz after the explanation (before examples). Use when the concept has a common point of confusion worth testing immediately:\n\n<quiz><q>question</q><options><o letter=\"A\">option</o><o letter=\"B\">option</o><o letter=\"C\">option</o></options><correct>B</correct></quiz>\n\n3 options only. Distractors should be plausible misconceptions.\n\n---\n## RESPONDING TO THE STUDENT\n\nWhen the student attempts the practice problem:\n- **Correct** → affirm concisely, then present the next sub-topic as a natural progression.\n- **Partially correct** → point out exactly which part needs work. Let them try once more.\n- **Wrong** → walk through the correct approach, highlighting where their reasoning went off. Give a similar practice problem. Append:\n  <mistake type=\"practice\" correct=\"...the key insight the student missed...\"></mistake>\n\n---\n## MATH BOOK SCAFFOLDS \u2014 theorem / proof / key-point / derivation\n\n**MANDATORY SCAFFOLD USAGE \u2014 non-negotiable.** Do NOT use markdown headings (`## \u5b9a\u7406`, `## \u5b9a\u4e49`, `## \u4f8b`), bold text (`**\u5b9a\u7406:**`) or plain prose paragraphs to structure a math response. Markdown headings are NOT rendered as styled cards in the UI. Every structural element MUST be emitted as one of the scaffold tags below or it will NOT appear as a card. Plan your response as a sequence of `<tag>...</tag>` blocks from the start of drafting, then connect them with brief prose paragraphs (NOT a section heading).\n\nFor any lesson that contains a theorem, formula, definition, or example, the response MUST contain at least one of these tags:\n- `<theorem>...</theorem>` for any named result, inequality, or identity.\n- `<definition>...</definition>` for any new formal term you introduce.\n- `<example>...</example>` for worked examples.\n- `<practice>...</practice>` for the mandatory practice problem.\n- `<key-point>...</key-point>` for ONE memorable formula or warning.\n- `<proof>...</proof>` (or a `<proof>` child inside `<theorem>`) for any claim.\n- `<derivation>...</derivation>` for multi-line algebra.\n- `<quiz>...</quiz>` for one short check (optional, max one per turn).\n- `<flashcard>...</flashcard>` for one memorable fact (optional).\n- `<step n=\"...\">...</step>` for any recipe / multi-step procedure.\n\n**Markdown headings are FORBIDDEN for structure.** `## \u5b9a\u7406` collapses to plain text and looks identical to surrounding prose in the rendered UI. Same for `**\u5b9a\u4e49:**` bold text. Always emit the tag instead. If you write prose without a tag and the content would have been a theorem / definition / example, go back and wrap it.\n\n**Templates:**\n\n`<theorem>` \u2014 formal result, usually with a name or number:\n`<theorem><title>Theorem 1 (Cauchy\u2013Schwarz)</title><statement>For all vectors $u, v$ in an inner product space, $$\abs{\inner{u}{v}} \le \norm{u}\,\norm{v}. $$</statement><proof>The proof is by expanding $\norm{u - t v}^2 \ge 0$ for all real $t$ and minimizing over $t$, which yields the quadratic discriminant $\inner{u}{v}^2 - \norm{u}^2 \norm{v}^2 \le 0$. Hence the stated inequality.</proof></theorem>`\n\n`<proof>` \u2014 standalone short argument block:\n`<proof><title>Proof sketch</title><body>We start from $\d f = 0$ at an extremum ... $$\nabla f(x_0) = 0.$$ The converse direction requires a strict local convexity assumption.</body></proof>`\n\n`<key-point>` \u2014 single boxed emphasis:\n`<key-point>Watch out: the identity $$\sum_{i=1}^{n} i = \frac{n(n+1)}{2}$$ only holds for $n \ge 1$.</key-point>`\n\n`<derivation>` \u2014 multi-line worked algebra:\n`<derivation><title>Deriving the quadratic formula</title><body>Starting from $a x^2 + b x + c = 0$, complete the square:\n  $a x^2 + b x = -c$\n  $x^2 + \frac{b}{a} x = -\frac{c}{a}$\n  $\left( x + \frac{b}{2a} \right)^2 = \frac{b^2 - 4ac}{4a^2}$\n  $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$</body></derivation>`\n\n**Usage rules:**\n- One theorem and/or one proof per turn is plenty. A short derivation is fine; do not chain three derivations in one response.\n- Use `<key-point>` sparingly \u2014 one or two per lesson. Reserve for genuinely memorable formulas or warnings.\n- Prefer `<derivation>` over a plain multi-line `$$...$$` block when the work has more than 3 lines of algebra.\n\n**Useful KaTeX shorthands** (already enabled): `\norm{x}` for $\|x\|$, `\abs{x}` for $|x|$, `\inner{u}{v}` for $\langle u, v \rangle$, `\R` `\N` `\Z` `\Q` `\C` for the standard number sets, `\d` `\e` `\i` for differentials / Euler / imaginary unit, `\O` for big-O, `\iff` for $\Leftrightarrow$, `\st` for s.t.\n\n---\n## ABSOLUTE ANTI-PATTERNS\n\n- Do NOT switch languages mid-lesson or mix languages. Every element — explanation, examples, practice, quiz — must be in the same language.\n- Do NOT use a language different from what the student is using. Match their language from the first response.\n- Do NOT write short, shallow explanations. 8-20 paragraphs is normal for a thorough exposition, and for a non-trivial lesson the main body should run well above that — the DESCRIPTIVE &amp; THOROUGH DEPTH section above is the binding floor, not a soft suggestion\n\n- Do NOT produce one-sentence-per-paragraph explanations. A paragraph that is a single declarative sentence followed by a blank line is not a paragraph, it is a sign post — and a textbook does not use sign posts in place of exposition. Each paragraph carries the full unpacking of its claim.\n\n- Do NOT skip derivation steps, leave algebraic manipulations as \"it can be verified that ...\" or \"the rest follows by routine algebra\". Write every skipped step out — the reader is a student, and skipping is the most common way a textbook becomes unreadable.\n- Do NOT give fewer than 2 worked examples. Examples are where real learning happens.\n- Do NOT skip the foundation example (Example 1). Even if it seems too simple.\n- Do NOT make practice trivially solvable by copying an example. Require transfer.\n- Do NOT use casual or conversational language. Write in formal, precise textbook register.\n- Do NOT skip the motivation phase. Context and purpose are essential.\n- Do NOT present concepts in isolation. Every new idea must connect to the previous one.\n- Do NOT jump to advanced topics before the foundation is solidified.\n- Do NOT repeat explanations from the chat history.\n- Do NOT ask or present multiple questions in a single response. Each turn should ask at most one quiz, one practice problem, or one check. Never bundle two or more questions in the same message. — build on what you've already taught.\n- Do NOT use \"you\" to address the student directly in explanatory text (use \"we\" instead). Reserve \"you\" for exercises and quiz questions.\n- Do NOT use emojis anywhere in your output — not in text, headings, examples, definitions, quiz options, or practice problems. This is a formal textbook. Web search results may contain emojis in their titles or snippets; ignore them entirely and never reproduce or mimic them.\n- Do NOT use the em dash character (Unicode U+2014) or the en dash character (Unicode U+2013) anywhere in your prose output. They are the most recognizable tell of AI-generated writing, and a serious textbook does not use them. To replace them: a clause break on either side → write a new sentence or use parentheses around the aside. A parenthetical in the middle of a clause → surround with commas or parentheses. A range (1990 to 2000) → use \"to\" instead of an en dash, or use a hyphen (1990-2000).\n- **Avoid colons in prose.** The colon is the second-most recognizable tell of AI-generated writing after the em dash. In running prose, prefer a period, a comma, or a semicolon. The patterns \"There are three reasons: first, ... second, ... third, ...\", \"Consider this: ...\", \"Here is the catch: ...\", and any sentence that uses a colon to introduce a list, an elaboration, or a punchline are forbidden in prose. When you reach for a colon, the fix is almost always one of: (a) split into two sentences, (b) convert the colon into a comma followed by a connective (\"—\", \"which\", \"because\"), or (c) restructure so the second part is its own declarative sentence. Colons are still acceptable in technical notation (URLs, paths, ratios, key-value syntax), inside math and code, inside LaTeX (for example the definition syntax $x := ...$), and as the formal separator in citation-style lists when the user has asked for that format. The default for prose is: no colons.\n\n---\n## CONVERSATION RULES\n\n- Read the chat history before every response. NEVER restart from zero.\n- If the user's last message is short (\"ok\", \"continue\", \"next\"), pick up exactly where you left off.\n- If the user already answered a quiz, do NOT ask it again. Move to examples or practice.\n- If the user already completed practice, affirm and move to the next sub-topic.\n\nThe student is learning about: {topic}. Their current level in this area: {level}.\n\n{context}";console.log(typeof SOCRATIC_SYSTEM_PROMPT);
-
+/* Tutor mode: uses SOCRATIC_SYSTEM_PROMPT imported at the top of this file. */
 
 /* I18N — bilingual UI strings (en / zh). Add more entries as
    new surface text is introduced. */
@@ -13121,75 +12654,6 @@ var SOCRATIC_SYSTEM_PROMPT = "You are Socrates, a rigorous textbook author and p
    - Empty delta is OK if backend sent a __FORMATTED__ pre-render
    - Returns cancelled:true if the AbortController fired (caller can
      decide whether to show a "stopped" UI or fall back to mock) */
-var STREAM_TIMEOUT_MS=300000;          /* 5 min — balances reasoning models vs perceived hangs */
-var STREAM_HEARTBEAT_MS=60000;         /* 60 s silence before we treat as stall */
-var STREAM_MAX_ATTEMPTS=2;
-var STREAM_RETRY_DELAYS=[600,1500,3500];   /* ms, per attempt index */
-var STREAM_RETRYABLE_STATUS={408:true,425:true,429:true,500:true,502:true,503:true,504:true,520:true,522:true,524:true};
-
-/* ============================================================
-   UNIVERSAL AI CALL WATCHDOG
-   Wraps a single fetch + stream read loop with:
-     - total budget (kills the request after N ms no matter what)
-     - silence heartbeat (kills the request after M ms of no bytes)
-     - offline precheck (no point retrying if navigator says we're offline)
-   Returns an opaque handle with .stop(reason) and .touch() methods.
-   ============================================================ */
-function makeAIWatchdog(totalMs,heartbeatMs,onTimeout){
-  var stopped=false;
-  var reason="";
-  var ac=new AbortController();
-  var tmo=null,hb=null,lastTouch=Date.now();
-  function stop(r){
-    if(stopped)return;
-    stopped=true;reason=r||"stopped";
-    try{ac.abort(reason)}catch(_){}
-    if(tmo){clearTimeout(tmo);tmo=null}
-    if(hb){clearTimeout(hb);hb=null}
-  }
-  if(totalMs>0){
-    tmo=setTimeout(function(){
-      stop("total-timeout-"+totalMs+"ms");
-      if(typeof onTimeout==="function"){try{onTimeout("total",totalMs)}catch(_){}}
-    },totalMs);
-  }
-  function armHb(){
-    if(hb)clearTimeout(hb);
-    hb=setTimeout(function(){
-      stop("heartbeat-"+heartbeatMs+"ms");
-      if(typeof onTimeout==="function"){try{onTimeout("heartbeat",heartbeatMs)}catch(_){}}
-    },heartbeatMs);
-  }
-  function touch(){
-    lastTouch=Date.now();
-    if(heartbeatMs>0&&!stopped)armHb();
-  }
-  if(heartbeatMs>0)armHb();
-  return {ac:ac,stop:stop,touch:touch,isStopped:function(){return stopped},reason:function(){return reason},lastTouch:function(){return lastTouch}};
-}
-
-/* Returns true if we know the network is unreachable. Callers should
-   short-circuit their fetch attempts in that case (no point waiting
-   for the 1.5s/3.5s retry backoff). */
-function offlineGuard(){
-  if(typeof navigator!=="undefined"&&navigator.onLine===false)return true;
-  return false;
-}
-function sleepBackoff(attempt,retryAfterHeader){
-  var delay;
-  if(retryAfterHeader){
-    var n=parseFloat(retryAfterHeader);
-    if(!isNaN(n)&&n>0){
-      delay=Math.min(n*1000,15000);
-    }
-  }
-  if(!delay){
-    delay=STREAM_RETRY_DELAYS[Math.min(attempt-1,STREAM_RETRY_DELAYS.length-1)]||3500;
-  }
-  /* Add a small random jitter (0-200ms) to avoid thundering-herd. */
-  delay+=Math.floor(Math.random()*200);
-  return new Promise(function(r){setTimeout(r,delay)});
-}
 
 /* Append Beagle A identity to the system prompt when the built-in Beagle
    provider is active. This is appended LAST so the model sees it as the
@@ -13365,8 +12829,14 @@ function extractHistory(){
       }
       out.push(msg);
     }
-    if(out.length)return out;
+    if(out.length){
+      /* P_crosstalk-diag — history came from state.messages (tier 1). */
+      console.warn("[CTX-DIAG] extractHistory tier1 state.messages",{len:out.length,sid:state.session.currentSessionId});
+      return out;
+    }
   }
+  /* P_crosstalk-diag — fell through state.messages branch. */
+  console.warn("[CTX-DIAG] extractHistory fell through state.messages",{msgCount:Array.isArray(state.messages)?state.messages.length:-1});
   /* P_context-race — if currentSessionId is null (state was reset
      but no session loaded yet), skip the localStorage fallback.
      _memKey(null) resolves to "socrates-memory-default" which is a
@@ -13396,7 +12866,15 @@ function extractHistory(){
       if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";
       out.push({role:m.role==="user"?"user":"assistant",content:txt});
     }
-    if(out.length)return out;
+    if(out.length){
+      /* P_crosstalk-diag — history came from localStorage (tier 2).
+         This is the suspected culprit for cross-session context: if
+         the localStorage key still holds the OLD session's messages,
+         a new session with the same sid (or a sid collision) would
+         pull stale history. */
+      console.warn("[CTX-DIAG] extractHistory tier2 localStorage",{len:out.length,sid:sid,memKey:_memKey(sid),preview:out.map(function(m,i){return i+":"+m.role+":"+String(m.content).slice(0,50)})});
+      return out;
+    }
     /* Fall through to DOM if local cache has nothing usable */
   }
   var list=document.getElementById("msgList");
@@ -13416,6 +12894,8 @@ function extractHistory(){
     if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";
     out.unshift({role:el.classList.contains("user")?"user":"assistant",content:txt});
   }
+  /* P_crosstalk-diag — history came from DOM (tier 3 fallback). */
+  if(out.length)console.warn("[CTX-DIAG] extractHistory tier3 DOM",{len:out.length,kids:list.children.length});
   return out;
 }
 
@@ -13764,46 +13244,125 @@ window.showUsageTip = showUsageTip;
 window.hideUsageTip = hideUsageTip;
 window.closeCheatsheet = closeCheatsheet;
 window.autoResize = autoResize;
-window.closeModelPicker = closeModelPicker;
+/* P_apiconfig-bridge — apiConfig / appMode / webSearchOn / thinkingOn
+   are declared with `var` further up in main.js (line 10401 etc.)
+   but legacy callers + several module scripts (chat/api.js line 83,
+   pickers.js syncModelPills/syncChatModel, ui/usage.js, …) read them
+   via `window.apiConfig`. The old Phase-A block ended with
+   `window.apiConfig = apiConfig;` and a small handful of state var
+   mirrors. Restoring those four lines here. CRITICAL: callers MUST
+   mutate the object in place (apiConfig.activeId = …) rather than
+   reassign `apiConfig = {...}`, otherwise the window ref drifts and
+   the model picker silently sticks on "Add a model". */
+window.apiConfig = apiConfig;
+window.appMode = appMode;
+window.webSearchOn = webSearchOn;
+window.thinkingOn = thinkingOn;
+/* ─── Expose all onclick-required functions on window —── */
+/* ─── Inline-handler bridge ───
+   Bulk restore for the 119 `window.X = X` bindings that lived in
+   the pre-Phase-B AF block at main.js:13060–13176. windowExports.js
+   covers Phase-A-extracted modules (auth, render/markdown,
+   ui/cheatsheet, ui/scroll, storage/localMemory, chat/offline,
+   ui/usage, etc.). Everything below is a main.js-local function
+   that can't be imported from a module without circular deps — so
+   we re-bind here at the tail of main.js. Inline `onclick="X()"`
+   handlers resolve via [[Resolve]] → window.X → this block.
+   ─────────────────────────────────────────────────────────── */
+
+/* P_bulk-restore-2026-07-07 — three Phase-A/B regression repairs.
+   These were deleted in the move to windowExports.js but main.js
+   still emits inline `onclick="X()"` strings that reference them
+   (and auth/boot.js reads window.BEAGLE_BUILT_IN to consume the
+   /api/config beagleKey/beagleModel payloads). Without these,
+   clicking Skip on a diagnostic question, closing template mode,
+   or letting boot.js write back the beagle model would all
+   ReferenceError. main.js-local `var`s/functions, so we re-bind
+   at the tail of the bridge block above rather than
+   windowExports.js. */
+window.BEAGLE_BUILT_IN = BEAGLE_BUILT_IN;
+window.skipDiagQuestion = skipDiagQuestion;
+window.clearActiveTemplate = clearActiveTemplate;
+
+/* P_bulk-restore-2026-07-07-chat — chat module helpers missing from
+   the bridge. stream.js:91 / api.js consume `window.isReasoningProvider`
+   and `window.getCustomInstructionsString` — without these bindings
+   the callAPIStream path throws "d is not a function" (where `d` is
+   the minified isReasoningProvider identifier) and the non-stream
+   callAPI drops the user's Custom Instructions preamble. Both are
+   main.js-local functions that windowExports.js has not yet picked
+   up (Phase C deferral), so re-bind here. */
+window.isReasoningProvider = isReasoningProvider;
+window.getCustomInstructionsString = getCustomInstructionsString;
+window.addProvider = addProvider;
+window.clearSettings = clearSettings;
+window.closeCmdK = closeCmdK;
+window.closeConfirm = closeConfirm;
+window.closeExamModal = closeExamModal;
+window.closeExamView = closeExamView;
+window.cancelExamGeneration = cancelExamGeneration;
+window.closeProfile = closeProfile;
+window.closeSettings = closeSettings;
+window.closeShareModal = closeShareModal;
+window.confirmClearCache = confirmClearCache;
+window.confirmClearSettings = confirmClearSettings;
+window.confirmDeleteAccount = confirmDeleteAccount;
+window.copyShareLink = copyShareLink;
+window.createShareLink = createShareLink;
+/* Agent mode (openAgentView / exitAgentMode / deleteAgentRun) is a
+   planned feature that was never implemented — exposing it on
+   window would ReferenceError any inline handler that fires before
+   the surrounding UI lands. Inline placeholders stay commented until
+   the feature is built. */
+// window.exitAgentMode = exitAgentMode;   // unimplemented
+// window.openAgentView  = openAgentView;  // unimplemented
+// window.deleteAgentRun = deleteAgentRun; // unimplemented
+window.openProfile = openProfile;
+window.startExamGeneration = startExamGeneration;
+window.openPromptTemplatesModal = openPromptTemplatesModal;
+window.openSettings = openSettings;
+window.openShareModal = openShareModal;
+window.openStorageModal = openStorageModal;
+window.resetApp = resetApp;
+window.revokeShareLink = revokeShareLink;
+window.saveSettings = saveSettings;
+window.selectShareVis = selectShareVis;
+window.signOut = signOut;
+window.startSession = startSession;
+window.submitChatMessage = submitChatMessage;
+window.switchTab = switchTab;
+window.syncSidebarBtns = syncSidebarBtns;
+window.toggleAPI = toggleAPI;
+window.toggleAppLang = toggleAppLang;
+window.toggleProfileWebSearch = toggleProfileWebSearch;
+window.selectExamOpt = selectExamOpt;
+window.toggleExamType = toggleExamType;
 window.closeProjectEditor = closeProjectEditor;
 window.closePromptTemplatesModal = closePromptTemplatesModal;
 window.closeStorageModal = closeStorageModal;
 window.closeTagEditor = closeTagEditor;
 window.actuallyDeleteSession = actuallyDeleteSession;
 window.confirmPurgeSession = confirmPurgeSession;
+/* Agent mode placeholder (paired with the comment above on lines
+   13112-13114). */
+// window.deleteAgentRun = deleteAgentRun; // unimplemented
 window.finishDiagnostic = finishDiagnostic;
 window.proceedToTeaching = proceedToTeaching;
 window.loadSession = loadSession;
-window.loadUsageData = loadUsageData;
-window.loadUsageMonth = loadUsageMonth;
 window.nextDiagQuestion = nextDiagQuestion;
-window.skipDiagQuestion = skipDiagQuestion;
 window.onCmdKInput = onCmdKInput;
 window.onProjectChipClick = onProjectChipClick;
 window.onProjectDelete = onProjectDelete;
 window.onProjectEditorSave = onProjectEditorSave;
 window.onPromptRowDelete = onPromptRowDelete;
 window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
-window.onRecentsFilterChipClick = onRecentsFilterChipClick;
 window.onSlashRowClick = onSlashRowClick;
 window.updateSlashSelected = updateSlashSelected;
-window.updateSlashCommandPaletteFilter = updateSlashCommandPaletteFilter;
-window.isSlashCommandPaletteOpen = isSlashCommandPaletteOpen;
-window.openSlashCommandPalette = openSlashCommandPalette;
-window.closeSlashCommandPalette = closeSlashCommandPalette;
-window.setActiveTemplate = setActiveTemplate;
-window.clearActiveTemplate = clearActiveTemplate;
-window.isActiveTemplate = isActiveTemplate;
-window.getActiveTemplateSystemPrompt = getActiveTemplateSystemPrompt;
-window.stripTemplateBodyPrefix = stripTemplateBodyPrefix;
-window.renderTemplateModeChip = renderTemplateModeChip;
-window.injectTemplateSystemPrompt = injectTemplateSystemPrompt;
 window.updateCmdKSelected = updateCmdKSelected;
 window.openCmdKResult = openCmdKResult;
 window.openProjectEditor = openProjectEditor;
 window.openPromptTemplateEditor = openPromptTemplateEditor;
 window.openTagEditor = openTagEditor;
-window.pickActiveProviderById = pickActiveProviderById;
 window.pickProjectColor = pickProjectColor;
 window.prevDiagQuestion = prevDiagQuestion;
 window.renderExamForm = renderExamForm;
@@ -13811,8 +13370,6 @@ window.renderPromptTemplatesModal = renderPromptTemplatesModal;
 window.restoreSession = restoreSession;
 window.selectDiag = selectDiag;
 window.setActiveProvider = setActiveProvider;
-window.setRecentsFilter = setRecentsFilter;
-window.clearRecentsFilter = clearRecentsFilter;
 window.submitExam = submitExam;
 window.toggleKBDetail = toggleKBDetail;
 window.togglePinSession = togglePinSession;
@@ -13821,21 +13378,6 @@ window.clearProjectFilter = clearProjectFilter;
 window.handleChatKey = handleChatKey;
 window.onCmdKKey = onCmdKKey;
 window.onCustomInstructionsChange = onCustomInstructionsChange;
-window.submitAuthForgotPassword = submitAuthForgotPassword;
-window.submitAuthRegister = submitAuthRegister;
-window.submitAuthResetPassword = submitAuthResetPassword;
-window.submitAuthSignin = submitAuthSignin;
-window.updateSendBtn = updateSendBtn;
-window.updateStartBtn = updateStartBtn;
-window.setBackgroundColor = setBackgroundColor;
-window.setBackgroundLight = setBackgroundLight;
-window.setBackgroundDark = setBackgroundDark;
-window.resetBackgroundColor = resetBackgroundColor;
-window.resetBackgroundDark = resetBackgroundDark;
-window.resetBackgroundLight = resetBackgroundLight;
-window.toggleGrid = toggleGrid;
-window.setAccentColor = setAccentColor;
-window.afterAuthEnter = afterAuthEnter;
 window.markAuthSuccess = markAuthSuccess;
 window.loadProjects = loadProjects;
 window.renderProjects = renderProjects;
@@ -13847,54 +13389,12 @@ window.renderRecents = renderRecents;
 window.renderMistakes = renderMistakes;
 window.updateMistakesBadge = updateMistakesBadge;
 window.renderProviderList = renderProviderList;
-window.syncModelPills = syncModelPills;
-window.syncExtensionsUI = syncExtensionsUI;
 window.syncAppModeUI = syncAppModeUI;
 window.syncSidebarForMode = syncSidebarForMode;
 window.getChatIdFromURL = getChatIdFromURL;
 window.setChatIdInURL = setChatIdInURL;
 window.syncSettingsUI = syncSettingsUI;
 window.toggleShareBtn = toggleShareBtn;
-window.getActiveProvider = getActiveProvider;
-window.getCustomInstructionsString = getCustomInstructionsString;
-window.makeAIWatchdog = makeAIWatchdog;
-window.isReasoningProvider = isReasoningProvider;
-window.apiConfig = apiConfig;
-/* IMPORTANT: refreshApiConfig() / clearSettings() MUST mutate this
-   object in place (apiConfig.activeId = ... / apiConfig.providers = ...)
-   rather than reassigning `apiConfig = {...}`. Reassignment would
-   leave window.apiConfig pointing at the original empty object forever,
-   which would silently break every consumer (model picker, chat header,
-   request routing, etc.) — symptoms show up as "models not displaying". */
-window.offlineGuard = offlineGuard;
-window.sleepBackoff = sleepBackoff;
-window.STREAM_TIMEOUT_MS = STREAM_TIMEOUT_MS;
-window.STREAM_HEARTBEAT_MS = STREAM_HEARTBEAT_MS;
-window.STREAM_MAX_ATTEMPTS = STREAM_MAX_ATTEMPTS;
-window.STREAM_RETRYABLE_STATUS = STREAM_RETRYABLE_STATUS;
-window.webSearchOn = webSearchOn;
-window.thinkingOn = thinkingOn;
-window.appMode = appMode;
-window.openExamModal = openExamModal;
-window.fetchWebContext = fetchWebContext;
-window.setSearchPill = setSearchPill;
-window.esc = esc;
-window.addMessage = addMessage;
-window.showToast = showToast;
-window.saveCurrentSession = saveCurrentSession;
-window.fetchGeoInfo = fetchGeoInfo;
-window.loadSharedSession = loadSharedSession;
-window.BEAGLE_BUILT_IN = BEAGLE_BUILT_IN;
-window.RECENTS_FILTER_KEY = RECENTS_FILTER_KEY;
-window.updateProviderField = updateProviderField;
-window.closeChatModelMenu = closeChatModelMenu;
-window.offlineGuard = offlineGuard;
-window.sleepBackoff = sleepBackoff;
-window.STREAM_TIMEOUT_MS = STREAM_TIMEOUT_MS;
-window.STREAM_HEARTBEAT_MS = STREAM_HEARTBEAT_MS;
-window.STREAM_MAX_ATTEMPTS = STREAM_MAX_ATTEMPTS;
-window.STREAM_RETRYABLE_STATUS = STREAM_RETRYABLE_STATUS;
-
 /* Init UI sync — runs after window.apiConfig is set (above) so
    syncModelPills() can safely read the provider config. Moving
    this earlier would throw and halt the entire boot sequence. */

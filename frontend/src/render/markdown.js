@@ -582,3 +582,60 @@ export function formatMsg(t){
      formatMsgProgressive for rationale. */
   return sanitizeHtml(html);
 }
+
+/* ── Plain-text helpers (used by message-editing flows) ────────────
+   These two functions are *not* part of the streaming / rendering
+   pipeline — they strip markdown formatting so the user sees clean
+   text when editing or resending a message. Imported by main.js.
+   Note: distinct from stripChatArtifacts (util/stripChatArtifacts.js),
+   which strips code-injection artifacts for render-time safety. */
+
+export function stripMarkdown(s){
+  if(!s)return"";
+  return String(s)
+    /* Strip any HTML tags first — older server payloads sometimes
+       stored the rendered <p>foo</p> rather than the plain text.
+       Editing a user message must never expose raw <p>/<br>/etc. */
+    .replace(/<\/?[a-zA-Z][^>]*>/g,"")
+    .replace(/<!--[\s\S]*?-->/g,"")
+    .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g,"")
+    /* Remove fenced code blocks (```...``` or ~~~...~~~) */
+    .replace(/```[\s\S]*?```/g,"")
+    .replace(/~~~[\s\S]*?~~~/g,"")
+    /* Remove inline code and math: $...$, $$...$$, `...` */
+    .replace(/\$\$[^$]*\$\$/g,"")
+    .replace(/\$[^$]*\$/g,"")
+    .replace(/`[^`]*`/g,"")
+    /* Remove images: ![alt](url) */
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g,"$1")
+    /* Replace links: [text](url) → text */
+    .replace(/\[([^\]]*)\]\([^)]*\)/g,"$1")
+    /* Strip bold/italic markers */
+    .replace(/\*\*([^*]*)\*\*/g,"$1")
+    .replace(/__([^_]*)__/g,"$1")
+    .replace(/\*([^*]*)\*/g,"$1")
+    .replace(/_([^_]*)_/g,"$1")
+    /* Remove heading markers */
+    .replace(/^#{1,6}\s+/gm,"")
+    /* Remove blockquote markers */
+    .replace(/^>\s+/gm,"")
+    /* Remove horizontal rules */
+    .replace(/^[-*_]{3,}\s*$/gm,"")
+    /* Remove list markers (-, *, +, 1.) */
+    .replace(/^[-*+]\s+/gm,"")
+    .replace(/^\d+\.\s+/gm,"")
+    /* Collapse multiple newlines into one */
+    .replace(/\n{3,}/g,"\n\n")
+    .trim();
+}
+
+/* Returns the most recent user message with markdown stripped, or null.
+   Used by the `↑` (empty input) shortcut to pop the previous prompt
+   back into the input for editing. */
+export function findLastUserMessage(){
+  var list=window.state.session.messages||[];
+  for(var i=list.length-1;i>=0;i--){
+    if(list[i].role==="user"&&list[i].rawText)return stripMarkdown(list[i].rawText);
+  }
+  return null;
+}

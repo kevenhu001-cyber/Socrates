@@ -135,15 +135,24 @@ export async function apiFetch(path, opts = {}) {
   const userSignal = opts.signal || null;
   const controller = new AbortController();
   const timer = setTimeout(() => { try { controller.abort(); } catch (_) {} }, timeoutMs);
+  // Track the abort listener so we can detach it after the call completes,
+  // preventing listener accumulation when a long-lived signal is reused.
+  let onUserAbort = null;
   if (userSignal) {
     if (userSignal.aborted) { try { controller.abort(); } catch (_) {} }
-    else userSignal.addEventListener('abort', () => { try { controller.abort(); } catch (_) {} });
+    else {
+      onUserAbort = () => { try { controller.abort(); } catch (_) {} };
+      userSignal.addEventListener('abort', onUserAbort, { once: true });
+    }
   }
   let r;
   try {
     r = await fetch(path, Object.assign({}, opts, { signal: controller.signal }));
   } catch (e) {
     clearTimeout(timer);
+    if (userSignal && onUserAbort) {
+      try { userSignal.removeEventListener('abort', onUserAbort); } catch (_) {}
+    }
     const aborted = e && (e.name === 'AbortError' || controller.signal.aborted);
     throw makeApiError(
       0,
@@ -154,6 +163,9 @@ export async function apiFetch(path, opts = {}) {
     );
   } finally {
     clearTimeout(timer);
+    if (userSignal && onUserAbort) {
+      try { userSignal.removeEventListener('abort', onUserAbort); } catch (_) {}
+    }
   }
   let text;
   try { text = await r.text(); } catch (e) {
@@ -167,7 +179,14 @@ export async function apiFetch(path, opts = {}) {
     if (r.status === 401 && !opts._authEndpoint && !_isInGraceWindow()) {
       try { _on401 && _on401('apiFetch:' + method + ' ' + path); } catch (_) {}
     } else if (r.status === 403 && !opts._csrfRetried && method !== 'GET' && method !== 'HEAD') {
-      try { await fetch('/api/auth/csrf-token', { credentials: 'include', signal: controller.signal }); } catch (_) {}
+      // Use a fresh AbortController for the CSRF refresh — the original
+      // controller may already be aborted (timeout / user abort), which
+      // would silently fail the CSRF token fetch and leave the retry
+      // without a valid token, causing a permanent 403 loop.
+      const csrfController = new AbortController();
+      const csrfTimer = setTimeout(() => { try { csrfController.abort(); } catch (_) {} }, 5000);
+      try { await fetch('/api/auth/csrf-token', { credentials: 'include', signal: csrfController.signal }); } catch (_) {}
+      clearTimeout(csrfTimer);
       await new Promise((res) => setTimeout(res, 0));
       return apiFetch(path, Object.assign({}, opts, { _csrfRetried: true }));
     }

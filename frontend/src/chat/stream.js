@@ -88,7 +88,17 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        * Pass body as an object so apiFetchRaw stringifies it and sets
        * Content-Type: application/json — pre-stringified bodies are skipped. */
       var apiBody={messages:messages,temperature:0.7,max_tokens:maxTokens};
-      if(isReasoningProvider()){
+      /* P_chat-bridge-defence — call isReasoningProvider via the
+         window getter inside a typeof guard so a missing bridge
+         binding surfaces as "no reasoning flag" (safe) rather than
+         "TypeError: d is not a function" (whole stream dead). The
+         earlier `var isReasoningProvider = window.isReasoningProvider`
+         at the top of this function reads `undefined` if the bridge
+         forgot to expose the helper, and esbuild minifies
+         `isReasoningProvider()` to `d()` — losing the original name
+         in the stack trace. Reading window.isReasoningProvider
+         lazily keeps the source-level name visible in dev too. */
+      if(typeof window.isReasoningProvider==="function" && window.isReasoningProvider()){
         apiBody.reasoning_effort="high";
         apiBody.extra_body={thinking:{type:"enabled"}};
       }

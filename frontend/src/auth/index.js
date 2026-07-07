@@ -108,7 +108,6 @@ export async function afterAuthEnter(){
         await apiFetch("/api/migrate",{method:"POST",body:payload});
         try{localStorage.removeItem("socrates-sessions-v2")}catch(_){}
         try{localStorage.removeItem("socrates-api")}catch(_){}
-        try{localStorage.removeItem("socrates-websearch")}catch(_){}
       }catch(e){console.warn("[migrate]",e.message)}
     }
   }catch(e){console.warn("[migrate] setup",e.message)}
