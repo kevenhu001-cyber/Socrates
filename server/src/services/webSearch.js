@@ -69,10 +69,27 @@ export const WEB_SEARCH_TOOL = {
 const MAX_RESULTS = 12;           // final merged count / per-source limit
 
 /* ═══════════════════════════════════════════════════════════════════
-   Web search — MiniMax priority, searXNG fallback
+   Web search — parallel fan-out across MiniMax, Bing, searXNG
    ═══════════════════════════════════════════════════════════════════ */
 
-const TOTAL_SEARCH_TIMEOUT = 30_000;  // 硬性上限，覆盖 s 链全部尝试（MiniMax + searXNG）
+const TIMEOUT_MINIMAX_MS = 8_000;
+const TIMEOUT_BING_MS    = 8_000;
+const TIMEOUT_SEARXNG_MS = 6_000;
+
+const TOTAL_SEARCH_TIMEOUT = 12_000;
+
+function withTimeout(promise, ms, label) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((resolve) => {
+      timer = setTimeout(() => {
+        console.warn(`[webSearch] ${label} hit ${ms}ms timeout`);
+        resolve([]);
+      }, ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
 
 export async function webSearch(query, count = 10, opts = {}) {
   if (!query || !String(query).trim()) {
@@ -91,49 +108,57 @@ export async function webSearch(query, count = 10, opts = {}) {
     return cacheHit;
   }
 
-  // Wrap the entire search in a total timeout so the tool loop never
-  // gets stuck if both engines hang.
   const ac = new AbortController();
   const totalTimer = setTimeout(() => ac.abort('total_timeout'), TOTAL_SEARCH_TIMEOUT);
-  let finalResults = [];
-  try {
-    // 1. searXNG first (self-hosted metasearch, China-friendly engines)
-    const searxngResults = await searchSearxng(query, limit, ac.signal);
-    finalResults = searxngResults || [];
 
-    if (finalResults.length === 0) {
-      // 2. Fallback to MiniMax search (if key configured)
-      const minimaxKey = process.env.MINIMAX_SEARCH_KEY || process.env.MINIMAX_API_KEY || '';
-      if (minimaxKey) {
-        const minimaxResults = await searchMinimax(query, limit, ac.signal);
-        if (minimaxResults && minimaxResults.length > 0) {
-          finalResults = minimaxResults;
+  const hasMinimaxKey = !!(process.env.MINIMAX_SEARCH_KEY || process.env.MINIMAX_API_KEY);
+  const acSignal = ac.signal;
+
+  const minimaxP = hasMinimaxKey
+    ? withTimeout(searchMinimax(query, limit, acSignal), TIMEOUT_MINIMAX_MS, 'minimax')
+    : Promise.resolve([]);
+  const bingP = withTimeout(searchBing(query, limit, acSignal), TIMEOUT_BING_MS, 'bing');
+
+  const fastRace = await Promise.race([
+    minimaxP.then((r) => ({ source: 'minimax', results: r || [] })),
+    bingP.then((r) => ({ source: 'bing', results: r || [] })),
+  ]);
+
+  let finalResults = fastRace.results || [];
+
+  if (finalResults.length < limit) {
+    const loser = fastRace.source === 'minimax' ? bingP : minimaxP;
+    const loserResults = await loser.catch(() => []);
+    if (Array.isArray(loserResults) && loserResults.length > 0) {
+      const seen = new Set(finalResults.map((r) => r.url));
+      for (const r of loserResults) {
+        if (r.url && !seen.has(r.url)) {
+          finalResults.push(r);
+          seen.add(r.url);
+          if (finalResults.length >= limit) break;
         }
       }
     }
-    if (finalResults.length === 0) {
-      // 3. Final fallback: Bing HTML scrape (no API key needed)
-      const bingResults = await searchBing(query, limit, ac.signal);
-      finalResults = bingResults || [];
-    }
-  } catch (e) {
-    if (e && e.name === 'AbortError') {
-      console.warn('[webSearch] Total search timeout exceeded');
-    } else {
-      console.warn('[webSearch] Search failed:', e && e.message ? e.message : e);
-    }
-    finalResults = [];
-  } finally {
-    clearTimeout(totalTimer);
   }
 
-  // Tag results with matched query info
+  if (finalResults.length === 0) {
+    const searxngResults = await withTimeout(
+      searchSearxng(query, limit, acSignal),
+      TIMEOUT_SEARXNG_MS,
+      'searxng',
+    ).catch(() => []);
+    if (Array.isArray(searxngResults) && searxngResults.length > 0) {
+      finalResults = searxngResults;
+    }
+  }
+
+  clearTimeout(totalTimer);
+
   for (const r of finalResults) {
     r.matchedQuery = query;
     r.matchedQueries = [query];
   }
 
-  // 3. Surface language cluster (non-enumerable).
   try {
     Object.defineProperty(finalResults, 'expandedQueries', {
       value: [query],
@@ -149,7 +174,6 @@ export async function webSearch(query, count = 10, opts = {}) {
     });
   } catch { /* metadata is best-effort */ }
 
-  // 4. Cache the result (5 min TTL) and return
   try {
     searchResultCache.set({
       userId: opts.userId, query, count: limit, locale, apiKeyHint,
