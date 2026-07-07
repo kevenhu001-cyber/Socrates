@@ -307,8 +307,19 @@ function sanitizeExtraBody(raw) {
       } else if (Array.isArray(v) || (v && typeof v === 'object')) {
         // For response_format and stop we allow the object form too,
         // but only if the JSON is itself a plain object / array of
-        // strings — we don't recurse further.
-        out[k] = v;
+        // primitives (no further nesting — prevents smuggling
+        // 'api_key' via something like
+        // response_format.api_key='…').
+        if (Array.isArray(v)) {
+          if (v.every(x => typeof x === 'string' || typeof x === 'number')) {
+            out[k] = v;
+          }
+          continue;
+        }
+        const allPrim = Object.values(v).every(x =>
+          typeof x === 'string' || typeof x === 'number' || typeof x === 'boolean'
+        );
+        if (allPrim) out[k] = v;
       }
     }
   }
@@ -902,36 +913,29 @@ data: ${JSON.stringify({
   } catch (err) { next(err); }
 });
 
-/* ─── Execution progress SSE endpoint ───
- * GET /api/executions/:id/stream
- *
- * Streams real-time execution progress via Server-Sent Events.
+/* ─── Execution progress SSE stream handler ───
+ * Shared between the two route mounts so there is a single source
+ * of truth for the execution-progress SSE protocol.
  * The execution row is looked up by ID (scoped to the current user)
  * and progress events are emitted as they arrive from the worker.
- * This endpoint works INDEPENDENTLY of the chat SSE stream — the
- * frontend connects to it when a tool_use event is received, and
- * it continues to stream even if the main chat stream completes.
  *
  * SSE event types:
  *   event: progress — { phase, stream, chunk, elapsedMs, executionId }
  *   event: result   — { status, executionId, stdout, stderr, durationMs }
  *   event: error    — error description
  */
-router.get('/executions/:id/stream', requireAuth, async (req, res, next) => {
+async function handleExecutionStream(req, res, next) {
   try {
     const executionId = req.params.id;
     if (!isUuid(executionId)) {
       return res.status(400).json({ code: 'BAD_REQUEST', message: 'Invalid execution ID format' });
     }
-
-    // Verify the execution exists and belongs to this user
     const db = getDb();
     const [exec] = await db.select().from(executions)
       .where(and(eq(executions.id, executionId), eq(executions.userId, req.userId)))
       .limit(1);
     if (!exec) throw new NotFound('Execution not found');
 
-    // Set SSE headers
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -940,16 +944,12 @@ router.get('/executions/:id/stream', requireAuth, async (req, res, next) => {
       'Connection': 'keep-alive',
       'X-Accel-Buffering': 'no',
     });
-
-    // Flush headers immediately
     try { res.flushHeaders(); } catch {}
 
-    // Heartbeat keepalive
     const heartbeat = setInterval(() => {
       try { res.write(': keepalive\n\n'); try { res.flush?.(); } catch {} } catch {}
     }, 10_000);
 
-    // If execution is already in a terminal state, emit the stored result immediately
     if (exec.status === 'completed' || exec.status === 'failed' || exec.status === 'timeout' || exec.status === 'cancelled') {
       res.write(`event: result\ndata: ${JSON.stringify({
         status: exec.status,
@@ -966,139 +966,45 @@ router.get('/executions/:id/stream', requireAuth, async (req, res, next) => {
       return;
     }
 
-    // Subscribe to progress events for this execution
     const onProgress = (event) => {
       try {
         res.write(`event: progress\ndata: ${JSON.stringify({
-          phase: event.phase,
-          stream: event.stream,
-          chunk: event.chunk || '',
-          executionId: event.executionId,
+          phase: event.phase, stream: event.stream,
+          chunk: event.chunk || '', executionId: event.executionId,
           elapsedMs: event.elapsedMs || 0,
         })}\n\n`);
         try { res.flush?.(); } catch {}
-      } catch { /* client disconnected */ }
+      } catch {}
     };
-
     const onResult = (event) => {
       try {
         res.write(`event: result\ndata: ${JSON.stringify(event)}\n\n`);
         try { res.flush?.(); } catch {}
-      } catch { /* client disconnected */ }
+      } catch {}
     };
-
     const onError = (event) => {
       try {
         res.write(`event: error\ndata: ${JSON.stringify({ error: event.errorMessage || event })}\n\n`);
         try { res.flush?.(); } catch {}
-      } catch { /* client disconnected */ }
+      } catch {}
     };
 
     subscribeExecution(executionId, onProgress);
     subscribeExecutionResult(executionId, onResult);
 
-    // Clean up on client disconnect
     req.on('close', () => {
       clearInterval(heartbeat);
       unsubscribeExecution(executionId, onProgress);
       unsubscribeExecutionResult(executionId, onResult);
     });
-
   } catch (err) { next(err); }
-});
+}
 
-/* Execution SSE stream — also mount at /:id/stream so the
-   frontend's EventSource connection to /api/executions/:id/stream
-   resolves correctly. The same route is registered under
-   /executions/:id/stream for the /api/chat prefix. */
-router.get('/:id/stream', requireAuth, async (req, res, next) => {
-  try {
-    const executionId = req.params.id;
-    if (!isUuid(executionId)) {
-      return res.status(400).json({ code: 'BAD_REQUEST', message: 'Invalid execution ID format' });
-    }
-
-    // Verify the execution exists and belongs to this user
-    const db = getDb();
-    const [exec] = await db.select().from(executions)
-      .where(and(eq(executions.id, executionId), eq(executions.userId, req.userId)))
-      .limit(1);
-    if (!exec) throw new NotFound('Execution not found');
-
-    // Set SSE headers
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no',
-    });
-
-    // Flush headers immediately
-    try { res.flushHeaders(); } catch {}
-
-    // Heartbeat keepalive
-    const heartbeat = setInterval(() => {
-      try { res.write(': keepalive\n\n'); try { res.flush?.(); } catch {} } catch {}
-    }, 10_000);
-
-    // If execution is already in a terminal state, emit the stored result immediately
-    if (exec.status === 'completed' || exec.status === 'failed' || exec.status === 'timeout' || exec.status === 'cancelled') {
-      res.write(`event: result\ndata: ${JSON.stringify({
-        status: exec.status,
-        executionId: exec.id,
-        stdout: exec.stdout || '',
-        stderr: exec.stderr || '',
-        durationMs: exec.durationMs || 0,
-        exitCode: exec.exitCode,
-        errorMessage: exec.errorMessage || null,
-      })}\n\n`);
-      try { res.flush?.(); } catch {}
-      clearInterval(heartbeat);
-      try { res.end(); } catch {}
-      return;
-    }
-
-    // Subscribe to progress events for this execution
-    const onProgress = (event) => {
-      try {
-        res.write(`event: progress\ndata: ${JSON.stringify({
-          phase: event.phase,
-          stream: event.stream,
-          chunk: event.chunk || '',
-          executionId: event.executionId,
-          elapsedMs: event.elapsedMs || 0,
-        })}\n\n`);
-        try { res.flush?.(); } catch {}
-      } catch { /* client disconnected */ }
-    };
-
-    const onResult = (event) => {
-      try {
-        res.write(`event: result\ndata: ${JSON.stringify(event)}\n\n`);
-        try { res.flush?.(); } catch {}
-      } catch { /* client disconnected */ }
-    };
-
-    const onError = (event) => {
-      try {
-        res.write(`event: error\ndata: ${JSON.stringify({ error: event.errorMessage || event })}\n\n`);
-        try { res.flush?.(); } catch {}
-      } catch { /* client disconnected */ }
-    };
-
-    subscribeExecution(executionId, onProgress);
-    subscribeExecutionResult(executionId, onResult);
-
-    // Clean up on client disconnect
-    req.on('close', () => {
-      clearInterval(heartbeat);
-      unsubscribeExecution(executionId, onProgress);
-      unsubscribeExecutionResult(executionId, onResult);
-    });
-
-  } catch (err) { next(err); }
-});
+/* Mount the execution SSE handler at two paths:
+ *   /api/chat/executions/:id/stream — under the chat router (backward compat)
+ *   /api/executions/:id/stream      — standalone mount in app.js
+ */
+router.get('/executions/:id/stream', requireAuth, handleExecutionStream);
+router.get('/:id/stream', requireAuth, handleExecutionStream);
 
 export default router;
