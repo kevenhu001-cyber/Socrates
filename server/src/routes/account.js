@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { eq, count, sql, and, gte } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
+import { comparePassword } from '../lib/crypto.js';
+import { Unauthorized } from '../lib/errors.js';
 import {
   users, sessions, messages, apiKeys, usageEvents, tags, sessionTags,
   projects, mistakes, memories, artifacts, artifactVersions, prompts,
@@ -10,6 +12,10 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 router.use(requireAuth);
+
+/* Match the server-side password cap so the re-auth guard rejects
+ * absurd inputs before they reach bcrypt. */
+const MAX_PASSWORD_LENGTH = 64;
 
 /**
  * POST /api/account/cancel — downgrade a paid subscription back to the
@@ -216,6 +222,18 @@ router.get('/usage-heatmap', async (req, res, next) => {
  * GET /api/account/export — download all user data as a JSON file.
  * Returns a Content-Disposition: attachment response so the browser
  * saves the file rather than displaying it inline.
+ *
+ * P_export-reauth — M7 audit fix. The export endpoint returns the
+ * user's entire dataset (sessions, messages, API keys, mistakes,
+ * memories, ...). A stolen session cookie alone is enough to
+ * trigger a full exfiltration under the previous build. Require
+ * the caller to re-submit their current password via the
+ * `X-Reauth-Password` header (header instead of body so the value
+ * never lands in request logs, history, or the access log that
+ * ships to the audit table). The header is constant-time compared
+ * via bcrypt.compare. A failed re-auth does NOT increment the
+ * login-failure counter (this is a per-user check, not a
+ * brute-force channel) and does NOT log the attempted password.
  */
 router.get('/export', async (req, res, next) => {
   try {
@@ -230,11 +248,24 @@ router.get('/export', async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ code: 'USER_NOT_FOUND', message: 'User not found' });
     }
-    const {
-      passwordHash, verifyToken, verifyTokenExpiresAt,
-      resetToken, resetTokenExpiresAt,
-      ...safeUser
-    } = user;
+
+    // Re-auth: caller must re-submit the current password.
+    // Guest accounts (no password) cannot export.
+    const reauth = req.get('X-Reauth-Password') || '';
+    if (!user.passwordHash) {
+      throw new Unauthorized('REAUTH_REQUIRED', 'Re-authentication required for export');
+    }
+    if (typeof reauth !== 'string' || reauth.length === 0 || reauth.length > MAX_PASSWORD_LENGTH) {
+      throw new Unauthorized('REAUTH_REQUIRED', 'Re-authentication required for export');
+    }
+    const reauthOk = await comparePassword(reauth, user.passwordHash);
+    if (!reauthOk) {
+      throw new Unauthorized('REAUTH_FAILED', 'Re-authentication failed');
+    }
+    // Destructure out only the fields that actually exist on the users row.
+    // passwordHash MUST be excluded — it is a bcrypt hash but still a
+    // credential that should never appear in a downloadable export.
+    const { passwordHash: _pw, ...safeUser } = user;
 
     const userSessions = await db
       .select()

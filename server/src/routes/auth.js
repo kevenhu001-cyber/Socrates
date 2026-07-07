@@ -214,7 +214,7 @@ router.post('/password', requireAuth, authLimiter, async (req, res, next) => {
 /* ─── Delete account ─── */
 router.delete('/account', requireAuth, authLimiter, async (req, res, next) => {
   try {
-    await authService.deleteAccount(req.userId);
+    await authService.deleteAccount(req.userId, req.user?.email);
     clearSidCookie(res, req);
     clearCsrfCookie(res, req);
     return res.json({ ok: true });
@@ -222,16 +222,48 @@ router.delete('/account', requireAuth, authLimiter, async (req, res, next) => {
 });
 
 /* ─── OAuth GitHub start ─── */
+/* P_oauth-returnTo-strict-whitelist — M5 audit fix. The previous
+ * safeReturnTo accepted any same-origin path. That still allows
+ * a crafted OAuth flow to bounce the user into sensitive internal
+ * routes (e.g. `/api/account/export`, `/oauth/github/start` again,
+ * `/api/auth/logout` as a forced logout, etc). Restrict the
+ * redirect target to a small allow-list of SPA-facing prefixes
+ * the front-end actually uses. Anything else falls back to '/'. */
+const RETURN_TO_ALLOWLIST = [
+  '/',
+  '/app',
+  '/chat',
+  '/projects',
+  '/shares',
+  '/settings',
+  '/exam',
+  '/tutor',
+];
 function safeReturnTo(input) {
-  // Whitelist the redirect target to a same-origin relative path.
-  // Reject anything that could be a protocol-relative URL
-  // (`//evil.com`) or an absolute URL — both can be used for
-  // open-redirect attacks.
   if (typeof input !== 'string') return '/';
+  if (input.length > 512) return '/';
+  // Reject protocol-relative / backslash / absolute / non-path.
   if (!input.startsWith('/')) return '/';
-  if (input.startsWith('//')) return '/';
-  if (input.startsWith('/\\')) return '/';
-  return input;
+  if (input.startsWith('//') || input.startsWith('/\\')) return '/';
+  // Reject any path that contains a backslash anywhere (some
+  // browsers interpret `\` as `/` in URL parsing, so this is a
+  // common bypass for naive `startsWith('/')` checks).
+  if (input.includes('\\')) return '/';
+  // Reject control characters and CR/LF (header injection guard).
+  if (/[\x00-\x1f]/.test(input)) return '/';
+  // Strip trailing slash and `?...` fragment for prefix matching,
+  // but keep the original for redirect.
+  const [pathOnly] = input.split('?');
+  const [pathNoHash] = pathOnly.split('#');
+  const norm = pathNoHash.length > 1 && pathNoHash.endsWith('/')
+    ? pathNoHash.slice(0, -1)
+    : pathNoHash;
+  // Allow exact match for '/' (home) and prefix match for the rest.
+  for (const allowed of RETURN_TO_ALLOWLIST) {
+    if (norm === allowed) return input;
+    if (allowed !== '/' && norm.startsWith(allowed + '/')) return input;
+  }
+  return '/';
 }
 
 router.get('/oauth/github/start', (_req, res) => {

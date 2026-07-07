@@ -23,6 +23,69 @@ import { JSDOM } from 'jsdom';
 const window = new JSDOM('').window;
 const purify = createDOMPurify(window);
 
+/* P_extra-body-share — H5 audit fix.
+ * Whitelist of extra_body keys that may be forwarded to the LLM
+ * upstream. The SPA is allowed to tune reasoning / sampling knobs
+ * (top_p, top_k, seed, logit_bias, response_format, ...), but it
+ * must never be able to inject `tools`, `api_key`, `messages`, or
+ * any other field that would let a forged payload redefine the
+ * conversation or smuggle a credential. */
+const ALLOWED_EXTRA_BODY_KEYS = new Set([
+  'thinking',
+  'top_p',
+  'top_k',
+  'stop',
+  'frequency_penalty',
+  'presence_penalty',
+  'logit_bias',
+  'seed',
+  'response_format',
+]);
+
+/**
+ * Filter an `extra_body` object against the upstream-allowlist. Returns
+ * `undefined` for any input that is not a non-array object, and for an
+ * object that yields no whitelisted keys. Values are restricted to
+ * primitive arrays and flat-primitive objects so a malicious caller
+ * cannot nest functions / Dates / class instances.
+ *
+ * @param {unknown} raw
+ * @returns {object|undefined}
+ */
+export function sanitizeExtraBody(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const out = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (!ALLOWED_EXTRA_BODY_KEYS.has(k)) continue;
+    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+      out[k] = v;
+    } else if (Array.isArray(v)) {
+      if (v.every((x) => typeof x === 'string' || typeof x === 'number' || typeof x === 'boolean')) {
+        out[k] = v;
+      }
+    } else if (v && typeof v === 'object') {
+      const allPrim = Object.values(v).every((x) =>
+        typeof x === 'string' || typeof x === 'number' || typeof x === 'boolean'
+      );
+      if (allPrim) out[k] = v;
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/* P_share-visibility-enum — M6 audit fix. Both `shares.visibility`
+ * and `artifacts.visibility` are plain TEXT in the schema (no
+ * CHECK constraint), so an unvalidated write can store anything
+ * (e.g. `public; DROP TABLE shares; --` or the deprecated value
+ * `link`). Lock to the three known values and silently fall back
+ * to 'unlisted' for anything else so legacy clients that send
+ * `link` keep working. */
+const ALLOWED_VISIBILITY = new Set(['public', 'unlisted', 'private']);
+export function normalizeVisibility(v) {
+  if (typeof v === 'string' && ALLOWED_VISIBILITY.has(v)) return v;
+  return 'unlisted';
+}
+
 /**
  * Sanitize an HTML string for storage. Returns the cleaned HTML;
  * if the input is not a string we coerce to '' to avoid leaking

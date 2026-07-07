@@ -5,6 +5,7 @@ import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/
 import { buildSystemContextBlock } from '../services/productContext.js';
 import { requireAuth } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';
+import { sanitizeExtraBody } from '../lib/sanitize.js';
 
 const router = Router();
 
@@ -44,6 +45,10 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
     }
 
     const { messages, model, temperature, max_tokens, stream, reasoning_effort, extra_body } = req.body;
+    /* P_extra-body-share — H5 audit fix. Sanitise extra_body against
+     * the same whitelist chat.js uses, so a forged payload can't smuggle
+     * `tools`, `api_key`, etc to the built-in upstream. */
+    const safeExtraBody = sanitizeExtraBody(extra_body);
     /* OpenAI-compatible endpoints also accept ?stream=true as a
        query parameter. Honour it so the built-in proxy matches
        the spec — this matters for any client that toggles streaming
@@ -117,7 +122,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
           /* P_deepseek-mode — forward reasoning flags so the upstream
              emits reasoning_content chunks. */
           reasoning_effort,
-          extra_body,
+          extra_body: safeExtraBody,
         },
         // onChunk
         (chunk) => {
@@ -188,7 +193,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         temperature: temperature ?? 0.3,
         /* P_deepseek-mode — forward reasoning flags. */
         reasoning_effort,
-        extra_body,
+        extra_body: safeExtraBody,
       });
 
       res.json({

@@ -1,7 +1,9 @@
 import { eq, and, gte, ne, desc, sql } from 'drizzle-orm';
 import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { getDb } from '../db/index.js';
-import { users, authSessions, verificationTokens, pendingRegistrations } from '../db/schema.js';
+import { users, authSessions, verificationTokens, pendingRegistrations, files, loginFailures } from '../db/schema.js';
 import {
   hashPassword, comparePassword,
   generateSessionToken, generateShortToken, generateLoginCode,
@@ -38,6 +40,21 @@ const CODE_TTL_MINUTES = 10;
 /* Minimum password length — must match the front-end gate
  * (index.html:8065/8243) and the input minlength="8" attribute. */
 const MIN_PASSWORD_LENGTH = 8;
+
+/* P_password-bcrypt-truncation — M1 audit fix.
+ * bcrypt's algorithm silently TRUNCATES the plaintext at 72 BYTES
+ * (not 72 characters — UTF-8 multi-byte chars count as multiple).
+ * A 1000-char password "aaaa…aX" and a 73-char password "aaaa…aX"
+ * produce the SAME hash, so an attacker who knows a victim's long
+ * password could send any 72-byte prefix of it and authenticate.
+ *
+ * Reject anything longer than MAX_PASSWORD_LENGTH (64 chars) at
+ * every entry point so the input is guaranteed to fit in 72 bytes
+ * even with conservative UTF-8. The 64-char ceiling is also the
+ * practical upper bound for human-memorable passwords; beyond that
+ * we are almost certainly looking at a paste/programmatic input
+ * that's better off hashed with argon2/scrypt server-side. */
+const MAX_PASSWORD_LENGTH = 64;
 
 /* ──────────────────────────────────────────────
    Helpers
@@ -122,6 +139,7 @@ export async function register(email, password) {
     throw new BadRequest('Invalid email format');
   }
   if (password.length < MIN_PASSWORD_LENGTH) throw new BadRequest('Password must be at least 8 characters');
+  if (password.length > MAX_PASSWORD_LENGTH) throw new BadRequest('Password is too long (maximum 64 characters)');
 
   const db = getDb();
 
@@ -224,20 +242,20 @@ export async function login(email, password) {
   // Throws TooManyRequests if this email has hit the failure
   // threshold within the lockout window. Checking BEFORE bcrypt
   // also saves CPU under sustained attack.
-  checkLockout(normalizedEmail);
+  await checkLockout(normalizedEmail);
 
   const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   if (!user) {
     // Count the attempt against the email even though no user
     // exists — otherwise an attacker can probe "is X registered?"
     // by measuring when the lockout kicks in.
-    recordFailure(normalizedEmail);
+    await recordFailure(normalizedEmail);
     throw new Unauthorized('Invalid email or password');
   }
 
   const valid = await comparePassword(password, user.passwordHash);
   if (!valid) {
-    recordFailure(normalizedEmail);
+    await recordFailure(normalizedEmail);
     throw new Unauthorized('Invalid email or password');
   }
 
@@ -247,7 +265,7 @@ export async function login(email, password) {
   }
 
   // Successful login — wipe any prior failure count for this email.
-  recordSuccess(normalizedEmail);
+  await recordSuccess(normalizedEmail);
 
   const sid = await createSession(user.id);
 
@@ -275,7 +293,7 @@ export async function getMe(userId) {
     verifiedAt: user.verifiedAt,
     createdAt: user.createdAt,
     customInstructions: user.customInstructions,
-    preferences: user.preferences,
+    preferences: user.preferences ?? {},
     defaultModel: user.defaultModel,
   };
 }
@@ -470,6 +488,7 @@ export async function getResetInfo(token) {
 export async function resetPassword(token, newPassword) {
   if (!token || !newPassword) throw new BadRequest('Token and new password are required');
   if (newPassword.length < MIN_PASSWORD_LENGTH) throw new BadRequest('Password must be at least 8 characters');
+  if (newPassword.length > MAX_PASSWORD_LENGTH) throw new BadRequest('Password is too long (maximum 64 characters)');
 
   const db = getDb();
 
@@ -483,12 +502,21 @@ export async function resetPassword(token, newPassword) {
   if (!vt) throw new BadRequest('Invalid or expired reset token');
 
   const passwordHash = await hashPassword(newPassword);
-  await db.update(users).set({ passwordHash }).where(eq(users.id, vt.userId));
-  await db.delete(verificationTokens).where(eq(verificationTokens.token, token));
-  // Invalidate every session for this user. The user will need to
-  // sign back in (the standard "you've been signed out for security"
-  // flow) but no attacker who may have had a session can continue.
-  await db.delete(authSessions).where(eq(authSessions.userId, vt.userId));
+  /* P_reset-password-atomic — M2 audit fix. Three writes must be
+   * all-or-nothing: changing the password, consuming the reset token,
+   * and invalidating every session. A partial failure would leave an
+   * inconsistent state — e.g. "new password set, but the token is
+   * still valid and could be replayed" or "new password set, but
+   * the attacker's session is still alive". Wrap in a transaction
+   * so any error rolls back the whole reset. */
+  await db.transaction(async (tx) => {
+    await tx.update(users).set({ passwordHash }).where(eq(users.id, vt.userId));
+    await tx.delete(verificationTokens).where(eq(verificationTokens.token, token));
+    // Invalidate every session for this user. The user will need to
+    // sign back in (the standard "you've been signed out for security"
+    // flow) but no attacker who may have had a session can continue.
+    await tx.delete(authSessions).where(eq(authSessions.userId, vt.userId));
+  });
 }
 
 /**
@@ -502,6 +530,7 @@ export async function resetPassword(token, newPassword) {
 export async function changePassword(userId, oldPassword, newPassword, currentSid) {
   if (!oldPassword || !newPassword) throw new BadRequest('Current password and new password are required');
   if (newPassword.length < MIN_PASSWORD_LENGTH) throw new BadRequest('Password must be at least 8 characters');
+  if (newPassword.length > MAX_PASSWORD_LENGTH) throw new BadRequest('Password is too long (maximum 64 characters)');
 
   const db = getDb();
   const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
@@ -531,8 +560,58 @@ export async function changePassword(userId, oldPassword, newPassword, currentSi
 
 /**
  * DELETE /api/auth/account
+ *
+ * Cascade contract: most user-scoped rows are tied to users.id via
+ * `onDelete: 'cascade'` (sessions, messages, api_keys, projects,
+ * mistakes, audit_events, ...), so the final `DELETE FROM users`
+ * propagates automatically. Two manual sweeps are still required:
+ *
+ * 1. `login_failures` is keyed by email, NOT by userId — DB cascade
+ *    cannot reach it. Without the explicit delete, the row stays
+ *    forever and (worse) immediately re-locks any future account
+ *    that re-registers the same email.
+ *
+ * 2. Uploaded files have a `storage_path` on disk. The DB row is
+ *    removed by cascade, but the bytes on disk would orphan. We
+ *    unlink each file under the configured UPLOAD_DIR and ignore
+ *    ENOENT (already gone / never written). Anything outside the
+ *    upload root is refused so a poisoned storagePath can't trick
+ *    us into unlinking an arbitrary file.
  */
-export async function deleteAccount(userId) {
+export async function deleteAccount(userId, email) {
   const db = getDb();
+  const uploadRoot = path.resolve(process.env.UPLOAD_DIR || '/tmp/socrates-uploads');
+
+  // 1. Best-effort physical file cleanup. Run BEFORE the cascade
+  //    delete so we can still read the storage paths.
+  try {
+    const rows = await db.select({ storagePath: files.storagePath })
+      .from(files)
+      .where(eq(files.userId, userId));
+    for (const r of rows) {
+      if (!r.storagePath) continue;
+      const resolved = path.resolve(r.storagePath);
+      // Reject anything that escapes the upload root — defence in
+      // depth against a poisoned DB column.
+      if (!resolved.startsWith(uploadRoot + path.sep) && resolved !== uploadRoot) continue;
+      try { await fs.unlink(resolved); }
+      catch (e) { if (e.code !== 'ENOENT') console.warn('[auth] delete-account: unlink failed for', resolved, e.message); }
+    }
+  } catch (e) {
+    // Non-fatal — the row-level cascade still cleans the DB even if
+    // the file unlink pass errors out. Worst case: orphaned bytes
+    // get reaped by cleanupDb later.
+    console.warn('[auth] delete-account: file sweep failed:', e.message);
+  }
+
+  // 2. Cascade. sessions, messages, projects, api_keys, ... all go
+  //    away automatically via `onDelete: 'cascade'`.
   await db.delete(users).where(eq(users.id, userId));
+
+  // 3. login_failures is keyed by email, not userId — and not in the
+  //    cascade tree. Look up by the email the route handed us.
+  if (email) {
+    try { await db.delete(loginFailures).where(eq(loginFailures.email, email.toLowerCase())); }
+    catch (e) { /* non-fatal — orphaned lockout is bounded harm */ }
+  }
 }

@@ -3,13 +3,24 @@ import nodemailer from 'nodemailer';
 let transporter = null;
 
 function getTransporter() {
-  if (transporter) return transporter;
+  if (transporter !== undefined) return transporter;
 
   const { SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS } = process.env;
 
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    console.warn('[email] SMTP not fully configured — emails will be logged instead of sent');
-    return null;
+    // P_email-fallback-leak — H2 audit fix. In production we MUST NOT
+    // fall back to console.log: tokens (verify/reset/login codes) would
+    // land in journalctl, which has broader read access than intended.
+    // Surface a startup-time error instead; developers must configure
+    // real SMTP. In dev, allow the fallback but mask the body.
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[email] FATAL: SMTP not configured in production. Set SMTP_HOST/SMTP_USER/SMTP_PASS and restart.');
+      transporter = false;
+      return false;
+    }
+    console.warn('[email] SMTP not configured — dev mode, will log masked preview');
+    transporter = false;
+    return false;
   }
 
   transporter = nodemailer.createTransport({
@@ -23,13 +34,19 @@ function getTransporter() {
 }
 
 /**
- * Send an email. Falls back to console.log when SMTP is not configured.
+ * Send an email. Production requires SMTP — fails fast if missing.
+ * Dev mode logs a masked preview (first 40 chars of subject, body truncated).
  */
 export async function sendEmail({ to, subject, text, html }) {
   const t = getTransporter();
   if (!t) {
-    console.log(`[email] WOULD SEND — to: ${to}, subject: ${subject}`);
-    console.log(`[email] body: ${text || html}`);
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SMTP not configured — cannot deliver transactional email');
+    }
+    // Dev-only masked log; never print the full body or token.
+    const subjMask = (subject || '').slice(0, 40);
+    const bodyMask = ((text || html || '').replace(/\s+/g, ' ').slice(0, 80) + '…');
+    console.log(`[email:dev] masked preview — to: ${to}, subj: ${subjMask}, body: ${bodyMask}`);
     return;
   }
   try {
@@ -42,6 +59,7 @@ export async function sendEmail({ to, subject, text, html }) {
     });
   } catch (err) {
     console.error('[email] Failed to send:', err.message);
+    throw err;
   }
 }
 

@@ -1,6 +1,6 @@
 import { Unauthorized } from '../lib/errors.js';
 import { getDb } from '../db/index.js';
-import { users } from '../db/schema.js';
+import { users, authSessions } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -18,9 +18,6 @@ export async function requireAuth(req, _res, next) {
   }
 
   try {
-    // Look up the session in the auth_sessions table.
-    // Each `sid` cookie value maps to a user_id + expires_at.
-    const { authSessions } = await import('../db/schema.js');
     const db = getDb();
 
     const [session] = await db
@@ -67,7 +64,6 @@ export async function optionalAuth(req, _res, next) {
   }
 
   try {
-    const { authSessions } = await import('../db/schema.js');
     const db = getDb();
 
     const [session] = await db

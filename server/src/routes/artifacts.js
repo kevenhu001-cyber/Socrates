@@ -5,6 +5,7 @@ import { artifacts, artifactVersions } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
 import { generateShareToken } from '../lib/crypto.js';
+import { normalizeVisibility } from '../lib/sanitize.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -110,9 +111,13 @@ router.post('/:id/share', async (req, res, next) => {
       .where(and(eq(artifacts.id, req.params.id), eq(artifacts.userId, req.userId))).limit(1);
     if (!a) throw new NotFound('Artifact not found');
     const token = generateShareToken();
-    await db.update(artifacts).set({ shareToken: token, visibility: req.body?.visibility || 'unlisted' })
+    /* P_share-visibility-enum — M6 audit fix. Whitelist visibility
+     * at the API edge so the DB column cannot be poisoned with
+     * arbitrary text (artifacts.visibility is plain TEXT). */
+    const visibility = normalizeVisibility(req.body && req.body.visibility);
+    await db.update(artifacts).set({ shareToken: token, visibility })
       .where(eq(artifacts.id, req.params.id));
-    return res.status(201).json({ token, url: `/a/${token}` });
+    return res.status(201).json({ token, url: `/a/${token}`, visibility });
   } catch (err) { next(err); }
 });
 
