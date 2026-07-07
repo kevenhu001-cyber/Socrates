@@ -53,9 +53,9 @@
 
   <!-- tagline -->
   <g transform="translate(340 220)" fill="#d8c8a0" font-family="Inter, sans-serif">
-    <text x="0" y="0" font-size="16" opacity="0.9">Streaming chat, viz canvases, LaTeX, projects, tags, archive,</text>
-    <text x="0" y="22" font-size="16" opacity="0.9">prompts, agent mode, share links, Android client,</text>
-    <text x="0" y="44" font-size="16" opacity="0.9">and a Socratic teacher prompt — all in a single-file SPA.</text>
+    <text x="0" y="0" font-size="16" opacity="0.9">Streaming chat, viz canvases, KaTeX, reasoning models, projects, tags,</text>
+    <text x="0" y="22" font-size="16" opacity="0.9">agent mode, document extraction (DOCX/XLSX/PPTX/EPUB/RTF/PDF),</text>
+    <text x="0" y="44" font-size="16" opacity="0.9">Android client, and a Socratic teacher prompt — all in a single-page app.</text>
   </g>
 
   <!-- right side: small capability chips -->

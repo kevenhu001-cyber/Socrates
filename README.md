@@ -6,20 +6,21 @@
 
 [![Repo visibility](https://img.shields.io/badge/visibility-private-7a6c4d?style=flat-square)](#-repository-visibility)
 [![App status](https://img.shields.io/badge/app-online-d8a85b?style=flat-square)](https://app.topodrive.top/)
-[![Backend](https://img.shields.io/badge/backend-Node.js%2020%20%2B%20ESM-3c873a?style=flat-square&logo=node.js&logoColor=white)](server/)
-[![Frontend](https://img.shields.io/badge/frontend-single--file%20SPA-f3c769?style=flat-square&logo=html5&logoColor=black)](index.html)
+[![Backend](https://img.shields.io/badge/backend-Node.js%2022%20%2B%20ESM-3c873a?style=flat-square&logo=node.js&logoColor=white)](server/)
+[![Frontend](https://img.shields.io/badge/frontend-Vite%20SPA-f3c769?style=flat-square&logo=vite&logoColor=black)](frontend/)
 [![Android](https://img.shields.io/badge/android-Kotlin%20%2B%20Compose-3DDC84?style=flat-square&logo=android&logoColor=white)](android/)
+[![Database](https://img.shields.io/badge/database-PostgreSQL%2014%2B-4169e1?style=flat-square&logo=postgresql&logoColor=white)](server/src/db/)
 [![License](https://img.shields.io/badge/license-proprietary-555555?style=flat-square)](#-license)
 
-**Socrates is a streaming, Socratic AI tutor.**  
-It pairs an OpenAI-compatible chat model with a notebook, projects, tags,
-viz canvases, KaTeX, an Android client, and a Socratic teacher prompt —
-all in a single-page web app served from a static directory.
+**Socrates — AI-powered Socratic tutor**  
+Streaming chat with reasoning models, interactive viz canvases, KaTeX math,
+document extraction (PDF/DOCX/XLSX/PPTX/EPUB/RTF), projects & tags, agent mode,
+cross-session memory, and a native Android client.
 
+[中文版说明 →](README.zh.md) ·
 [Live app](https://app.topodrive.top/) ·
 [OpenAPI spec](docs/api/openapi.yaml) ·
-[Android build](.github/workflows/build-apk.yml) ·
-[Issue tracker](#-support)
+[Android build](.github/workflows/build-apk.yml)
 
 </div>
 
@@ -34,7 +35,7 @@ all in a single-page web app served from a static directory.
 - [Tech stack](#-tech-stack)
 - [Repository layout](#-repository-layout)
 - [Quick start](#-quick-start)
-  - [1. Web SPA (static file)](#1-web-spa-static-file)
+  - [1. Frontend (Vite SPA)](#1-frontend-vite-spa)
   - [2. Backend API server](#2-backend-api-server)
   - [3. Android client](#3-android-client)
 - [Configuration](#-configuration)
@@ -73,15 +74,16 @@ feel real:
   not after the model finishes its turn.
 - **Reasoning models** (DeepSeek R1, QwQ, etc.) stream `<think>…</think>`
   blocks into a collapsible details; the markdown before and after
-  the think block is rendered as proper HTML in the live view
-  (no more "# Title - item 1" run-on blobs).
-- **A notebook of viz canvases** — drop an `html` / `viz` fenced block
+  the think block is rendered as proper HTML in the live view.
+- **A notebook of viz canvases** — drop an `` ```html `` / `` ```viz `` fenced block
   into the chat and the model can ship an interactive React/HTML/SVG
   artifact, sandboxed in a same-origin iframe.
+- **Document extraction** — attach PDF, DOCX, XLSX, PPTX, EPUB, or RTF
+  files and the server parses them into plain text for the LLM context.
 - **Projects, tags, pin, archive, share links, custom instructions,
   Cmd-K search, slash-command palette, prompt templates** — the
-  normal operating-system features a learning app needs once you
-  have more than three sessions.
+  operating-system features a learning app needs once you have more
+  than three sessions.
 - **Bring your own API key.** Socrates never charges for model usage.
   Configure OpenAI / Anthropic / MiniMax / any OpenAI-compatible
   endpoint in *Account → API keys* and the backend proxies the
@@ -90,8 +92,8 @@ feel real:
 ## Screenshots
 
 The marketing site ([`site/`](site/)) is what the public sees; the
-SPA ([`index.html`](index.html)) is what learners use. Both are
-shipped from the same repo.
+SPA (`frontend/`) is what learners use. Both are shipped from the
+same repo.
 
 <div align="center">
 
@@ -102,12 +104,12 @@ shipped from the same repo.
 
 </div>
 
-The SPA itself is a 12 000-line single HTML file (with the Socratic
+The SPA is a Vite-bundled vanilla JS application with the Socratic
 dialogue happening in the center, viz iframes inline as the model
 emits them, a knowledge map sidebar on the left, and a status /
-stats footer at the bottom). Production is reachable at
+stats footer at the bottom. Production is reachable at
 <https://app.topodrive.top/>; the project-local [`deploy.sh`](deploy.sh)
-copies the file into the nginx web root.
+builds and copies the bundle into the nginx web root.
 
 ## Features
 
@@ -123,7 +125,7 @@ copies the file into the nginx web root.
 - **`<think>` / `</think>` reasoning blocks.** Models that expose
   chain-of-thought get a collapsible details card; the live
   pre-think and post-think content render as proper HTML.
-- **Viz / HTML fences.** Drop ```html or ```viz in the chat and the
+- **Viz / HTML fences.** Drop `` ```html `` or `` ```viz `` in the chat and the
   body becomes a sandboxed iframe (not a `<pre><code>` of raw
   HTML). Mid-stream, a loading card replaces the body so the user
   never sees raw `<div>` characters stream in.
@@ -161,7 +163,11 @@ copies the file into the nginx web root.
   OpenAI-compatible endpoint (OpenAI, Anthropic via proxy, MiniMax,
   self-hosted, etc.). The proxy never logs the API key in plaintext
   and is the only thing that talks to the upstream provider.
-- **REST + SSE** chat and agent endpoints.
+- **Document extraction** — server-side parsing of PDF, DOCX, XLSX,
+  PPTX, EPUB, and RTF via dedicated parser modules; the extracted
+  text is injected into the LLM context.
+- **Web search** — parallel fan-out across MiniMax, Bing, and SearXNG
+  with automatic fallback for low-latency results.
 - **File / image upload** with `sharp` for thumbnail generation.
 - **Public share links** (`/s/:token`) for read-only viewing of a
   single session.
@@ -198,7 +204,7 @@ is a thin native wrapper around the same API.
 ```mermaid
 flowchart LR
   subgraph Client["Client"]
-    SPA["Web SPA<br/>(index.html<br/>~12k LoC)"]
+    SPA["Web SPA<br/>(Vite + vanilla JS)"]
     APK["Android<br/>(Kotlin + Compose)"]
   end
 
@@ -207,17 +213,18 @@ flowchart LR
     API["api.topodrive.top<br/>(reverse proxy)"]
   end
 
-  subgraph Server["Backend (Node 20+ ESM)"]
+  subgraph Server["Backend (Node 22+ ESM)"]
     EX["Express 5"]
     AUTH["Auth + CSRF"]
     CHAT["Chat / Agent<br/>(SSE streaming)"]
     MEM["Memory / Projects / Tags / Archive"]
-    FILES["Files / Uploads"]
+    FILES["Files / Uploads /<br/>Document Extraction"]
+    WEB["Web Search<br/>(MiniMax+Bing+SearXNG)"]
     SHARE["Share / Public links"]
   end
 
   DB[("PostgreSQL<br/>(Drizzle)")]
-  LLM(["OpenAI-compatible<br/>LLM provider<br/>(user's own key)")]
+  LLM(["OpenAI-compatible<br/>LLM provider<br/>(user's own key)"])
   FCM(["FCM push"])
 
   SPA -->|HTTPS| APP
@@ -228,12 +235,14 @@ flowchart LR
   EX --> CHAT
   EX --> MEM
   EX --> FILES
+  EX --> WEB
   EX --> SHARE
   AUTH --> DB
   CHAT --> DB
   CHAT -->|streaming completion| LLM
   MEM --> DB
   FILES --> DB
+  WEB -->|parallel| SE["Search Engines"]
   SHARE --> DB
   EX -->|push| FCM
 ```
@@ -244,7 +253,7 @@ flowchart LR
 sequenceDiagram
   autonumber
   participant U as User (browser)
-  participant SPA as SPA (index.html)
+  participant SPA as SPA
   participant API as API (Express)
   participant DB as PostgreSQL
   participant LLM as LLM provider
@@ -268,20 +277,23 @@ sequenceDiagram
 
 | Layer | Technology | Notes |
 | --- | --- | --- |
-| Web SPA | Hand-written HTML / CSS / vanilla JS in one file | [`index.html`](index.html) is the only frontend artefact. No build step. |
+| Web SPA | Vanilla JS, Vite build | [`frontend/`](frontend/) — modular JS, tree-shaken via Vite |
 | Markdown | `marked` 4.3 + custom progressive renderer | see [Custom rendering pipeline](#-custom-rendering-pipeline) |
 | Math | `katex` 0.16.9 (CDN, SRI-pinned) | display + inline modes |
 | Code highlight | `highlight.js` (loaded lazily at finish time) | |
 | Search | `fuse.js` for the Cmd-K palette | |
 | Auth | Cookie (`sid`) + CSRF double-submit | see [`server/src/middleware/auth.js`](server/src/middleware/auth.js) and [`server/src/middleware/csrf.js`](server/src/middleware/csrf.js) |
-| Backend | Node.js 20+, Express 5, ESM | [`server/src/`](server/src/) |
-| ORM | Drizzle ORM 0.40 + `drizzle-kit` migrations | [`server/src/db/`](server/src/db/) |
+| Backend | Node.js 22+, Express 5, ESM | [`server/src/`](server/src/) |
+| ORM | Drizzle ORM 0.40+ + `drizzle-kit` migrations | [`server/src/db/`](server/src/db/) |
 | Database | PostgreSQL 14+ | `DATABASE_URL` env var |
 | LLM proxy | `fetch` to any OpenAI-compatible endpoint | [`server/src/services/llm.js`](server/src/services/llm.js) |
+| Document parsing | mammoth, SheetJS, jszip+xml2js, EPub, rtf2text | [`server/src/services/fileParsers/`](server/src/services/fileParsers/) |
+| Web search | MiniMax + Bing (parallel race), SearXNG fallback | [`server/src/services/webSearch.js`](server/src/services/webSearch.js) |
 | Image processing | `sharp` for upload thumbnails | |
 | Email | `nodemailer` (SMTP) for verification, magic-link reset | |
 | File upload | `multer` | |
 | Captcha | Server-issued image captcha | [`server/src/services/captcha.js`](server/src/services/captcha.js) |
+| Code execution | Pyodide WASM (Python sandbox) | [`server/src/services/codeInterpreter.js`](server/src/services/codeInterpreter.js) |
 | Android UI | Jetpack Compose (Material 3) | [`android/app/src/main/`](android/app/src/main/) |
 | Android networking | OkHttp + Kotlinx Serialization | |
 | CI | GitHub Actions: build Android APK on push to `main` | [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) |
@@ -292,88 +304,63 @@ sequenceDiagram
 
 ```
 Socrates/
-├── index.html              # The entire web SPA (~12k LoC, no build)
+├── frontend/               # Vite SPA (vanilla JS, modular)
+│   ├── index.html
+│   ├── src/
+│   │   ├── main.js         # App logic (~9.8k lines)
+│   │   ├── styles.css      # All CSS (~3600 lines)
+│   │   ├── state.js        # Reactive state object
+│   │   ├── attachments.js  # File attachment handling
+│   │   └── ...
+│   ├── dist/               # Built bundle (gitignored)
+│   └── package.json
 ├── site/                   # Marketing site (topodrive.top)
 │   ├── index.html
-│   ├── pricing.html
-│   ├── guide.html
-│   ├── about.html
-│   ├── contact.html
-│   ├── terms.html
-│   ├── privacy.html
-│   ├── account.html
-│   ├── api-keys.html
-│   ├── profile.html
-│   ├── checkout.html
 │   ├── base.css
-│   └── zh/                 # Chinese translations of every page
-├── server/                 # Node 20+ / Express 5 / Drizzle / PostgreSQL
+│   └── zh/                 # Chinese translations
+├── server/                 # Node 22+ / Express 5 / Drizzle / PostgreSQL
 │   ├── package.json
-│   ├── drizzle.config.js
 │   ├── drizzle/            # Migrations
 │   └── src/
-│       ├── index.js        # entry point
+│       ├── index.js        # Entry point
 │       ├── app.js          # Express app, middleware wiring
 │       ├── db/             # Drizzle schema, migrations, client
 │       ├── lib/            # errors, crypto helpers
 │       ├── middleware/     # auth, csrf, error
 │       ├── routes/         # auth, chat, sessions, share, files, ...
-│       └── services/       # llm, email, captcha, search, apiKey, ...
+│       └── services/       # llm, webSearch, fileParsers, codeInterpreter, ...
 ├── android/                # Kotlin / Compose client
 │   ├── build.gradle.kts
-│   ├── settings.gradle.kts
 │   └── app/
-│       ├── build.gradle.kts
-│       └── src/main/
-│           ├── AndroidManifest.xml
-│           ├── java/com/socrates/app/...
-│           └── res/
 ├── prompts/
-│   └── teacher-mode.md     # The Socratic system prompt
+│   └── teacher-mode.md     # The Socratic system prompt (verbatim)
 ├── docs/
 │   ├── api/openapi.yaml    # Full REST + SSE API spec
-│   └── assets/             # README hero, etc.
-├── .github/workflows/
-│   └── build-apk.yml       # Android CI
+│   └── assets/hero.svg     # README hero image
 ├── deploy.sh               # nginx copy + reload helper
-├── about-v2.png            # marketing screenshots
-├── pricing-v2.png
-├── index-v2.png
-├── ...
-├── .gitignore
-└── README.md               # you are here
+├── README.md               # English
+└── README.zh.md            # 中文
 ```
 
 ## Quick start
 
 You need three things running:
 
-1. The static SPA ([`index.html`](index.html)) — open it or serve
-   it from nginx.
-2. The API server ([`server/`](server/)) — Node 20+, PostgreSQL 14+.
+1. The frontend SPA ([`frontend/`](frontend/)) — Vite dev server or built bundle.
+2. The API server ([`server/`](server/)) — Node 22+, PostgreSQL 14+.
 3. (Optional) An LLM provider — the user configures their own
-   OpenAI-compatible key in *Account → API keys*, or the build-in
+   OpenAI-compatible key in *Account → API keys*, or the built-in
    "Beagle" provider is auto-seeded if the operator's `MINIMAX_API_KEY`
    env var is set.
 
-### 1. Web SPA (static file)
-
-The simplest possible setup — open the file in a browser:
+### 1. Frontend (Vite SPA)
 
 ```bash
-git clone https://github.com/kevenhu001-cyber/Socrates.git
-cd Socrates
-python3 -m http.server 8000
-# Open http://localhost:8000/index.html
-```
-
-For production, copy the file to your nginx web root (this is what
-[`deploy.sh`](deploy.sh) does):
-
-```bash
-sudo install -m 644 -o www-data -g www-data \
-  index.html /var/www/app.topodrive.top/index.html
-sudo nginx -s reload
+cd frontend
+npm install
+npm run dev        # Dev server at http://localhost:5173
+# or
+npm run build      # Production build → dist/
 ```
 
 ### 2. Backend API server
@@ -382,25 +369,21 @@ sudo nginx -s reload
 cd server
 npm install
 
-# Configure environment (see Configuration below)
-cp .env.example .env   # if present; otherwise set in your shell
+# Configure environment
 export DATABASE_URL="postgres://user:pass@localhost:5432/socrates"
 export PORT=8080
 
 # Migrate the schema
 npm run db:migrate
 
-# Run the dev server (auto-reload on file change)
+# Run the dev server (auto-reload)
 npm run dev
 
 # Or production
 npm start
 ```
 
-The server listens on `http://0.0.0.0:8080` by default. The SPA
-expects it at the same origin (or behind a same-domain reverse
-proxy). For local development, set up a line in `/etc/hosts` or a
-CORS-allowing reverse proxy.
+The server listens on `http://0.0.0.0:8080` by default.
 
 ### 3. Android client
 
@@ -412,8 +395,7 @@ cd android
 ```
 
 The CI workflow at [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml)
-runs on every push to `main` and on `workflow_dispatch`, and
-attaches the resulting APK as a workflow artefact.
+runs on every push to `main` and attaches the resulting APK as a workflow artefact.
 
 ## Configuration
 
@@ -431,7 +413,7 @@ the SPA reads no config from disk (its settings live in
 | `MINIMAX_API_KEY` | no | — | If set, a built-in "Beagle" LLM provider is auto-seeded so the app works out-of-the-box for new users |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | no | — | Required for email verification and password reset |
 | `FCM_SERVER_KEY` | no | — | Push notifications for the Android client |
-| `BEAGLE_BUILT_IN.key` | no | empty | If set, the built-in provider uses this key (overrides `MINIMAX_API_KEY` at runtime) |
+| `BEAGLE_BUILT_IN.key` | no | empty | If set, the built-in provider uses this key (overrides `MINIMAX_API_KEY`) |
 
 The user configures their own provider at runtime in
 *Account → API keys* — the backend never logs the key in plaintext,
@@ -445,14 +427,13 @@ based on whether the model has finished its turn:
 
 | Renderer | Where | Used when |
 | --- | --- | --- |
-| `formatMsgProgressive` | [`index.html`](index.html) (function `formatMsgProgressive(t)`) | Mid-stream, every animation frame. Line-by-line state machine, no `marked` dependency, handles ATX headings, lists, code fences, blockquotes, HRs, and inline `**bold**` / `*italic*` / `` `code` `` / `[link](url)`. |
-| `formatMsg` | [`index.html`](index.html) (function `formatMsg(t)`) | At `finish()` time, when the user re-opens a saved message, or when copying/exporting. Full pipeline: `marked` + KaTeX + highlight.js + viz iframe + think-block handling. |
+| `formatMsgProgressive` | [`frontend/src/main.js`](frontend/src/main.js) | Mid-stream, every animation frame. Line-by-line state machine, no `marked` dependency, handles ATX headings, lists, code fences, blockquotes, HRs, and inline `**bold**` / `*italic*` / `` `code` `` / `[link](url)`. |
+| `formatMsg` | [`frontend/src/main.js`](frontend/src/main.js) | At `finish()` time, when the user re-opens a saved message, or when copying/exporting. Full pipeline: `marked` + KaTeX + highlight.js + viz iframe + think-block handling. |
 
 The key design rules:
 
 - **Block elements appear the instant the opener lands.** `# ` →
-  `<h1>` on the same frame the space is typed. The user never sees
-  a frame of `# Title` raw text.
+  `<h1>` on the same frame the space is typed.
 - **`<think>…</think>` slices render as HTML too.** Pre-think content
   goes into a `<div class="think-prefix">`, post-think content into
   `<div class="think-suffix">`. The think block itself uses the full
@@ -461,39 +442,8 @@ The key design rules:
   Some reasoning models leak `<|im_start|>…<|im_end|>` or `[INST]…[/INST]`
   into the stream; `stripChatArtifacts(t)` runs once per render so
   the user never sees them flicker by.
-- **Escaping uses nonce placeholders**, not the naive
-  "escape → markup → restore" pattern. The latter breaks when
-  user text contains the literal string `<code>`; the former
-  can't be tricked into producing a real tag.
-
-A worked example for a DeepSeek-R1-style response that mixes a
-heading, an unordered list, a think block, and inline `code`/`**bold**`:
-
-```text
-input:
-  ## Step 1
-  Calculate x.
-
-  - pick A
-  - pick B
-
-  <think>
-  Let me think...
-  </think>
-
-  Final answer is **42**.
-
-mid-stream frame (lastRendered slices):
-  think-prefix : "<h2>Step 1</h2><p>Calculate x.</p><ul><li>pick A</li><li>pick B</li></ul>"
-  think-block  : <details class="think-block">…<p>Let me think...</p>…</details>
-  think-suffix : "<p>Final answer is <strong>42</strong>.</p>"
-
-finish() pass:
-  body.innerHTML = formatMsg(full)
-  // → flat HTML with all the same structures, but
-  //   KaTeX, highlight.js, viz, and the full think
-  //   block rendering now apply.
-```
+- **Escaping uses nonce placeholders** — the naive "escape → markup → restore"
+  pattern breaks when user text contains the literal string `<code>`.
 
 ## API reference
 
@@ -523,12 +473,12 @@ Content-Type: text/event-stream
 data: {"delta":"Bayes"}
 data: {"delta":"' theorem"}
 data: {"delta":" says..."}
-data: {"delta":"<|im_end|>"}            # filtered by stripChatArtifacts
 data: [DONE]
 ```
 
 Other notable endpoints: `/api/agent/run` (tool-using agent),
 `/api/search` (Cmd-K), `/api/fetch-batch` (URL scraping),
+`/api/files/extract` (document text extraction),
 `/api/share/:token` (public read-only), `/api/memory/*`
 (cross-session memory), `/api/usage/*` (token tracking),
 `/api/agent/files/*` (agent workspace file access).
@@ -538,16 +488,13 @@ Other notable endpoints: `/api/agent/run` (tool-using agent),
 The included [`deploy.sh`](deploy.sh) is the canonical "ship it"
 script for the production environment. It:
 
-1. Copies [`index.html`](index.html) to
-   `/var/www/app.topodrive.top/index.html` (the SPA origin).
-2. Copies [`site/base.css`](site/base.css) and every page in
-   [`site/`](site/) (including the [`site/zh/`](site/zh/) Chinese
-   translations) to `/var/www/topodrive.top/`.
-3. Validates and reloads nginx.
+1. Runs `vite build` in the frontend directory.
+2. Copies the built `dist/` bundle to `/var/www/app.topodrive.top/`.
+3. Copies the marketing site (`site/`) to `/var/www/topodrive.top/`.
+4. Validates and reloads nginx.
 
 ```bash
-./deploy.sh                              # deploy index.html
-./deploy.sh /path/to/index.html          # deploy a different file
+./deploy.sh                              # build + deploy
 ```
 
 For the backend, run `server/` under your process supervisor of
@@ -574,6 +521,9 @@ artefacts are downloadable from the Actions tab.
 - **Viz iframes.** Sandboxed (`sandbox="allow-scripts"`, no
   `allow-same-origin` by default), so a model that emits malicious
   HTML can't touch the parent DOM or the user's cookies.
+- **Document uploads.** Non-image files are force-downloaded via
+  `Content-Disposition: attachment`; HTML/XHTML uploads are blocked
+  at the multer level to prevent XSS.
 - **CSP.** Recommended for production (not currently shipped in
   the static SPA; the operator is expected to set headers at the
   nginx layer).
@@ -584,12 +534,9 @@ artefacts are downloadable from the Actions tab.
 
 This repository is **private**. The public-facing surfaces are:
 
-- The marketing site at <https://topodrive.top/> (served from
-  the `site/` directory of an internal mirror, not from this
-  repository).
-- The live app at <https://app.topodrive.top/> (also served from
-  a private build artefact).
-- The Google Play listing (when published) for the Android client.
+- The marketing site at <https://topodrive.top/>
+- The live app at <https://app.topodrive.top/>
+- The Google Play listing (when published) for the Android client
 
 If you've been granted access to this repo, please don't make
 the contents public — the SPA includes the Socratic teacher
@@ -600,23 +547,15 @@ rendering pipeline that we'd like to keep proprietary for now.
 
 Roughly in priority order, no dates:
 
-- [ ] **Multi-modal input.** Image / PDF attach-and-ask is
-  partially implemented; voice transcription exists; we want
-  a unified "drop a file" affordance in the input bar.
-- [ ] **Better RAG.** Today's memory store is keyword + recent;
-  a vector index over past sessions would let the model surface
-  older answers when a new question is a re-phrasing.
-- [ ] **Workspace sharing.** Workspaces exist (P5.5) but
-  collaboration is single-user; we'd like real-time co-editing
-  of a session.
-- [ ] **Mobile PWA installability.** The SPA is installable on
-  iOS Safari via "Add to Home Screen" but the manifest and
-  service worker are still in-progress.
-- [ ] **Sandboxed code execution** for the viz / agent story,
-  so the model can ship a tiny Python snippet and have it
-  actually run, not just render.
-- [ ] **Per-message cost estimate** in the toolbar, computed
-  from the provider's pricing endpoint when available.
+- [x] **Document extraction** — PDF, DOCX, XLSX, PPTX, EPUB, RTF parsing
+- [x] **Web search** — low-latency parallel search with fallback
+- [x] **Memory/performance tuning** — reduced memory footprint for constrained servers
+- [x] **SSE reliability** — silence watchdog, proper error events, graceful timeouts
+- [ ] **Better RAG** — vector index over past sessions for smarter context retrieval
+- [ ] **Workspace sharing** — real-time co-editing of sessions
+- [ ] **Mobile PWA** — manifest + service worker for installability
+- [ ] **Sandboxed code execution** — run Python snippets in the viz sandbox
+- [ ] **Per-message cost estimate** — computed from the provider's pricing endpoint
 
 ## Contributing
 
@@ -628,22 +567,13 @@ or open a ticket in the internal tracker.
 For core contributors:
 
 1. Branch off `main` (`git checkout -b pX.Y/short-name`).
-2. Make your change. Keep edits scoped; don't touch unrelated
-   files. The SPA is one giant HTML file, so be careful with
-   unrelated `index.html` churn.
+2. Make your change. Keep edits scoped.
 3. Run the linters:
    ```bash
    cd server && npm run lint
    ```
-4. Push and open a PR. The CI workflow builds the Android APK
-   on every push; if your change only touches `server/` you
-   can skip the APK build by labelling the PR `skip-apk`.
+4. Push and open a PR.
 5. Merge via squash.
-
-The commit message convention is `Pn.m: short summary` where
-`n.m` is the milestone / phase number. Examples: `P1.4: render
-think-block prefix/suffix as markdown, not raw text` (this
-release), `P2.1: Projects (folders) with sidebar chips`.
 
 ## License
 
@@ -664,5 +594,7 @@ only" until a public release is announced.
 <div align="center">
 
 Built with care, for learners everywhere.
+
+[中文版说明 →](README.zh.md)
 
 </div>
