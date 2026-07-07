@@ -1039,6 +1039,12 @@ function onCmdKKey(ev){
    the server adopted on the first response). */
 var _saveInFlight=null;
 var _saveDirty=false;
+/* P_context-race — guard flag set during loadSession to prevent
+   saveCurrentSession() calls during message rebuilding. Without this,
+   a saveCurrentSession() triggered by an event handler while
+   loadSession() is in progress could capture mismatched state
+   (new session ID + old or partially-rebuilt messages). */
+var _loadingSession=false;
 /* P_delete-resurrect — every session id the user deleted in the
    current page load. doSave() refuses to POST any payload whose
    sessionId is in here, regardless of state.topic/state.session.
@@ -1066,6 +1072,14 @@ function forgetDeletedSession(id){delete _deletedIds[id]}
 function saveCurrentSession(){
   if(!state.topic)return;
   if(!CURRENT_USER)return; /* not signed in; do nothing */
+  /* P_context-race — discard saves during session loading. The
+     loadSession function is in the middle of rebuilding state and
+     any intercepted save would capture mismatched sessionId vs
+     messages, causing "会话串台" (context cross-contamination). */
+  if(_loadingSession){
+    console.debug("[sessions] saveCurrentSession BLOCKED — loading in progress");
+    return;
+  }
   /* If a save is already running, mark dirty and let it coalesce. */
   if(_saveInFlight){
     _saveDirty=true;
@@ -1146,10 +1160,15 @@ function doSave(){
     title:state.session.sessionTitle||state.session.topic,
     domain:state.session.domain||state.session.topic,
     mode:appMode,
-    /* P2.1 — write the active project binding into the session
-       record so the server-side list endpoint can group by
-       project. `null` (or missing) means Inbox. */
-    projectId:state.session.currentProjectId||null,
+    /* P2.1 — project-to-session mapping. The client creates projects
+       locally with client-generated UUIDs. Patching these to the
+       server session would fail the FK constraint (projects.id)
+       because the server projects table uses different UUIDs
+       (server auto-generated). Until project sync is bidirectional,
+       projectId is NOT sent to the server; project filtering is
+       done entirely client-side via SERVER_SESSIONS + PROJECTS.
+       `null` = Inbox (no project). */
+    projectId: null, // client-only; see P2.1 comment above
     messages:messages,
     kbNodes:state.kb.kbNodes,
     mistakes:state.kb.mistakes||[],
@@ -1206,6 +1225,16 @@ function doSave(){
      save kept sending the original (rejected) id, breaking the upsert
      and producing duplicate rows. */
   _saveInFlight=apiFetch("/api/sessions",{method:"POST",body:payload}).then(function(r){
+    /* P_delete-resurrect — if this session was deleted while the
+       POST was in-flight (rememberDeletedSession set a tombstone),
+       do NOT adopt the server's id or update state. The server may
+       have processed this upsert after the DELETE (race), potentially
+       resurrecting the row. Instead, just refresh the server list
+       which will reflect the DELETE (or the next DELETE cycle). */
+    if(capturedSessionId && _deletedIds[capturedSessionId]){
+      console.debug("[sessions] POST response BLOCKED — session was deleted",{capturedSessionId});
+      return refreshServerSessions();
+    }
     /* P_context-race — if the user switched to a different session
        while this POST was in-flight, do NOT adopt the server's id
        (it belongs to the old session) and do NOT update the URL. */
@@ -1333,6 +1362,10 @@ async function loadSession(id){
   window._activeChatAbort=null;
   _chatStreaming=false;
   _chatStopMode=false;
+  /* P_context-race — prevent saveCurrentSession() during session
+     loading. Event handlers that fire during the async loading window
+     could otherwise capture mismatched state. */
+  _loadingSession=true;
   try{
     var s=await apiFetch("/api/sessions/"+encodeURIComponent(id));
     ensureSessionShape(s);
@@ -1342,12 +1375,21 @@ async function loadSession(id){
     state.currentNode=s.currentNode||0;
     state.totalQ=s.totalQ||0;
     state.phase=s.phase||"chat";
-    state.currentSessionId=s.id;
+    /* P_context-race — currentSessionId and URL are set DEFERRED
+       after messages are rebuilt below. Setting currentSessionId before
+       messages creates a window where state.session.currentSessionId
+       points to the NEW session but state.messages still holds the OLD
+       session's data. Any saveCurrentSession() that fires during this
+       window (called from 23+ places) would capture mismatched state,
+       causing "会话串台" (context cross-contamination). Both fields
+       are set together at the end of the message-rebuild block. */
+    // state.currentSessionId = s.id; ← MOVED DOWN
     toggleShareBtn();
     state.mistakes=s.mistakes||[];
     state.sessionTitle=s.title||null;
-    /* Update the URL to reflect the current chat session. */
-    pushChatIdToURL(s.id);
+    /* Update the URL to reflect the current chat session.
+       MOVED DOWN — see comment above. */
+    // pushChatIdToURL(s.id); ← MOVED DOWN
     state.substantiveCount=0;
     state.stuckCount=0;
     state.diagIndex=0;
@@ -1537,6 +1579,15 @@ async function loadSession(id){
       div.appendChild(body);
       msgList.appendChild(div);
     });
+    /* P_context-race — currentSessionId and URL are set HERE, AFTER
+       state.messages has been fully rebuilt. Setting them earlier
+       (before the forEach rebuild loop) left a window where
+       state.session.currentSessionId pointed to the new session but
+       state.messages still held old data — any saveCurrentSession()
+       firing in that window would cross-contaminate contexts. */
+    state.currentSessionId = s.id;
+    state.session.currentSessionId = s.id;
+    pushChatIdToURL(s.id);
     /* Mirror the server history into the localStorage cache so the
        next chat turn can read it via extractHistory() (fast path) instead
        of falling back to the slower DOM scrape. Skip if the local cache
@@ -1639,6 +1690,8 @@ async function loadSession(id){
         }catch(_){}
       }catch(_){}
     }
+  } finally {
+    _loadingSession = false;
   }
 }
 
