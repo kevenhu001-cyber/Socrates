@@ -38,8 +38,16 @@ const ACCEPTED_IMAGE_MIMES = new Set([
 const ACCEPTED_TEXT_MIMES = new Set([
   'text/plain', 'text/csv', 'text/markdown', 'application/json',
 ]);
-const ACCEPTED_PDF_MIMES = new Set([
+/* Office / document formats — extracted server-side via
+   POST /api/files/extract which dispatches to mammoth / SheetJS /
+   our JSZip-based PPTX parser / epub / rtf2text. */
+const ACCEPTED_DOC_MIMES = new Set([
   'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/epub+zip',
+  'application/rtf', 'text/rtf',
 ]);
 
 /* Pending attachments for the current turn. The store is
@@ -87,35 +95,62 @@ function shortId() {
   return 'att-' + Math.random().toString(36).slice(2, 10);
 }
 
-/** Decide whether `file` should be classified as image/text/pdf.
+/** Decide whether `file` should be classified as image/text/document.
  * Unknown MIMEs return null — the caller skips them with a toast. */
 function classify(file) {
   if (!file || !file.type) return null;
   if (ACCEPTED_IMAGE_MIMES.has(file.type)) return 'image';
   if (ACCEPTED_TEXT_MIMES.has(file.type)) return 'text';
-  if (ACCEPTED_PDF_MIMES.has(file.type)) return 'pdf';
-  // Fallback: treat .md/.csv/.txt with empty mime by extension.
+  if (ACCEPTED_DOC_MIMES.has(file.type)) return 'document';
+  // Fallback: classify by extension when the browser couldn't determine
+  // the MIME (common with drag-and-drop on Windows / some download managers).
   const name = (file.name || '').toLowerCase();
   if (name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.csv')
       || name.endsWith('.json') || name.endsWith('.log')) {
     return 'text';
   }
-  if (name.endsWith('.pdf')) return 'pdf';
+  if (name.endsWith('.pdf')) return 'document';
+  if (name.endsWith('.docx')) return 'document';
+  if (name.endsWith('.xlsx')) return 'document';
+  if (name.endsWith('.pptx')) return 'document';
+  if (name.endsWith('.epub')) return 'document';
+  if (name.endsWith('.rtf')) return 'document';
   return null;
 }
 
+/** Map a classified document to the kind label used in the chip + parts. */
+function docKindFromFile(file) {
+  const m = String((file && file.type) || '').toLowerCase();
+  if (m === 'application/pdf') return 'pdf';
+  if (m === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx';
+  if (m === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'xlsx';
+  if (m === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return 'pptx';
+  if (m === 'application/epub+zip') return 'epub';
+  if (m === 'application/rtf' || m === 'text/rtf') return 'rtf';
+  /* Extension fallback. */
+  const name = String((file && file.name) || '').toLowerCase();
+  if (name.endsWith('.pdf')) return 'pdf';
+  if (name.endsWith('.docx')) return 'docx';
+  if (name.endsWith('.xlsx')) return 'xlsx';
+  if (name.endsWith('.pptx')) return 'pptx';
+  if (name.endsWith('.epub')) return 'epub';
+  if (name.endsWith('.rtf')) return 'rtf';
+  return 'document';
+}
+
 /**
- * Extract text from a PDF by POSTing the file to /api/files/extract.
- * Returns { text, truncated, pageCount, error? }.
+ * Extract text from a PDF / DOCX / XLSX / PPTX / EPUB / RTF by POSTing
+ * the file to /api/files/extract. Returns { text, truncated, meta, error? }.
  *
- * The endpoint is mounted in server/src/routes/fileExtract.js. We use
- * multipart/form-data with a single `file` field. Errors surface as
- * a non-throwing { error } so the caller can keep the chip and show
+ * The endpoint is mounted in server/src/routes/fileExtract.js and
+ * dispatches to the appropriate parser based on the file's MIME type.
+ * We use multipart/form-data with a single `file` field. Errors surface
+ * as a non-throwing { error } so the caller can keep the chip and show
  * a banner instead of crashing the chat send.
  */
-async function extractPdfText(file) {
+async function extractDocumentText(file) {
   const fd = new FormData();
-  fd.append('file', file, file.name || 'document.pdf');
+  fd.append('file', file, file.name || 'document');
   const csrf = (typeof window !== 'undefined' && window.getCsrfToken)
     ? window.getCsrfToken() : '';
   const headers = csrf ? { 'X-CSRF-Token': csrf } : {};
@@ -126,16 +161,17 @@ async function extractPdfText(file) {
     headers,
   });
   if (!res.ok) {
-    return { text: '', truncated: false, pageCount: 0, error: `Extract failed (${res.status})` };
+    return { text: '', truncated: false, meta: {}, error: `Extract failed (${res.status})` };
   }
   const data = await res.json().catch(() => ({}));
   if (data && data.ok === false) {
-    return { text: '', truncated: false, pageCount: 0, error: data.error || 'Extract failed' };
+    return { text: '', truncated: false, meta: {}, error: data.error || 'Extract failed' };
   }
   return {
     text: data.text || '',
     truncated: !!data.truncated,
-    pageCount: data.pageCount || 0,
+    meta: data.meta || {},
+    kind: data.kind || 'document',
     error: data.error || undefined,
   };
 }
@@ -213,37 +249,46 @@ export async function addFiles(fileList) {
           size: file.size,
         });
         result.added++;
-      } else if (kind === 'pdf') {
+      } else if (kind === 'document') {
         if (file.size > MAX_IMAGE_BYTES * 6) { // ~25 MB cap, matches /api/files/extract
-          result.rejected.push(`${file.name}: PDF exceeds 25 MB limit`);
+          result.rejected.push(`${file.name}: file exceeds 25 MB limit`);
           continue;
         }
-        const { text, truncated, pageCount, error } = await extractPdfText(file);
+        const docKind = docKindFromFile(file);
+        const { text, truncated, meta, error } = await extractDocumentText(file);
+        const baseMime = file.type || ({
+          pdf: 'application/pdf',
+          docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          epub: 'application/epub+zip',
+          rtf: 'application/rtf',
+        })[docKind] || 'application/octet-stream';
         if (error) {
           result.rejected.push(`${file.name}: ${error}`);
-          // Still add the chip — the user sees the file is "attached"
-          // but with no text. We surface error in the chip itself.
           attachments.push({
             id: shortId(),
-            kind: 'pdf',
-            name: file.name || 'document.pdf',
-            mime: 'application/pdf',
+            kind: 'document',
+            docKind,
+            name: file.name || `document.${docKind}`,
+            mime: baseMime,
             text: '',
             truncated: false,
+            meta: {},
             size: file.size,
-            pageCount: 0,
             error,
           });
           continue;
         }
         attachments.push({
           id: shortId(),
-          kind: 'pdf',
-          name: file.name || 'document.pdf',
-          mime: 'application/pdf',
+          kind: 'document',
+          docKind,
+          name: file.name || `document.${docKind}`,
+          mime: baseMime,
           text,
           truncated,
-          pageCount,
+          meta,
           size: file.size,
         });
         result.added++;
@@ -294,29 +339,34 @@ export function buildMessageContent(text) {
         type: 'image_url',
         image_url: { url: a.dataUrl, detail: 'auto' },
       });
-    } else if ((a.kind === 'text' || a.kind === 'pdf') && a.text) {
+    } else if (a.kind === 'text' && a.text) {
       parts.push({
         type: 'text',
-        text: a.kind === 'pdf'
-          ? `[Parsed PDF: ${a.name}]\n${a.text}`
-          : `[Parsed file: ${a.name}]\n${a.text}`,
+        text: `[Parsed file: ${a.name}]\n${a.text}`,
       });
+    } else if (a.kind === 'document' && a.text) {
+      const label = a.docKind
+        ? `[Parsed ${a.docKind.toUpperCase()}: ${a.name}]`
+        : `[Parsed document: ${a.name}]`;
+      parts.push({ type: 'text', text: `${label}\n${a.text}` });
     }
-    // PDFs without extracted text (parse error) contribute nothing
-    // to the LLM content — the attachment chip still tells the user
-    // what they attached.
+    // Documents with no extracted text (parse error) contribute
+    // nothing to the LLM content — the attachment chip still tells
+    // the user what they attached.
   }
 
   // Defensive: the server caps to 20; trim here too.
   const attachmentList = attachments.slice(0, 20).map((a) => ({
     id: a.id,
     kind: a.kind,
+    docKind: a.docKind,
     name: a.name,
     mime: a.mime,
     dataUrl: a.dataUrl,
     text: a.text,
     truncated: a.truncated,
     pageCount: a.pageCount,
+    meta: a.meta,
     size: a.size,
     error: a.error,
   }));
