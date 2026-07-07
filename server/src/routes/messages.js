@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { eq, and, asc, gte, sql } from 'drizzle-orm';
+import { z } from 'zod';
 import { getDb } from '../db/index.js';
 import { messages, feedback, sessions, usageEvents } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -10,6 +11,28 @@ import { isUuid } from '../lib/validate.js';
 import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion } from '../services/llm.js';
+
+/* P_attachments-shape — mirrors the per-message `attachments` shape
+ * defined in routes/sessions.js (SessionPayloadSchema → messages[].attachments).
+ * The POST/PUT session-save path was already Zod-validated upstream,
+ * but the PATCH /api/messages/:id path previously trusted the client
+ * blindly: any object array passed `if (Array.isArray(attachments))`
+ * and was `slice(0, 20)`'d before being written to the messages.attachments
+ * JSONB column. That meant a forged PATCH could persist Date objects,
+ * circular refs, or arbitrary-sized strings, bloating the row and
+ * breaking downstream renderers. Re-using the exact same schema here
+ * keeps the two write paths in lockstep. */
+const attachmentSchema = z.object({
+  id: z.string().max(100),
+  kind: z.enum(['image', 'text', 'pdf']),
+  name: z.string().max(500),
+  mime: z.string().max(200),
+  dataUrl: z.string().max(2_000_000).optional(),
+  text: z.string().max(500_000).optional(),
+  truncated: z.boolean().optional(),
+  size: z.number().int().nonnegative().max(50 * 1024 * 1024),
+});
+const attachmentsSchema = z.array(attachmentSchema).max(20);
 
 async function checkBeagleLimit(userId, tier) {
   if (!userId) return null;
@@ -86,16 +109,21 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
     /* P_attachments — when the client explicitly sends `attachments`,
      * overwrite the stored array; otherwise keep the existing one so
      * a plain text-edit doesn't drop the thumbnails. We cap to 20 and
-     * require the same shape SessionPayloadSchema enforces (loose
-     * check here because the row is already validated by Zod upstream
-     * for session saves; PATCH trusts the SPA + same auth). */
+     * require the same shape SessionPayloadSchema enforces. The empty-
+     * array branch (`attachments = []`) is still an explicit "clear
+     * all attachments" — safeParse accepts an empty array and writes
+     * it through, so that path remains correct. */
     const updateSet = {
       content: safeContent,
       rawText: safeRaw,
       editedAt: new Date(),
     };
     if (Array.isArray(attachments)) {
-      updateSet.attachments = attachments.slice(0, 20);
+      const parsed = attachmentsSchema.safeParse(attachments);
+      if (!parsed.success) {
+        throw new BadRequest('Invalid attachments: ' + (parsed.error.issues[0]?.message || 'validation failed'));
+      }
+      updateSet.attachments = parsed.data;
     }
     await db.update(messages).set(updateSet).where(eq(messages.id, req.params.id));
 

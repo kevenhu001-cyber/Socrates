@@ -75,26 +75,38 @@ export const authLimiter = rateLimit({
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many auth attempts; try again later.'),
 });
 
-/* Tighter limiter for the login-with-code endpoint. Codes are 8-char
-   alphanumeric (~39 bits), but combined with the 10-minute TTL the
-   attack surface is still finite — capping attempts at 5 per email
-   per hour makes a remote brute force infeasible. */
+/* Tighter limiter for the login-with-code endpoint. Codes are 6 digits
+   (20 bits) with a 10-minute TTL — finite but small enough to brute
+   force in ~10s at 100 req/s. Capping at 5 per email+IP per hour
+   makes a remote brute force infeasible.
+
+   P_rate-limit-key-cardinality — M4 audit fix. The previous key
+   included the raw `code` field, which has near-unique entropy per
+   request: every wrong code produced a brand-new bucket, so the
+   limiter never tripped. Key on email + IP only. */
 export const codeLoginLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
-  keyGenerator: (req) => combineKeys(emailKey(req), codeKey(req), `ip:${req.ip}`) || `ip:${req.ip}`,
+  keyGenerator: (req) => combineKeys(emailKey(req), `ip:${req.ip}`) || `ip:${req.ip}`,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many code attempts; try again later.'),
 });
 
-/* Tighter limiter for password reset by token. Reset tokens are 64-bit
-   so not brute-forceable, but capping attempts per token still slows
-   down a determined attacker and gives operators a useful signal. */
+/* Tighter limiter for password reset. Reset tokens are 64 hex chars
+   (~256 bits) — cryptographically strong, not brute-forceable — so
+   the limiter's job here is anti-abuse, not anti-brute-force.
+
+   P_rate-limit-key-cardinality — M4 audit fix. The previous key
+   included the raw `token` field; a real attacker with a valid
+   token (e.g. one captured in email logs) would bypass the limiter
+   entirely, while a phisher trying a single bad token would get a
+   fresh bucket per request. Key on email + IP only so the limit
+   actually counts something meaningful. */
 export const resetLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
-  keyGenerator: (req) => combineKeys(tokenKey(req), `ip:${req.ip}`) || `ip:${req.ip}`,
+  keyGenerator: (req) => combineKeys(emailKey(req), `ip:${req.ip}`) || `ip:${req.ip}`,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many reset attempts; try again later.'),
@@ -125,6 +137,10 @@ export const searchLimiter = rateLimit({
 export const fetchLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 15,
+  /* /api/fetch-batch requires auth, so we key on userId when available
+     (fall back to IP for the off-chance an unauthenticated request reaches
+     the limiter before requireAuth rejects it). */
+  keyGenerator: (req) => req.userId || req.ip,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Fetch rate limit exceeded.'),

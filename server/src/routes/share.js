@@ -3,8 +3,9 @@ import { getDb } from '../db/index.js';
 import { shares, sessions } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth.js';
-import { NotFound } from '../lib/errors.js';
+import { NotFound, BadRequest } from '../lib/errors.js';
 import { generateShareToken } from '../lib/crypto.js';
+import { normalizeVisibility } from '../lib/sanitize.js';
 
 const router = Router({ mergeParams: true });
 
@@ -38,7 +39,11 @@ router.get('/', requireAuth, async (req, res, next) => {
 router.post('/', requireAuth, async (req, res, next) => {
   try {
     const db = getDb();
-    const { visibility = 'unlisted' } = req.body;
+    // Whitelist visibility — see P_share-visibility-enum. Bad
+    // input is silently coerced to 'unlisted' rather than 400'd
+    // so the SPA can keep working with stale clients that send
+    // an old value (e.g. 'link').
+    const visibility = normalizeVisibility(req.body && req.body.visibility);
 
     // Verify ownership
     if (!(await getOwnedSession(db, req.params.id, req.userId))) {
@@ -56,7 +61,7 @@ router.post('/', requireAuth, async (req, res, next) => {
       set: { token, visibility },
     });
 
-    return res.status(201).json({ token, url: `/a/${token}` });
+    return res.status(201).json({ token, url: `/a/${token}`, visibility });
   } catch (err) { next(err); }
 });
 

@@ -514,3 +514,19 @@ export const auditEvents = pgTable('audit_events', {
   index('audit_events_created_at_idx').on(table.createdAt),
   index('audit_events_action_idx').on(table.action),
 ]);
+
+/* ──────────────────────────────────────────────
+   Login Failures — per-email brute-force tracking
+   Persists failure counts and lockout timestamps so
+   the lockout is process-global (safe under
+   multi-worker / cluster deployments).
+   One row per email; UPSERTed on each failure.
+   ────────────────────────────────────────────── */
+export const loginFailures = pgTable('login_failures', {
+  email: text('email').primaryKey(),        // lowercased email
+  count: integer('count').notNull().default(0),
+  firstAt: timestamp('first_at', { withTimezone: true }).notNull().defaultNow(),
+  lockedUntil: timestamp('locked_until', { withTimezone: true }),
+}, (table) => [
+  index('login_failures_locked_until_idx').on(table.lockedUntil),
+]);
