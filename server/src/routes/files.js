@@ -42,9 +42,17 @@ const upload = multer({
   limits: { fileSize: MAX_SIZE },
   fileFilter: (_req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'application/pdf', 'text/plain', 'text/csv',
+      'application/pdf', 'text/plain', 'text/csv', 'text/markdown',
       'video/mp4', 'audio/mpeg', 'audio/wav', 'audio/webm',
-      'application/json'];
+      'application/json',
+      /* Office formats — see services/fileParsers/index.js for the
+         matching extractor set. The raw endpoint force-downloads
+         these so the browser never renders embedded script. */
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/epub+zip',
+      'application/rtf', 'text/rtf'];
     // text/html and application/xhtml+xml are explicitly blocked:
     // a malicious upload labelled as HTML would render in the
     // browser when /api/files/:id/raw is hit, opening an XSS
@@ -55,7 +63,7 @@ const upload = multer({
       cb(new BadRequest(`Unsupported file type: ${file.mimetype}`));
       return;
     }
-    if (allowed.includes(file.mimetype) || file.mimetype === 'text/plain' || file.mimetype === 'text/csv' || file.mimetype === 'text/markdown') {
+    if (allowed.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(new BadRequest(`Unsupported file type: ${file.mimetype}`));
@@ -179,6 +187,11 @@ function mimeKind(mime) {
   if (mime.startsWith('audio/')) return 'audio';
   if (mime === 'application/pdf') return 'pdf';
   if (mime.startsWith('text/')) return 'text';
+  if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx';
+  if (mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'xlsx';
+  if (mime === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return 'pptx';
+  if (mime === 'application/epub+zip') return 'epub';
+  if (mime === 'application/rtf' || mime === 'text/rtf') return 'rtf';
   return 'other';
 }
 

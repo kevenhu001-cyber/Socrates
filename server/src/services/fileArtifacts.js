@@ -53,6 +53,11 @@ function mimeKind(mime) {
   if (mime === 'application/pdf') return 'pdf';
   if (mime.startsWith('text/')) return 'text';
   if (mime === 'application/json') return 'code';
+  if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx';
+  if (mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'xlsx';
+  if (mime === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return 'pptx';
+  if (mime === 'application/epub+zip') return 'epub';
+  if (mime === 'application/rtf' || mime === 'text/rtf') return 'rtf';
   return 'other';
 }
 

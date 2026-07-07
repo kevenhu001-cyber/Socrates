@@ -1,19 +1,30 @@
 /**
- * PDF text extraction endpoint.
+ * Document text extraction endpoint.
  *
- * The chat client uploads a PDF (one-shot via multipart) and receives
- * the extracted plain-text body, which the front-end embeds in the
- * outgoing message. The PDF itself is NOT persisted on the server:
- *   - Reduces storage pressure (PDFs are big; their text is small).
- *   - Avoids needing a separate "delete after extract" cleanup.
- *   - Keeps the existing /api/files quota policy unchanged.
+ * Accepts multipart uploads of PDF / DOCX / XLSX / PPTX / EPUB / RTF
+ * and returns the extracted plain-text body. The original file is NOT
+ * persisted — only the extracted text comes back. Same security
+ * posture as before: keeps /api/files quota policy unchanged and
+ * avoids "delete after extract" cleanup.
  *
  * Limits:
- *   - writeLimiter (120/min/user) — covers this endpoint because
- *     PDF parsing is CPU work.
+ *   - writeLimiter (120/min/user) — CPU work counts against it.
  *   - 25 MB upload cap (matches /api/files MAX_SIZE).
- *   - Output text capped at 200 KB to bound prompt size.
- *   - PDF only; other MIME types return 400.
+ *   - Output text capped at MAX_TEXT_BYTES (200 KB) so a single
+ *     large spreadsheet cannot blow the LLM prompt budget.
+ *
+ * Response shape (uniform across all formats):
+ *   {
+ *     ok: true,
+ *     text: string,
+ *     truncated: boolean,
+ *     meta: { pageCount?, sheetCount?, slideCount?, chapterCount?, ... },
+ *     name: original filename,
+ *     kind: 'pdf' | 'docx' | 'xlsx' | 'pptx' | 'epub' | 'rtf'
+ *   }
+ *
+ * Errors return `{ ok:false, error, name, kind }` so the front-end
+ * can show the chip with a banner instead of crashing the chat send.
  */
 import { Router } from 'express';
 import multer from 'multer';
@@ -24,6 +35,7 @@ import fs from 'node:fs/promises';
 import { requireAuth } from '../middleware/auth.js';
 import { writeLimiter } from '../middleware/rateLimit.js';
 import { BadRequest, PayloadTooLarge } from '../lib/errors.js';
+import { extractText as dispatch, SUPPORTED_MIMES } from '../services/fileParsers/index.js';
 
 const MAX_UPLOAD = 25 * 1024 * 1024;        // 25 MB — matches /api/files
 const MAX_TEXT_BYTES = 200 * 1024;          // 200 KB extracted text
@@ -33,33 +45,64 @@ const TMP_DIR = process.env.NODE_ENV === 'production'
 
 await fs.mkdir(TMP_DIR, { recursive: true }).catch(() => {});
 
+/* Map a few loose MIME aliases the browser sometimes sends (especially
+   for drag-and-drop on Windows / older browsers). */
+const MIME_ALIASES = {
+  'application/x-pdf': 'application/pdf',
+  'application/acrobat': 'application/pdf',
+  'application/msword': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+};
+
+function normalizeMime(raw, originalName) {
+  let m = String(raw || '').toLowerCase().split(';')[0].trim();
+  m = MIME_ALIASES[m] || m;
+  if (m === 'application/octet-stream' && originalName) {
+    /* Fall back to extension sniffing — covers uploads where the
+       browser couldn't determine the type (e.g. .docx sent as
+       octet-stream from a download manager). */
+    const ext = path.extname(originalName).toLowerCase();
+    if (ext === '.pdf') return 'application/pdf';
+    if (ext === '.docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if (ext === '.xlsx') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if (ext === '.pptx') return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+    if (ext === '.epub') return 'application/epub+zip';
+    if (ext === '.rtf') return 'application/rtf';
+  }
+  return m;
+}
+
 const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, TMP_DIR),
-    filename: (_req, _file, cb) => cb(null, `${crypto.randomUUID()}.pdf`),
+    filename: (_req, _file, cb) => cb(null, `${crypto.randomUUID()}.bin`),
   }),
   limits: { fileSize: MAX_UPLOAD },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype !== 'application/pdf') {
-      cb(new BadRequest(`Only application/pdf is accepted, got ${file.mimetype}`));
-      return;
-    }
-    cb(null, true);
+    const mime = normalizeMime(file.mimetype, file.originalname);
+    /* Application/pdf + the new office formats pass. text/html and
+       text/xhtml stay blocked (XSS surface at the raw endpoint). */
+    const allowed = ['application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/epub+zip',
+      'application/rtf', 'text/rtf',
+    ];
+    if (allowed.includes(mime)) return cb(null, true);
+    cb(new BadRequest(`Unsupported file type: ${file.mimetype}`));
   },
 });
 
 const router = Router();
 
 /**
- * POST /api/files/extract — accept a PDF multipart upload, return
- *   { ok: true, text, truncated, pageCount, name }
- *
- * Authentication: required (requireAuth).
- * Rate limit: writeLimiter (120/min/user) — shared with /api/files.
+ * POST /api/files/extract — accept a PDF/Office document, return
+ *   { ok, text, truncated, meta, name, kind }
  */
 router.post('/extract', requireAuth, writeLimiter, (req, res, next) => {
   upload.single('file')(req, res, async (multerErr) => {
-    // Free the temp file before doing anything async.
     const cleanup = () => req.file?.path
       ? fs.unlink(req.file.path).catch(() => {})
       : Promise.resolve();
@@ -67,7 +110,7 @@ router.post('/extract', requireAuth, writeLimiter, (req, res, next) => {
       if (multerErr) {
         if (multerErr.code === 'LIMIT_FILE_SIZE') {
           await cleanup();
-          return next(new PayloadTooLarge(`PDF exceeds the ${MAX_UPLOAD / 1024 / 1024} MB limit`));
+          return next(new PayloadTooLarge(`File exceeds the ${MAX_UPLOAD / 1024 / 1024} MB limit`));
         }
         await cleanup();
         return next(multerErr);
@@ -76,54 +119,55 @@ router.post('/extract', requireAuth, writeLimiter, (req, res, next) => {
         return next(new BadRequest('No file provided in field "file"'));
       }
 
-      // Dynamic import so the pdf-parse startup cost (~50 MB pdf.js
-      // bundle) is only paid on the first PDF upload, not at process
-      // boot. This matters because the chat server handles thousands
-      // of text-only requests and never touches PDF parsing.
-      let pdfParse;
-      try {
-        const mod = await import('pdf-parse');
-        // pdf-parse's default export is a function; some versions
-        // export under .default.
-        pdfParse = mod.default || mod;
-      } catch (e) {
-        await cleanup();
-        return next(new Error('pdf-parse unavailable: ' + e.message));
-      }
+      const mime = normalizeMime(req.file.mimetype, req.file.originalname);
+      const kind = kindFromMime(mime);
 
-      let result;
+      let extractResult;
       try {
-        result = await pdfParse(req.file.path);
+        if (mime === 'application/pdf') {
+          /* PDF keeps the existing pdf-parse path — it's the historical
+             code and we don't want to refactor it today. */
+          const mod = await import('pdf-parse');
+          const pdfParse = mod.default || mod;
+          const result = await pdfParse(req.file.path);
+          extractResult = {
+            text: String((result && result.text) || ''),
+            meta: { pageCount: result && result.numpages ? Number(result.numpages) : 0 },
+          };
+        } else {
+          extractResult = await dispatch(mime, req.file.path);
+        }
       } catch (e) {
-        // Corrupt / non-PDF / password-protected etc.
         await cleanup();
+        const code = (e && e.code) || 'PARSE_FAILED';
+        const msg = (e && e.message) || String(e);
         return res.json({
           ok: true,
           text: '',
           truncated: false,
-          pageCount: 0,
+          meta: {},
           name: req.file.originalname,
-          error: 'PDF could not be parsed (corrupt or password-protected)',
+          kind,
+          error: `Could not parse ${kind || 'file'}: ${msg}`,
+          errorCode: code,
         });
       }
       await cleanup();
 
-      let text = (result && typeof result.text === 'string') ? result.text : '';
-      const pageCount = (result && result.numpages) ? Number(result.numpages) : 0;
+      let text = String((extractResult && extractResult.text) || '').replace(/\r\n/g, '\n');
+      const meta = (extractResult && extractResult.meta) || {};
       let truncated = false;
       if (text.length > MAX_TEXT_BYTES) {
         text = text.slice(0, MAX_TEXT_BYTES);
         truncated = true;
       }
-      // Normalise line endings; PDF extraction often returns \r\n.
-      text = text.replace(/\r\n/g, '\n');
-
       return res.json({
         ok: true,
         text,
         truncated,
-        pageCount,
+        meta,
         name: req.file.originalname,
+        kind,
       });
     } catch (err) {
       await cleanup();
@@ -132,4 +176,15 @@ router.post('/extract', requireAuth, writeLimiter, (req, res, next) => {
   });
 });
 
+function kindFromMime(mime) {
+  if (mime === 'application/pdf') return 'pdf';
+  if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx';
+  if (mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'xlsx';
+  if (mime === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return 'pptx';
+  if (mime === 'application/epub+zip') return 'epub';
+  if (mime === 'application/rtf' || mime === 'text/rtf') return 'rtf';
+  return 'document';
+}
+
+export { SUPPORTED_MIMES };
 export default router;
