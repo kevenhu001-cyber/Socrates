@@ -31,3 +31,4 @@ Thumbs.db
 codegraph.db
 openai-codex-*.tgz
 .vite/
+server.log.bak.*
