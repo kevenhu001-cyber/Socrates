@@ -12,7 +12,7 @@
  * This is the fallback when MiniMax search returns no results.
  */
 
-const REQUEST_TIMEOUT = 25_000;  // 国内上行引擎慢，需要更长的超时
+const REQUEST_TIMEOUT = 6_000;  // tight cap so a slow SearXNG can't drag the whole tool loop down
 const SEARXNG_BASE = process.env.SEARXNG_BASE_URL || 'http://127.0.0.1:8888';
 
 /**
