@@ -13559,6 +13559,16 @@ window.setActiveProvider = setActiveProvider;
 window.toggleKBDetail = toggleKBDetail;
 window.togglePinSession = togglePinSession;
 window.removeProvider = removeProvider;
+/* P_input-fields-not-persisted — renderProviderList builds the
+ * settings provider-row inputs with inline oninput="updateProviderField(...)".
+ * Inline HTML attribute handlers are resolved on the global object
+ * (i.e. window.updateProviderField), and updateProviderField was
+ * previously only a closure-local function inside the IIFE bundle.
+ * Typing in the URL / key / model input then threw ReferenceError
+ * (silently consumed by the browser since the oninput is an
+ * attribute handler, not a try/catch), so the typed value was
+ * discarded and saveSettings POSTed an empty row. Expose it. */
+window.updateProviderField = updateProviderField;
 window.clearProjectFilter = clearProjectFilter;
 window.handleChatKey = handleChatKey;
 window.onCmdKKey = onCmdKKey;
