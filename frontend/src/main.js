@@ -12578,8 +12578,20 @@ function saveSettings(){
       setTimeout(function(){closeSettings()},900);
     }catch(e){
       console.error("[saveSettings] error:",e,"stack:",e&&e.stack);
+      /* Surface WHY it failed — the bare e.message often just says
+         "HTTP 400" or "CSRF token required" with no field-level
+         detail. Include the status code, the server's `code` field
+         (e.g. BAD_REQUEST, FORBIDDEN) and the message so the user
+         can fix the right thing. */
+      var status2=(e&&e.status)||"";
+      var code2=(e&&e.code)||"";
+      var msg2=(e&&e.message)||String(e)||t("settings.unknownError");
+      var parts=[];
+      if(status2)parts.push("HTTP "+status2);
+      if(code2)parts.push(code2);
+      if(msg2)parts.push(msg2);
       status.className="settings-status warn";
-      status.textContent=t("settings.saveFailed").replace("{msg}",(e&&e.message)||String(e)||t("settings.unknownError"));
+      status.textContent=t("settings.saveFailed").replace("{msg}",parts.join(" · "));
     }
   })();
 }
