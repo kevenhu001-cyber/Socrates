@@ -8791,7 +8791,7 @@ function updateKB(){
   if(!cont)return;
   if(!state.kbNodes.length){
     cont.innerHTML='<div class="kb-empty">'+(typeof t==="function"
-      ?t("tutor.setTopicFirst")
+      ?t("tutor.kbTopicFirst")
       :"Set a learning topic to build your knowledge map.")+'</div>';
     return
   }
