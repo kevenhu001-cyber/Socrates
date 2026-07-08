@@ -12461,6 +12461,16 @@ function loadLastActiveId(){
 function updateProviderField(id,field,value){
   var p=apiConfig.providers.find(function(x){return x.id===id});
   if(!p)return;
+  /* P_key-placeholder-pollution — renderProviderList uses
+     "••••••••" as a MASK for saved providers' key field (the real
+     key never leaves the server). Without this guard, the password
+     input's oninput fires every time the user touches the row (or
+     the modal re-renders) and writes the mask back into p.key,
+     which then gets POSTed as a real API key on the next save.
+     That corrupts the stored key and causes "model unavailable"
+     on the next request. Only treat the value as a real key edit
+     if the user actually typed something other than the mask. */
+  if(field === "key" && value === "••••••••") return;
   p[field]=value;
   if(field==="label"||field==="model")syncModelPills();
   if(field==="key"||field==="model")syncSettingsUI();
