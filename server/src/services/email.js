@@ -1,6 +1,11 @@
 import nodemailer from 'nodemailer';
 
-let transporter = null;
+// NOTE: must start as `undefined` (not null) — the memoization guard
+// below is `transporter !== undefined`, so initialising to null would
+// short-circuit on the first call and never build the transport,
+// making every send throw "SMTP not configured" even when SMTP env
+// is present.
+let transporter;
 
 function getTransporter() {
   if (transporter !== undefined) return transporter;
