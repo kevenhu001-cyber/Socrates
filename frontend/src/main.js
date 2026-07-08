@@ -12394,7 +12394,21 @@ function removeProvider(id){
     apiConfig.providers=apiConfig.providers.filter(function(p){return p.id!==id});
     if(apiConfig.activeId===id)apiConfig.activeId=apiConfig.providers.length?apiConfig.providers[0].id:null;
     cacheProviderKeys();renderProviderList();syncModelPills();syncSettingsUI();
-  }).catch(function(e){console.warn("[api-key] delete failed:",e.message)});
+  }).catch(function(e){
+    /* Surface the delete failure in the settings status so the user
+       can retry instead of being silently left with a phantom row
+       that looks deleted but still exists server-side. */
+    var status=document.getElementById("stgStatus");
+    if(status){
+      var parts=[];
+      if(e&&e.status)parts.push("HTTP "+e.status);
+      if(e&&e.code)parts.push(e.code);
+      parts.push((e&&e.message)||String(e));
+      status.className="settings-status warn";
+      status.textContent=t("settings.saveFailed").replace("{msg}",parts.join(" · "));
+    }
+    console.warn("[api-key] delete failed:",e.message);
+  });
 }
 function setActiveProvider(id){
   if(!CURRENT_USER)return;
