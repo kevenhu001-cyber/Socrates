@@ -487,29 +487,74 @@ document.addEventListener("click",function(e){
 var sbBackdrop=document.getElementById("sidebarBackdrop");
 if(sbBackdrop)sbBackdrop.addEventListener("click",function(e){e.stopPropagation();var sbEl=document.getElementById("sidebar");if(isMobileViewport()&&sbEl&&!sbEl.classList.contains("collapsed"))toggleSidebar();});
 
-/* Mobile keyboard avoidance: when the keyboard opens on mobile, the browser
-   scrolls the page to keep the focused textarea visible. This pushes the AI
-   content upward even when there's empty space below it. This fix saves the
-   scroll position when the input is focused and restores it whenever the
-   visual viewport resizes (keyboard open), placing content back where it was. */
+/* Mobile keyboard avoidance — robust approach.
+
+   On mobile the visualViewport shrinks when the soft keyboard opens, and
+   the browser shifts the visual viewport scroll offset to keep the focused
+   textarea visible. The input bar (#chatInputBar, position:absolute;
+   bottom:0) moves up, but the scrollable content above it stays put,
+   creating a visual gap.
+
+   Our compensation: when the keyboard opens, scroll #msgList (or whichever
+   scrollContainer() returns) downward by the same pixel amount the
+   viewport lost — i.e. the keyboard height. This keeps the relative visual
+   position between the content and the input bar stable.
+
+   When the keyboard closes, restore the exact scrollTop that was captured
+   at focus time.
+
+   We use only visualViewport.resize to detect open/close transitions (a
+   simple state machine), and we do NOT use blur — the focus event just
+   records the baseline scrollTop. This avoids platform-specific timing
+   races (iOS fires blur before the close-resize; Android fires it after). */
 if(window.visualViewport){
   (function(){
     var input=document.getElementById("chatInputArea");
     if(!input)return;
-    var _kbFix=0;
+    var _kbSavedTop=0;
+    var _kbOpen=false;
+    /* Threshold: ignore address-bar toggles (typically ~60-80 px) and
+       visual-viewport initialization on page load. */
+    var KB_THRESHOLD=100;
+
     input.addEventListener("focus",function(){
       var sc=scrollContainer();
-      if(sc)_kbFix=sc.scrollTop;
+      if(sc)_kbSavedTop=sc.scrollTop;
+      /* Reset the open flag so that the next resize event that crosses
+         the threshold reliably triggers the open transition. This covers
+         the case where the user re-focuses the input while the keyboard
+         is already showing — the flag is already true, so we need a way
+         to re-apply the compensation. We set it to false so the resize
+         handler sees shouldBeOpen=true and re-computes scrollTop. */
+      _kbOpen=false;
     });
-    var tid;
+
     window.visualViewport.addEventListener("resize",function(){
-      if(tid)cancelAnimationFrame(tid);
-      tid=requestAnimationFrame(function(){
-        tid=0;
-        if(document.activeElement!==input)return;
-        var sc=scrollContainer();
-        if(sc)sc.scrollTop=_kbFix;
-      });
+      var vh=window.visualViewport.height;
+      var kbHeight=Math.round(window.innerHeight-vh);
+      var shouldOpen=kbHeight>KB_THRESHOLD;
+
+      /* Only act on a transition: closed → open or open → closed.
+         All intermediate resize events during the keyboard animation
+         are ignored. */
+      if(shouldOpen===_kbOpen)return;
+      _kbOpen=shouldOpen;
+
+      var sc=scrollContainer();
+      if(!sc)return;
+
+      if(shouldOpen){
+        /* Keyboard opened: shift the content down by the keyboard
+           height so it visually stays in the same place relative to
+           the (now-raised) input bar. */
+        sc.scrollTop=Math.max(0,Math.min(
+          _kbSavedTop+kbHeight,
+          sc.scrollHeight
+        ));
+      }else{
+        /* Keyboard closed: restore the original reading position. */
+        sc.scrollTop=_kbSavedTop;
+      }
     });
   })();
 }
@@ -4652,9 +4697,12 @@ async function submitChatMessage(textOverride,opts){
   var hasAtt = Array.isArray(window.attachments) && window.attachments.length>0;
   if(!text && !hasAtt)return;
   /* P_attachments — assemble the multimodal content (parts array)
-   * and the persistence list before we add the user bubble. */
+   * and the persistence list before we add the user bubble.
+   * buildMessageContent is async because it may call /api/vision/describe
+   * to get a text description for each attached image (so non-vision
+   * upstreams still get image context). */
   var built = (typeof buildMessageContent==="function")
-    ? buildMessageContent(text)
+    ? await buildMessageContent(text)
     : { rawText: text, parts: text, attachmentList: [] };
   var chatContent = built.parts;       // string OR parts array — what the LLM sees
   var persistText = built.rawText;     // user-visible bubble text (with placeholders)
@@ -12179,12 +12227,15 @@ function setSearchPill(kind,count,label){
    can trace any cited fact back to its source. Stored under the bubble
    in DOM (not on state) so each turn gets its own snapshot.
 
-   Input:  Array<{title:string,url:string,snippet?:string}>
+   Input:  Array<{title:string,url:string,snippet?:string,
+                  source?:string, date?:string,
+                  matchedQuery?:string, fullContent?:string,
+                  _relevance?:number}>
    Output: HTMLElement | null
-   The first <details> element is OPEN by default for the first source
-   (so the user can immediately see what URLs are involved) and the
-   rest are CLOSED. We expand the whole list on a single click of the
-   header toggle. */
+   The first source row is auto-expanded (so the user can immediately
+   see what URLs are involved); the rest are collapsed but clickable
+   to expand their detail panel. Clicking the header still toggles
+   the entire hidden list. */
 function renderSourcesCard(results){
   if(!Array.isArray(results)||!results.length)return null;
   var wrap=document.createElement("div");
@@ -12200,8 +12251,9 @@ function renderSourcesCard(results){
   html+='<span class="sources-count">'+results.length+'</span>';
   if(rest.length)html+='<span class="sources-chev">▾</span>';
   html+='</div>';
-  /* Primary source — always visible. */
-  html+=renderSourceRow(first,1);
+  /* Primary source — always visible, detail panel pre-expanded so the
+     user can see the snippet + meta right away without an extra click. */
+  html+=renderSourceRow(first,1,{expanded:true});
   /* Hidden list — toggled by .open on wrap. */
   if(rest.length){
     html+='<div class="sources-rest">';
@@ -12209,12 +12261,97 @@ function renderSourcesCard(results){
     html+='</div>';
   }
   wrap.innerHTML=html;
+
+  /* P_sources-card-expand — click delegation:
+       - a.sources-row[data-sources-toggle]  → toggle its detail panel
+                                                (don't navigate; the
+                                                inner .sources-open link
+                                                is the explicit "open in
+                                                new tab" affordance)
+       - .sources-copy                      → copy URL to clipboard
+     Using delegation on the wrap so we don't rebind per-row and so
+     dynamically-rendered rows inside .sources-rest (which appear
+     later when the user opens the list) keep working. */
+  wrap.addEventListener('click', function(ev){
+    var t = ev.target;
+    /* Walk up to find the actionable ancestor. */
+    var copyBtn = t.closest && t.closest('.sources-copy');
+    if (copyBtn) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      var u = copyBtn.getAttribute('data-copy-url') || '';
+      copyToClipboard(u).then(function(ok){
+        var orig = copyBtn.innerHTML;
+        copyBtn.classList.add('copied');
+        copyBtn.innerHTML = copyBtn.innerHTML.replace('Copy URL', 'Copied');
+        setTimeout(function(){
+          copyBtn.classList.remove('copied');
+          copyBtn.innerHTML = orig;
+        }, 1400);
+      }).catch(function(){
+        try{ showToast && showToast('Copy failed'); }catch(_){}
+      });
+      return;
+    }
+    var row = t.closest && t.closest('a.sources-row[data-sources-toggle]');
+    if (row) {
+      /* Middle-click / cmd-click / right-click should still navigate
+         naturally. The detail-panel toggle is for left-click only. */
+      if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var wrap2 = row.parentElement;
+      if (!wrap2) return;
+      var opened = wrap2.classList.toggle('open');
+      row.setAttribute('aria-expanded', opened ? 'true' : 'false');
+      return;
+    }
+  });
+
   return wrap;
 }
 
-function renderSourceRow(s,idx){
+/* Small clipboard helper — returns a Promise that resolves true on
+   success. Falls back to the legacy execCommand path when the
+   async Clipboard API is unavailable (older browsers, http on
+   non-localhost). */
+function copyToClipboard(text){
+  if (!text) return Promise.resolve(false);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text).then(function(){return true;}).catch(function(){return copyToClipboardFallback(text);});
+  }
+  return Promise.resolve(copyToClipboardFallback(text));
+}
+function copyToClipboardFallback(text){
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (_) { return false; }
+}
+
+/* P_sources-card-expand — each source row is now clickable to expand an
+   inline detail panel showing the snippet, source engine, date,
+   matched query, full-content excerpt (if fetch succeeded), and an
+   "Open original URL" button. This replaces the old behaviour where
+   clicking the row just navigated to the URL in a new tab — that
+   meant users had to leave the page to see what the search engine
+   actually returned for that link.
+
+   The row itself stays an <a> for keyboard / right-click affordance,
+   but its click handler calls preventDefault() to toggle the detail
+   panel instead of navigating. The detail panel contains the real
+   "Open URL in new tab" button for users who still want to read the
+   source. */
+function renderSourceRow(s,idx,opts){
   if(!s||!s.url)return"";
-  /* Trust nothing from the search response — escape + enforce http(s). */
+  opts=opts||{};
   var url=String(s.url);
   if(url.indexOf("http://")!==0&&url.indexOf("https://")!==0){
     return '<div class="sources-row" data-bad-url="1"><span class="sources-num">['+idx+']</span><span class="sources-title">'+(s.title||"(no title)")+'</span><span class="sources-bad">non-http url</span></div>';
@@ -12222,11 +12359,85 @@ function renderSourceRow(s,idx){
   var title=esc(s.title||url);
   var host="";
   try{host=new URL(url).hostname.replace(/^www\./,"")}catch(_){host=""}
-  return '<a class="sources-row" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+
-    '<span class="sources-num">['+idx+']</span>'+
-    '<span class="sources-title">'+title+'</span>'+
-    '<span class="sources-host">'+esc(host)+'</span>'+
-  '</a>';
+
+  /* Build the detail panel. Sections are omitted when the underlying
+     data is absent so a sparse search result still renders cleanly. */
+  var detailHtml = renderSourceDetail(s, idx);
+
+  return ''+
+    '<div class="sources-row-wrap'+(opts.expanded?' open':'')+'">'+
+      '<a class="sources-row" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" '+
+           'data-sources-toggle="1" aria-expanded="'+(opts.expanded?'true':'false')+'">'+
+        '<span class="sources-num">['+idx+']</span>'+
+        '<span class="sources-title">'+title+'</span>'+
+        '<span class="sources-host">'+esc(host)+'</span>'+
+        '<span class="sources-row-chev" aria-hidden="true">▾</span>'+
+      '</a>'+
+      detailHtml+
+    '</div>';
+}
+
+function renderSourceDetail(s, idx){
+  var url=String(s.url);
+  var host="";
+  try{host=new URL(url).hostname.replace(/^www\./,"")}catch(_){host=""}
+
+  var html = '<div class="sources-detail" role="region" aria-label="Source '+idx+' details">';
+
+  /* Source engine pill — name + colored dot. mmx CLI results get the
+     accent color so users can tell at a glance which results came
+     from the upgraded MiniMax CLI vs legacy Bing/searxng fallback. */
+  var engine = s.source || 'web';
+  var engineLabel = ({'minimax-cli':'MiniMax CLI','minimax':'MiniMax','bing':'Bing','searxng':'SearXNG'})[engine] || engine;
+  html += '<div class="sources-meta-row">';
+  html += '<span class="sources-engine-pill" data-engine="'+esc(engine)+'"><span class="sources-engine-dot"></span>'+esc(engineLabel)+'</span>';
+  if (s.date) html += '<span class="sources-date">'+esc(s.date)+'</span>';
+  if (typeof s._relevance === 'number') {
+    var relLabel = s._relevance>=70?'high relevance':s._relevance>=45?'medium relevance':'low relevance';
+    var relClass = s._relevance>=70?'high':s._relevance>=45?'med':'low';
+    html += '<span class="sources-relevance" data-rel="'+relClass+'">'+relLabel+'</span>';
+  }
+  html += '</div>';
+
+  if (s.snippet) {
+    html += '<div class="sources-snippet">'+esc(s.snippet)+'</div>';
+  } else {
+    html += '<div class="sources-snippet sources-snippet-empty">No snippet available.</div>';
+  }
+
+  if (s.matchedQuery) {
+    html += '<div class="sources-matched-q">Matched query: <code>'+esc(s.matchedQuery)+'</code></div>';
+  }
+
+  if (s.fullContent) {
+    var excerpt = s.fullContent.length > 1200 ? s.fullContent.slice(0, 1197) + '…' : s.fullContent;
+    var truncated = s.fullContent.length > 1200;
+    var truncatedTag = s.truncated ? ' <span class="sources-truncated-tag">(truncated excerpt)</span>' : '';
+    html += '<details class="sources-fulltext">'+
+              '<summary>Full text excerpt'+truncatedTag+'</summary>'+
+              '<div class="sources-fulltext-body">'+esc(excerpt)+'</div>'+
+            '</details>';
+  }
+
+  html += '<div class="sources-actions">'+
+            '<a class="sources-open" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+
+              '<svg class="icon-inline" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">'+
+                '<path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A.5.5 0 0 0 1 3.5v10A.5.5 0 0 0 1.5 14h10a.5.5 0 0 0 .5-.5V7.864a.5.5 0 0 0-1 0V13H2V4h5.136a.5.5 0 0 0 .5-.5z"/>'+
+                '<path d="M14 .5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0 0 1H12.79l-7.147 7.146a.5.5 0 0 0 .708.708L13.5 1.707V3.5a.5.5 0 0 0 1 0v-3z"/>'+
+              '</svg>'+
+              ' Open original'+
+            '</a>'+
+            '<button type="button" class="sources-copy" data-copy-url="'+esc(url)+'">'+
+              '<svg class="icon-inline" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">'+
+                '<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/>'+
+                '<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/>'+
+              '</svg>'+
+              ' Copy URL'+
+            '</button>'+
+          '</div>';
+
+  html += '</div>';
+  return html;
 }
 
 async function refreshProductInfo(){
@@ -13499,6 +13710,17 @@ window.confirmClearSettings = confirmClearSettings;
 window.confirmDeleteAccount = confirmDeleteAccount;
 window.copyShareLink = copyShareLink;
 window.createShareLink = createShareLink;
+/* P_share-load-bridge — auth/boot.js:44 calls `window.loadSharedSession`
+   when a visitor opens `?share=TOKEN`, before any auth flow. Without
+   this binding, that call throws TypeError, the surrounding try/catch
+   silently swallows it, and the shared view never renders — the page
+   sits on the boot-loading spinner until the 12s safety net in
+   index.html shows the sign-in gate instead. Same for
+   loadSharedExamSession, which is referenced from main.js itself
+   (loadSharedSession:10922) but kept on window for parity in case a
+   later caller invokes it directly. */
+window.loadSharedSession = loadSharedSession;
+window.loadSharedExamSession = loadSharedExamSession;
 /* Agent mode (openAgentView / exitAgentMode / deleteAgentRun) is a
    planned feature that was never implemented — exposing it on
    window would ReferenceError any inline handler that fires before

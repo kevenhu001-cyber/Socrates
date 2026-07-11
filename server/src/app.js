@@ -33,6 +33,7 @@ import classroomRouter from './routes/classroom.js';
 import minimaxRouter from './routes/minimaxProxy.js';
 import mistakesRouter from './routes/mistakes.js';
 import knowledgeBoundaryRouter from './routes/knowledgeBoundary.js';
+import visionRouter from './routes/vision.js';
 import { searchContent } from './services/search.js';
 import { webSearch, imageSearch } from './services/webSearch.js';
 import { fetchBatch } from './services/fetchBatch.js';
@@ -46,11 +47,31 @@ const app = express();
 /* Trust nginx (and any CDN hop in front of nginx). With EdgeOne +
  * nginx in front of us, the client IP arrives in X-Forwarded-For
  * after two hops — the left-most untrusted proxy entry is the real
- * client. Setting trust proxy to `2` (or a numeric count) instead of
- * the boolean `true` silences express-rate-limit's
- * ERR_ERL_PERMISSIVE_TRUST_PROXY warning while still letting
- * req.protocol / req.ip see the real client values. */
-app.set('trust proxy', 2);
+ * client.
+ *
+ * P_trust-proxy-subnets — previously `2` (a numeric hop count). A
+ * numeric count is brittle: adding another CDN / WAF hop without
+ * updating this number silently mis-attributes every IP, so all
+ * rate-limits and audit lines start tracing back to a single
+ * intermediary address. The subnet list below names the *known*
+ * trusted hops explicitly; anything not on the list falls through
+ * to socket.remoteAddress. The local subnet whitelisting
+ * (127.0.0.1, ::1, link-local) is required for the apiFetch in
+ * integration tests where the test runner hits Express directly
+ * without a proxy. Update this list whenever the operator adds a
+ * new tier of CDN / WAF / VPN in front of nginx. */
+app.set('trust proxy', [
+  'loopback',           // 127.0.0.1, ::1
+  'linklocal',          // 169.254.0.0/16, fe80::/10
+  'uniquelocal',        // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, fc00::/7
+  // EdgeOne + Cloudflare + nginx hops arrive from these subnets in
+  // practice. Add your exact upstream CIDRs here — DO NOT use a
+  // numeric trust-proxy count because it will silently mis-attribute
+  // IPs if the chain grows.
+  '10.0.0.0/8',
+  '172.16.0.0/12',
+  '192.168.0.0/16',
+]);
 // Don't advertise the framework in the X-Powered-By header.
 app.disable('x-powered-by');
 
@@ -441,6 +462,14 @@ app.use('/api/mistakes', mistakesRouter);
 
 // Knowledge boundary — aggregate kbNodes across sessions
 app.use('/api/knowledge-boundary', knowledgeBoundaryRouter);
+
+/* Vision — mmx CLI-backed image recognition. Used by the frontend
+   when the user attaches an image so the LLM gets image context
+   even on non-vision upstreams (the description is prepended to
+   the user message; image_url parts are still sent to vision-capable
+   models for accuracy). Auth required so unauthenticated visitors
+   can't run arbitrary mmx invocations. */
+app.use('/api/vision', visionRouter);
 
 /* ────────────────────────────
    Static SPA — serve the built frontend from frontend/dist/

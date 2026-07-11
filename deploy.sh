@@ -109,6 +109,34 @@ if [ -d "$SITE_DIR" ]; then
       fi
     done
   fi
+  # Static assets — logo.png, favicon.png, og-*.png, etc. The HTML
+  # templates all reference `/logo.png` from the nav-bar, so without
+  # this step every page on topodrive.top shows a broken-image
+  # icon.
+  #
+  # We use `find` rather than a single braced glob for two reasons:
+  #   1. Exclusion. `.DS_Store`, `Thumbs.db`, `*~`, `.gitkeep`, and
+  #      editor swap files in the source dir would otherwise be
+  #      copied wholesale into the webroot (nginx then indexes them
+  #      under default `autoindex on` if anyone flips it on, leaking
+  #      metadata).
+  #   2. Recursion into subdirs in a controlled way. `site/zh/`
+  #      already gets text pages explicitly above, so we keep
+  #      maxdepth=1 here. Future subdirs (e.g. icons pack) should be
+  #      promoted to explicit handling, not silently picked up.
+  while IFS= read -r -d '' asset; do
+    fname=$(basename "$asset")
+    # Belt-and-suspenders — even though find's exclusion above should
+    # cover these, refuse to install anything outside the allow-list
+    # of common web asset extensions.
+    case "$fname" in
+      *.png|*.ico|*.svg|*.jpg|*.jpeg|*.webp|*.gif|*.woff|*.woff2) ;;
+      *) continue ;;
+    esac
+    $SUDO install -m 644 -o www-data -g www-data "$asset" "$SITE_WEB_ROOT/$fname"
+  done < <(find "$SITE_DIR" -maxdepth 1 -type f \
+      ! -name '*.html' ! -name '*.css' ! -name '.*' ! -name '*~' \
+      -print0)
 fi
 
 # ─── 3. Validate nginx + reload ──────────────────────────────────────

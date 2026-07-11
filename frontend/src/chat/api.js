@@ -8,6 +8,19 @@
 
 import { apiFetchRaw } from '../util/api.js';
 
+/* Local copy of the Retry-After formatter — chat/stream.js has the same
+   helper but extracting it to a shared util for two callsites is more
+   weight than it's worth. Keep them in sync if you change one. */
+function formatMinutesApi(seconds) {
+  if (!seconds || !isFinite(seconds) || seconds <= 0) return "a moment";
+  if (seconds < 60) return Math.round(seconds) + "s";
+  var m = Math.ceil(seconds / 60);
+  if (m < 60) return m + " min";
+  var h = Math.floor(m / 60);
+  var rem = m % 60;
+  return rem ? (h + "h " + rem + "m") : (h + "h");
+}
+
 /* Non-streaming variant of callAPIStream for round-1 detection.
    Returns the same {text,html,widgets,cancelled} shape (or null on failure).
    Reuses the streaming call but accumulates without rendering. */
@@ -222,6 +235,21 @@ export async function callAPI(messages,maxTokens){
            "request aborted")
         :(eStatus?eStatus+" ":"network: ")+(e&&e.message||e);
       var userCancelledN=isAbortN&&!wdN.isStopped();
+      if(eStatus===429){
+        /* Rate limit — same treatment as stream.js: don't retry, surface
+           a friendly toast using the server-supplied Retry-After /
+           retryAfterSeconds so the user knows when to try again. */
+        var retryAfterN = null;
+        var raN = e && e.body && e.body.headers ? e.body.headers.get("Retry-After") : null;
+        if (raN) { var rn = parseFloat(raN); if (!isNaN(rn) && rn > 0) retryAfterN = rn; }
+        if (!retryAfterN && e && e.body && typeof e.body.retryAfterSeconds === "number") {
+          retryAfterN = e.body.retryAfterSeconds;
+        }
+        var msgN = "Slow down — too many requests. Try again in " + formatMinutesApi(retryAfterN) + ".";
+        state.lastCallError = msgN;
+        try { showToast && showToast(msgN, 5000); } catch (_) {}
+        return null;
+      }
       if(!userCancelledN&&(isHbN||isTotN||STREAM_RETRYABLE_STATUS[eStatus])&&nsAttempt<NONSTREAM_MAX){
         var raHdr=e&&e.body&&e.body.headers?e.body.headers.get("Retry-After"):null;
         await sleepBackoff(nsAttempt,raHdr);

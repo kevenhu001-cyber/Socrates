@@ -10,6 +10,20 @@
 
 import { apiFetchRaw } from '../util/api.js';
 
+/* Format a Retry-After-seconds value as a short human phrase.
+   Used by the 429 toast so the message reads "Try again in 2 min"
+   rather than the raw 178s. Anything below 60s collapses to seconds
+   so a sub-minute cooldown doesn't read as "0 min". */
+function formatMinutes(seconds) {
+  if (!seconds || !isFinite(seconds) || seconds <= 0) return "a moment";
+  if (seconds < 60) return Math.round(seconds) + "s";
+  var m = Math.ceil(seconds / 60);
+  if (m < 60) return m + " min";
+  var h = Math.floor(m / 60);
+  var rem = m % 60;
+  return rem ? (h + "h " + rem + "m") : (h + "h");
+}
+
 /* Streaming variant. Calls /api/chat/stream (our backend SSE proxy).
    onDelta(text, full) is called for every text chunk the upstream produces.
    Resolves to {text,html,widgets,cancelled} on success, or null on failure.
@@ -122,6 +136,27 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         /* 401 was already surfaced via handleAuthExpired by apiFetchRaw
          * (gated on the grace window). Set lastCallError and exit. */
         state.lastCallError="401: session expired";
+        return null;
+      }
+      if(eStatus===429){
+        /* Rate limit — do NOT retry. The server is telling us to back
+         * off, and burning our retry budget on a hard cap just delays
+         * the inevitable (and could trip the limiter further if any
+         * retry hits before the window resets). Surface a friendly
+         * toast using the Retry-After / retryAfterSeconds the server
+         * sent so the user knows when to try again. */
+        var retryAfterSec429 = null;
+        var raHdr429 = e && e.body && e.body.headers ? e.body.headers.get("Retry-After") : null;
+        if (raHdr429) {
+          var n = parseFloat(raHdr429);
+          if (!isNaN(n) && n > 0) retryAfterSec429 = n;
+        }
+        if (!retryAfterSec429 && e && e.body && typeof e.body.retryAfterSeconds === "number") {
+          retryAfterSec429 = e.body.retryAfterSeconds;
+        }
+        var msg429 = "Slow down — too many requests. Try again in " + formatMinutes(retryAfterSec429) + ".";
+        state.lastCallError = msg429;
+        try { showToast && showToast(msg429, 5000); } catch (_) {}
         return null;
       }
       if(STREAM_RETRYABLE_STATUS[eStatus]&&attempt<STREAM_MAX_ATTEMPTS){

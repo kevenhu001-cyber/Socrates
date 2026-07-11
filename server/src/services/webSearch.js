@@ -2,6 +2,7 @@ import { BadRequest } from '../lib/errors.js';
 import { detectLanguageCluster } from './scoring.js';
 import * as searchResultCache from '../lib/searchResultCache.js';
 import { searchMinimax } from './searchEngines/minimax.js';
+import { searchMmx } from './searchEngines/mmx.js';
 import { searchSearxng } from './searchEngines/searxng.js';
 import { searchBing } from './searchEngines/bing.js';
 
@@ -114,32 +115,58 @@ export async function webSearch(query, count = 10, opts = {}) {
   const hasMinimaxKey = !!(process.env.MINIMAX_SEARCH_KEY || process.env.MINIMAX_API_KEY);
   const acSignal = ac.signal;
 
+  /* P_mmx-cli-search — per project policy (2026-07-10), web search is
+     backed by the local `mmx` CLI (which authenticates from
+     ~/.mmx/config.json, the same credential surface as `mmx quota`).
+     The mmx engine is the PRIORITY; the direct MiniMax HTTP engine
+     and Bing race as fallbacks if mmx is missing, not authed, or
+     returns no results. Both engines return the same normalized
+     shape so the merge step doesn't care which one won. */
+  const mmxP = withTimeout(searchMmx(query, limit, acSignal), TIMEOUT_MINIMAX_MS, 'mmx-cli');
   const minimaxP = hasMinimaxKey
     ? withTimeout(searchMinimax(query, limit, acSignal), TIMEOUT_MINIMAX_MS, 'minimax')
     : Promise.resolve([]);
   const bingP = withTimeout(searchBing(query, limit, acSignal), TIMEOUT_BING_MS, 'bing');
 
-  const fastRace = await Promise.race([
-    minimaxP.then((r) => ({ source: 'minimax', results: r || [] })),
-    bingP.then((r) => ({ source: 'bing', results: r || [] })),
+  /* P_mmx-priority — wait for ALL engines in parallel and prefer mmx
+     if it returned anything. The previous Promise.race strategy let
+     Bing win on latency even when mmx had strictly-better results,
+     because mmx pays a ~150-300 ms Node CLI spawn cost that Bing's
+     HTTP fetch doesn't. Now: mmx is the priority; bing/searxng only
+     fill in when mmx is empty or missing. */
+  const settled = await Promise.allSettled([
+    mmxP, minimaxP, bingP,
   ]);
+  /* P_engine-result-guard — each engine promise is wrapped in
+     `withTimeout` which resolves to [] on timeout. The fulfilled
+     branch here covers all the happy paths. We still type-guard
+     against non-array returns because a buggy / future-version
+     engine could throw inside its own .map() and let `undefined`
+     leak through — losing an array would crash the merge step
+     below with TypeError, but more importantly silently dropping
+     the priority engine's results. */
+  const pickArray = (s) => (s.status === 'fulfilled' && Array.isArray(s.value)) ? s.value : [];
+  const mmxResults    = pickArray(settled[0]);
+  const minimaxResults = pickArray(settled[1]);
+  const bingResults    = pickArray(settled[2]);
 
-  let finalResults = fastRace.results || [];
-
-  if (finalResults.length < limit) {
-    const loser = fastRace.source === 'minimax' ? bingP : minimaxP;
-    const loserResults = await loser.catch(() => []);
-    if (Array.isArray(loserResults) && loserResults.length > 0) {
-      const seen = new Set(finalResults.map((r) => r.url));
-      for (const r of loserResults) {
-        if (r.url && !seen.has(r.url)) {
-          finalResults.push(r);
-          seen.add(r.url);
-          if (finalResults.length >= limit) break;
-        }
-      }
+  let finalResults = [];
+  const seen = new Set();
+  const push = (r) => {
+    if (r && r.url && !seen.has(r.url)) {
+      seen.add(r.url);
+      finalResults.push(r);
+      return true;
     }
-  }
+    return false;
+  };
+
+  // mmx first
+  for (const r of mmxResults) { if (push(r)) { if (finalResults.length >= limit) break; } }
+  // then direct MiniMax
+  for (const r of minimaxResults) { if (finalResults.length >= limit) break; if (push(r)) {} }
+  // then Bing to fill
+  for (const r of bingResults) { if (finalResults.length >= limit) break; if (push(r)) {} }
 
   if (finalResults.length === 0) {
     const searxngResults = await withTimeout(
