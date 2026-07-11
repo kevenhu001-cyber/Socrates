@@ -76,6 +76,41 @@ export function setCsrfToken(req, res) {
  *   3. Server compares header === cookie value
  *
  * Safe methods (GET, HEAD, OPTIONS) are skipped.
+ *
+ * SECURITY MODEL — IMPORTANT (do not change without auditing):
+ *
+ *   The double-submit check is the SECOND line of defence. The PRIMARY
+ *   defence against CSRF is the `sid` session cookie's attributes —
+ *   `httpOnly: true`, `secure: true` in production, `sameSite: 'lax'`
+ *   (set in routes/auth.js#getSessionCookieOptions). SameSite=Lax
+ *   blocks cross-origin POSTs from carrying the sid cookie, so an
+ *   attacker cannot ride on a victim's authenticated session from a
+ *   malicious origin. Verify those settings before changing any
+ *   branch of this middleware.
+ *
+ *   Within that envelope, the rules are:
+ *
+ *   (a) BOTH header and cookie present → require them to match
+ *       (double-submit cookie pattern).
+ *
+ *   (b) Both missing → pass through. Either anonymous (downstream
+ *       `requireAuth` rejects protected routes) OR privacy features
+ *       cleared the CSRF cookie while leaving the session intact
+ *       (legitimate user path). The Primary defence above still
+ *       blocks cross-origin attacks even in the second case, since
+ *       an attacker would also need to obtain the sid cookie.
+ *
+ *   (c) Exactly one of header/cookie present → REJECT. A clean
+ *       browser always has both (typical flow) or neither (privacy-
+ *       cleared). Seeing exactly one half on its own is anomalous.
+ *       The header comes from JavaScript on the same origin (the
+ *       csrf cookie is not HttpOnly, so JS can read it); a header
+ *       without a matching cookie implies an attacker read the
+ *       cookie value via XSS or browser extension and tried to
+ *       replay it cross-origin. The cookie-without-header case can
+ *       only arise if an attacker injects a csrf cookie via Set-
+ *       Cookie — which a same-origin XSS could already leverage for
+ *       much worse, so we treat that as a forced sign to investigate.
  */
 export function csrfProtection(req, res, next) {
   // Skip for safe methods
@@ -94,10 +129,8 @@ export function csrfProtection(req, res, next) {
 
   const headerToken = req.headers['x-csrf-token'];
   const cookieToken = req.cookies?.csrf;
-  const sidCookie = req.cookies?.sid;
 
-  // When BOTH header and cookie are present, validate that they match
-  // (double-submit cookie pattern).
+  // Path (a) — both present, must match.
   if (headerToken && cookieToken) {
     if (!timingSafeEqual(headerToken, cookieToken)) {
       return next(new Forbidden('CSRF_TOKEN_MISMATCH', 'CSRF token mismatch'));
@@ -105,18 +138,20 @@ export function csrfProtection(req, res, next) {
     return next();
   }
 
-  // If the user has a session (sid cookie) but NO CSRF token pair, the
-  // request still proceeds to `requireAuth` which validates the session.
-  // The CSRF check is relaxed here because:
-  //   1. The sid cookie is HttpOnly + SameSite=Lax, making CSRF attacks
-  //      infeasible (the attacker's cross-origin POST won't carry the
-  //      sid cookie, and JS can't read it to forge the header).
-  //   2. The downstream requireAuth middleware is the real auth gate.
-  //   3. The CSRF cookie can be cleared by browser privacy features
-  //      while the session remains valid, causing spurious 403s on
-  //      endpoints like /api/chat/stream and /api/web-search.
-  //
-  // Unauthenticated requests (no sid cookie) also pass through — the
-  // downstream middleware will reject them if the route requires auth.
-  next();
+  // Path (b) — both missing. Pass through; downstream auth/permissions
+  // gates handle rejection. Covered above by the SECURITY MODEL.
+  if (!headerToken && !cookieToken) {
+    return next();
+  }
+
+  // Path (c) — exactly one present without the other. Reject as a
+  // likely forgery: a clean browser has both (typical) or neither
+  // (when privacy features stripped the csrf cookie). Surfacing a
+  // 403 lets us observe this in logs/metrics and avoids letting an
+  // attacker ride on whichever token they happened to obtain.
+  const which = headerToken ? 'header-only' : 'cookie-only';
+  return next(new Forbidden(
+    'CSRF_TOKEN_PARTIAL',
+    `Partial CSRF token pair (${which}); refusing as a likely forgery`,
+  ));
 }
