@@ -175,6 +175,14 @@ window.confirmClearCache = confirmClearCache;
 window.confirmClearSettings = confirmClearSettings;
 window.confirmDeleteAccount = confirmDeleteAccount;
 
+/* ─── ui/profile.js ─── */
+import { closeProfile, onCustomInstructionsChange, toggleProfileWebSearch, renderUserFooter, openProfile } from './ui/profile.js';
+window.closeProfile = closeProfile;
+window.onCustomInstructionsChange = onCustomInstructionsChange;
+window.toggleProfileWebSearch = toggleProfileWebSearch;
+window.renderUserFooter = renderUserFooter;
+window.openProfile = openProfile;
+
 /* ─── ui/scroll.js ─── */
 import { scrollContainer } from './ui/scroll.js';
 window.scrollContainer = scrollContainer;
