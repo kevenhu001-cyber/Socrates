@@ -3408,21 +3408,26 @@ async function startSession(){
     document.getElementById("chatView").classList.remove("hidden");
     toggleChatTopBarEls(true);
     document.getElementById("msgList").innerHTML="";
-    /* Show the user's input as the first message in the chat. */
-    addMessage("user",'<p>'+esc(state.topic)+'</p>');
+    /* Show the user's input as the first message in the chat. Use
+       plain text (not HTML-wrapped) to match submitChatMessage's
+       addMessage pattern, so extractHistory sees consistent rawText. */
+    addMessage("user", state.topic);
     updateKB();
     updateChatStats();
-    saveCurrentSession();
-    /* Fire the greeting stream NOW — every operation above (addMessage,
-       saveCurrentSession) is already synchronous DOM / fire-and-forget
-       network, so there's no reason to wait another tick. addStreamingMessage
-       inside askChatTurn appends the streaming bubble to msgList and
-       callAPIStream kicks off the fetch on the same turn, so the request
-       is in flight before this function returns and the user sees the
-       "AI thinking…" placeholder immediately. The previous 200ms
-       setTimeout here was purely vestigial — it only added dead time on
-       top of the network TTFT. */
-    askChatTurn(state.topic);
+    /* Fire the greeting stream on the NEXT task (deferred). Do NOT call
+       askChatTurn synchronously inside the Begin click handler:
+       addStreamingMessage() captures ownerSessionId immediately, but
+       several still-pending microtasks from the topic-setup screen can
+       touch state.messages or state.session.currentSessionId in the same
+       task. If any of them land AFTER the placeholder is pushed but
+       before stillOwnsSlot() checks it, the placeholder's slot identity
+       becomes stale and stillOwnsSlot() drops every incoming delta —
+       the bubble then hangs on the "Connecting…" placeholder. The manual
+       Send path (submitChatMessage) wraps askChatTurn in setTimeout(…,0),
+       so the same code path works for follow-up messages. Mirror that
+       here so the first chat turn behaves identically — including the
+       async wrapper that ensures proper microtask ordering. */
+    setTimeout(async function(){ await askChatTurn(state.topic); }, 0);
     return;
   }
 

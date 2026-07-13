@@ -168,7 +168,7 @@ function injectUserContext(messages, user) {
   return [{ role: 'system', content: userCtx }, ...messages];
 }
 
-/* SSE_PRIME — 32 KB comment-padding frame written immediately after the
+/* SSE_PRIME — 12 KB comment-padding frame written immediately after the
    response headers to flush first-chunk buffers that sit between Node and
    the browser:
 
@@ -183,17 +183,18 @@ function injectUserContext(messages, user) {
      origin connection Safari paints nothing until enough bytes accumulate.
 
    8 bytes (the previous `: open\n\n`) is far below both thresholds, so the
-   priming never actually flushed either buffer. 32 KB provides ~4× margin
-   margin but might not be sufficient if EdgeOne's buffer is configured
-   larger than the documented default. 32 KB provides ~4× margin over the
-   assumed 8 KB threshold, covering most real-world EdgeOne configurations.
+   priming never actually flushed either buffer. 12 KB provides ~1.5× margin
+   over the assumed 8 KB threshold — enough to overflow EdgeOne's default
+   buffer and Safari's 1 KB threshold while keeping the priming overhead
+   low enough that slow connections (3G, mobile) don't add seconds of
+   latency before the first real data byte.
 
    Comment lines (leading `:`) are valid per the SSE spec and ignored by
    every parser, including ours (the frontend skips frames that contain no
    `data:` line). Split into 33 short lines so no single line exceeds ~1 KB,
    staying under any intermediary line-length limit. Precomputed once at
    module load — zero per-request cost. */
-const SSE_PRIME = ': open\n' + Array.from({ length: 32 }, () => ':' + 'o'.repeat(1022)).join('\n') + '\n\n';
+const SSE_PRIME = ': open\n' + Array.from({ length: 12 }, () => ':' + 'o'.repeat(1022)).join('\n') + '\n\n';
 
 /* Per-tier monthly Beagle token quotas are now in lib/tiers.js. */
 async function checkBeagleMonthlyLimit(userId, tier) {
@@ -507,8 +508,9 @@ router.post('/stream', requireAuth, chatRateLimitDispatch, audit('chat:stream'),
     }
 
     /* Beagle monthly token cap for free-tier users */
+    let limitErr = null;
     if (provider.isBuiltIn) {
-      const limitErr = await checkBeagleMonthlyLimit(req.userId, req.user?.tier);
+      limitErr = await checkBeagleMonthlyLimit(req.userId, req.user?.tier);
       if (limitErr) return res.status(429).json({ code: 'MONTHLY_LIMIT', message: limitErr.message });
     }
 

@@ -198,10 +198,10 @@ router.post('/', writeLimiter, async (req, res, next) => {
             if (recent.length > 0) {
               sid = recent[0].id;
             } else {
-              sid = randomUUID();
+              sid = id;
             }
           } else {
-            sid = randomUUID();
+            sid = id;
           }
         }
       } else {
