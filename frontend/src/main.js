@@ -8989,72 +8989,7 @@ window.handleAuthExpired=handleAuthExpired;
 installAuthHooks({ on401: handleAuthExpired, isInGraceWindow: isInAuthGraceWindow });
 
 
-function renderUserFooter(){
-  var row=document.querySelector(".sidebar-footer .user-row");
-  if(!row)return;
-  if(!CURRENT_USER){
-    row.innerHTML='<div class="user-avatar">?</div><div><div class="user-name">Guest</div><div class="user-plan">Not signed in</div></div>';
-    return;
-  }
-  var name=CURRENT_USER.displayName||CURRENT_USER.email||"?";
-  var parts=name.trim().split(/\s+/);
-  var initials=parts.length>1
-    ? (parts[0][0]+parts[parts.length-1][0]).toUpperCase()
-    : name.slice(0,2).toUpperCase();
-  var tier=CURRENT_USER.tier||'diophantus';
-  // Tier is server-controlled and known-safe, but escape anyway in case
-  // a future tier value (e.g. "tier-<script>") is ever introduced.
-  var safeTier=escapeHtml(tier);
-  var tierLabel=escapeHtml(tier.charAt(0).toUpperCase()+tier.slice(1));
-  var tierBadge='<span class="tier-badge '+safeTier+'">'+tierLabel+'</span>';
-  var safeName=escapeHtml(CURRENT_USER.displayName||CURRENT_USER.email||"");
-  row.innerHTML='<div class="user-avatar">'+escapeHtml(initials)+'</div><div style="flex:1;min-width:0" onclick="event.stopPropagation();openProfile()"><div class="user-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">'+safeName+'</div><div class="user-plan">'+tierBadge+'</div></div>';
-  /* Clicking the avatar opens the profile modal. */
-  row.querySelector(".user-avatar").onclick=function(e){e.stopPropagation();openProfile()};
-}
-function openProfile(){
-  if(!CURRENT_USER)return;
-  /* P1.3 — hydrate the custom-instructions textareas from the
-     last-saved value (localStorage first; falls back to
-     CURRENT_USER.customInstructions if the server already
-     returns it). */
-  loadCustomInstructionsIntoUI();
-  document.getElementById("profileAvatar").textContent=(CURRENT_USER.displayName||CURRENT_USER.email||"?").slice(0,2).toUpperCase();
-  document.getElementById("profileName").textContent=CURRENT_USER.displayName||"User";
-  document.getElementById("profileEmail").textContent=CURRENT_USER.email||"";
-  /* Format the join date. */
-  var joinedEl=document.getElementById("profileJoined");
-  if(CURRENT_USER.createdAt){
-    try{joinedEl.textContent=new Date(CURRENT_USER.createdAt).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})}catch(e){joinedEl.textContent=CURRENT_USER.createdAt}
-  }else{joinedEl.textContent="—"}
-  /* Email verified status with badge. */
-  document.getElementById("profileVerified").textContent=CURRENT_USER.verifiedAt?"Yes":"No";
-  document.getElementById("profileVerified").className="profile-row-value"+(CURRENT_USER.verifiedAt?" profile-status-badge yes":" profile-status-badge no");
-  /* User ID. */
-  var uidEl=document.getElementById("profileUserId").querySelector(".profile-id-text");
-  uidEl.textContent=CURRENT_USER.id||"—";
-  /* Subscription tier. */
-  var tier=CURRENT_USER.tier||'diophantus';
-  var tierEl=document.getElementById("profileTier");
-  tierEl.textContent=tier.charAt(0).toUpperCase()+tier.slice(1);
-  tierEl.className='profile-row-value tier-badge tier-'+tier;
-  /* Subscription end date. */
-  var subEndEl=document.getElementById("profileSubEnd");
-  var subEndRow=document.getElementById("profileSubEndRow");
-  if(CURRENT_USER.subscriptionEnd){
-    try{subEndEl.textContent=new Date(CURRENT_USER.subscriptionEnd).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})}catch(e){subEndEl.textContent="—"}
-    subEndRow.style.display="flex";
-  }else{
-    subEndRow.style.display=(tier==='diophantus'?'none':'flex');
-    subEndEl.textContent="—";
-  }
-  /* Sync web search toggle state. */
-  syncProfileWebSearchUI();
-  document.getElementById("profileOverlay").classList.remove("hidden");
-}
-function closeProfile(){
-  document.getElementById("profileOverlay").classList.add("hidden");
-}
+import { renderUserFooter, openProfile, closeProfile } from './ui/profile.js';
 
 /* ─── Exam view (standalone page) ─── */
 function openExamModal(){
@@ -9892,95 +9827,8 @@ import { renderArchivedList } from './ui/storage.js';
    PATCH /api/users/me.customInstructions so the same value
    flows to the Android client on the next sign-in. */
 var _customInstructionsSaveTimer=null;
-function loadCustomInstructions(){
-  try{
-    var raw=localStorage.getItem("socrates-custom-instructions");
-    if(raw)return JSON.parse(raw)||{};
-  }catch(_){}
-  return {};
-}
-function saveCustomInstructions(value){
-  try{localStorage.setItem("socrates-custom-instructions",JSON.stringify(value))}catch(_){}
-}
-function loadCustomInstructionsIntoUI(){
-  var data=loadCustomInstructions();
-  /* Fall back to the server-side value if local is empty. */
-  if(!data.response&&CURRENT_USER&&CURRENT_USER.customInstructions){
-    data.response=CURRENT_USER.customInstructions;
-  }
-  var respEl=document.getElementById("profileInstResponse");
-  var aboutEl=document.getElementById("profileInstAbout");
-  if(respEl)respEl.value=data.response||"";
-  if(aboutEl)aboutEl.value=data.about||"";
-  updateInstSaveState(data.savedAt);
-}
-function onCustomInstructionsChange(){
-  var respEl=document.getElementById("profileInstResponse");
-  var aboutEl=document.getElementById("profileInstAbout");
-  if(!respEl||!aboutEl)return;
-  updateInstSaveState(null);
-  /* Debounce 600ms — typing fires oninput on every keystroke. */
-  clearTimeout(_customInstructionsSaveTimer);
-  _customInstructionsSaveTimer=setTimeout(function(){
-    var value={
-      response:respEl.value,
-      about:aboutEl.value,
-      savedAt:new Date().toISOString()
-    };
-    saveCustomInstructions(value);
-    updateInstSaveState(value.savedAt);
-    /* Best-effort server sync — non-blocking. */
-    apiFetch("/api/users/me",{
-      method:"PATCH",
-      body:{customInstructions:buildCustomInstructionsString(value)},
-      timeoutMs:8000
-    }).then(function(){
-      /* Server accepted; nothing to do. */
-    }).catch(function(e){
-      console.debug("[custom-inst] server sync failed (will retry on next save):",e&&e.message);
-    });
-  },600);
-}
-function buildCustomInstructionsString(value){
-  var parts=[];
-  if(value&&value.response)parts.push("[How to respond]\n"+value.response);
-  if(value&&value.about)parts.push("[About the user]\n"+value.about);
-  return parts.join("\n\n");
-}
-function updateInstSaveState(savedAt){
-  var el=document.getElementById("profileInstSaveState");
-  if(!el)return;
-  if(!savedAt){
-    el.textContent=t("common.saving");
-    el.className="profile-instructions-state pending";
-    return;
-  }
-  var dt=new Date(savedAt);
-  var hh=String(dt.getHours()).padStart(2,"0");
-  var mm=String(dt.getMinutes()).padStart(2,"0");
-  el.textContent=t("profile.savedAt").replace("{hh}",hh).replace("{mm}",mm);
-  el.className="profile-instructions-state saved";
-}
-/* Returns the in-flight custom-instructions string (or "") for
-   callers that build the chat messages array — see
-   getSystemContext(). The string is fetched fresh on every
-   call so changes from another tab or device (post sync) are
-   visible immediately. */
-function getCustomInstructionsString(){
-  var v=loadCustomInstructions();
-  return buildCustomInstructionsString(v);
-}
-/* Web search toggle in profile. */
-function toggleProfileWebSearch(){
-  webSearchOn=!webSearchOn;
-  try{localStorage.setItem("socrates-websearch",JSON.stringify(webSearchOn))}catch(e){}
-  syncProfileWebSearchUI();
-}
-function syncProfileWebSearchUI(){
-  var track=document.getElementById("profileWebSearchTrack");
-  if(!track)return;
-  if(webSearchOn){track.classList.add("on")}else{track.classList.remove("on")}
-}
+import { loadCustomInstructions, saveCustomInstructions, loadCustomInstructionsIntoUI, onCustomInstructionsChange, buildCustomInstructionsString, updateInstSaveState, getCustomInstructionsString, toggleProfileWebSearch, syncProfileWebSearchUI } from './ui/profile.js';
+
 /* P_main-split — Wave 1a: showConfirm + closeConfirm extracted to ui/confirm.js. */
 import { showConfirm, closeConfirm } from './ui/confirm.js';
 
@@ -12993,13 +12841,11 @@ var _examSelectedTypes;
 /* ─── Expose all onclick-required functions on window ─── */
 window.addProvider = addProvider;
 window.clearSettings = clearSettings;
-window.closeProfile = closeProfile;
 window.closeSettings = closeSettings;
 window.closeShareModal = closeShareModal;
 window.closeUsageModal = closeUsageModal;
 window.copyShareLink = copyShareLink;
 window.createShareLink = createShareLink;
-window.openProfile = openProfile;
 window.openSettings = openSettings;
 window.openShareModal = openShareModal;
 window.openUsageModal = openUsageModal;
@@ -13034,7 +12880,6 @@ window.toggleExtensionsPicker = toggleExtensionsPicker;
 window.toggleModelPicker = toggleModelPicker;
 window.toggleChatModelMenu = toggleChatModelMenu;
 window.pickChatModel = pickChatModel;
-window.toggleProfileWebSearch = toggleProfileWebSearch;
 window.toggleSidebar = toggleSidebar;
 window.toggleTheme = toggleTheme;
 
@@ -13098,10 +12943,8 @@ window.isMiniMaxProvider = isMiniMaxProvider;
    Without this, reasoning models (DeepSeek R1 / QwQ / MiniMax) hit
    the default 60 s heartbeat mid-think and the stream aborts. */
 window.pickStreamBudgets = pickStreamBudgets;
-window.getCustomInstructionsString = getCustomInstructionsString;
 window.addProvider = addProvider;
 window.clearSettings = clearSettings;
-window.closeProfile = closeProfile;
 window.closeSettings = closeSettings;
 window.closeShareModal = closeShareModal;
 window.copyShareLink = copyShareLink;
@@ -13125,7 +12968,6 @@ window.loadSharedExamSession = loadSharedExamSession;
 // window.exitAgentMode = exitAgentMode;   // unimplemented
 // window.openAgentView  = openAgentView;  // unimplemented
 // window.deleteAgentRun = deleteAgentRun; // unimplemented
-window.openProfile = openProfile;
 window.openSettings = openSettings;
 window.openShareModal = openShareModal;
 window.resetApp = resetApp;
@@ -13139,7 +12981,6 @@ window.switchTab = switchTab;
 window.syncSidebarBtns = syncSidebarBtns;
 window.toggleAPI = toggleAPI;
 window.toggleAppLang = toggleAppLang;
-window.toggleProfileWebSearch = toggleProfileWebSearch;
 window.closeProjectEditor = closeProjectEditor;
 window.closeTagEditor = closeTagEditor;
 window.actuallyDeleteSession = actuallyDeleteSession;
@@ -13180,14 +13021,12 @@ window.removeProvider = removeProvider;
 window.updateProviderField = updateProviderField;
 window.clearProjectFilter = clearProjectFilter;
 window.handleChatKey = handleChatKey;
-window.onCustomInstructionsChange = onCustomInstructionsChange;
 window.markAuthSuccess = markAuthSuccess;
 window.loadProjects = loadProjects;
 window.renderProjects = renderProjects;
 window.refreshServerSessions = refreshServerSessions;
 window.refreshApiConfig = refreshApiConfig;
 window.loadUserMemories = loadUserMemories;
-window.renderUserFooter = renderUserFooter;
 window.renderRecents = renderRecents;
 window.renderMistakes = renderMistakes;
 window.updateMistakesBadge = updateMistakesBadge;
