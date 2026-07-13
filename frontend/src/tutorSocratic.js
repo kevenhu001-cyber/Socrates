@@ -543,11 +543,11 @@
         chatHeader.appendChild(cont);
       } else {
         /* Fallback: place inline in the top-bar next to the
-           session chip (topicBadge). This keeps the unified single
+           stats badge. This keeps the unified single
            top row instead of leaking above the message list. */
-        var badge = document.getElementById('topicBadge');
+        var badge = document.getElementById('chatStats');
         if (badge && badge.parentNode) {
-          badge.parentNode.insertBefore(cont, badge.nextSibling);
+          badge.parentNode.insertBefore(cont, badge);
         }
       }
     }

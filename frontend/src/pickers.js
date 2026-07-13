@@ -97,13 +97,13 @@ function syncModelPills(){
       html+='<span class="model-picker-item-main"><span class="model-picker-item-name">'+name+'</span>';
       if(subLine)html+='<span class="model-picker-item-sub">'+subLine+'</span>';
       html+='</span>';
-      html+='<svg class="model-picker-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+      html+='<svg class="model-picker-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/><circle cx="20" cy="5" r="1.2" opacity="0.4"/></svg>';
       html+='</button>';
     });
     html+='<div class="model-picker-divider"></div>';
   }
   html+='<button type="button" class="model-picker-add" onclick="closeModelPicker();window.openSettings()">';
-  html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+  html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="5" opacity="0.25"/><path d="M12 8v8M8 12h8"/></svg>';
   html+=providers.length?'Manage models…':'Add a model…';
   html+='</button>';
   menu.innerHTML=html;
@@ -171,13 +171,13 @@ function toggleChatModelMenu(){
       html+='<span class="model-picker-item-main"><span class="model-picker-item-name">'+name+'</span>';
       if(subLine)html+='<span class="model-picker-item-sub">'+subLine+'</span>';
       html+='</span>';
-      html+='<svg class="model-picker-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+      html+='<svg class="model-picker-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/><circle cx="20" cy="5" r="1.2" opacity="0.4"/></svg>';
       html+='</button>';
     });
     html+='<div class="model-picker-divider"></div>';
   }
   html+='<button type="button" class="model-picker-add" onclick="closeChatModelMenu();window.openSettings()">';
-  html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+  html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="5" opacity="0.25"/><path d="M12 8v8M8 12h8"/></svg>';
   html+=providers.length?'Manage models…':'Add a model…';
   html+='</button>';
   menu.innerHTML=html;
@@ -253,7 +253,7 @@ function renderExtensionsMenu(){
   var html="";
   EXTENSIONS.forEach(function(ext){
     html+='<button type="button" class="extensions-item'+(ext.on?" on":"")+'" data-ext="'+esc(ext.key)+'" role="option" aria-selected="'+!!ext.on+'">';
-    html+='<span class="extensions-item-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>';
+    html+='<span class="extensions-item-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/><circle cx="20" cy="5" r="1.2" opacity="0.4"/></svg></span>';
     html+='<span class="extensions-item-main">';
     html+='<span class="extensions-item-name">'+esc(ext.name)+'</span>';
     html+='</span>';

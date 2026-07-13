@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# deploy.sh — sync local source to topodrive.top web root
+# deploy.sh — sync local source to topodrive.top web root + restart backend
 # Usage:  ./deploy.sh                      # build frontend + deploy everything
 #   or:   ./deploy.sh /path/to/index.html  # legacy: deploy a single SPA file
 #
@@ -9,7 +9,8 @@
 
 set -euo pipefail
 
-FRONTEND_DIR="/home/ubuntu/Socrates/frontend"
+FRONTEND_DIR="/home/ubuntu/User/Socrates/frontend"
+SERVER_DIR="/home/ubuntu/User/Socrates/server"
 APP_WEB_ROOT="/var/www/app.topodrive.top"
 SITE_WEB_ROOT="/var/www/topodrive.top"
 
@@ -93,7 +94,7 @@ else
 fi
 
 # ─── 2. Marketing site (topodrive.top) ───────────────────────────────
-SITE_DIR="/home/ubuntu/Socrates/site"
+SITE_DIR="/home/ubuntu/User/Socrates/site"
 if [ -d "$SITE_DIR" ]; then
   backup_previous "$SITE_WEB_ROOT"
   $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/base.css" "$SITE_WEB_ROOT/base.css"
@@ -109,26 +110,9 @@ if [ -d "$SITE_DIR" ]; then
       fi
     done
   fi
-  # Static assets — logo.png, favicon.png, og-*.png, etc. The HTML
-  # templates all reference `/logo.png` from the nav-bar, so without
-  # this step every page on topodrive.top shows a broken-image
-  # icon.
-  #
-  # We use `find` rather than a single braced glob for two reasons:
-  #   1. Exclusion. `.DS_Store`, `Thumbs.db`, `*~`, `.gitkeep`, and
-  #      editor swap files in the source dir would otherwise be
-  #      copied wholesale into the webroot (nginx then indexes them
-  #      under default `autoindex on` if anyone flips it on, leaking
-  #      metadata).
-  #   2. Recursion into subdirs in a controlled way. `site/zh/`
-  #      already gets text pages explicitly above, so we keep
-  #      maxdepth=1 here. Future subdirs (e.g. icons pack) should be
-  #      promoted to explicit handling, not silently picked up.
+  # Static assets — logo.png, favicon.png, og-*.png, etc.
   while IFS= read -r -d '' asset; do
     fname=$(basename "$asset")
-    # Belt-and-suspenders — even though find's exclusion above should
-    # cover these, refuse to install anything outside the allow-list
-    # of common web asset extensions.
     case "$fname" in
       *.png|*.ico|*.svg|*.jpg|*.jpeg|*.webp|*.gif|*.woff|*.woff2) ;;
       *) continue ;;
@@ -139,7 +123,21 @@ if [ -d "$SITE_DIR" ]; then
       -print0)
 fi
 
-# ─── 3. Validate nginx + reload ──────────────────────────────────────
+# ─── 3. Restart backend server ────────────────────────────────────────
+echo "Restarting backend…"
+# Find and kill the current server process(es), then start fresh.
+# Uses `pkill` with the exact command pattern to avoid killing the
+# deploy script or unrelated node processes.
+pkill -f "node src/index\.js" 2>/dev/null || true
+sleep 2
+cd "$SERVER_DIR" && nohup node src/index.js > /tmp/server.log 2>&1 &
+# Give it a few seconds to bind, then check for startup errors.
+sleep 4
+if grep -qiE "error|fatal|listen EADDRINUSE" /tmp/server.log 2>/dev/null; then
+  echo "WARNING: backend may have startup errors — check /tmp/server.log"
+fi
+
+# ─── 4. Validate nginx + reload ──────────────────────────────────────
 if ! $SUDO nginx -t >/dev/null 2>&1; then
   echo "WARNING: nginx config test failed (not related to file copy)" >&2
 fi
@@ -150,10 +148,11 @@ else
   NGINX_STATUS="RELOAD FAILED — files are in place but nginx did not pick them up; check 'sudo nginx -t' manually"
 fi
 
-# ─── 4. Report ────────────────────────────────────────────────────────
+# ─── 5. Report ────────────────────────────────────────────────────────
 echo "✓ $SRC_DESC"
 echo "  size:    $SRC_SIZE bytes"
 echo "  md5:     $SRC_MD5"
 echo "  served:  $(curl -s -o /dev/null -w '%{http_code}' --max-time 5 https://app.topodrive.top/)"
 echo "  nginx:   $NGINX_STATUS"
+echo "  backend: $(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:3037/api/config)"
 echo "  rollback (if needed): sudo cp -a $APP_WEB_ROOT/.previous/* $APP_WEB_ROOT/"

@@ -7,7 +7,7 @@
    All three exported for use by main.js / doRender / streaming. */
 
 import { esc, escAttr, escHTML, KATEX_MACROS } from './helpers.js';
-import { renderMermaid, renderViz, renderVizLoading, renderVizError } from './viz.js';
+import { renderMermaid, renderViz, renderVizLoading, renderVizError, renderPlot } from './viz.js';
 import { preprocessMarkdown, preprocessMarkdownForStreaming } from './preprocess.js';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
 import { sanitizeUrls } from '../util/safe.js';
@@ -211,7 +211,17 @@ export function formatMsgProgressive(t){
   function save(html){
     var id=pid++;
     blocks.push(html);
-    return'\x00BLOCK'+id+'\x00';
+    return'XBLOCK'+id+'X';
+  }
+  /* Separate pool for viz/mermaid cards — same rationale as formatMsg:
+     their iframes are stripped by DOMPurify, so we restore them AFTER
+     the sanitize pass. */
+  var vizBlocks=[];
+  var vizPid=0;
+  function saveViz(html){
+    var id=vizPid++;
+    vizBlocks.push(html);
+    return'XVIZBLOCK'+id+'X';
   }
 
   /* 1. Closed think blocks */
@@ -294,7 +304,75 @@ export function formatMsgProgressive(t){
     return save('<span class="scaffold-stream scaffold-stream-unclosed"><span class="scaffold-stream-label">' + label + '</span> <span class="thinking-ring thinking-ring-sm"></span></span>');
   });
 
-  /* 2. Display math $$...$$ — CLOSED blocks render with KaTeX now. */
+  /* ═══════════════════════════════════════════════════════════════
+     CODE-FENCE & VIZ HANDLERS — MUST run BEFORE math handlers
+     below, so that $ characters inside SVG/HTML code fences are
+     never misinterpreted as LaTeX delimiters by the $...$ regex.
+     This mirrors the order in formatMsg().
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* 2. Mermaid diagram blocks — render during streaming so the user
+     sees the diagram live instead of a code block. */
+  s=s.replace(/```mermaid\s*\n?([\s\S]*?)```/g,function(_,code){
+    var trimmed=code.trim();
+    return trimmed?saveViz(renderMermaid(trimmed)):'';
+  });
+  s=s.replace(/```mermaid\s*\n?([\s\S]*?)$/g,function(_,body){
+    return saveViz(renderVizLoading());
+  });
+
+  /* 3. ```plot``` fence — JS-only math plot. Routed before generic
+     code fences so plot isn't mistaken for a code-block language. */
+  s=s.replace(/```plot\s*\n?([\s\S]*?)```/g,function(_,spec){
+    var trimmed=spec.trim();
+    return trimmed?saveViz(renderPlot(trimmed)):'';
+  });
+  s=s.replace(/```plot\s*\n?([\s\S]*?)$/g,function(){
+    return saveViz(renderVizLoading());
+  });
+
+  /* 4. Closed code fences — detect HTML/SVG/viz content and render as
+     sandboxed iframe (mirrors formatMsg's detection logic).
+     Explicit language tags (svg/html/viz) bypass the length threshold
+     so even a tiny <svg/> gets rendered rather than shown as code. */
+  s=s.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){
+    var trimmed=code.trim();
+    var isHtmlLang=lang==="html"||lang==="viz"||lang==="svg";
+    var looksLikeHtml=isHtmlLang||(
+      trimmed.length>30&&
+      /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
+    );
+    /* Explicit html/viz/svg lang → no length limit. Auto-detected
+       HTML requires at least 20 chars to avoid false positives. */
+    if(isHtmlLang || (looksLikeHtml && trimmed.length>20)){
+      return saveViz(renderViz(trimmed));
+    }
+    var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
+    return save('<pre><code'+langAttr+'>'+escHTML(trimmed)+'</code></pre>');
+  });
+
+  /* 5. Unclosed code fence — show a viz loading placeholder for
+     known viz languages, otherwise a monospace code block. */
+  s=s.replace(/```(\w*)\n?([\s\S]*)$/g,function(_,lang,body){
+    var trimmed=body.trim();
+    if(trimmed){
+      var isHtmlLang=lang==="html"||lang==="viz"||lang==="svg";
+      if(isHtmlLang){
+        return saveViz(renderVizLoading());
+      }
+      var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
+      return save('<pre><code'+langAttr+'>'+escHTML(trimmed)+'</code></pre>');
+    }
+    return save('<span style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">\u2026</span>');
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     MATH HANDLERS — process $ and $$ delimiters. Safe to run now
+     because all code-fence content has been stashed into XBLOCK or
+     XVIZBLOCK placeholders and won't be matched by these regexes.
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* 6. Display math $$...$$ */
   if(typeof katex!=="undefined"){
     s=s.replace(/\$\$([\s\S]+?)\$\$/g,function(_,math){
       try{
@@ -312,7 +390,7 @@ export function formatMsgProgressive(t){
     });
   }
 
-  /* 3. Inline math $...$ */
+  /* 7. Inline math $...$ */
   if(typeof katex!=="undefined"){
     s=s.replace(/\$(.+?)\$/g,function(_,math){
       try{
@@ -323,24 +401,7 @@ export function formatMsgProgressive(t){
     });
   }
 
-  /* 4. Closed code fences */
-  s=s.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){
-    var trimmed=code.trim();
-    var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
-    return save('<pre><code'+langAttr+'>'+escHTML(trimmed)+'</code></pre>');
-  });
-
-  /* 5. Unclosed code fence */
-  s=s.replace(/```(\w*)\n?([\s\S]*)$/g,function(_,lang,body){
-    var trimmed=body.trim();
-    if(trimmed){
-      var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
-      return save('<pre><code'+langAttr+'>'+escHTML(trimmed)+'</code></pre>');
-    }
-    return save('<span style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">\u2026</span>');
-  });
-
-  /* 6. Render Markdown via marked.parse */
+  /* 8. Render Markdown via marked.parse */
   var html;
   if(typeof marked!=="undefined"){
     html=marked.parse(s,{breaks:true,gfm:true});
@@ -348,17 +409,21 @@ export function formatMsgProgressive(t){
     html="<p>"+escHTML(s).replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>")+"</p>";
   }
 
-  /* 7. Restore protected blocks */
-  html=html.replace(/\x00BLOCK(\d+)\x00/g,function(_,id){
+  /* 9. Restore protected blocks */
+  html=html.replace(/XBLOCK(\d+)X/g,function(_,id){
     return blocks[parseInt(id)];
   });
 
-  /* 8. Sanitise the final HTML with DOMPurify.
+  /* 10. Sanitise the final HTML with DOMPurify.
      marked.parse() passes raw HTML through by default — this is
      the only line of defense against XSS via injected HTML. The
      `sanitizeUrls` pass earlier only filtered URL schemes; it did
      not strip inline event handlers (onerror, onclick, onload). */
-  return sanitizeHtml(html);
+  var sanitized=sanitizeHtml(html);
+  /* Restore viz blocks AFTER DOMPurify so iframes survive. */
+  return sanitized.replace(/XVIZBLOCK(\d+)X/g,function(_,id){
+    return vizBlocks[parseInt(id)];
+  });
 }
 
 export function formatMsg(t){
@@ -370,7 +435,20 @@ export function formatMsg(t){
   function save(html){
     var id=pid++;
     blocks.push(html);
-    return'\x00BLOCK'+id+'\x00';
+    return'XBLOCK'+id+'X';
+  }
+  /* Separate pool for viz/mermaid cards. Their HTML embeds a
+     sandboxed <iframe srcdoc=…> that the main DOMPurify pass
+     strips (FORBID_TAGS includes 'iframe' and 'frame'). We
+     restore viz placeholders AFTER DOMPurify below so the iframe
+     survives. The placeholders use a distinct prefix (VIZBLOCK)
+     so the pre-sanitize BLOCK<n> restore leaves them alone. */
+  var vizBlocks=[];
+  var vizPid=0;
+  function saveViz(html){
+    var id=vizPid++;
+    vizBlocks.push(html);
+    return'XVIZBLOCK'+id+'X';
   }
 
   t=t.replace(/&lt;think&gt;/g,'<think>').replace(/&lt;\/think&gt;/g,'</think>');
@@ -414,7 +492,7 @@ export function formatMsg(t){
     return save('<span class="scaffold-stream scaffold-stream-unclosed">\u2026'+esc(tag)+'\u2026</span>');
   });
 
-  t=t.replace(/^```(?:viz|html)\s*$/m,'```viz\n');
+  t=t.replace(/^```(?:viz|html|svg)\s*$/m,'```viz\n');
 
   /* Think blocks */
   t=t.replace(/<think>([\s\S]*?)<\/think>/g,function(_,content){
@@ -440,30 +518,48 @@ export function formatMsg(t){
   /* Mermaid diagram blocks */
   t=t.replace(/```mermaid\s*\n?([\s\S]*?)```/g,function(_,code){
     var trimmed=code.trim();
-    return trimmed?save(renderMermaid(trimmed)):'';
+    return trimmed?saveViz(renderMermaid(trimmed)):'';
   });
   t=t.replace(/```mermaid\s*\n?([\s\S]*?)$/g,function(_,body){
-    return save(renderVizLoading());
+    return saveViz(renderVizLoading());
   });
 
-  /* Viz blocks */
-  t=t.replace(/```(?:viz|html)\s*\n?([\s\S]*?)```/g,function(_,json){
+  /* Viz blocks — svg is included here so explicit ```svg fences bypass
+     the generic code-block length threshold below. */
+  t=t.replace(/```(?:viz|html|svg)\s*\n?([\s\S]*?)```/g,function(_,json){
     var trimmed=json.trim();
-    return trimmed?save(renderViz(trimmed)):'';
+    return trimmed?saveViz(renderViz(trimmed)):'';
   });
-  t=t.replace(/```(?:viz|html)\s*\n?([\s\S]*?)$/g,function(_,body){
-    return save(renderVizLoading());
+  t=t.replace(/```(?:viz|html|svg)\s*\n?([\s\S]*?)$/g,function(_,body){
+    return saveViz(renderVizLoading());
   });
 
-  /* Code blocks */
+  /* ```plot``` fence → JS-only math plot. Routed BEFORE the
+     generic ```lang``` handler so the plot language isn't
+     mistaken for a code-block highlight language. The plot
+     iframe is self-contained (canvas + inline runtime), no
+     Pyodide / server round-trip needed. */
+  t=t.replace(/```plot\s*\n?([\s\S]*?)```/g,function(_,spec){
+    var trimmed=spec.trim();
+    return trimmed?saveViz(renderPlot(trimmed)):'';
+  });
+  /* ```plot``` (unclosed) → just show a loading placeholder so the
+     user sees the model mid-prompt without leaking the raw tag. */
+  t=t.replace(/```plot\s*\n?([\s\S]*?)$/g,function(){
+    return saveViz(renderVizLoading());
+  });
+  /* Code blocks — detect HTML/SVG/viz by explicit language tag or
+     by content pattern (closing HTML tags). Self-closing SVGs without
+     </svg> are caught by lang==="svg". */
   t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){
     var trimmed=code.trim();
-    var looksLikeHtml=trimmed.length>30&&(
-      lang==="html"||lang==="viz"||
+    var isHtmlLang=lang==="html"||lang==="viz"||lang==="svg";
+    var looksLikeHtml=isHtmlLang||(
+      trimmed.length>30&&
       /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
     );
-    if(looksLikeHtml&&trimmed.length>20){
-      return save(renderViz(trimmed));
+    if(isHtmlLang || (looksLikeHtml && trimmed.length>20)){
+      return saveViz(renderViz(trimmed));
     }
     var langAttr=lang?' class="language-'+esc(lang)+'"':'';
     return save('<pre><code'+langAttr+'>'+esc(trimmed)+'</code></pre>');
@@ -518,8 +614,10 @@ export function formatMsg(t){
   /* Sanitize URLs in rendered HTML */
   html=sanitizeUrls(html);
 
-  /* Restore protected blocks */
-  html=html.replace(/\x00BLOCK(\d+)\x00/g,function(_,id){
+  /* Restore protected blocks. Viz/mermaid placeholders (VIZBLOCK)
+     are intentionally skipped — they are restored AFTER DOMPurify
+     below so the iframe + srcdoc survive sanitisation. */
+  html=html.replace(/XBLOCK(\d+)X/g,function(_,id){
     return blocks[parseInt(id)];
   });
 
@@ -580,7 +678,19 @@ export function formatMsg(t){
 
   /* Sanitise the final HTML with DOMPurify. See note in
      formatMsgProgressive for rationale. */
-  return sanitizeHtml(html);
+  var sanitized=sanitizeHtml(html);
+  /* Restore viz/mermaid blocks AFTER DOMPurify. Their HTML
+     strings (sandboxed iframe + srcdoc) are produced by our own
+     renderViz/renderMermaid helpers, not user content, so it is
+     safe to bypass the sanitiser for these specific blocks. The
+     srcdoc payload is HTML-entity-escaped at the call site
+     (renderViz in viz.js replaces &, ", <, > with entities
+     before assigning to the iframe's srcdoc attribute) so an
+     injection attempt renders as visible text inside the
+     sandboxed iframe, not as DOM nodes in the parent page. */
+  return sanitized.replace(/XVIZBLOCK(\d+)X/g,function(_,id){
+    return vizBlocks[parseInt(id)];
+  });
 }
 
 /* ── Plain-text helpers (used by message-editing flows) ────────────

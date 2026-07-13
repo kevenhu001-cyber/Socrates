@@ -18,11 +18,11 @@ import {
 } from './chat/offline.js';
 import { openUsageModal, closeUsageModal, loadUsageData, loadUsageMonth, renderUsageHeatmap, showUsageTip, hideUsageTip } from './ui/usage.js';
 import { batchSetItem, batchRemoveItem } from './batchStorage.js';
-import { LOCAL_MEMORY_MAX, loadLocalMemory, appendLocalMemory, clearLocalMemory } from './storage/localMemory.js';
+import { LOCAL_MEMORY_MAX, loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from './storage/localMemory.js';
 import { formatTickSlice, formatMsgProgressive, formatMsg, stripMarkdown, findLastUserMessage } from './render/markdown.js';
 import { SOCRATIC_SYSTEM_PROMPT } from './prompts/socratic.js';
 import { esc, escAttr, escHTML } from './render/helpers.js';
-import { processPendingMermaid, renderViz, renderVizLoading, renderMermaid, openVizModal } from './render/viz.js';
+import { processPendingMermaid, processPendingViz, processPendingVizActions, renderViz, renderVizLoading, renderMermaid, openVizModal } from './render/viz.js';
 import { callAPI, callAPIChat } from './chat/api.js';
 import { callAPIStream } from './chat/stream.js';
 import { hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister, switchAuthTab, setAuthError, showAuthForgotPassword, showAuthCodeLogin, submitAuthSignin, submitAuthRegister, submitAuthVerify, submitAuthForgotPassword, submitAuthResetPassword, submitAuthSendCode, submitAuthLoginWithCode, resendVerification, resendAuthCode, afterAuthEnter } from './auth/index.js';
@@ -1266,8 +1266,17 @@ function doSave(){
   /* Kick off AI title generation based on the user's first input. */
   if(!state.sessionTitle)generateSessionTitle();
   /* P1.2 — rebuild the Cmd-K search index after every save so the
-     user can immediately find the message they just sent. */
-  rebuildCmdKIndex();
+     user can immediately find the message they just sent.
+     P_lag-fix — Fuse builds over SERVER_SESSIONS + state.messages
+     and can stall the click→paint path on the new-session click by
+     100-500ms when there are many sessions. Defer to idle time so
+     the greeting stream starts unblocked; Cmd-K still rebuilds
+     synchronously the first time it's opened (lazy guard at line 893). */
+  if(typeof requestIdleCallback==="function"){
+    requestIdleCallback(function(){rebuildCmdKIndex()},{timeout:2000});
+  }else{
+    setTimeout(function(){rebuildCmdKIndex()},0);
+  }
   /* Fire-and-forget write to server. The local SERVER_SESSIONS cache is
      refreshed on next renderRecents; we don't block the UI on the roundtrip.
      P0.0 — adopt the server's canonical session id when it differs
@@ -1464,7 +1473,11 @@ async function loadSession(id){
      (sessionId + messages) at the start, but by the time the async
      POST resolves, state.messages may have been replaced with the
      new session's data — causing the old session's DB row to be
-     overwritten with the new session's messages ("会话串台"). */
+     overwritten with the new session's messages ("会话串台").
+     Additionally, the _saveDirty cascade must be drained before
+     _loadingSession is set, otherwise the dirty cascade would be
+     blocked by the _loadingSession guard and the old session's
+     pending messages would be silently dropped. */
   if(_saveInFlight){
     try{await _saveInFlight}catch(_){}
   }
@@ -1575,9 +1588,7 @@ async function loadSession(id){
     document.getElementById("topicSetup").classList.add("hidden");
     document.getElementById("diagnosticView").classList.add("hidden");
     document.getElementById("chatView").classList.remove("hidden");
-    document.getElementById("topicBadge").classList.remove("hidden");
     toggleChatTopBarEls(true);
-    document.getElementById("topicBadgeText").textContent=state.domain;
     syncChatModel();
     var msgList=document.getElementById("msgList");
     msgList.innerHTML="";
@@ -1640,6 +1651,24 @@ async function loadSession(id){
       // extractHistory(). `rawText` is the canonical source for
       // history (the LLM context is plain text); `html` is what
       // we just rendered. type/actions are unused on load.
+      /* P_tool-history — restore tool-call records so the cards
+         (including artifact images) re-appear on session reload. */
+      const restoredToolCalls = Array.isArray(m.toolCalls)
+        ? m.toolCalls.map(function(tc) {
+            return {
+              id: String(tc.id || ''),
+              name: String(tc.name || ''),
+              input: tc.input == null ? null : tc.input,
+              output: tc.output == null ? null : tc.output,
+              isError: tc.isError === true,
+              artifacts: Array.isArray(tc.artifacts)
+                ? tc.artifacts.map(function(a) {
+                    return { id: String(a.id || ''), mimeType: a.mimeType || null };
+                  })
+                : [],
+            };
+          })
+        : [];
       state.messages.push({
         clientId: clientId,
         role: m.role,
@@ -1653,6 +1682,7 @@ async function loadSession(id){
          * re-renders the chip strip AND so a future save round-trips
          * them again. */
         attachments: Array.isArray(m.attachments) ? m.attachments : [],
+        toolCalls: restoredToolCalls,
         actions: null
       });
 
@@ -1709,8 +1739,39 @@ async function loadSession(id){
         }
       }
       div.appendChild(body);
+      /* P_tool-history — restore tool-call cards (including artifact
+         images) when reloading a session that has saved tool entries. */
+      if(restoredToolCalls.length && m.role==="assistant"){
+        for(var tci=0;tci<restoredToolCalls.length;tci++){
+          var rtc=restoredToolCalls[tci];
+          var cardOut=appendToolModule(rtc.name||"code_interpreter",rtc.input||{},body);
+          if(cardOut){
+            var cardEl=cardOut.closest(".agent-tool-card");
+            if(cardEl)cardEl.setAttribute("data-tcid",rtc.id);
+            cardOut.textContent=rtc.output||"";
+            if(rtc.isError)cardOut.classList.add("error");
+            if(Array.isArray(rtc.artifacts)&&rtc.artifacts.length){
+              for(var ai=0;ai<rtc.artifacts.length;ai++){
+                appendInlineArtifact(rtc.artifacts[ai].id,rtc.artifacts[ai].mimeType,cardOut);
+              }
+            }
+            var cEl=cardOut.closest(".agent-tool-card");
+            if(cEl)cEl.classList.add("open");
+          }
+        }
+      }
       msgList.appendChild(div);
     });
+    /* P_viz-resume — after the loop rebuilds every assistant bubble,
+       wire up viz cards + action buttons. addMessage() does this per
+       message via its tail call, but the legacy session-reload path
+       mounts all bubbles synchronously and never went through
+       addMessage, so viz cards in restored sessions never got their
+       load listeners / data-action bindings. Run the post-process
+       pass once after the loop to cover everything. */
+    try{processPendingMermaid()}catch(_){}
+    try{processPendingViz()}catch(_){}
+    try{processPendingVizActions()}catch(_){}
     /* P_context-race — currentSessionId and URL are set HERE, AFTER
        state.messages has been fully rebuilt. Setting them earlier
        (before the forEach rebuild loop) left a window where
@@ -1815,7 +1876,6 @@ async function loadSession(id){
         state.kbNodes=[];
         state.phase="topic";
         document.getElementById("chatView").classList.add("hidden");
-        document.getElementById("topicBadge").classList.add("hidden");
         toggleChatTopBarEls(false);
         document.getElementById("topicSetup").classList.remove("hidden");
         /* Friendly notice so the user knows what just happened. */
@@ -2267,7 +2327,6 @@ function bounceOutOfArchivedSession(){
   document.getElementById("topicSetup").classList.remove("hidden");
   document.getElementById("diagnosticView").classList.add("hidden");
   document.getElementById("chatView").classList.add("hidden");
-  document.getElementById("topicBadge").classList.add("hidden");
   toggleChatTopBarEls(false);
   document.getElementById("msgList").innerHTML="";
   document.getElementById("topicInput").value="";
@@ -3347,16 +3406,23 @@ async function startSession(){
     document.getElementById("topicSetup").classList.add("hidden");
     document.getElementById("diagnosticView").classList.add("hidden");
     document.getElementById("chatView").classList.remove("hidden");
-    document.getElementById("topicBadge").classList.remove("hidden");
     toggleChatTopBarEls(true);
-    document.getElementById("topicBadgeText").textContent=state.domain;
     document.getElementById("msgList").innerHTML="";
     /* Show the user's input as the first message in the chat. */
     addMessage("user",'<p>'+esc(state.topic)+'</p>');
     updateKB();
     updateChatStats();
     saveCurrentSession();
-    setTimeout(function(){askChatTurn(state.topic)},200);
+    /* Fire the greeting stream NOW — every operation above (addMessage,
+       saveCurrentSession) is already synchronous DOM / fire-and-forget
+       network, so there's no reason to wait another tick. addStreamingMessage
+       inside askChatTurn appends the streaming bubble to msgList and
+       callAPIStream kicks off the fetch on the same turn, so the request
+       is in flight before this function returns and the user sees the
+       "AI thinking…" placeholder immediately. The previous 200ms
+       setTimeout here was purely vestigial — it only added dead time on
+       top of the network TTFT. */
+    askChatTurn(state.topic);
     return;
   }
 
@@ -3365,8 +3431,6 @@ async function startSession(){
   document.getElementById("diagnosticView").classList.remove("hidden");
   document.getElementById("chatView").classList.add("hidden");
   toggleChatTopBarEls(false);
-    document.getElementById("topicBadge").classList.remove("hidden");
-    document.getElementById("topicBadgeText").textContent=state.domain;
     syncChatModel();
   document.getElementById("diagnosticView").innerHTML='<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">'+t("tutor.loading")+'</p><div class="diag-progress"><div class="diag-progress-bar"><div class="diag-progress-fill" id="diagProgressFill"></div></div><div class="diag-progress-step" id="diagProgressStep"><span class="diag-progress-spin"></span>'+t("diag.analyzingTopic")+'</div></div></div>';
 
@@ -4147,6 +4211,10 @@ function handleChatApiResult(result,ctl,userText){
       ctl.abort();
     }else if(state.lastCallError){
       state.lastCallSource="error";
+      /* Surface the real error in the bubble AND show a console
+         warning + toast so the user sees what actually went wrong. */
+      console.error("[chat] stream error:",state.lastCallError);
+      try{showToast&&showToast("API error: "+state.lastCallError.slice(0,120),8000)}catch(_){}
       ctl.replaceWithError("(response interrupted: "+reason+" — tap Retry to resume)",function(){
         askChatTurn(userText);
       });
@@ -5334,7 +5402,7 @@ function restoreMessageBody(entry,body){
        html from when it was first saved. */
     var raw = entry.rawText;
     if(entry.role === "assistant" && /<(quiz|example|practice|definition|step|flashcard)\b/i.test(raw)){
-      try { body.innerHTML = renderAssistantHTML(raw); return; } catch(_) {}
+      try { body.innerHTML = renderAssistantHTML(raw); try{processPendingMermaid()}catch(_){} try{processPendingViz()}catch(_){} try{processPendingVizActions()}catch(_){} return; } catch(_) {}
     }
     body.innerHTML = formatMsg(raw);
   }else if(entry.html){
@@ -5342,6 +5410,9 @@ function restoreMessageBody(entry,body){
   }else{
     body.innerHTML = "";
   }
+  try{processPendingMermaid()}catch(_){}
+  try{processPendingViz()}catch(_){}
+  try{processPendingVizActions()}catch(_){}
 }
 function findMessageIndex(messageId){
   return state.messages.findIndex(function(m){
@@ -5489,6 +5560,9 @@ function addMessage(role,text,type,actions,attachmentsArg){
     div.appendChild(modelEl);
   }
   list.appendChild(div);
+  try{processPendingMermaid()}catch(_){}
+  try{processPendingViz()}catch(_){}
+  try{processPendingVizActions()}catch(_){}
 
   var sc=scrollContainer();
   requestAnimationFrame(function(){sc.scrollTop=sc.scrollHeight});
@@ -5616,10 +5690,42 @@ function appendToolModule(toolName,toolInput,body){
       '<span class="agent-tool-input"></span>'+
       '<span class="agent-tool-chev">▾</span>'+
     '</div>'+
+    '<div class="agent-tool-code-wrap"><pre class="agent-tool-code" style="display:none"><code></code></pre></div>'+
     '<div class="agent-tool-out"></div>';
   card.querySelector(".agent-tool-icon").innerHTML=meta.svg||meta.letter;
   card.querySelector(".agent-tool-name").textContent=meta.label;
   card.querySelector(".agent-tool-input").textContent=toolFormatInput(toolName,toolInput);
+  /* Insert the tool’s source code/command between head and output
+     when we have it. code_interpreter / Code share the python
+     source (toolInput.code). Bash has toolInput.command. WebFetch
+     shows the URL on its own line. Other tools (Grep, Glob, …)
+     don’t carry a meaningful source body, so we leave the code
+     block hidden and the input line in the head is enough. */
+  var codeEl=card.querySelector('.agent-tool-code');
+  var codeWrap=card.querySelector('.agent-tool-code-wrap');
+  var srcBody=null;
+  var srcLang='';
+  if(toolName==='code_interpreter'||toolName==='Code'){
+    srcBody=(toolInput&&toolInput.code)||'';
+    srcLang='python';
+  }else if(toolName==='Bash'){
+    srcBody=(toolInput&&toolInput.command)||'';
+    srcLang='bash';
+  }else if(toolName==='WebFetch'||toolName==='web_fetch'){
+    srcBody=(toolInput&&toolInput.url)||'';
+    srcLang='';
+  }
+  if(srcBody){
+    var codeInner=codeEl.querySelector('code');
+    codeInner.textContent=srcBody;
+    if(srcLang)codeInner.className='language-'+srcLang;
+    codeEl.style.display='';
+    if(typeof hljs!=='undefined'){
+      try{hljs.highlightElement(codeInner);codeInner.dataset.hljsDone='1'}catch(_){}
+    }
+  }else{
+    codeWrap.parentNode.removeChild(codeWrap);
+  }
   var head=card.querySelector(".agent-tool-head");
   head.addEventListener("click",function(){card.classList.toggle("open")});
   body.appendChild(card);
@@ -5654,6 +5760,38 @@ function setLastToolOutput(text,isError,outEl){
    pipeline, so the X-Content-Type-Options: nosniff header from
    server/src/routes/files.js:151-157 already protects against content
    sniffing. */
+/* Build the diagnostic placeholder shown when an inline artifact
+   fails to load. Replaces the <img> (or link) on error / non-2xx
+   so the user sees a useful message — the file id, mime, and a
+   retry button — instead of the browser's broken-image icon.
+   Returns the placeholder Element; caller decides where to mount
+   it. The error is informational only; we never throw. */
+function makeArtifactError(fileId,mimeType,url,reason){
+  var box=document.createElement("div");
+  box.className="artifact-error";
+  /* Inline SVG broken-image icon — same one most browsers draw. */
+  box.innerHTML=
+    '<svg class="artifact-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ 
+      '<rect x="3" y="3" width="18" height="18" rx="2"/>'+ 
+      '<circle cx="9" cy="9" r="2"/>'+ 
+      '<path d="m21 15-5-5L5 21"/>'+ 
+    '</svg>'+ 
+    '<span class="artifact-error-text">Could not load '+esc(mimeType||'file')+' · '+esc(fileId)+''+(reason?' ('+esc(reason)+')':'')+'</span>'+ 
+    '<button type="button" class="artifact-error-retry">Retry</button>';
+  /* Retry rebuilds the img with a cache-busting query param so the
+     browser re-fetches (avoids stuck negative caches on 4xx). */
+  box.querySelector('.artifact-error-retry').addEventListener('click',function(){
+    var fresh=document.createElement('img');
+    fresh.src=url+(url.indexOf('?')>=0?'&':'?')+'_='+Date.now();
+    fresh.alt="execution artifact";
+    fresh.className="exec-artifact-image";
+    fresh.loading="lazy";
+    fresh.addEventListener('error',function(){fresh.replaceWith(makeArtifactError(fileId,mimeType,url,'load failed'))});
+    if(box.parentNode)box.parentNode.replaceChild(fresh,box);
+  });
+  return box;
+}
+
 function appendInlineArtifact(fileId,mimeType,outEl){
   var out=outEl||document.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
   if(!out)return;
@@ -5664,6 +5802,13 @@ function appendInlineArtifact(fileId,mimeType,outEl){
     img.alt="execution artifact";
     img.className="exec-artifact-image";
     img.loading="lazy";
+    /* Programmatic error handler — DOMPurify strips inline onerror,
+       so we bind here on the Element directly. We use
+       replaceWith() so the broken-image icon disappears and the
+       placeholder takes its slot (no layout jump). */
+    img.addEventListener('error',function(){
+      try{if(img.parentNode)img.parentNode.replaceChild(makeArtifactError(fileId,mimeType,url,'load failed'),img)}catch(_){}
+    });
     out.appendChild(img);
     var card=out.closest(".agent-tool-card");
     if(card)card.classList.add("open");
@@ -5674,6 +5819,17 @@ function appendInlineArtifact(fileId,mimeType,outEl){
     a.target="_blank";
     a.rel="noopener";
     a.className="exec-artifact-link";
+    /* Non-image artifacts: also probe so a 401/404 turns the link
+       into a visible diagnostic instead of a dead download. */
+    if(typeof fetch==='function'){
+      try{
+        fetch(url,{method:'HEAD',credentials:'same-origin'}).then(function(r){
+          if(!r.ok&&a.parentNode){
+            a.parentNode.replaceChild(makeArtifactError(fileId,mimeType,url,'HTTP '+r.status),a);
+          }
+        }).catch(function(){});
+      }catch(_){}
+    }
     out.appendChild(a);
   }
 }
@@ -5769,6 +5925,9 @@ function appendThinking(text){
     if(buffer){
       try{
         thinkContent.innerHTML=formatMsg(buffer);
+        try{processPendingMermaid()}catch(_){}
+        try{processPendingViz()}catch(_){}
+        try{processPendingVizActions()}catch(_){}
         if(typeof hljs!=="undefined"){
           thinkContent.querySelectorAll("pre code").forEach(function(c){
             if(c.dataset&&c.dataset.hljsDone)return;
@@ -5852,41 +6011,41 @@ var SEARCH_PROGRESS_LABELS = {
     started:    'Searching the web for "{topic}"',
     expanding:  'Tried {n} query variants',
     querying:   'Q: {query}',
-    got_results:'  · {n} results',
-    retry:      '↻ First round was thin. Retrying with the original query…',
-    fetching:   'Reading {n} pages…',
-    fetched:    '✓ Read {ok}/{total} pages',
-    scored:     '  · top match {topRel}% relevance',
-    filtered:   '  · kept {kept}, dropped {dropped}',
-    good:       '✓ Quality OK ({score}/5)',
-    retry_low:  '↻ First round was thin. AI rewriting the query…',
-    retry_rewrote:'↻ New query: {q}',
-    retry_still_bad:'↻ Still thin. Proceeding with what we have.',
-    done:       '{n} sources · {engines} · {fetched} read',
+    got_results:'  \u00B7 {n} results',
+    retry:      '\u21BB First round was thin. Retrying with the original query\u2026',
+    fetching:   'Reading {n} pages\u2026',
+    fetched:    '[OK] Read {ok}/{total} pages',
+    scored:     '  \u00B7 top match {topRel}% relevance',
+    filtered:   '  \u00B7 kept {kept}, dropped {dropped}',
+    good:       '[OK] Quality OK ({score}/5)',
+    retry_low:  '\u21BB First round was thin. AI rewriting the query\u2026',
+    retry_rewrote:'\u21BB New query: {q}',
+    retry_still_bad:'\u21BB Still thin. Proceeding with what we have.',
+    done:       '{n} sources \u00B7 {engines} \u00B7 {fetched} read',
     error:      'Search failed: {msg}',
-    warn:       '⚠ {msg}',
+    warn:       '[!] {msg}',
     cancelled:  'Search cancelled.',
-    ceiling:    'Search exceeded {sec}s — proceeding without web context.',
+    ceiling:    'Search exceeded {sec}s \u2014 proceeding without web context.',
   },
   zh: {
-    started:    '正在搜索：“{topic}”',
-    expanding:  '尝试了 {n} 个查询变体',
+    started:    '\u6B63\u5728\u641C\u7D22\uFF1A\u201C{topic}\u201D',
+    expanding:  '\u5C1D\u8BD5\u4E86 {n} \u4E2A\u67E5\u8BE2\u53D8\u4F53',
     querying:   '{query}',
-    got_results:'  · {n} 条结果',
-    retry:      '↻ 第一轮结果偏少，正在用原查询重试…',
-    fetching:   '正在阅读 {n} 个页面…',
-    fetched:    '✓ 已读 {ok}/{total} 个页面',
-    scored:     '  · 最佳匹配相关度 {topRel}%',
-    filtered:   '  · 保留 {kept}，剔除 {dropped}',
-    good:       '✓ 质量良好（{score}/5）',
-    retry_low:  '↻ 第一轮结果偏少，AI 正在改写查询…',
-    retry_rewrote:'↻ 新查询：{q}',
-    retry_still_bad:'↻ 仍不理想，继续。',
-    done:       '{n} 条来源 · {engines} · 已读 {fetched}',
-    error:      '搜索失败：{msg}',
-    warn:       '⚠ {msg}',
-    cancelled:  '搜索已取消。',
-    ceiling:    '搜索超过 {sec} 秒，将在没有网络上下文的情况下继续。',
+    got_results:'  \u00B7 {n} \u6761\u7ED3\u679C',
+    retry:      '\u21BB \u7B2C\u4E00\u8F6E\u7ED3\u679C\u504F\u5C11\uFF0C\u6B63\u5728\u7528\u539F\u67E5\u8BE2\u91CD\u8BD5\u2026',
+    fetching:   '\u6B63\u5728\u9605\u8BFB {n} \u4E2A\u9875\u9762\u2026',
+    fetched:    '[OK] \u5DF2\u8BFB {ok}/{total} \u4E2A\u9875\u9762',
+    scored:     '  \u00B7 \u6700\u4F73\u5339\u914D\u76F8\u5173\u5EA6 {topRel}%',
+    filtered:   '  \u00B7 \u4FDD\u7559 {kept}\uFF0C\u5254\u9664 {dropped}',
+    good:       '[OK] \u8D28\u91CF\u826F\u597D\uFF08{score}/5\uFF09',
+    retry_low:  '\u21BB \u7B2C\u4E00\u8F6E\u7ED3\u679C\u504F\u5C11\uFF0CAI \u6B63\u5728\u6539\u5199\u67E5\u8BE2\u2026',
+    retry_rewrote:'\u21BB \u65B0\u67E5\u8BE2\uFF1A{q}',
+    retry_still_bad:'\u21BB \u4ECD\u4E0D\u7406\u60F3\uFF0C\u7EE7\u7EED\u3002',
+    done:       '{n} \u6761\u6765\u6E90 \u00B7 {engines} \u00B7 \u5DF2\u8BFB {fetched}',
+    error:      '\u641C\u7D22\u5931\u8D25\uFF1A{msg}',
+    warn:       '[!] {msg}',
+    cancelled:  '\u641C\u7D22\u5DF2\u53D6\u6D88\u3002',
+    ceiling:    '\u641C\u7D22\u8D85\u8FC7 {sec}s \uFF0C\u5C06\u5728\u6CA1\u6709\u7F51\u7EDC\u4E0A\u4E0B\u6587\u7684\u60C5\u51B5\u4E0B\u7EE7\u7EED\u3002',
   },
 };
 
@@ -5997,7 +6156,9 @@ function startSearchProgress(topic, opts) {
     li.className = 'search-progress-step ' + (kind || 'running');
     var icon = document.createElement('span');
     icon.className = 'icon';
-    icon.textContent = kind === 'ok' ? '✓' : kind === 'warn' ? '⚠' : kind === 'err' ? '✕' : '·';
+    /* Use plain ASCII text for status icons so they NEVER render as
+       emoji across platforms. The icon color is set via CSS class. */
+    icon.textContent = kind === 'ok' ? '+' : kind === 'warn' ? '!' : kind === 'err' ? 'x' : '\u00B7';
     var t = document.createElement('span');
     t.className = 'text';
     t.textContent = text;
@@ -6154,6 +6315,9 @@ function beginAgentTextStream(){
           try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
         });
       }
+      try{processPendingMermaid()}catch(_){}
+      try{processPendingViz()}catch(_){}
+      try{processPendingVizActions()}catch(_){}
     }catch(e){
       body.innerHTML='<p>'+esc(full)+'</p>';
     }
@@ -6179,6 +6343,9 @@ function beginAgentTextStream(){
       clearTimeout(firstDeltaTimer);
       if(pending){cancelAnimationFrame(pending);pending=null}
       try{body.innerHTML=formatMsg(full)}catch(_){body.innerHTML='<p>'+esc(full)+'</p>'}
+      try{processPendingMermaid()}catch(_){}
+      try{processPendingViz()}catch(_){}
+      try{processPendingVizActions()}catch(_){}
       scrollMainToBottom();
     }
   };
@@ -6613,6 +6780,9 @@ function teardownThinkStructure(){
     streamContent=document.createElement("div");
     streamContent.className="stream-content";
     streamContent.innerHTML=formatMsgProgressive(full);
+    try{processPendingMermaid()}catch(_){}
+    try{processPendingViz()}catch(_){}
+    try{processPendingVizActions()}catch(_){}
     body.appendChild(streamContent);
     cursor=document.createElement("span");
     cursor.className="stream-cursor";
@@ -6733,6 +6903,11 @@ function teardownThinkStructure(){
       if(streamContent.dataset.lastRendered!==rendered){
         streamContent.innerHTML=rendered;
         streamContent.dataset.lastRendered=rendered;
+        /* Wire viz/mermaid iframes that were just injected by the
+           streaming renderer so the loading spinner is hidden and
+           the card transitions to the "ready" state. */
+        try{processPendingViz()}catch(_){}
+        try{processPendingVizActions()}catch(_){}
       }
     }else{
       /* Think block is in play. Lay out the three-section
@@ -6753,10 +6928,14 @@ function teardownThinkStructure(){
       if(thinkState.beforeNode.dataset.lastRendered!==beforeText){
         thinkState.beforeNode.innerHTML=beforeText?formatMsgProgressive(beforeText):"";
         thinkState.beforeNode.dataset.lastRendered=beforeText;
+        try{processPendingViz()}catch(_){}
+        try{processPendingVizActions()}catch(_){}
       }
       if(thinkState.afterNode.dataset.lastRendered!==afterText){
         thinkState.afterNode.innerHTML=afterText?formatMsgProgressive(afterText):"";
         thinkState.afterNode.dataset.lastRendered=afterText;
+        try{processPendingViz()}catch(_){}
+        try{processPendingVizActions()}catch(_){}
       }
       /* When </think> has been seen, swap the summary to a
          static label and drop the pulse — the model is done
@@ -6773,6 +6952,9 @@ function teardownThinkStructure(){
         if(thinkContent){
           try{
             thinkState.thinkDiv.innerHTML=formatMsg(thinkContent.replace(/<\/?think>/g,""));
+            try{processPendingMermaid()}catch(_){}
+            try{processPendingViz()}catch(_){}
+            try{processPendingVizActions()}catch(_){}
             if(typeof hljs!=="undefined"){
               thinkState.thinkDiv.querySelectorAll("pre code").forEach(function(c){
                 if(c.dataset&&c.dataset.hljsDone)return;
@@ -6847,8 +7029,12 @@ function teardownThinkStructure(){
        EventSource keeps dispatching events for a tick or two after
        abort()/finish() flips _disposed; even with the close() added
        in those paths, a queued event in the EventSource dispatch loop
-       can still land here. Bail before any state.messages writes. */
+       can still land here. Bail before any state.messages writes.
+       P_session-cross-talk — stillOwnsSlot() prevents an EventSource
+       dispatch from mutating the wrong session's toolCalls after a
+       session switch, even if _disposed hasn't flipped yet. */
     if(_disposed)return;
+    if(!stillOwnsSlot())return;
     if(!p||!p.id)return;
     var entry=null;
     if(msgIdx>=0&&state.messages[msgIdx]&&Array.isArray(state.messages[msgIdx].toolCalls)){
@@ -6862,6 +7048,20 @@ function teardownThinkStructure(){
       entry._pendingProgress=entry._pendingProgress||[];
       entry._pendingProgress.push(p);
       return;
+    }
+    /* P_pending-retry — every time the card IS found, drain any
+       queued _pendingProgress events that accumulated before the
+       card's DOM was created. This is critical because a single
+       replay at recordToolUse time (the original design) could miss
+       events that arrived between the card creation and the next
+       progress event. Without this, progress queued after the first
+       drain settles forever and the user sees a stale [Booting]
+       while the std*output events pile up unseen. */
+    if(entry._pendingProgress&&entry._pendingProgress.length){
+      for(var _pp=0;_pp<entry._pendingProgress.length;_pp++){
+        _toolProgressToCard(entry._pendingProgress[_pp]);
+      }
+      entry._pendingProgress.length=0;
     }
     var out=card.querySelector(".agent-tool-out");
     if(!out)return;
@@ -6877,13 +7077,13 @@ function teardownThinkStructure(){
     }
     var badge=live?live.querySelector(".agent-tool-progress-badge"):null;
     var stream=live?live.querySelector(".agent-tool-stream"):null;
-    var phaseLabel="\u25B6 Running";
-    if(p.phase==="queued")phaseLabel="\u23F3 Queued";
-    else if(p.phase==="ready")phaseLabel="\u{1F527} Booting";
-    else if(p.phase==="stdout")phaseLabel="\u25B6 Running";
-    else if(p.phase==="stderr")phaseLabel="\u26A0 Stderr";
-    else if(p.phase==="timeout_warning")phaseLabel="\u26A0 Timeout at";
-    else if(p.phase==="skipped")phaseLabel="\u2298 Skipped";
+    var phaseLabel="[Running]";
+    if(p.phase==="queued")phaseLabel="[Queued]";
+    else if(p.phase==="ready")phaseLabel="[Booting]";
+    else if(p.phase==="stdout")phaseLabel="[Running]";
+    else if(p.phase==="stderr")phaseLabel="[Stderr]";
+    else if(p.phase==="timeout_warning")phaseLabel="[Timeout at]";
+    else if(p.phase==="skipped")phaseLabel="[Skipped]";
     var elapsedSec=((p.elapsedMs||0)/1000).toFixed(1);
     if(badge)badge.textContent=phaseLabel+" \u00B7 "+elapsedSec+"s";
     if(p.phase==="timeout_warning"&&p.chunk){
@@ -6923,6 +7123,28 @@ function teardownThinkStructure(){
     try{
       var es=new EventSource("/api/executions/"+encodeURIComponent(executionId)+"/stream");
       _executionSSESources.push(es);
+      /* P_execution-sse-timeout — safety net: if the backend never
+         delivers a result event (worker crash, SSE leak, etc.), emit
+         a synthetic error after 60s so the card doesn't hang on
+         [Booting] indefinitely. The timer is cleared on result/error
+         events. */
+      var _sseTimeout=setTimeout(function(){
+        try{
+          recordToolResult({
+            id:tcId,
+            ok:false,
+            status:"failed",
+            output:"",
+            stderr:"",
+            error:"execution_sse_timeout: backend did not respond within 60s",
+            artifacts:[],
+            durationMs:60000,
+            executionId:executionId,
+            name:"code_interpreter"
+          });
+        }catch(_){}
+        try{es.close()}catch(_){}
+      },60000);
       es.addEventListener("progress",function(ev){
         try{
           var data=JSON.parse(ev.data);
@@ -6931,6 +7153,7 @@ function teardownThinkStructure(){
         }catch(_){}
       });
       es.addEventListener("result",function(ev){
+        clearTimeout(_sseTimeout);
         try{
           var data=JSON.parse(ev.data);
           /* Forward as a tool_result so the card updates */
@@ -6950,6 +7173,7 @@ function teardownThinkStructure(){
         es.close();
       });
       es.addEventListener("error",function(ev){
+        clearTimeout(_sseTimeout);
         try{
           var data=ev.data?JSON.parse(ev.data):null;
           if(data&&data.error){
@@ -7105,6 +7329,16 @@ function teardownThinkStructure(){
         var card=body.querySelector('[data-tcid="'+_escId+'"]');
         if(card)out=card.querySelector(".agent-tool-out");
       }
+      /* P_execution-sse-fallback — if the result carries an executionId
+         but the entry never got one (execution_start was missed because
+         the main SSE stream ended before the tool finished), connect the
+         independent execution SSE channel now. The backend's endpoint
+         serves the final row immediately if the execution has already
+         completed. */
+      if(result.executionId&&entry&&!entry.executionId){
+        entry.executionId=result.executionId;
+        _connectExecutionSSE(result.executionId,result.id);
+      }
 
       var statusIcon="";
       var statusClass="";
@@ -7115,16 +7349,16 @@ function teardownThinkStructure(){
       }
       if(result.ok===false){
         if(result.status==="timeout"){
-          statusIcon="\u23F0";
+          statusIcon="!";
           statusClass="warn";
         }else{
-          statusIcon="\u2716";
+          statusIcon="x";
           statusClass="err";
         }
         var errMsg=result.error||result.output||"failed";
         display=(result.stderr?"[stderr]\n"+result.stderr+"\n":"")+"[error] "+errMsg+durStr;
       }else{
-        statusIcon="\u2714";
+        statusIcon="+";
         statusClass="ok";
         display=(result.output||"(no output)")+durStr;
       }
@@ -7136,33 +7370,32 @@ function teardownThinkStructure(){
         });
       }
       if(out){
-        /* P_progress — clear the live progress block before writing
-           the canonical output. */
-        var liveProg=out.querySelector(".agent-tool-progress");
-        if(liveProg)liveProg.parentNode.removeChild(liveProg);
-        /* Direct write to the output element — always targets the
-           correct card (found by index above), independent of the
-           global selector in setLastToolOutput. */
-        out.textContent=display||"";
-        if(entry.isError)out.classList.add("error");else out.classList.remove("error");
-        var card=out.closest(".agent-tool-card");
-        if(card){
-          var existingBadge=card.querySelector(".agent-tool-status");
-          if(!existingBadge){
-            var badge=document.createElement("span");
-            badge.className="agent-tool-status "+statusClass;
-            badge.textContent=statusIcon+(result.durationMs!=null?" "+(result.durationMs/1000).toFixed(1)+"s":"");
-            var nameEl=card.querySelector(".agent-tool-name");
-            if(nameEl&&nameEl.parentNode)nameEl.parentNode.insertBefore(badge,nameEl.nextSibling);
+        /* Skip DOM updates if we've already rendered this tool result
+           (prevents the execution SSE's duplicate result event from
+            clearing and re-rendering artifacts unnecessarily). */
+        if(!entry._toolResultApplied){
+          entry._toolResultApplied=true;
+          var liveProg=out.querySelector(".agent-tool-progress");
+          if(liveProg)liveProg.parentNode.removeChild(liveProg);
+          out.textContent=display||"";
+          if(entry.isError)out.classList.add("error");else out.classList.remove("error");
+          var card=out.closest(".agent-tool-card");
+          if(card){
+            var existingBadge=card.querySelector(".agent-tool-status");
+            if(!existingBadge){
+              var badge=document.createElement("span");
+              badge.className="agent-tool-status "+statusClass;
+              badge.textContent=statusIcon+(result.durationMs!=null?" "+(result.durationMs/1000).toFixed(1)+"s":"");
+              var nameEl=card.querySelector(".agent-tool-name");
+              if(nameEl&&nameEl.parentNode)nameEl.parentNode.insertBefore(badge,nameEl.nextSibling);
+            }
+            if(display&&display.length>0)card.classList.add("open");
+            if(result.ok===false)card.classList.add("open");
           }
-          /* Auto-open the card so the user sees the result without
-             having to click the header. Long results auto-open too. */
-          if(display&&display.length>0)card.classList.add("open");
-          if(result.ok===false)card.classList.add("open");
-        }
-        if(entry.artifacts&&entry.artifacts.length){
-          for(var k=0;k<entry.artifacts.length;k++){
-            appendInlineArtifact(entry.artifacts[k].id,entry.artifacts[k].mimeType,out);
+          if(entry.artifacts&&entry.artifacts.length){
+            for(var k=0;k<entry.artifacts.length;k++){
+              appendInlineArtifact(entry.artifacts[k].id,entry.artifacts[k].mimeType,out);
+            }
           }
         }
       }
@@ -7437,6 +7670,8 @@ function teardownThinkStructure(){
 
       function finishAfterRender(){
         try{processPendingMermaid()}catch(_){}
+        try{processPendingViz()}catch(_){}
+        try{processPendingVizActions()}catch(_){}
         if(hasSources){
           var card=renderSourcesCard(sourcesSnapshot);
           if(card)div.appendChild(card);
@@ -7973,6 +8208,11 @@ function renderAssistantHTML(rawText){
         var slot=document.querySelector('[data-key-point-id="'+p.id+'"]');
         if(slot)mountKeyPointWidget(slot,p.parsed);
       });
+      /* Wire any viz/mermaid blocks that may have been injected during
+         widget mounting. */
+      try{processPendingMermaid()}catch(_){}
+      try{processPendingViz()}catch(_){}
+      try{processPendingVizActions()}catch(_){}
     },0);
   }
   return html;
@@ -9167,15 +9407,13 @@ async function resetApp(){
     var ok=await showConfirm("Start a new session?","You have an active session. Starting a new one will save your progress to Recents.",false);
     if(!ok)return;
   }
-  saveCurrentSession();
-  /* P_context-race — wait for the save to complete before resetting
-     state. saveCurrentSession sets _saveInFlight and returns; if we
-     call resetState() before the POST finishes, doSave()'s payload
-     captures empty messages (because state.messages was already
-     cleared), and the server overwrites the session with empty data. */
-  if(_saveInFlight){
-    try{await _saveInFlight}catch(_){}
+  /* Drain any previous in-flight save first so the dirty cascade
+     fires before resetState. Then fire the new save with the current
+     snapshot — don't block the UI on the network roundtrip. */
+  if (_saveInFlight) {
+    try { await _saveInFlight; } catch (_) {}
   }
+  saveCurrentSession();
   /* P5.8 — clear the active prompt template. A new session
      is a fresh context; carrying over "summarize mode" from
      the previous chat would silently shape the first
@@ -9202,7 +9440,6 @@ async function resetApp(){
   document.getElementById("topicSetup").classList.remove("hidden");
   document.getElementById("diagnosticView").classList.add("hidden");
   document.getElementById("chatView").classList.add("hidden");
-  document.getElementById("topicBadge").classList.add("hidden");
   toggleChatTopBarEls(false);
   document.getElementById("msgList").innerHTML="";
   document.getElementById("topicInput").value="";
@@ -9958,7 +10195,7 @@ function renderExamNav(){
     var isAns=answeredKeys.indexOf(String(j))>=0;
     var isCur=(j===examNavCurrentIdx());
     var cls="exam-nav-pill"+(isCur?" current":"")+(isAns?" answered":"");
-    var lbl=(j+1)+(isAns?" ✓":"");
+    var lbl=(j+1)+(isAns?" \u00B7":"");
     html+='<button class="'+cls+'" data-nav-idx="'+j+'" onclick="examNavJump('+j+')">'+lbl+'</button>';
   }
   html+='</div>';
@@ -10036,7 +10273,7 @@ function refreshExamNavTally(){
     var j=parseInt(p.getAttribute("data-nav-idx"),10);
     var isAns=answered.indexOf(String(j))>=0;
     p.classList.toggle("answered",isAns);
-    if(isAns&&p.textContent.indexOf("✓")<0)p.textContent=(j+1)+" ✓";
+    if(isAns&&p.textContent.indexOf("\u00B7")<0)p.textContent=(j+1)+" \u00B7";
   });
 }
 
@@ -10196,7 +10433,7 @@ function renderExamResults(){
     var isCorrect=rd.isCorrect;
     var cls=isCorrect?"correct":"wrong";
     html+='<div class="exam-q-card">';
-    html+='<div class="exam-q-num">Question '+(i+1)+' — <span class="exam-result-'+(isCorrect?"correct":"wrong")+'">'+(isCorrect?"✓ Correct":"✗ Incorrect")+'</span><span class="exam-q-type">'+q.type+'</span></div>';
+    html+='<div class="exam-q-num">Question '+(i+1)+' — <span class="exam-result-'+(isCorrect?"correct":"wrong")+'">'+(isCorrect?"Correct":"Incorrect")+'</span><span class="exam-q-type">'+q.type+'</span></div>';
     html+='<div class="exam-q-text">'+formatMsg(q.q)+'</div>';
     if(q.type==="multiple-choice"&&q.opts){
       html+='<div class="exam-q-opts">';
@@ -10716,7 +10953,7 @@ async function signOut(){
    so the IIFE can reference it without relying on var-hoisting timing. */
 var BEAGLE_BUILT_IN={
   id:"beagle-built-in",
-  label:"Beagle A",
+  label:"Beagle",
   url:"/api/minimax/v1",
   model:"MiniMax-M2.7",
   key:"",
@@ -11026,6 +11263,9 @@ async function loadSharedSession(token){
       if(sharedToolbar) div.appendChild(sharedToolbar);
       msgList.appendChild(div);
     });
+    try{processPendingMermaid()}catch(_){}
+    try{processPendingViz()}catch(_){}
+    try{processPendingVizActions()}catch(_){}
     /* Show read-only banner. */
     var banner=document.getElementById("sharedBanner");
     if(banner)banner.classList.remove("hidden");
@@ -11036,14 +11276,8 @@ async function loadSharedSession(token){
     document.getElementById("chatView").classList.remove("hidden");
     document.getElementById("chatInputBar").classList.add("hidden");
     document.getElementById("shareBtn").classList.add("hidden");
-    /* Shared read-only mode — keep the session-name visible but hide the
-       chat-only controls (model picker, search pill, api badge, share)
-       because none of them apply in a read-only view. The session name
-       is shown via topicBadge (the only session indicator left). */
-    var badge=document.getElementById("topicBadge");
-    var badgeText=document.getElementById("topicBadgeText");
-    if(badge)badge.classList.remove("hidden");
-    if(badgeText)badgeText.textContent=(session.topic||"Shared")+" · Read-only";
+    /* Hide chat-only controls (model picker, search pill, api badge, share)
+       because none of them apply in a read-only view. */
     var mid=document.getElementById("chatModelWrap");if(mid)mid.classList.add("hidden");
     var api=document.getElementById("chatApiBadge");if(api)api.classList.add("hidden");
     var sp=document.getElementById("searchPill");if(sp)sp.classList.add("hidden");
@@ -11134,10 +11368,6 @@ async function loadSharedExamSession(session,token){
   syncSidebarBtns();
   document.getElementById("chatInputBar").classList.add("hidden");
   document.getElementById("shareBtn").classList.add("hidden");
-  var badge=document.getElementById("topicBadge");
-  var badgeText=document.getElementById("topicBadgeText");
-  if(badge)badge.classList.remove("hidden");
-  if(badgeText)badgeText.textContent=state.examTopic+" · "+readOnlyLabel;
   var mid=document.getElementById("chatModelWrap");if(mid)mid.classList.add("hidden");
   var api=document.getElementById("chatApiBadge");if(api)api.classList.add("hidden");
   var sp=document.getElementById("searchPill");if(sp)sp.classList.add("hidden");
@@ -11291,14 +11521,57 @@ async function refreshApiConfig(){
 /* P2.1 — return true when the active model is known to take 30+ s
    per call (reasoning models). The round-1 tool-detection path uses
    a longer ceiling for these so we don't accidentally skip them.
-   getActiveProvider() is imported from src/pickers.js */
+   getActiveProvider() is imported from src/pickers.js
+   P_minimax-thinking — match any MiniMax model (M2.7, M3, …) so the
+   built-in Beagle provider gets reasoning_effort + extra_body.thinking
+   sent to the upstream. Without this, MiniMax-M3 emits inline
+   <think> tags that the parser handles — but the more reliable path
+   is to ask upstream explicitly for reasoning_content. */
 function isReasoningProvider(){
   try{
     var p=getActiveProvider();
     if(!p)return false;
     var m=(p.model||"").toLowerCase();
-    return /deepseek-r1|qwq|o1|o3|reasoner|thinking/.test(m);
+    /* P_flash-exclude — fast / flash models should NOT get
+       reasoning_effort=high because they are designed for speed
+       and enabling deep reasoning slows them down significantly.
+       Models named "flash", "turbo", "fast", "mini", "small",
+       "light", "nano", "quick", "speed" are excluded. */
+    if(/\b(flash|turbo|fast|mini|small|light|lite|nano)\b/.test(m))return false;
+    return /deepseek|qwq|o1|o3|reasoner|thinking|minimax/i.test(m);
   }catch(_){return false}
+}
+
+/* P_reasoning_budget — pick per-provider silence/total budget.
+   Reasoning models (DeepSeek R1, QwQ, MiniMax with extended thinking)
+   emit sparse tokens 30–90 s apart during chain-of-thought; the
+   default 60 s heartbeat would falsely trip "stalled" and waste a
+   retry. Inline this here (rather than windowExports.js) because it
+   needs runtime access to getActiveProvider. stream.js calls
+   `window.pickStreamBudgets()` and falls back to the global defaults
+   when this is missing — see stream.js:47-48. */
+function pickStreamBudgets(){
+  try{
+    var p = (typeof getActiveProvider === "function") ? getActiveProvider() : null;
+    var m = ((p && p.model) || "").toLowerCase();
+    /* P_minimax-thinking — must agree with isReasoningProvider() so
+       reasoning models get BOTH the thinking flag AND the longer
+       heartbeat. If they diverge, MiniMax thinking will pass the
+       flag but still die at 60 s silence. */
+    var isReasoning = /deepseek|qwq|o1|o3|reasoner|thinking|minimax/i.test(m);
+    if(isReasoning){
+      /* 10 min total budget covers the 2-3 min reasoning traces that
+         DeepSeek R1 / QwQ / MiniMax are known to produce, with
+         headroom for two retries after a stall. 180 s heartbeat
+         tolerates the 30-90 s gaps between sparse thinking tokens
+         without falsely tripping. */
+      return { timeoutMs: 600_000, heartbeatMs: 180_000 };
+    }
+  }catch(_){ /* fall through to defaults */ }
+  return {
+    timeoutMs: (window.STREAM_TIMEOUT_MS || 240_000),
+    heartbeatMs: (window.STREAM_HEARTBEAT_MS || 60_000)
+  };
 }
 
 function hasUsableActive(){
@@ -12440,56 +12713,6 @@ function renderSourceDetail(s, idx){
   return html;
 }
 
-async function refreshProductInfo(){
-  var section=document.getElementById("productInfoSection");
-  var statusEl=document.getElementById("productInfoStatus");
-  if(!section||!statusEl)return;
-  try{
-    var r=await apiFetch("/api/product-context/status");
-    section.style.display="";
-    var pages=r.pages||[];
-    var okPages=pages.filter(function(p){return !p.error});
-    var errPages=pages.filter(function(p){return p.error});
-    var ago=r.fetchedAt?Math.round((Date.now()-r.fetchedAt)/60000)+" min ago":"never";
-    var next=r.nextRefreshIn||"unknown";
-    var html="<div>Fetched: "+ago+"</div>"+
-      "<div>Next refresh: "+next+"</div>"+
-      "<div>"+okPages.length+"/"+pages.length+" pages ok";
-    if(errPages.length){
-      html+=", <span style='color:hsl(0 70% 50%)'>"+errPages.length+" failed</span>";
-    }
-    html+="</div>";
-    if(errPages.length){
-      html+='<details style="margin-top:4px;font-size:11px;color:hsl(var(--text-400))"><summary>Errors</summary>';
-      errPages.forEach(function(p){
-        html+='<div>'+esc(p.url||"")+': '+(p.error||"unknown")+'</div>';
-      });
-      html+='</details>';
-    }
-    statusEl.innerHTML=html;
-  }catch(e){
-    if(e&&e.status===403){
-      section.style.display="none";
-    }else{
-      section.style.display="";
-      statusEl.innerHTML='<span style="color:hsl(0 70% 50%)">Error: '+(e&&e.message||"unknown")+'</span>';
-    }
-  }
-}
-window.refreshProductInfo = refreshProductInfo;
-window.handleRefreshProductInfo = handleRefreshProductInfo;
-
-async function handleRefreshProductInfo(){
-  var statusEl=document.getElementById("productInfoStatus");
-  if(statusEl)statusEl.innerHTML=t("settings.refresh");
-  try{
-    await apiFetch("/api/product-context/refresh",{method:"POST"});
-    await refreshProductInfo();
-  }catch(e){
-    if(statusEl)statusEl.innerHTML='<span style="color:hsl(0 70% 50%)">Refresh failed: '+(e&&e.message||"unknown")+'</span>';
-  }
-}
-
 function openSettings(){
   document.getElementById("settingsOverlay").classList.remove("hidden");
   renderProviderList();
@@ -12497,7 +12720,6 @@ function openSettings(){
   var stgEl=document.getElementById("stgStatus");
   stgEl.innerHTML="";
   stgEl.className="settings-status";
-  refreshProductInfo();
 }
 function closeSettings(){
   document.getElementById("settingsOverlay").classList.add("hidden");
@@ -13066,7 +13288,7 @@ You have access to tools (web_search, code_interpreter) that the system provides
    - Returns cancelled:true if the AbortController fired (caller can
      decide whether to show a "stopped" UI or fall back to mock) */
 
-/* Append Beagle A identity to the system prompt when the built-in Beagle
+/* Append Beagle identity to the system prompt when the built-in Beagle
    provider is active. This is appended LAST so the model sees it as the
    most recent instruction about its identity, overriding any generic
    system prompt that came before. */
@@ -13080,10 +13302,10 @@ function memoriesSuffix(){
 function beagleSuffix(){
   var p=getActiveProvider();
   if(p&&p.isBuiltIn){
-    return "\n\nYour name is Beagle A. You are an AI assistant developed by Topodrive company. "+
+    return "\n\nYour name is Beagle. You are an AI assistant developed by Topodrive company. "+
       "You are helpful, knowledgeable, and precise. Answer questions directly "+
       "and conversationally. Never identify as MiniMax or any other model — "+
-      "you are Beagle A, built by Topodrive.";
+      "you are Beagle, built by Topodrive.";
   }
   return "";
 }
@@ -13697,6 +13919,10 @@ window.clearActiveTemplate = clearActiveTemplate;
    main.js-local functions that windowExports.js has not yet picked
    up (Phase C deferral), so re-bind here. */
 window.isReasoningProvider = isReasoningProvider;
+/* P_reasoning_budget — paired with the stream.js call at line 47.
+   Without this, reasoning models (DeepSeek R1 / QwQ / MiniMax) hit
+   the default 60 s heartbeat mid-think and the stream aborts. */
+window.pickStreamBudgets = pickStreamBudgets;
 window.getCustomInstructionsString = getCustomInstructionsString;
 window.addProvider = addProvider;
 window.clearSettings = clearSettings;

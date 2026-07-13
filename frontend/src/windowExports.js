@@ -155,10 +155,11 @@ window.updateStartBtn = updateStartBtn;
 window.updateSendBtn = updateSendBtn;
 
 /* ─── storage/localMemory.js ─── */
-import { loadLocalMemory, appendLocalMemory, clearLocalMemory } from './storage/localMemory.js';
+import { loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from './storage/localMemory.js';
 window.loadLocalMemory = loadLocalMemory;
 window.appendLocalMemory = appendLocalMemory;
 window.clearLocalMemory = clearLocalMemory;
+window._memKey = _memKey;
 
 /* ─── attachments.js ─── */
 // attachments is a mutable array reference shared across modules
