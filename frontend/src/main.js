@@ -9869,176 +9869,19 @@ function renderExamResults(){
    days-remaining countdown, plus a Restore / Delete-forever
    pair per row. The modal is a single instance that gets
    rebuilt every time it opens, so the count is always live. */
-function openStorageModal(){
-  var overlay=document.getElementById("storageModalOverlay");
-  if(!overlay){
-    overlay=document.createElement("div");
-    overlay.id="storageModalOverlay";
-    overlay.className="cmd-k-overlay hidden";
-    overlay.onclick=function(ev){if(ev.target===overlay)closeStorageModal()};
-    overlay.innerHTML='<div class="cmd-k-modal storage-modal" onclick="event.stopPropagation()"></div>';
-    document.body.appendChild(overlay);
-  }
-  overlay.classList.remove("hidden");
-  renderArchivedList();
-}
-function closeStorageModal(){
-  var overlay=document.getElementById("storageModalOverlay");
-  if(overlay)overlay.classList.add("hidden");
-}
+import { openStorageModal, closeStorageModal } from './ui/storage.js';
 
 /* P5.8 — Prompt templates manager modal. Lists built-ins
    (read-only) and user customs (editable). The 'New
    template' button opens a lightweight editor inline. */
-function openPromptTemplatesModal(){
-  var overlay=document.getElementById("promptTemplatesOverlay");
-  if(!overlay){
-    overlay=document.createElement("div");
-    overlay.id="promptTemplatesOverlay";
-    overlay.className="cmd-k-overlay hidden";
-    overlay.onclick=function(ev){if(ev.target===overlay)closePromptTemplatesModal()};
-    overlay.innerHTML='<div class="cmd-k-modal prompt-templates-modal" onclick="event.stopPropagation()"></div>';
-    document.body.appendChild(overlay);
-  }
-  overlay.classList.remove("hidden");
-  renderPromptTemplatesModal();
-}
-function closePromptTemplatesModal(){
-  var overlay=document.getElementById("promptTemplatesOverlay");
-  if(overlay)overlay.classList.add("hidden");
-}
-function renderPromptTemplatesModal(){
-  var body=document.querySelector("#promptTemplatesOverlay .prompt-templates-modal");
-  if(!body)return;
-  var all=loadPromptTemplates();
-  var customs=all.filter(function(t){return!t.isBuiltin;});
-  var builtins=all.filter(function(t){return t.isBuiltin;});
-  var html=
-    '<div class="project-editor-head">'+
-      '<span class="project-editor-title">Prompt templates</span>'+
-      '<button class="project-editor-close" onclick="closePromptTemplatesModal()">×</button>'+
-    '</div>'+
-    '<div class="prompt-templates-body">'+
-      '<div class="prompt-templates-section-label">Built-in ('+builtins.length+')</div>'+
-      builtins.map(function(t){return renderPromptRow(t,false);}).join("")+
-      '<div class="prompt-templates-section-label" style="margin-top:14px">Your templates ('+customs.length+')</div>'+
-      (customs.length?customs.map(function(t){return renderPromptRow(t,true);}).join(""):
-        '<div class="prompt-templates-empty">No custom templates yet.</div>')+
-      '<button class="prompt-templates-new" onclick="openPromptTemplateEditor()">+ New template</button>'+
-    '</div>';
-  body.innerHTML=html;
-}
-function renderPromptRow(t,editable){
-  var iconHtml=t.icon&&t.icon.indexOf("<svg")===0?t.icon:esc(t.icon||"pg");
-  return '<div class="prompt-row'+(t.isBuiltin?" builtin":"")+'">'+
-    '<span class="prompt-row-icon">'+iconHtml+'</span>'+
-    '<div class="prompt-row-main">'+
-      '<div class="prompt-row-title">'+esc(t.title)+' <span class="prompt-row-shortcut">'+esc(t.shortcut)+'</span></div>'+
-      '<div class="prompt-row-desc">'+esc(t.description||"")+'</div>'+
-    '</div>'+
-    (editable?
-      '<div class="prompt-row-actions">'+
-      '<button class="prompt-row-edit" onclick="openPromptTemplateEditor('+encodeURIComponent(JSON.stringify(t))+')">Edit</button>'+
-        '<button class="prompt-row-delete" onclick="onPromptRowDelete(\''+esc(t.id)+'\')">Delete</button>'+
-      '</div>':'')+
-  '</div>';
-}
-function onPromptRowDelete(id){
-  showConfirm("Delete template?","This removes your custom template. Built-ins stay.",true).then(function(yes){
-    if(!yes)return;
-    deleteCustomTemplate(id);
-    renderPromptTemplatesModal();
-  });
-}
+import {
+  openPromptTemplatesModal, closePromptTemplatesModal,
+  renderPromptTemplatesModal, renderPromptRow,
+  onPromptRowDelete, openPromptTemplateEditor,
+  onPromptTemplateEditorSave,
+} from './ui/promptTemplates.js';
 
-/* P5.8 — Inline template editor. Reuses the same modal
-   shell but replaces the list with a form. `existing` is
-   either a full template object (edit) or null (new). */
-function openPromptTemplateEditor(existing){
-  var body=document.querySelector("#promptTemplatesOverlay .prompt-templates-modal");
-  if(!body)return;
-  var t=existing||{id:"tpl-"+Date.now().toString(36),title:"",description:"",body:"",systemPrompt:"",icon:"pg",category:"writing",shortcut:"/my-template"};
-  /* Save on Enter inside title field; Cmd/Ctrl+Enter inside
-     body. */
-  body.innerHTML=
-    '<div class="project-editor-head">'+
-      '<span class="project-editor-title">'+(existing?"Edit template":"New template")+'</span>'+
-      '<button class="project-editor-close" onclick="renderPromptTemplatesModal()">×</button>'+
-    '</div>'+
-    '<div class="prompt-templates-body">'+
-      '<div class="prompt-editor-grid">'+
-        '<label class="prompt-editor-label">Title<input class="prompt-editor-input" id="ptTitle" maxlength="80" value="'+esc(t.title)+'" placeholder="'+t("prompt.placeholderTitle")+'"></label>'+
-        '<label class="prompt-editor-label">Shortcut<input class="prompt-editor-input prompt-editor-shortcut" id="ptShortcut" maxlength="20" pattern="^/[a-z0-9-]+$" value="'+esc(t.shortcut)+'" placeholder="'+t("prompt.placeholderShortcut")+'"></label>'+
-      '</div>'+
-      '<label class="prompt-editor-label">Description<input class="prompt-editor-input" id="ptDescription" maxlength="200" value="'+esc(t.description||"")+'" placeholder="'+t("prompt.placeholderDesc")+'"></label>'+
-      '<div class="prompt-editor-grid">'+
-        '<label class="prompt-editor-label">Icon<input class="prompt-editor-input prompt-editor-icon" id="ptIcon" maxlength="4" value="'+esc(t.icon||"pg")+'"></label>'+
-        '<label class="prompt-editor-label">Category'+
-          '<select class="prompt-editor-input" id="ptCategory">'+
-            ["writing","code","learning","analysis","creative","other"].map(function(c){
-              return '<option value="'+c+'" '+(t.category===c?"selected":"")+'>'+c+'</option>';
-            }).join("")+
-          '</select>'+
-        '</label>'+
-      '</div>'+
-      '<label class="prompt-editor-label">Body<textarea class="prompt-editor-textarea" id="ptBody" rows="4" placeholder="'+t("prompt.placeholderBody")+'">'+esc(t.body||"")+'</textarea></label>'+
-      '<label class="prompt-editor-label">System prompt<textarea class="prompt-editor-textarea" id="ptSystemPrompt" rows="6" placeholder="'+t("prompt.placeholderSystem")+'">'+esc(t.systemPrompt||"")+'</textarea></label>'+
-    '</div>'+
-    '<div class="project-editor-foot">'+
-      '<div class="project-editor-spacer"></div>'+
-      '<button class="project-editor-cancel" onclick="renderPromptTemplatesModal()">Cancel</button>'+
-      '<button class="project-editor-save" onclick="onPromptTemplateEditorSave(\''+esc(t.id)+'\','+(existing?'1':'0')+')">Save</button>'+
-    '</div>';
-  var title=document.getElementById("ptTitle");
-  if(title){setTimeout(function(){title.focus();title.select()},0)}
-}
-function onPromptTemplateEditorSave(id,wasExisting){
-  var title=((document.getElementById("ptTitle")||{}).value||"").trim();
-  var shortcut=((document.getElementById("ptShortcut")||{}).value||"").trim();
-  var description=((document.getElementById("ptDescription")||{}).value||"").trim();
-  var icon=((document.getElementById("ptIcon")||{}).value||"pg").trim();
-  var category=((document.getElementById("ptCategory")||{}).value||"other");
-  var body=((document.getElementById("ptBody")||{}).value||"");
-  var systemPrompt=((document.getElementById("ptSystemPrompt")||{}).value||"");
-  if(!title){showToast("Title is required");return}
-  if(!/^\/[a-z0-9-]+$/.test(shortcut)){showToast("Shortcut must look like /my-template");return}
-  var existing=findTemplateByShortcut(shortcut);
-  if(existing&&existing.id!==id){showToast("That shortcut is already in use");return}
-  upsertCustomTemplate({id:id,title:title,description:description,icon:icon||"pg",category:category,shortcut:shortcut,body:body,systemPrompt:systemPrompt,isBuiltin:false});
-  renderPromptTemplatesModal();
-  showToast("Template saved");
-}
-function renderArchivedList(){
-  var body=document.querySelector("#storageModalOverlay .storage-modal");
-  if(!body)return;
-  var archived=getArchivedSessions();
-  var html=
-    '<div class="project-editor-head">'+
-      '<span class="project-editor-title">Archived sessions ('+archived.length+')</span>'+
-      '<button class="project-editor-close" onclick="closeStorageModal()">×</button>'+
-    '</div>'+
-    '<div class="storage-modal-body">'+
-      '<div class="storage-modal-desc">These sessions are pending permanent deletion. Deleting a session in Recents first archives it for up to 30 days as a safety net; this list shows any that have not yet been purged. Use Restore to bring one back, or Delete forever to remove it now.</div>'+
-      (archived.length?
-        '<div class="storage-list">'+archived.map(function(s){
-          var ageDays=Math.max(0,Math.floor((Date.now()-(s.archivedAt||0))/(24*60*60*1000)));
-          var remain=Math.max(0,30-ageDays);
-          return '<div class="storage-row">'+
-            '<div class="storage-row-main">'+
-              '<div class="storage-row-title">'+esc(s.title||s.topic||"(untitled)")+'</div>'+
-              '<div class="storage-row-meta">Archived '+ageDays+' day'+(ageDays===1?"":"s")+' ago · '+remain+' day'+(remain===1?"":"s")+' left</div>'+
-            '</div>'+
-            '<div class="storage-row-actions">'+
-              '<button class="storage-btn-restore" onclick="restoreSession(\''+esc(s.id)+'\')">Restore</button>'+
-              '<button class="storage-btn-delete" onclick="confirmPurgeSession(\''+esc(s.id)+'\')">Delete forever</button>'+
-            '</div>'+
-          '</div>';
-        }).join("")+'</div>':
-        '<div class="storage-empty">No archived sessions. Long-press a session in Recents to send it here.</div>'
-      )+
-    '</div>';
-  body.innerHTML=html;
-}
+import { renderArchivedList } from './ui/storage.js';
 
 /* P1.3 — Custom Instructions: load/save/serialize.
    Schema (localStorage key "socrates-custom-instructions"):
@@ -13224,10 +13067,8 @@ window.confirmDeleteAccount = confirmDeleteAccount;
 window.copyShareLink = copyShareLink;
 window.createShareLink = createShareLink;
 window.openProfile = openProfile;
-window.openPromptTemplatesModal = openPromptTemplatesModal;
 window.openSettings = openSettings;
 window.openShareModal = openShareModal;
-window.openStorageModal = openStorageModal;
 window.openUsageModal = openUsageModal;
 window.resendAuthCode = resendAuthCode;
 window.resendVerification = resendVerification;
@@ -13355,10 +13196,8 @@ window.loadSharedExamSession = loadSharedExamSession;
 // window.openAgentView  = openAgentView;  // unimplemented
 // window.deleteAgentRun = deleteAgentRun; // unimplemented
 window.openProfile = openProfile;
-window.openPromptTemplatesModal = openPromptTemplatesModal;
 window.openSettings = openSettings;
 window.openShareModal = openShareModal;
-window.openStorageModal = openStorageModal;
 window.resetApp = resetApp;
 window.revokeShareLink = revokeShareLink;
 window.saveSettings = saveSettings;
@@ -13372,8 +13211,6 @@ window.toggleAPI = toggleAPI;
 window.toggleAppLang = toggleAppLang;
 window.toggleProfileWebSearch = toggleProfileWebSearch;
 window.closeProjectEditor = closeProjectEditor;
-window.closePromptTemplatesModal = closePromptTemplatesModal;
-window.closeStorageModal = closeStorageModal;
 window.closeTagEditor = closeTagEditor;
 window.actuallyDeleteSession = actuallyDeleteSession;
 window.confirmPurgeSession = confirmPurgeSession;
@@ -13387,18 +13224,14 @@ window.nextDiagQuestion = nextDiagQuestion;
 window.onProjectChipClick = onProjectChipClick;
 window.onProjectDelete = onProjectDelete;
 window.onProjectEditorSave = onProjectEditorSave;
-window.onPromptRowDelete = onPromptRowDelete;
-window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
 window.onSlashRowClick = onSlashRowClick;
 window.updateSlashSelected = updateSlashSelected;
 window.updateCmdKSelected = updateCmdKSelected;
 window.openCmdKResult = openCmdKResult;
 window.openProjectEditor = openProjectEditor;
-window.openPromptTemplateEditor = openPromptTemplateEditor;
 window.openTagEditor = openTagEditor;
 window.pickProjectColor = pickProjectColor;
 window.prevDiagQuestion = prevDiagQuestion;
-window.renderPromptTemplatesModal = renderPromptTemplatesModal;
 window.restoreSession = restoreSession;
 window.selectDiag = selectDiag;
 window.setActiveProvider = setActiveProvider;

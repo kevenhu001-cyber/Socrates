@@ -154,6 +154,21 @@ window.closeCmdK = closeCmdK;
 window.onCmdKInput = onCmdKInput;
 window.onCmdKKey = onCmdKKey;
 
+/* ─── ui/storage.js ─── */
+import { openStorageModal, closeStorageModal, renderArchivedList } from './ui/storage.js';
+window.openStorageModal = openStorageModal;
+window.closeStorageModal = closeStorageModal;
+
+/* ─── ui/promptTemplates.js ─── */
+import { openPromptTemplatesModal, closePromptTemplatesModal, renderPromptTemplatesModal, renderPromptRow, onPromptRowDelete, openPromptTemplateEditor, onPromptTemplateEditorSave } from './ui/promptTemplates.js';
+window.openPromptTemplatesModal = openPromptTemplatesModal;
+window.closePromptTemplatesModal = closePromptTemplatesModal;
+window.renderPromptTemplatesModal = renderPromptTemplatesModal;
+window.renderPromptRow = renderPromptRow;
+window.onPromptRowDelete = onPromptRowDelete;
+window.openPromptTemplateEditor = openPromptTemplateEditor;
+window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
+
 /* ─── ui/scroll.js ─── */
 import { scrollContainer } from './ui/scroll.js';
 window.scrollContainer = scrollContainer;
