@@ -9985,73 +9985,9 @@ function syncProfileWebSearchUI(){
 import { showConfirm, closeConfirm } from './ui/confirm.js';
 
 /* Clear local conversations. */
-function confirmClearCache(){
-  showConfirm("Clear conversations?","This removes all local chat history from this browser. Your account data stays on the server.",false).then(function(yes){
-    if(!yes)return;
-    try{localStorage.removeItem("socrates-sessions-v2")}catch(e){}
-    state.currentSessionId=null;
-    renderRecents();
-    resetApp();
-    /* Refresh — just reload for a clean slate. */
-    location.reload();
-  });
-}
-/* Clear API settings. */
-function confirmClearSettings(){
-  showConfirm("Clear API settings?","This removes all configured API providers and keys. You'll need to reconfigure them.",false).then(function(yes){
-    if(!yes)return;
-    if(!CURRENT_USER)return;
-    (async function(){
-      /* Delete each non-built-in provider one by one. Built-in entries
-         (e.g. BEAGLE_BUILT_IN) live only in the frontend constant and
-         carry a non-UUID id, so the backend would reject them. Per-item
-         try/catch keeps one failure from aborting the rest of the loop. */
-      for(var i=0;i<apiConfig.providers.length;i++){
-        var p=apiConfig.providers[i];
-        if(p.isBuiltIn||p.id==="beagle-built-in")continue;
-        if(p.id.indexOf("new-")!==0){
-          try{
-            await apiFetch("/api/api-key/"+encodeURIComponent(p.id),{method:"DELETE"});
-          }catch(e){console.warn("[profile] clear settings: delete "+p.id+" failed:",e.message)}
-        }
-      }
-      /* Mutate in place so window.apiConfig (bound to this object at
-         module init) keeps seeing the latest providers. Reassigning
-         `apiConfig = {...}` would leave window.apiConfig pointing at
-         the original empty object forever. */
-      apiConfig.activeId=null;
-      apiConfig.providers=[Object.assign({},BEAGLE_BUILT_IN)];
-      try{localStorage.removeItem("socrates-provider-keys")}catch(e){}
-      try{localStorage.removeItem(LAST_ACTIVE_ID_KEY)}catch(e){}
-      renderProviderList();syncModelPills();syncSettingsUI();
-    })();
-    closeProfile();
-  });
-}
-/* Delete account. */
-function confirmDeleteAccount(){
-  showConfirm("Delete your account?","This permanently deletes your account, all chat sessions, and all saved settings. This cannot be undone.",true).then(function(yes){
-    if(!yes)return;
-    (async function(){
-      try{
-        await apiFetch("/api/auth/account",{method:"DELETE"});
-        CURRENT_USER=null;
-        try{localStorage.removeItem("socrates-sessions-v2")}catch(e){}
-        try{localStorage.removeItem("socrates-api")}catch(e){}
-        try{localStorage.removeItem("socrates-provider-keys")}catch(e){}
-        try{localStorage.removeItem("socrates-websearch")}catch(e){}
-        resetState();
-        resetApp();
-        showGate();
-        renderUserFooter();
-        closeProfile();
-        showAuthSignin();
-      }catch(e){
-        alert(t("settings.action.deleteAccount").replace("{msg}",e.message));
-      }
-    })();
-  });
-}
+/* P_main-split — Wave 2a: danger confirms extracted to ui/dangerConfirms.js. */
+import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from './ui/dangerConfirms.js';
+
 /* escapeHtml / sanitizeUrl / sanitizeUrls are imported from
  * ./util/safe.js. The window aliases are kept so any on-page
  * debug console (or older hot-reload tab) that still references
@@ -13061,9 +12997,6 @@ window.closeProfile = closeProfile;
 window.closeSettings = closeSettings;
 window.closeShareModal = closeShareModal;
 window.closeUsageModal = closeUsageModal;
-window.confirmClearCache = confirmClearCache;
-window.confirmClearSettings = confirmClearSettings;
-window.confirmDeleteAccount = confirmDeleteAccount;
 window.copyShareLink = copyShareLink;
 window.createShareLink = createShareLink;
 window.openProfile = openProfile;
@@ -13171,9 +13104,6 @@ window.clearSettings = clearSettings;
 window.closeProfile = closeProfile;
 window.closeSettings = closeSettings;
 window.closeShareModal = closeShareModal;
-window.confirmClearCache = confirmClearCache;
-window.confirmClearSettings = confirmClearSettings;
-window.confirmDeleteAccount = confirmDeleteAccount;
 window.copyShareLink = copyShareLink;
 window.createShareLink = createShareLink;
 /* P_share-load-bridge — auth/boot.js:44 calls `window.loadSharedSession`
