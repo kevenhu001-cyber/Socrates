@@ -238,6 +238,7 @@ const RETURN_TO_ALLOWLIST = [
   '/settings',
   '/exam',
   '/tutor',
+  '/account',
 ];
 function safeReturnTo(input) {
   if (typeof input !== 'string') return '/';
@@ -271,9 +272,10 @@ router.get('/oauth/github/start', (_req, res) => {
   if (!clientId) {
     return res.redirect('/?oauth_error=' + encodeURIComponent('github_not_configured'));
   }
+  const cbUrl = process.env.GITHUB_CALLBACK_URL || '';
   const returnTo = safeReturnTo(_req.query.return_to);
   const state = signOAuthState({ returnTo });
-  const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(process.env.GITHUB_CALLBACK_URL || '')}&state=${state}&scope=user:email`;
+  const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(cbUrl)}&state=${state}&scope=user:email`;
   return res.redirect(url);
 });
 
