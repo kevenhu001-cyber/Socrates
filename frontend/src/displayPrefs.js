@@ -6,13 +6,13 @@
 import { applyCustomBg, removeCustomBg } from './util/colors.js';
 
 /* ── constants ── */
-export const DISPLAY_FONT_STEPS  = [0.875, 1, 1.125, 1.25];
+export const DISPLAY_FONT_STEPS  = [1, 1.125, 1.25, 1.375];
 export const DISPLAY_WIDTH_STEPS = [0.85,  1, 1.3,   1.7];
 export const FONT_LABELS  = ["S","M","L","XL"];
 export const WIDTH_LABELS = ["S","M","L","XL"];
 
 /* ── state ── */
-export var displayPrefs = { font: 1, width: 1, darkBg: "", lightBg: "", showGrid: true };
+export var displayPrefs = { font: 1.125, width: 1, darkBg: "", lightBg: "", showGrid: true };
 
 /* ── helpers ── */
 export function loadDisplayPrefs() {
