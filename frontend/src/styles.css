@@ -396,9 +396,6 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 .top-bar-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .toggle-sidebar{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .06s,background .06s;flex-shrink:0}
 .toggle-sidebar:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}.toggle-sidebar svg{width:16px;height:16px}
-.topic-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:16px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.1);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
-.topic-badge span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.topic-badge .tb-dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000));flex-shrink:0}
 .share-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);transition:background-color .1s,color .1s,border-color .1s;cursor:pointer;line-height:1;flex-shrink:0}
 .share-btn:hover{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.06)}
 .share-btn svg{stroke:currentColor}
@@ -484,8 +481,8 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 .topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:10vh;flex:1;min-height:0;overflow-y:auto}
 .topic-title{font-family:var(--font-display);font-size:calc(clamp(1.75rem,1.25rem + 1.8vw,2.4rem) * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-200));text-align:center;line-height:1.4}
 .topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:640px}
-.topic-input-wrap{width:100%;max-width:720px;background:hsl(var(--bg-000));border:1px solid transparent;border-radius:18px;box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/4%),0 0 0 0.5px hsl(var(--border-300)/0.15);transition:box-shadow .2s,border-color .2s}
-.topic-input-wrap:focus-within{box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/8%),0 0 0 0.5px hsl(var(--border-200)/0.3);border-color:hsl(var(--border-200)/0.15)}
+.topic-input-wrap{width:100%;max-width:720px;background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.2);border-radius:24px;overflow:hidden;box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/4%);transition:box-shadow .2s,border-color .2s}
+.topic-input-wrap:focus-within{box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/8%);border-color:hsl(var(--accent-000)/0.35)}
 #topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(15.5px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-100));min-height:88px;max-height:320px;overflow-y:auto;font-family:var(--font-sans);padding:14px 20px}
 #topicInput::placeholder{color:hsl(var(--text-400))}
 .topic-footer{display:flex;align-items:center;justify-content:space-between;padding:0 20px 16px}
@@ -494,42 +491,43 @@ html[data-show-grid="false"] .main-bg{background-image:none}
    color/background instantly. */
 .start-btn{padding:10px 24px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .1s,color .1s}
 .start-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}.start-btn.active:hover{background:hsl(var(--accent-100))}
-/* Model picker — a single pill with a dropdown menu of available models.
-   Visually matches the .search-toggle row above it. */
+/* Model picker — a single trigger with a dropdown of available models.
+   Matches the .extensions-trigger style so the two sit on the same row
+   without one looking heavier than the other. */
 .model-picker{position:relative;max-width:720px;width:100%;display:flex;justify-content:center}
-.model-picker-trigger{display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 14px;border-radius:999px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:transparent;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s;font-family:var(--font-sans);line-height:1.2;max-width:100%}
-.model-picker-trigger:focus-visible{outline:2px solid hsl(var(--accent-000)/0.5);outline-offset:2px}
-.model-picker-trigger:hover{border-color:hsl(var(--border-200)/0.5);color:hsl(var(--text-100))}
-.model-picker-trigger.has-model{background:hsl(var(--accent-000)/0.08);border-color:hsl(var(--accent-000)/0.25);color:hsl(var(--accent-000))}
-.model-picker-trigger svg.model-picker-caret{width:12px;height:12px;flex-shrink:0;margin-left:2px;transition:transform .15s}
-.model-picker[data-open="true"] .model-picker-trigger{border-color:hsl(var(--accent-000)/0.4)}
+.model-picker-trigger{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid hsl(var(--border-300)/0.4);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:transparent;cursor:pointer;font-family:var(--font-sans);line-height:1.2;max-width:100%;transition:background-color .12s,color .12s,border-color .12s}
+.model-picker-trigger:focus-visible{outline:1px solid hsl(var(--accent-000)/0.5);outline-offset:1px}
+.model-picker-trigger:hover{border-color:hsl(var(--accent-000)/0.4);color:hsl(var(--text-100))}
+.model-picker-trigger.has-model{background:hsl(var(--accent-000)/0.06);border-color:hsl(var(--accent-000)/0.35);color:hsl(var(--accent-000))}
+.model-picker-trigger>svg:first-child{width:13px;height:13px;flex-shrink:0}
+.model-picker-trigger svg.model-picker-caret{width:10px;height:10px;flex-shrink:0;margin-left:2px;transition:transform .12s}
+.model-picker[data-open="true"] .model-picker-trigger{border-color:hsl(var(--accent-000)/0.5)}
 .model-picker[data-open="true"] .model-picker-caret{transform:rotate(180deg)}
 .model-picker-label{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.model-picker-trigger>svg:first-child{width:14px;height:14px;flex-shrink:0}
-.model-picker-menu{position:absolute;top:calc(100% + 6px);left:50%;min-width:240px;max-width:360px;max-height:280px;overflow-y:auto;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.25);border-radius:12px;box-shadow:0 8px 24px hsl(var(--always-black)/0.45);padding:4px;display:none;z-index:50;opacity:0;transform:translateX(-50%) translateY(-4px) scale(.96);transition:opacity .15s var(--ease-out),transform .15s var(--ease-out)}
-.model-picker[data-open="true"] .model-picker-menu{display:block;opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
-.model-picker-item{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));line-height:1.3;transition:background .08s}
+.model-picker-menu{position:absolute;top:calc(100% + 4px);left:50%;min-width:220px;max-width:340px;max-height:280px;overflow-y:auto;background:hsl(var(--bg-100));border:1px solid hsl(var(--border-300)/0.4);border-radius:6px;box-shadow:0 4px 12px hsl(var(--always-black)/0.3);padding:3px;display:none;z-index:50;opacity:0;transform:translateX(-50%) translateY(-2px);transition:opacity .1s,transform .12s}
+.model-picker[data-open="true"] .model-picker-menu{display:block;opacity:1;transform:translateX(-50%) translateY(0)}
+.model-picker-item{display:flex;align-items:center;gap:8px;width:100%;padding:6px 9px;border:none;background:transparent;border-radius:4px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));line-height:1.3;transition:background .1s,color .1s}
 .model-picker-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.model-picker-item.active{background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000))}
+.model-picker-item.active{background:hsl(var(--accent-000)/0.08);color:hsl(var(--accent-000))}
 .model-picker-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .model-picker-item-name{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .model-picker-item-sub{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.model-picker-item-check{flex-shrink:0;width:14px;height:14px;opacity:0;color:hsl(var(--accent-000))}
+.model-picker-item-check{flex-shrink:0;width:14px;height:14px;opacity:0;color:hsl(var(--accent-000));transition:opacity .1s}
 .model-picker-item.active .model-picker-item-check{opacity:1}
-.model-picker-divider{height:0.5px;background:hsl(var(--border-300)/0.18);margin:4px 0}
-.model-picker-filter{display:flex;align-items:center;gap:6px;padding:6px 8px 4px;border-bottom:0.5px solid hsl(var(--border-300)/0.18);margin-bottom:4px;color:hsl(var(--text-500))}
-.model-picker-filter svg{width:13px;height:13px;flex-shrink:0}
-.model-picker-filter-input{flex:1;min-width:0;padding:4px 6px;border:0.5px solid hsl(var(--border-300)/0.3);border-radius:6px;background:transparent;color:hsl(var(--text-100));font-family:var(--font-sans);font-size:calc(12.5px * var(--app-font-scale, 1));outline:none}
-.model-picker-filter-input:focus{border-color:hsl(var(--accent-000)/0.5)}
-.model-picker-item:focus-visible{outline:2px solid hsl(var(--accent-000)/0.5);outline-offset:-2px}
-.model-picker-add{display:flex;align-items:center;gap:6px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-400));font-size:calc(12.5px * var(--app-font-scale, 1))}
+.model-picker-divider{height:1px;background:hsl(var(--border-300)/0.25);margin:3px 0}
+.model-picker-filter{display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid hsl(var(--border-300)/0.25);margin-bottom:3px;color:hsl(var(--text-500))}
+.model-picker-filter svg{width:12px;height:12px;flex-shrink:0}
+.model-picker-filter-input{flex:1;min-width:0;padding:3px 6px;border:1px solid hsl(var(--border-300)/0.4);border-radius:4px;background:transparent;color:hsl(var(--text-100));font-family:var(--font-sans);font-size:calc(12px * var(--app-font-scale, 1));outline:none}
+.model-picker-filter-input:focus{border-color:hsl(var(--accent-000)/0.6)}
+.model-picker-item:focus-visible{outline:1px solid hsl(var(--accent-000)/0.5);outline-offset:-1px}
+.model-picker-add{display:block;width:100%;padding:6px 9px;border:none;background:transparent;border-top:1px solid hsl(var(--border-300)/0.25);border-radius:0;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-400));font-size:calc(12px * var(--app-font-scale, 1));margin-top:3px;transition:background .1s,color .1s}
 .model-picker-add:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
-.model-picker-empty{padding:14px 12px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-align:center;line-height:1.4}
+.model-picker-add svg{display:none}
+.model-picker-empty{padding:10px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-align:center;line-height:1.4}
 
-/* Chat-header model picker — a compact pill that sits at the
- * top-right of the chat view. Reuses .model-picker-item for the
- * dropdown rows so the look is identical to the topic-setup
- * picker, just with a different trigger position. */
+/* Chat-header model picker — compact version of the same component,
+ * sits at the top-right of the chat view. Reuses .model-picker-item
+ * so the dropdown rows look identical. */
 .chat-model-wrap{
   position:relative;
   display:inline-flex;
@@ -537,31 +535,31 @@ html[data-show-grid="false"] .main-bg{background-image:none}
   flex-shrink:0;
 }
 .chat-model-trigger{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:4px 10px 4px 9px;
-  border-radius:999px;
-  border:0.5px solid hsl(var(--border-300)/0.25);
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 8px;
+  border-radius:5px;
+  border:1px solid hsl(var(--border-300)/0.4);
   font-size:calc(12px * var(--app-font-scale, 1));
   color:hsl(var(--text-300));
   background:transparent;
   cursor:pointer;
-  transition:background-color .12s,color .12s,border-color .12s;
   font-family:var(--font-sans);
   line-height:1.2;
   max-width:200px;
   flex-shrink:0;
+  transition:background-color .1s,color .1s,border-color .1s;
 }
 .chat-model-trigger:hover{
-  border-color:hsl(var(--border-200)/0.4);
+  border-color:hsl(var(--accent-000)/0.4);
   color:hsl(var(--text-100));
-  background:hsl(var(--bg-200)/0.5);
+  background:hsl(var(--bg-300));
 }
 .chat-model-trigger.has-model{
-  background:hsl(var(--accent-000)/0.08);
-  border-color:hsl(var(--accent-000)/0.25);
+  background:hsl(var(--accent-000)/0.06);
+  border-color:hsl(var(--accent-000)/0.35);
   color:hsl(var(--accent-000));
 }
-.chat-model-trigger>svg:first-child{width:13px;height:13px;flex-shrink:0}
+.chat-model-trigger>svg:first-child{width:12px;height:12px;flex-shrink:0}
 .chat-model-label{
   max-width:140px;
   overflow:hidden;
@@ -569,27 +567,27 @@ html[data-show-grid="false"] .main-bg{background-image:none}
   white-space:nowrap;
   font-weight:500;
 }
-.chat-model-caret{width:11px;height:11px;flex-shrink:0;transition:transform .12s}
+.chat-model-caret{width:9px;height:9px;flex-shrink:0;transition:transform .12s}
 .chat-model-trigger.menu-open .chat-model-caret{transform:rotate(180deg)}
 .chat-model-menu.model-picker-menu{
   position:absolute;
-  top:calc(100% + 6px);
+  top:calc(100% + 4px);
   right:0;
-  min-width:240px;
+  min-width:220px;
   max-width:320px;
   max-height:320px;
   overflow-y:auto;
-  background:hsl(var(--bg-000));
-  border:0.5px solid hsl(var(--border-300)/0.25);
-  border-radius:10px;
-  box-shadow:0 8px 24px hsl(var(--always-black)/0.45);
-  padding:4px;
+  background:hsl(var(--bg-100));
+  border:1px solid hsl(var(--border-300)/0.4);
+  border-radius:6px;
+  box-shadow:0 4px 12px hsl(var(--always-black)/0.3);
+  padding:3px;
   z-index:50;
   display:block;
 }
 .chat-model-menu.model-picker-menu.hidden{display:none}
 /* Support data-open mechanism on the chat-model-wrap for the unified picker module. */
-.chat-model-wrap[data-open="true"] .chat-model-trigger{border-color:hsl(var(--accent-000)/0.4)}
+.chat-model-wrap[data-open="true"] .chat-model-trigger{border-color:hsl(var(--accent-000)/0.5)}
 .chat-model-wrap[data-open="true"] .chat-model-caret{transform:rotate(180deg)}
 /* When the unified picker sets data-open="true" on the wrap, hide the
 .hidden fallback so the menu shows. The .hidden utility class is
@@ -597,41 +595,39 @@ defined later in the file as `display:none !important`, so this
 override must also use !important to win the cascade. Without it
 the chat-header picker appears "open" (caret rotated, aria-expanded
 true) but the dropdown never shows — see commit history. */
-.chat-model-wrap[data-open="true"] .chat-model-menu.hidden{display:block !important;opacity:1;transform:translateY(0) scale(1)}
+.chat-model-wrap[data-open="true"] .chat-model-menu.hidden{display:block !important;opacity:1;transform:translateY(0)}
 .chat-model-menu .model-picker-add{
-  margin-top:4px;
-  border-top:0.5px solid hsl(var(--border-300)/0.18);
-  padding-top:8px;
+  margin-top:3px;
+  border-top:1px solid hsl(var(--border-300)/0.25);
+  padding-top:6px;
 }
 
-.topic-setup-row{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:720px;width:100%;padding:0 6px;position:relative}
+.topic-setup-row{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:720px;width:100%;padding:0 6px;position:relative}
 .topic-setup-row .model-picker,.topic-setup-row .extensions-picker{position:relative;max-width:none;width:auto}
 .extensions-picker{position:relative}
-.extensions-trigger{display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 14px;border-radius:999px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));background:transparent;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s;font-family:var(--font-sans);line-height:1.2}
-.extensions-trigger:hover{border-color:hsl(var(--border-200)/0.4);color:hsl(var(--text-200))}
-.extensions-trigger.has-active{background:hsl(var(--accent-000)/0.08);border-color:hsl(var(--accent-000)/0.25);color:hsl(var(--accent-000))}
-.extensions-trigger>svg:first-child{width:14px;height:14px;flex-shrink:0}
-.extensions-caret{width:12px;height:12px;flex-shrink:0;margin-left:2px;transition:transform .15s}
-.extensions-picker[data-open="true"] .extensions-trigger{border-color:hsl(var(--accent-000)/0.4)}
+.extensions-trigger{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid hsl(var(--border-300)/0.4);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));background:transparent;cursor:pointer;font-family:var(--font-sans);line-height:1.2;transition:background-color .12s,color .12s,border-color .12s}
+.extensions-trigger:hover{border-color:hsl(var(--accent-000)/0.4);color:hsl(var(--text-200))}
+.extensions-trigger.has-active{background:hsl(var(--accent-000)/0.06);border-color:hsl(var(--accent-000)/0.35);color:hsl(var(--accent-000))}
+.extensions-trigger>svg:first-child{width:13px;height:13px;flex-shrink:0}
+.extensions-caret{width:10px;height:10px;flex-shrink:0;margin-left:2px;transition:transform .12s}
+.extensions-picker[data-open="true"] .extensions-trigger{border-color:hsl(var(--accent-000)/0.5)}
 .extensions-picker[data-open="true"] .extensions-caret{transform:rotate(180deg)}
 .extensions-label{white-space:nowrap}
-.extensions-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:240px;max-width:340px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.25);border-radius:12px;box-shadow:0 8px 24px hsl(var(--always-black)/0.45);padding:4px;display:none;z-index:50;opacity:0;transform:translateY(-4px) scale(.96);transition:opacity .15s var(--ease-out),transform .15s var(--ease-out)}
-.extensions-picker[data-open="true"] .extensions-menu{display:block;opacity:1;transform:translateY(0) scale(1)}
-.extensions-item{display:flex;align-items:flex-start;gap:10px;width:100%;padding:9px 10px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));line-height:1.35;transition:background .08s}
+.extensions-menu{position:absolute;top:calc(100% + 4px);right:0;min-width:200px;max-width:300px;background:hsl(var(--bg-100));border:1px solid hsl(var(--border-300)/0.4);border-radius:6px;box-shadow:0 4px 12px hsl(var(--always-black)/0.3);padding:3px;display:none;z-index:50;opacity:0;transform:translateY(-2px);transition:opacity .1s,transform .12s}
+.extensions-picker[data-open="true"] .extensions-menu{display:block;opacity:1;transform:translateY(0)}
+.extensions-item{display:flex;align-items:center;gap:8px;width:100%;padding:6px 9px;border:none;background:transparent;border-radius:4px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));line-height:1.3;transition:background .1s,color .1s}
 .extensions-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .extensions-item.on{color:hsl(var(--text-100))}
-.extensions-item-icon{flex-shrink:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-400));margin-top:1px}
-.extensions-item.on .extensions-item-icon{color:hsl(var(--accent-000))}
-.extensions-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.extensions-item-name{font-weight:500;display:flex;align-items:center;gap:6px}
+.extensions-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.extensions-item-name{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .extensions-item-desc{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));line-height:1.35}
-.extensions-item-check{flex-shrink:0;width:16px;height:16px;border-radius:4px;border:1.5px solid hsl(var(--text-500));display:flex;align-items:center;justify-content:center;transition:background-color .12s,border-color .12s;margin-top:1px;background:transparent}
+.extensions-item-check{flex-shrink:0;width:14px;height:14px;border-radius:3px;border:1px solid hsl(var(--border-500));display:flex;align-items:center;justify-content:center;transition:background-color .1s,border-color .1s;background:transparent}
 .extensions-item.on .extensions-item-check{background:hsl(var(--accent-000));border-color:hsl(var(--accent-000))}
-.extensions-item-check svg{width:11px;height:11px;stroke:hsl(var(--oncolor-100));opacity:0}
+.extensions-item-check svg{width:10px;height:10px;stroke:hsl(var(--oncolor-100));opacity:0}
 .extensions-item.on .extensions-item-check svg{opacity:1}
-.extensions-divider{height:0.5px;background:hsl(var(--border-300)/0.18);margin:4px 0}
-@media (max-width:600px){.model-picker-trigger,.extensions-trigger{font-size:calc(12px * var(--app-font-scale, 1));padding:7px 12px}}
-@media (max-width:768px){.model-picker-menu{left:0;right:auto;transform:translateY(-4px);min-width:200px;max-width:calc(100vw - 24px)}.model-picker[data-open="true"] .model-picker-menu{transform:translateY(0)}}
+.extensions-divider{height:1px;background:hsl(var(--border-300)/0.25);margin:3px 0}
+@media (max-width:600px){.model-picker-trigger,.extensions-trigger{font-size:calc(12px * var(--app-font-scale, 1));padding:5px 9px}}
+@media (max-width:768px){.model-picker-menu{left:0;right:auto;transform:translateY(-2px);min-width:200px;max-width:calc(100vw - 24px)}.model-picker[data-open="true"] .model-picker-menu{transform:translateY(0)}}
 
 .settings-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .settings-btn-mini{padding:4px 10px;border-radius:8px;font-size:calc(12px * var(--app-font-scale, 1));background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);color:hsl(var(--text-200));cursor:pointer;transition:background-color .1s,border-color .1s}
@@ -1021,12 +1017,13 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
      * msg-list without a huge visual gap. */
   bottom:0;
   z-index:10;
-  background:linear-gradient(to top,hsl(var(--bg-000)) 70%,hsla(var(--bg-000)/0) 100%);
+  background:transparent;
   padding-top:12px;
   padding-bottom:env(safe-area-inset-bottom,0);
 }
-.chat-input-wrap{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.12);border-radius:14px;overflow:hidden;transition:border-color .15s,box-shadow .15s}
-.chat-input-wrap:focus-within{border-color:hsl(var(--border-200)/0.3);box-shadow:0 2px 12px hsl(var(--always-black)/0.2)}
+.chat-input-wrap{background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.55);border-radius:24px;overflow:hidden;transition:border-color .2s,box-shadow .2s;margin:0 12px;
+  box-shadow:0 2px 12px hsl(var(--always-black)/8%)}
+.chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.6);box-shadow:0 2px 20px hsl(var(--accent-000)/12%)}
 #chatInputArea{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(15px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));min-height:36px;max-height:120px;overflow-y:auto;scrollbar-width:none;font-family:var(--font-sans);padding:8px 14px}
 #chatInputArea::-webkit-scrollbar{display:none}
 #chatInputArea::placeholder{color:hsl(var(--text-400))}
@@ -1855,6 +1852,40 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
 .viz-body iframe{
   display:block;width:100%;border:0;background:transparent
 }
+/* Loading-skeleton lifecycle:
+   - Card mounts → JS sets data-viz-state="loading"; .viz-loading
+     shows the "Rendering…" placeholder; iframe is hidden.
+   - Normal path: processPendingViz() runs after the iframe is in
+     the DOM. It attaches a 'load' listener AND a setTimeout(80ms)
+     fallback that flips data-viz-state to "ready". At that point:
+       .viz-loading hides, iframe becomes visible.
+   - Safety net (this CSS): the skeleton ALSO auto-hides 600ms
+     after mount via animation. So even if processPendingViz() never
+     runs (e.g. the legacy session-reload path that mounted cards
+     before this wiring existed), the user sees at most a 600ms
+     spinner and then the iframe. The iframe was always going to
+     render once the browser parsed srcdoc — this just removes the
+     visual dependency on the JS path. */
+.viz[data-viz-state="ready"] .viz-loading,
+.viz[data-viz-state="error"] .viz-loading{display:none}
+.viz[data-viz-state="loading"] iframe{visibility:hidden}
+@keyframes viz-skeleton-fadeout{
+  0%{opacity:1;max-height:80px}
+  80%{opacity:1;max-height:80px}
+  100%{opacity:0;max-height:0;padding-top:0;padding-bottom:0;margin:0}
+}
+.viz[data-viz-state="loading"] .viz-loading{
+  animation: viz-skeleton-fadeout 800ms ease-out 0s 1 forwards;
+  overflow:hidden;
+}
+/* When JS flips state to ready, cancel the animation so the
+   skeleton disappears immediately rather than waiting for the
+   animation to finish. */
+.viz[data-viz-state="ready"] .viz-loading,
+.viz[data-viz-state="error"] .viz-loading{
+  animation:none;
+  display:none;
+}
 .viz-loading{
   display:flex;align-items:center;gap:6px;
   padding:24px 16px;
@@ -1982,7 +2013,22 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
 .think-summary-chevron{margin-left:auto;width:6px;height:6px;flex-shrink:0;border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:rotate(45deg);opacity:.45;color:hsl(var(--text-500))}
 .think-block[open]>.think-summary .think-summary-chevron{transform:rotate(-135deg)}
 
-.think-content{padding:2px 10px 10px;font-size:calc(12.5px * var(--app-font-scale,1));line-height:1.6;color:hsl(var(--text-400));white-space:pre-wrap}
+/* think-content: tight spacing for chain-of-thought prose.
+   white-space:pre-line collapses runs of whitespace but keeps
+   single \n as a soft break, so the model’s intermittent blank
+   lines don’t inflate into huge gaps. Per-element margins below
+   override the prose defaults so p/ul/ol/pre sit close together
+   while still respecting list/heading rhythm. */
+.think-content{padding:2px 10px 10px;font-size:calc(12.5px * var(--app-font-scale,1));line-height:1.55;color:hsl(var(--text-400));white-space:pre-line;word-wrap:break-word;overflow-wrap:anywhere}
+.think-content>p{margin:0 0 0.4em}
+.think-content>p:last-child{margin-bottom:0}
+.think-content>ul,.think-content>ol{margin:0 0 0.4em;padding-left:1.4em}
+.think-content>ul li,.think-content>ol li{margin:0 0 0.15em}
+.think-content>pre{margin:0 0 0.5em;padding:6px 8px;border-radius:4px;background:hsl(var(--bg-300)/0.4);overflow-x:auto}
+.think-content>pre:last-child{margin-bottom:0}
+.think-content>h1,.think-content>h2,.think-content>h3,.think-content>h4{margin:0.6em 0 0.25em;font-size:calc(13px * var(--app-font-scale,1));font-weight:600;color:hsl(var(--text-300))}
+.think-content code{font-family:var(--font-mono);font-size:0.92em;background:hsl(var(--bg-300)/0.35);padding:0 3px;border-radius:3px}
+.think-content a{color:hsl(var(--accent-000))}
 
 /* Tool cards area inside think-block — collapses/expands with the
    thinking block and appears after the reasoning text. */
@@ -2479,7 +2525,24 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-out{display:none;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-000));padding:8px 10px;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));white-space:pre-wrap;word-break:break-word;line-height:1.5;max-height:280px;overflow-y:auto}
 .agent-tool-card.open .agent-tool-out{display:block}
 .agent-tool-out.error{color:hsl(0 60% 50%);background:hsl(0 50% 95%)}
-.agent-tool-code{margin:0 0 6px;padding:8px 10px;background:hsl(var(--bg-200)/0.6);border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));line-height:1.45;white-space:pre;overflow-x:auto;color:hsl(var(--text-200))}
+/* Code block inside an agent-tool-card (e.g. python source from
+   code_interpreter, or a Bash command). Renders between the
+   head and the .agent-tool-out — visible by default so the user
+   immediately sees what code was generated. Only the .agent-tool-out
+   block (stdout/stderr/artifacts) still collapses with the card. */
+.agent-tool-code-wrap{display:block;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));background:hsl(var(--bg-200)/0.6)}
+.agent-tool-code{margin:0;padding:8px 10px;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));line-height:1.5;white-space:pre;overflow-x:auto;color:hsl(var(--text-200));max-height:240px;overflow-y:auto;tab-size:4}
+.agent-tool-code code{font-family:inherit;font-size:inherit;color:inherit;background:transparent;padding:0}
+[data-theme=socrates][data-mode=dark] .agent-tool-code-wrap{background:hsl(220 25% 14%/0.5)}
+/* Broken-artifact placeholder shown when an inline image (matplotlib
+   PNG, etc.) fails to load. Replaces the <img> on error so the
+   user sees a useful diagnostic instead of a browser broken-icon. */
+.artifact-error{display:flex;align-items:center;gap:8px;margin:6px 0;padding:8px 10px;border:0.5px dashed hsl(0 50% 60%/0.5);border-radius:5px;background:hsl(0 50% 95%/0.4);font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(0 50% 35%);line-height:1.45}
+.artifact-error-icon{flex-shrink:0;width:16px;height:16px;color:hsl(0 55% 50%)}
+.artifact-error-text{flex:1;word-break:break-all}
+.artifact-error-retry{margin-left:auto;border:0;background:hsl(var(--bg-200));color:hsl(var(--text-200));font:inherit;font-size:calc(10.5px * var(--app-font-scale, 1));padding:2px 8px;border-radius:4px;cursor:pointer;flex-shrink:0}
+.artifact-error-retry:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+[data-theme=socrates][data-mode=dark] .artifact-error{background:hsl(0 30% 18%/0.5);color:hsl(0 50% 75%);border-color:hsl(0 40% 40%/0.5)}
 /* P_progress — live execution block. The badge is a small pill
    in the top-left with the current phase + elapsed seconds; the
    <pre> underneath streams stdout/stderr as it arrives. We cap

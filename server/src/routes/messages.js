@@ -11,6 +11,7 @@ import { isUuid } from '../lib/validate.js';
 import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion } from '../services/llm.js';
+import { trackSseConnection } from '../lib/sse.js';
 
 /* P_attachments-shape — mirrors the per-message `attachments` shape
  * defined in routes/sessions.js (SessionPayloadSchema → messages[].attachments).
@@ -188,9 +189,17 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
       'X-Accel-Buffering': 'no',
     });
 
+    /* P_sse-metrics — bump the active-connection counter so the
+       /api/health endpoint can report how many SSE streams are open. */
+    trackSseConnection(req.app, +1);
+
     const hb = setInterval(() => { try { res.write(': keepalive\n\n'); } catch { clearInterval(hb); } }, 10000);
     const ac = new AbortController();
-    req.on('close', () => { clearInterval(hb); ac.abort(); });
+    req.on('close', () => {
+      clearInterval(hb);
+      trackSseConnection(req.app, -1);
+      ac.abort();
+    });
 
     let fullText = '';
     await streamChatCompletion(

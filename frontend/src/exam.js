@@ -553,7 +553,7 @@ function renderExamNav() {
     var isAns = answeredKeys.indexOf(String(j)) >= 0;
     var isCur = (j === examNavCurrentIdx());
     var cls = "exam-nav-pill" + (isCur ? " current" : "") + (isAns ? " answered" : "");
-    var lbl = (j + 1) + (isAns ? " ✓" : "");
+    var lbl = (j + 1) + (isAns ? " \u00B7" : "");
     html += '<button class="' + cls + '" data-nav-idx="' + j + '" onclick="examNavJump(' + j + ')">' + lbl + '</button>';
   }
   html += '</div>';
@@ -627,7 +627,7 @@ export function refreshExamNavTally() {
     var j = parseInt(p.getAttribute("data-nav-idx"), 10);
     var isAns = answered.indexOf(String(j)) >= 0;
     p.classList.toggle("answered", isAns);
-    if (isAns && p.textContent.indexOf("✓") < 0) p.textContent = (j + 1) + " ✓";
+    if (isAns && p.textContent.indexOf("\u00B7") < 0) p.textContent = (j + 1) + " \u00B7";
   });
 }
 
@@ -759,7 +759,7 @@ export function renderExamResults() {
     var isCorrect = rd.isCorrect;
     var cls = isCorrect ? "correct" : "wrong";
     html += '<div class="exam-q-card">';
-    html += '<div class="exam-q-num">Question ' + (i + 1) + ' — <span class="exam-result-' + (isCorrect ? "correct" : "wrong") + '">' + (isCorrect ? "✓ Correct" : "✗ Incorrect") + '</span><span class="exam-q-type">' + q.type + '</span></div>';
+    html += '<div class="exam-q-num">Question ' + (i + 1) + ' — <span class="exam-result-' + (isCorrect ? "correct" : "wrong") + '">' + (isCorrect ? "Correct" : "Incorrect") + '</span><span class="exam-q-type">' + q.type + '</span></div>';
     html += '<div class="exam-q-text">' + formatMsg(q.q) + '</div>';
     if (q.type === "multiple-choice" && q.opts) {
       html += '<div class="exam-q-opts">';

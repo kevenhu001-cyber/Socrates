@@ -10,7 +10,7 @@ import { pickChatLimiterFor } from '../middleware/rateLimit.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion, callChatCompletion } from '../services/llm.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
-import { usageEvents, executions } from '../db/schema.js';
+import { usageEvents, executions, files } from '../db/schema.js';
 import { audit } from '../middleware/audit.js';
 import { BadRequest, TooManyRequests, NotFound } from '../lib/errors.js';
 import { getBeagleQuota } from '../lib/tiers.js';
@@ -18,8 +18,8 @@ import { getExecutionsPerDay } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
 import { codeInterpreter, CODE_INTERPRETER_TOOL, subscribeExecution, unsubscribeExecution, subscribeExecutionResult, unsubscribeExecutionResult } from '../services/codeInterpreter.js';
 import { webSearch, WEB_SEARCH_TOOL } from '../services/webSearch.js';
-import { buildSystemContextBlock } from '../services/productContext.js';
 import { isMultimodalProvider } from '../lib/multimodal.js';
+import { trackSseConnection } from '../lib/sse.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -166,43 +166,6 @@ function injectUserContext(messages, user) {
     return cloned;
   }
   return [{ role: 'system', content: userCtx }, ...messages];
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   P_PRODUCT_CONTEXT — inject topodrive.top product knowledge as a
-   system message so the model can answer company/product questions
-   with accurate, sourced information.  The Markdown is pre-computed
-   by the productContext service (fetched + cached server-side every
-   6h) and is capped at 20k chars to protect the prompt budget.
-   ───────────────────────────────────────────────────────────────── */
-// We previously cached the rendered block in a module-level
-// `_productContextBlock` string. That made the cache "stuck" — a
-// background 6h refresh inside productContext.js never propagated
-// to the chat path, and the only way to get a fresh block was to
-// restart the process. The service itself already memoises the
-// cache entry by fetchedAt, so calling buildSystemContextBlock on
-// every chat turn is cheap: it returns the cached Markdown unless
-// stale, in which case it returns the stale block AND kicks off a
-// background refresh. Calling it on every turn is the right
-// trade-off — staleness window stays at 6h and we never serve
-// genuinely outdated data.
-async function injectProductContext(messages) {
-  let ctxBlock = '';
-  try {
-    ctxBlock = await buildSystemContextBlock({ allowStale: true });
-  } catch (err) {
-    console.warn('[chat] productContext build failed:', err.message);
-  }
-  if (!ctxBlock) return messages;
-
-  const productMsg = { role: 'system', content: ctxBlock };
-  const last = messages[messages.length - 1];
-  if (last && last.role === 'user') {
-    const cloned = messages.slice();
-    cloned.splice(cloned.length - 1, 0, productMsg);
-    return cloned;
-  }
-  return [...messages, productMsg];
 }
 
 /* SSE_PRIME — 32 KB comment-padding frame written immediately after the
@@ -446,7 +409,6 @@ router.post('/', requireAuth, chatRateLimitDispatch, audit('chat:sync'), async (
        first, then prepend teacher-mode prompt if applicable. */
     let finalMessages = injectUserContext(messages, req.user);
     if (mode === 'tutor') finalMessages = await prependTeacherModePrompt(finalMessages);
-    finalMessages = await injectProductContext(finalMessages);
 
     /* Sanitise extra_body before forwarding to the upstream — see
      * ChatPayloadSchema's comment for the rationale. */
@@ -527,7 +489,6 @@ router.post('/stream', requireAuth, chatRateLimitDispatch, audit('chat:stream'),
        first, then prepend teacher-mode prompt if applicable. */
     let finalMessages = injectUserContext(messages, req.user);
     if (mode === 'tutor') finalMessages = await prependTeacherModePrompt(finalMessages);
-    finalMessages = await injectProductContext(finalMessages);
 
     /* Sanitise extra_body before forwarding to the upstream — see
      * ChatPayloadSchema's comment for the rationale. */
@@ -594,6 +555,12 @@ router.post('/stream', requireAuth, chatRateLimitDispatch, audit('chat:stream'),
       try { res.flush?.(); } catch {}
     } catch { /* socket already closed — the req.on('close') guard below handles it */ }
 
+    /* P_sse-metrics — bump the active-connection counter so the
+       /api/health endpoint can report how many SSE streams are open
+       right now. The close handler (set below) decrements on any
+       disconnect, including client aborts mid-stream. */
+    trackSseConnection(req.app, +1);
+
     // Heartbeat keepalive
     const heartbeat = setInterval(() => {
       try { res.write(': keepalive\n\n'); try { res.flush?.(); } catch {} } catch { clearInterval(heartbeat); }
@@ -610,6 +577,7 @@ router.post('/stream', requireAuth, chatRateLimitDispatch, audit('chat:stream'),
     const abortController = new AbortController();
     req.on('close', () => {
       clearInterval(heartbeat);
+      trackSseConnection(req.app, -1);
       if (!abortController.signal.aborted) {
         abortController.abort('client_disconnected');
       }
@@ -983,11 +951,25 @@ async function handleExecutionStream(req, res, next) {
     });
     try { res.flushHeaders(); } catch {}
 
+    /* P_sse-metrics — same counter bump as the chat /stream route. */
+    trackSseConnection(req.app, +1);
+
     const heartbeat = setInterval(() => {
       try { res.write(': keepalive\n\n'); try { res.flush?.(); } catch {} } catch {}
     }, 10_000);
 
     if (exec.status === 'completed' || exec.status === 'failed' || exec.status === 'timeout' || exec.status === 'cancelled') {
+      // Fetch artifact file IDs so the frontend can render inline images
+      // (matplotlib PNGs, etc.) even when the execution completed before
+      // the client connected to the SSE stream.
+      let artifactFileIds = [];
+      try {
+        const artifactRows = await db.select({ id: files.id, name: files.name, mimeType: files.mimeType })
+          .from(files)
+          .where(eq(files.executionId, executionId));
+        artifactFileIds = artifactRows;
+      } catch (_) {}
+
       res.write(`event: result\ndata: ${JSON.stringify({
         status: exec.status,
         executionId: exec.id,
@@ -996,10 +978,14 @@ async function handleExecutionStream(req, res, next) {
         durationMs: exec.durationMs || 0,
         exitCode: exec.exitCode,
         errorMessage: exec.errorMessage || null,
+        artifactFileIds,
       })}\n\n`);
       try { res.flush?.(); } catch {}
       clearInterval(heartbeat);
       try { res.end(); } catch {}
+      /* P_sse-metrics — terminal-execution path doesn't fire the
+         req.on('close') handler in time, so decrement explicitly. */
+      trackSseConnection(req.app, -1);
       return;
     }
 
@@ -1026,13 +1012,25 @@ async function handleExecutionStream(req, res, next) {
       } catch {}
     };
 
-    subscribeExecution(executionId, onProgress);
-    subscribeExecutionResult(executionId, onResult);
+    /* P_pubsub — subscribeExecution now returns an unsubscribe handle
+     (pubsub backs the delivery). We store both and call them in the
+     close hook. The legacy `unsubscribeExecution(id, listener)` 2-arg
+     form is a no-op for backwards compatibility — pubsub tracks
+     handlers by reference and unsubscribing by handle is the only
+     correct path. */
+    const unsubProgress = await subscribeExecution(executionId, onProgress);
+    const unsubResult = await subscribeExecutionResult(executionId, onResult);
 
     req.on('close', () => {
       clearInterval(heartbeat);
-      unsubscribeExecution(executionId, onProgress);
-      unsubscribeExecutionResult(executionId, onResult);
+      trackSseConnection(req.app, -1);
+      try { unsubProgress && unsubProgress(); } catch (_) {}
+      try { unsubResult && unsubResult(); } catch (_) {}
+      // Legacy cleanup kept as a safety net — it's a no-op now but
+      // costs nothing if a future refactor wires it back to a real
+      // listener.
+      try { unsubscribeExecution(executionId, onProgress); } catch (_) {}
+      try { unsubscribeExecutionResult(executionId, onResult); } catch (_) {}
     });
   } catch (err) { next(err); }
 }

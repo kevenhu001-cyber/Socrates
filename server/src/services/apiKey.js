@@ -84,7 +84,7 @@ export async function seedBuiltInProvider() {
 
     const [existing] = await db.select()
       .from(apiKeys)
-      .where(and(eq(apiKeys.isBuiltIn, true), eq(apiKeys.label, 'Beagle A')))
+      .where(and(eq(apiKeys.isBuiltIn, true), eq(apiKeys.label, 'Beagle')))
       .limit(1);
 
     if (existing) {
@@ -98,10 +98,10 @@ export async function seedBuiltInProvider() {
         .where(eq(apiKeys.id, existing.id))
         .returning({ id: apiKeys.id, model: apiKeys.model, url: apiKeys.url });
       console.log('[seed] update returned: ' + JSON.stringify(upd));
-      console.log('[seed] Updated built-in Beagle A provider');
+      console.log('[seed] Updated built-in Beagle provider');
     } else {
       const ins = await db.insert(apiKeys).values({
-        label: 'Beagle A',
+        label: 'Beagle',
         url,
         model,
         keyCiphertext,
@@ -114,7 +114,7 @@ export async function seedBuiltInProvider() {
         isMultimodal: true,
       }).returning({ id: apiKeys.id, model: apiKeys.model });
       console.log('[seed] inserted row: ' + JSON.stringify(ins));
-      console.log('[seed] Created built-in Beagle A provider');
+      console.log('[seed] Created built-in Beagle provider');
     }
   } catch (err) {
     console.error('[seed] Failed to seed built-in provider:', err.message);

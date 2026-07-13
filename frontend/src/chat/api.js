@@ -125,7 +125,7 @@ export async function callAPI(messages,maxTokens){
   if(provider.isBuiltIn){
     var beagleMsgs=messages.slice();
     beagleMsgs.unshift({role:"system",
-      content:"Your name is Beagle A. You are an AI assistant developed by Topodrive company. "+
+      content:"Your name is Beagle. You are an AI assistant developed by Topodrive company. "+
         "You are helpful, knowledgeable, and precise. Never identify as MiniMax or any other model."});
     /* Reasoning models (MiniMax-M2.7, DeepSeek R1, QwQ) regularly
        take 2-4 minutes to think before producing the answer. The

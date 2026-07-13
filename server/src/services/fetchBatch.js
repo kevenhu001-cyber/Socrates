@@ -122,7 +122,7 @@ export async function fetchBatch(urls) {
 
       // Phase 2: build conditional-GET headers from the URL cache.
       const cached = urlCache.get(url);
-      const headers = { 'User-Agent': 'Socrates/1.0 (research bot)' };
+      const headers = { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36' };
       if (cached) {
         if (cached.etag) headers['If-None-Match'] = cached.etag;
         if (cached.lastModified) headers['If-Modified-Since'] = cached.lastModified;

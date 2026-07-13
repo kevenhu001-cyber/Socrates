@@ -114,7 +114,6 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
          lazily keeps the source-level name visible in dev too. */
       if(typeof window.isReasoningProvider==="function" && window.isReasoningProvider()){
         apiBody.reasoning_effort="high";
-        apiBody.extra_body={thinking:{type:"enabled"}};
       }
       resp=await apiFetchRaw("/api/chat/stream",{
         method:"POST",
@@ -225,10 +224,8 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             if(line.indexOf("data:")===0){
               dataParts.push(line.slice(5).trim());
             }else if(line.indexOf("event:")===0){
-              /* event: error surfaces failures */
-              if(/error/i.test(line))state.lastCallError="upstream error event";
               /* Capture the named event so we can route tool_use / tool_result
-                 frames to the caller's callbacks (Phase 4: code interpreter). */
+                 frames to the caller's callbacks. */
               var ev=line.slice(6).trim();
               if(ev)evName=ev;
             }
@@ -242,6 +239,19 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           }
           if(evName==="tool_result"&&opts&&typeof opts.onToolResult==="function"&&dataParts.length){
             try{opts.onToolResult(JSON.parse(dataParts.join("\n")))}catch(_){}
+            continue;
+          }
+          /* P_error_event — the backend emits `event: error` with
+             a JSON `data:` line containing the real error message.
+             Capture it in state.lastCallError so the caller surfaces
+             it to the user instead of a generic "stream interrupted". */
+          if(evName==="error"&&dataParts.length){
+            try{
+              var errData=JSON.parse(dataParts.join("\n"));
+              state.lastCallError=errData.error||errData.message||JSON.stringify(errData);
+            }catch(_){
+              state.lastCallError=dataParts.join(" ").slice(0,200);
+            }
             continue;
           }
           /* P_progress — incremental tool events. The backend emits

@@ -2,10 +2,10 @@ import { Router } from 'express';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion, callChatCompletion } from '../services/llm.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
-import { buildSystemContextBlock } from '../services/productContext.js';
 import { requireAuth } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../lib/sanitize.js';
+import { trackSseConnection } from '../lib/sse.js';
 
 const router = Router();
 
@@ -55,27 +55,6 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
        via the URL rather than the body. */
     const wantStream = stream === true || req.query.stream === 'true' || req.query.stream === '1';
 
-    /* P_PRODUCT_CONTEXT — inject topodrive.top product knowledge so
-       the built-in Beagle can answer company/product questions. Insert
-       before the last user message (or at end) just like chat.js.
-       Calling buildSystemContextBlock on every request is cheap because
-       the service memoises by fetchedAt — see chat.js for the
-       rationale. */
-    let finalMessages = messages;
-    try {
-      const ctxBlock = await buildSystemContextBlock({ allowStale: true });
-      if (ctxBlock) {
-        const productMsg = { role: 'system', content: ctxBlock };
-        const last = finalMessages[finalMessages.length - 1];
-        if (last && last.role === 'user') {
-          finalMessages = finalMessages.slice();
-          finalMessages.splice(finalMessages.length - 1, 0, productMsg);
-        } else {
-          finalMessages = [...finalMessages, productMsg];
-        }
-      }
-    } catch (_) { /* best-effort — don't break the chat */ }
-
     if (wantStream) {
       // ── Streaming: SSE response ──
       res.writeHead(200, {
@@ -97,11 +76,19 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         try { res.flush?.(); } catch {}
       } catch { /* socket already closed */ }
 
+      /* P_sse-metrics — bump the active-connection counter so the
+         /api/health endpoint can report how many SSE streams are open. */
+      trackSseConnection(req.app, +1);
+
       const abortController = new AbortController();
       const proxyHeartbeat = setInterval(() => {
         try { res.write(': keepalive\n\n'); try { res.flush?.(); } catch {} } catch { clearInterval(proxyHeartbeat); }
       }, 10_000);
-      req.on('close', () => { clearInterval(proxyHeartbeat); abortController.abort(); });
+      req.on('close', () => {
+        clearInterval(proxyHeartbeat);
+        trackSseConnection(req.app, -1);
+        abortController.abort();
+      });
 
       /* Token accounting for the built-in MiniMax provider. */
       const promptTokens = estimateMessageTokens(messages);
@@ -113,7 +100,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
           apiBase: provider.url,
           apiKey: provider.keyPlaintext,
           model: model || provider.model,
-          messages: finalMessages,
+          messages: messages,
           /* undefined → llm.js default (32 K) so a long streamed
              answer isn't silently truncated by a small per-model cap. */
           maxTokens: max_tokens,
@@ -186,7 +173,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         apiBase: provider.url,
         apiKey: provider.keyPlaintext,
         model: model || provider.model,
-        messages: finalMessages,
+        messages: messages,
         /* undefined → llm.js default (32 K) so a long response isn't
            silently truncated by a small per-model cap. */
         maxTokens: max_tokens,

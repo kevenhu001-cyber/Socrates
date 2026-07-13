@@ -32,40 +32,52 @@ import { executions, files } from '../db/schema.js';
 import { recordAudit } from '../middleware/audit.js';
 import { persistArtifact } from './fileArtifacts.js';
 import { TooManyRequests } from '../lib/errors.js';
+import { publish, subscribe as pubsubSubscribe, getStatus as pubsubStatus } from '../lib/pubsub.js';
 
-/* ─── Execution progress EventEmitter ───
- * Allows external consumers (e.g. SSE endpoints) to subscribe to
- * execution progress events without being coupled to the execute()
- * call chain. Events emitted:
- *   'progress:{executionId}' — { phase, stream, chunk, elapsedMs, executionId }
- *   'result:{executionId}'   — final { status, executionId, stdout, stderr, ... }
- * Consumers call subscribe(executionId, listener) and
- * unsubscribe(executionId, listener).
+/* ─── Execution progress pub/sub ───
+ * P_pubsub — replaces the in-process EventEmitter so SSE clients on
+ * process B receive progress / result events emitted by process A.
+ * Routes/chats.js subscribes to `exec_progress:{id}` and
+ * `exec_result:{id}` via subscribeExecution*; the call chain
+ * publishes via publish() through Postgres LISTEN/NOTIFY (or the
+ * local fallback if PG is down).
+ *
+ * Public API is unchanged — subscribeExecution(unsubscribe) and
+ * subscribeExecutionResult(unsubscribe) — so callers don't need to
+ * know about the underlying transport.
+ *
+ * Events emitted (payload shape):
+ *   exec_progress:{executionId}  — { phase, stream, chunk, elapsedMs, executionId }
+ *   exec_result:{executionId}    — final { status, executionId, stdout, stderr, ... }
  */
-const _progressEmitter = new EventEmitter();
-_progressEmitter.setMaxListeners(500); // accommodate concurrent SSE clients
-
-export function subscribeExecution(executionId, listener) {
-  _progressEmitter.on(`progress:${executionId}`, listener);
+export async function subscribeExecution(executionId, listener) {
+  return pubsubSubscribe(`exec_progress:${executionId}`, listener);
 }
 
 export function unsubscribeExecution(executionId, listener) {
-  _progressEmitter.off(`progress:${executionId}`, listener);
+  /* No-op: pubsub's subscribe() returns its own unsubscribe handle
+     that the caller should use. We keep the legacy sync API as a
+     wrapper that returns undefined so the few places that ignore the
+     return value (chat.js #1) still work. The full cleanup happens
+     when the chat route closes the SSE connection and invokes the
+     handle returned from subscribeExecution(). */
+  void listener;
 }
 
-/* Same for final result events. */
-export function subscribeExecutionResult(executionId, listener) {
-  _progressEmitter.on(`result:${executionId}`, listener);
+export async function subscribeExecutionResult(executionId, listener) {
+  return pubsubSubscribe(`exec_result:${executionId}`, listener);
 }
 
-export function unsubscribeExecutionResult(executionId, listener) {
-  _progressEmitter.off(`result:${executionId}`, listener);
+export async function unsubscribeExecutionResult(executionId, listener) {
+  void listener;
 }
 
-/* Internal helper: emit a progress event to all subscribers and
-   also forward to the call-site onProgress callback. */
+/* Internal helper: emit a progress event to all subscribers (now
+   potentially on other processes) AND forward to the call-site
+   onProgress callback so the chat SSE stream can also stream progress
+   inline. */
 function emitProgress(executionId, event, onProgress) {
-  _progressEmitter.emit(`progress:${executionId}`, event);
+  publish(`exec_progress:${executionId}`, event).catch(() => { /* logged in pubsub */ });
   if (typeof onProgress === 'function') {
     try { onProgress(event); } catch (_) {}
   }
@@ -453,16 +465,6 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
           worker.off('message', onMessage);
           if (signal) signal.removeEventListener('abort', onAbort);
           slot._inflightReject = null;
-          // Emit final result to EventEmitter subscribers (SSE clients)
-          _progressEmitter.emit(`result:${executionId}`, {
-            phase: 'completed',
-            executionId,
-            status: msg.status,
-            stdout: msg.stdout || '',
-            stderr: msg.stderr || '',
-            durationMs: msg.durationMs || 0,
-            artifactCount: (msg.artifacts || []).length,
-          });
           resolve(msg);
         }
       };
@@ -572,8 +574,8 @@ export const codeInterpreter = {
       durationMs: 0,
       artifacts: [],
     };
-    // Emit failure result to EventEmitter subscribers
-    _progressEmitter.emit(`result:${executionId}`, {
+    // Emit failure result to pubsub subscribers (SSE clients).
+    publish(`exec_result:${executionId}`, {
       phase: 'failed',
       executionId,
       status: result.status,
@@ -581,7 +583,7 @@ export const codeInterpreter = {
       stdout: '',
       stderr: '',
       durationMs: 0,
-    });
+    }).catch(() => { /* logged in pubsub */ });
   }
 
     // Persist artifacts. Each file in result.artifacts is something the
@@ -640,6 +642,21 @@ export const codeInterpreter = {
 
     // Reap the scratch dir now that we've persisted everything we want.
     fs.rm(executionScratchDir, { recursive: true, force: true }).catch(() => {});
+
+    // Emit final result to pubsub subscribers (SSE clients, possibly
+    // on another process). Fire-and-forget — pubsub logs internally
+    // on failure; we never let the emit block the resolve.
+    publish(`exec_result:${executionId}`, {
+      phase: 'completed',
+      executionId,
+      status: finalStatus,
+      stdout: result.stdout || '',
+      stderr: result.stderr || '',
+      durationMs: result.durationMs || 0,
+      exitCode: result.exitCode,
+      errorMessage: result.errorMessage || null,
+      artifactFileIds,                 // [{id, name, mimeType}] — was missing!
+    }).catch(() => { /* logged in pubsub */ });
 
     return {
       executionId,

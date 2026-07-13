@@ -40,7 +40,7 @@ import { fetchBatch } from './services/fetchBatch.js';
 import { getActiveApiKey } from './services/apiKey.js';
 import { getDb } from './db/index.js';
 import { sql } from 'drizzle-orm';
-import { startScheduledRefresh, refreshCache, getStatus } from './services/productContext.js';
+import { getStatus as getPubsubStatus } from './lib/pubsub.js';
 
 const app = express();
 
@@ -275,7 +275,15 @@ app.get('/api/health', async (_req, res) => {
   try {
     const db = getDb();
     await db.execute(sql`SELECT 1`);
-    res.json({ ok: true, db: 'connected', uptime: process.uptime() });
+    res.json({
+      ok: true,
+      db: 'connected',
+      uptime: process.uptime(),
+      pubsub: {
+        ...getPubsubStatus(),
+        transport: 'pg_notify',
+      },
+    });
   } catch {
     res.status(503).json({ ok: false, db: 'disconnected', uptime: process.uptime() });
   }
@@ -288,45 +296,19 @@ app.get('/api/hello', (_req, res) => {
   res.json({ message: 'hello' });
 });
 
-/* ─── Product Context (topodrive.top knowledge) ─── */
-/* GET  — status (auth required, admin only) */
-/* POST — manual refresh (auth required, admin only) */
-app.get('/api/product-context/status', requireAuth, (_req, res) => {
-  res.json(getStatus());
-});
-
-app.post('/api/product-context/refresh', requireAuth, async (req, res) => {
-  // Only admin users can trigger a manual refresh.
-  if (req.user?.role !== 'admin') {
-    return res.status(403).json({ code: 'FORBIDDEN', message: 'Admin access required' });
-  }
-  try {
-    const result = await refreshCache({ force: true });
-    res.json({
-      ok: true,
-      fetchedAt: result.fetchedAt,
-      pageCount: Object.keys(result.pages).length,
-      totalChars: Object.values(result.pages).reduce((sum, p) => sum + (p.length || 0), 0),
-    });
-  } catch (err) {
-    console.error('[product-context] manual refresh failed:', err.message);
-    res.status(500).json({ ok: false, error: err.message });
-  }
-});
-
 // Public configuration endpoint (no auth required).
 // Tells the SPA whether the built-in Beagle provider is available.
 // The raw key is NEVER sent to the client — the server proxies
 // all Beagle requests via /api/minimax/v1/chat/completions.
 app.get('/api/config', (_req, res) => {
-  // hasBeagleKey reflects the env var at process start. The SPA
-  // calls this on every boot to decide whether to surface the
-  // built-in provider — disabling the cache headers ensures a
-  // server restart (which can change MINIMAX_API_KEY) is visible
-  // on the next page load.
+  // hasBeagleKey reflects whether the built-in Beagle provider is
+  // available. Since Beagle now proxies to DeepSeek (or whatever
+  // backend is configured), it is always available — no env key
+  // required. The SPA calls this on every boot to decide whether
+  // to surface the built-in provider.
   res.set('Cache-Control', 'no-store');
   res.json({
-    hasBeagleKey: !!process.env.MINIMAX_API_KEY,
+    hasBeagleKey: true,
   });
 });
 
@@ -506,14 +488,5 @@ app.get(/^\/(?!api\/).*/, (_req, res, next) => {
    ──────────────────────────── */
 app.use(notFoundHandler);
 app.use(errorHandler);
-
-/* ─── Product Context: boot-time refresh + 6h cycle ───
-   Fire-and-forget: the first chat request after boot will either
-   have a ready cache (most cases) or will block briefly on the
-   first buildSystemContextBlock call while the initial refresh
-   completes.  Subsequent refreshes are truly background. */
-try { startScheduledRefresh(); } catch (e) {
-  console.error('[product-context] startScheduledRefresh failed:', e.message);
-}
 
 export default app;
