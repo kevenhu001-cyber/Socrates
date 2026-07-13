@@ -144,6 +144,10 @@ window.markProvidersFetched = markProvidersFetched;
 import { closeCheatsheet } from './ui/cheatsheet.js';
 window.closeCheatsheet = closeCheatsheet;
 
+/* ─── ui/confirm.js ─── */
+import { closeConfirm } from './ui/confirm.js';
+window.closeConfirm = closeConfirm;
+
 /* ─── ui/scroll.js ─── */
 import { scrollContainer } from './ui/scroll.js';
 window.scrollContainer = scrollContainer;

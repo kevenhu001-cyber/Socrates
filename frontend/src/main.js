@@ -10356,26 +10356,9 @@ function syncProfileWebSearchUI(){
   if(!track)return;
   if(webSearchOn){track.classList.add("on")}else{track.classList.remove("on")}
 }
-/* Confirm dialog helper — resolves true/false via a modal. */
-var _confirmResolve=null;
-function showConfirm(title,msg,isDanger){
-  return new Promise(function(resolve){
-    _confirmResolve=resolve;
-    document.getElementById("confirmTitle").textContent=title;
-    document.getElementById("confirmMsg").textContent=msg;
-    var okBtn=document.getElementById("confirmOkBtn");
-    okBtn.className="confirm-btn "+(isDanger?"danger":"primary");
-    okBtn.textContent=isDanger?t("common.delete"):t("common.ok");
-    okBtn.onclick=function(){closeConfirm(true)};
-    document.getElementById("confirmDialog").classList.remove("hidden");
-  });
-}
-function closeConfirm(resolveWith){
-  document.getElementById("confirmDialog").classList.add("hidden");
-  if(_confirmResolve){
-    _confirmResolve(resolveWith===undefined?false:resolveWith);_confirmResolve=null;
-  }
-}
+/* P_main-split — Wave 1a: showConfirm + closeConfirm extracted to ui/confirm.js. */
+import { showConfirm, closeConfirm } from './ui/confirm.js';
+
 /* Clear local conversations. */
 function confirmClearCache(){
   showConfirm("Clear conversations?","This removes all local chat history from this browser. Your account data stays on the server.",false).then(function(yes){
@@ -13450,7 +13433,6 @@ var _examSelectedTypes;
 window.addProvider = addProvider;
 window.clearSettings = clearSettings;
 window.closeCmdK = closeCmdK;
-window.closeConfirm = closeConfirm;
 window.closeProfile = closeProfile;
 window.closeSettings = closeSettings;
 window.closeShareModal = closeShareModal;
@@ -13565,7 +13547,6 @@ window.getCustomInstructionsString = getCustomInstructionsString;
 window.addProvider = addProvider;
 window.clearSettings = clearSettings;
 window.closeCmdK = closeCmdK;
-window.closeConfirm = closeConfirm;
 window.closeProfile = closeProfile;
 window.closeSettings = closeSettings;
 window.closeShareModal = closeShareModal;
