@@ -841,230 +841,12 @@ function formatRelativeTime(ts){
    client also fires a `globalSearch` request to extend the
    client-only results with cross-device / cross-account hits.
    ============================================================ */
-var _cmdKIndex=null;            /* fuse.js instance */
-var _cmdKIndexDocs=[];          /* raw docs, used to render snippets */
-var _cmdKResults=[];            /* last result list (used for keyboard nav) */
-var _cmdKSelected=0;             /* index of the highlighted row */
-var _cmdKRecent=[];             /* recent queries */
-try{_cmdKRecent=JSON.parse(localStorage.getItem("socrates-search-recent")||"[]")||[]}catch(_){_cmdKRecent=[]}
-
-function rebuildCmdKIndex(){
-  if(typeof Fuse==="undefined")return;
-  var docs=[];
-  /* Sessions: title + topic. */
-  (SERVER_SESSIONS||[]).forEach(function(s){
-    docs.push({
-      kind:"session",
-      id:s.id,
-      title:s.title||s.topic||"(untitled)",
-      topic:s.topic||"",
-      mode:s.mode||"tutor",
-      updatedAt:s.updated_at||s.updatedAt||0,
-      snippet:s.preview||(s.title||s.topic||"").slice(0,140)
-    });
-  });
-  /* Messages inside the active session. Older sessions get
-     loaded on demand when the user picks a session hit, so we
-     don't preload them. */
-  (state.session.messages||[]).forEach(function(m){
-    if(!m.rawText)return;
-    var role=m.role==="user"?"You":"Assistant";
-    docs.push({
-      kind:"message",
-      id:m.clientId||m.id,
-      sessionId:state.session.currentSessionId,
-      title:role+": "+(m.rawText||"").slice(0,80),
-      topic:state.session.topic||"",
-      snippet:(m.rawText||"").slice(0,200)
-    });
-  });
-  _cmdKIndexDocs=docs;
-  _cmdKIndex=new Fuse(docs,{
-    keys:["title","topic","snippet"],
-    threshold:0.4,
-    ignoreLocation:true,
-    minMatchCharLength:2,
-    includeMatches:true
-  });
-}
-
-function openCmdK(){
-  if(!CURRENT_USER)return;
-  if(!_cmdKIndex)rebuildCmdKIndex();
-  var overlay=document.getElementById("cmdKOverlay");
-  if(overlay)overlay.classList.remove("hidden");
-  var input=document.getElementById("cmdKInput");
-  if(input){input.value="";setTimeout(function(){input.focus()},0)}
-  /* If the user has recent queries, surface the most recent
-     so they can re-run with a single Enter. */
-  renderCmdKResults(_cmdKRecent.length?[
-    {kind:"recent",label:"Recent",items:_cmdKRecent.slice(0,5)}
-  ]:[]);
-  _cmdKResults=[];
-  _cmdKSelected=0;
-}
-function closeCmdK(){
-  var overlay=document.getElementById("cmdKOverlay");
-  if(overlay)overlay.classList.add("hidden");
-}
-function onCmdKInput(q){
-  q=(q||"").trim();
-  if(!q){
-    renderCmdKResults(_cmdKRecent.length?[
-      {kind:"recent",label:"Recent",items:_cmdKRecent.slice(0,5)}
-    ]:[]);
-    return;
-  }
-  var hits=_cmdKIndex?_cmdKIndex.search(q,{limit:20}):[];
-  /* Also fire a server search in the background. If the user
-     is on a slow link the local results are still useful. */
-  try{
-    apiFetch("/api/search",{
-      method:"POST",
-      body:{q:q,scope:"all",limit:20},
-      timeoutMs:4000
-    }).then(function(r){
-      if(r&&Array.isArray(r.hits)&&r.hits.length){
-        var serverHits=r.hits.map(function(h){
-          return{kind:"remote",id:h.id,sessionId:h.sessionId,title:h.title,snippet:h.snippet||""};
-        });
-        /* Merge remote hits after the local ones. */
-        var existing=document.getElementById("cmdKResults");
-        if(existing){
-          var remoteBlock=document.createElement("div");
-          remoteBlock.className="cmd-k-section";
-          remoteBlock.innerHTML='<div class="cmd-k-section-label">From your other devices</div>'+
-            serverHits.map(function(h,idx){
-              return '<div class="cmd-k-row" data-idx="'+(hits.length+idx)+'" data-kind="'+h.kind+'" data-id="'+esc(h.id)+'">'+
-                '<div class="cmd-k-row-title">'+esc(h.title)+'</div>'+
-                '<div class="cmd-k-row-snippet">'+esc(h.snippet)+'</div>'+
-              '</div>';
-            }).join("");
-          existing.appendChild(remoteBlock);
-        }
-      }
-    }).catch(function(){/* offline or 404 — ignore */});
-  }catch(_){}
-  _cmdKResults=hits;
-  _cmdKSelected=0;
-  renderCmdKResultsHits(q,hits);
-}
-function renderCmdKResultsHits(q,hits){
-  var html=[];
-  if(hits.length){
-    html.push('<div class="cmd-k-section"><div class="cmd-k-section-label">'+hits.length+' result'+(hits.length===1?"":"s")+' for "'+esc(q)+'"</div>');
-    hits.forEach(function(h,idx){
-      var item=h.item||h;
-      var meta=item.kind==="message"?"Message":(item.mode==="chat"?"Chat":"Tutor");
-      html.push(
-        '<div class="cmd-k-row '+(idx===_cmdKSelected?"selected":"")+'" data-idx="'+idx+'" data-kind="'+item.kind+'" data-id="'+esc(item.id||"")+'" onclick="openCmdKResult('+idx+')" onmouseenter="_cmdKSelected='+idx+';updateCmdKSelected()">'+
-          '<div class="cmd-k-row-title">'+esc(item.title||"")+'</div>'+
-          '<div class="cmd-k-row-snippet">'+esc(item.snippet||"")+'</div>'+
-          '<div class="cmd-k-row-meta">'+meta+'</div>'+
-        '</div>'
-      );
-    });
-    html.push('</div>');
-  }else{
-    html.push('<div class="cmd-k-empty">No results. Press <kbd>↵</kbd> to search on the server.</div>');
-  }
-  renderCmdKResultsHTML(html.join(""));
-}
-function renderCmdKResults(sections){
-  if(!sections.length){
-    renderCmdKResultsHTML('<div class="cmd-k-empty">Type to search across all your sessions.</div>');
-    return;
-  }
-  var html=sections.map(function(sec){
-    var rows=sec.items.map(function(it,idx){
-      return '<div class="cmd-k-row" data-recent="'+esc(it)+'" onclick="document.getElementById(\'cmdKInput\').value=\''+esc(it)+'\';onCmdKInput(\''+esc(it)+'\')">'+
-        '<div class="cmd-k-row-title">'+esc(it)+'</div>'+
-        '<div class="cmd-k-row-meta">Recent</div>'+
-      '</div>';
-    }).join("");
-    return '<div class="cmd-k-section"><div class="cmd-k-section-label">'+esc(sec.label)+'</div>'+rows+'</div>';
-  }).join("");
-  renderCmdKResultsHTML(html);
-}
-function renderCmdKResultsHTML(html){
-  var el=document.getElementById("cmdKResults");
-  if(el)el.innerHTML=html;
-}
-function updateCmdKSelected(){
-  var rows=document.querySelectorAll("#cmdKResults .cmd-k-row");
-  rows.forEach(function(r,i){
-    r.classList.toggle("selected",i===_cmdKSelected);
-    if(i===_cmdKSelected&&r.scrollIntoView){
-      r.scrollIntoView({block:"nearest"});
-    }
-  });
-}
-function openCmdKResult(idx){
-  var hit=_cmdKResults[idx];
-  if(!hit)return;
-  var item=hit.item||hit;
-  /* Persist the query for next time. */
-  var q=document.getElementById("cmdKInput").value.trim();
-  if(q){
-    _cmdKRecent=_cmdKRecent.filter(function(x){return x!==q});
-    _cmdKRecent.unshift(q);
-    _cmdKRecent=_cmdKRecent.slice(0,10);
-    try{localStorage.setItem("socrates-search-recent",JSON.stringify(_cmdKRecent))}catch(_){}
-  }
-  if(item.kind==="session"){
-    loadSession(item.id);
-  }else if(item.kind==="message"&&item.sessionId&&loadSession){
-    loadSession(item.sessionId);
-  }else if(item.kind==="remote"&&item.sessionId){
-    loadSession(item.sessionId);
-  }
-  closeCmdK();
-}
-function onCmdKKey(ev){
-  if(ev.key==="Escape"){
-    ev.preventDefault();
-    closeCmdK();
-  }else if(ev.key==="ArrowDown"){
-    ev.preventDefault();
-    if(_cmdKResults.length){
-      _cmdKSelected=(_cmdKSelected+1)%_cmdKResults.length;
-      updateCmdKSelected();
-    }
-  }else if(ev.key==="ArrowUp"){
-    ev.preventDefault();
-    if(_cmdKResults.length){
-      _cmdKSelected=(_cmdKSelected-1+_cmdKResults.length)%_cmdKResults.length;
-      updateCmdKSelected();
-    }
-  }else if(ev.key==="Enter"){
-    ev.preventDefault();
-    if(_cmdKResults.length){
-      openCmdKResult(_cmdKSelected);
-    }else{
-      var q=document.getElementById("cmdKInput").value.trim();
-      if(q){
-        /* No local hits — try the server endpoint as a last resort. */
-        apiFetch("/api/search",{
-          method:"POST",
-          body:{q:q,scope:"all",limit:20},
-          timeoutMs:5000
-        }).then(function(r){
-          if(r&&Array.isArray(r.hits)&&r.hits.length){
-            _cmdKResults=r.hits.map(function(h){
-              return{item:{kind:"remote",id:h.id,sessionId:h.sessionId,title:h.title,snippet:h.snippet||""}};
-            });
-            _cmdKSelected=0;
-            renderCmdKResultsHits(q,_cmdKResults);
-          }else{
-            showToast("No matches");
-          }
-        }).catch(function(){
-          showToast("Search failed");
-        });
-      }
-    }
-  }
-}
+/* P_main-split — Wave 1b: Cmd-K palette extracted to ui/cmdK.js. */
+import {
+  rebuildCmdKIndex, openCmdK, closeCmdK, onCmdKInput, onCmdKKey,
+  renderCmdKResults, renderCmdKResultsHits, renderCmdKResultsHTML,
+  openCmdKResult, updateCmdKSelected,
+} from './ui/cmdK.js';
 
 /* P_dup-session-race — when multiple saveCurrentSession() calls
    fire in quick succession (e.g. the several call sites inside
@@ -13432,7 +13214,6 @@ var _examSelectedTypes;
 /* ─── Expose all onclick-required functions on window ─── */
 window.addProvider = addProvider;
 window.clearSettings = clearSettings;
-window.closeCmdK = closeCmdK;
 window.closeProfile = closeProfile;
 window.closeSettings = closeSettings;
 window.closeShareModal = closeShareModal;
@@ -13546,7 +13327,6 @@ window.pickStreamBudgets = pickStreamBudgets;
 window.getCustomInstructionsString = getCustomInstructionsString;
 window.addProvider = addProvider;
 window.clearSettings = clearSettings;
-window.closeCmdK = closeCmdK;
 window.closeProfile = closeProfile;
 window.closeSettings = closeSettings;
 window.closeShareModal = closeShareModal;
@@ -13604,7 +13384,6 @@ window.finishDiagnostic = finishDiagnostic;
 window.proceedToTeaching = proceedToTeaching;
 window.loadSession = loadSession;
 window.nextDiagQuestion = nextDiagQuestion;
-window.onCmdKInput = onCmdKInput;
 window.onProjectChipClick = onProjectChipClick;
 window.onProjectDelete = onProjectDelete;
 window.onProjectEditorSave = onProjectEditorSave;
@@ -13638,7 +13417,6 @@ window.removeProvider = removeProvider;
 window.updateProviderField = updateProviderField;
 window.clearProjectFilter = clearProjectFilter;
 window.handleChatKey = handleChatKey;
-window.onCmdKKey = onCmdKKey;
 window.onCustomInstructionsChange = onCustomInstructionsChange;
 window.markAuthSuccess = markAuthSuccess;
 window.loadProjects = loadProjects;
