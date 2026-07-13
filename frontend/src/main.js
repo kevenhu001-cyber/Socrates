@@ -11775,25 +11775,8 @@ var _userMemories=[];   /* cached memories injected into system context */
      3. On fetch failure, leave _userMemories empty. Never keep the
         previous user's data around "for safety" — an empty list is
         safer than stale data. */
-function loadUserMemories(){
-  _userMemories=[];
-  if(!CURRENT_USER)return Promise.resolve();
-  try{
-    return apiFetch("/api/memory",{_authEndpoint:true}).then(function(r){
-      if(r&&Array.isArray(r)){
-        _userMemories=r.filter(function(m){return m.enabled!==false}).map(function(m){return m.text});
-      }
-      /* If r is not the expected shape, _userMemories stays empty. */
-    }).catch(function(e){
-      console.warn("[memories] load failed, leaving _userMemories empty:", e&&e.message);
-      _userMemories=[];
-    });
-  }catch(e){
-    console.warn("[memories] load threw, leaving _userMemories empty:", e&&e.message);
-    _userMemories=[];
-    return Promise.resolve();
-  }
-}
+/* P_main-split — Wave 2: loadUserMemories extracted to ui/profile.js. */
+import { loadUserMemories } from './ui/profile.js';
 
 /* Fetch user location from a free IP geolocation service. Cached
    in memory (and localStorage) so we don't hit the API every page load. */
@@ -12676,7 +12659,6 @@ window.loadProjects = loadProjects;
 window.renderProjects = renderProjects;
 window.refreshServerSessions = refreshServerSessions;
 window.refreshApiConfig = refreshApiConfig;
-window.loadUserMemories = loadUserMemories;
 window.renderRecents = renderRecents;
 window.renderMistakes = renderMistakes;
 window.updateMistakesBadge = updateMistakesBadge;
