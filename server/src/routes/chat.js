@@ -286,6 +286,7 @@ const ALLOWED_EXTRA_BODY_KEYS = new Set([
   'logit_bias',
   'seed',
   'response_format',   // { type: 'json_object' } etc — pass-through
+  'reasoning_split',   // MiniMax-M3: separate thinking into reasoning_content
 ]);
 function sanitizeExtraBody(raw) {
   if (!raw || typeof raw !== 'object') return undefined;

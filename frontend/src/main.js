@@ -6471,6 +6471,13 @@ function addStreamingMessage(opts){
     return true;
   }
   var pendingRender=null;
+  /* P_speed-cap — throttle streaming renders to ~12fps max so fast
+     reasoning models don't overwhelm the browser. formatMsgProgressive
+     cost grows linearly with response length; at 60fps this causes
+     visible layout jank on long responses. 80ms between actual render
+     passes (~12fps) keeps text smooth while cutting render work ~5x. */
+  var _lastRenderAt=0;
+  var _renderThrottleMs=80;
   /* Thinking pill (for chat-mode reasoning_content). Lazily created on
      the first onThinking(delta) callback so we don't add a pill for
      models that don't produce reasoning. Hidden when the user has
@@ -6814,6 +6821,17 @@ function teardownThinkStructure(){
        abort()/finish() usually wins, but a doRender body may already
        be running on this very tick. Bail before touching state.messages. */
     if(finished||_disposed)return;
+
+    /* P_speed-cap — cap render rate so fast reasoning models don't
+       overwhelm the browser. At 60fps the cost of formatMsgProgressive
+       grows linearly with response length, causing layout jank. An 80ms
+       cooldown (~12fps) keeps streaming smooth while cutting work ~5x. */
+    var _srNow=Date.now();
+    if(_srNow-_lastRenderAt<_renderThrottleMs){
+      pendingRender=requestAnimationFrame(function(){doRender()});
+      return;
+    }
+    _lastRenderAt=_srNow;
 
     /* P0 — chat-template artifact strip. The upstream LLM (Beagle,
      * DeepSeek, MiniMax M2, etc.) can leak <|im_start|>...<|im_end|>,
@@ -10960,7 +10978,7 @@ var BEAGLE_BUILT_IN={
   id:"beagle-built-in",
   label:"Beagle",
   url:"/api/minimax/v1",
-  model:"MiniMax-M2.7",
+  model:"MiniMax-M3",
   key:"",
   isBuiltIn:true,
   /* P_attachments-multimodal — built-in Beagle is a vision model;
@@ -11444,6 +11462,12 @@ async function refreshApiConfig(){
        by a previous version of the code — the built-in BEAGLE_BUILT_IN
        constant handles Beagle now via the nginx reverse proxy. */
     /* P_beagle-dedup — label 대신 id로 필터링하여 서버 label이 다를 때 중복 등록 방지 */
+    /* P_beagle-model-sync — save the server's model before filtering
+       out the Beagle row, so BEAGLE_BUILT_IN uses the server's model
+       (which may be updated via env var) rather than the hardcoded one. */
+    var serverBeagleModel=null;
+    var serverBeagleRow=rows.find(function(p){return p.id===BEAGLE_BUILT_IN.id});
+    if(serverBeagleRow)serverBeagleModel=serverBeagleRow.model;
     rows=rows.filter(function(p){return p.id!==BEAGLE_BUILT_IN.id});
     /* Mutate in place — see comment above the apiConfig export. */
     apiConfig.activeId=null;
@@ -11456,7 +11480,9 @@ async function refreshApiConfig(){
     /* Merge the built-in Beagle provider (frontend-only, no server registration). */
     var hasBeagle=apiConfig.providers.some(function(p){return p.isBuiltIn||p.id==="beagle-built-in"});
     if(!hasBeagle){
-      apiConfig.providers.push(Object.assign({},BEAGLE_BUILT_IN));
+      var beagle=Object.assign({},BEAGLE_BUILT_IN);
+      if(serverBeagleModel)beagle.model=serverBeagleModel;
+      apiConfig.providers.push(beagle);
     }
     /* A provider is "usable" if it is a built-in (server has the key)
        or if the server reports `hasKey: true`. The local `key` field is
@@ -11582,6 +11608,18 @@ function pickStreamBudgets(){
 function hasUsableActive(){
   var p=getActiveProvider();
   return !!(p && p.model && (p.isBuiltIn || p.hasKey));
+}
+
+/* P_minimax-reasoning-split — MiniMax-M3 exposes thinking content via
+   `reasoning_split: true` in extra_body, which separates chain-of-thought
+   into a `reasoning_content` SSE field. Unlike DeepSeek's reasoning_effort,
+   this is a MiniMax-specific parameter. */
+function isMiniMaxProvider(){
+  try{
+    var p=getActiveProvider();
+    if(!p)return false;
+    return /minimax/i.test((p.model||"").toLowerCase());
+  }catch(_){return false}
 }
 
 /* ============================================================
@@ -13924,6 +13962,9 @@ window.clearActiveTemplate = clearActiveTemplate;
    main.js-local functions that windowExports.js has not yet picked
    up (Phase C deferral), so re-bind here. */
 window.isReasoningProvider = isReasoningProvider;
+/* P_minimax-reasoning-split — stream.js checks this to decide whether
+   to send `reasoning_split: true` in extra_body for MiniMax models. */
+window.isMiniMaxProvider = isMiniMaxProvider;
 /* P_reasoning_budget — paired with the stream.js call at line 47.
    Without this, reasoning models (DeepSeek R1 / QwQ / MiniMax) hit
    the default 60 s heartbeat mid-think and the stream aborts. */

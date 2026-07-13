@@ -113,7 +113,14 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
          in the stack trace. Reading window.isReasoningProvider
          lazily keeps the source-level name visible in dev too. */
       if(typeof window.isReasoningProvider==="function" && window.isReasoningProvider()){
-        apiBody.reasoning_effort="high";
+        apiBody.reasoning_effort="medium";
+        /* P_minimax-reasoning-split — MiniMax-M3 needs reasoning_split
+           in extra_body to emit reasoning_content in SSE deltas.
+           Without this, its thinking is hidden even though adaptive
+           thinking is enabled by default. */
+        if(typeof window.isMiniMaxProvider==="function" && window.isMiniMaxProvider()){
+          apiBody.extra_body={reasoning_split:true};
+        }
       }
       resp=await apiFetchRaw("/api/chat/stream",{
         method:"POST",
