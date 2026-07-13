@@ -148,6 +148,12 @@ window.closeCheatsheet = closeCheatsheet;
 import { closeConfirm } from './ui/confirm.js';
 window.closeConfirm = closeConfirm;
 
+/* ─── ui/cmdK.js ─── */
+import { closeCmdK, onCmdKInput, onCmdKKey, openCmdK, rebuildCmdKIndex } from './ui/cmdK.js';
+window.closeCmdK = closeCmdK;
+window.onCmdKInput = onCmdKInput;
+window.onCmdKKey = onCmdKKey;
+
 /* ─── ui/scroll.js ─── */
 import { scrollContainer } from './ui/scroll.js';
 window.scrollContainer = scrollContainer;
