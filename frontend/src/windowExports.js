@@ -169,6 +169,12 @@ window.onPromptRowDelete = onPromptRowDelete;
 window.openPromptTemplateEditor = openPromptTemplateEditor;
 window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
 
+/* ─── ui/dangerConfirms.js ─── */
+import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from './ui/dangerConfirms.js';
+window.confirmClearCache = confirmClearCache;
+window.confirmClearSettings = confirmClearSettings;
+window.confirmDeleteAccount = confirmDeleteAccount;
+
 /* ─── ui/scroll.js ─── */
 import { scrollContainer } from './ui/scroll.js';
 window.scrollContainer = scrollContainer;
