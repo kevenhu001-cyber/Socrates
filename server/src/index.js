@@ -66,6 +66,56 @@ async function main() {
     }
   })();
 
+  // ── Warm up LLM provider connection (MiniMax) ──
+  // Send a minimal chat completion request to the upstream provider
+  // so the model is loaded into memory and the HTTP/2 connection pool
+  // is established before any user request arrives. Without this, the
+  // first user of every server restart pays the cold-start penalty
+  // (5-15s for model loading), which the frontend can't distinguish
+  // from a stuck connection.
+  // Uses the built-in provider key from the DB (seeded on a previous
+  // deploy with MINIMAX_API_KEY set), not the env var directly.
+  (async () => {
+    try {
+      const { getActiveApiKey } = await import('./services/apiKey.js');
+      const provider = await getActiveApiKey(null); // null = global built-in
+      if (!provider || !provider.keyPlaintext) {
+        console.log('[llm-warmup] No built-in provider key available — skipping');
+        return;
+      }
+      const baseUrl = (provider.url || '').replace(/\/+$/, '');
+      const model = provider.model || 'MiniMax-M3';
+      try {
+        const start = Date.now();
+        const resp = await fetch(`${baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${provider.keyPlaintext}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: '.' }],
+            max_tokens: 1,
+            temperature: 0,
+            stream: false,
+          }),
+          signal: AbortSignal.timeout(60000),
+        });
+        if (resp.ok) {
+          console.log(`[llm-warmup] Provider warmed in ${Date.now() - start}ms`);
+        } else {
+          const text = await resp.text().catch(() => '');
+          console.warn(`[llm-warmup] Warmup returned ${resp.status}: ${text.slice(0, 100)}`);
+        }
+      } catch (err) {
+        console.warn(`[llm-warmup] Skipped (${err.message || err}) — first request may be slow`);
+      }
+    } catch (err) {
+      console.warn(`[llm-warmup] Skipped (import error: ${err.message})`);
+    }
+  })();
+
   // ── Start periodic DB cleanup ──
   startExpiredCleanup();
 
