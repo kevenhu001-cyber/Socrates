@@ -11740,347 +11740,12 @@ function renderSourceDetail(s, idx){
   return html;
 }
 
-function openSettings(){
-  document.getElementById("settingsOverlay").classList.remove("hidden");
-  renderProviderList();
-  syncSettingsUI();
-  var stgEl=document.getElementById("stgStatus");
-  stgEl.innerHTML="";
-  stgEl.className="settings-status";
-}
-function closeSettings(){
-  document.getElementById("settingsOverlay").classList.add("hidden");
-}
-function toggleAPI(){
-  /* Reserved for future — current code always uses the active provider if it has key+model. */
-  syncSettingsUI();
-}
-function syncSettingsUI(){
-  var track=document.getElementById("stgToggleTrack");
-  if(!track)return;
-  if(hasUsableActive())track.classList.add("on");else track.classList.remove("on");
-}
-function renderProviderList(){
-  var cont=document.getElementById("providerList");
-  if(!cont)return;
-  var userProviders=apiConfig.providers.filter(function(p){return !p.isBuiltIn});
-  if(!userProviders.length){
-    cont.innerHTML='<div class="provider-empty">No models yet. Click "+ Add" to configure your first one.</div>';
-    return;
-  }
-  var html="";
-  userProviders.forEach(function(p){
-    var isActive=p.id===apiConfig.activeId;
-    html+='<div class="provider-row'+(isActive?" active":"")+'" data-id="'+esc(p.id||"")+'">';
-    html+='<button class="provider-active-btn" onclick="setActiveProvider(\''+esc(p.id||"")+'\')" title="'+(isActive?"Active model":"Set as active")+'">'+(isActive?"●":"○")+'</button>';
-    html+='<div class="provider-fields">';
-    html+='<input class="settings-input" name="providerLabel" aria-label="Provider label" placeholder="'+t("provider.placeholderLabel")+'" value="'+esc(p.label||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'label\',this.value)">';
-    html+='<input class="settings-input" name="providerUrl" aria-label="Provider base URL" placeholder="'+t("provider.placeholderUrl")+'" value="'+esc(p.url||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'url\',this.value)">';
-    /* The server list endpoint never returns the API key (it stays
-       encrypted on the server). For existing saved providers, show a
-       masked placeholder so the user knows a key is configured. */
-    var displayKey=p.key;
-    if(!displayKey&&p.id.indexOf("new-")!==0)displayKey="••••••••";
-    html+='<form style="display:contents" onsubmit="return false"><input type="text" name="username" autocomplete="username" style="display:none" aria-hidden="true"><input class="settings-input" name="providerKey" aria-label="Provider API key" type="password" autocomplete="new-password" placeholder="'+t("provider.placeholderKey")+'" value="'+esc(displayKey)+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'key\',this.value)"></form>';
-    html+='<input class="settings-input" name="providerModel" aria-label="Provider model ID" placeholder="'+t("provider.placeholderModel")+'" value="'+esc(p.model||"")+'" oninput="updateProviderField(\''+esc(p.id||"")+'\',\'model\',this.value)">';
-    /* P_attachments-multimodal — checkbox toggling the
-     * user-controlled vision flag. Only renders for non-built-in
-     * providers; the built-in Beagle row is filtered out above.
-     * Uses data-i18n-* so the label switches with the language
-     * toggle. The change handler mutates `p.isMultimodal` via the
-     * existing updateProviderField() mutator. */
-    html+='<label class="provider-multimodal" title="'+esc(t("provider.multimodalHint")||"")+'">'
-       +'<input type="checkbox" name="providerMultimodal" aria-label="'+esc(t("provider.multimodal")||"Multimodal")+'"'
-       +(p.isMultimodal?' checked':'')
-       +' onchange="updateProviderField(\''+esc(p.id||"")+'\',\'isMultimodal\',this.checked)">'
-       +'<span data-i18n-key="provider.multimodal">Multimodal (vision-capable)</span>'
-       +'</label>';
-    html+='</div>';
-    html+='<button class="provider-del" onclick="removeProvider(\''+esc(p.id||"")+'\')" title="Remove">×</button>';
-    html+='</div>';
-  });
-  cont.innerHTML=html;
-}
-/* Tier-based API key limits, mirroring server/src/routes/apiKeys.js */
-var TIER_KEY_LIMITS={diophantus:2,riemann:10,descartes:50,euclid:999};
-
-function addProvider(){
-  /* Enforce tier-based API key limit before inserting a new row. */
-  var tier=CURRENT_USER&&CURRENT_USER.tier||"diophantus";
-  var maxKeys=TIER_KEY_LIMITS[tier]||TIER_KEY_LIMITS.diophantus;
-  var existingNonBuiltin=apiConfig.providers.filter(function(p){return !p.isBuiltIn});
-  var existingSaved=existingNonBuiltin.filter(function(p){return p.id.indexOf("new-")!==0});
-  if(existingSaved.length>=maxKeys){
-    var status=document.getElementById("stgStatus");
-    if(status){
-      status.className="settings-status warn";
-      status.textContent=t("settings.apiKeyLimit").replace("{tier}",tier).replace("{max}",maxKeys);
-    }
-    return;
-  }
-  /* Insert a placeholder row locally so the user can fill in the form,
-     then commit to the server on Save. The placeholder carries the
-     fields label / url / model + a temporary key the user types. */
-  var p={
-    id:"new-"+Date.now().toString(36),
-    label:"New Model",
-    url:"https://api.openai.com/v1",
-    key:"",
-    model:"",
-    /* P_attachments-multimodal — default off for new custom
-     * providers; user opts in via the checkbox below. */
-    isMultimodal:false,
-    isPending:true
-  };
-  apiConfig.providers.push(p);
-  if(!apiConfig.activeId)apiConfig.activeId=p.id;
-  renderProviderList();
-  syncModelPills();
-  syncSettingsUI();
-}
-function removeProvider(id){
-  if(!CURRENT_USER)return;
-  /* Prevent removing the built-in Beagle provider. */
-  var target=apiConfig.providers.find(function(p){return p.id===id});
-  if(!target||target.isBuiltIn)return;
-  /* If this row was never saved server-side, just drop it from memory. */
-  if(id.indexOf("new-")===0){
-    apiConfig.providers=apiConfig.providers.filter(function(p){return p.id!==id});
-    if(apiConfig.activeId===id)apiConfig.activeId=apiConfig.providers.length?apiConfig.providers[0].id:null;
-    cacheProviderKeys();renderProviderList();syncModelPills();syncSettingsUI();
-    return;
-  }
-  apiFetch("/api/api-key/"+encodeURIComponent(id),{method:"DELETE"}).then(function(){
-    apiConfig.providers=apiConfig.providers.filter(function(p){return p.id!==id});
-    if(apiConfig.activeId===id)apiConfig.activeId=apiConfig.providers.length?apiConfig.providers[0].id:null;
-    cacheProviderKeys();renderProviderList();syncModelPills();syncSettingsUI();
-  }).catch(function(e){
-    /* Surface the delete failure in the settings status so the user
-       can retry instead of being silently left with a phantom row
-       that looks deleted but still exists server-side. */
-    var status=document.getElementById("stgStatus");
-    if(status){
-      var parts=[];
-      if(e&&e.status)parts.push("HTTP "+e.status);
-      if(e&&e.code)parts.push(e.code);
-      parts.push((e&&e.message)||String(e));
-      status.className="settings-status warn";
-      status.textContent=t("settings.saveFailed").replace("{msg}",parts.join(" · "));
-    }
-    console.warn("[api-key] delete failed:",e.message);
-  });
-}
-function setActiveProvider(id){
-  if(!CURRENT_USER)return;
-  var target=apiConfig.providers.find(function(p){return p.id===id});
-  if(!target)return;
-  /* Save the choice locally FIRST so it survives a page reload even
-     if the server PATCH hasn't completed yet. */
-  apiConfig.activeId=id;
-  saveLastActiveId(id);
-  if(target.isBuiltIn){
-    /* Deactivate any user-controlled active providers on the server
-       so a page refresh doesn't re-activate a stale isActive flag
-       and silently switch back from Beagle. */
-    apiConfig.providers.forEach(function(p){
-      if(p.id.indexOf("new-")===0||p.isBuiltIn||!p.isActive)return;
-      apiFetch("/api/api-key/"+encodeURIComponent(p.id),{method:"PATCH",body:{isActive:false}}).catch(function(){});
-    });
-    apiConfig.providers.forEach(function(p){p.isActive=(p.id===id)});
-    renderProviderList();syncModelPills();syncSettingsUI();syncChatModel();
-    return;
-  }
-  apiFetch("/api/api-key/"+encodeURIComponent(id),{method:"PATCH",body:{isActive:true}}).then(function(){
-    apiConfig.providers.forEach(function(p){p.isActive=(p.id===id)});
-    renderProviderList();syncModelPills();syncSettingsUI();syncChatModel();
-  }).catch(function(e){console.warn("[api-key] set active failed:",e.message)});
-}
-
-/* Remember the last provider the user picked across page reloads.
-   The server's `isActive` flag is the authoritative source, but if
-   the server hasn't marked any provider (e.g. a brand-new install
-   or a row whose key never finished saving) this local fallback
-   keeps the user's last choice instead of switching to BEAGLE. */
-var LAST_ACTIVE_ID_KEY="socrates-last-active-id";
-function saveLastActiveId(id){
-  if(!id)return;
-  try{localStorage.setItem(LAST_ACTIVE_ID_KEY,id);console.log("[last-active] saved via localStorage:",id)}catch(e){
-    console.warn("[last-active] localStorage save failed, trying cookie:",e&&e.message);
-    try{document.cookie=LAST_ACTIVE_ID_KEY+"="+encodeURIComponent(id)+";path=/;max-age=31536000"}catch(_){}
-  }
-}
-function loadLastActiveId(){
-  try{var v=localStorage.getItem(LAST_ACTIVE_ID_KEY);if(v)return v}catch(_){}
-  /* Fallback: try cookie (works in Chrome incognito / strict partitioning). */
-  try{
-    var m=document.cookie.match(new RegExp("(?:^|; )"+LAST_ACTIVE_ID_KEY+"=([^;]*)"));
-    if(m)return decodeURIComponent(m[1]);
-  }catch(_){}
-  return null;
-}
-function updateProviderField(id,field,value){
-  var p=apiConfig.providers.find(function(x){return x.id===id});
-  if(!p)return;
-  /* P_key-placeholder-pollution — renderProviderList uses
-     "••••••••" as a MASK for saved providers' key field (the real
-     key never leaves the server). Without this guard, the password
-     input's oninput fires every time the user touches the row (or
-     the modal re-renders) and writes the mask back into p.key,
-     which then gets POSTed as a real API key on the next save.
-     That corrupts the stored key and causes "model unavailable"
-     on the next request. Only treat the value as a real key edit
-     if the user actually typed something other than the mask. */
-  if(field === "key" && value === "••••••••") return;
-  p[field]=value;
-  if(field==="label"||field==="model")syncModelPills();
-  if(field==="key"||field==="model")syncSettingsUI();
-}
-function saveSettings(){
-  var status=document.getElementById("stgStatus");
-  if(!CURRENT_USER){
-    status.className="settings-status warn";
-    status.textContent=t("settings.signInFirst");
-    return;
-  }
-  status.className="settings-status";
-  status.textContent=t("common.saving");
-  (async function(){
-    try{
-      /* Drop any duplicate "new-..." placeholder rows. A duplicate is a
-         second+ row whose (label, url, model) tuple already exists among
-         earlier rows. This prevents a stray extra "+ Add" click from
-         creating a duplicate server row on Save. */
-      var seen={};
-      var deduped=[];
-      apiConfig.providers.forEach(function(p){
-        var key=(p.label||"")+"|"+(p.url||"")+"|"+(p.model||"");
-        if(seen[key])return;
-        seen[key]=true;
-        deduped.push(p);
-      });
-      apiConfig.providers=deduped;
-
-      /* Drop entirely empty new rows (user clicked "+ Add" but never
-         filled in model / key). These would fail validation with a
-         confusing "missing URL or model" message. */
-      apiConfig.providers=apiConfig.providers.filter(function(p){
-        return !(p.id.indexOf("new-")===0 && !p.model && !p.key);
-      });
-
-      /* Validate every row. */
-      for(var i=0;i<apiConfig.providers.length;i++){
-        var p=apiConfig.providers[i];
-        if(!p.model||!p.url){
-          status.className="settings-status warn";
-          status.textContent=t("settings.rowMissing").replace("{n}",(i+1));
-          return;
-        }
-        if(p.id.indexOf("new-")===0 && !p.key){
-          status.className="settings-status warn";
-          status.textContent=t("settings.rowMissingKey").replace("{n}",(i+1));
-          return;
-        }
-      }
-      for(var j=0;j<apiConfig.providers.length;j++){
-        var p=apiConfig.providers[j];
-        /* Skip built-in providers (Beagle) — they are not stored server-side. */
-        if(p.isBuiltIn)continue;
-        if(p.id.indexOf("new-")===0){
-          /* P_attachments-multimodal — include the user-controlled
-           * vision flag in the create payload so the API key is
-           * persisted with the user's preference from the start.
-           * Coerce to strict boolean so the server-side `=== true`
-           * check in routes/apiKeys.js accepts it. */
-          var body={label:p.label||p.model,url:p.url,model:p.model,key:p.key||"",isMultimodal:p.isMultimodal===true};
-          var r=await apiFetch("/api/api-key",{method:"POST",body:body});
-          p.id=r.id;p.isActive=true;
-        }else{
-          /* P_attachments-multimodal — include the flag in the
-           * PATCH so editing the checkbox and clicking Save
-           * persists the change. Server guards built-in rows so
-           * it's safe to send unconditionally. */
-          var patch={label:p.label||p.model,url:p.url,model:p.model,isMultimodal:p.isMultimodal===true};
-          if(p.key){patch.key=p.key}
-          await apiFetch("/api/api-key/"+encodeURIComponent(p.id),{method:"PATCH",body:patch});
-        }
-      }
-      /* P4.4 — After saving, the old code cached keys to localStorage.
-         That cache has been REMOVED in the security hardening pass; the
-         server is now the sole store. cacheProviderKeys() is a no-op
-         kept for compatibility, and the API key input is intentionally
-         cleared on next refresh so the user must re-enter to change it. */
-      cacheProviderKeys();
-      /* Refresh from server and mark the most-recently-saved one as active. */
-      var savedIds=apiConfig.providers.filter(function(p){return p.id.indexOf("new-")!==0}).map(function(p){return p.id});
-      await refreshApiConfig();
-      var lastSaved=savedIds[savedIds.length-1];
-      if(lastSaved){
-        apiConfig.providers.forEach(function(p){p.isActive=(p.id===lastSaved)});
-        apiConfig.activeId=lastSaved;
-        /* Persist the activation to the server. Without this, the next page
-           load finds no row marked active and the UI silently falls back to
-           mock even though the key exists. Fire-and-forget; UI already shows
-           the new active state. */
-        try{await apiFetch("/api/api-key/"+encodeURIComponent(lastSaved),{method:"PATCH",body:{isActive:true}})}catch(_){}
-      }
-      renderProviderList();syncModelPills();syncSettingsUI();
-      var active=getActiveProvider();
-      if(active&&active.model){
-        status.className="settings-status ok";
-        status.textContent=t("settings.saved").replace("{name}",active.label||active.model);
-      }else if(apiConfig.providers.length){
-        status.className="settings-status warn";
-        status.textContent=t("settings.savedFallback");
-      }else{
-        status.className="settings-status warn";
-        status.textContent=t("settings.noModels");
-      }
-      setTimeout(function(){closeSettings()},900);
-    }catch(e){
-      console.error("[saveSettings] error:",e,"stack:",e&&e.stack);
-      /* Surface WHY it failed — the bare e.message often just says
-         "HTTP 400" or "CSRF token required" with no field-level
-         detail. Include the status code, the server's `code` field
-         (e.g. BAD_REQUEST, FORBIDDEN) and the message so the user
-         can fix the right thing. */
-      var status2=(e&&e.status)||"";
-      var code2=(e&&e.code)||"";
-      var msg2=(e&&e.message)||String(e)||t("settings.unknownError");
-      var parts=[];
-      if(status2)parts.push("HTTP "+status2);
-      if(code2)parts.push(code2);
-      if(msg2)parts.push(msg2);
-      status.className="settings-status warn";
-      status.textContent=t("settings.saveFailed").replace("{msg}",parts.join(" · "));
-    }
-  })();
-}
-function clearSettings(){
-  if(!CURRENT_USER)return;
-  /* Delete all server-side providers one by one. */
-  (async function(){
-    /* Same loop-shape fix as confirmClearSettings: skip built-in providers
-       and isolate each delete so a single failure doesn't strand the rest. */
-    for(var i=0;i<apiConfig.providers.length;i++){
-      var p=apiConfig.providers[i];
-      if(p.isBuiltIn||p.id==="beagle-built-in")continue;
-      if(p.id.indexOf("new-")!==0){
-        try{
-          await apiFetch("/api/api-key/"+encodeURIComponent(p.id),{method:"DELETE"});
-        }catch(e){console.warn("[api-key] clear: delete "+p.id+" failed:",e.message)}
-      }
-    }
-    /* Mutate in place — see comment above the apiConfig export. */
-    apiConfig.activeId=null;
-    apiConfig.providers=[Object.assign({},BEAGLE_BUILT_IN)];
-    try{localStorage.removeItem("socrates-provider-keys")}catch(e){}
-    try{localStorage.removeItem(LAST_ACTIVE_ID_KEY)}catch(e){}
-    renderProviderList();syncModelPills();syncSettingsUI();
-    var status=document.getElementById("stgStatus");
-    status.className="settings-status ok";
-    status.textContent=t("settings.cleared");
-  })();
-}
+/* P_main-split — Wave 2c: settings + provider management extracted to ui/settings.js. */
+import {
+  openSettings, closeSettings, toggleAPI, syncSettingsUI,
+  renderProviderList, addProvider, removeProvider,
+  setActiveProvider, updateProviderField, saveSettings, clearSettings,
+} from './ui/settings.js';
 
 /* ============================================================
    API CALL (replaces mock when enabled)
@@ -12839,21 +12504,16 @@ async function generateFollowUpStream(answer,node,domain,onDelta,onThinking){
 var _examSelectedTypes;
 
 /* ─── Expose all onclick-required functions on window ─── */
-window.addProvider = addProvider;
-window.clearSettings = clearSettings;
-window.closeSettings = closeSettings;
 window.closeShareModal = closeShareModal;
 window.closeUsageModal = closeUsageModal;
 window.copyShareLink = copyShareLink;
 window.createShareLink = createShareLink;
-window.openSettings = openSettings;
 window.openShareModal = openShareModal;
 window.openUsageModal = openUsageModal;
 window.resendAuthCode = resendAuthCode;
 window.resendVerification = resendVerification;
 window.resetApp = resetApp;
 window.revokeShareLink = revokeShareLink;
-window.saveSettings = saveSettings;
 window.selectShareVis = selectShareVis;
 window.setAuthError = setAuthError;
 window.showAuthCodeLogin = showAuthCodeLogin;
@@ -12873,7 +12533,6 @@ window.askChatTurn = askChatTurn;
 window.switchAuthTab = switchAuthTab;
 window.switchTab = switchTab;
 window.syncSidebarBtns = syncSidebarBtns;
-window.toggleAPI = toggleAPI;
 window.toggleAppLang = toggleAppLang;
 window.toggleDisplayPrefs = toggleDisplayPrefs;
 window.toggleExtensionsPicker = toggleExtensionsPicker;
@@ -12943,9 +12602,6 @@ window.isMiniMaxProvider = isMiniMaxProvider;
    Without this, reasoning models (DeepSeek R1 / QwQ / MiniMax) hit
    the default 60 s heartbeat mid-think and the stream aborts. */
 window.pickStreamBudgets = pickStreamBudgets;
-window.addProvider = addProvider;
-window.clearSettings = clearSettings;
-window.closeSettings = closeSettings;
 window.closeShareModal = closeShareModal;
 window.copyShareLink = copyShareLink;
 window.createShareLink = createShareLink;
@@ -12968,18 +12624,15 @@ window.loadSharedExamSession = loadSharedExamSession;
 // window.exitAgentMode = exitAgentMode;   // unimplemented
 // window.openAgentView  = openAgentView;  // unimplemented
 // window.deleteAgentRun = deleteAgentRun; // unimplemented
-window.openSettings = openSettings;
 window.openShareModal = openShareModal;
 window.resetApp = resetApp;
 window.revokeShareLink = revokeShareLink;
-window.saveSettings = saveSettings;
 window.selectShareVis = selectShareVis;
 window.signOut = signOut;
 window.startSession = startSession;
 window.submitChatMessage = submitChatMessage;
 window.switchTab = switchTab;
 window.syncSidebarBtns = syncSidebarBtns;
-window.toggleAPI = toggleAPI;
 window.toggleAppLang = toggleAppLang;
 window.closeProjectEditor = closeProjectEditor;
 window.closeTagEditor = closeTagEditor;
@@ -13005,10 +12658,8 @@ window.pickProjectColor = pickProjectColor;
 window.prevDiagQuestion = prevDiagQuestion;
 window.restoreSession = restoreSession;
 window.selectDiag = selectDiag;
-window.setActiveProvider = setActiveProvider;
 window.toggleKBDetail = toggleKBDetail;
 window.togglePinSession = togglePinSession;
-window.removeProvider = removeProvider;
 /* P_input-fields-not-persisted — renderProviderList builds the
  * settings provider-row inputs with inline oninput="updateProviderField(...)".
  * Inline HTML attribute handlers are resolved on the global object
@@ -13018,7 +12669,6 @@ window.removeProvider = removeProvider;
  * (silently consumed by the browser since the oninput is an
  * attribute handler, not a try/catch), so the typed value was
  * discarded and saveSettings POSTed an empty row. Expose it. */
-window.updateProviderField = updateProviderField;
 window.clearProjectFilter = clearProjectFilter;
 window.handleChatKey = handleChatKey;
 window.markAuthSuccess = markAuthSuccess;
@@ -13030,12 +12680,10 @@ window.loadUserMemories = loadUserMemories;
 window.renderRecents = renderRecents;
 window.renderMistakes = renderMistakes;
 window.updateMistakesBadge = updateMistakesBadge;
-window.renderProviderList = renderProviderList;
 window.syncAppModeUI = syncAppModeUI;
 window.syncSidebarForMode = syncSidebarForMode;
 window.getChatIdFromURL = getChatIdFromURL;
 window.setChatIdInURL = setChatIdInURL;
-window.syncSettingsUI = syncSettingsUI;
 window.toggleShareBtn = toggleShareBtn;
 window.pushChatIdToURL = pushChatIdToURL;
 window.toggleChatTopBarEls = toggleChatTopBarEls;
