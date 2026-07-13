@@ -157,9 +157,31 @@ function syncProfileWebSearchUI() {
   if (window.webSearchOn) { track.classList.add("on"); } else { track.classList.remove("on"); }
 }
 
+/* ─── Cross-session memory loader ─── */
+
+function loadUserMemories() {
+  window._userMemories = [];
+  if (!window.CURRENT_USER) return Promise.resolve();
+  try {
+    return window.apiFetch("/api/memory", { _authEndpoint: true }).then(function (r) {
+      if (r && Array.isArray(r)) {
+        window._userMemories = r.filter(function (m) { return m.enabled !== false; }).map(function (m) { return m.text; });
+      }
+    }).catch(function (e) {
+      console.warn("[memories] load failed, leaving _userMemories empty:", e && e.message);
+      window._userMemories = [];
+    });
+  } catch (e) {
+    console.warn("[memories] load threw, leaving _userMemories empty:", e && e.message);
+    window._userMemories = [];
+    return Promise.resolve();
+  }
+}
+
 export {
   renderUserFooter, openProfile, closeProfile,
   loadCustomInstructions, saveCustomInstructions, loadCustomInstructionsIntoUI,
   onCustomInstructionsChange, buildCustomInstructionsString, updateInstSaveState,
   getCustomInstructionsString, toggleProfileWebSearch, syncProfileWebSearchUI,
+  loadUserMemories,
 };

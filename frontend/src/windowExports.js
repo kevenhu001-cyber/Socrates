@@ -188,7 +188,8 @@ window.confirmClearSettings = confirmClearSettings;
 window.confirmDeleteAccount = confirmDeleteAccount;
 
 /* ─── ui/profile.js ─── */
-import { closeProfile, onCustomInstructionsChange, toggleProfileWebSearch, renderUserFooter, openProfile } from './ui/profile.js';
+import { closeProfile, onCustomInstructionsChange, toggleProfileWebSearch, renderUserFooter, openProfile, loadUserMemories } from './ui/profile.js';
+window.loadUserMemories = loadUserMemories;
 window.closeProfile = closeProfile;
 window.onCustomInstructionsChange = onCustomInstructionsChange;
 window.toggleProfileWebSearch = toggleProfileWebSearch;
