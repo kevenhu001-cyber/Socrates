@@ -169,6 +169,18 @@ window.onPromptRowDelete = onPromptRowDelete;
 window.openPromptTemplateEditor = openPromptTemplateEditor;
 window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
 
+/* ─── ui/settings.js ─── */
+import { openSettings, closeSettings, toggleAPI, syncSettingsUI, renderProviderList, addProvider, removeProvider, setActiveProvider, updateProviderField, saveSettings, clearSettings } from './ui/settings.js';
+window.openSettings = openSettings;
+window.closeSettings = closeSettings;
+window.toggleAPI = toggleAPI;
+window.addProvider = addProvider;
+window.removeProvider = removeProvider;
+window.setActiveProvider = setActiveProvider;
+window.updateProviderField = updateProviderField;
+window.saveSettings = saveSettings;
+window.clearSettings = clearSettings;
+
 /* ─── ui/dangerConfirms.js ─── */
 import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from './ui/dangerConfirms.js';
 window.confirmClearCache = confirmClearCache;
