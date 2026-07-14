@@ -234,9 +234,15 @@ document.addEventListener("click",function(e){
 /* ============================================================
    EXTENSIONS PICKER — multi-select dropdown
    ============================================================ */
+/* P_extensions-simplify — the Extension panel used to expose four
+ * toggles. Web Search and Show AI thinking are now backend-default-on
+ * features; the user can still reach them through the profile modal
+ * (legacy) but the Extension panel stays focused on what the user
+ * actively controls each turn:
+ *   - Tutor mode (chat ↔ tutor switch)
+ *   - Extensive thinking (verbose scholar prompt ↔ concise prompt)
+ *   - Generate exam (action button, no .on state) */
 var EXTENSIONS=[
-  {key:"webSearch",   name:"Web search",
-   on:window.webSearchOn, onChange:function(v){window.webSearchOn=v;try{localStorage.setItem("socrates-websearch",JSON.stringify(window.webSearchOn))}catch(e){} syncExtensionsUI();}},
   {key:"tutorMode",   name:"Tutor mode",
    on:window.appMode==="tutor", onChange:function(v){
      /* P_tutor-toggle — Extensions 메뉴에서 Tutor 모드를 토글할 때
@@ -252,8 +258,12 @@ var EXTENSIONS=[
      }
      syncExtensionsUI();
    }},
-  {key:"thinkingMode",name:"Show AI thinking",
-   on:window.thinkingOn, onChange:function(v){window.thinkingOn=v;try{localStorage.setItem("socrates-thinking",JSON.stringify(window.thinkingOn))}catch(e){} syncExtensionsUI();}},
+  {key:"extensiveThinking", name:"Extensive thinking",
+   on:!!window.extensiveThinkingOn, onChange:function(v){
+     window.extensiveThinkingOn=v;
+     try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch(e){}
+     syncExtensionsUI();
+   }},
   {key:"exam",         name:"Generate exam",
    on:false, onChange:function(){window.openExamModal(); syncExtensionsUI();}},
 ];
@@ -290,9 +300,13 @@ function countActiveExtensions(){
   return EXTENSIONS.filter(function(e){return e.on}).length;
 }
 function syncExtensionsUI(){
-  EXTENSIONS[0].on=window.webSearchOn;
-  EXTENSIONS[1].on=(window.appMode==="tutor");
-  EXTENSIONS[2].on=window.thinkingOn;
+  /* P_extensions-simplify — only the user-facing toggles (tutorMode,
+   * extensiveThinking) need .on re-synced from window state. The
+   * exam entry is an action button; its .on stays false. */
+  EXTENSIONS.forEach(function(ext){
+    if(ext.key==="tutorMode") ext.on = (window.appMode==="tutor");
+    else if(ext.key==="extensiveThinking") ext.on = !!window.extensiveThinkingOn;
+  });
   renderExtensionsMenu();
   var trigger=document.getElementById("extensionsTrigger");
   var label=document.getElementById("extensionsLabel");
