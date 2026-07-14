@@ -7,7 +7,13 @@
  * NEVER reassigned (apiConfig = {...}). See window.apiConfig bridge comment.
  */
 
-var BEAGLE_BUILT_IN = { id: "beagle-built-in", label: "Beagle", url: "/api/minimax/v1", model: "MiniMax-M3", vision: true, isBuiltIn: true, key: "" };
+/* P_privacy-leak — do NOT put a real or fake model name in the default.
+ * The built-in "Beagle" provider is an alias; the actual upstream model
+ * is operator-configured server-side and must never be hinted at in
+ * the public client bundle. The model field is intentionally empty
+ * (server uses provider.model from the DB regardless of what's here).
+ * Reasoning/vision flags stay on (Beagle supports both by default). */
+var BEAGLE_BUILT_IN = { id: "beagle-built-in", label: "Beagle", url: "/api/minimax/v1", model: "", vision: true, isBuiltIn: true, key: "" };
 var apiConfig = { activeId: null, providers: [] };
 var webSearchOn = false;
 var appMode = "chat";
