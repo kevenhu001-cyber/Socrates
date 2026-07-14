@@ -790,3 +790,12 @@ export function renderExamResults() {
   body.innerHTML = html;
   footer.innerHTML = '<button class="exam-btn success" onclick="renderExamForm()">New Exam</button><button class="exam-btn secondary" onclick="closeExamView()">Close</button>';
 }
+
+
+export {
+  renderExamNav,
+  examNavCurrentIdx,
+  syncExamNav,
+  saveExamSession,
+  doSaveExamSession,
+};
