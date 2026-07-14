@@ -10073,345 +10073,12 @@ async function clearCachedProviderKey(_id){
 /* ============================================================
    SHARE LINK — create / revoke / view shared sessions
    ============================================================ */
-function toggleShareBtn(){
-  var btn=document.getElementById("shareBtn");
-  if(!btn)return;
-  /* P_exam-history — exam sessions are shareable too. We only need a
-   * currentSessionId and an authenticated user; the topic can be empty
-   * for a freshly-created session. The state.topic check is kept
-   * for chat sessions because those are the ones that need a topic
-   * to be meaningful when shared. */
-  var hasSess=CURRENT_USER&&state.currentSessionId;
-  var inExam=!!state._examInView;
-  var show=hasSess&&(inExam||!!state.topic);
-  btn.classList.toggle("hidden",!show);
-}
-/* Chat-only top-bar controls (session name, API dot, search pill,
-   model picker) live inside .top-bar which is always visible. They
-   must show only when chat/tutor is on-screen. Call this with
-   true/false whenever chatView is shown/hidden. */
-function toggleChatTopBarEls(show){
-  /* chatDomain is gone — topicBadge (set in index.html) is the only
-     session indicator in the top-bar. We only need to toggle the
-     chat/tutor controls (api dot, search pill, model picker). */
-  var ids=["chatApiBadge","searchPill","chatModelWrap"];
-  ids.forEach(function(id){
-    var el=document.getElementById(id);
-    if(el)el.classList.toggle("hidden",!show);
-  });
-}
-var _shareVisibility="public";
-var _shareToken=null;  /* current share token for this session */
-var _shareUrl="";
-
-function openShareModal(){
-  if(!CURRENT_USER||!state.currentSessionId)return;
-  document.getElementById("shareOverlay").classList.remove("hidden");
-  selectShareVis("public");
-  /* Check if there's already a share link for this session. */
-  apiFetch("/api/sessions/"+encodeURIComponent(state.currentSessionId)+"/share").then(function(r){
-    if(r&&r.token){
-      _shareToken=r.token;
-      _shareVisibility=r.visibility||"public";
-      _shareUrl=window.location.origin+"?share="+encodeURIComponent(r.token);
-      selectShareVis(_shareVisibility);
-      showShareLink(_shareUrl);
-    }
-  }).catch(function(){});
-}
-
-function closeShareModal(){
-  document.getElementById("shareOverlay").classList.add("hidden");
-}
-
-function selectShareVis(vis){
-  _shareVisibility=vis;
-  document.getElementById("shareOptPublic").classList.toggle("selected",vis==="public");
-  document.getElementById("shareOptPrivate").classList.toggle("selected",vis==="private");
-}
-
-async function createShareLink(){
-  if(!CURRENT_USER||!state.currentSessionId)return;
-  var btn=document.getElementById("shareCreateBtn");
-  var errEl=document.getElementById("shareError");
-  var statusEl=document.getElementById("shareStatus");
-  errEl.classList.add("hidden");
-  statusEl.classList.remove("hidden");
-  statusEl.textContent=t("share.creatingLink");
-  btn.disabled=true;
-  try{
-    var r=await apiFetch("/api/sessions/"+encodeURIComponent(state.currentSessionId)+"/share",{
-      method:"POST",
-      body:{visibility:_shareVisibility}
-    });
-    if(r&&r.token){
-      _shareToken=r.token;
-      _shareUrl=window.location.origin+"?share="+encodeURIComponent(r.token);
-      showShareLink(_shareUrl);
-      statusEl.classList.add("hidden");
-    }else{
-      throw new Error("no token returned");
-    }
-  }catch(e){
-    errEl.textContent=t("share.failedCreate").replace("{msg}",e&&e.message||t("share.errorUnknown"));
-    errEl.classList.remove("hidden");
-    statusEl.classList.add("hidden");
-  }
-  btn.disabled=false;
-}
-
-function showShareLink(url){
-  document.getElementById("shareCreateArea").classList.add("hidden");
-  document.getElementById("shareLinkArea").classList.remove("hidden");
-  document.getElementById("shareLinkInput").value=url;
-  document.getElementById("shareRevokeArea").classList.remove("hidden");
-}
-
-function copyShareLink(){
-  var inp=document.getElementById("shareLinkInput");
-  var btn=document.getElementById("shareCopyBtn");
-  inp.select();
-  try{
-    document.execCommand("copy");
-    btn.textContent=t("share.copied");
-    btn.classList.add("copied");
-    setTimeout(function(){btn.textContent=t("share.copy");btn.classList.remove("copied")},2000);
-  }catch(e){}
-}
-
-async function revokeShareLink(){
-  if(!CURRENT_USER||!state.currentSessionId||!_shareToken)return;
-  var errEl=document.getElementById("shareError");
-  errEl.classList.add("hidden");
-  try{
-    await apiFetch("/api/sessions/"+encodeURIComponent(state.currentSessionId)+"/share",{method:"DELETE"});
-    _shareToken=null;
-    _shareUrl="";
-    document.getElementById("shareCreateArea").classList.remove("hidden");
-    document.getElementById("shareLinkArea").classList.add("hidden");
-    document.getElementById("shareRevokeArea").classList.add("hidden");
-  }catch(e){
-    errEl.textContent=t("share.failedRevoke").replace("{msg}",e&&e.message||t("share.errorUnknown"));
-    errEl.classList.remove("hidden");
-  }
-}
-
-/* Load a shared session for read-only viewing. Called on boot if
-   ?share=TOKEN is in the URL, before auth flow. */
-async function loadSharedSession(token){
-  try{
-    var r=await fetch("/api/shares/"+encodeURIComponent(token));
-    if(!r.ok)throw new Error("HTTP "+r.status);
-    var session=await r.json();
-    if(!session)throw new Error("empty session");
-    /* P_exam-share — a shared exam session carries kind='exam' and
-     * the rendered examData payload. The chat-style message list is
-     * empty for exams, so the message-renderer below would have
-     * nothing to show. Render the exam in read-only mode instead
-     * (a re-hydrated loadExamSession() with submission locked and
-     * no save). */
-    if(session.kind==="exam"&&session.examData){
-      await loadSharedExamSession(session,token);
-      return;
-    }
-    if(!session.messages)throw new Error("empty session");
-    /* Render messages in read-only mode. */
-    var msgList=document.getElementById("msgList");
-    msgList.innerHTML="";
-    // P-arch context-resume — mirror loaded messages into state.messages
-    // so a follow-up chat turn can include the prior conversation in
-    // its history payload. Shared sessions are read-only for replying
-    // (the input bar is hidden further down), so this primarily
-    // ensures the local copy and DOM stay in sync; if reply is later
-    // enabled, the history will already be present.
-    state.messages.length = 0;
-    session.messages.forEach(function(m){
-      var div=document.createElement("div");
-      div.className="msg "+(m.role||"assistant");
-      var body=document.createElement("div");
-      body.className="msg-body";
-      // Re-render from rawText for assistant messages so the latest
-      // renderer is used (see loadSession comment for rationale).
-      // User messages also go through formatMsg so legacy payloads
-      // where rawText was the rendered HTML (e.g. "<p>...</p>") are
-      // cleaned up by preprocessMarkdown instead of being displayed
-      // as visible tag text.
-      var _userRaw = m.rawText;
-      if(m.role === "user" && _userRaw) {
-        _userRaw = String(_userRaw).replace(/^\s*<p>\s*/i, "").replace(/\s*<\/p>\s*$/i, "").trim();
-      }
-      var renderHtml = "";
-      if(_userRaw && m.role === "user") {
-        renderHtml = formatMsg(_userRaw);
-      } else if(m.role==="assistant" && m.rawText){
-        renderHtml = formatMsg(m.rawText);
-      } else if(m.html){
-        renderHtml = m.html;
-      } else if(m.content) {
-        // Content could be pre-rendered HTML (from session save) or raw
-        // text (from streaming). Detect by checking for block-level HTML.
-        renderHtml = /<(p|div|h[1-6]|table|ul|ol|li|blockquote|pre|figure)\b/i.test(m.content)
-          ? m.content : formatMsg(m.content);
-      }
-      body.innerHTML = renderHtml;
-      var clientId = m.id || ("shared-"+generateId());
-      div.dataset.clientId = clientId;
-      state.messages.push({
-        clientId: clientId,
-        role: m.role,
-        rawText: m.rawText || "",
-        html: renderHtml,
-        type: m.type || null,
-        actions: null
-      });
-      div.appendChild(body);
-      var sharedEntry = state.messages[state.messages.length - 1];
-      var sharedToolbar = buildMessageToolbar({role: m.role || "assistant", entry: sharedEntry, readOnly: true});
-      if(sharedToolbar) div.appendChild(sharedToolbar);
-      msgList.appendChild(div);
-    });
-    try{processPendingMermaid()}catch(_){}
-    try{processPendingViz()}catch(_){}
-    try{processPendingVizActions()}catch(_){}
-    /* Show read-only banner. */
-    var banner=document.getElementById("sharedBanner");
-    if(banner)banner.classList.remove("hidden");
-    /* Hide input, show topic as readonly title. */
-    var titleEl=document.getElementById("topicTitle");
-    if(titleEl)titleEl.textContent=session.topic||"Shared conversation";
-    document.getElementById("topicSetup").classList.add("hidden");
-    document.getElementById("chatView").classList.remove("hidden");
-    document.getElementById("chatInputBar").classList.add("hidden");
-    document.getElementById("shareBtn").classList.add("hidden");
-    /* Hide chat-only controls (model picker, search pill, api badge, share)
-       because none of them apply in a read-only view. */
-    var mid=document.getElementById("chatModelWrap");if(mid)mid.classList.add("hidden");
-    var api=document.getElementById("chatApiBadge");if(api)api.classList.add("hidden");
-    var sp=document.getElementById("searchPill");if(sp)sp.classList.add("hidden");
-    /* Hide sidebar controls that don't apply. */
-    var sidebar=document.getElementById("sidebar");
-    if(sidebar)sidebar.classList.add("collapsed");
-    sidebarOpen=false;
-    syncSidebarBtns();
-    document.getElementById("authGate").classList.add("hidden");
-    document.getElementById("appShell").classList.remove("hidden");
-    /* P0.6 — prevent the 12s pre-boot timeout from re-showing the
-       auth gate (bootState is still "checking" at this point). */
-    try{document.documentElement.dataset.bootState="app"}catch(_){}
-    renderUserFooter();
-  }catch(e){
-    console.warn("[share] failed to load:",e&&e.message);
-    document.getElementById("sharedBanner").classList.add("hidden");
-    /* Show error in the setup area. */
-    var titleEl=document.getElementById("topicTitle");
-    if(titleEl)titleEl.textContent=t("share.notFoundTitle");
-    var subEl=document.getElementById("topicSub");
-    if(subEl)subEl.textContent=t("share.notFoundMsg");
-    /* Still flip bootState so the 12s timeout doesn't layer the
-       auth gate on top of the "not found" message. */
-    try{document.documentElement.dataset.bootState="app"}catch(_){}
-  }
-}
-
-/* P_exam-share — render a shared exam session in read-only mode.
- * Mirrors loadExamSession() but locks submission and the per-answer
- * autosave (the viewer isn't signed in as the owner, so we must not
- * POST back to /api/sessions). A small "Read-only" pill is added in
- * the title area so the visitor knows they can't submit. */
-async function loadSharedExamSession(session,token){
-  state._examInView=true;
-  state.examCancel=false;
-  state.examReadOnly=true;
-  state.examTopic=(session.examData&&session.examData.topic)||session.topic||"";
-  state.examCount=(session.examData&&session.examData.count)||((session.examData&&session.examData.questions&&session.examData.questions.length)||0);
-  state.examLang=(session.examData&&session.examData.lang)||"English";
-  state.examDifficulty=(session.examData&&session.examData.difficulty)||"intermediate";
-  state.examTypes=Array.isArray(session.examData&&session.examData.types)?session.examData.types:[];
-  state.examQuestions=Array.isArray(session.examData&&session.examData.questions)?session.examData.questions.map(function(q,i){
-    var c=Object.assign({},q);
-    c._idx=i;
-    return c;
-  }):[];
-  state.examAnswers=(session.examData&&session.examData.answers)||{};
-  state.examSubmitted=!!(session.examData&&session.examData.submitted);
-  /* Hide all other top-level views. */
-  ["topicSetup","diagnosticView","chatView"].forEach(function(id){
-    var el=document.getElementById(id);
-    if(el)el.classList.add("hidden");
-  });
-  var ev=document.getElementById("examView");
-  ev.classList.remove("hidden");
-  var lang=state.examLang;
-  var readOnlyLabel=t("share.readOnly");
-  _examTitle().textContent=state.examSubmitted?(state.examTopic+" — "+readOnlyLabel):(state.examTopic+" — "+readOnlyLabel);
-  /* If the exam was already submitted on the owner's side, jump to
-   * the results view. Otherwise show the questions with the answers
-   * the owner gave (read-only — the input/buttons are disabled). */
-  var body=_examBody();
-  body.innerHTML='<div id="examQuestionsContainer"></div>';
-  state.examQuestions.forEach(function(q,idx){
-    var card=document.createElement("div");
-    card.className="exam-q-card";
-    card.id="examQ"+idx;
-    card.setAttribute("data-idx",idx);
-    body.querySelector("#examQuestionsContainer").appendChild(card);
-    renderSharedQuestionCard(idx,q);
-  });
-  renderExamNav();
-  if(state.examSubmitted){
-    renderExamResults();
-  }else{
-    /* No submit in read-only mode — the visitor only sees the
-     * questions and the owner's previously-given answers. */
-    _examFooter().innerHTML='<div class="exam-readonly-pill">'+readOnlyLabel+'</div>';
-  }
-  /* Read-only banner. */
-  var banner=document.getElementById("sharedBanner");
-  if(banner)banner.classList.remove("hidden");
-  /* Hide chrome that doesn't apply in a public read-only view. */
-  var sb=document.getElementById("sidebar");
-  if(sb)sb.classList.add("collapsed");
-  sidebarOpen=false;
-  syncSidebarBtns();
-  document.getElementById("chatInputBar").classList.add("hidden");
-  document.getElementById("shareBtn").classList.add("hidden");
-  var mid=document.getElementById("chatModelWrap");if(mid)mid.classList.add("hidden");
-  var api=document.getElementById("chatApiBadge");if(api)api.classList.add("hidden");
-  var sp=document.getElementById("searchPill");if(sp)sp.classList.add("hidden");
-  document.getElementById("authGate").classList.add("hidden");
-  document.getElementById("appShell").classList.remove("hidden");
-  try{document.documentElement.dataset.bootState="app"}catch(_){}
-  renderUserFooter();
-}
-
-/* P_exam-share — render a single shared question card in read-only
- * mode. Buttons / inputs are `disabled` so the visitor can't change
- * the owner's answers. */
-function renderSharedQuestionCard(idx,q){
-  var ph=document.getElementById("examQ"+idx);
-  if(!ph)return;
-  var html='<div class="exam-q-num">Question '+(idx+1)+' of '+state.examCount+' <span class="exam-q-type">'+q.type+'</span></div>';
-  html+='<div class="exam-q-text">'+formatMsg(q.q)+'</div>';
-  var saved=state.examAnswers&&state.examAnswers[idx];
-  if(q.type==="multiple-choice"&&q.opts){
-    html+='<div class="exam-q-opts">';
-    q.opts.forEach(function(o,oi){
-      var isSel=(saved===oi);
-      html+='<div class="exam-q-opt'+(isSel?" selected":"")+'">';
-      html+='<span class="exam-q-opt-letter">'+o.letter+'</span>';
-      html+='<span class="exam-q-opt-text">'+formatMsg(o.text)+'</span>';
-      html+='</div>';
-    });
-    html+='</div>';
-  }else if(q.type==="fill-blank"){
-    var v=(typeof saved==="string")?saved:"";
-    html+='<input class="exam-q-fill-input" value="'+esc(v)+'" readonly>';
-  }else if(q.type==="short-answer"){
-    var vv=(typeof saved==="string")?saved:"";
-    html+='<textarea class="exam-q-fill-input" readonly rows="3" style="min-height:60px;resize:vertical">'+esc(vv)+'</textarea>';
-  }
-  ph.innerHTML=html;
-}
+/* P_main-split — Wave 3a: share modal extracted to ui/share.js. */
+import {
+  toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal,
+  selectShareVis, createShareLink, copyShareLink, revokeShareLink,
+  loadSharedSession, loadSharedExamSession, renderSharedQuestionCard,
+} from './ui/share.js';
 
 async function refreshApiConfig(){
   console.log("[refreshApiConfig] ENTRY, CURRENT_USER=", CURRENT_USER && CURRENT_USER.email);
@@ -12487,17 +12154,11 @@ async function generateFollowUpStream(answer,node,domain,onDelta,onThinking){
 var _examSelectedTypes;
 
 /* ─── Expose all onclick-required functions on window ─── */
-window.closeShareModal = closeShareModal;
 window.closeUsageModal = closeUsageModal;
-window.copyShareLink = copyShareLink;
-window.createShareLink = createShareLink;
-window.openShareModal = openShareModal;
 window.openUsageModal = openUsageModal;
 window.resendAuthCode = resendAuthCode;
 window.resendVerification = resendVerification;
 window.resetApp = resetApp;
-window.revokeShareLink = revokeShareLink;
-window.selectShareVis = selectShareVis;
 window.setAuthError = setAuthError;
 window.showAuthCodeLogin = showAuthCodeLogin;
 window.showAuthForgotPassword = showAuthForgotPassword;
@@ -12585,9 +12246,6 @@ window.isMiniMaxProvider = isMiniMaxProvider;
    Without this, reasoning models (DeepSeek R1 / QwQ / MiniMax) hit
    the default 60 s heartbeat mid-think and the stream aborts. */
 window.pickStreamBudgets = pickStreamBudgets;
-window.closeShareModal = closeShareModal;
-window.copyShareLink = copyShareLink;
-window.createShareLink = createShareLink;
 /* P_share-load-bridge — auth/boot.js:44 calls `window.loadSharedSession`
    when a visitor opens `?share=TOKEN`, before any auth flow. Without
    this binding, that call throws TypeError, the surrounding try/catch
@@ -12597,8 +12255,6 @@ window.createShareLink = createShareLink;
    loadSharedExamSession, which is referenced from main.js itself
    (loadSharedSession:10922) but kept on window for parity in case a
    later caller invokes it directly. */
-window.loadSharedSession = loadSharedSession;
-window.loadSharedExamSession = loadSharedExamSession;
 /* Agent mode (openAgentView / exitAgentMode / deleteAgentRun) is a
    planned feature that was never implemented — exposing it on
    window would ReferenceError any inline handler that fires before
@@ -12607,10 +12263,7 @@ window.loadSharedExamSession = loadSharedExamSession;
 // window.exitAgentMode = exitAgentMode;   // unimplemented
 // window.openAgentView  = openAgentView;  // unimplemented
 // window.deleteAgentRun = deleteAgentRun; // unimplemented
-window.openShareModal = openShareModal;
 window.resetApp = resetApp;
-window.revokeShareLink = revokeShareLink;
-window.selectShareVis = selectShareVis;
 window.signOut = signOut;
 window.startSession = startSession;
 window.submitChatMessage = submitChatMessage;
@@ -12666,9 +12319,7 @@ window.syncAppModeUI = syncAppModeUI;
 window.syncSidebarForMode = syncSidebarForMode;
 window.getChatIdFromURL = getChatIdFromURL;
 window.setChatIdInURL = setChatIdInURL;
-window.toggleShareBtn = toggleShareBtn;
 window.pushChatIdToURL = pushChatIdToURL;
-window.toggleChatTopBarEls = toggleChatTopBarEls;
 /* Init UI sync — runs after window.apiConfig is set (above) so
    syncModelPills() can safely read the provider config. Moving
    this earlier would throw and halt the entire boot sequence. */

@@ -181,6 +181,17 @@ window.updateProviderField = updateProviderField;
 window.saveSettings = saveSettings;
 window.clearSettings = clearSettings;
 
+/* ─── ui/share.js ─── */
+import { openShareModal, closeShareModal, selectShareVis, createShareLink, copyShareLink, revokeShareLink, loadSharedSession, loadSharedExamSession } from './ui/share.js';
+window.openShareModal = openShareModal;
+window.closeShareModal = closeShareModal;
+window.selectShareVis = selectShareVis;
+window.copyShareLink = copyShareLink;
+window.revokeShareLink = revokeShareLink;
+window.createShareLink = createShareLink;
+window.loadSharedSession = loadSharedSession;
+window.loadSharedExamSession = loadSharedExamSession;
+
 /* ─── ui/dangerConfirms.js ─── */
 import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from './ui/dangerConfirms.js';
 window.confirmClearCache = confirmClearCache;
