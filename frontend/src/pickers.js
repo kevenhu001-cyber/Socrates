@@ -286,16 +286,33 @@ function toggleExtensionByKey(key){
   if(!ext)return;
   ext.onChange(!ext.on);
 }
-(function bindExtensionsMenuClicks(){
+/* P_timing-fix — defer click binding until the DOM is fully parsed.
+   Like the attachments autoWire, this runs at module init and on some
+   browsers the extensionsMenu element isn't queryable yet when the
+   Vite IIFE evaluates (the script tag sits after the menu in HTML
+   order, but document.readyState may still say "loading" depending
+   on streaming/Chunked transfer). setTimeout(0) pushes the query
+   past the synchronous parse. Already-wired guard prevents
+   double-binding on a re-run. */
+var _extMenuBound=false;
+function bindExtensionsMenuClicks(){
+  if(_extMenuBound)return;
   var menu=document.getElementById("extensionsMenu");
   if(!menu)return;
+  _extMenuBound=true;
   menu.addEventListener("click",function(e){
     var btn=e.target.closest(".extensions-item");
     if(!btn)return;
     e.stopPropagation();
     toggleExtensionByKey(btn.getAttribute("data-ext"));
   });
-})();
+}
+setTimeout(function(){
+  bindExtensionsMenuClicks();
+  /* P_boot-sync — render the menu items on first load so the
+     Extensions panel is never empty when the user opens it. */
+  syncExtensionsUI();
+},0);
 function countActiveExtensions(){
   return EXTENSIONS.filter(function(e){return e.on}).length;
 }
