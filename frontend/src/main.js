@@ -8,7 +8,7 @@ import './state.js';
 import './i18n.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
 import { scrollContainer, scrollToBottomIfPinned } from './ui/scroll.js';
-import { initSidebarDrag, onViewportResize } from './ui/sidebarResize.js';
+import { initSidebarDrag } from './ui/sidebarResize.js';
 import { showNewReplyPill, hideNewReplyPill, wireScrollPill } from './ui/scrollPill.js';
 import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
 import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal } from './ui/share.js';
@@ -22,6 +22,18 @@ import { batchSetItem, batchRemoveItem } from './batchStorage.js';
 import { LOCAL_MEMORY_MAX, loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from './storage/localMemory.js';
 import { formatTickSlice, formatMsgProgressive, formatMsg, stripMarkdown, findLastUserMessage } from './render/markdown.js';
 import { SOCRATIC_SYSTEM_PROMPT } from './prompts/socratic.js';
+import { fetchGeoInfo, getSystemContext, resetGeoInfo } from './system/context.js';
+import {
+  getChatIdFromURL, setChatIdInURL, pushChatIdToURL,
+  capSessions, getVisibleSessions, getArchivedSessionsFrom,
+  sweepExpiredArchivesFrom, createDeletedSessionGuard,
+} from './session/store.js';
+import {
+  INBOX_PROJECT_ID, INBOX_PROJECT, PROJECT_COLOR_PALETTE,
+  loadProjectsFromStorage, saveProjectsToStorage, getProjectByIdFrom,
+  createProjectRecord, updateProjectRecord, deleteProjectFromList,
+  randomProjectColor,
+} from './projects/store.js';
 import { esc, escAttr, escHTML, decodeEntities, stripTags } from './render/helpers.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions, renderViz, renderVizLoading, renderMermaid, openVizModal } from './render/viz.js';
 import { callAPI, callAPIChat } from './chat/api.js';
@@ -30,6 +42,11 @@ import { hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister, swi
 import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
 import { toggleSidebar, getRecentsFilter, setRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
 import { stripChatArtifacts } from './util/stripChatArtifacts.js';
+import { renderRecentsFilterChips as renderRecentsFilterChipsUI } from './ui/recentsFilterChips.js';
+import {
+  formatRelativeTime, getKnownTagsFromSessions,
+  filterRecentsForProject, filterRecentsByChip,
+} from './ui/recentsHelpers.js';
 import {
   displayPrefs, loadDisplayPrefs, applyDisplayPrefs, saveDisplayPrefs,
   setDisplayFont, setDisplayWidth,
@@ -155,97 +172,9 @@ loadDisplayPrefs();
   });
 })();
 
-/* ============================================================
-   SIDEBAR DRAG-TO-RESIZE
-   Drag the 10px-wide strip on the right edge of the sidebar to
-   change its width. Range: 200–480 px. Persists in localStorage.
-   The sidebar overlays the main content when wider than 18rem.
-   ============================================================ */
-var SIDEBAR_MIN_PX=200;
-var SIDEBAR_MAX_PX=480;
-var sidebarWidthPx=288;   /* default ≈ 18rem */
-
-function loadSidebarWidth(){
-  try{
-    var raw=localStorage.getItem("socrates-sidebar-width");
-    if(raw){
-      var n=parseInt(raw,10);
-      if(n>=SIDEBAR_MIN_PX&&n<=SIDEBAR_MAX_PX)sidebarWidthPx=n;
-    }
-  }catch(_){}
-  applySidebarWidth();
-}
-function applySidebarWidth(){
-  document.documentElement.style.setProperty("--app-sidebar-width", sidebarWidthPx+"px");
-}
-function saveSidebarWidth(){
-  try{localStorage.setItem("socrates-sidebar-width",String(sidebarWidthPx))}catch(_){}
-}
-(function initSidebarDrag(){
-  var handle=document.getElementById("sidebarResizeHandle");
-  if(!handle)return;
-  loadSidebarWidth();
-  var dragging=false,startX=0,startW=0;
-  function onDown(e){
-    if(window.innerWidth<=768)return; /* mobile: no resize */
-    dragging=true;
-    startX=e.clientX;
-    startW=sidebarWidthPx;
-    handle.classList.add("dragging");
-    document.body.classList.add("sidebar-resizing");
-    e.preventDefault();
-  }
-  function onMove(e){
-    if(!dragging)return;
-    var dx=e.clientX-startX;
-    var w=startW+dx;
-    if(w<SIDEBAR_MIN_PX)w=SIDEBAR_MIN_PX;
-    if(w>SIDEBAR_MAX_PX)w=SIDEBAR_MAX_PX;
-    sidebarWidthPx=w;
-    applySidebarWidth();
-  }
-  function onUp(){
-    if(!dragging)return;
-    dragging=false;
-    handle.classList.remove("dragging");
-    document.body.classList.remove("sidebar-resizing");
-    saveSidebarWidth();
-  }
-  handle.addEventListener("mousedown",onDown);
-  window.addEventListener("mousemove",onMove);
-  window.addEventListener("mouseup",onUp);
-  /* Touch support so tablets can drag too. */
-  handle.addEventListener("touchstart",function(e){
-    if(e.touches.length!==1)return;
-    onDown({clientX:e.touches[0].clientX,preventDefault:function(){e.preventDefault()}});
-  },{passive:false});
-  window.addEventListener("touchmove",function(e){
-    if(!dragging||e.touches.length!==1)return;
-    onMove({clientX:e.touches[0].clientX});
-  },{passive:true});
-  window.addEventListener("touchend",onUp);
-  /* Keyboard: focused handle, arrow keys nudge. */
-  handle.tabIndex=0;
-  handle.addEventListener("keydown",function(e){
-    var step=e.shiftKey?32:8;
-    if(e.key==="ArrowLeft"){sidebarWidthPx=Math.max(SIDEBAR_MIN_PX,sidebarWidthPx-step);applySidebarWidth();saveSidebarWidth();e.preventDefault()}
-    else if(e.key==="ArrowRight"){sidebarWidthPx=Math.min(SIDEBAR_MAX_PX,sidebarWidthPx+step);applySidebarWidth();saveSidebarWidth();e.preventDefault()}
-  });
-})();
-/* Auto-collapse on viewport shrink to mobile width, expand on grow to desktop */
-window.addEventListener("resize",function(){
-  var bd=document.getElementById("sidebarBackdrop");
-  var s=document.getElementById("sidebar");
-  var open=s&&!s.classList.contains("collapsed");
-  if(window.innerWidth<768&&open){
-    if(s)s.classList.add("collapsed");
-    sidebarOpen=false;
-    if(bd)bd.classList.remove("show");
-  }else if(window.innerWidth>=768&&bd){
-    bd.classList.remove("show");
-  }
-  syncSidebarBtns();
-});
+/* Sidebar drag + responsive collapse live in ui/sidebarResize.js.
+   Keep initialization here, after the DOM-backed sidebar state is restored. */
+initSidebarDrag();
 document.addEventListener("keydown",function(e){if(e.key==="\\"&&e.ctrlKey){e.preventDefault();toggleSidebar()}});
 /* P1.2 — Cmd/Ctrl+K opens the global search modal. The
    listener is intentionally registered at module scope so it
@@ -649,19 +578,24 @@ import {
    ============================================================ */
 var RECENTS_KEY="socrates-sessions-v2";
 var RECENTS_KEY_OLD="socrates-sessions";
-var RECENTS_CAP=20;
 /* P2.3 — how long the client and server keep an archived
    session before it's permanently erased. The server is the
    source of truth (it runs a daily GC job); we mirror the
    window on the client to keep the Storage modal and the
    Recents list in sync without waiting for the server's
    next sync round. */
-var ARCHIVE_RETENTION_MS=30*24*60*60*1000;
 /* Server-side session cache. The SPA keeps a copy of the user's chat
    sessions here so the UI can render the Recents / Knowledge / Mistakes
    tabs without a roundtrip on every action. We keep it fresh via
    getRecents() / setRecents() — which now hit the server. */
 var SERVER_SESSIONS=[];
+try{
+  Object.defineProperty(window,"SERVER_SESSIONS",{
+    configurable:true,
+    get:function(){return SERVER_SESSIONS},
+    set:function(v){SERVER_SESSIONS=capSessions(v)}
+  });
+}catch(_){}
 
 /* P2.1 — Projects. The web SPA has a built-in "Inbox" project
    (the default for legacy sessions) and supports user-created
@@ -674,46 +608,25 @@ var SERVER_SESSIONS=[];
    Sessions get a `projectId` field; missing → "inbox".
    The default Recents list shows everything; clicking a
    project chip filters to that project only. */
-var PROJECTS_KEY="socrates-projects";
-var INBOX_PROJECT_ID="inbox";
-var INBOX_PROJECT={id:INBOX_PROJECT_ID,name:"Inbox",description:"All sessions without a project",color:"#7d7468",icon:"in",systemPrompt:"",createdAt:0,archivedAt:null,isSystem:true};
 var PROJECTS=[INBOX_PROJECT];
+try{
+  Object.defineProperty(window,"PROJECTS",{
+    configurable:true,
+    get:function(){return PROJECTS},
+    set:function(v){PROJECTS=Array.isArray(v)?v:[INBOX_PROJECT]}
+  });
+}catch(_){}
 function loadProjects(){
-  try{
-    var raw=localStorage.getItem(PROJECTS_KEY);
-    var arr=raw?JSON.parse(raw):null;
-    if(Array.isArray(arr)&&arr.length){
-      /* Always ensure Inbox is first. */
-      PROJECTS=[INBOX_PROJECT].concat(arr.filter(function(p){return p.id!==INBOX_PROJECT_ID}));
-    }else{
-      PROJECTS=[INBOX_PROJECT];
-    }
-  }catch(_){
-    PROJECTS=[INBOX_PROJECT];
-  }
+  PROJECTS=loadProjectsFromStorage();
 }
 function saveProjects(){
-  try{
-    var persistable=PROJECTS.filter(function(p){return!p.isSystem});
-    localStorage.setItem(PROJECTS_KEY,JSON.stringify(persistable));
-  }catch(_){}
+  saveProjectsToStorage(PROJECTS);
 }
 function getProjectById(id){
-  if(!id)return INBOX_PROJECT;
-  for(var i=0;i<PROJECTS.length;i++)if(PROJECTS[i].id===id)return PROJECTS[i];
-  return INBOX_PROJECT;
+  return getProjectByIdFrom(PROJECTS,id);
 }
 function createProject(opts){
-  var p={
-    id:generateId(),
-    name:(opts&&opts.name||"New project").trim().slice(0,80),
-    description:(opts&&opts.description||"").trim().slice(0,500),
-    color:(opts&&opts.color)||randomProjectColor(),
-    icon:(opts&&opts.icon)||"fl",
-    systemPrompt:(opts&&opts.systemPrompt||"").slice(0,8000),
-    createdAt:Date.now(),
-    archivedAt:null
-  };
+  var p=createProjectRecord(opts,generateId);
   PROJECTS.push(p);
   saveProjects();
   renderProjects();
@@ -722,11 +635,7 @@ function createProject(opts){
 function updateProject(id,patch){
   var p=getProjectById(id);
   if(p.isSystem)return p;
-  if(patch.name!==undefined)p.name=String(patch.name).trim().slice(0,80);
-  if(patch.description!==undefined)p.description=String(patch.description).trim().slice(0,500);
-  if(patch.color!==undefined)p.color=patch.color;
-  if(patch.icon!==undefined)p.icon=String(patch.icon).slice(0,4);
-  if(patch.systemPrompt!==undefined)p.systemPrompt=String(patch.systemPrompt).slice(0,8000);
+  updateProjectRecord(p,patch);
   saveProjects();
   renderProjects();
   return p;
@@ -744,17 +653,10 @@ function deleteProject(id){
      exists, with no chip to click to clear it (the project is gone
      from PROJECTS). */
   if(state.session.activeProjectFilter===id)state.session.activeProjectFilter=null;
-  PROJECTS=PROJECTS.filter(function(p){return p.id!==id});
+  PROJECTS=deleteProjectFromList(PROJECTS,id);
   saveProjects();
   renderProjects();
   renderRecents();
-}
-function randomProjectColor(){
-  /* Curated palette that pairs with the existing tier-badge
-     colors. Each entry is a hex that the dot + chip both
-     reference. */
-  var palette=["#d8a85b","#7da9d8","#a0c46c","#c47ed1","#e07b5b","#5bc0be","#d6a4d1","#b8b54a"];
-  return palette[Math.floor(Math.random()*palette.length)];
 }
 function generateId(){
   /* Use the standard UUIDv4 when the browser supports it — the
@@ -774,44 +676,26 @@ function generateId(){
   function h(){return Math.floor(Math.random()*65536).toString(16).padStart(4,'0')}
   return h()+h()+'-'+h()+'-4'+h().slice(1)+'-'+(8+Math.floor(Math.random()*4)).toString(16)+h().slice(1)+'-'+h()+h()+h();
 }
-function getChatIdFromURL(){return new URLSearchParams(location.search).get("chat")||null}
-function setChatIdInURL(id){history.replaceState({chatId:id},"",id?"?chat="+encodeURIComponent(id):location.pathname)}
-function pushChatIdToURL(id){history.pushState({chatId:id},"",id?"?chat="+encodeURIComponent(id):location.pathname)}
 function getRecents(){
   /* P2.3 — sweep local expired archives first so the Recents
      list and the Storage modal never disagree. */
   sweepExpiredArchives();
   /* P2.3 — archived sessions are hidden from the default
      Recents list. Users restore them from the Storage modal. */
-  var copy=SERVER_SESSIONS.filter(function(s){return!s||!s.archivedAt;});
-  /* P2.2 — pinned sessions always come first, then everything
-     else sorted by updatedAt desc. The sort is stable; ties keep
-     their original order. */
-  copy.sort(function(a,b){
-    var ap=a&&a.pinned?1:0;
-    var bp=b&&b.pinned?1:0;
-    if(ap!==bp)return bp-ap;
-    var at=(a&&(a.updated_at||a.updatedAt||a.created_at||a.createdAt))||0;
-    var bt=(b&&(b.updated_at||b.updatedAt||b.created_at||b.createdAt))||0;
-    return bt-at;
-  });
-  return copy;
+  return getVisibleSessions(SERVER_SESSIONS);
 }
-function setRecents(arr){SERVER_SESSIONS=Array.isArray(arr)?arr.slice(0,RECENTS_CAP):[]}
+function setRecents(arr){SERVER_SESSIONS=capSessions(arr)}
 
 /* P2.2 — filter chip state. `null` = all; otherwise one of
    "pinned" or a tag string. Persisted in localStorage so
    the user's last filter survives a reload. */
 var RECENTS_FILTER_KEY="socrates-recents-filter";
+try{window.RECENTS_FILTER_KEY=RECENTS_FILTER_KEY}catch(_){}
 
 /* P2.2 — set of tag strings the user has ever used. Powers
    the autocomplete suggestions in the tag editor popover. */
 function getKnownTags(){
-  var seen={};
-  (SERVER_SESSIONS||[]).forEach(function(s){
-    (s.tags||[]).forEach(function(t){if(t)seen[t]=1});
-  });
-  return Object.keys(seen).sort();
+  return getKnownTagsFromSessions(SERVER_SESSIONS);
 }
 async function refreshServerSessions(){
   if(!CURRENT_USER)return[];
@@ -832,18 +716,6 @@ async function refreshServerSessions(){
      the chip row stays at 0 even when sessions are present. */
   try{renderProjects()}catch(_){}
   return SERVER_SESSIONS.slice();
-}
-function formatRelativeTime(ts){
-  var diff=Date.now()-ts;
-  var m=Math.floor(diff/60000);
-  if(m<1)return"just now";
-  if(m<60)return m+"m ago";
-  var h=Math.floor(m/60);
-  if(h<24)return h+"h ago";
-  var d=Math.floor(h/24);
-  if(d===1)return"Yesterday";
-  if(d<7)return d+" days ago";
-  return new Date(ts).toLocaleDateString();
 }
 /* ============================================================
    P1.2 — Global search (Cmd / Ctrl + K)
@@ -904,20 +776,11 @@ var _loadSessionId=null;
    deletion (in actuallyDeleteSession's then-callback) so the
    guard doesn't permanently block re-saving a new session with
    a coincidentally-similar id. */
-var _deletedIds=Object.create(null);
+var _deletedSessionGuard=createDeletedSessionGuard();
 function rememberDeletedSession(id){
-  if(!id)return;
-  _deletedIds[id]=Date.now();
-  /* Cap to last 50 so the set can't grow unbounded if some
-     pathological flow keeps deleting without clearing. */
-  var keys=Object.keys(_deletedIds);
-  if(keys.length>50){
-    keys.sort(function(a,b){return _deletedIds[a]-_deletedIds[b]});
-    var toDrop=keys.length-50;
-    for(var i=0;i<toDrop;i++)delete _deletedIds[keys[i]];
-  }
+  _deletedSessionGuard.remember(id);
 }
-function forgetDeletedSession(id){delete _deletedIds[id]}
+function forgetDeletedSession(id){_deletedSessionGuard.forget(id)}
 function saveCurrentSession(){
   if(!state.topic)return;
   if(!CURRENT_USER)return; /* not signed in; do nothing */
@@ -953,8 +816,8 @@ function doSave(){
      designed at one point) would otherwise bypass the topic
      check and silently re-insert the deleted row. */
   var sid=state.session.currentSessionId;
-  if(sid&&_deletedIds[sid]){
-    console.debug("[sessions] doSave BLOCKED — id was deleted",{sid,ageMs:Date.now()-_deletedIds[sid]});
+  if(_deletedSessionGuard.has(sid)){
+    console.debug("[sessions] doSave BLOCKED — id was deleted",{sid,ageMs:_deletedSessionGuard.ageMs(sid)});
     _saveInFlight=null;
     _saveDirty=false;
     return;
@@ -1089,7 +952,7 @@ function doSave(){
        have processed this upsert after the DELETE (race), potentially
        resurrecting the row. Instead, just refresh the server list
        which will reflect the DELETE (or the next DELETE cycle). */
-    if(capturedSessionId && _deletedIds[capturedSessionId]){
+    if(_deletedSessionGuard.has(capturedSessionId)){
       console.debug("[sessions] POST response BLOCKED — session was deleted",{capturedSessionId});
       return refreshServerSessions();
     }
@@ -2095,21 +1958,15 @@ function confirmPurgeSession(id){
    policy client-side so the Storage modal doesn't show
    ghost rows). */
 function getArchivedSessions(){
-  var cutoff=Date.now()-ARCHIVE_RETENTION_MS;
-  return (SERVER_SESSIONS||[])
-    .filter(function(s){return s&&s.archivedAt&&s.archivedAt>cutoff})
-    .sort(function(a,b){return(b.archivedAt||0)-(a.archivedAt||0)});
+  return getArchivedSessionsFrom(SERVER_SESSIONS);
 }
 /* P2.3 — the localStorage mirror is swept the same way the
    server is expected to. Called from refreshServerSessions
    and on every read of getArchivedSessions. */
 function sweepExpiredArchives(){
-  var cutoff=Date.now()-ARCHIVE_RETENTION_MS;
-  var before=SERVER_SESSIONS.length;
-  SERVER_SESSIONS=(SERVER_SESSIONS||[]).filter(function(s){
-    return!s.archivedAt||s.archivedAt>cutoff;
-  });
-  return SERVER_SESSIONS.length!==before;
+  var result=sweepExpiredArchivesFrom(SERVER_SESSIONS);
+  SERVER_SESSIONS=result.sessions;
+  return result.changed;
 }
 
 /* P2.3 — bounce the user out of an archived session. Used by
@@ -2235,7 +2092,7 @@ function openProjectEditor(projectId){
       '<label class="project-editor-label">Icon<input class="project-editor-input project-editor-icon" id="projIcon" maxlength="4" value="'+esc(existing&&existing.icon||"pg")+'"></label>'+
       '<div class="project-editor-label">Color'+
         '<div class="project-editor-colors" id="projColors">'+
-          ["#d8a85b","#7da9d8","#a0c46c","#c47ed1","#e07b5b","#5bc0be","#d6a4d1","#b8b54a"].map(function(c){
+          PROJECT_COLOR_PALETTE.map(function(c){
             return '<button class="project-editor-swatch" data-color="'+c+'" style="background:'+c+'" onclick="pickProjectColor(\''+c+'\')" '+(existing&&existing.color===c?"data-selected=\"1\"":"" )+'></button>';
           }).join("")+
         '</div>'+
@@ -2347,22 +2204,13 @@ function doRenderRecents(){
      A project id (including INBOX_PROJECT_ID) scopes the list
      to that project. */
   if(filter){
-    recents=recents.filter(function(s){
-      var pid=s.projectId||INBOX_PROJECT_ID;
-      return pid===filter;
-    });
+    recents=filterRecentsForProject(recents,filter,INBOX_PROJECT_ID);
   }
   /* P2.2 — apply the persistent tag / pin filter, layered on
      top of the project filter. The two compose: "show pinned
      in this project" is just (project==P) ∧ (filter==pinned). */
   var recentsFilter=getRecentsFilter();
-  if(recentsFilter==="pinned"){
-    recents=recents.filter(function(s){return s&&s.pinned;});
-  }else if(recentsFilter&&recentsFilter!=="all"){
-    recents=recents.filter(function(s){
-      return Array.isArray(s.tags)&&s.tags.indexOf(recentsFilter)>=0;
-    });
-  }
+  recents=filterRecentsByChip(recents,recentsFilter);
   /* Render the project filter chip showing what's currently
      shown. */
   var filterEl=document.getElementById("recentsFilter");
@@ -2484,39 +2332,10 @@ function doRenderRecents(){
 }
 
 function renderRecentsFilterChips(){
-  var el=document.getElementById("recentsFilterChips");
-  if(!el)return;
-  var cur=getRecentsFilter();
-  var tags=getKnownTags().slice(0,8);
-  var html=[];
-  function chip(label,val,isActive){
-    return '<button class="recents-filter-chip-btn'+(isActive?" active":"")+'" data-filter="'+esc(val==null?"all":val)+'" onclick="onRecentsFilterChipClick(\''+esc(val==null?"all":val)+'\')">'+esc(label)+'</button>';
-  }
-  html.push(chip("All",null,!cur));
-  var pinActive=cur==="pinned";
-  /* Pinned chip — minimal line-drawn bookmark. The previous
-     Bootstrap pushpin had 18 control points and read as busy at
-     11px; a 4-vertex bookmark is the universal "pinned / saved"
-     cue and matches the stroke style of the other sidebar icons. */
-  html.push('<button class="recents-filter-chip-btn'+(pinActive?" active":"")+'" data-filter="pinned" onclick="onRecentsFilterChipClick(\'pinned\')" title="Pinned"><svg class="icon-inline" viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2 H12 V14 L8 11 L4 14 Z"/></svg><span class="recents-filter-chip-label">Pinned</span></button>');
-  /* P2.2 — surface the tags currently in use, plus — crucially —
-     the active tag filter even if no session currently carries it.
-     Without this, an orphaned tag filter (e.g. the user removed the
-     tag from every session, or the tag was lost during a partial
-     sync) would be invisible AND match nothing, leaving the Recents
-     list empty with no way to clear the filter except clicking "All". */
-  var tagSet={};
-  tags.forEach(function(t){tagSet[t]=true});
-  if(cur&&cur!=="pinned"&&!tagSet[cur]){
-    tags.push(cur);
-  }
-  if(tags.length){
-    html.push('<span class="recents-filter-chips-sep"></span>');
-    tags.forEach(function(t){
-      html.push(chip("#"+t,t,cur===t));
-    });
-  }
-  el.innerHTML=html.join("");
+  renderRecentsFilterChipsUI({
+    currentFilter:getRecentsFilter(),
+    tags:getKnownTags().slice(0,8)
+  });
 }
 
 /* =============================================================
@@ -8943,15 +8762,13 @@ function handleAuthExpired(cause){
   try{
     /* P_bleed-auth-expired — same per-user cache wipe as signOut().
        A 401 may fire mid-session while the user is still on the
-       screen; without clearing _userMemories / _geoInfo, the
+       screen; without clearing _userMemories / geo info, the
        signin-gate UI would briefly show the previous user's
        memories in any subsequent system-context preview, and
        _pendingChatContent could replay a draft image after the
        user signs back in. */
     try{_userMemories=[]}catch(_){}
-    try{_geoInfo={country:"",region:"",city:"",tz:""}}catch(_){}
-    try{_geoFetched=false}catch(_){}
-    try{localStorage.removeItem("socrates-geo")}catch(_){}
+    try{resetGeoInfo({clearCache:true})}catch(_){}
     try{window._pendingChatContent=null}catch(_){}
     /* P_bleed-auth-expired — same comprehensive wipe as signOut(). A
        401 may fire mid-session; without clearing SERVER_SESSIONS /
@@ -9091,8 +8908,7 @@ function clearPerUserClientState(){
   try{_crossSessionKBCache={data:null,at:0}}catch(_){}
   try{_examAnswerSaveTimer=null;_examSaveInFlight=null}catch(_){}
   try{_userMemories=[]}catch(_){}
-  try{_geoInfo={country:"",region:"",city:"",tz:""}}catch(_){}
-  try{_geoFetched=false}catch(_){}
+  try{resetGeoInfo()}catch(_){}
   try{if(window._pendingChatContent!==undefined)window._pendingChatContent=null}catch(_){}
   /* P_locale-ghost — `state.locale` was never a real field (the real
      language selector is window._currentLang, managed by i18n.js).
@@ -9161,7 +8977,7 @@ async function signOut(){
   }
   /* P_bleed-signout — wipe every per-user cache so the next user on
      this browser starts from a clean slate. Clears _userMemories /
-     _geoInfo / _pendingChatContent (in-memory) AND the full module-
+     geo info / _pendingChatContent (in-memory) AND the full module-
      level set (SERVER_SESSIONS, apiConfig, PROJECTS, _cmdKIndex, …)
      plus localStorage entries that survive sign-out. */
   clearPerUserClientState();
@@ -10265,8 +10081,6 @@ import {
 /* ============================================================
    SYSTEM CONTEXT — real-time date, estimated user location
    ============================================================ */
-var _geoInfo={country:"",region:"",city:"",tz:""};
-var _geoFetched=false;
 var _userMemories=[];   /* cached memories injected into system context */
 
 /* Fetch the user's saved memories from the server so getSystemContext
@@ -10289,76 +10103,7 @@ var _userMemories=[];   /* cached memories injected into system context */
 /* P_main-split — Wave 2: loadUserMemories extracted to ui/profile.js. */
 import { loadUserMemories } from './ui/profile.js';
 
-/* Fetch user location from a free IP geolocation service. Cached
-   in memory (and localStorage) so we don't hit the API every page load. */
-function fetchGeoInfo(){
-  if(_geoFetched)return;
-  _geoFetched=true;
-  try{
-    var cached=localStorage.getItem("socrates-geo");
-    if(cached){_geoInfo=JSON.parse(cached);return}
-  }catch(_){}
-  try{_geoInfo.tz=Intl.DateTimeFormat().resolvedOptions().timeZone||""}catch(_){}
-  fetch("https://ip-api.com/json/?fields=country,regionName,city,timezone",{mode:"cors"}).then(function(r){
-    if(!r.ok)return;
-    return r.json().then(function(d){
-      if(!d)return;
-      _geoInfo.country=d.country||"";
-      _geoInfo.region=d.regionName||"";
-      _geoInfo.city=d.city||"";
-      _geoInfo.tz=d.timezone||_geoInfo.tz;
-      try{localStorage.setItem("socrates-geo",JSON.stringify(_geoInfo))}catch(_){}
-    });
-  }).catch(function(){});
-}
-
-/* Build the dynamic system context block — date, location, etc.
-   Called fresh every time so the date is always current. */
-function getSystemContext(){
-  try{
-    var ctx="";
-    var now=new Date();
-    var dateStr=now.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
-    var timeStr=now.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
-    ctx+="Today is "+dateStr+". Local time: "+timeStr;
-    if(_geoInfo.tz)ctx+=" ("+_geoInfo.tz+")";
-    ctx+=".";
-    if(_geoInfo.city&&_geoInfo.country){
-      ctx+=" Estimated user location: "+_geoInfo.city;
-      if(_geoInfo.region&&_geoInfo.region!==_geoInfo.city)ctx+=", "+_geoInfo.region;
-      ctx+=", "+_geoInfo.country+".";
-    }else if(_geoInfo.country){
-      ctx+=" Estimated user location: "+_geoInfo.country+".";
-    }
-    ctx+="\n\nUse the date and location above to give contextually appropriate answers (e.g. current events, local relevance, timezone-aware time references). If a question asks about something time-sensitive, factor in today's date.";
-    ctx+="\n\n## Canvas tool\n\nFor any visual answer (chart, diagram, animation, simulation, comparison), output the visualization directly as a Canvas card.\n\n"+
-      "Use a single ```html ... ``` fence containing a self-contained HTML/CSS/JS snippet. The system renders it inside a sandboxed iframe; the user sees a Canvas card, not source code.\n\n"+
-      "**When to use it — be proactive.** A visual is better than text when:\n"+
-      "- You draw a chart, plot, graph, diagram, animation, comparison, timeline, or flow\n"+
-      "- The answer involves structure, layout, or relationships that benefit from being seen\n"+
-      "- You would otherwise need 5+ lines to describe a visual pattern\n"+
-      "- You want to illustrate a concept with an interactive or animated example\n\n"+
-      "**Structure:**\n"+
-      "1. Fence: ```html (only). NOT ```viz, NOT ```javascript, NOT ```chart.\n"+
-      "2. Content: inner HTML only. No <!DOCTYPE>, <html>, <head>, or <body>.\n"+
-      "3. All CSS and JS must be inline. No external CDN, no <link>, no fetch.\n"+
-      "4. Theme: define colors in CSS and use `prefers-color-scheme: dark` to override.\n"+
-      "5. Use plain ES5 JS (var, function) for sandbox compatibility.\n"+
-       "6. Keep it minimal: no extra fonts, no shadows, no decorative chrome.\n"+
-       "7. Do NOT use emoji anywhere in the snippet — not in text, labels, titles, or as chart elements. Use text or shapes instead.\n"+
-       "8. The ```html block IS the answer. No prose, no explanation, no other ``` fences, no markdown headings inside the snippet.\n\n"+
-      "**Minimal example:**\n"+
-      "```html\n"+
-      "<style>body{font:14px sans-serif;padding:12px;color:#333;background:#fff}"+
-      "@media(prefers-color-scheme:dark){body{color:#eee;background:#1c1d22}}"+
-      ".bar{display:inline-block;width:30px;margin:0 4px;background:#4a9eff;border-radius:3px 3px 0 0;vertical-align:bottom}</style>\n"+
-      "<h3>Sample</h3>\n<div id='root'><\/div>\n<script>\n"+
-      "var data=[30,80,45,60];\n"+
-      "var root=document.getElementById('root');\n"+
-      "for(var i=0;i<data.length;i++){var b=document.createElement('div');b.className='bar';b.style.height=data[i]+'px';b.textContent=data[i];root.appendChild(b)}\n"+
-      "<\/script>\n```"; }catch(_){return "";}
-}
-
+/* P_main-split: system context and geolocation live in system/context.js. */
 /* ============================================================
    SYSTEM PROMPTS
    ============================================================ */
