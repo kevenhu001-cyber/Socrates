@@ -88,6 +88,13 @@ export async function authBoot(){
       }
       cfgOk=true;
     }
+    /* P_privacy-leak — bridge the server-side capability hint to
+     * window so isReasoningProvider() / pickStreamBudgets() can pick
+     * longer timeouts and request reasoning_effort for the built-in
+     * provider without ever knowing its model name. Default false
+     * (assume non-reasoning) if the server is older and doesn't send
+     * the field. */
+    try { window.BEAGLE_IS_REASONING = cfg && cfg.isReasoning === true; } catch (_) {}
   }catch(_){console.warn("[boot] config fetch failed")}
   /* Promote to the module-level flag so refreshApiConfig() — which
      runs after we return — can decide whether to fall back to
@@ -100,7 +107,7 @@ export async function authBoot(){
      window copy never sees the runtime update above. Re-bridge
      here so refreshApiConfig() sees the true value. */
   try { window.SERVER_HAS_BEAGLE_KEY = cfgOk; } catch (_) {}
-  console.log("[boot] config hasBeagleKey="+cfgOk+", BEAGLE_BUILT_IN.key.length="+((window.BEAGLE_BUILT_IN&&window.BEAGLE_BUILT_IN.key)||"").length);
+  console.log("[boot] config hasBeagleKey="+cfgOk+", BEAGLE_IS_REASONING="+(window.BEAGLE_IS_REASONING===true)+", BEAGLE_BUILT_IN.key.length="+((window.BEAGLE_BUILT_IN&&window.BEAGLE_BUILT_IN.key)||"").length);
 
   /* P0.0 — only route the user to the auth gate when the server
    * explicitly says 401. Network blips, 5xx, and a missing

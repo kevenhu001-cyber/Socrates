@@ -28,14 +28,22 @@ try {
   if (saved !== null) webSearchOn = saved === "true";
 } catch (e) {}
 
-function isReasoningProvider() {
+/* P_privacy-leak — built-in providers don't expose their model name,
+ * so the regex-based check below would always return false for them.
+ * Use the boolean capability hint bridged from /api/config instead. */
+function _isReasoningForActive() {
   var active = apiConfig.activeId;
   if (!active) return false;
   var p = (apiConfig.providers || []).find(function (x) { return x && x.id === active; });
   if (!p) return false;
+  if (p.isBuiltIn) return !!window.BEAGLE_IS_REASONING;
   var m = (p.model || "").toLowerCase();
   var l = (p.label || "").toLowerCase();
   return /deepseek-r1|qwq-|minimax-m1|reasoning|think/.test(m) || /deepseek-r1|qwq/.test(l);
+}
+
+function isReasoningProvider() {
+  return _isReasoningForActive();
 }
 
 function pickStreamBudgets() {
@@ -43,9 +51,7 @@ function pickStreamBudgets() {
   if (!active) return { timeoutMs: 300000, heartbeatMs: 60000, maxAttempts: 3, retryable: [429, 503] };
   var p = (apiConfig.providers || []).find(function (x) { return x && x.id === active; });
   if (!p) return { timeoutMs: 300000, heartbeatMs: 60000, maxAttempts: 3, retryable: [429, 503] };
-  var m = (p.model || "").toLowerCase();
-  var l = (p.label || "").toLowerCase();
-  var isReasoning = /deepseek-r1|qwq-|minimax-m1/.test(m) || /deepseek-r1|qwq/.test(l);
+  var isReasoning = _isReasoningForActive();
   return { timeoutMs: isReasoning ? 600000 : 300000, heartbeatMs: isReasoning ? 120000 : 60000, maxAttempts: 5, retryable: [429, 500, 502, 503] };
 }
 
