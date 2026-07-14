@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="socrates" data-mode="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Socrates — 关于</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="/base.css" rel="stylesheet">
+<script>
+!function(){
+  try{
+    var p=localStorage.getItem("socrates-lang");
+    if(!p)return;
+    var c=document.documentElement.lang;
+    var here=window.location.pathname;
+    if(p==="zh"&&c.indexOf("zh")!==0){
+      var target=here.replace(/\.html$/,"");
+      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
+    }else if(p==="en"&&c.indexOf("en")!==0){
+      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
+      window.location.replace(target2==="/"||target2===""?"/":target2);
+    }
+  }catch(e){}
+}();
+</script>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="page">
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px">Socrates</a>
+    <div class="nav-links">
+      <a href="/pricing">套餐</a>
+      <a href="/guide">指南</a>
+      <a href="/about" class="nav-active">关于</a>
+      <a href="/contact">联系</a>
+      <a class="lang-switch">EN</a>
+      <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="section-eyebrow">关于</div>
+  <h1>由教育工作者打造，<br><strong>AI 驱动</strong></h1>
+  <p>Socrates 由一支小而独立的团队创建，我们相信深度学习不应该需要一间教室或一笔财富。我们正在构建一位 AI 导师，像优秀的老师一样教学：通过提出正确的问题。内置 Beagle AI 模型让它可以立即使用，无需设置，无需 API 密钥。</p>
+</div>
+
+<section style="padding-top:0">
+  <div class="section-inner">
+    <div class="narrative-text sr" style="margin-bottom:32px">
+      <p style="margin-bottom:16px">Socrates 于 2025 年初作为一项研究项目启动，探索现代语言模型是否能够实现真正的苏格拉底式教学，不仅仅是回答问题，而是通过结构化对话、诊断检查和自适应节奏引导学习者构建理解。</p>
+      <p style="margin-bottom:16px">经过数月与数学、编程、哲学和科学领域学生的测试，我们向公众开放了 Socrates。反馈证实了我们的猜想：学习者渴望一位能够挑战他们思考的导师，而不是一位仅仅给出答案的导师。</p>
+      <p style="margin-bottom:16px">如今，Socrates 已被超过 40 个国家的学习者使用。我们的团队是一个分布式的五人小组，包括工程师、教育工作者和研究人员，分布在中国和北美。我们由总部位于中国西安的 Topodrive 全资拥有和运营。</p>
+    </div>
+
+    <div class="sr" style="display:flex;gap:24px;justify-content:center;align-items:center;margin-bottom:32px;flex-wrap:wrap">
+      <div style="text-align:center"><div style="font-family:var(--font-display);font-size:32px;font-weight:300;color:hsl(var(--accent-000));line-height:1">5</div><div style="font-size:12px;color:hsl(var(--text-500));margin-top:2px">团队成员</div></div>
+      <div style="width:0.5px;height:32px;background:hsl(var(--border-300)/0.1)"></div>
+      <div style="text-align:center"><div style="font-family:var(--font-display);font-size:32px;font-weight:300;color:hsl(var(--accent-000));line-height:1">40+</div><div style="font-size:12px;color:hsl(var(--text-500));margin-top:2px">覆盖国家</div></div>
+    </div>
+
+    <h3 class="narrative-heading sr" style="margin-top:48px;margin-bottom:24px;text-align:center">我们的信念</h3>
+    <div class="feat-list sr">
+      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">深度胜于速度</div><div class="feat-item-desc">理解不能急于求成。每个概念都值得从零开始、层层深入地教授。我们宁愿你深入学好一件事，也不愿让你肤浅地浏览十件事。</div></div></div>
+      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">教学，而非作答</div><div class="feat-item-desc">导师的工作不是提供答案，而是提出能够引导理解的问题。每一次诊断检查都在构建心智模型，而非一份记录。</div></div></div>
+      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">彻底的可及性</div><div class="feat-item-desc">优质教育不应该需要信用卡，甚至不需要 API 密钥。内置 Beagle AI 模型让任何人都能立即开始学习。永久免费。</div></div></div>
+    </div>
+
+    <h3 class="narrative-heading sr" style="margin-top:48px;margin-bottom:24px;text-align:center">我们的方法</h3>
+    <div class="feat-list sr">
+      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">第一性原理</div><div class="feat-item-desc">每节课都从基础开始。Socrates 识别先修概念，清晰定义术语，并循序渐进，从不假设未经验证的已有知识。</div></div></div>
+      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">主动回忆</div><div class="feat-item-desc">Socrates 在自然间隔中将讲解与诊断问题交织在一起，迫使你的大脑在信息消退之前检索和应用知识。</div></div></div>
+      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">自适应节奏</div><div class="feat-item-desc">掌握了一个概念？Socrates 会推进。遇到困难？它会实时调整，提供替代解释和基础回顾。</div></div></div>
+      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">考试与测评</div><div class="feat-item-desc">在任意主题上生成结构化考试。设置难度和题型，按自己的节奏作答，提交评分，长期追踪学习效果。</div></div></div>
+    </div>
+
+    <div class="pull-quote sr" style="margin:60px 0 0">
+      <div class="section-inner">
+        <blockquote>&ldquo;唯一真正的教育来自于激发学习者自身的能力。Socrates 不是填满一个桶，而是点燃一把火。&rdquo;</blockquote>
+        <cite>我们将苏格拉底方法应用于 AI</cite>
+      </div>
+    </div>
+
+    <p class="narrative-text sr" style="margin-top:48px;text-align:center;font-size:14px;color:hsl(var(--text-500))">成立于 2026 年 &middot; 陕西西安 &middot; 中国</p>
+  </div>
+</section>
+
+<section class="cta-section sr">
+  <div class="section-inner">
+    <h2>准备好<strong>深度学习</strong>了吗？</h2>
+    <p>从任何主题开始。永久免费。</p>
+    <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-tag"><em>S</em>ocrates</div>
+      <p>AI 驱动的苏格拉底式导师。循序渐进，学无止境。</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">产品</div>
+      <a href="/pricing">套餐</a>
+      <a href="/guide">指南</a>
+      <a href="https://app.topodrive.top">应用</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">公司</div>
+      <a href="/about">关于</a>
+      <a href="/contact">联系</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">账户</div>
+      <a href="/zh/account">我的账户</a>
+      <a href="/zh/api-keys">API 密钥</a>
+      <a href="/zh/profile">个人资料</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">法律</div>
+      <a href="/terms">服务条款</a>
+      <a href="/privacy">隐私政策</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">支持</div>
+      <a href="mailto:help@addtech.site">help@addtech.site</a>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Topodrive. 保留所有权利。</p>
+      <p>用心打造，服务全球学习者。</p>
+    </div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('in');
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.sr').forEach(el => observer.observe(el));
+</script>
+<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/^\/zh/,'').replace(/\.html$/,'');b.href=p==='/'||p===''?'/':p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","en")}catch(e){}});})();</script>
+</body>
+</html>

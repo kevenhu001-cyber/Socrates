@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="socrates" data-mode="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Socrates — Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="/base.css" rel="stylesheet">
+<script>
+!function(){
+  try{
+    var p=localStorage.getItem("socrates-lang");
+    if(!p)return;
+    var c=document.documentElement.lang;
+    var here=window.location.pathname;
+    if(p==="zh"&&c.indexOf("zh")!==0){
+      var target=here.replace(/\.html$/,"");
+      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
+    }else if(p==="en"&&c.indexOf("en")!==0){
+      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
+      window.location.replace(target2==="/"||target2===""?"/":target2);
+    }
+  }catch(e){}
+}();
+</script>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="page">
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px">Socrates</a>
+    <div class="nav-links">
+      <a href="/pricing">Pricing</a>
+      <a href="/guide" class="nav-active">Guide</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+      <a class="lang-switch">中文</a>
+      <a href="https://app.topodrive.top" class="cta-btn">Start learning</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="section-eyebrow">Guide</div>
+  <h1>Start learning in <strong>minutes</strong></h1>
+  <p>Getting started with Socrates is straightforward. The built-in Beagle AI model works out of the box with no API key needed. Just pick a topic and start learning. Here is everything you need to know, from setup to your first lesson.</p>
+</div>
+
+<section style="padding-top:0">
+  <div class="section-inner">
+    <div class="guide-steps">
+      <div class="guide-step sr">
+        <div class="guide-step-num">1</div>
+        <div>
+          <h3>Open the app</h3>
+          <p>Head to <a href="https://app.topodrive.top">app.topodrive.top</a>. No download, no installation. It works in any modern browser (Chrome, Firefox, Safari, Edge). The interface is split into a sidebar (session history, settings, knowledge map) and the main area where your lessons unfold. On mobile the sidebar collapses and the main view takes full width. Tap the hamburger icon to toggle it.</p>
+        </div>
+      </div>
+      <div class="guide-step sr">
+        <div class="guide-step-num">2</div>
+        <div>
+          <h3>Configure your provider</h3>
+          <p>Socrates comes with a built-in <strong>Beagle</strong> AI model that works immediately with no configuration needed. If you prefer your own model, click the gear icon in the bottom-left corner to open API Settings. Socrates also works with OpenAI (GPT-5.5), Anthropic (Claude Opus 4.8, Sonnet 4.6), and any OpenAI-compatible endpoint (together.ai, Groq, DeepSeek, local LLMs via vLLM/Ollama).</p>
+          <p style="margin-top:8px">To get a key: visit <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a> or <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>, create an API key, and paste it into the settings. The free tier supports up to 2 keys; paid tiers support up to unlimited keys across different providers.</p>
+        </div>
+      </div>
+      <div class="guide-step sr">
+        <div class="guide-step-num">3</div>
+        <div>
+          <h3>Choose a topic</h3>
+          <p>Type anything you want to learn in the input field at the center of the screen. Socrates adapts to any subject — from calculus to poetry, quantum mechanics to philosophy, machine learning to music theory. Some examples:</p>
+          <ul style="margin-top:8px;padding-left:20px;font-size:14px;color:hsl(var(--text-400));line-height:1.8">
+            <li>"Explain the chain rule with examples from physics"</li>
+            <li>"Teach me about the Byzantine Empire - focus on trade routes"</li>
+            <li>"I want to understand how transformers work in deep learning"</li>
+            <li>"Walk me through John Stuart Mill's utilitarianism"</li>
+          </ul>
+        </div>
+      </div>
+      <div class="guide-step sr">
+        <div class="guide-step-num">4</div>
+        <div>
+          <h3>Learn at your own pace</h3>
+          <p>Socrates begins with a structured explanation of the topic, introducing concepts one at a time with clear definitions, concrete examples, and connections to prior material. Mathematical notation renders beautifully with LaTeX. Code blocks are syntax-highlighted. Each section reads like a well-written textbook chapter — only it's written specifically for you.</p>
+          <p style="margin-top:8px">After each key concept, Socrates asks a diagnostic question. Answer correctly and you advance to the next layer. Get it wrong and the tutor revisits the material from a different angle — an alternative explanation, a different example, or a more foundational review. No two learning paths are identical.</p>
+          <p style="margin-top:8px">You can also switch to <strong>Exam Mode</strong> to test your knowledge with structured assessments. Generate an exam on any topic, set difficulty and question types, answer at your own pace, and submit for automatic grading. Every answered question is tracked in your mistake book for later review.</p>
+        </div>
+      </div>
+      <div class="guide-step sr">
+        <div class="guide-step-num">5</div>
+        <div>
+          <h3>Create an account</h3>
+          <p>Socrates requires an account to use. Sign up with your email to get started — verification is quick, just check your inbox for a confirmation link. Once verified, your sessions, knowledge graph, mistake book, and API keys are all backed up on the server and synced across devices.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pull-quote sr">
+  <div class="section-inner">
+    <blockquote>&ldquo;The best way to learn is to teach. Socrates does the teaching so you can focus on the understanding.&rdquo;</blockquote>
+    <cite>Designed around cognitive science principles</cite>
+  </div>
+</section>
+
+<section class="sr">
+  <div class="section-inner" style="text-align:center">
+    <div class="section-eyebrow">Tips</div>
+    <h2 class="section-title" style="margin-bottom:24px">Get the most out of <strong>Socrates</strong></h2>
+    <div class="feat-list">
+      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">Be specific</div><div class="feat-item-desc">Narrow topics produce deeper lessons. Instead of "math," try "the chain rule from first principles with physics examples."</div></div></div>
+      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">Answer honestly</div><div class="feat-item-desc">Diagnostic questions check your understanding, not your ego. Guessing correctly when you're unsure skips material you need.</div></div></div>
+      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">Review your mistakes</div><div class="feat-item-desc">The mistake book records every question you answered incorrectly. Revisit it periodically to reinforce weak areas.</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Provider reference -->
+<section class="sr" style="padding-top:40px">
+  <div class="section-inner" style="text-align:center">
+    <div class="section-eyebrow">Supported models</div>
+    <h2 class="section-title" style="margin-bottom:24px">Bring your <strong>own LLM</strong></h2>
+    <div class="feat-list compact">
+      <div class="feat-item"><div><div class="feat-item-title">Beagle (Built-in)</div><div class="feat-item-desc">Works out of the box, no API key required. Generous monthly token quotas on every tier.</div></div></div>
+      <div class="feat-item"><div><div class="feat-item-title">OpenAI</div><div class="feat-item-desc">GPT-5.5 via platform.openai.com</div></div></div>
+      <div class="feat-item"><div><div class="feat-item-title">Anthropic</div><div class="feat-item-desc">Claude Opus 4.8, Sonnet 4.6 via console.anthropic.com</div></div></div>
+      <div class="feat-item"><div><div class="feat-item-title">Compatible</div><div class="feat-item-desc">Together.ai, Groq, DeepSeek, vLLM, Ollama — any OpenAI-compatible endpoint works.</div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section sr">
+  <div class="section-inner">
+    <h2>Ready to try it? <strong>It's free.</strong></h2>
+    <p>Sign up with your email and start learning in minutes.</p>
+    <a href="https://app.topodrive.top" class="cta-btn">Open the app</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-tag"><em>S</em>ocrates</div>
+      <p>An AI-powered Socratic tutor. Learn anything, step by step.</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Product</div>
+      <a href="/pricing">Pricing</a>
+      <a href="/guide">Guide</a>
+      <a href="https://app.topodrive.top">App</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Company</div>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Account</div>
+      <a href="/account">My Account</a>
+      <a href="/api-keys">API Keys</a>
+      <a href="/profile">Profile</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Legal</div>
+      <a href="/terms">Terms of Service</a>
+      <a href="/privacy">Privacy Policy</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Support</div>
+      <a href="mailto:help@addtech.site">help@addtech.site</a>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Topodrive. All rights reserved.</p>
+      <p>Built with care, for learners everywhere.</p>
+    </div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('in');
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.sr').forEach(el => observer.observe(el));
+</script>
+<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/\.html$/,'');b.href=p==='/'||p===''?'/zh/':'/zh'+p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","zh")}catch(e){}});})();</script>
+</body>
+</html>

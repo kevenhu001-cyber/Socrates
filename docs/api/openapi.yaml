@@ -1,0 +1,2315 @@
+openapi: 3.1.0
+info:
+  title: Socrates Backend API
+  description: |
+    REST + SSE API consumed by the Socrates web SPA
+    (`index.html`) and the Android Kotlin client. The existing
+    endpoints (auth, captcha, sessions, share, api-key, migrate,
+    chat, agent, search, fetch-batch) are summarised at the end
+    of this file for completeness; the new endpoints introduced
+    by the P1-P6 feature enhancements are documented in detail.
+  version: "2.0.0"
+  contact:
+    name: Socrates engineering
+    url: https://app.topodrive.top/
+servers:
+  - url: https://app.topodrive.top
+    description: Production
+  - url: http://localhost:8080
+    description: Local dev
+security:
+  - cookieAuth: []
+  - csrfHeader: []
+
+tags:
+  - name: messages
+    description: Per-message actions (P1.1 — Copy/Edit/Regenerate/Feedback)
+  - name: search
+    description: Global session search (P1.2)
+  - name: users
+    description: User preferences and custom instructions (P1.3)
+  - name: projects
+    description: Workspace projects / folders (P2.1)
+  - name: tags
+    description: Session tags and pin state (P2.2)
+  - name: archive
+    description: Archive / restore / purge (P2.3)
+  - name: files
+    description: File & image upload + retrieval (P3.1, P3.2)
+  - name: voice
+    description: Voice transcription (P3.3)
+  - name: artifacts
+    description: Canvas artifacts — HTML/React/SVG/Mermaid (P4.1)
+  - name: memory
+    description: Cross-session memory store (P4.4)
+  - name: usage
+    description: Token usage / billing dashboard (P5.1)
+  - name: notifications
+    description: Push notification registration (P5.2)
+  - name: workspaces
+    description: Team workspaces (P5.5)
+  - name: collaborators
+    description: Real-time collaboration sync (P6.1)
+  - name: agents
+    description: Agent runs, plans, checkpoints (P6.2)
+  - name: classroom
+    description: Classroom, spaced-repetition, study paths (P6.3)
+  - name: imports
+    description: Import from ChatGPT/Claude export (P5.7)
+  - name: prompts
+    description: Prompt templates (P5.8)
+
+paths:
+  # ========================================================================
+  # P1.1 — Message operations
+  # ========================================================================
+  /api/messages/{messageId}:
+    parameters:
+      - $ref: '#/components/parameters/MessageId'
+    patch:
+      tags: [messages]
+      operationId: editMessage
+      summary: Edit the content of a user message (and optionally regenerate the assistant reply)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string, minLength: 1, maxLength: 32000 }
+                regenerate: { type: boolean, default: false, description: If true, also delete the assistant message that followed and trigger a new stream. }
+      responses:
+        '200':
+          description: Updated message
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [messages]
+      operationId: deleteMessage
+      summary: Soft-delete a message (kept for audit, hidden from chat)
+      responses:
+        '204': { description: Deleted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/messages/{messageId}/regenerate:
+    parameters:
+      - $ref: '#/components/parameters/MessageId'
+    post:
+      tags: [messages]
+      operationId: regenerateAssistant
+      summary: Re-run the model on the user message that precedes this assistant message
+      description: |
+        Returns a Server-Sent-Events stream identical in shape to
+        `/api/chat/stream`, with `delta.content` chunks. After the
+        stream completes, the server has replaced the assistant
+        message in-place.
+      responses:
+        '200':
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema: { $ref: '#/components/schemas/ChatDelta' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/messages/{messageId}/feedback:
+    parameters:
+      - $ref: '#/components/parameters/MessageId'
+    put:
+      tags: [messages]
+      operationId: submitFeedback
+      summary: Thumbs up/down + optional reason
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating: { type: string, enum: [up, down, none] }
+                reason: { type: string, maxLength: 500, description: Free-form feedback when rating is "down" }
+                categories:
+                  type: array
+                  items: { type: string, enum: [hallucination, off_topic, too_long, too_short, wrong_format, harmful, other] }
+      responses:
+        '200':
+          description: Stored
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FeedbackReceipt' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/messages/{messageId}/copy-event:
+    parameters:
+      - $ref: '#/components/parameters/MessageId'
+    post:
+      tags: [messages]
+      operationId: logCopy
+      summary: "Server-side telemetry: user clicked Copy on this message"
+      description: |
+        Best-effort; the client may skip this on privacy opt-out.
+        Helps the user see "this is a popular answer" and helps
+        admins prioritise quality work.
+      responses:
+        '204': { description: Recorded }
+
+  # ========================================================================
+  # P1.2 — Global search
+  # ========================================================================
+  /api/search:
+    post:
+      tags: [search]
+      operationId: globalSearch
+      summary: Search across sessions, messages, and artifacts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [q]
+              properties:
+                q: { type: string, minLength: 1, maxLength: 200 }
+                scope: { type: string, enum: [all, sessions, messages, artifacts, memory], default: all }
+                projectId: { type: string, format: uuid, nullable: true }
+                tags: { type: array, items: { type: string } }
+                limit: { type: integer, default: 20, maximum: 100 }
+                cursor: { type: string, nullable: true, description: Opaque pagination cursor }
+                from: { type: string, format: date, nullable: true }
+                to: { type: string, format: date, nullable: true }
+      responses:
+        '200':
+          description: Hits
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [hits]
+                properties:
+                  hits:
+                    type: array
+                    items: { $ref: '#/components/schemas/SearchHit' }
+                  nextCursor: { type: string, nullable: true }
+                  total: { type: integer }
+
+  /api/search/suggest:
+    get:
+      tags: [search]
+      operationId: searchSuggest
+      summary: Typeahead suggestions (titles, tags, recent queries)
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        '200':
+          description: Suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  titles: { type: array, items: { type: string } }
+                  tags: { type: array, items: { type: string } }
+                  recent: { type: array, items: { type: string } }
+
+  # ========================================================================
+  # P1.3 — User preferences
+  # ========================================================================
+  /api/users/me:
+    get:
+      tags: [users]
+      operationId: getMe
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+    patch:
+      tags: [users]
+      operationId: updateMe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName: { type: string, maxLength: 80 }
+                customInstructions:
+                  type: string
+                  maxLength: 8000
+                  description: Always prepended to the system prompt
+                preferences:
+                  type: object
+                  additionalProperties: true
+                  description: Free-form key/value bag (theme, fontStep, etc.)
+                defaultModel: { type: string, nullable: true }
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+
+  /api/users/me/export:
+    get:
+      tags: [users]
+      operationId: exportMyData
+      summary: GDPR-style data export (sessions, memories, settings)
+      responses:
+        '200':
+          description: ZIP archive
+          content:
+            application/zip:
+              schema: { type: string, format: binary }
+
+  # ========================================================================
+  # P2.1 — Projects
+  # ========================================================================
+  /api/projects:
+    get:
+      tags: [projects]
+      operationId: listProjects
+      responses:
+        '200':
+          description: List of projects the user owns or has access to
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects: { type: array, items: { $ref: '#/components/schemas/Project' } }
+    post:
+      tags: [projects]
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 80 }
+                description: { type: string, maxLength: 2000 }
+                color: { type: string, pattern: "^#[0-9A-Fa-f]{6}$" }
+                icon: { type: string, maxLength: 16, description: Emoji or short label }
+                systemPrompt: { type: string, maxLength: 32000, description: Project-scoped system prompt additions }
+                workspaceId: { type: string, format: uuid, nullable: true }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/projects/{projectId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      tags: [projects]
+      operationId: getProject
+      responses:
+        '200':
+          description: Project with sessions
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProjectDetail' }
+    patch:
+      tags: [projects]
+      operationId: updateProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                color: { type: string }
+                icon: { type: string }
+                systemPrompt: { type: string }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+    delete:
+      tags: [projects]
+      operationId: deleteProject
+      parameters:
+        - in: query
+          name: cascade
+          schema: { type: boolean, default: false, description: If true, also archive all sessions. }
+      responses:
+        '204': { description: Deleted }
+
+  /api/projects/{projectId}/sessions:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      tags: [projects]
+      operationId: listProjectSessions
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, maximum: 200 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        '200':
+          description: Sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions: { type: array, items: { $ref: '#/components/schemas/SessionSummary' } }
+                  nextCursor: { type: string, nullable: true }
+
+  # ========================================================================
+  # P2.2 — Tags & pinning
+  # ========================================================================
+  /api/sessions/{sessionId}/tags:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    put:
+      tags: [tags]
+      operationId: setSessionTags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tags]
+              properties:
+                tags: { type: array, items: { type: string, maxLength: 30 }, maxItems: 12 }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionSummary' }
+
+  /api/sessions/{sessionId}/pin:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    post:
+      tags: [tags]
+      operationId: pinSession
+      responses:
+        '200':
+          description: Pinned
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionSummary' }
+    delete:
+      tags: [tags]
+      operationId: unpinSession
+      responses:
+        '200':
+          description: Unpinned
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionSummary' }
+
+  /api/tags:
+    get:
+      tags: [tags]
+      operationId: listMyTags
+      responses:
+        '200':
+          description: User's tag vocabulary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tags:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name: { type: string }
+                        count: { type: integer }
+                        color: { type: string }
+
+  # ========================================================================
+  # P2.3 — Archive / trash
+  # ========================================================================
+  /api/sessions/{sessionId}/archive:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    post:
+      tags: [archive]
+      operationId: archiveSession
+      responses:
+        '200':
+          description: Archived
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionSummary' }
+    delete:
+      tags: [archive]
+      operationId: restoreSession
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionSummary' }
+
+  /api/sessions/archived:
+    get:
+      tags: [archive]
+      operationId: listArchived
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+      responses:
+        '200':
+          description: Archived sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions: { type: array, items: { $ref: '#/components/schemas/SessionSummary' } }
+
+  /api/sessions/{sessionId}:
+    delete:
+      tags: [archive]
+      operationId: purgeSession
+      summary: Hard-delete (only valid for already-archived sessions)
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '204': { description: Purged }
+        '409':
+          description: Session is not archived; archive first
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ========================================================================
+  # P3.1 — File upload
+  # ========================================================================
+  /api/files:
+    post:
+      tags: [files]
+      operationId: uploadFile
+      summary: Multipart upload. Returns a fileId that can be attached to messages.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Max 25 MB
+                sessionId: { type: string, format: uuid, nullable: true, description: If provided, file is bound to the session for retention purposes. }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileRef' }
+        '413':
+          description: File too large
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/files/{fileId}:
+    parameters:
+      - $ref: '#/components/parameters/FileId'
+    get:
+      tags: [files]
+      operationId: getFile
+      responses:
+        '200':
+          description: File metadata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileRef' }
+    delete:
+      tags: [files]
+      operationId: deleteFile
+      responses:
+        '204': { description: Deleted }
+
+  /api/files/{fileId}/raw:
+    parameters:
+      - $ref: '#/components/parameters/FileId'
+    get:
+      tags: [files]
+      operationId: getFileRaw
+      responses:
+        '200':
+          description: File bytes
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+
+  /api/files/{fileId}/thumbnail:
+    parameters:
+      - $ref: '#/components/parameters/FileId'
+      - in: query
+        name: w
+        schema: { type: integer, default: 256 }
+      - in: query
+        name: h
+        schema: { type: integer, default: 256 }
+    get:
+      tags: [files]
+      operationId: getFileThumbnail
+      responses:
+        '200':
+          description: PNG thumbnail
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+
+  # ========================================================================
+  # P3.3 — Voice
+  # ========================================================================
+  /api/voice/transcribe:
+    post:
+      tags: [voice]
+      operationId: transcribeAudio
+      summary: Server-side fallback when client-side Web Speech API is unavailable
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [audio]
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: webm/opus or wav, max 5 minutes
+                language:
+                  type: string
+                  description: BCP-47 code, e.g. "en-US"
+      responses:
+        '200':
+          description: Transcript
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text: { type: string }
+                  language: { type: string }
+                  duration: { type: number, description: Seconds }
+                  words:
+                    type: array
+                    items: { $ref: '#/components/schemas/TranscriptWord' }
+
+  # ========================================================================
+  # P4.1 — Artifacts
+  # ========================================================================
+  /api/artifacts:
+    parameters:
+      - $ref: '#/components/parameters/SessionIdOptional'
+      - in: query
+        name: projectId
+        schema: { type: string, format: uuid }
+    post:
+      tags: [artifacts]
+      operationId: createArtifact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, source]
+              properties:
+                type: { type: string, enum: [html, react, svg, mermaid, code, markdown] }
+                title: { type: string, maxLength: 200 }
+                source: { type: string, description: Original code/markup }
+                sessionId: { type: string, format: uuid }
+                messageId: { type: string, format: uuid }
+                language: { type: string, description: For code artifacts }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Artifact' }
+    get:
+      tags: [artifacts]
+      operationId: listArtifacts
+      responses:
+        '200':
+          description: User's artifacts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  artifacts: { type: array, items: { $ref: '#/components/schemas/Artifact' } }
+
+  /api/artifacts/{artifactId}:
+    parameters:
+      - $ref: '#/components/parameters/ArtifactId'
+    get:
+      tags: [artifacts]
+      operationId: getArtifact
+      responses:
+        '200':
+          description: Artifact
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Artifact' }
+    patch:
+      tags: [artifacts]
+      operationId: updateArtifact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                source: { type: string }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Artifact' }
+    delete:
+      tags: [artifacts]
+      operationId: deleteArtifact
+      responses:
+        '204': { description: Deleted }
+
+  /api/artifacts/{artifactId}/versions:
+    parameters:
+      - $ref: '#/components/parameters/ArtifactId'
+    get:
+      tags: [artifacts]
+      operationId: listArtifactVersions
+      responses:
+        '200':
+          description: Version history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  versions: { type: array, items: { $ref: '#/components/schemas/ArtifactVersion' } }
+
+  /api/artifacts/{artifactId}/share:
+    parameters:
+      - $ref: '#/components/parameters/ArtifactId'
+    post:
+      tags: [artifacts]
+      operationId: shareArtifact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visibility: { type: string, enum: [public, unlisted, private] }
+      responses:
+        '201':
+          description: Shared
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShareResponse' }
+    delete:
+      tags: [artifacts]
+      operationId: unshareArtifact
+      responses:
+        '204': { description: Unshared }
+
+  /a/{shareToken}:
+    get:
+      tags: [artifacts]
+      operationId: publicArtifactView
+      responses:
+        '200':
+          description: Public artifact page (HTML)
+          content:
+            text/html: {}
+
+  # ========================================================================
+  # P4.4 — Memory
+  # ========================================================================
+  /api/memory:
+    get:
+      tags: [memory]
+      operationId: listMemories
+      parameters:
+        - in: query
+          name: includeDisabled
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: User memories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  memories: { type: array, items: { $ref: '#/components/schemas/MemoryEntry' } }
+    post:
+      tags: [memory]
+      operationId: createMemory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, minLength: 1, maxLength: 2000 }
+                scope: { type: string, enum: [global, project], default: global }
+                projectId: { type: string, format: uuid, nullable: true }
+                source: { type: string, enum: [user, extracted], default: user }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MemoryEntry' }
+
+  /api/memory/{memoryId}:
+    parameters:
+      - $ref: '#/components/parameters/MemoryId'
+    patch:
+      tags: [memory]
+      operationId: updateMemory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text: { type: string }
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MemoryEntry' }
+    delete:
+      tags: [memory]
+      operationId: deleteMemory
+      responses:
+        '204': { description: Deleted }
+
+  /api/memory/{memoryId}/enable:
+    parameters:
+      - $ref: '#/components/parameters/MemoryId'
+    post:
+      tags: [memory]
+      operationId: enableMemory
+      responses:
+        '200':
+          description: Enabled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MemoryEntry' }
+
+  /api/memory/{memoryId}/disable:
+    parameters:
+      - $ref: '#/components/parameters/MemoryId'
+    post:
+      tags: [memory]
+      operationId: disableMemory
+      responses:
+        '200':
+          description: Disabled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MemoryEntry' }
+
+  /api/memory/extract:
+    post:
+      tags: [memory]
+      operationId: extractMemoriesFromSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId]
+              properties:
+                sessionId: { type: string, format: uuid }
+                confirm: { type: array, items: { type: string, maxLength: 2000 }, description: Pre-approved candidates to upsert verbatim }
+      responses:
+        '200':
+          description: Extraction candidates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  candidates:
+                    type: array
+                    items: { $ref: '#/components/schemas/MemoryEntry' }
+
+  # ========================================================================
+  # P5.1 — Usage
+  # ========================================================================
+  /api/usage:
+    get:
+      tags: [usage]
+      operationId: getUsage
+      parameters:
+        - in: query
+          name: period
+          schema: { type: string, enum: [day, week, month, all], default: month }
+        - in: query
+          name: groupBy
+          schema: { type: string, enum: [model, project, day, none], default: model }
+      responses:
+        '200':
+          description: Usage summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Usage' }
+
+  /api/usage/limits:
+    get:
+      tags: [usage]
+      operationId: getUsageLimits
+      responses:
+        '200':
+          description: Plan limits
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UsageLimits' }
+
+  # ========================================================================
+  # P5.2 — Notifications
+  # ========================================================================
+  /api/notifications/register:
+    post:
+      tags: [notifications]
+      operationId: registerPush
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform, token]
+              properties:
+                platform: { type: string, enum: [web, android, ios] }
+                token: { type: string }
+                deviceId: { type: string, nullable: true }
+                channels:
+                  type: array
+                  items: { type: string, enum: [long_tasks, mentions, replies, billing] }
+      responses:
+        '200':
+          description: Registered
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationToken' }
+
+  /api/notifications/unregister:
+    delete:
+      tags: [notifications]
+      operationId: unregisterPush
+      responses:
+        '204': { description: Unregistered }
+
+  /api/notifications/preferences:
+    get:
+      tags: [notifications]
+      operationId: getNotifPrefs
+      responses:
+        '200':
+          description: Per-channel preferences
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationPrefs' }
+    put:
+      tags: [notifications]
+      operationId: setNotifPrefs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NotificationPrefs' }
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationPrefs' }
+
+  # ========================================================================
+  # P5.5 — Workspaces
+  # ========================================================================
+  /api/workspaces:
+    get:
+      tags: [workspaces]
+      operationId: listWorkspaces
+      responses:
+        '200':
+          description: Workspaces
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workspaces: { type: array, items: { $ref: '#/components/schemas/Workspace' } }
+    post:
+      tags: [workspaces]
+      operationId: createWorkspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 80 }
+                plan: { type: string, enum: [team, business], default: team }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Workspace' }
+
+  /api/workspaces/{workspaceId}/members:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceId'
+    get:
+      tags: [workspaces]
+      operationId: listMembers
+      responses:
+        '200':
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  members: { type: array, items: { $ref: '#/components/schemas/WorkspaceMember' } }
+    post:
+      tags: [workspaces]
+      operationId: inviteMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email: { type: string, format: email }
+                role: { type: string, enum: [admin, member, viewer] }
+      responses:
+        '201':
+          description: Invited
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorkspaceMember' }
+
+  /api/workspaces/{workspaceId}/members/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceId'
+      - in: path
+        name: userId
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [workspaces]
+      operationId: updateMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role: { type: string, enum: [admin, member, viewer] }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorkspaceMember' }
+    delete:
+      tags: [workspaces]
+      operationId: removeMember
+      responses:
+        '204': { description: Removed }
+
+  # ========================================================================
+  # P5.7 — Import
+  # ====================================================================
+  /api/import:
+    post:
+      tags: [imports]
+      operationId: importConversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source, payload]
+              properties:
+                source: { type: string, enum: [chatgpt, claude, socrates, jsonl] }
+                payload: { type: object, description: Source-native format }
+                projectId: { type: string, format: uuid, nullable: true }
+      responses:
+        '202':
+          description: Import started
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportJob' }
+    get:
+      tags: [imports]
+      operationId: listImports
+      responses:
+        '200':
+          description: Past imports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs: { type: array, items: { $ref: '#/components/schemas/ImportJob' } }
+
+  /api/import/{jobId}:
+    parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [imports]
+      operationId: getImport
+      responses:
+        '200':
+          description: Import job
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportJob' }
+
+  # ========================================================================
+  # P5.8 — Prompt templates
+  # ========================================================================
+  /api/prompts:
+    get:
+      tags: [prompts]
+      operationId: listPromptTemplates
+      parameters:
+        - in: query
+          name: scope
+          schema: { type: string, enum: [builtin, mine, all], default: all }
+      responses:
+        '200':
+          description: Templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  templates: { type: array, items: { $ref: '#/components/schemas/PromptTemplate' } }
+    post:
+      tags: [prompts]
+      operationId: createPromptTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, body]
+              properties:
+                title: { type: string, maxLength: 80 }
+                description: { type: string, maxLength: 200 }
+                body: { type: string, maxLength: 32000 }
+                icon: { type: string, maxLength: 16 }
+                category: { type: string, enum: [writing, code, learning, analysis, creative, other] }
+                shortcut: { type: string, maxLength: 20, description: Optional slash-command alias, e.g. "/summarize" }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PromptTemplate' }
+
+  /api/prompts/{templateId}:
+    parameters:
+      - in: path
+        name: templateId
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [prompts]
+      operationId: updatePromptTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                body: { type: string }
+                icon: { type: string }
+                category: { type: string }
+                shortcut: { type: string }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PromptTemplate' }
+    delete:
+      tags: [prompts]
+      operationId: deletePromptTemplate
+      responses:
+        '204': { description: Deleted }
+
+  # ========================================================================
+  # P6.1 — Real-time collaboration
+  # ========================================================================
+  /api/sessions/{sessionId}/collab:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    get:
+      tags: [collaborators]
+      operationId: openCollabSocket
+      summary: Upgrade to WebSocket for real-time sync (Y.js over binary protocol)
+      description: |
+        Bidirectional WebSocket. The server stores the Y.Doc per
+        session and broadcasts updates to all connected clients.
+        Authentication via the same `sid` cookie + `X-CSRF-Token`
+        header (sent in the WebSocket upgrade request).
+      responses:
+        '101':
+          description: Switching protocols
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/sessions/{sessionId}/collab/presence:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    get:
+      tags: [collaborators]
+      operationId: getPresence
+      responses:
+        '200':
+          description: Currently connected users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items: { $ref: '#/components/schemas/PresenceUser' }
+
+  /api/sessions/{sessionId}/collab/comments:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    get:
+      tags: [collaborators]
+      operationId: listComments
+      responses:
+        '200':
+          description: Inline comments anchored to message ids
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comments: { type: array, items: { $ref: '#/components/schemas/Comment' } }
+    post:
+      tags: [collaborators]
+      operationId: addComment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [anchor, body]
+              properties:
+                anchor: { type: string, description: MessageId or range }
+                body: { type: string, maxLength: 4000 }
+                parentId: { type: string, format: uuid, nullable: true, description: For threading replies }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Comment' }
+
+  # ========================================================================
+  # P6.2 — Agent reinforcement
+  # ========================================================================
+  /api/agent/runs/{runId}:
+    parameters:
+      - in: path
+        name: runId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [agents]
+      operationId: getAgentRun
+      responses:
+        '200':
+          description: Run state
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentRun' }
+
+  /api/agent/runs/{runId}/plan:
+    parameters:
+      - in: path
+        name: runId
+        required: true
+        schema: { type: string, format: uuid }
+    put:
+      tags: [agents]
+      operationId: setAgentPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [steps]
+              properties:
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, title]
+                    properties:
+                      id: { type: string }
+                      title: { type: string, maxLength: 200 }
+                      rationale: { type: string, maxLength: 1000 }
+                approved: { type: boolean, default: false, description: When true, the agent starts executing. }
+      responses:
+        '200':
+          description: Plan saved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentRun' }
+
+  /api/agent/runs/{runId}/checkpoints:
+    parameters:
+      - in: path
+        name: runId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [agents]
+      operationId: listCheckpoints
+      responses:
+        '200':
+          description: Rollback points
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checkpoints: { type: array, items: { $ref: '#/components/schemas/Checkpoint' } }
+    post:
+      tags: [agents]
+      operationId: createCheckpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 100 }
+                description: { type: string, maxLength: 500 }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Checkpoint' }
+
+  /api/agent/runs/{runId}/checkpoints/{checkpointId}/rollback:
+    parameters:
+      - in: path
+        name: runId
+        required: true
+        schema: { type: string, format: uuid }
+      - in: path
+        name: checkpointId
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [agents]
+      operationId: rollbackToCheckpoint
+      responses:
+        '200':
+          description: Rolled back
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentRun' }
+
+  /api/agent/runs/{runId}/diffs:
+    parameters:
+      - in: path
+        name: runId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [agents]
+      operationId: listDiffs
+      responses:
+        '200':
+          description: Proposed file changes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  diffs: { type: array, items: { $ref: '#/components/schemas/FileDiff' } }
+
+  /api/agent/runs/{runId}/diffs/{diffId}/approve:
+    parameters:
+      - in: path
+        name: runId
+        required: true
+        schema: { type: string, format: uuid }
+      - in: path
+        name: diffId
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [agents]
+      operationId: approveDiff
+      responses:
+        '200':
+          description: Approved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileDiff' }
+
+  /api/agent/runs/{runId}/diffs/{diffId}/reject:
+    parameters:
+      - in: path
+        name: runId
+        required: true
+        schema: { type: string, format: uuid }
+      - in: path
+        name: diffId
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [agents]
+      operationId: rejectDiff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, maxLength: 500 }
+      responses:
+        '200':
+          description: Rejected
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileDiff' }
+
+  /api/agent/compact:
+    post:
+      tags: [agents]
+      operationId: compactContext
+      summary: Force context compaction of a long agent conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [runId]
+              properties:
+                runId: { type: string, format: uuid }
+                strategy: { type: string, enum: [sliding, summary, both], default: both }
+      responses:
+        '200':
+          description: Compaction stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  beforeTokens: { type: integer }
+                  afterTokens: { type: integer }
+                  summary: { type: string, nullable: true }
+
+  # ========================================================================
+  # P6.3 — Classroom / spaced repetition
+  # ========================================================================
+  /api/classroom/classes:
+    get:
+      tags: [classroom]
+      operationId: listClasses
+      responses:
+        '200':
+          description: "Classes (teacher view: own; student view: enrolled)"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  classes: { type: array, items: { $ref: '#/components/schemas/ClassroomClass' } }
+    post:
+      tags: [classroom]
+      operationId: createClass
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 80 }
+                description: { type: string, maxLength: 500 }
+                subject: { type: string, maxLength: 40 }
+                gradeLevel: { type: string, maxLength: 20 }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClassroomClass' }
+
+  /api/classroom/classes/{classId}/students:
+    parameters:
+      - in: path
+        name: classId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [classroom]
+      operationId: listClassStudents
+      responses:
+        '200':
+          description: Students
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  students: { type: array, items: { $ref: '#/components/schemas/StudentSummary' } }
+    post:
+      tags: [classroom]
+      operationId: joinClass
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [joinCode]
+              properties:
+                joinCode: { type: string, pattern: "^[A-Z0-9]{6}$" }
+      responses:
+        '201':
+          description: Joined
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClassroomClass' }
+
+  /api/classroom/classes/{classId}/dashboard:
+    parameters:
+      - in: path
+        name: classId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [classroom]
+      operationId: getClassDashboard
+      description: Teacher-only. Aggregate progress, mistake hotspots, completion rates.
+      responses:
+        '200':
+          description: Dashboard
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClassDashboard' }
+
+  /api/srs/queue:
+    get:
+      tags: [classroom]
+      operationId: getSrsQueue
+      description: Spaced-repetition queue of mistakes due for review today
+      responses:
+        '200':
+          description: Queue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  due: { type: array, items: { $ref: '#/components/schemas/MistakeSummary' } }
+                  new: { type: array, items: { $ref: '#/components/schemas/MistakeSummary' } }
+                  learning: { type: array, items: { $ref: '#/components/schemas/MistakeSummary' } }
+    post:
+      tags: [classroom]
+      operationId: gradeSrsCard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mistakeId, grade]
+              properties:
+                mistakeId: { type: string, format: uuid }
+                grade: { type: integer, minimum: 0, maximum: 3, description: Anki-style 0-3 grade }
+      responses:
+        '200':
+          description: Updated schedule
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nextDue: { type: string, format: date-time }
+                  interval: { type: integer, description: Days }
+                  ease: { type: number }
+
+  /api/paths:
+    get:
+      tags: [classroom]
+      operationId: listStudyPaths
+      responses:
+        '200':
+          description: Study paths
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paths: { type: array, items: { $ref: '#/components/schemas/StudyPath' } }
+
+  /api/paths/{pathId}/enroll:
+    parameters:
+      - in: path
+        name: pathId
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [classroom]
+      operationId: enrollPath
+      responses:
+        '200':
+          description: Enrolled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  progress: { type: object }
+
+  /api/streaks:
+    get:
+      tags: [classroom]
+      operationId: getStreaks
+      responses:
+        '200':
+          description: Streak data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  current: { type: integer, description: Consecutive days }
+                  longest: { type: integer }
+                  last7Days: { type: array, items: { type: boolean } }
+
+  # ========================================================================
+  # Existing endpoints (summary)
+  # ========================================================================
+  /api/auth/me:
+    get:
+      tags: [users]
+      summary: EXISTING — see auth flow
+  /api/auth/login:
+    post:
+      tags: [users]
+      summary: EXISTING
+  /api/auth/register:
+    post:
+      tags: [users]
+      summary: EXISTING
+  /api/auth/logout:
+    post:
+      tags: [users]
+      summary: EXISTING
+  /api/auth/forgot-password:
+    post:
+      tags: [users]
+      summary: EXISTING
+  /api/auth/reset-password:
+    post:
+      tags: [users]
+      summary: EXISTING
+  /api/auth/send-code:
+    post:
+      tags: [users]
+      summary: EXISTING
+  /api/auth/login-with-code:
+    post:
+      tags: [users]
+      summary: EXISTING
+  /api/auth/verify:
+    get:
+      tags: [users]
+      summary: EXISTING
+  /api/auth/oauth/github/start:
+    get:
+      tags: [users]
+      summary: EXISTING
+  /api/captcha/generate:
+    get:
+      tags: [users]
+      summary: EXISTING
+  /api/sessions:
+    get:
+      tags: [archive]
+      summary: EXISTING — list active (non-archived) sessions
+    post:
+      tags: [archive]
+      summary: EXISTING — create session
+  /api/sessions/{id}:
+    get:
+      tags: [archive]
+      summary: EXISTING — get session detail
+    patch:
+      tags: [archive]
+      summary: EXISTING — update session
+  /api/sessions/{id}/share:
+    get:
+      tags: [archive]
+      summary: EXISTING
+    post:
+      tags: [archive]
+      summary: EXISTING
+    delete:
+      tags: [archive]
+      summary: EXISTING
+  /api/shares/{token}:
+    get:
+      tags: [archive]
+      summary: EXISTING — public read-only view
+  /api/api-key:
+    get:
+      tags: [users]
+      summary: EXISTING — list BYO providers
+    post:
+      tags: [users]
+      summary: EXISTING
+  /api/api-key/{id}:
+    patch:
+      tags: [users]
+      summary: EXISTING
+    delete:
+      tags: [users]
+      summary: EXISTING
+  /api/migrate:
+    post:
+      tags: [users]
+      summary: EXISTING — localStorage → server migration
+  /api/chat:
+    post:
+      tags: [users]
+      summary: EXISTING — non-streaming chat
+  /api/chat/stream:
+    post:
+      tags: [users]
+      summary: EXISTING — SSE chat
+  /api/agent/run:
+    post:
+      tags: [agents]
+      summary: EXISTING — SSE agent run
+  /api/search:
+    post:
+      tags: [search]
+      summary: EXISTING — web search proxy
+  /api/fetch-batch:
+    post:
+      tags: [search]
+      summary: EXISTING — fetch web pages
+  /api/minimax/v1/chat/completions:
+    post:
+      tags: [users]
+      summary: EXISTING — direct MiniMax proxy (Beagle built-in)
+
+# ============================================================================
+# Components
+# ============================================================================
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sid
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+
+  parameters:
+    MessageId:
+      in: path
+      name: messageId
+      required: true
+      schema: { type: string, format: uuid }
+    SessionId:
+      in: path
+      name: sessionId
+      required: true
+      schema: { type: string, format: uuid }
+    SessionIdOptional:
+      in: query
+      name: sessionId
+      schema: { type: string, format: uuid }
+    ProjectId:
+      in: path
+      name: projectId
+      required: true
+      schema: { type: string, format: uuid }
+    FileId:
+      in: path
+      name: fileId
+      required: true
+      schema: { type: string, format: uuid }
+    ArtifactId:
+      in: path
+      name: artifactId
+      required: true
+      schema: { type: string, format: uuid }
+    MemoryId:
+      in: path
+      name: memoryId
+      required: true
+      schema: { type: string, format: uuid }
+    WorkspaceId:
+      in: path
+      name: workspaceId
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    BadRequest:
+      description: Malformed request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Not signed in
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: CSRF missing or wrong, or wrong owner
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: NOT_FOUND }
+        message: { type: string }
+        detail: { type: object, additionalProperties: true }
+
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        displayName: { type: string, nullable: true }
+        tier: { type: string, enum: [diophantus, riemann, descartes, euclid] }
+        plan: { type: string, nullable: true }
+        isGuest: { type: boolean, default: false }
+        verifiedAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        customInstructions: { type: string, nullable: true }
+        preferences: { type: object, additionalProperties: true, nullable: true }
+        defaultModel: { type: string, nullable: true }
+
+    Message:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        sessionId: { type: string, format: uuid }
+        role: { type: string, enum: [user, assistant, system] }
+        content: { type: string }
+        rawText: { type: string, nullable: true }
+        html: { type: string, nullable: true }
+        type: { type: string, nullable: true }
+        model: { type: string, nullable: true }
+        tokenCount: { type: integer, nullable: true }
+        attachments:
+          type: array
+          items: { $ref: '#/components/schemas/FileRef' }
+        createdAt: { type: string, format: date-time }
+        editedAt: { type: string, format: date-time, nullable: true }
+        parentId: { type: string, format: uuid, nullable: true, description: For regenerated/edited chains }
+
+    FeedbackReceipt:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        messageId: { type: string, format: uuid }
+        rating: { type: string, enum: [up, down, none] }
+        storedAt: { type: string, format: date-time }
+
+    SearchHit:
+      type: object
+      properties:
+        kind: { type: string, enum: [session, message, artifact, memory] }
+        id: { type: string, format: uuid }
+        sessionId: { type: string, format: uuid, nullable: true }
+        title: { type: string }
+        snippet: { type: string, description: Excerpt with <mark> highlights }
+        score: { type: number }
+        updatedAt: { type: string, format: date-time }
+
+    SessionSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string, nullable: true }
+        topic: { type: string, nullable: true }
+        mode: { type: string, enum: [tutor, chat] }
+        projectId: { type: string, format: uuid, nullable: true }
+        tags:
+          type: array
+          items: { type: string }
+        pinned: { type: boolean, default: false }
+        archivedAt: { type: string, format: date-time, nullable: true }
+        preview: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Project:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        color: { type: string, nullable: true }
+        icon: { type: string, nullable: true }
+        systemPrompt: { type: string, nullable: true }
+        workspaceId: { type: string, format: uuid, nullable: true }
+        createdAt: { type: string, format: date-time }
+        sessionCount: { type: integer }
+
+    ProjectDetail:
+      allOf:
+        - $ref: '#/components/schemas/Project'
+        - type: object
+          properties:
+            recentSessions:
+              type: array
+              items: { $ref: '#/components/schemas/SessionSummary' }
+
+    FileRef:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        mimeType: { type: string }
+        size: { type: integer, description: Bytes }
+        kind: { type: string, enum: [image, video, audio, pdf, text, code, csv, other] }
+        width: { type: integer, nullable: true, description: For images / video }
+        height: { type: integer, nullable: true }
+        pages: { type: integer, nullable: true, description: For PDFs }
+        sha256: { type: string }
+        uploadedAt: { type: string, format: date-time }
+        thumbnailUrl: { type: string, format: uri, nullable: true }
+        url: { type: string, format: uri }
+
+    ChatDelta:
+      type: object
+      properties:
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              delta:
+                type: object
+                properties:
+                  content: { type: string, nullable: true }
+                  role: { type: string, nullable: true }
+
+    TranscriptWord:
+      type: object
+      properties:
+        text: { type: string }
+        start: { type: number }
+        end: { type: number }
+        confidence: { type: number }
+
+    Artifact:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, enum: [html, react, svg, mermaid, code, markdown] }
+        title: { type: string }
+        source: { type: string }
+        language: { type: string, nullable: true }
+        sessionId: { type: string, format: uuid, nullable: true }
+        messageId: { type: string, format: uuid, nullable: true }
+        projectId: { type: string, format: uuid, nullable: true }
+        visibility: { type: string, enum: [private, unlisted, public] }
+        shareToken: { type: string, nullable: true }
+        version: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    ArtifactVersion:
+      type: object
+      properties:
+        version: { type: integer }
+        source: { type: string }
+        createdAt: { type: string, format: date-time }
+        createdBy: { type: string, format: uuid, nullable: true }
+
+    MemoryEntry:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        text: { type: string }
+        scope: { type: string, enum: [global, project] }
+        projectId: { type: string, format: uuid, nullable: true }
+        source: { type: string, enum: [user, extracted] }
+        enabled: { type: boolean, default: true }
+        confidence: { type: number, nullable: true, description: 0-1 for extracted memories }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Usage:
+      type: object
+      properties:
+        period: { type: string, enum: [day, week, month, all] }
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        totalTokens: { type: integer }
+        totalCost: { type: number, description: USD }
+        byModel:
+          type: array
+          items:
+            type: object
+            properties:
+              model: { type: string }
+              tokens: { type: integer }
+              cost: { type: number }
+              percent: { type: number }
+        byDay:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string, format: date }
+              tokens: { type: integer }
+              cost: { type: number }
+
+    UsageLimits:
+      type: object
+      properties:
+        plan: { type: string }
+        tokenQuota: { type: integer, nullable: true, description: null = unlimited }
+        tokensUsed: { type: integer }
+        resetAt: { type: string, format: date-time, nullable: true }
+        hardLimit: { type: boolean, description: true = block, false = overage allowed with billing }
+
+    NotificationToken:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        platform: { type: string }
+        channels:
+          type: array
+          items: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    NotificationPrefs:
+      type: object
+      properties:
+        longTasks: { type: boolean, default: true }
+        mentions: { type: boolean, default: true }
+        replies: { type: boolean, default: false }
+        billing: { type: boolean, default: true }
+        quietHours:
+          type: object
+          properties:
+            enabled: { type: boolean }
+            from: { type: string, description: "HH:mm" }
+            to: { type: string, description: "HH:mm" }
+            timezone: { type: string }
+
+    Workspace:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        plan: { type: string, enum: [team, business] }
+        ownerId: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        memberCount: { type: integer }
+
+    WorkspaceMember:
+      type: object
+      properties:
+        userId: { type: string, format: uuid }
+        email: { type: string, format: email }
+        displayName: { type: string, nullable: true }
+        role: { type: string, enum: [owner, admin, member, viewer] }
+        joinedAt: { type: string, format: date-time }
+
+    ImportJob:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        source: { type: string, enum: [chatgpt, claude, socrates, jsonl] }
+        status: { type: string, enum: [queued, running, completed, failed] }
+        progress:
+          type: object
+          properties:
+            total: { type: integer }
+            processed: { type: integer }
+            errors: { type: integer }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time, nullable: true }
+
+    PromptTemplate:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        body: { type: string }
+        icon: { type: string, nullable: true }
+        category: { type: string, enum: [writing, code, learning, analysis, creative, other] }
+        shortcut: { type: string, nullable: true, description: Slash-command alias }
+        isBuiltin: { type: boolean, default: false }
+        usageCount: { type: integer, default: 0 }
+        createdAt: { type: string, format: date-time }
+
+    PresenceUser:
+      type: object
+      properties:
+        userId: { type: string, format: uuid }
+        displayName: { type: string, nullable: true }
+        color: { type: string }
+        cursor:
+          type: object
+          properties:
+            messageId: { type: string, format: uuid, nullable: true }
+            offset: { type: integer, nullable: true }
+        lastSeen: { type: string, format: date-time }
+
+    Comment:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        anchor: { type: string }
+        body: { type: string }
+        authorId: { type: string, format: uuid }
+        authorName: { type: string, nullable: true }
+        parentId: { type: string, format: uuid, nullable: true }
+        resolved: { type: boolean, default: false }
+        createdAt: { type: string, format: date-time }
+
+    AgentRun:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        task: { type: string }
+        status: { type: string, enum: [planning, awaiting_approval, running, paused, completed, failed, rolled_back] }
+        plan:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              title: { type: string }
+              rationale: { type: string, nullable: true }
+              status: { type: string, enum: [pending, running, done, skipped, failed] }
+        steps:
+          type: array
+          items: { $ref: '#/components/schemas/AgentStep' }
+        checkpoints:
+          type: array
+          items: { $ref: '#/components/schemas/Checkpoint' }
+        diffs:
+          type: array
+          items: { $ref: '#/components/schemas/FileDiff' }
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time, nullable: true }
+
+    AgentStep:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        input: { type: object, additionalProperties: true, nullable: true }
+        output: { type: string, nullable: true }
+        ok: { type: boolean }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: string, format: date-time, nullable: true }
+
+    Checkpoint:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        filesHash: { type: string, description: SHA-256 of the snapshot }
+        createdAt: { type: string, format: date-time }
+
+    FileDiff:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        path: { type: string }
+        before: { type: string, nullable: true }
+        after: { type: string }
+        status: { type: string, enum: [pending, approved, rejected, applied] }
+        reason: { type: string, nullable: true, description: For rejections }
+
+    ClassroomClass:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        subject: { type: string, nullable: true }
+        gradeLevel: { type: string, nullable: true }
+        teacherId: { type: string, format: uuid }
+        joinCode: { type: string, description: 6-char code students use to enrol }
+        studentCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    StudentSummary:
+      type: object
+      properties:
+        userId: { type: string, format: uuid }
+        displayName: { type: string, nullable: true }
+        progressPercent: { type: number }
+        streakDays: { type: integer }
+        mistakeCount: { type: integer }
+        lastActiveAt: { type: string, format: date-time, nullable: true }
+
+    ClassDashboard:
+      type: object
+      properties:
+        classId: { type: string, format: uuid }
+        students: { type: array, items: { $ref: '#/components/schemas/StudentSummary' } }
+        hotspotMistakes:
+          type: array
+          items:
+            type: object
+            properties:
+              mistakeId: { type: string, format: uuid }
+              question: { type: string }
+              affectedStudents: { type: integer }
+        topicCompletion:
+          type: array
+          items:
+            type: object
+            properties:
+              topic: { type: string }
+              completion: { type: number }
+
+    MistakeSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        question: { type: string }
+        userAnswer: { type: string }
+        correctAnswer: { type: string, nullable: true }
+        nodeName: { type: string, nullable: true }
+        nextDue: { type: string, format: date-time, nullable: true }
+        interval: { type: integer, description: Days until next review }
+        ease: { type: number }
+
+    StudyPath:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        subject: { type: string }
+        steps:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              title: { type: string }
+              topic: { type: string }
+              estMinutes: { type: integer }
+        enrolled: { type: boolean, default: false }
+        progressPercent: { type: number }
+
+    ShareResponse:
+      type: object
+      properties:
+        token: { type: string }
+        url: { type: string, format: uri }
+        visibility: { type: string }

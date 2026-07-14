@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="socrates" data-mode="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Socrates — Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="/base.css" rel="stylesheet">
+<style>
+.profile-form{max-width:440px;margin:0 auto}
+.profile-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:16px;padding:28px 32px 32px;box-shadow:0 2px 12px hsl(var(--always-black)/0.08)}
+.profile-card h3{font-size:15px;font-weight:600;color:hsl(var(--text-100));margin-bottom:16px;padding-bottom:12px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
+.profile-field{margin-bottom:16px}
+.profile-field label{display:block;font-size:12px;color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
+.profile-field input{width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:inherit;outline:none;transition:border-color .15s}
+.profile-field input:focus{border-color:hsl(var(--accent-000)/0.4)}
+.profile-field input:disabled{opacity:0.5}
+.profile-msg{font-size:13px;padding:10px 16px;border-radius:8px;margin-bottom:14px;display:none}
+.profile-msg.ok{display:block;background:hsl(145 50% 45%/0.08);color:hsl(145 50% 50%);border:0.5px solid hsl(145 50% 45%/0.15)}
+.profile-msg.err{display:block;background:hsl(0 60% 50%/0.08);color:hsl(0 60% 55%);border:0.5px solid hsl(0 60% 50%/0.12)}
+.profile-divider{height:0.5px;background:hsl(var(--border-300)/0.08);margin:24px 0}
+.profile-card + .profile-card{margin-top:16px}
+@media(max-width:720px){.profile-card{padding:20px}}
+</style>
+<script>
+!function(){
+  try{
+    var p=localStorage.getItem("socrates-lang");
+    if(!p)return;
+    var c=document.documentElement.lang;
+    var here=window.location.pathname;
+    if(p==="zh"&&c.indexOf("zh")!==0){
+      var target=here.replace(/\.html$/,"");
+      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
+    }else if(p==="en"&&c.indexOf("en")!==0){
+      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
+      window.location.replace(target2==="/"||target2===""?"/":target2);
+    }
+  }catch(e){}
+}();
+</script>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="page">
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px">Socrates</a>
+    <div class="nav-links">
+      <a href="/pricing">Pricing</a>
+      <a href="/guide">Guide</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+      <a href="/account">Account</a>
+      <a class="lang-switch">中文</a>
+      <a href="https://app.topodrive.top" class="cta-btn">Start learning</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="section-eyebrow">Settings</div>
+  <h1>Your <strong>Profile</strong></h1>
+  <p>Manage your display name and password.</p>
+</div>
+
+<section style="padding-top:0">
+  <div class="section-inner" style="max-width:480px">
+
+    <div id="profileContent">
+      <!-- Profile info card -->
+      <div class="profile-card sr">
+        <h3>Profile Information</h3>
+        <div id="profileMsg" class="profile-msg"></div>
+        <div class="profile-field">
+          <label>Email</label>
+          <input id="profEmail" disabled>
+        </div>
+        <div class="profile-field">
+          <label for="profName">Display Name</label>
+          <input id="profName" placeholder="Your display name" maxlength="100">
+        </div>
+        <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+      </div>
+
+      <!-- Password card -->
+      <div class="profile-card sr sr-d1">
+        <h3>Change Password</h3>
+        <div id="passMsg" class="profile-msg"></div>
+        <div class="profile-field">
+          <label for="oldPass">Current Password</label>
+          <input id="oldPass" type="password" placeholder="Current password">
+        </div>
+        <div class="profile-field">
+          <label for="newPass">New Password</label>
+          <input id="newPass" type="password" placeholder="At least 6 characters">
+        </div>
+        <button class="btn btn-primary" onclick="changePass()">Update Password</button>
+      </div>
+
+      <!-- Export card -->
+      <div class="profile-card sr sr-d2">
+        <h3>Export Your Data</h3>
+        <p style="font-size:13px;color:hsl(var(--text-400));line-height:1.7;margin-bottom:14px">Download all your data including chat sessions, API provider configurations, and account information as a JSON file.</p>
+        <a href="/api/account/export" class="btn btn-outline" download>Download Export</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-tag"><em>S</em>ocrates</div>
+      <p>An AI-powered Socratic tutor. Learn anything, step by step.</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Product</div>
+      <a href="/pricing">Pricing</a>
+      <a href="/guide">Guide</a>
+      <a href="https://app.topodrive.top">App</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Company</div>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Account</div>
+      <a href="/account">My Account</a>
+      <a href="/api-keys">API Keys</a>
+      <a href="/profile">Profile</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Legal</div>
+      <a href="/terms">Terms of Service</a>
+      <a href="/privacy">Privacy Policy</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Support</div>
+      <a href="mailto:help@addtech.site">help@addtech.site</a>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Topodrive. All rights reserved.</p>
+      <p>Built with care, for learners everywhere.</p>
+    </div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+/* ── Scroll reveal ─────────────────────────────────── */
+var srObs = new IntersectionObserver(function(e){
+  e.forEach(function(entry){if(entry.isIntersecting)entry.target.classList.add('in')});
+},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.sr').forEach(function(el){srObs.observe(el)});
+
+/* ── CSRF / cookie helpers ─────────────────────────── */
+function getCookie(name) {
+  var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '=([^;]*)'));
+  return m ? m[1] : null;
+}
+function msg(el, text, type) {
+  el.textContent = text;
+  el.className = 'profile-msg ' + (type || '');
+}
+
+/* ── Load profile ──────────────────────────────────── */
+function loadProfile() {
+  fetch('/api/auth/me', { credentials: 'same-origin' }).then(function(r) {
+    if (r.status === 401) { window.location.href = '/account'; return null; }
+    return r.json();
+  }).then(function(d) {
+    if (!d || !d.user) return;
+    document.getElementById('profEmail').value = d.user.email || '';
+    document.getElementById('profName').value = d.user.displayName || '';
+  }).catch(function(){});
+}
+
+/* ── Save profile ──────────────────────────────────── */
+function saveProfile() {
+  var name = document.getElementById('profName').value.trim();
+  var el = document.getElementById('profileMsg');
+  if (!name) { msg(el, 'Display name cannot be empty.', 'err'); return; }
+  msg(el, 'Saving…', '');
+  fetch('/api/users/me', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
+    body: JSON.stringify({ displayName: name }),
+    credentials: 'same-origin'
+  }).then(function(r){
+    if (!r.ok) { return r.json().then(function(d){ throw new Error(d.detail || d.message || 'request failed'); }); }
+    return r.json();
+  }).then(function(d){
+    msg(el, 'Profile updated successfully.', 'ok');
+  }).catch(function(e){
+    msg(el, e.message || 'Connection error.', 'err');
+  });
+}
+
+/* ── Change password ──────────────────────────────── */
+function changePass() {
+  var oldP = document.getElementById('oldPass').value;
+  var newP = document.getElementById('newPass').value;
+  var el = document.getElementById('passMsg');
+  if (!oldP || !newP) { msg(el, 'Please fill in both fields.', 'err'); return; }
+  if (newP.length < 6) { msg(el, 'New password must be at least 6 characters.', 'err'); return; }
+  msg(el, 'Updating…', '');
+  fetch('/api/auth/password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
+    body: JSON.stringify({ oldPassword: oldP, newPassword: newP }),
+    credentials: 'same-origin'
+  }).then(function(r){return r.json()}).then(function(d){
+    if (d.error) { msg(el, d.error, 'err'); return; }
+    msg(el, 'Password updated successfully.', 'ok');
+    document.getElementById('oldPass').value = '';
+    document.getElementById('newPass').value = '';
+  }).catch(function(){ msg(el, 'Connection error.', 'err'); });
+}
+
+/* ── Init ──────────────────────────────────────────── */
+(function(){
+  fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}).then(function(){ loadProfile(); });
+})();
+</script>
+<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/\.html$/,'');b.href=p==='/'||p===''?'/zh/':'/zh'+p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","zh")}catch(e){}});})();</script>
+</body>
+</html>

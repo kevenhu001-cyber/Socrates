@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="socrates" data-mode="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Socrates</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- P5.1 — Google Fonts CSS is intentionally NOT SRI-pinned: the CSS
+     response is generated per-user-agent and is tiny; the actual
+     font binaries are loaded with `crossorigin` and pinned with
+     stable fonts.googleapis.com URL.  For first-party SRI, swap to
+     self-hosting the .woff2 files. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<!-- P5.1 — Subresource Integrity (SHA-384) for all third-party CDN
+     assets. If a CDN is compromised and serves a different file, the
+     browser refuses to apply it. `crossorigin="anonymous"` is required
+     for SRI to take effect on <link>/<script> without credentials. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<!-- P0.6 — pre-boot marker. -->
+<script>
+(function(){
+  try{document.documentElement.dataset.bootState="checking"}catch(_){}
+  /* P_grid — restore grid preference before first paint so the
+     boot-loading screen respects the user's choice immediately. */
+  try{
+    var _g=JSON.parse(localStorage.getItem("socrates-display"));
+    if(_g&&_g.showGrid===false)document.documentElement.dataset.showGrid="false";
+  }catch(_){}
+  /* If no preference stored, grid is on by default (no attribute needed). */
+  /* Safety net: if authBoot() never replaces bootState within 12s
+   * (offline / backend hung / unexpected error), default to the
+   * sign-in form so the user always has a way out. */
+  setTimeout(function(){
+    try{
+      if(document.documentElement.dataset.bootState==="checking"){
+        document.documentElement.dataset.bootState="auth";
+        var g=document.getElementById("authGate");if(g)g.classList.remove("hidden");
+        var s=document.getElementById("appShell");if(s)s.classList.add("hidden");
+      }
+    }catch(_){}
+  },12000);
+})();
+</script>
+<link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+
+<!-- P0.6 — pre-boot loading shell. Visible only while
+     data-boot-state="checking" (i.e. between the synchronous
+     pre-boot script and authBoot() finishing /api/auth/me). The
+     CSS rules for that data attribute set opacity:0 and
+     pointer-events:none on this element as soon as bootState
+     flips to "auth" or "app", so the transition is smooth. -->
+<div class="boot-loading" id="bootLoading" aria-hidden="true">
+  <div class="boot-loading-logo">
+    <img src="/logo.png" width="20" height="20" alt="" style="border-radius:4px;flex-shrink:0">
+    <span>Socrates</span>
+    <span class="boot-loading-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+  </div>
+</div>
+
+<!-- ============================================================
+     AUTH GATE
+     Shown whenever the user is not signed in. Covers the whole
+     viewport with a centered card. The app shell below stays in the
+     DOM but is hidden behind it (display:none on the gate keeps the
+     rest of the page inert). On successful login/registration/verify
+     we hide the gate and reveal the app.
+     ============================================================ -->
+<div class="auth-gate" id="authGate">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <img src="/logo.png" width="22" height="22" alt="" style="border-radius:4px">
+      <span>Socrates</span>
+    </div>
+
+    <div class="auth-tabs" id="authTabs">
+      <div class="auth-tab active" data-tab="signin" onclick="switchAuthTab('signin')">Sign in</div>
+      <div class="auth-tab" data-tab="register" onclick="switchAuthTab('register')">Create account</div>
+    </div>
+
+    <div class="auth-views">
+      <!-- Sign in -->
+      <form class="auth-view" id="authSigninView" onsubmit="event.preventDefault();submitAuthSignin()">
+        <label class="auth-label" for="authSigninEmail">Email</label>
+        <input class="auth-input" id="authSigninEmail" name="authSigninEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+        <label class="auth-label" for="authSigninPassword">Password</label>
+        <input class="auth-input" id="authSigninPassword" name="authSigninPassword" type="password" autocomplete="current-password" required placeholder="••••••••">
+        <a class="auth-inline-link" href="#" onclick="event.preventDefault();showAuthForgotPassword()" style="text-align:right;display:block">Forgot password?</a>
+        <div class="auth-error" id="authSigninError"></div>
+        <label class="auth-guest-label" for="authGuestCheckbox"><input type="checkbox" id="authGuestCheckbox" name="authGuestCheckbox"> Guest mode</label>
+        <button class="auth-btn primary" id="authSigninBtn" type="submit">Sign in</button>
+        <div class="auth-view-separator">or</div>
+        <a class="auth-btn secondary" id="authGithubBtn" href="/api/auth/oauth/github/start?return_to=/" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>Continue with GitHub</a>
+        <a class="auth-inline-link" href="#" onclick="event.preventDefault();showAuthCodeLogin()" style="text-align:center;display:block;margin-top:10px;margin-bottom:4px">Login with verification code</a>
+        <div class="auth-foot">No account? <a href="#" onclick="event.preventDefault();switchAuthTab('register')">Create one</a></div>
+      </form>
+
+      <!-- Register -->
+      <form class="auth-view hidden" id="authRegisterView" onsubmit="event.preventDefault();submitAuthRegister()">
+        <p class="auth-lede">Sign up with your email. We'll send a verification link — no codes to memorize.</p>
+        <label class="auth-label" for="authRegisterEmail">Email</label>
+        <input class="auth-input" id="authRegisterEmail" name="authRegisterEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+        <label class="auth-label" for="authRegisterPassword">Password</label>
+        <input class="auth-input" id="authRegisterPassword" name="authRegisterPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
+        <div class="auth-error" id="authRegisterError"></div>
+        <button class="auth-btn primary" id="authRegisterBtn" type="submit">Send verification link</button>
+        <div class="auth-foot">Already verified? <a href="#" onclick="event.preventDefault();switchAuthTab('signin')">Sign in</a></div>
+      </form>
+
+      <!-- Verify-sent -->
+      <div class="auth-view hidden" id="authVerifySentView">
+        <div class="auth-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <h2 class="auth-title">Check your inbox</h2>
+        <p class="auth-lede">We sent a verification link to <strong id="authVerifyEmail"></strong>. Click the button in the email to start learning with Socrates. The link expires in 24 hours.</p>
+        <button class="auth-btn secondary" onclick="resendVerification()">Resend the link</button>
+        <div class="auth-foot"><a href="#" onclick="event.preventDefault();showAuthSignin()">Use a different email</a></div>
+      </div>
+
+      <!-- Verify-failed -->
+      <div class="auth-view hidden" id="authVerifyFailedView">
+        <div class="auth-icon auth-icon-warn">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h2 class="auth-title" id="authVerifyFailedTitle">This link is invalid or expired</h2>
+        <p class="auth-lede" id="authVerifyFailedMsg">Verification links expire after 24 hours. Enter your email and we'll send a fresh one.</p>
+        <form onsubmit="event.preventDefault();resendVerification()">
+          <label class="auth-label" for="authResendEmail">Email</label>
+          <input class="auth-input" id="authResendEmail" name="authResendEmail" type="email" required placeholder="you@example.com">
+          <div class="auth-error" id="authVerifyFailedError"></div>
+          <button class="auth-btn primary" type="submit">Send a new link</button>
+        </form>
+        <div class="auth-foot"><a href="#" onclick="event.preventDefault();showAuthSignin()">Back to sign in</a></div>
+      </div>
+
+      <!-- Verified-success transition (shown briefly after clicking the
+           email link, before sliding into the app). -->
+      <div class="auth-view hidden" id="authVerifiedView">
+        <div class="auth-icon auth-icon-ok">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 class="auth-title">Email verified</h2>
+        <p class="auth-lede">You're signed in. Taking you to your dashboard…</p>
+      </div>
+
+      <!-- Forgot-password (enter email to receive reset link) -->
+      <form class="auth-view hidden" id="authForgotPasswordView" onsubmit="event.preventDefault();submitAuthForgotPassword()">
+        <a class="auth-back-link" href="#" onclick="event.preventDefault();showAuthSignin()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to sign in</a>
+        <div class="auth-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h2 class="auth-title">Reset your password</h2>
+        <p class="auth-lede">Enter your email and we'll send a reset link.</p>
+        <label class="auth-label" for="authForgotEmail">Email</label>
+        <input class="auth-input" id="authForgotEmail" name="authForgotEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+        <div class="auth-error" id="authForgotError"></div>
+        <button class="auth-btn primary" id="authForgotBtn" type="submit">Send reset link</button>
+      </form>
+
+      <!-- Forgot-password-sent -->
+      <div class="auth-view hidden" id="authForgotSentView">
+        <div class="auth-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <h2 class="auth-title">Check your inbox</h2>
+        <p class="auth-lede">If an account exists for <strong id="authForgotSentEmail"></strong>, we sent a password reset link. The link expires in 1 hour.</p>
+        <div class="auth-foot"><a href="#" onclick="event.preventDefault();showAuthSignin()">Back to sign in</a></div>
+      </div>
+
+      <!-- Reset-password (accessed via ?reset_token= URL param) -->
+      <form class="auth-view hidden" id="authResetPasswordView" onsubmit="event.preventDefault();submitAuthResetPassword()">
+        <div class="auth-icon auth-icon-ok">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h2 class="auth-title">Set new password</h2>
+        <p class="auth-lede">Choose a new password for your account.</p>
+        <!-- a11y: password managers and screen readers expect a
+             username/email field on the same form so the new password
+             can be associated with an account. The reset link itself
+             carries the token + email, so this field is hidden but
+             still part of the form. -->
+        <label class="auth-label" for="authResetEmail" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">Email</label>
+        <input class="auth-input" id="authResetEmail" type="email" autocomplete="username" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+        <label class="auth-label" for="authResetPassword">New password</label>
+        <input class="auth-input" id="authResetPassword" name="authResetPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
+        <label class="auth-label" for="authResetConfirm">Confirm password</label>
+        <input class="auth-input" id="authResetConfirm" name="authResetConfirm" type="password" autocomplete="new-password" minlength="8" required placeholder="Repeat your password">
+        <div class="auth-error" id="authResetError"></div>
+        <button class="auth-btn primary" id="authResetBtn" type="submit">Reset password</button>
+      </form>
+
+      <!-- Reset-success (shown after password is reset) -->
+      <div class="auth-view hidden" id="authResetSuccessView">
+        <div class="auth-icon auth-icon-ok">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 class="auth-title">Password updated</h2>
+        <p class="auth-lede">Your password has been reset successfully. Sign in with your new password.</p>
+        <button class="auth-btn primary" onclick="showAuthSignin()">Sign in</button>
+      </div>
+
+      <!-- Code-login (email + verification code) -->
+      <div class="auth-view hidden" id="authCodeLoginView">
+        <a class="auth-back-link" href="#" onclick="event.preventDefault();showAuthSignin()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to sign in</a>
+        <div class="auth-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 11v4"/><circle cx="12" cy="8" r=".5" fill="currentColor"/></svg>
+        </div>
+        <h2 class="auth-title">Email code login</h2>
+        <p class="auth-lede">Enter your email to receive a 6-digit login code.</p>
+        <label class="auth-label" for="authCodeEmail">Email</label>
+        <input class="auth-input" id="authCodeEmail" name="authCodeEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+        <div id="authCodeCodeWrap" class="hidden">
+          <label class="auth-label" for="authCodeInput">6-digit code</label>
+          <input class="auth-input auth-code-input" id="authCodeInput" name="authCodeInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="000000">
+          <p class="auth-msg hidden" id="authCodeSentMsg">We sent a code to <strong id="authCodeSentEmail"></strong>. It expires in 10 minutes.</p>
+        </div>
+        <div class="auth-error" id="authCodeError"></div>
+        <label class="auth-guest-label" for="authCodeGuestCheckbox"><input type="checkbox" id="authCodeGuestCheckbox" name="authCodeGuestCheckbox"> Guest mode</label>
+        <button class="auth-btn primary" id="authCodeSendBtn" onclick="submitAuthSendCode()">Send code</button>
+        <button class="auth-btn primary hidden" id="authCodeLoginBtn" onclick="submitAuthLoginWithCode()">Log in</button>
+        <div class="auth-foot hidden" id="authCodeResendWrap"><a href="#" onclick="event.preventDefault();resendAuthCode()">Resend code</a></div>
+        <div class="auth-foot"><a href="#" onclick="event.preventDefault();showAuthSignin()">Back to sign in</a></div>
+      </div>
+    </div>
+  </div>
+  <div class="auth-footnote">Socrates asks questions to help you think. It does not judge your answers.</div>
+</div>
+
+<div class="app hidden" id="appShell">
+
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-inner">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="/logo.png" width="18" height="18" alt="" style="border-radius:3px;flex-shrink:0">
+        <span>Socrates</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:2px">
+        <button class="icon-btn" id="newChatBtn" title="Start a new chat" onclick="event.preventDefault();resetApp()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <button class="icon-btn" id="sidebarCloseBtn" title="Close sidebar" onclick="toggleSidebar()" aria-label="Close sidebar" aria-controls="sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
+        </button>
+      </div>
+    </div>
+    <!-- P2.1 — Projects row at the top of the sidebar. The
+         Inbox project is the system default; user-created
+         projects live as horizontal chips. Each chip is
+         clickable to filter the Recents panel; a long-press
+         (or the + button) opens the project editor. -->
+    <div class="sidebar-projects" id="sidebarProjects"></div>
+
+    <div class="sidebar-tabs">
+      <div class="sidebar-tab tutor-only" id="tabKnowledge" onclick="switchTab('knowledge')" data-i18n-key="sidebar.knowledge">Knowledge</div>
+      <div class="sidebar-tab active" id="tabRecents" onclick="switchTab('recents')" data-i18n-key="sidebar.recents">Recents</div>
+      <div class="sidebar-tab tutor-only" id="tabMistakes" onclick="switchTab('mistakes')"><span data-i18n-key="sidebar.mistakes">Mistakes</span><span class="tab-badge" id="mistakesTabBadge"></span></div>
+    </div>
+    <div class="knowledge-panel tutor-only hidden" id="knowledgePanel">
+      <div id="teachingPlanContent"></div>
+      <div id="kbContent"><div class="kb-empty" data-i18n-key="tutor.kbTopicFirst">Set a topic to build your knowledge map.</div></div>
+    </div>
+    <div class="recents-panel" id="recentsPanel">
+      <div class="recents-header">
+        <span class="recents-title" data-i18n-key="sidebar.recentSessions">Recent Sessions</span>
+        <button class="recents-new-btn" id="newChatBtnRecents" title="Start a new chat" onclick="resetApp()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M12 5v14M5 12h14"/></svg>
+          <span data-i18n-key="sidebar.new">New</span>
+        </button>
+      </div>
+      <!-- P2.1 — active project filter chip. Renders only when
+           the user is filtered to a specific project; clicking
+           the × restores "All projects". -->
+      <div class="recents-filter" id="recentsFilter"></div>
+      <!-- P2.2 — secondary filter chips. "All" / "Pinned" plus
+           a few of the user's most-used tags. Renders inline
+           below the project filter; the active chip is
+           highlighted. -->
+      <div class="recents-filter-chips" id="recentsFilterChips"></div>
+      <div id="recentsList"></div>
+    </div>
+    <div class="recents-panel hidden tutor-only" id="mistakesPanel">
+      <div class="recents-header"><span class="recents-title" data-i18n-key="sidebar.mistakeBook">Mistake Book</span></div>
+      <div id="mistakesList"></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-row"><div class="user-avatar">JH</div><div><div class="user-name">Jiacheng Hu</div><div class="user-plan">Free plan</div></div></div>
+      <div style="display:flex;align-items:center;gap:2px;margin-left:auto;position:relative">
+        <button class="icon-btn theme-toggle" id="themeToggle" onclick="toggleTheme(event)" title="Toggle theme">
+          <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button class="icon-btn" onclick="toggleDisplayPrefs()" title="Display settings" aria-label="Display settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="6" x2="14" y2="6"/><line x1="10" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="16" y2="18"/><line x1="12" y1="18" x2="3" y2="18"/></svg>
+        </button>
+        <button class="icon-btn" onclick="openSettings()" title="API Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
+        <div class="display-prefs-popover hidden" id="displayPrefsPopover" onclick="event.stopPropagation()">
+          <div class="display-prefs-row">
+            <div class="display-prefs-label"><span>Text size</span><span class="value" id="displayPrefsFontLabel">M</span></div>
+            <div class="display-prefs-segs" id="displayPrefsFontSegs">
+              <button class="display-prefs-seg" data-font="1">S</button>
+              <button class="display-prefs-seg" data-font="1.125">M</button>
+              <button class="display-prefs-seg" data-font="1.25">L</button>
+              <button class="display-prefs-seg" data-font="1.375">XL</button>
+            </div>
+          </div>
+          <div class="display-prefs-row">
+            <div class="display-prefs-label"><span>Content width</span><span class="value" id="displayPrefsWidthLabel">M</span></div>
+            <div class="display-prefs-segs" id="displayPrefsWidthSegs">
+              <button class="display-prefs-seg" data-width="0.85" title="Narrow">S</button>
+              <button class="display-prefs-seg" data-width="1" title="Medium">M</button>
+              <button class="display-prefs-seg" data-width="1.3" title="Wide">L</button>
+              <button class="display-prefs-seg" data-width="1.7" title="Full width">XL</button>
+            </div>
+          </div>
+          <!-- Accent color picker — Ant Design ColorPicker-inspired -->
+          <div class="display-prefs-row">
+            <div class="display-prefs-label"><span>Accent color</span></div>
+            <div class="display-prefs-colors" id="displayAccentColors">
+              <button class="color-swatch" data-hue="35" style="--swatch:hsl(35 80% 50%)" title="Gold" onclick="setAccentColor(35)"></button>
+              <button class="color-swatch" data-hue="160" style="--swatch:hsl(160 70% 45%)" title="Teal" onclick="setAccentColor(160)"></button>
+              <button class="color-swatch" data-hue="210" style="--swatch:hsl(210 80% 50%)" title="Blue" onclick="setAccentColor(210)"></button>
+              <button class="color-swatch" data-hue="270" style="--swatch:hsl(270 70% 55%)" title="Purple" onclick="setAccentColor(270)"></button>
+              <button class="color-swatch" data-hue="330" style="--swatch:hsl(330 75% 50%)" title="Rose" onclick="setAccentColor(330)"></button>
+              <button class="color-swatch active" data-hue="40" style="--swatch:hsl(40 75% 50%)" title="Amber (default)" onclick="setAccentColor(40)"></button>
+            </div>
+          </div>
+          <!-- Grid background toggle -->
+          <div class="display-prefs-row display-prefs-toggle-row">
+            <div class="display-prefs-label"><span>Background grid</span></div>
+            <button class="grid-toggle on" id="gridToggle" type="button" onclick="toggleGrid()" title="Toggle background grid" aria-label="Toggle background grid">
+              <div class="toggle-knob"></div>
+            </button>
+          </div>
+          <!-- Background color pickers — separate per mode -->
+          <div class="display-prefs-row">
+            <div class="display-prefs-label"><span>Dark mode BG</span></div>
+            <div class="display-prefs-bg-picker">
+              <input type="color" id="displayPrefsBgDark" value="#252220" title="Dark mode page background" oninput="setBackgroundDark(this.value)">
+              <button class="display-prefs-bg-reset" onclick="resetBackgroundDark()" title="Reset dark mode to theme default">↺</button>
+            </div>
+          </div>
+          <div class="display-prefs-row">
+            <div class="display-prefs-label"><span>Light mode BG</span></div>
+            <div class="display-prefs-bg-picker">
+              <input type="color" id="displayPrefsBgLight" value="#ded6c8" title="Light mode page background" oninput="setBackgroundLight(this.value)">
+              <button class="display-prefs-bg-reset" onclick="resetBackgroundLight()" title="Reset light mode to theme default">↺</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-resize-handle" id="sidebarResizeHandle" aria-label="Drag to resize sidebar" title="Drag to resize sidebar"></div>
+  </div>
+</aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+<main class="main">
+  <div class="main-bg" aria-hidden="true"></div>
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <button class="toggle-sidebar" id="sidebarOpenBtn" onclick="toggleSidebar()" title="Toggle sidebar (⌘B)" aria-controls="sidebar" aria-expanded="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
+      </button>
+      <button class="exam-back-btn hidden" id="examBackBtn" onclick="closeExamView()" title="Back to chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span>Back to chat</span>
+      </button>
+      <span class="chat-stats hidden" id="chatStats"></span>
+      <span class="exam-title-bar hidden" id="examTitleBar"></span>
+    </div>
+    <div class="top-bar-right">
+      <span class="chat-api-badge hidden" id="chatApiBadge"></span>
+      <span class="search-pill hidden" id="searchPill"></span>
+      <div class="chat-model-wrap hidden" id="chatModelWrap">
+        <button class="chat-model-trigger" id="chatModel" type="button" aria-haspopup="listbox" aria-expanded="false" title="Pick or configure the model for this conversation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/><circle cx="18" cy="6" r="1.5" opacity="0.6"/><path d="M5 17l2-1-2-1 2-1-2-1" opacity="0.7"/></svg>
+          <span class="chat-model-label" id="chatModelLabel">Model</span>
+          <svg class="chat-model-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 10l6 5 6-5"/></svg>
+        </button>
+        <div class="chat-model-menu model-picker-menu hidden" id="chatModelMenu" role="listbox" aria-label="Available models"></div>
+      </div>
+      <button class="share-btn hidden" id="shareBtn" onclick="openShareModal()" title="Share this conversation" aria-label="Share this conversation">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        <span class="share-btn-label" data-i18n-key="sidebar.share">Share</span>
+      </button>
+    </div>
+  </div>
+  <div class="main-content" id="mainContent">
+    <div class="main-inner" id="mainInner">
+
+      <div class="topic-setup" id="topicSetup">
+        <h1 class="topic-title" id="topicTitle">What would you like to explore?</h1>
+        <p class="topic-sub" id="topicSub">Describe what you want to learn. Socrates will ask you questions to help you think deeper about it.</p>
+        <div class="topic-input-wrap">
+          <textarea id="topicInput" name="topicInput" aria-label="What would you like to explore?" placeholder="e.g. I want to understand how machine learning works..." data-i18n-placeholder="topic.inputPlaceholder" rows="2" oninput="autoResize(this);updateStartBtn()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startSession()}"></textarea>
+          <div class="topic-footer">
+            <span style="font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))" id="topicHint">Be specific for better results</span>
+            <button class="start-btn" id="startBtn" onclick="startSession()">Begin</button>
+          </div>
+        </div>
+
+        <!-- v3.0 design — §10.1 long-term-plan optional inputs.
+             All three fields are OPTIONAL. If the user leaves
+             them empty the system still works (it just won't
+             warn about deadline pressure or pace targets). The
+             whole row is collapsed under a "Show optional plan"
+             toggle to keep the cold-start friction low (§4.1). -->
+        <div class="plan-setup" id="planSetup">
+          <button class="plan-setup-toggle" id="planSetupToggle" type="button" aria-expanded="false" aria-controls="planSetupFields">
+            <span class="plan-setup-caret" aria-hidden="true">›</span>
+            <span class="plan-setup-label" data-i18n-key="tutor.planSetupToggle">Optional: set a target date and daily time</span>
+          </button>
+          <div class="plan-setup-fields" id="planSetupFields" hidden>
+            <label class="plan-setup-field">
+              <span class="plan-setup-field-label" data-i18n-key="tutor.planSetupTargetDate">Target date</span>
+              <input class="plan-setup-input" type="date" id="planTargetDateInput" name="planTargetDateInput">
+            </label>
+            <label class="plan-setup-field">
+              <span class="plan-setup-field-label" data-i18n-key="tutor.planSetupDailyMinutes">Daily minutes</span>
+              <input class="plan-setup-input" type="number" id="planDailyMinutesInput" name="planDailyMinutesInput" min="5" max="240" step="5" value="30">
+            </label>
+            <div class="plan-setup-field plan-setup-field-rest">
+              <span class="plan-setup-field-label" data-i18n-key="tutor.planSetupRestDays">Rest days</span>
+              <div class="plan-setup-restdays" id="planRestDays" role="group" data-i18n-aria="tutor.planSetupRestDays" aria-label="Rest days of the week">
+                <button type="button" class="plan-restday" data-day="0" data-i18n-key="common.dayShort.sun">Sun</button>
+                <button type="button" class="plan-restday" data-day="1" data-i18n-key="common.dayShort.mon">Mon</button>
+                <button type="button" class="plan-restday" data-day="2" data-i18n-key="common.dayShort.tue">Tue</button>
+                <button type="button" class="plan-restday" data-day="3" data-i18n-key="common.dayShort.wed">Wed</button>
+                <button type="button" class="plan-restday" data-day="4" data-i18n-key="common.dayShort.thu">Thu</button>
+                <button type="button" class="plan-restday" data-day="5" data-i18n-key="common.dayShort.fri">Fri</button>
+                <button type="button" class="plan-restday" data-day="6" data-i18n-key="common.dayShort.sat">Sat</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-setup-row">
+        <div class="model-picker" id="modelPicker" data-open="false">
+          <button class="model-picker-trigger" id="modelPickerTrigger" type="button" onclick="toggleModelPicker()" aria-haspopup="listbox" aria-expanded="false" title="Pick which model to use for this conversation">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/><circle cx="18" cy="6" r="1.5" opacity="0.6"/><path d="M5 17l2-1-2-1 2-1-2-1" opacity="0.7"/></svg>
+            <span class="model-picker-label" id="modelPickerLabel">No model</span>
+            <svg class="model-picker-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 10l6 5 6-5"/></svg>
+          </button>
+          <div class="model-picker-menu" id="modelPickerMenu" role="listbox" aria-label="Available models"></div>
+        </div>
+
+        <div class="extensions-picker" id="extensionsPicker" data-open="false">
+          <button class="extensions-trigger" id="extensionsTrigger" type="button" onclick="toggleExtensionsPicker()" aria-haspopup="listbox" aria-expanded="false" title="Toggle extensions for this conversation">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/><circle cx="20" cy="5" r="1.5" opacity="0.5"/><circle cx="4" cy="19" r="1.5" opacity="0.5"/><path d="M8 20l1-2-1-2" opacity="0.7"/></svg>
+            <span class="extensions-label" id="extensionsLabel">Extensions</span>
+            <svg class="extensions-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 10l6 5 6-5"/></svg>
+          </button>
+          <div class="extensions-menu" id="extensionsMenu" role="listbox" aria-label="Conversation extensions"></div>
+        </div>
+        </div>
+      </div>
+
+      <div class="diagnostic-view hidden tutor-only" id="diagnosticView"></div>
+
+      <div class="shared-banner hidden" id="sharedBanner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        <span>Read-only view — this is a shared conversation.</span>
+      </div>
+      <div class="chat-view hidden" id="chatView">
+        <div class="msg-list" id="msgList"></div>
+        <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
+        <div class="chat-input-bar" id="chatInputBar">
+          <div class="chat-input-wrap" id="chatInputWrap">
+            <!-- P_attachments — chip strip above the textarea. Each
+                 chip is rendered by renderAttachmentChips() in main.js;
+                 this is just the empty container. -->
+            <div class="attachment-chips hidden" id="attachmentChips"></div>
+            <!-- P5.8 — template mode chip. Hidden by default;
+                 surfaces when a prompt template is active so the
+                 user knows the system is in a specialized mode.
+                 Click × (rendered inline) to exit. -->
+            <div class="template-mode-chip hidden" id="templateModeChip" aria-live="polite"></div>
+            <textarea id="chatInputArea" name="chatInputArea" aria-label="Type your thinking" placeholder="Type your thinking..." rows="1" oninput="autoResize(this);updateSendBtn()" onkeydown="handleChatKey(event)"></textarea>
+            <div class="chat-input-footer">
+              <button class="attach-btn" id="attachBtn" type="button" data-i18n-aria="chat.attach.aria" data-i18n-title="chat.attach" aria-label="Attach files" title="Attach files">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              </button>
+              <input type="file" id="attachInput" multiple
+                     accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
+                     hidden>
+              <span class="chat-input-hint" id="chatInputHint">Shift+Enter for new line</span>
+              <button class="send-btn" id="sendBtn" onclick="submitChatMessage()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="disclaimer" id="topicDisclaimer">Socrates asks questions to help you think. It does not judge your answers.</p>
+
+    </div>
+
+    <div class="exam-view hidden" id="examView">
+      <header class="exam-view-header">
+        <button class="exam-back-btn" onclick="closeExamView()" title="Back to chat" aria-label="Back to chat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          <span>Back</span>
+        </button>
+        <div class="exam-view-title-wrap">
+          <h2 class="exam-view-title" id="examViewTitle">Generate Exam</h2>
+        </div>
+        <div class="exam-view-header-right">
+          <span class="exam-view-meta" id="examViewMeta"></span>
+        </div>
+      </header>
+      <div class="exam-view-body" id="examViewBody"></div>
+      <div class="exam-view-footer" id="examViewFooter"></div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- P5.1 — `marked` pinned to 13.0.3 (the URL was previously
+     `marked/marked.min.js` with no version — that resolves to
+     latest, which can break the chat UI silently). -->
+<script src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js" integrity="sha384-YTBHtsL8yVTHcLakYNyrOfK3K+QQcXiECuaALJ+3j7Mo681Rtzadt8NR6WrZH+eQ" crossorigin="anonymous"></script>
+<!-- P5.1 — DOMPurify 3.2.4 — required to sanitise the HTML output
+     of marked.parse() before it reaches innerHTML. marked passes
+     raw HTML through by default; without this, an attacker who
+     can inject content (prompt injection, malicious share view,
+     XSS in upstream model) can run arbitrary JavaScript via
+     <img onerror=…>, <svg onload=…>, etc. SRI-pinned so a CDN
+     compromise cannot swap the library out from under us. -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-ifpG+NlgMq0kvOSGqGQxW1mJKpjjMDmZdpKGq3tbvD3WPhyshCEEYClriK/wRVU0" crossorigin="anonymous"></script>
+<!-- KaTeX auto-render — catches math the explicit $...$/$$...$$ pass
+     misses (e.g. model emits \(x+y\) with extra whitespace, or an
+     unclosed \( at end of stream). Loaded after katex.min.js since it
+     depends on the global `katex` symbol.
+     Note: KaTeX 0.16 dropped contrib/cancel; strikethrough macros
+     (\cancel, \bcancel, \xcancel) are emulated in KATEX_MACROS
+     instead. See frontend/src/render/helpers.js for details. -->
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js" integrity="sha384-T/0lMUdJpd2S1ZHtRiofG3htU3xPCrFVeAQ1UUE2TJwlEJSV5NUwn30kP28n238E" crossorigin="anonymous" onload="try{mermaid.initialize({startOnLoad:false})}catch(_){}"></script>
+<!-- highlight.js (code syntax highlighting). Optional: if the CDN is
+     blocked, hljs is undefined and addStreamingMessage falls back to
+     plain <pre><code> rendering. -->
+<!-- P5.1 — SRI for highlight.js (style + script). -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css" integrity="sha384-oaMLBGEzBOJx3UHwac0cVndtX5fxGQIfnAeFZ35RTgqPcYlbprH9o9PUV/F8Le07" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js" integrity="sha384-F/bZzf7p3Joyp5psL90p/p89AZJsndkSoGwRpXcZhleCWhd8SnRuoYo4d0yirjJp" crossorigin="anonymous"></script>
+<!-- P1.2 — fuse.js for client-side global search. Pinned to 7.0.0
+     with SRI; ~12 KB gzipped. Builds a fuzzy-search index over
+     session titles, message raw text, and (when present) memory
+     and artifact entries. -->
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js" integrity="sha384-PCSoOZTpbkikBEtd/+uV3WNdc676i9KUf01KOA8CnJotvlx8rRrETbDuwdjqTYvt" crossorigin="anonymous"></script>
+<script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/tutorSocratic.js"></script>
+
+<!-- Settings Modal -->
+<!-- P1.2 — global search modal. Toggled by `Cmd/Ctrl+K` (and
+     `Esc` to close). The modal owns a single <input> that drives
+     a fuse.js fuzzy index over:
+       - session titles + topics (SERVER_SESSIONS)
+       - message raw text inside the active session
+       - cached titles of older sessions loaded from localStorage
+     Indexed on first open and rebuilt whenever a session is
+     saved. Recent queries persist under socrates-search-recent. -->
+<div class="cmd-k-overlay hidden" id="cmdKOverlay" onclick="if(event.target===this)closeCmdK()">
+  <div class="cmd-k-modal" onclick="event.stopPropagation()">
+    <div class="cmd-k-input-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="cmd-k-icon"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="cmdKInput" name="cmdKInput" aria-label="Search sessions and messages" placeholder="Search sessions and messages…" autocomplete="off" spellcheck="false" oninput="onCmdKInput(this.value)" onkeydown="onCmdKKey(event)">
+      <kbd class="cmd-k-kbd">Esc</kbd>
+    </div>
+    <div class="cmd-k-results" id="cmdKResults"></div>
+    <div class="cmd-k-foot">
+      <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> open</span>
+      <span><kbd>esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
+<div class="share-overlay hidden" id="shareOverlay" onclick="if(event.target===this)closeShareModal()">
+  <div class="share-modal" onclick="event.stopPropagation()">
+    <div class="share-header">
+      <span class="share-title" data-i18n-key="share.title">Share conversation</span>
+      <button class="share-close" onclick="closeShareModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="share-opt" id="shareOptPublic" onclick="selectShareVis('public')">
+      <div class="share-opt-radio"></div>
+      <div class="share-opt-body">
+        <div class="share-opt-title" data-i18n-key="share.publicTitle">Anyone with the link</div>
+        <div class="share-opt-desc" data-i18n-key="share.publicDesc">No sign-in required. Anyone who has the link can view this conversation.</div>
+      </div>
+    </div>
+    <div class="share-opt" id="shareOptPrivate" onclick="selectShareVis('private')">
+      <div class="share-opt-radio"></div>
+      <div class="share-opt-body">
+        <div class="share-opt-title" data-i18n-key="share.privateTitle">Only you</div>
+        <div class="share-opt-desc" data-i18n-key="share.privateDesc">Must be logged into your account to view. Still shared via link.</div>
+      </div>
+    </div>
+    <div id="shareLinkArea" class="share-link-area hidden">
+      <input class="share-link-input" id="shareLinkInput" name="shareLinkInput" type="text" readonly onclick="this.select()" aria-label="Share link">
+      <button class="share-copy-btn" id="shareCopyBtn" onclick="copyShareLink()" data-i18n-key="share.copy">Copy</button>
+    </div>
+    <div id="shareRevokeArea" class="hidden" style="text-align:center">
+      <button class="share-revoke" onclick="revokeShareLink()" data-i18n-key="share.revoke">× Revoke share link</button>
+    </div>
+    <div class="share-error hidden" id="shareError"></div>
+    <div class="share-status hidden" id="shareStatus"></div>
+    <div id="shareCreateArea" style="text-align:center;margin-top:4px">
+      <button class="settings-btn primary" id="shareCreateBtn" onclick="createShareLink()" style="margin-top:8px" data-i18n-key="share.create">Create share link</button>
+    </div>
+  </div>
+</div>
+
+<div class="settings-overlay hidden" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-modal" onclick="event.stopPropagation()">
+    <div class="settings-header">
+      <span class="settings-title">API Configuration</span>
+      <button class="settings-close" onclick="closeSettings()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="settings-body">
+      <div class="stg-toggle" onclick="toggleAPI()">
+        <span class="settings-label" style="margin-bottom:0">Use External API</span>
+        <div class="stg-toggle-track" id="stgToggleTrack"><div class="stg-toggle-knob"></div></div>
+      </div>
+      <div class="settings-field">
+        <div class="settings-label-row">
+          <span class="settings-label">Models</span>
+          <button class="settings-btn-mini" onclick="addProvider()">+ Add</button>
+        </div>
+        <span class="settings-hint">Configure one or more providers. Click the circle to set one as active.</span>
+        <div class="provider-list" id="providerList"></div>
+      </div>
+      <div id="stgStatus"></div>
+
+      <div class="settings-actions">
+        <button class="settings-btn danger" onclick="clearSettings()">Clear all</button>
+        <button class="settings-btn secondary" onclick="closeSettings()">Cancel</button>
+        <button class="settings-btn primary" onclick="saveSettings()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- profile modal -->
+<div class="profile-overlay hidden" id="profileOverlay" onclick="if(event.target===this)closeProfile()">
+  <div class="profile-modal" onclick="event.stopPropagation()">
+    <div class="profile-header">
+      <div class="profile-avatar" id="profileAvatar">JH</div>
+      <div class="profile-name" id="profileName">Jiacheng Hu</div>
+      <div class="profile-email" id="profileEmail">jiacheng@example.com</div>
+    </div>
+    <div class="profile-body" id="profileBody">
+      <!-- Account details section -->
+      <div class="profile-section">
+        <div class="profile-section-title" data-i18n-key="profile.account">Account</div>
+        <div class="profile-row">
+          <span class="profile-row-label" data-i18n-key="profile.joined">Joined</span>
+          <span class="profile-row-value" id="profileJoined">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-row-label" data-i18n-key="profile.emailVerified">Email verified</span>
+          <span class="profile-row-value" id="profileVerified">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-row-label" data-i18n-key="profile.userId">User ID</span>
+          <span class="profile-row-value" id="profileUserId"><span class="profile-id-text"></span></span>
+        </div>
+      </div>
+      <!-- Subscription section -->
+      <div class="profile-section">
+        <div class="profile-section-title" data-i18n-key="profile.subscription">Subscription</div>
+        <div class="profile-row">
+          <span class="profile-row-label" data-i18n-key="profile.currentPlan">Current plan</span>
+          <span class="profile-row-value" id="profileTier" style="font-size:calc(13px * var(--app-font-scale, 1))"></span>
+        </div>
+        <div class="profile-row" id="profileSubEndRow">
+          <span class="profile-row-label" data-i18n-key="profile.renewal">Renewal</span>
+          <span class="profile-row-value" id="profileSubEnd">—</span>
+        </div>
+        <div style="margin-top:10px">
+          <a href="https://topodrive.top/#pricing" class="profile-btn close-btn" style="text-align:center;display:block;font-size:calc(12px * var(--app-font-scale, 1));padding:8px 0" data-i18n-key="profile.comparePlans">Compare plans</a>
+        </div>
+      </div>
+      <!-- Preferences section -->
+      <div class="profile-section">
+        <div class="profile-section-title" data-i18n-key="profile.preferences">Preferences</div>
+        <!-- Language toggle — order matches the chat language directive's
+             detection order in main.js (zh / ja / ko / en). The label
+             text inside each option is intentionally not localized: the
+             button shows the language's own native name so a user can
+             find their own language regardless of UI state. -->
+        <div class="profile-row">
+          <span class="profile-row-label" data-i18n-key="profile.language">Language</span>
+          <div class="profile-lang-toggle" id="profileLangToggle">
+            <span class="profile-lang-option active" id="profileLangEn" onclick="setLang('en')">English</span>
+            <span class="profile-lang-option" id="profileLangZh" onclick="setLang('zh')">中文</span>
+          </div>
+        </div>
+        <div class="profile-toggle-desc" data-i18n-key="profile.webSearchDesc">Enable web search to include real-time results in questions.</div>
+        <div class="profile-toggle" id="profileWebSearchToggle" onclick="toggleProfileWebSearch()">
+          <span class="profile-toggle-label" data-i18n-key="profile.webSearch">Web search</span>
+          <div class="stg-toggle-track" id="profileWebSearchTrack"><div class="stg-toggle-knob"></div></div>
+        </div>
+        <!-- P1.3 — Custom Instructions. Two free-form textareas
+             that are prepended to the system prompt on every chat
+             turn. The first is "How should I respond?" (style /
+             tone / format); the second is "What do you know about
+             me?" (persisted context). Both are stored locally
+             under socrates-custom-instructions; when the backend
+             /api/users/me PATCH endpoint (docs/api/openapi.yaml
+             P1.3) is live, we sync to the server. -->
+        <div class="profile-instructions">
+          <label class="profile-instructions-label" for="profileInstResponse" data-i18n-key="profile.howShouldIRespond">How should I respond?</label>
+          <textarea id="profileInstResponse" name="profileInstResponse" class="profile-instructions-area" maxlength="4000" placeholder="e.g. Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language." oninput="onCustomInstructionsChange()"></textarea>
+          <label class="profile-instructions-label" for="profileInstAbout" style="margin-top:10px" data-i18n-key="profile.whatDoYouKnow">What do you know about me?</label>
+          <textarea id="profileInstAbout" name="profileInstAbout" class="profile-instructions-area" maxlength="4000" placeholder="e.g. I'm a backend engineer working on a payments product. I'm allergic to puns." oninput="onCustomInstructionsChange()"></textarea>
+          <div class="profile-instructions-foot">
+            <span id="profileInstSaveState" class="profile-instructions-state" data-i18n-key="profile.notYetSaved">Not yet saved</span>
+          </div>
+        </div>
+      </div>
+      <!-- Data management section -->
+      <div class="profile-section">
+        <div class="profile-section-title" data-i18n-key="profile.data">Data</div>
+        <!-- Usage / heatmap entry -->
+        <div class="profile-action-row">
+          <div>
+            <div class="profile-action-label" data-i18n-key="profile.usage">Token usage</div>
+            <div class="profile-action-desc" data-i18n-key="profile.usage.desc">View daily token usage heatmap and monthly breakdown.</div>
+          </div>
+          <button class="profile-btn" onclick="openUsageModal()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.view">View</button>
+        </div>
+        <!-- P2.3 — Storage entry. Opens a modal listing archived
+             sessions with restore / delete controls. The button
+             label shows the live count so the user knows if
+             there's anything to act on. -->
+        <div class="profile-action-row">
+          <div>
+            <div class="profile-action-label" data-i18n-key="profile.archivedSessions">Archived sessions</div>
+            <div class="profile-action-desc" data-i18n-key="profile.archivedSessionsDesc">Sessions you deleted are kept here for 30 days before being permanently erased.</div>
+          </div>
+          <button class="profile-btn" onclick="openStorageModal()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.manage">Manage</button>
+        </div>
+        <!-- P5.8 — Prompt templates. Opens a manager modal
+             where the user can add / edit / delete custom
+             templates. Built-ins are listed but read-only. -->
+        <div class="profile-action-row">
+          <div>
+            <div class="profile-action-label" data-i18n-key="profile.promptTemplates">Prompt templates</div>
+            <div class="profile-action-desc" data-i18n-key="profile.promptTemplatesDesc">Reusable prompts you can fire from the chat with <code>/shortcut</code>.</div>
+          </div>
+          <button class="profile-btn" onclick="openPromptTemplatesModal()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.manage">Manage</button>
+        </div>
+        <div class="profile-action-row">
+          <div>
+            <div class="profile-action-label" data-i18n-key="profile.clearConversations">Clear conversations</div>
+            <div class="profile-action-desc" data-i18n-key="profile.clearConversationsDesc">Remove all local chat history.</div>
+          </div>
+          <button class="profile-btn warning" onclick="confirmClearCache()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.clear">Clear</button>
+        </div>
+        <div class="profile-action-row">
+          <div>
+            <div class="profile-action-label" data-i18n-key="profile.clearApiSettings">Clear API settings</div>
+            <div class="profile-action-desc" data-i18n-key="profile.clearApiSettingsDesc">Remove all configured API providers and keys.</div>
+          </div>
+          <button class="profile-btn warning" onclick="confirmClearSettings()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.clear">Clear</button>
+        </div>
+      </div>
+      <!-- Danger zone section -->
+      <div class="profile-section">
+        <div class="profile-section-title" style="color:hsl(0 60% 55%)" data-i18n-key="profile.dangerZone">Danger zone</div>
+        <div class="profile-action-row">
+          <div>
+            <div class="profile-action-label" data-i18n-key="profile.signOut">Sign out</div>
+            <div class="profile-action-desc" data-i18n-key="profile.signOutDesc">End your session on this device.</div>
+          </div>
+          <button class="profile-btn signout" onclick="signOut();closeProfile()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.signOut">Sign out</button>
+        </div>
+        <div class="profile-action-row">
+          <div>
+            <div class="profile-action-label" style="color:hsl(0 60% 55%)" data-i18n-key="profile.deleteAccount">Delete account</div>
+            <div class="profile-action-desc" data-i18n-key="profile.deleteAccountDesc">Permanently delete your account and all data.</div>
+          </div>
+          <button class="profile-btn danger" onclick="confirmDeleteAccount()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.deleteAccount">Delete</button>
+        </div>
+      </div>
+    </div>
+    <div class="profile-actions" style="border-top:0.5px solid hsl(var(--border-300)/0.08);padding-top:12px">
+      <button class="profile-btn close-btn" onclick="closeProfile()" data-i18n-key="common.close">Close</button>
+    </div>
+  </div>
+</div>
+<!-- confirm dialog -->
+<div class="confirm-dialog hidden" id="confirmDialog" onclick="if(event.target===this)closeConfirm()">
+  <div class="confirm-box" onclick="event.stopPropagation()">
+    <div class="confirm-title" id="confirmTitle">Are you sure?</div>
+    <div class="confirm-msg" id="confirmMsg">This action cannot be undone.</div>
+    <div class="confirm-actions" id="confirmActions">
+      <button class="confirm-btn cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="confirm-btn primary" id="confirmOkBtn" onclick="closeConfirm()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- exam modal -->
+<div class="exam-overlay hidden" id="examOverlay" onclick="if(event.target===this)closeExamModal()">
+  <div class="exam-modal" onclick="event.stopPropagation()">
+    <div class="exam-header">
+      <span class="exam-title" id="examTitle">Generate Exam</span>
+      <span class="exam-close" onclick="closeExamModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </span>
+    </div>
+    <div class="exam-body" id="examBody"></div>
+    <div class="exam-footer" id="examFooter"></div>
+  </div>
+</div>
+
+<!-- usage modal -->
+<div class="usage-overlay hidden" id="usageOverlay" onclick="if(event.target===this)closeUsageModal()">
+  <div class="usage-modal" onclick="event.stopPropagation()">
+    <div class="usage-header">
+      <span class="usage-title">Token Usage</span>
+      <span class="usage-close" onclick="closeUsageModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </span>
+    </div>
+    <div class="usage-body" id="usageBody">
+      <div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> <span data-i18n-key="usage.loading">Loading usage data…</span></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,65 @@
+# Dependabot — weekly security and version updates.
+#
+# We track three ecosystems:
+#   1. gradle        — Android app dependencies (libs.versions.toml)
+#   2. github-actions — CI workflow versions
+#   3. npm           — placeholder, in case any JS tooling is added
+#
+# The groups below coalesce minor + patch updates into single PRs
+# (so we get one PR per week with 5-10 grouped updates rather than
+# 50 single-version PRs). Major version updates stay as separate
+# PRs because they often need code changes.
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/android"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    groups:
+      kotlin:
+        patterns:
+          - "kotlin*"
+          - "org.jetbrains.kotlin*"
+          - "androidx.compose*"
+          - "com.google.devtools.ksp*"
+        update-types: ["minor", "patch"]
+      android-core:
+        patterns:
+          - "androidx.*"
+          - "com.google.android.material*"
+        update-types: ["minor", "patch"]
+      networking:
+        patterns:
+          - "com.squareup.*"
+          - "io.coil-kt*"
+          - "org.jetbrains.kotlinx*"
+        update-types: ["minor", "patch"]
+    # Surface insecure / yanked versions as a separate security PR.
+    security-updates-only: false
+    # Don't bump Compose BOM major versions automatically — they
+    # often need material3 API reviews.
+    ignore:
+      - dependency-name: "androidx.compose:compose-bom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "io.coil-kt:coil-compose"
+        # P6.4 — coil-compose is dead code; we plan to remove it
+        # entirely. Until the removal lands, ignore Dependabot
+        # PRs so we don't waste review time.
+        versions: ["*"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    groups:
+      actions:
+        patterns:
+          - "*"
+        update-types: ["minor", "patch"]

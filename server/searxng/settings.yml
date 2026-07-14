@@ -1,0 +1,96 @@
+use_default_settings: true
+
+general:
+  instance_name: Socrates SearXNG
+  debug: false
+  enable_metrics: false
+
+server:
+  secret_key: "socrates-searxng-internal-agent-key-2026"
+  bind_address: "0.0.0.0"
+  port: 8080
+  limiter: false
+  image_proxy: false
+
+search:
+  formats:
+    - html
+    - json
+  safe_search: 0
+  autocomplete: ""
+  lang: auto
+
+ui:
+  static_use_hash: true
+  default_theme: simple
+
+outgoing:
+  request_timeout: 20.0
+  max_request_timeout: 40.0
+  using_proxy: false
+
+# Explicit engine config for China mainland server
+engines:
+  # ---- Disable all engines that are blocked/unreachable from China ----
+  - name: google
+    disabled: true
+  - name: duckduckgo
+    disabled: true
+  - name: brave
+    disabled: true
+  - name: startpage
+    disabled: true
+  - name: qwant
+    disabled: true
+  - name: yahoo
+    disabled: true
+  - name: yandex
+    disabled: true
+  - name: mojeek
+    disabled: true
+  - name: swisscows
+    disabled: true
+  - name: presearch
+    disabled: true
+    disabled: true
+  - name: mwmbl
+    disabled: true
+  - name: privacywall
+    disabled: true
+  - name: marginalia
+    disabled: true
+    disabled: true
+  - name: wikidata
+    disabled: true
+    disabled: true
+  # ---- Engines that work from China Mainland ----
+  - name: bing
+    engine: bing
+    base_url: https://cn.bing.com
+    shortcut: bi
+    disabled: false
+
+  - name: baidu
+    engine: baidu
+    shortcut: bd
+    disabled: false
+
+  - name: sogou
+    engine: sogou
+    shortcut: sg
+    disabled: false
+
+  - name: github
+    engine: github
+    shortcut: gh
+    disabled: false
+
+  - name: stackexchange
+    engine: stackexchange
+    shortcut: sx
+    disabled: false
+
+  - name: arxiv
+    engine: arxiv
+    shortcut: ar
+    disabled: false

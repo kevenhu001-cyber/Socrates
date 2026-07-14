@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="socrates" data-mode="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Socrates — 联系</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="/base.css" rel="stylesheet">
+<script>
+!function(){
+  try{
+    var p=localStorage.getItem("socrates-lang");
+    if(!p)return;
+    var c=document.documentElement.lang;
+    var here=window.location.pathname;
+    if(p==="zh"&&c.indexOf("zh")!==0){
+      var target=here.replace(/\.html$/,"");
+      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
+    }else if(p==="en"&&c.indexOf("en")!==0){
+      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
+      window.location.replace(target2==="/"||target2===""?"/":target2);
+    }
+  }catch(e){}
+}();
+</script>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="page">
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px">Socrates</a>
+    <div class="nav-links">
+      <a href="/pricing">套餐</a>
+      <a href="/guide">指南</a>
+      <a href="/about">关于</a>
+      <a href="/contact" class="nav-active">联系</a>
+      <a class="lang-switch">EN</a>
+      <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="section-eyebrow">联系</div>
+  <h1>我们很乐意<strong>听取你的声音</strong></h1>
+  <p>有问题、建议，或者只是想打个招呼？以下是联系我们的最佳方式。我们会亲自回复每一条消息。</p>
+</div>
+
+<section style="padding-top:0">
+  <div class="section-inner">
+    <div class="contact-stack sr">
+      <div class="contact-block">
+        <div class="contact-block-label">帮助与支持</div>
+        <div class="contact-block-email"><a href="mailto:help@addtech.site">help@addtech.site</a></div>
+        <div class="contact-block-desc">关于账单、账户、技术问题或错误报告。我们在工作日 24 小时内回复。</div>
+      </div>
+      <div class="contact-block">
+        <div class="contact-block-label">一般咨询</div>
+        <div class="contact-block-email"><a href="mailto:hello@topodrive.top">hello@topodrive.top</a></div>
+        <div class="contact-block-desc">合作、媒体、功能请求，或者只是想打个招呼。我们会阅读每一条消息并亲自回复。</div>
+      </div>
+    </div>
+
+    <!-- Additional contact options -->
+    <div class="feat-list sr" style="margin-top:32px">
+      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">错误报告</div><div class="feat-item-desc">某些功能无法正常工作？请将详情发送至 <a href="mailto:help@addtech.site" style="color:hsl(var(--accent-000))">help@addtech.site</a>。截图和控制台日志能帮助我们更快地修复问题。</div></div></div>
+      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">功能建议</div><div class="feat-item-desc">有让 Socrates 变得更好的想法？请通过邮件发送你的建议。如果与我们的愿景一致，我们会将其加入路线图。</div></div></div>
+      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">安全</div><div class="feat-item-desc">发现了安全问题？请直接向 <a href="mailto:help@addtech.site" style="color:hsl(var(--accent-000))">help@addtech.site</a> 报告。我们会在 48 小时内确认收到。</div></div></div>
+    </div>
+
+    <div class="contact-note sr" style="margin-top:48px">
+      <p style="margin-bottom:8px"><strong style="color:hsl(var(--text-100))">回复时间</strong></p>
+      <p style="margin-bottom:4px">支持：工作日 24 小时内（周一至周五，UTC+8）</p>
+      <p style="margin-bottom:4px">一般咨询：48 小时内——有时当天回复</p>
+      <p style="margin-top:20px;font-size:13px">有关账单或订阅的问题？请使用 <a href="mailto:help@addtech.site">help@addtech.site</a> 并附上你的账户邮箱。</p>
+    </div>
+  </div>
+</section>
+
+<section class="pull-quote sr">
+  <div class="section-inner">
+    <blockquote>&ldquo;教学的艺术是协助发现的艺术。我们在这里帮助你发现。&rdquo;</blockquote>
+    <cite>——灵感来自 Mark Van Doren</cite>
+  </div>
+</section>
+
+<section class="cta-section sr">
+  <div class="section-inner">
+    <h2>还没准备好联系我们？<br><strong>先开始学习吧。</strong></h2>
+    <p>自行探索 Socrates。无承诺，无垃圾邮件。</p>
+    <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-tag"><em>S</em>ocrates</div>
+      <p>AI 驱动的苏格拉底式导师。循序渐进，学无止境。</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">产品</div>
+      <a href="/pricing">套餐</a>
+      <a href="/guide">指南</a>
+      <a href="https://app.topodrive.top">应用</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">公司</div>
+      <a href="/about">关于</a>
+      <a href="/contact">联系</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">账户</div>
+      <a href="/zh/account">我的账户</a>
+      <a href="/zh/api-keys">API 密钥</a>
+      <a href="/zh/profile">个人资料</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">法律</div>
+      <a href="/terms">服务条款</a>
+      <a href="/privacy">隐私政策</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">支持</div>
+      <a href="mailto:help@addtech.site">help@addtech.site</a>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Topodrive. 保留所有权利。</p>
+      <p>用心打造，服务全球学习者。</p>
+    </div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('in');
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.sr').forEach(el => observer.observe(el));
+</script>
+<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/^\/zh/,'').replace(/\.html$/,'');b.href=p==='/'||p===''?'/':p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","en")}catch(e){}});})();</script>
+</body>
+</html>

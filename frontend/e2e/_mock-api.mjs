@@ -1,0 +1,113 @@
+// e2e/_mock-api.mjs — Wave -1
+// Shared helper for Playwright specs: stub /api/* so the app boots into its
+// real chat shell (instead of staying on the auth gate). Used by every spec
+// that wants to exercise post-auth flows.
+//
+// Usage:
+//   import { mockAuthedApp } from './_mock-api.mjs';
+//   test.beforeEach(async ({ page }) => { await mockAuthedApp(page); });
+
+import fs from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const MOCK_USER = {
+  id: 'u-test-1',
+  email: 'smoke@example.test',
+  name: 'Smoke Test',
+  verifiedAt: '2026-01-01T00:00:00Z',
+  plan: 'descartes',
+  customInstructions: '',
+  webSearchOn: true,
+};
+
+const MOCK_CFG = {
+  hasBeagleKey: true,
+  // Don't send beagleKey to client (server-only). Smoke test relies on
+  // BEAGLE_BUILT_IN being wireable client-side via the existing fallback path.
+};
+
+const MOCK_SESSIONS = { sessions: [] };
+const MOCK_API_KEYS = { providers: [], activeId: null };
+
+function jsonResponse(body, status = 200) {
+  return {
+    status,
+    contentType: 'application/json',
+    body: typeof body === 'string' ? body : JSON.stringify(body),
+    headers: { 'Access-Control-Allow-Origin': '*' },
+  };
+}
+
+const CSRF_COOKIE_VALUE = 'smoke-csrf-token';
+
+/**
+ * Stub /api/* with predictable responses. Order matters — Playwright
+ * matches the LAST registered route. We register the broad fallback LAST.
+ */
+export async function mockAuthedApp(page) {
+  // Cookies that auth/boot.js + util/api.js expect to find.
+  await page.context().addCookies([{
+    name: 'csrf', value: CSRF_COOKIE_VALUE, domain: '127.0.0.1', path: '/',
+  }, {
+    name: 'xsrf-token', value: CSRF_COOKIE_VALUE, domain: '127.0.0.1', path: '/',
+  }, {
+    name: 'sid', value: 'smoke-sid-abc', domain: '127.0.0.1', path: '/',
+  }]);
+
+  // IMPORTANT: Playwright route handlers are matched in REVERSE order of
+  // registration — the LAST registered route is tried FIRST. So we register
+  // most-specific routes AFTER the generic catch-all. We use a single
+  // branching handler to avoid order-sensitivity entirely.
+  await page.route('**/api/**', async (route) => {
+    const req = route.request();
+    const url = req.url();
+    if (url.endsWith('/api/auth/me') || url.includes('/api/auth/me?')) {
+      await route.fulfill(jsonResponse({ user: MOCK_USER }));
+      return;
+    }
+    if (url.endsWith('/api/config') || url.includes('/api/config?')) {
+      await route.fulfill(jsonResponse(MOCK_CFG));
+      return;
+    }
+    if (url.endsWith('/api/auth/csrf-token')) {
+      await route.fulfill(jsonResponse({ csrfToken: CSRF_COOKIE_VALUE, ok: true }));
+      return;
+    }
+    if (url.includes('/api/sessions')) {
+      if (req.method() === 'GET') {
+        await route.fulfill(jsonResponse(MOCK_SESSIONS));
+      } else {
+        await route.fulfill(jsonResponse({ session: { id: 'smoke-saved-1' } }));
+      }
+      return;
+    }
+    if (url.includes('/api/api-key')) {
+      await route.fulfill(jsonResponse(MOCK_API_KEYS));
+      return;
+    }
+    if (url.includes('/api/memories') || url.includes('/api/usage') ||
+        url.includes('/api/projects') || url.includes('/api/share') ||
+        url.includes('/api/mistakes')) {
+      await route.fulfill(jsonResponse({ items: [], list: [], count: 0, ok: true }));
+      return;
+    }
+    // Default: pretend success so callers don't throw on offline fetches.
+    await route.fulfill(jsonResponse({ ok: true, stub: true }));
+  });
+}
+
+/**
+ * Wait until the app shows the topic-setup shell (or whatever post-auth
+ * screen is currently first). The data-boot-state attribute on <html> flips
+ * from "checking" → "auth" or "app". In mocked mode we want "app".
+ */
+export async function waitForAppShell(page, timeoutMs = 15_000) {
+  await page.waitForFunction(() => {
+    const s = document.documentElement.dataset.bootState;
+    return s === 'app' || s === 'auth';
+  }, null, { timeout: timeoutMs }).catch(() => {});
+  await page.waitForTimeout(300);
+}

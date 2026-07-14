@@ -1,0 +1,936 @@
+var I18N={
+  en:{
+    "chat.placeholder":"Type your thinking...",
+    "chat.hint":"Shift+Enter for new line",
+    "chat.send":"Send",
+    /* P_attachments — UI strings for the chat-input attachment chip
+     * strip, paperclip button, and toast feedback. Kept short so
+     * the chips don't wrap. */
+    "chat.attach":"Attach files",
+    "chat.attach.aria":"Attach files",
+    "chat.attach.remove.aria":"Remove attachment",
+    "chat.attach.maxReached":"You can attach up to 6 files per turn.",
+    "chat.attach.imageTooLarge":"Image exceeds the {size} MB limit.",
+    "chat.attach.pdfTooLarge":"PDF exceeds the 25 MB limit.",
+    "chat.attach.unsupported":"Only images, text files, and PDFs are supported.",
+    "chat.attach.truncated":"(truncated)",
+    /* P_attachments-multimodal — UI strings for the user-controlled
+     * multimodal checkbox on the API key editor row (provider.*) and
+     * the rejected-image toast in the chat composer (attach.*). The
+     * checkbox label is consumed by data-i18n-key="provider.multimodal"
+     * and switched by applyI18n on language toggle. */
+    "provider.multimodal":"Multimodal (vision-capable)",
+    "provider.multimodalHint":"Allow image attachments to be sent to this model",
+    "attach.notMultimodal":"The active model can't view images. Add a multimodal provider or remove image attachments.",
+    /* P_lang-slogans — the topic-setup hero slogan was previously
+       pinned English in BOTH i18n blocks (with a comment claiming
+       this was intentional). That made the Tutor-mode hero stay
+       English even when the user switched the whole app to 中文,
+       which read as broken localization rather than a design
+       choice. Chat-mode slogans are translated (`topic.titleChat`),
+       so for symmetry we now translate these too. The hero is
+       still managed by syncAppModeUI() in main.js — only the
+       zh-side strings change. */
+    "topic.title":"What would you like to explore?",
+    "topic.subtitle":"Describe what you want to learn. Socrates will ask you questions to help you think deeper about it.",
+    "topic.inputPlaceholder":"e.g. I want to understand how machine learning works...",
+    "topic.start":"Begin",
+    "topic.hint":"Be specific for better results",
+    "topic.model":"Model",
+    "topic.extensions":"Extensions",
+    "profile.usage":"Token usage",
+    "profile.usage.desc":"View daily token usage heatmap and monthly breakdown.",
+    "profile.view":"View",
+    "profile.account":"Account",
+    "profile.joined":"Joined",
+    "profile.emailVerified":"Email verified",
+    "profile.userId":"User ID",
+    "profile.subscription":"Subscription",
+    "profile.currentPlan":"Current plan",
+    "profile.renewal":"Renewal",
+    "profile.comparePlans":"Compare plans",
+    "profile.preferences":"Preferences",
+    "profile.language":"Language",
+    "profile.webSearch":"Web search",
+    "profile.webSearchDesc":"Enable web search to include real-time results in questions.",
+    "profile.howShouldIRespond":"How should I respond?",
+    "profile.whatDoYouKnow":"What do you know about me?",
+    "profile.notYetSaved":"Not yet saved",
+    "profile.data":"Data",
+    "profile.deleteAccount":"Delete",
+    "profile.archivedSessions":"Archived sessions",
+    "profile.archivedSessionsDesc":"Sessions you deleted are kept here for 30 days before being permanently erased.",
+    "profile.manage":"Manage",
+    "profile.promptTemplates":"Prompt templates",
+    "profile.promptTemplatesDesc":"Reusable prompts you can fire from the chat with <code>/shortcut</code>.",
+    "profile.clearConversations":"Clear conversations",
+    "profile.clearConversationsDesc":"Remove all local chat history.",
+    "profile.clear":"Clear",
+    "profile.clearApiSettings":"Clear API settings",
+    "profile.clearApiSettingsDesc":"Remove all configured API providers and keys.",
+    "profile.dangerZone":"Danger zone",
+    "profile.signOut":"Sign out",
+    "profile.signOutDesc":"End your session on this device.",
+    "profile.deleteAccountDesc":"Permanently delete your account and all data.",
+    "sidebar.knowledge":"Knowledge",
+    "sidebar.recents":"Recents",
+    "sidebar.mistakes":"Mistakes",
+    "sidebar.recentSessions":"Recent Sessions",
+    "sidebar.new":"New",
+    "sidebar.mistakeBook":"Mistake Book",
+    "sidebar.inbox":"Inbox",
+    "sidebar.inboxDesc":"All sessions without a project",
+    "sidebar.newProject":"New project",
+    "sidebar.editProject":"Edit project",
+    "sidebar.all":"All",
+    "sidebar.pinned":"Pinned",
+    "sidebar.recent":"Recent",
+    "sidebar.share":"Share",
+    "sidebar.shareConversation":"Share conversation",
+    "sidebar.copy":"Copy",
+    "sidebar.revokeShare":"× Revoke share link",
+    "sidebar.createShareLink":"Create share link",
+    "sidebar.textSize":"Text size",
+    "sidebar.contentWidth":"Content width",
+    "sidebar.narrow":"Narrow",
+    "sidebar.medium":"Medium",
+    "sidebar.wide":"Wide",
+    "sidebar.fullWidth":"Full width",
+    "sidebar.newChat":"New chat",
+    "sidebar.shareCurrentChat":"Share current chat",
+    "sidebar.newLine":"New line",
+    "sidebar.ok":"OK",
+    "sidebar.public":"Public",
+    "sidebar.private":"Private",
+    "sidebar.publicDesc":"Anyone with the link can view",
+    "sidebar.privateDesc":"Only you can view",
+    "sidebar.shareLink":"Share link",
+    "sidebar.startNewChat":"Start a new chat",
+    "share.title":"Share conversation",
+    "share.publicTitle":"Anyone with the link",
+    "share.publicDesc":"No sign-in required. Anyone who has the link can view this conversation.",
+    "share.privateTitle":"Only you",
+    "share.privateDesc":"Must be logged into your account to view. Still shared via link.",
+    "share.copy":"Copy",
+    "share.copied":"Copied!",
+    "share.revoke":"× Revoke share link",
+    "share.create":"Create share link",
+    "share.copySource":"Copy source",
+    "share.startChatFirst":"Start a chat first to share it",
+    "share.projectChips":"Project chips ↑ — click to switch",
+    "share.projectPrefix":"Project: ",
+    "search.noMatches":"No matches",
+    "search.failed":"Search failed",
+    "tags.maxTags":"Maximum 12 tags per session",
+    "session.deleted":"Session deleted",
+    "session.deleteFailed":"Delete failed",
+    "session.archiveFirst":"Archive the session first (long-press → Delete).",
+    "session.inboxPermanent":"The Inbox project is permanent",
+    "project.nameRequired":"Project name is required",
+    "project.deleteConfirm":"Delete project?",
+    "project.deleteDesc":"Sessions in this project will move back to Inbox. This cannot be undone.",
+    "feedback.thanks":"Thanks for the feedback",
+    "feedback.improve":"Got it — we'll improve",
+    "feedback.notFound":"Message not found",
+    "feedback.saved":"Saved locally — will sync when back online",
+    "clipboard.copied":"Copied to clipboard",
+    "clipboard.failed":"Copy failed",
+    "share.linkLabel":"Share link",
+    "exam.title":"Generate Exam",
+    "exam.back":"Back to chat",
+    "exam.cancel":"Cancel",
+    "exam.generate":"Generate Exam",
+    "exam.topic":"Topic",
+    "exam.difficulty":"Difficulty",
+    "exam.count":"Number of questions",
+    "exam.types":"Question types",
+    "exam.instructions":"Detailed instructions (optional)",
+    "exam.submit":"Submit for Grading",
+    "exam.new":"New Exam",
+    "exam.close":"Close",
+    "common.cancel":"Cancel",
+    "common.save":"Save",
+    "common.delete":"Delete",
+    "common.close":"Close",
+    "tutor.loading":"Generating questions...",
+    "tutor.loadingWeb":"Searching the web and generating questions...",
+    "tutor.questionOf":"Question {n} of {total}",
+    "tutor.begin":"Begin",
+    "tutor.back":"Back",
+    "tutor.next":"Next",
+    "tutor.quickCheck":"Quick check",
+    "tutor.problem":"Problem",
+    "tutor.solution":"Solution",
+    "tutor.hint":"Hint",
+    "tutor.explain":"Explain this concept to me",
+    "tutor.skip":"Ask me a different question",
+    "tutor.diagSkip":"I don't know · Skip",
+    "tutor.thinkMore":"I need to think more",
+    "tutor.takeTime":"Take your time. There is no rush.",
+    "tutor.fallbackWarn":"This content has a formatting issue; shown as-is.",
+    /* v3.0 design — §8.2 "want to walk through" prompt and §8.6
+       four-option dialog. Keys are read via t() in tutorSocratic.js
+       (which falls back to inline copy if the key is missing, so
+       adding the keys here is forward-compatible). */
+    "tutor.explainPrompt":"Want to walk through this concept?",
+    "tutor.explainKeepTrying":"Keep trying",
+    "tutor.fourOptionTitle":"Stuck on the practice? Pick a next step.",
+    "tutor.fourOptionHint":"Hint",
+    "tutor.fourOptionFull":"Full explanation",
+    "tutor.fourOptionMistake":"Add to mistakes",
+    "tutor.fourOptionSkip":"Skip",
+    /* v3.0 design — §6 knowledge boundary file. */
+    "tutor.kbFileTitle":"Knowledge Boundary",
+    "tutor.kbLastUpdated":"Last updated",
+    "tutor.kbSnapshot":"Save snapshot",
+    "tutor.kbHistory":"Snapshot history",
+    "tutor.kbSectionInternalized":"Internalized",
+    "tutor.kbSectionFuzzy":"Fuzzy",
+    "tutor.kbSectionBlank":"Not yet explored",
+    "tutor.kbVerifiedTag":"verified x",
+    "tutor.kbTopicFirst":"Set a topic to build your knowledge map.",
+    /* v3.0 design — §10 long-term plan. */
+    "tutor.planTitle":"Teaching plan",
+    "tutor.scheduleTitle":"Daily schedule",
+    "tutor.scheduleTarget":"Target",
+    "tutor.scheduleDay":"day",
+    "tutor.scheduleEmpty":"Set a target date and a daily time budget to see a day-by-day plan with review buffer and deadline warnings.",
+    "tutor.scheduleEmptyCta":"Set up now",
+    "tutor.scheduleRest":"Rest day",
+    "tutor.scheduleReview":"Review buffer",
+    "tutor.scheduleMore":"more days",
+    "tutor.planWarningOverdue":"Plan is {n} day(s) past the target date. Adjust the deadline or scope.",
+    "tutor.planWarningBlank":"Progress note: {days} day(s) left and {pct}% of nodes are unexplored.",
+    "tutor.planWarningOverrun":"Progress note: at the current pace, you will finish {n} day(s) after the target date.",
+    "tutor.planActionScope":"Trim scope",
+    "tutor.planActionTime":"Add daily time",
+    "tutor.planActionDeadline":"Extend deadline",
+    /* v3.0 design — mode banner (§11). */
+    "tutor.modeChat":"Chat",
+    "tutor.modeTutor":"Tutor",
+    "tutor.modeChatDesc":"Plain conversation, no scaffolding",
+    "tutor.modeTutorDesc":"AI asks, follows up, and tracks what you know",
+    "tutor.modeSwitchToTutor":"Switch to Tutor",
+    "tutor.modeSwitchToChat":"Switch to Chat",
+    /* Math-textbook scaffold blocks (proof / theorem / key-point / derivation) */
+    "tutor.proofLabel":"Proof",
+    "tutor.theoremLabel":"Theorem",
+    "tutor.keyPointLabel":"Key Point",
+    "tutor.derivationLabel":"Derivation",
+    "tutor.theoremStatementLabel":"Statement",
+    "tutor.theoremProofLabel":"Proof",
+    "tutor.showProof":"Show proof",
+    "tutor.hideProof":"Hide proof",
+    /* v3.0 design — mistake book filter (§9.4). */
+    "tutor.mistakeFilterAll":"All",
+    "tutor.mistakeFilterUnresolved":"Unresolved",
+    "tutor.mistakeFilterResolved":"Resolved",
+    "tutor.mistakeResolvedTag":"conquered",
+    "tutor.mistakeEmpty":"No mistakes yet. Wrong quiz picks and incorrect practice attempts will land here for review.",
+    "tutor.mistakeEmptyResolved":"No resolved mistakes yet. Mark a mistake as conquered after redoing it successfully.",
+    "tutor.mistakeEmptyOther":"Nothing in this filter. Switch to \"All\" to see every mistake.",
+    /* v3.0 design — practice progress chip (§8.5). */
+    "tutor.practiceFoundation":"Foundation",
+    "tutor.practiceTransfer":"Transfer",
+    "tutor.practiceAttempts":"{n} attempt(s)",
+    "tutor.practiceCurrentNode":"current topic",
+    /* v3.0 design — plan-setup form (§10.1). */
+    "tutor.planSetupToggle":"Optional: set a target date and daily time",
+    "tutor.planSetupTargetDate":"Target date",
+    "tutor.planSetupDailyMinutes":"Daily minutes",
+    "tutor.planSetupRestDays":"Rest days",
+    /* v3.0 design — stage labels. */
+    "tutor.stageMotivate":"Intuition",
+    "tutor.stageDefine":"Definition",
+    "tutor.stageDevelop":"Development",
+    "tutor.stageIllustrate":"Worked example",
+    "tutor.stageExercise":"Practice",
+    "tutor.stageCheck":"Check",
+    "tutor.done":"[done]",
+    /* Scaffold widget strings — buttons, placeholders, feedback. */
+    "tutor.flashcardAria":"Flashcard — click to flip",
+    "tutor.hideHint":"Hide hint",
+    "tutor.hideSolution":"Hide solution",
+    "tutor.practiceEmpty":"Please type an answer first.",
+    "tutor.practicePlaceholder":"Type your answer…",
+    "tutor.practicePrefix":"[Practice attempt]\n",
+    "tutor.practiceSelfCorrect":"Correct!",
+    "tutor.practiceSelfWrong":"Not quite. The correct answer is:",
+    "tutor.practiceSent":"Sent for review.",
+    "tutor.quizCorrect":"Correct ({answer}).",
+    "tutor.quizRecorded":"Recorded: {letter}.",
+    "tutor.quizWrong":"Not quite. The correct answer is {answer}.",
+    "tutor.revealAnswer":"Reveal answer",
+    "tutor.showHint":"Show hint",
+    "tutor.showSolution":"Show solution",
+    "tutor.submitAnswer":"Submit",
+    "chat.thinking":"Thinking…",
+    "chat.generating":"Generating…",
+    "chat.generatingQuestions":"Generating questions…",
+    "chat.generatingQ":"Generating Q {n}/{total}…",
+    "chat.generatedQ":"Generated {n}/{total} questions",
+    "chat.knowledgeReady":"Knowledge dimensions ready",
+    "common.loading":"Loading…",
+    "common.saving":"Saving…",
+    "common.thinking":"Thinking…",
+    "common.generating":"Generating…",
+    "common.ok":"OK",
+    "chat.webSearchLabel":"Web search:",
+    "chat.webSearchSources":"{n} sources",
+    "chat.webSearchRefreshTimeout":"Search refresh timed out",
+    "chat.webSearchResults":"Latest web search results",
+    "chat.webSearchFailed":"Search failed",
+    "auth.sessionExpired":"Your session has expired. Please sign in again.",
+    "auth.checkInbox":"Check your inbox",
+    "auth.verificationLinkSent":"We sent a verification link to <strong>{email}</strong>. Click the button in the email to start learning with Socrates. The link expires in 24 hours.",
+    "auth.resetLinkSent":"If an account exists for <strong>{email}</strong>, we sent a password reset link. The link expires in 1 hour.",
+    "auth.verifiedTitle":"Email verified",
+    "auth.verifiedMsg":"You're signed in. Taking you to your dashboard…",
+    "auth.signinError":"Sign-in failed",
+    "auth.signupError":"Sign-up failed",
+    "auth.codeSentMsg":"We sent a code to <strong>{email}</strong>. It expires in 10 minutes.",
+    "auth.signIn":"Sign in",
+    "auth.sending":"Sending…",
+    "auth.resetting":"Resetting…",
+    "auth.resetPassword":"Reset password",
+    "auth.passwordTooShort":"Password must be at least 8 characters.",
+    "auth.passwordsDontMatch":"Passwords don't match.",
+    "auth.pleaseEnterEmail":"Please enter your email.",
+    "auth.wrongCredentials":"Wrong email or password.",
+    "auth.loginFailedPrefix":"Login failed: ",
+    "auth.sendVerificationLink":"Send verification link",
+    "auth.sendResetLink":"Send reset link",
+    "auth.sendCode":"Send code",
+    "auth.logIn":"Log in",
+    "exam.generating":"Generating your exam…",
+    "exam.generatingQ":"Generating question {n} of {total}…",
+    "exam.generatingQSimple":"Generating question {n}…",
+    "exam.cancel":"Cancel",
+    "exam.preparing":"Preparing…",
+    "exam.preparingSubtitle":"The AI is preparing your questions — this usually takes a few seconds.",
+    "exam.tryAgain":"Try again",
+    "exam.close":"Close",
+    "exam.cancelled":"Generation cancelled.",
+    "exam.noModelsAvailable":"No models available",
+    "exam.modelLabel":"Model",
+    "exam.typeMc":"Multiple choice",
+    "exam.typeFb":"Fill blank",
+    "exam.typeSa":"Short answer",
+    "exam.cancelledTitle":"Cancelled",
+    "exam.answered":"answered",
+    "exam.results":"Exam Results: {topic}",
+    "exam.placeholderTopic":"e.g. Linear Algebra, Quantum Mechanics, World War II...",
+    "exam.placeholderDifficulty":"beginner / intermediate / hard / expert / custom",
+    "exam.placeholderInstructions":"Specific topics to cover, or leave blank for AI to decide...",
+    "exam.placeholderAnswer":"Type your answer…",
+    "exam.placeholderTopicZh":"如：线性代数、量子力学、二战…",
+    "exam.placeholderDifficultyZh":"入门 / 中级 / 困难 / 专家 / 自定义",
+    "exam.placeholderInstructionsZh":"具体说明要覆盖的知识点，留空则由 AI 决定…",
+    "exam.placeholderAnswerZh":"输入你的答案…",
+    "settings.saved":"Saved. Active: {name}.",
+    "settings.savedFallback":"Saved. Active provider is missing model — using mock engine as fallback.",
+    "settings.noModels":"No models configured — using mock engine.",
+    "settings.saveFailed":"Save failed: {msg}",
+    "settings.unknownError":"unknown error",
+    "settings.cleared":"Cleared. Built-in Beagle is still available — pick a model to start.",
+    "settings.signInFirst":"Please sign in to save API keys.",
+    "settings.rowMissing":"Row #{n} is missing URL or model. Fix it and try again.",
+    "settings.rowMissingKey":"New row #{n} needs an API key.",
+    "settings.apiKeyLimit":"API key limit reached for {tier} plan ({max} keys). Upgrade your plan to add more.",
+    "settings.refresh":"Refreshing…",
+    "settings.action.deleteAccount":"Failed to delete account: {msg}",
+    "common.thinkingLabel":"Thinking",
+    "common.dayShort.sun":"Sun",
+    "common.dayShort.mon":"Mon",
+    "common.dayShort.tue":"Tue",
+    "common.dayShort.wed":"Wed",
+    "common.dayShort.thu":"Thu",
+    "common.dayShort.fri":"Fri",
+    "common.dayShort.sat":"Sat",
+    "think.title":"Thought",
+    "think.thinking":"Thinking…",
+    "think.connecting":"Connecting to AI…",
+    "think.connectingShort":"Connecting…",
+    "think.wordCount":"{n} words",
+    "think.wordCountOne":"1 word",
+    "think.toggle":"Toggle thinking",
+    "profile.disclaimerTutor":"Socrates asks questions to help you think. It does not judge your answers.",
+    "tag.placeholder":"Add a tag and press Enter",
+    "project.placeholderName":"e.g. Linear Algebra",
+    "project.placeholderDesc":"Optional. Helps the tutor tailor its style.",
+    "kb.placeholderNote":"Write anything you want to remember about this sub-topic...",
+    "prompt.placeholderTitle":"e.g. Code review",
+    "prompt.placeholderShortcut":"/my-template",
+    "prompt.placeholderDesc":"One-line summary",
+    "prompt.placeholderBody":"The text inserted into the chat as a placeholder. The user types or pastes the real content below; this prefix is stripped before the message is sent to the LLM.",
+    "prompt.placeholderSystem":"Optional. The invisible instruction injected as a system message whenever this template is active. Tell the model what role to play, what the input contract is, what the output should look like, and any constraints. Leave empty to send the body as a plain user message with no role switch.",
+    "provider.placeholderLabel":"Label (e.g. GPT-5.5)",
+    "provider.placeholderUrl":"Base URL  (https://api.openai.com/v1)",
+    "provider.placeholderKey":"API key",
+    "provider.placeholderModel":"Model id  (e.g. gpt-5.5, claude-opus-4-8, sonnet-4-6)",
+    "usage.failed":"Failed to load usage data. Make sure you are signed in.",
+    "usage.failedGeneric":"Failed to load usage data.",
+    "usage.loading":"Loading usage data…",
+    "exam.noResponse":"no response",
+    "exam.failNoResponse":"Generation failed — no response",
+    "exam.failed":"Failed",
+    "exam.failParse":"Parse failed — unexpected format",
+    "exam.failParseHint":"Try again or switch model",
+    "exam.parseFailed":"Parse failed",
+    "exam.failNone":"Generation failed — no questions",
+    "exam.questionsLabel":"questions ·",
+    "exam.answeredLabel":"answered",
+    "diag.analyzingTopic":"Analyzing topic…",
+    "diag.ready":"Ready",
+    "common.noResponseTimeout":"No response for {sec}s — check API availability",
+    "common.retry":"Retry",
+    "common.truncated":"(truncated)",
+    "common.downloadFile":"[download {type}]",
+    "share.linkExpired":"Link expired — start a new topic.",
+    "share.creatingLink":"Creating link…",
+    "share.failedCreate":"Failed to create link: {msg}",
+    "share.failedRevoke":"Failed to revoke: {msg}",
+    "share.copied":"Copied!",
+    "share.copy":"Copy",
+    "share.errorUnknown":"unknown error",
+    "share.notFoundTitle":"Shared conversation not found",
+    "share.notFoundMsg":"The link may be expired or invalid.",
+    "share.readOnly":"Read-only",
+    "topic.titleChat":"What can I help you with?",
+    "topic.subChat":"Ask me anything. Plain conversation — no diagnostic, no lesson plan.",
+    "topic.disclaimerChat":"Chat mode is a plain conversation.",
+    "profile.savedAt":"Saved at {hh}:{mm}",
+    "profile.instructionsSavedPlaceholder":"Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language.",
+    "profile.instructionsAboutPlaceholder":"e.g. I'm a backend engineer working on a payments product. I'm allergic to puns."
+  },
+  zh:{
+    "chat.placeholder":"输入你的想法...",
+    "chat.hint":"Shift+Enter 换行",
+    "chat.send":"发送",
+    /* P_attachments — see matching en block. */
+    "chat.attach":"附加文件",
+    "chat.attach.aria":"附加文件",
+    "chat.attach.remove.aria":"移除附件",
+    "chat.attach.maxReached":"每次最多附加 6 个文件。",
+    "chat.attach.imageTooLarge":"图片超过 {size} MB 上限。",
+    "chat.attach.pdfTooLarge":"PDF 超过 25 MB 上限。",
+    "chat.attach.unsupported":"仅支持图片、文本文件和 PDF。",
+    "chat.attach.truncated":"（已截断）",
+    /* P_attachments-multimodal — see matching en block. */
+    "provider.multimodal":"多模态（支持图像理解）",
+    "provider.multimodalHint":"允许将图片附件发送给此模型",
+    "attach.notMultimodal":"当前模型无法理解图像。请添加多模态提供方或移除图片附件。",
+    /* P_lang-slogans — Tutor-mode hero was pinned English before; now
+       translated so the whole app reads consistently in 中文.
+       The chat-mode equivalents (`topic.titleChat` / `topic.subChat`)
+       above are already localized, so Tutor now mirrors that. */
+    "topic.title":"今天想探索什么？",
+    "topic.subtitle":"描述你想学习的主题，Socrates 会通过提问引导你深入思考。",
+    "topic.inputPlaceholder":"例如：我想了解机器学习是怎么工作的...",
+    "topic.start":"开始",
+    "topic.hint":"描述越具体效果越好",
+    "topic.model":"模型",
+    "topic.extensions":"扩展",
+    "profile.usage":"Token 用量",
+    "profile.usage.desc":"查看每日 token 用量热力图和月度统计。",
+    "profile.view":"查看",
+    "profile.account":"账户",
+    "profile.joined":"加入时间",
+    "profile.emailVerified":"邮箱已验证",
+    "profile.userId":"用户 ID",
+    "profile.subscription":"订阅",
+    "profile.currentPlan":"当前套餐",
+    "profile.renewal":"续费日期",
+    "profile.comparePlans":"对比套餐",
+    "profile.preferences":"偏好设置",
+    "profile.language":"语言",
+    "profile.webSearch":"网页搜索",
+    "profile.webSearchDesc":"开启后，出题时会包含实时搜索结果。",
+    "profile.howShouldIRespond":"你希望我如何回答？",
+    "profile.whatDoYouKnow":"你了解我什么？",
+    "profile.notYetSaved":"尚未保存",
+    "profile.data":"数据",
+    "profile.deleteAccount":"删除",
+    "profile.archivedSessions":"已归档会话",
+    "profile.archivedSessionsDesc":"你删除的会话会在这里保留 30 天后永久清除。",
+    "profile.manage":"管理",
+    "profile.promptTemplates":"提示词模板",
+    "profile.promptTemplatesDesc":"可重复使用的提示词，可在对话中通过 <code>/shortcut</code> 调用。",
+    "profile.clearConversations":"清除对话",
+    "profile.clearConversationsDesc":"删除所有本地对话历史。",
+    "profile.clear":"清除",
+    "profile.clearApiSettings":"清除 API 设置",
+    "profile.clearApiSettingsDesc":"删除所有已配置的 API 提供商和密钥。",
+    "profile.dangerZone":"危险区域",
+    "profile.signOut":"退出登录",
+    "profile.signOutDesc":"在此设备上结束你的会话。",
+    "profile.deleteAccountDesc":"永久删除你的账户和所有数据。",
+    "sidebar.knowledge":"知识",
+    "sidebar.recents":"最近",
+    "sidebar.mistakes":"错题",
+    "sidebar.recentSessions":"最近会话",
+    "sidebar.new":"新建",
+    "sidebar.mistakeBook":"错题本",
+    "sidebar.inbox":"收件箱",
+    "sidebar.inboxDesc":"所有未归类项目的会话",
+    "sidebar.newProject":"新建项目",
+    "sidebar.editProject":"编辑项目",
+    "sidebar.all":"全部",
+    "sidebar.pinned":"已固定",
+    "sidebar.recent":"最近",
+    "sidebar.share":"分享",
+    "sidebar.shareConversation":"分享对话",
+    "sidebar.copy":"复制",
+    "sidebar.revokeShare":"× 撤销分享链接",
+    "sidebar.createShareLink":"创建分享链接",
+    "sidebar.textSize":"文字大小",
+    "sidebar.contentWidth":"内容宽度",
+    "sidebar.narrow":"窄",
+    "sidebar.medium":"中",
+    "sidebar.wide":"宽",
+    "sidebar.fullWidth":"全宽",
+    "sidebar.newChat":"新建对话",
+    "sidebar.shareCurrentChat":"分享当前对话",
+    "sidebar.newLine":"换行",
+    "sidebar.ok":"确定",
+    "sidebar.public":"公开",
+    "sidebar.private":"私密",
+    "sidebar.publicDesc":"任何有链接的人都可以查看",
+    "sidebar.privateDesc":"只有你可以查看",
+    "sidebar.shareLink":"分享链接",
+    "sidebar.startNewChat":"开始新对话",
+    "share.title":"分享对话",
+    "share.publicTitle":"任何有链接的人",
+    "share.publicDesc":"无需登录。任何有链接的人都可以查看这个对话。",
+    "share.privateTitle":"仅限你",
+    "share.privateDesc":"必须登录你的账户才能查看。仍通过链接分享。",
+    "share.copy":"复制",
+    "share.copied":"已复制！",
+    "share.revoke":"× 撤销分享链接",
+    "share.create":"创建分享链接",
+    "share.copySource":"复制源代码",
+    "share.startChatFirst":"请先开始一个对话再分享",
+    "share.projectChips":"项目标签 ↑ — 点击切换",
+    "share.projectPrefix":"项目: ",
+    "search.noMatches":"无匹配结果",
+    "search.failed":"搜索失败",
+    "tags.maxTags":"每个会话最多 12 个标签",
+    "session.deleted":"会话已删除",
+    "session.deleteFailed":"删除失败",
+    "session.archiveFirst":"请先归档会话(长按 → 删除)。",
+    "session.inboxPermanent":"收件箱项目是永久的",
+    "project.nameRequired":"项目名称不能为空",
+    "project.deleteConfirm":"删除项目?",
+    "project.deleteDesc":"此项目中的会话将移回收件箱。此操作无法撤销。",
+    "feedback.thanks":"感谢反馈",
+    "feedback.improve":"收到 — 我们会改进",
+    "feedback.notFound":"未找到消息",
+    "feedback.saved":"已本地保存 — 恢复网络后将同步",
+    "clipboard.copied":"已复制到剪贴板",
+    "clipboard.failed":"复制失败",
+    "share.linkLabel":"分享链接",
+    "exam.title":"生成考试",
+    "exam.back":"返回对话",
+    "exam.cancel":"取消",
+    "exam.generate":"生成考试",
+    "exam.topic":"主题",
+    "exam.difficulty":"难度",
+    "exam.count":"题目数量",
+    "exam.types":"题型",
+    "exam.instructions":"详细说明（可选）",
+    "exam.submit":"提交批改",
+    "exam.new":"新考试",
+    "exam.close":"关闭",
+    "common.cancel":"取消",
+    "common.save":"保存",
+    "common.delete":"删除",
+    "common.close":"关闭",
+    "tutor.loading":"正在生成问题...",
+    "tutor.loadingWeb":"正在搜索网络并生成问题...",
+    "tutor.questionOf":"第 {n} / {total} 题",
+    "tutor.begin":"开始",
+    "tutor.back":"上一题",
+    "tutor.next":"下一题",
+    "tutor.quickCheck":"小测",
+    "tutor.problem":"题目",
+    "tutor.solution":"解答",
+    "tutor.hint":"提示",
+    "tutor.explain":"给我讲解一下这个概念",
+    "tutor.skip":"换一道题",
+    "tutor.diagSkip":"跳过",
+    "tutor.thinkMore":"我再想想",
+    "tutor.takeTime":"慢慢来，不着急。",
+    "tutor.fallbackWarn":"该内容格式异常，已原样展示",
+    /* v3.0 design — §8.2 prompt + §8.6 four-option dialog (zh) */
+    "tutor.explainPrompt":"这里需要梳理一下吗？",
+    "tutor.explainKeepTrying":"再想想",
+    "tutor.fourOptionTitle":"练习题卡住了，下一步？",
+    "tutor.fourOptionHint":"提示",
+    "tutor.fourOptionFull":"完整讲解",
+    "tutor.fourOptionMistake":"加入错题本",
+    "tutor.fourOptionSkip":"跳过",
+    /* v3.0 design — §6 knowledge boundary file (zh) */
+    "tutor.kbFileTitle":"知识边界",
+    "tutor.kbLastUpdated":"最后更新",
+    "tutor.kbSnapshot":"存档当前版本",
+    "tutor.kbHistory":"存档历史",
+    "tutor.kbSectionInternalized":"已内化",
+    "tutor.kbSectionFuzzy":"模糊",
+    "tutor.kbSectionBlank":"未探测",
+    "tutor.kbVerifiedTag":"验证 x",
+    "tutor.kbTopicFirst":"设置学习主题后，这里会显示知识地图。",
+    /* v3.0 design — §10 long-term plan (zh) */
+    "tutor.planTitle":"教学计划",
+    "tutor.scheduleTitle":"学习日程",
+    "tutor.scheduleTarget":"截止时间",
+    "tutor.scheduleDay":"天",
+    "tutor.scheduleEmpty":"设置截止时间和每日学习时间后，会按节奏把今天要做的主题和剩余天数排在这里。",
+    "tutor.scheduleEmptyCta":"现在设置",
+    "tutor.scheduleRest":"休息",
+    "tutor.scheduleReview":"复习缓冲",
+    "tutor.scheduleMore":"天",
+    "tutor.planWarningOverdue":"计划已过截止日期 {n} 天。可以调整截止时间或学习范围。",
+    "tutor.planWarningBlank":"当前进度提示：距截止时间还有 {days} 天，仍有 {pct}% 的节点未探测。",
+    "tutor.planWarningOverrun":"当前进度提示：按当前节奏，预计需要比截止时间多 {n} 天。",
+    "tutor.planActionScope":"调整学习范围",
+    "tutor.planActionTime":"增加每日时间",
+    "tutor.planActionDeadline":"延长截止日期",
+    /* v3.0 design — mode banner (zh) */
+    "tutor.modeChat":"对话模式",
+    "tutor.modeTutor":"引导模式",
+    "tutor.modeChatDesc":"普通对话，无教学引导",
+    "tutor.modeTutorDesc":"AI 主动提问并跟踪你的学习",
+    "tutor.modeSwitchToTutor":"切换到引导模式",
+    "tutor.modeSwitchToChat":"切换到对话模式",
+    /* Math-textbook scaffold blocks (zh) */
+    "tutor.proofLabel":"证明",
+    "tutor.theoremLabel":"定理",
+    "tutor.keyPointLabel":"要点",
+    "tutor.derivationLabel":"推导",
+    "tutor.theoremStatementLabel":"陈述",
+    "tutor.theoremProofLabel":"证明",
+    "tutor.showProof":"展开证明",
+    "tutor.hideProof":"收起证明",
+    /* v3.0 design — mistake book filter (zh) */
+    "tutor.mistakeFilterAll":"全部",
+    "tutor.mistakeFilterUnresolved":"未攻克",
+    "tutor.mistakeFilterResolved":"已攻克",
+    "tutor.mistakeResolvedTag":"已攻克",
+    "tutor.mistakeEmpty":"还没有错题。答错的测验题和练习题会收集在这里。",
+    "tutor.mistakeEmptyResolved":"还没有攻克的错题。重新答对一道题后会标记为已攻克。",
+    "tutor.mistakeEmptyOther":"当前筛选下没有内容。切换到「全部」查看所有错题。",
+    /* v3.0 design — practice progress chip (zh) */
+    "tutor.practiceFoundation":"基础题",
+    "tutor.practiceTransfer":"变式题",
+    "tutor.practiceAttempts":"已尝试 {n} 次",
+    "tutor.practiceCurrentNode":"当前主题",
+    /* v3.0 design — plan-setup form (zh) */
+    "tutor.planSetupToggle":"可选：设置截止时间与每日学习时长",
+    "tutor.planSetupTargetDate":"截止时间",
+    "tutor.planSetupDailyMinutes":"每日时长（分钟）",
+    "tutor.planSetupRestDays":"休息日",
+    /* v3.0 design — stage labels (zh) */
+    "tutor.stageMotivate":"建立直觉",
+    "tutor.stageDefine":"精确定义",
+    "tutor.stageDevelop":"深入推导",
+    "tutor.stageIllustrate":"应用示例",
+    "tutor.stageExercise":"动手练习",
+    "tutor.stageCheck":"阶段检查",
+    "tutor.done":"[已完成]",
+    /* Scaffold widget strings — buttons, placeholders, feedback. */
+    "tutor.flashcardAria":"闪卡 — 点击翻转",
+    "tutor.hideHint":"隐藏提示",
+    "tutor.hideSolution":"隐藏答案",
+    "tutor.practiceEmpty":"请先输入答案。",
+    "tutor.practicePlaceholder":"输入你的答案…",
+    "tutor.practicePrefix":"[练习作答]\n",
+    "tutor.practiceSelfCorrect":"答对了！",
+    "tutor.practiceSelfWrong":"不太对，正确答案是：",
+    "tutor.practiceSent":"已发送，等待 AI 点评。",
+    "tutor.quizCorrect":"答对了（{answer}）。",
+    "tutor.quizRecorded":"已记录：{letter}。",
+    "tutor.quizWrong":"不太对，正确答案是 {answer}。",
+    "tutor.revealAnswer":"查看答案",
+    "tutor.showHint":"显示提示",
+    "tutor.showSolution":"显示答案",
+    "tutor.submitAnswer":"提交",
+    "chat.thinking":"思考中…",
+    "chat.generating":"正在生成…",
+    "chat.generatingQuestions":"正在生成问题…",
+    "chat.generatingQ":"正在出第 {n}/{total} 题…",
+    "chat.generatedQ":"已生成 {n}/{total} 题",
+    "chat.knowledgeReady":"知识点已就绪",
+    "common.loading":"加载中…",
+    "common.saving":"保存中…",
+    "common.thinking":"思考中…",
+    "common.generating":"正在生成…",
+    "common.ok":"确定",
+    "chat.webSearchLabel":"网络搜索：",
+    "chat.webSearchSources":"{n} 个来源",
+    "chat.webSearchRefreshTimeout":"搜索刷新超时",
+    "chat.webSearchResults":"最新网络搜索结果",
+    "chat.webSearchFailed":"搜索失败",
+    "auth.sessionExpired":"会话已过期，请重新登录。",
+    "auth.checkInbox":"请检查邮箱",
+    "auth.verificationLinkSent":"我们已向 <strong>{email}</strong> 发送验证链接。点击邮件中的按钮即可开始。链接 24 小时内有效。",
+    "auth.resetLinkSent":"如果该邮箱存在账户，我们已发送重置链接。链接 1 小时内有效。",
+    "auth.verifiedTitle":"邮箱已验证",
+    "auth.verifiedMsg":"已登录，正在跳转到主页…",
+    "auth.signinError":"登录失败",
+    "auth.signupError":"注册失败",
+    "auth.codeSentMsg":"验证码已发送到 <strong>{email}</strong>。10 分钟内有效。",
+    "auth.signIn":"登录",
+    "auth.sending":"发送中…",
+    "auth.resetting":"重置中…",
+    "auth.resetPassword":"重置密码",
+    "auth.passwordTooShort":"密码至少需要 8 个字符。",
+    "auth.passwordsDontMatch":"两次输入的密码不一致。",
+    "auth.pleaseEnterEmail":"请输入您的邮箱。",
+    "auth.wrongCredentials":"邮箱或密码错误。",
+    "auth.loginFailedPrefix":"登录失败：",
+    "auth.sendVerificationLink":"发送验证链接",
+    "auth.sendResetLink":"发送重置链接",
+    "auth.sendCode":"发送验证码",
+    "auth.logIn":"登录",
+    "exam.generating":"正在生成考卷…",
+    "exam.generatingQ":"正在生成第 {n}/{total} 题…",
+    "exam.generatingQSimple":"正在生成第 {n} 题…",
+    "exam.cancel":"取消",
+    "exam.preparing":"准备出题…",
+    "exam.preparingSubtitle":"AI 正在为您出题，请稍候片刻",
+    "exam.tryAgain":"重新出题",
+    "exam.close":"关闭",
+    "exam.cancelled":"已取消出题。",
+    "exam.noModelsAvailable":"无可用模型",
+    "exam.modelLabel":"生成模型",
+    "exam.typeMc":"选择题",
+    "exam.typeFb":"填空题",
+    "exam.typeSa":"简答题",
+    "exam.cancelledTitle":"已取消",
+    "exam.answered":"已答",
+    "exam.results":"考试成绩：{topic}",
+    "exam.placeholderTopic":"e.g. Linear Algebra, Quantum Mechanics, World War II...",
+    "exam.placeholderDifficulty":"beginner / intermediate / hard / expert / custom",
+    "exam.placeholderInstructions":"Specific topics to cover, or leave blank for AI to decide...",
+    "exam.placeholderAnswer":"Type your answer…",
+    "exam.placeholderTopicZh":"如：线性代数、量子力学、二战…",
+    "exam.placeholderDifficultyZh":"入门 / 中级 / 困难 / 专家 / 自定义",
+    "exam.placeholderInstructionsZh":"具体说明要覆盖的知识点，留空则由 AI 决定…",
+    "exam.placeholderAnswerZh":"输入你的答案…",
+    "settings.saved":"已保存。当前激活：{name}。",
+    "settings.savedFallback":"已保存。当前激活的提供商缺少模型——临时使用 mock 引擎。",
+    "settings.noModels":"尚未配置任何模型——已使用 mock 引擎。",
+    "settings.saveFailed":"保存失败：{msg}",
+    "settings.unknownError":"未知错误",
+    "settings.cleared":"已清空。内置的 Beagle 仍可用——选择一个模型即可开始。",
+    "settings.signInFirst":"请先登录再保存 API 密钥。",
+    "settings.rowMissing":"第 {n} 行缺少 URL 或模型。请修改后再试。",
+    "settings.rowMissingKey":"新增的第 {n} 行需要 API 密钥。",
+    "settings.apiKeyLimit":"您的 {tier} 计划已达 API 密钥上限（{max} 个）。请升级计划后继续添加。",
+    "settings.refresh":"刷新中…",
+    "settings.action.deleteAccount":"删除账户失败：{msg}",
+    "common.thinkingLabel":"思考",
+    "common.dayShort.sun":"日",
+    "common.dayShort.mon":"一",
+    "common.dayShort.tue":"二",
+    "common.dayShort.wed":"三",
+    "common.dayShort.thu":"四",
+    "common.dayShort.fri":"五",
+    "common.dayShort.sat":"六",
+    "think.title":"思考过程",
+    "think.thinking":"正在思考…",
+    "think.connecting":"正在连接 AI…",
+    "think.connectingShort":"连接中…",
+    "think.wordCount":"{n} 字",
+    "think.wordCountOne":"1 字",
+    "think.toggle":"展开或收起思考过程",
+    "profile.disclaimerTutor":"Socrates 通过提问帮助你思考，不会评判你的回答。",
+    "tag.placeholder":"输入标签后按回车",
+    "project.placeholderName":"如：线性代数",
+    "project.placeholderDesc":"可选。帮助 AI 调整讲解风格。",
+    "kb.placeholderNote":"写下你对本主题想记住的任何内容...",
+    "prompt.placeholderTitle":"如：代码审查",
+    "prompt.placeholderShortcut":"/my-template",
+    "prompt.placeholderDesc":"一行简介",
+    "prompt.placeholderBody":"插入到聊天输入框中的提示文本。用户在下方输入或粘贴真实内容，发送时会自动移除此前缀。",
+    "prompt.placeholderSystem":"可选。每次启用该模板时作为隐藏的系统消息注入。告诉模型扮演什么角色、输入约定是什么、输出应该长什么样以及任何约束。留空则仅以普通用户消息发送模板正文。",
+    "provider.placeholderLabel":"显示名（如：GPT-5.5）",
+    "provider.placeholderUrl":"Base URL  (https://api.openai.com/v1)",
+    "provider.placeholderKey":"API 密钥",
+    "provider.placeholderModel":"模型 ID  (如：gpt-5.5、claude-opus-4-8、sonnet-4-6)",
+    "usage.failed":"加载用量数据失败，请确认已登录。",
+    "usage.failedGeneric":"加载用量数据失败。",
+    "usage.loading":"加载用量数据…",
+    "exam.noResponse":"模型无响应",
+    "exam.failNoResponse":"生成失败：模型无响应",
+    "exam.failed":"生成失败",
+    "exam.failParse":"解析失败：模型返回格式异常",
+    "exam.failParseHint":"请重试或更换模型",
+    "exam.parseFailed":"解析失败",
+    "exam.failNone":"生成失败：没有成功生成任何题目",
+    "exam.questionsLabel":"题 ·",
+    "exam.answeredLabel":"已答",
+    "diag.analyzingTopic":"正在分析主题…",
+    "diag.ready":"准备就绪",
+    "common.noResponseTimeout":"已等待 {sec} 秒未响应 — 请检查 API 可用性",
+    "common.retry":"重试",
+    "common.truncated":"（已截断）",
+    "common.downloadFile":"[下载 {type}]",
+    "share.linkExpired":"链接已过期 — 请开启新的会话。",
+    "share.creatingLink":"正在创建链接…",
+    "share.failedCreate":"创建链接失败：{msg}",
+    "share.failedRevoke":"撤销链接失败：{msg}",
+    "share.copied":"已复制！",
+    "share.copy":"复制",
+    "share.errorUnknown":"未知错误",
+    "share.notFoundTitle":"未找到该共享会话",
+    "share.notFoundMsg":"链接可能已过期或无效。",
+    "share.readOnly":"只读",
+    "topic.titleChat":"我能帮你什么？",
+    "topic.subChat":"随便聊 — 没有诊断，没有学习计划。",
+    "topic.disclaimerChat":"聊天模式为普通对话。",
+    "profile.savedAt":"已保存 {hh}:{mm}",
+    "profile.instructionsSavedPlaceholder":"例如：用简洁的项目符号回复。引用来源标为 [1]、[2]。避免模棱两可的措辞。",
+    "profile.instructionsAboutPlaceholder":"例如：我是一名后端工程师，正在做支付产品。我讨厌双关语。"
+  },
+};
+var _currentLang="en";
+function t(key){return (I18N[_currentLang]&&I18N[_currentLang][key])||I18N.en[key]||key;}
+function setLang(lang){
+  if(!I18N[lang])return;
+  _currentLang=lang;
+  window._currentLang=lang;
+  try{localStorage.setItem("socrates-lang-app",lang)}catch(_){}
+  applyI18n();
+  /* P_tutor-leak — applyI18n() rewrites #topicTitle / #topicSub /
+     #topicDisclaimer using the current appMode. Without this call
+     the topic-setup copy could drift if anything else touched those
+     elements between mode-sync ticks. Cheap and idempotent. */
+  try{if(typeof syncAppModeUI==="function")syncAppModeUI()}catch(_){}
+  /* Update language toggle active state. Only en + zh are supported;
+     removing ja/ko from this iteration avoids keeping dead UI states
+     if the toggle HTML reverts. */
+  var optionIds=["profileLangEn","profileLangZh"];
+  for(var i=0;i<optionIds.length;i++){
+    var el=document.getElementById(optionIds[i]);
+    if(!el)continue;
+    var optLang=optionIds[i].replace("profileLang","").toLowerCase();
+    el.classList.toggle("active",optLang===lang);
+  }
+  /* Update the small "EN/中" label in the sidebar header so the
+     quick-toggle button reflects the active language. */
+  try{
+    var lbl=document.getElementById("langToggleLabel");
+    if(lbl){
+      if(lang==="zh")lbl.textContent="中";
+      else lbl.textContent="EN";
+    }
+  }catch(_){}
+}
+function applyI18n(){
+  /* Translate all elements with data-i18n-key attribute */
+  var els=document.querySelectorAll("[data-i18n-key]");
+  for(var i=0;i<els.length;i++){
+    var key=els[i].getAttribute("data-i18n-key");
+    var val=t(key);
+    if(val&&val!==key)els[i].textContent=val;
+  }
+  /* Translate all elements with data-i18n-placeholder attribute
+     (used on <input>/<textarea> where textContent doesn't apply). */
+  var phs=document.querySelectorAll("[data-i18n-placeholder]");
+  for(var j=0;j<phs.length;j++){
+    var ph=phs[j].getAttribute("data-i18n-placeholder");
+    var phv=t(ph);
+    if(phv&&phv!==ph)phs[j].setAttribute("placeholder",phv);
+  }
+  /* Translate elements with data-i18n-title / data-i18n-aria — used
+   * by the attachment paperclip button. Same pattern as the
+   * placeholder block above. */
+  var titles=document.querySelectorAll("[data-i18n-title]");
+  for(var ti=0;ti<titles.length;ti++){
+    var tk=titles[ti].getAttribute("data-i18n-title");
+    var tv=t(tk);
+    if(tv&&tv!==tk)titles[ti].setAttribute("title",tv);
+  }
+  var arias=document.querySelectorAll("[data-i18n-aria]");
+  for(var ai=0;ai<arias.length;ai++){
+    var ak=arias[ai].getAttribute("data-i18n-aria");
+    var av=t(ak);
+    if(av&&av!==ak)arias[ai].setAttribute("aria-label",av);
+  }
+  /* Placeholder / value updates — done selectively for now. */
+  var ci=document.getElementById("chatInputArea");
+  if(ci)ci.placeholder=t("chat.placeholder");
+  var ch=document.getElementById("chatInputHint");
+  if(ch)ch.textContent=t("chat.hint");
+  /* Topic-setup title/sub/disclaimer. syncAppModeUI() rewrote these
+     as either the tutor-mode or chat-mode versions; re-route through
+     t() but keep the mode-aware mapping so toggling the language
+     doesn't revert them to the wrong mode's text.
+     P_tutor-leak — appMode is a top-level `var` in main.js and is
+     mirrored onto `window.appMode` at boot (see main.js:13243). It is
+     NOT a field on `window.state` (state.js has no `appMode`), so
+     reading `window.state.appMode` was always undefined and we fell
+     back to "tutor" — silently flipping a chat-mode user into tutor
+     copy on every language toggle. Read the real global and default
+     to "chat" so a fresh page (window.appMode not yet set) doesn't
+     paint tutor text. */
+  var appMode=(typeof window!=="undefined"&&window.appMode)||"chat";
+  var tt=document.getElementById("topicTitle");
+  if(tt)tt.textContent=t(appMode==="chat"?"topic.titleChat":"topic.title");
+  var ts=document.getElementById("topicSub");
+  if(ts)ts.textContent=t(appMode==="chat"?"topic.subChat":"topic.subtitle");
+  var tdisc=document.getElementById("topicDisclaimer");
+  if(tdisc)tdisc.textContent=t(appMode==="chat"?"topic.disclaimerChat":"profile.disclaimerTutor");
+  var tp=document.getElementById("topicInput");
+  if(tp)tp.placeholder=t("topic.inputPlaceholder");
+  var sb=document.getElementById("startBtn");
+  if(sb)sb.textContent=t("topic.start");
+  var el=document.getElementById("extensionsLabel");
+  if(el)el.textContent=t("topic.extensions");
+  var ev=document.getElementById("examViewTitle");
+  if(ev&&window.state&&window.state._examInView)ev.textContent=ev.textContent; /* already localized by render */
+}
+/* Load saved language preference. _currentLang is the single source
+   of truth at runtime; setLang() persists changes and applyI18n()
+   pushes them onto the DOM.
+   P_lang-persist — defensive dual-write on read: when the saved
+   value resolves to a known language, we write it back to
+   localStorage as well. Some browser flows (Safari private mode,
+   cookie-expiry redirects, third-party-script-injected storage
+   clears) can leave the entry null between sessions. Re-writing
+   it here makes the preference resilient to a transient missing
+   entry and gives a single load() call a self-healing behavior. */
+try{
+  var s=localStorage.getItem("socrates-lang-app");
+  if(s&&I18N[s]){
+    _currentLang=s;
+  }else if(!s){
+    /* No preference recorded yet — persist the default so the
+       next load picks up the same value instead of leaving the
+       slot empty. */
+    try{localStorage.setItem("socrates-lang-app",_currentLang)}catch(_){}
+  }else{
+    /* Stale value (e.g. user downgraded and we removed a locale) —
+     * overwrite with the default so the entry stays canonical. */
+    try{localStorage.removeItem("socrates-lang-app");localStorage.setItem("socrates-lang-app",_currentLang)}catch(_){}
+  }
+}catch(_){}
+/* P_lang-init — run applyI18n SYNCHRONOUSLY at module load so every
+   data-i18n-key element is in the saved language BEFORE main.js
+   finishes initializing (syncAppModeUI, renderRecents, etc.). The
+   previous setTimeout(0) deferred translation to the next event-loop
+   tick, which meant main.js rendered a flash of English first —
+   and the partial re-render that followed left the page in a
+   mixed-language state. */
+try{
+  var lbl=document.getElementById("langToggleLabel");
+  if(lbl)lbl.textContent=_currentLang==="en"?"EN":"中";
+  applyI18n();
+}catch(_){}
+
+/* Expose i18n functions as globals for main.js and other modules. */
+window._currentLang = _currentLang;
+window.t = t;
+window.setLang = setLang;
+window.applyI18n = applyI18n;
