@@ -84,7 +84,7 @@ export async function authBoot(){
          The raw key is never sent to the client, so cfg.beagleKey
          is intentionally absent. Only update model when the server
          explicitly provides one. */
-      var BEAGLE_BUILT_IN=window.BEAGLE_BUILT_IN;
+      var BEAGLE_BUILT_IN = window.BEAGLE_BUILT_IN;
       if(BEAGLE_BUILT_IN){
         if(typeof cfg.beagleKey==="string")BEAGLE_BUILT_IN.key=cfg.beagleKey;
         if(typeof cfg.beagleModel==="string")BEAGLE_BUILT_IN.model=cfg.beagleModel;
@@ -96,6 +96,13 @@ export async function authBoot(){
      runs after we return — can decide whether to fall back to
      BEAGLE on cold start. */
   SERVER_HAS_BEAGLE_KEY=cfgOk;
+  /* Also sync the window bridge. windowExports.js imported the var
+     at module-load time (false), and ESM imports are live bindings
+     for re-exports BUT the plain assignment `window.X = X` in
+     windowExports.js captured the value at import time, so the
+     window copy never sees the runtime update above. Re-bridge
+     here so refreshApiConfig() sees the true value. */
+  try { window.SERVER_HAS_BEAGLE_KEY = cfgOk; } catch (_) {}
   console.log("[boot] config hasBeagleKey="+cfgOk+", BEAGLE_BUILT_IN.key.length="+((window.BEAGLE_BUILT_IN&&window.BEAGLE_BUILT_IN.key)||"").length);
 
   /* P0.0 — only route the user to the auth gate when the server

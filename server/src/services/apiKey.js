@@ -1,4 +1,4 @@
-import { eq, and, isNotNull, isNull } from 'drizzle-orm';
+import { eq, and, isNotNull, ne } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { apiKeys } from '../db/schema.js';
 import { encrypt, decrypt, deriveEncryptionKey } from '../lib/crypto.js';
@@ -29,9 +29,12 @@ export async function getActiveApiKey(userId) {
     .limit(1);
 
   if (!key) {
-    // Fall back to built-in (must also have a ciphertext)
+    // Fall back to built-in (must also have a ciphertext).
+    // Order by createdAt so the original seeded row is always preferred
+    // over any duplicates that may have been created by previous seed runs.
     [key] = await db.select().from(apiKeys)
       .where(and(eq(apiKeys.isActive, true), eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
+      .orderBy(apiKeys.createdAt)
       .limit(1);
   }
 
@@ -99,6 +102,14 @@ export async function seedBuiltInProvider() {
         .returning({ id: apiKeys.id, model: apiKeys.model, url: apiKeys.url });
       console.log('[seed] update returned: ' + JSON.stringify(upd));
       console.log('[seed] Updated built-in Beagle provider');
+      /* Clean up any stale built-in rows (e.g. "Beagle A" from
+         previous seed runs) that could confuse getActiveApiKey(). */
+      const cleaned = await db.update(apiKeys)
+        .set({ isActive: false })
+        .where(and(eq(apiKeys.isBuiltIn, true), ne(apiKeys.id, existing.id), eq(apiKeys.isActive, true)));
+      if (cleaned && cleaned.rowCount > 0) {
+        console.log('[seed] Deactivated ' + cleaned.rowCount + ' stale built-in row(s)');
+      }
     } else {
       const ins = await db.insert(apiKeys).values({
         label: 'Beagle',

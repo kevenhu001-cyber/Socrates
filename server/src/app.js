@@ -39,7 +39,8 @@ import { webSearch, imageSearch } from './services/webSearch.js';
 import { fetchBatch } from './services/fetchBatch.js';
 import { getActiveApiKey } from './services/apiKey.js';
 import { getDb } from './db/index.js';
-import { sql } from 'drizzle-orm';
+import { apiKeys } from './db/schema.js';
+import { sql, and, eq, isNotNull } from 'drizzle-orm';
 import { getStatus as getPubsubStatus } from './lib/pubsub.js';
 
 const app = express();
@@ -300,15 +301,24 @@ app.get('/api/hello', (_req, res) => {
 // Tells the SPA whether the built-in Beagle provider is available.
 // The raw key is NEVER sent to the client — the server proxies
 // all Beagle requests via /api/minimax/v1/chat/completions.
-app.get('/api/config', (_req, res) => {
+app.get('/api/config', async (_req, res) => {
   // hasBeagleKey reflects whether the built-in Beagle provider is
-  // available. Since Beagle now proxies to DeepSeek (or whatever
-  // backend is configured), it is always available — no env key
-  // required. The SPA calls this on every boot to decide whether
-  // to surface the built-in provider.
+  // available. Also send the model name so the frontend's
+  // BEAGLE_BUILT_IN.model stays in sync with the DB.
   res.set('Cache-Control', 'no-store');
+  let beagleModel = null;
+  try {
+    const db = getDb();
+    const [row] = await db.select()
+      .from(apiKeys)
+      .where(and(eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
+      .orderBy(apiKeys.createdAt)
+      .limit(1);
+    if (row) beagleModel = row.model;
+  } catch (_) { /* best-effort */ }
   res.json({
     hasBeagleKey: true,
+    ...(beagleModel ? { beagleModel } : {}),
   });
 });
 

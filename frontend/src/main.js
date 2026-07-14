@@ -9006,9 +9006,9 @@ import { renderUserFooter, openProfile, closeProfile } from './ui/profile.js';
 /* P_main-split — Wave 3b: exam generation form extracted to exam.js. */
 import {
   openExamModal, closeExamModal, closeExamView, renderExamForm,
-  toggleExamType, detectExamLang, startExamGeneration,
-  restoreExamActiveProvider, cancelExamGeneration,
-  generateAllQuestions, parseSingleExamQuestion, parseExamArrayJSON,
+  toggleExamType, startExamGeneration,
+  cancelExamGeneration,
+  parseSingleExamQuestion, parseExamArrayJSON,
   renderAllQuestions, paintQuestionCard, replaceStreamingCardWithQuestion,
   appendExamErrorCard, selectExamOpt, finishExamGeneration,
   renderExamNav, examNavCurrentIdx, examNavJump, examNavStep,
@@ -11150,6 +11150,25 @@ window.updateMistakesBadge = updateMistakesBadge;
 window.getChatIdFromURL = getChatIdFromURL;
 window.setChatIdInURL = setChatIdInURL;
 window.pushChatIdToURL = pushChatIdToURL;
+/* P_bulk-restore-2026-07-14 — Phase C module bridges.
+   These are main.js-local functions referenced by extracted modules
+   (chat/quickActions.js, chat/api.js, chat/format.js, pickers.js,
+   ui/promptTemplates.js, ui/storage.js, ui/share.js, auth/boot.js,
+   tutorSocratic.js) as window.X. Without these bindings the callers
+   throw TypeError at runtime. */
+window.addMessage = addMessage;
+window.askNextQuestion = askNextQuestion;
+window.getExplanation = getExplanation;
+window.saveCurrentSession = saveCurrentSession;
+window.fetchWebContext = fetchWebContext;
+window.setSearchPill = setSearchPill;
+window.loadPromptTemplates = loadPromptTemplates;
+window.deleteCustomTemplate = deleteCustomTemplate;
+window.findTemplateByShortcut = findTemplateByShortcut;
+window.upsertCustomTemplate = upsertCustomTemplate;
+window.getArchivedSessions = getArchivedSessions;
+window.fetchGeoInfo = fetchGeoInfo;
+window.getCustomInstructionsString = getCustomInstructionsString;
 /* Init UI sync — runs after window.apiConfig is set (above) so
    syncModelPills() can safely read the provider config. Moving
    this earlier would throw and halt the entire boot sequence. */
