@@ -11,6 +11,7 @@ import { scrollContainer, scrollToBottomIfPinned } from './ui/scroll.js';
 import { initSidebarDrag, onViewportResize } from './ui/sidebarResize.js';
 import { showNewReplyPill, hideNewReplyPill, wireScrollPill } from './ui/scrollPill.js';
 import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
+import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal } from './ui/share.js';
 import { renderAttachmentChips, setupAttachmentInput } from './attachments/render.js';
 import {
   STREAM_TIMEOUT_MS, STREAM_HEARTBEAT_MS, STREAM_MAX_ATTEMPTS, STREAM_RETRYABLE_STATUS,
@@ -1352,7 +1353,7 @@ async function loadSession(id){
        session has an explicit mode field — sessions without one (older
        rows where the DB defaulted to 'tutor') keep the current appMode
        so a chat user doesn't get silently switched to tutor mode. */
-    if(s.mode==="chat"||s.mode==="tutor"){appMode=s.mode;}
+    if(s.mode==="chat"||s.mode==="tutor"){window.appMode=s.mode;}
     /* P_tutor-sync — keep window.appMode in lock-step. */
     try{window.appMode=appMode}catch(_){}
     syncAppModeUI();
@@ -9104,7 +9105,7 @@ function clearPerUserClientState(){
      touching the toggle. Clear it (and the runtime mirror) so the
      new session starts in the documented default of "chat". */
   try{localStorage.removeItem("socrates-appmode")}catch(_){}
-  try{appMode="chat"}catch(_){}
+  try{window.appMode="chat"}catch(_){}
   try{window.appMode=appMode}catch(_){}
   try{if(typeof LAST_ACTIVE_ID_KEY!=="undefined"){try{localStorage.removeItem(LAST_ACTIVE_ID_KEY)}catch(_){}}}catch(_){}
   /* Re-render so the cleared state is visible immediately, not on
@@ -9166,404 +9167,15 @@ async function signOut(){
    The API key is fetched from the server at boot via GET /api/config
    so it stays out of the source tree. Defined here (before authBoot)
    so the IIFE can reference it without relying on var-hoisting timing. */
-var BEAGLE_BUILT_IN={
-  id:"beagle-built-in",
-  label:"Beagle",
-  url:"/api/minimax/v1",
-  model:"MiniMax-M3",
-  key:"",
-  isBuiltIn:true,
-  /* P_attachments-multimodal — built-in Beagle is a vision model;
-   * matches the server-side seeder which forces isMultimodal=true. */
-  isMultimodal:true
-};
-
-/* On boot: try /api/auth/me. If the URL has ?token=… it's a verification
-   link, so consume that first. If ?reset_token=… it's a password reset. */
-/* The auth boot sequence (csrf priming, /me retry, gate routing)
-   runs in auth/boot.js — imported at the top of this file. */
-
-/* Listen for browser back/forward and load the corresponding chat. */
-window.addEventListener("popstate",function(e){
-  /* Defer to let the URL settle, then check for a chat session ID. */
-  setTimeout(function(){
-    var chatId=getChatIdFromURL();
-    if(chatId&&chatId!==state.currentSessionId){
-      loadSession(chatId);
-    }else if(!chatId&&state.currentSessionId){
-      state.currentSessionId=null;
-      resetApp();
-    }
-  },0);
-});
-
-/* ============================================================
-   SETTINGS & API  —  server-backed provider list
-   The browser no longer holds the API key — the server stores it
-   encrypted and the chat proxy uses it from the per-user row in
-   api_providers. The browser only sees {id, isActive, label, url, model}.
-   ============================================================ */
-/* Initialize empty so getActiveProvider() returns null until the
-   user explicitly picks a model. The built-in BEAGLE is offered as
-   a selectable option (it lives in providers[] after the first
-   refresh), but it is NOT auto-activated — choosing a model is the
-   user's call, and silently routing everything through a fallback
-   that the user never picked is misleading.
-   If the user has never added a provider, the Settings panel still
-   shows BEAGLE_BUILT_IN (and any other built-ins) for them to pick. */
-var apiConfig={activeId:null,providers:[]};
-
-
-/* P4.4 — encrypted provider-key cache. Old versions stored
-   {providerId: sk-rawKey} as plaintext JSON in
-   localStorage["socrates-provider-keys"], readable by anyone with
-   access to the browser profile (extension, sync, devtools).
-   New format: { v: 2, salt, iv, ct } — AES-GCM-256 with a key
-   derived via PBKDF2 (200 000 iterations) from a stable
-   per-installation passphrase. The salt is per-installation and
-   stored in localStorage alongside the ciphertext; the passphrase
-   is also stored in localStorage (the protection here is
-   "at-rest encryption against a casual observer / profile sync",
-   NOT against a determined attacker with code execution on the
-   device — for that we would need WebAuthn PRF).
-   The legacy v1 plaintext format is read once, migrated to v2,
-   and the plaintext entry is wiped. */
-var PK_CACHE_KEY="socrates-provider-keys";
-var PK_PASSPHRASE_KEY="socrates-pk-passphrase";
-var PK_SALT_KEY="socrates-pk-salt";
-var _pkCryptoKeyPromise=null;
-
-/* P4.4 — Provider-key storage was REMOVED in the security
-   hardening pass. The previous build stored LLM provider API keys
-   in localStorage (encrypted with AES-GCM-256 derived from a
-   per-installation passphrase). This was a defence against
-   "casual profile sync / devtools snooping" but NOT against an
-   attacker with code execution on the page (XSS via markdown
-   injection): both the ciphertext AND the decryption passphrase
-   sat in the same localStorage, so a single XSS payload could
-   read both and walk away with the user's LLM credentials and
-   burn their API budget.
-
-   New behaviour: provider keys never live on the client. The
-   server stores them encrypted at rest (AES-256-GCM with a key
-   derived from SESSION_SECRET via HKDF), and the list endpoint
-   only returns a `hasKey` boolean. The "usability" check uses
-   that boolean instead of looking up the key locally.
-
-   The user re-enters their API key after a sign-out / clear-cache,
-   which is the expected UX for any sensitive credential. The PK_*
-   localStorage entries from older builds are wiped on next boot.
-
-   The legacy `cacheProviderKeys / loadCachedProviderKeys /
-   clearCachedProviderKey` exports are kept as no-ops so any
-   remaining call-sites do not blow up — they just return empty
-   objects and do not touch storage. */
-
-/* Wipe legacy PK_* entries from older builds. Idempotent. */
-function _purgeLegacyProviderKeyCache(){
-  try{ localStorage.removeItem(PK_CACHE_KEY); }catch(_){}
-  try{ localStorage.removeItem(PK_PASSPHRASE_KEY); }catch(_){}
-  try{ localStorage.removeItem(PK_SALT_KEY); }catch(_){}
-}
-_purgeLegacyProviderKeyCache();
-
-/* No-op shims — kept so the call-sites compile and silently do the
-   right thing (nothing). The server is the source of truth. */
-async function cacheProviderKeys(){
-  _purgeLegacyProviderKeyCache();
-}
-async function loadCachedProviderKeys(){
-  return {};
-}
-async function clearCachedProviderKey(_id){
-  _purgeLegacyProviderKeyCache();
-}
-/* ============================================================
-   SHARE LINK — create / revoke / view shared sessions
-   ============================================================ */
-/* P_main-split — Wave 3a: share modal extracted to ui/share.js. */
+/* P_main-split — Wave 3c: provider config extracted to config/providers.js. */
 import {
-  toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal,
-  selectShareVis, createShareLink, copyShareLink, revokeShareLink,
-  loadSharedSession, loadSharedExamSession, renderSharedQuestionCard,
-} from './ui/share.js';
+  BEAGLE_BUILT_IN, apiConfig, webSearchOn, appMode,
+  isReasoningProvider, pickStreamBudgets, hasUsableActive,
+  isMiniMaxProvider, ensureSessionShape,
+  syncAppModeUI, syncSidebarForMode,
+  refreshApiConfig,
+} from './config/providers.js';
 
-async function refreshApiConfig(){
-  console.log("[refreshApiConfig] ENTRY, CURRENT_USER=", CURRENT_USER && CURRENT_USER.email);
-  if(!CURRENT_USER){
-    console.log("[refreshApiConfig] EARLY RETURN: no CURRENT_USER");
-    /* Mutate in place — see comment above the apiConfig export. */
-    apiConfig.activeId=null;
-    apiConfig.providers=[];
-    /* P_init-sync — even on the empty/no-user path, the picker must
-       escape the "Loading…" holding pattern. Otherwise syncModelPills
-       (which is gated on _providersFetched) keeps showing the loading
-       placeholder forever, leaving the user with no signal that they
-       need to add a model. Mark fetched so the next syncModelPills()
-       shows the genuine "Add a model" empty state. */
-    try{typeof window.markProvidersFetched==="function"&&window.markProvidersFetched()}catch(_){}
-    try{syncModelPills()}catch(_){}
-    try{renderProviderList()}catch(_){}
-    return apiConfig;
-  }
-  try{
-    /* P4.4 — Provider keys are NEVER read from localStorage anymore.
-       The server is the source of truth: it stores keys encrypted at
-       rest (AES-256-GCM via HKDF(SESSION_SECRET)) and the list
-       endpoint returns `hasKey: true/false`. We populate the local
-       `key` field only with the user-typed value from the form, which
-       is sent to the server on save and then wiped from the client. */
-    var r=await apiFetch("/api/api-key");
-    console.log("[refreshApiConfig] /api/api-key response:", r);
-    var rows=Array.isArray(r&&r.providers)?r.providers:[];
-    console.log("[refreshApiConfig] rows count:", rows.length, "rows:", rows.map(function(x){return{x:x&&x.label,y:x&&x.isActive,z:x&&x.hasKey?'Y':'N'}}));
-    /* Filter out any stale Beagle providers that were registered server-side
-       by a previous version of the code — the built-in BEAGLE_BUILT_IN
-       constant handles Beagle now via the nginx reverse proxy. */
-    /* P_beagle-dedup — label 대신 id로 필터링하여 서버 label이 다를 때 중복 등록 방지 */
-    /* P_beagle-model-sync — save the server's model before filtering
-       out the Beagle row, so BEAGLE_BUILT_IN uses the server's model
-       (which may be updated via env var) rather than the hardcoded one. */
-    var serverBeagleModel=null;
-    var serverBeagleRow=rows.find(function(p){return p.id===BEAGLE_BUILT_IN.id});
-    if(serverBeagleRow)serverBeagleModel=serverBeagleRow.model;
-    rows=rows.filter(function(p){return p.id!==BEAGLE_BUILT_IN.id});
-    /* Mutate in place — see comment above the apiConfig export. */
-    apiConfig.activeId=null;
-    apiConfig.providers=rows.map(function(p){
-      /* `key` is only ever set by the user's typed input in the
-         settings form. For saved providers we leave it empty and
-         rely on the masked placeholder + `hasKey` for usability. */
-      return{id:p.id,isActive:p.isActive,isBuiltIn:p.isBuiltIn,label:p.label,url:p.url,model:p.model,hasKey:!!p.hasKey,key:"",isMultimodal:!!p.isMultimodal};
-    });
-    /* Merge the built-in Beagle provider (frontend-only, no server registration). */
-    var hasBeagle=apiConfig.providers.some(function(p){return p.isBuiltIn||p.id==="beagle-built-in"});
-    if(!hasBeagle){
-      var beagle=Object.assign({},BEAGLE_BUILT_IN);
-      if(serverBeagleModel)beagle.model=serverBeagleModel;
-      apiConfig.providers.push(beagle);
-    }
-    /* A provider is "usable" if it is a built-in (server has the key)
-       or if the server reports `hasKey: true`. The local `key` field is
-       never populated by the cache — it only contains what the user has
-       typed into the form this session, before the value is sent to the
-       server and cleared. */
-    function providerUsable(p){
-      return !!(p && (p.isBuiltIn || p.hasKey));
-    }
-    /* Cold-start: honour the user's persisted active provider first. The
-       server's `isActive` flag is the source of truth for what the user
-       chose via the model picker / Settings. If none is marked, fall back
-       to the last provider they picked (kept in localStorage by
-       setActiveProvider). NEVER auto-pick BEAGLE on cold start — the
-       user must explicitly choose it via the model picker. */
-    var userActive=apiConfig.providers.find(function(p){
-      return p.isActive && providerUsable(p);
-    });
-    if(userActive){
-      apiConfig.activeId=userActive.id;
-    }else{
-      var lastId=loadLastActiveId();
-      var lastProvider=lastId?apiConfig.providers.find(function(p){
-        return p.id===lastId && providerUsable(p);
-      }):null;
-      if(lastProvider){
-        apiConfig.activeId=lastProvider.id;
-      }else{
-        /* First-time user with no prior pick. Default to the
-           built-in Beagle so the chat always has a model selected
-           out of the box (no unselected state in the UI). Only
-           leave activeId null if the server doesn't expose a
-           beagle key (self-hosted with no MINIMAX_API_KEY). */
-        if(SERVER_HAS_BEAGLE_KEY){
-          apiConfig.activeId=BEAGLE_BUILT_IN.id;
-        }else{
-          apiConfig.activeId=null;
-        }
-      }
-    }
-  }catch(e){
-    console.warn("[api-key] refresh failed:",e.message);
-    if(!apiConfig.providers.length && !apiConfig.providers.some(function(p){return p.isBuiltIn||p.id==="beagle-built-in"})){
-      apiConfig.providers.push(Object.assign({},BEAGLE_BUILT_IN));
-    }
-  }
-  console.log("[refreshApiConfig] EXIT, providers.length=", apiConfig.providers.length, "activeId=", apiConfig.activeId, "list:", apiConfig.providers.map(function(p){return p.label;}));
-  /* P_picker-stale — after refreshing providers, force-sync the model
-     picker UI. Without this, the picker still shows "Add a model" /
-     "Pick a model" from the boot-time syncModelPills() call that ran
-     BEFORE refreshApiConfig populated the list. The afterAuthEnter
-     boot chain ALSO calls syncModelPills, but other refresh paths
-     (Settings "Add provider" form onSubmit, the /api/api-key POST
-     response, the settings-clear handler, sign-out → sign-in cycle
-     where the user keeps the same tab) never call afterAuthEnter and
-     would silently leave the picker stale. One source of truth for
-     "after refresh, the UI matches the cache". */
-  /* P_init-sync — providers가 처음 로드되었음을 표시하여 syncModelPills가
-     더 이상 "Loading…" 중립 상태 대신 실제 데이터를 표시하도록 함. */
-  try{typeof window.markProvidersFetched==="function"&&window.markProvidersFetched()}catch(_){}
-  try{syncModelPills()}catch(e){console.warn("[refreshApiConfig] syncModelPills threw:",e&&e.message)}
-  try{renderProviderList()}catch(e){console.warn("[refreshApiConfig] renderProviderList threw:",e&&e.message)}
-  try{syncChatModel&&syncChatModel()}catch(e){console.warn("[refreshApiConfig] syncChatModel threw:",e&&e.message)}
-  return apiConfig;
-}
-
-/* P2.1 — return true when the active model is known to take 30+ s
-   per call (reasoning models). The round-1 tool-detection path uses
-   a longer ceiling for these so we don't accidentally skip them.
-   getActiveProvider() is imported from src/pickers.js
-   P_minimax-thinking — match any MiniMax model (M2.7, M3, …) so the
-   built-in Beagle provider gets reasoning_effort + extra_body.thinking
-   sent to the upstream. Without this, MiniMax-M3 emits inline
-   <think> tags that the parser handles — but the more reliable path
-   is to ask upstream explicitly for reasoning_content. */
-function isReasoningProvider(){
-  try{
-    var p=getActiveProvider();
-    if(!p)return false;
-    var m=(p.model||"").toLowerCase();
-    /* P_flash-exclude — fast / flash models should NOT get
-       reasoning_effort=high because they are designed for speed
-       and enabling deep reasoning slows them down significantly.
-       Models named "flash", "turbo", "fast", "mini", "small",
-       "light", "nano", "quick", "speed" are excluded. */
-    if(/\b(flash|turbo|fast|mini|small|light|lite|nano)\b/.test(m))return false;
-    return /deepseek|qwq|o1|o3|reasoner|thinking|minimax/i.test(m);
-  }catch(_){return false}
-}
-
-/* P_reasoning_budget — pick per-provider silence/total budget.
-   Reasoning models (DeepSeek R1, QwQ, MiniMax with extended thinking)
-   emit sparse tokens 30–90 s apart during chain-of-thought; the
-   default 60 s heartbeat would falsely trip "stalled" and waste a
-   retry. Inline this here (rather than windowExports.js) because it
-   needs runtime access to getActiveProvider. stream.js calls
-   `window.pickStreamBudgets()` and falls back to the global defaults
-   when this is missing — see stream.js:47-48. */
-function pickStreamBudgets(){
-  try{
-    var p = (typeof getActiveProvider === "function") ? getActiveProvider() : null;
-    var m = ((p && p.model) || "").toLowerCase();
-    /* P_minimax-thinking — must agree with isReasoningProvider() so
-       reasoning models get BOTH the thinking flag AND the longer
-       heartbeat. If they diverge, MiniMax thinking will pass the
-       flag but still die at 60 s silence. */
-    var isReasoning = /deepseek|qwq|o1|o3|reasoner|thinking|minimax/i.test(m);
-    if(isReasoning){
-      /* 10 min total budget covers the 2-3 min reasoning traces that
-         DeepSeek R1 / QwQ / MiniMax are known to produce, with
-         headroom for two retries after a stall. 180 s heartbeat
-         tolerates the 30-90 s gaps between sparse thinking tokens
-         without falsely tripping. */
-      return { timeoutMs: 600_000, heartbeatMs: 180_000 };
-    }
-  }catch(_){ /* fall through to defaults */ }
-  return {
-    timeoutMs: (window.STREAM_TIMEOUT_MS || 240_000),
-    heartbeatMs: (window.STREAM_HEARTBEAT_MS || 60_000)
-  };
-}
-
-function hasUsableActive(){
-  var p=getActiveProvider();
-  return !!(p && p.model && (p.isBuiltIn || p.hasKey));
-}
-
-/* P_minimax-reasoning-split — MiniMax-M3 exposes thinking content via
-   `reasoning_split: true` in extra_body, which separates chain-of-thought
-   into a `reasoning_content` SSE field. Unlike DeepSeek's reasoning_effort,
-   this is a MiniMax-specific parameter. */
-function isMiniMaxProvider(){
-  try{
-    var p=getActiveProvider();
-    if(!p)return false;
-    return /minimax/i.test((p.model||"").toLowerCase());
-  }catch(_){return false}
-}
-
-/* ============================================================
-   MISTAKE BOOK + ensureSessionShape
-   ============================================================ */
-function ensureSessionShape(s){
-  if(!s)return s;
-  if(!Array.isArray(s.kbNodes))s.kbNodes=[];
-  s.kbNodes.forEach(function(n){
-    if(typeof n.system_note!=="string")n.system_note="";
-    if(typeof n.user_note!=="string")n.user_note="";
-    if(typeof n.confidence_score!=="number")n.confidence_score=0;
-    if(!Array.isArray(n.history))n.history=[];
-  });
-  if(!Array.isArray(s.mistakes))s.mistakes=[];
-  return s;
-}
-
-/* ── Model Picker, Chat Model, Extensions Picker — see src/pickers.js ── */
-
-/* ── webSearchOn / thinkingOn state (used throughout main.js) ── */
-var webSearchOn=false;
-try{webSearchOn=!!JSON.parse(localStorage.getItem("socrates-websearch")||"false")}catch(e){}
-var thinkingOn=true;
-try{thinkingOn=JSON.parse(localStorage.getItem("socrates-thinking")||"true")!==false}catch(e){}
-
-/* ============================================================
-   APP MODE — "tutor" (Socratic + KB + diagnostic) or "chat" (plain).
-   Default "chat". Per-session: switching mid-conversation saves
-   the current session to Recents and resets the app.
-   ============================================================ */
-var appMode="chat";
-try{
-  var savedMode=localStorage.getItem("socrates-appmode");
-  if(savedMode==="chat"||savedMode==="tutor")appMode=savedMode;
-}catch(e){}
-function syncAppModeUI(){
-  /* P_tutor-sync — `window.appMode` is the canonical source of truth.
-     Other modules (notably pickers.js, which fires the extensions-
-     menu Tutor toggle) only mutate `window.appMode`; they can't see
-     this module's local `appMode`. Reading from `window.appMode`
-     means a click in pickers.js re-renders correctly without us
-     needing to expose a setter across the module boundary. The local
-     `appMode` is still kept in sync by loadSession / toggleAppMode /
-     clearPerUserClientState so non-syncUI code paths (placeholder
-     text, four-option dialog, plan-warning logic) still work. */
-  var mode = window.appMode || appMode || "chat";
-  appMode = mode;
-  window.appMode = mode;
-  /* The visible Tutor/Chat toggle now lives inside the Extensions menu;
-     this function only updates the topic-setup hero copy and then
-     re-renders the extensions menu so its checkmark state stays in sync. */
-  var title=document.getElementById("topicTitle");
-  var sub=document.getElementById("topicSub");
-  var disc=document.getElementById("topicDisclaimer");
-  if(appMode==="tutor"){
-    if(title)title.textContent=t("topic.title");
-    if(sub)sub.textContent=t("topic.subtitle");
-    if(disc)disc.textContent=t("profile.disclaimerTutor");
-  }else{
-    if(title)title.textContent=t("topic.titleChat");
-    if(sub)sub.textContent=t("topic.subChat");
-    if(disc)disc.textContent=t("topic.disclaimerChat");
-  }
-  /* v3.0 — long-term plan setup is only meaningful in Tutor mode
-     (it drives the KB / plan-warning flow). In Chat mode we hide
-     the whole block to keep the topic-setup screen uncluttered. */
-  var planSetup=document.getElementById("planSetup");
-  if(planSetup)planSetup.classList.toggle("hidden",appMode!=="tutor");
-  /* Mirror the current mode onto <body data-app-mode> so the
-     CSS rule `body[data-app-mode="chat"] .tutor-only{display:none}`
-     can hide every Tutor-only element with one selector. The
-     plan-setup form (above) keeps its own .hidden class for the
-     brief moment before the dataset attribute lands. */
-  try{document.body.dataset.appMode=appMode}catch(_){}
-  if(typeof syncExtensionsUI==="function")syncExtensionsUI();
-}
-function syncSidebarForMode(){
-  var isTutor=appMode==="tutor";
-  var tk=document.getElementById("tabKnowledge");
-  if(tk)tk.classList.toggle("hidden",!isTutor);
-  var tm=document.getElementById("tabMistakes");
-  if(tm)tm.classList.toggle("hidden",!isTutor);
-  if(!isTutor)switchTab("recents");
-}
 async function toggleAppMode(){
   /* Mid-session switch: confirm before discarding the live session. */
   var inSession=state.topic||state.kbNodes&&state.kbNodes.length>0||(state.phase==="chat")||
@@ -9577,7 +9189,7 @@ async function toggleAppMode(){
     saveCurrentSession();
     resetApp();
   }
-  appMode=appMode==="tutor"?"chat":"tutor";
+  window.appMode=window.appMode==="tutor"?"chat":"tutor";
   /* P_tutor-sync — keep window.appMode in lock-step so pickers.js and
      i18n.js's applyI18n() see the same value as this module. */
   try{window.appMode=appMode}catch(_){}
@@ -11404,10 +11016,6 @@ window.autoResize = autoResize;
    mutate the object in place (apiConfig.activeId = …) rather than
    reassign `apiConfig = {...}`, otherwise the window ref drifts and
    the model picker silently sticks on "Add a model". */
-window.apiConfig = apiConfig;
-window.appMode = appMode;
-window.webSearchOn = webSearchOn;
-window.thinkingOn = thinkingOn;
 /* ─── Expose all onclick-required functions on window —── */
 /* ─── Inline-handler bridge ───
    Bulk restore for the 119 `window.X = X` bindings that lived in
@@ -11430,7 +11038,6 @@ window.thinkingOn = thinkingOn;
    ReferenceError. main.js-local `var`s/functions, so we re-bind
    at the tail of the bridge block above rather than
    windowExports.js. */
-window.BEAGLE_BUILT_IN = BEAGLE_BUILT_IN;
 window.skipDiagQuestion = skipDiagQuestion;
 window.clearActiveTemplate = clearActiveTemplate;
 
@@ -11442,14 +11049,11 @@ window.clearActiveTemplate = clearActiveTemplate;
    callAPI drops the user's Custom Instructions preamble. Both are
    main.js-local functions that windowExports.js has not yet picked
    up (Phase C deferral), so re-bind here. */
-window.isReasoningProvider = isReasoningProvider;
 /* P_minimax-reasoning-split — stream.js checks this to decide whether
    to send `reasoning_split: true` in extra_body for MiniMax models. */
-window.isMiniMaxProvider = isMiniMaxProvider;
 /* P_reasoning_budget — paired with the stream.js call at line 47.
    Without this, reasoning models (DeepSeek R1 / QwQ / MiniMax) hit
    the default 60 s heartbeat mid-think and the stream aborts. */
-window.pickStreamBudgets = pickStreamBudgets;
 /* P_share-load-bridge — auth/boot.js:44 calls `window.loadSharedSession`
    when a visitor opens `?share=TOKEN`, before any auth flow. Without
    this binding, that call throws TypeError, the surrounding try/catch
@@ -11519,8 +11123,6 @@ window.refreshApiConfig = refreshApiConfig;
 window.renderRecents = renderRecents;
 window.renderMistakes = renderMistakes;
 window.updateMistakesBadge = updateMistakesBadge;
-window.syncAppModeUI = syncAppModeUI;
-window.syncSidebarForMode = syncSidebarForMode;
 window.getChatIdFromURL = getChatIdFromURL;
 window.setChatIdInURL = setChatIdInURL;
 window.pushChatIdToURL = pushChatIdToURL;
