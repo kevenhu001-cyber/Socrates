@@ -5,7 +5,7 @@
    - /api/auth/me retry loop (3 attempts, 500ms backoff)
    - Branching to gate or app shell
    Reads main.js globals via window (BEAGLE_BUILT_IN, CURRENT_USER,
-   apiFetch, fetchGeoInfo, etc.). */
+   apiFetch, etc.). */
 
 import { apiFetch } from '../util/api.js';
 
@@ -16,9 +16,6 @@ export var SERVER_HAS_BEAGLE_KEY=false;
 export async function authBoot(){
   /* Prime the CSRF cookie before any API calls. */
   try{await fetch("/api/auth/csrf-token",{credentials:"include"})}catch(_){}
-  /* Kick off geolocation fetch in background (cached for reuse). */
-  try{window.fetchGeoInfo&&window.fetchGeoInfo()}catch(_){}
-
   var params=new URLSearchParams(location.search);
   var oauthError=params.get("oauth_error");
   if(oauthError){
