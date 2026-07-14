@@ -255,15 +255,15 @@
     <div class="sidebar-projects" id="sidebarProjects"></div>
 
     <div class="sidebar-tabs">
-      <div class="sidebar-tab active" id="tabKnowledge" onclick="switchTab('knowledge')" data-i18n-key="sidebar.knowledge">Knowledge</div>
-      <div class="sidebar-tab" id="tabRecents" onclick="switchTab('recents')" data-i18n-key="sidebar.recents">Recents</div>
-      <div class="sidebar-tab" id="tabMistakes" onclick="switchTab('mistakes')"><span data-i18n-key="sidebar.mistakes">Mistakes</span><span class="tab-badge" id="mistakesTabBadge"></span></div>
+      <div class="sidebar-tab tutor-only" id="tabKnowledge" onclick="switchTab('knowledge')" data-i18n-key="sidebar.knowledge">Knowledge</div>
+      <div class="sidebar-tab active" id="tabRecents" onclick="switchTab('recents')" data-i18n-key="sidebar.recents">Recents</div>
+      <div class="sidebar-tab tutor-only" id="tabMistakes" onclick="switchTab('mistakes')"><span data-i18n-key="sidebar.mistakes">Mistakes</span><span class="tab-badge" id="mistakesTabBadge"></span></div>
     </div>
-    <div class="knowledge-panel tutor-only" id="knowledgePanel">
+    <div class="knowledge-panel tutor-only hidden" id="knowledgePanel">
       <div id="teachingPlanContent"></div>
       <div id="kbContent"><div class="kb-empty" data-i18n-key="tutor.kbTopicFirst">Set a topic to build your knowledge map.</div></div>
     </div>
-    <div class="recents-panel hidden" id="recentsPanel">
+    <div class="recents-panel" id="recentsPanel">
       <div class="recents-header">
         <span class="recents-title" data-i18n-key="sidebar.recentSessions">Recent Sessions</span>
         <button class="recents-new-btn" id="newChatBtnRecents" title="Start a new chat" onclick="resetApp()">

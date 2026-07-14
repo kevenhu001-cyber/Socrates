@@ -69,6 +69,16 @@ function syncModelPills(){
     return;
   }
   var active=providers.find(function(p){return p&&p.id===window.apiConfig.activeId});
+  /* P_model-autofallback — if no activeId is set but the providers
+     list includes BEAGLE_BUILT_IN, auto-select it so the model
+     picker never shows "Pick a model" on cold boot. */
+  if(!active && window.BEAGLE_BUILT_IN){
+    var beagle = providers.find(function(p){return p && p.id === window.BEAGLE_BUILT_IN.id});
+    if(beagle){
+      window.apiConfig.activeId = beagle.id;
+      active = beagle;
+    }
+  }
   if(active){
     label.textContent=(active.label||active.model||"Model");
     label.title=active.isBuiltIn?"":((active.url||"")+" · "+(active.model||""));

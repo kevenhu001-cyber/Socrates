@@ -20,8 +20,12 @@
 //               self-bridge for state vars (apiConfig / appMode / etc.)
 //               and functions not yet extracted.
 
+/* ─── auth/boot.js — boot-time flags ─── */
+import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
+window.SERVER_HAS_BEAGLE_KEY = SERVER_HAS_BEAGLE_KEY;
+
 /* ─── config/providers.js — MUST come first (apiConfig consumed by every other module) ─── */
-import { apiConfig, appMode, webSearchOn, BEAGLE_BUILT_IN, isReasoningProvider, isMiniMaxProvider, pickStreamBudgets, hasUsableActive, ensureSessionShape, syncAppModeUI, syncSidebarForMode } from './config/providers.js';
+import { apiConfig, appMode, webSearchOn, BEAGLE_BUILT_IN, isReasoningProvider, isMiniMaxProvider, pickStreamBudgets, hasUsableActive, ensureSessionShape, syncAppModeUI, syncSidebarForMode, LAST_ACTIVE_ID_KEY, saveLastActiveId, loadLastActiveId, thinkingOn } from './config/providers.js';
 window.apiConfig = apiConfig;
 window.appMode = appMode;
 window.webSearchOn = webSearchOn;
@@ -33,6 +37,10 @@ window.hasUsableActive = hasUsableActive;
 window.ensureSessionShape = ensureSessionShape;
 window.syncAppModeUI = syncAppModeUI;
 window.syncSidebarForMode = syncSidebarForMode;
+window.LAST_ACTIVE_ID_KEY = LAST_ACTIVE_ID_KEY;
+window.saveLastActiveId = saveLastActiveId;
+window.loadLastActiveId = loadLastActiveId;
+window.thinkingOn = thinkingOn;
 
 /* ─── util/colors.js ─── */
 import { parseHexColor, applyCustomBg, removeCustomBg } from './util/colors.js';
@@ -159,14 +167,17 @@ import { closeCheatsheet } from './ui/cheatsheet.js';
 window.closeCheatsheet = closeCheatsheet;
 
 /* ─── ui/confirm.js ─── */
-import { closeConfirm } from './ui/confirm.js';
+import { closeConfirm, showConfirm } from './ui/confirm.js';
 window.closeConfirm = closeConfirm;
+window.showConfirm = showConfirm;
 
 /* ─── ui/cmdK.js ─── */
 import { closeCmdK, onCmdKInput, onCmdKKey, openCmdK, rebuildCmdKIndex } from './ui/cmdK.js';
 window.closeCmdK = closeCmdK;
 window.onCmdKInput = onCmdKInput;
 window.onCmdKKey = onCmdKKey;
+window.openCmdK = openCmdK;
+window.rebuildCmdKIndex = rebuildCmdKIndex;
 
 /* ─── ui/storage.js ─── */
 import { openStorageModal, closeStorageModal, renderArchivedList } from './ui/storage.js';
@@ -188,6 +199,8 @@ import { openSettings, closeSettings, toggleAPI, syncSettingsUI, renderProviderL
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 window.toggleAPI = toggleAPI;
+window.syncSettingsUI = syncSettingsUI;
+window.renderProviderList = renderProviderList;
 window.addProvider = addProvider;
 window.removeProvider = removeProvider;
 window.setActiveProvider = setActiveProvider;
@@ -196,7 +209,9 @@ window.saveSettings = saveSettings;
 window.clearSettings = clearSettings;
 
 /* ─── ui/share.js ─── */
-import { openShareModal, closeShareModal, selectShareVis, createShareLink, copyShareLink, revokeShareLink, loadSharedSession, loadSharedExamSession } from './ui/share.js';
+import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal, selectShareVis, createShareLink, copyShareLink, revokeShareLink, loadSharedSession, loadSharedExamSession, renderSharedQuestionCard, _shareToken, _shareUrl, _shareVisibility } from './ui/share.js';
+window.toggleShareBtn = toggleShareBtn;
+window.toggleChatTopBarEls = toggleChatTopBarEls;
 window.openShareModal = openShareModal;
 window.closeShareModal = closeShareModal;
 window.selectShareVis = selectShareVis;
@@ -205,6 +220,10 @@ window.revokeShareLink = revokeShareLink;
 window.createShareLink = createShareLink;
 window.loadSharedSession = loadSharedSession;
 window.loadSharedExamSession = loadSharedExamSession;
+window.renderSharedQuestionCard = renderSharedQuestionCard;
+window._shareToken = _shareToken;
+window._shareUrl = _shareUrl;
+window._shareVisibility = _shareVisibility;
 
 /* ─── ui/dangerConfirms.js ─── */
 import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from './ui/dangerConfirms.js';

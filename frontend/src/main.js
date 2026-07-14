@@ -74,6 +74,20 @@ window.resetBackgroundColor=resetBackgroundColor;window.resetBackgroundDark=rese
 window.toggleGrid=toggleGrid;window.setAccentColor=setAccentColor;
 window.toggleDisplayPrefs=toggleDisplayPrefs;window.toggleTheme=toggleTheme;
 
+/* Expose main.js functions to window for inline onclick handlers.
+   These are still in main.js (not yet extracted to modules), but
+   in ESM they're module-scoped, so inline onclick="X()" can't find
+   them without an explicit window bridge. */
+function bridgeMainJsFunctions(){
+  window.switchTab=switchTab;
+  window.resetApp=resetApp;
+  window.submitChatMessage=submitChatMessage;
+  window.startSession=startSession;
+  window.signOut=signOut;
+  window.showToast=showToast;
+}
+bridgeMainJsFunctions();
+
 function syncSidebarBtns(){
   var ob=document.getElementById("sidebarOpenBtn");
   var cb=document.getElementById("sidebarCloseBtn");
@@ -391,9 +405,9 @@ document.addEventListener("keydown",function(e){
   /* Cmd+Shift+M — toggle "show AI thinking" preference. */
   if(cmd&&!e.altKey&&e.shiftKey&&key==="m"){
     e.preventDefault();
-    if(typeof thinkingOn!=="undefined"){
-      thinkingOn=!thinkingOn;
-      try{localStorage.setItem("socrates-thinking",JSON.stringify(thinkingOn))}catch(_){}
+    if(typeof window.thinkingOn!=="undefined"){
+      window.thinkingOn=!window.thinkingOn;
+      try{localStorage.setItem("socrates-thinking",JSON.stringify(window.thinkingOn))}catch(_){}
     }
     return;
   }
@@ -1515,7 +1529,7 @@ async function loadSession(id){
       }
       /* P_reasoning-persist — render the thinking pill if the loaded
          message has saved reasoning_content and thinking is on. */
-      if(m.role==="assistant" && m.reasoning_content && thinkingOn){
+      if(m.role==="assistant" && m.reasoning_content && window.thinkingOn){
         var tp=appendThinking(m.reasoning_content||"");
         if(tp&&typeof tp.finalize==="function"){
           try{setTimeout(function(){tp.finalize()},0)}catch(_){}
@@ -2103,7 +2117,7 @@ function sweepExpiredArchives(){
    being archived; the chat view collapses back to the topic
    screen. */
 function bounceOutOfArchivedSession(){
-  _shareToken=null;
+  window._shareToken=null;
   resetState();
   toggleShareBtn();
   setChatIdInURL(null);
@@ -5948,7 +5962,7 @@ function addStreamingMessage(opts){
        real reasoning_content arrives. Remove it here so the user
        sees only the thinking pill ("正在思考"), not both. */
     try{placeholder.remove()}catch(_){}
-    if(!thinkingOn){
+    if(!window.thinkingOn){
       /* P_thinking-off-indicator — even when "Show AI thinking" is
          off, show a minimal "正在思考…" badge so the user knows the
          AI is reasoning. When thinking finishes it switches to
@@ -6161,7 +6175,7 @@ function addStreamingMessage(opts){
 
     var det=document.createElement("details");
     det.className="think-block think-block-streaming";
-    det.open=!!thinkingOn;
+    det.open=!!window.thinkingOn;
     /* Open by default when Show AI Thinking is ON so the user
        sees reasoning content without clicking. When OFF, the
        thinking-off-indicator (ensureThinkCtl) handles display. */
@@ -8821,7 +8835,7 @@ async function resetApp(){
   window._activeChatAbort=null;
   _chatStreaming=false;
   _chatStopMode=false;
-  _shareToken=null;
+  window._shareToken=null;
   resetState();
   /* P_crosstalk-diag — confirm resetState actually cleared messages. */
   try{console.warn("[CTX-DIAG] resetApp after resetState",{msgCount:Array.isArray(state.messages)?state.messages.length:-1,sid:state.session.currentSessionId,topic:state.session.topic})}catch(_){}
@@ -9168,7 +9182,7 @@ import {
   BEAGLE_BUILT_IN, apiConfig, webSearchOn, appMode,
   isReasoningProvider, pickStreamBudgets, hasUsableActive,
   isMiniMaxProvider, ensureSessionShape,
-  syncAppModeUI, syncSidebarForMode,
+  syncAppModeUI, syncSidebarForMode, setAppMode,
   refreshApiConfig,
 } from './config/providers.js';
 
@@ -9186,9 +9200,12 @@ async function toggleAppMode(){
     resetApp();
   }
   window.appMode=window.appMode==="tutor"?"chat":"tutor";
-  /* P_tutor-sync — keep window.appMode in lock-step so pickers.js and
-     i18n.js's applyI18n() see the same value as this module. */
-  try{window.appMode=appMode}catch(_){}
+  /* P_tutor-sync — update the module-level appMode first, then
+     sync window.appMode from it so pickers.js and i18n.js's
+     applyI18n() see the correct value. The imported binding is
+     read-only, so we use setAppMode() to mutate the module var. */
+  setAppMode(window.appMode);
+  window.appMode = appMode;
   try{localStorage.setItem("socrates-appmode",appMode)}catch(e){}
   syncAppModeUI();
   syncSidebarForMode();
@@ -9926,17 +9943,27 @@ function generateSessionTitle(){
   var topic=(state.topic||"").replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,"").trim();
   if(!topic)return;
   _titleGenQueued=true;
-  var prompt="Based on the user's first message below, generate a SHORT "+
-    "declarative title (3-8 words) in a statement tone that names what the "+
-    "session is about. Examples: \"Exploring quantum computing\", "+
-    "\"Understanding machine learning basics\", \"Writing better essays\". "+
-    "Do NOT use a question or a label — it must read as a statement. "+
-    "Output ONLY the title, no quotes, no extra text.\n\n"+topic.slice(0,300);
-  /* System instruction forbids thinking for this short task. Some
-   * models still emit a <think>…</think> block anyway, so we
-   * also defensively strip think blocks and chat-template tokens
-   * from the response below before using it as the title. */
-  var sysMsg={role:"system",content:"Do NOT output <think>...</think> blocks, internal reasoning, or chain-of-thought. Reply directly with the final title in clean prose. No preamble."};
+  /* Detect user language from UI preference and topic content. */
+  var isZh = typeof window._currentLang !== "undefined"
+    ? window._currentLang === "zh"
+    : /[\u4e00-\u9fff]/.test(topic);
+  var prompt, sysContent;
+  if (isZh) {
+    prompt = "基于用户的第一条消息，生成一个简短的中文陈述式标题（3-8个字），"+
+      "概括会话内容。示例：「探索量子计算」、「理解机器学习基础」、「学会更优写作」。\n"+
+      "不要使用问句或标签 — 必须是一个陈述。只输出标题本身，不要引号，不要多余文字。\n\n"+
+      topic.slice(0, 300);
+    sysContent = "不要输出<think>思考块、内部推理或思维链。直接输出最终的标题，纯文字，无前缀。";
+  } else {
+    prompt = "Based on the user's first message below, generate a SHORT "+
+      "declarative title (3-8 words) in a statement tone that names what the "+
+      "session is about. Examples: \"Exploring quantum computing\", "+
+      "\"Understanding machine learning basics\", \"Writing better essays\". "+
+      "Do NOT use a question or a label — it must read as a statement. "+
+      "Output ONLY the title, no quotes, no extra text.\n\n"+topic.slice(0,300);
+    sysContent = "Do NOT output <think>...</think> blocks, internal reasoning, or chain-of-thought. Reply directly with the final title in clean prose. No preamble.";
+  }
+  var sysMsg={role:"system",content:sysContent};
   var userMsg={role:"user",content:prompt};
   var msgs2=[sysMsg,userMsg];
   /* Always go through the server proxy — Beagle is registered server-side. */
@@ -9958,8 +9985,9 @@ function generateSessionTitle(){
       .replace(/<\/?s>/g,"")
       .replace(/\[INST\]|\[\/INST\]|<<SYS>>|<<\/SYS>>/g,"")
       .replace(/^\s*Title\s*[:\-]\s*/i,"")
+      .replace(/^\s*标题\s*[:\-]\s*/,"")
       .trim()
-      .replace(/^["']+|["']+$/g,"")
+      .replace(/^[\s\-•·—:"'\u201c\u201d\u2018\u2019]+|[\s\-•·—:"'\u201c\u201d\u2018\u2019]+$/g,"")
       .replace(/^[\s\-•·—:]+/,"")
       .slice(0,60);
     if(title&&title.length>2){
@@ -10480,7 +10508,7 @@ function beagleSuffix(){
    prose / chain-of-thought" phrasing the model tends to echo. The
    appendThinking() front-end filter is a second line of defense. */
 function thinkingSuffix(){
-  if(thinkingOn){
+  if(window.thinkingOn){
     return "\n\nYou MAY include a brief <think>…</think> block at the start of each reply showing your step-by-step reasoning. The block will be rendered as a collapsible section for the user.";
   }
   return "\n\nKeep your reply focused on the final answer. Avoid exposing step-by-step scratch work to the reader.";

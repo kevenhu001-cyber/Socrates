@@ -19,73 +19,53 @@ function closeSettings() {
 }
 
 function toggleAPI() {
-  var rows = document.getElementById("providerRows");
+  var rows = document.getElementById("providerList");
   if (rows) rows.classList.toggle("collapsed");
 }
 
 function syncSettingsUI() {
-  var rows = document.getElementById("providerRows");
+  var rows = document.getElementById("providerList");
   if (rows) rows.classList.remove("collapsed");
 }
 
 function renderProviderList() {
-  var rows = document.getElementById("providerRows");
-  if (!rows) return;
+  var cont = document.getElementById("providerList");
+  if (!cont) return;
   var apiConfig = window.apiConfig;
-  var providers = apiConfig.providers || [];
-  var activeId = apiConfig.activeId;
-
-  /* Surface the built-in provider first (Beagle), then sorted active key first. */
-  var sorted = providers.slice().sort(function (a, b) {
-    if (a.id === "beagle-built-in") return -1;
-    if (b.id === "beagle-built-in") return 1;
-    if (a.id === activeId) return -1;
-    if (b.id === activeId) return 1;
-    return 0;
-  });
-  rows.innerHTML = sorted.map(function (p, idx) { return renderProviderRow(p, idx === 0); }).join("");
-
-  /* ─── provider-row indexing ───
-   * The very first row is a special Beagle built-in section rendered only when
-   * SERVER_HAS_BEAGLE_KEY is true. It's followed by user-added providers.
-   * The inline `onclick` / `oninput` handlers rely on row-idx-relative targets
-   * found by the updateProviderField / setActiveProvider functions.
-   * Every row except Beagle has clickable active/delete and editable fields. */
-}
-
-function renderProviderRow(p, isFirst) {
-  var isBuiltIn = p.isBuiltIn || p.id === "beagle-built-in";
-  var apiConfig = window.apiConfig;
-  var activeId = apiConfig.activeId;
-  var isActive = p.id === activeId;
-  var label = window.esc(p.label || (p.id === "beagle-built-in" ? "Built-in" : ""));
-  var url = window.esc(p.url || "");
-  var model = window.esc(p.model || "");
-  var keyPreview = p.key ? "••••••••" : (p.id && p.id.indexOf("new-") !== 0 ? "••••••••" : "");
-  var hasVision = p.vision ? "checked" : "";
-
-  if (isBuiltIn) {
-    return '<div class="provider-row builtin-row" data-pid="' + window.esc(p.id) + '">' +
-      '<div class="provider-label"><strong>Beagle (Built-in)</strong>' +
-      '</div><div class="provider-model-row">Model: <span class="provider-model-label">' + model + '</span>' +
-      '</div></div>';
+  /* Filter out built-in / Beagle — not shown in API Configuration. */
+  var userProviders = (apiConfig.providers || []).filter(function (p) { return !p.isBuiltIn && p.id !== "beagle-built-in"; });
+  if (!userProviders.length) {
+    cont.innerHTML = '<div class="provider-empty">No models yet. Click "+ Add" to configure your first one.</div>';
+    return;
   }
-
-  var keyInput = keyPreview
-    ? '<input class="provider-input" id="key-' + window.esc(p.id) + '" type="password" placeholder="••••••••" oninput="updateProviderField(\'' + window.esc(p.id) + '\',\'key\',this.value)" value="' + window.esc(keyPreview) + '">'
-    : '<input class="provider-input" id="key-' + window.esc(p.id) + '" type="password" placeholder="sk-..." oninput="updateProviderField(\'' + window.esc(p.id) + '\',\'key\',this.value)">';
-
-  return '<div class="provider-row' + (isActive ? ' active' : '') + '" data-pid="' + window.esc(p.id) + '">' +
-    '<div class="provider-label"><input class="provider-input provider-label-input" id="label-' + window.esc(p.id) + '" value="' + label + '" placeholder="e.g. My OpenAI key" oninput="updateProviderField(\'' + window.esc(p.id) + '\',\'label\',this.value)">' +
-    '</div>' +
-    '<div class="provider-field"><span class="provider-field-label">URL</span><input class="provider-input" id="url-' + window.esc(p.id) + '" value="' + url + '" placeholder="https://api.openai.com/v1" oninput="updateProviderField(\'' + window.esc(p.id) + '\',\'url\',this.value)"></div>' +
-    '<div class="provider-field">' + keyInput + '</div>' +
-    '<div class="provider-model-row"><span class="provider-field-label">Model</span><input class="provider-input" id="model-' + window.esc(p.id) + '" value="' + model + '" placeholder="e.g. gpt-4o-mini" oninput="updateProviderField(\'' + window.esc(p.id) + '\',\'model\',this.value)"></div>' +
-    '<div class="provider-actions">' +
-    '<label class="provider-action provider-checkbox"><input type="checkbox" ' + hasVision + ' onchange="updateProviderField(\'' + window.esc(p.id) + '\',\'vision\',this.checked)"> Vision</label>' +
-    '<button class="provider-action ' + (isActive ? 'active' : '') + '" onclick="setActiveProvider(\'' + window.esc(p.id) + '\')">' + (isActive ? '&bull; Active' : 'Activate') + '</button>' +
-    '<button class="provider-action danger" onclick="removeProvider(\'' + window.esc(p.id) + '\')">Delete</button>' +
-    '</div></div>';
+  var t = window.t;
+  var esc = window.esc;
+  var html = "";
+  userProviders.forEach(function (p) {
+    var isActive = p.id === apiConfig.activeId;
+    var displayKey = p.key ? "" : (p.id && p.id.indexOf("new-") !== 0 ? "••••••••" : "");
+    if (displayKey === "••••••••") {
+      /* masked — no value attr */
+    }
+    var keyVal = p.key ? "" : (p.id && p.id.indexOf("new-") !== 0 ? "••••••••" : "");
+    html += '<div class="provider-row' + (isActive ? " active" : "") + '" data-id="' + esc(p.id || "") + '">';
+    html += '<button class="provider-active-btn" onclick="setActiveProvider(\'' + esc(p.id || "") + '\')" title="' + (isActive ? "Active model" : "Set as active") + '">' + (isActive ? "●" : "○") + '</button>';
+    html += '<div class="provider-fields">';
+    html += '<input class="settings-input" name="providerLabel" placeholder="' + esc(t("provider.placeholderLabel") || "Label") + '" value="' + esc(p.label || "") + '" oninput="updateProviderField(\'' + esc(p.id || "") + '\',\'label\',this.value)">';
+    html += '<input class="settings-input" name="providerUrl" placeholder="' + esc(t("provider.placeholderUrl") || "Base URL") + '" value="' + esc(p.url || "") + '" oninput="updateProviderField(\'' + esc(p.id || "") + '\',\'url\',this.value)">';
+    html += '<form style="display:contents" onsubmit="return false"><input type="text" name="username" autocomplete="username" style="display:none" aria-hidden="true"><input class="settings-input" name="providerKey" type="password" autocomplete="new-password" placeholder="' + esc(t("provider.placeholderKey") || "sk-...") + '" value="' + esc(keyVal) + '" oninput="updateProviderField(\'' + esc(p.id || "") + '\',\'key\',this.value)"></form>';
+    html += '<input class="settings-input" name="providerModel" placeholder="' + esc(t("provider.placeholderModel") || "Model ID") + '" value="' + esc(p.model || "") + '" oninput="updateProviderField(\'' + esc(p.id || "") + '\',\'model\',this.value)">';
+    html += '<label class="provider-multimodal" title="' + esc(t("provider.multimodalHint") || "") + '">'
+       + '<input type="checkbox" name="providerMultimodal"'
+       + (p.vision ? ' checked' : '')
+       + ' onchange="updateProviderField(\'' + esc(p.id || "") + '\',\'vision\',this.checked)">'
+       + '<span data-i18n-key="provider.multimodal">Multimodal (vision-capable)</span>'
+       + '</label>';
+    html += '</div>';
+    html += '<button class="provider-del" onclick="removeProvider(\'' + esc(p.id || "") + '\')" title="Remove">&times;</button>';
+    html += '</div>';
+  });
+  cont.innerHTML = html;
 }
 
 function addProvider() {
@@ -101,8 +81,13 @@ function addProvider() {
   var id = "new-" + Date.now().toString(36);
   apiConfig.providers.push({ id: id, label: "", url: "", key: "", model: "", vision: false, isBuiltIn: false });
   renderProviderList();
-  var el = document.getElementById("label-" + id);
-  if (el) setTimeout(function () { el.focus(); }, 0);
+  /* Focus the first input in the newly added row. */
+  var rows = document.getElementById("providerList");
+  if (rows) {
+    var inputs = rows.querySelectorAll('input[name="providerLabel"]');
+    var last = inputs[inputs.length - 1];
+    if (last) setTimeout(function () { last.focus(); }, 0);
+  }
 }
 
 function removeProvider(id) {
@@ -117,9 +102,20 @@ function removeProvider(id) {
 
 function setActiveProvider(id) {
   var apiConfig = window.apiConfig;
+  var prevActiveId = apiConfig.activeId;
   apiConfig.activeId = id;
   window.saveLastActiveId(id);
-  window.apiFetch("/api/api-key/" + encodeURIComponent(id) + "/activate", { method: "PATCH" }).catch(function () {});
+  /* Built-in providers (beagle-built-in) are not real DB records for
+     this user — skip the PATCH to avoid a 404. But we still need to
+     tell the server to deactivate the previously active provider so
+     the server's isActive flag stays in sync. */
+  if (id === "beagle-built-in") {
+    if (prevActiveId && prevActiveId !== "beagle-built-in") {
+      window.apiFetch("/api/api-key/" + encodeURIComponent(prevActiveId), { method: "PATCH", body: { isActive: false } }).catch(function () {});
+    }
+  } else {
+    window.apiFetch("/api/api-key/" + encodeURIComponent(id), { method: "PATCH", body: { isActive: true } }).catch(function () {});
+  }
   window.syncModelPills();
   window.syncChatModel();
   renderProviderList();
@@ -140,6 +136,7 @@ function updateProviderField(id, field, value) {
     p.key = clean;
   } else if (field === "vision") {
     p.vision = !!value;
+    p.isMultimodal = !!value; /* backward compat for attachments.js */
   } else {
     p[field] = value;
   }
@@ -167,7 +164,7 @@ function saveSettings() {
     if (lastValid) apiConfig.activeId = lastValid;
     window.saveLastActiveId(lastValid);
     window.syncModelPills();
-    window.syncModels();
+    try { window.syncModels(); } catch (e) {}
     window.syncChatModel();
     if (lastErr) {
       window.showToast("Saved, but one provider sync failed: " + (lastErr.message || "unknown error") + ". Try saving again.");

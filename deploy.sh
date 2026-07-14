@@ -124,17 +124,17 @@ if [ -d "$SITE_DIR" ]; then
 fi
 
 # ─── 3. Restart backend server ────────────────────────────────────────
-echo "Restarting backend…"
-# Find and kill the current server process(es), then start fresh.
-# Uses `pkill` with the exact command pattern to avoid killing the
-# deploy script or unrelated node processes.
-pkill -f "node src/index\.js" 2>/dev/null || true
-sleep 2
-cd "$SERVER_DIR" && nohup node src/index.js > /tmp/server.log 2>&1 &
+echo "Restarting backend via systemd…"
+# The server runs as a systemd unit (Restart=always). Use systemctl to
+# restart cleanly instead of pkill+nohup which races with systemd and
+# can leave zombie processes occupying no port (causing 502 errors).
+$SUDO systemctl restart socrates-api
 # Give it a few seconds to bind, then check for startup errors.
-sleep 4
-if grep -qiE "error|fatal|listen EADDRINUSE" /tmp/server.log 2>/dev/null; then
-  echo "WARNING: backend may have startup errors — check /tmp/server.log"
+sleep 5
+if $SUDO systemctl is-active --quiet socrates-api; then
+  echo "Backend running (PID $(systemctl show -p MainPID socrates-api --value))"
+else
+  echo "WARNING: backend failed to start — check 'sudo journalctl -u socrates-api -n 30'"
 fi
 
 # ─── 4. Validate nginx + reload ──────────────────────────────────────
@@ -154,5 +154,5 @@ echo "  size:    $SRC_SIZE bytes"
 echo "  md5:     $SRC_MD5"
 echo "  served:  $(curl -s -o /dev/null -w '%{http_code}' --max-time 5 https://app.topodrive.top/)"
 echo "  nginx:   $NGINX_STATUS"
-echo "  backend: $(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:3037/api/config)"
+echo "  backend: $(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:3037/api/config) (systemd: $($SUDO systemctl is-active socrates-api))"
 echo "  rollback (if needed): sudo cp -a $APP_WEB_ROOT/.previous/* $APP_WEB_ROOT/"
