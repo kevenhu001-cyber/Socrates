@@ -111,7 +111,7 @@ export async function callAPI(messages,maxTokens){
     return null; /* fall back to mock */
   }
   state.lastCallError=null;
-  console.log("[callAPI] provider="+(provider.label||provider.id)+" isBuiltIn="+(!!provider.isBuiltIn)+" model="+(provider.model||"<unset>")+" keyLen="+(provider.key||"").length);
+  console.log("[callAPI] provider="+(provider.label||provider.id)+" isBuiltIn="+(!!provider.isBuiltIn)+" keyLen="+(provider.key||"").length);
   /* Prepend the user's Custom Instructions to the system-context block.
      Loaded fresh on every call so changes from another tab (or a future
      Android device that syncs the same /api/users/me.customInstructions)
@@ -153,7 +153,7 @@ export async function callAPI(messages,maxTokens){
           method:"POST",
           credentials:"include",
           headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key,"X-CSRF-Token":csrfBeagle||""},
-          body:JSON.stringify({messages:beagleMsgs,model:provider.model,temperature:0.7,max_tokens:maxTokens}),
+          body:JSON.stringify({messages:beagleMsgs,temperature:0.7,max_tokens:maxTokens}),
           signal:wdB.ac.signal
         });
         /* Read the response body BEFORE stopping the watchdog.
