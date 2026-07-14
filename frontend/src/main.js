@@ -11356,10 +11356,6 @@ async function generateFollowUpStream(answer,node,domain,onDelta,onThinking){
   return null;
 };
 
-/* Implicit-global declarations — these are assigned within functions
-   without var/let/const and must be declared in module scope for
-   strict-mode compat. */
-var _examSelectedTypes;
 
 /* ─── Expose all onclick-required functions on window ─── */
 window.closeUsageModal = closeUsageModal;
