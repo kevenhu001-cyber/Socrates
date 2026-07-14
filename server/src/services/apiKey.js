@@ -175,6 +175,23 @@ export async function validateApiKeys() {
   }
 }
 
+/* P_apikey-ciphertext-leak — defensive projection. This helper isn't
+ * called by the current route handlers (apiKeys.js does the insert
+ * inline with SAFE_PROJECTION), but it remains exported and could
+ * easily be wired up later. Returning the raw row would leak the
+ * AES-GCM ciphertext, so we explicitly omit keyCiphertext here too. */
+const SAFE_CREATE_PROJECTION = {
+  id: apiKeys.id,
+  label: apiKeys.label,
+  url: apiKeys.url,
+  model: apiKeys.model,
+  keyHint: apiKeys.keyHint,
+  isActive: apiKeys.isActive,
+  isBuiltIn: apiKeys.isBuiltIn,
+  isMultimodal: apiKeys.isMultimodal,
+  createdAt: apiKeys.createdAt,
+};
+
 export async function createApiKey(userId, { label, url, model, key, isMultimodal }) {
   const keyCiphertext = key ? encrypt(key, ENCRYPTION_KEY) : null;
   const keyHint = key ? key.slice(0, 8) : null;
@@ -192,7 +209,7 @@ export async function createApiKey(userId, { label, url, model, key, isMultimoda
      * Coerced to a strict boolean so a malicious client can't
      * smuggle a non-boolean through zod's passthrough. */
     isMultimodal: isMultimodal === true,
-  }).returning();
+  }).returning(SAFE_CREATE_PROJECTION);
 
   return result;
 }
