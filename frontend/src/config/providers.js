@@ -15,7 +15,18 @@
  * Reasoning/vision flags stay on (Beagle supports both by default). */
 var BEAGLE_BUILT_IN = { id: "beagle-built-in", label: "Beagle", url: "/api/minimax/v1", model: "", vision: true, isBuiltIn: true, key: "" };
 var apiConfig = { activeId: null, providers: [] };
-var webSearchOn = false;
+/* Web Search is now a backend-default-on feature. The Extension panel
+ * no longer surfaces this toggle; only the legacy profile.js switch
+ * and Cmd+Shift+F remain as override paths. Default true so new users
+ * get the search-augmented response without having to discover the
+ * toggle; existing localStorage values still win for users who
+ * explicitly turned it off before the toggle was hidden. */
+var webSearchOn = true;
+/* Extensive thinking: chat-mode prompt switch. When on (default), the
+ * full CHAT_SYSTEM_PROMPT (verbose "careful scholar" voice + thinking
+ * suffix) is injected. When off, CHAT_CONCISE_PROMPT replaces both —
+ * shorter, more direct answers with no reasoning block requested. */
+var extensiveThinkingOn = true;
 var appMode = "chat";
 var thinkingOn = true;
 
@@ -26,6 +37,10 @@ try {
 try {
   var saved = localStorage.getItem("socrates-websearch");
   if (saved !== null) webSearchOn = saved === "true";
+} catch (e) {}
+try {
+  var savedExt = localStorage.getItem("socrates-extensive-thinking");
+  if (savedExt !== null) extensiveThinkingOn = savedExt === "true";
 } catch (e) {}
 
 /* P_privacy-leak — built-in providers don't expose their model name,
@@ -179,7 +194,7 @@ function loadLastActiveId() {
 }
 
 export {
-  BEAGLE_BUILT_IN, apiConfig, webSearchOn, appMode, thinkingOn,
+  BEAGLE_BUILT_IN, apiConfig, webSearchOn, extensiveThinkingOn, appMode, thinkingOn,
   isReasoningProvider, pickStreamBudgets, hasUsableActive,
   isMiniMaxProvider, ensureSessionShape,
   syncAppModeUI, syncSidebarForMode, setAppMode,
