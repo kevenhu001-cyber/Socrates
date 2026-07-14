@@ -319,7 +319,16 @@ app.get('/api/config', async (_req, res) => {
       .limit(1);
     hasBeagleKey = !!row;
   } catch (_) { /* best-effort */ }
-  res.json({ hasBeagleKey });
+  res.json({
+    hasBeagleKey,
+    /* P_privacy-leak — expose only a boolean capability hint, never the
+     * underlying model name. The SPA needs to know whether the built-in
+     * provider is reasoning-capable so chat.js can set reasoning_effort
+     * and pick longer stream timeouts; it doesn't need to know WHICH
+     * model that is. Operator controls via BEAGLE_IS_REASONING env
+     * (default true; set to "false" to disable for non-reasoning upstreams). */
+    isReasoning: process.env.BEAGLE_IS_REASONING !== 'false',
+  });
 });
 
 // Auth (Phase 1)
