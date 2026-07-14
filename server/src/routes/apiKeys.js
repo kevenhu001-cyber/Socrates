@@ -11,6 +11,29 @@ import { isUuid } from '../lib/validate.js';
 
 const ENCRYPTION_KEY = deriveEncryptionKey(process.env.SESSION_SECRET || 'dev-secret');
 
+/* P_apikey-ciphertext-leak — projection shared by every response that
+ * returns an apiKeys row. The encrypted AES-GCM payload is stored
+ * exclusively for server-side decrypt during chat proxying; it is
+ * never useful to the SPA and shipping it down the wire leaks the
+ * ciphertext (and any future plaintext-rotation metadata). The
+ * frontend only needs hasKey as a derived boolean. */
+const SAFE_PROJECTION = {
+  id: apiKeys.id,
+  label: apiKeys.label,
+  url: apiKeys.url,
+  model: apiKeys.model,
+  keyHint: apiKeys.keyHint,
+  isActive: apiKeys.isActive,
+  isBuiltIn: apiKeys.isBuiltIn,
+  isMultimodal: apiKeys.isMultimodal,
+  createdAt: apiKeys.createdAt,
+  /* For insert/update responses the row always has a ciphertext set
+   * (we just inserted/rotated it), so a constant TRUE is correct. The
+   * GET / list endpoint needs to derive hasKey per-row from a SQL
+   * expression and uses its own projection instead. */
+  hasKey: sql`TRUE`,
+};
+
 /* P_apiKey-ssrf — H4 audit fix. Provider URLs are forwarded verbatim
  * to the upstream LLM call. Reject any URL that resolves to an
  * internal/private/link-local destination so the user's API key
@@ -138,7 +161,7 @@ router.post('/', audit('create_api_key', (req) => ({ label: req.body?.label, url
       keyHint: key.slice(0, 8),
       isActive: true,
       isMultimodal,
-    }).returning();
+    }).returning(SAFE_PROJECTION);
 
     return res.status(201).json(result);
   } catch (err) { next(err); }
@@ -192,7 +215,7 @@ router.patch('/:id', async (req, res, next) => {
     }
 
     await db.update(apiKeys).set(patch).where(eq(apiKeys.id, req.params.id));
-    const [updated] = await db.select().from(apiKeys).where(eq(apiKeys.id, req.params.id)).limit(1);
+    const [updated] = await db.select(SAFE_PROJECTION).from(apiKeys).where(eq(apiKeys.id, req.params.id)).limit(1);
     return res.json(updated);
   } catch (err) { next(err); }
 });
