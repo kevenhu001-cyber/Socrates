@@ -177,6 +177,9 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
     if (!provider) {
       return res.status(503).json({ code: 'NO_PROVIDER', message: 'No active LLM provider configured' });
     }
+    if (!provider.keyPlaintext) {
+      return res.status(503).json({ code: 'KEY_DECRYPT_FAILED', message: 'API key decryption failed. Please re-enter your API key in Settings.' });
+    }
     if (provider.isBuiltIn) {
       const limitErr = await checkBeagleLimit(req.userId, req.user?.tier);
       if (limitErr) return res.status(429).json({ code: 'MONTHLY_LIMIT', message: limitErr.message });
