@@ -71,7 +71,11 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
 
   try {
     if (Array.isArray(tools) && tools.length > 0) {
-      console.log('[DEBUG-LLM] Sending tools to upstream:', JSON.stringify(tools.map(t => t.function?.name)), 'model:', model, 'stream:', true);
+      /* P_privacy-leak — don't log the upstream model name. The
+       * provider-agnostic tool names are enough to confirm what
+       * capabilities we're sending; the model identity stays in the
+       * DB only. */
+      console.log('[DEBUG-LLM] Sending tools to upstream:', JSON.stringify(tools.map(t => t.function?.name)), 'tools.length:', tools.length);
     }
     const response = await fetch(`${apiBase}/chat/completions`, {
       method: 'POST',
