@@ -20,6 +20,20 @@
 //               self-bridge for state vars (apiConfig / appMode / etc.)
 //               and functions not yet extracted.
 
+/* ─── config/providers.js — MUST come first (apiConfig consumed by every other module) ─── */
+import { apiConfig, appMode, webSearchOn, BEAGLE_BUILT_IN, isReasoningProvider, isMiniMaxProvider, pickStreamBudgets, hasUsableActive, ensureSessionShape, syncAppModeUI, syncSidebarForMode } from './config/providers.js';
+window.apiConfig = apiConfig;
+window.appMode = appMode;
+window.webSearchOn = webSearchOn;
+window.BEAGLE_BUILT_IN = BEAGLE_BUILT_IN;
+window.isReasoningProvider = isReasoningProvider;
+window.isMiniMaxProvider = isMiniMaxProvider;
+window.pickStreamBudgets = pickStreamBudgets;
+window.hasUsableActive = hasUsableActive;
+window.ensureSessionShape = ensureSessionShape;
+window.syncAppModeUI = syncAppModeUI;
+window.syncSidebarForMode = syncSidebarForMode;
+
 /* ─── util/colors.js ─── */
 import { parseHexColor, applyCustomBg, removeCustomBg } from './util/colors.js';
 window.parseHexColor = parseHexColor;
