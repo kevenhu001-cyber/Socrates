@@ -397,9 +397,21 @@
       <div class="topic-setup" id="topicSetup">
         <h1 class="topic-title" id="topicTitle">What would you like to explore?</h1>
         <p class="topic-sub" id="topicSub">Describe what you want to learn. Socrates will ask you questions to help you think deeper about it.</p>
-        <div class="topic-input-wrap">
+        <div class="topic-input-wrap" id="topicInputWrap">
+          <!-- P_attachments-tutor — chip strip above the topic-setup
+               textarea. Shares the same .attachment-chips class and
+               renderAttachmentChips() path as the chat-mode chips
+               container; src/attachments/render.js fans the render
+               out to every wired composer. -->
+          <div class="attachment-chips hidden" id="topicAttachmentChips"></div>
           <textarea id="topicInput" name="topicInput" aria-label="What would you like to explore?" placeholder="e.g. I want to understand how machine learning works..." data-i18n-placeholder="topic.inputPlaceholder" rows="2" oninput="autoResize(this);updateStartBtn()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startSession()}"></textarea>
           <div class="topic-footer">
+            <button class="attach-btn" id="topicAttachBtn" type="button" data-i18n-aria="chat.attach.aria" data-i18n-title="chat.attach" aria-label="Attach files" title="Attach files">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            </button>
+            <input type="file" id="topicAttachInput" multiple
+                   accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
+                   hidden>
             <span style="font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))" id="topicHint">Be specific for better results</span>
             <button class="start-btn" id="startBtn" onclick="startSession()">Begin</button>
           </div>

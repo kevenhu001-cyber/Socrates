@@ -22,11 +22,17 @@ export function autoResize(el){
   el.style.height = Math.min(el.scrollHeight, maxH) + "px";
 }
 
-/* Light up the "Start" button when the topic input has non-empty text. */
+/* Light up the "Start" button when the topic input has non-empty
+   text OR pending attachments (P_attachments-tutor — a user can drop
+   a PDF in tutor mode, leave the textarea empty, and Begin must
+   still be active). */
 export function updateStartBtn(){
   var v = document.getElementById("topicInput").value.trim();
   var b = document.getElementById("startBtn");
-  if(v) b.classList.add("active"); else b.classList.remove("active");
+  var hasAtt = typeof window.attachments !== "undefined"
+    && Array.isArray(window.attachments)
+    && window.attachments.length > 0;
+  if(v || hasAtt) b.classList.add("active"); else b.classList.remove("active");
 }
 
 /* Light up the "Send" button when there's text OR pending attachments
