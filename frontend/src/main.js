@@ -22,7 +22,7 @@ import { batchSetItem, batchRemoveItem } from './batchStorage.js';
 import { LOCAL_MEMORY_MAX, loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from './storage/localMemory.js';
 import { formatTickSlice, formatMsgProgressive, formatMsg, stripMarkdown, findLastUserMessage } from './render/markdown.js';
 import { SOCRATIC_SYSTEM_PROMPT } from './prompts/socratic.js';
-import { esc, escAttr, escHTML } from './render/helpers.js';
+import { esc, escAttr, escHTML, decodeEntities, stripTags } from './render/helpers.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions, renderViz, renderVizLoading, renderMermaid, openVizModal } from './render/viz.js';
 import { callAPI, callAPIChat } from './chat/api.js';
 import { callAPIStream } from './chat/stream.js';
@@ -8169,10 +8169,6 @@ function mountKeyPointWidget(slot,parsed){
   slot.replaceWith(el);
 }
 
-function decodeEntities(s){
-  return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,"&");
-}
-function stripTags(s){return s.replace(/<[^>]+>/g,"")}
 
 function mountQuizWidget(slot,parsed){
   /* Record the slot id on the parsed object so handleQuizPick can later

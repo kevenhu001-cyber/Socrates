@@ -11,6 +11,11 @@ export function escAttr(s){return String(s||"").replace(/&/g,"&amp;").replace(/"
 
 export function escHTML(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 
+export function decodeEntities(s){
+  return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,"&");
+}
+export function stripTags(s){return s.replace(/<[^>]+>/g,"")}
+
 /* ── KaTeX macros and config ──
    \div → \operatorname{div}   (divergence, not ÷)
    \curl → \operatorname{curl} (curl)
