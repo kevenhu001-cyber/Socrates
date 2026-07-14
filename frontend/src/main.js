@@ -5171,7 +5171,12 @@ function appendThinking(text){
   }else{
     details=document.createElement("details");
     details.className="think-block think-block-streaming";
-    details.open=true;
+    /* P_thinking-collapsed-default — think-block starts collapsed. The
+     * summary still shows the live "Thinking…" spinner so the user
+     * knows the model is reasoning, but the reasoning content itself
+     * is hidden until the user clicks the summary to expand. This
+     * matches the "folded by default, expand on demand" convention. */
+    details.open=false;
     var sum=document.createElement("summary");
     sum.className="think-summary think-summary-streaming";
     sum.innerHTML=_summarize(true);
@@ -5230,7 +5235,13 @@ function appendThinking(text){
     finalize:function(){
       if(pending){cancelAnimationFrame(pending);pending=null}
       doRender();
-      details.open=false;
+      /* P_thinking-collapsed-default — respect the user's expand/collapse
+       * choice during streaming. Previously this force-closed the block,
+       * which undid any manual click-to-expand the user had done while
+       * waiting for the answer. With the collapsed-by-default design,
+       * leaving the open state as-is is the right behaviour: a user
+       * who expanded during streaming keeps it open after the answer
+       * lands; a user who didn't still sees the summary. */
       details.classList.remove("think-block-streaming");
       var sum=details.querySelector("summary");
       if(sum){
@@ -5994,10 +6005,13 @@ function addStreamingMessage(opts){
 
     var det=document.createElement("details");
     det.className="think-block think-block-streaming";
-    det.open=!!window.thinkingOn;
-    /* Open by default when Show AI Thinking is ON so the user
-       sees reasoning content without clicking. When OFF, the
-       thinking-off-indicator (ensureThinkCtl) handles display. */
+    /* P_thinking-collapsed-default — think-block is folded by default
+     * on this path too (matches appendThinking() above). window.thinkingOn
+     * still controls whether reasoning content is generated at all
+     * (system prompt suffix in buildSocraticPrompt, see thinkingSuffix()),
+     * but no longer auto-expands the UI block. The user clicks the
+     * summary to expand if they want to read the live reasoning stream. */
+    det.open=false;
     var sum=document.createElement("summary");
     sum.className="think-summary think-summary-streaming";
     var _streamingLabel=(typeof window!=="undefined"&&window.t)?window.t("think.thinking"):"Thinking…";
