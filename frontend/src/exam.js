@@ -366,7 +366,7 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
   finishExamGeneration();
 }
 
-function parseSingleExamQuestion(text) {
+export function parseSingleExamQuestion(text) {
   try {
     var raw = String(text || "").replace(/```(?:json|JSON)?\s*/g, "").replace(/\s*```/g, "").replace(/<(?:thinking|think)>[\s\S]*?(<\/(?:thinking|think)>|$)/gi, "").replace(/\[(?:thinking|think)\][\s\S]*?(\[\/(?:thinking|think)\]|$)/gi, "").trim();
     var idx = 0, end = raw.lastIndexOf("}");
@@ -437,7 +437,7 @@ export function parseExamArrayJSON(text) {
   return null;
 }
 
-function renderAllQuestions() {
+export function renderAllQuestions() {
   var body = _examBody();
   if (!body) return;
   body.innerHTML = '<div id="examQuestionsContainer"></div>';
@@ -499,7 +499,7 @@ export function selectExamOpt(qidx, oidx) {
   saveExamSession();
 }
 
-function finishExamGeneration() {
+export function finishExamGeneration() {
   var st = document.getElementById("examGenStatus");
   if (st) st.style.display = "none";
   var valid = window.state.examQuestions.filter(function (q) { return q.type !== "error"; });
