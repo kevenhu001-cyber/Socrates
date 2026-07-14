@@ -91,17 +91,16 @@ export async function seedBuiltInProvider() {
       .limit(1);
 
     if (existing) {
-      /* P_diag-seed — surface the resolved env values so a silent
-       * regression (env not loaded, env file in wrong path, typo)
-       * shows up in the boot log instead of getting masked by the
-       * "Updated" line that fires unconditionally. */
-      console.log('[seed] resolved env: model=' + JSON.stringify(model) + ' url=' + JSON.stringify(url));
+      /* P_privacy-leak — do NOT log the resolved model/url here. The
+       * built-in "Beagle" provider is an alias; surfacing the real
+       * upstream model in the boot log reveals the operator's
+       * LLM choice to anyone with access to the systemd journal.
+       * The "Updated" line below is enough to confirm the seed ran. */
       const upd = await db.update(apiKeys)
         .set({ keyCiphertext, keyHint: apiKey.slice(0, 8), url, model, isMultimodal: true })
         .where(eq(apiKeys.id, existing.id))
-        .returning({ id: apiKeys.id, model: apiKeys.model, url: apiKeys.url });
-      console.log('[seed] update returned: ' + JSON.stringify(upd));
-      console.log('[seed] Updated built-in Beagle provider');
+        .returning({ id: apiKeys.id });
+      console.log('[seed] Updated built-in Beagle provider (id=' + (upd[0] && upd[0].id) + ')');
       /* Clean up any stale built-in rows (e.g. "Beagle A" from
          previous seed runs) that could confuse getActiveApiKey(). */
       const cleaned = await db.update(apiKeys)
@@ -123,9 +122,8 @@ export async function seedBuiltInProvider() {
          * model (MiniMax-M3). Force the flag on insert so chat.js
          * forwards image_url parts without any user setup. */
         isMultimodal: true,
-      }).returning({ id: apiKeys.id, model: apiKeys.model });
-      console.log('[seed] inserted row: ' + JSON.stringify(ins));
-      console.log('[seed] Created built-in Beagle provider');
+      }).returning({ id: apiKeys.id });
+      console.log('[seed] Created built-in Beagle provider (id=' + (ins[0] && ins[0].id) + ')');
     }
   } catch (err) {
     console.error('[seed] Failed to seed built-in provider:', err.message);

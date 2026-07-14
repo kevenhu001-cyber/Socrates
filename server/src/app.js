@@ -301,25 +301,25 @@ app.get('/api/hello', (_req, res) => {
 // Tells the SPA whether the built-in Beagle provider is available.
 // The raw key is NEVER sent to the client — the server proxies
 // all Beagle requests via /api/minimax/v1/chat/completions.
+//
+// P_privacy-leak — do NOT expose the real upstream model name
+// (e.g. "deepseek-v4-flash") here. "Beagle" is an alias; surfacing
+// the underlying model lets any unauthenticated visitor learn the
+// operator's LLM choice. The actual model is selected server-side
+// from the DB at chat time, so the SPA doesn't need to know.
 app.get('/api/config', async (_req, res) => {
-  // hasBeagleKey reflects whether the built-in Beagle provider is
-  // available. Also send the model name so the frontend's
-  // BEAGLE_BUILT_IN.model stays in sync with the DB.
   res.set('Cache-Control', 'no-store');
-  let beagleModel = null;
+  let hasBeagleKey = false;
   try {
     const db = getDb();
-    const [row] = await db.select()
+    const [row] = await db.select({ id: apiKeys.id })
       .from(apiKeys)
       .where(and(eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
       .orderBy(apiKeys.createdAt)
       .limit(1);
-    if (row) beagleModel = row.model;
+    hasBeagleKey = !!row;
   } catch (_) { /* best-effort */ }
-  res.json({
-    hasBeagleKey: true,
-    ...(beagleModel ? { beagleModel } : {}),
-  });
+  res.json({ hasBeagleKey });
 });
 
 // Auth (Phase 1)

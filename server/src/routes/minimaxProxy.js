@@ -45,6 +45,13 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
     }
 
     const { messages, model, temperature, max_tokens, stream, reasoning_effort, extra_body } = req.body;
+    /* P_privacy-leak — the upstream model name is operator-configured
+     * and must never be settable from the client. Even though the SPA
+     * currently doesn't know the real model (we strip it from
+     * /api/config), a determined user could still smuggle a guess
+     * into req.body.model and the previous `model || provider.model`
+     * pattern would forward it to the upstream. Pin to provider.model. */
+    const upstreamModel = provider.model;
     /* P_extra-body-share — H5 audit fix. Sanitise extra_body against
      * the same whitelist chat.js uses, so a forged payload can't smuggle
      * `tools`, `api_key`, etc to the built-in upstream. */
@@ -99,7 +106,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         {
           apiBase: provider.url,
           apiKey: provider.keyPlaintext,
-          model: model || provider.model,
+          model: upstreamModel,
           messages: messages,
           /* undefined → llm.js default (32 K) so a long streamed
              answer isn't silently truncated by a small per-model cap. */
@@ -130,7 +137,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
           if (req.userId) {
             recordUsage({
               userId: req.userId,
-              model: model || provider.model,
+              model: upstreamModel,
               sessionId: typeof req.query.sessionId === 'string' ? req.query.sessionId : null,
               promptTokens,
               completionTokens,
@@ -150,7 +157,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
           if (req.userId && fullText.length > 0) {
             recordUsage({
               userId: req.userId,
-              model: model || provider.model,
+              model: upstreamModel,
               sessionId: typeof req.query.sessionId === 'string' ? req.query.sessionId : null,
               promptTokens,
               completionTokens: estimateTokens(fullText),
@@ -172,7 +179,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       const result = await callChatCompletion({
         apiBase: provider.url,
         apiKey: provider.keyPlaintext,
-        model: model || provider.model,
+        model: upstreamModel,
         messages: messages,
         /* undefined → llm.js default (32 K) so a long response isn't
            silently truncated by a small per-model cap. */
