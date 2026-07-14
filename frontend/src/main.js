@@ -2872,15 +2872,15 @@ async function startSession(){
   _chatStreaming=false;
   _chatStopMode=false;
 
-  /* Chat mode: skip diagnostic, KB, mistake book. Go straight to chat
-     with a plain-conversation prompt. The first AI turn is a greeting
-     so the user sees something without having to type. */
+/* Chat mode: skip diagnostic, KB, mistake book. Go straight to chat
+      with a plain-conversation prompt. The first AI turn is a greeting
+      so the user sees something without having to type. */
   if(appMode==="chat"){
     /* P_crosstalk-diag — capture state at chat-mode session start. */
     try{console.warn("[CTX-DIAG] startSession chat-mode",{msgCountBefore:Array.isArray(state.messages)?state.messages.length:-1,sid:state.session.currentSessionId,topic:state.topic})}catch(_){}
     state.kbNodes=[];
     /* diagQuestions/diagAnswers/diagIndex/substantiveCount already
-       cleared by the P_new-session-context-leak block above. */
+        cleared by the P_new-session-context-leak block above. */
     state.domain=state.topic;
     state.phase="chat";
     document.getElementById("topicSetup").classList.add("hidden");
@@ -2888,10 +2888,27 @@ async function startSession(){
     document.getElementById("chatView").classList.remove("hidden");
     toggleChatTopBarEls(true);
     document.getElementById("msgList").innerHTML="";
-    /* Show the user's input as the first message in the chat. Use
-       plain text (not HTML-wrapped) to match submitChatMessage's
-       addMessage pattern, so extractHistory sees consistent rawText. */
-    addMessage("user", state.topic);
+    /* P_attachments-start — assemble the first user message the same
+       way submitChatMessage does, so an attachment dropped onto the
+       topic-setup screen travels with the very first chat turn (not
+       just follow-up messages). buildMessageContent may call
+       /api/vision/describe for image attachments; await it here so
+       the multimodal content is fully assembled before askChatTurn
+       picks up _pendingChatContent. */
+    var startBuilt = (typeof buildMessageContent === "function")
+      ? await buildMessageContent(state.topic)
+      : { rawText: state.topic, parts: state.topic, attachmentList: [] };
+    var startChatContent = startBuilt.parts;
+    var startPersistText = startBuilt.rawText;
+    var startAttList = startBuilt.attachmentList || [];
+    window._pendingChatContent = startChatContent;
+    window._pendingAttachments = startAttList;
+    addMessage("user", startPersistText, null, null, startAttList);
+    /* Consume the pending attachments now that the message is committed
+       to the DOM. Re-render chips so both composers' strips empty out. */
+    if(typeof resetAttachments === "function") resetAttachments();
+    if(typeof renderAttachmentChips === "function") renderAttachmentChips();
+    if(typeof updateSendBtn === "function") updateSendBtn();
     updateKB();
     updateChatStats();
     /* Fire the greeting stream on the NEXT task (deferred). Do NOT call
@@ -2917,6 +2934,25 @@ async function startSession(){
   document.getElementById("chatView").classList.add("hidden");
   toggleChatTopBarEls(false);
     syncChatModel();
+
+  /* P_attachments-tutor-persist — copy any pending attachments from
+     the topic-setup screen onto the session state so subsequent tutor
+     calls (diagnostic, first teaching turn) can pick them up. The
+     chat-mode branch above already consumes pendingAttachments into
+     the first chat bubble; tutor mode goes through a diagnostic
+     detour first, so we stash the list on state for the LLM calls
+     ahead. After this snapshot, the pending chips are cleared so
+     the chat composer (visible after diagnostic) starts empty. */
+  var tutorBuilt = null;
+  if(typeof buildMessageContent === "function"){
+    try{ tutorBuilt = await buildMessageContent(topic); }catch(_){ tutorBuilt = null; }
+  }
+  state.tutorAttachments = (tutorBuilt && tutorBuilt.attachmentList) || [];
+  state.tutorPartsTemplate = (tutorBuilt && tutorBuilt.parts) || topic;
+  if(typeof resetAttachments === "function") resetAttachments();
+  if(typeof renderAttachmentChips === "function") renderAttachmentChips();
+  if(typeof updateStartBtn === "function") updateStartBtn();
+  if(typeof updateSendBtn === "function") updateSendBtn();
   document.getElementById("diagnosticView").innerHTML='<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">'+t("tutor.loading")+'</p><div class="diag-progress"><div class="diag-progress-bar"><div class="diag-progress-fill" id="diagProgressFill"></div></div><div class="diag-progress-step" id="diagProgressStep"><span class="diag-progress-spin"></span>'+t("diag.analyzingTopic")+'</div></div></div>';
 
   /* Phase 3 — create the search-progress log up front so the user sees
