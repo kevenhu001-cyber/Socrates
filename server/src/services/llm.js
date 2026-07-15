@@ -16,8 +16,8 @@
  * LLM_SILENCE_TIMEOUT_MS — separate watchdog that aborts the upstream
  * fetch if NO bytes arrive for this many ms. Reset on every chunk so
  * a healthy but slow stream (long thinking) never trips it. */
-const LLM_TOTAL_TIMEOUT_MS = 180_000;
-const LLM_SILENCE_TIMEOUT_MS = 60_000;
+const LLM_TOTAL_TIMEOUT_MS = 300_000;
+const LLM_SILENCE_TIMEOUT_MS = 120_000;
 
 /**
  * Stream a chat completion from an external LLM provider.
@@ -42,8 +42,14 @@ const LLM_SILENCE_TIMEOUT_MS = 60_000;
  *                                  { id, type:'function', function:{ name, arguments } }.
  *                                  Arguments is the raw JSON string the upstream streamed —
  *                                  callers must parse it themselves.
+ * @param {function} [onToolCallDelta] - Called on each tool_call delta with the partial
+ *                                  accumulated state. Receives
+ *                                  { index, id?, name?, argumentsDelta, arguments }
+ *                                  so the chat route can stream the in-progress JSON
+ *                                  (e.g. Python source) to the client for live rendering
+ *                                  instead of waiting for finish_reason='tool_calls'.
  */
-export async function streamChatCompletion(opts, onChunk, onDone, onError, onReasoning, onToolUse) {
+export async function streamChatCompletion(opts, onChunk, onDone, onError, onReasoning, onToolUse, onToolCallDelta) {
   const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.7, signal, reasoning_effort, extra_body, tools, tool_choice } = opts;
 
   // P0.0 — when no maxTokens is set, default to a very high value so
@@ -124,17 +130,53 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
        mirror what the model would have produced in a non-streaming
        response. */
     const toolCallAcc = new Map();
-    /* Arm the silence watchdog before the first read. We re-arm it
-       after every chunk arrives so a healthy stream never trips it. */
-    armSilenceTimer();
+    /* P_silence_fix — do NOT arm the silence watchdog before the first
+       read. Reasoning models (DeepSeek R1, QwQ, MiniMax reasoning variants)
+       routinely think for 60-120 s before emitting their first token. Arming
+       the watchdog before the first reader.read() would count that initial
+       thinking latency against the silence budget and abort the stream
+       prematurely. Instead, we arm AFTER the first chunk arrives, and
+       re-arm after every subsequent chunk. */
+    let _firstChunkArrived = false;
+
+    /* P_tool_stream_emit — throttle the tool_call_delta emission so a
+       high-frequency upstream doesn't flood the SSE channel. We coalesce
+       the per-delta callbacks to at most one per ~30 ms (or every 64
+       bytes of accumulated arguments) so the client gets a smooth
+       typewriter effect instead of jittery 1-char bursts. */
+    let _lastDeltaEmit = 0;
+    let _lastDeltaBytes = 0;
+    const _emitToolDelta = (entry, full) => {
+      if (typeof onToolCallDelta !== 'function') return;
+      const now = Date.now();
+      const bytes = (entry.function.arguments || '').length;
+      if (now - _lastDeltaEmit < 30 && bytes - _lastDeltaBytes < 64) return;
+      _lastDeltaEmit = now;
+      _lastDeltaBytes = bytes;
+      try { onToolCallDelta({
+        index: entry.__index,
+        id: entry.id,
+        name: entry.function.name,
+        arguments: entry.function.arguments,
+      }); } catch { /* ignore listener errors */ }
+    };
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      /* Reset the silence timer: we just got bytes, the connection
-         is alive. If the model thinks for >LLM_SILENCE_TIMEOUT_MS
-         with no bytes, we'll time out (and that's a genuine stall). */
-      armSilenceTimer();
+      /* P_silence_fix — arm the watchdog on the first real chunk
+         (not before). This gives reasoning models unlimited time
+         for the initial thinking burst. After the first chunk, the
+         watchdog guards against genuine mid-stream stalls. */
+      if (!_firstChunkArrived) {
+        _firstChunkArrived = true;
+        armSilenceTimer();
+      } else {
+        /* Reset the silence timer: we just got bytes, the connection
+           is alive. If the model stalls for >LLM_SILENCE_TIMEOUT_MS
+           with no bytes between chunks, we'll time out. */
+        armSilenceTimer();
+      }
       if (!value || value.byteLength === 0) continue;
 
       buffer += decoder.decode(value, { stream: true });
@@ -164,7 +206,10 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
           }
           /* Tool-call deltas. Each entry carries a partial id/name/
              arguments; we accumulate by `index` and flush once the
-             upstream signals finish_reason='tool_calls'. */
+             upstream signals finish_reason='tool_calls'. We also
+             forward a throttled delta to onToolCallDelta so the
+             client can stream the in-progress JSON (e.g. Python
+             source) live instead of waiting for completion. */
           if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
             for (const tc of delta.tool_calls) {
               const i = tc.index ?? 0;
@@ -173,14 +218,17 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
                 type: 'function',
                 function: { name: '', arguments: '' },
               };
-              toolCallAcc.set(i, {
+              const next = {
                 id: tc.id || prev.id,
                 type: 'function',
                 function: {
                   name: (tc.function && tc.function.name) || prev.function.name,
                   arguments: prev.function.arguments + ((tc.function && tc.function.arguments) || ''),
                 },
-              });
+                __index: i,
+              };
+              toolCallAcc.set(i, next);
+              _emitToolDelta(next, next.function.arguments);
             }
           }
           /* finish_reason only appears on the last chunk of a stream.
@@ -215,14 +263,17 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
                 type: 'function',
                 function: { name: '', arguments: '' },
               };
-              toolCallAcc.set(i, {
+              const next = {
                 id: tc.id || prev.id,
                 type: 'function',
                 function: {
                   name: (tc.function && tc.function.name) || prev.function.name,
                   arguments: prev.function.arguments + ((tc.function && tc.function.arguments) || ''),
                 },
-              });
+                __index: i,
+              };
+              toolCallAcc.set(i, next);
+              _emitToolDelta(next, next.function.arguments);
             }
           }
           const choice = json.choices?.[0];
@@ -234,6 +285,23 @@ export async function streamChatCompletion(opts, onChunk, onDone, onError, onRea
     }
 
     if (silenceTimer) clearTimeout(silenceTimer);
+
+    /* P_tool_stream_finalize — emit a final tool_call_delta so the
+       client gets the last few bytes that were throttled out by
+       _emitToolDelta's time/size guard. Without this, the UI may
+       show a code body that's 1-3 characters short of the final
+       argument string until the next onToolUse frame arrives. */
+    if (typeof onToolCallDelta === 'function') {
+      for (const [idx, entry] of toolCallAcc.entries()) {
+        try { onToolCallDelta({
+          index: idx,
+          id: entry.id,
+          name: entry.function.name,
+          arguments: entry.function.arguments,
+          final: true,
+        }); } catch { /* ignore listener errors */ }
+      }
+    }
 
     /* Dispatch accumulated tool calls when the model decided to call
        a tool. The chat route listens for these in its tool-execution

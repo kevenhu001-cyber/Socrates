@@ -50,7 +50,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   var STREAM_TIMEOUT_MS=_budget.timeoutMs;
   var STREAM_HEARTBEAT_MS=_budget.heartbeatMs;
   var STREAM_RETRYABLE_STATUS=window.STREAM_RETRYABLE_STATUS;
-  var STREAM_MAX_ATTEMPTS=window.STREAM_MAX_ATTEMPTS;
+  var STREAM_MAX_ATTEMPTS=_budget.maxAttempts||window.STREAM_MAX_ATTEMPTS||2;
 
   var provider=getActiveProvider();
   if(!provider){
@@ -89,7 +89,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   while(attempt<STREAM_MAX_ATTEMPTS){
     attempt++;
     var ac=new AbortController();
-    window._activeChatAbort=function(reason){try{ac.abort(reason||"superseded")}catch(_){}};
+    window._activeChatAbort=function(reason){try{ac.abort(reason)}catch(_){}};
     window._activeChatAbort._fromThisCall=true;
     var tmo=setTimeout(function(){try{ac.abort("timeout")}catch(_){}},STREAM_TIMEOUT_MS);
     var hbTmo=null;
@@ -165,15 +165,21 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         try { showToast && showToast(msg429, 5000); } catch (_) {}
         return null;
       }
-      if(STREAM_RETRYABLE_STATUS[eStatus]&&attempt<STREAM_MAX_ATTEMPTS){
-        lastErr=eStatus+" "+(e.message||"error");
+      /* P_network_retry — network errors (no HTTP status, e.g. DNS/TLS
+         failures, mid-stream socket reset) are transient and should be
+         retried. Also retry on HTTP retryable status codes (5xx/408/429). */
+      var isRetryable=STREAM_RETRYABLE_STATUS[eStatus]||(!eStatus&&attempt<STREAM_MAX_ATTEMPTS);
+      if(isRetryable&&attempt<STREAM_MAX_ATTEMPTS){
+        lastErr=eStatus?eStatus+" "+(e.message||"error"):"network: "+(e&&e.message||e);
         var retryAfterHdr=e&&e.body&&e.body.headers?e.body.headers.get("Retry-After"):null;
         await sleepBackoff(attempt,retryAfterHdr);
         continue;
       }
       lastErr=(eStatus?eStatus+" ":"network: ")+(e&&e.message||e);
       console.error("[API stream] request failed:",e);
-      state.lastCallError=lastErr;
+      /* P_error_preserve — don't overwrite a richer lastCallError already
+         captured from event:error SSE frames upstream. */
+      if(!state.lastCallError)state.lastCallError=lastErr;
       return null;
     }
     clearTimeout(tmo);
@@ -277,6 +283,17 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             try{opts.onExecutionStart(JSON.parse(dataParts.join("\n")))}catch(_){}
             continue;
           }
+          /* P_tool_stream — forward the live tool_call_delta frames
+             from the backend to the caller's onToolCallDelta. The
+             backend emits these as the upstream streams
+             delta.tool_calls — typically the in-progress JSON for
+             the tool's arguments (e.g. Python source). The frontend
+             uses them to render the code in the tool card
+             progressively, not as a single reveal at finish_reason. */
+          if(evName==="tool_call_delta"&&opts&&typeof opts.onToolCallDelta==="function"&&dataParts.length){
+            try{opts.onToolCallDelta(JSON.parse(dataParts.join("\n")))}catch(_){}
+            continue;
+          }
           if(dataParts.length===0)continue;
           var payload=dataParts.join("\n");
           if(!payload||payload==="[DONE]")continue;
@@ -285,8 +302,24 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             /* The next frame's first data: line contains the JSON */
             continue;
           }
-          if(formattedHtml===null&&payload.indexOf("{")===0&&payload.indexOf("html")>=0){
-            try{formattedHtml=JSON.parse(payload);continue}catch(_){}
+          /* Server-side pre-formatted HTML response detection. Only
+             match when the parsed JSON object actually has a STRING
+             `html` key — not when the substring "html" happens to
+             appear in the message content (e.g. a ```html fenced
+             canvas block whose JSON-serialised delta contains the
+             literal characters "html" inside the content string).
+             The previous indexOf-based check falsely routed those
+             frames through the formattedHtml path, leaving `text`
+             empty and the user staring at "response interrupted".
+             Parse the JSON and look for an actual `html` property. */
+          if(formattedHtml===null&&payload.indexOf("{")===0){
+            try{
+              var probe=JSON.parse(payload);
+              if(probe&&typeof probe.html==="string"){
+                formattedHtml=probe;
+                continue;
+              }
+            }catch(_){}
           }
           /* Some upstreams send "event: error" frames; surface them. */
           try{
@@ -446,9 +479,11 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
               try{console.warn("[API stream] inline <think> detected but caller did not provide onThinking; thinking pill will not light up. Pass an onThinking callback in callAPIStream(...,onThinking,opts).")}catch(_){}
             }
           }catch(parseErr){
-            /* Could be a final [DONE] or unknown frame; ignore unless it
-               looks like an error event. */
-            if(/error/i.test(payload)){
+            /* Could be a final [DONE] or unknown frame; ignore unless the
+               payload looks like a truncated JSON error event (has "error"
+               as a JSON key, not just the word "error" in prose). */
+            if((payload.indexOf('"error"')>=0||payload.indexOf("'error'")>=0)
+               && /error|fail|unavailable/i.test(payload)){
               state.lastCallError=payload.slice(0,200);
               try{reader.cancel()}catch(_){}
               cancelled=true;
@@ -542,8 +577,18 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     resp=null;
     reader=null;
     /* Empty stream — server returned 200 but no body. Treat as
-       retriable (rare, but happens on flaky upstreams). */
+       retriable (rare, but happens on flaky upstreams).
+       P_silence_fix — preserve any real error already captured from
+       event:error SSE frames instead of overwriting with generic
+       "empty stream". Without this, the user always sees
+       "response interrupted: empty stream" even when the real
+       cause was "LLM stream stalled: no data for 60s". */
     if(!gotAnyData&&!full&&!formattedHtml){
+      if(state.lastCallError){
+        /* Real error already set (from event:error or upstream
+           abort) — propagate it and do NOT retry. */
+        return null;
+      }
       lastErr="empty stream ("+bytesReceived+" bytes received)";
       if(attempt<STREAM_MAX_ATTEMPTS){
         console.warn("[API stream]",lastErr+", retrying");
@@ -554,7 +599,18 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       return null;
     }
     if(!full&&!formattedHtml){
-      state.lastCallError="empty stream";
+      if(state.lastCallError){
+        /* Real error already set — preserve it instead of
+           overwriting with generic "empty stream". */
+        return null;
+      }
+      lastErr="empty stream (server returned no content)";
+      if(attempt<STREAM_MAX_ATTEMPTS){
+        console.warn("[API stream]",lastErr+", retrying");
+        await sleepBackoff(attempt);
+        continue;
+      }
+      state.lastCallError=lastErr;
       return null;
     }
     /* P_global_handle_cleanup — drop the global abort handle so

@@ -93,7 +93,12 @@ function handleChatApiResult(result,ctl,userText){
     window.state.lastCallSource="api";
     ctl.finish();
   }else{
-    var reason=window.state.lastCallError||"stream interrupted before completion";
+    /* P_lastError_fallback — when callAPIStream returns null WITHOUT
+       setting state.lastCallError (should not happen with the current
+       stream.js code, but be defensive), construct a diagnostic message
+       so the user sees something actionable rather than the generic
+       fallback "stream interrupted before completion". */
+    var reason=window.state.lastCallError||"empty response (no error detail)";
     var isCancel=/cancel|user-stop|superseded|new-session|session-switch|session-deleted|session-purged|session-reset|msg-edit/i.test(reason);
     if(isCancel){
       window.state.lastCallSource="cancelled";
@@ -108,7 +113,11 @@ function handleChatApiResult(result,ctl,userText){
     }else{
       window.state.lastCallSource="error";
       ctl.abort();
-      window.addMessage&&window.addMessage("assistant","(response interrupted: "+reason+" — tap Retry to resend)");
+      /* If the result is falsy but lastCallError is null, the stream
+         ended with no content but no specific error was captured. Show
+         a diagnostic that logs the full state for debugging. */
+      console.warn("[chat] stream returned no result with no error. result=",result,"lastCallError=",window.state.lastCallError);
+      window.addMessage&&window.addMessage("assistant","(response interrupted — no content received)");
     }
   }
 }

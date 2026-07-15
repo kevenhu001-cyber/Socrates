@@ -2477,12 +2477,13 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 
 /* Tool module cards — appended to assistant bubbles. Looks like
    a compact, collapsible summary line. */
-.agent-tool-card{margin-top:6px;font-size:calc(12px * var(--app-font-scale, 1));border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));border-radius:8px;background:hsl(var(--bg-100)/0.6);overflow:hidden;transition:border-color .1s}
+.agent-tool-card{margin-top:8px;font-size:calc(12px * var(--app-font-scale, 1));border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));border-radius:10px;background:hsl(var(--bg-100)/0.7);overflow:hidden;transition:border-color .15s,box-shadow .15s}
 .agent-tool-card:hover{border-color:hsl(var(--border-300))}
-.agent-tool-head{display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;user-select:none;transition:background .1s}
+.agent-tool-card.open{box-shadow:0 1px 3px hsl(220 30% 50%/0.06)}
+.agent-tool-head{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;user-select:none;transition:background .12s}
 .agent-tool-head:hover{background:hsl(var(--accent-000)/0.05)}
-.agent-tool-head:focus-visible{outline:2px solid hsl(var(--accent-000)/0.72);outline-offset:-2px}
-.agent-tool-icon{flex-shrink:0;width:20px;height:20px;border-radius:5px;background:hsl(var(--bg-300));color:hsl(var(--text-300));display:flex;align-items:center;justify-content:center}
+.agent-tool-head:focus-visible{outline:2px solid hsl(var(--accent-000)/0.72);outline-offset:-2px;border-radius:10px}
+.agent-tool-icon{flex-shrink:0;width:22px;height:22px;border-radius:6px;background:hsl(var(--bg-300));color:hsl(var(--text-300));display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:calc(11px * var(--app-font-scale, 1));line-height:1;letter-spacing:-0.02em}
 .agent-tool-icon svg{display:block;width:14px;height:14px}
 .agent-tool-card.read    .agent-tool-icon{background:hsl(200 50% 90%);color:hsl(200 60% 32%)}
 .agent-tool-card.write   .agent-tool-icon{background:hsl(145 50% 90%);color:hsl(145 60% 28%)}
@@ -2504,14 +2505,14 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-card.websearch .agent-tool-icon{background:hsl(190 50% 90%);color:hsl(190 60% 30%)}
 .agent-tool-card.codeint  .agent-tool-icon{background:hsl(270 40% 92%);color:hsl(270 55% 40%)}
 .agent-tool-card.code{
-  border-left:2px solid #ffe873;
   background:hsl(48 60% 97%/0.6);
 }
 [data-theme=socrates][data-mode=dark] .agent-tool-card.code{
   background:hsl(220 25% 14%/0.55);
 }
+/* Subtle "py" tag after the Python card name — visual continuity
+   with the Python wordmark. */
 .agent-tool-card.code .agent-tool-name::after{
-  /* "py" tag after the label, mimicking the Python wordmark style */
   content:" · py";
   color:hsl(220 30% 55%);
   font-weight:500;
@@ -2529,25 +2530,68 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 [data-theme=socrates][data-mode=dark] .agent-tool-card.webfetch .agent-tool-icon{background:hsl(20 30% 18%);color:hsl(20 60% 70%)}
 [data-theme=socrates][data-mode=dark] .agent-tool-card.websearch .agent-tool-icon{background:hsl(190 30% 18%);color:hsl(190 60% 70%)}
 [data-theme=socrates][data-mode=dark] .agent-tool-card.codeint .agent-tool-icon{background:hsl(270 30% 18%);color:hsl(270 60% 75%)}
-.agent-tool-name{font-weight:600;color:hsl(var(--text-100));font-size:calc(11.5px * var(--app-font-scale, 1));flex-shrink:0}
-.agent-tool-input{flex:1;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.agent-tool-chev{margin-left:auto;font-size:calc(9px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .15s;flex-shrink:0}
-.agent-tool-card.open .agent-tool-chev{transform:rotate(180deg)}
-.agent-tool-out{display:none;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-000));padding:8px 10px;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));white-space:pre-wrap;word-break:break-word;line-height:1.5;max-height:280px;overflow-y:auto}
-.agent-tool-card.open .agent-tool-out{display:block}
+.agent-tool-name{font-weight:600;color:hsl(var(--text-100));font-size:calc(11.5px * var(--app-font-scale, 1));flex-shrink:0;letter-spacing:-0.005em}
+.agent-tool-input{flex:1;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;opacity:.85}
+.agent-tool-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .2s cubic-bezier(.4,0,.2,1);flex-shrink:0;opacity:.6}
+.agent-tool-card.open .agent-tool-chev{transform:rotate(180deg);opacity:.95}
+
+/* Accent rail on the leading edge of the body — gives each tool
+   card a glanceable identity without painting the whole border.
+   Tone is set by `.tool-{tone}` on the card root. The .tool-{cls}
+   modifiers used by the old SVG-emoji icons (read / write / edit
+   / bash / glob / grep / webfetch / websearch / codeint) get a
+   matching rail automatically via the per-tool .agent-tool-body
+   styles below. */
+.agent-tool-body{position:relative;padding:0}
+.agent-tool-card .agent-tool-body::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;border-radius:2px 0 0 0;opacity:.85;pointer-events:none}
+.agent-tool-card.tool-blue   .agent-tool-body::before{background:hsl(200 65% 55%)}
+.agent-tool-card.tool-green  .agent-tool-body::before{background:hsl(145 55% 42%)}
+.agent-tool-card.tool-amber  .agent-tool-body::before{background:hsl(38 75% 48%)}
+.agent-tool-card.tool-teal   .agent-tool-body::before{background:hsl(185 55% 42%)}
+.agent-tool-card.tool-purple .agent-tool-body::before{background:hsl(280 50% 55%)}
+.agent-tool-card.tool-orange .agent-tool-body::before{background:hsl(22 70% 48%)}
+.agent-tool-card.tool-python .agent-tool-body::before{background:linear-gradient(180deg,#ffe873 0%,#306998 100%)}
+/* Map the existing per-tool class names (kept for backward compat)
+   to the corresponding tool-{tone} so the accent rail still
+   appears on cards built by the legacy appendToolModule signature. */
+.agent-tool-card.read    .agent-tool-body::before{background:hsl(200 65% 55%)}
+.agent-tool-card.write   .agent-tool-body::before{background:hsl(145 55% 42%)}
+.agent-tool-card.edit    .agent-tool-body::before{background:hsl(38 75% 48%)}
+.agent-tool-card.bash    .agent-tool-body::before{background:hsl(280 50% 55%)}
+.agent-tool-card.glob    .agent-tool-body::before,
+.agent-tool-card.grep    .agent-tool-body::before{background:hsl(185 55% 42%)}
+.agent-tool-card.webfetch .agent-tool-body::before{background:hsl(22 70% 48%)}
+.agent-tool-card.websearch .agent-tool-body::before{background:hsl(185 55% 42%)}
+.agent-tool-card.code    .agent-tool-body::before,
+.agent-tool-card.codeint .agent-tool-body::before{background:linear-gradient(180deg,#ffe873 0%,#306998 100%)}
+
+.agent-tool-out{font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-000)/0.4);padding:8px 12px;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));white-space:pre-wrap;word-break:break-word;line-height:1.5;max-height:280px;overflow-y:auto}
+.agent-tool-out[hidden]{display:none}
 .agent-tool-out.error{color:hsl(0 60% 50%);background:hsl(0 50% 95%)}
 /* Code block inside an agent-tool-card (e.g. python source from
    code_interpreter, or a Bash command). Renders between the
    head and the .agent-tool-out — visible by default so the user
    immediately sees what code was generated. Only the .agent-tool-out
    block (stdout/stderr/artifacts) still collapses with the card. */
-.agent-tool-code-wrap{display:block;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));background:hsl(var(--bg-200)/0.6)}
-.agent-tool-code{margin:0;padding:8px 10px;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));line-height:1.5;white-space:pre;overflow-x:auto;color:hsl(var(--text-200));max-height:240px;overflow-y:auto;tab-size:4}
+.agent-tool-code{margin:0;padding:10px 12px;font-family:var(--font-mono);font-size:calc(11.5px * var(--app-font-scale, 1));line-height:1.55;white-space:pre;overflow-x:auto;color:hsl(var(--text-100));max-height:280px;overflow-y:auto;tab-size:4;background:hsl(var(--bg-000)/0.5);border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6))}
+.agent-tool-code[hidden]{display:none}
 .agent-tool-code code{font-family:inherit;font-size:inherit;color:inherit;background:transparent;padding:0}
-/* Code streaming animation — a subtle left-border pulse while the
-   typewriter is active. Signals "code is still being revealed". */
-.agent-tool-code-streaming{border-left:2px solid hsl(var(--accent-000));animation:code-stream-pulse 1s infinite alternate}
-@keyframes code-stream-pulse{0%{border-left-color:hsl(var(--accent-000)/0.3)}100%{border-left-color:hsl(var(--accent-000))}}
+/* Blinking caret on the last line of the code block while the LLM
+   is still streaming the JSON arguments — gives the user a clear
+   "more is coming" cue without re-running the slow typewriter
+   setTimeout loop. */
+.agent-tool-code-streaming::after{content:"▍";margin-left:1px;color:hsl(var(--accent-000));animation:code-caret-blink 0.9s steps(2) infinite}
+@keyframes code-caret-blink{50%{opacity:0}}
+[data-theme=socrates][data-mode=dark] .agent-tool-code{background:hsl(220 25% 14%/0.5)}
+/* Truncated-code marker: a small red dot at the end when the
+   upstream was cut off mid-stream (e.g. max_tokens hit). A title
+   tooltip explains the marker; the live stream also clears the
+   marker if a final frame arrives. */
+.agent-tool-code-truncated{box-shadow:inset 2px 0 0 hsl(0 65% 50%);position:relative}
+.agent-tool-code-truncated::before{content:"";position:absolute;right:6px;top:6px;width:6px;height:6px;border-radius:50%;background:hsl(0 65% 50%);box-shadow:0 0 0 2px hsl(0 65% 50%/0.18);animation:truncation-pulse 1.4s ease-in-out infinite}
+@keyframes truncation-pulse{50%{opacity:.4}}
+/* Legacy alias used by older tool card builds (.agent-tool-code-wrap). */
+.agent-tool-code-wrap{display:block;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));background:hsl(var(--bg-200)/0.6)}
 [data-theme=socrates][data-mode=dark] .agent-tool-code-wrap{background:hsl(220 25% 14%/0.5)}
 /* Broken-artifact placeholder shown when an inline image (matplotlib
    PNG, etc.) fails to load. Replaces the <img> on error so the
@@ -2563,11 +2607,13 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    <pre> underneath streams stdout/stderr as it arrives. We cap
    height at 200px so a runaway print loop scrolls instead of
    pushing the page. */
-.agent-tool-progress{margin:4px 0 6px;padding:6px 8px;background:hsl(var(--bg-000)/0.6);border-radius:6px;border-left:2px solid hsl(220 60% 60%)}
-.agent-tool-progress-badge{display:inline-block;font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;letter-spacing:0.4px;color:hsl(220 60% 60%);padding:2px 6px;border-radius:4px;background:hsl(220 60% 95%);font-variant-numeric:tabular-nums}
+.agent-tool-progress{margin:0;padding:6px 12px;background:hsl(var(--bg-000)/0.55);border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));display:flex;align-items:center;gap:8px}
+.agent-tool-progress-badge{display:inline-flex;align-items:center;font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;letter-spacing:0.4px;color:hsl(220 60% 60%);padding:2px 8px;border-radius:999px;background:hsl(220 60% 95%);font-variant-numeric:tabular-nums;flex-shrink:0}
+.agent-tool-progress .agent-tool-progress-spinner{display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;border:1.5px solid hsl(220 60% 60%/0.25);border-top-color:hsl(220 60% 60%);vertical-align:-1px;animation:agent-tool-spin 0.7s linear infinite}
+@keyframes agent-tool-spin{to{transform:rotate(360deg)}}
 [data-theme=socrates][data-mode=dark] .agent-tool-progress-badge{background:hsl(220 30% 22%);color:hsl(220 60% 78%)}
-[data-theme=socrates][data-mode=dark] .agent-tool-progress{background:hsl(220 25% 14%/0.6);border-left-color:hsl(220 60% 55%)}
-.agent-tool-stream{margin:4px 0 0;padding:6px 8px;background:hsl(var(--bg-200)/0.5);border-radius:4px;font-family:var(--font-mono);font-size:calc(10.5px * var(--app-font-scale, 1));line-height:1.4;color:hsl(var(--text-300));white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;margin:0}
+[data-theme=socrates][data-mode=dark] .agent-tool-progress{background:hsl(220 25% 14%/0.55)}
+.agent-tool-stream{margin:0;padding:6px 12px 8px;background:transparent;font-family:var(--font-mono);font-size:calc(10.5px * var(--app-font-scale, 1));line-height:1.4;color:hsl(var(--text-300));white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;flex:1;min-width:0}
 .agent-tool-out-sep{height:1px;background:hsl(var(--border-300)/0.15);margin:4px 0 6px}
 [data-theme=socrates][data-mode=dark] .agent-tool-out.error{background:hsl(0 30% 18%);color:hsl(0 55% 70%)}
 
@@ -2587,30 +2633,48 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 [data-theme=socrates][data-mode=dark] .agent-tool-status.mute {background:hsl(220 15% 22%);color:hsl(220 15% 70%)}
 
 /* Inline artifacts produced by the code interpreter (matplotlib PNGs,
-   CSV exports, etc.). Images stay inside the tool-out's overflow:auto
-   and the 280px max-height so a tall PNG scrolls instead of pushing
-   the page around. The download link sits on a new line below the
-   stdout. */
-.exec-artifact-image{display:block;max-width:100%;max-height:240px;margin-top:8px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-200));object-fit:contain}
-.exec-artifact-skeleton{width:100%;height:120px;margin-top:8px;border-radius:6px;background:hsl(var(--bg-200));overflow:hidden;position:relative}
-.exec-artifact-skeleton-pulse{display:block;position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,hsl(var(--bg-300)/0.5) 50%,transparent 100%);animation:skeleton-pulse 1.5s infinite}
-@keyframes skeleton-pulse{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-.exec-artifact-link{display:inline-block;margin-top:6px;font-family:var(--font-mono);font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
+   CSV exports, etc.). The figure wrapper (.exec-artifact) holds the
+   skeleton + the eventual image. A 240px max-height keeps a tall PNG
+   from pushing the page; a fade-in transition keeps the user from
+   being visually startled when the image lands. */
+.exec-artifact{display:block;margin:6px 0 2px;padding:0;border-radius:8px;overflow:hidden;background:hsl(var(--bg-200)/0.5);position:relative}
+.exec-artifact-image{display:block;max-width:100%;max-height:280px;border-radius:8px;background:transparent;object-fit:contain;margin:0 auto;opacity:0;transition:opacity .25s ease-out}
+.exec-artifact-image.loaded{opacity:1}
+.exec-artifact-skeleton{width:100%;height:160px;display:flex;align-items:center;justify-content:center;background:hsl(var(--bg-200)/0.6);position:relative;overflow:hidden}
+.exec-artifact-skeleton::after{content:"";position:absolute;left:50%;top:50%;width:24px;height:24px;margin-left:-12px;margin-top:-12px;border-radius:50%;border:2px solid hsl(var(--bg-300));border-top-color:hsl(var(--accent-000));animation:exec-artifact-spin 0.9s linear infinite}
+.exec-artifact-skeleton-pulse{display:none}
+@keyframes exec-artifact-spin{to{transform:rotate(360deg)}}
+.exec-artifact-link{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.5);background:hsl(var(--bg-200));font-family:var(--font-mono);font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-200));text-decoration:none;transition:background .12s,border-color .12s}
+.exec-artifact-link::before{content:"↓";font-size:11px;opacity:.7}
+.exec-artifact-link:hover{background:hsl(var(--bg-300));border-color:hsl(var(--border-300));color:hsl(var(--text-100))}
 
 /* Web Search results — structured list inside the websearch tool card.
    Shows title (clickable link), URL + date, and a brief snippet per result. */
-.agent-tool-card.websearch .agent-tool-out{max-height:400px;white-space:normal}
-.web-search-results{display:flex;flex-direction:column;gap:10px}
-.wsr-item{padding:6px 0;border-bottom:0.5px solid hsl(var(--border-300)/0.3)}
-.wsr-item:last-child{border-bottom:none;padding-bottom:0}
-.wsr-title{display:block;font-family:var(--font-sans,system-ui);font-size:calc(12.5px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--accent-000));text-decoration:none;line-height:1.4;word-break:break-word}
-.wsr-title:hover{text-decoration:underline}
-.wsr-url{font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wsr-date{margin-left:8px;color:hsl(var(--text-500));font-style:italic}
-.wsr-snippet{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-300));margin-top:3px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.agent-tool-card.websearch .agent-tool-out{max-height:480px;white-space:normal;padding:6px 0 8px}
+/* Web search results — left-rail index + body. Mirrors the layout
+   modern search UIs use (Perplexity / Google SGE / ChatGPT search)
+   so the result is immediately recognisable. The header is a
+   one-liner summary; each result is its own card with a small
+   monogram, host, date, and a 3-line snippet clamp. */
+.web-search-results{display:flex;flex-direction:column;gap:0}
+.wsr-header{font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));padding:0 12px 6px;font-style:italic;letter-spacing:0.01em}
+.wsr-item{display:flex;gap:10px;padding:8px 12px;border-radius:0;transition:background .12s}
+.wsr-item:hover{background:hsl(var(--accent-000)/0.04)}
+.wsr-item + .wsr-item{border-top:0.5px solid hsl(var(--border-300)/0.18)}
+.wsr-index{flex-shrink:0;width:18px;height:18px;border-radius:4px;background:hsl(var(--bg-300));color:hsl(var(--text-400));display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;line-height:1;margin-top:1px}
+.wsr-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.wsr-title{display:block;font-family:var(--font-sans,system-ui);font-size:calc(12.5px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--accent-000));text-decoration:none;line-height:1.35;word-break:break-word;letter-spacing:-0.005em}
+.wsr-title:hover{text-decoration:underline;text-underline-offset:2px}
+.wsr-meta{display:flex;align-items:center;gap:6px;font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));overflow:hidden}
+.wsr-host{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%}
+.wsr-date{color:hsl(var(--text-500));font-style:italic;flex-shrink:0}
+.wsr-date::before{content:"·";margin-right:6px;color:hsl(var(--text-500)/0.6)}
+.wsr-snippet{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));margin-top:2px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 [data-theme=socrates][data-mode=dark] .wsr-title{color:hsl(var(--accent-000))}
-[data-theme=socrates][data-mode=dark] .wsr-url{color:hsl(var(--text-500))}
-[data-theme=socrates][data-mode=dark] .wsr-snippet{color:hsl(var(--text-400))}
+[data-theme=socrates][data-mode=dark] .wsr-meta,
+[data-theme=socrates][data-mode=dark] .wsr-date{color:hsl(var(--text-500))}
+[data-theme=socrates][data-mode=dark] .wsr-snippet{color:hsl(var(--text-300))}
+[data-theme=socrates][data-mode=dark] .wsr-index{background:hsl(var(--bg-200));color:hsl(var(--text-500))}
 @media(max-width:480px){
   .agent-tool-head{align-items:flex-start;gap:6px;padding:7px 8px}
   .agent-tool-input{white-space:normal;overflow-wrap:anywhere;line-height:1.35}

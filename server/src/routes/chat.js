@@ -608,7 +608,12 @@ router.post('/stream', requireAuth, chatRateLimitDispatch, audit('chat:stream'),
     const codeInterpreterToolDef = codeInterpreter.getToolDefinition();
     const toolDefs = [];
     if (codeInterpreterToolDef) toolDefs.push(codeInterpreterToolDef);
-    toolDefs.push(WEB_SEARCH_TOOL);
+    /* P_tutor-no-search — Tutor mode (the guided Socratic teacher)
+       does not need web search. Its answers are rooted in the
+       built-in knowledge map, not live results. Disabling web search
+       in tutor mode prevents unnecessary tool calls that slow down
+       the conversation and confuse the teaching flow. */
+    if (mode !== 'tutor') toolDefs.push(WEB_SEARCH_TOOL);
     let workingMessages = finalMessages;
 
     const writeSse = (payload) => {
@@ -674,6 +679,25 @@ router.post('/stream', requireAuth, chatRateLimitDispatch, audit('chat:stream'),
         // tool_use event even if multiple tool_calls arrive split.
         (tc) => {
           toolCallsThisTurn.push(tc);
+        },
+        // P_tool_stream — forward partial tool_call deltas as
+        // `event: tool_call_delta` SSE frames. The chat route uses
+        // this to let the frontend render the in-progress JSON
+        // (typically the Python source for code_interpreter, or the
+        // query string for web_search) live, instead of waiting for
+        // finish_reason='tool_calls'. The frontend correlates the
+        // delta to the eventual tool_use frame via the tool_call id.
+        (delta) => {
+          try {
+            res.write(`event: tool_call_delta\ndata: ${JSON.stringify({
+              index: delta.index,
+              id: delta.id || null,
+              name: delta.name || null,
+              arguments: delta.arguments || '',
+              final: !!delta.final,
+            })}\n\n`);
+            try { res.flush?.(); } catch {}
+          } catch { /* client disconnected */ }
         },
       );
 

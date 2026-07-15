@@ -14,7 +14,7 @@
 
 export const STREAM_TIMEOUT_MS    = 300000;   /* 5 min — balances reasoning models vs perceived hangs */
 export const STREAM_HEARTBEAT_MS  = 60000;    /* 60 s silence before we treat as stall */
-export const STREAM_MAX_ATTEMPTS  = 2;
+export const STREAM_MAX_ATTEMPTS  = 5;
 export const STREAM_RETRY_DELAYS  = [600, 1500, 3500];   /* ms, per attempt index */
 export const STREAM_RETRYABLE_STATUS = {
   408: true, 425: true, 429: true, 500: true, 502: true,
