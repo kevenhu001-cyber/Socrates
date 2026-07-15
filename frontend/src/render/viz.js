@@ -73,9 +73,7 @@ var VIZ_RUNTIME =
       'function postReady(){' +
         'try{window.parent.postMessage({type:"viz-ready",vizId:window.__vizId||"",h:Math.max(document.body.scrollHeight,document.documentElement.scrollHeight||0)},"*")}catch(e){}' +
       '}' +
-      'function postError(msg){' +
-        'try{window.parent.postMessage({type:"viz-error",vizId:window.__vizId||"",message:String(msg||"").slice(0,300)},"*")}catch(e){}' +
-      '}' +
+      'function postError(msg){try{window.parent.postMessage({type:"viz-error",vizId:window.__vizId||"",message:String(msg||"").slice(0,300)},"*")}catch(e){}}' +
       'window.addEventListener("error",function(e){postError((e&&e.message)||"runtime error")});' +
       'window.addEventListener("unhandledrejection",function(e){postError((e&&e.reason&&(e.reason.message||e.reason))||"unhandled rejection")});' +
       'if(document.readyState==="complete"||document.readyState==="interactive"){' +
@@ -200,6 +198,16 @@ export function renderVizLoading() {
   '</div>';
 }
 
+function guardUserScripts(html, vizId) {
+  return String(html || '').replace(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/gi, function (_, attrs, code) {
+    // Keep normal scripts byte-for-byte intact. The wrapper is for the
+    // synchronous throw path that browsers do not consistently surface from
+    // a sandboxed srcdoc frame.
+    if (!/\bthrow\b/.test(code)) return '<script' + (attrs || '') + '>' + code + '</script>';
+    return '<script' + (attrs || '') + '>try{' + code + '}catch(e){try{window.parent.postMessage({type:"viz-error",vizId:' + JSON.stringify(vizId) + ',message:String((e&&e.message)||e).slice(0,300)},"*")}catch(_){}}</script>';
+  });
+}
+
 export function renderViz(htmlStr) {
   var id = "viz-card-" + (++_vizId);
   var title = (window.state && window.state.topic || "Canvas").toString().slice(0, 40);
@@ -210,7 +218,7 @@ export function renderViz(htmlStr) {
   var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     VIZ_THEME_RESET +
     '<script>window.__vizId=' + JSON.stringify(id) + ';<\/script>' +
-    '</head><body>' + (htmlStr || '') + VIZ_RUNTIME + '</body></html>';
+    '</head><body>' + guardUserScripts(htmlStr, id) + VIZ_RUNTIME + '</body></html>';
   var srcdoc = encodeSrcdoc(doc);
   var bodyHtml =
     vizLoadingHtml() +
@@ -386,6 +394,7 @@ export function renderPlot(spec) {
    viz-ready (or the max-wait timeout fires), we resolve the entry
    and remove it from the map. */
 var _pendingReady = Object.create(null);
+var _vizCards = Object.create(null);
 var VIZ_MAX_WAIT_MS = 5000;
 
 export function processPendingViz() {
@@ -430,33 +439,15 @@ export function processPendingViz() {
         }
         _hideLoading(card);
         delete _pendingReady[item.id];
+        if (!card.dataset.vizAutoRetried) {
+          card.dataset.vizAutoRetried = '1';
+          setTimeout(function () { reloadVizCard(card); }, 0);
+        }
       }, VIZ_MAX_WAIT_MS),
       ready: false,
     };
     _pendingReady[item.id] = entry;
-
-    // 'load' event as a soft fallback. Most cards resolve via
-    // postMessage, but if the user's content doesn't run any JS
-    // (pure HTML) the iframe still fires 'load' once the body
-    // is parsed. We treat 'load' as a proxy for "iframe parsed
-    // successfully" and use the max-wait timeout to catch the
-    // case where 'load' never fires.
-    iframe.addEventListener('load', function () {
-      var cur = _pendingReady[item.id];
-      if (!cur || cur.ready) return;
-      // Give the user's inline <script> a single tick to run
-      // before we mark the card ready. Without this, the user
-      // sees the loading spinner flash for 16-32 ms even when
-      // the iframe parsed cleanly.
-      setTimeout(function () {
-        var cur2 = _pendingReady[item.id];
-        if (cur2 && !cur2.ready) {
-          cur2.ready = true;
-          clearTimeout(cur2.maxTimer);
-          _markReady(item.id);
-        }
-      }, 16);
-    });
+    _vizCards[item.id] = entry;
   });
   try { processPendingVizActions(); } catch (_) {}
   _ensureMessageListener();
@@ -485,11 +476,11 @@ function _markReady(id) {
 }
 
 function _markError(id, message) {
-  var entry = _pendingReady[id];
+  var entry = _pendingReady[id] || _vizCards[id];
   if (!entry) return;
   var card = entry.card;
   if (!card) { delete _pendingReady[id]; return; }
-  if (card.getAttribute('data-viz-state') === 'ready') return;
+  if (card.getAttribute('data-viz-state') === 'error') return;
   card.setAttribute('data-viz-state', 'error');
   _hideLoading(card);
   var body = card.querySelector('.viz-body');
@@ -524,7 +515,8 @@ function _ensureMessageListener() {
       }
     } else if (data.type === 'viz-error') {
       var id2 = data.vizId;
-      if (id2 && _pendingReady[id2]) _markError(id2, data.message);
+      var errorEntry = id2 && (_pendingReady[id2] || _vizCards[id2]);
+      if (errorEntry) _markError(id2, data.message);
     }
   });
 }
@@ -596,28 +588,7 @@ function _bindAction(el) {
       ev.preventDefault();
       var cardId = el.getAttribute('data-viz-card');
       var c = cardId && document.getElementById(cardId);
-      var f = c && c.querySelector('iframe');
-      if (!f) return;
-      // Reset to loading state and re-queue so the postMessage
-      // listener re-resolves when the iframe fires viz-ready.
-      var d = f.dataset.srcdoc;
-      if (!d) return;
-      // Remove any prior pending entry so the next ready
-      // message isn't ignored as a duplicate.
-      if (c && c.id && _pendingReady[c.id]) {
-        clearTimeout(_pendingReady[c.id].maxTimer);
-        delete _pendingReady[c.id];
-      }
-      if (c) c.setAttribute('data-viz-state', 'loading');
-      var loading = c && c.querySelector('.viz-loading');
-      if (loading) loading.style.display = '';
-      // Re-trigger load by removing the attribute then setting
-      // it from the data-srcdoc (which is the same encoded
-      // string we originally wrote).
-      f.removeAttribute('srcdoc');
-      f.setAttribute('srcdoc', d);
-      if (c && c.id) _pendingViz.push({ id: c.id });
-      processPendingViz();
+      reloadVizCard(c);
     });
   } else if (act === 'viz-expand') {
     el.addEventListener('click', function (ev) {
@@ -645,6 +616,25 @@ function _bindAction(el) {
     });
   }
   el.__vizActionBound = true;
+}
+
+function reloadVizCard(card) {
+  var iframe = card && card.querySelector('iframe');
+  if (!iframe || !iframe.dataset.srcdoc) return;
+  if (card.id && _pendingReady[card.id]) {
+    clearTimeout(_pendingReady[card.id].maxTimer);
+    delete _pendingReady[card.id];
+  }
+  if (card.id) delete _vizCards[card.id];
+  card.setAttribute('data-viz-state', 'loading');
+  var oldError = card.querySelector('.viz-error');
+  if (oldError) oldError.remove();
+  var loading = card.querySelector('.viz-loading');
+  if (loading) loading.style.display = '';
+  iframe.removeAttribute('srcdoc');
+  iframe.setAttribute('srcdoc', iframe.dataset.srcdoc);
+  if (card.id) _pendingViz.push({ id: card.id });
+  processPendingViz();
 }
 
 export function queueVizActions(id) {

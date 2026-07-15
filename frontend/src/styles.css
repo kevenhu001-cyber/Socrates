@@ -2683,6 +2683,37 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   .wsr-url{white-space:normal;overflow-wrap:anywhere}
 }
 
+/* Tool cards deliberately stay quiet: the chat content is primary, while
+   execution/search details are available on demand. These overrides replace
+   the earlier per-tool colour system, rails, gradients, and badge pills. */
+.agent-tool-card,.agent-tool-card.code,.agent-tool-card.codeint{background:hsl(var(--bg-100));border:1px solid hsl(var(--border-300)/.45);border-radius:6px;box-shadow:none}
+.agent-tool-card:hover{border-color:hsl(var(--border-300)/.7);box-shadow:none}
+.agent-tool-head{min-height:34px;padding:7px 10px;gap:7px;background:transparent}
+.agent-tool-icon,.agent-tool-card.codeint .agent-tool-icon,.agent-tool-card.websearch .agent-tool-icon{width:16px;height:16px;border-radius:3px;background:transparent!important;color:hsl(var(--text-400))!important;font-size:10px}
+.agent-tool-card .agent-tool-body::before{display:none}
+.agent-tool-name{font-size:calc(11.5px * var(--app-font-scale, 1));font-weight:600}
+.agent-tool-input{font-size:calc(10.5px * var(--app-font-scale, 1));opacity:.72}
+.agent-tool-status{min-width:0;height:auto;margin-left:2px;padding:0;background:transparent!important;color:hsl(var(--text-500))!important;font-size:calc(10px * var(--app-font-scale, 1));font-weight:500}
+.agent-tool-status.err,.agent-tool-status.warn{color:hsl(0 55% 52%)!important}
+.agent-tool-code,.agent-tool-out,.agent-tool-progress{background:hsl(var(--bg-000)/.24);border-top:1px solid hsl(var(--border-300)/.3)}
+.agent-tool-code{padding:8px 10px;font-size:calc(11px * var(--app-font-scale, 1));max-height:240px}
+.agent-tool-out{padding:8px 10px;font-size:calc(10.75px * var(--app-font-scale, 1));max-height:260px}
+.agent-tool-progress-badge{padding:0;background:transparent;color:hsl(var(--text-400));font-weight:500}
+.agent-tool-progress .agent-tool-progress-spinner{width:8px;height:8px}
+.exec-artifact{border:1px solid hsl(var(--border-300)/.35);border-radius:5px;background:transparent}
+.exec-artifact-image{border-radius:4px;transition:none}
+.exec-artifact-skeleton{height:120px;background:hsl(var(--bg-200)/.35)}
+.artifact-error{align-items:flex-start;flex-wrap:wrap;margin:6px 0;padding:8px;border:1px solid hsl(0 45% 55%/.35);border-radius:5px;background:transparent}
+.artifact-error-open,.artifact-error-retry{margin-left:0;border:0;background:transparent;color:hsl(var(--accent-000));padding:0;font:inherit;font-size:inherit;text-decoration:underline;cursor:pointer}
+.artifact-error-detail,.agent-tool-error-detail{width:100%;color:hsl(var(--text-400));font-size:inherit}
+.artifact-error-detail code,.agent-tool-error-detail code{display:block;margin-top:5px;white-space:pre-wrap;word-break:break-word;color:hsl(var(--text-400))}
+.agent-tool-retry{display:block;margin-top:8px;padding:0;border:0;background:transparent;color:hsl(var(--accent-000));font:inherit;font-size:inherit;text-decoration:underline;cursor:pointer}
+.web-search-results{border-top:1px solid hsl(var(--border-300)/.3)}
+.wsr-header{padding:7px 10px 4px;font-style:normal}
+.wsr-item{padding:7px 10px;gap:8px}
+.wsr-index{width:auto;height:auto;background:transparent;color:hsl(var(--text-500));font-size:10px}
+.wsr-title{font-size:calc(12px * var(--app-font-scale, 1));font-weight:500}
+
 /* Link previews — rendered inside the user's chat bubble when their
    message contains URLs we successfully fetched. Compact, single-line
    meta on the head; title is the primary clickable; excerpt is a 1-2

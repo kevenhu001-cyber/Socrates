@@ -6,6 +6,16 @@ import { searchMmx } from './searchEngines/mmx.js';
 import { searchSearxng } from './searchEngines/searxng.js';
 import { searchBing } from './searchEngines/bing.js';
 
+export class WebSearchUnavailableError extends Error {
+  constructor(diagnostics) {
+    super('web_search_unavailable');
+    this.name = 'WebSearchUnavailableError';
+    this.code = 'web_search_unavailable';
+    this.retryable = true;
+    this.diagnostics = diagnostics;
+  }
+}
+
 /**
  * Web search backend — MiniMax priority + searXNG fallback.
  *
@@ -79,6 +89,12 @@ const TIMEOUT_SEARXNG_MS = 6_000;
 
 const TOTAL_SEARCH_TIMEOUT = 12_000;
 
+function unavailableResults(reason) {
+  const result = [];
+  Object.defineProperty(result, '_engineStatus', { value: reason, enumerable: false });
+  return result;
+}
+
 function withTimeout(promise, ms, label) {
   let timer;
   return Promise.race([
@@ -86,7 +102,7 @@ function withTimeout(promise, ms, label) {
     new Promise((resolve) => {
       timer = setTimeout(() => {
         console.warn(`[webSearch] ${label} hit ${ms}ms timeout`);
-        resolve([]);
+        resolve(unavailableResults('timeout'));
       }, ms);
     }),
   ]).finally(() => clearTimeout(timer));
@@ -145,10 +161,21 @@ export async function webSearch(query, count = 10, opts = {}) {
      leak through — losing an array would crash the merge step
      below with TypeError, but more importantly silently dropping
      the priority engine's results. */
-  const pickArray = (s) => (s.status === 'fulfilled' && Array.isArray(s.value)) ? s.value : [];
-  const mmxResults    = pickArray(settled[0]);
-  const minimaxResults = pickArray(settled[1]);
-  const bingResults    = pickArray(settled[2]);
+  const pickOutcome = (name, settledResult) => {
+    if (settledResult.status !== 'fulfilled' || !Array.isArray(settledResult.value)) {
+      return { name, results: [], status: 'error' };
+    }
+    const results = settledResult.value;
+    return { name, results, status: results._engineStatus || 'ok' };
+  };
+  const outcomes = [
+    pickOutcome('mmx', settled[0]),
+    pickOutcome('minimax', settled[1]),
+    pickOutcome('bing', settled[2]),
+  ];
+  const mmxResults = outcomes[0].results;
+  const minimaxResults = outcomes[1].results;
+  const bingResults = outcomes[2].results;
 
   let finalResults = [];
   const seen = new Set();
@@ -173,13 +200,28 @@ export async function webSearch(query, count = 10, opts = {}) {
       searchSearxng(query, limit, acSignal),
       TIMEOUT_SEARXNG_MS,
       'searxng',
-    ).catch(() => []);
+    ).catch(() => unavailableResults('error'));
+    outcomes.push({
+      name: 'searxng',
+      results: Array.isArray(searxngResults) ? searxngResults : [],
+      status: Array.isArray(searxngResults) ? (searxngResults._engineStatus || 'ok') : 'error',
+    });
     if (Array.isArray(searxngResults) && searxngResults.length > 0) {
       finalResults = searxngResults;
     }
   }
 
   clearTimeout(totalTimer);
+
+  // An empty list is a valid outcome only when at least one configured
+  // provider completed normally.  Previously every engine failure was
+  // flattened to [] and the chat UI incorrectly claimed that no sources
+  // existed.  Keep diagnostics non-enumerable so the public array contract
+  // remains unchanged for existing callers and caches.
+  const available = outcomes.some((outcome) => outcome.status === 'ok');
+  if (!finalResults.length && !available) {
+    throw new WebSearchUnavailableError(outcomes.map(({ name, status }) => ({ name, status })));
+  }
 
   for (const r of finalResults) {
     r.matchedQuery = query;
@@ -195,6 +237,12 @@ export async function webSearch(query, count = 10, opts = {}) {
     });
     Object.defineProperty(finalResults, 'language', {
       value: langCluster,
+      enumerable: false,
+      configurable: true,
+      writable: false,
+    });
+    Object.defineProperty(finalResults, 'diagnostics', {
+      value: outcomes.map(({ name, status }) => ({ name, status })),
       enumerable: false,
       configurable: true,
       writable: false,

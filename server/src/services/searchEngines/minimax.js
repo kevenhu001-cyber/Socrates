@@ -18,6 +18,12 @@
 
 const REQUEST_TIMEOUT = 10_000;
 
+function unavailable(reason) {
+  const result = [];
+  Object.defineProperty(result, '_engineStatus', { value: reason, enumerable: false });
+  return result;
+}
+
 /**
  * Build the search endpoint URL from the existing MINIMAX_BASE_URL config.
  * The user's .env has MINIMAX_BASE_URL=https://api.minimaxi.com/v1,
@@ -54,7 +60,7 @@ export async function searchMinimax(query, limit = 10, signal = null) {
   const apiKey = getApiKey();
   if (!apiKey) {
     console.warn('[searchMinimax] No API key available — skipping');
-    return [];
+    return unavailable('disabled');
   }
 
   const endpoint = buildEndpoint();
@@ -80,7 +86,7 @@ export async function searchMinimax(query, limit = 10, signal = null) {
     if (!r.ok) {
       const errText = await r.text().catch(() => '');
       console.warn(`[searchMinimax] HTTP ${r.status}: ${errText.slice(0, 200)}`);
-      return [];
+      return unavailable(`http_${r.status}`);
     }
 
     const data = await r.json();
@@ -89,7 +95,7 @@ export async function searchMinimax(query, limit = 10, signal = null) {
     const baseResp = data?.base_resp || data?.baseResp;
     if (baseResp && String(baseResp.status_code) !== '0') {
       console.warn(`[searchMinimax] API error (${baseResp.status_code}): ${baseResp.status_msg || 'unknown'}`);
-      return [];
+      return unavailable('upstream_error');
     }
 
     // Extract organic results — the API may return them in any of these locations
@@ -112,6 +118,6 @@ export async function searchMinimax(query, limit = 10, signal = null) {
     } else {
       console.warn('[searchMinimax] Request failed:', e && e.message ? e.message : e);
     }
-    return [];
+    return unavailable(e && e.name === 'AbortError' ? 'timeout' : 'error');
   }
 }

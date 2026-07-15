@@ -420,13 +420,17 @@ export function makeArtifactError(fileId, mimeType, url, reason) {
       '<circle cx="9" cy="9" r="2"/>' +
       '<path d="m21 15-5-5L5 21"/>' +
     '</svg>' +
-    `<span class="artifact-error-text">Could not load ${esc(mimeType || "file")} · ${esc(fileId)}${reason ? " (" + esc(reason) + ")" : ""}</span>` +
-    '<button type="button" class="artifact-error-retry">Retry</button>';
+    `<span class="artifact-error-text">图片产物暂时无法加载</span>` +
+    '<a class="artifact-error-open" target="_blank" rel="noopener" download>打开原文件</a>' +
+    '<button type="button" class="artifact-error-retry">重试</button>' +
+    `<details class="artifact-error-detail"><summary>查看详情</summary><code>${esc(reason || 'load failed')} · ${esc(fileId)}</code></details>`;
+  box.querySelector('.artifact-error-open').href = url;
   box.querySelector(".artifact-error-retry").addEventListener("click", function () {
     const fresh = document.createElement("img");
     fresh.src = url + (url.indexOf("?") >= 0 ? "&" : "?") + "_=" + Date.now();
     fresh.alt = "execution artifact";
     fresh.className = "exec-artifact-image";
+    fresh.addEventListener("load", function () { fresh.classList.add("loaded"); });
     fresh.addEventListener("error", function () { fresh.replaceWith(makeArtifactError(fileId, mimeType, url, "load failed")); });
     if (box.parentNode) box.parentNode.replaceChild(fresh, box);
   });
@@ -452,6 +456,8 @@ export function appendInlineArtifact(fileId, mimeType, outEl) {
   let out = outEl || document.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
   if (!out || !fileId) return;
   const url = "/api/files/" + encodeURIComponent(fileId) + "/raw";
+  const selectorId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(String(fileId)) : String(fileId).replace(/[^a-zA-Z0-9_-]/g, '');
+  if (out.querySelector(`[data-artifact-id="${selectorId}"]`)) return;
   if ((mimeType || "").indexOf("image/") === 0) {
     appendInlineImage(fileId, mimeType, url, out);
   } else {
@@ -462,6 +468,7 @@ export function appendInlineArtifact(fileId, mimeType, outEl) {
 function appendInlineImage(fileId, mimeType, url, out) {
   const wrap = document.createElement("figure");
   wrap.className = "exec-artifact";
+  wrap.dataset.artifactId = String(fileId);
   const skeleton = document.createElement("div");
   skeleton.className = "exec-artifact-skeleton";
   skeleton.innerHTML = '<span class="exec-artifact-skeleton-pulse"></span>';
@@ -475,19 +482,17 @@ function appendInlineImage(fileId, mimeType, url, out) {
   // Cache-bust so the browser doesn't reuse a stale 404 after a
   // previous failed load (e.g. worker regenerated the artifact
   // and re-uploaded it under the same id).
-  img.src = url + (url.indexOf("?") >= 0 ? "&" : "?") + "_t=" + Date.now();
-
-  // 30s hard cap. Some Pyodide matplotlib runs push 5-15 MB PNGs
-  // over slow connections; we don't want the skeleton to spin
-  // forever. The cap also covers a real bug where the file route
-  // hangs because the upstream storage call deadlocked.
-  let loadTimer = setTimeout(function () {
-    if (wrap.parentNode && !img.complete) {
-      try {
-        wrap.parentNode.replaceChild(makeArtifactError(fileId, mimeType, url, "load timeout (30s)"), wrap);
-      } catch (_) {}
-    }
-  }, 30000);
+  let loadTimer = null;
+  let attempts = 0;
+  function requestImage() {
+    clearTimeout(loadTimer);
+    img.src = url + (url.indexOf("?") >= 0 ? "&" : "?") + "_t=" + Date.now();
+    loadTimer = setTimeout(function () {
+      if (!wrap.parentNode || img.complete) return;
+      if (attempts++ === 0) return requestImage();
+      try { wrap.parentNode.replaceChild(makeArtifactError(fileId, mimeType, url, "load timeout after retry"), wrap); } catch (_) {}
+    }, 10000);
+  }
 
   img.addEventListener("load", function () {
     clearTimeout(loadTimer);
@@ -499,12 +504,14 @@ function appendInlineImage(fileId, mimeType, url, out) {
   });
   img.addEventListener("error", function () {
     clearTimeout(loadTimer);
+    if (attempts++ === 0) return requestImage();
     try {
-      if (wrap.parentNode) wrap.parentNode.replaceChild(makeArtifactError(fileId, mimeType, url, "load failed"), wrap);
+      if (wrap.parentNode) wrap.parentNode.replaceChild(makeArtifactError(fileId, mimeType, url, "load failed after retry"), wrap);
     } catch (_) {}
   });
   img.style.display = "none";
   out.appendChild(wrap);
+  requestImage();
   const card = out.closest(".agent-tool-card");
   if (card) card.classList.add("open");
 }
