@@ -104,6 +104,14 @@ function syncAppModeUI() {
      actually takes effect — hiding tutor-only tab buttons + panels
      in chat mode so the sidebar keeps a stable flex layout. */
   try { document.body.setAttribute("data-app-mode", appMode); } catch (e) {}
+  /* P_mode-i18n — reroute the topic title / subtitle / disclaimer and
+     the chat-input placeholder through applyI18n() so they reflect the
+     active mode (chat vs tutor). Without this, toggling the mode from
+     Extensions would switch CSS/visibility but leave the topic-setup
+     text stuck on whichever mode was active on the first page load. */
+  if (typeof window.applyI18n === 'function') {
+    try { window.applyI18n(); } catch (_) {}
+  }
 }
 
 /* Setter for appMode — updates the module-level variable so
