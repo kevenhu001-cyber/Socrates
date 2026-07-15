@@ -110,6 +110,13 @@ export const CODE_INTERPRETER_TOOL = {
       'Available libraries: Python 3.12 standard library (subset), NumPy, pandas, matplotlib. ' +
       `Stdout/stderr are capped at ${MAX_OUTPUT_BYTES} bytes; runs that exceed it fail with output_limit_exceeded. ` +
       'Files the code writes to the current directory are returned as artifacts (PNG charts, CSV exports, etc.) and surfaced as inline links. ' +
+      /* P_sandbox-filesystem — describe the file system constraints
+         directly in the tool description so the model never asks
+         the user to "load the data" from a path that isn't
+         available, and so any FileNotFoundError at runtime is
+         already pre-empted by the prompt the model sees. */
+      'Sandbox: only files the run itself writes are present in the working directory. There is no access to the user\'s local filesystem, no upload path, and no network fetch — so open() / read_csv() / Image.open() will FAIL with FileNotFoundError unless the file was just produced by an earlier statement in the SAME run. ' +
+      'To work with user-supplied data, the previous statement must have written the file first (e.g. by reading a base64 payload and decoding it), or you must generate the data inline (e.g. via numpy / random). ' +
       'No network access, no filesystem access outside the artifact directory, no subprocess.',
     parameters: {
       type: 'object',

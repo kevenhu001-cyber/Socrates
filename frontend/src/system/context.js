@@ -1,38 +1,64 @@
-var _geoInfo = { country: "", region: "", city: "", tz: "" };
+/* system/context.js — system context (date, time, location) used as
+ * the first user-context block in the LLM prompt. Location is now
+ * derived from the browser's Intl API only — the previous version
+ * also called out to ip-api.com for country / city, but that
+ * service rate-limits anonymous requests with HTTP 403 and the
+ * fallback HTTP 200/4xx in the dev-tools console created a noisy,
+ * user-visible "Failed to load resource" error every time the
+ * user opened a chat. The Intl-based timezone + locale provide
+ * enough fidelity for the model's context-aware answers without
+ * any third-party network call. */
+
+var _geoInfo = { country: "", region: "", city: "", tz: "", locale: "" };
 var _geoFetched = false;
 
 export function resetGeoInfo(options) {
-  _geoInfo = { country: "", region: "", city: "", tz: "" };
+  _geoInfo = { country: "", region: "", city: "", tz: "", locale: "" };
   _geoFetched = false;
   if (options && options.clearCache) {
     try { localStorage.removeItem("socrates-geo"); } catch (_) {}
   }
 }
 
+/* Derive a coarse city / region hint from the browser's locale
+ * string (e.g. "zh-CN" → country "CN"). We don't get a city this
+ * way, but we can get a country code which is enough to ask the
+ * LLM "the user is likely in <country>" without a third-party
+ * request. The Intl.Locale API is widely supported (Chrome 74+,
+   Firefox 75+, Safari 14.1+). */
+function deriveLocaleInfo() {
+  try {
+    var locales = (typeof Intl !== "undefined" && Intl.DateTimeFormat)
+      ? Intl.DateTimeFormat().resolvedOptions().locale
+      : "";
+    if (locales && typeof Intl.Locale === "function") {
+      try {
+        var loc = new Intl.Locale(locales);
+        if (loc.region && !_geoInfo.country) _geoInfo.country = loc.region;
+        if (loc.language && !_geoInfo.locale) _geoInfo.locale = loc.language;
+      } catch (_) { /* Intl.Locale can throw on malformed inputs */ }
+    }
+  } catch (_) {}
+}
+
+/* Populate _geoInfo from browser APIs only. We deliberately do NOT
+ * call any third-party service (ip-api.com, ipwho.is, etc.) — they
+ * rate-limit anonymous requests and produce user-visible 403/429
+ * errors in the console. The Intl.DateTimeFormat timezone is the
+   most reliable signal and the only one the model strictly needs
+   for time-aware answers. */
 export function fetchGeoInfo() {
   if (_geoFetched) return;
   _geoFetched = true;
   try {
     var cached = localStorage.getItem("socrates-geo");
     if (cached) {
-      _geoInfo = JSON.parse(cached);
-      return;
+      try { _geoInfo = JSON.parse(cached); return; } catch (_) {}
     }
   } catch (_) {}
   try { _geoInfo.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (_) {}
-  try {
-    fetch("https://ip-api.com/json/?fields=country,regionName,city,timezone", { mode: "cors" }).then(function (r) {
-      if (!r.ok) return;
-      return r.json().then(function (d) {
-        if (!d) return;
-        _geoInfo.country = d.country || "";
-        _geoInfo.region = d.regionName || "";
-        _geoInfo.city = d.city || "";
-        _geoInfo.tz = d.timezone || _geoInfo.tz;
-        try { localStorage.setItem("socrates-geo", JSON.stringify(_geoInfo)); } catch (_) {}
-      });
-    }).catch(function () {});
-  } catch (_) {}
+  deriveLocaleInfo();
+  try { localStorage.setItem("socrates-geo", JSON.stringify(_geoInfo)); } catch (_) {}
 }
 
 export function getSystemContext() {
@@ -45,14 +71,16 @@ export function getSystemContext() {
     ctx += "Today is " + dateStr + ". Local time: " + timeStr;
     if (_geoInfo.tz) ctx += " (" + _geoInfo.tz + ")";
     ctx += ".";
-    if (_geoInfo.city && _geoInfo.country) {
-      ctx += " Estimated user location: " + _geoInfo.city;
-      if (_geoInfo.region && _geoInfo.region !== _geoInfo.city) ctx += ", " + _geoInfo.region;
-      ctx += ", " + _geoInfo.country + ".";
-    } else if (_geoInfo.country) {
-      ctx += " Estimated user location: " + _geoInfo.country + ".";
+    /* If Intl.Locale gave us a country code (e.g. "CN", "US"),
+       surface it. We avoid claiming a city unless we have one —
+       an incorrect city would mislead the LLM more than no city. */
+    if (_geoInfo.country) {
+      ctx += " User locale region: " + _geoInfo.country + ".";
     }
-    ctx += "\n\nUse the date and location above to give contextually appropriate answers (e.g. current events, local relevance, timezone-aware time references). If a question asks about something time-sensitive, factor in today's date.";
+    if (_geoInfo.locale) {
+      ctx += " Locale: " + _geoInfo.locale + ".";
+    }
+    ctx += "\n\nUse the date and locale above to give contextually appropriate answers (e.g. current events, local relevance, timezone-aware time references). If a question asks about something time-sensitive, factor in today's date.";
     ctx += "\n\n## Canvas tool\n\nFor any visual answer (chart, diagram, animation, simulation, comparison), output the visualization directly as a Canvas card.\n\n" +
       "Use a single ```html ... ``` fence containing a self-contained HTML/CSS/JS snippet. The system renders it inside a sandboxed iframe; the user sees a Canvas card, not source code.\n\n" +
       "**When to use it — be proactive.** A visual is better than text when:\n" +
