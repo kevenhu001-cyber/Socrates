@@ -14,38 +14,41 @@
 
 function confirmClearCache() {
   window.showConfirm("Clear conversations?", "This removes all local chat history from this browser. Your account data stays on the server.", false).then(function (yes) {
-    if (!yes) return;
-    try { localStorage.removeItem("socrates-sessions-v2"); } catch (e) {}
+    if (yes !== true) { return; }
+    try { localStorage.removeItem("socrates-sessions-v2"); } catch (e) { /* ignore */ }
     window.state.currentSessionId = null;
     window.renderRecents();
     window.resetApp();
     location.reload();
-  });
+  }).catch(function(){});
 }
 
 function confirmClearSettings() {
   window.showConfirm("Clear API settings?", "This removes all configured API providers and keys. You'll need to reconfigure them.", false).then(function (yes) {
-    if (!yes) return;
-    if (!window.CURRENT_USER) return;
-    (async function () {
-      var apiConfig = window.apiConfig;
-      for (var i = 0; i < apiConfig.providers.length; i++) {
-        var p = apiConfig.providers[i];
-        if (p.isBuiltIn || p.id === "beagle-built-in") continue;
-        if (p.id.indexOf("new-") !== 0) {
-          try {
-            await window.apiFetch("/api/api-key/" + encodeURIComponent(p.id), { method: "DELETE" });
-          } catch (e) { console.warn("[profile] clear settings: delete " + p.id + " failed:", e.message); }
-        }
-      }
+    if (yes !== true) { return; }
+    if (!window.CURRENT_USER) { return; }
+    var apiConfig = window.apiConfig;
+    var deletePromises = [];
+    for (var i = 0; i < apiConfig.providers.length; i++) {
+      var p = apiConfig.providers[i];
+      if (p.isBuiltIn || p.id === "beagle-built-in") { continue; }
+      if (p.id.indexOf("new-") === 0) { continue; }
+      deletePromises.push(
+        window.apiFetch("/api/api-key/" + encodeURIComponent(p.id), { method: "DELETE" })
+          .catch(function(){})
+      );
+    }
+    Promise.all(deletePromises).then(function(){
       apiConfig.activeId = null;
       apiConfig.providers = [Object.assign({}, window.BEAGLE_BUILT_IN)];
-      try { localStorage.removeItem("socrates-provider-keys"); } catch (e) {}
-      try { localStorage.removeItem(window.LAST_ACTIVE_ID_KEY); } catch (e) {}
-      window.renderProviderList(); window.syncModelPills(); window.syncSettingsUI();
-    })();
-    window.closeProfile();
-  });
+      try { localStorage.removeItem("socrates-provider-keys"); } catch (e) { /* ignore */ }
+      try { localStorage.removeItem(window.LAST_ACTIVE_ID_KEY); } catch (e) { /* ignore */ }
+      window.renderProviderList();
+      window.syncModelPills();
+      window.syncSettingsUI();
+      window.closeProfile();
+    }).catch(function(){});
+  }).catch(function(){});
 }
 
 function confirmDeleteAccount() {

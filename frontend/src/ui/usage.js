@@ -23,12 +23,13 @@ export function loadUsageData(){
     apiFetch("/api/usage/daily?days=365"),
     apiFetch("/api/usage/limits"),
   ]).then(function(results){
-    renderUsageHeatmap(results[0],body,results[1]);
+    renderUsageHeatmap(results[0],body,results[1],'year');
   }).catch(function(){
     body.innerHTML='<div class="usage-loading" style="color:hsl(0 60% 55%)">'+t("usage.failed")+'</div>';
   });
 }
-export function renderUsageHeatmap(data,body,limits){
+export function renderUsageHeatmap(data,body,limits,period){
+  period=period||'year';
   var entries=data.entries||[];
   var lookup={};
   var totalTokens=0,totalMsgs=0;
@@ -41,10 +42,11 @@ export function renderUsageHeatmap(data,body,limits){
   var maxDay=entries.reduce(function(m,e){return Math.max(m,parseInt(e.tokens,10)||0)},1);
   function level(t){var v=parseInt(t,10)||0;if(v===0)return 0;var r=v/maxDay;return r>0.8?5:r>0.6?4:r>0.4?3:r>0.2?2:1;}
 
-  /* Build date grid for last 365 days (or up to today) */
+  /* Build date grid */
   var now=new Date();
   var end=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  var start=new Date(end);start.setDate(start.getDate()-364);
+  var dayRange=period==='month'?30:364;
+  var start=new Date(end);start.setDate(start.getDate()-dayRange);
   /* Align start to Sunday */
   var startDow=start.getDay();
   start.setDate(start.getDate()-startDow);
@@ -114,8 +116,8 @@ export function renderUsageHeatmap(data,body,limits){
   /* Period tabs */
   html+='<div class="usage-section-title">Daily Activity</div>';
   html+='<div class="usage-period-tabs">';
-  html+='<button class="usage-period-tab active" onclick="loadUsageData()">Last 12 months</button>';
-  html+='<button class="usage-period-tab" onclick="loadUsageMonth()">This month</button>';
+  html+='<button class="usage-period-tab'+(period==='year'?' active':'')+'" onclick="loadUsageData()">Last 12 months</button>';
+  html+='<button class="usage-period-tab'+(period==='month'?' active':'')+'" onclick="loadUsageMonth()">This month</button>';
   html+='</div>';
 
   /* Heatmap grid */
@@ -199,7 +201,7 @@ export function loadUsageMonth(){
     apiFetch("/api/usage/daily?days=31"),
     apiFetch("/api/usage/limits"),
   ]).then(function(results){
-    renderUsageHeatmap(results[0],body,results[1]);
+    renderUsageHeatmap(results[0],body,results[1],'month');
   }).catch(function(){
     body.innerHTML='<div class="usage-loading" style="color:hsl(0 60% 55%)">'+t("usage.failedGeneric")+'</div>';
   });
