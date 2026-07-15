@@ -39,7 +39,7 @@ import { esc, escAttr, escHTML, decodeEntities, stripTags } from './render/helpe
 import { processPendingMermaid, processPendingViz, processPendingVizActions, renderViz, renderVizLoading, renderMermaid, openVizModal } from './render/viz.js';
 import { callAPI, callAPIChat } from './chat/api.js';
 import { callAPIStream } from './chat/stream.js';
-import { TOOL_META, toolFormatInput, appendToolModule, setLastToolOutput, makeArtifactError, appendInlineArtifact, renderWebSearchResults } from './ui/toolCards.js';
+import { TOOL_META, toolFormatInput, appendToolModule, setLastToolOutput, makeArtifactError, appendInlineArtifact, renderWebSearchResults, updateToolCardCode, findToolCard, extractCodeFromArgs } from './ui/toolCards.js';
 import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
 import { SEARCH_PROGRESS_LABELS, trSearchLabel, _formatEngineBreakdown, startSearchProgress } from './ui/searchProgress.js';
 import { beginAgentTextStream, appendRunFooter } from './chat/agentStream.js';
@@ -3622,7 +3622,15 @@ async function askChatTurn(userText){
     onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];ctl.recordToolUse(c)}},
     onToolResult:function(r){ctl.recordToolResult(r)},
     onToolProgress:function(p){if(ctl.recordToolProgress)ctl.recordToolProgress(p)},
-    onExecutionStart:function(ev){if(ctl.recordExecutionStart)ctl.recordExecutionStart(ev)}
+    onExecutionStart:function(ev){if(ctl.recordExecutionStart)ctl.recordExecutionStart(ev)},
+    /* P_tool_stream — forward the live tool_call_delta frames to
+       the streaming controller so the code / query inside each
+       tool card streams in real time, instead of appearing all at
+       once when the upstream signals finish_reason='tool_calls'. */
+    onToolCallDelta:function(d){
+      if(!d)return;
+      if(typeof ctl.recordToolCallDelta==="function")ctl.recordToolCallDelta(d);
+    }
   });
   handleChatApiResult(result,ctl,userText);
   updateChatStats();
@@ -4989,6 +4997,10 @@ function addStreamingMessage(opts){
   var _toolCardContainer=null;
   function _ensureToolContainer(){
     if(_toolCardContainer&&_toolCardContainer.isConnected)return _toolCardContainer;
+    /* Try to reuse an existing think-block's .think-tools slot.
+       When both thinking content and tool cards arrive, they share
+       the same collapsible block — the tool cards go in .think-tools
+       and the reasoning text goes in .think-content. */
     var tb=body.querySelector('.think-block');
     if(tb){
       _toolCardContainer=tb.querySelector('.think-tools');
@@ -4996,24 +5008,21 @@ function addStreamingMessage(opts){
         _toolCardContainer=document.createElement("div");
         _toolCardContainer.className="think-tools";
         var tc=tb.querySelector('.think-content');
-        if(tc)tc.parentNode.appendChild(_toolCardContainer);
+        if(tc)tc.after(_toolCardContainer);
         else tb.appendChild(_toolCardContainer);
       }
-    }else{
-      tb=document.createElement("details");
-      tb.className="think-block think-block-streaming";
-      tb.open=true;
-      var sum=document.createElement("summary");
-      sum.className="think-summary think-summary-streaming";
-      sum.innerHTML='<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span><span class="think-summary-label">'+esc(t("think.thinking"))+'</span><span class="think-summary-chevron" aria-hidden="true"></span>';
-      tb.appendChild(sum);
-      var tc=document.createElement("div");
-      tc.className="think-content";
-      tb.appendChild(tc);
+      return _toolCardContainer;
+    }
+    /* No think-block yet (thinking content hasn't arrived, or won't
+       arrive at all — e.g. tool-only responses). Place tool cards
+       directly in the bubble body without a wrapper. They'll be
+       preserved by the finish() path which saves and re-inserts
+       orphaned .agent-tool-card elements. */
+    _toolCardContainer=body.querySelector('.think-tools');
+    if(!_toolCardContainer){
       _toolCardContainer=document.createElement("div");
       _toolCardContainer.className="think-tools";
-      tb.appendChild(_toolCardContainer);
-      body.appendChild(tb);
+      body.appendChild(_toolCardContainer);
     }
     return _toolCardContainer;
   }
@@ -5121,6 +5130,9 @@ function addStreamingMessage(opts){
     finished=true;
     if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
     state.lastCallError="No response for "+Math.round(FIRST_DELTA_TIMEOUT_MS/1000)+"s";
+    /* Cancel the underlying stream so it doesn't keep running in the
+       background holding resources for the full timeout window. */
+    try{if(window._activeChatAbort)window._activeChatAbort("first-delta-timeout")}catch(_){}
     /* P_paint-race — swap placeholder for the error block via
        replaceChild so other children (in practice the reasoning
        pill if reasoning_content arrived first) survive. */
@@ -5148,14 +5160,14 @@ function addStreamingMessage(opts){
     var btn=body.querySelector("#"+retryBtnId);
     if(btn){
       btn.addEventListener("click",function(){
-        /* Replacing the error block with a simple "Retrying…" pill
-           before invoking onRetry is fine via innerHTML here: at
-           this point we want a fresh, intentional transition and
-           there are no other children to preserve. */
-        body.innerHTML='<span class="thinking-dot"><span class="thinking-ring thinking-ring-sm"></span>Retrying…</span>';
-        setTimeout(function(){
-          if(typeof onRetry==="function"){try{onRetry()}catch(e){console.warn("[retry] handler threw:",e)}}
-        },120);
+        /* P_no_retry_loading — fire onRetry() directly so the new
+           streaming bubble appears immediately. Previously we showed
+           a transient "Retrying…" pill for 120ms before invoking
+           onRetry, which the user found noisy and confusing — the
+           pill sat there loading, then a new conversation bubble
+           appeared below, looking like two separate events. The
+           new bubble's own thinking state is enough indication. */
+        if(typeof onRetry==="function"){try{onRetry()}catch(e){console.warn("[retry] handler threw:",e)}}
       });
     }
     updateChatStats();
@@ -5397,15 +5409,24 @@ function teardownThinkStructure(){
            text — the tool cards were added during SSE parsing and
            must not be wiped). */
         var savedPill=body.querySelector('.think-block');
-        var savedToolCards=body.querySelectorAll('.agent-tool-card');
+        var savedToolContainer=body.querySelector('.think-tools');
         var savedToolCardArr=[];
         /* If cards live inside the think-block (the normal case now),
-           saving the pill already captures them. Only extract individual
-           cards when there's no pill to host them. */
+           saving the pill already captures them. Only extract when
+           there's no pill to host them. */
         if(!savedPill){
-          for(var sci=0;sci<savedToolCards.length;sci++){
-            savedToolCardArr.push(savedToolCards[sci]);
-            savedToolCards[sci].parentNode.removeChild(savedToolCards[sci]);
+          /* Prefer saving the whole .think-tools container so the
+             wrapper and its children survive intact. */
+          if(savedToolContainer){
+            savedToolContainer.parentNode.removeChild(savedToolContainer);
+            savedToolCardArr.push(savedToolContainer);
+          }else{
+            /* No wrapper — save individual cards. */
+            var savedToolCards=body.querySelectorAll('.agent-tool-card');
+            for(var sci=0;sci<savedToolCards.length;sci++){
+              savedToolCardArr.push(savedToolCards[sci]);
+              savedToolCards[sci].parentNode.removeChild(savedToolCards[sci]);
+            }
           }
         }
         try{placeholder.remove()}catch(_){}
@@ -5637,6 +5658,85 @@ function teardownThinkStructure(){
     return String(s).replace(/[^a-zA-Z0-9_-]/g,function(c){return"\\"+c.charCodeAt(0).toString(16)+" "});
   }
 
+  /* P_tool_stream — live tool_call_delta routing. The backend
+     forwards partial `function.arguments` JSON as the upstream
+     streams it; we coalesce updates in a queue and flush once
+     per rAF so a 60Hz event stream doesn't trigger 60 paint
+     cycles. Each entry in the queue represents the LATEST known
+     state for a given (id, index) pair, so even when the queue
+     has 30 deltas for the same tool we only run one DOM update
+     per frame. */
+  var _pendingDeltaQueue=[];
+  var _deltaFlushScheduled=false;
+  function _flushToolDeltas(){
+    _deltaFlushScheduled=false;
+    if(_disposed)return;
+    if(!_pendingDeltaQueue.length)return;
+    // Coalesce: keep only the latest delta per (id, index). This
+    // handles the case where 30 small deltas land between two
+    // rAFs — the first 29 are irrelevant because the 30th already
+    // contains the same arguments + more.
+    var latest=new Map();
+    for(var qi=0;qi<_pendingDeltaQueue.length;qi++){
+      var d=_pendingDeltaQueue[qi];
+      if(!d)continue;
+      var key=(d.id||"?")+":"+(d.index||0);
+      latest.set(key,d);
+    }
+    _pendingDeltaQueue=[];
+    var cards=body.querySelectorAll(".agent-tool-card[data-tcid]");
+    for(var ci=0;ci<cards.length;ci++){
+      var cardEl=cards[ci];
+      var tcid=cardEl.getAttribute("data-tcid");
+      // Match by id first (preferred), fall back to index for
+      // deltas that arrived before the tool_use event assigned
+      // the id. The backend fills the id on subsequent deltas
+      // once the upstream emits it.
+      var dFound=null;
+      latest.forEach(function(v,k){
+        if(dFound)return;
+        if(k.split(":")[0]===tcid)dFound=v;
+      });
+      if(!dFound)continue;
+      try{
+        if(typeof updateToolCardCode==="function"){
+          updateToolCardCode(tcid,dFound.arguments||"",dFound.name||"");
+        }
+      }catch(_){}
+      // When the final delta arrives (or no final flag — the
+      // backend always emits one), remove the streaming class so
+      // the blinking caret disappears.
+      if(dFound.final){
+        var codeEl=cardEl.querySelector(".agent-tool-code");
+        if(codeEl)codeEl.classList.remove("agent-tool-code-streaming");
+      }
+    }
+    // Stash any unmatched deltas (no card yet) on the matching
+    // tool_call entry so recordToolUse can drain them when the
+    // card is finally created. Without this, deltas that arrived
+    // a few ms before tool_use would be silently dropped, leaving
+    // the card showing only the final-frame arguments.
+    if(msgIdx>=0&&state.messages[msgIdx]&&Array.isArray(state.messages[msgIdx].toolCalls)){
+      latest.forEach(function(d){
+        if(!d)return;
+        if(!d.id)return;
+        for(var ti=0;ti<state.messages[msgIdx].toolCalls.length;ti++){
+          var tcEntry=state.messages[msgIdx].toolCalls[ti];
+          if(tcEntry.id===d.id){
+            if(!Array.isArray(tcEntry._pendingDeltas))tcEntry._pendingDeltas=[];
+            tcEntry._pendingDeltas.push(d);
+            return;
+          }
+        }
+        // No matching entry yet (id may be a delta id that the
+        // upcoming tool_use will adopt). Buffer by id.
+        if(!Array.isArray(state.messages[msgIdx]._orphanDeltas))state.messages[msgIdx]._orphanDeltas={};
+        if(!state.messages[msgIdx]._orphanDeltas[d.id])state.messages[msgIdx]._orphanDeltas[d.id]=[];
+        state.messages[msgIdx]._orphanDeltas[d.id].push(d);
+      });
+    }
+  }
+
   /* Track active execution SSE connections so we can clean up on finish */
   var _executionSSESources=[];
 
@@ -5768,6 +5868,18 @@ function teardownThinkStructure(){
       if(cardOut){
         var cardEl=cardOut.closest(".agent-tool-card");
         if(cardEl)cardEl.setAttribute("data-tcid",entry.id);
+        // Drain any tool_call_delta frames that arrived before the
+        // tool_use event landed. Without this, the card would show
+        // nothing for the duration of the tool_use -> tool_call_delta
+        // race window (typically <50ms but visible to the eye).
+        if(entry._pendingDeltas&&entry._pendingDeltas.length){
+          for(var ddi=0;ddi<entry._pendingDeltas.length;ddi++){
+            try{
+              updateToolCardCode(entry.id,entry._pendingDeltas[ddi].arguments||"",entry._pendingDeltas[ddi].name||"");
+            }catch(_){}
+          }
+          entry._pendingDeltas.length=0;
+        }
         if(Array.isArray(entry._pendingProgress)&&entry._pendingProgress.length){
           for(var dpi=0;dpi<entry._pendingProgress.length;dpi++){
             _toolProgressToCard(entry._pendingProgress[dpi]);
@@ -5795,6 +5907,32 @@ function teardownThinkStructure(){
          switched. */
       if(!stillOwnsSlot())return;
       _toolProgressToCard(p);
+    },
+    /* P_tool_stream — live tool_call_delta. The backend forwards
+       partial `function.arguments` as the upstream streams them;
+       we route the partial JSON to the right tool card so the
+       Python source / search query streams in real time.
+
+       The card is identified by the tool_call id (`id` on the
+       delta), which is the same id we'll later see in the
+       `tool_use` event from the backend. The delta may arrive
+       before the matching tool_use (the backend throttles the
+       `onToolUse` callback to one-per-stream-end), so we have
+       to handle "delta for a tool call we haven't recorded yet"
+       by creating a card with empty input and updating it
+       in place. */
+    recordToolCallDelta:function(d){
+      if(!stillOwnsSlot())return;
+      if(!d)return;
+      // Throttle DOM updates. The backend already throttles to
+      // ~30ms / 64 bytes, but the rAF coalesce below is the
+      // authoritative cap so 60fps devices don't waste paint
+      // cycles on every delta.
+      _pendingDeltaQueue.push(d);
+      if(!_deltaFlushScheduled){
+        _deltaFlushScheduled=true;
+        requestAnimationFrame(_flushToolDeltas);
+      }
     },
     recordExecutionStart:function(ev){
       /* P_session-stream-dispose — same guard; also avoids
@@ -5851,9 +5989,10 @@ function teardownThinkStructure(){
       }else{
         /* Find the card by its data-tcid attribute (set in recordToolUse)
            instead of index-based lookup — the card's position may shift
-           if the think-block was rebuilt between tool_use and tool_result. */
-        var _escId=entry.id.replace(/["\\]/g,'');
-        var card=body.querySelector('[data-tcid="'+_escId+'"]');
+           if the think-block was rebuilt between tool_use and tool_result.
+           Use CSS.escape so IDs with colons, dots, or brackets (common in
+           OpenAI-style tool_call_id values) don't break the selector. */
+        var card=body.querySelector('[data-tcid="'+CSS.escape(entry.id)+'"]');
         if(card)out=card.querySelector(".agent-tool-out");
       }
       /* P_execution-sse-fallback — if the result carries an executionId
@@ -6051,6 +6190,14 @@ function teardownThinkStructure(){
       if(pendingRender){
         cancelAnimationFrame(pendingRender);
         pendingRender=null;
+      }
+      /* Cancel any active typewriter animation on tool cards so the
+         setTimeout chain doesn't keep updating detached DOM nodes. */
+      var _twCards=div.querySelectorAll('.agent-tool-card');
+      for(var _twi=0;_twi<_twCards.length;_twi++){
+        if(typeof _twCards[_twi]._cancelTypewriter==='function'){
+          try{_twCards[_twi]._cancelTypewriter()}catch(_){}
+        }
       }
       /* P1.2 — single formatMsg pass at finish time, write to
          state.messages[i].html, and replace the streaming nodes
@@ -6321,6 +6468,13 @@ function teardownThinkStructure(){
           state.messages.splice(msgIdx,1);
         }
       }
+      /* Cancel any active typewriter animation on tool cards */
+      var _twCardsAb=div.querySelectorAll('.agent-tool-card');
+      for(var _twAb=0;_twAb<_twCardsAb.length;_twAb++){
+        if(typeof _twCardsAb[_twAb]._cancelTypewriter==='function'){
+          try{_twCardsAb[_twAb]._cancelTypewriter()}catch(_){}
+        }
+      }
       /* Delay remove so a pending rAF render doesn't throw on detached DOM */
       requestAnimationFrame(function(){div.remove()});
     },
@@ -6333,6 +6487,11 @@ function teardownThinkStructure(){
         clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
         if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
+        /* Cancel typewriter animations before replacing body content */
+        var _twErr=div.querySelectorAll('.agent-tool-card');
+        for(var _te=0;_te<_twErr.length;_te++){
+          if(typeof _twErr[_te]._cancelTypewriter==='function'){try{_twErr[_te]._cancelTypewriter()}catch(_){}}
+        }
        try{
          body.innerHTML=
            '<div class="msg-error">'+
@@ -6343,22 +6502,19 @@ function teardownThinkStructure(){
           var btn=body.querySelector("#"+retryBtnId);
           if(btn&&typeof onRetry==="function"){
             btn.addEventListener("click",function(){
-              /* Reset this bubble to thinking state, then retry.
-                 The retried call writes to a new bubble via addStreamingMessage,
-                 so we clean up this failed one. */
-body.innerHTML='<span class="thinking-dot"><span class="thinking-ring thinking-ring-sm"></span>Retrying…</span>';
-              /* Small delay so the user can see the retry state before the
-                 new bubble appears. */
-             setTimeout(function(){
-               try{
-                 var ret=onRetry();
-                 /* If onRetry returns a Promise, await it — some callers
-                    (askChatTurn, submitChatMessage) are async. */
-                 if(ret&&typeof ret.then==="function"){
-                   ret.catch(function(e){console.warn("[retry] async handler failed:",e)});
-                 }
-               }catch(e){console.warn("[retry] handler threw:",e)}
-             },120);
+              /* P_no_retry_loading — fire onRetry() immediately so the
+                 new streaming bubble appears in one step. The previous
+                 implementation flashed a "Retrying…" pill for 120ms
+                 before invoking the handler, but the user found it
+                 noisy and confusing — the pill just sat there loading
+                 while a new conversation bubble appeared below. The
+                 new bubble's own thinking state is enough. */
+              try{
+                var ret=onRetry();
+                if(ret&&typeof ret.then==="function"){
+                  ret.catch(function(e){console.warn("[retry] async handler failed:",e)});
+                }
+              }catch(e){console.warn("[retry] handler threw:",e)}
            });
          }
        }catch(e){
