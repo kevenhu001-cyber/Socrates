@@ -62,23 +62,34 @@ export function resetAttachments() {
 
 /**
  * Read a File into a base64 dataUrl via FileReader.
+ * Calls onProgress(percent) as the read progresses.
  * Returns { dataUrl, size }.
  */
-function readFileAsDataUrl(file) {
+function readFileAsDataUrl(file, onProgress) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
     reader.onload = () => resolve({ dataUrl: String(reader.result || ''), size: file.size });
+    if (typeof onProgress === 'function') {
+      reader.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+    }
     reader.readAsDataURL(file);
   });
 }
 
-/** Read a File as plain UTF-8 text. */
-function readFileAsText(file) {
+/** Read a File as plain UTF-8 text, calling onProgress(percent). */
+function readFileAsText(file, onProgress) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
     reader.onload = () => resolve(String(reader.result || ''));
+    if (typeof onProgress === 'function') {
+      reader.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+    }
     reader.readAsText(file);
   });
 }
@@ -140,40 +151,48 @@ function docKindFromFile(file) {
 
 /**
  * Extract text from a PDF / DOCX / XLSX / PPTX / EPUB / RTF by POSTing
- * the file to /api/files/extract. Returns { text, truncated, meta, error? }.
- *
- * The endpoint is mounted in server/src/routes/fileExtract.js and
- * dispatches to the appropriate parser based on the file's MIME type.
- * We use multipart/form-data with a single `file` field. Errors surface
- * as a non-throwing { error } so the caller can keep the chip and show
- * a banner instead of crashing the chat send.
+ * the file to /api/files/extract. Calls onProgress(percent) during the
+ * upload phase. Returns { text, truncated, meta, error? }.
+ * Uses XMLHttpRequest so the upload progress is measurable (fetch does
+ * not expose upload progress events).
  */
-async function extractDocumentText(file) {
-  const fd = new FormData();
-  fd.append('file', file, file.name || 'document');
-  const csrf = (typeof window !== 'undefined' && window.getCsrfToken)
-    ? window.getCsrfToken() : '';
-  const headers = csrf ? { 'X-CSRF-Token': csrf } : {};
-  const res = await fetch('/api/files/extract', {
-    method: 'POST',
-    body: fd,
-    credentials: 'same-origin',
-    headers,
+async function extractDocumentText(file, onProgress) {
+  return new Promise((resolve) => {
+    const fd = new FormData();
+    fd.append('file', file, file.name || 'document');
+    const csrf = (typeof window !== 'undefined' && window.getCsrfToken)
+      ? window.getCsrfToken() : '';
+    const xhr = new XMLHttpRequest();
+    if (typeof onProgress === 'function' && xhr.upload) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+    }
+    xhr.onload = function () {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText || '{}');
+          resolve({
+            text: data.text || '',
+            truncated: !!data.truncated,
+            meta: data.meta || {},
+            kind: data.kind || 'document',
+            error: (data.ok === false) ? (data.error || 'Extract failed') : undefined,
+          });
+        } catch (_) {
+          resolve({ text: '', truncated: false, meta: {}, error: 'Extract response parse failed' });
+        }
+      } else {
+        resolve({ text: '', truncated: false, meta: {}, error: `Extract failed (${xhr.status})` });
+      }
+    };
+    xhr.onerror = () => resolve({ text: '', truncated: false, meta: {}, error: 'Network error during extract' });
+    xhr.ontimeout = () => resolve({ text: '', truncated: false, meta: {}, error: 'Extract timed out' });
+    xhr.open('POST', '/api/files/extract');
+    if (csrf) xhr.setRequestHeader('X-CSRF-Token', csrf);
+    xhr.timeout = 60000; // 60s
+    xhr.send(fd);
   });
-  if (!res.ok) {
-    return { text: '', truncated: false, meta: {}, error: `Extract failed (${res.status})` };
-  }
-  const data = await res.json().catch(() => ({}));
-  if (data && data.ok === false) {
-    return { text: '', truncated: false, meta: {}, error: data.error || 'Extract failed' };
-  }
-  return {
-    text: data.text || '',
-    truncated: !!data.truncated,
-    meta: data.meta || {},
-    kind: data.kind || 'document',
-    error: data.error || undefined,
-  };
 }
 
 /**
@@ -182,20 +201,23 @@ async function extractDocumentText(file) {
  * unsupported type, count cap reached) and returns a { added, rejected }
  * summary so the UI can toast a status.
  *
+ * P_pending-feedback — each file pushes a pending stub into the
+ * attachments[] array BEFORE any async work so the UI chip appears
+ * immediately. The stub's `pending:true` and `progress:0-100` fields
+ * drive a spinner + progress bar in renderAttachmentChips(). Once the
+ * file is fully read/extracted the stub is updated in-place (pending
+ * becomes false, the real fields are populated) and onUpdate is called
+ * so the renderer replaces the spinner with the final chip.
+ *
  * @param {FileList|File[]} fileList
+ * @param {function} [onUpdate] — called after each stub mutation so
+ *   the caller can re-render chips (typically renderAttachmentChips).
  * @returns {Promise<{added:number, rejected:string[]}>}
  */
-export async function addFiles(fileList) {
+export async function addFiles(fileList, onUpdate) {
   const files = Array.from(fileList || []);
   const result = { added: 0, rejected: [] };
-  /* P_attachments-multimodal — proactive gate for image attachments.
-   * We refuse to even chip an image if the active provider is not
-   * flagged as multimodal, because shipping the base64 to a text-
-   * only model results in a confusing upstream 400. Text/PDF
-   * attachments don't depend on vision, so they pass through.
-   *
-   * We resolve the active provider lazily so this module is usable
-   * in isolation (the function may be undefined in tests). */
+  /* P_attachments-multimodal — proactive gate for image attachments. */
   const activeProvider = (typeof window !== 'undefined' && typeof window.getActiveProvider === 'function')
     ? window.getActiveProvider() : null;
   const activeIsMultimodal = !!(activeProvider && activeProvider.isMultimodal === true);
@@ -211,9 +233,6 @@ export async function addFiles(fileList) {
     }
     try {
       if (kind === 'image') {
-        /* P_attachments-multimodal — refuse images for non-multimodal
-         * active providers. The i18n key `attach.notMultimodal` is
-         * surfaced by the main.js caller via showToast(). */
         if (!activeIsMultimodal) {
           result.rejected.push(`${file.name}: active provider is not multimodal`);
           continue;
@@ -222,76 +241,92 @@ export async function addFiles(fileList) {
           result.rejected.push(`${file.name}: image exceeds ${MAX_IMAGE_BYTES / 1024 / 1024} MB`);
           continue;
         }
-        const { dataUrl } = await readFileAsDataUrl(file);
+        /* Push pending stub immediately — the chip shows a spinner.
+           The actual dataUrl is populated asynchronously below. */
+        const pendingId = shortId();
         attachments.push({
-          id: shortId(),
-          kind: 'image',
-          name: file.name || 'image',
-          mime: file.type,
-          dataUrl,
-          size: file.size,
+          id: pendingId, kind: 'image', pending: true, progress: 0,
+          name: file.name || 'image', mime: file.type, size: file.size,
         });
+        if (onUpdate) onUpdate();
+        const { dataUrl, size } = await readFileAsDataUrl(file, function(pct){
+          const e = attachments.find(a => a.id === pendingId);
+          if(e) e.progress = pct;
+          if(onUpdate) onUpdate();
+        });
+        const entry = attachments.find(a => a.id === pendingId);
+        if (entry) {
+          entry.pending = false;
+          entry.progress = 100;
+          entry.dataUrl = dataUrl;
+        }
+        if (onUpdate) onUpdate();
         result.added++;
       } else if (kind === 'text') {
-        let text = await readFileAsText(file);
+        const pendingId = shortId();
+        attachments.push({
+          id: pendingId, kind: 'text', pending: true, progress: 0,
+          name: file.name || 'file.txt', mime: file.type || 'text/plain', size: file.size,
+        });
+        if (onUpdate) onUpdate();
+        const rawText = await readFileAsText(file, function(pct){
+          const e = attachments.find(a => a.id === pendingId);
+          if(e) e.progress = pct;
+          if(onUpdate) onUpdate();
+        });
+        let text = rawText;
         let truncated = false;
         if (text.length > MAX_TEXT_BYTES) {
           text = text.slice(0, MAX_TEXT_BYTES);
           truncated = true;
         }
-        attachments.push({
-          id: shortId(),
-          kind: 'text',
-          name: file.name || 'file.txt',
-          mime: file.type || 'text/plain',
-          text,
-          truncated,
-          size: file.size,
-        });
+        const entry = attachments.find(a => a.id === pendingId);
+        if (entry) {
+          entry.pending = false;
+          entry.progress = 100;
+          entry.text = text || '';
+          entry.truncated = truncated;
+        }
+        if (onUpdate) onUpdate();
         result.added++;
       } else if (kind === 'document') {
-        if (file.size > MAX_IMAGE_BYTES * 6) { // ~25 MB cap, matches /api/files/extract
+        if (file.size > MAX_IMAGE_BYTES * 6) {
           result.rejected.push(`${file.name}: file exceeds 25 MB limit`);
           continue;
         }
         const docKind = docKindFromFile(file);
-        const { text, truncated, meta, error } = await extractDocumentText(file);
         const baseMime = file.type || ({
-          pdf: 'application/pdf',
-          docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-          epub: 'application/epub+zip',
-          rtf: 'application/rtf',
+          epub: 'application/epub+zip', rtf: 'application/rtf',
         })[docKind] || 'application/octet-stream';
+        const pendingId = shortId();
+        attachments.push({
+          id: pendingId, kind: 'document', docKind, pending: true, progress: 0,
+          name: file.name || `document.${docKind}`, mime: baseMime, size: file.size,
+        });
+        if (onUpdate) onUpdate();
+        const { text, truncated, meta, error } = await extractDocumentText(file, function(pct){
+          const e = attachments.find(a => a.id === pendingId);
+          if(e) e.progress = pct;
+          if(onUpdate) onUpdate();
+        });
+        const entry = attachments.find(a => a.id === pendingId);
+        if (entry) {
+          entry.pending = false;
+          entry.progress = 100;
+          entry.text = text || '';
+          entry.truncated = !!truncated;
+          entry.meta = meta || {};
+          entry.error = error || undefined;
+        }
+        if (onUpdate) onUpdate();
         if (error) {
           result.rejected.push(`${file.name}: ${error}`);
-          attachments.push({
-            id: shortId(),
-            kind: 'document',
-            docKind,
-            name: file.name || `document.${docKind}`,
-            mime: baseMime,
-            text: '',
-            truncated: false,
-            meta: {},
-            size: file.size,
-            error,
-          });
-          continue;
+        } else {
+          result.added++;
         }
-        attachments.push({
-          id: shortId(),
-          kind: 'document',
-          docKind,
-          name: file.name || `document.${docKind}`,
-          mime: baseMime,
-          text,
-          truncated,
-          meta,
-          size: file.size,
-        });
-        result.added++;
       }
     } catch (err) {
       result.rejected.push(`${file.name || 'file'}: ${err.message || 'read failed'}`);
