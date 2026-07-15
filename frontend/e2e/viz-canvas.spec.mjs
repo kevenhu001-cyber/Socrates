@@ -132,6 +132,31 @@ test('viz card renders a user canvas and flips to ready via postMessage', async 
   expect(result.ok).toBe(true);
 });
 
+test('viz card surfaces a synchronous script failure instead of claiming readiness', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route('**/api/chat/stream', async (route) => {
+    const broken = '```html\n<div>before failure</div><script>throw new Error("chart exploded")</script>\n```';
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: ' + JSON.stringify({ choices: [{ delta: { content: broken } }] }) + '\n\ndata: [DONE]\n\n',
+    });
+  });
+  await page.goto('/');
+  await waitForAppShell(page);
+  await page.evaluate(async () => {
+    window.state.phase = 'chat';
+    window.state.currentSessionId = '44444444-4444-4444-8444-444444444444';
+    window.state.messages = [{ clientId: 'user-4', role: 'user', rawText: 'broken canvas', html: null }];
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    await window.askChatTurn('broken canvas');
+  });
+  const card = page.locator('.viz').last();
+  await expect(card).toHaveAttribute('data-viz-state', 'error', { timeout: 16_000 });
+  await expect(card.locator('.viz-error')).toContainText('chart exploded');
+});
+
 test('plot card draws the function and posts viz-ready', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/chat/stream', async (route) => {

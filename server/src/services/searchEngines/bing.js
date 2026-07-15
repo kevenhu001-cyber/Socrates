@@ -11,6 +11,12 @@
 const REQUEST_TIMEOUT = 12_000;
 const MAX_RESULTS = 12;
 
+function unavailable(reason) {
+  const result = [];
+  Object.defineProperty(result, '_engineStatus', { value: reason, enumerable: false });
+  return result;
+}
+
 const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
@@ -132,7 +138,7 @@ export async function searchBing(query, limit = 10, signal = null) {
       redirect: 'follow',
     });
     clearTimeout(timer);
-    if (!r.ok) return [];
+    if (!r.ok) return unavailable(`http_${r.status}`);
 
     const html = await r.text();
     const capped = html.length > 500_000 ? html.slice(0, 500_000) : html;
@@ -145,6 +151,6 @@ export async function searchBing(query, limit = 10, signal = null) {
     } else {
       console.warn('[searchBing] Request failed:', e && e.message ? e.message : e);
     }
-    return [];
+    return unavailable(e && e.name === 'AbortError' ? 'timeout' : 'error');
   }
 }

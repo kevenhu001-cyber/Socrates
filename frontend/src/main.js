@@ -6029,16 +6029,16 @@ function teardownThinkStructure(){
         var sec=(result.durationMs/1000).toFixed(1);
         durStr=" ["+sec+"s]";
       }
-      if(result.ok===false){
-        if(result.status==="timeout"){
-          statusIcon="!";
+        if(result.ok===false){
+          if(result.status==="timeout"){
+          statusIcon="超时";
           statusClass="warn";
         }else{
-          statusIcon="x";
+          statusIcon="失败";
           statusClass="err";
         }
-        var errMsg=result.error||result.output||"failed";
-        display=(result.stderr?"[stderr]\n"+result.stderr+"\n":"")+"[error] "+errMsg+durStr;
+        var errMsg=result.userMessage||result.error||result.output||"failed";
+        display=errMsg+durStr;
         /* P_py_hint — recognise the most common Python runtime
            errors and append a one-line hint that explains the
            working directory and what to do next. Pyodide mounts the
@@ -6061,7 +6061,7 @@ function teardownThinkStructure(){
           }
         }
       }else{
-        statusIcon="+";
+        statusIcon="已完成";
         statusClass="ok";
         display=(result.output||"(no output)")+
           (result.stderr?"\n[stderr]\n"+result.stderr:"")+durStr;
@@ -6095,6 +6095,29 @@ function teardownThinkStructure(){
           }
           if(!didRichRender){
             out.textContent=display||"";
+          }
+          if(entry.isError&&result.detail){
+            var errDetails=document.createElement("details");
+            errDetails.className="agent-tool-error-detail";
+            var errSummary=document.createElement("summary");
+            errSummary.textContent="查看技术详情";
+            var errCode=document.createElement("code");
+            errCode.textContent=typeof result.detail==="string"?result.detail:JSON.stringify(result.detail);
+            errDetails.appendChild(errSummary);
+            errDetails.appendChild(errCode);
+            out.appendChild(errDetails);
+          }
+          if(entry.isError&&result.retryable&&entry.name==="web_search"&&entry.input&&entry.input.query){
+            var retryButton=document.createElement("button");
+            retryButton.type="button";
+            retryButton.className="agent-tool-retry";
+            retryButton.textContent="重试搜索";
+            retryButton.addEventListener("click",function(){
+              var retryText="请重试搜索："+entry.input.query;
+              if(typeof window.addMessage==="function")window.addMessage("user",retryText);
+              if(typeof window.askChatTurn==="function")window.askChatTurn(retryText);
+            });
+            out.appendChild(retryButton);
           }
           if(entry.isError)out.classList.add("error");else out.classList.remove("error");
           var card=out.closest(".agent-tool-card");

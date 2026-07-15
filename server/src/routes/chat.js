@@ -773,6 +773,10 @@ router.post('/stream', requireAuth, chatRateLimitDispatch, audit('chat:stream'),
                   id: tc.id, ok: false, status: 'failed',
                   output: '', stderr: '',
                   error: `daily_execution_limit_reached: ${tierLimit} executions per day`,
+                  errorCode: 'daily_execution_limit_reached',
+                  retryable: false,
+                  userMessage: `今日代码执行次数已达上限（${tierLimit} 次）。`,
+                  detail: `daily_execution_limit_reached: ${tierLimit} executions per day`,
                   artifacts: [],
                   executionId: null,
                   durationMs: 0,
@@ -833,6 +837,14 @@ data: ${JSON.stringify({
               output: execResult.stdout || '',
               stderr: execResult.stderr || '',
               error: execResult.status !== 'completed' ? (execResult.errorMessage || execResult.status) : null,
+              errorCode: execResult.status === 'timeout'
+                ? 'execution_timeout'
+                : (execResult.errorMessage || (execResult.status === 'skipped' ? 'code_interpreter_unavailable' : 'execution_failed')),
+              retryable: false,
+              userMessage: execResult.status === 'timeout'
+                ? '代码执行超时，请缩小计算规模后重试。'
+                : (execResult.status === 'completed' ? null : '代码未能完成执行。'),
+              detail: execResult.stderr || execResult.errorMessage || null,
               artifacts: execResult.artifactFileIds || [],
               executionId: execResult.executionId,
               durationMs: execResult.durationMs,
@@ -841,29 +853,53 @@ data: ${JSON.stringify({
             // Execute web search as an LLM tool.
             const searchQuery = args.query || '';
             const searchCount = Math.min(args.count || 10, 12);
-            let searchResults;
-            try {
-              searchResults = await webSearch(searchQuery, searchCount, {
-                userId: req.userId,
-                locale: (req.headers['accept-language'] || '').split(',')[0].trim() || null,
-              });
-            } catch (err) {
-              searchResults = null;
-              result = { status: 'failed', error: String(err && err.message || err) };
+            let searchResults = null;
+            let searchError = null;
+            // Searches are idempotent and provider/network failures are often
+            // transient. Retry once here; code execution deliberately does
+            // not use this path because repeating it may have side effects.
+            for (let attempt = 0; attempt < 2; attempt++) {
+              try {
+                searchResults = await webSearch(searchQuery, searchCount, {
+                  userId: req.userId,
+                  locale: (req.headers['accept-language'] || '').split(',')[0].trim() || null,
+                });
+                searchError = null;
+                break;
+              } catch (err) {
+                searchError = err;
+                if (attempt === 0 && err && err.retryable !== false) continue;
+              }
             }
-            if (searchResults && searchResults.length > 0) {
+            if (searchError) {
+              const detail = searchError.diagnostics || String(searchError && searchError.message || searchError);
+              result = {
+                status: 'failed',
+                error: searchError.code || String(searchError && searchError.message || searchError),
+                errorCode: searchError.code || 'web_search_failed',
+                retryable: searchError.retryable !== false,
+                userMessage: '暂时无法连接搜索服务，请稍后重试。',
+                detail,
+              };
+              writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                id: tc.id, ok: false, status: 'failed', output: '', results: [],
+                error: result.error, errorCode: result.errorCode,
+                retryable: result.retryable, userMessage: result.userMessage, detail,
+              })}\n\n`);
+            } else if (searchResults && searchResults.length > 0) {
               const output = searchResults.map((r) => `${r.title}\n${r.url}\n${r.snippet}`).join('\n\n');
-              result = { status: 'completed', output, results: searchResults };
+              result = { status: 'completed', output, results: searchResults, retryable: false };
               writeSse(`event: tool_result\ndata: ${JSON.stringify({
                 id: tc.id, ok: true, status: 'completed',
                 output,
+                retryable: false,
                 results: searchResults.map((r) => ({ title: r.title, url: r.url, snippet: r.snippet, date: r.date })),
               })}\n\n`);
             } else {
-              result = { status: 'completed', output: 'No search results found.', results: [] };
+              result = { status: 'completed', output: 'No search results found.', results: [], retryable: false };
               writeSse(`event: tool_result\ndata: ${JSON.stringify({
                 id: tc.id, ok: true, status: 'completed',
-                output: 'No search results found.', results: [],
+                output: 'No search results found.', results: [], retryable: false,
               })}\n\n`);
             }
           } else {
@@ -872,6 +908,8 @@ data: ${JSON.stringify({
               id: tc.id, ok: false, status: 'failed',
               output: '', stderr: '', artifacts: [],
               error: 'unknown_tool',
+              errorCode: 'unknown_tool', retryable: false,
+              userMessage: '该工具暂不可用。', detail: 'unknown_tool',
             })}\n\n`);
             result = { status: 'failed', error: 'unknown_tool' };
           }
@@ -883,6 +921,8 @@ data: ${JSON.stringify({
             id: tc.id, ok: false, status: 'failed',
             output: '', stderr: '', artifacts: [],
             error: msg,
+            errorCode: 'tool_execution_failed', retryable: false,
+            userMessage: '工具执行失败。', detail: msg,
           })}\n\n`);
           result = { status: 'failed', error: msg };
         }

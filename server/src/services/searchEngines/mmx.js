@@ -26,6 +26,12 @@ import { runMmx } from '../../lib/spawnMmx.js';
 
 const REQUEST_TIMEOUT = 8_000;
 
+function unavailable(reason) {
+  const result = [];
+  Object.defineProperty(result, '_engineStatus', { value: reason, enumerable: false });
+  return result;
+}
+
 /**
  * Search the web via the local `mmx` CLI.
  *
@@ -46,7 +52,7 @@ export async function searchMmx(query, limit = 10, signal) {
   } catch (e) {
     // Engine failure should not break the pipeline — fall through.
     console.warn('[searchMmx]', e && e.message ? e.message : e);
-    return [];
+    return unavailable(e && e.name === 'AbortError' ? 'timeout' : 'error');
   }
 
   let data;
@@ -54,13 +60,13 @@ export async function searchMmx(query, limit = 10, signal) {
     data = JSON.parse(stdout);
   } catch (_) {
     console.warn('[searchMmx] non-JSON output from CLI (length=' + stdout.length + ')');
-    return [];
+    return unavailable('invalid_response');
   }
 
   const baseResp = data?.base_resp || data?.baseResp;
   if (baseResp && String(baseResp.status_code) !== '0') {
     console.warn(`[searchMmx] API error (${baseResp.status_code}): ${baseResp.status_msg || 'unknown'}`);
-    return [];
+    return unavailable('upstream_error');
   }
 
   const organic = Array.isArray(data?.organic)

@@ -15,6 +15,12 @@
 const REQUEST_TIMEOUT = 6_000;  // tight cap so a slow SearXNG can't drag the whole tool loop down
 const SEARXNG_BASE = process.env.SEARXNG_BASE_URL || 'http://127.0.0.1:8888';
 
+function unavailable(reason) {
+  const result = [];
+  Object.defineProperty(result, '_engineStatus', { value: reason, enumerable: false });
+  return result;
+}
+
 /**
  * Extract an approximate date from a searXNG result's publishedDate field
  * or from the snippet text.
@@ -56,7 +62,7 @@ export async function searchSearxng(query, limit = 10, signal = null) {
       headers: { 'Accept': 'application/json' },
     });
     clearTimeout(timer);
-    if (!r.ok) return [];
+    if (!r.ok) return unavailable(`http_${r.status}`);
 
     const data = await r.json();
     const results = data?.results;
@@ -77,6 +83,6 @@ export async function searchSearxng(query, limit = 10, signal = null) {
     } else {
       console.warn('[searchSearxng] Request failed:', e && e.message ? e.message : e);
     }
-    return [];
+    return unavailable(e && e.name === 'AbortError' ? 'timeout' : 'error');
   }
 }
