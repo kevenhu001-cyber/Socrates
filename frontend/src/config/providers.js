@@ -133,9 +133,7 @@ function syncSidebarForMode() {
 
 async function refreshApiConfig() {
   var CURRENT_USER = window.CURRENT_USER;
-  console.log("[refreshApiConfig] ENTRY, CURRENT_USER=", CURRENT_USER && CURRENT_USER.email);
   if (!CURRENT_USER) {
-    console.log("[refreshApiConfig] EARLY RETURN: no CURRENT_USER");
     apiConfig.activeId = null;
     apiConfig.providers = [];
     try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (_) {}
@@ -145,7 +143,6 @@ async function refreshApiConfig() {
   }
   try {
     var r = await window.apiFetch("/api/api-key");
-    console.log("[refreshApiConfig] /api/api-key response:", r);
     var rows = Array.isArray(r && r.providers) ? r.providers : [];
     var serverBeagleModel = null;
     var serverBeagleRow = rows.find(function (p) { return p.id === BEAGLE_BUILT_IN.id; });
@@ -183,7 +180,6 @@ async function refreshApiConfig() {
     try { window.syncChatModel(); } catch (_) {}
     return apiConfig;
   } catch (e) {
-    console.warn("[refreshApiConfig] failed:", e && e.message);
     apiConfig.activeId = null;
     apiConfig.providers = [];
     try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (_) {}

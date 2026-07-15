@@ -125,7 +125,7 @@ async function loadSharedSession(token) {
       throw new Error("Invalid response");
     }
   } catch (e) {
-    console.warn("[share] load failed:", e);
+    console.log("[share] load failed");
     document.documentElement.dataset.bootState = "app";
     document.getElementById("authGate").classList.add("hidden");
     window.showToast("Shared session not found or has expired.");

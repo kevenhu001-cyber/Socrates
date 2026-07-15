@@ -722,8 +722,7 @@ async function refreshServerSessions(){
   try{
     var r=await apiFetch("/api/sessions?limit=200");
     SERVER_SESSIONS=Array.isArray(r&&r.sessions)?r.sessions:[];
-    console.debug("[sessions] refreshServerSessions result",{count:SERVER_SESSIONS.length});
-  }catch(e){console.warn("[sessions] refresh failed:",e.message)}
+    }catch(e){/* refresh failed */}
   /* Recompute the sidebar project counts now that the session
      list is fresh. renderProjects reads SERVER_SESSIONS for the
      per-project session-count badge, so without this re-render
@@ -802,10 +801,7 @@ function saveCurrentSession(){
      loadSession function is in the middle of rebuilding state and
      any intercepted save would capture mismatched sessionId vs
      messages, causing "会话串台" (context cross-contamination). */
-  if(_loadingSession){
-    console.debug("[sessions] saveCurrentSession BLOCKED — loading in progress");
-    return;
-  }
+  if(_loadingSession) return;
   /* If a save is already running, mark dirty and let it coalesce. */
   if(_saveInFlight){
     _saveDirty=true;
@@ -831,12 +827,10 @@ function doSave(){
      check and silently re-insert the deleted row. */
   var sid=state.session.currentSessionId;
   if(_deletedSessionGuard.has(sid)){
-    console.debug("[sessions] doSave BLOCKED — id was deleted",{sid,ageMs:_deletedSessionGuard.ageMs(sid)});
     _saveInFlight=null;
     _saveDirty=false;
     return;
   }
-  console.debug("[sessions] doSave called",{topic:state.topic,cur:state.session.currentSessionId,_saveDirty,_saveInFlight:!!_saveInFlight});
   if(!state.topic)return;
   var now=Date.now();
   /* P1.1 — read from the authoritative state.messages list, NOT
@@ -871,6 +865,11 @@ function doSave(){
        * re-upload. The server caps to 20 in sessions.js; we
        * trim here too to keep payloads small. */
       attachments:Array.isArray(m.attachments)?m.attachments.slice(0,20):[],
+      /* P_tool-history — persist tool-call cards (including artifact
+       * image IDs) so session reload re-renders the cards and their
+       * images. Without this, toolCalls are silently dropped at save
+       * time and never restored on reload. */
+      toolCalls:Array.isArray(m.toolCalls)?m.toolCalls.slice(0,20):[],
     };
   });
   var sessionId=state.session.currentSessionId||generateId();
@@ -910,15 +909,6 @@ function doSave(){
     practiceAttempts:state.session.practiceAttempts||0,
     practicePhase:state.session.practicePhase||"foundation",
     teachingPlan:state.session.teachingPlan||null,
-    /* v3.0 design — persist the long-term-plan optional fields
-       (§10) so a reloaded session restores the deadline, daily
-       budget, and rest-day selection. The backend sessions
-       schema uses .passthrough() so these are accepted as-is. */
-    planTargetDate:state.session.planTargetDate||null,
-    planDailyMinutes:state.session.planDailyMinutes||30,
-    planWeeklyRestDays:state.session.planWeeklyRestDays||[],
-    planStartedAt:state.session.planStartedAt||null,
-    planLastWarnedAt:state.session.planLastWarnedAt||0,
     /* v3.0 design — knowledge boundary history (snapshots) and
        mistake filter are also persisted so the sidebar state
        survives reloads. */
@@ -967,7 +957,6 @@ function doSave(){
        resurrecting the row. Instead, just refresh the server list
        which will reflect the DELETE (or the next DELETE cycle). */
     if(_deletedSessionGuard.has(capturedSessionId)){
-      console.debug("[sessions] POST response BLOCKED — session was deleted",{capturedSessionId});
       return refreshServerSessions();
     }
     /* P_context-race — if the user switched to a different session
@@ -980,8 +969,20 @@ function doSave(){
       pushChatIdToURL(r.id);
     }
     return refreshServerSessions();
-  }).then(function(){renderRecents()}).catch(function(e){
-    console.warn("[sessions] save failed:",e.message);
+  }).then(function(){
+    /* P_streaming-survival — after a successful save (the stream
+       completed normally), clear the server-side streaming_text
+       so a reload doesn't show partial content. Fire-and-forget;
+       failure is harmless. */
+    var curSid=state.session.currentSessionId||state.currentSessionId;
+    if(curSid){
+      apiFetch("/api/sessions/"+encodeURIComponent(curSid),{
+        method:"PATCH",
+        body:{streamingText:null,streamingReasoning:null},
+        timeoutMs:5000,
+      }).catch(function(){});
+    }
+    renderRecents();}).catch(function(e){
     /* F1a — surface the save failure so the user knows their
        conversation isn't being persisted. Without this the recent
        list can silently lose new entries (Bug1). showToast lives at
@@ -1111,11 +1112,6 @@ function resetSessionTransients(s){
   s.call.source=null;
   s.call.error=null;
   s.session.sessionTitle=null;
-  s.session.planTargetDate=null;
-  s.session.planDailyMinutes=30;
-  s.session.planWeeklyRestDays=[];
-  s.session.planStartedAt=null;
-  s.session.planLastWarnedAt=0;
   try{var ci=document.getElementById("chatInputArea");if(ci){ci.value="";autoResize(ci);}}catch(_){}
   try{updateSendBtn();}catch(_){}
   try{if(window._pendingChatContent!==undefined)window._pendingChatContent=null;}catch(_){}
@@ -1178,10 +1174,7 @@ async function loadSession(id){
     /* P_stale-loadSession — if a newer loadSession() was already
        requested while this fetch was in-flight, skip the stale
        response so we don't overwrite the newer session's state. */
-    if(_loadSessionId!==id){
-      console.debug("[sessions] loadSession stale — skip",{completed:id, latest:_loadSessionId});
-      return;
-    }
+    if(_loadSessionId!==id) return;
     state.topic=s.topic;
     state.domain=s.domain;
     state.kbNodes=s.kbNodes||[];
@@ -1222,24 +1215,9 @@ async function loadSession(id){
     state.practiceAttempts=s.practiceAttempts||0;
     state.practicePhase=s.practicePhase||"foundation";
     state.teachingPlan=s.teachingPlan||null;
-    /* v3.0 design — restore the long-term plan fields. Sessions
-       saved before this field existed default to a 30 min/day
-       budget with no deadline. */
-    state.session.planTargetDate=s.planTargetDate||null;
-    state.session.planDailyMinutes=s.planDailyMinutes||30;
-    state.session.planWeeklyRestDays=Array.isArray(s.planWeeklyRestDays)?s.planWeeklyRestDays:[];
-    state.session.planStartedAt=s.planStartedAt||null;
-    state.session.planLastWarnedAt=s.planLastWarnedAt||0;
     /* Restore KB boundary history and mistake filter. */
     state.kb.boundariesHistory=Array.isArray(s.boundariesHistory)?s.boundariesHistory:[];
     state.kb.mistakeFilter=s.mistakeFilter||"all";
-    /* A-R2 perf — invalidate the cached plan warning; the
-       underlying planTargetDate / dailyMinutes may have just
-       changed. */
-    if(typeof tutorSocratic==="object"&&tutorSocratic
-       &&typeof tutorSocratic.invalidatePlanWarningCache==="function"){
-      try{tutorSocratic.invalidatePlanWarningCache()}catch(_){}
-    }
     /* Restore the mode the session was started in. Only override when the
        session has an explicit mode field — sessions without one (older
        rows where the DB defaulted to 'tutor') keep the current appMode
@@ -1446,6 +1424,76 @@ async function loadSession(id){
     try{processPendingMermaid()}catch(_){}
     try{processPendingViz()}catch(_){}
     try{processPendingVizActions()}catch(_){}
+    /* P_streaming-survival — if the server has saved streaming_text
+       (the previous stream was interrupted before completion), render
+       it as a partial assistant message with a Retry button so the
+       user can resume the interrupted response. */
+    if(s.streamingText){
+      var partialMsg=document.createElement("div");
+      partialMsg.className="msg assistant";
+      var partialBody=document.createElement("div");
+      partialBody.className="msg-body content";
+      var partialText=s.streamingText||"(partial content)";
+      var partialRendered=s.streamingText;
+      /* Try to render the partial text so it looks as good as possible. */
+      try{partialRendered=formatMsg(partialText)}catch(_){partialRendered="<p>"+esc(partialText)+"</p>"}
+      partialBody.innerHTML='<div class="msg-content">'+partialRendered+'</div>'+
+        '<div class="msg-error" style="margin-top:8px">'+
+          '<span class="msg-error-text">(response interrupted — tap Retry to continue)</span>'+
+          '<button type="button" class="msg-retry-btn stream-retry-btn">Retry</button>'+
+        '</div>';
+      partialMsg.appendChild(partialBody);
+      msgList.appendChild(partialMsg);
+      /* Also push into state.messages so it participates in
+         extractHistory(). The type is "assistant" so doSave()
+         persists it. The user can delete it manually. */
+      var partialIdx2=state.messages.push({
+        role:"assistant",
+        clientId:"stream-recovered-"+Date.now(),
+        rawText:partialText,
+        html:partialBody.innerHTML,
+        type:"assistant",
+      })-1;
+      /* Wire the retry button */
+      var retryBtn=partialBody.querySelector('.stream-retry-btn');
+      if(retryBtn){
+        retryBtn.addEventListener("click",function(){
+          /* Remove this partial message from state so it doesn't
+             appear in the next history extract. */
+          if(partialIdx2>=0&&state.messages[partialIdx2]){
+            state.messages.splice(partialIdx2,1);
+          }
+          /* Also clear the server's streaming_text tombstone. */
+          apiFetch("/api/sessions/"+encodeURIComponent(s.id),{
+            method:"PATCH",
+            body:{streamingText:null,streamingReasoning:null},
+            timeoutMs:5000,
+          }).catch(function(){});
+          /* Scroll away this partial bubble visually. */
+          partialMsg.remove();
+          /* Call askChatTurn with the last user message. */
+          var lastUserMsg=null;
+          for(var ui=state.messages.length-1;ui>=0;ui--){
+            if(state.messages[ui]&&state.messages[ui].role==="user"){
+              lastUserMsg=state.messages[ui].rawText||state.messages[ui].content;
+              break;
+            }
+          }
+          if(lastUserMsg&&typeof window.askChatTurn==="function"){
+            window.askChatTurn(lastUserMsg);
+          }else{
+            showToast("No previous user message to retry.");
+          }
+        });
+      }
+      /* Also clear the server-side streaming_text so a second reload
+         doesn't show the same partial content again. */
+      apiFetch("/api/sessions/"+encodeURIComponent(s.id),{
+        method:"PATCH",
+        body:{streamingText:null,streamingReasoning:null},
+        timeoutMs:5000,
+      }).catch(function(){});
+    }
     /* P_context-race — currentSessionId and URL are set HERE, AFTER
        state.messages has been fully rebuilt. Setting them earlier
        (before the forEach rebuild loop) left a window where
@@ -1478,7 +1526,7 @@ async function loadSession(id){
           rec.messages.push({role:m.role,content:txt});
         });
         if(rec.messages.length)batchSetItem(_memKey(s.id),JSON.stringify(rec));
-      }catch(e){console.warn("[sessions] mirror to local memory failed:",e.message)}
+      }catch(e){/* mirror failed */}
     }
     updateKB();
     updateChatStats();
@@ -1514,11 +1562,7 @@ async function loadSession(id){
     /* P_stale-loadSession — if a newer loadSession was requested
        while this one was in-flight, the error (if any) belongs to
        the stale request; don't disrupt the newer session's state. */
-    if(_loadSessionId!==id){
-      console.debug("[sessions] loadSession error stale — skip",{failed:id, latest:_loadSessionId});
-      return;
-    }
-    console.warn("[sessions] load failed:",e.message);
+    if(_loadSessionId!==id) return;
     showToast("Session not found or could not be loaded.");
     /* The URL had ?chat=<id> pointing to a session that doesn't exist
        on the server (404). This happens when the user bookmarks a
@@ -1656,7 +1700,7 @@ function togglePinSession(id,e){
     body:{pinned:s.pinned},
     timeoutMs:8000
   }).catch(function(err){
-    console.debug("[pin] server sync failed:",err&&err.message);
+    /* pin sync failed */
   });
   renderRecents();
 }
@@ -1791,7 +1835,7 @@ function removeTagFromSession(id,tag){
     body:{tags:s.tags},
     timeoutMs:8000
   }).catch(function(err){
-    console.debug("[tags] server sync failed:",err&&err.message);
+    /* tags sync failed */
   });
   renderRecents();
   openTagEditor(id,{stopPropagation:function(){},preventDefault:function(){},currentTarget:document.querySelector('.recent-item[data-recent-actual="'+id+'"] .tag-btn')});
@@ -1827,7 +1871,7 @@ function actuallyDeleteSession(id,ev){
      messages because the bounce never fired. Also cancel any
      in-flight chat stream so a half-written reply doesn't
      resurface after the delete. */
-  console.debug("[sessions] delete click",{id,cur:state.session.currentSessionId,sessCount:SERVER_SESSIONS.length,wasActive:state.session.currentSessionId===id||state.currentSessionId===id});
+  
   var wasActive=state.session.currentSessionId===id||state.currentSessionId===id;
   if(wasActive){
     if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
@@ -1840,7 +1884,6 @@ function actuallyDeleteSession(id,ev){
   SERVER_SESSIONS=SERVER_SESSIONS.filter(function(s){return s.id!==id;});
   clearLocalMemory(id);
   renderRecents();
-  console.debug("[sessions] delete after local filter",{sessCount:SERVER_SESSIONS.length,id});
   /* P_delete-resurrect — register this id with the doSave()
      tombstone set BEFORE the network round-trip. Any POST that
      arrives during the flight window, or any post-flight
@@ -1858,13 +1901,11 @@ function actuallyDeleteSession(id,ev){
     timeoutMs:8000
   }).then(function(){
     showToast("Session deleted");
-    console.debug("[sessions] DELETE 200",{id});
     /* P_delete-stale — if no sessions remain, make sure the
        chat view is hidden and the topic-setup is showing so the
        user lands on a clean "start a new conversation" surface
        instead of a blank / stale chat panel. */
     refreshServerSessions().then(function(){
-      console.debug("[sessions] delete after refreshServerSessions",{sessCount:SERVER_SESSIONS.length});
       /* P_delete-resurrect — the server has now confirmed the
          row is gone. From this point on, a streaming-callback
          POST that happens to carry this same id is no longer
@@ -1881,7 +1922,7 @@ function actuallyDeleteSession(id,ev){
       }
     });
   }).catch(function(err){
-    console.warn("[delete] server sync failed:",err&&err.message);
+    /* delete sync failed */
     try{showToast("Delete failed: "+(err&&err.message||"server error")+" - refreshing.",4000)}catch(_){}
     /* P_delete-resurrect — keep the tombstone on failure. The
        local mirror no longer has the row (we filtered it at
@@ -1915,7 +1956,7 @@ function restoreSession(id){
     method:"DELETE",
     timeoutMs:8000
   }).catch(function(err){
-    console.debug("[archive] restore sync failed:",err&&err.message);
+    /* archive sync failed */
   });
   renderRecents();
 }
@@ -2161,7 +2202,7 @@ function onProjectEditorSave(projectId){
       method:projectId?"PATCH":"POST",
       body:{name:name,description:description,color:color,icon:icon},
       timeoutMs:8000
-    }).catch(function(e){console.debug("[project] server sync failed:",e&&e.message)});
+    }).catch(function(e){/* project sync failed */});
   }catch(_){}
 }
 function onProjectDelete(projectId){
@@ -2420,12 +2461,10 @@ async function generateDiagnosticQuestions(topic,language,onProgress){
     var resp=await callAPI(msgs,MAX_TOKENS_DIAG);
     if(!resp){
       if(!state.lastCallError)state.lastCallError="Diag call returned empty response";
-      console.log("[diag] step "+(i+1)+"/5: no response, reason="+state.lastCallError);
       break;
     }
     var q=parseOneDiagResponse(resp,i);
     if(!q){
-      console.log("[diag] step "+(i+1)+"/5: parse failed, reason="+state.lastCallError);
       break;
     }
     all.push(q);
@@ -2744,7 +2783,6 @@ async function generateTopicKBNodes(topic,language){
     while(arr.length<5)arr.push("Dimension "+arr.length);
     return arr.slice(0,5).map(function(s){return String(s).trim()}).filter(function(s){return s.length>0});
   }catch(e){
-    console.log("[generateTopicKBNodes] failed: "+(e&&e.message?e.message:String(e)));
     return null;
   }
 }
@@ -2821,12 +2859,6 @@ async function startSession(){
   state.topic=topic;
   state.diagIndex=0;
   state.diagAnswers=[];
-  /* v3.0 design — §10.1 read the optional long-term plan fields
-     (target date / daily minutes / rest days) into state before
-     the KB is built so the plan generator can use them. */
-  if(typeof readPlanSetupIntoState==="function"){
-    try{readPlanSetupIntoState()}catch(_){}
-  }
 
   var lang=detectLanguage(topic);
 
@@ -2890,8 +2922,7 @@ async function startSession(){
       with a plain-conversation prompt. The first AI turn is a greeting
       so the user sees something without having to type. */
   if(appMode==="chat"){
-    /* P_crosstalk-diag — capture state at chat-mode session start. */
-    try{console.warn("[CTX-DIAG] startSession chat-mode",{msgCountBefore:Array.isArray(state.messages)?state.messages.length:-1,sid:state.session.currentSessionId,topic:state.topic})}catch(_){}
+    
     state.kbNodes=[];
     /* diagQuestions/diagAnswers/diagIndex/substantiveCount already
         cleared by the P_new-session-context-leak block above. */
@@ -3020,11 +3051,9 @@ async function startSession(){
         ? "已识别 "+state.kbNodes.length+" 个知识点"
         : "Identified "+state.kbNodes.length+" knowledge points"));
     }else{
-      console.log("[startSession] generateTopicKBNodes returned insufficient results, using generic KB node names");
       diagProgress(15, t("chat.knowledgeReady"));
     }
   }catch(e){
-    console.log("[startSession] generateTopicKBNodes failed, using generic KB node names:",e&&e.message?e.message:String(e));
     diagProgress(15, t("chat.knowledgeReady"));
   }
 
@@ -3043,8 +3072,6 @@ async function startSession(){
   /* P_ui-tutor-diag-debug — log apiConfig so we can see why
      getActiveProvider() might return null on cold boot. */
   try{
-    var _ap=getActiveProvider();
-    console.log("[diag] apiConfig.activeId="+apiConfig.activeId+" providerCount="+apiConfig.providers.length+" activeProvider="+(_ap?(_ap.label||_ap.id):"null"));
   }catch(_){}
   try {
     diagQs = await generateDiagnosticQuestions(topic, lang, function(step, total, q) {
@@ -3076,7 +3103,7 @@ async function startSession(){
          console shows the actual failure mode, not just the generic
          "Diag generator returned no questions" string the badge
          displays. */
-      try{console.warn("[diag] generator failed, lastCallError="+state.lastCallError)}catch(_){}
+      /* generator failed */
     }
   }
   if (diagQs && diagQs.length) {
@@ -3290,32 +3317,6 @@ function proceedToTeaching(){
      always points to the first node so teaching starts from the
      foundation. */
   state.teachingPlan=buildTeachingPlanFromKB();
-  /* v3.0 design (§10) — overlay the long-term plan: target date,
-     daily minutes, weekly rest days, day-by-day distribution with
-     the last 7 days reserved as a review buffer. The plan object
-     keeps the legacy fields (subtopics, currentSubtopicIdx) for
-     backwards compatibility with the rest of the code. */
-  if(typeof tutorSocratic==="object"&&tutorSocratic
-     &&typeof tutorSocratic.buildLongTermPlan==="function"){
-    try{
-      var _ltp=tutorSocratic.buildLongTermPlan({});
-      if(_ltp){
-        /* Merge the schedule fields into the existing plan so
-           callers reading state.teachingPlan see one shape. */
-        for(var _k in _ltp){
-          if(Object.prototype.hasOwnProperty.call(_ltp,_k)
-             &&!Object.prototype.hasOwnProperty.call(state.teachingPlan,_k)){
-            state.teachingPlan[_k]=_ltp[_k];
-          }
-        }
-        state.teachingPlan.days=_ltp.days;
-        state.teachingPlan.dailyMinutes=_ltp.dailyMinutes;
-        state.teachingPlan.targetDate=_ltp.targetDate;
-        state.teachingPlan.totalMinutes=_ltp.totalMinutes;
-        state.teachingPlan.weeklyRestDays=_ltp.weeklyRestDays;
-      }
-    }catch(_){}
-  }
   /* P_teaching-plan — sync state.currentNode with the teaching plan's
      first sub-topic. The teaching plan subtopics are sorted (blank → fuzzy
      → internalized), but state.currentNode indexes into the original
@@ -3478,19 +3479,7 @@ async function askChatTurn(userText){
      old context" bug. Logs the history length, state.messages length,
      current session id, and a short preview of each history entry so
      we can see exactly where the stale context comes from. */
-  try{
-    console.warn("[CTX-DIAG] askChatTurn",{
-      sid:state.session.currentSessionId,
-      topic:state.topic,
-      msgCount:Array.isArray(state.messages)?state.messages.length:-1,
-      histLen:history?history.length:0,
-      histPreview:(history||[]).map(function(h,i){
-        var c=typeof h.content==="string"?h.content:(JSON.stringify(h.content)||"");
-        return i+":"+h.role+":"+c.slice(0,60);
-      }),
-      msgListKids:document.getElementById("msgList")?document.getElementById("msgList").children.length:-1
-    });
-  }catch(_){}
+  
   /* The "user" message we feed the model: if the user just opened the
      chat and hasn't typed anything, synthesize a short opener so the
      model has something to greet them with. */
@@ -3606,17 +3595,7 @@ async function askChatTurn(userText){
      "continues an old session", the stale content must be in here.
      Spread the preview as individual console.warn lines so they show
      in the text output without needing to expand Array(2). */
-  try{
-    console.warn("[CTX-DIAG] callAPIStream msgs",{
-      sid:state.session.currentSessionId,
-      topic:state.topic,
-      msgsLen:msgs.length
-    });
-    for(var _di=0;_di<msgs.length;_di++){
-      var _mc=typeof msgs[_di].content==="string"?msgs[_di].content:(JSON.stringify(msgs[_di].content)||"");
-      console.warn("[CTX-DIAG]   msg["+_di+"] role="+msgs[_di].role+" content="+_mc.slice(0,300));
-    }
-  }catch(_){}
+  
   var ctl=addStreamingMessage({onRetry:function(){askChatTurn(userText)}});
   var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)},{
     onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];ctl.recordToolUse(c)}},
@@ -4137,14 +4116,6 @@ async function submitChatMessage(textOverride,opts){
       node.status="internalized";
       node.questions=(node.questions||0)+1;
       state.substantiveCount=0;
-      /* A-R2 perf — node status flipped; the cached plan warning
-         is now stale. Invalidate so the next evaluatePlanWarning
-         recomputes the blank/fuzzy ratio. */
-      try{
-        if(window.tutorSocratic&&window.tutorSocratic._invalidatePlanWarningCache){
-          window.tutorSocratic._invalidatePlanWarningCache();
-        }
-      }catch(_){}
       /* P_node-sync — find the next sub-topic using the teaching
          plan's SORTED order, NOT the raw kbNodes order. The plan
          sorts blank → fuzzy → internalized so we teach the biggest
@@ -4281,17 +4252,6 @@ async function submitChatMessage(textOverride,opts){
         addMessage("assistant",t("tutor.takeTime"));
       }
     }
-    /* v3.0 design — §10.4 plan warning. Evaluate after every
-       user turn; render if a warning is due. The evaluator
-       itself throttles so the user is not nagged. */
-    if(typeof tutorSocratic==="object"&&tutorSocratic
-       &&typeof tutorSocratic.evaluatePlanWarning==="function"
-       &&typeof tutorSocratic.renderPlanWarning==="function"){
-      try{
-        var _warn=tutorSocratic.evaluatePlanWarning();
-        if(_warn)tutorSocratic.renderPlanWarning(_warn);
-      }catch(_){}
-    }
     updateChatStats();
   },0);
 }
@@ -4332,7 +4292,7 @@ function buildMessageToolbar(opts){
     b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+svgInner+"</svg>";
     b.addEventListener("click",function(ev){
       ev.stopPropagation();
-      try{onClick(ev)}catch(e){console.warn("[msg-toolbar] "+action+" failed:",e&&e.message)}
+      try{onClick(ev)}catch(e){/* msg-toolbar action failed */}
     });
     bar.appendChild(b);
     return b;
@@ -4499,7 +4459,7 @@ function fireFeedback(messageId,rating,categories){
       timeoutMs:8000
     }).catch(function(e){
       /* Telemetry failures are non-fatal. */
-      console.debug("[msg-feedback] not sent:",e&&e.message);
+      console.debug("[msg-feedback] not sent");
     });
   }catch(_){}
 }
@@ -4562,7 +4522,7 @@ function editUserMessage(messageId,bar){
       body:{content:editedText,regenerate:true,discardFollowing:true},
       timeoutMs:15000
     }).catch(function(e){
-      console.warn("[msg-edit] PATCH failed; staying in offline mode:",e&&e.message);
+      console.log("[msg-edit] PATCH failed");
       showToast("Saved locally — will sync when back online");
     });
     /* Replay from the edited turn. askChatTurn writes a fresh
@@ -4576,7 +4536,7 @@ function editUserMessage(messageId,bar){
         if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
         if(window._activeChatAbort){try{window._activeChatAbort("msg-edit")}catch(_){}}
         window.askChatTurn(editedText);
-      }catch(e){console.warn("[msg-edit] replay failed:",e&&e.message)}
+      }catch(e){/* msg-edit replay failed */}
     }
     /* Avoid leaving the patch promise dangling — reference it so
        linters don't drop it. */
@@ -4627,7 +4587,7 @@ function deleteUserMessage(messageId,bar){
     method:"DELETE",
     timeoutMs:8000
   }).catch(function(e){
-    console.debug("[msg-delete] not synced:",e&&e.message);
+    console.log("[msg-delete] not synced");
   });
 }
 function regenerateAssistantMessage(messageId,bar){
@@ -4649,7 +4609,7 @@ function regenerateAssistantMessage(messageId,bar){
   var div=document.querySelector('[data-client-id="'+messageId+'"]');
   if(div)div.remove();
   if(typeof window.askChatTurn==="function"){
-    try{window.askChatTurn(userText)}catch(e){console.warn("[regen] failed:",e&&e.message)}
+    try{window.askChatTurn(userText)}catch(e){/* regen failed */}
   }
 }
 function restoreMessageBody(entry,body){
@@ -5138,9 +5098,6 @@ function addStreamingMessage(opts){
        pill if reasoning_content arrived first) survive. */
     var err=document.createElement("div");
     err.className="msg-error";
-    var errIcon=document.createElement("span");
-    errIcon.className="msg-error-icon";
-    errIcon.textContent="!";
     var errText=document.createElement("span");
     errText.className="msg-error-text";
     errText.textContent=t("common.noResponseTimeout").replace("{sec}",Math.round(FIRST_DELTA_TIMEOUT_MS/1000));
@@ -5149,7 +5106,6 @@ function addStreamingMessage(opts){
     errBtn.className="msg-retry-btn";
     errBtn.id=retryBtnId;
     errBtn.textContent=t("common.retry");
-    err.appendChild(errIcon);
     err.appendChild(errText);
     err.appendChild(errBtn);
     if(placeholder.parentNode===body){
@@ -5167,7 +5123,7 @@ function addStreamingMessage(opts){
            pill sat there loading, then a new conversation bubble
            appeared below, looking like two separate events. The
            new bubble's own thinking state is enough indication. */
-        if(typeof onRetry==="function"){try{onRetry()}catch(e){console.warn("[retry] handler threw:",e)}}
+        if(typeof onRetry==="function"){try{onRetry()}catch(e){/* retry handler threw */}}
       });
     }
     updateChatStats();
@@ -5817,7 +5773,7 @@ function teardownThinkStructure(){
         es.close();
       });
     }catch(e){
-      console.warn("[execution-sse] failed to connect:",e&&e.message);
+      console.log("[execution-sse] failed");
     }
   }
 
@@ -6296,7 +6252,7 @@ function teardownThinkStructure(){
                  interactive widgets in live tutor mode. */
               var finalHtml;
               try{finalHtml=renderAssistantHTML(full)}catch(e){
-                console.warn("[typeTick] renderAssistantHTML error:",e&&e.message);
+                console.log("[typeTick] render error");
                 finalHtml="<p>"+esc(full)+"</p>";
               }
               body.innerHTML=finalHtml;
@@ -6329,7 +6285,7 @@ function teardownThinkStructure(){
             }
             requestAnimationFrame(typeTick);
           }catch(e){
-            console.warn("[typeTick] render error:",e&&e.message);
+            console.log("[typeTick] render error");
             try{
               var fb=renderAssistantHTML(full);
               body.innerHTML=fb;
@@ -6355,7 +6311,7 @@ function teardownThinkStructure(){
         try{
           finalHtml=renderAssistantHTML(full);
         }catch(e){
-          console.warn("[finish] renderAssistantHTML error:",e&&e.message);
+          console.log("[finish] render error");
           finalHtml="<p>"+esc(full)+"</p>";
         }
         /* P_stop-spinner — finalize the thinking pill BEFORE saving
@@ -6394,7 +6350,7 @@ function teardownThinkStructure(){
           state.messages[msgIdx].reasoningContent=fullReasoning||null;
         }
       }catch(e){
-        console.warn("[finish] formatMsg error:",e&&e.message);
+        console.log("[finish] formatMsg error");
         var fb="<p>"+esc(full)+"</p>";
         var savedPill2=body.querySelector('.think-block');
         var savedTC2=body.querySelectorAll('.agent-tool-card');
@@ -6539,7 +6495,6 @@ function teardownThinkStructure(){
        try{
          body.innerHTML=
            '<div class="msg-error">'+
-             '<span class="msg-error-icon">!</span>'+
              '<span class="msg-error-text">'+(errMsg||'Generation failed')+'</span>'+
               '<button type="button" class="msg-retry-btn" id="'+retryBtnId+'">Retry</button>'+
             '</div>';
@@ -6556,9 +6511,9 @@ function teardownThinkStructure(){
               try{
                 var ret=onRetry();
                 if(ret&&typeof ret.then==="function"){
-                  ret.catch(function(e){console.warn("[retry] async handler failed:",e)});
+                  ret.catch(function(e){/* retry async handler failed */});
                 }
-              }catch(e){console.warn("[retry] handler threw:",e)}
+              }catch(e){/* retry handler threw */}
            });
          }
        }catch(e){
@@ -7608,10 +7563,10 @@ function persistMistake(mistakeData){
         source:mistakeData.source||"quiz"
       }
     }).catch(function(e){
-      console.warn("[mistakes] failed to persist mistake:",e&&e.message);
+      console.log("[mistakes] failed to persist mistake");
     });
   }catch(e){
-    console.warn("[mistakes] persistMistake threw:",e&&e.message);
+    console.log("[mistakes] persistMistake threw");
   }
 }
 
@@ -7796,14 +7751,11 @@ function updateKB(){
      #kbContent body to that renderer. */
   if(typeof tutorSocratic==="object"&&tutorSocratic
      &&typeof tutorSocratic.renderKnowledgeBoundaryFile==="function"){
-    try{tutorSocratic.renderKnowledgeBoundaryFile()}catch(e){console.warn("[kb] boundary render failed",e)}
+    try{tutorSocratic.renderKnowledgeBoundaryFile()}catch(e){/* kb boundary render failed */}
   }
   /* Mode banner and teaching plan re-render in the new module. */
   if(typeof tutorSocratic==="object"&&tutorSocratic){
     try{tutorSocratic.renderTeachingPlan()}catch(_){}
-    try{tutorSocratic.renderModeBanner()}catch(_){}
-    try{tutorSocratic.renderLongTermPlan()}catch(_){}
-    try{tutorSocratic.renderPracticeProgress()}catch(_){}
   }
   var cont=document.getElementById("kbContent");
   if(!cont)return;
@@ -7916,7 +7868,7 @@ function loadCrossSessionKB(opts){
     _crossSessionKBCache={data:r,at:Date.now()};
     return r;
   }).catch(function(e){
-    console.warn("[kb] failed to load cross-session boundary:",e&&e.message);
+    console.log("[kb] failed to load cross-session boundary");
     return {items:[],summary:{total:0,fuzzy:0,internalized:0,blank:0}};
   });
 }
@@ -8132,8 +8084,7 @@ async function resetApp(){
   _chatStopMode=false;
   window._shareToken=null;
   resetState();
-  /* P_crosstalk-diag — confirm resetState actually cleared messages. */
-  try{console.warn("[CTX-DIAG] resetApp after resetState",{msgCount:Array.isArray(state.messages)?state.messages.length:-1,sid:state.session.currentSessionId,topic:state.session.topic})}catch(_){}
+  
   /* P2.1 — preserve the project binding so a new chat in the
      same project keeps the user in their context. */
   state.session.currentProjectId=getActiveProjectId();
@@ -8148,14 +8099,6 @@ async function resetApp(){
   document.getElementById("topicInput").value="";
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">'+(typeof t==="function"?t("tutor.kbTopicFirst"):"Set a topic to build your knowledge map.")+'</div>';
   document.getElementById("chatStats").textContent="";
-  /* v3.0 design — refresh the plan-setup form so a returning
-     user sees their previously chosen target date / daily
-     minutes / rest days. Without this, the form would always
-     show the default 30-minute empty date, even after the
-     user had set values in a previous session. */
-  if(typeof writeStateIntoPlanSetup==="function"){
-    try{writeStateIntoPlanSetup()}catch(_){}
-  }
   /* Task 3.3 — clear the teaching-plan view on full reset so a
      previous session's plan doesn't linger in the sidebar. */
   var _tpc2=document.getElementById("teachingPlanContent");if(_tpc2)_tpc2.innerHTML="";
@@ -8234,7 +8177,7 @@ window.isInAuthGraceWindow=isInAuthGraceWindow;
    truth for session lifetime, and the next successful login will
    set a new one. */
 function handleAuthExpired(cause){
-  console.warn("[auth] handleAuthExpired called, cause="+(cause||"apiFetch-401"),"at",new Error().stack?.split("\n")[2]?.trim());
+  console.log("[auth] handleAuthExpired called, cause="+(cause||"apiFetch-401"));
   try{
     /* P_bleed-auth-expired — same per-user cache wipe as signOut().
        A 401 may fire mid-session while the user is still on the
@@ -8263,7 +8206,7 @@ function handleAuthExpired(cause){
     }catch(_){}
     if(window._onAuthExpiredListeners){
       window._onAuthExpiredListeners.forEach(function(fn){
-        try{fn()}catch(e){console.warn("[auth] listener threw:",e)}
+        try{fn()}catch(e){/* auth listener threw */}
       });
     }
     /* Show the gate; the existing showGate() handles UI swap. */
@@ -8283,7 +8226,7 @@ function handleAuthExpired(cause){
         if(gate){gate.insertBefore(banner,gate.firstChild)}
       }
     },0);
-  }catch(e){console.warn("[auth] handleAuthExpired failed:",e&&e.message)}
+  }catch(e){/* handleAuthExpired failed */}
 }
 window.handleAuthExpired=handleAuthExpired;
 
@@ -8631,7 +8574,7 @@ async function fetchWebContext(topic,opts){
          soft error; the user still gets the previous context if any. */
       var firstErr=searchResps.find(function(x){return x&&!x.ok&&(x.status||x.reason)});
       var emsg=firstErr?(firstErr.status?"HTTP "+firstErr.status:(firstErr.reason||"failed")):"no results";
-      console.warn("[web search] all queries failed:",emsg);
+      console.log("[web search] all queries failed");
       state.searchContextError=emsg;
       _emit("error",{message:emsg,code:"no-results"});
       try{setSearchPill("err",0,"Search failed: "+emsg)}catch(_){}
@@ -8666,7 +8609,7 @@ async function fetchWebContext(topic,opts){
         var okN=fetched.filter(function(x){return x&&x.ok}).length;
         _emit("fetched",{okCount:okN,total:topUrls.length});
       }catch(e){
-        console.warn("[web fetch] batch failed:",e&&e.message,"status:",e&&e.status);
+        console.log("[web fetch] batch failed");
         _emit("fetched",{okCount:0,total:topUrls.length,error:e&&e.message});
       }
     }
@@ -8794,13 +8737,13 @@ async function fetchWebContext(topic,opts){
       }
       _emit("done",{finalCount:enriched.length,fetchedCount:fetchedCount,engines:engineCounts});
     }
-    console.log("[web search]",enriched.length,"results ("+fetchedCount+" fetched) for:",topic);
+    console.log("[web search]",enriched.length,"results for:",topic);
     try{setSearchPill("ok",enriched.length,enriched.length+" sources"+(fetchedCount?" · "+fetchedCount+" full":""))}catch(_){}
     return{ok:true,reason:"ok",results:enriched.length,context:ctx,sources:enriched};
   }catch(e){
     clearTimeout(tmo);
     var emsg=(e&&e.message)||String(e);
-    console.warn("[web search] failed:",emsg);
+    console.log("[web search] failed");
     state.searchContextError=emsg;
     _emit("error",{message:emsg,code:"exception"});
     try{setSearchPill("err",0,"Search: "+emsg)}catch(_){}
@@ -9162,7 +9105,7 @@ async function rewriteQueryForSearch(rawText){
     return cleaned;
   }catch(e){
     clearTimeout(tmo);
-    console.warn("[rewriter] failed:",e&&e.message);
+    console.log("[rewriter] failed");
     return null;
   }
 }
@@ -9235,7 +9178,7 @@ function generateSessionTitle(){
     }
   }).catch(function(e){
     _titleGenQueued=false;
-    console.warn("[title gen] failed:",e&&e.message);
+    console.log("[title gen] failed");
   });
 }
 
@@ -9842,14 +9785,8 @@ function extractHistory(){
       }
       out.push(msg);
     }
-    if(out.length){
-      /* P_crosstalk-diag — history came from state.messages (tier 1). */
-      console.warn("[CTX-DIAG] extractHistory tier1 state.messages",{len:out.length,sid:state.session.currentSessionId});
-      return out;
-    }
+    if(out.length) return out;
   }
-  /* P_crosstalk-diag — fell through state.messages branch. */
-  console.warn("[CTX-DIAG] extractHistory fell through state.messages",{msgCount:Array.isArray(state.messages)?state.messages.length:-1});
   /* P_context-race — if currentSessionId is null (state was reset
      but no session loaded yet), skip the localStorage fallback.
      _memKey(null) resolves to "socrates-memory-default" which is a
@@ -9879,15 +9816,7 @@ function extractHistory(){
       if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";
       out.push({role:m.role==="user"?"user":"assistant",content:txt});
     }
-    if(out.length){
-      /* P_crosstalk-diag — history came from localStorage (tier 2).
-         This is the suspected culprit for cross-session context: if
-         the localStorage key still holds the OLD session's messages,
-         a new session with the same sid (or a sid collision) would
-         pull stale history. */
-      console.warn("[CTX-DIAG] extractHistory tier2 localStorage",{len:out.length,sid:sid,memKey:_memKey(sid),preview:out.map(function(m,i){return i+":"+m.role+":"+String(m.content).slice(0,50)})});
-      return out;
-    }
+    if(out.length) return out;
     /* Fall through to DOM if local cache has nothing usable */
   }
   var list=document.getElementById("msgList");
@@ -9907,8 +9836,7 @@ function extractHistory(){
     if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";
     out.unshift({role:el.classList.contains("user")?"user":"assistant",content:txt});
   }
-  /* P_crosstalk-diag — history came from DOM (tier 3 fallback). */
-  if(out.length)console.warn("[CTX-DIAG] extractHistory tier3 DOM",{len:out.length,kids:list.children.length});
+  
   return out;
 }
 
@@ -10042,7 +9970,7 @@ function fromBasicsDirective(node){
 
 async function generateSocraticQuestion(node,domain){
   if(hasUsableActive()){
-    console.log("%c[Socratic] non-stream for: "+node.name,"color:#4af");
+    console.log("[Socratic] non-stream for: "+node.name);
     var history=extractHistory();
     var isFirst=history.length===0;
     var msgs=buildSocraticMessages(node,domain,history,isFirst);
@@ -10058,7 +9986,7 @@ async function generateSocraticQuestion(node,domain){
 
 async function generateSocraticQuestionStream(node,domain,onDelta){
   if(hasUsableActive()){
-    console.log("%c[Socratic] stream for: "+node.name,"color:#4af");
+    console.log("[Socratic] stream for: "+node.name);
     var history=extractHistory();
     var isFirst=history.length===0;
     var msgs=buildSocraticMessages(node,domain,history,isFirst);

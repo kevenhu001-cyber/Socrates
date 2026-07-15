@@ -87,7 +87,7 @@ export async function afterAuthEnter(){
      surfaces (renderRecents, renderProviderList, renderProjects)
      so the empty state appears immediately. */
   if(typeof window.clearPerUserClientState==="function"){
-    try{window.clearPerUserClientState()}catch(e){console.warn("[afterAuthEnter] clearPerUserClientState threw:",e&&e.message)}
+    try{window.clearPerUserClientState()}catch(e){/* ignore */}
   }
   /* P2.1 — hydrate the project list from localStorage and
      paint the chip row. Server-side /api/projects is
@@ -108,9 +108,9 @@ export async function afterAuthEnter(){
         await apiFetch("/api/migrate",{method:"POST",body:payload});
         try{localStorage.removeItem("socrates-sessions-v2")}catch(_){}
         try{localStorage.removeItem("socrates-api")}catch(_){}
-      }catch(e){console.warn("[migrate]",e.message)}
+      }catch(e){/* migrate failed */}
     }
-  }catch(e){console.warn("[migrate] setup",e.message)}
+  }catch(e){/* migrate setup failed */}
   /* Boot-time data fetch helper — calls a `fn` once; if it throws
      an ApiError(401) DURING the post-login grace window
      (isInAuthGraceWindow), the brand-new `sid` cookie may not have
@@ -131,14 +131,11 @@ export async function afterAuthEnter(){
     }catch(e){
       var isGrace=typeof window.isInAuthGraceWindow==="function" && window.isInAuthGraceWindow();
       if(!isGrace || !e || e.status!==401) throw e;
-      console.warn("[boot]", label, "401 during grace window — retrying after 500ms");
       await new Promise(function(res){setTimeout(res,500)});
       try{
         var r2=await fn();
-        console.log("[boot]", label, "retry succeeded");
         return r2;
       }catch(e2){
-        console.warn("[boot]", label, "retry failed:", e2 && e2.message);
         /* Re-throw so handleAuthExpired() can take over — better
            than showing the user an empty picker while their real
            session is still alive. */
@@ -153,7 +150,6 @@ export async function afterAuthEnter(){
      bootFetch retries 401s during the grace window so the model
      picker isn't left empty when the sid cookie is still settling. */
   var _r=await bootFetch("refreshApiConfig", window.refreshApiConfig);
-  console.log("[afterAuthEnter] refreshApiConfig returned:", _r && _r.providers && _r.providers.length, "providers, activeId=", _r && _r.activeId);
   /* Load the user's saved memories for long-term context. AWAIT this
      so the first chat request the user fires after sign-in sees their
      own memories (and not the previous user's, which would otherwise
@@ -177,8 +173,7 @@ export async function afterAuthEnter(){
   var chatId=window.getChatIdFromURL&&window.getChatIdFromURL();
   var state=window.state;
   if(chatId){
-    try{await window.loadSession(chatId)}catch(e){
-      console.warn("[boot] failed to load session from URL:",chatId,e&&e.message);
+    try{await window.loadSession(chatId)}catch(e){/* failed to load session */
       state.currentSessionId=null;
       window.setChatIdInURL&&window.setChatIdInURL(null);
     }
@@ -205,19 +200,10 @@ export async function submitAuthSignin(){
   try{
     var r=await apiFetch("/api/auth/login",{method:"POST",_authEndpoint:true,body:{email,password}});
     if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){}
-    /* Build 2026-06-09b: /login now returns the full user shape (incl.
-       verifiedAt). Log it so a hard-refresh test can confirm the new
-       payload is reaching the browser. */
-    console.log("[boot/build 2026-06-09b] login.user =", JSON.stringify(r.user).substring(0, 300));
-    /* Start the post-auth grace window + adopt the canonical user
-       object from /me. This avoids the "Guest / Not signed in"
-       flash that happens when background calls hit the server
-       before the Set-Cookie has fully propagated. */
     markAuthSuccess&&markAuthSuccess();
     try{
       var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
       window.setCurrentUser((me&&me.user)?me.user:r.user);
-      console.log("[boot/build 2026-06-09b] /me.user =", JSON.stringify(me.user).substring(0, 300));
     }catch(_){
       /* /me is the source of truth for the user object (tier,
          preferences, etc.). If it fails after a successful login,

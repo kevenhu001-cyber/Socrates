@@ -106,6 +106,20 @@
       "when": 1783531200000,
       "tag": "0014_login_failures",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1787389200000,
+      "tag": "0015_check_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1787389500000,
+      "tag": "0016_streaming_survival",
+      "breakpoints": true
     }
   ]
 }

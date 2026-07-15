@@ -105,9 +105,7 @@ function handleChatApiResult(result,ctl,userText){
       ctl.abort();
     }else if(window.state.lastCallError){
       window.state.lastCallSource="error";
-      console.error("[chat] stream error:",window.state.lastCallError);
-      try{window.showToast&&window.showToast("API error: "+window.state.lastCallError.slice(0,120),8000)}catch(_){}
-      ctl.replaceWithError("(response interrupted: "+reason+" — tap Retry to resume)",function(){
+      ctl.replaceWithError("(response interrupted — tap Retry to resume)",function(){
         window.askChatTurn&&window.askChatTurn(userText);
       });
     }else{

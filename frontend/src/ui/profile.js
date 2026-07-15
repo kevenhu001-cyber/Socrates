@@ -111,7 +111,7 @@ function onCustomInstructionsChange() {
       body: { customInstructions: buildCustomInstructionsString(value) },
       timeoutMs: 8000,
     }).then(function () {}).catch(function (e) {
-      console.debug("[custom-inst] server sync failed (will retry on next save):", e && e.message);
+      console.log("[custom-inst] server sync failed");
     });
   }, 600);
 }
@@ -168,11 +168,11 @@ function loadUserMemories() {
         window._userMemories = r.filter(function (m) { return m.enabled !== false; }).map(function (m) { return m.text; });
       }
     }).catch(function (e) {
-      console.warn("[memories] load failed, leaving _userMemories empty:", e && e.message);
+      console.log("[memories] load failed");
       window._userMemories = [];
     });
   } catch (e) {
-    console.warn("[memories] load threw, leaving _userMemories empty:", e && e.message);
+    console.log("[memories] load threw");
     window._userMemories = [];
     return Promise.resolve();
   }

@@ -37,8 +37,7 @@ export function beginAgentTextStream(){
     if(pending){cancelAnimationFrame(pending);pending=null}
     body.innerHTML=
       '<div class="msg-error">'+
-        '<span class="msg-error-icon">!</span>'+
-        '<span class="msg-error-text">Response timed out (no text for '+(FIRST_DELTA_TIMEOUT_MS/1000)+'s)</span>'+
+        '<span class="msg-error-text">Response timed out</span>'+
       '</div>';
   },FIRST_DELTA_TIMEOUT_MS);
   function doRender(){

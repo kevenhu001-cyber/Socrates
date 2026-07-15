@@ -91,6 +91,13 @@ export const sessions = pgTable('sessions', {
   mistakes: jsonb('mistakes').default([]),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  /* P_streaming-survival — when the client disconnects mid-stream
+   * (browser close, network blip), the server saves the accumulated
+   * partial text and reasoning content here. On reload the client
+   * finds these non-null, renders the partial response, and offers
+   * to resume/retry. finish() clears them back to null. */
+  streamingText: text('streaming_text'),
+  streamingReasoning: text('streaming_reasoning'),
 }, (table) => [
   index('sessions_user_id_idx').on(table.userId),
   index('sessions_archived_at_idx').on(table.archivedAt),
