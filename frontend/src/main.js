@@ -8,6 +8,7 @@ import './state.js';
 import './i18n.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
 import { scrollContainer, scrollToBottomIfPinned } from './ui/scroll.js';
+import { initKeyboardViewport } from './ui/keyboardViewport.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
 import { showNewReplyPill, hideNewReplyPill, wireScrollPill } from './ui/scrollPill.js';
 import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
@@ -38,6 +39,12 @@ import { esc, escAttr, escHTML, decodeEntities, stripTags } from './render/helpe
 import { processPendingMermaid, processPendingViz, processPendingVizActions, renderViz, renderVizLoading, renderMermaid, openVizModal } from './render/viz.js';
 import { callAPI, callAPIChat } from './chat/api.js';
 import { callAPIStream } from './chat/stream.js';
+import { TOOL_META, toolFormatInput, appendToolModule, setLastToolOutput, makeArtifactError, appendInlineArtifact, renderWebSearchResults } from './ui/toolCards.js';
+import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
+import { SEARCH_PROGRESS_LABELS, trSearchLabel, _formatEngineBreakdown, startSearchProgress } from './ui/searchProgress.js';
+import { beginAgentTextStream, appendRunFooter } from './chat/agentStream.js';
+import { BUILTIN_TEMPLATES, SYSTEM_PROMPT_SUMMARIZE, SYSTEM_PROMPT_TRANSLATE, SYSTEM_PROMPT_EXPLAIN_CODE, SYSTEM_PROMPT_DEBUG, SYSTEM_PROMPT_QUIZ, SYSTEM_PROMPT_SOCRATIC, PROMPT_TEMPLATES_KEY, loadPromptTemplates, savePromptTemplates, findTemplateByShortcut, upsertCustomTemplate, deleteCustomTemplate } from './chat/promptTemplates.js';
+import { renderNoUrlHint, renderLinkPreviews } from './ui/linkPreviews.js';
 import { hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister, switchAuthTab, setAuthError, showAuthForgotPassword, showAuthCodeLogin, submitAuthSignin, submitAuthRegister, submitAuthVerify, submitAuthForgotPassword, submitAuthResetPassword, submitAuthSendCode, submitAuthLoginWithCode, resendVerification, resendAuthCode, afterAuthEnter } from './auth/index.js';
 import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
 import { toggleSidebar, getRecentsFilter, setRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
@@ -451,7 +458,7 @@ if(sbBackdrop)sbBackdrop.addEventListener("click",function(e){e.stopPropagation(
    simple state machine), and we do NOT use blur — the focus event just
    records the baseline scrollTop. This avoids platform-specific timing
    races (iOS fires blur before the close-resize; Android fires it after). */
-if(window.visualViewport){
+if(false && window.visualViewport){
   (function(){
     var input=document.getElementById("chatInputArea");
     if(!input)return;
@@ -502,6 +509,13 @@ if(window.visualViewport){
     });
   })();
 }
+
+/* Use a CSS inset instead of imperative scroll compensation. This keeps the
+   composer stable when browsers report VisualViewport measurements differently. */
+initKeyboardViewport({
+  input: document.getElementById('chatInputArea'),
+  container: document.getElementById('appShell'),
+});
 
 function switchTab(tab){
   var tk=document.getElementById("tabKnowledge");if(tk)tk.classList.toggle("active",tab==="knowledge");
@@ -3654,86 +3668,11 @@ function handleChatKey(e){
    API contract: docs/api/openapi.yaml P5.8 — these mirror
    the server shape; when the backend lands /api/prompts
    the local array becomes the offline cache. */
-/* P5.8 — Icon set. Each template has a 16×16 outline icon
-   rendered as inline SVG so it inherits `currentColor`. The
-   style is consistent across the set: 1.2–1.3px stroke,
-   rounded line caps/joins, filled accents (bullets / dots)
-   only where small, solid shapes are needed. Defined as
-   local constants so the BUILTIN_TEMPLATES array stays
-   readable. */
-var ICON_SUMMARIZE='<svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="3" cy="4" r="1.1"/><circle cx="3" cy="8" r="1.1"/><circle cx="3" cy="12" r="1.1"/><rect x="5.5" y="3.4" width="8" height="1.2" rx="0.6"/><rect x="5.5" y="7.4" width="8" height="1.2" rx="0.6"/><rect x="5.5" y="11.4" width="6" height="1.2" rx="0.6"/></svg>';
-var ICON_TRANSLATE='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><ellipse cx="8" cy="8" rx="2.5" ry="6"/><line x1="2" y1="8" x2="14" y2="8"/></svg>';
-var ICON_EXPLAIN_CODE='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6,4.5 2.5,8 6,11.5"/><polyline points="10,4.5 13.5,8 10,11.5"/><line x1="9.2" y1="3.5" x2="6.8" y2="12.5"/></svg>';
-var ICON_DEBUG='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="8" cy="9.5" rx="3.2" ry="3.8"/><line x1="4.8" y1="9.5" x2="11.2" y2="9.5"/><line x1="6.5" y1="6" x2="5.5" y2="3.8"/><line x1="9.5" y1="6" x2="10.5" y2="3.8"/><line x1="5" y1="12" x2="3" y2="13.2"/><line x1="11" y1="12" x2="13" y2="13.2"/><line x1="3.2" y1="9.5" x2="1.4" y2="9.5"/><line x1="12.8" y1="9.5" x2="14.6" y2="9.5"/></svg>';
-var ICON_QUIZ='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M5.7 6.3a2.3 2.3 0 0 1 4.5.7c0 1.1-.9 1.5-1.5 1.8-.4.2-.5.6-.5 1.1"/><circle cx="8.2" cy="11.8" r="0.7" fill="currentColor" stroke="none"/></svg>';
-var ICON_SOCRATIC='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h10a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H7l-3 3v-3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><circle cx="5.5" cy="6.5" r="0.6" fill="currentColor" stroke="none"/><circle cx="8" cy="6.5" r="0.6" fill="currentColor" stroke="none"/><circle cx="10.5" cy="6.5" r="0.6" fill="currentColor" stroke="none"/></svg>';
 
-/* P5.8 — Specialized system prompts. One per built-in template.
-   These get injected as an EXTRA system message in front of the
-   user's turn when a template is active. They are deliberately
-   short and role-specific so the model commits to one mode (no
-   drift back to "be a helpful assistant"). The base system
-   prompt stays intact; the template prompt stacks on top. The
-   user never sees these.
-
-   Each prompt follows the same shape so the model can pattern-
-   match: ROLE → INPUT CONTRACT → OUTPUT CONTRACT → CONSTRAINTS.
-   This consistency matters more than any single template's
-   wording. */
-var SYSTEM_PROMPT_SUMMARIZE="You are a precise summarization specialist. The user will paste a passage; condense it into clear bullet points that preserve the key facts, names, numbers, dates, and conclusions. Rules:\n- Match the source language exactly — do NOT translate.\n- Length: target ~5 bullets for a paragraph, scaling up for long inputs (one bullet per paragraph or per key idea); never exceed what the source actually supports.\n- Preserve technical terms, proper nouns, numbers, and units verbatim.\n- Each bullet stands alone — no \"this/that\" references that need the original context.\n- Output only the bullets. No preamble, no \"Here is a summary:\", no meta-commentary.";
-var SYSTEM_PROMPT_TRANSLATE="You are a professional English translator. The user will paste text in another language; produce a natural English translation that preserves tone, register, and meaning. Rules:\n- Adapt idioms — find English equivalents instead of literal translations (\"avoir le cafard\" → \"to feel down\", not \"to have the cockroach\").\n- Keep proper nouns, brand names, and technical terms in their original form when English usage keeps them (e.g. \"déjà vu\", \"tsunami\").\n- Preserve the source register: casual stays casual, formal stays formal, technical stays technical.\n- Do NOT add explanations, footnotes, or alternatives. Output only the translation.\n- If the source is already English, say \"This is already English.\" and offer to refine instead.";
-var SYSTEM_PROMPT_EXPLAIN_CODE="You are a patient code mentor. The user will paste a code snippet; walk through it line-by-line, explaining what each line does, the data flow, and the design choices. Rules:\n- Lead with a one-sentence TL;DR of what the code does.\n- Then a section-by-section walkthrough. Group related lines; don't narrate every single statement if the structure is obvious.\n- Call out anything non-obvious: subtle bugs, surprising behaviors, edge cases the code does or doesn't handle, performance gotchas, security smells.\n- Match the user's apparent level. If the snippet is simple, don't pad; if it's advanced, skip basics and dive into the interesting parts.\n- Use markdown: headings for sections, inline code for symbols, fenced blocks for the snippet under discussion. No emojis.";
-var SYSTEM_PROMPT_DEBUG="You are a senior debugger. The user will paste code that is misbehaving, plus the expected vs. actual behavior. Work through this systematically:\n1. State your best-guess root cause in one sentence up front — don't bury the answer.\n2. Quote the specific line(s) that cause the issue, with line numbers if the snippet is numbered.\n3. Explain WHY the line fails (the mental model the code is encoding, and the gap between that model and reality).\n4. Propose the minimal fix. Show the corrected snippet; explain why this fix resolves the issue.\n5. Suggest a quick verification — a test, a print, or a mental check — the user can run to confirm.\nRules:\n- If the snippet has multiple plausible bugs, address the most likely one first; mention the rest only if they're independent.\n- If the bug is in third-party code or environment rather than the snippet itself, say so explicitly.\n- No fluff, no reassurance — be direct. The user came here to find the bug.";
-var SYSTEM_PROMPT_QUIZ="You are a quiz master. The user will give you a topic; generate exactly 5 questions of varying difficulty:\n- 1 easy (recall / definition).\n- 2 medium (apply / compare).\n- 2 hard (analyze / synthesize / edge case).\nFor each question:\n- State the question clearly.\n- Give exactly 3 options labeled A, B, C. Distractors should be plausible misconceptions, not obvious wrong answers.\n- Mark the correct option (e.g. \"Correct: B\") and add a one-sentence explanation of why it's right and why the distractors fail.\nFormat each question as:\nQ1. <question>\nA) ...  B) ...  C) ...\nCorrect: <letter> — <one-sentence reason>\nAfter all 5 questions, stop. Do NOT ask the user to begin — they'll respond when ready. Match the user's language.";
-var SYSTEM_PROMPT_SOCRATIC="You are a Socratic tutor. The user will give you a problem or concept. Your job is NOT to solve it — it's to guide them to the answer through questions. Rules:\n- Never reveal the answer, the formula, or the next step. If they ask directly, redirect with a question: \"What do you think happens when...?\".\n- Start by clarifying what they already know. Ask one question at a time.\n- After each of their responses, identify the gap in their reasoning and ask the next question that targets exactly that gap.\n- Build from concrete to abstract: anchor with a specific case before generalizing.\n- Be patient. If they're stuck, give a smaller, related problem — still as a question.\n- Only confirm or correct AFTER they've worked out the key insight themselves. When you do, briefly state what they got right and what was still off.\n- Match their language. Use their technical vocabulary, not textbook jargon they haven't seen.\n- One question per turn. Never bundle two or more questions in the same message.";
-
-var BUILTIN_TEMPLATES=[
-  {id:"tpl-summarize",title:"Summarize",description:"Condense the pasted text into bullet points.",icon:ICON_SUMMARIZE,category:"writing",shortcut:"/summarize",body:"Paste the text you want summarized:\n\n",systemPrompt:SYSTEM_PROMPT_SUMMARIZE,isBuiltin:true},
-  {id:"tpl-translate",title:"Translate to English",description:"Translate the input into natural English.",icon:ICON_TRANSLATE,category:"writing",shortcut:"/translate",body:"Paste the text to translate into English:\n\n",systemPrompt:SYSTEM_PROMPT_TRANSLATE,isBuiltin:true},
-  {id:"tpl-explain-code",title:"Explain this code",description:"Walk through the snippet line by line.",icon:ICON_EXPLAIN_CODE,category:"code",shortcut:"/explain",body:"Paste the code you want explained:\n\n```\n\n```\n",systemPrompt:SYSTEM_PROMPT_EXPLAIN_CODE,isBuiltin:true},
-  {id:"tpl-debug",title:"Debug this",description:"Find the bug, propose a fix, explain why it worked.",icon:ICON_DEBUG,category:"code",shortcut:"/debug",body:"Paste the misbehaving code:\n\n```\n\n```\n\nExpected behavior:\nActual behavior:\n",systemPrompt:SYSTEM_PROMPT_DEBUG,isBuiltin:true},
-  {id:"tpl-quiz",title:"Quiz me",description:"Generate 5 questions on a topic.",icon:ICON_QUIZ,category:"learning",shortcut:"/quiz",body:"Topic to be quizzed on:\n",systemPrompt:SYSTEM_PROMPT_QUIZ,isBuiltin:true},
-  {id:"tpl-socratic",title:"Socratic me",description:"Don't tell me the answer — ask me leading questions.",icon:ICON_SOCRATIC,category:"learning",shortcut:"/socratic",body:"Problem to work through:\n",systemPrompt:SYSTEM_PROMPT_SOCRATIC,isBuiltin:true}
-];
-var PROMPT_TEMPLATES_KEY="socrates-prompt-templates";
-function loadPromptTemplates(){
-  try{
-    var raw=localStorage.getItem(PROMPT_TEMPLATES_KEY);
-    var custom=raw?JSON.parse(raw):null;
-    if(!Array.isArray(custom))custom=[];
-  }catch(_){custom=[]}
-  /* Custom entries shadow built-ins of the same shortcut. */
-  var byShortcut={};
-  BUILTIN_TEMPLATES.forEach(function(t){byShortcut[t.shortcut]=t;});
-  custom.forEach(function(t){if(t&&t.shortcut)byShortcut[t.shortcut]=t;});
-  return Object.values(byShortcut).sort(function(a,b){
-    return(a.title||"").localeCompare(b.title||"");
-  });
-}
-function savePromptTemplates(customs){
-  try{
-    /* Persist only non-built-in entries. */
-    var persistable=(customs||[]).filter(function(t){return t&&!t.isBuiltin;});
-    localStorage.setItem(PROMPT_TEMPLATES_KEY,JSON.stringify(persistable));
-  }catch(_){}
-}
-function findTemplateByShortcut(s){
-  if(!s)return null;
-  var list=loadPromptTemplates();
-  for(var i=0;i<list.length;i++)if(list[i].shortcut===s)return list[i];
-  return null;
-}
-function upsertCustomTemplate(t){
-  var customs=loadPromptTemplates().filter(function(x){return!x.isBuiltin;});
-  var idx=-1;
-  for(var i=0;i<customs.length;i++)if(customs[i].id===t.id){idx=i;break}
-  if(idx>=0)customs[idx]=t;else customs.push(t);
-  savePromptTemplates(customs);
-}
-function deleteCustomTemplate(id){
-  var customs=loadPromptTemplates().filter(function(x){return!x.isBuiltin&&x.id!==id;});
-  savePromptTemplates(customs);
-}
+/* ICON_*, SYSTEM_PROMPT_*, BUILTIN_TEMPLATES, loadPromptTemplates,
+   savePromptTemplates, findTemplateByShortcut, upsertCustomTemplate,
+   deleteCustomTemplate extracted to src/chat/promptTemplates.js
+   (Phase 1E split). Imported at the top. */
 
 /* P5.8 — Slash-command palette overlay. A single instance
    that's lazily created the first time the user types `/`.
@@ -4914,780 +4853,26 @@ function syncMessageFromDom(clientId){
 }
 
 
-/* ============================================================
-   TOOL-CALLING UI HELPERS
-   The live chat's /api/chat/stream route emits `event: tool_use` /
-   `tool_progress` / `tool_result` / `execution_start` frames when
-   the model decides to call the code_interpreter tool. These
-   helpers render the resulting card in the last assistant bubble
-   and stream live stdout/stderr into it. Reusable for any future
-   tool the route registers with the upstream provider.
-   ============================================================ */
-
-var TOOL_META={
-  Read:    {letter:"R", cls:"read",    label:"Read",
-    svg:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2v12l6-3 6 3V2l-6 3L2 2z"/></svg>'},
-  Write:   {letter:"W", cls:"write",   label:"Write",
-    svg:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 1.5l3 3M5 11l-3.5 4 4-3.5M11.5 1.5L4 9l-1 3 3-1 7.5-7.5a2 2 0 0 0-2-2z"/></svg>'},
-  Edit:    {letter:"E", cls:"edit",    label:"Edit",
-    svg:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2.5a2 2 0 0 0-2.8 0l-9 9L1 15l3.5-1.7 9-9a2 2 0 0 0 0-2.8z"/><path d="M10.5 4.5l3 3"/></svg>'},
-  Glob:    {letter:"G", cls:"glob",    label:"Find",
-    svg:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 5h13l-1.5 8H3z"/><path d="M3.5 5V2h4l2 3"/></svg>'},
-  Grep:    {letter:"F", cls:"grep",    label:"Search",
-    svg:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.3 10.3l4.2 4.2"/></svg>'},
-  Bash:    {letter:"$", cls:"bash",    label:"Bash",
-    svg:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4l5 4-5 4"/><path d="M10 12h4"/></svg>'},
-  WebFetch:{letter:"↗", cls:"webfetch",label:"Fetch",
-    svg:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M2 8h12"/><path d="M8 1.5a11 11 0 0 1 0 13 11 11 0 0 1 0-13z"/></svg>'},
-  Code:    {letter:"λ", cls:"code",    label:"Python",
-    svg:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4L2 8l4 4"/><path d="M10 4l4 4-4 4"/></svg>'},
-  web_search:{letter:"W", cls:"websearch",label:"Web Search",
-    svg:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5l3.5 3.5"/><path d="M7 2.5a6 6 0 0 1 0 9"/><path d="M2.5 7h9"/></svg>'},
-  code_interpreter:{letter:"C", cls:"codeint",label:"Code",
-    svg:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l6 4-6 4z"/><path d="M2 3v10"/><path d="M14 3v10"/></svg>'},
-};
+/* TOOL_META, toolFormatInput, appendToolModule, setLastToolOutput,
+   makeArtifactError, appendInlineArtifact — extracted to
+   src/ui/toolCards.js (Phase 1A split). Imported at the top. */
 
 var _chatStopMode=false;
 var _chatStreaming=false;
 
-function toolFormatInput(name,inp){
-  if(!inp||typeof inp!=="object")return"";
-  if(name==="Read")    return inp.path+(inp.limit?("  lines "+(inp.offset||0)+"–"+(inp.offset+inp.limit)):"");
-  if(name==="Write")   return inp.path+"  ("+((inp.content||"").length)+" bytes)";
-  if(name==="Edit")    return inp.path+(inp.allOccurrences?"  (all occurrences)":"");
-  if(name==="Glob")    return inp.pattern;
-  if(name==="Grep")    return (inp.path||"workspace")+"  /  "+inp.pattern;
-  if(name==="Bash")    return inp.command;
-  if(name==="WebFetch")return inp.url;
-  if(name==="Code")    return (inp.language||"python")+"  ·  "+((inp.code||"").split("\n")[0]||"").slice(0,80);
-  if(name==="web_search")return inp.query||"";
-  if(name==="code_interpreter")return inp.code?(inp.language||"python")+"  ·  "+((inp.code||"").split("\n")[0]||"").slice(0,80):"";
-  return JSON.stringify(inp).slice(0,200);
-}
-
-/* Append a "tool module" to the target assistant bubble. Layout:
-   [icon][name: input]  ▼  (collapsible output).
-   - body (optional): explicit .msg-body to append into. The chat
-     streaming controller passes the current bubble's body. Falls
-     back to the last assistant bubble in msgList when omitted. */
-function appendToolModule(toolName,toolInput,body){
-  if(!body){
-    var list=document.getElementById("msgList");
-    if(!list)return null;
-    var last=list.lastElementChild;
-    if(last&&last.classList.contains("assistant")){
-      body=last.querySelector(".msg-body");
-    }
-  }
-  if(!body){
-    var list2=document.getElementById("msgList");
-    var div=document.createElement("div");
-    div.className="msg assistant";
-    body=document.createElement("div");
-    body.className="msg-body";
-    div.appendChild(body);
-    list2.appendChild(div);
-  }
-  var meta=TOOL_META[toolName]||{letter:"?",cls:"",label:toolName};
-
-  /* Card. */
-  var card=document.createElement("div");
-  card.className="agent-tool-card "+meta.cls;
-  card.innerHTML=
-    '<div class="agent-tool-head">'+
-      '<span class="agent-tool-icon"></span>'+
-      '<span class="agent-tool-name"></span>'+
-      '<span class="agent-tool-input"></span>'+
-      '<span class="agent-tool-chev">▾</span>'+
-    '</div>'+
-    '<div class="agent-tool-code-wrap"><pre class="agent-tool-code" style="display:none"><code></code></pre></div>'+
-    '<div class="agent-tool-out"></div>';
-  card.querySelector(".agent-tool-icon").innerHTML=meta.svg||meta.letter;
-  card.querySelector(".agent-tool-name").textContent=meta.label;
-  card.querySelector(".agent-tool-input").textContent=toolFormatInput(toolName,toolInput);
-  /* Insert the tool’s source code/command between head and output
-     when we have it. code_interpreter / Code share the python
-     source (toolInput.code). Bash has toolInput.command. WebFetch
-     shows the URL on its own line. Other tools (Grep, Glob, …)
-     don’t carry a meaningful source body, so we leave the code
-     block hidden and the input line in the head is enough. */
-  var codeEl=card.querySelector('.agent-tool-code');
-  var codeWrap=card.querySelector('.agent-tool-code-wrap');
-  var srcBody=null;
-  var srcLang='';
-  if(toolName==='code_interpreter'||toolName==='Code'){
-    srcBody=(toolInput&&toolInput.code)||'';
-    srcLang='python';
-  }else if(toolName==='Bash'){
-    srcBody=(toolInput&&toolInput.command)||'';
-    srcLang='bash';
-  }else if(toolName==='WebFetch'||toolName==='web_fetch'){
-    srcBody=(toolInput&&toolInput.url)||'';
-    srcLang='';
-  }
-  if(srcBody){
-    var codeInner=codeEl.querySelector('code');
-    codeInner.textContent=srcBody;
-    if(srcLang)codeInner.className='language-'+srcLang;
-    codeEl.style.display='';
-    if(typeof hljs!=='undefined'){
-      try{hljs.highlightElement(codeInner);codeInner.dataset.hljsDone='1'}catch(_){}
-    }
-  }else{
-    codeWrap.parentNode.removeChild(codeWrap);
-  }
-  var head=card.querySelector(".agent-tool-head");
-  head.addEventListener("click",function(){card.classList.toggle("open")});
-  body.appendChild(card);
-  scrollMainToBottom();
-  return card.querySelector(".agent-tool-out");
-}
-
-/* Update the most recently appended tool card's output.
-   When outEl is provided, write directly to it (avoids the
-   fragile last-card selector). */
-function setLastToolOutput(text,isError,outEl){
-  var out=outEl||null;
-  if(!out){
-    var list=document.getElementById("msgList");
-    if(!list)return;
-    out=list.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
-  }
-  if(!out)return;
-  out.textContent=text||"";
-  if(isError)out.classList.add("error");else out.classList.remove("error");
-  /* If the text is long, open the card by default so the user sees it. */
-  if(text&&text.length>200){
-    var card=out.parentElement;
-    if(card)card.classList.add("open");
-  }
-}
-
-/* Append an inline artifact (matplotlib PNG, CSV download link, etc.)
-   produced by the code interpreter to the last tool card's output.
-   Images render inline; everything else becomes a [download <mime>]
-   link. The /api/files/:id/raw endpoint is shared with the file-upload
-   pipeline, so the X-Content-Type-Options: nosniff header from
-   server/src/routes/files.js:151-157 already protects against content
-   sniffing. */
-/* Build the diagnostic placeholder shown when an inline artifact
-   fails to load. Replaces the <img> (or link) on error / non-2xx
-   so the user sees a useful message — the file id, mime, and a
-   retry button — instead of the browser's broken-image icon.
-   Returns the placeholder Element; caller decides where to mount
-   it. The error is informational only; we never throw. */
-function makeArtifactError(fileId,mimeType,url,reason){
-  var box=document.createElement("div");
-  box.className="artifact-error";
-  /* Inline SVG broken-image icon — same one most browsers draw. */
-  box.innerHTML=
-    '<svg class="artifact-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ 
-      '<rect x="3" y="3" width="18" height="18" rx="2"/>'+ 
-      '<circle cx="9" cy="9" r="2"/>'+ 
-      '<path d="m21 15-5-5L5 21"/>'+ 
-    '</svg>'+ 
-    '<span class="artifact-error-text">Could not load '+esc(mimeType||'file')+' · '+esc(fileId)+''+(reason?' ('+esc(reason)+')':'')+'</span>'+ 
-    '<button type="button" class="artifact-error-retry">Retry</button>';
-  /* Retry rebuilds the img with a cache-busting query param so the
-     browser re-fetches (avoids stuck negative caches on 4xx). */
-  box.querySelector('.artifact-error-retry').addEventListener('click',function(){
-    var fresh=document.createElement('img');
-    fresh.src=url+(url.indexOf('?')>=0?'&':'?')+'_='+Date.now();
-    fresh.alt="execution artifact";
-    fresh.className="exec-artifact-image";
-    fresh.loading="lazy";
-    fresh.addEventListener('error',function(){fresh.replaceWith(makeArtifactError(fileId,mimeType,url,'load failed'))});
-    if(box.parentNode)box.parentNode.replaceChild(fresh,box);
-  });
-  return box;
-}
-
-function appendInlineArtifact(fileId,mimeType,outEl){
-  var out=outEl||document.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
-  if(!out)return;
-  var url="/api/files/"+encodeURIComponent(fileId)+"/raw";
-  if((mimeType||"").indexOf("image/")===0){
-    var img=document.createElement("img");
-    img.src=url;
-    img.alt="execution artifact";
-    img.className="exec-artifact-image";
-    img.loading="lazy";
-    /* Programmatic error handler — DOMPurify strips inline onerror,
-       so we bind here on the Element directly. We use
-       replaceWith() so the broken-image icon disappears and the
-       placeholder takes its slot (no layout jump). */
-    img.addEventListener('error',function(){
-      try{if(img.parentNode)img.parentNode.replaceChild(makeArtifactError(fileId,mimeType,url,'load failed'),img)}catch(_){}
-    });
-    out.appendChild(img);
-    var card=out.closest(".agent-tool-card");
-    if(card)card.classList.add("open");
-  }else{
-    var a=document.createElement("a");
-    a.href=url;
-    a.textContent=t("common.downloadFile").replace("{type}",mimeType||"file");
-    a.target="_blank";
-    a.rel="noopener";
-    a.className="exec-artifact-link";
-    /* Non-image artifacts: also probe so a 401/404 turns the link
-       into a visible diagnostic instead of a dead download. */
-    if(typeof fetch==='function'){
-      try{
-        fetch(url,{method:'HEAD',credentials:'same-origin'}).then(function(r){
-          if(!r.ok&&a.parentNode){
-            a.parentNode.replaceChild(makeArtifactError(fileId,mimeType,url,'HTTP '+r.status),a);
-          }
-        }).catch(function(){});
-      }catch(_){}
-    }
-    out.appendChild(a);
-  }
-}
-
-/* Phrases the model tends to echo verbatim from the system prompt's
-   "thinking off" / "thinking on" suffixes. If a streamed thinking
-   buffer contains any of these it has almost certainly drifted into
-   self-restraint meta-text, which is not useful to the user and is
-   the bug we are trying to prevent. Matched case-insensitively
-   against short phrases (3+ words) so a single passing word like
-   "reply" never trips the filter. */
-function looksLikeMetaInstruction(s){
-  if(!s)return false;
-  var t=s.toLowerCase();
-  var phrases=[
-    /* the OLD "thinking off" suffix (kept so historical build outputs
-       still get filtered) */
-    "do not output", "reply directly with", "in clean prose",
-    "do not narrate your thought process", "narrate your thought process",
-    "chain-of-thought", "internal reasoning",
-    /* the NEW "thinking off" suffix (must also be filtered — even
-       though we just rewrote it, the model may still echo it) */
-    "step-by-step scratch work", "exposing step-by-step",
-    "keep your reply focused on the final answer",
-    /* the "thinking on" suffix (less common but possible) */
-    "rendered as a collapsible section",
-  ];
-  for(var i=0;i<phrases.length;i++){
-    if(t.indexOf(phrases[i])>=0)return true;
-  }
-  return false;
-}
-
-/* Append a small "thinking" pill. The body is rendered through
-   formatMsg (marked + KaTeX + highlight.js) so reasoning that
-   contains code, math, lists, or links is typeset properly — not
-   dumped as raw text. Throttled with rAF so a 1000-token burst
-   doesn't fire 1000 innerHTML assignments.
-
-Returns a controller { append(delta), finalize(), remove() } so the
-    caller can:
-      - append()  more deltas
-      - finalize() when the stream signals 'text' (re-render once with cursor)
-      - remove()   if thinking should be hidden (e.g. user toggled off mid-run) */
-function appendThinking(text){
-  var list=document.getElementById("msgList");
-  if(!list)return null;
-  var last=list.lastElementChild;
-  var body=null;
-  if(last&&last.classList.contains("assistant"))body=last.querySelector(".msg-body");
-  if(!body){
-    var div=document.createElement("div");
-    div.className="msg assistant";
-    body=document.createElement("div");
-    body.className="msg-body";
-    div.appendChild(body);
-    list.appendChild(div);
-  }
-  /* Dedupe consecutive thinking: reuse existing think-block if present. */
-  var existing=body.lastElementChild;
-  var details, thinkContent, buffer, pending;
-  function _summarize(streaming){
-    var label=streaming
-      ?((typeof window.t==="function")?window.t("think.thinking"):"Thinking\u2026")
-      :((typeof window.t==="function")?window.t("think.title"):"Thought");
-    var icon=streaming
-      ?'<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>'
-      :'';
-    return icon+'<span class="think-summary-label">'+esc(label)+'</span><span class="think-summary-chevron" aria-hidden="true"></span>';
-  }
-  if(existing&&existing.classList&&existing.classList.contains("think-block")){
-    details=existing;
-    thinkContent=details.querySelector(".think-content");
-    buffer=thinkContent?thinkContent.textContent||"":"";
-  }else{
-    details=document.createElement("details");
-    details.className="think-block think-block-streaming";
-    /* P_thinking-collapsed-default — think-block starts collapsed. The
-     * summary still shows the live "Thinking…" spinner so the user
-     * knows the model is reasoning, but the reasoning content itself
-     * is hidden until the user clicks the summary to expand. This
-     * matches the "folded by default, expand on demand" convention. */
-    details.open=false;
-    var sum=document.createElement("summary");
-    sum.className="think-summary think-summary-streaming";
-    sum.innerHTML=_summarize(true);
-    details.appendChild(sum);
-    thinkContent=document.createElement("div");
-    thinkContent.className="think-content";
-    details.appendChild(thinkContent);
-    body.appendChild(details);
-    buffer="";
-    pending=null;
-  }
-  function doRender(){
-    pending=null;
-    if(!details.isConnected)return;
-    if(buffer){
-      try{
-        thinkContent.innerHTML=formatMsg(buffer);
-        try{processPendingMermaid()}catch(_){}
-        try{processPendingViz()}catch(_){}
-        try{processPendingVizActions()}catch(_){}
-        if(typeof hljs!=="undefined"){
-          thinkContent.querySelectorAll("pre code").forEach(function(c){
-            if(c.dataset&&c.dataset.hljsDone)return;
-            if(/```\s*$/.test(c.textContent||""))return;
-            try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
-          });
-        }
-      }catch(e){
-        thinkContent.innerHTML='<pre style="white-space:pre-wrap;margin:0">'+esc(buffer)+'</pre>';
-      }
-    }
-    scrollMainToBottom();
-  }
-  function schedule(){
-    if(pending)return;
-    pending=requestAnimationFrame(doRender);
-  }
-  buffer+=text||"";
-  if(looksLikeMetaInstruction(buffer)){
-    if(details.parentNode)details.parentNode.removeChild(details);
-    buffer="";
-  }
-  schedule();
-  return {
-    append:function(delta){
-      if(!details.isConnected)return;
-      buffer+=delta||"";
-      if(looksLikeMetaInstruction(buffer)){
-        if(details.parentNode)details.parentNode.removeChild(details);
-        buffer="";
-        schedule();
-        return;
-      }
-      schedule();
-    },
-    finalize:function(){
-      if(pending){cancelAnimationFrame(pending);pending=null}
-      doRender();
-      /* P_thinking-collapsed-default — respect the user's expand/collapse
-       * choice during streaming. Previously this force-closed the block,
-       * which undid any manual click-to-expand the user had done while
-       * waiting for the answer. With the collapsed-by-default design,
-       * leaving the open state as-is is the right behaviour: a user
-       * who expanded during streaming keeps it open after the answer
-       * lands; a user who didn't still sees the summary. */
-      details.classList.remove("think-block-streaming");
-      var sum=details.querySelector("summary");
-      if(sum){
-        var count=0;
-        if(buffer){
-          var cjk=(buffer.match(/[㐀-鿿豈-﫿]/g)||[]).length;
-          var rest=buffer.replace(/[㐀-鿿豈-﫿]/g," ").trim();
-          var words=rest?rest.split(/\s+/).filter(Boolean).length:0;
-          count=cjk+words;
-        }
-        var label=(typeof window.t==="function")?window.t("think.title"):"Thought";
-        var meta=count>0?'<span class="think-summary-meta">'+
-          (count===1
-            ?((typeof window.t==="function")?window.t("think.wordCountOne"):"1 word")
-            :(((typeof window.t==="function")?window.t("think.wordCount"):"{n} words").replace("{n}",count)))
-          +'</span>':'';
-        sum.innerHTML='<span class="think-summary-label">'+esc(label)+'</span>'+
-          meta+
-          '<span class="think-summary-chevron" aria-hidden="true"></span>';
-      }
-    },
-    remove:function(){
-      if(pending){cancelAnimationFrame(pending);pending=null}
-      if(details&&details.parentNode)details.parentNode.removeChild(details);
-    }
-  };
-}
-
-/* ──────────────────────────────────────────────────────────────────────
-   Phase 3 — Search Progress Log
-   ──────────────────────────────────────────────────────────────────────
-   A streaming, collapsible activity log that surfaces each step of
-   `fetchWebContext` (and any future re-search round) as it happens.
-   Appears in the AI bubble that will answer the user, or inside the
-   diagnostic loading card. Modeled on the `appendThinking` controller
-   pattern: returns { appendStep, onStep, finalize, remove } so the
-   caller can drive it from the existing fetchWebContext onStep
-   callback with no extra plumbing. */
-
-var SEARCH_PROGRESS_LABELS = {
-  en: {
-    started:    'Searching the web for "{topic}"',
-    expanding:  'Tried {n} query variants',
-    querying:   'Q: {query}',
-    got_results:'  \u00B7 {n} results',
-    retry:      '\u21BB First round was thin. Retrying with the original query\u2026',
-    fetching:   'Reading {n} pages\u2026',
-    fetched:    '[OK] Read {ok}/{total} pages',
-    scored:     '  \u00B7 top match {topRel}% relevance',
-    filtered:   '  \u00B7 kept {kept}, dropped {dropped}',
-    good:       '[OK] Quality OK ({score}/5)',
-    retry_low:  '\u21BB First round was thin. AI rewriting the query\u2026',
-    retry_rewrote:'\u21BB New query: {q}',
-    retry_still_bad:'\u21BB Still thin. Proceeding with what we have.',
-    done:       '{n} sources \u00B7 {engines} \u00B7 {fetched} read',
-    error:      'Search failed: {msg}',
-    warn:       '[!] {msg}',
-    cancelled:  'Search cancelled.',
-    ceiling:    'Search exceeded {sec}s \u2014 proceeding without web context.',
-  },
-  zh: {
-    started:    '\u6B63\u5728\u641C\u7D22\uFF1A\u201C{topic}\u201D',
-    expanding:  '\u5C1D\u8BD5\u4E86 {n} \u4E2A\u67E5\u8BE2\u53D8\u4F53',
-    querying:   '{query}',
-    got_results:'  \u00B7 {n} \u6761\u7ED3\u679C',
-    retry:      '\u21BB \u7B2C\u4E00\u8F6E\u7ED3\u679C\u504F\u5C11\uFF0C\u6B63\u5728\u7528\u539F\u67E5\u8BE2\u91CD\u8BD5\u2026',
-    fetching:   '\u6B63\u5728\u9605\u8BFB {n} \u4E2A\u9875\u9762\u2026',
-    fetched:    '[OK] \u5DF2\u8BFB {ok}/{total} \u4E2A\u9875\u9762',
-    scored:     '  \u00B7 \u6700\u4F73\u5339\u914D\u76F8\u5173\u5EA6 {topRel}%',
-    filtered:   '  \u00B7 \u4FDD\u7559 {kept}\uFF0C\u5254\u9664 {dropped}',
-    good:       '[OK] \u8D28\u91CF\u826F\u597D\uFF08{score}/5\uFF09',
-    retry_low:  '\u21BB \u7B2C\u4E00\u8F6E\u7ED3\u679C\u504F\u5C11\uFF0CAI \u6B63\u5728\u6539\u5199\u67E5\u8BE2\u2026',
-    retry_rewrote:'\u21BB \u65B0\u67E5\u8BE2\uFF1A{q}',
-    retry_still_bad:'\u21BB \u4ECD\u4E0D\u7406\u60F3\uFF0C\u7EE7\u7EED\u3002',
-    done:       '{n} \u6761\u6765\u6E90 \u00B7 {engines} \u00B7 \u5DF2\u8BFB {fetched}',
-    error:      '\u641C\u7D22\u5931\u8D25\uFF1A{msg}',
-    warn:       '[!] {msg}',
-    cancelled:  '\u641C\u7D22\u5DF2\u53D6\u6D88\u3002',
-    ceiling:    '\u641C\u7D22\u8D85\u8FC7 {sec}s \uFF0C\u5C06\u5728\u6CA1\u6709\u7F51\u7EDC\u4E0A\u4E0B\u6587\u7684\u60C5\u51B5\u4E0B\u7EE7\u7EED\u3002',
-  },
-};
-
-/* Tiny tr(key, vars) for the search-progress labels. Picks language
-   from window._currentLang (the i18n.js source of truth, kept in sync
-   by setLang()); falls back to en for any missing key.
-   P_locale-ghost — previously this read `state.locale`, but that field
-   was never actually written anywhere (the only write site was a
-   `state.locale=null` in clearPerUserClientState, which just triggered
-   the state.js Proxy's "unknown flat key" warning). The real language
-   selector lives in i18n.js as `_currentLang` / `window._currentLang`. */
-function trSearchLabel(key, vars) {
-  var lang = (typeof window !== "undefined" && window._currentLang === 'zh') ? 'zh' : 'en';
-  var labels = SEARCH_PROGRESS_LABELS[lang] || SEARCH_PROGRESS_LABELS.en;
-  var tpl = labels[key] || (SEARCH_PROGRESS_LABELS.en[key] || key);
-  if (!vars) return tpl;
-  return tpl.replace(/\{(\w+)\}/g, function (m, name) {
-    return (vars[name] != null) ? String(vars[name]) : m;
-  });
-}
-
-/* Build a short, comma-separated engine breakdown like
- * "arXiv ×3, Wikipedia ×1, Bing ×2" from {engine: count} map. */
-function _formatEngineBreakdown(engines) {
-  if (!engines || typeof engines !== 'object') return '';
-  var keys = Object.keys(engines);
-  if (!keys.length) return '';
-  /* Sort: by count desc, then alphabetically. */
-  keys.sort(function (a, b) { return (engines[b] - engines[a]) || (a < b ? -1 : 1); });
-  return keys.map(function (k) {
-    /* Map raw source tags to friendlier labels. */
-    var labelMap = { bing: 'Bing', google: 'Google', baidu: 'Baidu',
-                     wikipedia: 'Wikipedia', arxiv: 'arXiv', ddg: 'DDG',
-                     web: 'Web' };
-    var label = labelMap[k] || k;
-    return label + ' ×' + engines[k];
-  }).join(', ');
-}
-
-/* startSearchProgress(topic, opts) — create a streaming activity log
- * inside `opts.mount` (or fall back to the most recent AI bubble body,
- * or the diagnostic loading card). Returns a controller:
- *   ctl.onStep(event)   — feed it a fetchWebContext event
- *   ctl.appendStep(ev)  — push a synthetic step (used by webSearchWithRetry
- *                         for retry / judge messages)
- *   ctl.finalize(summary) — collapse to the final summary line
- *   ctl.remove()        — detach entirely (used on cancel / error)
- *
- * Steps are coalesced via rAF so a burst of events from fetchWebContext
- * doesn't fire 20 innerHTML assignments. */
-function startSearchProgress(topic, opts) {
-  opts = opts || {};
-  /* Decide where to mount. Caller can pass opts.mount (a real Element).
-   * Otherwise, fall back to the most recent assistant bubble body. If
-   * neither exists (e.g. diagnostic flow), look for the diagnostic
-   * loading card. If even that is missing, create a floating panel
-   * pinned to the bottom of the chat. */
-  var mount = opts.mount;
-  if (!mount) {
-    var lastAssistant = document.querySelector('.msg.assistant:last-child .msg-body');
-    if (lastAssistant) mount = lastAssistant;
-  }
-  if (!mount) {
-    var diag = document.querySelector('#diagnosticView .diag-loading-text, #diagnosticView .diag-loading');
-    if (diag) mount = diag;
-  }
-  /* Create the root element. We always create a fresh `<div>` and
-   * prepend it to mount — that way the search log appears at the top
-   * of the bubble body, just above the streaming answer text. */
-  var root = document.createElement('div');
-  root.className = 'search-progress running';
-  if (opts.collapsed === false) root.classList.add('open');
-
-  var head = document.createElement('div');
-  head.className = 'search-progress-head';
-  head.innerHTML =
-    '<span class="search-progress-pulse"></span>' +
-    '<span class="search-progress-title">' + esc(trSearchLabel('started', { topic: topic || '' })) + '</span>' +
-    '<span class="search-progress-chev">▾</span>';
-  root.appendChild(head);
-
-  var stepsList = document.createElement('ul');
-  stepsList.className = 'search-progress-steps';
-  root.appendChild(stepsList);
-
-  if (mount) {
-    /* Insert at the very top of mount so the log precedes any stream. */
-    if (mount.firstChild) mount.insertBefore(root, mount.firstChild);
-    else mount.appendChild(root);
-  } else {
-    /* Last-resort: floating panel pinned to chat bottom. */
-    root.classList.add('search-progress-floating');
-    var msgList = document.getElementById('msgList');
-    if (msgList && msgList.parentNode) {
-      msgList.parentNode.insertBefore(root, msgList.nextSibling);
-    } else {
-      document.body.appendChild(root);
-    }
-  }
-
-  /* Click-to-expand: clicking the header toggles `.open` (CSS controls
-   * visibility of .search-progress-steps). */
-  head.addEventListener('click', function () { root.classList.toggle('open'); });
-
-  /* Append a step. kind: 'running' | 'ok' | 'warn' | 'err'. */
-  function makeStepEl(text, kind) {
-    var li = document.createElement('li');
-    li.className = 'search-progress-step ' + (kind || 'running');
-    var icon = document.createElement('span');
-    icon.className = 'icon';
-    /* Use plain ASCII text for status icons so they NEVER render as
-       emoji across platforms. The icon color is set via CSS class. */
-    icon.textContent = kind === 'ok' ? '+' : kind === 'warn' ? '!' : kind === 'err' ? 'x' : '\u00B7';
-    var t = document.createElement('span');
-    t.className = 'text';
-    t.textContent = text;
-    li.appendChild(icon);
-    li.appendChild(t);
-    stepsList.appendChild(li);
-    return li;
-  }
-
-  var pendingSteps = [];
-  var rafScheduled = false;
-  function scheduleFlush() {
-    if (rafScheduled) return;
-    rafScheduled = true;
-    requestAnimationFrame(function () {
-      rafScheduled = false;
-      var pending = pendingSteps;
-      pendingSteps = [];
-      for (var i = 0; i < pending.length; i++) {
-        var p = pending[i];
-        var li = makeStepEl(p.text, p.kind);
-        if (p.autoscroll) scrollMainToBottom();
-      }
-    });
-  }
-
-  /* Translate a fetchWebContext step event into a user-visible line. */
-  function renderEvent(ev) {
-    var d = ev.data || {};
-    switch (ev.kind) {
-      case 'started':
-        return null; /* Already shown in the header — no extra line. */
-      case 'expanding':
-        return { text: trSearchLabel('expanding', { n: d.count || 0 }), kind: 'running' };
-      case 'querying':
-        return { text: trSearchLabel('querying', { query: d.query || '' }), kind: 'running' };
-      case 'got_results':
-        return { text: trSearchLabel('got_results', { n: d.count || 0 }), kind: d.count > 0 ? 'ok' : 'warn' };
-      case 'retry':
-        return { text: trSearchLabel('retry'), kind: 'warn' };
-      case 'fetching':
-        return { text: trSearchLabel('fetching', { n: d.count || 0 }), kind: 'running' };
-      case 'fetched':
-        if (d.error) return { text: trSearchLabel('warn', { msg: d.error }), kind: 'warn' };
-        return { text: trSearchLabel('fetched', { ok: d.okCount || 0, total: d.total || 0 }), kind: d.okCount > 0 ? 'ok' : 'warn' };
-      case 'scored':
-        return { text: trSearchLabel('scored', { topRel: d.topRel || 0 }), kind: 'running' };
-      case 'filtered':
-        return { text: trSearchLabel('filtered', { kept: d.keptCount || 0, dropped: d.droppedCount || 0 }), kind: 'running' };
-      case 'done':
-        return null; /* Final summary is rendered into the header by finalize(). */
-      case 'error':
-        return { text: trSearchLabel('error', { msg: d.message || 'failed' }), kind: 'err' };
-      default:
-        return null;
-    }
-  }
-
-  function appendSynthetic(text, kind) {
-    pendingSteps.push({ text: text, kind: kind || 'running', autoscroll: true });
-    scheduleFlush();
-  }
-
-  function onStep(ev) {
-    var step = renderEvent(ev);
-    if (step) appendSynthetic(step.text, step.kind);
-  }
-
-  function finalize(summary) {
-    summary = summary || {};
-    var state = summary.state || 'ok';
-    root.classList.remove('running');
-    root.classList.add(state);
-    var titleEl = head.querySelector('.search-progress-title');
-    var chev = head.querySelector('.search-progress-chev');
-    /* In the diagnostic flow, leave the steps list expanded so the user
-     * can see the full history before they're taken to the next step. */
-    if (opts.collapsed === false) {
-      /* Keep .open. */
-    } else {
-      /* Default: collapse the steps after finalize. */
-      root.classList.remove('open');
-    }
-    if (chev) chev.style.display = '';
-    if (state === 'err') {
-      if (titleEl) titleEl.textContent = trSearchLabel('error', { msg: summary.message || 'failed' });
-    } else if (state === 'warn') {
-      if (titleEl) titleEl.textContent = trSearchLabel('warn', { msg: summary.message || '' });
-    } else {
-      var engineStr = _formatEngineBreakdown(summary.engines);
-      if (titleEl) {
-        titleEl.textContent = trSearchLabel('done', {
-          n: summary.finalCount || 0,
-          engines: engineStr || '—',
-          fetched: summary.fetchedCount || 0,
-        });
-      }
-    }
-  }
-
-  function remove() {
-    if (root && root.parentNode) root.parentNode.removeChild(root);
-  }
-
-  return {
-    onStep: onStep,
-    appendStep: appendSynthetic,
-    finalize: finalize,
-    remove: remove,
-  };
-}
+/* looksLikeMetaInstruction + appendThinking extracted to
+   src/ui/thinkingPill.js (Phase 1B split). Imported at the top. */
 
 
-/* Stream agent text into a single assistant bubble. Returns the
-   controller { append(delta), finalize() }. Same rAF-coalesced
-   pattern as addStreamingMessage — so we get the full chat
-   markdown renderer (formatMsg → marked + KaTeX) for headings,
-   code blocks, inline code, lists, links, and math. */
-function beginAgentTextStream(){
-  var list=document.getElementById("msgList");
-  if(!list)return null;
-  var div=document.createElement("div");
-  div.className="msg assistant";
-  var body=document.createElement("div");
-  body.className="msg-body";
-  div.appendChild(body);
-  list.appendChild(div);
-  var full="";
-  var finished=false;
-  var pending=null;
-  /* First-delta watchdog: if no text chunk arrives within 30s, surface an
-     error so the user isn't left looking at an empty assistant bubble. */
-  var FIRST_DELTA_TIMEOUT_MS=45000;
-  var firstDelta=true;
-  var firstDeltaTimer=setTimeout(function(){
-    if(finished||firstDelta===false)return;
-    finished=true;
-    if(pending){cancelAnimationFrame(pending);pending=null}
-    body.innerHTML=
-      '<div class="msg-error">'+
-        '<span class="msg-error-icon">!</span>'+
-        '<span class="msg-error-text">Response timed out (no text for '+(FIRST_DELTA_TIMEOUT_MS/1000)+'s)</span>'+
-      '</div>';
-  },FIRST_DELTA_TIMEOUT_MS);
-  function doRender(){
-    pending=null;
-    if(finished)return;
-    try{
-      body.innerHTML=formatMsg(full);
-      if(typeof hljs!=="undefined"){
-        body.querySelectorAll("pre code").forEach(function(c){
-          if(c.dataset&&c.dataset.hljsDone)return;
-          if(/```\s*$/.test(c.textContent||""))return;
-          try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
-        });
-      }
-      try{processPendingMermaid()}catch(_){}
-      try{processPendingViz()}catch(_){}
-      try{processPendingVizActions()}catch(_){}
-    }catch(e){
-      body.innerHTML='<p>'+esc(full)+'</p>';
-    }
-    scrollMainToBottom();
-  }
-  function schedule(){
-    if(pending||finished)return;
-    pending=requestAnimationFrame(doRender);
-  }
-  return {
-    append:function(delta){
-      if(finished)return;
-      if(firstDelta){
-        firstDelta=false;
-        clearTimeout(firstDeltaTimer);
-      }
-      full+=delta||"";
-      schedule();
-    },
-    finalize:function(){
-      if(finished)return;
-      finished=true;
-      clearTimeout(firstDeltaTimer);
-      if(pending){cancelAnimationFrame(pending);pending=null}
-      try{body.innerHTML=formatMsg(full)}catch(_){body.innerHTML='<p>'+esc(full)+'</p>'}
-      try{processPendingMermaid()}catch(_){}
-      try{processPendingViz()}catch(_){}
-      try{processPendingVizActions()}catch(_){}
-      scrollMainToBottom();
-    }
-  };
-}
 
-/* End a run with a small status footer chip ("Done · 4 steps · 12.4s"). */
-function appendRunFooter(steps,usedTools,durationMs,status){
-  var list=document.getElementById("msgList");
-  if(!list)return;
-  var last=list.lastElementChild;
-  if(!last||!last.classList.contains("assistant"))return;
-  var body=last.querySelector(".msg-body");
-  if(!body)return;
-  var chip=document.createElement("div");
-  chip.className="agent-run-footer "+(status||"done");
-  var s=durationMs>0?(durationMs/1000).toFixed(1)+"s":steps+" steps";
-  var tools=(usedTools&&usedTools.length)?" · "+usedTools.join(", "):"";
-  chip.textContent=(status==="error"?"Error":(status==="stopped"?"Stopped":"Done"))+" · "+steps+" steps · "+s+tools;
-  body.appendChild(chip);
-  scrollMainToBottom();
-}
+
+
+/* SEARCH_PROGRESS_LABELS, trSearchLabel, _formatEngineBreakdown,
+   startSearchProgress extracted to src/ui/searchProgress.js
+   (Phase 1C split). Imported at the top. */
+
+/* beginAgentTextStream, appendRunFooter extracted to
+   src/chat/agentStream.js (Phase 1D split). Imported at the top. */
 
 function scrollMainToBottom(){
   if(state._userScrolledAway)return;
@@ -6682,8 +5867,24 @@ function teardownThinkStructure(){
         _connectExecutionSSE(result.executionId,result.id);
       }
 
+      /* P4_drain-pending — drain any queued _pendingProgress events BEFORE
+         writing the final output. Without this, if the only progress event
+         was phase:"ready" (Booting) and the next event is the result itself,
+         the drain in _toolProgressToCard never runs (it only triggers on the
+         NEXT progress event), leaving the card stuck on [Booting] with no
+         stdout visible. Draining here ensures all buffered progress is
+         rendered into the card before we replace the live-progress node
+         with the final output text. */
+      if(entry&&entry._pendingProgress&&entry._pendingProgress.length){
+        for(var dp=0;dp<entry._pendingProgress.length;dp++){
+          _toolProgressToCard(entry._pendingProgress[dp]);
+        }
+        entry._pendingProgress.length=0;
+      }
+
       var statusIcon="";
       var statusClass="";
+      var display="";
       var durStr="";
       if(result.durationMs!=null){
         var sec=(result.durationMs/1000).toFixed(1);
@@ -6702,14 +5903,19 @@ function teardownThinkStructure(){
       }else{
         statusIcon="+";
         statusClass="ok";
-        display=(result.output||"(no output)")+durStr;
+        display=(result.output||"(no output)")+
+          (result.stderr?"\n[stderr]\n"+result.stderr:"")+durStr;
       }
       entry.output=display;
       entry.isError=result.ok===false;
       if(Array.isArray(result.artifacts)){
         entry.artifacts=result.artifacts.slice(0,20).map(function(a){
-          return{id:String(a.id||""),mimeType:a.mimeType||null};
-        });
+          /* Current servers send {id,mimeType}; accept legacy string IDs too
+             so an otherwise valid generated image never becomes img src
+             `/api/files//raw`. */
+          if(typeof a==="string")return{id:a,mimeType:null};
+          return{id:String((a&&a.id)||""),mimeType:(a&&a.mimeType)||null};
+        }).filter(function(a){return!!a.id});
       }
       if(out){
         /* Skip DOM updates if we've already rendered this tool result
@@ -6719,7 +5925,17 @@ function teardownThinkStructure(){
           entry._toolResultApplied=true;
           var liveProg=out.querySelector(".agent-tool-progress");
           if(liveProg)liveProg.parentNode.removeChild(liveProg);
-          out.textContent=display||"";
+          /* P2_web-search-render — for web_search tool results, the backend
+             sends a `results` array [{title, url, snippet, date}]. Render
+             these as a clickable list instead of dumping raw text. */
+          var toolName_=entry.name||result.name||"";
+          var didRichRender=false;
+          if(toolName_==="web_search"&&result.results&&Array.isArray(result.results)&&result.results.length>0){
+            didRichRender=renderWebSearchResults(out,result.results);
+          }
+          if(!didRichRender){
+            out.textContent=display||"";
+          }
           if(entry.isError)out.classList.add("error");else out.classList.remove("error");
           var card=out.closest(".agent-tool-card");
           if(card){
@@ -9670,64 +8886,6 @@ async function fetchPagesForContext(urls){
 /* When the user references a website but we couldn't extract a URL,
    drop a small "paste the full URL" hint card in the bubble so they
    know to include the https:// prefix on the next turn. */
-function renderNoUrlHint(targetEl){
-  if(!targetEl)return;
-  var card=document.createElement("div");
-  card.className="link-card err no-url-hint";
-  card.innerHTML=
-    '<div class="link-card-head">'+
-      '<div class="link-card-host"><svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z"/><path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4 4 0 0 1-.82 1H12a3 3 0 1 0 0-6z"/></svg> No URL detected</div>'+
-      '<div class="link-card-status err">awaiting full link</div>'+
-    '</div>'+
-    '<div class="link-card-excerpt">'+
-      'You mentioned a site but the URL is missing or not in a form I can fetch. '+
-      'On your next turn, paste the full address including the <code>https://</code> prefix '+
-      '(e.g. <code>https://www.topodrive.top/pricing</code>) and I\'ll read it for you.'+
-    '</div>';
-  var wrap=document.createElement("div");
-  wrap.className="link-previews";
-  wrap.appendChild(card);
-  targetEl.appendChild(wrap);
-}
-
-/* Render compact link-preview cards inside the user's bubble, one per
-   URL. Each card shows: domain, title (or url fallback), a 1-2 line
-   excerpt, and a status badge. On failure the card flips to a red
-   "could not read" state with the reason. */
-function renderLinkPreviews(targetEl,urls,results){
-  if(!targetEl||!Array.isArray(urls)||!urls.length)return;
-  var wrap=document.createElement("div");
-  wrap.className="link-previews";
-  for(var i=0;i<urls.length;i++){
-    var u=urls[i];
-    var f=(results&&results[i])||null;
-    var card=document.createElement("div");
-    card.className="link-card "+(f&&f.ok?"ok":"err");
-    var host="";
-    try{host=new URL(u).hostname.replace(/^www\./,"")}catch(_){host=u}
-    var title=(f&&f.title)||u;
-    var excerpt=f&&f.content?(f.content.length>220?f.content.slice(0,217)+"…":f.content):"";
-    var statusHtml;
-    if(f&&f.ok){
-      var meta=f.truncated?"excerpt · "+f.chars+" chars":"full · "+f.chars+" chars";
-      statusHtml='<div class="link-card-status">'+esc(meta)+'</div>';
-    }else{
-      var reason=(f&&f.reason)||"fetch failed";
-      statusHtml='<div class="link-card-status err"><svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg> '+esc(reason)+'</div>';
-    }
-    card.innerHTML=
-      '<div class="link-card-head">'+
-        '<div class="link-card-host"><svg class="icon-inline" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z"/><path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4 4 0 0 1-.82 1H12a3 3 0 1 0 0-6z"/></svg> '+esc(host)+'</div>'+
-        statusHtml+
-      '</div>'+
-      '<a class="link-card-title" href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+esc(title)+'</a>'+
-      (excerpt?'<div class="link-card-excerpt">'+esc(excerpt)+'</div>':'');
-    wrap.appendChild(card);
-  }
-  targetEl.appendChild(wrap);
-}
-
-
 /* Pick a useful search query for Chat mode. We don't have a
    session-wide topic here, so the user's current message is the most
    relevant signal. If it's too short, prepend the session topic. */

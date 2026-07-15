@@ -188,5 +188,13 @@ export function toggleTheme() {
   var next = mode === "dark" ? "light" : "dark";
   html.setAttribute("data-mode", next);
   try { localStorage.setItem("socrates-theme", next); } catch (e) { /* ignore */ }
+  /* Re-init Mermaid with the appropriate theme so future diagrams
+     render correctly in the new mode. Existing SVGs keep their
+     original colours (re-rendering them would be disruptive). */
+  try {
+    if (typeof mermaid !== "undefined" && mermaid.initialize) {
+      mermaid.initialize({ startOnLoad: false, theme: next === "dark" ? "dark" : "default" });
+    }
+  } catch (_) { /* ignore */ }
   applyDisplayPrefs();
 }
