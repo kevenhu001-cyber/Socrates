@@ -72,10 +72,16 @@ export function renderAttachmentChips(){
 
     attachments.forEach(function(a){
       const chip = document.createElement("div");
-      chip.className = "attachment-chip" + (a.error ? " error" : "");
+      chip.className = "attachment-chip" + (a.error ? " error" : "") + (a.pending ? " pending" : "");
       chip.dataset.id = a.id;
 
-      if(a.kind === "image" && a.dataUrl){
+      if(a.pending){
+        // Pending chip: spinner + progress bar.
+        const spinner = document.createElement("span");
+        spinner.className = "attachment-chip-spinner";
+        spinner.innerHTML = '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>';
+        chip.appendChild(spinner);
+      } else if(a.kind === "image" && a.dataUrl){
         const img = document.createElement("img");
         img.className = "attachment-chip-thumb";
         img.src = a.dataUrl;
@@ -94,7 +100,15 @@ export function renderAttachmentChips(){
       name.textContent = a.name || "file";
       chip.appendChild(name);
 
-      if(a.truncated){
+      if(a.pending && typeof a.progress === "number" && a.progress >= 0){
+        const bar = document.createElement("div");
+        bar.className = "attachment-chip-progress-bar";
+        const fill = document.createElement("div");
+        fill.className = "attachment-chip-progress-fill";
+        fill.style.width = Math.min(a.progress, 100) + "%";
+        bar.appendChild(fill);
+        chip.appendChild(bar);
+      } else if(a.truncated){
         const meta = document.createElement("span");
         meta.className = "attachment-chip-meta";
         meta.textContent = "(truncated)";
@@ -116,6 +130,14 @@ export function renderAttachmentChips(){
       wrap.appendChild(chip);
     });
   });
+}
+
+/* Helper: re-render chips + refresh buttons after attachment mutation.
+   Passed as onUpdate to addFiles() so the chip strip updates in
+   real-time as each file passes through its pending→ready lifecycle. */
+function renderAndRefresh(){
+  renderAttachmentChips();
+  refreshAllSendBtns();
 }
 
 /* Run every wired input's "send button refresher" (updateSendBtn for
@@ -184,8 +206,7 @@ export function setupAttachmentInput(opts){
   };
   input.onchange = async function(){
     if(!input.files || !input.files.length) return;
-    const res = await addFiles(input.files);
-    renderAttachmentChips();
+    const res = await addFiles(input.files, renderAndRefresh);
     refreshAllSendBtns();
     if(res.rejected && res.rejected.length){
       btn.classList.add("has-error");
@@ -210,9 +231,7 @@ export function setupAttachmentInput(opts){
   wrap.addEventListener("drop", async function(e){
     const dt = e.dataTransfer;
     if(!dt || !dt.files || !dt.files.length) return;
-    const res = await addFiles(dt.files);
-    renderAttachmentChips();
-    refreshAllSendBtns();
+    const res = await addFiles(dt.files, renderAndRefresh);
     surfaceRejectionToast(res);
   });
 
@@ -234,12 +253,10 @@ export function setupAttachmentInput(opts){
         }
       }
       if(!files.length) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const res = await addFiles(files);
-      renderAttachmentChips();
-      refreshAllSendBtns();
-      if(res.added > 0){
+e.preventDefault();
+    e.stopPropagation();
+    const res = await addFiles(files, renderAndRefresh);
+    if(res.added > 0){
         toast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
       }
       surfaceRejectionToast(res);
@@ -319,9 +336,7 @@ function wireDocumentDrag(){
     if(!dt || !dt.files || !dt.files.length) return;
     e.preventDefault();
     e.stopPropagation();
-    const res = await addFiles(dt.files);
-    renderAttachmentChips();
-    refreshAllSendBtns();
+    const res = await addFiles(dt.files, renderAndRefresh);
     surfaceRejectionToast(res);
   });
 }
