@@ -57,7 +57,7 @@ const SessionPayloadSchema = z.object({
        and parsed text. dataUrl is capped at 2 MB per attachment. */
     attachments: z.array(z.object({
       id: z.string().max(100),
-      kind: z.enum(['image', 'text', 'pdf']),
+      kind: z.string().max(50),
       name: z.string().max(500),
       mime: z.string().max(200),
       dataUrl: z.string().max(2_000_000).optional(),
