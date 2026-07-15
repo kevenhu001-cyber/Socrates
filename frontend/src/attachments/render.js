@@ -352,22 +352,18 @@ function autoWire(){
     updateBtnName: "updateStartBtn",
   });
 }
-/* P_timing-fix — defer the DOM wiring to the end of the current
- * microtask so the Vite IIFE has fully flushed into the page before
- * we query for DOM elements. The old immediacy-safe guard
- * (readyState !== "loading") works on most browsers but can still
- * race on slow connections or Viper/edge-case bundles where the
- * IIFE runs before the parser finishes the element whose id we
- * need (e.g. topicAttachBtn in the tutor setup block). A single
- * setTimeout(0) pushes the query past the synchronous parse. */
-function scheduleAutoWire(){
-  setTimeout(function(){
-    try{ autoWire(); }catch(e){ try{console.warn("[attachments] autoWire failed:",e)}catch(_){} }
-  }, 0);
+/* P_timing-DCL — the Vite IIFE evaluates before the DOM is ready,
+ * so any module-level code that queries getElementById returns null.
+ * The only reliable way to wire DOM-dependent behaviour is
+ * DOMContentLoaded, which fires once after the document is fully
+ * parsed — see DOMContentLoaded support table. */
+function dcl(){
+  if(dcl.ran)return; dcl.ran=true;
+  autoWire();
 }
 if(typeof window !== "undefined"){
-  window.addEventListener("DOMContentLoaded", scheduleAutoWire);
-  /* If the script runs after DOMContentLoaded (Vite HMR or inline
-     execution), the setTimeout(0) fallback catches it there too. */
-  scheduleAutoWire();
+  window.addEventListener("DOMContentLoaded", dcl);
+  /* If the script runs after DOMContentLoaded (rare — Vite HMR,
+     extension injection, SSR hydration), fire immediately. */
+  if(document.readyState !== "loading"){ try{ dcl(); }catch(_){} }
 }

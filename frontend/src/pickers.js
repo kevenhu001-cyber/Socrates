@@ -307,12 +307,31 @@ function bindExtensionsMenuClicks(){
     toggleExtensionByKey(btn.getAttribute("data-ext"));
   });
 }
-setTimeout(function(){
+var _extMenuBound=false;
+function bindExtensionsMenuClicks(){
+  if(_extMenuBound)return;
+  var menu=document.getElementById("extensionsMenu");
+  if(!menu)return;
+  _extMenuBound=true;
+  menu.addEventListener("click",function(e){
+    var btn=e.target.closest(".extensions-item");
+    if(!btn)return;
+    e.stopPropagation();
+    toggleExtensionByKey(btn.getAttribute("data-ext"));
+  });
+}
+/* P_timing-DCL — same rationale as attachments/render.js: the IIFE
+ * runs before the DOM is ready, so getElementById("extensionsMenu")
+ * returns null. Defer to DOMContentLoaded like the attachment wiring. */
+function extDcl(){
+  if(extDcl.ran)return; extDcl.ran=true;
   bindExtensionsMenuClicks();
-  /* P_boot-sync — render the menu items on first load so the
-     Extensions panel is never empty when the user opens it. */
   syncExtensionsUI();
-},0);
+}
+if(typeof window !== "undefined"){
+  window.addEventListener("DOMContentLoaded", extDcl);
+  if(document.readyState !== "loading"){ try{ extDcl(); }catch(_){} }
+}
 function countActiveExtensions(){
   return EXTENSIONS.filter(function(e){return e.on}).length;
 }
