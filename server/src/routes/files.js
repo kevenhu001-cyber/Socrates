@@ -157,6 +157,9 @@ router.get('/:id/raw', async (req, res, next) => {
     // Critical for SVG (which can contain JS) and for any file
     // whose on-disk extension doesn't match its MIME.
     res.set('X-Content-Type-Options', 'nosniff');
+    // No caching for artifact files so regenerated images with the
+    // same fileId always show the latest version.
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     // Force-download for any file that could execute script in the
     // browser — text, SVG, JSON, XML, etc. Only images and PDFs are
     // safe to render inline.

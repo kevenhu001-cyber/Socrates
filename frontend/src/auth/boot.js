@@ -95,7 +95,7 @@ export async function authBoot(){
      * (assume non-reasoning) if the server is older and doesn't send
      * the field. */
     try { window.BEAGLE_IS_REASONING = cfg && cfg.isReasoning === true; } catch (_) {}
-  }catch(_){console.warn("[boot] config fetch failed")}
+  }catch(_){/* config fetch failed */}
   /* Promote to the module-level flag so refreshApiConfig() — which
      runs after we return — can decide whether to fall back to
      BEAGLE on cold start. */
@@ -107,7 +107,6 @@ export async function authBoot(){
      window copy never sees the runtime update above. Re-bridge
      here so refreshApiConfig() sees the true value. */
   try { window.SERVER_HAS_BEAGLE_KEY = cfgOk; } catch (_) {}
-  console.log("[boot] config hasBeagleKey="+cfgOk+", BEAGLE_IS_REASONING="+(window.BEAGLE_IS_REASONING===true)+", BEAGLE_BUILT_IN.key.length="+((window.BEAGLE_BUILT_IN&&window.BEAGLE_BUILT_IN.key)||"").length);
 
   /* P0.0 — only route the user to the auth gate when the server
    * explicitly says 401. Network blips, 5xx, and a missing
@@ -124,7 +123,6 @@ export async function authBoot(){
       break;
     }catch(e){
       meLastErr=e;
-      console.warn("[boot] /me attempt "+meAttempt+" failed:",e&&e.message,e&&e.status);
       if(e&&e.status===401){
         /* Genuine session expiry. Don't immediately kick to the gate on the
          * very first 401 — a transient race or a Set-Cookie propagation
@@ -145,9 +143,6 @@ export async function authBoot(){
   if(me&&me.user){
     if(typeof window.setCurrentUser==="function")window.setCurrentUser(me.user);
     else window.CURRENT_USER=me.user;
-    console.log("[boot] /me succeeded: user="+(me.user&&me.user.email)+
-      " verifiedAt="+(me.user&&me.user.verifiedAt)+
-      " plan="+(me.user&&me.user.plan));
     /* Grace window for the Set-Cookie to settle (see notes in
      * markAuthSuccess). */
     try{window.markAuthSuccess&&window.markAuthSuccess()}catch(_){}
@@ -158,7 +153,6 @@ export async function authBoot(){
   /* /me never resolved with a user — surface a visible error and
    * leave the user on the existing app shell so they can retry,
    * rather than yanking them to the sign-in form. */
-  console.warn("[boot] /me unresolved after retries:",meLastErr&&meLastErr.message);
   window.showGate&&window.showGate();
   window.showAuthSignin&&window.showAuthSignin();
   try{window.showToast("Couldn't reach the server. Check your connection and retry.",5000)}catch(_){}
@@ -168,7 +162,6 @@ export async function authBoot(){
 /* Run the boot. Wrapped in a .catch to keep the page responsive
    even if any boot step throws an unexpected error. */
 authBoot().catch(function(e){
-  console.error("[boot] unhandled error:",e&&e.message);
   try{
     window.showGate&&window.showGate();
     window.showAuthSignin&&window.showAuthSignin();

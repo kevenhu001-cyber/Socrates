@@ -40,13 +40,13 @@ describe('rateLimit: authLimiter (10 / 15min)', () => {
   });
 });
 
-describe('rateLimit: chatLimiter (60 / hour) — 61st call is rejected', () => {
+describe('rateLimit: chatLimiter (240 / hour) — 241st call is rejected', () => {
   let server;
   before(async () => { server = await listen(buildApp(chatLimiter)); });
   after(async () => { await server.close(); });
 
-  test('all 60 are allowed; the 61st is 429', async () => {
-    for (let i = 0; i < 60; i++) {
+  test('all 240 are allowed; the 241st is 429', async () => {
+    for (let i = 0; i < 240; i++) {
       const r = await httpRequest(server.url + '/limited');
       assert.equal(r.status, 200);
     }

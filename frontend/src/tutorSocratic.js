@@ -32,9 +32,6 @@
   /* A-R1 perf — coalesce KB re-renders inside one rAF. */
   var _kbRenderPending = false;
 
-  /* A-R2 perf — throttle plan-warning evaluation. */
-  var _planWarningCache = { at: 0, result: null };
-
   /* Friendly human labels for the design's internal stage names.
      Per §11.4 system messages: no exclamation marks, no judgement,
      no emoji. The labels read like status badges. */
@@ -358,123 +355,8 @@
   }
 
   /* ----------------------------------------------------------------
-   * Long-term plan warnings (§10.4)
-   *
-   * If a target date is set, evaluate progress each call and emit
-   * a warning card into the chat when:
-   *   - more than 20% of nodes are still blank within 7 days of the
-   *     deadline, or
-   *   - the projected finish date falls past the deadline.
-   * The warning text follows §11.4 — no exclamation marks, no
-   * judgement, just numbers and a list of options.
-   * ---------------------------------------------------------------- */
-  function evaluatePlanWarning() {
-    if (!window.state) return null;
-    /* A-R2 perf — cache the last evaluation for 30s. The chat
-       loop calls evaluatePlanWarning after every user turn;
-       without this we recompute the projection math (which
-       walks every KB node) on each call. The plan changes
-       rarely, the warning changes even more rarely. */
-    var now = Date.now();
-    if (_planWarningCache.result !== null
-        && (now - _planWarningCache.at) < 30000
-        && _planWarningCache.targetDate === (window.state.planTargetDate || null)
-        && _planWarningCache.dailyMin === (window.state.planDailyMinutes || 30)) {
-      return _planWarningCache.result;
-    }
-    var result = _evaluatePlanWarningInner();
-    _planWarningCache = {
-      at: now,
-      result: result,
-      targetDate: window.state.planTargetDate || null,
-      dailyMin: window.state.planDailyMinutes || 30
-    };
-    return result;
-  }
-
-  function _evaluatePlanWarningInner() {
-    var plan = window.state.teachingPlan;
-    if (!plan || !plan.subtopics || !plan.subtopics.length) return null;
-    var target = window.state.planTargetDate;
-    if (!target) return null;
-    var nodes = window.state.kbNodes || [];
-    if (!nodes.length) return null;
-
-    var now = Date.now();
-    var targetMs = (target instanceof Date) ? target.getTime() : new Date(target).getTime();
-    if (!targetMs || isNaN(targetMs)) return null;
-    var daysLeft = Math.ceil((targetMs - now) / (1000 * 60 * 60 * 24));
-    if (daysLeft < 0) {
-      return {
-        kind: 'overdue',
-        daysLeft: daysLeft,
-        ratio: 1
-      };
-    }
-    var done = 0, fuzzy = 0, blank = 0;
-    nodes.forEach(function (n) {
-      if (n.status === 'internalized') done++;
-      else if (n.status === 'fuzzy') fuzzy++;
-      else blank++;
-    });
-    var total = Math.max(1, nodes.length);
-    var blankRatio = blank / total;
-    /* Project the finish date assuming a constant rate. */
-    var dailyMin = Math.max(5, window.state.planDailyMinutes || 30);
-    /* Heuristic: each non-internalized node takes ~3 turns × ~3 min. */
-    var pending = fuzzy + blank;
-    var minutesNeeded = pending * 9;
-    var daysNeeded = Math.ceil(minutesNeeded / dailyMin);
-    var projectedDaysLeft = daysLeft - daysNeeded;
-    var warn = null;
-    if (daysLeft <= 7 && blankRatio > 0.2) {
-      warn = { kind: 'deadline-blank', daysLeft: daysLeft, blankRatio: blankRatio };
-    } else if (projectedDaysLeft < 0) {
-      warn = { kind: 'projected-overrun', daysLeft: daysLeft, projectedDaysLeft: projectedDaysLeft };
-    }
-    /* Throttle: don't repeat the same warning inside 24h. */
-    var last = window.state.planLastWarnedAt || 0;
-    if (warn && (now - last) < 24 * 60 * 60 * 1000) return null;
-    if (warn) {
-      try { window.state.planLastWarnedAt = now; } catch (_) {}
-    }
-    return warn;
-  }
-
-  function renderPlanWarning(warn) {
-    if (!warn) return;
-    var text;
-    var actions;
-    if (warn.kind === 'overdue') {
-      text = ti('tutor.planWarningOverdue', currentLang() === 'zh'
-        ? '计划已过截止日期 ' + Math.abs(warn.daysLeft) + ' 天。可以调整截止时间或学习范围。'
-        : 'Plan is ' + Math.abs(warn.daysLeft) + ' day(s) past the target date. Adjust the deadline or scope.')
-        .replace('{n}', String(Math.abs(warn.daysLeft)));
-    } else if (warn.kind === 'deadline-blank') {
-      text = ti('tutor.planWarningBlank', currentLang() === 'zh'
-        ? '当前进度提示：距截止时间还有 ' + warn.daysLeft + ' 天，仍有 ' + Math.round(warn.blankRatio * 100) + '% 的节点未探测。'
-        : 'Progress note: ' + warn.daysLeft + ' day(s) left and ' + Math.round(warn.blankRatio * 100) + '% of nodes are unexplored.')
-        .replace('{days}', String(warn.daysLeft))
-        .replace('{pct}', String(Math.round(warn.blankRatio * 100)));
-    } else {
-      text = ti('tutor.planWarningOverrun', currentLang() === 'zh'
-        ? '当前进度提示：按当前节奏，预计需要比截止时间多 ' + Math.abs(warn.projectedDaysLeft) + ' 天。'
-        : 'Progress note: at the current pace, you will finish ' + Math.abs(warn.projectedDaysLeft) + ' day(s) after the target date.')
-        .replace('{n}', String(Math.abs(warn.projectedDaysLeft)));
-    }
-    actions = [
-      { text: ti('tutor.planActionScope',     currentLang() === 'zh' ? '调整学习范围' : 'Trim scope'),     action: 'plan-scope' },
-      { text: ti('tutor.planActionTime',      currentLang() === 'zh' ? '增加每日时间' : 'Add daily time'), action: 'plan-time' },
-      { text: ti('tutor.planActionDeadline',  currentLang() === 'zh' ? '延长截止日期' : 'Extend deadline'), action: 'plan-deadline' }
-    ];
-    if (typeof window.addMessage === 'function') {
-      window.addMessage('assistant', text, 'suggest', actions);
-    }
-  }
-
-  /* ----------------------------------------------------------------
    * Teaching plan label rendering
-   *
+
    * The existing renderKnowledgeView shows the internal stage names
    * ("motivate", "define") directly. Per §16.3 system messages must
    * be free of internal identifiers — surface the human label
@@ -627,212 +509,6 @@
   }
 
   /* ----------------------------------------------------------------
-   * §10 — long-term plan generation.
-   *
-   * Given the freshly-built KB and a user-supplied target date /
-   * daily budget, build a structured plan with:
-   *   - subtopics sorted by prerequisite chain then by status
-   *     (fuzzy → blank → internalized, per existing buildTeachingPlanFromKB),
-   *   - per-subtopic `objective`, `exampleCount`, `practiceCount`,
-   *     `inspectionType`,
-   *   - per-day `estimated_minutes` that respects the user's
-   *     daily budget,
-   *   - the last 7 days reserved as the "review buffer" before
-   *     the deadline,
-   *   - a warning schedule — the caller is expected to poll
-   *     `evaluatePlanWarning` after each user turn.
-   * ---------------------------------------------------------------- */
-  function buildLongTermPlan(opts) {
-    opts = opts || {};
-    if (!window.state) return null;
-    var nodes = window.state.kbNodes || [];
-    if (!nodes.length) return null;
-
-    var target = opts.targetDate || window.state.planTargetDate || null;
-    var dailyMin = Math.max(5, opts.dailyMinutes || window.state.planDailyMinutes || 30);
-    var restDays = Array.isArray(opts.weeklyRestDays) ? opts.weeklyRestDays
-                : (window.state.planWeeklyRestDays || []);
-
-    /* Per §10.2 step 3: estimate the time cost of each node. The
-       design says "use historical turn data, fall back to a
-       structural default." We have no historical data on first
-       build, so the structural default is: 2 worked examples +
-       1 practice problem ≈ 9 minutes of focused work per node. */
-    var rank = { fuzzy: 0, blank: 1, internalized: 2 };
-    var subtopics = nodes.map(function (n, i) {
-      return {
-        nodeIdx: i,
-        name: n.name || ('Node ' + (i + 1)),
-        status: n.status || 'blank',
-        objective: '掌握 ' + (n.name || ('Node ' + (i + 1))),
-        exampleCount: 2,
-        practiceCount: 1,
-        inspectionType: 'concept',
-        prerequisites: [],
-        estimatedMinutes: 9
-      };
-    });
-    subtopics.sort(function (a, b) {
-      var ra = rank[a.status] != null ? rank[a.status] : 1;
-      var rb = rank[b.status] != null ? rank[b.status] : 1;
-      if (ra !== rb) return ra - rb;
-      return a.nodeIdx - b.nodeIdx;
-    });
-
-    /* §10.2 step 4: allocate to the time axis. The deadline
-       drives the day count; we reserve 7 days for review. */
-    var days = [];
-    var totalMinutes = subtopics.reduce(function (s, x) {
-      return s + (x.status === 'internalized' ? 0 : x.estimatedMinutes);
-    }, 0);
-    if (target) {
-      var targetMs = (target instanceof Date) ? target.getTime() : new Date(target).getTime();
-      if (!isNaN(targetMs)) {
-        var totalDays = Math.max(1, Math.ceil((targetMs - Date.now()) / 86400000));
-        /* Reserve the last 7 days as review buffer per §10.2. */
-        var studyDays = Math.max(1, totalDays - 7);
-        days = distributeAcrossDays(subtopics, studyDays, dailyMin, restDays);
-        /* Append 7 review-buffer days with empty placeholder tasks
-           (the long-term plan will be re-evaluated at runtime to
-           fill these from the mistake book, §10.5). */
-        for (var k = 0; k < 7; k++) {
-          days.push({ dayOffset: totalDays - 7 + k, isReviewBuffer: true, tasks: [] });
-        }
-      }
-    }
-    if (!days.length) {
-      /* No target date — flat single-day plan. */
-      days = [{ dayOffset: 0, isReviewBuffer: false, tasks: subtopics.filter(function (s) { return s.status !== 'internalized'; }) }];
-    }
-    var firstActive = 0;
-    for (var ii = 0; ii < subtopics.length; ii++) {
-      if (subtopics[ii].status !== 'internalized') { firstActive = ii; break; }
-    }
-    return {
-      subtopics: subtopics,
-      currentSubtopicIdx: firstActive,
-      createdAt: Date.now(),
-      targetDate: target,
-      dailyMinutes: dailyMin,
-      weeklyRestDays: restDays,
-      days: days,
-      totalMinutes: totalMinutes,
-      startedAt: Date.now()
-    };
-  }
-
-  function distributeAcrossDays(subtopics, studyDays, dailyMin, restDays) {
-    var days = [];
-    var bucket = [];
-    var minutes = 0;
-    /* Skip rest days (0=Sun..6=Sat). */
-    function isRest(offset) {
-      var d = new Date(Date.now() + offset * 86400000);
-      return restDays.indexOf(d.getDay()) !== -1;
-    }
-    for (var i = 0; i < subtopics.length; i++) {
-      var s = subtopics[i];
-      if (s.status === 'internalized') continue;
-      if (minutes + s.estimatedMinutes > dailyMin && bucket.length) {
-        days.push({ dayOffset: days.length, isReviewBuffer: false, tasks: bucket });
-        bucket = [];
-        minutes = 0;
-      }
-      bucket.push(s);
-      minutes += s.estimatedMinutes;
-    }
-    if (bucket.length) {
-      days.push({ dayOffset: days.length, isReviewBuffer: false, tasks: bucket });
-    }
-    return days;
-  }
-
-  /* Render the long-term plan as a vertical timeline that fits
-     under the teaching-plan list in the Knowledge sidebar. */
-  function renderLongTermPlan() {
-    var cont = document.getElementById('teachingPlanContent');
-    if (!cont) return;
-    var plan = window.state && window.state.teachingPlan;
-    if (!plan) return;
-    if (!plan.days || !plan.days.length) return;
-    var html = '<div class="ltp">';
-    html += '<div class="ltp-title">'
-         + ti('tutor.scheduleTitle', currentLang() === 'zh' ? '学习日程' : 'Daily schedule')
-         + '</div>';
-    if (plan.targetDate) {
-      var d = (plan.targetDate instanceof Date) ? plan.targetDate : new Date(plan.targetDate);
-      var ds = isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
-      html += '<div class="ltp-meta">'
-           + ti('tutor.scheduleTarget', currentLang() === 'zh' ? '截止时间' : 'Target')
-           + ': ' + esc(ds)
-           + ' · ' + (plan.dailyMinutes || 30) + ' min/'
-           + ti('tutor.scheduleDay', currentLang() === 'zh' ? '天' : 'day')
-           + '</div>';
-      html += '<ol class="ltp-days">';
-      plan.days.slice(0, 14).forEach(function (day) {
-        var dt = new Date(Date.now() + day.dayOffset * 86400000);
-        var dateStr = dt.toISOString().slice(5, 10);
-        var taskNames = (day.tasks || []).map(function (t) { return t.name; });
-        var label = day.isReviewBuffer
-          ? ti('tutor.scheduleReview', currentLang() === 'zh' ? '复习缓冲' : 'Review buffer')
-          : (taskNames.length
-              ? taskNames.join(' · ')
-              : ti('tutor.scheduleRest', currentLang() === 'zh' ? '休息' : 'Rest day'));
-        html += '<li class="ltp-day' + (day.isReviewBuffer ? ' ltp-day-review' : '') + '">'
-             + '<span class="ltp-day-date">' + esc(dateStr) + '</span>'
-             + '<span class="ltp-day-tasks">' + esc(label) + '</span>'
-             + '</li>';
-      });
-      if (plan.days.length > 14) {
-        html += '<li class="ltp-day ltp-day-more">+ '
-             + (plan.days.length - 14) + ' '
-             + ti('tutor.scheduleMore', currentLang() === 'zh' ? '天' : 'more days')
-             + '</li>';
-      }
-      html += '</ol>';
-    } else {
-      /* Empty state — no target date set. Show a guided
-         explanation instead of a bare "no days to show" — the
-         audit caught this as U-M1 (sub-topic progress is
-         invisible). §10.1 of the design makes the target date
-         optional, so we have to make the absence useful. */
-      html += '<div class="ltp-empty">'
-           + ti('tutor.scheduleEmpty', currentLang() === 'zh'
-               ? '设置截止时间和每日学习时间后，会按节奏把今天要做的主题和剩余天数排在这里。'
-               : 'Set a target date and a daily time budget to see a day-by-day plan with review buffer and deadline warnings.')
-           + '</div>';
-      html += '<button class="ltp-empty-cta" id="ltpEmptyCta" type="button">'
-           + ti('tutor.scheduleEmptyCta', currentLang() === 'zh' ? '现在设置' : 'Set up now')
-           + '</button>';
-    }
-    html += '</div>';
-    /* Append rather than replace — the teaching-plan section
-       above remains. */
-    var existing = document.getElementById('ltpContainer');
-    if (existing) existing.remove();
-    var wrap = document.createElement('div');
-    wrap.id = 'ltpContainer';
-    wrap.innerHTML = html;
-    cont.appendChild(wrap);
-    /* Wire the empty-state CTA — when clicked, jump back to the
-       topic-setup screen and auto-expand the plan fields. */
-    var cta = document.getElementById('ltpEmptyCta');
-    if (cta) {
-      cta.onclick = function () {
-        if (typeof window.resetApp === 'function') {
-          try { window.resetApp(); } catch (_) {}
-        }
-        var toggle = document.getElementById('planSetupToggle');
-        var fields = document.getElementById('planSetupFields');
-        if (toggle) toggle.setAttribute('aria-expanded', 'true');
-        if (fields) fields.hidden = false;
-        var dateInput = document.getElementById('planTargetDateInput');
-        if (dateInput) try { dateInput.focus(); } catch (_) {}
-      };
-    }
-  }
-
-  /* ----------------------------------------------------------------
    * §9 — mistake book helper.
    *
    * Wraps the existing `state.mistakes` push so the rest of the
@@ -867,13 +543,6 @@
    * Public hooks. Expose everything the rest of the app needs.
    * ---------------------------------------------------------------- */
 
-  /* A-R2 perf — explicit invalidator so the caller (e.g. when a
-     node flips to internalized) can force the next evaluation
-     to recompute instead of returning the cached result. */
-  function invalidatePlanWarningCache() {
-    _planWarningCache = { at: 0, result: null };
-  }
-
   window.tutorSocratic = {
     stageLabel: stageLabel,
     detectStuck: detectStuck,
@@ -884,12 +553,7 @@
     renderTeachingPlan: renderTeachingPlan,
     renderModeBanner: renderModeBanner,
     renderPracticeProgress: renderPracticeProgress,
-    evaluatePlanWarning: evaluatePlanWarning,
-    invalidatePlanWarningCache: invalidatePlanWarningCache,
-    renderPlanWarning: renderPlanWarning,
     renderMistakeFilterBar: renderMistakeFilterBar,
-    buildLongTermPlan: buildLongTermPlan,
-    renderLongTermPlan: renderLongTermPlan,
     recordMistakeNotice: recordMistakeNotice
   };
 })();

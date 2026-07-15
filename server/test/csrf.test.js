@@ -70,18 +70,19 @@ describe('csrf: unsafe methods with an authenticated session', () => {
     assert.equal(r.status, 200);
   });
 
-  test('POST with sid cookie but missing csrf header passes through (requireAuth validates session)', async () => {
-    // The CSRF middleware is relaxed: when both header and cookie are
-    // not both present, it passes through to downstream middleware
-    // (requireAuth). Downstream auth will validate the session; CSRF
-    // protection is redundant because the sid cookie is HttpOnly +
-    // SameSite=Lax, making cross-origin forgery infeasible.
+  test('POST with sid cookie but missing csrf header is rejected as partial pair', async () => {
+    // The CSRF middleware rejects partial token pairs — a csrf cookie
+    // without a matching X-CSRF-Token header is anomalous (cookie-only).
+    // An attacker who injects a csrf cookie via Set-Cookie cannot also
+    // supply the header from a cross-origin request, so the 403 is the
+    // correct defensive response.
     const r = await httpRequest(server.url + '/write', {
       method: 'POST',
       cookies: { sid: 'session-token-abc', csrf: 'token-xyz' },
       body: {},
     });
-    assert.equal(r.status, 200);
+    assert.equal(r.status, 403);
+    assert.equal(r.body.code, 'CSRF_TOKEN_PARTIAL');
   });
 
   test('POST with sid cookie but mismatched csrf header is rejected', async () => {

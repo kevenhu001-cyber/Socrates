@@ -354,7 +354,7 @@ router.patch('/:id', async (req, res, next) => {
       .limit(1);
     if (!existing) throw new NotFound('Session not found');
 
-    const allowed = ['title', 'topic', 'mode', 'phase', 'kind', 'examData', 'domain', 'pinned', 'projectId', 'kbNodes', 'mistakes', 'totalQ', 'currentNode'];
+    const allowed = ['title', 'topic', 'mode', 'phase', 'kind', 'examData', 'domain', 'pinned', 'projectId', 'kbNodes', 'mistakes', 'totalQ', 'currentNode', 'streamingText', 'streamingReasoning'];
     const patch = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) patch[key] = req.body[key];

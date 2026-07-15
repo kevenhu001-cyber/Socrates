@@ -2435,10 +2435,9 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .stream-content>.stream-chunk>p:last-child{margin-bottom:0}
 
 /* Inline error/retry state — replaces the streaming bubble on failure */
-.msg-error{display:flex;align-items:center;gap:10px;padding:10px 14px;border:0.5px solid hsl(0 60% 50%/0.3);border-radius:10px;background:hsl(0 60% 30%/0.1);color:hsl(0 60% 75%);font-size:calc(13px * var(--app-font-scale, 1));flex-wrap:wrap}
-.msg-error-icon{flex-shrink:0;width:18px;height:18px;border-radius:50%;background:hsl(0 60% 50%);color:hsl(0 0% 100%);font-size:calc(12px * var(--app-font-scale, 1));font-weight:700;line-height:18px;text-align:center;font-family:var(--font-sans)}
+.msg-error{display:flex;align-items:center;gap:8px;padding:6px 10px;border:0.5px solid hsl(0 60% 50%/0.25);border-radius:8px;background:transparent;color:hsl(0 60% 70%);font-size:calc(12px * var(--app-font-scale, 1))}
 .msg-error-text{flex:1;min-width:0;word-break:break-word}
-.msg-retry-btn{flex-shrink:0;padding:5px 12px;border-radius:8px;background:hsl(var(--accent-000)/0.15);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.4);font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:background-color .12s,color .1s,opacity .12s}
+.msg-retry-btn{flex-shrink:0;padding:3px 10px;border-radius:6px;background:transparent;color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.35);font-size:calc(11.5px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:background-color .12s,color .1s,opacity .12s}
 .msg-retry-btn:hover:not(:disabled){background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .msg-retry-btn:disabled{opacity:0.5;cursor:wait}
 
@@ -2967,124 +2966,12 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
  * preserve cold-start friction.
  * ===================================================================== */
 
-.plan-setup{
-  max-width:720px;
-  width:100%;
-  margin:8px auto 0;
-  padding:0 6px;
-  text-align:left;
-}
-.plan-setup-toggle{
-  display:flex;align-items:center;gap:6px;
-  background:transparent;border:0;
-  color:hsl(var(--text-400));
-  font-size:calc(12px * var(--app-font-scale, 1));
-  padding:6px 0;
-  cursor:pointer;
-}
-.plan-setup-toggle:hover{color:hsl(var(--text-200))}
-.plan-setup-caret{
-  display:inline-block;
-  transition:transform .15s ease;
-  font-size:calc(14px * var(--app-font-scale, 1));
-  width:14px;text-align:center;
-}
-.plan-setup-toggle[aria-expanded="true"] .plan-setup-caret{transform:rotate(90deg)}
-.plan-setup-fields{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  padding:6px 4px 4px 20px;
-  border-left:1px solid hsl(var(--border-300)/0.25);
-  margin:2px 0 6px 6px;
-}
-/* The HTML `hidden` attribute is overridden by the explicit
-   `display:grid` above. Restore the default so the toggle can
-   actually collapse the field block. */
-.plan-setup-fields[hidden]{display:none}
-
 /* Chat mode — strip every Tutor-only UI element in one place.
    `appMode` is mirrored onto <body data-app-mode> by syncAppModeUI
    in main.js. .tutor-only is added in index.html (knowledgePanel,
    mistakesPanel, diagnosticView) and tutorSocratic.js (mode banner,
    practice chip, diagnostic banner, mistake filter bar). */
 body[data-app-mode="chat"] .tutor-only{display:none !important}
-.plan-setup-field{
-  display:flex;flex-direction:column;gap:4px;
-}
-.plan-setup-field-rest{grid-column:1 / -1}
-.plan-setup-field-label{
-  font-size:calc(11px * var(--app-font-scale, 1));
-  color:hsl(var(--text-500));
-  text-transform:uppercase;
-  letter-spacing:.04em;
-  font-weight:600;
-}
-.plan-setup-input{
-  background:hsl(var(--bg-200));
-  border:0.5px solid hsl(var(--border-300)/0.3);
-  color:hsl(var(--text-100));
-  padding:6px 10px;
-  border-radius:6px;
-  font-size:calc(13px * var(--app-font-scale, 1));
-}
-.plan-setup-input:focus{outline:none;border-color:hsl(var(--accent-000)/0.6)}
-.plan-setup-restdays{display:flex;gap:4px;flex-wrap:wrap}
-.plan-restday{
-  background:transparent;
-  border:0.5px solid hsl(var(--border-300)/0.3);
-  color:hsl(var(--text-400));
-  padding:3px 8px;
-  border-radius:6px;
-  font-size:calc(11px * var(--app-font-scale, 1));
-  cursor:pointer;
-  transition:background .08s,color .08s;
-}
-.plan-restday:hover{color:hsl(var(--text-100))}
-.plan-restday.active{
-  background:hsl(var(--accent-000)/0.15);
-  color:hsl(var(--accent-000));
-  border-color:hsl(var(--accent-000)/0.4);
-}
-
-/* Long-term-plan daily schedule. */
-.ltp{
-  padding:6px 4px 10px;
-  margin-top:6px;
-  border-top:0.5px solid hsl(var(--border-300)/0.15);
-}
-.ltp-title{
-  font-size:calc(11px * var(--app-font-scale, 1));
-  font-weight:600;color:hsl(var(--text-500));
-  text-transform:uppercase;letter-spacing:.06em;
-  padding:6px 8px 4px;
-}
-.ltp-meta{
-  font-size:calc(11px * var(--app-font-scale, 1));
-  color:hsl(var(--text-400));
-  padding:0 8px 6px;
-  font-variant-numeric:tabular-nums;
-}
-.ltp-days{
-  list-style:none;padding:0;margin:0;
-  display:flex;flex-direction:column;gap:2px;
-  padding:0 4px;
-}
-.ltp-day{
-  display:flex;align-items:baseline;gap:8px;
-  padding:4px 8px;
-  border-radius:6px;
-  font-size:calc(12px * var(--app-font-scale, 1));
-  color:hsl(var(--text-300));
-}
-.ltp-day-date{
-  color:hsl(var(--text-500));
-  font-variant-numeric:tabular-nums;
-  flex-shrink:0;width:36px;
-}
-.ltp-day-tasks{flex:1;min-width:0;word-break:break-word}
-.ltp-day-review{color:hsl(var(--text-500));font-style:italic}
-.ltp-day-more{color:hsl(var(--text-500));font-size:calc(11px * var(--app-font-scale, 1))}
 
 /* §8.5 — practice progress chip. Now an inline span inside
  * the chat header (sits next to the mode chip when the exercise
@@ -3109,32 +2996,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   font-variant-numeric:tabular-nums;
   font-size:calc(10px * var(--app-font-scale, 1));
 }
-
-/* Long-term-plan empty state. */
-.ltp-empty{
-  font-size:calc(12px * var(--app-font-scale, 1));
-  line-height:1.5;
-  color:hsl(var(--text-400));
-  padding:6px 8px 8px;
-  border-radius:6px;
-  background:hsl(var(--bg-200)/0.4);
-  border:0.5px dashed hsl(var(--border-300)/0.3);
-  margin:4px 4px 6px;
-}
-.ltp-empty-cta{
-  display:inline-block;
-  background:hsl(var(--accent-000)/0.12);
-  color:hsl(var(--accent-000));
-  border:0.5px solid hsl(var(--accent-000)/0.3);
-  padding:4px 12px;
-  border-radius:6px;
-  font-size:calc(12px * var(--app-font-scale, 1));
-  cursor:pointer;
-  margin:0 4px 8px;
-  font-weight:500;
-  transition:background .08s;
-}
-.ltp-empty-cta:hover{background:hsl(var(--accent-000)/0.2)}
 
 /* §9.4 — resolved mistake cards are visually muted. The user
  * still sees them (the audit noted they should be retained as

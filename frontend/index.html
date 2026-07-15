@@ -417,41 +417,6 @@
           </div>
         </div>
 
-        <!-- v3.0 design — §10.1 long-term-plan optional inputs.
-             All three fields are OPTIONAL. If the user leaves
-             them empty the system still works (it just won't
-             warn about deadline pressure or pace targets). The
-             whole row is collapsed under a "Show optional plan"
-             toggle to keep the cold-start friction low (§4.1). -->
-        <div class="plan-setup" id="planSetup">
-          <button class="plan-setup-toggle" id="planSetupToggle" type="button" aria-expanded="false" aria-controls="planSetupFields">
-            <span class="plan-setup-caret" aria-hidden="true">›</span>
-            <span class="plan-setup-label" data-i18n-key="tutor.planSetupToggle">Optional: set a target date and daily time</span>
-          </button>
-          <div class="plan-setup-fields" id="planSetupFields" hidden>
-            <label class="plan-setup-field">
-              <span class="plan-setup-field-label" data-i18n-key="tutor.planSetupTargetDate">Target date</span>
-              <input class="plan-setup-input" type="date" id="planTargetDateInput" name="planTargetDateInput">
-            </label>
-            <label class="plan-setup-field">
-              <span class="plan-setup-field-label" data-i18n-key="tutor.planSetupDailyMinutes">Daily minutes</span>
-              <input class="plan-setup-input" type="number" id="planDailyMinutesInput" name="planDailyMinutesInput" min="5" max="240" step="5" value="30">
-            </label>
-            <div class="plan-setup-field plan-setup-field-rest">
-              <span class="plan-setup-field-label" data-i18n-key="tutor.planSetupRestDays">Rest days</span>
-              <div class="plan-setup-restdays" id="planRestDays" role="group" data-i18n-aria="tutor.planSetupRestDays" aria-label="Rest days of the week">
-                <button type="button" class="plan-restday" data-day="0" data-i18n-key="common.dayShort.sun">Sun</button>
-                <button type="button" class="plan-restday" data-day="1" data-i18n-key="common.dayShort.mon">Mon</button>
-                <button type="button" class="plan-restday" data-day="2" data-i18n-key="common.dayShort.tue">Tue</button>
-                <button type="button" class="plan-restday" data-day="3" data-i18n-key="common.dayShort.wed">Wed</button>
-                <button type="button" class="plan-restday" data-day="4" data-i18n-key="common.dayShort.thu">Thu</button>
-                <button type="button" class="plan-restday" data-day="5" data-i18n-key="common.dayShort.fri">Fri</button>
-                <button type="button" class="plan-restday" data-day="6" data-i18n-key="common.dayShort.sat">Sat</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="topic-setup-row">
         <div class="model-picker" id="modelPicker" data-open="false">
           <button class="model-picker-trigger" id="modelPickerTrigger" type="button" onclick="toggleModelPicker()" aria-haspopup="listbox" aria-expanded="false" title="Pick which model to use for this conversation">

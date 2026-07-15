@@ -10,7 +10,7 @@ import { pickChatLimiterFor } from '../middleware/rateLimit.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion, callChatCompletion } from '../services/llm.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
-import { usageEvents, executions, files } from '../db/schema.js';
+import { usageEvents, executions, files, sessions } from '../db/schema.js';
 import { audit } from '../middleware/audit.js';
 import { BadRequest, TooManyRequests, NotFound } from '../lib/errors.js';
 import { getBeagleQuota } from '../lib/tiers.js';
@@ -570,6 +570,7 @@ router.post('/stream', requireAuth, chatRateLimitDispatch, audit('chat:stream'),
     }, 10_000);
 
     let fullText = '';
+    let fullReasoning = '';  // P_streaming-survival
     /* Token accounting — compute prompt tokens once from the
        incoming messages, then increment completion tokens as
        chunks arrive. On done/error, persist a usage event into
@@ -578,11 +579,26 @@ router.post('/stream', requireAuth, chatRateLimitDispatch, audit('chat:stream'),
     let completionTokens = 0;
 
     const abortController = new AbortController();
+    let streamCompleted = false;  // P_streaming-survival — prevents close handler from overwriting cleared streaming_text
     req.on('close', () => {
       clearInterval(heartbeat);
       trackSseConnection(req.app, -1);
       if (!abortController.signal.aborted) {
         abortController.abort('client_disconnected');
+      }
+      // P_streaming-survival — save partial content when client
+      // disconnects mid-stream so a reload can resume / retry.
+      // Only save if the stream did NOT complete normally (the
+      // normal completion path clears streaming_text itself).
+      if (!streamCompleted && sessionIdFromQuery && (fullText || fullReasoning)) {
+        const db = getDb();
+        db.update(sessions)
+          .set({
+            streamingText: fullText || null,
+            streamingReasoning: fullReasoning || null,
+          })
+          .where(eq(sessions.id, sessionIdFromQuery))
+          .catch((err) => console.error('[chat/stream] save streaming text on close failed:', err.message));
       }
     });
 
@@ -667,8 +683,10 @@ router.post('/stream', requireAuth, chatRateLimitDispatch, audit('chat:stream'),
           } catch { /* ignore */ }
         },
         // onReasoning — emit reasoning_content as SSE delta so the
-        // client renders the thinking pill.
+        // client renders the thinking pill. Also accumulate so
+        // streaming_text captures it on disconnect.
         (reasoning) => {
+          fullReasoning += reasoning;
           try {
             res.write(`data: {"choices":[{"delta":{"reasoning_content":${JSON.stringify(reasoning)}}}]}\n\n`);
             try { res.flush?.(); } catch {}
@@ -963,10 +981,10 @@ data: ${JSON.stringify({
       return;
     }
 
-    /* Done — record usage and close the stream. The onDone branch
-     * inside streamChatCompletion only handles per-iteration
-     * bookkeeping; the actual end-of-response ceremony happens here
-     * so a final iteration that wraps up in prose still gets recorded. */
+    /* Done — record usage, clear streaming text, and close the stream.
+     * The streaming_text is cleared so the client knows the stream
+     * completed normally (no partial content to recover). The client's
+     * own saveCurrentSession() will persist the full message. */
     clearInterval(heartbeat);
     try {
       res.write('data: [DONE]\n\n');
@@ -981,6 +999,18 @@ data: ${JSON.stringify({
         completionTokens,
         source: 'chat',
       });
+    }
+    // P_streaming-survival — mark stream as completed BEFORE clearing
+    // streaming_text, so the close handler doesn't overwrite with stale data.
+    streamCompleted = true;
+    // P_streaming-survival — clear streaming_text on normal completion
+    // so the client knows no partial content needs recovery.
+    if (sessionIdFromQuery) {
+      const db = getDb();
+      db.update(sessions)
+        .set({ streamingText: null, streamingReasoning: null })
+        .where(eq(sessions.id, sessionIdFromQuery))
+        .catch(() => {});
     }
   } catch (err) { next(err); }
 });
