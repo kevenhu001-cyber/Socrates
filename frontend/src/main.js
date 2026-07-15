@@ -6039,6 +6039,27 @@ function teardownThinkStructure(){
         }
         var errMsg=result.error||result.output||"failed";
         display=(result.stderr?"[stderr]\n"+result.stderr+"\n":"")+"[error] "+errMsg+durStr;
+        /* P_py_hint — recognise the most common Python runtime
+           errors and append a one-line hint that explains the
+           working directory and what to do next. Pyodide mounts the
+           host scratch dir as /artifacts and `os.chdir`s there at
+           the start of every run, so file paths the user passes
+           are resolved relative to that scratch dir. When the
+           model asks the user to "load the data" without first
+           uploading the file, the open() call fails with a bare
+           FileNotFoundError that doesn't tell the user what
+           happened; the appended hint makes the cause obvious
+           without having to read the traceback. */
+        if(result.name==="code_interpreter"){
+          var stderrText=String(result.stderr||"")+String(errMsg||"");
+          if(/FileNotFoundError|No such file or directory/i.test(stderrText)){
+            display+="\n\nHint: Python's working directory is the run scratch dir; only files the previous run wrote there (matplotlib PNGs, CSV exports, etc.) are available. To load a new file, attach it to the chat as input and have the code read from the path the attachment handler exposes, or have the previous cell write the file first.";
+          }else if(/ModuleNotFoundError/i.test(stderrText)){
+            display+="\n\nHint: Pyodide ships numpy, pandas, and matplotlib pre-installed. For other packages, install them in the run with `import micropip; micropip.install('pkg')`.";
+          }else if(/PermissionError|IsADirectoryError|NotADirectoryError/i.test(stderrText)){
+            display+="\n\nHint: the path is a directory or not writable. Use the artifact paths from the previous run, or write to a fresh filename.";
+          }
+        }
       }else{
         statusIcon="+";
         statusClass="ok";
