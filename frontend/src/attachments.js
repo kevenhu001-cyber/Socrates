@@ -214,7 +214,7 @@ async function extractDocumentText(file, onProgress) {
  *   the caller can re-render chips (typically renderAttachmentChips).
  * @returns {Promise<{added:number, rejected:string[]}>}
  */
-export async function addFiles(fileList, onUpdate) {
+export async function addFiles(fileList, onUpdate, onProgress) {
   const files = Array.from(fileList || []);
   const result = { added: 0, rejected: [] };
   /* P_attachments-multimodal — proactive gate for image attachments. */
@@ -241,8 +241,6 @@ export async function addFiles(fileList, onUpdate) {
           result.rejected.push(`${file.name}: image exceeds ${MAX_IMAGE_BYTES / 1024 / 1024} MB`);
           continue;
         }
-        /* Push pending stub immediately — the chip shows a spinner.
-           The actual dataUrl is populated asynchronously below. */
         const pendingId = shortId();
         attachments.push({
           id: pendingId, kind: 'image', pending: true, progress: 0,
@@ -252,7 +250,8 @@ export async function addFiles(fileList, onUpdate) {
         const { dataUrl, size } = await readFileAsDataUrl(file, function(pct){
           const e = attachments.find(a => a.id === pendingId);
           if(e) e.progress = pct;
-          if(onUpdate) onUpdate();
+          if(onProgress) onProgress();
+          else if(onUpdate) onUpdate();
         });
         const entry = attachments.find(a => a.id === pendingId);
         if (entry) {
@@ -272,7 +271,8 @@ export async function addFiles(fileList, onUpdate) {
         const rawText = await readFileAsText(file, function(pct){
           const e = attachments.find(a => a.id === pendingId);
           if(e) e.progress = pct;
-          if(onUpdate) onUpdate();
+          if(onProgress) onProgress();
+          else if(onUpdate) onUpdate();
         });
         let text = rawText;
         let truncated = false;
@@ -310,7 +310,8 @@ export async function addFiles(fileList, onUpdate) {
         const { text, truncated, meta, error } = await extractDocumentText(file, function(pct){
           const e = attachments.find(a => a.id === pendingId);
           if(e) e.progress = pct;
-          if(onUpdate) onUpdate();
+          if(onProgress) onProgress();
+          else if(onUpdate) onUpdate();
         });
         const entry = attachments.find(a => a.id === pendingId);
         if (entry) {
