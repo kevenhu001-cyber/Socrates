@@ -1,4 +1,4 @@
-:root{--always-white:0 0% 100%;--always-black:0 0% 0%}
+:root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px}
 [data-theme=socrates][data-mode=dark]{--bg-000:42 4% 18%;--bg-100:40 3.3% 14.5%;--bg-200:36 3.6% 11.8%;--bg-300:39 3.2% 7.8%;--bg-400:0 0% 0%;--text-000:45 30% 96%;--text-100:45 30% 96%;--text-200:45 8% 72%;--text-300:45 8% 72%;--text-400:44 4.5% 58%;--text-500:44 4.5% 58%;--border-100:45 20% 82%;--border-200:45 20% 82%;--border-300:45 20% 82%;--border-400:45 20% 82%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
 [data-theme=socrates][data-mode=light]{--bg-000:40 24% 91%;--bg-100:40 18% 87%;--bg-200:40 14% 81%;--bg-300:40 10% 73%;--bg-400:0 0% 100%;--text-000:40 12% 10%;--text-100:40 10% 16%;--text-200:40 8% 32%;--text-300:40 8% 32%;--text-400:40 6% 38%;--text-500:40 6% 38%;--border-100:40 10% 62%;--border-200:40 10% 62%;--border-300:40 10% 62%;--border-400:40 10% 62%;--accent-000:43 65% 42%;--accent-100:43 65% 38%;--accent-900:43 40% 90%;--brand-000:36 55% 42%;--brand-100:36 60% 47%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.6}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -412,7 +412,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 .new-reply-pill{
   position:absolute;
   right:20px;
-  bottom:120px;
+  bottom:calc(120px + var(--keyboard-inset));
   padding:6px 12px;
   border-radius:999px;
   background:hsl(var(--accent-500));
@@ -782,7 +782,7 @@ true) but the dropdown never shows — see commit history. */
   overflow-y:auto;
   scrollbar-width:thin;
   scrollbar-color:transparent transparent;
-  padding-bottom:calc(120px + env(safe-area-inset-bottom,0));
+  padding-bottom:calc(120px + env(safe-area-inset-bottom, 0px) + var(--keyboard-inset));
 }
 .chat-view>.msg-list.scrollbar-visible{
   scrollbar-color:hsl(var(--text-500)/0.25) transparent;
@@ -1021,11 +1021,11 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
   right:0;
   /* Compact gradient (12px) so the input field sits close to the
      * msg-list without a huge visual gap. */
-  bottom:0;
+  bottom:var(--keyboard-inset);
   z-index:10;
   background:transparent;
   padding-top:12px;
-  padding-bottom:env(safe-area-inset-bottom,0);
+  padding-bottom:env(safe-area-inset-bottom, 0px);
 }
 .chat-input-wrap{background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.55);border-radius:24px;overflow:hidden;transition:border-color .2s,box-shadow .2s;margin:0 12px;
   box-shadow:0 2px 12px hsl(var(--always-black)/8%)}
@@ -2053,7 +2053,7 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
 .katex .mord{color:hsl(var(--text-100))}
 .katex .mbin{color:hsl(var(--accent-000))}
 .katex .mrel{color:hsl(var(--accent-000))}
-@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .35s cubic-bezier(0.34,1.3,0.64,1),box-shadow .35s var(--ease-out);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4vh 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{bottom:0;padding-top:20px}}
+@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .35s cubic-bezier(0.34,1.3,0.64,1),box-shadow .35s var(--ease-out);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4vh 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{bottom:var(--keyboard-inset);padding-top:20px}}
 .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:25;animation:fadeIn .15s}
 .sidebar-backdrop.show{display:block}
 
@@ -2481,6 +2481,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-card:hover{border-color:hsl(var(--border-300))}
 .agent-tool-head{display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;user-select:none;transition:background .1s}
 .agent-tool-head:hover{background:hsl(var(--accent-000)/0.05)}
+.agent-tool-head:focus-visible{outline:2px solid hsl(var(--accent-000)/0.72);outline-offset:-2px}
 .agent-tool-icon{flex-shrink:0;width:20px;height:20px;border-radius:5px;background:hsl(var(--bg-300));color:hsl(var(--text-300));display:flex;align-items:center;justify-content:center}
 .agent-tool-icon svg{display:block;width:14px;height:14px}
 .agent-tool-card.read    .agent-tool-icon{background:hsl(200 50% 90%);color:hsl(200 60% 32%)}
@@ -2543,6 +2544,10 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-code-wrap{display:block;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));background:hsl(var(--bg-200)/0.6)}
 .agent-tool-code{margin:0;padding:8px 10px;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));line-height:1.5;white-space:pre;overflow-x:auto;color:hsl(var(--text-200));max-height:240px;overflow-y:auto;tab-size:4}
 .agent-tool-code code{font-family:inherit;font-size:inherit;color:inherit;background:transparent;padding:0}
+/* Code streaming animation — a subtle left-border pulse while the
+   typewriter is active. Signals "code is still being revealed". */
+.agent-tool-code-streaming{border-left:2px solid hsl(var(--accent-000));animation:code-stream-pulse 1s infinite alternate}
+@keyframes code-stream-pulse{0%{border-left-color:hsl(var(--accent-000)/0.3)}100%{border-left-color:hsl(var(--accent-000))}}
 [data-theme=socrates][data-mode=dark] .agent-tool-code-wrap{background:hsl(220 25% 14%/0.5)}
 /* Broken-artifact placeholder shown when an inline image (matplotlib
    PNG, etc.) fails to load. Replaces the <img> on error so the
@@ -2586,8 +2591,33 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    and the 280px max-height so a tall PNG scrolls instead of pushing
    the page around. The download link sits on a new line below the
    stdout. */
-.exec-artifact-image{display:block;max-width:100%;max-height:240px;margin-top:8px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-200))}
+.exec-artifact-image{display:block;max-width:100%;max-height:240px;margin-top:8px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-200));object-fit:contain}
+.exec-artifact-skeleton{width:100%;height:120px;margin-top:8px;border-radius:6px;background:hsl(var(--bg-200));overflow:hidden;position:relative}
+.exec-artifact-skeleton-pulse{display:block;position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,hsl(var(--bg-300)/0.5) 50%,transparent 100%);animation:skeleton-pulse 1.5s infinite}
+@keyframes skeleton-pulse{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 .exec-artifact-link{display:inline-block;margin-top:6px;font-family:var(--font-mono);font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
+
+/* Web Search results — structured list inside the websearch tool card.
+   Shows title (clickable link), URL + date, and a brief snippet per result. */
+.agent-tool-card.websearch .agent-tool-out{max-height:400px;white-space:normal}
+.web-search-results{display:flex;flex-direction:column;gap:10px}
+.wsr-item{padding:6px 0;border-bottom:0.5px solid hsl(var(--border-300)/0.3)}
+.wsr-item:last-child{border-bottom:none;padding-bottom:0}
+.wsr-title{display:block;font-family:var(--font-sans,system-ui);font-size:calc(12.5px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--accent-000));text-decoration:none;line-height:1.4;word-break:break-word}
+.wsr-title:hover{text-decoration:underline}
+.wsr-url{font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wsr-date{margin-left:8px;color:hsl(var(--text-500));font-style:italic}
+.wsr-snippet{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-300));margin-top:3px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+[data-theme=socrates][data-mode=dark] .wsr-title{color:hsl(var(--accent-000))}
+[data-theme=socrates][data-mode=dark] .wsr-url{color:hsl(var(--text-500))}
+[data-theme=socrates][data-mode=dark] .wsr-snippet{color:hsl(var(--text-400))}
+@media(max-width:480px){
+  .agent-tool-head{align-items:flex-start;gap:6px;padding:7px 8px}
+  .agent-tool-input{white-space:normal;overflow-wrap:anywhere;line-height:1.35}
+  .agent-tool-code,.agent-tool-out{padding:8px;max-height:220px}
+  .agent-tool-card.websearch .agent-tool-out{max-height:55vh}
+  .wsr-url{white-space:normal;overflow-wrap:anywhere}
+}
 
 /* Link previews — rendered inside the user's chat bubble when their
    message contains URLs we successfully fetched. Compact, single-line
@@ -3060,7 +3090,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   .auth-card{padding:24px 16px}
   .profile-overlay{padding:20px 12px}
   .sidebar{width:var(--app-sidebar-width,16rem);min-width:var(--app-sidebar-width,16rem)}
-  .new-reply-pill{right:10px;bottom:100px;font-size:11px;padding:4px 10px}
+  .new-reply-pill{right:10px;bottom:calc(100px + var(--keyboard-inset));font-size:11px;padding:4px 10px}
 }
 
 /* ────── Responsive: large screens ≥ 1200 px ────── */

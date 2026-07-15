@@ -557,7 +557,7 @@
      (\cancel, \bcancel, \xcancel) are emulated in KATEX_MACROS
      instead. See frontend/src/render/helpers.js for details. -->
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js" integrity="sha384-T/0lMUdJpd2S1ZHtRiofG3htU3xPCrFVeAQ1UUE2TJwlEJSV5NUwn30kP28n238E" crossorigin="anonymous" onload="try{mermaid.initialize({startOnLoad:false})}catch(_){}"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js" integrity="sha384-T/0lMUdJpd2S1ZHtRiofG3htU3xPCrFVeAQ1UUE2TJwlEJSV5NUwn30kP28n238E" crossorigin="anonymous" onload="try{var dm=document.documentElement.getAttribute('data-mode')==='dark';mermaid.initialize({startOnLoad:false,theme:dm?'dark':'default'})}catch(_){}"></script>
 <!-- highlight.js (code syntax highlighting). Optional: if the CDN is
      blocked, hljs is undefined and addStreamingMessage falls back to
      plain <pre><code> rendering. -->
