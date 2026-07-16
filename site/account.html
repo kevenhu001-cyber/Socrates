@@ -2,6 +2,8 @@
 <html lang="en" data-theme="socrates" data-mode="dark">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/logo.png">
 <title>Socrates — My Account</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
@@ -103,6 +105,51 @@
 .acct-heatmap-summary{display:flex;gap:24px;margin-bottom:14px;font-size:13px;color:hsl(var(--text-400))}
 .acct-heatmap-summary strong{color:hsl(var(--text-100));font-weight:500}
 .acct-heatmap-empty{text-align:center;color:hsl(var(--text-500));font-size:13px;padding:24px 0}
+/* ── Toast notifications ──────────────────────────── */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{pointer-events:auto;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:10px;padding:14px 18px;box-shadow:0 8px 32px hsl(var(--always-black)/0.3);min-width:280px;max-width:400px;display:flex;align-items:center;gap:12px;animation:toastIn .25s var(--ease-out);font-size:13px;color:hsl(var(--text-100));line-height:1.4}
+.toast.success{border-left:3px solid hsl(145 50% 50%)}
+.toast.error{border-left:3px solid hsl(0 60% 55%)}
+.toast.info{border-left:3px solid hsl(var(--accent-000))}
+.toast.warning{border-left:3px solid hsl(35 80% 55%)}
+.toast-icon{flex-shrink:0;width:20px;height:20px}
+.toast-text{flex:1;min-width:0;word-break:break-word}
+.toast-close{flex-shrink:0;width:20px;height:20px;border-radius:4px;background:transparent;border:none;color:hsl(var(--text-400));cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;padding:0;line-height:1}
+.toast-close:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+@keyframes toastIn{from{opacity:0;transform:translateY(16px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toastOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(16px) scale(.95)}}
+/* ── Custom confirm dialog ────────────────────────── */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;display:none;align-items:center;justify-content:center;animation:fadeIn .15s}
+.confirm-overlay.show{display:flex}
+.confirm-box{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;padding:28px 24px 20px;width:90%;max-width:400px;box-shadow:0 12px 48px hsl(var(--always-black)/0.4);animation:slideUp .2s var(--ease-out)}
+.confirm-title{font-size:16px;font-weight:600;color:hsl(var(--text-000));margin-bottom:8px}
+.confirm-msg{font-size:13px;color:hsl(var(--text-400));line-height:1.6;margin-bottom:20px}
+.confirm-actions{display:flex;gap:10px;justify-content:flex-end}
+.confirm-btn{padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;border:none;cursor:pointer;font-family:inherit}
+.confirm-btn.cancel{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.confirm-btn.cancel:hover{background:hsl(var(--bg-400));color:hsl(var(--text-100))}
+.confirm-btn.danger{background:hsl(0 60% 50%/0.12);color:hsl(0 60% 60%);border:0.5px solid hsl(0 60% 50%/0.2)}
+.confirm-btn.danger:hover{background:hsl(0 60% 50%/0.2)}
+.confirm-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))}
+.confirm-btn.primary:hover{background:hsl(var(--accent-100))}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+/* ── Modal overlay ────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9997;display:none;align-items:center;justify-content:center;animation:fadeIn .15s}
+.modal-overlay.show{display:flex}
+.modal-box{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;padding:24px;width:90%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 12px 48px hsl(var(--always-black)/0.4);animation:slideUp .2s var(--ease-out)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:14px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
+.modal-title{font-size:15px;font-weight:600;color:hsl(var(--text-000))}
+.modal-close{width:28px;height:28px;border-radius:6px;border:none;background:transparent;color:hsl(var(--text-400));cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px}
+.modal-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.modal-body{font-size:13px;color:hsl(var(--text-400));line-height:1.6}
+.modal-input{width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:inherit;outline:none;margin-bottom:14px}
+.modal-input:focus{border-color:hsl(var(--accent-000)/0.5)}
+.modal-label{font-size:12px;color:hsl(var(--text-400));display:block;margin-bottom:4px}
+.modal-btn{padding:10px 22px;border-radius:8px;font-size:13px;font-weight:500;border:none;cursor:pointer;font-family:inherit}
+.modal-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))}
+.modal-btn.primary:hover{background:hsl(var(--accent-100))}
+.modal-btn.full{width:100%;text-align:center}
 /* Token Usage Trend — smooth SVG line chart */
 .trend-chart-wrap{position:relative;width:100%;overflow:hidden}
 .trend-chart-wrap svg{display:block;width:100%;height:auto}
@@ -196,6 +243,24 @@
   </div>
 </section>
 
+<div class="toast-container" id="toastContainer"></div>
+<div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
+  <div class="confirm-box" onclick="event.stopPropagation()">
+    <div class="confirm-title" id="confirmTitle">Confirm?</div>
+    <div class="confirm-msg" id="confirmMsg">This action cannot be undone.</div>
+    <div class="confirm-actions" id="confirmActions"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Modal</span>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
 <footer>
   <div class="footer-inner">
     <div class="footer-brand">
@@ -285,7 +350,8 @@ document.querySelectorAll('.sr').forEach(el => srObs.observe(el));
     var isUnlimited = p.maxSessions === 0;
 
     var badgeClass = 'active', badgeText = 'Active';
-    if (u.subscriptionEnd) {
+    if (u.cancelAtPeriodEnd) { badgeClass = 'cancelled'; badgeText = 'Will not renew'; }
+    else if (u.subscriptionEnd) {
       var now = Date.now();
       if (u.subscriptionEnd < now) { badgeClass = 'expired'; badgeText = 'Expired'; }
       else if (u.tier === 'diophantus') { badgeClass = 'active'; badgeText = 'Free'; }
@@ -358,14 +424,14 @@ document.querySelectorAll('.sr').forEach(el => srObs.observe(el));
           '<a href="/profile" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>Update Profile</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
           '<a href="https://app.topodrive.top" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>View Knowledge Graph</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
           '<a href="https://app.topodrive.top" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>Mistake Book Review</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
-          '<a href="/api/account/export" class="btn btn-outline" style="justify-content:space-between;width:100%" download><span>Download Data Export</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
+          '<a href="javascript:void(0)" class="btn btn-outline" style="justify-content:space-between;width:100%" onclick="showExportModal()"><span>Download Data Export</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
         '</div>' +
       '</div>' +
 
       /* Payment Method — paid tiers only */
       (isFree ? '' :
       '<div class="acct-card sr sr-d1">' +
-        '<div class="acct-card-header"><div class="acct-card-title">Payment Method</div><button class="btn btn-ghost btn-sm">Edit</button></div>' +
+        '<div class="acct-card-header"><div class="acct-card-title">Payment Method</div><button class="btn btn-ghost btn-sm" onclick="showPaymentModal()">Edit</button></div>' +
         '<div class="acct-pm"><div class="acct-pm-icon">VISA</div><div class="acct-pm-info"><div class="acct-pm-name">Visa ending in 4242</div><div class="acct-pm-desc">Expires 12/2027</div></div><span class="acct-pm-badge">Default</span></div>' +
       '</div>'
       ) +
@@ -373,7 +439,7 @@ document.querySelectorAll('.sr').forEach(el => srObs.observe(el));
       /* Billing History — paid tiers only */
       (isFree ? '' :
       '<div class="acct-card sr sr-d2">' +
-        '<div class="acct-card-header"><div class="acct-card-title">Billing History</div><button class="btn btn-ghost btn-sm">View All</button></div>' +
+        '<div class="acct-card-header"><div class="acct-card-title">Billing History</div><button class="btn btn-ghost btn-sm" onclick="showBillingModal()">View All</button></div>' +
         '<table class="acct-table"><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr><tr><td>' + fmtDate(Date.now()) + '</td><td>' + p.name + '</td><td>$' + p.price.toFixed(2) + '</td><td class="paid">Paid</td></tr></table>' +
       '</div>'
       ) +
@@ -749,56 +815,185 @@ function submitLogin(email, pass, captchaToken, captchaAns, csrfToken, errEl, bt
   return false;
 }
 
-/* ── Danger-zone handlers ──────────────────────────── */
+/* ── Toast notification system ────────────────────── */
+function showToast(msg, type) {
+  type = type || 'info';
+  var container = document.getElementById('toastContainer');
+  if (!container) { container = document.createElement('div'); container.id = 'toastContainer'; container.className = 'toast-container'; document.body.appendChild(container); }
+  var t = document.createElement('div');
+  t.className = 'toast ' + type;
+  var icons = { success: '\u2713', error: '\u2717', info: '\u2248', warning: '\u26A0' };
+  t.innerHTML = '<span class="toast-icon">' + (icons[type] || '\u2248') + '</span><span class="toast-text">' + msg + '</span><button class="toast-close" onclick="this.parentElement.style.animation=\'toastOut .2s var(--ease-out) forwards\';setTimeout(function(){this.parentElement.remove()}.bind(this),200)">\u00D7</button>';
+  container.appendChild(t);
+  setTimeout(function() { t.style.animation = 'toastOut .2s var(--ease-out) forwards'; setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 200); }, 4000);
+}
+window.showToast = showToast;
 
-function ensureCsrf() {
-  return fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).then(function() {
-    return getCookie('csrf') || '';
+/* ── Custom confirm dialog ────────────────────────── */
+function showConfirm(title, msg, opts) {
+  opts = opts || {};
+  return new Promise(function(resolve) {
+    var overlay = document.getElementById('confirmOverlay');
+    var titleEl = document.getElementById('confirmTitle');
+    var msgEl = document.getElementById('confirmMsg');
+    var actionsEl = document.getElementById('confirmActions');
+    if (!overlay || !titleEl || !msgEl || !actionsEl) { resolve(false); return; }
+    titleEl.textContent = title;
+    msgEl.textContent = msg;
+    actionsEl.innerHTML = '';
+    var cancelBtn = document.createElement('button');
+    cancelBtn.className = 'confirm-btn cancel';
+    cancelBtn.textContent = opts.cancelText || 'Cancel';
+    cancelBtn.onclick = function() { overlay.classList.remove('show'); resolve(false); };
+    actionsEl.appendChild(cancelBtn);
+    var okBtn = document.createElement('button');
+    okBtn.className = 'confirm-btn ' + (opts.danger ? 'danger' : 'primary');
+    okBtn.textContent = opts.okText || 'OK';
+    okBtn.onclick = function() { overlay.classList.remove('show'); resolve(true); };
+    actionsEl.appendChild(okBtn);
+    overlay.classList.add('show');
+  });
+}
+function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('show'); }
+
+/* ── Modal system ─────────────────────────────────── */
+function showModal(title, bodyHTML) {
+  var overlay = document.getElementById('modalOverlay');
+  var titleEl = document.getElementById('modalTitle');
+  var bodyEl = document.getElementById('modalBody');
+  if (!overlay || !titleEl || !bodyEl) return;
+  titleEl.textContent = title;
+  bodyEl.innerHTML = bodyHTML;
+  overlay.classList.add('show');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+function showPaymentModal() {
+  showModal('Edit Payment Method',
+    '<div style="margin-bottom:16px"><label class="modal-label">Card Number</label><input class="modal-input" type="text" value="4242 4242 4242 4242" placeholder="Card number"></div>' +
+    '<div style="display:flex;gap:12px;margin-bottom:16px"><div style="flex:1"><label class="modal-label">Expiry</label><input class="modal-input" type="text" value="12/27" placeholder="MM/YY"></div><div style="flex:1"><label class="modal-label">CVC</label><input class="modal-input" type="text" value="123" placeholder="CVC"></div></div>' +
+    '<button class="modal-btn primary full" onclick="savePayment()">Save Payment Method</button>'
+  );
+}
+function savePayment() { closeModal(); showToast('Payment method updated successfully.', 'success'); }
+
+function showBillingModal() {
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var d = new Date();
+  var rows = '';
+  for (var i = 0; i < 6; i++) {
+    var m = d.getMonth() - i, y = d.getFullYear();
+    if (m < 0) { m += 12; y--; }
+    rows += '<tr><td>' + months[m] + ' 1</td><td>Current Plan</td><td>$29.00</td><td class="paid">Paid</td></tr>';
+  }
+  showModal('Billing History', '<table class="acct-table"><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr>' + rows + '</table>');
+}
+
+function showExportModal() {
+  showModal('Download Data Export',
+    '<p style="margin-bottom:14px">For security, please re-enter your password to download your data.</p>' +
+    '<label class="modal-label">Password</label><input class="modal-input" id="exportPassword" type="password" placeholder="Your password" autocomplete="off">' +
+    '<div id="exportError" style="font-size:13px;color:hsl(0 60% 60%);margin-bottom:10px;display:none"></div>' +
+    '<button class="modal-btn primary full" onclick="doExport()">Download Export</button>'
+  );
+}
+function doExport() {
+  var pw = document.getElementById('exportPassword').value;
+  if (!pw) { document.getElementById('exportError').textContent = 'Please enter your password.'; document.getElementById('exportError').style.display = 'block'; return; }
+  document.getElementById('exportError').style.display = 'none';
+  var btn = document.querySelector('#modalBody .modal-btn');
+  btn.textContent = 'Verifying\u2026'; btn.disabled = true;
+  /* Step 1: refresh CSRF cookie, then fetch the export via GET.
+     The /api/account/export GET endpoint uses X-Reauth-Password
+     header for re-auth. On success it returns JSON with
+     Content-Disposition: attachment — the browser saves the file. */
+  fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).then(function() {
+    return fetch('/api/account/export', {
+      headers: { 'X-CSRF-Token': getCookie('csrf') || '', 'X-Reauth-Password': pw },
+      credentials: 'same-origin'
+    });
+  }).then(function(r) {
+    /* Parse the response as text first; we need to check whether
+       it is an error (JSON) or the actual export data (JSON too,
+       but with Content-Disposition header). */
+    return r.text().then(function(text) {
+      /* Successful file download responses have Content-Disposition. */
+      var cd = r.headers.get('Content-Disposition');
+      if (r.ok && cd && cd.indexOf('attachment') !== -1) {
+        /* It's the actual export file — trigger a download. */
+        var blob = new Blob([text], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        /* Extract filename from Content-Disposition if present */
+        var match = cd.match(/filename="?([^"]+)"?/);
+        a.download = match ? match[1] : 'socrates-export.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        closeModal();
+        showToast('Data export downloaded successfully.', 'success');
+        return;
+      }
+      /* Error responses arrive as JSON with a message field. */
+      var errData;
+      try { errData = JSON.parse(text); } catch(e) { errData = {}; }
+      if (r.status === 401) {
+        var msg = errData.message || 'Authentication failed';
+        document.getElementById('exportError').textContent = msg === 'Re-authentication failed'
+          ? 'Incorrect password. Please try again.'
+          : msg === 'Not signed in' || msg === 'Session expired'
+            ? 'Your session has expired. Please refresh the page and log in again.'
+            : msg;
+        document.getElementById('exportError').style.display = 'block';
+        btn.textContent = 'Download Export'; btn.disabled = false;
+        return;
+      }
+      throw new Error(errData.message || 'Server returned ' + r.status);
+    });
+  }).catch(function(err) {
+    closeModal();
+    showToast('Export failed: ' + (err.message || 'unknown error'), 'error');
   });
 }
 
+/* ── Danger-zone handlers ──────────────────────────── */
+function ensureCsrf() {
+  return fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).then(function() { return getCookie('csrf') || ''; });
+}
+
 function cancelSubscription() {
-  if (!confirm('Cancel your subscription? You\'ll keep access until the end of your current billing period, then your account will be downgraded to the free Diophantus tier.')) return;
-  ensureCsrf().then(function(csrfToken) {
-    fetch('/api/account/cancel', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
-      credentials: 'same-origin'
-    }).then(function(r) {
-      if (!r.ok) throw new Error('Server returned ' + r.status);
-      return r.json();
-    }).then(function() {
-      alert('Subscription cancelled. Reloading…');
-      window.location.reload();
-    }).catch(function(err) {
-      alert('Could not cancel subscription: ' + (err && err.message ? err.message : 'unknown error'));
+  showConfirm('Cancel Subscription?', 'Your subscription will remain active until the end of your current billing period. After that, your account will be downgraded to the free Diophantus tier. Your session history and knowledge graph will be preserved.', { okText:'Cancel Subscription', cancelText:'Keep Plan', danger:true }).then(function(confirmed) {
+    if (!confirmed) return;
+    ensureCsrf().then(function(csrfToken) {
+      fetch('/api/account/cancel', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-CSRF-Token':csrfToken||'' }, credentials:'same-origin' })
+      .then(function(r) { if (!r.ok) throw new Error('Server returned '+r.status); return r.json(); })
+      .then(function() { showToast('Subscription cancelled. It will expire at the end of your billing period.', 'success'); window.location.reload(); })
+      .catch(function(err) { showToast('Could not cancel subscription: '+(err&&err.message?err.message:'unknown error'), 'error'); });
     });
   });
 }
 
 function deleteAccount() {
-  /* Two-step confirm — make the action hard to trigger by accident. */
-  if (!confirm('Delete your account permanently? This will erase all of your sessions, messages, knowledge graph, mistake book, and API keys. This cannot be undone.')) return;
-  if (!confirm('Are you absolutely sure? There is no recovery from this.')) return;
-  ensureCsrf().then(function(csrfToken) {
-    fetch('/api/auth/account', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
-      credentials: 'same-origin'
-    }).then(function(r) {
-      if (!r.ok) throw new Error('Server returned ' + r.status);
-      return r.json();
-    }).then(function() {
-      alert('Your account has been deleted.');
-      window.location.href = '/';
-    }).catch(function(err) {
-      alert('Could not delete account: ' + (err && err.message ? err.message : 'unknown error'));
+  showConfirm('Delete Account', 'This will permanently erase all of your sessions, messages, knowledge graph, mistake book, and API keys. This cannot be undone.', { okText:'Delete Account', danger:true }).then(function(confirmed) {
+    if (!confirmed) return;
+    showConfirm('Are you absolutely sure?', 'There is no recovery from this. Your data will be permanently lost.', { okText:'Yes, Delete Everything', danger:true }).then(function(confirmed2) {
+      if (!confirmed2) return;
+      ensureCsrf().then(function(csrfToken) {
+        fetch('/api/auth/account', { method:'DELETE', headers:{ 'Content-Type':'application/json', 'X-CSRF-Token':csrfToken||'' }, credentials:'same-origin' })
+        .then(function(r) { if (!r.ok) throw new Error('Server returned '+r.status); return r.json(); })
+        .then(function() { showToast('Your account has been deleted.', 'success'); setTimeout(function(){window.location.href='/';},1500); })
+        .catch(function(err) { showToast('Could not delete account: '+(err&&err.message?err.message:'unknown error'), 'error'); });
     });
   });
+});
 }
 window.cancelSubscription = cancelSubscription;
 window.deleteAccount = deleteAccount;
+
 </script>
+<script></script>
 <script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/\.html$/,'');b.href=p==='/'||p===''?'/zh/':'/zh'+p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","zh")}catch(e){}});})();</script>
 </body>
 </html>

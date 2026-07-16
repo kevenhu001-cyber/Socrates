@@ -54,6 +54,7 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash').notNull(),
   tier: text('tier').notNull().default('diophantus'),  // diophantus | riemann | descartes | euclid
   plan: text('plan'),
+  cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
   isGuest: boolean('is_guest').notNull().default(false),
   verifiedAt: timestamp('verified_at', { withTimezone: true }),
   customInstructions: text('custom_instructions'),

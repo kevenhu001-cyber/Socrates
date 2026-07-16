@@ -18,10 +18,11 @@ router.use(requireAuth);
 const MAX_PASSWORD_LENGTH = 64;
 
 /**
- * POST /api/account/cancel — downgrade a paid subscription back to the
- * free Diophantus tier. Mirrors the front-end My Account "Cancel
- * Subscription" action. Idempotent: calling it on an already-free user
- * is a no-op (returns 200 with the unchanged tier).
+ * POST /api/account/cancel — mark a paid subscription to cancel at period end.
+ * Instead of immediately downgrading to the free tier, this sets a
+ * `cancelAtPeriodEnd` flag so the subscription stays active until the
+ * current billing period expires. Idempotent: calling it on an already-cancelled
+ * or free user returns 200 with the current state.
  */
 router.post('/cancel', async (req, res, next) => {
   try {
@@ -34,13 +35,14 @@ router.post('/cancel', async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ code: 'USER_NOT_FOUND', message: 'User not found' });
     }
-    if (user.tier !== 'diophantus') {
+    if (user.tier !== 'diophantus' && !user.cancelAtPeriodEnd) {
       await db
         .update(users)
-        .set({ tier: 'diophantus', plan: null })
+        .set({ cancelAtPeriodEnd: true })
         .where(eq(users.id, req.userId));
+      return res.json({ ok: true, cancelAtPeriodEnd: true, tier: user.tier });
     }
-    return res.json({ ok: true, tier: 'diophantus' });
+    return res.json({ ok: true, cancelAtPeriodEnd: !!user.cancelAtPeriodEnd, tier: user.tier || 'diophantus' });
   } catch (err) { next(err); }
 });
 
@@ -129,6 +131,8 @@ router.get('/usage', async (req, res, next) => {
       displayName: user.displayName,
       tier: user.tier,
       plan: user.plan ?? null,
+      cancelAtPeriodEnd: !!user.cancelAtPeriodEnd,
+      subscriptionEnd,
       isGuest: !!user.isGuest,
       verifiedAt: user.verifiedAt,
       createdAt: user.createdAt,
@@ -219,7 +223,7 @@ router.get('/usage-heatmap', async (req, res, next) => {
 });
 
 /**
- * GET /api/account/export — download all user data as a JSON file.
+ * GET|POST /api/account/export — download all user data as a JSON file.
  * Returns a Content-Disposition: attachment response so the browser
  * saves the file rather than displaying it inline.
  *
@@ -234,6 +238,9 @@ router.get('/usage-heatmap', async (req, res, next) => {
  * via bcrypt.compare. A failed re-auth does NOT increment the
  * login-failure counter (this is a per-user check, not a
  * brute-force channel) and does NOT log the attempted password.
+ *
+ * POST mode accepts the password via `req.body.password` (form or JSON)
+ * for reliable form-based downloads from the marketing-site account page.
  */
 router.get('/export', async (req, res, next) => {
   try {
@@ -251,7 +258,7 @@ router.get('/export', async (req, res, next) => {
 
     // Re-auth: caller must re-submit the current password.
     // Guest accounts (no password) cannot export.
-    const reauth = req.get('X-Reauth-Password') || '';
+    const reauth = req.get('X-Reauth-Password') || req.body?.password || '';
     if (!user.passwordHash) {
       throw new Unauthorized('REAUTH_REQUIRED', 'Re-authentication required for export');
     }

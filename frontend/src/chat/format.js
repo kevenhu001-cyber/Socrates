@@ -105,7 +105,7 @@ function handleChatApiResult(result,ctl,userText){
       ctl.abort();
     }else if(window.state.lastCallError){
       window.state.lastCallSource="error";
-      ctl.replaceWithError("(response interrupted — tap Retry to resume)",function(){
+      ctl.replaceWithError(window.state.lastCallError,function(){
         window.askChatTurn&&window.askChatTurn(userText);
       });
     }else{

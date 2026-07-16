@@ -112,9 +112,11 @@ export async function apiFetchRaw(path, opts = {}) {
       return apiFetchRaw(path, Object.assign({}, opts, { _csrfRetried: true }));
     }
     let txt = '';
+    let parsedBody = null;
     try { txt = await r.text(); } catch (_) {}
-    const msg = (txt || r.statusText || ('HTTP ' + r.status)).slice(0, 200);
-    throw makeApiError(r.status, msg, null, null, 0);
+    try { if (txt) parsedBody = JSON.parse(txt); } catch (_) {}
+    const msg = (parsedBody && parsedBody.message) || (parsedBody && parsedBody.detail) || (parsedBody && parsedBody.error) || txt || r.statusText || ('HTTP ' + r.status);
+    throw makeApiError(r.status, String(msg).slice(0, 200), parsedBody, (parsedBody && parsedBody.code) || null, 0);
   }
   return r;
 }
