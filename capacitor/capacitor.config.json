@@ -1,0 +1,18 @@
+{
+  "appId": "com.topodrive.socrates",
+  "appName": "Socrates",
+  "webDir": "../frontend/dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0,
+      "backgroundColor": "#101318",
+      "showSpinner": false
+    }
+  }
+}

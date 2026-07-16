@@ -33,11 +33,11 @@ export var TOOL_META = {
   Edit:    { letter: "E", cls: "edit",     short: "Edit",    tone: "amber"  },
   Glob:    { letter: "G", cls: "glob",     short: "Find",    tone: "teal"   },
   Grep:    { letter: "F", cls: "grep",     short: "Search",  tone: "teal"   },
-  Bash:    { letter: "$", cls: "bash",     short: "Bash",    tone: "purple" },
-  WebFetch:{ letter: "↗", cls: "webfetch", short: "Fetch",   tone: "orange" },
-  Code:    { letter: "λ", cls: "code",     short: "Python",  tone: "python" },
+  Bash:    { letter: "$", cls: "bash",     short: "Shell",   tone: "purple" },
+  WebFetch:{ letter: ">", cls: "webfetch", short: "Fetch",   tone: "orange" },
+  Code:    { letter: "py", cls: "code",    short: "Python",  tone: "python" },
   web_search:    { letter: "Q", cls: "websearch", short: "Search", tone: "teal"   },
-  code_interpreter: { letter: "λ", cls: "codeint", short: "Code", tone: "python" },
+  code_interpreter: { letter: "{}", cls: "codeint", short: "Code", tone: "python" },
 };
 
 /* Extract the human-readable input preview shown in the collapsed
@@ -46,25 +46,85 @@ export var TOOL_META = {
 export function toolFormatInput(name, inp) {
   if (!inp || typeof inp !== "object") return "";
   switch (name) {
-    case "Read":    return inp.path + (inp.limit ? `  ·  lines ${inp.offset || 0}–${(inp.offset || 0) + inp.limit}` : "");
-    case "Write":   return `${inp.path}  ·  ${((inp.content || "").length)} bytes`;
-    case "Edit":    return inp.path + (inp.allOccurrences ? "  ·  all occurrences" : "");
+    case "Read":    return inp.path + (inp.limit ? `  -  lines ${inp.offset || 0}-${(inp.offset || 0) + inp.limit}` : "");
+    case "Write":   return `${inp.path}  -  ${((inp.content || "").length)} bytes`;
+    case "Edit":    return inp.path + (inp.allOccurrences ? "  -  all occurrences" : "");
     case "Glob":    return inp.pattern || "";
     case "Grep":    return `${inp.path || "workspace"}  /  ${inp.pattern || ""}`;
     case "Bash":    return inp.command || "";
     case "WebFetch":return inp.url || "";
     case "Code":    {
       const first = ((inp.code || "").split("\n")[0] || "").slice(0, 80);
-      return `${inp.language || "python"}  ·  ${first}`;
+      return `${inp.language || "python"}  -  ${first}`;
     }
     case "web_search":  return inp.query || "";
     case "code_interpreter": {
       if (!inp.code) return "";
       const first = ((inp.code || "").split("\n")[0] || "").slice(0, 80);
-      return `${inp.language || "python"}  ·  ${first}`;
+      return `${inp.language || "python"}  -  ${first}`;
     }
-    default:        return JSON.stringify(inp).slice(0, 160);
+    default:        return stringifyPreview(inp, 160);
   }
+}
+
+function stringifyPreview(value, maxLen) {
+  var text = "";
+  try {
+    text = typeof value === "string" ? value : JSON.stringify(value);
+  } catch (_) {
+    text = String(value || "");
+  }
+  text = text.replace(/\s+/g, " ").trim();
+  if (!maxLen || text.length <= maxLen) return text;
+  return text.slice(0, Math.max(0, maxLen - 1)) + "...";
+}
+
+function decodeJsonStringFragment(raw, truncated) {
+  if (raw == null) return "";
+  if (truncated && String(raw).endsWith("\\")) raw = String(raw).slice(0, -1);
+  try {
+    return JSON.parse('"' + raw + '"');
+  } catch (_) {
+    return String(raw)
+      .replace(/\\n/g, "\n")
+      .replace(/\\t/g, "\t")
+      .replace(/\\r/g, "\r")
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, "\\");
+  }
+}
+
+function hostFromUrl(url) {
+  try {
+    if (!url || url === "#") return "";
+    return new URL(url).host.replace(/^www\./, "");
+  } catch (_) {
+    return "";
+  }
+}
+
+function compactHostLabel(host) {
+  if (!host) return "Web";
+  var parts = host.split(".").filter(Boolean);
+  if (parts.length >= 2) return parts.slice(-2).join(".");
+  return host;
+}
+
+function trTool(key, fallback, vars) {
+  var text = fallback;
+  try {
+    if (typeof window !== "undefined" && typeof window.t === "function") {
+      text = window.t(key) || fallback;
+    }
+  } catch (_) {
+    text = fallback;
+  }
+  if (vars) {
+    Object.keys(vars).forEach(function (name) {
+      text = text.replace(new RegExp("\\{" + name + "\\}", "g"), String(vars[name]));
+    });
+  }
+  return text;
 }
 
 /* Pull the readable code body out of a tool call's argument JSON.
@@ -93,17 +153,7 @@ export function extractCodeFromArgs(name, argsJson) {
     // surface a half-escaped sequence.
     const m = argsJson.match(/"code"\s*:\s*"((?:\\.|[^"\\])*)/);
     if (m) {
-      let raw = m[1];
-      // Truncation safety: if the last character is a backslash it
-      // is half of an escape sequence; drop it.
-      if (truncated && raw.endsWith("\\")) raw = raw.slice(0, -1);
-      // Unescape a small set of common JSON escapes.
-      const code = raw
-        .replace(/\\n/g, "\n")
-        .replace(/\\t/g, "\t")
-        .replace(/\\r/g, "\r")
-        .replace(/\\"/g, '"')
-        .replace(/\\\\/g, "\\");
+      const code = decodeJsonStringFragment(m[1], truncated);
       const langMatch = argsJson.match(/"language"\s*:\s*"([^"]+)"/);
       return { code, language: langMatch ? langMatch[1] : "python", parsed: false, truncated };
     }
@@ -115,9 +165,7 @@ export function extractCodeFromArgs(name, argsJson) {
     }
     const m = argsJson.match(/"query"\s*:\s*"((?:\\.|[^"\\])*)/);
     if (m) {
-      let raw = m[1];
-      if (truncated && raw.endsWith("\\")) raw = raw.slice(0, -1);
-      return { code: raw.replace(/\\"/g, '"').replace(/\\\\/g, "\\"), language: "query", parsed: false, truncated };
+      return { code: decodeJsonStringFragment(m[1], truncated), language: "query", parsed: false, truncated };
     }
     return { code: "", language: "query", parsed: false, truncated };
   }
@@ -325,12 +373,55 @@ export function setLastToolOutput(text, isError, outEl) {
     out = list.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
   }
   if (!out) return;
-  out.textContent = text || "";
-  if (isError) out.classList.add("error"); else out.classList.remove("error");
+  renderToolTextOutput(out, text || "", {
+    isError: !!isError,
+    kind: isError ? "error" : "output",
+  });
   if (text && text.length > 200) {
     const card = out.closest(".agent-tool-card");
     if (card) card.classList.add("open");
   }
+}
+
+export function renderToolTextOutput(out, text, opts) {
+  if (!out) return null;
+  opts = opts || {};
+  const value = String(text || "");
+  const longOutput = value.length > 5000 || value.split(/\r?\n/).length > 120;
+  const wrap = document.createElement("div");
+  wrap.className = "agent-tool-output-text";
+  if (opts.kind) wrap.dataset.kind = String(opts.kind);
+
+  const pre = document.createElement("pre");
+  pre.className = "agent-tool-output-pre";
+  pre.textContent = value || trTool("tool.noOutput", "(no output)");
+  wrap.appendChild(pre);
+
+  if (longOutput) {
+    wrap.classList.add("is-collapsed");
+    const controls = document.createElement("div");
+    controls.className = "agent-tool-output-controls";
+    const summary = document.createElement("span");
+    summary.className = "agent-tool-output-summary";
+    summary.textContent = trTool("tool.outputChars", "{n} chars", { n: value.length.toLocaleString() });
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "agent-tool-output-toggle";
+    button.textContent = trTool("tool.showFullOutput", "Show full output");
+    button.addEventListener("click", function () {
+      const collapsed = wrap.classList.toggle("is-collapsed");
+      button.textContent = collapsed
+        ? trTool("tool.showFullOutput", "Show full output")
+        : trTool("tool.collapseOutput", "Collapse output");
+    });
+    controls.appendChild(summary);
+    controls.appendChild(button);
+    wrap.appendChild(controls);
+  }
+
+  out.replaceChildren(wrap);
+  if (opts.isError) out.classList.add("error"); else out.classList.remove("error");
+  return wrap;
 }
 
 /* Build search result nodes directly so untrusted provider payloads
@@ -343,57 +434,80 @@ export function renderWebSearchResults(out, results, query) {
   if (!out || !Array.isArray(results) || !results.length) return false;
   const wrap = document.createElement("div");
   wrap.className = "web-search-results";
+  const seen = new Set();
+  const normalized = [];
+  for (let i = 0; i < results.length; i++) {
+    const source = results[i] || {};
+    const rawUrl = String(source.url || "").trim();
+    const url = sanitizeUrl(rawUrl);
+    const title = String(source.title || rawUrl || "Untitled result").trim();
+    const key = (url || "#") + "\n" + title.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    normalized.push({
+      title,
+      rawUrl,
+      url,
+      host: hostFromUrl(url),
+      snippet: String(source.snippet || source.description || "").trim(),
+      date: String(source.date || source.published || "").trim(),
+    });
+  }
+  if (!normalized.length) return false;
   if (query) {
     const head = document.createElement("div");
     head.className = "wsr-header";
-    head.textContent = `Found ${results.length} result${results.length === 1 ? "" : "s"} for "${query}"`;
+    head.textContent = trTool(
+      normalized.length === 1 ? "tool.sourceForQuery" : "tool.sourcesForQuery",
+      normalized.length === 1 ? '{n} source for "{query}"' : '{n} sources for "{query}"',
+      { n: normalized.length, query }
+    );
     wrap.appendChild(head);
   }
-  for (let i = 0; i < results.length; i++) {
-    const source = results[i] || {};
-    const url = sanitizeUrl(String(source.url || ""));
+  for (let i = 0; i < normalized.length; i++) {
+    const source = normalized[i];
     const item = document.createElement("article");
     item.className = "wsr-item";
+    if (!source.host) item.classList.add("wsr-item-muted");
 
     // Left rail with the result index — gives a strong scan line and
     // a natural place to hang the "cite as [1]" hint.
     const idx = document.createElement("span");
     idx.className = "wsr-index";
-    idx.textContent = String(i + 1);
+    idx.textContent = source.host ? compactHostLabel(source.host).slice(0, 1).toUpperCase() : String(i + 1);
+    idx.title = source.host || trTool("tool.unavailableSource", "Unavailable source");
     item.appendChild(idx);
 
     const body = document.createElement("div");
     body.className = "wsr-body";
 
-    const host = (() => {
-      try { return new URL(url).host.replace(/^www\./, ""); } catch (_) { return ""; }
-    })();
-
     const title = document.createElement("a");
     title.className = "wsr-title";
-    title.href = url || "#";
-    title.target = "_blank";
-    title.rel = "noopener noreferrer";
-    title.textContent = source.title || source.url || "Untitled result";
+    title.href = source.url || "#";
+    title.textContent = source.title;
+    if (source.url && source.url !== "#") {
+      title.target = "_blank";
+      title.rel = "noopener noreferrer";
+    } else {
+      title.classList.add("is-disabled");
+      title.setAttribute("aria-disabled", "true");
+      title.setAttribute("tabindex", "-1");
+    }
     body.appendChild(title);
 
-    if (source.url) {
-      const meta = document.createElement("div");
-      meta.className = "wsr-meta";
-      if (host) {
-        const hostEl = document.createElement("span");
-        hostEl.className = "wsr-host";
-        hostEl.textContent = host;
-        meta.appendChild(hostEl);
-      }
-      if (source.date) {
-        const date = document.createElement("span");
-        date.className = "wsr-date";
-        date.textContent = source.date;
-        meta.appendChild(date);
-      }
-      body.appendChild(meta);
+    const meta = document.createElement("div");
+    meta.className = "wsr-meta";
+    const hostEl = document.createElement("span");
+    hostEl.className = "wsr-host";
+    hostEl.textContent = source.host || trTool("tool.linkUnavailable", "Link unavailable");
+    meta.appendChild(hostEl);
+    if (source.date) {
+      const date = document.createElement("span");
+      date.className = "wsr-date";
+      date.textContent = source.date;
+      meta.appendChild(date);
     }
+    body.appendChild(meta);
 
     if (source.snippet) {
       const snippet = document.createElement("p");
@@ -406,6 +520,7 @@ export function renderWebSearchResults(out, results, query) {
     wrap.appendChild(item);
   }
   out.replaceChildren(wrap);
+  out.classList.remove("error");
   return true;
 }
 

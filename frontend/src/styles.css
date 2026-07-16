@@ -2687,22 +2687,89 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 }
 
 /* Tool cards deliberately stay quiet: the chat content is primary, while
-   execution/search details are available on demand. These overrides replace
-   the earlier per-tool colour system, rails, gradients, and badge pills. */
-.agent-tool-card,.agent-tool-card.code,.agent-tool-card.codeint{background:hsl(var(--bg-100));border:1px solid hsl(var(--border-300)/.45);border-radius:6px;box-shadow:none}
+   execution/search details are available on demand. */
+.agent-tool-card,.agent-tool-card.code,.agent-tool-card.codeint{
+  background:hsl(var(--bg-100)/.82);
+  border:1px solid hsl(var(--border-300)/.38);
+  border-radius:7px;
+  box-shadow:none;
+}
 .agent-tool-card:hover{border-color:hsl(var(--border-300)/.7);box-shadow:none}
-.agent-tool-head{min-height:34px;padding:7px 10px;gap:7px;background:transparent}
-.agent-tool-icon,.agent-tool-card.codeint .agent-tool-icon,.agent-tool-card.websearch .agent-tool-icon{width:16px;height:16px;border-radius:3px;background:transparent!important;color:hsl(var(--text-400))!important;font-size:10px}
+.agent-tool-card.open{box-shadow:0 6px 18px hsl(var(--shadow-color,0 0% 0%)/.035)}
+.agent-tool-head{min-height:36px;padding:8px 10px;gap:7px;background:transparent}
+.agent-tool-head:hover{background:hsl(var(--bg-200)/.42)}
 .agent-tool-card .agent-tool-body::before{display:none}
+.agent-tool-name,.agent-tool-input,.wsr-title{letter-spacing:0}
+.agent-tool-icon,.agent-tool-card.codeint .agent-tool-icon,.agent-tool-card.websearch .agent-tool-icon{
+  width:18px;height:18px;border-radius:4px;
+  background:transparent!important;
+  color:hsl(var(--text-400))!important;
+  font-size:calc(9.5px * var(--app-font-scale, 1));
+}
 .agent-tool-name{font-size:calc(11.5px * var(--app-font-scale, 1));font-weight:600}
 .agent-tool-input{font-size:calc(10.5px * var(--app-font-scale, 1));opacity:.72}
-.agent-tool-status{min-width:0;height:auto;margin-left:2px;padding:0;background:transparent!important;color:hsl(var(--text-500))!important;font-size:calc(10px * var(--app-font-scale, 1));font-weight:500}
+.agent-tool-status{
+  min-width:0;
+  height:auto;
+  margin-left:auto;
+  padding:0 0 0 8px;
+  background:transparent!important;
+  color:hsl(var(--text-500))!important;
+  font-size:calc(10px * var(--app-font-scale, 1));
+  font-weight:500;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
 .agent-tool-status.err,.agent-tool-status.warn{color:hsl(0 55% 52%)!important}
-.agent-tool-code,.agent-tool-out,.agent-tool-progress{background:hsl(var(--bg-000)/.24);border-top:1px solid hsl(var(--border-300)/.3)}
-.agent-tool-code{padding:8px 10px;font-size:calc(11px * var(--app-font-scale, 1));max-height:240px}
-.agent-tool-out{padding:8px 10px;font-size:calc(10.75px * var(--app-font-scale, 1));max-height:260px}
+.agent-tool-chev{margin-left:2px}
+.agent-tool-code,.agent-tool-out,.agent-tool-progress{
+  background:hsl(var(--bg-000)/.32);
+  border-top:1px solid hsl(var(--border-300)/.26);
+}
+.agent-tool-code{padding:8px 10px;font-size:calc(11px * var(--app-font-scale, 1));max-height:300px;line-height:1.52}
+.agent-tool-out{padding:8px 10px;font-size:calc(10.75px * var(--app-font-scale, 1));max-height:320px;line-height:1.5}
+.agent-tool-output-text{min-width:0}
+.agent-tool-output-pre{
+  margin:0;
+  padding:0;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  line-height:inherit;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.agent-tool-output-text.is-collapsed .agent-tool-output-pre{
+  max-height:13.5em;
+  overflow:hidden;
+  -webkit-mask-image:linear-gradient(180deg,#000 72%,transparent);
+  mask-image:linear-gradient(180deg,#000 72%,transparent);
+}
+.agent-tool-output-controls{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:7px;
+  padding-top:7px;
+  border-top:1px solid hsl(var(--border-300)/.22);
+  color:hsl(var(--text-500));
+}
+.agent-tool-output-summary{font-size:calc(10px * var(--app-font-scale, 1));font-variant-numeric:tabular-nums}
+.agent-tool-output-toggle{
+  border:0;
+  background:transparent;
+  color:hsl(var(--accent-000));
+  padding:0;
+  font:inherit;
+  font-size:calc(10.5px * var(--app-font-scale, 1));
+  cursor:pointer;
+}
+.agent-tool-output-toggle:hover{text-decoration:underline;text-underline-offset:2px}
+.agent-tool-progress{align-items:flex-start;padding:7px 10px}
 .agent-tool-progress-badge{padding:0;background:transparent;color:hsl(var(--text-400));font-weight:500}
 .agent-tool-progress .agent-tool-progress-spinner{width:8px;height:8px}
+.agent-tool-stream{padding:0;max-height:180px}
 .exec-artifact{border:1px solid hsl(var(--border-300)/.35);border-radius:5px;background:transparent}
 .exec-artifact-image{border-radius:4px;transition:none}
 .exec-artifact-skeleton{height:120px;background:hsl(var(--bg-200)/.35)}
@@ -2711,11 +2778,42 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .artifact-error-detail,.agent-tool-error-detail{width:100%;color:hsl(var(--text-400));font-size:inherit}
 .artifact-error-detail code,.agent-tool-error-detail code{display:block;margin-top:5px;white-space:pre-wrap;word-break:break-word;color:hsl(var(--text-400))}
 .agent-tool-retry{display:block;margin-top:8px;padding:0;border:0;background:transparent;color:hsl(var(--accent-000));font:inherit;font-size:inherit;text-decoration:underline;cursor:pointer}
-.web-search-results{border-top:1px solid hsl(var(--border-300)/.3)}
-.wsr-header{padding:7px 10px 4px;font-style:normal}
-.wsr-item{padding:7px 10px;gap:8px}
-.wsr-index{width:auto;height:auto;background:transparent;color:hsl(var(--text-500));font-size:10px}
-.wsr-title{font-size:calc(12px * var(--app-font-scale, 1));font-weight:500}
+.agent-tool-card.websearch .agent-tool-out{padding:0;max-height:520px}
+.web-search-results{border-top:1px solid hsl(var(--border-300)/.24)}
+.wsr-header{
+  display:flex;
+  align-items:center;
+  min-height:28px;
+  padding:7px 10px;
+  border-bottom:1px solid hsl(var(--border-300)/.18);
+  color:hsl(var(--text-400));
+  font-size:calc(10.5px * var(--app-font-scale, 1));
+}
+.wsr-item{padding:9px 10px;gap:9px}
+.wsr-item:hover{background:hsl(var(--bg-200)/.36)}
+.wsr-index{
+  width:20px;
+  height:20px;
+  border:1px solid hsl(var(--border-300)/.35);
+  border-radius:5px;
+  background:hsl(var(--bg-200)/.45);
+  color:hsl(var(--text-400));
+  font-size:calc(10px * var(--app-font-scale, 1));
+  line-height:18px;
+}
+.wsr-item-muted{opacity:.72}
+.wsr-title{color:hsl(var(--text-100));font-weight:600;line-height:1.36}
+.wsr-title:hover{color:hsl(var(--accent-000))}
+.wsr-title.is-disabled{color:hsl(var(--text-400));pointer-events:none}
+.wsr-meta{gap:7px}
+.wsr-host{max-width:72%;font-weight:500;color:hsl(var(--text-400))}
+.wsr-snippet{font-size:calc(11.5px * var(--app-font-scale, 1));line-height:1.48}
+@media(max-width:480px){
+  .agent-tool-status{margin-left:0;padding-left:0}
+  .agent-tool-head{align-items:center}
+  .wsr-index{width:18px;height:18px;line-height:16px}
+  .wsr-snippet{-webkit-line-clamp:2}
+}
 
 /* Link previews — rendered inside the user's chat bubble when their
    message contains URLs we successfully fetched. Compact, single-line
@@ -2766,29 +2864,32 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   color:hsl(var(--text-400));
   line-height:1.5;
   margin:6px 0 10px;
-  padding:8px 10px;
-  border-radius:8px;
-  background:hsl(var(--bg-100)/0.5);
-  border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.5));
+  padding:0;
+  overflow:hidden;
+  border-radius:7px;
+  background:hsl(var(--bg-100)/.82);
+  border:1px solid hsl(var(--border-300)/.34);
   list-style:none;
   cursor:pointer;
   user-select:none;
 }
-.search-progress.running{background:hsl(45 50% 95%);border-color:hsl(45 50% 75%/0.6)}
-.search-progress.ok{background:hsl(200 50% 95%);border-color:hsl(200 50% 75%/0.5)}
-.search-progress.warn{background:hsl(45 50% 92%);border-color:hsl(45 50% 70%/0.5)}
-.search-progress.err{background:hsl(0 50% 95%);border-color:hsl(0 50% 70%/0.5)}
-[data-theme=socrates][data-mode=dark] .search-progress.running{background:hsl(45 30% 18%);border-color:hsl(45 40% 38%/0.6)}
-[data-theme=socrates][data-mode=dark] .search-progress.ok{background:hsl(200 30% 16%);border-color:hsl(200 40% 36%/0.5)}
-[data-theme=socrates][data-mode=dark] .search-progress.warn{background:hsl(45 30% 16%);border-color:hsl(45 40% 36%/0.5)}
-[data-theme=socrates][data-mode=dark] .search-progress.err{background:hsl(0 30% 16%);border-color:hsl(0 40% 38%/0.5)}
+.search-progress.running,
+.search-progress.ok,
+[data-theme=socrates][data-mode=dark] .search-progress.running,
+[data-theme=socrates][data-mode=dark] .search-progress.ok{background:hsl(var(--bg-100)/.82);border-color:hsl(var(--border-300)/.38)}
+.search-progress.warn,
+[data-theme=socrates][data-mode=dark] .search-progress.warn{background:hsl(var(--bg-100)/.82);border-color:hsl(38 70% 50%/.38)}
+.search-progress.err,
+[data-theme=socrates][data-mode=dark] .search-progress.err{background:hsl(var(--bg-100)/.82);border-color:hsl(0 58% 52%/.42)}
 
 .search-progress-head{
-  display:flex;align-items:center;gap:6px;
-  font-weight:500;letter-spacing:.01em;
+  display:flex;align-items:center;gap:8px;
+  min-height:34px;
+  padding:7px 10px;
+  font-weight:500;letter-spacing:0;
   color:hsl(var(--text-300));
 }
-.search-progress-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.search-progress-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0}
 .search-progress-chev{
   margin-left:auto;
   font-size:calc(10px * var(--app-font-scale, 1));
@@ -2799,20 +2900,35 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 
 .search-progress-pulse{
   display:inline-flex;align-items:center;justify-content:center;
-  width:12px;height:12px;position:relative;vertical-align:middle;flex-shrink:0;
+  width:9px;height:9px;border-radius:50%;position:relative;vertical-align:middle;flex-shrink:0;
+  background:hsl(var(--accent-000)/.82);
 }
-.search-progress-pulse::before,.search-progress-pulse::after{content:"";position:absolute;inset:0;border-radius:50%;border:1.5px solid transparent;box-sizing:border-box}
-.search-progress-pulse::before{border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--accent-000)/0.6);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite}
-.search-progress-pulse::after{inset:2.5px;border-top-color:hsl(var(--accent-000)/0.7);border-left-color:hsl(var(--accent-000)/0.4);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite reverse}
+.search-progress-pulse::before,.search-progress-pulse::after{display:none}
+.search-progress.running .search-progress-pulse{animation:search-progress-dot 1.1s ease-in-out infinite}
+@keyframes search-progress-dot{50%{opacity:.35;transform:scale(.82)}}
 .search-progress.ok .search-progress-pulse,
 .search-progress.warn .search-progress-pulse,
 .search-progress.err .search-progress-pulse{display:none}
+.search-progress.ok .search-progress-head::before,
+.search-progress.warn .search-progress-head::before,
+.search-progress.err .search-progress-head::before{
+  content:"";
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  flex:0 0 auto;
+  background:hsl(145 45% 45%);
+}
+.search-progress.warn .search-progress-head::before{background:hsl(38 70% 48%)}
+.search-progress.err .search-progress-head::before{background:hsl(0 58% 52%)}
 
 .search-progress-steps{
-  margin:6px 0 0;padding:0;list-style:none;
+  margin:0;
+  padding:7px 10px 8px;
+  list-style:none;
   display:none;
-  border-top:0.5px dashed hsl(var(--border-300)/0.5);
-  padding-top:6px;
+  border-top:1px solid hsl(var(--border-300)/.22);
+  background:hsl(var(--bg-000)/.22);
   /* The list itself shouldn't be clickable; clicks bubble to root which
    * toggles .open. We stop propagation on .search-progress-step to
    * avoid that. */
@@ -2820,20 +2936,23 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .search-progress.open .search-progress-steps{display:block}
 
 .search-progress-step{
-  display:flex;align-items:baseline;gap:6px;
+  display:flex;align-items:baseline;gap:7px;
   padding:2px 0;
   font-variant-numeric:tabular-nums;
   color:hsl(var(--text-300));
 }
-.search-progress-step .icon{flex-shrink:0;width:14px;text-align:center;font-weight:600}
-.search-progress-step .text{flex:1;min-width:0;word-break:break-word}
-.search-progress-step.running .icon{color:hsl(var(--accent-000))}
-.search-progress-step.ok .icon{color:hsl(140 50% 45%)}
-.search-progress-step.warn .icon{color:hsl(36 70% 45%)}
-.search-progress-step.err .icon{color:hsl(0 60% 50%)}
-[data-theme=socrates][data-mode=dark] .search-progress-step.ok .icon{color:hsl(140 50% 65%)}
-[data-theme=socrates][data-mode=dark] .search-progress-step.warn .icon{color:hsl(45 70% 70%)}
-[data-theme=socrates][data-mode=dark] .search-progress-step.err .icon{color:hsl(0 55% 70%)}
+.search-progress-step .icon{
+  flex-shrink:0;
+  width:12px;
+  text-align:center;
+  color:hsl(var(--text-500));
+  font-weight:500;
+}
+.search-progress-step.running .icon,
+.search-progress-step.ok .icon,
+.search-progress-step.warn .icon,
+.search-progress-step.err .icon{color:hsl(var(--text-500))}
+.search-progress-step .text{flex:1;min-width:0;word-break:break-word;letter-spacing:0}
 
 /* Last-resort floating panel when neither bubble nor diagnostic card
  * is available. Pinned to the bottom of the chat. */

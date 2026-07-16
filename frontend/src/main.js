@@ -39,7 +39,7 @@ import { esc, escAttr, escHTML, decodeEntities, stripTags } from './render/helpe
 import { processPendingMermaid, processPendingViz, processPendingVizActions, renderViz, renderVizLoading, renderMermaid, openVizModal } from './render/viz.js';
 import { callAPI, callAPIChat } from './chat/api.js';
 import { callAPIStream } from './chat/stream.js';
-import { TOOL_META, toolFormatInput, appendToolModule, setLastToolOutput, makeArtifactError, appendInlineArtifact, renderWebSearchResults, updateToolCardCode, findToolCard, extractCodeFromArgs } from './ui/toolCards.js';
+import { TOOL_META, toolFormatInput, appendToolModule, setLastToolOutput, makeArtifactError, appendInlineArtifact, renderWebSearchResults, renderToolTextOutput, updateToolCardCode, findToolCard, extractCodeFromArgs } from './ui/toolCards.js';
 import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
 import { SEARCH_PROGRESS_LABELS, trSearchLabel, _formatEngineBreakdown, startSearchProgress } from './ui/searchProgress.js';
 import { beginAgentTextStream, appendRunFooter } from './chat/agentStream.js';
@@ -5985,12 +5985,12 @@ function teardownThinkStructure(){
         var sec=(result.durationMs/1000).toFixed(1);
         durStr=" ["+sec+"s]";
       }
-        if(result.ok===false){
-          if(result.status==="timeout"){
-          statusIcon="超时";
+      if(result.ok===false){
+        if(result.status==="timeout"){
+          statusIcon=(typeof window!=="undefined"&&window.t)?window.t("tool.statusTimeout"):"Timeout";
           statusClass="warn";
         }else{
-          statusIcon="失败";
+          statusIcon=(typeof window!=="undefined"&&window.t)?window.t("tool.statusFailed"):"Failed";
           statusClass="err";
         }
         var errMsg=result.userMessage||result.error||result.output||"failed";
@@ -6017,7 +6017,7 @@ function teardownThinkStructure(){
           }
         }
       }else{
-        statusIcon="已完成";
+        statusIcon=(typeof window!=="undefined"&&window.t)?window.t("tool.statusDone"):"Done";
         statusClass="ok";
         display=(result.output||"(no output)")+
           (result.stderr?"\n[stderr]\n"+result.stderr:"")+durStr;
@@ -6047,10 +6047,14 @@ function teardownThinkStructure(){
           var toolName_=entry.name||result.name||"";
           var didRichRender=false;
           if(toolName_==="web_search"&&result.results&&Array.isArray(result.results)&&result.results.length>0){
-            didRichRender=renderWebSearchResults(out,result.results);
+            var q_=(entry.input&&entry.input.query)||result.query||"";
+            didRichRender=renderWebSearchResults(out,result.results,q_);
           }
           if(!didRichRender){
-            out.textContent=display||"";
+            renderToolTextOutput(out,display||"",{
+              isError: entry.isError,
+              kind: entry.isError ? "error" : "output"
+            });
           }
           if(entry.isError&&result.detail){
             var errDetails=document.createElement("details");
@@ -6075,7 +6079,6 @@ function teardownThinkStructure(){
             });
             out.appendChild(retryButton);
           }
-          if(entry.isError)out.classList.add("error");else out.classList.remove("error");
           var card=out.closest(".agent-tool-card");
           if(card){
             var existingBadge=card.querySelector(".agent-tool-status");
