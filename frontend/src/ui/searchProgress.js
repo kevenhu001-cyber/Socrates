@@ -91,17 +91,24 @@ export function startSearchProgress(topic, opts) {
   var root = document.createElement('div');
   root.className = 'search-progress running';
   if (opts.collapsed === false) root.classList.add('open');
+  root.setAttribute('aria-busy', 'true');
 
   var head = document.createElement('div');
   head.className = 'search-progress-head';
+  head.setAttribute('role', 'button');
+  head.setAttribute('tabindex', '0');
+  head.setAttribute('aria-expanded', root.classList.contains('open') ? 'true' : 'false');
   head.innerHTML =
     '<span class="search-progress-pulse"></span>' +
     '<span class="search-progress-title">' + esc(trSearchLabel('started', { topic: topic || '' })) + '</span>' +
+    '<span class="search-progress-elapsed">0s</span>' +
     '<span class="search-progress-chev">\u25BE</span>';
   root.appendChild(head);
 
   var stepsList = document.createElement('ul');
   stepsList.className = 'search-progress-steps';
+  stepsList.setAttribute('role', 'log');
+  stepsList.setAttribute('aria-live', 'polite');
   root.appendChild(stepsList);
 
   if (mount) {
@@ -117,7 +124,23 @@ export function startSearchProgress(topic, opts) {
     }
   }
 
-  head.addEventListener('click', function () { root.classList.toggle('open'); });
+  function toggleOpen() {
+    root.classList.toggle('open');
+    head.setAttribute('aria-expanded', root.classList.contains('open') ? 'true' : 'false');
+  }
+  head.addEventListener('click', toggleOpen);
+  head.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleOpen();
+    }
+  });
+
+  var startedAt = Date.now();
+  var elapsedEl = head.querySelector('.search-progress-elapsed');
+  var elapsedTimer = setInterval(function () {
+    if (elapsedEl) elapsedEl.textContent = Math.max(0, Math.floor((Date.now() - startedAt) / 1000)) + 's';
+  }, 1000);
 
   function makeStepEl(text, kind) {
     var li = document.createElement('li');
@@ -197,12 +220,17 @@ export function startSearchProgress(topic, opts) {
     var st = summary.state || 'ok';
     root.classList.remove('running');
     root.classList.add(st);
+    root.setAttribute('aria-busy', 'false');
+    clearInterval(elapsedTimer);
+    var elapsedSec = ((Date.now() - startedAt) / 1000).toFixed(1);
+    if (elapsedEl) elapsedEl.textContent = elapsedSec + 's';
     var titleEl = head.querySelector('.search-progress-title');
     var chev = head.querySelector('.search-progress-chev');
     if (opts.collapsed === false) {
       /* Keep .open. */
     } else {
       root.classList.remove('open');
+      head.setAttribute('aria-expanded', 'false');
     }
     if (chev) chev.style.display = '';
     if (st === 'err') {
@@ -222,6 +250,7 @@ export function startSearchProgress(topic, opts) {
   }
 
   function remove() {
+    clearInterval(elapsedTimer);
     if (root && root.parentNode) root.parentNode.removeChild(root);
   }
 

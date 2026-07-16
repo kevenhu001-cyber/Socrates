@@ -11,6 +11,7 @@ const ONE_PIXEL_PNG = Buffer.from(
 );
 
 test('tool cards show expanded web results, execution output, and image artifacts', async ({ page }) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   const longStdout = 'answer: 42\n' + Array.from({ length: 140 }, (_, i) => `line ${i + 1}: streamed diagnostic output`).join('\n');
   await mockAuthedApp(page);
   await page.route('**/api/files/plot-1/raw**', async (route) => {
@@ -52,6 +53,11 @@ test('tool cards show expanded web results, execution output, and image artifact
   await expect(search.locator('.wsr-title').nth(1)).toHaveAttribute('href', '#');
   await expect(search.locator('.wsr-title').nth(1)).toHaveClass(/is-disabled/);
   await expect(search.locator('.wsr-title').nth(1)).toHaveAttribute('tabindex', '-1');
+  await expect(search).toHaveAttribute('data-tool-state', 'complete');
+  await expect(search.locator('.agent-tool-status')).toContainText('Done');
+  await expect(search.locator('.wsr-copy-all')).toBeVisible();
+  await search.locator('.wsr-copy-all').click();
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('Trusted source - https://example.test/source');
 
   const code = page.locator('.agent-tool-card.codeint').last();
   await expect(code).toHaveClass(/open/);
@@ -59,6 +65,11 @@ test('tool cards show expanded web results, execution output, and image artifact
   await expect(code.locator('.agent-tool-out')).toContainText('answer: 42');
   await expect(code.locator('.agent-tool-out')).toContainText('[stderr]');
   await expect(code.locator('.agent-tool-output-text')).toHaveClass(/is-collapsed/);
+  await expect(code.locator('[data-tool-copy="code"]')).toBeVisible();
+  await expect(code.locator('[data-tool-copy="output"]')).toBeVisible();
+  await code.locator('[data-tool-copy="code"]').click();
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('plt.savefig');
+  await expect(code.locator('[data-tool-copy="code"]')).toContainText('Copied');
   await code.locator('.agent-tool-output-toggle').click();
   await expect(code.locator('.agent-tool-output-text')).not.toHaveClass(/is-collapsed/);
   await expect(code.locator('img.exec-artifact-image')).toBeVisible();
@@ -76,4 +87,56 @@ test('tool cards show expanded web results, execution output, and image artifact
   await expect(search.locator('.web-search-results')).toBeVisible();
   const bounds = await code.boundingBox();
   expect(bounds && bounds.width).toBeLessThanOrEqual(390);
+});
+
+test('tool cards replay tool_call_delta frames that arrive before tool_use', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route('**/api/chat/stream', async (route) => {
+    const args = JSON.stringify({
+      language: 'python',
+      code: 'print("early delta")\nvalue = 7',
+    });
+    const stream = [
+      'event: tool_call_delta\ndata: ' + JSON.stringify({
+        index: 0,
+        id: 'early-code',
+        name: 'code_interpreter',
+        arguments: args,
+        final: true,
+      }) + '\n\n',
+      'event: tool_use\ndata: [{"id":"early-code","name":"code_interpreter","input":{}}]\n\n',
+      'event: tool_result\ndata: ' + JSON.stringify({
+        id: 'early-code',
+        ok: true,
+        status: 'completed',
+        output: 'early delta output',
+        durationMs: 10,
+        artifacts: [],
+      }) + '\n\n',
+      'data: {"choices":[{"delta":{"content":"Done."}}]}\n\n',
+      'data: [DONE]\n\n',
+    ].join('');
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
+  });
+
+  await page.goto('/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(async () => {
+    window.state.phase = 'chat';
+    window.state.currentSessionId = '99999999-9999-4999-8999-999999999999';
+    window.state.messages = [{ clientId: 'user-9', role: 'user', rawText: 'Run early delta tool', html: null }];
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    await window.askChatTurn('Run early delta tool');
+  });
+
+  const code = page.locator('.agent-tool-card.codeint').last();
+  await expect(code).toHaveClass(/open/);
+  await expect(code.locator('.agent-tool-code')).toContainText('print("early delta")');
+  await expect(code.locator('.agent-tool-input')).toContainText('python');
+  await expect(code.locator('.agent-tool-input')).toContainText('print("early delta")');
+  await expect(code.locator('.agent-tool-code')).not.toHaveClass(/agent-tool-code-streaming/);
+  await expect(code.locator('.agent-tool-out')).toContainText('early delta output');
 });
