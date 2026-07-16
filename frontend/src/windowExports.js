@@ -89,6 +89,11 @@ window.__vizOpenModal = openVizModal;
 window.processPendingViz = processPendingViz;
 window.processPendingVizActions = processPendingVizActions;
 
+/* ─── ui/searchProgress.js — internal bridge used by smoke tests and
+   non-chat surfaces that need to mount the same search activity UI. ─── */
+import { startSearchProgress } from './ui/searchProgress.js';
+window.__startSearchProgress = startSearchProgress;
+
 /* ─── render/markdown.js ─── */
 import { stripMarkdown, findLastUserMessage } from './render/markdown.js';
 window.stripMarkdown = stripMarkdown;

@@ -6,6 +6,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
 import { generateShareToken } from '../lib/crypto.js';
 import { normalizeVisibility } from '../lib/sanitize.js';
+import { requireOwnedArtifact } from '../services/artifactOwnership.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -96,6 +97,7 @@ router.delete('/:id', async (req, res, next) => {
 router.get('/:id/versions', async (req, res, next) => {
   try {
     const db = getDb();
+    await requireOwnedArtifact(db, req.params.id, req.userId);
     const rows = await db.select().from(artifactVersions)
       .where(eq(artifactVersions.artifactId, req.params.id))
       .orderBy(desc(artifactVersions.version));

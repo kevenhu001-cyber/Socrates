@@ -79,6 +79,16 @@ function stringifyPreview(value, maxLen) {
   return text.slice(0, Math.max(0, maxLen - 1)) + "...";
 }
 
+function toolInputPreviewFromExtracted(toolName, extracted) {
+  if (!extracted || !extracted.code) return "";
+  if (toolName === "web_search") return stringifyPreview(extracted.code, 160);
+  if (toolName === "code_interpreter" || toolName === "Code") {
+    const first = ((extracted.code || "").split("\n")[0] || "").slice(0, 80);
+    return `${extracted.language || "python"}  -  ${first}`;
+  }
+  return stringifyPreview(extracted.code, 160);
+}
+
 function decodeJsonStringFragment(raw, truncated) {
   if (raw == null) return "";
   if (truncated && String(raw).endsWith("\\")) raw = String(raw).slice(0, -1);
@@ -125,6 +135,52 @@ function trTool(key, fallback, vars) {
     });
   }
   return text;
+}
+
+function copyText(text) {
+  var value = String(text || "");
+  if (!value) return Promise.reject(new Error("empty"));
+  if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    return navigator.clipboard.writeText(value);
+  }
+  return new Promise(function (resolve, reject) {
+    try {
+      var area = document.createElement("textarea");
+      area.value = value;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      var ok = document.execCommand("copy");
+      area.remove();
+      if (ok) resolve(); else reject(new Error("copy failed"));
+    } catch (err) { reject(err); }
+  });
+}
+
+function setCopyFeedback(button, ok) {
+  if (!button) return;
+  var original = button.dataset.defaultLabel || button.textContent;
+  button.dataset.defaultLabel = original;
+  button.textContent = ok
+    ? trTool("tool.copied", "Copied")
+    : trTool("tool.copyFailed", "Copy failed");
+  clearTimeout(button._copyFeedbackTimer);
+  button._copyFeedbackTimer = setTimeout(function () { button.textContent = original; }, 1200);
+}
+
+function syncToolCopyActions(card) {
+  if (!card) return;
+  var code = card.querySelector(".agent-tool-code code");
+  var output = card.querySelector(".agent-tool-output-pre");
+  var codeButton = card.querySelector('[data-tool-copy="code"]');
+  var outputButton = card.querySelector('[data-tool-copy="output"]');
+  var isSearch = card.dataset.tool === "web_search";
+  if (codeButton) codeButton.hidden = isSearch || !(code && code.textContent.trim());
+  if (outputButton) outputButton.hidden = isSearch || !(output && output.textContent.trim());
+  var toolbar = card.querySelector(".agent-tool-toolbar");
+  if (toolbar) toolbar.hidden = (!codeButton || codeButton.hidden) && (!outputButton || outputButton.hidden);
 }
 
 /* Pull the readable code body out of a tool call's argument JSON.
@@ -231,21 +287,47 @@ export function appendToolModule(toolName, toolInput, body, opts) {
   const card = document.createElement("div");
   card.className = `agent-tool-card tool-${meta.tone} ${meta.cls}`;
   card.dataset.tool = toolName;
+  card.dataset.toolState = opts.restored ? (opts.isError ? "error" : "complete") : "running";
   card.innerHTML = `
     <div class="agent-tool-head" role="button" tabindex="0" aria-expanded="false">
       <span class="agent-tool-icon" aria-hidden="true">${meta.letter}</span>
       <span class="agent-tool-name"></span>
       <span class="agent-tool-input"></span>
-      <span class="agent-tool-status" aria-hidden="true"></span>
+      <span class="agent-tool-status" role="status" aria-live="polite"></span>
       <span class="agent-tool-chev" aria-hidden="true">▾</span>
     </div>
     <div class="agent-tool-body" hidden>
+      <div class="agent-tool-toolbar" hidden>
+        <span class="agent-tool-toolbar-label"></span>
+        <button type="button" class="agent-tool-action" data-tool-copy="code" hidden></button>
+        <button type="button" class="agent-tool-action" data-tool-copy="output" hidden></button>
+      </div>
       <pre class="agent-tool-code"><code></code></pre>
       <div class="agent-tool-out"></div>
     </div>`;
 
   card.querySelector(".agent-tool-name").textContent = meta.short;
   card.querySelector(".agent-tool-input").textContent = toolFormatInput(toolName, toolInput);
+  card.querySelector(".agent-tool-status").textContent = opts.restored
+    ? trTool(opts.isError ? "tool.statusFailed" : "tool.statusDone", opts.isError ? "Failed" : "Done")
+    : trTool("tool.statusRunning", "Running");
+  card.querySelector(".agent-tool-toolbar-label").textContent = trTool("tool.details", "Details");
+  var copyCodeButton = card.querySelector('[data-tool-copy="code"]');
+  var copyOutputButton = card.querySelector('[data-tool-copy="output"]');
+  copyCodeButton.textContent = trTool("tool.copyCode", "Copy code");
+  copyOutputButton.textContent = trTool("tool.copyOutput", "Copy output");
+  copyCodeButton.addEventListener("click", function (event) {
+    event.stopPropagation();
+    var code = card.querySelector(".agent-tool-code code");
+    copyText(code && code.textContent).then(function () { setCopyFeedback(copyCodeButton, true); })
+      .catch(function () { setCopyFeedback(copyCodeButton, false); });
+  });
+  copyOutputButton.addEventListener("click", function (event) {
+    event.stopPropagation();
+    var output = card.querySelector(".agent-tool-output-pre");
+    copyText(output && output.textContent).then(function () { setCopyFeedback(copyOutputButton, true); })
+      .catch(function () { setCopyFeedback(copyOutputButton, false); });
+  });
 
   // Always mount the code/body block; we hide it via [hidden] until
   // there's something to show, so the streaming path doesn't have to
@@ -294,6 +376,7 @@ export function appendToolModule(toolName, toolInput, body, opts) {
   // the .agent-tool-out element for backward compat with callers
   // that pre-date the streaming rewrite.
   card._tcRefs = { out: card.querySelector(".agent-tool-out"), code: codeEl, codeInner, body: bodyEl };
+  syncToolCopyActions(card);
   if (typeof window.scrollMainToBottom === "function") window.scrollMainToBottom();
   return card.querySelector(".agent-tool-out");
 }
@@ -318,6 +401,11 @@ export function updateToolCardCode(tcId, argsJson, language) {
   const extracted = extractCodeFromArgs(card.dataset.tool, argsJson);
   const lang = language || extracted.language || "";
   if (extracted.code) {
+    const inputEl = card.querySelector(".agent-tool-input");
+    const preview = toolInputPreviewFromExtracted(card.dataset.tool, extracted);
+    if (inputEl && preview && inputEl.textContent !== preview) {
+      inputEl.textContent = preview;
+    }
     // Only write when the text actually changed — avoids a layout
     // pass per frame when the upstream emits an empty delta.
     if (codeInner.textContent !== extracted.code) {
@@ -333,6 +421,7 @@ export function updateToolCardCode(tcId, argsJson, language) {
     // shows until the final frame clears it.
     codeEl.classList.add("agent-tool-code-streaming");
     head_set_aria(card, "true");
+    syncToolCopyActions(card);
   }
   // Truncation marker: a small red dot after the last character
   // when the upstream was cut off mid-string. Helps the user
@@ -421,6 +510,7 @@ export function renderToolTextOutput(out, text, opts) {
 
   out.replaceChildren(wrap);
   if (opts.isError) out.classList.add("error"); else out.classList.remove("error");
+  syncToolCopyActions(out.closest(".agent-tool-card"));
   return wrap;
 }
 
@@ -459,11 +549,28 @@ export function renderWebSearchResults(out, results, query) {
   if (query) {
     const head = document.createElement("div");
     head.className = "wsr-header";
-    head.textContent = trTool(
+    const summary = document.createElement("span");
+    summary.className = "wsr-summary";
+    summary.textContent = trTool(
       normalized.length === 1 ? "tool.sourceForQuery" : "tool.sourcesForQuery",
       normalized.length === 1 ? '{n} source for "{query}"' : '{n} sources for "{query}"',
       { n: normalized.length, query }
     );
+    head.appendChild(summary);
+    const copyAll = document.createElement("button");
+    copyAll.type = "button";
+    copyAll.className = "wsr-copy-all";
+    copyAll.textContent = trTool("tool.copySources", "Copy sources");
+    copyAll.addEventListener("click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const sourceText = normalized.map(function (source, index) {
+        return "[" + (index + 1) + "] " + source.title + (source.url && source.url !== "#" ? " - " + source.url : "");
+      }).join("\n");
+      copyText(sourceText).then(function () { setCopyFeedback(copyAll, true); })
+        .catch(function () { setCopyFeedback(copyAll, false); });
+    });
+    head.appendChild(copyAll);
     wrap.appendChild(head);
   }
   for (let i = 0; i < normalized.length; i++) {
@@ -534,14 +641,8 @@ export function renderWebSearchResults(out, results, query) {
       event.preventDefault();
       event.stopPropagation();
       const citeText = "[" + (i + 1) + "] " + source.title + (source.url && source.url !== "#" ? " - " + source.url : "");
-      if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-        navigator.clipboard.writeText(citeText).then(function () {
-          cite.textContent = trTool("tool.copied", "Copied");
-          setTimeout(function () { cite.textContent = trTool("tool.copyCitation", "Copy citation"); }, 1200);
-        }).catch(function () {
-          cite.textContent = trTool("tool.copyFailed", "Copy failed");
-        });
-      }
+      copyText(citeText).then(function () { setCopyFeedback(cite, true); })
+        .catch(function () { setCopyFeedback(cite, false); });
     });
     actions.appendChild(cite);
     body.appendChild(actions);

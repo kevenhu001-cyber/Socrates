@@ -132,6 +132,69 @@ test('viz card renders a user canvas and flips to ready via postMessage', async 
   expect(result.ok).toBe(true);
 });
 
+test('viz fullscreen preserves the complete iframe srcdoc', async ({ page }) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await mockAuthedApp(page);
+  await page.route('**/api/chat/stream', async (route) => {
+    const htmlBody = [
+      '```html',
+      '<canvas id="cv" width="80" height="40" style="display:block;width:100%;height:120px"></canvas>',
+      '<script>',
+      'var c=document.getElementById("cv");',
+      'var x=c.getContext("2d");',
+      'x.fillStyle="#3a6df0";',
+      'x.fillRect(0,0,80,40);',
+      '</script>',
+      '```',
+    ].join('\n');
+    const stream = [
+      'data: ' + JSON.stringify({ choices: [{ delta: { content: htmlBody } }] }) + '\n\n',
+      'data: [DONE]\n\n',
+    ].join('');
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
+  });
+
+  await page.goto('/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(async () => {
+    window.state.phase = 'chat';
+    window.state.currentSessionId = '88888888-8888-4888-8888-888888888888';
+    window.state.messages = [{ clientId: 'user-8', role: 'user', rawText: 'render fullscreen canvas', html: null }];
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    await window.askChatTurn('render fullscreen canvas');
+  });
+
+  const card = page.locator('.viz').last();
+  await expect(card).toHaveAttribute('data-viz-state', 'ready', { timeout: 6000 });
+  const expand = card.locator('.viz-btn-expand');
+  await expect(expand).toHaveCount(1);
+  await expand.click();
+
+  const modalFrame = page.locator('.viz-modal-backdrop iframe');
+  await expect(modalFrame).toBeVisible();
+  const modalSrcdoc = await modalFrame.getAttribute('srcdoc');
+  expect(modalSrcdoc).toContain('fillRect');
+  expect(modalSrcdoc.length).toBeGreaterThan(500);
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.viz-modal-backdrop')).toHaveCount(0);
+  await expect(expand).toBeFocused();
+
+  const sourceButton = card.locator('.viz-btn-source');
+  await expect(sourceButton).toBeVisible();
+  await sourceButton.click();
+  const sourceModal = page.locator('.viz-source-modal');
+  await expect(sourceModal).toBeVisible();
+  await expect(sourceModal.locator('.viz-source-code')).toContainText('fillRect');
+  await sourceModal.locator('.viz-source-copy').click();
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('fillRect');
+  await page.keyboard.press('Escape');
+  await expect(sourceButton).toBeFocused();
+});
+
 test('viz card surfaces a synchronous script failure instead of claiming readiness', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/chat/stream', async (route) => {

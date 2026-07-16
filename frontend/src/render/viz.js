@@ -36,6 +36,7 @@ var _pendingViz = [];
 export var VIZ_ICON_RENDER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>';
 export var VIZ_ICON_RELOAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
 export var VIZ_ICON_EXPAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><path d="M9 21 3 21 3 15"/><path d="M21 3 14 10"/><path d="M3 21 10 14"/></svg>';
+export var VIZ_ICON_SOURCE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 9-3 3 3 3"/><path d="m16 9 3 3-3 3"/><path d="m14 5-4 14"/></svg>';
 
 /* VIZ_THEME_RESET — applied INSIDE the iframe so the user's canvas
    inherits the page's design tokens (text color, accent, monospace
@@ -93,8 +94,11 @@ function vizRuntime(vizId) {
   '<\/script>';
 }
 
-function vizActions(cardId) {
+function vizActions(cardId, showSource) {
   return '<div class="viz-actions">' +
+    '<span class="viz-status" role="status"><span class="viz-status-dot"></span><span class="viz-status-label"></span></span>' +
+    (showSource ? '<button type="button" class="viz-btn viz-btn-source" title="View source" aria-label="View source" data-action="viz-source" data-viz-card="' + cardId + '">' +
+      VIZ_ICON_SOURCE + '</button>' : '') +
     '<button type="button" class="viz-btn viz-btn-reload" title="Reload" aria-label="Reload" data-action="viz-reload" data-viz-card="' + cardId + '">' +
       VIZ_ICON_RELOAD + '</button>' +
     '<button type="button" class="viz-btn viz-btn-expand" title="Expand" aria-label="Expand" data-action="viz-expand" data-viz-card="' + cardId + '">' +
@@ -263,14 +267,14 @@ export function renderViz(htmlStr) {
   var srcdoc = encodeSrcdoc(doc);
   var bodyHtml =
     vizLoadingHtml() +
-    '<iframe data-srcdoc="' + srcdoc + '" srcdoc="' + srcdoc +
+    '<iframe data-source="' + encodeSrcdoc(cleaned) + '" data-srcdoc="' + srcdoc + '" srcdoc="' + srcdoc +
     '" sandbox="allow-scripts" title="Canvas" ' +
     'style="width:100%;border:0;background:transparent;display:block;min-height:160px">' +
     '</iframe>';
   _pendingViz.push({ id: id });
   queueVizActions(id);
   return '<div class="viz" id="' + id + '" data-viz-state="loading" data-title="' + esc(title) + '">' +
-    vizActions(id) +
+    vizActions(id, true) +
     '<div class="viz-body">' + bodyHtml + '</div>' +
   '</div>';
 }
@@ -418,14 +422,14 @@ export function renderPlot(spec) {
   var srcdoc = encodeSrcdoc(doc);
   var bodyHtml =
     vizLoadingHtml() +
-    '<iframe data-srcdoc="' + srcdoc + '" srcdoc="' + srcdoc +
+    '<iframe data-source="' + encodeSrcdoc(String(spec || '')) + '" data-srcdoc="' + srcdoc + '" srcdoc="' + srcdoc +
     '" sandbox="allow-scripts" title="Plot of ' + esc(parsed.expr) + '" ' +
     'style="width:100%;border:0;background:transparent;display:block;min-height:340px">' +
     '</iframe>';
   _pendingViz.push({ id: id });
   queueVizActions(id);
   return '<div class="viz" id="' + id + '" data-viz-state="loading" data-title="' + esc(title) + '">' +
-    vizActions(id) +
+    vizActions(id, true) +
     '<div class="viz-body">' + bodyHtml + '</div>' +
   '</div>';
 }
@@ -594,39 +598,135 @@ export function renderVizError(htmlStr, errorMsg) {
   '</div>';
 }
 
+function decodeSrcdoc(srcdoc) {
+  return String(srcdoc || '')
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+
 export function openVizModal(srcdoc, title) {
   if (!srcdoc) return;
   // srcdoc is HTML-attribute-encoded when it comes from
   // data-srcdoc. Decode it back to raw HTML before stuffing it
   // into the modal iframe, which expects a raw srcdoc value.
-  var decoded = String(srcdoc)
-    .replace(/&quot;/g, '"')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&');
+  var decoded = decodeSrcdoc(srcdoc);
+  var opener = document.activeElement;
   var modal = document.createElement("div");
   modal.className = "viz-modal-backdrop";
   modal.onclick = function (e) { if (e.target === modal) close(); };
-  function close() { modal.remove(); document.removeEventListener("keydown", onKey); }
+  function close() {
+    modal.remove();
+    document.removeEventListener("keydown", onKey);
+    if (opener && typeof opener.focus === "function") opener.focus();
+  }
   function onKey(e) { if (e.key === "Escape") close(); }
   document.addEventListener("keydown", onKey);
-  modal.innerHTML =
-    '<div class="viz-modal" role="dialog" aria-label="Canvas fullscreen">' +
-      '<div class="viz-modal-head">' +
-        '<span class="viz-modal-title">' + esc(title || "Canvas") + '</span>' +
-        '<button type="button" class="viz-modal-close" aria-label="Close" data-action="viz-close-modal">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>' +
-        '</button>' +
-      '</div>' +
-      '<div class="viz-modal-body">' +
-        '<iframe srcdoc="' + decoded + '" sandbox="allow-scripts" title="Canvas fullscreen" style="width:100%;height:100%;border:0;background:transparent;display:block"></iframe>' +
-      '</div>' +
-    '</div>';
+  var dialog = document.createElement("div");
+  dialog.className = "viz-modal";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-label", "Canvas fullscreen");
+  dialog.setAttribute("aria-modal", "true");
+
+  var head = document.createElement("div");
+  head.className = "viz-modal-head";
+
+  var titleEl = document.createElement("span");
+  titleEl.className = "viz-modal-title";
+  titleEl.textContent = title || "Canvas";
+  head.appendChild(titleEl);
+
+  var closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "viz-modal-close";
+  closeButton.setAttribute("aria-label", "Close");
+  closeButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  closeButton.addEventListener("click", close);
+  head.appendChild(closeButton);
+
+  var modalBody = document.createElement("div");
+  modalBody.className = "viz-modal-body";
+
+  var iframe = document.createElement("iframe");
+  iframe.setAttribute("sandbox", "allow-scripts");
+  iframe.setAttribute("title", "Canvas fullscreen");
+  iframe.style.width = "100%";
+  iframe.style.height = "100%";
+  iframe.style.border = "0";
+  iframe.style.background = "transparent";
+  iframe.style.display = "block";
+  iframe.srcdoc = decoded;
+  modalBody.appendChild(iframe);
+
+  dialog.appendChild(head);
+  dialog.appendChild(modalBody);
+  modal.appendChild(dialog);
   document.body.appendChild(modal);
-  /* P_viz-no-globalscan — modal close button must self-bind; the
-     processPendingVizActions() global [data-action] scan no longer
-     runs. */
-  _bindAction(modal.querySelector('[data-action="viz-close-modal"]'));
+  closeButton.focus();
+}
+
+function openVizSourceModal(srcdoc, title) {
+  if (!srcdoc) return;
+  var decoded = decodeSrcdoc(srcdoc);
+  var opener = document.activeElement;
+  var modal = document.createElement("div");
+  modal.className = "viz-modal-backdrop";
+  function close() {
+    modal.remove();
+    document.removeEventListener("keydown", onKey);
+    if (opener && typeof opener.focus === "function") opener.focus();
+  }
+  function onKey(e) { if (e.key === "Escape") close(); }
+  document.addEventListener("keydown", onKey);
+  modal.addEventListener("click", function (event) { if (event.target === modal) close(); });
+
+  var dialog = document.createElement("div");
+  dialog.className = "viz-modal viz-source-modal";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-label", "Canvas source");
+  dialog.setAttribute("aria-modal", "true");
+
+  var head = document.createElement("div");
+  head.className = "viz-modal-head";
+  var titleEl = document.createElement("span");
+  titleEl.className = "viz-modal-title";
+  titleEl.textContent = (title || "Canvas") + " source";
+  head.appendChild(titleEl);
+
+  var copyButton = document.createElement("button");
+  copyButton.type = "button";
+  copyButton.className = "viz-source-copy";
+  copyButton.textContent = "Copy source";
+  copyButton.addEventListener("click", function () {
+    if (!navigator.clipboard || typeof navigator.clipboard.writeText !== "function") return;
+    navigator.clipboard.writeText(decoded).then(function () {
+      copyButton.textContent = "Copied";
+      setTimeout(function () { copyButton.textContent = "Copy source"; }, 1200);
+    }).catch(function () { copyButton.textContent = "Copy failed"; });
+  });
+  head.appendChild(copyButton);
+
+  var closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "viz-modal-close";
+  closeButton.setAttribute("aria-label", "Close");
+  closeButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  closeButton.addEventListener("click", close);
+  head.appendChild(closeButton);
+
+  var body = document.createElement("div");
+  body.className = "viz-modal-body viz-source-body";
+  var pre = document.createElement("pre");
+  pre.className = "viz-source-code";
+  pre.textContent = decoded;
+  body.appendChild(pre);
+
+  dialog.appendChild(head);
+  dialog.appendChild(body);
+  modal.appendChild(dialog);
+  document.body.appendChild(modal);
+  closeButton.focus();
 }
 
 var _pendingActions = [];
@@ -653,6 +753,15 @@ function _bindAction(el) {
       var cardId = el.getAttribute('data-viz-card');
       var c = cardId && document.getElementById(cardId);
       reloadVizCard(c);
+    });
+  } else if (act === 'viz-source') {
+    el.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      var cardId = el.getAttribute('data-viz-card');
+      var c = cardId && document.getElementById(cardId);
+      if (!c) return;
+      var f = c.querySelector('iframe');
+      openVizSourceModal((f && (f.dataset.source || f.dataset.srcdoc)) || '', c.dataset.title || 'Canvas');
     });
   } else if (act === 'viz-expand') {
     el.addEventListener('click', function (ev) {

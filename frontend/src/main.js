@@ -19,6 +19,7 @@ import {
   offlineGuard, sleepBackoff, makeAIWatchdog,
 } from './chat/offline.js';
 import { openUsageModal, closeUsageModal, loadUsageData, loadUsageMonth, renderUsageHeatmap, showUsageTip, hideUsageTip } from './ui/usage.js';
+import { createMistakeBook } from './ui/mistakeBook.js';
 import { batchSetItem, batchRemoveItem } from './batchStorage.js';
 import { LOCAL_MEMORY_MAX, loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from './storage/localMemory.js';
 import { formatTickSlice, formatMsgProgressive, formatMsg, stripMarkdown, findLastUserMessage } from './render/markdown.js';
@@ -52,9 +53,10 @@ import { BASELINE_LEVEL, stageInstruction, fromBasicsDirective } from './chat/so
 import { aiGenerate } from './chat/mockDiagnostic.js';
 import { extractHistory } from './chat/history.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './chat/systemPrompts.js';
-import { TOOL_META, toolFormatInput, appendToolModule, setLastToolOutput, makeArtifactError, appendInlineArtifact, renderWebSearchResults, renderToolTextOutput, updateToolCardCode, findToolCard, extractCodeFromArgs } from './ui/toolCards.js';
+import { appendToolModule, appendInlineArtifact, renderWebSearchResults, renderToolTextOutput } from './ui/toolCards.js';
 import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
 import { SEARCH_PROGRESS_LABELS, trSearchLabel, _formatEngineBreakdown, startSearchProgress } from './ui/searchProgress.js';
+import { createToolRuntime } from './chat/toolRuntime.js';
 import { beginAgentTextStream, appendRunFooter } from './chat/agentStream.js';
 import { BUILTIN_TEMPLATES, SYSTEM_PROMPT_SUMMARIZE, SYSTEM_PROMPT_TRANSLATE, SYSTEM_PROMPT_EXPLAIN_CODE, SYSTEM_PROMPT_DEBUG, SYSTEM_PROMPT_QUIZ, SYSTEM_PROMPT_SOCRATIC, PROMPT_TEMPLATES_KEY, loadPromptTemplates, savePromptTemplates, findTemplateByShortcut, upsertCustomTemplate, deleteCustomTemplate } from './chat/promptTemplates.js';
 import { renderNoUrlHint, renderLinkPreviews } from './ui/linkPreviews.js';
@@ -1416,7 +1418,10 @@ async function loadSession(id){
       if(restoredToolCalls.length && m.role==="assistant"){
         for(var tci=0;tci<restoredToolCalls.length;tci++){
           var rtc=restoredToolCalls[tci];
-          var cardOut=appendToolModule(rtc.name||"code_interpreter",rtc.input||{},body);
+          var cardOut=appendToolModule(rtc.name||"code_interpreter",rtc.input||{},body,{
+            restored:true,
+            isError:!!rtc.isError
+          });
           if(cardOut){
             var cardEl=cardOut.closest(".agent-tool-card");
             if(cardEl)cardEl.setAttribute("data-tcid",rtc.id);
@@ -4198,9 +4203,8 @@ function syncMessageFromDom(clientId){
 }
 
 
-/* TOOL_META, toolFormatInput, appendToolModule, setLastToolOutput,
-   makeArtifactError, appendInlineArtifact — extracted to
-   src/ui/toolCards.js (Phase 1A split). Imported at the top. */
+/* Tool-card restoration helpers live in src/ui/toolCards.js. Live
+   tool orchestration is owned by src/chat/toolRuntime.js. */
 
 var _chatStopMode=false;
 var _chatStreaming=false;
@@ -4465,6 +4469,7 @@ function addStreamingMessage(opts){
     if(finished||!firstDelta)return;
     if(_elapsedTick)clearInterval(_elapsedTick);
     finished=true;
+    if(toolRuntime)toolRuntime.dispose();
     if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
     state.lastCallError="No response for "+Math.round(FIRST_DELTA_TIMEOUT_MS/1000)+"s";
     /* Cancel the underlying stream so it doesn't keep running in the
@@ -4898,284 +4903,16 @@ function teardownThinkStructure(){
    * detach, finalize, and feed it without re-querying the DOM. */
   var _searchProgress = null;
 
-  /* P_tool_card_preserve — P_progress — internal helper: route
-     a tool_progress event to its matching .agent-tool-card. The
-     card is selected by the data-tcid attribute stamped in the
-     recordToolUse step. The function creates the live progress
-     node on first call, updates the phase badge + timer, and
-     appends stdout/stderr chunks. The node lives inside
-     .agent-tool-out so it disappears when the card is collapsed. */
-  function _toolProgressToCard(p){
-    /* P_session-stream-dispose — defense in depth. _executionSSESources
-       EventSource keeps dispatching events for a tick or two after
-       abort()/finish() flips _disposed; even with the close() added
-       in those paths, a queued event in the EventSource dispatch loop
-       can still land here. Bail before any state.messages writes.
-       P_session-cross-talk — stillOwnsSlot() prevents an EventSource
-       dispatch from mutating the wrong session's toolCalls after a
-       session switch, even if _disposed hasn't flipped yet. */
-    if(_disposed)return;
-    if(!stillOwnsSlot())return;
-    if(!p||!p.id)return;
-    var entry=null;
-    if(msgIdx>=0&&state.messages[msgIdx]&&Array.isArray(state.messages[msgIdx].toolCalls)){
-      for(var ti=0;ti<state.messages[msgIdx].toolCalls.length;ti++){
-        if(state.messages[msgIdx].toolCalls[ti].id===p.id){entry=state.messages[msgIdx].toolCalls[ti];break}
-      }
-    }
-    if(!entry)return;
-    var card=body.querySelector('.think-tools .agent-tool-card[data-tcid="'+cssEscape(p.id)+'"]');
-    if(!card){
-      entry._pendingProgress=entry._pendingProgress||[];
-      entry._pendingProgress.push(p);
-      return;
-    }
-    /* P_pending-retry — every time the card IS found, drain any
-       queued _pendingProgress events that accumulated before the
-       card's DOM was created. This is critical because a single
-       replay at recordToolUse time (the original design) could miss
-       events that arrived between the card creation and the next
-       progress event. Without this, progress queued after the first
-       drain settles forever and the user sees a stale [Booting]
-       while the std*output events pile up unseen. */
-    if(entry._pendingProgress&&entry._pendingProgress.length){
-      for(var _pp=0;_pp<entry._pendingProgress.length;_pp++){
-        _toolProgressToCard(entry._pendingProgress[_pp]);
-      }
-      entry._pendingProgress.length=0;
-    }
-    var out=card.querySelector(".agent-tool-out");
-    if(!out)return;
-    var live=out.querySelector(".agent-tool-progress");
-    if(!live&&p.phase!=="timeout_warning"&&p.phase!=="completed"&&p.phase!=="failed"&&p.phase!=="queued"){
-      live=document.createElement("div");
-      live.className="agent-tool-progress";
-      var outTextSlot=out.querySelector(".agent-tool-output-text");
-      if(outTextSlot){out.insertBefore(live,outTextSlot)}
-      else{out.appendChild(live)}
-      live.innerHTML='<span class="agent-tool-progress-badge"></span><pre class="agent-tool-stream"></pre>';
-      card.classList.add("open");
-    }
-    var badge=live?live.querySelector(".agent-tool-progress-badge"):null;
-    var stream=live?live.querySelector(".agent-tool-stream"):null;
-    var phaseLabel="[Running]";
-    if(p.phase==="queued")phaseLabel="[Queued]";
-    else if(p.phase==="ready")phaseLabel="[Booting]";
-    else if(p.phase==="stdout")phaseLabel="[Running]";
-    else if(p.phase==="stderr")phaseLabel="[Stderr]";
-    else if(p.phase==="timeout_warning")phaseLabel="[Timeout at]";
-    else if(p.phase==="skipped")phaseLabel="[Skipped]";
-    var elapsedSec=((p.elapsedMs||0)/1000).toFixed(1);
-    if(badge)badge.textContent=phaseLabel+" \u00B7 "+elapsedSec+"s";
-    if(p.phase==="timeout_warning"&&p.chunk){
-      /* Timeout warnings appear as a distinct warning line in the stream */
-      if(stream){
-        stream.textContent+="\n["+p.chunk+"]\n";
-        stream.scrollTop=stream.scrollHeight;
-      }
-      /* Also update the card border to show warning state */
-      if(card)card.style.borderColor="hsl(35 80% 50%)";
-      return;
-    }
-    if(stream&&p.chunk){
-      stream.textContent+=p.chunk;
-      if(stream.textContent.length>51200){
-        stream.textContent="[\u2026truncated\u2026]\n"+stream.textContent.slice(stream.textContent.length-51200);
-      }
-      stream.scrollTop=stream.scrollHeight;
-    }
-  }
-
-  function cssEscape(s){
-    if(typeof CSS!=="undefined"&&CSS&&typeof CSS.escape==="function")return CSS.escape(s);
-    return String(s).replace(/[^a-zA-Z0-9_-]/g,function(c){return"\\"+c.charCodeAt(0).toString(16)+" "});
-  }
-
-  /* P_tool_stream — live tool_call_delta routing. The backend
-     forwards partial `function.arguments` JSON as the upstream
-     streams it; we coalesce updates in a queue and flush once
-     per rAF so a 60Hz event stream doesn't trigger 60 paint
-     cycles. Each entry in the queue represents the LATEST known
-     state for a given (id, index) pair, so even when the queue
-     has 30 deltas for the same tool we only run one DOM update
-     per frame. */
-  var _pendingDeltaQueue=[];
-  var _deltaFlushScheduled=false;
-  function _flushToolDeltas(){
-    _deltaFlushScheduled=false;
-    if(_disposed)return;
-    if(!_pendingDeltaQueue.length)return;
-    // Coalesce: keep only the latest delta per (id, index). This
-    // handles the case where 30 small deltas land between two
-    // rAFs — the first 29 are irrelevant because the 30th already
-    // contains the same arguments + more.
-    var latest=new Map();
-    for(var qi=0;qi<_pendingDeltaQueue.length;qi++){
-      var d=_pendingDeltaQueue[qi];
-      if(!d)continue;
-      var key=(d.id||"?")+":"+(d.index||0);
-      latest.set(key,d);
-    }
-    _pendingDeltaQueue=[];
-    var cards=body.querySelectorAll(".agent-tool-card[data-tcid]");
-    for(var ci=0;ci<cards.length;ci++){
-      var cardEl=cards[ci];
-      var tcid=cardEl.getAttribute("data-tcid");
-      // Match by id first (preferred), fall back to index for
-      // deltas that arrived before the tool_use event assigned
-      // the id. The backend fills the id on subsequent deltas
-      // once the upstream emits it.
-      var dFound=null;
-      latest.forEach(function(v,k){
-        if(dFound)return;
-        if(k.split(":")[0]===tcid)dFound=v;
-      });
-      if(!dFound)continue;
-      try{
-        if(typeof updateToolCardCode==="function"){
-          updateToolCardCode(tcid,dFound.arguments||"",dFound.name||"");
-        }
-      }catch(_){}
-      // When the final delta arrives (or no final flag — the
-      // backend always emits one), remove the streaming class so
-      // the blinking caret disappears.
-      if(dFound.final){
-        var codeEl=cardEl.querySelector(".agent-tool-code");
-        if(codeEl)codeEl.classList.remove("agent-tool-code-streaming");
-      }
-    }
-    // Stash any unmatched deltas (no card yet) on the matching
-    // tool_call entry so recordToolUse can drain them when the
-    // card is finally created. Without this, deltas that arrived
-    // a few ms before tool_use would be silently dropped, leaving
-    // the card showing only the final-frame arguments.
-    if(msgIdx>=0&&state.messages[msgIdx]&&Array.isArray(state.messages[msgIdx].toolCalls)){
-      latest.forEach(function(d){
-        if(!d)return;
-        if(!d.id)return;
-        for(var ti=0;ti<state.messages[msgIdx].toolCalls.length;ti++){
-          var tcEntry=state.messages[msgIdx].toolCalls[ti];
-          if(tcEntry.id===d.id){
-            if(!Array.isArray(tcEntry._pendingDeltas))tcEntry._pendingDeltas=[];
-            tcEntry._pendingDeltas.push(d);
-            return;
-          }
-        }
-        // No matching entry yet (id may be a delta id that the
-        // upcoming tool_use will adopt). Buffer by id.
-        if(!Array.isArray(state.messages[msgIdx]._orphanDeltas))state.messages[msgIdx]._orphanDeltas={};
-        if(!state.messages[msgIdx]._orphanDeltas[d.id])state.messages[msgIdx]._orphanDeltas[d.id]=[];
-        state.messages[msgIdx]._orphanDeltas[d.id].push(d);
-      });
-    }
-  }
-
-  /* Track active execution SSE connections so we can clean up on finish */
-  var _executionSSESources=[];
-
-  /* Connect to the dedicated execution progress SSE endpoint. This runs
-     INDEPENDENTLY of the main chat SSE stream so progress continues even
-     if the chat stream completes. The endpoint is at
-     /api/chat/executions/:id/stream (mounted under /api/executions/:id/stream
-     in production). */
-  function _connectExecutionSSE(executionId,tcId){
-    if(!executionId||!tcId)return;
-    try{
-      var es=new EventSource("/api/executions/"+encodeURIComponent(executionId)+"/stream");
-      _executionSSESources.push(es);
-      /* P_execution-sse-timeout — safety net: if the backend never
-         delivers a result event (worker crash, SSE leak, etc.), emit
-         a synthetic error after 60s so the card doesn't hang on
-         [Booting] indefinitely. The timer is cleared on result/error
-         events. */
-      var _sseTimeout=setTimeout(function(){
-        try{
-          recordToolResult({
-            id:tcId,
-            ok:false,
-            status:"failed",
-            output:"",
-            stderr:"",
-            error:"execution_sse_timeout: backend did not respond within 60s",
-            artifacts:[],
-            durationMs:60000,
-            executionId:executionId,
-            name:"code_interpreter"
-          });
-        }catch(_){}
-        try{es.close()}catch(_){}
-      },60000);
-      es.addEventListener("progress",function(ev){
-        try{
-          var data=JSON.parse(ev.data);
-          data.id=tcId;  /* match the tool card's data-tcid */
-          _toolProgressToCard(data);
-        }catch(_){}
-      });
-      es.addEventListener("result",function(ev){
-        clearTimeout(_sseTimeout);
-        try{
-          var data=JSON.parse(ev.data);
-          /* Forward as a tool_result so the card updates */
-          recordToolResult({
-            id:tcId,
-            ok:data.status==="completed",
-            status:data.status,
-            output:data.stdout||"(no output)",
-            stderr:data.stderr||"",
-            error:data.status!=="completed"?(data.errorMessage||data.status):null,
-            artifacts:data.artifactFileIds||[],
-            durationMs:data.durationMs||0,
-            executionId:executionId,
-            name:"code_interpreter"
-          });
-        }catch(_){}
-        es.close();
-      });
-      es.addEventListener("error",function(ev){
-        clearTimeout(_sseTimeout);
-        try{
-          var data=ev.data?JSON.parse(ev.data):null;
-          if(data&&data.error){
-            recordToolResult({
-              id:tcId,
-              ok:false,
-              status:"failed",
-              output:"",
-              error:data.error,
-              artifacts:[]
-            });
-          }
-        }catch(_){}
-        es.close();
-      });
-    }catch(e){
-      console.log("[execution-sse] failed");
-    }
-  }
-
-  var ret={
-    /* P_tool-history — record a tool invocation (e.g. code_interpreter,
-       web_search). Pushes a new entry onto state.messages[msgIdx].toolCalls
-       and renders a collapsible card in the live bubble. Returns the
-       card's output element so callers can fill it in later via
-       recordToolResult. The card is stamped with data-tcid=<id> so
-       recordToolProgress can find it by selector. */
-    recordToolUse:function(call){
-      /* P_session-stream-dispose — guard the public API so a late
-         tool_use callback after abort() can't push a stale entry
-         into the new session's toolCalls array.
-         P_session-cross-talk — also verify slot ownership so the
-         race window between abort() and a late tool_use frame can't
-         push into the new session's reused msgIdx slot. */
-      if(!stillOwnsSlot())return null;
-      if(!call||!call.name)return null;
-      /* P_tool_first_delta — when the LLM calls a tool before
-         producing any text content, firstDelta is still true and
-         the streaming DOM hasn't been set up yet. Flip firstDelta
-         here so the placeholder is removed and the bubble enters
-         streaming mode immediately, preventing the firstDeltaTimer
-         from firing during tool execution. */
+  var toolRuntime=createToolRuntime({
+    body:body,
+    stillOwnsSlot:stillOwnsSlot,
+    getMessage:function(){
+      return msgIdx>=0?(state.messages[msgIdx]||null):null;
+    },
+    ensureToolContainer:_ensureToolContainer,
+    onToolActivity:function(){
+      /* A tool call counts as first visible activity, so retire the
+         waiting placeholder before execution progress begins. */
       if(firstDelta&&!finished){
         firstDelta=false;
         clearTimeout(firstDeltaTimer);
@@ -5183,302 +4920,14 @@ function teardownThinkStructure(){
         if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
         pendingRender=requestAnimationFrame(function(){doRender()});
       }
-      var entry={
-        id:String(call.id||("tc-"+Date.now()+"-"+Math.random().toString(36).slice(2,8))),
-        name:String(call.name),
-        input:call.input==null?null:call.input,
-        output:null,
-        isError:false,
-        artifacts:[]
-      };
-      if(msgIdx>=0&&state.messages[msgIdx]){
-        if(!Array.isArray(state.messages[msgIdx].toolCalls)){
-          state.messages[msgIdx].toolCalls=[];
-        }
-        state.messages[msgIdx].toolCalls.push(entry);
-      }
-      var cardOut=appendToolModule(entry.name,entry.input||{},_ensureToolContainer());
-      if(cardOut){
-        var cardEl=cardOut.closest(".agent-tool-card");
-        if(cardEl)cardEl.setAttribute("data-tcid",entry.id);
-        // Drain any tool_call_delta frames that arrived before the
-        // tool_use event landed. Without this, the card would show
-        // nothing for the duration of the tool_use -> tool_call_delta
-        // race window (typically <50ms but visible to the eye).
-        if(entry._pendingDeltas&&entry._pendingDeltas.length){
-          for(var ddi=0;ddi<entry._pendingDeltas.length;ddi++){
-            try{
-              updateToolCardCode(entry.id,entry._pendingDeltas[ddi].arguments||"",entry._pendingDeltas[ddi].name||"");
-            }catch(_){}
-          }
-          entry._pendingDeltas.length=0;
-        }
-        if(Array.isArray(entry._pendingProgress)&&entry._pendingProgress.length){
-          for(var dpi=0;dpi<entry._pendingProgress.length;dpi++){
-            _toolProgressToCard(entry._pendingProgress[dpi]);
-          }
-          entry._pendingProgress.length=0;
-        }
-        /* Connect to dedicated execution SSE for code_interpreter tool */
-        if(call.name==="code_interpreter"&&call.executionId){
-          _connectExecutionSSE(call.executionId,entry.id);
-        }
-      }
-      return cardOut;
-    },
-    /* P_progress — incremental tool events. Backend emits these
-       between tool_use and tool_result so the user sees live
-       stdout/stderr + a phase timer instead of staring at a
-       frozen card for 30s. Delegates to the hoisted helper. */
-    recordToolProgress:function(p){
-      /* P_session-stream-dispose — same guard. Without this, a late
-         progress chunk could find a toolCalls[i] entry that now
-         belongs to the new session and mutate its executionId or
-         _pendingProgress, leaking old tool state across the boundary.
-         P_session-cross-talk — stillOwnsSlot() also blocks the race
-         window where abort() hasn't fired yet but the session already
-         switched. */
-      if(!stillOwnsSlot())return;
-      _toolProgressToCard(p);
-    },
-    /* P_tool_stream — live tool_call_delta. The backend forwards
-       partial `function.arguments` as the upstream streams them;
-       we route the partial JSON to the right tool card so the
-       Python source / search query streams in real time.
-
-       The card is identified by the tool_call id (`id` on the
-       delta), which is the same id we'll later see in the
-       `tool_use` event from the backend. The delta may arrive
-       before the matching tool_use (the backend throttles the
-       `onToolUse` callback to one-per-stream-end), so we have
-       to handle "delta for a tool call we haven't recorded yet"
-       by creating a card with empty input and updating it
-       in place. */
-    recordToolCallDelta:function(d){
-      if(!stillOwnsSlot())return;
-      if(!d)return;
-      // Throttle DOM updates. The backend already throttles to
-      // ~30ms / 64 bytes, but the rAF coalesce below is the
-      // authoritative cap so 60fps devices don't waste paint
-      // cycles on every delta.
-      _pendingDeltaQueue.push(d);
-      if(!_deltaFlushScheduled){
-        _deltaFlushScheduled=true;
-        requestAnimationFrame(_flushToolDeltas);
-      }
-    },
-    recordExecutionStart:function(ev){
-      /* P_session-stream-dispose — same guard; also avoids
-         _connectExecutionSSE which opens a long-lived EventSource
-         that would otherwise keep streaming after a session switch. */
-      if(!stillOwnsSlot())return;
-      if(!ev||!ev.executionId||!ev.id)return;
-      if(msgIdx>=0&&state.messages[msgIdx]&&Array.isArray(state.messages[msgIdx].toolCalls)){
-        for(var ti=0;ti<state.messages[msgIdx].toolCalls.length;ti++){
-          if(state.messages[msgIdx].toolCalls[ti].id===ev.id){
-            state.messages[msgIdx].toolCalls[ti].executionId=ev.executionId;
-            break;
-          }
-        }
-      }
-      _connectExecutionSSE(ev.executionId,ev.id);
-    },
-    /* P_tool-history — record the outcome of a tool call. Updates the
-       matching entry in state.messages[msgIdx].toolCalls (by id) and
-       writes the text + any inline artifacts into the corresponding
-       card. If the id doesn't match a prior recordToolUse (e.g. the
-       backend emits tool_result without a tool_use), a synthetic
-       entry is created so the result is still visible. */
-    recordToolResult:function(result){
-      /* P_session-stream-dispose — same guard as recordToolUse. */
-      if(!stillOwnsSlot())return;
-      if(!result||!result.id)return;
-      var out=null;
-      var entry=null;
-      if(msgIdx>=0&&state.messages[msgIdx]&&Array.isArray(state.messages[msgIdx].toolCalls)){
-        for(var i=0;i<state.messages[msgIdx].toolCalls.length;i++){
-          if(state.messages[msgIdx].toolCalls[i].id===result.id){
-            entry=state.messages[msgIdx].toolCalls[i];
-            break;
-          }
-        }
-      }
-      if(!entry){
-        entry={
-          id:String(result.id),
-          name:result.name||"tool",
-          input:null,
-          output:null,
-          isError:false,
-          artifacts:[]
-        };
-        if(msgIdx>=0&&state.messages[msgIdx]){
-          if(!Array.isArray(state.messages[msgIdx].toolCalls)){
-            state.messages[msgIdx].toolCalls=[];
-          }
-          state.messages[msgIdx].toolCalls.push(entry);
-        }
-        out=appendToolModule(entry.name,{},_ensureToolContainer());
-      }else{
-        /* Find the card by its data-tcid attribute (set in recordToolUse)
-           instead of index-based lookup — the card's position may shift
-           if the think-block was rebuilt between tool_use and tool_result.
-           Use CSS.escape so IDs with colons, dots, or brackets (common in
-           OpenAI-style tool_call_id values) don't break the selector. */
-        var card=body.querySelector('[data-tcid="'+CSS.escape(entry.id)+'"]');
-        if(card)out=card.querySelector(".agent-tool-out");
-      }
-      /* P_execution-sse-fallback — if the result carries an executionId
-         but the entry never got one (execution_start was missed because
-         the main SSE stream ended before the tool finished), connect the
-         independent execution SSE channel now. The backend's endpoint
-         serves the final row immediately if the execution has already
-         completed. */
-      if(result.executionId&&entry&&!entry.executionId){
-        entry.executionId=result.executionId;
-        _connectExecutionSSE(result.executionId,result.id);
-      }
-
-      /* P4_drain-pending — drain any queued _pendingProgress events BEFORE
-         writing the final output. Without this, if the only progress event
-         was phase:"ready" (Booting) and the next event is the result itself,
-         the drain in _toolProgressToCard never runs (it only triggers on the
-         NEXT progress event), leaving the card stuck on [Booting] with no
-         stdout visible. Draining here ensures all buffered progress is
-         rendered into the card before we replace the live-progress node
-         with the final output text. */
-      if(entry&&entry._pendingProgress&&entry._pendingProgress.length){
-        for(var dp=0;dp<entry._pendingProgress.length;dp++){
-          _toolProgressToCard(entry._pendingProgress[dp]);
-        }
-        entry._pendingProgress.length=0;
-      }
-
-      var statusIcon="";
-      var statusClass="";
-      var display="";
-      var durStr="";
-      if(result.durationMs!=null){
-        var sec=(result.durationMs/1000).toFixed(1);
-        durStr=" ["+sec+"s]";
-      }
-      if(result.ok===false){
-        if(result.status==="timeout"){
-          statusIcon=(typeof window!=="undefined"&&window.t)?window.t("tool.statusTimeout"):"Timeout";
-          statusClass="warn";
-        }else{
-          statusIcon=(typeof window!=="undefined"&&window.t)?window.t("tool.statusFailed"):"Failed";
-          statusClass="err";
-        }
-        var errMsg=result.userMessage||result.error||result.output||"failed";
-        display=errMsg+durStr;
-        /* P_py_hint — recognise the most common Python runtime
-           errors and append a one-line hint that explains the
-           working directory and what to do next. Pyodide mounts the
-           host scratch dir as /artifacts and `os.chdir`s there at
-           the start of every run, so file paths the user passes
-           are resolved relative to that scratch dir. When the
-           model asks the user to "load the data" without first
-           uploading the file, the open() call fails with a bare
-           FileNotFoundError that doesn't tell the user what
-           happened; the appended hint makes the cause obvious
-           without having to read the traceback. */
-        if(result.name==="code_interpreter"){
-          var stderrText=String(result.stderr||"")+String(errMsg||"");
-          if(/FileNotFoundError|No such file or directory/i.test(stderrText)){
-            display+="\n\nHint: Python's working directory is the run scratch dir; only files the previous run wrote there (matplotlib PNGs, CSV exports, etc.) are available. To load a new file, attach it to the chat as input and have the code read from the path the attachment handler exposes, or have the previous cell write the file first.";
-          }else if(/ModuleNotFoundError/i.test(stderrText)){
-            display+="\n\nHint: Pyodide ships numpy, pandas, and matplotlib pre-installed. For other packages, install them in the run with `import micropip; micropip.install('pkg')`.";
-          }else if(/PermissionError|IsADirectoryError|NotADirectoryError/i.test(stderrText)){
-            display+="\n\nHint: the path is a directory or not writable. Use the artifact paths from the previous run, or write to a fresh filename.";
-          }
-        }
-      }else{
-        statusIcon=(typeof window!=="undefined"&&window.t)?window.t("tool.statusDone"):"Done";
-        statusClass="ok";
-        display=(result.output||"(no output)")+
-          (result.stderr?"\n[stderr]\n"+result.stderr:"")+durStr;
-      }
-      entry.output=display;
-      entry.isError=result.ok===false;
-      entry.results=Array.isArray(result.results)?result.results.slice(0,20):[];
-      if(Array.isArray(result.artifacts)){
-        entry.artifacts=result.artifacts.slice(0,20).map(function(a){
-          /* Current servers send {id,mimeType}; accept legacy string IDs too
-             so an otherwise valid generated image never becomes img src
-             `/api/files//raw`. */
-          if(typeof a==="string")return{id:a,mimeType:null,name:null};
-          return{id:String((a&&a.id)||""),mimeType:(a&&a.mimeType)||null,name:(a&&a.name)||null};
-        }).filter(function(a){return!!a.id});
-      }
-      if(out){
-        /* Skip DOM updates if we've already rendered this tool result
-           (prevents the execution SSE's duplicate result event from
-            clearing and re-rendering artifacts unnecessarily). */
-        if(!entry._toolResultApplied){
-          entry._toolResultApplied=true;
-          var liveProg=out.querySelector(".agent-tool-progress");
-          if(liveProg)liveProg.parentNode.removeChild(liveProg);
-          /* P2_web-search-render — for web_search tool results, the backend
-             sends a `results` array [{title, url, snippet, date}]. Render
-             these as a clickable list instead of dumping raw text. */
-          var toolName_=entry.name||result.name||"";
-          var didRichRender=false;
-          if(toolName_==="web_search"&&result.results&&Array.isArray(result.results)&&result.results.length>0){
-            var q_=(entry.input&&entry.input.query)||result.query||"";
-            didRichRender=renderWebSearchResults(out,result.results,q_);
-          }
-          if(!didRichRender){
-            renderToolTextOutput(out,display||"",{
-              isError: entry.isError,
-              kind: entry.isError ? "error" : "output"
-            });
-          }
-          if(entry.isError&&result.detail){
-            var errDetails=document.createElement("details");
-            errDetails.className="agent-tool-error-detail";
-            var errSummary=document.createElement("summary");
-            errSummary.textContent="查看技术详情";
-            var errCode=document.createElement("code");
-            errCode.textContent=typeof result.detail==="string"?result.detail:JSON.stringify(result.detail);
-            errDetails.appendChild(errSummary);
-            errDetails.appendChild(errCode);
-            out.appendChild(errDetails);
-          }
-          if(entry.isError&&result.retryable&&entry.name==="web_search"&&entry.input&&entry.input.query){
-            var retryButton=document.createElement("button");
-            retryButton.type="button";
-            retryButton.className="agent-tool-retry";
-            retryButton.textContent="重试搜索";
-            retryButton.addEventListener("click",function(){
-              var retryText="请重试搜索："+entry.input.query;
-              if(typeof window.addMessage==="function")window.addMessage("user",retryText);
-              if(typeof window.askChatTurn==="function")window.askChatTurn(retryText);
-            });
-            out.appendChild(retryButton);
-          }
-          var card=out.closest(".agent-tool-card");
-          if(card){
-            var existingBadge=card.querySelector(".agent-tool-status");
-            var badge=existingBadge;
-            if(!badge){
-              badge=document.createElement("span");
-              var nameEl=card.querySelector(".agent-tool-name");
-              if(nameEl&&nameEl.parentNode)nameEl.parentNode.insertBefore(badge,nameEl.nextSibling);
-            }
-            badge.className="agent-tool-status "+statusClass;
-            badge.textContent=statusIcon+(result.durationMs!=null?" "+(result.durationMs/1000).toFixed(1)+"s":"");
-            if(display&&display.length>0)card.classList.add("open");
-            if(result.ok===false)card.classList.add("open");
-          }
-          if(entry.artifacts&&entry.artifacts.length){
-            for(var k=0;k<entry.artifacts.length;k++){
-              appendInlineArtifact(entry.artifacts[k].id,entry.artifacts[k].mimeType,out,entry.artifacts[k].name);
-            }
-          }
-        }
-      }
-    },
+    }
+  });
+  var ret={
+    recordToolUse:toolRuntime.recordToolUse,
+    recordToolProgress:toolRuntime.recordToolProgress,
+    recordToolCallDelta:toolRuntime.recordToolCallDelta,
+    recordExecutionStart:toolRuntime.recordExecutionStart,
+    recordToolResult:toolRuntime.recordToolResult,
     append:function(delta){
       /* P_session-stream-dispose — primary entry-point guard. The
          stream.js reader keeps draining already-buffered SSE chunks
@@ -5553,20 +5002,13 @@ function teardownThinkStructure(){
         clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
         if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
-        for(var esi2=0;esi2<_executionSSESources.length;esi2++){
-          try{_executionSSESources[esi2].close()}catch(_){}
-        }
-        _executionSSESources.length=0;
+        toolRuntime.dispose();
         return;
       }
       if(finished)return;
       finished=true;
       _disposed=true;
-      /* Close any active execution SSE connections */
-      for(var esi=0;esi<_executionSSESources.length;esi++){
-        try{_executionSSESources[esi].close()}catch(_){}
-      }
-      _executionSSESources.length=0;
+      toolRuntime.dispose();
       clearTimeout(firstDeltaTimer);
       if(_elapsedTick)clearInterval(_elapsedTick);
       if(pendingRender){
@@ -5823,19 +5265,9 @@ function teardownThinkStructure(){
         _chatStreaming=false;
         try{setChatStopState(false)}catch(_){}
       }
-      /* P_session-stream-dispose — code_interpreter opens a SEPARATE
-         EventSource on /api/executions/:id/stream that keeps streaming
-         progress events INDEPENDENTLY of the main chat SSE. Ac.abort()
-         only stops the main stream; this EventSource would otherwise
-         keep dispatching progress events into _toolProgressToCard →
-         state.messages[msgIdx].toolCalls[i] after a session switch,
-         polluting the new session. Close them here. finish() already
-         does the same in its first few lines, so this covers the
-         user-stopped / superseded path. */
-      for(var esi=0;esi<_executionSSESources.length;esi++){
-        try{_executionSSESources[esi].close()}catch(_){}
-      }
-      _executionSSESources.length=0;
+      /* Stop the independent execution stream and any queued delta
+         frame before this message can lose ownership of its slot. */
+      toolRuntime.dispose();
       /* Clean up incomplete placeholder message from state.messages
        * to prevent saving empty/partial AI responses to the database.
        * Only remove if still in streaming state with no content.
@@ -5866,6 +5298,7 @@ function teardownThinkStructure(){
       replaceWithError:function(errMsg,onRetry){
         if(finished)return;
         finished=true;
+        toolRuntime.dispose();
         clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
         if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
@@ -6786,204 +6219,16 @@ function handleQuizPick(cardEl,optsEl,feedback,btns,picked,parsed){
   submitChatMessage(text,{origin:"quiz"});
 }
 
-/* ============================================================
-   MISTAKE BOOK
-   Captures wrong quiz picks and wrong practice attempts. Surfaced in
-   a dedicated sidebar tab with a Redo button that re-enables the
-   original widget (or re-emits it inline if the widget is gone).
-   ============================================================ */
-/* Task 5.5 — fire-and-forget POST to /api/mistakes so the server-side
-   mistakes table stays in sync with the client-side mistake book. The
-   mistake is already in state.mistakes (recordMistake unshifted it), so
-   a failed POST is non-fatal — we just log and move on. Uses apiFetch
-   for credentials / CSRF / JSON body handling, consistent with other
-   calls (e.g. /api/sessions). */
-function persistMistake(mistakeData){
-  var sid=state.currentSessionId;
-  /* The backend zod schema requires a UUID for sessionId; during
-     session creation currentSessionId can briefly hold a non-uuid
-     value, so guard before sending to avoid a noisy 400. */
-  if(typeof sid!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sid))sid=null;
-  try{
-    apiFetch("/api/mistakes",{
-      method:"POST",
-      body:{
-        sessionId:sid,
-        nodeName:mistakeData.nodeName||null,
-        questionContent:mistakeData.questionContent||"",
-        userAnswer:mistakeData.userAnswer!=null?String(mistakeData.userAnswer):null,
-        correctAnswer:mistakeData.correctAnswer!=null?String(mistakeData.correctAnswer):null,
-        source:mistakeData.source||"quiz"
-      }
-    }).catch(function(e){
-      console.log("[mistakes] failed to persist mistake");
-    });
-  }catch(e){
-    console.log("[mistakes] persistMistake threw");
-  }
-}
-
-function recordMistake(rec){
-  if(!state.mistakes)state.mistakes=[];
-  var node=state.kbNodes[state.currentNode]||{};
-  var mistake={
-    id:"m-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6),
-    type:rec.type||"quiz",
-    topic:state.topic||"",
-    node:node.name||"",
-    nodeIdx:state.currentNode,
-    q:rec.q,
-    options:rec.options||[],
-    correct:rec.correct||null,
-    userAnswer:rec.userAnswer||null,
-    judgedAnswer:rec.judgedAnswer||null,
-    timestamp:Date.now(),
-    redoCount:0,
-    quizSlotId:rec.quizSlotId||null
-  };
-  state.mistakes.unshift(mistake);
-  /* Task 5.5 — mirror the mistake to the backend mistakes table.
-     Fire-and-forget; the client-side array above remains the source
-     of truth for the UI, so a failed POST doesn't break anything.
-     Both recording sites (the <mistake> block parser and
-     handleQuizPick) funnel through recordMistake, so this covers
-     them both. */
-  persistMistake({
-    nodeName:mistake.node||null,
-    questionContent:mistake.q||"",
-    userAnswer:mistake.userAnswer,
-    correctAnswer:mistake.correct,
-    source:mistake.type==="practice"?"practice":"quiz"
-  });
-  saveCurrentSession();
-  renderMistakes();
-  updateMistakesBadge();
-}
-
-function removeMistakeForQuizSlot(slotId){
-  if(!slotId||!state.mistakes)return;
-  var before=state.mistakes.length;
-  state.mistakes=state.mistakes.filter(function(m){return m.quizSlotId!==slotId});
-  if(state.mistakes.length!==before){
-    saveCurrentSession();
-    renderMistakes();
-    updateMistakesBadge();
-  }
-}
-
-function updateMistakesBadge(){
-  var badge=document.getElementById("mistakesTabBadge");
-  if(!badge)return;
-  var n=(state.mistakes||[]).length;
-  badge.textContent=n>0?String(n):"";
-}
-
-function renderMistakes(){
-  var cont=document.getElementById("mistakesList");
-  if(!cont)return;
-  /* v3.0 design — §9.4 filter bar (all / unresolved / resolved) */
-  if(typeof tutorSocratic==="object"&&tutorSocratic
-     &&typeof tutorSocratic.renderMistakeFilterBar==="function"){
-    try{tutorSocratic.renderMistakeFilterBar()}catch(_){}
-  }
-  if(!state.mistakes||state.mistakes.length===0){
-    cont.innerHTML='<div class="recents-empty">No mistakes yet.<br>Wrong quiz picks and incorrect practice attempts will land here for review.</div>';
-    return;
-  }
-  /* v3.0 design — apply the user's current filter selection
-     (all / unresolved / resolved) per §9.4. */
-  var filter=state.mistakeFilter||"all";
-  var filtered=state.mistakes.slice();
-  if(filter==="unresolved"){
-    filtered=filtered.filter(function(m){return!m.resolved&&!m.isResolved});
-  }else if(filter==="resolved"){
-    filtered=filtered.filter(function(m){return!!(m.resolved||m.isResolved)});
-  }
-  if(!filtered.length){
-    cont.innerHTML='<div class="recents-empty">'
-      +(filter==="resolved"
-        ?"No resolved mistakes yet. Mark a mistake as conquered after redoing it successfully."
-        :"Nothing in this filter. Switch to \"all\" to see every mistake.")
-      +'</div>';
-    return;
-  }
-  var html="";
-  filtered.forEach(function(m){
-    var optsHtml="";
-    (m.options||[]).forEach(function(o){
-      var tag=o.letter===m.correct?"correct-tag":(o.letter===m.userAnswer?"wrong-tag":"");
-      optsHtml+='<div class="mistake-opt '+tag+'"><span class="mistake-opt-letter">'+esc(o.letter)+'</span><span>'+esc(o.text)+'</span></div>';
-    });
-    var resolvedFlag=!!(m.resolved||m.isResolved);
-    html+='<div class="mistake-card'+(resolvedFlag?' mistake-card-resolved':'')+'" data-mistake-id="'+esc(m.id)+'">';
-    html+='<div class="mistake-meta"><span class="mistake-type">'+esc(m.type)+'</span><span class="mistake-topic">'+esc(m.topic||"")+'</span><span class="mistake-time">'+formatRelativeTime(m.timestamp)+'</span>'
-      +(resolvedFlag?'<span class="mistake-resolved-tag">conquered</span>':'')
-      +'</div>';
-    html+='<div class="mistake-q">'+esc(m.q||"")+'</div>';
-    html+='<div class="mistake-opts">'+optsHtml+'</div>';
-    if(m.redoCount)html+='<div class="mistake-redo-count">Redone '+m.redoCount+' time'+(m.redoCount>1?'s':'')+'</div>';
-    html+='<button class="mistake-redo-btn" data-redo="'+esc(m.id)+'">Redo</button>';
-    html+='</div>';
-  });
-  cont.innerHTML=html;
-  /* Wire Redo buttons. */
-  cont.querySelectorAll('[data-redo]').forEach(function(btn){
-    btn.onclick=function(){handleMistakeRedo(btn.getAttribute("data-redo"))};
-  });
-}
-
-function handleMistakeRedo(mistakeId){
-  var m=(state.mistakes||[]).find(function(x){return x.id===mistakeId});
-  if(!m)return;
-  m.redoCount=(m.redoCount||0)+1;
-  saveCurrentSession();
-  /* Try to reset the original widget in-place. */
-  if(m.quizSlotId){
-    var slot=document.querySelector('[data-quiz-id="'+m.quizSlotId+'"]');
-    if(slot){
-      var parent=slot.closest(".inline-quiz");
-      if(parent){
-        /* Re-render fresh. The original parsed object isn't reachable here,
-           so we reconstruct it from the mistake record. */
-        var parsed={
-          q:m.q,
-          options:m.options.map(function(o){return{letter:o.letter,text:o.text}}),
-          correct:m.correct,
-          slotId:m.quizSlotId
-        };
-        /* Replace the existing widget with a fresh one. */
-        var fresh=document.createElement("div");
-        parent.parentNode.replaceChild(fresh,parent);
-        mountQuizWidget(fresh,parsed);
-        return;
-      }
-    }
-  }
-  /* Fallback: append a new assistant message containing a fresh quiz widget. */
-  var div=document.createElement("div");
-  div.className="msg assistant";
-  var body=document.createElement("div");
-  body.className="msg-body";
-  body.innerHTML='<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-bottom:6px">— Redoing a question you got wrong —</div><div class="quiz-slot" data-quiz-id="redo-'+Date.now().toString(36)+'"></div>';
-  div.appendChild(body);
-  var list=document.getElementById("msgList");
-  if(list)list.appendChild(div);
-  var sc=scrollContainer();
-  requestAnimationFrame(function(){sc.scrollTop=sc.scrollHeight});
-  var slot=div.querySelector(".quiz-slot");
-  if(slot){
-    var parsed={
-      q:m.q,
-      options:m.options.map(function(o){return{letter:o.letter,text:o.text}}),
-      correct:m.correct,
-      slotId:slot.getAttribute("data-quiz-id")
-    };
-    /* Update the mistake's quizSlotId so a future correct pick clears it. */
-    m.quizSlotId=parsed.slotId;
-    saveCurrentSession();
-    mountQuizWidget(slot,parsed);
-  }
-}
+/* P_main-split - Wave 2: mistake-book runtime extracted. */
+const mistakeBook = createMistakeBook({
+  state: state,
+  apiFetch: apiFetch,
+  saveCurrentSession: saveCurrentSession,
+  mountQuizWidget: mountQuizWidget,
+  scrollContainer: scrollContainer,
+  getTutorSocratic: function(){ return window.tutorSocratic; },
+});
+const { recordMistake, removeMistakeForQuizSlot, updateMistakesBadge, renderMistakes } = mistakeBook;
 
 /* P_main-split — Wave 0: handleQuickAction (region 26) extracted. */
 import { handleQuickAction } from './chat/quickActions.js';
