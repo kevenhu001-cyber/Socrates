@@ -451,6 +451,8 @@ export function renderWebSearchResults(out, results, query) {
       host: hostFromUrl(url),
       snippet: String(source.snippet || source.description || "").trim(),
       date: String(source.date || source.published || "").trim(),
+      source: String(source.source || source.engine || "").trim(),
+      matchedQuery: String(source.matchedQuery || "").trim(),
     });
   }
   if (!normalized.length) return false;
@@ -474,7 +476,7 @@ export function renderWebSearchResults(out, results, query) {
     // a natural place to hang the "cite as [1]" hint.
     const idx = document.createElement("span");
     idx.className = "wsr-index";
-    idx.textContent = source.host ? compactHostLabel(source.host).slice(0, 1).toUpperCase() : String(i + 1);
+    idx.textContent = "[" + (i + 1) + "]";
     idx.title = source.host || trTool("tool.unavailableSource", "Unavailable source");
     item.appendChild(idx);
 
@@ -501,6 +503,12 @@ export function renderWebSearchResults(out, results, query) {
     hostEl.className = "wsr-host";
     hostEl.textContent = source.host || trTool("tool.linkUnavailable", "Link unavailable");
     meta.appendChild(hostEl);
+    if (source.source) {
+      const engine = document.createElement("span");
+      engine.className = "wsr-source";
+      engine.textContent = source.source;
+      meta.appendChild(engine);
+    }
     if (source.date) {
       const date = document.createElement("span");
       date.className = "wsr-date";
@@ -515,6 +523,28 @@ export function renderWebSearchResults(out, results, query) {
       snippet.textContent = source.snippet;
       body.appendChild(snippet);
     }
+
+    const actions = document.createElement("div");
+    actions.className = "wsr-actions";
+    const cite = document.createElement("button");
+    cite.type = "button";
+    cite.className = "wsr-copy";
+    cite.textContent = trTool("tool.copyCitation", "Copy citation");
+    cite.addEventListener("click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const citeText = "[" + (i + 1) + "] " + source.title + (source.url && source.url !== "#" ? " - " + source.url : "");
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        navigator.clipboard.writeText(citeText).then(function () {
+          cite.textContent = trTool("tool.copied", "Copied");
+          setTimeout(function () { cite.textContent = trTool("tool.copyCitation", "Copy citation"); }, 1200);
+        }).catch(function () {
+          cite.textContent = trTool("tool.copyFailed", "Copy failed");
+        });
+      }
+    });
+    actions.appendChild(cite);
+    body.appendChild(actions);
 
     item.appendChild(body);
     wrap.appendChild(item);
@@ -566,7 +596,7 @@ export function makeArtifactError(fileId, mimeType, url, reason) {
      4. Apply a fade-in transition so the image appearing doesn't
         visually "pop" — this matters for chat streams where the
         user is reading and a sudden large image is jarring. */
-export function appendInlineArtifact(fileId, mimeType, outEl) {
+export function appendInlineArtifact(fileId, mimeType, outEl, displayName) {
   const t = window.t || function (k) { return k; };
   let out = outEl || document.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
   if (!out || !fileId) return;
@@ -576,7 +606,7 @@ export function appendInlineArtifact(fileId, mimeType, outEl) {
   if ((mimeType || "").indexOf("image/") === 0) {
     appendInlineImage(fileId, mimeType, url, out);
   } else {
-    appendInlineFileLink(fileId, mimeType, url, out, t);
+    appendInlineFileLink(fileId, mimeType, url, out, t, displayName);
   }
 }
 
@@ -631,10 +661,10 @@ function appendInlineImage(fileId, mimeType, url, out) {
   if (card) card.classList.add("open");
 }
 
-function appendInlineFileLink(fileId, mimeType, url, out, t) {
+function appendInlineFileLink(fileId, mimeType, url, out, t, displayName) {
   const a = document.createElement("a");
   a.href = url;
-  a.textContent = t("common.downloadFile").replace("{type}", mimeType || "file");
+  a.textContent = displayName || t("common.downloadFile").replace("{type}", mimeType || "file");
   a.target = "_blank";
   a.rel = "noopener";
   a.className = "exec-artifact-link";

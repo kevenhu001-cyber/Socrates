@@ -80,7 +80,16 @@ const SessionPayloadSchema = z.object({
       artifacts: z.array(z.object({
         id: z.string().max(100),
         mimeType: z.string().max(200).optional().nullable(),
+        name: z.string().max(500).optional().nullable(),
       })).max(20).optional(),
+      results: z.array(z.object({
+        title: z.string().max(1000).optional(),
+        url: z.string().max(3000).optional(),
+        snippet: z.string().max(5000).optional(),
+        date: z.string().max(200).optional().nullable(),
+        source: z.string().max(100).optional().nullable(),
+        matchedQuery: z.string().max(1000).optional().nullable(),
+      }).passthrough()).max(20).optional(),
     })).max(20).optional(),
   })).max(1000).optional(),
   kbNodes: z.array(z.any()).max(5000).optional(),
