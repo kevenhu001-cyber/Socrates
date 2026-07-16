@@ -1,17 +1,40 @@
 import { Router } from 'express';
 import { eq, and, isNull } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { shares, sessions, messages } from '../db/schema.js';
+import { shares, sessions, messages, users } from '../db/schema.js';
 
 const router = Router();
 
+/* Decide whether the current request is allowed to view a share
+ * based on its visibility setting and the optional auth state.
+ * Pure function so it can be unit-tested without DB / Express.
+ *
+ *   public | unlisted   → any caller (token is the credential)
+ *   private             → only the session owner with a valid session
+ *
+ * Returns a tri-state: 'ok' / 'forbidden' / 'unauthorized'.
+ */
+export function checkShareAccess(share, session, user) {
+  if (!share || !session) return 'unauthorized';
+  if (share.visibility === 'public' || share.visibility === 'unlisted') return 'ok';
+  if (share.visibility === 'private') {
+    if (user && user.id && session.userId && session.userId === user.id) return 'ok';
+    return 'forbidden';
+  }
+  return 'forbidden';
+}
+
 /* GET /api/shares/:token — public read-only view of a shared session.
  *
- * Used by the front-end when a user opens a share link with ?share=TOKEN.
- * No authentication required — visibility is enforced by the share token.
+ * Visibility rules:
+ *   - 'public' / 'unlisted' — anyone with the token may read.
+ *   - 'private'              — only the session owner with a valid
+ *     session cookie may read; anonymous or other logged-in users
+ *     receive 403.
  *
- * Returns the session metadata + the message list (HTML rendered by the
- * server? No — the front-end re-renders the same way as the live app).
+ * Returns the session metadata + the message list (the front-end
+ * re-renders the same way as the live app). Sensitive fields
+ * (attachments, html snapshots, rawText) are explicitly excluded.
  */
 router.get('/:token', async (req, res, next) => {
   try {
@@ -31,6 +54,14 @@ router.get('/:token', async (req, res, next) => {
       .limit(1);
     if (!session) {
       return res.status(404).json({ code: 'NOT_FOUND', message: 'Session not found' });
+    }
+
+    const access = checkShareAccess(share, session, req.user || null);
+    if (access === 'forbidden') {
+      return res.status(403).json({ code: 'PRIVATE', message: 'This share is private' });
+    }
+    if (access === 'unauthorized') {
+      return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Authentication required' });
     }
 
     /* P_share-attachments-privacy — public share tokens must NOT leak
@@ -55,6 +86,7 @@ router.get('/:token', async (req, res, next) => {
       .limit(200);
 
     return res.json({
+      id: session.id,
       title: session.title,
       topic: session.topic,
       domain: session.domain,

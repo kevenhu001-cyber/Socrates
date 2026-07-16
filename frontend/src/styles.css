@@ -426,7 +426,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
   opacity:0;
   transform:translateY(8px);
   pointer-events:none;
-  transition:opacity .18s ease, transform .18s ease;
+  transition:opacity .18s ease, transform .18s ease, bottom 0.3s var(--ease-out);
   z-index:30;
 }
 .new-reply-pill.visible{
@@ -783,6 +783,7 @@ true) but the dropdown never shows — see commit history. */
   scrollbar-width:thin;
   scrollbar-color:transparent transparent;
   padding-bottom:calc(120px + env(safe-area-inset-bottom, 0px) + var(--keyboard-inset));
+  transition:padding-bottom 0.3s var(--ease-out);
 }
 .chat-view>.msg-list.scrollbar-visible{
   scrollbar-color:hsl(var(--text-500)/0.25) transparent;
@@ -1015,7 +1016,8 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
      room so the input box sits as low as practical — users kept
      feeling the input floated too high. Lives OUTSIDE the flex/
      scroll flow so message length never affects its position.
-     Keyboard-avoidance (visualViewport resize) handles iOS. */
+     Keyboard-avoidance (visualViewport resize) handles iOS.
+     The bottom transition makes keyboard open/close smooth. */
   position:absolute;
   left:0;
   right:0;
@@ -1790,12 +1792,14 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
 .share-title{font-size:calc(16px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
 .share-close{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:hsl(var(--text-400));cursor:pointer;transition:color .1s,background .1s}
 .share-close:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
-.share-opt{display:flex;align-items:flex-start;gap:12px;padding:12px;border:0.5px solid hsl(var(--border-300)/0.15);border-radius:10px;cursor:pointer;transition:background-color .12s,border-color .12s;margin-bottom:8px;background:hsl(var(--bg-100))}
+.share-opt{display:flex;align-items:flex-start;gap:12px;padding:12px;border:0.5px solid hsl(var(--border-300)/0.15);border-radius:10px;cursor:pointer;transition:background-color .15s,border-color .15s;margin-bottom:8px;background:hsl(var(--bg-100))}
 .share-opt:hover{border-color:hsl(var(--accent-000)/0.4)}
+.share-opt:hover .share-opt-radio{border-color:hsl(var(--text-300))}
 .share-opt.selected{border-color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.06)}
-.share-opt-radio{width:18px;height:18px;border-radius:50%;border:2px solid hsl(var(--text-400));flex-shrink:0;margin-top:1px;transition:border-color .12s;display:flex;align-items:center;justify-content:center}
+.share-opt-radio{width:18px;height:18px;border-radius:50%;border:2px solid hsl(var(--text-400));flex-shrink:0;margin-top:1px;transition:border-color .15s;display:flex;align-items:center;justify-content:center}
 .share-opt.selected .share-opt-radio{border-color:hsl(var(--accent-000))}
-.share-opt.selected .share-opt-radio::after{content:'';width:10px;height:10px;border-radius:50%;background:hsl(var(--accent-000))}
+.share-opt-radio-dot{width:10px;height:10px;border-radius:50%;background:hsl(var(--accent-000));opacity:0;transform:scale(0);transition:opacity .15s,transform .15s var(--ease-out)}
+.share-opt.selected .share-opt-radio-dot{opacity:1;transform:scale(1)}
 .share-opt-body{flex:1;min-width:0}
 .share-opt-title{font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-100));margin-bottom:2px}
 .share-opt-desc{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.4}
@@ -2841,11 +2845,10 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   box-shadow:0 4px 16px hsl(var(--shadow-color, 0 0% 0%) / 0.08);
 }
 
-/* In the diagnostic loading card, render the log un-collapsed so the
- * user can see the full history before being taken to the questions. */
+/* In the diagnostic loading card, disable click-to-toggle so the
+ * header is a static status line. The steps follow the normal
+ * collapsed/open state set by startSearchProgress. */
 .diag-loading .search-progress{cursor:default}
-.diag-loading .search-progress-steps{display:block}
-.diag-loading .search-progress-chev{display:none}
 
 /* =====================================================================
  * v3.0 design — Tutor mode UI additions

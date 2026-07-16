@@ -436,9 +436,15 @@ export function processPendingViz() {
             '<pre class="viz-error-source" hidden>' + esc(iframe.getAttribute('data-srcdoc') || '').slice(0, 2000) + '</pre>';
           // Insert banner ABOVE the iframe
           if (iframe.parentNode === body) body.insertBefore(banner, iframe);
+          // Bind the toggle-source button immediately. We no longer
+          // rely on the global document-wide [data-action] scan that
+          // ran every stream tick, so cards must self-bind.
+          _bindAction(banner.querySelector('.viz-error-btn'));
         }
         _hideLoading(card);
+        clearTimeout(entry.maxTimer);
         delete _pendingReady[item.id];
+        delete _vizCards[item.id];
         if (!card.dataset.vizAutoRetried) {
           card.dataset.vizAutoRetried = '1';
           setTimeout(function () { reloadVizCard(card); }, 0);
@@ -464,7 +470,12 @@ function _markReady(id) {
   if (!entry) return;
   var card = entry.card;
   if (!card) { delete _pendingReady[id]; return; }
-  if (card.getAttribute('data-viz-state') === 'ready') return;
+  if (card.getAttribute('data-viz-state') === 'ready') {
+    clearTimeout(entry.maxTimer);
+    delete _pendingReady[id];
+    delete _vizCards[id];
+    return;
+  }
   card.setAttribute('data-viz-state', 'ready');
   // If the iframe posted a height, adopt it so the card doesn't
   // show a fixed min-height when the content is shorter/longer.
@@ -472,14 +483,21 @@ function _markReady(id) {
     entry.iframe.style.height = entry.lastHeight + 'px';
   }
   _hideLoading(card);
+  clearTimeout(entry.maxTimer);
   delete _pendingReady[id];
+  delete _vizCards[id];
 }
 
 function _markError(id, message) {
+  /* P_viz-cleanup — the iframe may report a viz-error after the
+     registry entry has already been removed (e.g. timeout fired
+     first). Resolve the live card via the DOM in that case so the
+     error still surfaces without resurrecting a strong reference to
+     a card that should be GC-able. */
   var entry = _pendingReady[id] || _vizCards[id];
-  if (!entry) return;
-  var card = entry.card;
-  if (!card) { delete _pendingReady[id]; return; }
+  var card = entry && entry.card;
+  if (!card) card = document.getElementById(id);
+  if (!card) { delete _pendingReady[id]; delete _vizCards[id]; return; }
   if (card.getAttribute('data-viz-state') === 'error') return;
   card.setAttribute('data-viz-state', 'error');
   _hideLoading(card);
@@ -489,11 +507,15 @@ function _markError(id, message) {
     banner.className = 'viz-error';
     banner.innerHTML = '<span class="viz-error-icon">!</span><span class="viz-error-msg">' + esc(message || 'Canvas failed to render') + '</span>' +
       '<button type="button" class="viz-error-btn" data-action="viz-toggle-source">Show source</button>' +
-      '<pre class="viz-error-source" hidden>' + esc(entry.iframe.getAttribute('data-srcdoc') || '').slice(0, 2000) + '</pre>';
-    if (entry.iframe.parentNode === body) body.insertBefore(banner, entry.iframe);
+      '<pre class="viz-error-source" hidden>' + esc((entry && entry.iframe && entry.iframe.getAttribute('data-srcdoc')) || card.querySelector('iframe') && card.querySelector('iframe').getAttribute('data-srcdoc') || '').slice(0, 2000) + '</pre>';
+    var iframeEl = entry && entry.iframe;
+    if (!iframeEl) iframeEl = card.querySelector('iframe');
+    if (iframeEl && iframeEl.parentNode === body) body.insertBefore(banner, iframeEl);
+    _bindAction(banner.querySelector('.viz-error-btn'));
   }
-  clearTimeout(entry.maxTimer);
+  if (entry && entry.maxTimer) clearTimeout(entry.maxTimer);
   delete _pendingReady[id];
+  delete _vizCards[id];
 }
 
 var _msgListenerInstalled = false;
@@ -515,8 +537,7 @@ function _ensureMessageListener() {
       }
     } else if (data.type === 'viz-error') {
       var id2 = data.vizId;
-      var errorEntry = id2 && (_pendingReady[id2] || _vizCards[id2]);
-      if (errorEntry) _markError(id2, data.message);
+      _markError(id2, data.message);
     }
   });
 }
@@ -558,6 +579,10 @@ export function openVizModal(srcdoc, title) {
       '</div>' +
     '</div>';
   document.body.appendChild(modal);
+  /* P_viz-no-globalscan — modal close button must self-bind; the
+     processPendingVizActions() global [data-action] scan no longer
+     runs. */
+  _bindAction(modal.querySelector('[data-action="viz-close-modal"]'));
 }
 
 var _pendingActions = [];
@@ -566,11 +591,6 @@ export function processPendingVizActions() {
   var pending = _pendingActions;
   _pendingActions = [];
   pending.forEach(_bindActionsInCard);
-  var docEls = document.querySelectorAll('[data-action]');
-  for (var i = 0; i < docEls.length; i++) {
-    var el = docEls[i];
-    if (!el.__vizActionBound) _bindAction(el);
-  }
 }
 
 function _bindActionsInCard(item) {

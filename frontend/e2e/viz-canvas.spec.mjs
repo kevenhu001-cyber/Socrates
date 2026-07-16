@@ -197,3 +197,76 @@ test('plot card draws the function and posts viz-ready', async ({ page }) => {
   expect(srcdoc).toContain('__plot');
   expect(srcdoc).toContain('sin(x)');
 });
+
+test('ready viz cards release the iframe registry; late viz-error still surfaces', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route('**/api/chat/stream', async (route) => {
+    const htmlBody = [
+      '```html',
+      '<canvas id="cv" width="40" height="20" style="display:block;width:100%;height:60px"></canvas>',
+      '<script>setTimeout(function(){parent.postMessage({type:"viz-ready",vizId:window.__vizId},"*")},50);</script>',
+      '```',
+    ].join('\n');
+    const stream = [
+      'data: ' + JSON.stringify({ choices: [{ delta: { content: htmlBody } }] }) + '\n\n',
+      'data: [DONE]\n\n',
+    ].join('');
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
+  });
+  await page.goto('/');
+  await waitForAppShell(page);
+  await page.evaluate(async () => {
+    window.state.phase = 'chat';
+    window.state.currentSessionId = '55555555-5555-4555-8555-555555555555';
+    window.state.messages = [{ clientId: 'user-5', role: 'user', rawText: 'draw ready', html: null }];
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    await window.askChatTurn('draw ready');
+  });
+  const card = page.locator('.viz').last();
+  await expect(card).toHaveAttribute('data-viz-state', 'ready', { timeout: 6000 });
+  // After ready, the module-level registry should drop the card so
+  // the iframe is GC-eligible. We probe by exporting _vizCards and
+  // asserting the id is no longer present.
+  const released = await page.evaluate(() => {
+    const id = document.querySelector('.viz[data-viz-state="ready"]').id;
+    return id && (!window.__vizCards || !window.__vizCards[id]);
+  });
+  expect(released).toBe(true);
+  // Inject a viz-error postMessage from the iframe. The card should
+  // re-render the error banner even though the registry is empty.
+  await page.evaluate(() => {
+    const id = document.querySelector('.viz').id;
+    window.postMessage({ type: 'viz-error', vizId: id, message: 'late chart failure' }, '*');
+  });
+  await expect(card).toHaveAttribute('data-viz-state', 'error', { timeout: 3000 });
+  await expect(card.locator('.viz-error')).toContainText('late chart failure');
+  // Toggle-source button must still be functional without the
+  // global [data-action] scan.
+  await card.locator('.viz-error-btn').click();
+  await expect(card.locator('.viz-error-source')).toBeVisible();
+});
+
+test('processPendingVizActions does not trigger a document-wide [data-action] scan', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.goto('/');
+  await waitForAppShell(page);
+  const before = await page.evaluate(() => {
+    window.__vizActionScanCount = 0;
+    const orig = document.querySelectorAll.bind(document);
+    document.querySelectorAll = function (sel) {
+      if (sel === '[data-action]') window.__vizActionScanCount += 1;
+      return orig(sel);
+    };
+    return window.__vizActionScanCount;
+  });
+  expect(before).toBe(0);
+  // Call processPendingVizActions many times — under the old code
+  // every call did a full document-wide querySelectorAll. The new
+  // path only walks the explicit _pendingActions queue.
+  await page.evaluate(() => {
+    for (var i = 0; i < 50; i++) window.processPendingVizActions();
+  });
+  const after = await page.evaluate(() => window.__vizActionScanCount);
+  expect(after).toBe(0);
+});

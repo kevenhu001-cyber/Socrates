@@ -5,6 +5,7 @@
    ============================================================ */
 
 import { esc } from './render/helpers.js';
+import { webSearchOn, setWebSearchOn } from './config/providers.js';
 
 /* P_init-sync — providers가 서버에서 로드되었는지 추적.
    syncModelPills()가 providers=[] 상태에서 "Add a model"을 렌더링하지 않고
@@ -366,10 +367,9 @@ document.addEventListener("keydown",function(e){
 
 /* ── Web search toggle (used by extensions picker and settings) ── */
 function toggleWebSearch(){
-  window.webSearchOn=!window.webSearchOn;
-  try{localStorage.setItem("socrates-websearch",JSON.stringify(window.webSearchOn))}catch(e){}
+  var next = setWebSearchOn(!webSearchOn);
   syncWebSearchUI();
-  if(!window.webSearchOn){
+  if(!next){
     window.state.searchContext="";
     window.state.searchContextAt=0;
     window.state.searchContextCount=0;
@@ -383,9 +383,9 @@ function toggleWebSearch(){
 }
 function syncWebSearchUI(){
   syncExtensionsUI();
-  if(window.webSearchOn&&window.state.topic&&!window.state.searchContext){
+  if(webSearchOn&&window.state.topic&&!window.state.searchContext){
     window.fetchWebContext(window.state.topic);
-  }else if(!window.webSearchOn){
+  }else if(!webSearchOn){
     var p=document.getElementById("searchPill");if(p)p.classList.add("hidden");
   }
 }
