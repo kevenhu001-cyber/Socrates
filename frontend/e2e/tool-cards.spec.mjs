@@ -11,6 +11,7 @@ const ONE_PIXEL_PNG = Buffer.from(
 );
 
 test('tool cards show expanded web results, execution output, and image artifacts', async ({ page }) => {
+  const longStdout = 'answer: 42\n' + Array.from({ length: 140 }, (_, i) => `line ${i + 1}: streamed diagnostic output`).join('\n');
   await mockAuthedApp(page);
   await page.route('**/api/files/plot-1/raw**', async (route) => {
     await route.fulfill({ status: 200, contentType: 'image/png', body: ONE_PIXEL_PNG });
@@ -22,7 +23,7 @@ test('tool cards show expanded web results, execution output, and image artifact
       'event: tool_use\ndata: [{"id":"code-1","name":"code_interpreter","input":{"language":"python","code":"import matplotlib.pyplot as plt\\nprint(42)\\nplt.plot([0, 1])\\nplt.savefig(\u0027artifacts/plot.png\u0027)\\n# generated for the learner"}}]\n\n',
       'event: tool_progress\ndata: {"id":"code-1","phase":"ready","chunk":"","elapsedMs":5}\n\n',
       'event: tool_progress\ndata: {"id":"code-1","phase":"stdout","chunk":"answer: 42\\n","elapsedMs":12}\n\n',
-      'event: tool_result\ndata: {"id":"code-1","ok":true,"status":"completed","output":"answer: 42\\n","stderr":"plot backend: ok","durationMs":15,"artifacts":[{"id":"plot-1","mimeType":"image/png"}]}\n\n',
+      'event: tool_result\ndata: ' + JSON.stringify({ id: 'code-1', ok: true, status: 'completed', output: longStdout, stderr: 'plot backend: ok', durationMs: 15, artifacts: [{ id: 'plot-1', mimeType: 'image/png' }] }) + '\n\n',
       'data: {"choices":[{"delta":{"content":"Completed the requested work."}}]}\n\n',
       'data: [DONE]\n\n',
     ].join('');
@@ -45,15 +46,21 @@ test('tool cards show expanded web results, execution output, and image artifact
   const search = page.locator('.agent-tool-card.websearch').last();
   await expect(search).toHaveClass(/open/);
   await expect(search.locator('.web-search-results')).toBeVisible();
+  await expect(search.locator('.wsr-header')).toContainText('2 sources for "Socrates learning"');
   await expect(search.locator('.wsr-title')).toHaveCount(2);
   await expect(search.locator('.wsr-title').first()).toHaveAttribute('href', 'https://example.test/source');
   await expect(search.locator('.wsr-title').nth(1)).toHaveAttribute('href', '#');
+  await expect(search.locator('.wsr-title').nth(1)).toHaveClass(/is-disabled/);
+  await expect(search.locator('.wsr-title').nth(1)).toHaveAttribute('tabindex', '-1');
 
   const code = page.locator('.agent-tool-card.codeint').last();
   await expect(code).toHaveClass(/open/);
   await expect(code.locator('.agent-tool-code')).toContainText('plt.savefig');
   await expect(code.locator('.agent-tool-out')).toContainText('answer: 42');
   await expect(code.locator('.agent-tool-out')).toContainText('[stderr]');
+  await expect(code.locator('.agent-tool-output-text')).toHaveClass(/is-collapsed/);
+  await code.locator('.agent-tool-output-toggle').click();
+  await expect(code.locator('.agent-tool-output-text')).not.toHaveClass(/is-collapsed/);
   await expect(code.locator('img.exec-artifact-image')).toBeVisible();
 
   const header = code.locator('.agent-tool-head');

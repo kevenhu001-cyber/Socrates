@@ -1,0 +1,20 @@
+{
+  "name": "socrates-capacitor",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Bundled Android Capacitor client for Socrates",
+  "scripts": {
+    "web:build": "npm --prefix ../frontend run build",
+    "sync": "npm run web:build && npx cap sync android",
+    "apk:debug": "npm run sync && cd android && gradlew.bat assembleDebug",
+    "apk:release": "npm run sync && cd android && gradlew.bat assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
+    "typescript": "^7.0.2"
+  }
+}
