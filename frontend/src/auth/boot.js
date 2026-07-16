@@ -38,7 +38,12 @@ export async function authBoot(){
   if(shareToken){
     /* Shared session view — load immediately, no auth needed for public. */
     history.replaceState(null,"",location.pathname);
-    try{window.loadSharedSession(shareToken)}catch(_){}
+    try{
+      var sharePromise = window.loadSharedSession(shareToken);
+      if (sharePromise && typeof sharePromise.then === "function") {
+        await sharePromise;
+      }
+    }catch(_){}
     return;
   }
 

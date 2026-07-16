@@ -78,45 +78,54 @@ export async function checkLockout(email) {
  * Record a failed attempt. Call this from the login() function
  * when bcrypt says "no match".
  *
- * Uses PostgreSQL upsert semantics so concurrent failures don't race
- * past the threshold. The firstAt window is preserved unless the
- * window has elapsed (we reset count + firstAt in that case).
+ * Concurrency-safe: uses a single atomic upsert so two concurrent
+ * failures can never observe the same baseline and overwrite each
+ * other with the same absolute count. The `count = count + 1`
+ * increment lives in the ON CONFLICT branch, where PostgreSQL
+ * serialises conflicting writes per row.
+ *
+ * Window logic (also inside the SQL):
+ *   - If the existing row's `first_at` is inside the rolling window
+ *     AND there is no active lock, increment count and (when the
+ *     threshold is reached) set `locked_until`.
+ *   - If the window has elapsed (or the row is absent), reset
+ *     `count` to 1 and refresh `first_at` to now.
+ *   - If a lock is already in force, leave the row untouched so
+ *     concurrent failures don't reset the lockout clock.
  */
 export async function recordFailure(email) {
   if (!email) return;
   const db = getDb();
   const key = email.toLowerCase();
   const now = new Date();
-  const windowStart = new Date(now.getTime() - WINDOW_MS);
-
-  const [existing] = await db.select().from(loginFailures)
-    .where(eq(loginFailures.email, key)).limit(1);
-
-  let newCount;
-  let lockedUntil = null;
-  if (!existing || existing.firstAt < windowStart) {
-    // Fresh window — start over at 1.
-    newCount = 1;
-  } else {
-    newCount = existing.count + 1;
-    if (newCount >= THRESHOLD) {
-      lockedUntil = new Date(now.getTime() + LOCKOUT_MS);
-    }
-  }
+  const lockedUntil = new Date(now.getTime() + LOCKOUT_MS);
 
   await db.insert(loginFailures)
     .values({
       email: key,
-      count: newCount,
-      firstAt: existing && existing.firstAt >= windowStart ? existing.firstAt : now,
-      lockedUntil,
+      count: 1,
+      firstAt: now,
+      lockedUntil: null,
     })
     .onConflictDoUpdate({
       target: loginFailures.email,
       set: {
-        count: newCount,
-        firstAt: existing && existing.firstAt >= windowStart ? existing.firstAt : now,
-        lockedUntil,
+        count: sql`CASE
+          WHEN ${loginFailures.lockedUntil} IS NOT NULL AND ${loginFailures.lockedUntil} > NOW() THEN ${loginFailures.count}
+          WHEN ${loginFailures.firstAt} < ${new Date(now.getTime() - WINDOW_MS)} THEN 1
+          ELSE ${loginFailures.count} + 1
+        END`,
+        firstAt: sql`CASE
+          WHEN ${loginFailures.lockedUntil} IS NOT NULL AND ${loginFailures.lockedUntil} > NOW() THEN ${loginFailures.firstAt}
+          WHEN ${loginFailures.firstAt} < ${new Date(now.getTime() - WINDOW_MS)} THEN ${now}
+          ELSE ${loginFailures.firstAt}
+        END`,
+        lockedUntil: sql`CASE
+          WHEN ${loginFailures.lockedUntil} IS NOT NULL AND ${loginFailures.lockedUntil} > NOW() THEN ${loginFailures.lockedUntil}
+          WHEN ${loginFailures.count} + 1 >= ${THRESHOLD} THEN ${lockedUntil}
+          WHEN ${loginFailures.firstAt} < ${new Date(now.getTime() - WINDOW_MS)} THEN NULL
+          ELSE ${loginFailures.lockedUntil}
+        END`,
       },
     });
 }

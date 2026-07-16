@@ -5,9 +5,11 @@
  * / web-search helpers (L9895-L9979).
  *
  * Touches via window.*:
- *   CURRENT_USER, state, escapeHtml, esc, t, webSearchOn, loadCustomInstructions,
+ *   CURRENT_USER, state, escapeHtml, esc, t, loadCustomInstructions,
  *   saveCustomInstructions, apiFetch, syncModelPills, closeProfile (self)
  */
+
+import { webSearchOn, setWebSearchOn } from '../config/providers.js';
 
 /* ─── User footer + profile modal shell ─── */
 
@@ -146,15 +148,14 @@ function getCustomInstructionsString() {
 /* ─── Web search toggle ─── */
 
 function toggleProfileWebSearch() {
-  window.webSearchOn = !window.webSearchOn;
-  try { localStorage.setItem("socrates-websearch", JSON.stringify(window.webSearchOn)); } catch (e) {}
+  setWebSearchOn(!webSearchOn);
   syncProfileWebSearchUI();
 }
 
 function syncProfileWebSearchUI() {
   var track = document.getElementById("profileWebSearchTrack");
   if (!track) return;
-  if (window.webSearchOn) { track.classList.add("on"); } else { track.classList.remove("on"); }
+  if (webSearchOn) { track.classList.add("on"); } else { track.classList.remove("on"); }
 }
 
 /* ─── Cross-session memory loader ─── */

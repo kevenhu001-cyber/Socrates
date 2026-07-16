@@ -162,7 +162,15 @@ function saveSettings() {
   })).then(function () {
     renderProviderList();
     if (lastValid) apiConfig.activeId = lastValid;
-    window.saveLastActiveId(lastValid);
+    /* P_saveLastActive-bug — only persist when the server actually
+       acknowledged at least one provider save. Saving the string "null"
+       on a fully-failed run would be loaded back as truthy on next
+       boot and confuse the active-provider resolver. */
+    if (lastValid) {
+      window.saveLastActiveId(lastValid);
+    } else {
+      window.saveLastActiveId(null);
+    }
     window.syncModelPills();
     try { window.syncModels(); } catch (e) {}
     window.syncChatModel();

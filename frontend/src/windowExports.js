@@ -25,10 +25,11 @@ import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
 window.SERVER_HAS_BEAGLE_KEY = SERVER_HAS_BEAGLE_KEY;
 
 /* ─── config/providers.js — MUST come first (apiConfig consumed by every other module) ─── */
-import { apiConfig, appMode, webSearchOn, extensiveThinkingOn, BEAGLE_BUILT_IN, isReasoningProvider, isMiniMaxProvider, pickStreamBudgets, hasUsableActive, ensureSessionShape, syncAppModeUI, syncSidebarForMode, LAST_ACTIVE_ID_KEY, saveLastActiveId, loadLastActiveId, thinkingOn } from './config/providers.js';
+import { apiConfig, appMode, webSearchOn, setWebSearchOn, extensiveThinkingOn, BEAGLE_BUILT_IN, isReasoningProvider, isMiniMaxProvider, pickStreamBudgets, hasUsableActive, ensureSessionShape, syncAppModeUI, syncSidebarForMode, LAST_ACTIVE_ID_KEY, saveLastActiveId, loadLastActiveId, thinkingOn } from './config/providers.js';
 window.apiConfig = apiConfig;
 window.appMode = appMode;
 window.webSearchOn = webSearchOn;
+window.setWebSearchOn = setWebSearchOn;
 window.extensiveThinkingOn = extensiveThinkingOn;
 window.BEAGLE_BUILT_IN = BEAGLE_BUILT_IN;
 window.isReasoningProvider = isReasoningProvider;
@@ -83,8 +84,10 @@ window.sanitizeUrl = sanitizeUrl;
 window.sanitizeUrls = sanitizeUrls;
 
 /* ─── render/viz.js ─── */
-import { openVizModal } from './render/viz.js';
+import { openVizModal, processPendingViz, processPendingVizActions } from './render/viz.js';
 window.__vizOpenModal = openVizModal;
+window.processPendingViz = processPendingViz;
+window.processPendingVizActions = processPendingVizActions;
 
 /* ─── render/markdown.js ─── */
 import { stripMarkdown, findLastUserMessage } from './render/markdown.js';

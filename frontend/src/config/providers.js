@@ -46,6 +46,13 @@ try {
 /* P_privacy-leak — built-in providers don't expose their model name,
  * so the regex-based check below would always return false for them.
  * Use the boolean capability hint bridged from /api/config instead. */
+function setWebSearchOn(value) {
+  webSearchOn = !!value;
+  try { window.webSearchOn = webSearchOn; } catch (e) {}
+  try { localStorage.setItem("socrates-websearch", JSON.stringify(webSearchOn)); } catch (e) {}
+  return webSearchOn;
+}
+
 function _isReasoningForActive() {
   var active = apiConfig.activeId;
   if (!active) return false;
@@ -190,15 +197,24 @@ async function refreshApiConfig() {
 var LAST_ACTIVE_ID_KEY = "socrates-last-active-id";
 
 function saveLastActiveId(id) {
-  try { localStorage.setItem(LAST_ACTIVE_ID_KEY, id); } catch (e) {}
+  try {
+    if (!id || id === "null" || id === "undefined") {
+      localStorage.removeItem(LAST_ACTIVE_ID_KEY);
+      return;
+    }
+    localStorage.setItem(LAST_ACTIVE_ID_KEY, String(id));
+  } catch (e) {}
 }
 
 function loadLastActiveId() {
-  try { return localStorage.getItem(LAST_ACTIVE_ID_KEY) || null; } catch (e) { return null; }
+  try {
+    var value = localStorage.getItem(LAST_ACTIVE_ID_KEY);
+    return value && value !== "null" && value !== "undefined" ? value : null;
+  } catch (e) { return null; }
 }
 
 export {
-  BEAGLE_BUILT_IN, apiConfig, webSearchOn, extensiveThinkingOn, appMode, thinkingOn,
+  BEAGLE_BUILT_IN, apiConfig, webSearchOn, setWebSearchOn, extensiveThinkingOn, appMode, thinkingOn,
   isReasoningProvider, pickStreamBudgets, hasUsableActive,
   isMiniMaxProvider, ensureSessionShape,
   syncAppModeUI, syncSidebarForMode, setAppMode,

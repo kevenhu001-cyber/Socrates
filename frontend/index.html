@@ -570,15 +570,15 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>
-    <div class="share-opt" id="shareOptPublic" onclick="selectShareVis('public')">
-      <div class="share-opt-radio"></div>
+    <div class="share-opt" id="shareOptPublic" data-share-vis="public" role="radio" tabindex="0" onclick="selectShareVis('public')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectShareVis('public')}">
+      <div class="share-opt-radio"><span class="share-opt-radio-dot"></span></div>
       <div class="share-opt-body">
         <div class="share-opt-title" data-i18n-key="share.publicTitle">Anyone with the link</div>
         <div class="share-opt-desc" data-i18n-key="share.publicDesc">No sign-in required. Anyone who has the link can view this conversation.</div>
       </div>
     </div>
-    <div class="share-opt" id="shareOptPrivate" onclick="selectShareVis('private')">
-      <div class="share-opt-radio"></div>
+    <div class="share-opt" id="shareOptPrivate" data-share-vis="private" role="radio" tabindex="0" onclick="selectShareVis('private')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectShareVis('private')}">
+      <div class="share-opt-radio"><span class="share-opt-radio-dot"></span></div>
       <div class="share-opt-body">
         <div class="share-opt-title" data-i18n-key="share.privateTitle">Only you</div>
         <div class="share-opt-desc" data-i18n-key="share.privateDesc">Must be logged into your account to view. Still shared via link.</div>

@@ -93,6 +93,12 @@ const PYODIDE_VERSION = process.env.EXEC_PYODIDE_VERSION || '0.26.4';
 const DEFAULT_TIMEOUT_MS = parseInt(process.env.EXEC_TIMEOUT_MS_DEFAULT || '30000', 10);
 const MAX_OUTPUT_BYTES = parseInt(process.env.EXEC_MAX_OUTPUT_BYTES || '65536', 10);
 const MAX_ARTIFACT_BYTES = parseInt(process.env.EXEC_MAX_ARTIFACT_BYTES || '10485760', 10);
+/* P_code-size-cap — cap the source a single execution can carry so
+   neither the `executions.code` row nor the in-memory worker buffer
+   can be weaponised into a deniability-of-storage surface. The chat
+   schema already caps message content at 200 KB; we mirror that for
+   the tool's own code argument. */
+const MAX_CODE_CHARS = parseInt(process.env.EXEC_MAX_CODE_CHARS || '200000', 10);
 const SCRATCH_DIR = process.env.EXEC_SCRATCH_DIR
   || (process.env.NODE_ENV === 'production' ? '/var/lib/socrates/exec' : path.join(os.tmpdir(), 'socrates-exec'));
 
@@ -130,6 +136,7 @@ export const CODE_INTERPRETER_TOOL = {
         code: {
           type: 'string',
           description: 'Python source code to execute. State does not persist across calls.',
+          maxLength: 200000,
         },
       },
       required: ['code'],
@@ -374,16 +381,30 @@ class PyodidePool {
 
 let pool = null;
 let _poolInitLock = null;
+/* P_pool-retry — `_poolInitLock` was previously a Promise that, on
+   failure, was never cleared. Every subsequent getPool() call would
+   await the same rejected promise and re-throw, permanently disabling
+   the executor. We now wrap the IIFE in try/finally so a transient
+   boot failure (e.g. the worker file was briefly unreadable) lets the
+   next caller retry. Concurrent first-callers still share a single
+   in-flight init via the captured promise. */
 async function getPool() {
   if (pool) return pool;
   if (EXEC_RUNNER === 'disabled') return null;
   if (!_poolInitLock) {
     _poolInitLock = (async () => {
-      pool = new PyodidePool({ size: POOL_SIZE });
-      console.log(`[code-interpreter] pool ready (${POOL_SIZE} workers, pyodide ${PYODIDE_VERSION})`);
+      try {
+        pool = new PyodidePool({ size: POOL_SIZE });
+        console.log(`[code-interpreter] pool ready (${POOL_SIZE} workers, pyodide ${PYODIDE_VERSION})`);
+      } finally {
+        /* Clear the lock so a later call can retry on failure. The
+           next caller sees `pool === null` (init never produced one)
+           and starts a fresh init. On success the lock is cleared
+           and subsequent callers short-circuit on `pool`. */
+        _poolInitLock = null;
+      }
     })();
   }
-  // Wait for the init to complete (in case another fiber started it)
   await _poolInitLock;
   return pool;
 }
@@ -529,6 +550,25 @@ export const codeInterpreter = {
     const timeoutMs = opts.timeoutMs || DEFAULT_TIMEOUT_MS;
     const signal = opts.signal || null;
     const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
+
+    /* P_code-size-cap — reject oversized sources BEFORE we touch
+       the database, the scratch dir, or the worker pool. The user
+       sees a stable 'failed/code_too_large' status and we never
+       persist a 10 MB `executions.code` row. */
+    if (code.length > MAX_CODE_CHARS) {
+      const maxKb = Math.round(MAX_CODE_CHARS / 1024);
+      return {
+        status: 'failed',
+        errorMessage: `code_too_large: source exceeds ${maxKb} KB limit`,
+        stdout: '',
+        stderr: '',
+        exitCode: 1,
+        durationMs: 0,
+        artifacts: [],
+        artifactFileIds: [],
+        artifactCount: 0,
+      };
+    }
 
     const pool = await getPool();
     if (!pool) {

@@ -3008,7 +3008,7 @@ async function startSession(){
   if(webSearchOn){
     try{
       var diagLoading=document.querySelector("#diagnosticView .diag-loading");
-      diagSearchLog=startSearchProgress(topic,{mount:diagLoading,collapsed:false});
+      diagSearchLog=startSearchProgress(topic,{mount:diagLoading});
       /* Background search — don't await. Diagnostic questions start
          immediately; search context is ready by the teaching phase. */
       fetchWebContext(topic,{onStep:function(ev){if(diagSearchLog)diagSearchLog.onStep(ev)}}).then(function(sc){
@@ -8469,6 +8469,11 @@ window.toggleAppMode = toggleAppMode;
      grounding. */
 var SEARCH_REFRESH_EVERY=5;
 var SEARCH_TIMEOUT_MS=12000;
+/* Hard cap on /api/web-search POSTs per single fetchWebContext call.
+   Each query variant + the retry (if all fail) consumes one. This
+   caps the total backend search volume and prevents runaway costs
+   when the rewriter generates many alternatives. */
+var MAX_WS_CALLS=5;
 
 async function fetchWebContext(topic,opts){
   opts=opts||{};
@@ -8520,6 +8525,9 @@ async function fetchWebContext(topic,opts){
   if(queries.indexOf(topic)===-1)queries.push(topic);
   /* Cap to 6 for a good balance of breadth vs latency. */
   if(queries.length>6)queries=queries.slice(0,6);
+  /* Honor the per-call search budget — reserve one slot for the retry. */
+  var _wsRemaining=MAX_WS_CALLS;
+  if(queries.length>_wsRemaining)queries=queries.slice(0,_wsRemaining);
   _emit("expanding",{queries:queries.slice(),count:queries.length});
   /* Always do at least one search; dedupe results by URL. */
   var ac=new AbortController();
@@ -8530,6 +8538,7 @@ async function fetchWebContext(topic,opts){
     var seenUrls={};
     var searches=queries.map(function(q,idx){
       _emit("querying",{query:q,idx:idx,total:queries.length});
+      _wsRemaining--;
       return apiFetchRaw("/api/web-search",{
         method:"POST",
         body:{query:q,count:8},
@@ -8556,8 +8565,9 @@ async function fetchWebContext(topic,opts){
     clearTimeout(tmo);
     /* If every search failed AND we used the rewriter, retry once with
        the raw topic — sometimes the rewriter is too aggressive. */
-    if(!searchResults.length&&queries[0]!==topic){
+    if(!searchResults.length&&queries[0]!==topic&&_wsRemaining>0){
       _emit("retry",{reason:"all-failed",query:topic});
+      _wsRemaining--;
       try{
         var r2=await apiFetchRaw("/api/web-search",{
           method:"POST",

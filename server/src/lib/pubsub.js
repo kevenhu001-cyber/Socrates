@@ -98,10 +98,12 @@ let reconnectTimer = null;
  * pass a `local: true` option which uses the local emitter — useful
  * for tests.)
  *
- * @param {string} topic   e.g. "exec_progress:abc-123"
- * @param {object} payload any JSON-serialisable object
+ * @param {string} topic          e.g. "exec_progress:abc-123"
+ * @param {object} payload        any JSON-serialisable object
+ * @param {object} [opts]
+ * @param {boolean} [opts.local]  force the local emitter (bypass PG)
  */
-export async function publish(topic, payload) {
+export async function publish(topic, payload, opts = {}) {
   if (!isValidTopic(topic)) {
     logger.child({ module: 'pubsub' }).warn('publish_invalid_topic', { topic });
     return;
@@ -112,16 +114,15 @@ export async function publish(topic, payload) {
     // huge stdout buffer is acceptable; losing the whole event
     // because the SSE client never sees anything is worse.
     const truncated = json.slice(0, MAX_PAYLOAD_BYTES - 32) + '...truncated';
-    return publishRaw(topic, truncated);
+    return publishRaw(topic, truncated, !!opts.local);
   }
-  return publishRaw(topic, json);
+  return publishRaw(topic, json, !!opts.local);
 }
 
-async function publishRaw(topic, json) {
-  /* If the listener is up, route through PG. Otherwise fall back to
-     local emitter so a single-process dev session works. The fallback
-     path explicitly logs at warn so an operator sees the degradation. */
-  if (pgListenerReady && pgClient) {
+async function publishRaw(topic, json, forceLocal) {
+  /* If the listener is up AND the caller did not opt into the local
+     emitter, route through PG. */
+  if (!forceLocal && pgListenerReady && pgClient) {
     try {
       // pg_notify takes BOTH arguments as text literals — they're
       // string values, not identifiers. (P_pg-channel-identifier: the
@@ -133,12 +134,14 @@ async function publishRaw(topic, json) {
       await pgClient.query(`SELECT pg_notify(${channelLit}, ${payloadLit})`);
       return;
     } catch (err) {
-      // Don't crash the publish path — drop the event and log.
-      // The caller has already written to DB so the event is recoverable
-      // via the executions row.
-      logger.child({ module: 'pubsub', op: 'publish' }).warn('publish_failed', {
+      // Don't crash the publish path — log at warn and still try to
+      // deliver to in-process subscribers via the local emitter so a
+      // brief PG hiccup doesn't strand the SSE consumer. PG-down is
+      // a degraded mode; a single failed NOTIFY is too.
+      logger.child({ module: 'pubsub', op: 'publish' }).warn('publish_pg_failed_using_local', {
         topic, error: err.message,
       });
+      _localEmitter.emit('local', topic, json);
       return;
     }
   }
@@ -146,7 +149,7 @@ async function publishRaw(topic, json) {
   if (!_localEmitter.listenerCount('__degraded__')) {
     logger.child({ module: 'pubsub' }).warn(
       'publish_using_local_fallback',
-      { topic, reason: pgListenerReady ? 'no_client' : 'pg_not_ready' }
+      { topic, reason: forceLocal ? 'local_forced' : (pgListenerReady ? 'no_client' : 'pg_not_ready') }
     );
   }
   _localEmitter.emit('local', topic, json);
@@ -219,9 +222,17 @@ export function subscribeLocal(topic, handler) {
 }
 
 /**
- * Diagnostic: number of distinct topics currently subscribed, and
- * whether the PG listener is up. Cheap; safe to call from /api/health.
+ * Test-only: drop all in-process subscribers and reset internal
+ * counters. Not part of the public API — used by server/test/pubsub.test.js
+ * to keep tests isolated when run alongside the live module.
  */
+export function _resetForTests() {
+  handlers.clear();
+  listenedTopics.clear();
+  _localEmitter.removeAllListeners('local');
+}
+
+
 export function getStatus() {
   return {
     pgListenerReady,
@@ -356,7 +367,11 @@ function scheduleReconnect() {
    means a process that publishes through the fallback (because its
    PG isn't ready yet) still feeds its own SSE subscribers. */
 _localEmitter.on('local', (topic, json) => {
-  const set = handlers.get(topic);
+  /* P_pubsub-key-encoding — the handlers map is keyed by the encoded
+     channel name (see subscribe / subscribeLocal). Looking up by the
+     raw topic skips every topic that contains a colon or hyphen and
+     silently drops the event. */
+  const set = handlers.get(encodeChannel(topic));
   if (!set || set.size === 0) return;
   let payload;
   try { payload = JSON.parse(json); } catch (_) { return; }
