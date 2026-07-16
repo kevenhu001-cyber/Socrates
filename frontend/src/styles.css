@@ -1882,7 +1882,14 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
      visual dependency on the JS path. */
 .viz[data-viz-state="ready"] .viz-loading,
 .viz[data-viz-state="error"] .viz-loading{display:none}
-.viz[data-viz-state="loading"] iframe{visibility:hidden}
+/* P_viz-no-blank — the iframe is left visible while in the
+   "loading" state. The skeleton-fadeout animation above takes
+   the .viz-loading overlay out of view after ~800ms; once it
+   is gone, the iframe content is already on screen. Previously
+   the iframe was `visibility:hidden` while loading, so any path
+   where the JS handshake (postMessage viz-ready) failed left the
+   card blank after the skeleton faded. */
+.viz[data-viz-state="loading"] iframe{visibility:visible}
 @keyframes viz-skeleton-fadeout{
   0%{opacity:1;max-height:80px}
   80%{opacity:1;max-height:80px}

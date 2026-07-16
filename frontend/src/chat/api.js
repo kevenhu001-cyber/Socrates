@@ -132,7 +132,7 @@ export async function callAPI(messages,maxTokens){
        truncation. Use the same 10-minute total budget + 2-retry
        pattern as the streaming path so a slow first attempt has a
        chance to recover. */
-    var BEAGLE_NONSTREAM_MAX=2;
+    var BEAGLE_NONSTREAM_MAX=4;
     var beagleAttempt=0;
     var lastBeagleErr=null;
     while(beagleAttempt<BEAGLE_NONSTREAM_MAX){
@@ -206,7 +206,7 @@ export async function callAPI(messages,maxTokens){
     return null;
   }
   /* Non-built-in provider: same retry logic, same timeouts. */
-  var NONSTREAM_MAX=2;
+  var NONSTREAM_MAX=4;
   var nsAttempt=0;
   var lastNsErr=null;
   while(nsAttempt<NONSTREAM_MAX){
@@ -242,10 +242,12 @@ export async function callAPI(messages,maxTokens){
           try { showToast && showToast(state.lastCallError, 8000); } catch (_) {}
           return null;
         }
+        /* Regular rate limit — retry up to NONSTREAM_MAX times before
+           showing the error. Set lastNsErr and fall through so the
+           retry loop below treats it as retryable (STREAM_RETRYABLE_STATUS[429] is true). */
         var retryAfterN = e && e.body && typeof e.body.retryAfterSeconds === "number" ? e.body.retryAfterSeconds : null;
-        state.lastCallError = "Slow down — too many requests. Try again in " + formatMinutesApi(retryAfterN) + ".";
-        try { showToast && showToast(state.lastCallError, 5000); } catch (_) {}
-        return null;
+        lastNsErr = "Rate limited (429). Try again in " + formatMinutesApi(retryAfterN) + ".";
+        /* Fall through to the retry check below. */
       }
       if(!userCancelledN&&(isHbN||isTotN||STREAM_RETRYABLE_STATUS[eStatus])&&nsAttempt<NONSTREAM_MAX){
         var raHdr=e&&e.body&&e.body.headers?e.body.headers.get("Retry-After"):null;

@@ -79,7 +79,9 @@ You have access to tools (web_search, code_interpreter) that the system provides
 
 - Use web_search when the topic is time-sensitive, when the user has explicitly asked you to search, or when you lack information that cannot be reasonably inferred. Do not search for conceptual questions, coding help, or general knowledge.
 
-- Use code_interpreter for arithmetic, data manipulation, plotting, or quick verification of numeric claims. Each call is a fresh interpreter with no persistent state.
+- Use code_interpreter ONLY for arithmetic, data manipulation, or quick verification of numeric claims. Each call is a fresh interpreter with no persistent state.
+- code_interpreter is for mathematical data-line plots (generated from numeric data with matplotlib). Do NOT use code_interpreter for illustrations, drawings, or pictures of concrete subjects — those belong in a \`\`\`viz block as hand-written SVG.
+- Use \`\`\`viz blocks (inline SVG/HTML) for illustrations, diagrams, drawings, pictures of concrete subjects (animals, people, scenes, logos, icons), and any non-data visual content.
 
 - When the user shares a URL, the system prepends a [Referenced page] block. Use it as your source. Cite inline with [1], [2] matching the order of referenced pages. End with sources in the format [1] Title (URL).`;
 
@@ -109,6 +111,7 @@ You have web_search and code_interpreter available via the function-calling inte
 
 - Use web_search for time-sensitive or factual questions you cannot answer from training.
 - Use code_interpreter for arithmetic, data manipulation, or quick verification of numeric claims.
+- Do NOT use code_interpreter for illustrations, drawings, or pictures of concrete subjects — those go in a \`\`\`viz block as hand-written SVG.
 
 The system injects a [Web research] block when web search has run for this turn. Treat its results as fresh and authoritative, and cite them inline as [1], [2], etc. matching the order of referenced pages. If no [Web research] block is present, you do not have live web access for this turn — say so honestly rather than guessing about current events, prices, dates, or anything that may have changed since your training cutoff.
 

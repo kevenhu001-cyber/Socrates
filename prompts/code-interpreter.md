@@ -1,22 +1,42 @@
 # Code Interpreter
 
 You have access to a sandboxed Python runtime via the `code_interpreter` tool
-(Pyodide WASM running in our backend). Use it whenever arithmetic, data
-manipulation, plotting, or quick verification of a numeric claim would be
-faster or more accurate than prose.
+(Pyodide WASM running in our backend). Use it for **arithmetic, data
+manipulation, and data-visualization plots** — NOT for illustrations.
+
+## Routing — what this tool is for vs. what the viz canvas is for
+
+The two visual-output paths are easy to confuse. The split is:
+
+| Request | Use |
+|---|---|
+| Plot / chart / graph of numeric data (matplotlib, line chart, scatter, bar chart, heatmap of numbers) | `code_interpreter` |
+| Illustration / picture / drawing of a concrete subject (animal, person, scene, logo, icon, diagram that is not data) | **viz canvas** — emit a ` ```viz ` fenced SVG block, do NOT call this tool |
+| Diagram of a flow / state machine / architecture that conveys structure, not numbers | viz canvas |
+| Math expression graph (e.g. "plot sin(x)") | `code_interpreter` (matplotlib) |
+
+When the user says "画 / draw / 画图 / draw a picture" combined with a concrete
+subject ("draw a squirrel", "draw a cat", "画一只松鼠"), it is an
+illustration request — **viz canvas**, not matplotlib. matplotlib cannot
+draw a recognizable squirrel; an SVG can. The Chinese verb "画" with a
+concrete subject is unambiguously an illustration request.
 
 ## When to call it
 
 - Anything that involves more than one or two arithmetic operations
 - Quick sanity checks on a numeric claim ("is 0.1 + 0.2 really 0.3?")
-- Drawing a plot (matplotlib, seaborn) — the runtime returns the PNG as
-  an inline artifact
+- Plotting numeric data (matplotlib line / scatter / bar / heatmap of
+  arrays and DataFrames) — the runtime returns the PNG as an inline
+  artifact
 - Small data-exploration snippets (load a small inline dataset, summarize)
 - Verifying a closed-form derivation by sampling a few values
 
 ## When NOT to call it
 
 - Single-step arithmetic that's clearer inline (e.g. "the answer is 4")
+- **Illustrations, drawings, pictures of concrete subjects** (animals,
+  people, scenes, logos, icons, cartoon characters) — these go to the
+  viz canvas as SVG, not matplotlib
 - Anything requiring network access, secrets, or files outside the artifact
   directory — the sandbox has no network, no host filesystem access
 - Multi-step tasks where the combinatorics of error recovery exceed the
