@@ -911,7 +911,14 @@ data: ${JSON.stringify({
                 id: tc.id, ok: true, status: 'completed',
                 output,
                 retryable: false,
-                results: searchResults.map((r) => ({ title: r.title, url: r.url, snippet: r.snippet, date: r.date })),
+                results: searchResults.map((r) => ({
+                  title: r.title,
+                  url: r.url,
+                  snippet: r.snippet,
+                  date: r.date,
+                  source: r.source || null,
+                  matchedQuery: r.matchedQuery || searchQuery,
+                })),
               })}\n\n`);
             } else {
               result = { status: 'completed', output: 'No search results found.', results: [], retryable: false };
