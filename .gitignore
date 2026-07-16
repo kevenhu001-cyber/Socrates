@@ -26,6 +26,9 @@ Thumbs.db
 # ── OpenCode / IDE ──
 .omo/
 
+# ── Firecrawl CLI cache ──
+.firecrawl/
+
 # ── Local tooling artifacts ──
 .codegraph/
 codegraph.db

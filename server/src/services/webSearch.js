@@ -3,6 +3,7 @@ import { detectLanguageCluster } from './scoring.js';
 import * as searchResultCache from '../lib/searchResultCache.js';
 import { searchMinimax } from './searchEngines/minimax.js';
 import { searchMmx } from './searchEngines/mmx.js';
+import { searchFirecrawl } from './searchEngines/firecrawl.js';
 import { searchSearxng } from './searchEngines/searxng.js';
 import { searchBing } from './searchEngines/bing.js';
 
@@ -17,17 +18,17 @@ export class WebSearchUnavailableError extends Error {
 }
 
 /**
- * Web search backend — MiniMax priority + searXNG fallback.
+ * Web search backend — parallel fan-out across mmx (MiniMax CLI),
+ * firecrawl-cli, MiniMax HTTP, Bing, with searXNG fallback.
  *
  * Pipeline:
  *   0. CHECK CACHE — if (userId, query, count, locale, apiKeyHint) match
  *      a recent result, return it directly.
  *   1. Detect query language cluster (cjk | cyrillic | latin | other).
  *   2. Expand the user's query into 1–3 variants via the LLM (cached).
- *   3. Run MiniMax search first (priority). If it returns results,
- *      short-circuit immediately — no other engines, no fetchBatch
- *      content extraction.
- *   4. If MiniMax returns nothing, fall back to searXNG (self-hosted
+ *   3. Run ALL engines in parallel and merge by priority:
+ *      mmx (MiniMax CLI) → firecrawl-cli → MiniMax HTTP → Bing.
+ *   4. If all four return nothing, fall back to searXNG (self-hosted
  *      metasearch, configured with China-friendly engines).
  *   5. Cache the result for 5 minutes and return.
  *
@@ -80,12 +81,13 @@ export const WEB_SEARCH_TOOL = {
 const MAX_RESULTS = 12;           // final merged count / per-source limit
 
 /* ═══════════════════════════════════════════════════════════════════
-   Web search — parallel fan-out across MiniMax, Bing, searXNG
+   Web search — parallel fan-out across mmx, firecrawl, MiniMax, Bing, searXNG
    ═══════════════════════════════════════════════════════════════════ */
 
-const TIMEOUT_MINIMAX_MS = 8_000;
-const TIMEOUT_BING_MS    = 8_000;
-const TIMEOUT_SEARXNG_MS = 6_000;
+const TIMEOUT_MINIMAX_MS   = 8_000;
+const TIMEOUT_FIRECRAWL_MS = 10_000;
+const TIMEOUT_BING_MS      = 8_000;
+const TIMEOUT_SEARXNG_MS   = 6_000;
 
 const TOTAL_SEARCH_TIMEOUT = 12_000;
 
@@ -139,19 +141,19 @@ export async function webSearch(query, count = 10, opts = {}) {
      returns no results. Both engines return the same normalized
      shape so the merge step doesn't care which one won. */
   const mmxP = withTimeout(searchMmx(query, limit, acSignal), TIMEOUT_MINIMAX_MS, 'mmx-cli');
+  const firecrawlP = withTimeout(searchFirecrawl(query, limit, acSignal), TIMEOUT_FIRECRAWL_MS, 'firecrawl');
   const minimaxP = hasMinimaxKey
     ? withTimeout(searchMinimax(query, limit, acSignal), TIMEOUT_MINIMAX_MS, 'minimax')
     : Promise.resolve([]);
   const bingP = withTimeout(searchBing(query, limit, acSignal), TIMEOUT_BING_MS, 'bing');
 
-  /* P_mmx-priority — wait for ALL engines in parallel and prefer mmx
-     if it returned anything. The previous Promise.race strategy let
-     Bing win on latency even when mmx had strictly-better results,
-     because mmx pays a ~150-300 ms Node CLI spawn cost that Bing's
-     HTTP fetch doesn't. Now: mmx is the priority; bing/searxng only
-     fill in when mmx is empty or missing. */
+  /* P_engine-priority — wait for ALL engines in parallel.  Merge
+     priority: mmx (MiniMax CLI) first, then firecrawl (free credits),
+     then minimax (direct HTTP), then bing.  The first two are CLI
+     spawns (~100-300 ms overhead) but are prioritised because they
+     are the project's preferred providers. */
   const settled = await Promise.allSettled([
-    mmxP, minimaxP, bingP,
+    mmxP, firecrawlP, minimaxP, bingP,
   ]);
   /* P_engine-result-guard — each engine promise is wrapped in
      `withTimeout` which resolves to [] on timeout. The fulfilled
@@ -170,12 +172,14 @@ export async function webSearch(query, count = 10, opts = {}) {
   };
   const outcomes = [
     pickOutcome('mmx', settled[0]),
-    pickOutcome('minimax', settled[1]),
-    pickOutcome('bing', settled[2]),
+    pickOutcome('firecrawl', settled[1]),
+    pickOutcome('minimax', settled[2]),
+    pickOutcome('bing', settled[3]),
   ];
   const mmxResults = outcomes[0].results;
-  const minimaxResults = outcomes[1].results;
-  const bingResults = outcomes[2].results;
+  const firecrawlResults = outcomes[1].results;
+  const minimaxResults = outcomes[2].results;
+  const bingResults = outcomes[3].results;
 
   let finalResults = [];
   const seen = new Set();
@@ -190,6 +194,8 @@ export async function webSearch(query, count = 10, opts = {}) {
 
   // mmx first
   for (const r of mmxResults) { if (push(r)) { if (finalResults.length >= limit) break; } }
+  // then firecrawl
+  for (const r of firecrawlResults) { if (finalResults.length >= limit) break; if (push(r)) {} }
   // then direct MiniMax
   for (const r of minimaxResults) { if (finalResults.length >= limit) break; if (push(r)) {} }
   // then Bing to fill
