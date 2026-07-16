@@ -1,7 +1,10 @@
 <!DOCTYPE html>
+
 <html lang="zh-CN" data-theme="socrates" data-mode="dark">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/logo.png">
 <title>Socrates — 我的账户</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
@@ -153,6 +156,53 @@
   }catch(e){}
 }();
 </script>
+<style>
+/* ── Toast notifications ──────────────────────────── */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{pointer-events:auto;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:10px;padding:14px 18px;box-shadow:0 8px 32px hsl(var(--always-black)/0.3);min-width:280px;max-width:400px;display:flex;align-items:center;gap:12px;animation:toastIn .25s var(--ease-out);font-size:13px;color:hsl(var(--text-100));line-height:1.4}
+.toast.success{border-left:3px solid hsl(145 50% 50%)}
+.toast.error{border-left:3px solid hsl(0 60% 55%)}
+.toast.info{border-left:3px solid hsl(var(--accent-000))}
+.toast.warning{border-left:3px solid hsl(35 80% 55%)}
+.toast-icon{flex-shrink:0;width:20px;height:20px}
+.toast-text{flex:1;min-width:0;word-break:break-word}
+.toast-close{flex-shrink:0;width:20px;height:20px;border-radius:4px;background:transparent;border:none;color:hsl(var(--text-400));cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;padding:0;line-height:1}
+.toast-close:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+@keyframes toastIn{from{opacity:0;transform:translateY(16px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toastOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(16px) scale(.95)}}
+/* ── Custom confirm dialog ────────────────────────── */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;display:none;align-items:center;justify-content:center;animation:fadeIn .15s}
+.confirm-overlay.show{display:flex}
+.confirm-box{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;padding:28px 24px 20px;width:90%;max-width:400px;box-shadow:0 12px 48px hsl(var(--always-black)/0.4);animation:slideUp .2s var(--ease-out)}
+.confirm-title{font-size:16px;font-weight:600;color:hsl(var(--text-000));margin-bottom:8px}
+.confirm-msg{font-size:13px;color:hsl(var(--text-400));line-height:1.6;margin-bottom:20px}
+.confirm-actions{display:flex;gap:10px;justify-content:flex-end}
+.confirm-btn{padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;border:none;cursor:pointer;font-family:inherit}
+.confirm-btn.cancel{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.confirm-btn.cancel:hover{background:hsl(var(--bg-400));color:hsl(var(--text-100))}
+.confirm-btn.danger{background:hsl(0 60% 50%/0.12);color:hsl(0 60% 60%);border:0.5px solid hsl(0 60% 50%/0.2)}
+.confirm-btn.danger:hover{background:hsl(0 60% 50%/0.2)}
+.confirm-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))}
+.confirm-btn.primary:hover{background:hsl(var(--accent-100))}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+/* ── Modal overlay ────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9997;display:none;align-items:center;justify-content:center;animation:fadeIn .15s}
+.modal-overlay.show{display:flex}
+.modal-box{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;padding:24px;width:90%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 12px 48px hsl(var(--always-black)/0.4);animation:slideUp .2s var(--ease-out)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:14px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
+.modal-title{font-size:15px;font-weight:600;color:hsl(var(--text-000))}
+.modal-close{width:28px;height:28px;border-radius:6px;border:none;background:transparent;color:hsl(var(--text-400));cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px}
+.modal-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.modal-body{font-size:13px;color:hsl(var(--text-400));line-height:1.6}
+.modal-input{width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:inherit;outline:none;margin-bottom:14px}
+.modal-input:focus{border-color:hsl(var(--accent-000)/0.5)}
+.modal-label{font-size:12px;color:hsl(var(--text-400));display:block;margin-bottom:4px}
+.modal-btn{padding:10px 22px;border-radius:8px;font-size:13px;font-weight:500;border:none;cursor:pointer;font-family:inherit}
+.modal-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))}
+.modal-btn.primary:hover{background:hsl(var(--accent-100))}
+.modal-btn.full{width:100%;text-align:center}
+</style>
 </head>
 <body>
 <div class="bg-grid"></div>
@@ -187,6 +237,24 @@
     </div>
   </div>
 </section>
+
+<div class="toast-container" id="toastContainer"></div>
+<div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
+  <div class="confirm-box" onclick="event.stopPropagation()">
+    <div class="confirm-title" id="confirmTitle">确认?</div>
+    <div class="confirm-msg" id="confirmMsg">这个操作不可撤销。</div>
+    <div class="confirm-actions" id="confirmActions"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Modal</span>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
 
 <footer>
   <div class="footer-inner">
@@ -747,54 +815,174 @@ function submitLogin(email, pass, captchaToken, captchaAns, csrfToken, errEl, bt
 
 /* ── 危险区域处理器 ──────────────────────────── */
 
-function ensureCsrf() {
-  return fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).then(function() {
-    return getCookie('csrf') || '';
+/* ── Toast notification system ────────────────────── */
+function showToast(msg, type) {
+  type = type || 'info';
+  var container = document.getElementById('toastContainer');
+  if (!container) { container = document.createElement('div'); container.id = 'toastContainer'; container.className = 'toast-container'; document.body.appendChild(container); }
+  var t = document.createElement('div');
+  t.className = 'toast ' + type;
+  var icons = { success: '\u2713', error: '\u2717', info: '\u2248', warning: '\u26A0' };
+  t.innerHTML = '<span class="toast-icon">' + (icons[type] || '\u2248') + '</span><span class="toast-text">' + msg + '</span><button class="toast-close" onclick="this.parentElement.style.animation=\'toastOut .2s var(--ease-out) forwards\';setTimeout(function(){this.parentElement.remove()}.bind(this),200)">\u00D7</button>';
+  container.appendChild(t);
+  setTimeout(function() { t.style.animation = 'toastOut .2s var(--ease-out) forwards'; setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 200); }, 4000);
+}
+window.showToast = showToast;
+
+/* ── Custom confirm dialog ────────────────────────── */
+function showConfirm(title, msg, opts) {
+  opts = opts || {};
+  return new Promise(function(resolve) {
+    var overlay = document.getElementById('confirmOverlay');
+    var titleEl = document.getElementById('confirmTitle');
+    var msgEl = document.getElementById('confirmMsg');
+    var actionsEl = document.getElementById('confirmActions');
+    if (!overlay || !titleEl || !msgEl || !actionsEl) { resolve(false); return; }
+    titleEl.textContent = title;
+    msgEl.textContent = msg;
+    actionsEl.innerHTML = '';
+    var cancelBtn = document.createElement('button');
+    cancelBtn.className = 'confirm-btn cancel';
+    cancelBtn.textContent = opts.cancelText || '取消';
+    cancelBtn.onclick = function() { overlay.classList.remove('show'); resolve(false); };
+    actionsEl.appendChild(cancelBtn);
+    var okBtn = document.createElement('button');
+    okBtn.className = 'confirm-btn ' + (opts.danger ? 'danger' : 'primary');
+    okBtn.textContent = opts.okText || '确定';
+    okBtn.onclick = function() { overlay.classList.remove('show'); resolve(true); };
+    actionsEl.appendChild(okBtn);
+    overlay.classList.add('show');
+  });
+}
+function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('show'); }
+
+/* ── Modal system ─────────────────────────────────── */
+function showModal(title, bodyHTML) {
+  var overlay = document.getElementById('modalOverlay');
+  var titleEl = document.getElementById('modalTitle');
+  var bodyEl = document.getElementById('modalBody');
+  if (!overlay || !titleEl || !bodyEl) return;
+  titleEl.textContent = title;
+  bodyEl.innerHTML = bodyHTML;
+  overlay.classList.add('show');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+function showPaymentModal() {
+  showModal('编辑付款方式',
+    '<div style="margin-bottom:16px"><label class="modal-label">卡号</label><input class="modal-input" type="text" value="4242 4242 4242 4242" placeholder="卡号"></div>' +
+    '<div style="display:flex;gap:12px;margin-bottom:16px"><div style="flex:1"><label class="modal-label">有效期</label><input class="modal-input" type="text" value="12/27" placeholder="MM/YY"></div><div style="flex:1"><label class="modal-label">安全码</label><input class="modal-input" type="text" value="123" placeholder="CVC"></div></div>' +
+    '<button class="modal-btn primary full" onclick="savePayment()">保存付款方式</button>'
+  );
+}
+function savePayment() { closeModal(); showToast('付款方式已更新成功。', 'success'); }
+
+function showBillingModal() {
+  var months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  var d = new Date();
+  var rows = '';
+  for (var i = 0; i < 6; i++) {
+    var m = d.getMonth() - i, y = d.getFullYear();
+    if (m < 0) { m += 12; y--; }
+    rows += '<tr><td>' + y + '年' + (m+1) + '月</td><td>当前计划</td><td>$29.00</td><td class="paid">已付款</td></tr>';
+  }
+  showModal('账单历史', '<table class="acct-table"><tr><th>日期</th><th>计划</th><th>金额</th><th>状态</th></tr>' + rows + '</table>');
+}
+
+function showExportModal() {
+  showModal('下载数据导出',
+    '<p style="margin-bottom:14px">为安全起见，请重新输入您的密码以下载数据。</p>' +
+    '<label class="modal-label">密码</label><input class="modal-input" id="exportPassword" type="password" placeholder="您的密码" autocomplete="off">' +
+    '<div id="exportError" style="font-size:13px;color:hsl(0 60% 60%);margin-bottom:10px;display:none"></div>' +
+    '<button class="modal-btn primary full" onclick="doExport()">下载导出</button>'
+  );
+}
+function doExport() {
+  var pw = document.getElementById('exportPassword').value;
+  if (!pw) { document.getElementById('exportError').textContent = '请输入您的密码。'; document.getElementById('exportError').style.display = 'block'; return; }
+  document.getElementById('exportError').style.display = 'none';
+  var btn = document.querySelector('#modalBody .modal-btn');
+  btn.textContent = '验证中…'; btn.disabled = true;
+  /* 先刷新 CSRF cookie，再用 GET 方式下载导出文件 */
+  fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).then(function() {
+    return fetch('/api/account/export', {
+      headers: { 'X-CSRF-Token': getCookie('csrf') || '', 'X-Reauth-Password': pw },
+      credentials: 'same-origin'
+    });
+  }).then(function(r) {
+    return r.text().then(function(text) {
+      var cd = r.headers.get('Content-Disposition');
+      if (r.ok && cd && cd.indexOf('attachment') !== -1) {
+        /* 成功获取导出文件 */
+        var blob = new Blob([text], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        var match = cd.match(/filename="?([^"]+)"?/);
+        a.download = match ? match[1] : 'socrates-export.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        closeModal();
+        showToast('数据导出已成功下载。', 'success');
+        return;
+      }
+      var errData;
+      try { errData = JSON.parse(text); } catch(e) { errData = {}; }
+      if (r.status === 401) {
+        var msg = errData.message || '验证失败';
+        document.getElementById('exportError').textContent = msg === 'Re-authentication failed'
+          ? '密码错误，请重试。'
+          : '您的会话已过期，请刷新页面重新登录。';
+        document.getElementById('exportError').style.display = 'block';
+        btn.textContent = '下载导出'; btn.disabled = false;
+        return;
+      }
+      throw new Error(errData.message || '服务器返回 ' + r.status);
+    });
+  }).catch(function(err) {
+    closeModal();
+    showToast('导出失败：' + (err.message || '未知错误'), 'error');
   });
 }
 
+/* ── Danger-zone handlers ──────────────────────────── */
+function ensureCsrf() {
+  return fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).then(function() { return getCookie('csrf') || ''; });
+}
+
 function cancelSubscription() {
-  if (!confirm('确认取消订阅？您将在当前计费周期结束前继续享有权益，随后账户将降级为免费 Diophantus 套餐。')) return;
-  ensureCsrf().then(function(csrfToken) {
-    fetch('/api/account/cancel', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
-      credentials: 'same-origin'
-    }).then(function(r) {
-      if (!r.ok) throw new Error('服务器返回 ' + r.status);
-      return r.json();
-    }).then(function() {
-      alert('订阅已取消。正在刷新…');
-      window.location.reload();
-    }).catch(function(err) {
-      alert('无法取消订阅：' + (err && err.message ? err.message : '未知错误'));
+  showConfirm('取消订阅？', '您的订阅将持续到当前计费周期结束。之后，您的账户将降级到免费 Diophantus 层级。您的会话历史记录和知识图谱将被保留。', { okText:'取消订阅', cancelText:'保留计划', danger:true }).then(function(confirmed) {
+    if (!confirmed) return;
+    ensureCsrf().then(function(csrfToken) {
+      fetch('/api/account/cancel', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-CSRF-Token':csrfToken||'' }, credentials:'same-origin' })
+      .then(function(r) { if (!r.ok) throw new Error('Server returned '+r.status); return r.json(); })
+      .then(function() { showToast('订阅已取消。将在当前计费周期结束时到期。', 'success'); window.location.reload(); })
+      .catch(function(err) { showToast('无法取消订阅：'+(err&&err.message?err.message:'未知错误'), 'error'); });
     });
   });
 }
 
 function deleteAccount() {
-  /* 两步确认，避免误操作。 */
-  if (!confirm('确认永久删除您的账号？所有会话、消息、知识图谱、错题本、API 密钥将一并清除，且无法恢复。')) return;
-  if (!confirm('再次确认：此操作不可撤销。')) return;
-  ensureCsrf().then(function(csrfToken) {
-    fetch('/api/auth/account', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
-      credentials: 'same-origin'
-    }).then(function(r) {
-      if (!r.ok) throw new Error('服务器返回 ' + r.status);
-      return r.json();
-    }).then(function() {
-      alert('您的账号已删除。');
-      window.location.href = '/';
-    }).catch(function(err) {
-      alert('无法删除账号：' + (err && err.message ? err.message : '未知错误'));
+  showConfirm('删除账号', '这将永久删除您的所有会话、消息、知识图谱、错题本和 API 密钥。此操作不可撤销。', { okText:'删除账号', danger:true }).then(function(confirmed) {
+    if (!confirmed) return;
+    showConfirm('您确定吗？', '此操作无法恢复。您的数据将被永久丢失。', { okText:'是，全部删除', danger:true }).then(function(confirmed2) {
+      if (!confirmed2) return;
+      ensureCsrf().then(function(csrfToken) {
+        fetch('/api/auth/account', { method:'DELETE', headers:{ 'Content-Type':'application/json', 'X-CSRF-Token':csrfToken||'' }, credentials:'same-origin' })
+        .then(function(r) { if (!r.ok) throw new Error('Server returned '+r.status); return r.json(); })
+        .then(function() { showToast('您的账号已被删除。', 'success'); setTimeout(function(){window.location.href='/';},1500); })
+        .catch(function(err) { showToast('无法删除账号：'+(err&&err.message?err.message:'未知错误'), 'error'); });
     });
   });
+});
 }
 window.cancelSubscription = cancelSubscription;
 window.deleteAccount = deleteAccount;
+
 </script>
+<script></script>
 <script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/^\/zh/,'').replace(/\.html$/,'');b.href=p==='/'||p===''?'/':p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","en")}catch(e){}});})();</script>
 </body>
 </html>

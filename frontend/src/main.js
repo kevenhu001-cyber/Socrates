@@ -1563,6 +1563,23 @@ async function loadSession(id){
        while this one was in-flight, the error (if any) belongs to
        the stale request; don't disrupt the newer session's state. */
     if(_loadSessionId!==id) return;
+    
+    /* Distinguish session-not-found (404) from transient errors
+       (429 rate limit, 5xx server error, network failure) so we
+       don't show "Link expired" and blow away the UI on every hiccup.
+       For transient errors, just show a toast and keep the current
+       view intact — the user can try again later. */
+    var errStatus = (e && typeof e.status === 'number') ? e.status : 0;
+    var isNotFound = (errStatus === 404);
+    
+    if (!isNotFound) {
+      /* Transient error — don't destroy the current session UI.
+         Silently log and return so the user stays where they are. */
+      console.warn('[loadSession] transient error loading session', id, 'status=' + errStatus, e && e.message);
+      showToast('Failed to load session: ' + (e && e.message || 'temporary error') + '. Please try again.');
+      return;
+    }
+    
     showToast("Session not found or could not be loaded.");
     /* The URL had ?chat=<id> pointing to a session that doesn't exist
        on the server (404). This happens when the user bookmarks a
@@ -2401,7 +2418,7 @@ function renderRecentsFilterChips(){
 import { detectLanguage, languageDirectiveFor } from './chat/lang.js';
 
 
-var DIAG_SYSTEM_PROMPT = "You are a thoughtful diagnostic tutor. Generate exactly 1 multiple-choice question (this is question {questionNumber} of 5, focused on {aspect}) to assess a learner's grasp of {topic}.\n\n{previousQuestions}\n\nVoice and form:\n- Write the question and all options in {language}. The learner thinks in {language}; the text must read as native, not a translation. Match the learner's input language exactly.\n- Use academic but accessible language, like a kind teacher who is precise yet warm. Imagine a professor explaining to a curious student over tea.\n- Show depth and a small intellectual flavor (韵味) in the question. It should feel thoughtful, never mechanical. Probe what the learner truly understands, not just surface familiarity.\n- Avoid em-dashes (—, ——) where possible. Prefer periods, commas, colons, semicolons, or parentheses instead.\n- Use Markdown for formatting (bold, italic, code) and LaTeX ($...$ or $$...$$) for mathematical notation where applicable.\n\nStructure:\n- The question must probe {aspect} from a different angle than anything listed above.\n- The question must target a SPECIFIC knowledge point within {aspect}. Name it in the knowledgePoint field (e.g. \"matrix multiplication rules\", \"Ohm's law derivation\", \"binary search edge cases\"). This maps the question to a concrete concept so the teaching plan can address it precisely.\n- Provide 3 to 4 options labeled A, B, C, D.\n- Each option includes a level field: internalized (deep grasp), fuzzy (some knowledge with gaps), or blank (no knowledge).\n- Output ONLY a single valid JSON object, no other text: {\"q\":\"question text\", \"knowledgePoint\":\"specific concept being tested\", \"opts\":[{\"letter\":\"A\",\"text\":\"option text\",\"level\":\"internalized\"}, ...]}\n- Do NOT wrap the JSON in code fences.\n- CRITICAL: inside any string value, NEVER use ASCII double quotes (\\\"...) to quote phrases. Use full-width quotation marks 「...」 or 『...』 for CJK text, or just plain text without quotes for English. ASCII double quotes are reserved for JSON delimiters only.";
+var DIAG_SYSTEM_PROMPT = "You are a thoughtful diagnostic tutor. Generate exactly 1 multiple-choice question (this is question {questionNumber} of 5, focused on {aspect}) to assess a learner's grasp of {topic}.\n\n{previousQuestions}\n\nVoice and form:\n- Write the question and all options in {language}. The learner thinks in {language}; the text must read as native, not a translation. Match the learner's input language exactly.\n- Use academic but accessible language, like a kind teacher who is precise yet warm. Imagine a professor explaining to a curious student over tea.\n- Show depth and a small intellectual flavor (韵味) in the question. It should feel thoughtful, never mechanical. Probe what the learner truly understands, not just surface familiarity.\n- Avoid em-dashes (—, ——) completely — they are the most recognizable tell of AI-generated writing. Use periods, commas, semicolons, or parentheses instead. If you find yourself typing an em dash, stop and restructure the sentence.\n- Use Markdown for formatting (bold, italic, code) and LaTeX ($...$ or $$...$$) for mathematical notation where applicable.\n\nStructure:\n- The question must probe {aspect} from a different angle than anything listed above.\n- The question must target a SPECIFIC knowledge point within {aspect}. Name it in the knowledgePoint field (e.g. \"matrix multiplication rules\", \"Ohm's law derivation\", \"binary search edge cases\"). This maps the question to a concrete concept so the teaching plan can address it precisely.\n- Provide 3 to 4 options labeled A, B, C, D.\n- Each option includes a level field: internalized (deep grasp), fuzzy (some knowledge with gaps), or blank (no knowledge).\n- Output ONLY a single valid JSON object, no other text: {\"q\":\"question text\", \"knowledgePoint\":\"specific concept being tested\", \"opts\":[{\"letter\":\"A\",\"text\":\"option text\",\"level\":\"internalized\"}, ...]}\n- Do NOT wrap the JSON in code fences.\n- CRITICAL: inside any string value, NEVER use ASCII double quotes (\\\"...) to quote phrases. Use full-width quotation marks 「...」 or 『...』 for CJK text, or just plain text without quotes for English. ASCII double quotes are reserved for JSON delimiters only.";
 
 /* The five probe angles, one per question. Mapped 1:1 to the
    fixed KB nodes in aiGenerate() (0 Core concepts, 1 Key principles,
@@ -9584,7 +9601,7 @@ var CHAT_CONCISE_PROMPT = `You are a helpful assistant. Answer the user's questi
 - Be direct. Start with the answer in the first sentence. No preamble: do not write "Sure!", "Of course!", "Great question!", "Certainly!", "Absolutely!", "I'd be happy to help!", or any variant.
 - Be reliable. If you do not know, say so plainly ("I don't know" or "I'm not sure"). Do not invent facts, citations, or URLs.
 - Be concise. Match the length of your answer to the question. A one-line question deserves a one-line answer. Do not pad, do not repeat, do not summarize at the end, do not end with a question.
-- Do not use the em dash character (U+2014) or the en dash (U+2013). Use periods, commas, semicolons, or parentheses.
+- **Zero em dashes.** The em dash character (U+2014) and the en dash (U+2013) must never appear in your output. Use periods, commas, semicolons, or parentheses instead. This is a strict prohibition. If you use one, the response is wrong.
 - Avoid colons in running prose. Restructure so the same content flows without a colon.
 - Do not use emojis.
 - Do not use bullet points or numbered lists unless the user explicitly asked for one. Weave any enumeration into flowing prose.

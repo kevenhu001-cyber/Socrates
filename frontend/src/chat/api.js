@@ -234,18 +234,17 @@ export async function callAPI(messages,maxTokens){
         :(eStatus?eStatus+" ":"network: ")+(e&&e.message||e);
       var userCancelledN=isAbortN&&!wdN.isStopped();
       if(eStatus===429){
-        /* Rate limit — same treatment as stream.js: don't retry, surface
-           a friendly toast using the server-supplied Retry-After /
-           retryAfterSeconds so the user knows when to try again. */
-        var retryAfterN = null;
-        var raN = e && e.body && e.body.headers ? e.body.headers.get("Retry-After") : null;
-        if (raN) { var rn = parseFloat(raN); if (!isNaN(rn) && rn > 0) retryAfterN = rn; }
-        if (!retryAfterN && e && e.body && typeof e.body.retryAfterSeconds === "number") {
-          retryAfterN = e.body.retryAfterSeconds;
+        /* Check for monthly quota before generic rate-limit message */
+        var code429 = e && e.code;
+        var body429 = e && e.body;
+        if (code429 === 'MONTHLY_LIMIT' || (body429 && body429.code === 'MONTHLY_LIMIT')) {
+          state.lastCallError = 'Monthly Beagle usage limit reached. ' + (body429 && body429.message || 'Upgrade your plan or wait until next month.');
+          try { showToast && showToast(state.lastCallError, 8000); } catch (_) {}
+          return null;
         }
-        var msgN = "Slow down — too many requests. Try again in " + formatMinutesApi(retryAfterN) + ".";
-        state.lastCallError = msgN;
-        try { showToast && showToast(msgN, 5000); } catch (_) {}
+        var retryAfterN = e && e.body && typeof e.body.retryAfterSeconds === "number" ? e.body.retryAfterSeconds : null;
+        state.lastCallError = "Slow down — too many requests. Try again in " + formatMinutesApi(retryAfterN) + ".";
+        try { showToast && showToast(state.lastCallError, 5000); } catch (_) {}
         return null;
       }
       if(!userCancelledN&&(isHbN||isTotN||STREAM_RETRYABLE_STATUS[eStatus])&&nsAttempt<NONSTREAM_MAX){

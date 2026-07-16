@@ -145,22 +145,22 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         return null;
       }
       if(eStatus===429){
-        /* Rate limit — do NOT retry. The server is telling us to back
-         * off, and burning our retry budget on a hard cap just delays
-         * the inevitable (and could trip the limiter further if any
-         * retry hits before the window resets). Surface a friendly
-         * toast using the Retry-After / retryAfterSeconds the server
-         * sent so the user knows when to try again. */
-        var retryAfterSec429 = null;
-        var raHdr429 = e && e.body && e.body.headers ? e.body.headers.get("Retry-After") : null;
-        if (raHdr429) {
-          var n = parseFloat(raHdr429);
-          if (!isNaN(n) && n > 0) retryAfterSec429 = n;
+        /* 429 can mean either rate-limiting (try again later) or monthly
+         * quota exhaustion (Beagle token limit reached — won't reset
+         * until next billing cycle). Distinguish via the server's code. */
+        if (e && (e.code === 'MONTHLY_LIMIT' || (e.body && e.body.code === 'MONTHLY_LIMIT'))) {
+          var msg429 = 'Monthly Beagle usage limit reached. ' + ((e.body && e.body.message) || 'Upgrade your plan or wait until next month.');
+          state.lastCallError = msg429;
+          try { showToast && showToast(msg429, 8000); } catch (_) {}
+          return null;
         }
-        if (!retryAfterSec429 && e && e.body && typeof e.body.retryAfterSeconds === "number") {
+        /* Rate limit — do NOT retry. */
+        var retryAfterSec429 = null;
+        if (e && e.body && typeof e.body.retryAfterSeconds === "number") {
           retryAfterSec429 = e.body.retryAfterSeconds;
         }
-        var msg429 = "Slow down — too many requests. Try again in " + formatMinutes(retryAfterSec429) + ".";
+        var msg429 = "Slow down — too many requests. Try again in " + (retryAfterSec429 ? formatMinutes(retryAfterSec429) : "a moment") + ".";
+        state.lastCallError = msg429;
         state.lastCallError = msg429;
         try { showToast && showToast(msg429, 5000); } catch (_) {}
         return null;
