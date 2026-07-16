@@ -111,7 +111,14 @@ export const CODE_INTERPRETER_TOOL = {
   function: {
     name: 'code_interpreter',
     description:
-      'Execute Python code in a sandboxed Pyodide WASM runtime. Use for arithmetic, data manipulation, plotting, quick verification of numeric claims. ' +
+      'Execute Python code in a sandboxed Pyodide WASM runtime. ' +
+      /* P_tool-scope — be explicit at the tool-definition layer (which
+         the model sees when choosing tools) about what this tool is
+         NOT for. Without this, "draw a squirrel" gets routed here
+         because matplotlib can technically plot things. */
+      'Use ONLY for arithmetic, data manipulation, and DATA-VISUALIZATION PLOTS (line/scatter/bar/heatmap of numbers from numpy or pandas). ' +
+      'ABSOLUTELY DO NOT use for illustrations, drawings, pictures, or sketches of concrete subjects (animals, people, scenes, logos, icons) — those MUST go in a ```viz block as inline SVG, not Python. ' +
+      'When the user says "用 SVG 画" or "draw with SVG" or "draw a <concrete subject>" — that is an SVG illustration request, NOT a code_interpreter task. Output a ```viz block with hand-written SVG instead. ' +
       'Each call is a fresh interpreter — no persistent state across calls. ' +
       'Available libraries: Python 3.12 standard library (subset), NumPy, pandas, matplotlib. ' +
       `Stdout/stderr are capped at ${MAX_OUTPUT_BYTES} bytes; runs that exceed it fail with output_limit_exceeded. ` +

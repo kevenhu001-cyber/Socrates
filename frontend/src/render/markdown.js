@@ -224,7 +224,12 @@ export function formatMsgProgressive(t){
     return'XVIZBLOCK'+id+'X';
   }
 
-  /* 1. Closed think blocks */
+  /* 1. Normalize ```svg / ```html → ```viz so the explicit-lang
+     code fence handler catches them. Must run before think blocks
+     and code fence processing. */
+  s=s.replace(/^```(?:viz|html|svg)\s*$/m,'```viz\n');
+
+  /* 2. Closed think blocks */
   s=s.replace(/<think>([\s\S]*?)<\/think>/g,function(_,content){
     var inner;
     try{
@@ -318,7 +323,7 @@ export function formatMsgProgressive(t){
     return trimmed?saveViz(renderMermaid(trimmed)):'';
   });
   s=s.replace(/```mermaid\s*\n?([\s\S]*?)$/g,function(_,body){
-    return saveViz(renderVizLoading());
+    return saveViz(renderVizLoading({streaming:true}));
   });
 
   /* 3. ```plot``` fence — JS-only math plot. Routed before generic
@@ -328,7 +333,7 @@ export function formatMsgProgressive(t){
     return trimmed?saveViz(renderPlot(trimmed)):'';
   });
   s=s.replace(/```plot\s*\n?([\s\S]*?)$/g,function(){
-    return saveViz(renderVizLoading());
+    return saveViz(renderVizLoading({streaming:true}));
   });
 
   /* 4. Closed code fences — detect HTML/SVG/viz content and render as
@@ -338,13 +343,21 @@ export function formatMsgProgressive(t){
   s=s.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){
     var trimmed=code.trim();
     var isHtmlLang=lang==="html"||lang==="viz"||lang==="svg";
-    var looksLikeHtml=isHtmlLang||(
+    /* P_svg-auto-detect — detect SVG content even in short blocks.
+       A bare ``` <svg viewBox="0 0 100 100"><circle r="10"/></svg> ```
+       without explicit language tag needs to be routed to renderViz,
+       not shown as a code block. We detect `<svg` as a strong signal
+       independently of the generic HTML length threshold. */
+    var hasSvgTag=/<svg[\s>]/i.test(trimmed);
+    var looksLikeHtml=isHtmlLang||hasSvgTag||(
       trimmed.length>30&&
       /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
     );
     /* Explicit html/viz/svg lang → no length limit. Auto-detected
-       HTML requires at least 20 chars to avoid false positives. */
-    if(isHtmlLang || (looksLikeHtml && trimmed.length>20)){
+       HTML requires at least 20 chars to avoid false positives.
+       SVG tags are exempt from the length requirement since even
+       a single <svg><circle r="10"/></svg> is valid rendered content. */
+    if(isHtmlLang || looksLikeHtml && (trimmed.length>20 || hasSvgTag)){
       return saveViz(renderViz(trimmed));
     }
     var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
@@ -358,7 +371,7 @@ export function formatMsgProgressive(t){
     if(trimmed){
       var isHtmlLang=lang==="html"||lang==="viz"||lang==="svg";
       if(isHtmlLang){
-        return saveViz(renderVizLoading());
+        return saveViz(renderVizLoading({streaming:true}));
       }
       var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
       return save('<pre><code'+langAttr+'>'+escHTML(trimmed)+'</code></pre>');
@@ -554,11 +567,13 @@ export function formatMsg(t){
   t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){
     var trimmed=code.trim();
     var isHtmlLang=lang==="html"||lang==="viz"||lang==="svg";
-    var looksLikeHtml=isHtmlLang||(
+    /* P_svg-auto-detect — detect SVG content even in short blocks. */
+    var hasSvgTag=/<svg[\s>]/i.test(trimmed);
+    var looksLikeHtml=isHtmlLang||hasSvgTag||(
       trimmed.length>30&&
       /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
     );
-    if(isHtmlLang || (looksLikeHtml && trimmed.length>20)){
+    if(isHtmlLang || looksLikeHtml && (trimmed.length>20 || hasSvgTag)){
       return saveViz(renderViz(trimmed));
     }
     var langAttr=lang?' class="language-'+esc(lang)+'"':'';

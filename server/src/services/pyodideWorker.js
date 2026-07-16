@@ -65,8 +65,21 @@ async function bootPyodide() {
     // keeps its own buffer (no dependency on the original stream's API),
     // enforces a per-run byte cap, and exposes a getvalue() method so we
     // can pull the captured text after the run.
+    //
+    // P_matplotlib-backend — matplotlib is preloaded at boot and
+    // declares `matplotlib-pyodide` as a dependency. When user code
+    // triggers pyplot's auto-backend logic, the candidate list can
+    // include `module://matplotlib_pyodide.wasm_backend`, whose top-
+    // level `from js import ImageData, document` raises ImportError
+    // under Node (no `js` globals). We pin the non-GUI 'Agg' backend
+    // before any user code runs so the wasm_backend is never tried.
     pyodide.runPython(`
 import sys
+try:
+    import matplotlib
+    matplotlib.use('Agg')
+except Exception:
+    pass
 
 class _CappedStream:
     """Self-contained byte-capped text stream. No wrapping of any original."""

@@ -66,14 +66,22 @@ import { esc } from './helpers.js';
 
    Because the snippet is appended AFTER the user's content, it
    runs AFTER every <script> in the user's HTML — so by the time
-   we post viz-ready, the user's canvas (if any) is already drawn. */
-var VIZ_RUNTIME =
-  '<script>' +
+   we post viz-ready, the user's canvas (if any) is already drawn.
+
+   P_viz-id-safety — the viz id is captured in the IIFE's closure
+   (VIZ_ID_LITERAL is interpolated at srcdoc build time) instead of
+   being read off `window.__vizId`. The user code may overwrite
+   `window.__vizId`, which used to make the parent drop the postMessage
+   on the floor (entry lookup on "" failed silently). */
+function vizRuntime(vizId) {
+  var idJson = JSON.stringify(vizId);
+  return '<script>' +
     '(function(){' +
+      'var VIZ_ID=' + idJson + ';' +
       'function postReady(){' +
-        'try{window.parent.postMessage({type:"viz-ready",vizId:window.__vizId||"",h:Math.max(document.body.scrollHeight,document.documentElement.scrollHeight||0)},"*")}catch(e){}' +
+        'try{window.parent.postMessage({type:"viz-ready",vizId:VIZ_ID,h:Math.max(document.body.scrollHeight,document.documentElement.scrollHeight||0)},"*")}catch(e){}' +
       '}' +
-      'function postError(msg){try{window.parent.postMessage({type:"viz-error",vizId:window.__vizId||"",message:String(msg||"").slice(0,300)},"*")}catch(e){}}' +
+      'function postError(msg){try{window.parent.postMessage({type:"viz-error",vizId:VIZ_ID,message:String(msg||"").slice(0,300)},"*")}catch(e){}}' +
       'window.addEventListener("error",function(e){postError((e&&e.message)||"runtime error")});' +
       'window.addEventListener("unhandledrejection",function(e){postError((e&&e.reason&&(e.reason.message||e.reason))||"unhandled rejection")});' +
       'if(document.readyState==="complete"||document.readyState==="interactive"){' +
@@ -83,6 +91,7 @@ var VIZ_RUNTIME =
       '}' +
     '})();' +
   '<\/script>';
+}
 
 function vizActions(cardId) {
   return '<div class="viz-actions">' +
@@ -191,34 +200,66 @@ function encodeSrcdoc(doc) {
     .replace(/>/g, '&gt;');
 }
 
-export function renderVizLoading() {
-  var id = "viz-card-" + (++_vizId);
-  return '<div class="viz" id="' + id + '" data-viz-state="loading">' +
-    '<div class="viz-body">' + vizLoadingHtml() + '</div>' +
+export function renderVizLoading(opts) {
+  /* P_viz-no-streaming-spinner — when called during streaming
+     (markdown.js passes opts.streaming=true), the spinner overlay
+     is suppressed. The parent message's own thinking indicator
+     already provides feedback; flashing a per-card "Rendering…"
+     every stream tick produced visible flicker and re-ran the
+     skeleton-fadeout animation each tick. The actual spinner
+     still appears in the FINAL renderViz path (post-stream) so
+     the user gets feedback when the iframe is mounting for
+     real. */
+  var streaming = opts && opts.streaming;
+  var id = (opts && opts.stableId) || ("viz-card-" + (++_vizId));
+  var body = streaming ? '' : vizLoadingHtml();
+  return '<div class="viz" id="' + id + '" data-viz-state="loading"' +
+    (streaming ? ' data-streaming="1"' : '') + '>' +
+    '<div class="viz-body">' + body + '</div>' +
   '</div>';
 }
 
 function guardUserScripts(html, vizId) {
+  /* P_viz-safety — wrap EVERY inline <script> in a try/catch so any
+     synchronous error (not just explicit `throw`) posts a viz-error
+     back to the parent. The previous version only wrapped scripts
+     containing the `throw` keyword, which silently lost the majority
+     of runtime errors (ReferenceError, TypeError, undefined calls,
+     JSON parse failures, etc.) and left cards stuck on "Rendering…"
+     until the 5s max-timer fired. The wrapper is self-contained —
+     no external globals — so it works under sandbox="allow-scripts". */
+  var idJson = JSON.stringify(vizId);
   return String(html || '').replace(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/gi, function (_, attrs, code) {
-    // Keep normal scripts byte-for-byte intact. The wrapper is for the
-    // synchronous throw path that browsers do not consistently surface from
-    // a sandboxed srcdoc frame.
-    if (!/\bthrow\b/.test(code)) return '<script' + (attrs || '') + '>' + code + '</script>';
-    return '<script' + (attrs || '') + '>try{' + code + '}catch(e){try{window.parent.postMessage({type:"viz-error",vizId:' + JSON.stringify(vizId) + ',message:String((e&&e.message)||e).slice(0,300)},"*")}catch(_){}}</script>';
+    var safe = '(function(){' +
+      'try{' + code + '}catch(e){' +
+      'try{window.parent.postMessage({type:"viz-error",vizId:' + idJson + ',message:String((e&&e.message)||e).slice(0,300)},"*")}catch(_){}' +
+      '}' +
+    '}).call(this);';
+    return '<script' + (attrs || '') + '>' + safe + '<\/script>';
   });
 }
 
 export function renderViz(htmlStr) {
   var id = "viz-card-" + (++_vizId);
   var title = (window.state && window.state.topic || "Canvas").toString().slice(0, 40);
+  // P_svg-no-xml-pi — strip the `<?xml version="1.0"?>` processing
+  // instruction if the user pasted a standalone SVG document. Inside
+  // an HTML <body>, the HTML5 tokenizer turns `<?...?>` into a bogus
+  // comment (so it does not break parsing), but some browsers
+  // (Safari, older Chrome builds) flip into quirks mode or refuse to
+  // parse the SVG namespace when they see the PI inside an HTML
+  // document — and the iframe ends up rendering a blank card. The
+  // declaration is redundant inside HTML anyway (the iframe's own
+  // <meta charset="utf-8"> handles encoding).
+  var cleaned = String(htmlStr || '').replace(/^\s*<\?xml[^?]*\?>\s*/i, '');
   // The user HTML is injected into <body>. VIZ_THEME_RESET goes in
-  // <head>, and the VIZ_RUNTIME snippet (which posts viz-ready) is
-  // appended at the end of <body> so it runs AFTER all of the
+  // <head>, and the vizRuntime(id) snippet (which posts viz-ready)
+  // is appended at the end of <body> so it runs AFTER all of the
   // user's inline <script>s.
   var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     VIZ_THEME_RESET +
     '<script>window.__vizId=' + JSON.stringify(id) + ';<\/script>' +
-    '</head><body>' + guardUserScripts(htmlStr, id) + VIZ_RUNTIME + '</body></html>';
+    '</head><body>' + guardUserScripts(cleaned, id) + vizRuntime(id) + '</body></html>';
   var srcdoc = encodeSrcdoc(doc);
   var bodyHtml =
     vizLoadingHtml() +
@@ -373,7 +414,7 @@ export function renderPlot(spec) {
   var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     VIZ_THEME_RESET +
     '<script>window.__vizId=' + JSON.stringify(id) + ';<\/script>' +
-    '</head><body>' + setupScript + innerHtml + VIZ_RUNTIME + '</body></html>';
+    '</head><body>' + setupScript + innerHtml + vizRuntime(id) + '</body></html>';
   var srcdoc = encodeSrcdoc(doc);
   var bodyHtml =
     vizLoadingHtml() +
@@ -420,6 +461,13 @@ export function processPendingViz() {
         // or the contentDocument was blocked by the sandbox
         // policy). Flip the card to error and surface a
         // diagnostic.
+        //
+        // P_viz-no-autoreload — the previous version auto-
+        // reloaded the iframe here, which produced a visible
+        // "Rendering…" → error → "Rendering…" → … flicker. The
+        // user can re-trigger via the Reload button, which
+        // surfaces the error to them with full intent. We never
+        // re-enter `loading` state from a timeout.
         var card = entry.card;
         if (!card || card.getAttribute('data-viz-state') === 'ready') return;
         if (!card.isConnected) return;
@@ -445,10 +493,6 @@ export function processPendingViz() {
         clearTimeout(entry.maxTimer);
         delete _pendingReady[item.id];
         delete _vizCards[item.id];
-        if (!card.dataset.vizAutoRetried) {
-          card.dataset.vizAutoRetried = '1';
-          setTimeout(function () { reloadVizCard(card); }, 0);
-        }
       }, VIZ_MAX_WAIT_MS),
       ready: false,
     };

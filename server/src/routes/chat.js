@@ -773,6 +773,43 @@ router.post('/stream', requireAuth, chatRateLimitDispatch, audit('chat:stream'),
 
           const toolName = tc.function && tc.function.name;
           if (toolName === 'code_interpreter') {
+            /* P_illustration-guard — detect when the model is using
+               code_interpreter for SVG illustration / drawing tasks
+               instead of data analysis. The model sometimes routes
+               "draw a squirrel" or "用 SVG 画" to code_interpreter
+               because matplotlib has plotting capabilities. Pre-empt
+               this by scanning the code for SVG-generation patterns
+               and returning a corrective error. */
+            const code = (args.code || '').toLowerCase();
+            const illustrationPatterns = [
+              /<svg[\s>]/,              // building SVG strings
+              /turtle\.(forward|backward|left|right|circle|goto)/,  // turtle graphics
+              /print\(.*<svg/i,         // printing SVG from Python
+              /svg.*draw|draw.*svg/i,   // SVG drawing
+              /plt\.savefig.*\.svg/i,   // saving matplotlib as SVG
+              /matplotlib.*svg/i,       // matplotlib SVG output
+            ];
+            const isIllustrationAttempt = illustrationPatterns.some(p => p.test(code));
+            if (isIllustrationAttempt) {
+              writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                id: tc.id, ok: false, status: 'failed',
+                output: '', stderr: '',
+                error: 'SVG illustrations should use ```viz blocks, not code_interpreter. Output a ```viz fenced block with hand-written SVG instead.',
+                errorCode: 'illustration_not_supported',
+                retryable: false,
+                userMessage: 'SVG 插画请使用 ```viz 代码块输出手写 SVG，不要使用代码执行工具。',
+                detail: 'code_interpreter is for data analysis, not SVG illustrations. SVG belongs in a ```viz block.',
+                artifacts: [], executionId: null, durationMs: 0,
+              })}\n\n`);
+              result = { status: 'failed', error: 'illustration_not_supported' };
+              workingMessages = workingMessages.concat([{
+                role: 'tool',
+                tool_call_id: tc.id,
+                content: `[error] illustration_not_supported: SVG illustrations must go in a \`\`\`viz block as hand-written SVG, not through code_interpreter. Output a \`\`\`viz fenced block with inline SVG instead.`,
+              }]);
+              continue;
+            }
+
             const tierLimit = getExecutionsPerDay(req.user && req.user.tier);
             if (tierLimit > 0 && req.userId) {
               const today = new Date();

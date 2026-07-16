@@ -154,16 +154,17 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           try { showToast && showToast(msg429, 8000); } catch (_) {}
           return null;
         }
-        /* Rate limit — do NOT retry. */
+        /* Rate limit — retry up to STREAM_MAX_ATTEMPTS times before
+           showing the error to the user. The retry loop below handles
+           the actual back-off and continue; we just set lastErr and
+           fall through so STREAM_RETRYABLE_STATUS[429] catches it. */
         var retryAfterSec429 = null;
         if (e && e.body && typeof e.body.retryAfterSeconds === "number") {
           retryAfterSec429 = e.body.retryAfterSeconds;
         }
-        var msg429 = "Slow down — too many requests. Try again in " + (retryAfterSec429 ? formatMinutes(retryAfterSec429) : "a moment") + ".";
-        state.lastCallError = msg429;
-        state.lastCallError = msg429;
-        try { showToast && showToast(msg429, 5000); } catch (_) {}
-        return null;
+        lastErr = "Rate limited (429). Try again in " + (retryAfterSec429 ? formatMinutes(retryAfterSec429) : "a moment") + ".";
+        try { showToast && showToast("Rate limited — auto-retrying...", 3000); } catch (_) {}
+        /* Fall through to the retry loop — STREAM_RETRYABLE_STATUS[429] is true. */
       }
       /* P_network_retry — network errors (no HTTP status, e.g. DNS/TLS
          failures, mid-stream socket reset) are transient and should be
