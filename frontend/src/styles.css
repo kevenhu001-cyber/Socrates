@@ -43,18 +43,26 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .sidebar.collapsed .sidebar-resize-handle{opacity:0;pointer-events:none}
 .sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}
 .sidebar-header{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 8px 12px;flex-shrink:0}
-.sidebar-logo{display:flex;align-items:center;gap:6px;padding:3px 8px;font-weight:600;font-size:calc(16px * var(--app-font-scale, 1));letter-spacing:-.02em;white-space:nowrap;border-radius:6px;color:hsl(var(--text-100))}
+.sidebar-logo{display:flex;align-items:center;gap:6px;padding:3px 8px;font-weight:500;font-size:calc(18px * var(--app-font-scale, 1));letter-spacing:-.03em;white-space:nowrap;border-radius:6px;color:hsl(var(--text-100));font-family:var(--font-display)}
 .sidebar-logo img{flex-shrink:0}
-.icon-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .06s,background .06s}
-.icon-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}.icon-btn svg{width:16px;height:16px}
+.sidebar-logo em{font-style:italic;color:hsl(var(--accent-000))}
+.icon-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),transform .12s ease;cursor:pointer;border:none;background:transparent}
+.icon-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+.icon-btn:active{transform:scale(.92)}
+.icon-btn svg{width:16px;height:16px;transition:transform .2s cubic-bezier(.4,0,.2,1)}
 .sidebar-tabs{display:flex;flex-shrink:0;padding:6px 8px;gap:4px}
-.sidebar-tab{flex:1;text-align:center;padding:6px 4px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));border-radius:8px;transition:color .15s,background .15s;cursor:pointer;font-weight:500}
-.sidebar-tab:hover{color:hsl(var(--text-200));background:hsl(var(--bg-200)/0.3)}.sidebar-tab.active{color:hsl(var(--text-000));background:hsl(var(--bg-200))}
+.sidebar-tab{flex:1;text-align:center;padding:6px 4px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));border-radius:8px;transition:color .2s cubic-bezier(.4,0,.2,1),background .2s cubic-bezier(.4,0,.2,1),transform .12s ease;cursor:pointer;font-weight:500;position:relative}
+.sidebar-tab:hover{color:hsl(var(--text-200));background:hsl(var(--bg-200)/0.3)}
+.sidebar-tab:active{transform:scale(.97)}
+.sidebar-tab.active{color:hsl(var(--text-000));background:hsl(var(--bg-200));box-shadow:0 1px 3px hsl(var(--always-black)/0.06)}
+.sidebar-tab.active::after{content:"";position:absolute;left:50%;bottom:-1px;width:0;height:2px;border-radius:1px;background:hsl(var(--accent-000));transform:translateX(-50%);transition:width .26s cubic-bezier(.4,0,.2,1)}
+.sidebar-tab.active:hover::after{width:30%}
 .knowledge-panel{flex:1;overflow-y:auto;padding:12px 8px;display:flex;flex-direction:column;gap:6px;opacity:1;transition:opacity .15s ease}
 .knowledge-panel.hidden{display:none}
 .kb-section-title{font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 2px}
-.kb-node{display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));transition:background .06s;cursor:pointer}
+.kb-node{display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));transition:background .18s cubic-bezier(.4,0,.2,1),transform .12s ease;cursor:pointer}
 .kb-node:hover{background:hsl(var(--bg-300))}
+.kb-node:active{transform:scale(.99)}
 .kb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .kb-dot.internalized{background:hsl(145 50% 50%)}.kb-dot.fuzzy{background:hsl(var(--accent-000))}.kb-dot.blank{background:hsl(var(--text-500))}
 .kb-name{flex:1;color:hsl(var(--text-200))}.kb-count{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
@@ -70,16 +78,18 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
    click) draws a thin outline so multi-select reads at a glance.
    The + chip is a bare icon button — no chip chrome. */
 .sidebar-projects{display:flex;align-items:center;gap:2px;padding:6px 8px;overflow-x:auto;flex-shrink:0;scrollbar-width:thin}
-.sidebar-project-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:5px;background:transparent;border:0;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-400));cursor:pointer;flex-shrink:0;transition:color .1s,background .1s;line-height:1.2;position:relative}
+.sidebar-project-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:5px;background:transparent;border:0;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-400));cursor:pointer;flex-shrink:0;transition:color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),transform .12s ease;line-height:1.2;position:relative}
 .sidebar-project-chip:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.sidebar-project-chip:active{transform:scale(.95)}
 .sidebar-project-chip.active{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
 .sidebar-project-chip.active::after{content:"";position:absolute;left:8px;right:8px;bottom:1px;height:1.5px;border-radius:1px;background:var(--chip-color,hsl(var(--accent-000)));opacity:.85}
 .sidebar-project-chip.filter{box-shadow:0 0 0 1px var(--chip-color,hsl(var(--accent-000))/0.7);border-radius:5px}
 .sidebar-project-icon{width:8px;height:8px;border-radius:2px;background:var(--chip-color,hsl(var(--text-500)));flex-shrink:0;display:inline-block}
 .sidebar-project-name{white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis;font-weight:500}
 .sidebar-project-count{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-variant-numeric:tabular-nums;margin-left:-2px}
-.sidebar-project-add{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:5px;background:transparent;border:0;color:hsl(var(--text-500));cursor:pointer;flex-shrink:0;transition:color .1s,background .1s;margin-left:2px}
-.sidebar-project-add:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.sidebar-project-add{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:5px;background:transparent;border:0;color:hsl(var(--text-500));cursor:pointer;flex-shrink:0;transition:color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),transform .15s cubic-bezier(.4,0,.2,1);margin-left:2px}
+.sidebar-project-add:hover{background:hsl(var(--bg-200));color:hsl(var(--accent-000));transform:rotate(90deg)}
+.sidebar-project-add:active{transform:rotate(90deg) scale(.88)}
 
 /* P2.1 — Recents filter chip ("Showing: Math ›") */
 .recents-filter{padding:0 4px 6px;flex-shrink:0}
@@ -265,11 +275,14 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .project-editor-delete{background:transparent;color:hsl(0 60% 70%);border-color:hsl(0 60% 30%/0.5)}
 .project-editor-delete:hover{background:hsl(0 60% 30%/0.4)}
 .recents-title{font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
-.recents-new-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-300));background:transparent;border:0.5px solid hsl(var(--border-300)/0.5);transition:background-color .12s,color .12s,border-color .12s;cursor:pointer;line-height:1}
+.recents-new-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-300));background:transparent;border:0.5px solid hsl(var(--border-300)/0.5);transition:background-color .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),border-color .2s cubic-bezier(.4,0,.2,1),transform .12s ease;cursor:pointer;line-height:1}
 .recents-new-btn:hover{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.08)}
-.recents-new-btn svg{stroke:currentColor}
-.recent-item{display:flex;align-items:center;padding:8px 12px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));transition:background .06s,color .06s;cursor:pointer;gap:8px;position:relative}
-.recent-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.recents-new-btn:active{transform:scale(.96)}
+.recents-new-btn svg{stroke:currentColor;transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.recents-new-btn:hover svg{transform:rotate(90deg)}
+.recent-item{display:flex;align-items:center;padding:8px 12px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));transition:background .18s cubic-bezier(.4,0,.2,1),color .18s cubic-bezier(.4,0,.2,1),transform .12s ease;cursor:pointer;gap:8px;position:relative}
+.recent-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));transform:translateX(2px)}
+.recent-item:active{transform:translateX(2px) scale(.99)}
 .recent-item.active{background:hsl(var(--bg-300))}
 .recent-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .recent-item-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:hsl(var(--text-200))}
@@ -307,11 +320,13 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 [data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-tutor{background:hsl(36 70% 60%)}
 [data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-chat{background:hsl(200 70% 65%)}
 [data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-exam{background:hsl(280 60% 70%)}
-.recent-item-del{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-500));opacity:0;transition:opacity .1s,background .1s,color .1s;flex-shrink:0;cursor:pointer}
+.recent-item-del{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-500));opacity:0;transition:opacity .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),color .18s cubic-bezier(.4,0,.2,1),transform .12s ease;flex-shrink:0;cursor:pointer}
 .recent-item:hover .recent-item-del{opacity:1}
-.recent-item-del:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
+.recent-item-del:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%);transform:scale(1.1)}
+.recent-item-del:active{transform:scale(.92)}
 .recent-item-del.holding{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%);opacity:1}
-.recent-item-del svg{width:12px;height:12px}
+.recent-item-del svg{width:12px;height:12px;transition:transform .2s cubic-bezier(.4,0,.2,1)}
+.recent-item-del:hover svg{transform:scale(1.1)}
 /* P4.1 — inline confirm bar shown when the user holds the delete
    button for 600ms. Replaces the row's normal content with a
    [Cancel][Delete] pair. */
@@ -327,8 +342,9 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 [data-mode=dark] .theme-toggle .theme-sun{display:none}
 [data-mode=light] .theme-toggle .theme-moon{display:none}
 .lang-toggle .lang-toggle-label{font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;letter-spacing:.03em;color:hsl(var(--text-300))}
-.user-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;transition:background .06s;cursor:pointer}
+.user-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;transition:background .18s cubic-bezier(.4,0,.2,1),transform .12s ease;cursor:pointer}
 .user-row:hover{background:hsl(var(--bg-300))}
+.user-row:active{transform:scale(.99)}
 
 /* Display / reading preferences (font size + content width) */
 .display-prefs-popover{position:fixed;min-width:240px;max-width:280px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.5);border-radius:10px;padding:10px 12px;box-shadow:0 8px 24px hsl(var(--always-black)/0.2);z-index:80;display:flex;flex-direction:column;gap:10px;font-size:calc(12px * var(--app-font-scale, 1))}
@@ -336,17 +352,57 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .display-prefs-row{display:flex;flex-direction:column;gap:4px}
 .display-prefs-label{display:flex;justify-content:space-between;align-items:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em}
 .display-prefs-label .value{color:hsl(var(--text-200));font-weight:600;text-transform:none;letter-spacing:0}
-.display-prefs-segs{display:flex;gap:2px;background:hsl(var(--bg-300));border-radius:6px;padding:2px}
-.display-prefs-seg{flex:1 1 0;min-width:0;padding:4px 6px;border-radius:4px;border:0;background:transparent;color:hsl(var(--text-400));font-size:calc(11.5px * var(--app-font-scale, 1));cursor:pointer;transition:background-color .1s,color .1s,box-shadow .1s;font-family:inherit;white-space:nowrap;text-align:center}
+/* Text-size & content-width segmented controls inside the display
+   prefs popover. Both have N buttons (font: 4, width: 4) and share
+   the same .display-prefs-segs chrome. The active segment is
+   highlighted by a single sliding ::before indicator; JS sets
+   --seg-x / --seg-w on the wrapper after measuring the .on button
+   so the indicator tracks layout changes (gap, padding) without
+   needing fragile calc()-based math here. */
+.display-prefs-segs{position:relative;display:flex;gap:2px;background:hsl(var(--bg-300));border-radius:6px;padding:2px;isolation:isolate}
+.display-prefs-segs::before{
+  content:"";
+  position:absolute;
+  top:2px;bottom:2px;
+  left:var(--seg-x,0px);
+  width:var(--seg-w,0px);
+  border-radius:4px;
+  background:hsl(var(--bg-100));
+  box-shadow:0 0 0 0.5px hsl(var(--border-300)/0.6);
+  transition:left .26s cubic-bezier(.4,0,.2,1),width .26s cubic-bezier(.4,0,.2,1),background-color .26s ease;
+  pointer-events:none;
+  z-index:-1;
+}
+.display-prefs-seg{flex:1 1 0;min-width:0;padding:4px 6px;border-radius:4px;border:0;background:transparent;color:hsl(var(--text-400));font-size:calc(11.5px * var(--app-font-scale, 1));cursor:pointer;transition:color .2s cubic-bezier(.4,0,.2,1),transform .12s ease;font-family:inherit;white-space:nowrap;text-align:center;position:relative;z-index:1}
 .display-prefs-seg:hover{color:hsl(var(--text-200))}
-.display-prefs-seg.on{background:hsl(var(--bg-100));color:hsl(var(--text-100));box-shadow:0 0 0 0.5px hsl(var(--border-300)/0.6)}
+.display-prefs-seg:active{transform:scale(.94)}
+.display-prefs-seg.on{color:hsl(var(--text-100))}
 
 /* Accent color swatches — Ant Design ColorPicker-inspired */
-.display-prefs-colors{display:flex;gap:5px;flex-wrap:wrap}
-.color-swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;background:var(--swatch);cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;padding:0;position:relative}
+.display-prefs-colors{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.color-swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;background:var(--swatch);cursor:pointer;transition:transform .18s cubic-bezier(.4,0,.2,1),box-shadow .18s cubic-bezier(.4,0,.2,1),border-color .18s ease,background-color .25s ease;padding:0;position:relative}
 .color-swatch:hover{transform:scale(1.18);box-shadow:0 2px 8px hsl(var(--always-black)/0.25)}
+.color-swatch:active{transform:scale(1.05)}
 .color-swatch.active{border-color:hsl(var(--text-100))}
 .color-swatch.active::after{content:"";position:absolute;inset:3px;border-radius:50%;border:1.5px solid hsl(var(--bg-000))}
+/* Custom color swatch — a label wrapping a hidden native color input.
+   Looks like the preset swatches but the background is a "+" icon
+   over a faint hatched gradient until the user picks something,
+   at which point JS writes the picked hex into --swatch. */
+.color-swatch-custom{cursor:pointer;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,hsl(var(--bg-300)) 0 4px,hsl(var(--bg-200)) 4px 8px);border:2px solid hsl(var(--border-300)/0.6)}
+.color-swatch-custom svg{width:11px;height:11px;color:hsl(var(--text-400));transition:transform .22s cubic-bezier(.4,0,.2,1),color .18s ease;z-index:1;pointer-events:none}
+.color-swatch-custom:hover svg{transform:rotate(90deg);color:hsl(var(--accent-000))}
+.color-swatch-custom.active{border-color:hsl(var(--text-100))}
+.color-swatch-custom.active::after{content:"";position:absolute;inset:3px;border-radius:50%;border:1.5px solid hsl(var(--bg-000))}
+.color-swatch-custom.active svg{display:none}
+/* The actual color input is invisible — the wrapping label is the
+   visible surface. Cover the entire label with the input so clicks
+   anywhere open the native picker. */
+.color-swatch-custom input[type="color"]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0;background:transparent}
+/* Reset button in the accent row — small, ghost-style, hover accent. */
+.accent-reset-btn{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.5);border-radius:5px;padding:2px 8px;cursor:pointer;transition:color .18s cubic-bezier(.4,0,.2,1),border-color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),transform .12s ease}
+.accent-reset-btn:hover{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.08)}
+.accent-reset-btn:active{transform:scale(.95)}
 .display-prefs-bg-picker{display:flex;align-items:center;gap:6px}
 .display-prefs-bg-picker input[type=color]{width:28px;height:28px;padding:0;border:1.5px solid hsl(var(--border-300)/0.3);border-radius:6px;cursor:pointer;background:none;flex-shrink:0}
 .display-prefs-bg-picker input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
@@ -424,17 +480,18 @@ html[data-show-grid="false"] .main-bg{background-image:none}
   user-select:none;
   box-shadow:0 4px 14px -2px hsl(var(--shadow-color,0 0% 0%)/0.25),0 1px 3px hsl(var(--shadow-color,0 0% 0%)/0.12);
   opacity:0;
-  transform:translateY(8px);
+  transform:translateY(8px) scale(.96);
   pointer-events:none;
-  transition:opacity .18s ease, transform .18s ease, bottom 0.3s var(--ease-out);
+  transition:opacity .22s cubic-bezier(.4,0,.2,1),transform .26s cubic-bezier(.16,1,.3,1),bottom 0.3s var(--ease-out),box-shadow .2s cubic-bezier(.4,0,.2,1),filter .2s ease;
   z-index:30;
 }
 .new-reply-pill.visible{
   opacity:1;
-  transform:translateY(0);
+  transform:translateY(0) scale(1);
   pointer-events:auto;
 }
-.new-reply-pill:hover{filter:brightness(1.08)}
+.new-reply-pill:hover{filter:brightness(1.08);transform:translateY(-2px) scale(1);box-shadow:0 6px 20px -2px hsl(var(--shadow-color,0 0% 0%)/0.32),0 2px 4px hsl(var(--shadow-color,0 0% 0%)/0.14)}
+.new-reply-pill:active{transform:translateY(0) scale(.96)}
 .new-reply-pill:focus-visible{outline:2px solid hsl(var(--accent-200));outline-offset:2px}
 .main-content{
   flex:1;
@@ -481,7 +538,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
    extra bottom padding. */
 .topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:10vh;flex:1;min-height:0;overflow-y:auto}
 .topic-title{font-family:var(--font-display);font-size:calc(clamp(1.75rem,1.25rem + 1.8vw,2.4rem) * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-200));text-align:center;line-height:1.4}
-.topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:640px}
+.topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:640px;white-space:nowrap}
 .topic-input-wrap{width:100%;max-width:720px;background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.2);border-radius:24px;overflow:hidden;box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/4%);transition:box-shadow .2s,border-color .2s}
 .topic-input-wrap:focus-within{box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/8%);border-color:hsl(var(--accent-000)/0.35)}
 #topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(15.5px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-100));min-height:88px;max-height:320px;overflow-y:auto;font-family:var(--font-sans);padding:14px 20px}
@@ -490,23 +547,51 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 /* .start-btn has no :hover rule — drop transition: all (was paying compositor
    cost watching properties that never animate). Active state still flips
    color/background instantly. */
-.start-btn{padding:10px 24px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .1s,color .1s}
-.start-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}.start-btn.active:hover{background:hsl(var(--accent-100))}
+.start-btn{padding:10px 24px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .22s cubic-bezier(.4,0,.2,1),color .22s cubic-bezier(.4,0,.2,1),box-shadow .22s cubic-bezier(.4,0,.2,1),transform .12s ease;cursor:pointer;border:none;font-family:var(--font-sans)}
+.start-btn:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
+.start-btn:active{transform:scale(.96)}
+.start-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));box-shadow:0 2px 8px hsl(var(--accent-000)/0.18)}.start-btn.active:hover{background:hsl(var(--accent-100));box-shadow:0 4px 14px hsl(var(--accent-000)/0.28);transform:translateY(-1px)}
+.start-btn.active:active{transform:translateY(0) scale(.97)}
 /* Model picker — a single trigger with a dropdown of available models.
    Matches the .extensions-trigger style so the two sit on the same row
    without one looking heavier than the other. */
 .model-picker{position:relative;max-width:720px;width:100%;display:flex;justify-content:center}
-.model-picker-trigger{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid hsl(var(--border-300)/0.4);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:transparent;cursor:pointer;font-family:var(--font-sans);line-height:1.2;max-width:100%;transition:background-color .12s,color .12s,border-color .12s}
+.model-picker-trigger{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid hsl(var(--border-300)/0.4);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:transparent;cursor:pointer;font-family:var(--font-sans);line-height:1.2;max-width:100%;transition:background-color .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),border-color .2s cubic-bezier(.4,0,.2,1),box-shadow .2s cubic-bezier(.4,0,.2,1)}
 .model-picker-trigger:focus-visible{outline:1px solid hsl(var(--accent-000)/0.5);outline-offset:1px}
-.model-picker-trigger:hover{border-color:hsl(var(--accent-000)/0.4);color:hsl(var(--text-100))}
-.model-picker-trigger.has-model{background:hsl(var(--accent-000)/0.06);border-color:hsl(var(--accent-000)/0.35);color:hsl(var(--accent-000))}
+/* Unselected hover: subtle background tint only, no border-color jump —
+   matches the user's request that "未选中时不要有光影变化". */
+.model-picker-trigger:hover{background:hsl(var(--bg-300)/0.5)}
+.model-picker-trigger.has-model{background:hsl(var(--accent-000)/0.06);border-color:hsl(var(--accent-000)/0.35);color:hsl(var(--accent-000));animation:triggerPulse 2.4s ease-in-out infinite}
+.model-picker-trigger.has-model:hover{background:hsl(var(--accent-000)/0.12);border-color:hsl(var(--accent-000)/0.5)}
 .model-picker-trigger>svg:first-child{width:13px;height:13px;flex-shrink:0}
-.model-picker-trigger svg.model-picker-caret{width:10px;height:10px;flex-shrink:0;margin-left:2px;transition:transform .12s}
-.model-picker[data-open="true"] .model-picker-trigger{border-color:hsl(var(--accent-000)/0.5)}
+.model-picker-trigger svg.model-picker-caret{width:10px;height:10px;flex-shrink:0;margin-left:2px;transition:transform .22s cubic-bezier(.4,0,.2,1)}
+/* Only highlight on open when something is already picked. Otherwise the
+   border would suddenly change just because the menu opened, which the
+   user finds distracting. */
+.model-picker.has-model[data-open="true"] .model-picker-trigger,
+.model-picker-trigger.has-model[data-open-true]{border-color:hsl(var(--accent-000)/0.5)}
 .model-picker[data-open="true"] .model-picker-caret{transform:rotate(180deg)}
 .model-picker-label{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.model-picker-menu{position:absolute;top:calc(100% + 4px);left:50%;min-width:220px;max-width:340px;max-height:280px;overflow-y:auto;background:hsl(var(--bg-100));border:1px solid hsl(var(--border-300)/0.4);border-radius:6px;box-shadow:0 4px 12px hsl(var(--always-black)/0.3);padding:3px;display:none;z-index:50;opacity:0;transform:translateX(-50%) translateY(-2px);transition:opacity .1s,transform .12s}
-.model-picker[data-open="true"] .model-picker-menu{display:block;opacity:1;transform:translateX(-50%) translateY(0)}
+.model-picker-menu{position:absolute;top:calc(100% + 4px);left:50%;min-width:220px;max-width:340px;max-height:280px;overflow-y:auto;background:hsl(var(--bg-100));border:1px solid hsl(var(--border-300)/0.4);border-radius:6px;box-shadow:0 4px 12px hsl(var(--always-black)/0.3);padding:3px;display:none;z-index:50;opacity:0;transform:translateX(-50%) translateY(-6px) scale(.96);transform-origin:top center;transition:opacity .14s ease,transform .22s cubic-bezier(.16,1,.3,1);will-change:transform,opacity}
+.model-picker[data-open="true"] .model-picker-menu{display:block;opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+.model-picker-menu .model-picker-item,
+.model-picker-menu .model-picker-divider,
+.model-picker-menu .model-picker-filter,
+.model-picker-menu .model-picker-add,
+.model-picker-menu .model-picker-empty{
+  animation:menuItemIn .26s cubic-bezier(.16,1,.3,1) both;
+}
+.model-picker-menu .model-picker-item:nth-child(1){animation-delay:0ms}
+.model-picker-menu .model-picker-item:nth-child(2){animation-delay:18ms}
+.model-picker-menu .model-picker-item:nth-child(3){animation-delay:36ms}
+.model-picker-menu .model-picker-item:nth-child(4){animation-delay:54ms}
+.model-picker-menu .model-picker-item:nth-child(5){animation-delay:72ms}
+.model-picker-menu .model-picker-item:nth-child(n+6){animation-delay:90ms}
+@keyframes menuItemIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+@keyframes triggerPulse{
+  0%,100%{box-shadow:0 0 0 0 hsl(var(--accent-000)/0)}
+  50%{box-shadow:0 0 0 4px hsl(var(--accent-000)/0.10)}
+}
 .model-picker-item{display:flex;align-items:center;gap:8px;width:100%;padding:6px 9px;border:none;background:transparent;border-radius:4px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));line-height:1.3;transition:background .1s,color .1s}
 .model-picker-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .model-picker-item.active{background:hsl(var(--accent-000)/0.08);color:hsl(var(--accent-000))}
@@ -568,7 +653,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
   white-space:nowrap;
   font-weight:500;
 }
-.chat-model-caret{width:9px;height:9px;flex-shrink:0;transition:transform .12s}
+.chat-model-caret{width:9px;height:9px;flex-shrink:0;transition:transform .22s cubic-bezier(.4,0,.2,1)}
 .chat-model-trigger.menu-open .chat-model-caret{transform:rotate(180deg)}
 .chat-model-menu.model-picker-menu{
   position:absolute;
@@ -606,16 +691,25 @@ true) but the dropdown never shows — see commit history. */
 .topic-setup-row{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:720px;width:100%;padding:0 6px;position:relative}
 .topic-setup-row .model-picker,.topic-setup-row .extensions-picker{position:relative;max-width:none;width:auto}
 .extensions-picker{position:relative}
-.extensions-trigger{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid hsl(var(--border-300)/0.4);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));background:transparent;cursor:pointer;font-family:var(--font-sans);line-height:1.2;transition:background-color .12s,color .12s,border-color .12s}
-.extensions-trigger:hover{border-color:hsl(var(--accent-000)/0.4);color:hsl(var(--text-200))}
-.extensions-trigger.has-active{background:hsl(var(--accent-000)/0.06);border-color:hsl(var(--accent-000)/0.35);color:hsl(var(--accent-000))}
+.extensions-trigger{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid hsl(var(--border-300)/0.4);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));background:transparent;cursor:pointer;font-family:var(--font-sans);line-height:1.2;transition:background-color .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),border-color .2s cubic-bezier(.4,0,.2,1),box-shadow .2s cubic-bezier(.4,0,.2,1)}
+.extensions-trigger:hover{background:hsl(var(--bg-300)/0.5)}
+.extensions-trigger.has-active{background:hsl(var(--accent-000)/0.06);border-color:hsl(var(--accent-000)/0.35);color:hsl(var(--accent-000));animation:triggerPulse 2.4s ease-in-out infinite}
+.extensions-trigger.has-active:hover{background:hsl(var(--accent-000)/0.12);border-color:hsl(var(--accent-000)/0.5)}
 .extensions-trigger>svg:first-child{width:13px;height:13px;flex-shrink:0}
-.extensions-caret{width:10px;height:10px;flex-shrink:0;margin-left:2px;transition:transform .12s}
-.extensions-picker[data-open="true"] .extensions-trigger{border-color:hsl(var(--accent-000)/0.5)}
+.extensions-caret{width:10px;height:10px;flex-shrink:0;margin-left:2px;transition:transform .22s cubic-bezier(.4,0,.2,1)}
+.extensions-picker.has-active[data-open="true"] .extensions-trigger{border-color:hsl(var(--accent-000)/0.5)}
 .extensions-picker[data-open="true"] .extensions-caret{transform:rotate(180deg)}
 .extensions-label{white-space:nowrap}
-.extensions-menu{position:absolute;top:calc(100% + 4px);right:0;min-width:200px;max-width:300px;background:hsl(var(--bg-100));border:1px solid hsl(var(--border-300)/0.4);border-radius:6px;box-shadow:0 4px 12px hsl(var(--always-black)/0.3);padding:3px;display:none;z-index:50;opacity:0;transform:translateY(-2px);transition:opacity .1s,transform .12s}
-.extensions-picker[data-open="true"] .extensions-menu{display:block;opacity:1;transform:translateY(0)}
+.extensions-menu{position:absolute;top:calc(100% + 4px);right:0;min-width:200px;max-width:300px;background:hsl(var(--bg-100));border:1px solid hsl(var(--border-300)/0.4);border-radius:6px;box-shadow:0 4px 12px hsl(var(--always-black)/0.3);padding:3px;display:none;z-index:50;opacity:0;transform:translateY(-6px) scale(.96);transform-origin:top right;transition:opacity .14s ease,transform .22s cubic-bezier(.16,1,.3,1);will-change:transform,opacity}
+.extensions-picker[data-open="true"] .extensions-menu{display:block;opacity:1;transform:translateY(0) scale(1)}
+.extensions-menu .extensions-item,
+.extensions-menu .extensions-divider{
+  animation:menuItemIn .26s cubic-bezier(.16,1,.3,1) both;
+}
+.extensions-menu .extensions-item:nth-child(1){animation-delay:0ms}
+.extensions-menu .extensions-item:nth-child(2){animation-delay:24ms}
+.extensions-menu .extensions-item:nth-child(3){animation-delay:48ms}
+.extensions-menu .extensions-item:nth-child(n+4){animation-delay:72ms}
 .extensions-item{display:flex;align-items:center;gap:8px;width:100%;padding:6px 9px;border:none;background:transparent;border-radius:4px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));line-height:1.3;transition:background .1s,color .1s}
 .extensions-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .extensions-item.on{color:hsl(var(--text-100))}
@@ -628,7 +722,7 @@ true) but the dropdown never shows — see commit history. */
 .extensions-item.on .extensions-item-check svg{opacity:1}
 .extensions-divider{height:1px;background:hsl(var(--border-300)/0.25);margin:3px 0}
 @media (max-width:600px){.model-picker-trigger,.extensions-trigger{font-size:calc(12px * var(--app-font-scale, 1));padding:5px 9px}}
-@media (max-width:768px){.model-picker-menu{left:0;right:auto;transform:translateY(-2px);min-width:200px;max-width:calc(100vw - 24px)}.model-picker[data-open="true"] .model-picker-menu{transform:translateY(0)}}
+@media (max-width:768px){.model-picker-menu{left:0;right:auto;transform-origin:top left;transform:translateY(-6px) scale(.96);min-width:200px;max-width:calc(100vw - 24px)}.model-picker[data-open="true"] .model-picker-menu{transform:translateY(0) scale(1)}}
 
 .settings-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .settings-btn-mini{padding:4px 10px;border-radius:8px;font-size:calc(12px * var(--app-font-scale, 1));background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);color:hsl(var(--text-200));cursor:pointer;transition:background-color .1s,border-color .1s}
@@ -820,15 +914,66 @@ true) but the dropdown never shows — see commit history. */
    sole session indicator now. Hide any stale nodes defensively. */
 .chat-domain{display:none !important}
 .chat-stats{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
-/* U-H2 — chat-header mode badge (Tutor/Chat), a pill next to chatStats. */
-.chat-mode-badge{display:inline-block;font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;padding:2px 9px;border-radius:999px;letter-spacing:.03em;vertical-align:middle;border:0.5px solid hsl(var(--border-300)/0.35);color:hsl(var(--text-400));background:hsl(var(--bg-300))}
+/* U-H2 — chat-header mode badge (Tutor/Chat), a pill next to chatStats.
+   Animated so the text/background/color crossfade between Tutor and Chat
+   instead of snapping instantly. The `badgeSwap` keyframe runs once per
+   class change (driven by JS clearing & re-adding the class). */
+.chat-mode-badge{display:inline-flex;align-items:center;gap:4px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;padding:2px 9px;border-radius:999px;letter-spacing:.03em;vertical-align:middle;border:0.5px solid hsl(var(--border-300)/0.35);color:hsl(var(--text-400));background:hsl(var(--bg-300));transition:background-color .3s ease,color .3s ease,border-color .3s ease;animation:badgeSwap .35s cubic-bezier(.16,1,.3,1) both}
 .chat-mode-badge.mode-tutor{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12);border-color:hsl(var(--accent-000)/0.25)}
 .chat-mode-badge.mode-chat{color:hsl(var(--text-300));background:hsl(var(--bg-300))}
-/* U-H1 — Tutor/Chat segmented control on the topic-setup screen. */
-.mode-segmented{display:flex;width:max-content;margin:0 auto 14px;gap:2px;padding:3px;border-radius:10px;background:hsl(var(--bg-300));border:0.5px solid hsl(var(--border-300)/0.3)}
-.mode-segmented .app-mode-toggle{appearance:none;-webkit-appearance:none;border:0;cursor:pointer;background:transparent;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale, 1));font-weight:600;padding:6px 18px;border-radius:8px;transition:background .12s,color .12s}
+@keyframes badgeSwap{
+  0%{transform:scale(.92);opacity:.5;filter:blur(1px)}
+  60%{transform:scale(1.04);opacity:1;filter:blur(0)}
+  100%{transform:scale(1);opacity:1;filter:blur(0)}
+}
+/* U-H1 — Tutor/Chat segmented control on the topic-setup screen.
+   Uses a pseudo-element (.mode-segmented::before) as the sliding
+   indicator behind the active segment. JS keeps --seg-active set
+   on the container (an index 0/1) and the indicator translates
+   accordingly. This is cheaper and smoother than animating the
+   active segment's background because the indicator is a single
+   layer that moves, not a layout-shifting box repaint. */
+.mode-segmented{position:relative;display:flex;width:max-content;margin:0 auto 14px;gap:0;padding:3px;border-radius:10px;background:hsl(var(--bg-300));border:0.5px solid hsl(var(--border-300)/0.3);isolation:isolate}
+.mode-segmented::before{
+  content:"";
+  position:absolute;
+  top:3px;bottom:3px;
+  /* default (chat active) — left half of the pill */
+  left:3px;
+  width:calc(50% - 3px);
+  background:hsl(var(--bg-100));
+  border-radius:8px;
+  box-shadow:0 1px 2px hsl(0 0% 0%/0.12);
+  transition:left .26s cubic-bezier(.4,0,.2,1),width .26s cubic-bezier(.4,0,.2,1),background-color .26s ease;
+  z-index:-1;
+  pointer-events:none;
+}
+.mode-segmented[data-seg-active="tutor"]::before{
+  left:calc(50% + 0px);
+  width:calc(50% - 3px);
+  background:hsl(var(--accent-000)/0.14);
+}
+.mode-segmented .app-mode-toggle{
+  position:relative;
+  appearance:none;-webkit-appearance:none;
+  border:0;cursor:pointer;
+  background:transparent;
+  color:hsl(var(--text-400));
+  font-size:calc(13px * var(--app-font-scale, 1));
+  font-weight:600;
+  padding:6px 18px;
+  border-radius:8px;
+  transition:color .18s ease,transform .12s ease;
+  min-width:80px;
+  user-select:none;
+}
 .mode-segmented .app-mode-toggle:hover{color:hsl(var(--text-100))}
-.mode-segmented .app-mode-toggle.active{background:hsl(var(--bg-100));color:hsl(var(--text-100));box-shadow:0 1px 2px hsl(0 0% 0%/0.12)}
+.mode-segmented .app-mode-toggle.active{color:hsl(var(--text-100))}
+.mode-segmented .app-mode-toggle:active{transform:scale(.97)}
+.mode-segmented .app-mode-toggle[data-mode="tutor"].active{color:hsl(var(--accent-000))}
+@keyframes segIconPop{0%{transform:scale(.85);opacity:.6}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}
+.mode-segmented .app-mode-toggle.active svg,
+.mode-segmented .app-mode-toggle .seg-icon{animation:segIconPop .28s ease-out both}
 /* API status indicator — small colored dot in the top-bar; full
    status text appears in the tooltip (title attr). */
 .chat-api-badge{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:hsl(var(--text-500));cursor:help;margin:0 4px;overflow:hidden;text-indent:-9999px;vertical-align:middle}
@@ -845,21 +990,23 @@ true) but the dropdown never shows — see commit history. */
    behind a "▾" toggle on the header. */
 .sources-card{margin-top:8px;font-size:calc(12px * var(--app-font-scale, 1));border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.5));border-radius:8px;background:hsl(var(--bg-100)/0.5);overflow:hidden}
 [data-theme=socrates][data-mode=dark] .sources-card{background:hsl(var(--bg-200)/0.4)}
-.sources-head{display:flex;align-items:center;padding:5px 12px;cursor:pointer;user-select:none;color:hsl(var(--text-500));transition:color .1s}
-.sources-head:hover{color:hsl(var(--accent-000))}
+.sources-head{display:flex;align-items:center;padding:5px 12px;cursor:pointer;user-select:none;color:hsl(var(--text-500));transition:color .2s cubic-bezier(.4,0,.2,1),background .2s cubic-bezier(.4,0,.2,1),transform .12s ease}
+.sources-head:hover{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.04)}
+.sources-head:active{transform:scale(.995)}
 .sources-label{font-weight:500}
-.sources-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .15s}
-.sources-card.open .sources-chev{transform:rotate(180deg)}
+.sources-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .26s cubic-bezier(.4,0,.2,1),color .2s ease}
+.sources-card.open .sources-chev{transform:rotate(180deg);color:hsl(var(--accent-000))}
 .sources-rest{display:none}
 .sources-card.open .sources-rest{display:block}
 .sources-row-wrap{border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.3))}
 .sources-row-wrap:first-of-type{border-top:0}
 .sources-row-wrap.open{background:hsl(var(--bg-100)/0.4)}
 [data-theme=socrates][data-mode=dark] .sources-row-wrap.open{background:hsl(var(--bg-200)/0.3)}
-.sources-row{display:flex;align-items:baseline;gap:8px;padding:7px 12px;color:hsl(var(--text-200));text-decoration:none;transition:background .1s,color .1s;line-height:1.4;cursor:pointer}
-a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.6)}
+.sources-row{display:flex;align-items:baseline;gap:8px;padding:7px 12px;color:hsl(var(--text-200));text-decoration:none;transition:background .18s cubic-bezier(.4,0,.2,1),color .18s cubic-bezier(.4,0,.2,1),transform .12s ease;line-height:1.4;cursor:pointer}
+a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.6);transform:translateX(2px)}
+a.sources-row:active{transform:translateX(2px) scale(.99)}
 [data-theme=socrates][data-mode=dark] a.sources-row:hover{background:hsl(var(--bg-200)/0.6)}
-.sources-row-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .15s;flex-shrink:0}
+.sources-row-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .26s cubic-bezier(.4,0,.2,1),color .2s ease;flex-shrink:0}
 .sources-row-wrap.open .sources-row-chev{transform:rotate(180deg);color:hsl(var(--accent-100))}
 .sources-num{flex-shrink:0;color:hsl(var(--text-500));font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;min-width:22px}
 .sources-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1052,9 +1199,9 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
   padding-top:12px;
   padding-bottom:env(safe-area-inset-bottom, 0px);
 }
-.chat-input-wrap{background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.55);border-radius:24px;overflow:hidden;transition:border-color .2s,box-shadow .2s;margin:0 12px;
+.chat-input-wrap{background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.55);border-radius:24px;overflow:hidden;transition:border-color .25s cubic-bezier(.4,0,.2,1),box-shadow .25s cubic-bezier(.4,0,.2,1),transform .25s cubic-bezier(.4,0,.2,1);margin:0 12px;
   box-shadow:0 2px 12px hsl(var(--always-black)/8%)}
-.chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.6);box-shadow:0 2px 20px hsl(var(--accent-000)/12%)}
+.chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.6);box-shadow:0 2px 20px hsl(var(--accent-000)/12%);transform:translateY(-1px)}
 #chatInputArea{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(15px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));min-height:36px;max-height:120px;overflow-y:auto;scrollbar-width:none;font-family:var(--font-sans);padding:8px 14px}
 #chatInputArea::-webkit-scrollbar{display:none}
 #chatInputArea::placeholder{color:hsl(var(--text-400))}
@@ -1063,9 +1210,11 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
 /* P_attachments — paperclip button to the left of the hint. Same
    circle footprint as the send button so the footer stays balanced
    regardless of attach state. */
-.attach-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:transparent;color:hsl(var(--text-400));transition:background-color .08s,color .08s;flex-shrink:0;cursor:pointer;border:none;padding:0}
+.attach-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:transparent;color:hsl(var(--text-400));transition:background-color .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),transform .12s ease;flex-shrink:0;cursor:pointer;border:none;padding:0}
 .attach-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
-.attach-btn svg{width:16px;height:16px}
+.attach-btn:active{transform:scale(.88)}
+.attach-btn svg{width:16px;height:16px;transition:transform .2s cubic-bezier(.4,0,.2,1)}
+.attach-btn:hover svg{transform:rotate(-12deg)}
 .attach-btn.has-error{color:hsl(0 70% 50%)}
 /* P_attachments — chip strip rendered above the textarea. Hidden
    when there are no pending attachments. */
@@ -1089,9 +1238,13 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
    user drags files over the input. */
 .chat-input-wrap.drag-over{border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.2)}
 .chat-input-bar.drag-over-doc{position:relative}.chat-input-bar.drag-over-doc::after{content:'';position:absolute;inset:4px;border:2px dashed hsl(var(--accent-000)/0.4);border-radius:18px;pointer-events:none;z-index:20}
-.send-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .08s,color .08s;flex-shrink:0}
+.send-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),box-shadow .22s cubic-bezier(.4,0,.2,1),transform .12s ease;flex-shrink:0;cursor:pointer;border:none;padding:0}
 .send-btn:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
-.send-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}.send-btn.active:hover{background:hsl(var(--accent-100))}
+.send-btn:active{transform:scale(.88)}
+.send-btn svg{width:16px;height:16px;transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.send-btn:hover svg{transform:translateY(-1px)}
+.send-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));box-shadow:0 2px 8px hsl(var(--accent-000)/0.18)}.send-btn.active:hover{background:hsl(var(--accent-100));box-shadow:0 4px 14px hsl(var(--accent-000)/0.30);transform:translateY(-1px)}
+.send-btn.active:active{transform:translateY(0) scale(.92)}
 .send-btn svg{width:16px;height:16px}
 /* Agent-run state: send button morphs into a red Stop. Same DOM
    element, no layout shift. */
@@ -2078,46 +2231,8 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
 .msg-body a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
 .msg-body a:hover{color:hsl(var(--accent-100))}
 .msg-body img{max-width:100%;border-radius:8px;margin:8px 0}
-/* ─── Stream cursor ──────────────────────────────────────────────
-   A soft pulsing caret instead of a hard step-end blink. The previous
-   step-end blink felt jarring during long responses (text would suddenly
-   show/hide), so we use a smooth opacity + scale "breathing" curve over
-   ~1.1s, with a faint accent-tinted glow that ties it visually to the
-   spinner shown while waiting for the first delta. The cursor lives
-   inline at the end of the streaming body (after the pending chunk) so
-   it appears to be typing where new text will arrive. */
-.stream-cursor{
-  display:inline-block;
-  width:2px;
-  height:1.05em;
-  margin-left:1px;
-  vertical-align:-0.18em;
-  background:linear-gradient(180deg,hsl(var(--accent-000)) 0%,hsl(var(--accent-000)/0.55) 100%);
-  border-radius:1px;
-  box-shadow:0 0 6px hsl(var(--accent-000)/0.35);
-  animation:streamCursorPulse 1.1s cubic-bezier(.4,0,.2,1) infinite;
-  will-change:opacity,transform;
-}
-@keyframes streamCursorPulse{
-  0%,100%{opacity:.95;transform:scaleY(1)}
-  50%{opacity:.25;transform:scaleY(.78)}
-}
-/* Legacy single-glyph caret (▍) — kept as a fallback for any caller
-   still rendering the old character. Wrapped in .stream-cursor-text
-   so the smoother bar caret above remains the default. */
-.stream-cursor-text{
-  display:inline-block;
-  color:hsl(var(--text-400));
-  font-size:calc(14px * var(--app-font-scale, 1));
-  margin-left:1px;
-  vertical-align:baseline;
-  animation:streamCursorFade 1.1s ease-in-out infinite;
-  will-change:opacity;
-}
-@keyframes streamCursorFade{
-  0%,100%{opacity:1}
-  50%{opacity:.15}
-}
+.stream-cursor{display:inline-block;animation:blink 1s step-end infinite;color:hsl(var(--text-400));font-size:calc(14px * var(--app-font-scale, 1));margin-left:1px;vertical-align:baseline}
+@keyframes blink{50%{opacity:0}}
 
 /* Think block — cream/gold redesign.
    - Collapsed by default (the markup no longer carries `open` once
@@ -2505,7 +2620,9 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .thinking-dot[data-mode="chat"]{color:hsl(var(--accent-000))}
 .thinking-dot .loading{width:14px;height:14px}
 /* Container that stacks the "Thinking…" badge above the skeleton
-   shimmer lines. Used by addStreamingMessage in main.js. */
+   shimmer lines. Used by addStreamingMessage in main.js. The skeleton
+   is the visual cue while waiting for the first delta — the streaming
+   text itself renders without chunked fade-in. */
 .thinking-placeholder{display:flex;flex-direction:column;gap:14px;padding:2px 0 4px}
 /* Restore the small inline spinner used inside .thinking-dot,
    .think-summary, .chat-hint, .appendThinking pill, and the
@@ -2525,67 +2642,12 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    instead of all collapsing into one run-on line. */
 .stream-content{white-space:normal;word-wrap:break-word;overflow-wrap:break-word}
 .stream-content.stream-typing{white-space:pre-wrap;word-wrap:break-word}
-.stream-chunk{display:block;opacity:1}
-/* Pending chunk — the trailing slice after the last emitted `\n\n`.
-   It's a <div class="stream-chunk stream-chunk-pending"> (not a
-   <span>) because formatMsgProgressive may return HTML with
-   block-level children like <p>, and a <span> cannot legally wrap
-   block elements. We keep `white-space:pre-wrap` so newlines within
-   a streaming paragraph are preserved until the closing \n\n arrives,
-   but the element itself is block-level. The chunk has no fade-in
-   class so its innerHTML re-renders don't re-trigger animations. */
-.stream-chunk.stream-chunk-pending{white-space:pre-wrap}
-/* Fade-in animation for each closed chunk.
-   Two variants live here:
-     - `.stream-chunk-in`     — default for prose / lists / headings.
-                                Uses opacity + tiny translateY only
-                                (NO blur) because filter:blur() would
-                                rasterise-blur any KaTeX math inside
-                                the chunk (KaTeX output is heavy on
-                                inline SVG with margin-right /
-                                vertical-align transforms, which
-                                blur+gpu-promote doesn't play nicely
-                                with).
-     - `.stream-chunk-in-rich`— for chunks containing viz/mermaid
-                                iframes or other rendered diagrams.
-                                A slower fade (720ms) with slightly
-                                more translateY so the user sees the
-                                chart "settle" rather than snap in.
-                                No blur either — diagrams have inline
-                                SVGs that would smear under blur.
 
-   Both share a per-chunk stagger via --stream-chunk-i (35ms steps)
-   so when two chunks emit in the same delta they cascade in. */
-.stream-chunk-in{
-  animation:streamChunkFade .42s cubic-bezier(.16,1,.3,1) both;
-  animation-delay:calc(var(--stream-chunk-i, 0) * 35ms);
-}
-.stream-chunk-in-rich{
-  animation:streamChunkFadeRich .72s cubic-bezier(.16,1,.3,1) both;
-  animation-delay:calc(var(--stream-chunk-i, 0) * 35ms);
-}
-@keyframes streamChunkFade{
-  from{opacity:0;transform:translateY(2px)}
-  to{opacity:1;transform:translateY(0)}
-}
-@keyframes streamChunkFadeRich{
-  from{opacity:0;transform:translateY(6px)}
-  to{opacity:1;transform:translateY(0)}
-}
-/* Normalise paragraph margins inside chunks so multiple chunks stack
-   with the same spacing as multiple paragraphs in a single chunk,
-   and so the first / last paragraph inside a chunk don't carry an
-   extra gap to the chunk border. */
-.stream-content>.stream-chunk>p:first-child{margin-top:0}
-.stream-content>.stream-chunk>p:last-child{margin-bottom:0}
-
-/* ─── Skeleton placeholder while waiting for the first delta ──────
-   When the assistant bubble is created but no text has streamed yet,
-   we render a few shimmering placeholder lines so the user gets a
-   visual "loading" cue (and an idea of how long the response might
-   be) instead of a single spinner + "Thinking…" text. The shimmer is
-   a moving highlight bar that sweeps across neutral bars of varying
-   widths, in the same vein as Notion / Linear / ChatGPT skeletons. */
+/* Skeleton placeholder — 5 shimmer lines below the "Thinking…" badge
+   while waiting for the first delta. The shimmer is a moving highlight
+   bar that sweeps across neutral bars of varying widths, mirroring the
+   placeholders used by Notion / Linear / ChatGPT. Once the first text
+   delta lands, the skeleton is removed alongside the placeholder. */
 .stream-skeleton{display:flex;flex-direction:column;gap:10px;padding:2px 0 4px;max-width:100%}
 .stream-skeleton-line{position:relative;overflow:hidden;height:13px;border-radius:6px;background:hsl(var(--bg-200)/0.85)}
 .stream-skeleton-line::after{
@@ -2599,12 +2661,6 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   transform:translateX(-100%);
   animation:shimmerSweep 1.6s cubic-bezier(.4,0,.2,1) infinite;
 }
-/* Pulse the whole skeleton block softly so it doesn't feel static. */
-.stream-skeleton{animation:streamSkeletonPulse 2.4s ease-in-out infinite}
-@keyframes streamSkeletonPulse{
-  0%,100%{opacity:.95}
-  50%{opacity:.7}
-}
 .stream-skeleton-line:nth-child(1){width:88%}
 .stream-skeleton-line:nth-child(2){width:72%}
 .stream-skeleton-line:nth-child(3){width:94%}
@@ -2615,27 +2671,6 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .stream-skeleton-line:nth-child(3)::after{animation-delay:.3s}
 .stream-skeleton-line:nth-child(4)::after{animation-delay:.45s}
 .stream-skeleton-line:nth-child(5)::after{animation-delay:.6s}
-/* When the first delta lands, fade the skeleton out instead of
-   removing it instantly — the new chunks fade in while the old
-   skeleton fades away, giving a smooth "text takes over" feel. */
-.stream-skeleton-out{animation:streamSkeletonOut .35s cubic-bezier(.4,0,.2,1) forwards;pointer-events:none}
-@keyframes streamSkeletonOut{
-  from{opacity:1;transform:translateY(0)}
-  to{opacity:0;transform:translateY(-4px)}
-}
-
-/* ─── Reduced motion ────────────────────────────────────────────
-   Users with prefers-reduced-motion: reduce get the streamed text
-   instantly without any fade / shimmer / pulse, but we keep the
-   cursor pulsing (the soft opacity sweep is far less intrusive than
-   a step-end blink and important for legibility). */
-@media (prefers-reduced-motion: reduce){
-  .stream-chunk-in{animation:none}
-  .stream-skeleton{animation:none}
-  .stream-skeleton-line::after{animation-duration:3s;opacity:.4}
-  .stream-skeleton-out{animation-duration:.12s}
-  .stream-cursor{animation-duration:2.2s;box-shadow:none}
-}
 
 /* Inline error/retry state — replaces the streaming bubble on failure */
 .msg-error{display:flex;align-items:center;gap:8px;padding:6px 10px;border:0.5px solid hsl(0 60% 50%/0.25);border-radius:8px;background:transparent;color:hsl(0 60% 70%);font-size:calc(12px * var(--app-font-scale, 1))}
@@ -3425,7 +3460,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 @media(max-width:480px){
   .main-inner{padding:2vh 8px 20px}
   .topic-title{font-size:calc(1.25rem * var(--app-font-scale, 1));padding:16px 4px 0}
-  .topic-sub{font-size:calc(12.5px * var(--app-font-scale, 1));padding:0 4px}
+  .topic-sub{font-size:calc(12.5px * var(--app-font-scale, 1));padding:0 4px;white-space:nowrap}
   .chat-messages{padding:8px 4px}
   .msg-body{padding:10px 12px;font-size:calc(13px * var(--app-font-scale, 1))}
   .msg.user .msg-body{font-size:calc(13px * var(--app-font-scale, 1))}
@@ -3470,8 +3505,10 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   width:100%; min-height:38px; display:flex; align-items:center; gap:7px;
   padding:8px 10px; border:0; background:transparent; color:hsl(var(--text-300));
   font:500 calc(12px * var(--app-font-scale,1)) var(--font-sans); text-align:left; cursor:pointer;
+  transition:background .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),transform .12s ease;
 }
 .tool-run-summary:hover{background:hsl(var(--bg-200)/.5);color:hsl(var(--text-100))}
+.tool-run-summary:active{transform:scale(.997)}
 .tool-run-summary:focus-visible{outline:2px solid hsl(var(--accent-000)/.65);outline-offset:-2px}
 .tool-run-summary-dot{width:7px;height:7px;border-radius:50%;background:hsl(var(--text-500));flex:0 0 auto}
 .tool-run-group[data-state="running"] .tool-run-summary-dot{background:hsl(var(--accent-000));animation:search-progress-dot 1.1s ease-in-out infinite}
@@ -3480,8 +3517,8 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .tool-run-group[data-state="cancelled"] .tool-run-summary-dot{background:hsl(35 58% 48%)}
 .tool-run-summary-label{font-weight:600;color:hsl(var(--text-200))}
 .tool-run-summary-meta{color:hsl(var(--text-500));font-size:calc(11px * var(--app-font-scale,1));font-variant-numeric:tabular-nums}
-.tool-run-summary-chev{margin-left:auto;color:hsl(var(--text-500));transition:transform .15s ease}
-.tool-run-group.open .tool-run-summary-chev{transform:rotate(180deg)}
+.tool-run-summary-chev{margin-left:auto;color:hsl(var(--text-500));transition:transform .26s cubic-bezier(.4,0,.2,1),color .2s ease}
+.tool-run-group.open .tool-run-summary-chev{transform:rotate(180deg);color:hsl(var(--accent-000))}
 .tool-run-list{padding:0 8px 8px;border-top:1px solid hsl(var(--border-300)/.18)}
 .tool-run-list .agent-tool-card{margin-top:7px;background:hsl(var(--bg-000)/.45);border-color:hsl(var(--border-300)/.3)}
 .tool-run-list .agent-tool-card.open{box-shadow:none}
@@ -3502,4 +3539,69 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   .chat-input-footer{min-height:44px;padding:0 8px 6px}
   .chat-input-hint{display:none}
   .tool-run-summary{min-height:44px}
+}
+
+/* A11Y — respect the user's OS-level "reduce motion" preference. Disable
+   the new animations introduced by the polish pass: the sliding segmented
+   indicator, the scale-up on picker menus, the menu-item stagger, the
+   chat-mode-badge swap, the trigger pulse, and the segment icon pop, plus
+   the hover-lift/active-press-down transforms on buttons. Basic color/border
+   transitions are kept because those convey state, not motion. */
+@media (prefers-reduced-motion: reduce){
+  .mode-segmented::before{transition:none}
+  .mode-segmented .app-mode-toggle{transition:color .12s ease}
+  .mode-segmented .app-mode-toggle:active{transform:none}
+  .mode-segmented .app-mode-toggle.active svg,
+  .mode-segmented .app-mode-toggle .seg-icon{animation:none}
+  .model-picker-menu,.extensions-menu{transition:opacity .12s ease;transform:none !important}
+  .model-picker-menu .model-picker-item,
+  .model-picker-menu .model-picker-divider,
+  .model-picker-menu .model-picker-filter,
+  .model-picker-menu .model-picker-add,
+  .model-picker-menu .model-picker-empty,
+  .extensions-menu .extensions-item,
+  .extensions-menu .extensions-divider{animation:none}
+  .model-picker-trigger.has-model,
+  .extensions-trigger.has-active{animation:none}
+  .chat-mode-badge{animation:none}
+  .display-prefs-segs::before{transition:none}
+  .display-prefs-seg:active{transform:none}
+  .model-picker-trigger svg.model-picker-caret,
+  .extensions-caret,
+  .chat-model-caret,
+  .sources-chev,
+  .sources-row-chev,
+  .tool-run-summary-chev{transition:transform .12s ease,color .12s ease}
+  /* Disable transform-on-press/hover for all interactive controls. */
+  .start-btn:active,
+  .send-btn:active,
+  .send-btn.active:active,
+  .start-btn.active:active,
+  .attach-btn:active,
+  .icon-btn:active,
+  .sidebar-tab:active,
+  .sidebar-project-chip:active,
+  .recent-item:active,
+  .recent-item-del:active,
+  .recent-item-del:hover,
+  .recents-new-btn:active,
+  .kb-node:active,
+  .user-row:active,
+  .sources-head:active,
+  .sources-row:active,
+  .tool-run-summary:active,
+  .new-reply-pill:active,
+  .new-reply-pill:hover{transform:none !important}
+  /* Disable icon micro-rotations. */
+  .attach-btn:hover svg,
+  .recents-new-btn:hover svg,
+  .recent-item-del:hover svg,
+  .send-btn:hover svg,
+  .sidebar-project-add:hover,
+  .sidebar-project-add:active{transform:none !important}
+  /* Disable hover translateX shifts that move content. */
+  .recent-item:hover,
+  .sources-row:hover{transform:none !important}
+  /* Disable focus-within lift on the chat input. */
+  .chat-input-wrap:focus-within{transform:none}
 }

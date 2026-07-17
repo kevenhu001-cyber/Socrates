@@ -140,6 +140,7 @@ router.get('/usage', async (req, res, next) => {
       preferences: user.preferences ?? {},
       defaultModel: user.defaultModel,
       subscriptionEnd,
+      paymentMethod: (user.preferences && user.preferences.paymentMethod) || null,
     };
 
     return res.json({
@@ -153,6 +154,52 @@ router.get('/usage', async (req, res, next) => {
         beagleLimit,
       },
     });
+  } catch (err) { next(err); }
+});
+
+/**
+ * POST /api/account/payment-method — store non-sensitive payment method
+ * metadata (brand, last4, expiry month/year). Full card number and CVC
+ * are NEVER sent or stored — the frontend strips them before the request.
+ */
+router.post('/payment-method', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const { brand, last4, expMonth, expYear } = req.body || {};
+
+    if (!brand || !last4 || !expMonth || !expYear) {
+      return res.status(400).json({ code: 'INVALID_INPUT', message: 'brand, last4, expMonth, expYear are required' });
+    }
+    if (!/^\d{4}$/.test(String(last4))) {
+      return res.status(400).json({ code: 'INVALID_LAST4', message: 'last4 must be exactly 4 digits' });
+    }
+
+    const pm = { brand, last4, expMonth: parseInt(expMonth, 10), expYear: parseInt(expYear, 10), updatedAt: new Date().toISOString() };
+
+    await db
+      .update(users)
+      .set({
+        preferences: sql`jsonb_set(COALESCE(preferences, '{}'::jsonb), '{paymentMethod}', ${JSON.stringify(pm)}::jsonb)`,
+      })
+      .where(eq(users.id, req.userId));
+
+    return res.json({ ok: true, paymentMethod: pm });
+  } catch (err) { next(err); }
+});
+
+/**
+ * DELETE /api/account/payment-method — remove saved payment method metadata.
+ */
+router.delete('/payment-method', async (req, res, next) => {
+  try {
+    const db = getDb();
+    await db
+      .update(users)
+      .set({
+        preferences: sql`COALESCE(preferences, '{}'::jsonb) #- '{paymentMethod}'`,
+      })
+      .where(eq(users.id, req.userId));
+    return res.json({ ok: true });
   } catch (err) { next(err); }
 });
 

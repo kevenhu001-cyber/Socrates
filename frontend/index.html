@@ -236,7 +236,7 @@
     <div class="sidebar-header">
       <div class="sidebar-logo">
         <img src="/logo.png" width="18" height="18" alt="" style="border-radius:3px;flex-shrink:0">
-        <span>Socrates</span>
+        <span><em>S</em>ocrates</span>
       </div>
       <div style="display:flex;align-items:center;gap:2px">
         <button class="icon-btn" id="newChatBtn" title="Start a new chat" onclick="event.preventDefault();resetApp()">
@@ -318,16 +318,29 @@
               <button class="display-prefs-seg" data-width="1.7" title="Full width">XL</button>
             </div>
           </div>
-          <!-- Accent color picker — Ant Design ColorPicker-inspired -->
+          <!-- Accent color picker — Ant Design ColorPicker-inspired.
+               Preset swatches plus a custom <input type="color"> for any
+               user-chosen accent, with a reset button to restore defaults. -->
           <div class="display-prefs-row">
-            <div class="display-prefs-label"><span>Accent color</span></div>
+            <div class="display-prefs-label">
+              <span>Accent color</span>
+              <button type="button" class="accent-reset-btn" id="accentResetBtn" title="Reset accent to default" onclick="resetAccentColor()">Reset</button>
+            </div>
             <div class="display-prefs-colors" id="displayAccentColors">
               <button class="color-swatch" data-hue="35" style="--swatch:hsl(35 80% 50%)" title="Gold" onclick="setAccentColor(35)"></button>
               <button class="color-swatch" data-hue="160" style="--swatch:hsl(160 70% 45%)" title="Teal" onclick="setAccentColor(160)"></button>
               <button class="color-swatch" data-hue="210" style="--swatch:hsl(210 80% 50%)" title="Blue" onclick="setAccentColor(210)"></button>
               <button class="color-swatch" data-hue="270" style="--swatch:hsl(270 70% 55%)" title="Purple" onclick="setAccentColor(270)"></button>
               <button class="color-swatch" data-hue="330" style="--swatch:hsl(330 75% 50%)" title="Rose" onclick="setAccentColor(330)"></button>
-              <button class="color-swatch active" data-hue="40" style="--swatch:hsl(40 75% 50%)" title="Amber (default)" onclick="setAccentColor(40)"></button>
+              <button class="color-swatch" data-hue="40" style="--swatch:hsl(40 75% 50%)" title="Amber (default)" onclick="setAccentColor(40)"></button>
+              <!-- Custom accent: a native color input styled as a swatch.
+                   oninput fires every time the user drags in the picker,
+                   so the UI updates live. The default value matches the
+                   Amber preset so it doesn't start blank. -->
+              <label class="color-swatch color-swatch-custom" id="accentCustomSwatch" title="Custom color">
+                <input type="color" id="accentCustomInput" value="#d99a2b" oninput="setAccentCustom(this.value)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              </label>
             </div>
           </div>
           <!-- Grid background toggle -->

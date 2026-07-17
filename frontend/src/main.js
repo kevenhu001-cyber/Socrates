@@ -80,7 +80,7 @@ import {
   setDisplayFont, setDisplayWidth,
   setBackgroundColor, setBackgroundDark, setBackgroundLight,
   resetBackgroundColor, resetBackgroundDark, resetBackgroundLight,
-  toggleGrid, setAccentColor, toggleDisplayPrefs, toggleTheme
+  toggleGrid, setAccentColor, setAccentCustom, resetAccentColor, toggleDisplayPrefs, toggleTheme
 } from './displayPrefs.js';
 import {
   getActiveProvider,
@@ -116,7 +116,7 @@ window.parseHexColor=parseHexColor;window.applyCustomBg=applyCustomBg;window.rem
 window.setDisplayFont=setDisplayFont;window.setDisplayWidth=setDisplayWidth;
 window.setBackgroundColor=setBackgroundColor;window.setBackgroundDark=setBackgroundDark;window.setBackgroundLight=setBackgroundLight;
 window.resetBackgroundColor=resetBackgroundColor;window.resetBackgroundDark=resetBackgroundDark;window.resetBackgroundLight=resetBackgroundLight;
-window.toggleGrid=toggleGrid;window.setAccentColor=setAccentColor;
+window.toggleGrid=toggleGrid;window.setAccentColor=setAccentColor;window.setAccentCustom=setAccentCustom;window.resetAccentColor=resetAccentColor;
 window.toggleDisplayPrefs=toggleDisplayPrefs;window.toggleTheme=toggleTheme;
 
 /* Expose main.js functions to window for inline onclick handlers.
@@ -180,10 +180,17 @@ try{
   var savedTheme=localStorage.getItem("socrates-theme");
   if(savedTheme==="light"||savedTheme==="dark")document.documentElement.setAttribute("data-mode",savedTheme);
 }catch(e){}
-/* Restore saved accent hue */
+/* Restore saved accent: custom hex takes priority over preset hue,
+   since once a user picks a custom color the preset index would
+   just point at the nearest hue and overwrite their choice. */
 try{
-  var savedHue=localStorage.getItem("socrates-accent-hue");
-  if(savedHue)setAccentColor(parseInt(savedHue,10));
+  var savedHex=localStorage.getItem("socrates-accent-hex");
+  if(savedHex)setAccentCustom(savedHex);
+  else{
+    var savedHue=localStorage.getItem("socrates-accent-hue");
+    if(savedHue)setAccentColor(parseInt(savedHue,10));
+    else setAccentColor(40);
+  }
 }catch(e){}
 /* Apply text-size / content-width prefs (must run before any layout
    that depends on .main-inner max-width). */
@@ -4378,51 +4385,20 @@ function addStreamingMessage(opts){
      The stable-prefix cache below does the heavy lifting: it turns the
      per-frame full re-parse (O(n²) over a stream) into a tail-only
      re-parse (O(n) total). */
-  /* P_anim-chunks — throttled render so fast reasoning models don't
-     overwhelm the browser. The 150ms window (~6.5fps) is the upper
-     bound on how often formatMsgProgressive runs on the pending slice.
-     The actual visible cadence is driven by the chunk boundaries — a
-     new chunk only emits when the model produces a `\n\n` (paragraph
-     break), so the user never sees text appear "randomly" inside a
-     paragraph. 150ms (down from 250ms) keeps the pending slice feel
-     responsive without re-rendering at full 60fps. */
+  /* Throttle so fast reasoning models don't overwhelm the browser.
+     ~250ms is the upper bound on how often formatMsg runs. */
   var _lastRenderAt=0;
-  var _renderThrottleMs=150;
+  var _renderThrottleMs=250;
   /* P-H4 — skip an entire render pass when no new characters have
      arrived since the last one (e.g. the trailing rAF the throttle
      schedules after the stream goes idle). */
   var _lastParsedLen=-1;
-  /* P_anim-chunks — chunked-fade render state. Each "closed" chunk
-     (paragraph ending in \n\n) is rendered once into a
-     `<div class="stream-chunk stream-chunk-in">` and never re-rendered.
-     Only the trailing pending slice is re-parsed each frame.
-     lastClosedChunkEnd = end offset within `displayFull` of the last
-     emitted chunk. Used to know how much new text has arrived since
-     the previous emit. */
-  var lastClosedChunkEnd=0;
-  /* Per-render stagger index for new chunks. The CSS uses
-     `var(--stream-chunk-i)` to offset each chunk's animation start
-     by ~35ms, so when two chunks emit in the same delta they cascade
-     in instead of fading in lock-step. Reset on a new render pass. */
-  var _chunkStaggerIdx=0;
-  /* pendingChunk — a <div class="stream-chunk"> that holds the
-     trailing slice. It must be a block-level <div> rather than an
-     inline <span> because formatMsgProgressive may return HTML with
-     block-level children like <p>...</p>, and a <span> cannot legally
-     contain block elements (browsers would auto-close the span and
-     break the chunked DOM layout). The pending chunk has no fade-in
-     class so it doesn't re-animate on each re-render. */
-  var pendingChunk=null;
-  /* same idea for the think-block streaming DOM: each new appended
-     chunk of think content fades in, instead of re-rendering the
-     whole thinkDiv.innerHTML every frame. */
-  var thinkLastClosedEnd=0;
-  var thinkPendingChunk=null;
-  var thinkChunkStaggerIdx=0;
-  /* Same for the after-think content stream (the post-</think> answer). */
-  var afterLastClosedEnd=0;
-  var afterPendingChunk=null;
-  var afterChunkStaggerIdx=0;
+  /* P-H4 — stable-prefix cache for the no-think branch. Everything up to
+     the last blank line is treated as settled markdown blocks: parsed
+     once and cached here, so each frame only re-parses the unfinished
+     tail block instead of the whole accumulated response. */
+  var _stablePrefixText=null;
+  var _stablePrefixHtml="";
   /* Thinking pill (for chat-mode reasoning_content). Lazily created on
      the first onThinking(delta) callback so we don't add a pill for
      models that don't produce reasoning. Hidden when the user has
@@ -4557,17 +4533,12 @@ function addStreamingMessage(opts){
      timeout swaps placeholder for the error block via replaceChild
      so other children survive. */
   var FIRST_DELTA_TIMEOUT_MS=120000;
-  /* P_anim-skeleton — placeholder is now a 2-row stack: the original
-     "Thinking…" badge with the rotating ring on top, and a 5-line
-     skeleton below with shimmer bars. The skeleton gives the user a
-     "loading" feel that something is being prepared, mirroring the
-     placeholders used by Notion / Linear / ChatGPT. On the first text
-     delta the skeleton fades out smoothly (.stream-skeleton-out) and
-     is removed after the animation, while the rest of the placeholder
-     is removed as before by streamContent setup. Using a <div> here
-     (was a <span>) so we can stack the badge + skeleton vertically;
-     replaceChild(err, placeholder) and placeholder.remove() still
-     work the same way since they operate on the container itself. */
+  /* Thinking-placeholder = the "Thinking…" rotating-ring badge stacked
+     on top of a 5-line skeleton shimmer. The skeleton is the visual
+     loading cue while waiting for the first delta (mimics Notion /
+     Linear / ChatGPT placeholders). On the first text delta the entire
+     placeholder is removed as a single unit, since the streaming text
+     itself doesn't use any chunked fade-in. */
   var placeholder=document.createElement("div");
   placeholder.className="thinking-placeholder";
   var placeholderRow=document.createElement("span");
@@ -4579,9 +4550,6 @@ function addStreamingMessage(opts){
   placeholderRow.appendChild(placeholderRing);
   placeholderRow.appendChild(placeholderText);
   placeholder.appendChild(placeholderRow);
-  /* Skeleton: 5 lines of varying widths with a moving highlight bar.
-     Hidden from the moment the first delta arrives; until then it
-     pulses + shimmers to keep the bubble from feeling static. */
   var _skeleton=document.createElement("div");
   _skeleton.className="stream-skeleton";
   for(var _si=0;_si<5;_si++){
@@ -4752,28 +4720,16 @@ function addStreamingMessage(opts){
 
     /* P1.4 — post-think text gets the same block-level container
        treatment; empty until </think> arrives, then populated by
-       doRender via the shared chunked-fade emitter. The container
-       holds a single stream-chunk-pending span (the trailing slice,
-       rewritten each frame) plus the cursor — new closed chunks are
-       inserted before the pending span by _emitChunksInto. */
+       doRender via formatMsgProgressive. */
     thinkState.afterNode=document.createElement("div");
-    thinkState.afterNode.className="think-suffix stream-content";
+    thinkState.afterNode.className="think-suffix";
     body.appendChild(thinkState.afterNode);
-    var _afterPendingEl=document.createElement("div");
-    _afterPendingEl.className="stream-chunk stream-chunk-pending";
-    thinkState.afterNode.appendChild(_afterPendingEl);
-    /* P_anim-cursor — bar caret (no text glyph). The same component
-       used in the no-think stream, so the visual style is consistent
-       regardless of whether the model produces reasoning. */
+
     var cur=document.createElement("span");
     cur.className="stream-cursor";
+    cur.textContent="▍";
     body.appendChild(cur);
     thinkState.cursorNode=cur;
-    /* Sync the post-think refs so _emitChunksInto writes into the
-       freshly-created pending span, not a stale null. */
-    afterPendingChunk=_afterPendingEl;
-    _afterPending.value=_afterPendingEl;
-    _afterLastClosed.value=0;
 
     thinkState.details=det;
     thinkState.summary=sum;
@@ -4802,25 +4758,17 @@ function teardownThinkStructure(){
     body.innerHTML="";
     streamContent=document.createElement("div");
     streamContent.className="stream-content";
-    body.appendChild(streamContent);
-    /* P_anim-chunks — rebuild a single trailing pendingChunk so the
-       shared _emitChunksInto helper has somewhere to write. The
-       full `full` text is treated as one big pending slice; chunks
-       are emitted on subsequent frames as `\n\n` boundaries
-       become available. */
-    pendingChunk=document.createElement("div");
-    pendingChunk.className="stream-chunk stream-chunk-pending";
-    pendingChunk.innerHTML=formatMsgProgressive(full);
-    streamContent.appendChild(pendingChunk);
-    cursor=document.createElement("span");
-    cursor.className="stream-cursor";
-    body.appendChild(cursor);
-    /* Sync the helper refs so subsequent calls target this layout. */
-    _mainPending.value=pendingChunk;
-    _mainLastClosed.value=0;
+    streamContent.innerHTML=formatMsgProgressive(full);
     try{processPendingMermaid()}catch(_){}
     try{processPendingViz()}catch(_){}
     try{processPendingVizActions()}catch(_){}
+    body.appendChild(streamContent);
+    cursor=document.createElement("span");
+    cursor.className="stream-cursor";
+    cursor.textContent="▍";
+    /* Cursor is a child of streamContent (see note in the other
+       appendChild(cursor) callsites). */
+    streamContent.appendChild(cursor);
     thinkState.beforeNode=null;
     thinkState.details=null;
     thinkState.summary=null;
@@ -4845,90 +4793,6 @@ function teardownThinkStructure(){
     if((s.split("\\[").length-1)!==(s.split("\\]").length-1))return false;
     return true;
   }
-
-  /* P_anim-chunks — shared chunked-fade emitter. Walks `\n\n`
-     boundaries inside `fullText`, emits a new fade-in chunk for
-     each one we haven't emitted yet, and updates the trailing
-     pendingChunk. The state variables (lastClosedEnd, pendingChunk,
-     staggerIdx) are owned by the caller (one set per render container:
-     streamContent for the main no-think stream, thinkState.afterNode
-     for the post-think stream). The trailing pendingChunk is provided
-     by the caller because we never want to recreate it — its innerHTML
-     just gets rewritten in place.
-
-     P_anim-math-safe — animation class is picked per-chunk so KaTeX
-     and inline-SVG diagram content doesn't get rasterised-blurred
-     during fade-in. Detection is a cheap substring check on the
-     already-rendered HTML (formatMsgProgressive synchronously runs
-     KaTeX before returning, so the chunk's innerHTML is the final
-     DOM-ready string). Match keywords:
-       - `katex`        — KaTeX wrapper (inline or display math)
-       - `<svg`         — Mermaid / viz / KaTeX embedded SVGs
-       - `<iframe`      — viz cards (srcdoc sandbox)
-       - `<canvas`      — plot/chart widgets
-       - `mermaid`      — mermaid placeholder / source
-     Anything matching gets `.stream-chunk-in-rich` (slower, deeper
-     translateY, no blur) so a chart visibly "settles" without
-     smearing its inline SVG; everything else stays on the default
-     `.stream-chunk-in` (opacity + tiny translateY, also no blur —
-     see styles.css for the math-friendly reasoning). */
-  function _emitChunksInto(fullText, lastClosedEndRef, pendingChunkRef, staggerRef){
-    /* Reset stagger so all chunks emitted in a single frame cascade
-       in order (chunk 0, chunk 1, ...). Without this reset, the
-       stagger index would carry over from previous frames and the
-       cascade would look noisy. */
-    staggerRef.value=0;
-    while(true){
-      var _cut=fullText.indexOf("\n\n", lastClosedEndRef.value);
-      if(_cut<0)break;
-      var _endOfChunk=_cut+2;
-      var _prefixCheck=fullText.slice(0,_endOfChunk);
-      if(!_prefixIsSafeToCache(_prefixCheck))break;
-      var _newSlice=fullText.slice(lastClosedEndRef.value,_endOfChunk);
-      if(_newSlice.trim().length>0){
-        var _renderedHtml=formatMsgProgressive(_newSlice);
-        var _chunk=document.createElement("div");
-        /* P_anim-math-safe — pick the fade variant by content. The
-           detection runs on the rendered HTML (not the raw slice)
-           because KaTeX is already expanded to <span class="katex">
-           at this point, and inline-SVG diagrams are emitted as
-           full <svg> tags. A regex with all five keywords matches
-           in one pass; no need for five separate indexOf calls. */
-        if(/katex|<svg|<iframe|<canvas|mermaid/.test(_renderedHtml)){
-          _chunk.className="stream-chunk stream-chunk-in-rich";
-        }else{
-          _chunk.className="stream-chunk stream-chunk-in";
-        }
-        _chunk.style.setProperty("--stream-chunk-i", String(staggerRef.value % 4));
-        staggerRef.value++;
-        _chunk.innerHTML=_renderedHtml;
-        /* Insert before the pending chunk so DOM order matches the
-           text order (closed chunks first, pending trailing). */
-        pendingChunkRef.value.parentNode.insertBefore(_chunk,pendingChunkRef.value);
-        try{processPendingViz()}catch(_){}
-        try{processPendingVizActions()}catch(_){}
-      }
-      lastClosedEndRef.value=_endOfChunk;
-    }
-    /* Update the trailing pending slice — only when content changed. */
-    var _pendingText=fullText.slice(lastClosedEndRef.value);
-    if(pendingChunkRef.value && pendingChunkRef.value.dataset.lastRendered!==_pendingText){
-      pendingChunkRef.value.innerHTML=_pendingText?formatMsgProgressive(_pendingText):"";
-      pendingChunkRef.value.dataset.lastRendered=_pendingText;
-      try{processPendingViz()}catch(_){}
-      try{processPendingVizActions()}catch(_){}
-    }
-  }
-  /* Ref-shaped wrappers around the primitive numbers so the helper
-     above can mutate them by reference (var ints in JS are value-
-     type, but the refs let us share the same closure across both
-     render containers without passing 6 arguments). */
-  var _mainLastClosed={value:lastClosedChunkEnd};
-  var _mainPending={value:pendingChunk};
-  var _mainStagger={value:0};
-  var _afterLastClosed={value:afterLastClosedEnd};
-  var _afterPending={value:afterPendingChunk};
-  var _afterStagger={value:0};
 
   function doRender(){
     pendingRender=null;
@@ -5031,61 +4895,54 @@ function teardownThinkStructure(){
             }
           }
         }
-        /* P_anim-skeleton — fade out the skeleton smoothly before the
-           placeholder is removed. The animation runs in parallel with
-           the placeholder removal so the user sees the new chunks
-           fading in WHILE the old skeleton fades away — a smooth
-           "text takes over" transition instead of a hard cut. */
-        if(_skeleton && _skeleton.parentNode){
-          _skeleton.classList.add("stream-skeleton-out");
-          var _skRef=_skeleton;
-          setTimeout(function(){
-            try{if(_skRef && _skRef.parentNode)_skRef.parentNode.removeChild(_skRef)}catch(_){}
-          },380);
-        }
         try{placeholder.remove()}catch(_){}
         body.innerHTML="";
         streamContent=document.createElement("div");
         streamContent.className="stream-content";
         body.appendChild(streamContent);
-        /* P_anim-chunks — pendingChunk is the trailing slice div that
-           holds the unfinished last paragraph. Each frame rewrites
-           its innerHTML with formatMsgProgressive so unclosed $...$
-           or ``` stay inert until their closing delimiter arrives.
-           Using a <div> (not <span>) so block-level HTML like <p>
-           from formatMsgProgressive nests correctly. */
-        pendingChunk=document.createElement("div");
-        pendingChunk.className="stream-chunk stream-chunk-pending";
-        streamContent.appendChild(pendingChunk);
-        /* P_anim-cursor — pure CSS bar caret now (no text glyph). The
-           previous ▍ text character is replaced with a 2px bar whose
-           colour and glow are tied to the accent token, so the caret
-           feels native to the rest of the loading UI. Placed as a
-           sibling of streamContent (body child) so it sits on its
-           own line directly below the last chunk, matching the
-           pre-refactor layout. */
         cursor=document.createElement("span");
         cursor.className="stream-cursor";
-        body.appendChild(cursor);
-        /* Sync the helper-ref wrappers with the freshly-created nodes
-           so the shared _emitChunksInto helper knows where to write. */
-        _mainPending.value=pendingChunk;
-        _mainLastClosed.value=0;
+        cursor.textContent="▍";
+        /* Cursor is a child of streamContent (see note in the other
+           appendChild(cursor) callsites). */
+        streamContent.appendChild(cursor);
         if(savedPill)body.insertBefore(savedPill,body.firstChild);
         for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
           body.appendChild(savedToolCardArr[sci2]);
         }
       }
-      /* P_anim-chunks — incremental chunked emission. Walk through
-         every `\n\n` boundary in displayFull, emitting a new fade-in
-         chunk for each one we haven't emitted yet. Only the trailing
-         pending slice (after the last emitted boundary) is re-parsed
-         each frame, so the per-frame render cost is O(tail) instead
-         of O(whole text). Shared with the post-think container. */
-      _emitChunksInto(displayFull,_mainLastClosed,_mainPending,_mainStagger);
-      /* Mirror progress back to the outer var so finish() / abort()
-         can read where we left off without going through the refs. */
-      lastClosedChunkEnd=_mainLastClosed.value;
+      /* P-H4 — stable-prefix incremental render. Split displayFull at the
+         last blank line: the part before it is settled markdown blocks
+         (parsed once, cached in _stablePrefixHtml) and only the trailing
+         unfinished block is re-parsed each frame. This turns the old
+         O(n²) "re-parse the whole accumulated text every frame" into an
+         O(tail) pass. The split is only trusted when the prefix has
+         balanced code fences / math delimiters (see _prefixIsSafeToCache);
+         otherwise we fall back to a full parse for this frame. finish()
+         always re-runs the full formatMsg, so any streaming-time seam is
+         corrected once the message completes. */
+      var rendered;
+      var _cut=displayFull.lastIndexOf("\n\n");
+      var _prefix=_cut>0?displayFull.slice(0,_cut):"";
+      if(_prefix&&_prefixIsSafeToCache(_prefix)){
+        if(_prefix!==_stablePrefixText){
+          _stablePrefixHtml=formatMsgProgressive(_prefix);
+          _stablePrefixText=_prefix;
+        }
+        var _tail=displayFull.slice(_cut+2);
+        rendered=_stablePrefixHtml+(_tail?formatMsgProgressive(_tail):"");
+      }else{
+        rendered=formatMsgProgressive(displayFull);
+      }
+      if(streamContent.dataset.lastRendered!==rendered){
+        streamContent.innerHTML=rendered;
+        streamContent.dataset.lastRendered=rendered;
+        /* Wire viz/mermaid iframes that were just injected by the
+           streaming renderer so the loading spinner is hidden and
+           the card transitions to the "ready" state. */
+        try{processPendingViz()}catch(_){}
+        try{processPendingVizActions()}catch(_){}
+      }
     }else{
       /* Think block is in play. Lay out the three-section
          structure once, then update the text nodes and the
@@ -5097,12 +4954,10 @@ function teardownThinkStructure(){
         ?displayFull.slice(thinkState.startIdx+"<think>".length,thinkState.endIdx-"</think>".length)
         :displayFull.slice(thinkState.startIdx+"<think>".length);
       var afterText=thinkClosed?displayFull.slice(thinkState.endIdx):"";
-      /* P_arch streaming-render — pre-think slice is small (typically
-         empty) so we keep the simple innerHTML write. The post-think
-         slice uses the shared chunked-fade emitter so the user sees
-         the answer stream in with the same fade-in cadence as the
-         no-think branch. formatMsgProgressive handles partial $$ and
-         ``` with placeholders, so a half-arrived formula doesn't leak
+      /* P_arch streaming-render — pre-think and post-think slices
+         use formatMsgProgressive (streaming-safe) for real-time
+         rendering. formatMsgProgressive handles partial $$ and ```
+         with placeholders, so a half-arrived formula doesn't leak
          raw LaTeX into the live bubble. */
       if(thinkState.beforeNode.dataset.lastRendered!==beforeText){
         thinkState.beforeNode.innerHTML=beforeText?formatMsgProgressive(beforeText):"";
@@ -5110,13 +4965,11 @@ function teardownThinkStructure(){
         try{processPendingViz()}catch(_){}
         try{processPendingVizActions()}catch(_){}
       }
-      /* Post-think answer stream — incremental chunks with fade-in.
-         Only emit when </think> has actually arrived (afterText
-         non-empty); before that, afterText is "" and the pending
-         span stays empty. */
-      if(afterText){
-        _emitChunksInto(afterText,_afterLastClosed,_afterPending,_afterStagger);
-        afterLastClosedEnd=_afterLastClosed.value;
+      if(thinkState.afterNode.dataset.lastRendered!==afterText){
+        thinkState.afterNode.innerHTML=afterText?formatMsgProgressive(afterText):"";
+        thinkState.afterNode.dataset.lastRendered=afterText;
+        try{processPendingViz()}catch(_){}
+        try{processPendingVizActions()}catch(_){}
       }
       /* When </think> has been seen, swap the summary to a
          static label and drop the pulse — the model is done
@@ -7043,8 +6896,24 @@ function updateModeBadge(){
     : (mode==="tutor"?"Tutor":"Chat");
   badge.textContent=label;
   badge.classList.remove("hidden");
+  /* U-H2-anim — re-trigger the badgeSwap CSS keyframes each time the
+     mode flips. The badge style has `animation: badgeSwap …` set
+     unconditionally, so the keyframes only run on first render. We
+     toggle the inline `animation` to none, force a reflow, and
+     restore so the animation replays on every mode change. */
+  var prevMode=badge.getAttribute("data-mode");
+  badge.setAttribute("data-mode",mode);
+  badge.classList.remove("mode-tutor","mode-chat");
   badge.classList.toggle("mode-tutor",mode==="tutor");
   badge.classList.toggle("mode-chat",mode==="chat");
+  if(prevMode!==mode){
+    badge.style.animation="none";
+    /* Force layout flush so the browser sees the cleared animation
+       before we restore it — without this, the animation property
+       resets but no reflow happens and the keyframes don't replay. */
+    void badge.offsetWidth;
+    badge.style.animation="";
+  }
 }
 window.updateModeBadge = updateModeBadge;
 

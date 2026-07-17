@@ -28,17 +28,17 @@
 </head>
 <body>
 <div class="bg-ambient"></div>
-<div class="bg-glow"></div>
 <div class="page">
 
 <nav>
   <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="">Socrates</a>
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt=""><span><em>S</em>ocrates</span></a>
     <div class="nav-links">
       <a href="/pricing">Pricing</a>
       <a href="/guide">Guide</a>
       <a href="/about">About</a>
       <a href="/contact">Contact</a>
+      <a href="/account">Account</a>
       <a class="lang-switch">中文</a>
       <a href="https://app.topodrive.top" class="cta-btn">Start learning</a>
     </div>
@@ -48,14 +48,14 @@
 <section class="hero">
   <div class="section-inner">
     <div class="hero-platform">
-      <div class="hero-label sr parallax-base" data-parallax="-6">AI-Powered tutor</div>
-      <h1 class="sr sr-d1 parallax-base" data-parallax="-4">Learn anything,<br><strong class="gradient">step by step</strong></h1>
-      <p class="sr sr-d2 parallax-base" data-parallax="-2">Socrates is an intelligent tutor that guides you through any topic with the rigor of a textbook and the patience of a great teacher. No fluff, no skipping ahead. Just systematic understanding, built from first principles.</p>
-      <div class="hero-actions sr sr-d3 parallax-base" data-parallax="1">
+      <div class="hero-label sr">AI-Powered tutor</div>
+      <h1 class="sr sr-d1">Learn anything,<br><strong class="gradient">step by step</strong></h1>
+      <p class="sr sr-d2">Socrates is an intelligent tutor that guides you through any topic with the rigor of a textbook and the patience of a great teacher. No fluff, no skipping ahead. Just systematic understanding, built from first principles.</p>
+      <div class="hero-actions sr sr-d3">
         <a href="https://app.topodrive.top" class="cta-btn">Start learning</a>
         <a href="/guide" class="cta-btn ghost">How it works</a>
       </div>
-      <p class="hero-note sr sr-d4 parallax-base" data-parallax="3">Built-in Beagle AI model included. Or bring your own LLM key. No credit card required.</p>
+      <p class="hero-note sr sr-d4">Built-in Beagle AI model included. Or bring your own LLM key. No credit card required.</p>
     </div>
   </div>
 </section>
@@ -244,6 +244,7 @@
     <div class="footer-bottom">
       <p>&copy; 2026 Topodrive. All rights reserved.</p>
       <p>Built with care, for learners everywhere.</p>
+      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
     </div>
   </div>
 </footer>
@@ -259,54 +260,7 @@ const srObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 document.querySelectorAll('.sr').forEach(function(el){ srObserver.observe(el) });
 
-/* Mouse-following glow */
-(function(){
-  var glow = document.querySelector('.bg-glow');
-  if (!glow) return;
-  var cx = window.innerWidth / 2, cy = window.innerHeight / 2;
-  var tx = cx, ty = cx;
-  var curX = cx, curY = cy;
-  var idleTimer = null;
-  function tick(){
-    curX += (tx - curX) * 0.06;
-    curY += (ty - curY) * 0.06;
-    glow.style.transform = 'translate(' + curX + 'px,' + curY + 'px)';
-    requestAnimationFrame(tick);
-  }
-  document.addEventListener('mousemove', function(e){
-    tx = e.clientX;
-    ty = e.clientY;
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(function(){
-      tx = window.innerWidth / 2;
-      ty = window.innerHeight / 2;
-    }, 2500);
-  });
-  tick();
-})();
 
-/* Parallax on scroll — uses CSS translate property to avoid
-   conflicting with scroll-reveal transforms. */
-(function(){
-  var els = document.querySelectorAll('.parallax-base');
-  if (!els.length) return;
-  var ticking = false;
-  function update(){
-    var sy = window.scrollY;
-    els.forEach(function(el){
-      var speed = parseFloat(el.getAttribute('data-parallax')) || 0;
-      var offset = sy * speed * 0.02;
-      el.style.setProperty('--parallax-y', offset + 'px');
-    });
-    ticking = false;
-  }
-  window.addEventListener('scroll', function(){
-    if (!ticking) {
-      requestAnimationFrame(update);
-      ticking = true;
-    }
-  });
-})();
 </script>
 <script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/\.html$/,'');b.href=p==='/'||p===''?'/zh/':'/zh'+p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","zh")}catch(e){}});})();</script>
 </body>

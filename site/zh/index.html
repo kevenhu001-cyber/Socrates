@@ -26,23 +26,23 @@
 }();
 </script>
 <style>
-  html[lang^="zh"] body{font-family:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  html[lang^="zh"] body{font-family:"Inter","PingFang SC","Hiragino Sans GB","Noto Sans SC",sans-serif}
   html[lang^="zh"] .section-title, html[lang^="zh"] .page-header h1, html[lang^="zh"] .hero h1, html[lang^="zh"] .narrative-heading, html[lang^="zh"] .pricing-block-name, html[lang^="zh"] .cta-section h2, html[lang^="zh"] .pull-quote blockquote, html[lang^="zh"] .footer-tag, html[lang^="zh"] .stat-number{font-family:"Noto Serif SC","Newsreader",serif}
 </style>
 </head>
 <body>
 <div class="bg-ambient"></div>
-<div class="bg-glow"></div>
 <div class="page">
 
 <nav>
   <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="">Socrates</a>
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt=""><span><em>S</em>ocrates</span></a>
     <div class="nav-links">
       <a href="/pricing">套餐</a>
       <a href="/guide">指南</a>
       <a href="/about">关于</a>
       <a href="/contact">联系</a>
+      <a href="/account">账户</a>
       <a class="lang-switch">English</a>
       <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
     </div>
@@ -52,14 +52,14 @@
 <section class="hero">
   <div class="section-inner">
     <div class="hero-platform">
-      <div class="hero-label sr parallax-base" data-parallax="-6">AI 智能导师</div>
-      <h1 class="sr sr-d1 parallax-base" data-parallax="-4">循序渐进，<br><strong class="gradient">学无止境</strong></h1>
-      <p class="sr sr-d2 parallax-base" data-parallax="-2">Socrates 是一位智能导师，以教科书的严谨和名师的耐心，带你系统掌握任何知识。没有冗余，没有跳步，只有从第一性原理出发的系统理解。</p>
-      <div class="hero-actions sr sr-d3 parallax-base" data-parallax="1">
+      <div class="hero-label sr">AI 智能导师</div>
+      <h1 class="sr sr-d1">循序渐进，<br><strong class="gradient">学无止境</strong></h1>
+      <p class="sr sr-d2">Socrates 是一位智能导师，以教科书的严谨和名师的耐心，带你系统掌握任何知识。没有冗余，没有跳步，只有从第一性原理出发的系统理解。</p>
+      <div class="hero-actions sr sr-d3">
         <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
         <a href="/guide" class="cta-btn ghost">了解原理</a>
       </div>
-      <p class="hero-note sr sr-d4 parallax-base" data-parallax="3">内置 Beagle AI 模型，开箱即用，也可使用自己的 LLM 密钥。无需信用卡。</p>
+      <p class="hero-note sr sr-d4">内置 Beagle AI 模型，开箱即用，也可使用自己的 LLM 密钥。无需信用卡。</p>
     </div>
   </div>
 </section>
@@ -248,6 +248,7 @@
     <div class="footer-bottom">
       <p>&copy; 2026 Topodrive. 保留所有权利。</p>
       <p>用心打造，服务全球学习者。</p>
+      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
     </div>
   </div>
 </footer>
@@ -263,54 +264,7 @@ const srObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 document.querySelectorAll('.sr').forEach(function(el){ srObserver.observe(el) });
 
-/* Mouse-following glow */
-(function(){
-  var glow = document.querySelector('.bg-glow');
-  if (!glow) return;
-  var cx = window.innerWidth / 2, cy = window.innerHeight / 2;
-  var tx = cx, ty = cx;
-  var curX = cx, curY = cy;
-  var idleTimer = null;
-  function tick(){
-    curX += (tx - curX) * 0.06;
-    curY += (ty - curY) * 0.06;
-    glow.style.transform = 'translate(' + curX + 'px,' + curY + 'px)';
-    requestAnimationFrame(tick);
-  }
-  document.addEventListener('mousemove', function(e){
-    tx = e.clientX;
-    ty = e.clientY;
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(function(){
-      tx = window.innerWidth / 2;
-      ty = window.innerHeight / 2;
-    }, 2500);
-  });
-  tick();
-})();
 
-/* Parallax on scroll — uses CSS translate property to avoid
-   conflicting with scroll-reveal transforms. */
-(function(){
-  var els = document.querySelectorAll('.parallax-base');
-  if (!els.length) return;
-  var ticking = false;
-  function update(){
-    var sy = window.scrollY;
-    els.forEach(function(el){
-      var speed = parseFloat(el.getAttribute('data-parallax')) || 0;
-      var offset = sy * speed * 0.02;
-      el.style.setProperty('--parallax-y', offset + 'px');
-    });
-    ticking = false;
-  }
-  window.addEventListener('scroll', function(){
-    if (!ticking) {
-      requestAnimationFrame(update);
-      ticking = true;
-    }
-  });
-})();
 </script>
 <script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/^\/zh/,'').replace(/\.html$/,'');b.href=p==='/'||p===''?'/':p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","en")}catch(e){}});})();</script>
 </body>
