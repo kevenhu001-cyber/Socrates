@@ -217,6 +217,24 @@ async function extractDocumentText(file, onProgress) {
 export async function addFiles(fileList, onUpdate, onProgress) {
   const files = Array.from(fileList || []);
   const result = { added: 0, rejected: [] };
+  /* U/perf — coalesce per-tick FileReader progress into one repaint per
+     animation frame. Large files fire progress events far faster than the
+     browser can usefully re-render every chip; without this each tick ran a
+     full chip re-render, thrashing layout. rAF (setTimeout fallback in
+     non-DOM/test envs) de-bounces those into at most one callback per frame.
+     Final states still call onUpdate() directly below, so the terminal chip
+     is always accurate and the public API is unchanged. */
+  let _progressRaf = 0;
+  const _rafFn = (typeof requestAnimationFrame === 'function')
+    ? requestAnimationFrame : function(cb){ return setTimeout(cb, 16); };
+  function notifyProgress(){
+    if (_progressRaf) return;
+    _progressRaf = _rafFn(function(){
+      _progressRaf = 0;
+      if (onProgress) onProgress();
+      else if (onUpdate) onUpdate();
+    });
+  }
   /* P_attachments-multimodal — proactive gate for image attachments. */
   const activeProvider = (typeof window !== 'undefined' && typeof window.getActiveProvider === 'function')
     ? window.getActiveProvider() : null;
@@ -250,8 +268,7 @@ export async function addFiles(fileList, onUpdate, onProgress) {
         const { dataUrl, size } = await readFileAsDataUrl(file, function(pct){
           const e = attachments.find(a => a.id === pendingId);
           if(e) e.progress = pct;
-          if(onProgress) onProgress();
-          else if(onUpdate) onUpdate();
+          notifyProgress();
         });
         const entry = attachments.find(a => a.id === pendingId);
         if (entry) {
@@ -271,8 +288,7 @@ export async function addFiles(fileList, onUpdate, onProgress) {
         const rawText = await readFileAsText(file, function(pct){
           const e = attachments.find(a => a.id === pendingId);
           if(e) e.progress = pct;
-          if(onProgress) onProgress();
-          else if(onUpdate) onUpdate();
+          notifyProgress();
         });
         let text = rawText;
         let truncated = false;
@@ -310,8 +326,7 @@ export async function addFiles(fileList, onUpdate, onProgress) {
         const { text, truncated, meta, error } = await extractDocumentText(file, function(pct){
           const e = attachments.find(a => a.id === pendingId);
           if(e) e.progress = pct;
-          if(onProgress) onProgress();
-          else if(onUpdate) onUpdate();
+          notifyProgress();
         });
         const entry = attachments.find(a => a.id === pendingId);
         if (entry) {

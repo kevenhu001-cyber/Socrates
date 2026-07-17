@@ -87,7 +87,7 @@ export async function callAPIChat(messages,maxTokens,timeoutMs){
    - /api/minimax/v1/chat/completions for built-in Beagle (server can't route there)
    - /api/chat for non-built-in providers
    Both paths use the same retry/timeout pattern. */
-export async function callAPI(messages,maxTokens){
+export async function callAPI(messages,maxTokens,timeoutMs){
   /* state, apiConfig, getActiveProvider, getCustomInstructionsString,
      makeAIWatchdog, STREAM_TIMEOUT_MS, STREAM_HEARTBEAT_MS,
      getCsrfToken, STREAM_RETRYABLE_STATUS, sleepBackoff live in
@@ -103,6 +103,12 @@ export async function callAPI(messages,maxTokens){
   var STREAM_TIMEOUT_MS=window.STREAM_TIMEOUT_MS;
   var STREAM_HEARTBEAT_MS=window.STREAM_HEARTBEAT_MS;
   var STREAM_RETRYABLE_STATUS=window.STREAM_RETRYABLE_STATUS;
+
+  /* U-H3 — optional per-call total-timeout override. Diagnostic
+     generation passes a shorter budget for the first question so the
+     user isn't left staring at a spinner for the full STREAM_TIMEOUT_MS.
+     Falls back to the shared streaming budget when omitted. */
+  var EFFECTIVE_TIMEOUT_MS=(typeof timeoutMs==="number"&&timeoutMs>0)?timeoutMs:STREAM_TIMEOUT_MS;
 
   var provider=getActiveProvider();
   if(!provider){
@@ -137,7 +143,7 @@ export async function callAPI(messages,maxTokens){
     var lastBeagleErr=null;
     while(beagleAttempt<BEAGLE_NONSTREAM_MAX){
       beagleAttempt++;
-      var wdB=makeAIWatchdog(STREAM_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdB&&wdB.stop("beagle-watchdog")}catch(_){}});
+      var wdB=makeAIWatchdog(EFFECTIVE_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdB&&wdB.stop("beagle-watchdog")}catch(_){}});
       try{
         /* Make sure a fresh csrf cookie exists before we read it.
            The boot path calls /api/auth/csrf-token once, but if the
@@ -190,7 +196,7 @@ export async function callAPI(messages,maxTokens){
         var isTotal=wdReason.indexOf("total-timeout")>=0;
         lastBeagleErr=isAbort
           ?(isHeartbeat?"request stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)":
-             isTotal?"request timed out after "+(STREAM_TIMEOUT_MS/1000)+"s":
+             isTotal?"request timed out after "+(EFFECTIVE_TIMEOUT_MS/1000)+"s":
              "request aborted")
           :String(e&&e.message||e);
         var userCancelled=isAbort&&!wdB.isStopped();
@@ -211,9 +217,9 @@ export async function callAPI(messages,maxTokens){
   var lastNsErr=null;
   while(nsAttempt<NONSTREAM_MAX){
     nsAttempt++;
-    var wdN=makeAIWatchdog(STREAM_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdN&&wdN.stop("non-builtin-watchdog")}catch(_){}});
+    var wdN=makeAIWatchdog(EFFECTIVE_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdN&&wdN.stop("non-builtin-watchdog")}catch(_){}});
     try{
-      var resp=await apiFetch("/api/chat",{method:"POST",body:{messages:messages,temperature:0.7,max_tokens:maxTokens},signal:wdN.ac.signal,timeoutMs:STREAM_TIMEOUT_MS});
+      var resp=await apiFetch("/api/chat",{method:"POST",body:{messages:messages,temperature:0.7,max_tokens:maxTokens},signal:wdN.ac.signal,timeoutMs:EFFECTIVE_TIMEOUT_MS});
       wdN.stop("done");
       if(!resp||!resp.choices||!resp.choices[0]||!resp.choices[0].message){
         state.lastCallError="malformed response";
@@ -229,7 +235,7 @@ export async function callAPI(messages,maxTokens){
       var eStatus=e&&e.status;
       lastNsErr=isAbortN
         ?(isHbN?"request stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)":
-           isTotN?"request timed out after "+(STREAM_TIMEOUT_MS/1000)+"s":
+           isTotN?"request timed out after "+(EFFECTIVE_TIMEOUT_MS/1000)+"s":
            "request aborted")
         :(eStatus?eStatus+" ":"network: ")+(e&&e.message||e);
       var userCancelledN=isAbortN&&!wdN.isStopped();

@@ -14,6 +14,7 @@ import {
   renderWebSearchResults,
   updateToolCardCode,
 } from '../ui/toolCards.js';
+import { TOOL_RUN_PHASES, isTerminalToolPhase, phaseFromProgress, summarizeToolRuns, transitionToolRun } from './toolRunState.js';
 
 function cssEscape(value) {
   if (typeof CSS !== 'undefined' && CSS && typeof CSS.escape === 'function') {
@@ -27,7 +28,10 @@ function cssEscape(value) {
 function translate(key, fallback) {
   try {
     if (typeof window !== 'undefined' && typeof window.t === 'function') {
-      return window.t(key) || fallback;
+      var translated = window.t(key);
+      // The lightweight test dictionary returns the key for unknown
+      // strings. Treat that as a miss so new runtime copy stays human.
+      return translated && translated !== key ? translated : fallback;
     }
   } catch (_) {}
   return fallback;
@@ -53,6 +57,27 @@ function normalizeArtifacts(artifacts) {
   }).filter(function (artifact) { return !!artifact.id; });
 }
 
+function getRun(entry) {
+  return entry && entry._run ? entry._run : null;
+}
+
+function setRun(entry, phase, patch) {
+  if (!entry) return null;
+  const next = transitionToolRun(getRun(entry) || {
+    id: entry.id,
+    tool: entry.name,
+    phase: TOOL_RUN_PHASES.preparing,
+    startedAt: Date.now(),
+  }, phase, patch);
+  // Runtime metadata must not leak into the persisted `toolCalls` schema.
+  if (!Object.prototype.hasOwnProperty.call(entry, '_run')) {
+    Object.defineProperty(entry, '_run', { value: next, writable: true, configurable: true, enumerable: false });
+  } else {
+    entry._run = next;
+  }
+  return next;
+}
+
 export function createToolRuntime(options) {
   options = options || {};
   var body = options.body;
@@ -74,6 +99,36 @@ export function createToolRuntime(options) {
   var deltaFrame = null;
   var executionConnections = new Set();
 
+  function updateRunSummary(message) {
+    if (!body || !message) return;
+    var group = body.querySelector('.tool-run-group');
+    if (!group) return;
+    var runs = (message.toolCalls || []).map(function (entry) {
+      return getRun(entry) || { phase: entry && entry.isError ? TOOL_RUN_PHASES.failed : TOOL_RUN_PHASES.succeeded };
+    });
+    var summary = summarizeToolRuns(runs);
+    var label = group.querySelector('.tool-run-summary-label');
+    var meta = group.querySelector('.tool-run-summary-meta');
+    if (!label || !meta) return;
+    if (summary.active) {
+      group.dataset.state = 'running';
+      label.textContent = translate('tool.groupWorking', 'Working');
+      meta.textContent = summary.total > 1 ? summary.active + ' of ' + summary.total + ' tools' : 'Running';
+    } else if (summary.failed || summary.timed_out) {
+      group.dataset.state = 'error';
+      label.textContent = translate('tool.groupNeedsAttention', 'Tool needs attention');
+      meta.textContent = (summary.failed + summary.timed_out) + ' of ' + summary.total + ' failed';
+    } else if (summary.cancelled) {
+      group.dataset.state = 'cancelled';
+      label.textContent = translate('tool.groupStopped', 'Tool run stopped');
+      meta.textContent = summary.total + ' tool' + (summary.total === 1 ? '' : 's');
+    } else {
+      group.dataset.state = 'complete';
+      label.textContent = translate('tool.groupComplete', 'Used tools');
+      meta.textContent = summary.total + ' tool' + (summary.total === 1 ? '' : 's');
+    }
+  }
+
   function activeMessage() {
     if (disposed || !stillOwnsSlot()) return null;
     return getMessage() || null;
@@ -89,6 +144,8 @@ export function createToolRuntime(options) {
     if (!message || !progress || !progress.id) return;
     var entry = findEntry(message, progress.id);
     if (!entry) return;
+    setRun(entry, phaseFromProgress(progress), { elapsedMs: progress.elapsedMs || 0 });
+    updateRunSummary(message);
     var card = findCard(progress.id);
     if (!card) {
       entry._pendingProgress = entry._pendingProgress || [];
@@ -110,7 +167,6 @@ export function createToolRuntime(options) {
       var outputText = out.querySelector('.agent-tool-output-text');
       if (outputText) out.insertBefore(live, outputText); else out.appendChild(live);
       live.innerHTML = '<span class="agent-tool-progress-badge"></span><pre class="agent-tool-stream"></pre>';
-      card.classList.add('open');
     }
 
     var badge = live && live.querySelector('.agent-tool-progress-badge');
@@ -272,6 +328,7 @@ export function createToolRuntime(options) {
       isError: false,
       artifacts: [],
     };
+    setRun(entry, TOOL_RUN_PHASES.preparing);
 
     if (pendingDeltas.length) {
       var kept = [];
@@ -321,6 +378,7 @@ export function createToolRuntime(options) {
       entry.executionId = call.executionId;
       connectExecution(call.executionId, entry.id);
     }
+    updateRunSummary(message);
     return output;
   }
 
@@ -339,7 +397,11 @@ export function createToolRuntime(options) {
     var message = activeMessage();
     if (!message || !event || !event.executionId || !event.id) return;
     var entry = findEntry(message, event.id);
-    if (entry) entry.executionId = event.executionId;
+    if (entry) {
+      entry.executionId = event.executionId;
+      setRun(entry, TOOL_RUN_PHASES.running);
+      updateRunSummary(message);
+    }
     connectExecution(event.executionId, event.id);
   }
 
@@ -352,6 +414,7 @@ export function createToolRuntime(options) {
       entry = { id: String(result.id), name: result.name || 'tool', input: null, output: null, isError: false, artifacts: [] };
       if (!Array.isArray(message.toolCalls)) message.toolCalls = [];
       message.toolCalls.push(entry);
+      setRun(entry, TOOL_RUN_PHASES.preparing);
       output = appendToolModule(entry.name, {}, ensureToolContainer());
       var syntheticCard = output && output.closest('.agent-tool-card');
       if (syntheticCard) syntheticCard.setAttribute('data-tcid', entry.id);
@@ -359,6 +422,8 @@ export function createToolRuntime(options) {
       var card = findCard(entry.id);
       if (card) output = card.querySelector('.agent-tool-out');
     }
+
+    if (getRun(entry) && isTerminalToolPhase(getRun(entry).phase) && entry._toolResultApplied) return;
 
     if (result.executionId && !entry.executionId) {
       entry.executionId = result.executionId;
@@ -399,10 +464,15 @@ export function createToolRuntime(options) {
       display = (result.output || '(no output)') + (result.stderr ? '\n[stderr]\n' + result.stderr : '') + duration;
     }
 
+    var terminalPhase = result.ok === false
+      ? (result.status === 'timeout' ? TOOL_RUN_PHASES.timed_out : TOOL_RUN_PHASES.failed)
+      : TOOL_RUN_PHASES.succeeded;
+    setRun(entry, terminalPhase, { endedAt: Date.now(), durationMs: result.durationMs || 0 });
     entry.output = display;
     entry.isError = result.ok === false;
     entry.results = Array.isArray(result.results) ? result.results.slice(0, 20) : [];
     if (Array.isArray(result.artifacts)) entry.artifacts = normalizeArtifacts(result.artifacts);
+    updateRunSummary(message);
     if (!output || entry._toolResultApplied) return;
     entry._toolResultApplied = true;
     var liveProgress = output.querySelector('.agent-tool-progress');
@@ -425,15 +495,6 @@ export function createToolRuntime(options) {
       details.appendChild(code);
       output.appendChild(details);
     }
-    if (entry.isError && result.retryable && entry.name === 'web_search' && entry.input && entry.input.query) {
-      var retry = document.createElement('button');
-      retry.type = 'button';
-      retry.className = 'agent-tool-retry';
-      retry.textContent = '重试搜索';
-      retry.addEventListener('click', function () { onSearchRetry(entry.input.query); });
-      output.appendChild(retry);
-    }
-
     var resultCard = output.closest('.agent-tool-card');
     if (resultCard) {
       resultCard.dataset.toolState = entry.isError ? 'error' : 'complete';
@@ -443,7 +504,6 @@ export function createToolRuntime(options) {
         badge.className = 'agent-tool-status ' + statusClass;
         badge.textContent = statusText + (result.durationMs != null ? ' ' + (result.durationMs / 1000).toFixed(1) + 's' : '');
       }
-      if (display || entry.isError) resultCard.classList.add('open');
     }
     for (var artifactIndex = 0; artifactIndex < entry.artifacts.length; artifactIndex++) {
       var artifact = entry.artifacts[artifactIndex];
@@ -463,12 +523,32 @@ export function createToolRuntime(options) {
     executionConnections.clear();
   }
 
+  function cancel() {
+    var message = stillOwnsSlot() ? getMessage() : null;
+    if (message && Array.isArray(message.toolCalls)) {
+      for (var i = 0; i < message.toolCalls.length; i++) {
+        var entry = message.toolCalls[i];
+        if (!entry || (getRun(entry) && isTerminalToolPhase(getRun(entry).phase))) continue;
+        setRun(entry, TOOL_RUN_PHASES.cancelled, { endedAt: Date.now() });
+        var card = findCard(entry.id);
+        if (card) {
+          card.dataset.toolState = 'cancelled';
+          var badge = card.querySelector('.agent-tool-status');
+          if (badge) { badge.className = 'agent-tool-status mute'; badge.textContent = translate('tool.statusStopped', 'Stopped'); }
+        }
+      }
+      updateRunSummary(message);
+    }
+    dispose();
+  }
+
   return {
     recordToolUse: recordToolUse,
     recordToolProgress: recordToolProgress,
     recordToolCallDelta: recordToolCallDelta,
     recordExecutionStart: recordExecutionStart,
     recordToolResult: recordToolResult,
+    cancel: cancel,
     dispose: dispose,
   };
 }

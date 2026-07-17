@@ -10,7 +10,7 @@ const ONE_PIXEL_PNG = Buffer.from(
   'base64',
 );
 
-test('tool cards show expanded web results, execution output, and image artifacts', async ({ page }) => {
+test('tool activity is grouped by answer and reveals search, code, and artifacts on demand', async ({ page }) => {
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   const longStdout = 'answer: 42\n' + Array.from({ length: 140 }, (_, i) => `line ${i + 1}: streamed diagnostic output`).join('\n');
   await mockAuthedApp(page);
@@ -44,7 +44,16 @@ test('tool cards show expanded web results, execution output, and image artifact
     await window.askChatTurn('Run the tools');
   });
 
-  const search = page.locator('.agent-tool-card.websearch').last();
+  const group = page.locator('.tool-run-group').last();
+  await expect(group).toHaveAttribute('data-state', 'complete');
+  await expect(group.locator('.tool-run-summary')).toContainText('Used tools');
+  await expect(group.locator('.tool-run-list')).toBeHidden();
+  await group.locator('.tool-run-summary').click();
+  await expect(group.locator('.tool-run-list')).toBeVisible();
+
+  const search = group.locator('.agent-tool-card.websearch').last();
+  await expect(search).not.toHaveClass(/open/);
+  await search.locator('.agent-tool-head').click();
   await expect(search).toHaveClass(/open/);
   await expect(search.locator('.web-search-results')).toBeVisible();
   await expect(search.locator('.wsr-header')).toContainText('2 sources for "Socrates learning"');
@@ -59,7 +68,9 @@ test('tool cards show expanded web results, execution output, and image artifact
   await search.locator('.wsr-copy-all').click();
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('Trusted source - https://example.test/source');
 
-  const code = page.locator('.agent-tool-card.codeint').last();
+  const code = group.locator('.agent-tool-card.codeint').last();
+  await expect(code).not.toHaveClass(/open/);
+  await code.locator('.agent-tool-head').click();
   await expect(code).toHaveClass(/open/);
   await expect(code.locator('.agent-tool-code')).toContainText('plt.savefig');
   await expect(code.locator('.agent-tool-out')).toContainText('answer: 42');
@@ -132,7 +143,11 @@ test('tool cards replay tool_call_delta frames that arrive before tool_use', asy
     await window.askChatTurn('Run early delta tool');
   });
 
-  const code = page.locator('.agent-tool-card.codeint').last();
+  const group = page.locator('.tool-run-group').last();
+  await group.locator('.tool-run-summary').click();
+  const code = group.locator('.agent-tool-card.codeint').last();
+  await expect(code).not.toHaveClass(/open/);
+  await code.locator('.agent-tool-head').click();
   await expect(code).toHaveClass(/open/);
   await expect(code.locator('.agent-tool-code')).toContainText('print("early delta")');
   await expect(code.locator('.agent-tool-input')).toContainText('python');

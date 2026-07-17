@@ -119,6 +119,11 @@ function syncAppModeUI() {
   if (typeof window.applyI18n === 'function') {
     try { window.applyI18n(); } catch (_) {}
   }
+  /* U-H2 — keep the chat-header mode badge in sync with the active
+     mode whenever the mode UI is re-synced. */
+  if (typeof window.updateModeBadge === 'function') {
+    try { window.updateModeBadge(); } catch (_) {}
+  }
 }
 
 /* Setter for appMode — updates the module-level variable so

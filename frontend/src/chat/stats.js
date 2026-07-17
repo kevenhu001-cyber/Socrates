@@ -25,6 +25,11 @@ function updateChatStats() {
     badge.className = "chat-api-badge";
     badge.title = "";
   }
+  /* U-H2 — refresh the chat-header mode badge on every stats update so
+     it reflects the current mode as the chat view re-renders. */
+  if (typeof window.updateModeBadge === "function") {
+    try { window.updateModeBadge(); } catch (e) {}
+  }
 }
 
 export { updateChatStats };

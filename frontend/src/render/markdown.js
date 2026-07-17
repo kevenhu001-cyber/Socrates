@@ -441,7 +441,29 @@ export function formatMsgProgressive(t){
 
 export function formatMsg(t){
   if(typeof marked==="undefined"||typeof katex==="undefined"){
-    return"<p>"+esc(preprocessMarkdown(t)).replace(/```(\w*)\r?\n?([\s\S]*?)```/g,function(_,l,c){return"<pre><code>"+esc(c.trim())+"</code></pre>"}).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>")+"</p>"
+    /* Rendering a sandboxed visualization must not depend on optional CDN
+       markdown/math globals. Without this branch, an offline page turned a
+       complete ```html fence into escaped code even though Viz is local. */
+    var fallbackViz=[];
+    function saveFallbackViz(html){
+      var id=fallbackViz.length;
+      fallbackViz.push(html);
+      return 'XVIZFALLBACK'+id+'X';
+    }
+    var raw=preprocessMarkdown(t);
+    raw=raw.replace(/```(?:viz|html|svg)\s*\n?([\s\S]*?)```/gi,function(_,content){
+      var trimmed=content.trim();
+      return trimmed?saveFallbackViz(renderViz(trimmed)):'';
+    });
+    raw=raw.replace(/```plot\s*\n?([\s\S]*?)```/gi,function(_,content){
+      var trimmed=content.trim();
+      return trimmed?saveFallbackViz(renderPlot(trimmed)):'';
+    });
+    raw=raw.replace(/```(?:viz|html|svg|plot)\s*\n?([\s\S]*)$/i,function(_,content){
+      return saveFallbackViz(renderVizLoading({streaming:true}));
+    });
+    var fallbackHtml="<p>"+esc(raw).replace(/```(\w*)\r?\n?([\s\S]*?)```/g,function(_,l,c){return"<pre><code>"+esc(c.trim())+"</code></pre>"}).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>")+"</p>";
+    return fallbackHtml.replace(/XVIZFALLBACK(\d+)X/g,function(_,id){return fallbackViz[parseInt(id)]||'';});
   }
   var blocks=[];
   var pid=0;

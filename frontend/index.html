@@ -372,6 +372,10 @@
         <span>Back to chat</span>
       </button>
       <span class="chat-stats hidden" id="chatStats"></span>
+      <!-- U-H2 — chat-header mode badge. updateModeBadge() (main.js) sets
+           the localized Tutor/Chat label and un-hides it once a mode is
+           active; kept distinct from the retired renderModeBanner(). -->
+      <span class="chat-mode-badge hidden" id="chatModeBadge"></span>
       <span class="exam-title-bar hidden" id="examTitleBar"></span>
     </div>
     <div class="top-bar-right">
@@ -397,6 +401,15 @@
       <div class="topic-setup" id="topicSetup">
         <h1 class="topic-title" id="topicTitle">What would you like to explore?</h1>
         <p class="topic-sub" id="topicSub">Describe what you want to learn. Socrates will ask you questions to help you think deeper about it.</p>
+        <!-- U-H1 — Tutor/Chat segmented control. The buttons carry the
+             .app-mode-toggle class + data-mode so syncAppModeUI() keeps
+             the active segment in sync; clicking the inactive segment
+             routes through window.toggleAppMode() which owns the
+             session-save / confirm logic. -->
+        <div class="mode-segmented" id="modeSegmented" role="tablist" aria-label="Session mode">
+          <button type="button" class="app-mode-toggle" data-mode="tutor" role="tab" data-i18n-key="tutor.modeTutor" onclick="if(window.appMode!=='tutor'&&typeof window.toggleAppMode==='function')window.toggleAppMode()">Tutor</button>
+          <button type="button" class="app-mode-toggle" data-mode="chat" role="tab" data-i18n-key="tutor.modeChat" onclick="if(window.appMode!=='chat'&&typeof window.toggleAppMode==='function')window.toggleAppMode()">Chat</button>
+        </div>
         <div class="topic-input-wrap" id="topicInputWrap">
           <!-- P_attachments-tutor — chip strip above the topic-setup
                textarea. Shares the same .attachment-chips class and

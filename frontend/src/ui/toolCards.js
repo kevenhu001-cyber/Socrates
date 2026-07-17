@@ -344,15 +344,17 @@ export function appendToolModule(toolName, toolInput, body, opts) {
     codeInner.textContent = initial.code;
     codeInner.className = initial.language ? `language-${initial.language}` : "";
     codeEl.hidden = false;
-    bodyEl.hidden = false;
+    bodyEl.hidden = true;
   } else if (toolName === "web_search") {
     // No body to show until the query is known; keep collapsed.
     codeEl.hidden = true;
     bodyEl.hidden = true;
   } else {
-    // Show the body so the live stream has somewhere to land.
+    // Keep details collapsed while the live stream fills it. The card
+    // header carries the useful status; opening code automatically made
+    // tool-heavy answers harder to read.
     codeEl.hidden = false;
-    bodyEl.hidden = false;
+    bodyEl.hidden = true;
   }
 
   // Click/keyboard to expand/collapse.
@@ -415,12 +417,11 @@ export function updateToolCardCode(tcId, argsJson, language) {
       }
     }
     codeEl.hidden = false;
-    if (bodyEl) bodyEl.hidden = false;
-    card.classList.add("open");
+    // Content can stream into a collapsed card. Users opt into details
+    // via the header, rather than every tool call expanding the message.
     // Mark the card as actively streaming so the blinking caret
     // shows until the final frame clears it.
     codeEl.classList.add("agent-tool-code-streaming");
-    head_set_aria(card, "true");
     syncToolCopyActions(card);
   }
   // Truncation marker: a small red dot after the last character
@@ -466,10 +467,6 @@ export function setLastToolOutput(text, isError, outEl) {
     isError: !!isError,
     kind: isError ? "error" : "output",
   });
-  if (text && text.length > 200) {
-    const card = out.closest(".agent-tool-card");
-    if (card) card.classList.add("open");
-  }
 }
 
 export function renderToolTextOutput(out, text, opts) {
@@ -758,8 +755,6 @@ function appendInlineImage(fileId, mimeType, url, out) {
   img.style.display = "none";
   out.appendChild(wrap);
   requestImage();
-  const card = out.closest(".agent-tool-card");
-  if (card) card.classList.add("open");
 }
 
 function appendInlineFileLink(fileId, mimeType, url, out, t, displayName) {

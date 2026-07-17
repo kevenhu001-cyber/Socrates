@@ -91,6 +91,15 @@
     var map = currentLang() === 'zh' ? STAGE_LABELS : STAGE_LABELS_EN;
     return map[stage] || map.motivate;
   }
+  /* U-H4 — localized label for a sub-topic mastery status
+     (blank / fuzzy / internalized). Prefers the i18n key, falling
+     back to inline bilingual copy so the plan sidebar never shows a
+     raw internal identifier. */
+  function statusLabel(status) {
+    if (status === 'internalized') return ti('tutor.statusInternalized', currentLang() === 'zh' ? '已内化' : 'Internalized');
+    if (status === 'fuzzy')        return ti('tutor.statusFuzzy',        currentLang() === 'zh' ? '模糊' : 'Fuzzy');
+    return ti('tutor.statusBlank', currentLang() === 'zh' ? '空白' : 'Blank');
+  }
   function esc(s) {
     if (typeof window.esc === 'function') return window.esc(s);
     return String(s == null ? '' : s)
@@ -395,6 +404,8 @@
         html += '<span class="teaching-plan-marker">'
              + (isDone ? ti('tutor.done', '[done]') : isCurrent ? '›' : '·') + '</span>';
         html += '<span class="teaching-plan-name">' + esc(s.name) + '</span>';
+        html += '<span class="teaching-plan-status status-' + esc(s.status || 'blank') + '">'
+             + esc(statusLabel(s.status || 'blank')) + '</span>';
         if (isCurrent) {
           html += '<span class="teaching-plan-stage">'
                + esc(stageLabel(stage)) + '</span>';
