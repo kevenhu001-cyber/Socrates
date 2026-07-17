@@ -235,30 +235,12 @@ document.addEventListener("click",function(e){
 /* ============================================================
    EXTENSIONS PICKER — multi-select dropdown
    ============================================================ */
-/* P_extensions-simplify — the Extension panel used to expose four
- * toggles. Web Search and Show AI thinking are now backend-default-on
- * features; the user can still reach them through the profile modal
- * (legacy) but the Extension panel stays focused on what the user
- * actively controls each turn:
- *   - Tutor mode (chat ↔ tutor switch)
+/* The Extension panel provides toggles the user actively controls
+ * each turn:
  *   - Extensive thinking (verbose scholar prompt ↔ concise prompt)
- *   - Generate exam (action button, no .on state) */
+ *   - Generate exam (action button, no .on state)
+ * Tutor/chat mode is now switched via the top-bar segmented control. */
 var EXTENSIONS=[
-  {key:"tutorMode",   name:"Tutor mode",
-   on:window.appMode==="tutor", onChange:function(v){
-     /* P_tutor-toggle — Extensions 메뉴에서 Tutor 모드를 토글할 때
-        toggleAppMode()를 통해 세션 저장/확인 로직을 거치도록 함.
-        직접 appMode를 변경하면 진행 중인 세션 데이터가 손실됨. */
-     if(typeof window.toggleAppMode==="function"){
-       window.toggleAppMode();
-     }else{
-       window.appMode=v?"tutor":"chat";
-       try{localStorage.setItem("socrates-appmode",window.appMode)}catch(e){}
-       window.syncAppModeUI();
-       window.syncSidebarForMode();
-     }
-     syncExtensionsUI();
-   }},
   {key:"extensiveThinking", name:"Extensive thinking",
    on:!!window.extensiveThinkingOn, onChange:function(v){
      window.extensiveThinkingOn=v;
@@ -316,12 +298,10 @@ function countActiveExtensions(){
   return EXTENSIONS.filter(function(e){return e.on}).length;
 }
 function syncExtensionsUI(){
-  /* P_extensions-simplify — only the user-facing toggles (tutorMode,
-   * extensiveThinking) need .on re-synced from window state. The
-   * exam entry is an action button; its .on stays false. */
+  /* Only extensiveThinking needs .on re-synced from window state.
+   * The exam entry is an action button; its .on stays false. */
   EXTENSIONS.forEach(function(ext){
-    if(ext.key==="tutorMode") ext.on = (window.appMode==="tutor");
-    else if(ext.key==="extensiveThinking") ext.on = !!window.extensiveThinkingOn;
+    if(ext.key==="extensiveThinking") ext.on = !!window.extensiveThinkingOn;
   });
   renderExtensionsMenu();
   var trigger=document.getElementById("extensionsTrigger");
