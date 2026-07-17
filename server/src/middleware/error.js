@@ -19,7 +19,7 @@ export function timeoutMiddleware(req, res, next) {
       /* Headers already sent — we can't change the status code, but
        * destroying the socket still stops the downstream handler from
        * consuming resources indefinitely. */
-      try { res.destroy(); } catch (_) {}
+      try { res.destroy(); } catch (err) { console.warn('[timeout] socket destroy failed:', err.message); }
       return;
     }
     res.status(504).json({

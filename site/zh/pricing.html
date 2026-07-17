@@ -6,7 +6,7 @@
 <link rel="apple-touch-icon" href="/logo.png">
 <title>Socrates — 套餐</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=Noto+Serif+SC:wght@300;400;500&display=swap" rel="stylesheet">
 <link href="/base.css" rel="stylesheet">
 <script>
 !function(){
@@ -25,15 +25,19 @@
   }catch(e){}
 }();
 </script>
+<style>
+  html[lang^="zh"] body{font-family:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  html[lang^="zh"] .section-title, html[lang^="zh"] .page-header h1, html[lang^="zh"] .hero h1, html[lang^="zh"] .narrative-heading, html[lang^="zh"] .pricing-block-name, html[lang^="zh"] .cta-section h2, html[lang^="zh"] .pull-quote blockquote, html[lang^="zh"] .footer-tag, html[lang^="zh"] .stat-number{font-family:"Noto Serif SC","Newsreader",serif}
+</style>
 </head>
 <body>
-<div class="bg-grid"></div>
+<div class="bg-ambient"></div>
 <div class="bg-glow"></div>
 <div class="page">
 
 <nav>
   <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px">Socrates</a>
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="">Socrates</a>
     <div class="nav-links">
       <a href="/pricing" class="nav-active">套餐</a>
       <a href="/guide">指南</a>
@@ -135,113 +139,115 @@
 
     <div class="pricing-compare sr">
       <h3>详细对比</h3>
-      <table class="compare-table">
-        <tr>
-          <th>功能</th>
-          <th>Diophantus</th>
-          <th>Riemann</th>
-          <th>Descartes</th>
-          <th>Euclid</th>
-        </tr>
-        <tr>
-          <td>保存的会话</td>
-          <td>5</td>
-          <td>50</td>
-          <td>200</td>
-          <td>无限</td>
-        </tr>
-        <tr>
-          <td>LLM 提供商密钥</td>
-          <td>1</td>
-          <td>3</td>
-          <td>5</td>
-          <td>无限</td>
-        </tr>
-        <tr>
-          <td>内置 Beagle 模型</td>
-          <td>100万 token/月</td>
-          <td>1亿 token/月</td>
-          <td>3亿 token/月</td>
-          <td>8亿 token/月</td>
-        </tr>
-        <tr>
-          <td>支持的提供商</td>
-          <td>Beagle + 自带密钥</td>
-          <td>Beagle + 自带密钥</td>
-          <td>Beagle + 自带密钥</td>
-          <td>Beagle + 自带密钥</td>
-        </tr>
-        <tr>
-          <td>教学质量</td>
-          <td>标准</td>
-          <td>高级</td>
-          <td>高级 + 深度控制</td>
-          <td>最大深度 + 自定义</td>
-        </tr>
-        <tr>
-          <td>导师模式</td>
-          <td>已启用</td>
-          <td>已启用</td>
-          <td>已启用</td>
-          <td>已启用</td>
-        </tr>
-        <tr>
-          <td>考试与测评</td>
-          <td>已启用</td>
-          <td>已启用</td>
-          <td>已启用</td>
-          <td>已启用</td>
-        </tr>
-        <tr>
-          <td>联网搜索</td>
-          <td>&mdash;</td>
-          <td>已启用</td>
-          <td>已启用</td>
-          <td>已启用</td>
-        </tr>
-        <tr>
-          <td>知识图谱</td>
-          <td>基础</td>
-          <td>完整</td>
-          <td>完整</td>
-          <td>完整 + 导出</td>
-        </tr>
-        <tr>
-          <td>错题本</td>
-          <td>已启用</td>
-          <td>已启用</td>
-          <td>已启用</td>
-          <td>已启用</td>
-        </tr>
-        <tr>
-          <td>诊断式提问</td>
-          <td>已启用</td>
-          <td>已启用</td>
-          <td>已启用</td>
-          <td>已启用</td>
-        </tr>
-        <tr>
-          <td>LaTeX 渲染</td>
-          <td>已启用</td>
-          <td>已启用</td>
-          <td>已启用</td>
-          <td>已启用</td>
-        </tr>
-        <tr>
-          <td>实时流式输出</td>
-          <td>已启用</td>
-          <td>已启用</td>
-          <td>已启用</td>
-          <td>已启用</td>
-        </tr>
-        <tr>
-          <td>支持</td>
-          <td>社区</td>
-          <td>邮件</td>
-          <td>优先邮件</td>
-          <td>优先支持 + 抢先体验</td>
-        </tr>
-      </table>
+      <div class="compare-table-wrap">
+        <table class="compare-table">
+          <tr>
+            <th>功能</th>
+            <th>Diophantus</th>
+            <th>Riemann</th>
+            <th>Descartes</th>
+            <th>Euclid</th>
+          </tr>
+          <tr>
+            <td>保存的会话</td>
+            <td>5</td>
+            <td>50</td>
+            <td>200</td>
+            <td>无限</td>
+          </tr>
+          <tr>
+            <td>LLM 提供商密钥</td>
+            <td>1</td>
+            <td>3</td>
+            <td>5</td>
+            <td>无限</td>
+          </tr>
+          <tr>
+            <td>内置 Beagle 模型</td>
+            <td>100万 token/月</td>
+            <td>1亿 token/月</td>
+            <td>3亿 token/月</td>
+            <td>8亿 token/月</td>
+          </tr>
+          <tr>
+            <td>支持的提供商</td>
+            <td>Beagle + 自带密钥</td>
+            <td>Beagle + 自带密钥</td>
+            <td>Beagle + 自带密钥</td>
+            <td>Beagle + 自带密钥</td>
+          </tr>
+          <tr>
+            <td>教学质量</td>
+            <td>标准</td>
+            <td>高级</td>
+            <td>高级 + 深度控制</td>
+            <td>最大深度 + 自定义</td>
+          </tr>
+          <tr>
+            <td>导师模式</td>
+            <td>已启用</td>
+            <td>已启用</td>
+            <td>已启用</td>
+            <td>已启用</td>
+          </tr>
+          <tr>
+            <td>考试与测评</td>
+            <td>已启用</td>
+            <td>已启用</td>
+            <td>已启用</td>
+            <td>已启用</td>
+          </tr>
+          <tr>
+            <td>联网搜索</td>
+            <td>&mdash;</td>
+            <td>已启用</td>
+            <td>已启用</td>
+            <td>已启用</td>
+          </tr>
+          <tr>
+            <td>知识图谱</td>
+            <td>基础</td>
+            <td>完整</td>
+            <td>完整</td>
+            <td>完整 + 导出</td>
+          </tr>
+          <tr>
+            <td>错题本</td>
+            <td>已启用</td>
+            <td>已启用</td>
+            <td>已启用</td>
+            <td>已启用</td>
+          </tr>
+          <tr>
+            <td>诊断式提问</td>
+            <td>已启用</td>
+            <td>已启用</td>
+            <td>已启用</td>
+            <td>已启用</td>
+          </tr>
+          <tr>
+            <td>LaTeX 渲染</td>
+            <td>已启用</td>
+            <td>已启用</td>
+            <td>已启用</td>
+            <td>已启用</td>
+          </tr>
+          <tr>
+            <td>实时流式输出</td>
+            <td>已启用</td>
+            <td>已启用</td>
+            <td>已启用</td>
+            <td>已启用</td>
+          </tr>
+          <tr>
+            <td>支持</td>
+            <td>社区</td>
+            <td>邮件</td>
+            <td>优先邮件</td>
+            <td>优先支持 + 抢先体验</td>
+          </tr>
+        </table>
+      </div>
     </div>
   </div>
 </section>
@@ -314,9 +320,11 @@
 
 <section class="cta-section sr">
   <div class="section-inner">
-    <h2>还在犹豫？<strong>免费开始。</strong></h2>
-    <p>无需信用卡。带上你的 API 密钥，开启学习之旅。</p>
-    <a href="https://app.topodrive.top" class="cta-btn">免费开始</a>
+    <div class="neu-cta-card">
+      <h2>还在犹豫？<strong>免费开始。</strong></h2>
+      <p>无需信用卡。带上你的 API 密钥，开启学习之旅。</p>
+      <a href="https://app.topodrive.top" class="cta-btn">免费开始</a>
+    </div>
   </div>
 </section>
 
@@ -339,9 +347,9 @@
     </div>
     <div class="footer-col">
       <div class="footer-col-title">账户</div>
-      <a href="/zh/account">我的账户</a>
-      <a href="/zh/api-keys">API 密钥</a>
-      <a href="/zh/profile">个人资料</a>
+      <a href="/account">我的账户</a>
+      <a href="/api-keys">API 密钥</a>
+      <a href="/profile">个人资料</a>
     </div>
     <div class="footer-col">
       <div class="footer-col-title">法律</div>

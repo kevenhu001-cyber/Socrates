@@ -6,7 +6,7 @@
 <link rel="apple-touch-icon" href="/logo.png">
 <title>Socrates — 指南</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=Noto+Serif+SC:wght@300;400;500&display=swap" rel="stylesheet">
 <link href="/base.css" rel="stylesheet">
 <script>
 !function(){
@@ -25,15 +25,19 @@
   }catch(e){}
 }();
 </script>
+<style>
+  html[lang^="zh"] body{font-family:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  html[lang^="zh"] .section-title, html[lang^="zh"] .page-header h1, html[lang^="zh"] .hero h1, html[lang^="zh"] .narrative-heading, html[lang^="zh"] .pricing-block-name, html[lang^="zh"] .cta-section h2, html[lang^="zh"] .pull-quote blockquote, html[lang^="zh"] .footer-tag, html[lang^="zh"] .stat-number{font-family:"Noto Serif SC","Newsreader",serif}
+</style>
 </head>
 <body>
-<div class="bg-grid"></div>
+<div class="bg-ambient"></div>
 <div class="bg-glow"></div>
 <div class="page">
 
 <nav>
   <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px">Socrates</a>
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="">Socrates</a>
     <div class="nav-links">
       <a href="/pricing">套餐</a>
       <a href="/guide" class="nav-active">指南</a>
@@ -74,7 +78,7 @@
         <div>
           <h3>选择主题</h3>
           <p>在屏幕中央的输入框中输入任何你想学习的内容。Socrates 适应任何学科，从微积分到诗歌，从量子力学到哲学，从机器学习到音乐理论。一些示例：</p>
-          <ul style="margin-top:8px;padding-left:20px;font-size:14px;color:hsl(var(--text-400));line-height:1.8">
+          <ul style="margin-top:8px;padding-left:20px;font-size:14px;color:hsl(var(--text-300));line-height:1.85">
             <li>"用物理实例讲解链式法则"</li>
             <li>"教我了解拜占庭帝国，重点讲贸易路线"</li>
             <li>"我想理解深度学习中的 Transformer 原理"</li>
@@ -102,21 +106,25 @@
   </div>
 </section>
 
-<section class="pull-quote sr">
+<section class="sr">
   <div class="section-inner">
-    <blockquote>&ldquo;最好的学习方式是教学。Socrates 负责教学，让你专注于理解。&rdquo;</blockquote>
-    <cite>围绕认知科学原理设计</cite>
+    <div class="pull-quote">
+      <div class="pull-quote-inner">
+        <blockquote>&ldquo;最好的学习方式是教学。Socrates 负责教学，让你专注于理解。&rdquo;</blockquote>
+        <cite>围绕认知科学原理设计</cite>
+      </div>
+    </div>
   </div>
 </section>
 
 <section class="sr">
   <div class="section-inner" style="text-align:center">
     <div class="section-eyebrow">使用技巧</div>
-    <h2 class="section-title" style="margin-bottom:24px">充分发挥 <strong>Socrates</strong> 的价值</h2>
+    <h2 class="section-title" style="margin-bottom:32px">充分发挥 <strong>Socrates</strong> 的价值</h2>
     <div class="feat-list">
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">尽量具体</div><div class="feat-item-desc">主题越窄，课程越深。与其输入"数学"，不如尝试"从第一性原理讲解链式法则，并配以物理实例"。</div></div></div>
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">诚实作答</div><div class="feat-item-desc">诊断问题检验的是你的理解，而非自尊。不确定时猜对会跳过你真正需要的内容。</div></div></div>
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">回顾错题</div><div class="feat-item-desc">错题本记录了你答错的每一道题。定期回顾，巩固薄弱环节。</div></div></div>
+      <div class="feat-item"><div class="feat-bullet">01</div><div><div class="feat-item-title">尽量具体</div><div class="feat-item-desc">主题越窄，课程越深。与其输入"数学"，不如尝试"从第一性原理讲解链式法则，并配以物理实例"。</div></div></div>
+      <div class="feat-item"><div class="feat-bullet">02</div><div><div class="feat-item-title">诚实作答</div><div class="feat-item-desc">诊断问题检验的是你的理解，而非自尊。不确定时猜对会跳过你真正需要的内容。</div></div></div>
+      <div class="feat-item"><div class="feat-bullet">03</div><div><div class="feat-item-title">回顾错题</div><div class="feat-item-desc">错题本记录了你答错的每一道题。定期回顾，巩固薄弱环节。</div></div></div>
     </div>
   </div>
 </section>
@@ -125,21 +133,27 @@
 <section class="sr" style="padding-top:40px">
   <div class="section-inner" style="text-align:center">
     <div class="section-eyebrow">支持的模型</div>
-    <h2 class="section-title" style="margin-bottom:24px">携带<strong>自有 LLM</strong></h2>
-    <div class="feat-list">
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">Beagle（内置）</div><div class="feat-item-desc">开箱即用，无需 API 密钥。每个套餐都有慷慨的月度 token 配额。</div></div></div>
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">OpenAI</div><div class="feat-item-desc">通过 platform.openai.com 使用 GPT-5.5</div></div></div>
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">Anthropic</div><div class="feat-item-desc">通过 console.anthropic.com 使用 Claude Opus 4.8、Sonnet 4.6</div></div></div>
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">兼容平台</div><div class="feat-item-desc">Together.ai、Groq、DeepSeek、vLLM、Ollama 等任何 OpenAI 兼容端点均可使用。</div></div></div>
+    <h2 class="section-title" style="margin-bottom:32px">携带<strong>自有 LLM</strong></h2>
+    <div class="provider-row">
+      <span class="provider-pill is-primary">Beagle（内置）</span>
+      <span class="provider-pill">OpenAI</span>
+      <span class="provider-pill">Anthropic</span>
+      <span class="provider-pill">Together.ai</span>
+      <span class="provider-pill">Groq</span>
+      <span class="provider-pill">DeepSeek</span>
+      <span class="provider-pill">vLLM / Ollama</span>
     </div>
+    <p style="font-size:13px;color:hsl(var(--text-400));margin-top:18px;max-width:520px;margin-left:auto;margin-right:auto">内置 Beagle 即开即用，月度配额慷慨。或使用任何 OpenAI 兼容端点。</p>
   </div>
 </section>
 
 <section class="cta-section sr">
   <div class="section-inner">
-    <h2>准备好试试了吗？<strong>完全免费。</strong></h2>
-    <p>用邮箱注册账号，几分钟即可开启学习之旅。</p>
-    <a href="https://app.topodrive.top" class="cta-btn">打开应用</a>
+    <div class="neu-cta-card">
+      <h2>准备好试试了吗？<strong>完全免费。</strong></h2>
+      <p>用邮箱注册账号，几分钟即可开启学习之旅。</p>
+      <a href="https://app.topodrive.top" class="cta-btn">打开应用</a>
+    </div>
   </div>
 </section>
 
@@ -162,9 +176,9 @@
     </div>
     <div class="footer-col">
       <div class="footer-col-title">账户</div>
-      <a href="/zh/account">我的账户</a>
-      <a href="/zh/api-keys">API 密钥</a>
-      <a href="/zh/profile">个人资料</a>
+      <a href="/account">我的账户</a>
+      <a href="/api-keys">API 密钥</a>
+      <a href="/profile">个人资料</a>
     </div>
     <div class="footer-col">
       <div class="footer-col-title">法律</div>

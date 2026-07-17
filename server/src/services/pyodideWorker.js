@@ -238,8 +238,8 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
   // the user's `open('foo.png')` lands in the scratch dir on the host FS.
   const artifactsDir = path.join(scratchDir, 'artifacts');
   await fs.mkdir(artifactsDir, { recursive: true }).catch(() => {});
-  try { pyodide.FS.mkdirTree('/artifacts'); } catch (_) {}
-  try { pyodide.FS.unmount('/artifacts'); } catch (_) {}
+  try { pyodide.FS.mkdirTree('/artifacts'); } catch (err) { /* directory already exists */ }
+  try { pyodide.FS.unmount('/artifacts'); } catch (err) { /* not mounted yet */ }
   pyodide.FS.mount(pyodide.FS.filesystems.NODEFS, { root: artifactsDir }, '/artifacts');
   pyodide.runPython(`import os; os.chdir('/artifacts')`);
 

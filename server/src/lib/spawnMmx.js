@@ -82,7 +82,7 @@ export function runMmx(args, opts = {}) {
     proc.stderr.on('data', (d) => { stderr += d.toString('utf8'); });
 
     const timer = setTimeout(() => {
-      try { proc.kill('SIGTERM'); } catch (_) {}
+      try { proc.kill('SIGTERM'); } catch (err) { /* process already exited */ }
     }, timeoutMs);
 
     proc.on('error', (e) => { clearTimeout(timer); reject(e); });
