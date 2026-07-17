@@ -2582,7 +2582,24 @@ async function startSession(){
   if(typeof renderAttachmentChips === "function") renderAttachmentChips();
   if(typeof updateStartBtn === "function") updateStartBtn();
   if(typeof updateSendBtn === "function") updateSendBtn();
-  document.getElementById("diagnosticView").innerHTML='<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">'+t("tutor.loading")+'</p><div class="diag-progress"><div class="diag-progress-bar"><div class="diag-progress-fill" id="diagProgressFill"></div></div><div class="diag-progress-step" id="diagProgressStep"><span class="diag-progress-spin"></span>'+t("diag.analyzingTopic")+'</div></div></div>';
+  /* U-H3 — reusable loading markup (initial render + retry re-render).
+     Includes a cancel button so the user can bail out of a slow
+     generation instead of watching the spinner indefinitely. */
+  function diagLoadingHTML(){
+    return '<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">'+t("tutor.loading")+'</p><div class="diag-progress"><div class="diag-progress-bar"><div class="diag-progress-fill" id="diagProgressFill"></div></div><div class="diag-progress-step" id="diagProgressStep"><span class="diag-progress-spin"></span>'+t("diag.analyzingTopic")+'</div></div><button type="button" class="diag-cancel-btn" onclick="cancelDiagnostic()">'+t("diag.cancel")+'</button></div>';
+  }
+  /* U-H3 — cancel handler: raise the cancel flag (checked inside
+     generateDiagnosticQuestions) and return to the topic-setup screen. */
+  window.cancelDiagnostic=function(){
+    state.diagCancel=true;
+    var dv=document.getElementById("diagnosticView");
+    if(dv){dv.classList.add("hidden");dv.innerHTML="";}
+    var ts=document.getElementById("topicSetup");
+    if(ts)ts.classList.remove("hidden");
+    var inp=document.getElementById("topicInput");
+    if(inp){try{inp.focus();}catch(_){}}
+  };
+  document.getElementById("diagnosticView").innerHTML=diagLoadingHTML();
 
   /* Phase 3 — create the search-progress log up front so the user sees
    * the activity feed while the search runs in the background.
@@ -2641,83 +2658,84 @@ async function startSession(){
     diagProgress(15, t("chat.knowledgeReady"));
   }
 
-  /* KB nodes ready — advance to question generation */
-  diagProgress(20, t("chat.generatingQuestions"));
-
-  /* Try the real LLM first (via the project's existing
-     generateDiagnosticQuestions — it goes through callAPI() and
-     so respects the user's configured provider, plus the
-     DIAG_SYSTEM_PROMPT already instructs the model to write all
-     questions and options in the user's input language).
-     Falls back to the built-in mock only if the LLM call returns
-     nothing usable. */
-  var diagQs = null;
-  var diagErr = null;
-  /* P_ui-tutor-diag-debug — log apiConfig so we can see why
-     getActiveProvider() might return null on cold boot. */
-  try{
-  }catch(_){}
-  try {
-    diagQs = await generateDiagnosticQuestions(topic, lang, function(step, total, q) {
-      var pct = 20 + Math.round(75 * step / total);
-      if (q) {
-        diagProgress(pct, t("chat.generatedQ").replace("{n}", step).replace("{total}", total));
-      } else {
-        diagProgress(pct, t("chat.generatingQ").replace("{n}", step).replace("{total}", total));
-      }
-    });
-  } catch (e) {
-    diagErr = (e && e.message) || String(e);
+  /* KB nodes ready — advance to question generation.
+     U-H3 — generation is wrapped in a retryable closure so the
+     timeout/failure prompt can re-run it, and a cancel flag lets the
+     user bail out mid-generation (see cancelDiagnostic above). */
+  function renderDiagFailure(fallbackErr){
+    var dv=document.getElementById("diagnosticView");
+    if(!dv)return;
+    var _esc=(typeof window.esc==="function")?window.esc:function(x){return String(x==null?"":x)};
+    var reason=state.lastCallError||fallbackErr||"";
+    dv.classList.remove("hidden");
+    dv.innerHTML='<div class="diag-error">'
+      +'<p class="diag-error-title">'+_esc(t("diag.timeoutTitle"))+'</p>'
+      +(reason?'<p class="diag-error-reason">'+_esc(reason)+'</p>':'')
+      +'<div class="diag-error-actions">'
+      +'<button type="button" class="diag-error-retry" onclick="retryDiagnostic()">'+_esc(t("diag.retry"))+'</button>'
+      +'<button type="button" class="diag-error-builtin" onclick="useBuiltinDiagnostic()">'+_esc(t("diag.useBuiltin"))+'</button>'
+      +'</div></div>';
   }
-  if (!diagQs) {
-    /* Belt-and-braces: if callAPI / generateDiagnosticQuestions
-       returned null without writing lastCallError, synthesise a
-       reason from the current apiConfig so the api-badge actually
-       tells the user something useful. */
+  async function attemptDiagGeneration(reinjectLoading){
+    state.diagCancel=false;
+    if(reinjectLoading){
+      var dvl=document.getElementById("diagnosticView");
+      if(dvl){dvl.classList.remove("hidden");dvl.innerHTML=diagLoadingHTML();}
+    }
+    diagProgress(20, t("chat.generatingQuestions"));
+    var diagQs=null;
+    var diagErr=null;
+    try {
+      diagQs = await generateDiagnosticQuestions(topic, lang, function(step, total, q) {
+        var pct = 20 + Math.round(75 * step / total);
+        if (q) {
+          diagProgress(pct, t("chat.generatedQ").replace("{n}", step).replace("{total}", total));
+        } else {
+          diagProgress(pct, t("chat.generatingQ").replace("{n}", step).replace("{total}", total));
+        }
+      }, function(){ return !!state.diagCancel; });
+    } catch (e) {
+      diagErr = (e && e.message) || String(e);
+    }
+    /* User cancelled — cancelDiagnostic() already restored topic-setup. */
+    if (state.diagCancel) return;
+    if (diagQs && diagQs.length) {
+      state.diagQuestions = diagQs;
+      state.lastCallSource = 'real';
+      updateChatStats();
+      diagProgress(100, t("diag.ready"));
+      renderDiagQuestion();
+      updateKB();
+      return;
+    }
+    /* Generation failed (not a user cancel). Synthesise a reason for the
+       api-badge, then show an explicit retry / use-built-in prompt
+       instead of silently falling back to the mock questions. */
     if (!state.lastCallError) {
       var ap = (typeof getActiveProvider === "function") ? getActiveProvider() : null;
       if (!ap) state.lastCallError = "no provider configured";
       else if (!ap.model) state.lastCallError = "active provider missing model";
       else if (ap.isBuiltIn) state.lastCallError = "built-in provider call failed (network or server error)";
       else state.lastCallError = "active provider '"+(ap.label||ap.id)+"' call failed";
-    } else {
-      /* generateDiagnosticQuestions already wrote a specific reason
-         (e.g. "Diag JSON parse failed: ..." or "Diag response had no
-         JSON array"). Log it once at warn level so the user / dev
-         console shows the actual failure mode, not just the generic
-         "Diag generator returned no questions" string the badge
-         displays. */
-      /* generator failed */
     }
+    updateChatStats();
+    renderDiagFailure(diagErr);
   }
-  if (diagQs && diagQs.length) {
-    state.diagQuestions = diagQs;
-    state.lastCallSource = 'real';
-    /* Don't overwrite lastCallError on success — callAPI() set it to
-       null on the way in and we want to leave it that way. */
-  } else {
-    /* Fallback: built-in mock questions. callAPI() / generateDiagnosticQuestions
-       have already populated state.lastCallError with the real reason
-       (network, JSON parse, provider missing, etc.) — surface it on
-       the api-badge via updateChatStats(). If for some reason that
-       didn't happen (e.g. callAPI never ran because the user is on a
-       fresh page where state.lastCallError hasn't been initialised),
-       synthesise a clear reason from apiConfig. */
+  /* U-H3 — retry re-runs generation from scratch; use-built-in accepts
+     the mock questions the caller already prepared (gen.diagQuestions). */
+  window.retryDiagnostic = function(){ attemptDiagGeneration(true); };
+  window.useBuiltinDiagnostic = function(){
     state.diagQuestions = gen.diagQuestions;
     state.lastCallSource = 'mock';
-    if (!state.lastCallError) {
-      var ap = (typeof getActiveProvider === "function") ? getActiveProvider() : null;
-      state.lastCallError = diagErr
-        || (ap ? "Diag generator returned no questions" : "no provider configured");
-    }
-  }
-  updateChatStats();
+    if (!state.lastCallError) state.lastCallError = "Using built-in questions";
+    updateChatStats();
+    var dv = document.getElementById("diagnosticView");
+    if (dv) dv.classList.remove("hidden");
+    renderDiagQuestion();
+    updateKB();
+  };
 
-  /* Done — fill the bar before showing questions */
-  diagProgress(100, t("diag.ready"));
-
-  renderDiagQuestion();
-  updateKB();
+  await attemptDiagGeneration(false);
 }
 
 function renderDiagQuestion(){
@@ -4321,13 +4339,26 @@ function addStreamingMessage(opts){
     return true;
   }
   var pendingRender=null;
-  /* P_speed-cap — throttle streaming renders to ~12fps max so fast
-     reasoning models don't overwhelm the browser. formatMsgProgressive
-     cost grows linearly with response length; at 60fps this causes
-     visible layout jank on long responses. 80ms between actual render
-     passes (~12fps) keeps text smooth while cutting render work ~5x. */
+  /* P_speed-cap / P-H4 — throttle streaming renders so fast reasoning
+     models don't overwhelm the browser. formatMsgProgressive cost grows
+     with response length; at 60fps this causes visible layout jank on
+     long responses. 250ms between actual render passes (~4fps, per the
+     perf audit) keeps text readable while cutting render work sharply.
+     The stable-prefix cache below does the heavy lifting: it turns the
+     per-frame full re-parse (O(n²) over a stream) into a tail-only
+     re-parse (O(n) total). */
   var _lastRenderAt=0;
-  var _renderThrottleMs=80;
+  var _renderThrottleMs=250;
+  /* P-H4 — skip an entire render pass when no new characters have
+     arrived since the last one (e.g. the trailing rAF the throttle
+     schedules after the stream goes idle). */
+  var _lastParsedLen=-1;
+  /* P-H4 — stable-prefix cache for the no-think branch. Everything up to
+     the last blank line is treated as settled markdown blocks: parsed
+     once and cached here, so each frame only re-parses the unfinished
+     tail block instead of the whole accumulated response. */
+  var _stablePrefixText=null;
+  var _stablePrefixHtml="";
   /* Thinking pill (for chat-mode reasoning_content). Lazily created on
      the first onThinking(delta) callback so we don't add a pill for
      models that don't produce reasoning. Hidden when the user has
@@ -4336,6 +4367,28 @@ function addStreamingMessage(opts){
   /* P_tool_in_think — cached container for tool cards inside
      the think-block. Lazily created by _ensureToolContainer(). */
   var _toolCardContainer=null;
+  function _toolRunList(host){
+    var group=host.querySelector('.tool-run-group');
+    if(!group){
+      group=document.createElement('section');
+      group.className='tool-run-group';
+      group.innerHTML='<button type="button" class="tool-run-summary" aria-expanded="false">'+
+        '<span class="tool-run-summary-dot" aria-hidden="true"></span>'+
+        '<span class="tool-run-summary-label">Working</span>'+
+        '<span class="tool-run-summary-meta"></span>'+
+        '<span class="tool-run-summary-chev" aria-hidden="true">⌄</span>'+
+        '</button><div class="tool-run-list" hidden></div>';
+      var trigger=group.querySelector('.tool-run-summary');
+      var list=group.querySelector('.tool-run-list');
+      trigger.addEventListener('click',function(){
+        var open=group.classList.toggle('open');
+        trigger.setAttribute('aria-expanded',open?'true':'false');
+        list.hidden=!open;
+      });
+      host.appendChild(group);
+    }
+    return group.querySelector('.tool-run-list');
+  }
   function _ensureToolContainer(){
     if(_toolCardContainer&&_toolCardContainer.isConnected)return _toolCardContainer;
     /* Try to reuse an existing think-block's .think-tools slot.
@@ -4352,6 +4405,7 @@ function addStreamingMessage(opts){
         if(tc)tc.after(_toolCardContainer);
         else tb.appendChild(_toolCardContainer);
       }
+      _toolCardContainer=_toolRunList(_toolCardContainer);
       return _toolCardContainer;
     }
     /* No think-block yet (thinking content hasn't arrived, or won't
@@ -4365,6 +4419,7 @@ function addStreamingMessage(opts){
       _toolCardContainer.className="think-tools";
       body.appendChild(_toolCardContainer);
     }
+    _toolCardContainer=_toolRunList(_toolCardContainer);
     return _toolCardContainer;
   }
   function ensureThinkCtl(){
@@ -4669,6 +4724,18 @@ function teardownThinkStructure(){
     thinkState.lastRenderedAfter=null;
   }
 
+  /* P-H4 — a prefix is only safe to freeze into the stable cache when it
+     doesn't end inside an open construct. An odd number of ``` fences,
+     $$ math delimiters, or \[ vs \] display-math brackets means the cut
+     point falls inside an unfinished block; splitting there would render
+     both halves wrong, so we decline the optimization for that frame. */
+  function _prefixIsSafeToCache(s){
+    if((s.split("```").length-1)%2!==0)return false;
+    if((s.split("$$").length-1)%2!==0)return false;
+    if((s.split("\\[").length-1)!==(s.split("\\]").length-1))return false;
+    return true;
+  }
+
   function doRender(){
     pendingRender=null;
     /* P_session-stream-dispose — rAF guard. cancelAnimationFrame in
@@ -4698,6 +4765,9 @@ function teardownThinkStructure(){
      * is still kept in state.messages[msgIdx].rawText for save /
      * history so a later formatMsg can re-process it. */
     var displayFull=stripChatArtifacts(full);
+
+    /* P-H4 — nothing new since the last render; skip the whole parse. */
+    if(displayFull.length===_lastParsedLen)return;
 
     /* Locate <think> / </think> in the accumulated stream. The
        startIdx is only set the first time we see <think> so the
@@ -4781,11 +4851,29 @@ function teardownThinkStructure(){
           body.appendChild(savedToolCardArr[sci2]);
         }
       }
-      /* Skip the DOM write if the rendered HTML hasn't changed —
-         the most common case once the cursor blinks and the model
-         produces no new tokens. Caching by raw text length + last
-         few chars is cheap and avoids a layout per frame. */
-      var rendered=formatMsgProgressive(displayFull);
+      /* P-H4 — stable-prefix incremental render. Split displayFull at the
+         last blank line: the part before it is settled markdown blocks
+         (parsed once, cached in _stablePrefixHtml) and only the trailing
+         unfinished block is re-parsed each frame. This turns the old
+         O(n²) "re-parse the whole accumulated text every frame" into an
+         O(tail) pass. The split is only trusted when the prefix has
+         balanced code fences / math delimiters (see _prefixIsSafeToCache);
+         otherwise we fall back to a full parse for this frame. finish()
+         always re-runs the full formatMsg, so any streaming-time seam is
+         corrected once the message completes. */
+      var rendered;
+      var _cut=displayFull.lastIndexOf("\n\n");
+      var _prefix=_cut>0?displayFull.slice(0,_cut):"";
+      if(_prefix&&_prefixIsSafeToCache(_prefix)){
+        if(_prefix!==_stablePrefixText){
+          _stablePrefixHtml=formatMsgProgressive(_prefix);
+          _stablePrefixText=_prefix;
+        }
+        var _tail=displayFull.slice(_cut+2);
+        rendered=_stablePrefixHtml+(_tail?formatMsgProgressive(_tail):"");
+      }else{
+        rendered=formatMsgProgressive(displayFull);
+      }
       if(streamContent.dataset.lastRendered!==rendered){
         streamContent.innerHTML=rendered;
         streamContent.dataset.lastRendered=rendered;
@@ -4857,6 +4945,10 @@ function teardownThinkStructure(){
         thinkState.lastRenderedThink=thinkContent;
       }
     }
+
+    /* P-H4 — remember the length we just rendered so an idle trailing
+       frame with no new characters short-circuits at the top. */
+    _lastParsedLen=displayFull.length;
 
     /* P1.1 — mirror rawText to state.messages so extractHistory
        and saveCurrentSession see the latest text. html is left
@@ -5151,9 +5243,10 @@ function teardownThinkStructure(){
            inside the pill, so saving the pill is sufficient — only
            extract individual cards when there's no pill to host them. */
         var savedPill=body.querySelector('.think-block');
+        var savedToolGroup=body.querySelector('.tool-run-group');
         var savedToolCards=body.querySelectorAll('.agent-tool-card');
         var savedToolCardArr=[];
-        if(!savedPill){
+        if(!savedPill&&!savedToolGroup){
           for(var sci=0;sci<savedToolCards.length;sci++){
             savedToolCardArr.push(savedToolCards[sci]);
             savedToolCards[sci].parentNode.removeChild(savedToolCards[sci]);
@@ -5161,6 +5254,7 @@ function teardownThinkStructure(){
         }
         body.innerHTML=finalHtml;
         if(savedPill)body.insertBefore(savedPill,body.firstChild);
+        else if(savedToolGroup)body.appendChild(savedToolGroup);
         for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
           body.appendChild(savedToolCardArr[sci2]);
         }
@@ -5177,9 +5271,10 @@ function teardownThinkStructure(){
         console.log("[finish] formatMsg error");
         var fb="<p>"+esc(full)+"</p>";
         var savedPill2=body.querySelector('.think-block');
+        var savedToolGroup2=body.querySelector('.tool-run-group');
         var savedTC2=body.querySelectorAll('.agent-tool-card');
         var savedTCArr2=[];
-        if(!savedPill2){
+        if(!savedPill2&&!savedToolGroup2){
           for(var sci3=0;sci3<savedTC2.length;sci3++){
             savedTCArr2.push(savedTC2[sci3]);
             savedTC2[sci3].parentNode.removeChild(savedTC2[sci3]);
@@ -5187,6 +5282,7 @@ function teardownThinkStructure(){
         }
         body.innerHTML=fb;
         if(savedPill2)body.insertBefore(savedPill2,body.firstChild);
+        else if(savedToolGroup2)body.appendChild(savedToolGroup2);
         for(var sci4=0;sci4<savedTCArr2.length;sci4++){
           body.appendChild(savedTCArr2[sci4]);
         }
@@ -5267,7 +5363,7 @@ function teardownThinkStructure(){
       }
       /* Stop the independent execution stream and any queued delta
          frame before this message can lose ownership of its slot. */
-      toolRuntime.dispose();
+      toolRuntime.cancel();
       /* Clean up incomplete placeholder message from state.messages
        * to prevent saving empty/partial AI responses to the database.
        * Only remove if still in streaming state with no content.
@@ -5298,7 +5394,7 @@ function teardownThinkStructure(){
       replaceWithError:function(errMsg,onRetry){
         if(finished)return;
         finished=true;
-        toolRuntime.dispose();
+        toolRuntime.cancel();
         clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
         if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
@@ -6706,6 +6802,7 @@ async function toggleAppMode(){
   try{localStorage.setItem("socrates-appmode",appMode)}catch(e){}
   syncAppModeUI();
   syncSidebarForMode();
+  updateModeBadge();
   /* v3.0 design — re-render the mode banner after a switch so the
      label and switch-button text flip. */
   if(typeof tutorSocratic==="object"&&tutorSocratic
@@ -6717,6 +6814,26 @@ async function toggleAppMode(){
    calls window.toggleAppMode when the user clicks "Switch to
    Chat/Tutor". */
 window.toggleAppMode = toggleAppMode;
+
+/* U-H2 — chat-header mode badge. Shows the active mode (Tutor/Chat)
+   in the top bar so the user always knows which mode a live
+   conversation is in. Called from toggleAppMode(), syncAppModeUI()
+   (providers.js) and updateChatStats() (chat/stats.js). Kept separate
+   from the retired renderModeBanner() no-op to avoid re-cluttering the
+   message list. */
+function updateModeBadge(){
+  var badge=document.getElementById("chatModeBadge");
+  if(!badge)return;
+  var mode=(window.appMode==="tutor")?"tutor":"chat";
+  var label=(typeof window.t==="function")
+    ? window.t(mode==="tutor"?"tutor.modeTutor":"tutor.modeChat")
+    : (mode==="tutor"?"Tutor":"Chat");
+  badge.textContent=label;
+  badge.classList.remove("hidden");
+  badge.classList.toggle("mode-tutor",mode==="tutor");
+  badge.classList.toggle("mode-chat",mode==="chat");
+}
+window.updateModeBadge = updateModeBadge;
 
 /* P_main-split — Wave 2c: settings + provider management extracted to ui/settings.js. */
 import {

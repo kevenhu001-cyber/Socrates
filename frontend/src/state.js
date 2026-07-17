@@ -42,7 +42,11 @@ var state={
        dialog. */
     stuckCheckOffered:false,
     stuckCheckRejected:0,
-    fourOptionDialog:null
+    fourOptionDialog:null,
+    /* U-H3 — set true when the user cancels diagnostic-question
+       generation so the async generation loop can bail out early
+       instead of finishing a run whose result will be discarded. */
+    diagCancel:false
   },
   /* kb: knowledge graph + mistake book. */
   kb:{kbNodes:[],currentNode:0,mistakes:[],
@@ -80,6 +84,7 @@ var STATE_FLAT_TO_NS={
   messages:"session.messages",
   currentProjectId:"session.currentProjectId",
   activeProjectFilter:"session.activeProjectFilter",
+  diagCancel:"session.diagCancel",
   /* Task 2.1 — teaching-stage state machine fields. Mapped so
      legacy `state.teachingStage` etc. continue to work alongside
      the namespaced `state.session.teachingStage`. */
@@ -279,6 +284,7 @@ function resetState(){
   state.session.stuckCheckOffered=false;
   state.session.stuckCheckRejected=0;
   state.session.fourOptionDialog=null;
+  state.session.diagCancel=false;
   state.kb.kbNodes=[];
   state.kb.currentNode=0;
   state.kb.mistakes=[];
