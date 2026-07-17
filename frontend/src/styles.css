@@ -2078,8 +2078,46 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
 .msg-body a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
 .msg-body a:hover{color:hsl(var(--accent-100))}
 .msg-body img{max-width:100%;border-radius:8px;margin:8px 0}
-.stream-cursor{display:inline-block;animation:blink 1s step-end infinite;color:hsl(var(--text-400));font-size:calc(14px * var(--app-font-scale, 1));margin-left:1px;vertical-align:baseline}
-@keyframes blink{50%{opacity:0}}
+/* ─── Stream cursor ──────────────────────────────────────────────
+   A soft pulsing caret instead of a hard step-end blink. The previous
+   step-end blink felt jarring during long responses (text would suddenly
+   show/hide), so we use a smooth opacity + scale "breathing" curve over
+   ~1.1s, with a faint accent-tinted glow that ties it visually to the
+   spinner shown while waiting for the first delta. The cursor lives
+   inline at the end of the streaming body (after the pending chunk) so
+   it appears to be typing where new text will arrive. */
+.stream-cursor{
+  display:inline-block;
+  width:2px;
+  height:1.05em;
+  margin-left:1px;
+  vertical-align:-0.18em;
+  background:linear-gradient(180deg,hsl(var(--accent-000)) 0%,hsl(var(--accent-000)/0.55) 100%);
+  border-radius:1px;
+  box-shadow:0 0 6px hsl(var(--accent-000)/0.35);
+  animation:streamCursorPulse 1.1s cubic-bezier(.4,0,.2,1) infinite;
+  will-change:opacity,transform;
+}
+@keyframes streamCursorPulse{
+  0%,100%{opacity:.95;transform:scaleY(1)}
+  50%{opacity:.25;transform:scaleY(.78)}
+}
+/* Legacy single-glyph caret (▍) — kept as a fallback for any caller
+   still rendering the old character. Wrapped in .stream-cursor-text
+   so the smoother bar caret above remains the default. */
+.stream-cursor-text{
+  display:inline-block;
+  color:hsl(var(--text-400));
+  font-size:calc(14px * var(--app-font-scale, 1));
+  margin-left:1px;
+  vertical-align:baseline;
+  animation:streamCursorFade 1.1s ease-in-out infinite;
+  will-change:opacity;
+}
+@keyframes streamCursorFade{
+  0%,100%{opacity:1}
+  50%{opacity:.15}
+}
 
 /* Think block — cream/gold redesign.
    - Collapsed by default (the markup no longer carries `open` once
@@ -2466,6 +2504,9 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .thinking-dot{display:inline-flex;align-items:center;gap:6px;color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:4px 0;line-height:1.3}
 .thinking-dot[data-mode="chat"]{color:hsl(var(--accent-000))}
 .thinking-dot .loading{width:14px;height:14px}
+/* Container that stacks the "Thinking…" badge above the skeleton
+   shimmer lines. Used by addStreamingMessage in main.js. */
+.thinking-placeholder{display:flex;flex-direction:column;gap:14px;padding:2px 0 4px}
 /* Restore the small inline spinner used inside .thinking-dot,
    .think-summary, .chat-hint, .appendThinking pill, and the
    streaming body. Was deleted when the diff renamed every
@@ -2478,36 +2519,58 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .thinking-pulse::before{border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--accent-000)/0.6);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite}
 .thinking-pulse::after{inset:2.5px;border-top-color:hsl(var(--accent-000)/0.7);border-left-color:hsl(var(--accent-000)/0.4);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite reverse}
 
-/* P_chunked-fade — animated reveal of streamed text. Each "chunk"
-   is a <div class="stream-chunk"> produced by addStreamingMessage
-   at a paragraph / line / sentence boundary (1–3 lines per chunk).
-   The chunk's innerHTML is the result of formatMsg on the closed
-   slice, so KaTeX formulas and code fences render properly inside
-   the chunk's own bounds — and since each chunk is rendered ONCE
-   when its closing boundary arrives and never re-rendered, no
-   formula ever lands mid-stream to push the chunks above the
-   cursor down.
-
-   The trailing pending slice is a <span class="stream-chunk
-   stream-chunk-pending"> sitting just before the cursor; it shows
-   raw text only (no formatMsg), so an unclosed $...$ or ``` is
-   harmless until its closing delimiter arrives.
-
-   The fade-in animation replaces the old character-by-character
-   typewriter: each new chunk rises 2px and fades from blur(2px) to
-   clear over ~420ms, giving a soft "settle into place" feel. */
-.stream-content{white-space:normal;word-wrap:break-word;overflow-wrap:break-word}
 /* P_arch typewriter — during streaming we show raw text only (no
    markdown rendering, no KaTeX). Newlines need to be preserved so
    the streamed source reflects the model's actual line breaks
    instead of all collapsing into one run-on line. */
+.stream-content{white-space:normal;word-wrap:break-word;overflow-wrap:break-word}
 .stream-content.stream-typing{white-space:pre-wrap;word-wrap:break-word}
 .stream-chunk{display:block;opacity:1}
-.stream-chunk.stream-chunk-pending{display:inline;white-space:pre-wrap}
-.stream-chunk-in{animation:streamChunkFade .42s var(--ease-out, cubic-bezier(0.16,1,0.3,1)) both}
+/* Pending chunk — the trailing slice after the last emitted `\n\n`.
+   It's a <div class="stream-chunk stream-chunk-pending"> (not a
+   <span>) because formatMsgProgressive may return HTML with
+   block-level children like <p>, and a <span> cannot legally wrap
+   block elements. We keep `white-space:pre-wrap` so newlines within
+   a streaming paragraph are preserved until the closing \n\n arrives,
+   but the element itself is block-level. The chunk has no fade-in
+   class so its innerHTML re-renders don't re-trigger animations. */
+.stream-chunk.stream-chunk-pending{white-space:pre-wrap}
+/* Fade-in animation for each closed chunk.
+   Two variants live here:
+     - `.stream-chunk-in`     — default for prose / lists / headings.
+                                Uses opacity + tiny translateY only
+                                (NO blur) because filter:blur() would
+                                rasterise-blur any KaTeX math inside
+                                the chunk (KaTeX output is heavy on
+                                inline SVG with margin-right /
+                                vertical-align transforms, which
+                                blur+gpu-promote doesn't play nicely
+                                with).
+     - `.stream-chunk-in-rich`— for chunks containing viz/mermaid
+                                iframes or other rendered diagrams.
+                                A slower fade (720ms) with slightly
+                                more translateY so the user sees the
+                                chart "settle" rather than snap in.
+                                No blur either — diagrams have inline
+                                SVGs that would smear under blur.
+
+   Both share a per-chunk stagger via --stream-chunk-i (35ms steps)
+   so when two chunks emit in the same delta they cascade in. */
+.stream-chunk-in{
+  animation:streamChunkFade .42s cubic-bezier(.16,1,.3,1) both;
+  animation-delay:calc(var(--stream-chunk-i, 0) * 35ms);
+}
+.stream-chunk-in-rich{
+  animation:streamChunkFadeRich .72s cubic-bezier(.16,1,.3,1) both;
+  animation-delay:calc(var(--stream-chunk-i, 0) * 35ms);
+}
 @keyframes streamChunkFade{
-  from{opacity:0;transform:translateY(4px);filter:blur(2px)}
-  to{opacity:1;transform:translateY(0);filter:blur(0)}
+  from{opacity:0;transform:translateY(2px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes streamChunkFadeRich{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
 }
 /* Normalise paragraph margins inside chunks so multiple chunks stack
    with the same spacing as multiple paragraphs in a single chunk,
@@ -2515,6 +2578,64 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    extra gap to the chunk border. */
 .stream-content>.stream-chunk>p:first-child{margin-top:0}
 .stream-content>.stream-chunk>p:last-child{margin-bottom:0}
+
+/* ─── Skeleton placeholder while waiting for the first delta ──────
+   When the assistant bubble is created but no text has streamed yet,
+   we render a few shimmering placeholder lines so the user gets a
+   visual "loading" cue (and an idea of how long the response might
+   be) instead of a single spinner + "Thinking…" text. The shimmer is
+   a moving highlight bar that sweeps across neutral bars of varying
+   widths, in the same vein as Notion / Linear / ChatGPT skeletons. */
+.stream-skeleton{display:flex;flex-direction:column;gap:10px;padding:2px 0 4px;max-width:100%}
+.stream-skeleton-line{position:relative;overflow:hidden;height:13px;border-radius:6px;background:hsl(var(--bg-200)/0.85)}
+.stream-skeleton-line::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg,
+    transparent 0%,
+    hsl(var(--accent-000)/0.10) 50%,
+    transparent 100%);
+  transform:translateX(-100%);
+  animation:shimmerSweep 1.6s cubic-bezier(.4,0,.2,1) infinite;
+}
+/* Pulse the whole skeleton block softly so it doesn't feel static. */
+.stream-skeleton{animation:streamSkeletonPulse 2.4s ease-in-out infinite}
+@keyframes streamSkeletonPulse{
+  0%,100%{opacity:.95}
+  50%{opacity:.7}
+}
+.stream-skeleton-line:nth-child(1){width:88%}
+.stream-skeleton-line:nth-child(2){width:72%}
+.stream-skeleton-line:nth-child(3){width:94%}
+.stream-skeleton-line:nth-child(4){width:58%}
+.stream-skeleton-line:nth-child(5){width:80%}
+/* Stagger the shimmer so the lines don't all flash together. */
+.stream-skeleton-line:nth-child(2)::after{animation-delay:.15s}
+.stream-skeleton-line:nth-child(3)::after{animation-delay:.3s}
+.stream-skeleton-line:nth-child(4)::after{animation-delay:.45s}
+.stream-skeleton-line:nth-child(5)::after{animation-delay:.6s}
+/* When the first delta lands, fade the skeleton out instead of
+   removing it instantly — the new chunks fade in while the old
+   skeleton fades away, giving a smooth "text takes over" feel. */
+.stream-skeleton-out{animation:streamSkeletonOut .35s cubic-bezier(.4,0,.2,1) forwards;pointer-events:none}
+@keyframes streamSkeletonOut{
+  from{opacity:1;transform:translateY(0)}
+  to{opacity:0;transform:translateY(-4px)}
+}
+
+/* ─── Reduced motion ────────────────────────────────────────────
+   Users with prefers-reduced-motion: reduce get the streamed text
+   instantly without any fade / shimmer / pulse, but we keep the
+   cursor pulsing (the soft opacity sweep is far less intrusive than
+   a step-end blink and important for legibility). */
+@media (prefers-reduced-motion: reduce){
+  .stream-chunk-in{animation:none}
+  .stream-skeleton{animation:none}
+  .stream-skeleton-line::after{animation-duration:3s;opacity:.4}
+  .stream-skeleton-out{animation-duration:.12s}
+  .stream-cursor{animation-duration:2.2s;box-shadow:none}
+}
 
 /* Inline error/retry state — replaces the streaming bubble on failure */
 .msg-error{display:flex;align-items:center;gap:8px;padding:6px 10px;border:0.5px solid hsl(0 60% 50%/0.25);border-radius:8px;background:transparent;color:hsl(0 60% 70%);font-size:calc(12px * var(--app-font-scale, 1))}
