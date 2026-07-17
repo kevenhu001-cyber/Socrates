@@ -376,7 +376,7 @@ _localEmitter.on('local', (topic, json) => {
   let payload;
   try { payload = JSON.parse(json); } catch (_) { return; }
   for (const h of set) {
-    try { h(payload); } catch (_) {}
+    try { h(payload); } catch (err) { console.error('[pubsub] handler error:', err.message); }
   }
 });
 

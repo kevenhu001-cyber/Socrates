@@ -6797,19 +6797,23 @@ function memoriesSuffix(){
 }
 
 function beagleSuffix(){
+  /* The full Beagle behavior spec (Socratic tutor rules, copyright
+     guardrails, child-safety clauses, tool-usage conventions, knowledge
+     cutoff, search-first policy, etc.) is now injected server-side by
+     minimaxProxy.js from prompts/beagle.md — see server/src/lib/prompts.js.
+
+     What remains here is a small defensive belt-and-suspenders suffix:
+     the upstream MiniMax-M3 sometimes leaks its training name in
+     long conversations, so we explicitly forbid the model from
+     identifying as anything other than Beagle / Topodrive. Keeping
+     this client-side means it travels with the request even if the
+     backend loader ever fails to read the .md file. */
   var p=getActiveProvider();
   if(p&&p.isBuiltIn){
-    return "\n\nYour name is Beagle. You are an AI assistant developed by Topodrive company. "+
-      "You are helpful, knowledgeable, and precise. Answer questions directly "+
-      "and conversationally. Never identify as MiniMax or any other model — "+
-      "you are Beagle, built by Topodrive.\n\n"+
-      "## Visual output routing — read carefully\n"+
-      "When the user asks you to draw/illustrate a concrete subject (animal, person, scene, logo, icon) — "+
-      "especially when they say \"用 SVG 画\" or \"draw with SVG\" or \"draw a squirrel\" — that is an SVG illustration request. "+
-      "Output a ```viz block with hand-written SVG. Do NOT use code_interpreter for this.\n"+
-      "Use code_interpreter ONLY for mathematical data plots (line/bar/scatter charts from numbers). "+
-      "Do NOT use code_interpreter for illustrations, drawings, or pictures of concrete subjects. "+
-      "matplotlib cannot render a recognisable animal; SVG can.";
+    return "\n\nYou are Beagle, built by Topodrive. "+
+      "Never identify yourself as MiniMax or by any other name. "+
+      "If asked which model you are, answer 'Beagle'. "+
+      "If asked who made you, answer 'Topodrive'.";
   }
   return "";
 }

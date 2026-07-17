@@ -6,7 +6,7 @@
 <link rel="apple-touch-icon" href="/logo.png">
 <title>Socrates — 联系</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=Noto+Serif+SC:wght@300;400;500&display=swap" rel="stylesheet">
 <link href="/base.css" rel="stylesheet">
 <script>
 !function(){
@@ -25,15 +25,19 @@
   }catch(e){}
 }();
 </script>
+<style>
+  html[lang^="zh"] body{font-family:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  html[lang^="zh"] .section-title, html[lang^="zh"] .page-header h1, html[lang^="zh"] .hero h1, html[lang^="zh"] .narrative-heading, html[lang^="zh"] .pricing-block-name, html[lang^="zh"] .cta-section h2, html[lang^="zh"] .pull-quote blockquote, html[lang^="zh"] .footer-tag, html[lang^="zh"] .stat-number{font-family:"Noto Serif SC","Newsreader",serif}
+</style>
 </head>
 <body>
-<div class="bg-grid"></div>
+<div class="bg-ambient"></div>
 <div class="bg-glow"></div>
 <div class="page">
 
 <nav>
   <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px">Socrates</a>
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="">Socrates</a>
     <div class="nav-links">
       <a href="/pricing">套餐</a>
       <a href="/guide">指南</a>
@@ -67,10 +71,10 @@
     </div>
 
     <!-- Additional contact options -->
-    <div class="feat-list sr" style="margin-top:32px">
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">错误报告</div><div class="feat-item-desc">某些功能无法正常工作？请将详情发送至 <a href="mailto:help@addtech.site" style="color:hsl(var(--accent-000))">help@addtech.site</a>。截图和控制台日志能帮助我们更快地修复问题。</div></div></div>
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">功能建议</div><div class="feat-item-desc">有让 Socrates 变得更好的想法？请通过邮件发送你的建议。如果与我们的愿景一致，我们会将其加入路线图。</div></div></div>
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">安全</div><div class="feat-item-desc">发现了安全问题？请直接向 <a href="mailto:help@addtech.site" style="color:hsl(var(--accent-000))">help@addtech.site</a> 报告。我们会在 48 小时内确认收到。</div></div></div>
+    <div class="feat-list sr" style="margin-top:40px">
+      <div class="feat-item"><div class="feat-bullet">01</div><div><div class="feat-item-title">错误报告</div><div class="feat-item-desc">某些功能无法正常工作？请将详情发送至 <a href="mailto:help@addtech.site" style="color:hsl(var(--accent-000))">help@addtech.site</a>。截图和控制台日志能帮助我们更快地修复问题。</div></div></div>
+      <div class="feat-item"><div class="feat-bullet">02</div><div><div class="feat-item-title">功能建议</div><div class="feat-item-desc">有让 Socrates 变得更好的想法？请通过邮件发送你的建议。如果与我们的愿景一致，我们会将其加入路线图。</div></div></div>
+      <div class="feat-item"><div class="feat-bullet">03</div><div><div class="feat-item-title">安全</div><div class="feat-item-desc">发现了安全问题？请直接向 <a href="mailto:help@addtech.site" style="color:hsl(var(--accent-000))">help@addtech.site</a> 报告。我们会在 48 小时内确认收到。</div></div></div>
     </div>
 
     <div class="contact-note sr" style="margin-top:48px">
@@ -82,18 +86,24 @@
   </div>
 </section>
 
-<section class="pull-quote sr">
+<section class="sr">
   <div class="section-inner">
-    <blockquote>&ldquo;教学的艺术是协助发现的艺术。我们在这里帮助你发现。&rdquo;</blockquote>
-    <cite>——灵感来自 Mark Van Doren</cite>
+    <div class="pull-quote">
+      <div class="pull-quote-inner">
+        <blockquote>&ldquo;教学的艺术是协助发现的艺术。我们在这里帮助你发现。&rdquo;</blockquote>
+        <cite>——灵感来自 Mark Van Doren</cite>
+      </div>
+    </div>
   </div>
 </section>
 
 <section class="cta-section sr">
   <div class="section-inner">
-    <h2>还没准备好联系我们？<br><strong>先开始学习吧。</strong></h2>
-    <p>自行探索 Socrates。无承诺，无垃圾邮件。</p>
-    <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+    <div class="neu-cta-card">
+      <h2>还没准备好联系我们？<br><strong>先开始学习吧。</strong></h2>
+      <p>自行探索 Socrates。无承诺，无垃圾邮件。</p>
+      <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+    </div>
   </div>
 </section>
 
@@ -116,9 +126,9 @@
     </div>
     <div class="footer-col">
       <div class="footer-col-title">账户</div>
-      <a href="/zh/account">我的账户</a>
-      <a href="/zh/api-keys">API 密钥</a>
-      <a href="/zh/profile">个人资料</a>
+      <a href="/account">我的账户</a>
+      <a href="/api-keys">API 密钥</a>
+      <a href="/profile">个人资料</a>
     </div>
     <div class="footer-col">
       <div class="footer-col-title">法律</div>

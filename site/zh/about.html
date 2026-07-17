@@ -6,7 +6,7 @@
 <link rel="apple-touch-icon" href="/logo.png">
 <title>Socrates — 关于</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=Noto+Serif+SC:wght@300;400;500&display=swap" rel="stylesheet">
 <link href="/base.css" rel="stylesheet">
 <script>
 !function(){
@@ -25,15 +25,19 @@
   }catch(e){}
 }();
 </script>
+<style>
+  html[lang^="zh"] body{font-family:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  html[lang^="zh"] .section-title, html[lang^="zh"] .page-header h1, html[lang^="zh"] .hero h1, html[lang^="zh"] .narrative-heading, html[lang^="zh"] .pricing-block-name, html[lang^="zh"] .cta-section h2, html[lang^="zh"] .pull-quote blockquote, html[lang^="zh"] .footer-tag, html[lang^="zh"] .stat-number{font-family:"Noto Serif SC","Newsreader",serif}
+</style>
 </head>
 <body>
-<div class="bg-grid"></div>
+<div class="bg-ambient"></div>
 <div class="bg-glow"></div>
 <div class="page">
 
 <nav>
   <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px">Socrates</a>
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="">Socrates</a>
     <div class="nav-links">
       <a href="/pricing">套餐</a>
       <a href="/guide">指南</a>
@@ -53,49 +57,58 @@
 
 <section style="padding-top:0">
   <div class="section-inner">
-    <div class="narrative-text sr" style="margin-bottom:32px">
+    <div class="neu-surface sr" style="margin-bottom:32px">
       <p style="margin-bottom:16px">Socrates 于 2025 年初作为一项研究项目启动，探索现代语言模型是否能够实现真正的苏格拉底式教学，不仅仅是回答问题，而是通过结构化对话、诊断检查和自适应节奏引导学习者构建理解。</p>
       <p style="margin-bottom:16px">经过数月与数学、编程、哲学和科学领域学生的测试，我们向公众开放了 Socrates。反馈证实了我们的猜想：学习者渴望一位能够挑战他们思考的导师，而不是一位仅仅给出答案的导师。</p>
-      <p style="margin-bottom:16px">如今，Socrates 已被超过 40 个国家的学习者使用。我们的团队是一个分布式的五人小组，包括工程师、教育工作者和研究人员，分布在中国和北美。我们由总部位于中国西安的 Topodrive 全资拥有和运营。</p>
+      <p>如今，Socrates 已被超过 40 个国家的学习者使用。我们的团队是一个分布式的五人小组，包括工程师、教育工作者和研究人员，分布在中国和北美。我们由总部位于中国西安的 Topodrive 全资拥有和运营。</p>
     </div>
 
-    <div class="sr" style="display:flex;gap:24px;justify-content:center;align-items:center;margin-bottom:32px;flex-wrap:wrap">
-      <div style="text-align:center"><div style="font-family:var(--font-display);font-size:32px;font-weight:300;color:hsl(var(--accent-000));line-height:1">5</div><div style="font-size:12px;color:hsl(var(--text-500));margin-top:2px">团队成员</div></div>
-      <div style="width:0.5px;height:32px;background:hsl(var(--border-300)/0.1)"></div>
-      <div style="text-align:center"><div style="font-family:var(--font-display);font-size:32px;font-weight:300;color:hsl(var(--accent-000));line-height:1">40+</div><div style="font-size:12px;color:hsl(var(--text-500));margin-top:2px">覆盖国家</div></div>
+    <div class="sr" style="text-align:center;margin-bottom:32px">
+      <div class="stats-row">
+        <div class="stat-pill">
+          <div class="stat-number">5</div>
+          <div class="stat-label">团队成员</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-number">40+</div>
+          <div class="stat-label">覆盖国家</div>
+        </div>
+      </div>
     </div>
 
     <h3 class="narrative-heading sr" style="margin-top:48px;margin-bottom:24px;text-align:center">我们的信念</h3>
     <div class="feat-list sr">
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">深度胜于速度</div><div class="feat-item-desc">理解不能急于求成。每个概念都值得从零开始、层层深入地教授。我们宁愿你深入学好一件事，也不愿让你肤浅地浏览十件事。</div></div></div>
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">教学，而非作答</div><div class="feat-item-desc">导师的工作不是提供答案，而是提出能够引导理解的问题。每一次诊断检查都在构建心智模型，而非一份记录。</div></div></div>
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">彻底的可及性</div><div class="feat-item-desc">优质教育不应该需要信用卡，甚至不需要 API 密钥。内置 Beagle AI 模型让任何人都能立即开始学习。永久免费。</div></div></div>
+      <div class="feat-item"><div class="feat-bullet">01</div><div><div class="feat-item-title">深度胜于速度</div><div class="feat-item-desc">理解不能急于求成。每个概念都值得从零开始、层层深入地教授。我们宁愿你深入学好一件事，也不愿让你肤浅地浏览十件事。</div></div></div>
+      <div class="feat-item"><div class="feat-bullet">02</div><div><div class="feat-item-title">教学，而非作答</div><div class="feat-item-desc">导师的工作不是提供答案，而是提出能够引导理解的问题。每一次诊断检查都在构建心智模型，而非一份记录。</div></div></div>
+      <div class="feat-item"><div class="feat-bullet">03</div><div><div class="feat-item-title">彻底的可及性</div><div class="feat-item-desc">优质教育不应该需要信用卡，甚至不需要 API 密钥。内置 Beagle AI 模型让任何人都能立即开始学习。永久免费。</div></div></div>
     </div>
 
     <h3 class="narrative-heading sr" style="margin-top:48px;margin-bottom:24px;text-align:center">我们的方法</h3>
     <div class="feat-list sr">
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">第一性原理</div><div class="feat-item-desc">每节课都从基础开始。Socrates 识别先修概念，清晰定义术语，并循序渐进，从不假设未经验证的已有知识。</div></div></div>
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">主动回忆</div><div class="feat-item-desc">Socrates 在自然间隔中将讲解与诊断问题交织在一起，迫使你的大脑在信息消退之前检索和应用知识。</div></div></div>
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">自适应节奏</div><div class="feat-item-desc">掌握了一个概念？Socrates 会推进。遇到困难？它会实时调整，提供替代解释和基础回顾。</div></div></div>
-      <div class="feat-item"><span class="feat-bullet"></span><div><div class="feat-item-title">考试与测评</div><div class="feat-item-desc">在任意主题上生成结构化考试。设置难度和题型，按自己的节奏作答，提交评分，长期追踪学习效果。</div></div></div>
+      <div class="feat-item"><div class="feat-bullet">01</div><div><div class="feat-item-title">第一性原理</div><div class="feat-item-desc">每节课都从基础开始。Socrates 识别先修概念，清晰定义术语，并循序渐进，从不假设未经验证的已有知识。</div></div></div>
+      <div class="feat-item"><div class="feat-bullet">02</div><div><div class="feat-item-title">主动回忆</div><div class="feat-item-desc">Socrates 在自然间隔中将讲解与诊断问题交织在一起，迫使你的大脑在信息消退之前检索和应用知识。</div></div></div>
+      <div class="feat-item"><div class="feat-bullet">03</div><div><div class="feat-item-title">自适应节奏</div><div class="feat-item-desc">掌握了一个概念？Socrates 会推进。遇到困难？它会实时调整，提供替代解释和基础回顾。</div></div></div>
+      <div class="feat-item"><div class="feat-bullet">04</div><div><div class="feat-item-title">考试与测评</div><div class="feat-item-desc">在任意主题上生成结构化考试。设置难度和题型，按自己的节奏作答，提交评分，长期追踪学习效果。</div></div></div>
     </div>
 
     <div class="pull-quote sr" style="margin:60px 0 0">
-      <div class="section-inner">
+      <div class="pull-quote-inner">
         <blockquote>&ldquo;唯一真正的教育来自于激发学习者自身的能力。Socrates 不是填满一个桶，而是点燃一把火。&rdquo;</blockquote>
         <cite>我们将苏格拉底方法应用于 AI</cite>
       </div>
     </div>
 
-    <p class="narrative-text sr" style="margin-top:48px;text-align:center;font-size:14px;color:hsl(var(--text-500))">成立于 2026 年 &middot; 陕西西安 &middot; 中国</p>
+    <p class="narrative-text sr" style="margin-top:48px;text-align:center;font-size:14px;color:hsl(var(--text-400))">成立于 2026 年 &middot; 陕西西安 &middot; 中国</p>
   </div>
 </section>
 
 <section class="cta-section sr">
   <div class="section-inner">
-    <h2>准备好<strong>深度学习</strong>了吗？</h2>
-    <p>从任何主题开始。永久免费。</p>
-    <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+    <div class="neu-cta-card">
+      <h2>准备好<strong>深度学习</strong>了吗？</h2>
+      <p>从任何主题开始。永久免费。</p>
+      <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+    </div>
   </div>
 </section>
 
@@ -118,9 +131,9 @@
     </div>
     <div class="footer-col">
       <div class="footer-col-title">账户</div>
-      <a href="/zh/account">我的账户</a>
-      <a href="/zh/api-keys">API 密钥</a>
-      <a href="/zh/profile">个人资料</a>
+      <a href="/account">我的账户</a>
+      <a href="/api-keys">API 密钥</a>
+      <a href="/profile">个人资料</a>
     </div>
     <div class="footer-col">
       <div class="footer-col-title">法律</div>

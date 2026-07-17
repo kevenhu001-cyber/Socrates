@@ -10,13 +10,13 @@ import { pickChatLimiterFor } from '../middleware/rateLimit.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion, callChatCompletion } from '../services/llm.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
-import { usageEvents, executions, files, sessions } from '../db/schema.js';
+import { usageEvents, executions, sessions } from '../db/schema.js';
 import { audit } from '../middleware/audit.js';
 import { BadRequest, TooManyRequests, NotFound } from '../lib/errors.js';
 import { getBeagleQuota } from '../lib/tiers.js';
 import { getExecutionsPerDay } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
-import { codeInterpreter, CODE_INTERPRETER_TOOL, subscribeExecution, unsubscribeExecution, subscribeExecutionResult, unsubscribeExecutionResult } from '../services/codeInterpreter.js';
+import { codeInterpreter, CODE_INTERPRETER_TOOL } from '../services/codeInterpreter.js';
 import { webSearch, WEB_SEARCH_TOOL } from '../services/webSearch.js';
 import { isMultimodalProvider } from '../lib/multimodal.js';
 import { trackSseConnection } from '../lib/sse.js';
@@ -144,7 +144,7 @@ function injectUserContext(messages, user) {
     try {
       const created = new Date(user.createdAt);
       userCtx += `\nUser account created: ${created.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`;
-    } catch (_) {}
+    } catch (err) { console.warn('[chat] invalid user createdAt:', err.message); }
   }
   userCtx += '\n[/System context]';
 
@@ -1058,129 +1058,5 @@ data: ${JSON.stringify({
     }
   } catch (err) { next(err); }
 });
-
-/* ─── Execution progress SSE stream handler ───
- * Shared between the two route mounts so there is a single source
- * of truth for the execution-progress SSE protocol.
- * The execution row is looked up by ID (scoped to the current user)
- * and progress events are emitted as they arrive from the worker.
- *
- * SSE event types:
- *   event: progress — { phase, stream, chunk, elapsedMs, executionId }
- *   event: result   — { status, executionId, stdout, stderr, durationMs }
- *   event: error    — error description
- */
-async function handleExecutionStream(req, res, next) {
-  try {
-    const executionId = req.params.id;
-    if (!isUuid(executionId)) {
-      return res.status(400).json({ code: 'BAD_REQUEST', message: 'Invalid execution ID format' });
-    }
-    const db = getDb();
-    const [exec] = await db.select().from(executions)
-      .where(and(eq(executions.id, executionId), eq(executions.userId, req.userId)))
-      .limit(1);
-    if (!exec) throw new NotFound('Execution not found');
-
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no',
-    });
-    try { res.flushHeaders(); } catch {}
-
-    /* P_sse-metrics — same counter bump as the chat /stream route. */
-    trackSseConnection(req.app, +1);
-
-    const heartbeat = setInterval(() => {
-      try { res.write(': keepalive\n\n'); try { res.flush?.(); } catch {} } catch {}
-    }, 10_000);
-
-    if (exec.status === 'completed' || exec.status === 'failed' || exec.status === 'timeout' || exec.status === 'cancelled') {
-      // Fetch artifact file IDs so the frontend can render inline images
-      // (matplotlib PNGs, etc.) even when the execution completed before
-      // the client connected to the SSE stream.
-      let artifactFileIds = [];
-      try {
-        const artifactRows = await db.select({ id: files.id, name: files.name, mimeType: files.mimeType })
-          .from(files)
-          .where(eq(files.executionId, executionId));
-        artifactFileIds = artifactRows;
-      } catch (_) {}
-
-      res.write(`event: result\ndata: ${JSON.stringify({
-        status: exec.status,
-        executionId: exec.id,
-        stdout: exec.stdout || '',
-        stderr: exec.stderr || '',
-        durationMs: exec.durationMs || 0,
-        exitCode: exec.exitCode,
-        errorMessage: exec.errorMessage || null,
-        artifactFileIds,
-      })}\n\n`);
-      try { res.flush?.(); } catch {}
-      clearInterval(heartbeat);
-      try { res.end(); } catch {}
-      /* P_sse-metrics — terminal-execution path doesn't fire the
-         req.on('close') handler in time, so decrement explicitly. */
-      trackSseConnection(req.app, -1);
-      return;
-    }
-
-    const onProgress = (event) => {
-      try {
-        res.write(`event: progress\ndata: ${JSON.stringify({
-          phase: event.phase, stream: event.stream,
-          chunk: event.chunk || '', executionId: event.executionId,
-          elapsedMs: event.elapsedMs || 0,
-        })}\n\n`);
-        try { res.flush?.(); } catch {}
-      } catch {}
-    };
-    const onResult = (event) => {
-      try {
-        res.write(`event: result\ndata: ${JSON.stringify(event)}\n\n`);
-        try { res.flush?.(); } catch {}
-      } catch {}
-    };
-    const onError = (event) => {
-      try {
-        res.write(`event: error\ndata: ${JSON.stringify({ error: event.errorMessage || event })}\n\n`);
-        try { res.flush?.(); } catch {}
-      } catch {}
-    };
-
-    /* P_pubsub — subscribeExecution now returns an unsubscribe handle
-     (pubsub backs the delivery). We store both and call them in the
-     close hook. The legacy `unsubscribeExecution(id, listener)` 2-arg
-     form is a no-op for backwards compatibility — pubsub tracks
-     handlers by reference and unsubscribing by handle is the only
-     correct path. */
-    const unsubProgress = await subscribeExecution(executionId, onProgress);
-    const unsubResult = await subscribeExecutionResult(executionId, onResult);
-
-    req.on('close', () => {
-      clearInterval(heartbeat);
-      trackSseConnection(req.app, -1);
-      try { unsubProgress && unsubProgress(); } catch (_) {}
-      try { unsubResult && unsubResult(); } catch (_) {}
-      // Legacy cleanup kept as a safety net — it's a no-op now but
-      // costs nothing if a future refactor wires it back to a real
-      // listener.
-      try { unsubscribeExecution(executionId, onProgress); } catch (_) {}
-      try { unsubscribeExecutionResult(executionId, onResult); } catch (_) {}
-    });
-  } catch (err) { next(err); }
-}
-
-/* Mount the execution SSE handler at two paths:
- *   /api/chat/executions/:id/stream — under the chat router (backward compat)
- *   /api/executions/:id/stream      — standalone mount in app.js
- */
-router.get('/executions/:id/stream', requireAuth, handleExecutionStream);
-router.get('/:id/stream', requireAuth, handleExecutionStream);
 
 export default router;

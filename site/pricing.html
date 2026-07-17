@@ -27,13 +27,13 @@
 </script>
 </head>
 <body>
-<div class="bg-grid"></div>
+<div class="bg-ambient"></div>
 <div class="bg-glow"></div>
 <div class="page">
 
 <nav>
   <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px">Socrates</a>
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="">Socrates</a>
     <div class="nav-links">
       <a href="/pricing" class="nav-active">Pricing</a>
       <a href="/guide">Guide</a>
@@ -135,113 +135,115 @@
 
     <div class="pricing-compare sr">
       <h3>Detailed comparison</h3>
-      <table class="compare-table">
-        <tr>
-          <th>Feature</th>
-          <th>Diophantus</th>
-          <th>Riemann</th>
-          <th>Descartes</th>
-          <th>Euclid</th>
-        </tr>
-        <tr>
-          <td>Saved sessions</td>
-          <td>5</td>
-          <td>50</td>
-          <td>200</td>
-          <td>Unlimited</td>
-        </tr>
-        <tr>
-          <td>LLM provider keys</td>
-          <td>1</td>
-          <td>3</td>
-          <td>5</td>
-          <td>Unlimited</td>
-        </tr>
-        <tr>
-          <td>Built-in Beagle model</td>
-          <td>1M tokens/mo</td>
-          <td>100M tokens/mo</td>
-          <td>300M tokens/mo</td>
-          <td>800M tokens/mo</td>
-        </tr>
-        <tr>
-          <td>Supported providers</td>
-          <td>Beagle + BYO key</td>
-          <td>Beagle + BYO key</td>
-          <td>Beagle + BYO key</td>
-          <td>Beagle + BYO key</td>
-        </tr>
-        <tr>
-          <td>Teaching quality</td>
-          <td>Standard</td>
-          <td>Advanced</td>
-          <td>Advanced + depth control</td>
-          <td>Max depth + customization</td>
-        </tr>
-        <tr>
-          <td>Tutor mode</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-        </tr>
-        <tr>
-          <td>Exam & assessment</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-        </tr>
-        <tr>
-          <td>Web search</td>
-          <td>&mdash;</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-        </tr>
-        <tr>
-          <td>Knowledge graph</td>
-          <td>Basic</td>
-          <td>Full</td>
-          <td>Full</td>
-          <td>Full + export</td>
-        </tr>
-        <tr>
-          <td>Mistake book</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-        </tr>
-        <tr>
-          <td>Diagnostic questions</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-        </tr>
-        <tr>
-          <td>LaTeX rendering</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-        </tr>
-        <tr>
-          <td>Real-time streaming</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-          <td>Enabled</td>
-        </tr>
-        <tr>
-          <td>Support</td>
-          <td>Community</td>
-          <td>Email</td>
-          <td>Priority email</td>
-          <td>Priority + early access</td>
-        </tr>
-      </table>
+      <div class="compare-table-wrap">
+        <table class="compare-table">
+          <tr>
+            <th>Feature</th>
+            <th>Diophantus</th>
+            <th>Riemann</th>
+            <th>Descartes</th>
+            <th>Euclid</th>
+          </tr>
+          <tr>
+            <td>Saved sessions</td>
+            <td>5</td>
+            <td>50</td>
+            <td>200</td>
+            <td>Unlimited</td>
+          </tr>
+          <tr>
+            <td>LLM provider keys</td>
+            <td>1</td>
+            <td>3</td>
+            <td>5</td>
+            <td>Unlimited</td>
+          </tr>
+          <tr>
+            <td>Built-in Beagle model</td>
+            <td>1M tokens/mo</td>
+            <td>100M tokens/mo</td>
+            <td>300M tokens/mo</td>
+            <td>800M tokens/mo</td>
+          </tr>
+          <tr>
+            <td>Supported providers</td>
+            <td>Beagle + BYO key</td>
+            <td>Beagle + BYO key</td>
+            <td>Beagle + BYO key</td>
+            <td>Beagle + BYO key</td>
+          </tr>
+          <tr>
+            <td>Teaching quality</td>
+            <td>Standard</td>
+            <td>Advanced</td>
+            <td>Advanced + depth control</td>
+            <td>Max depth + customization</td>
+          </tr>
+          <tr>
+            <td>Tutor mode</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+          </tr>
+          <tr>
+            <td>Exam &amp; assessment</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+          </tr>
+          <tr>
+            <td>Web search</td>
+            <td>&mdash;</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+          </tr>
+          <tr>
+            <td>Knowledge graph</td>
+            <td>Basic</td>
+            <td>Full</td>
+            <td>Full</td>
+            <td>Full + export</td>
+          </tr>
+          <tr>
+            <td>Mistake book</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+          </tr>
+          <tr>
+            <td>Diagnostic questions</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+          </tr>
+          <tr>
+            <td>LaTeX rendering</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+          </tr>
+          <tr>
+            <td>Real-time streaming</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+            <td>Enabled</td>
+          </tr>
+          <tr>
+            <td>Support</td>
+            <td>Community</td>
+            <td>Email</td>
+            <td>Priority email</td>
+            <td>Priority + early access</td>
+          </tr>
+        </table>
+      </div>
     </div>
   </div>
 </section>
@@ -314,9 +316,11 @@
 
 <section class="cta-section sr">
   <div class="section-inner">
-    <h2>Still exploring? <strong>Start free.</strong></h2>
-    <p>No credit card required. Bring your API key and begin your learning journey.</p>
-    <a href="https://app.topodrive.top" class="cta-btn">Get started free</a>
+    <div class="neu-cta-card">
+      <h2>Still exploring? <strong>Start free.</strong></h2>
+      <p>No credit card required. Bring your API key and begin your learning journey.</p>
+      <a href="https://app.topodrive.top" class="cta-btn">Get started free</a>
+    </div>
   </div>
 </section>
 

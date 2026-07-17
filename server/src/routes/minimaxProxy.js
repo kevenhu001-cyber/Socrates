@@ -6,6 +6,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../lib/sanitize.js';
 import { trackSseConnection } from '../lib/sse.js';
+import { getBeagleSystemPrompt } from '../lib/prompts.js';
 
 const router = Router();
 
@@ -44,7 +45,41 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       });
     }
 
-    const { messages, model, temperature, max_tokens, stream, reasoning_effort, extra_body } = req.body;
+    const { messages: rawMessages, model, temperature, max_tokens, stream, reasoning_effort, extra_body } = req.body;
+
+    /* P_beagle-system-prompt — inject the full behavior spec from
+       prompts/beagle.md as the first system message. This is what
+       actually teaches MiniMax-M3 the Socratic-tutor role, copyright
+       rules, child-safety guardrails, and tool-usage conventions. The
+       frontend previously only sent a ~30-line identity+visual-routing
+       suffix; the full spec lives on disk and is loaded/cached by
+       lib/prompts.js so editing the .md is picked up on the next request.
+
+       If the file can't be read for any reason, we continue without it
+       rather than 500 — the upstream still works, just with weaker
+       guardrails. The error is already logged by getBeagleSystemPrompt.
+
+       Skip injection if the client already supplied a system message
+       that *is* the beagle spec (identified by a stable marker the
+       frontend can include to avoid double-loading). */
+    const beaglePrompt = await getBeagleSystemPrompt();
+    let messages = rawMessages;
+    if (beaglePrompt) {
+      const BEAGLE_MARKER = '<!-- @beagle-system-prompt -->';
+      const alreadyHasBeagle = Array.isArray(rawMessages) && rawMessages.some(
+        (m) => m && m.role === 'system' && typeof m.content === 'string' && m.content.includes(BEAGLE_MARKER)
+      );
+      if (!alreadyHasBeagle) {
+        const taggedPrompt = beaglePrompt.replace(
+          'Beagle should never use {voice_note} blocks',
+          `${BEAGLE_MARKER}\nBeagle should never use {voice_note} blocks`
+        );
+        /* Prepend — never append — so the spec wins precedence over any
+           later system message (e.g. teacher-mode that chat.js may have
+           already added for the same turn). */
+        messages = [{ role: 'system', content: taggedPrompt }, ...(Array.isArray(rawMessages) ? rawMessages : [])];
+      }
+    }
     /* P_privacy-leak — the upstream model name is operator-configured
      * and must never be settable from the client. Even though the SPA
      * currently doesn't know the real model (we strip it from

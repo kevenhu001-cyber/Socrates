@@ -34,6 +34,7 @@ import minimaxRouter from './routes/minimaxProxy.js';
 import mistakesRouter from './routes/mistakes.js';
 import knowledgeBoundaryRouter from './routes/knowledgeBoundary.js';
 import visionRouter from './routes/vision.js';
+import executionRouter from './routes/execution.js';
 import { searchContent } from './services/search.js';
 import { webSearch, imageSearch } from './services/webSearch.js';
 import { fetchBatch } from './services/fetchBatch.js';
@@ -342,7 +343,9 @@ app.use('/api/chat', chatRouter);
 
 // Execution SSE stream — standalone endpoint for real-time code execution progress
 // Mounted at /api/executions/:id/stream for frontend EventSource consumption.
-app.use('/api/executions', chatRouter);
+// Uses its own router (not chatRouter) to avoid exposing all chat routes
+// under /api/executions/.
+app.use('/api/executions', executionRouter);
 
 // API keys (Phase 3)
 app.use('/api/api-key', apiKeyRouter);
