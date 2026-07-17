@@ -57,9 +57,16 @@
 .acct-table .paid{color:hsl(145 50% 50%)}
 .acct-table .pending{color:hsl(35 80% 55%)}
 
+/* Scrollable table wrapper on mobile */
+.acct-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:-4px 0}
+.acct-table-wrap::-webkit-scrollbar{height:3px}
+.acct-table-wrap::-webkit-scrollbar-thumb{background:hsl(var(--border-300)/0.3);border-radius:9px}
+.acct-table-wrap::-webkit-scrollbar-track{background:transparent}
+
 /* Payment method */
 .acct-pm{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:12px;background:hsl(var(--bg-200)/0.5);border:0.5px solid hsl(var(--border-300)/0.08)}
-.acct-pm-icon{width:40px;height:28px;border-radius:4px;background:hsl(var(--bg-300));display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:hsl(var(--text-500));flex-shrink:0}
+.acct-pm-icon{width:40px;height:28px;border-radius:4px;background:hsl(var(--bg-300));display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.acct-pm-icon svg{display:block;width:100%;height:100%}
 .acct-pm-info{flex:1;min-width:0}
 .acct-pm-name{font-size:14px;font-weight:500;color:hsl(var(--text-100))}
 .acct-pm-desc{font-size:12px;color:hsl(var(--text-500));margin-top:1px}
@@ -102,9 +109,12 @@
 .trend-chart-wrap .trend-y-label{fill:hsl(var(--text-500));font-size:10px;text-anchor:end}
 
 /* Danger zone */
-.acct-danger{padding:20px 24px;border-radius:12px;border:0.5px solid hsl(0 60% 50%/0.15);background:hsl(0 60% 50%/0.03)}
-.acct-danger-title{font-size:13px;font-weight:600;color:hsl(0 60% 60%);margin-bottom:6px}
-.acct-danger p{font-size:12px;color:hsl(var(--text-500));line-height:1.6;margin-bottom:14px}
+.acct-danger-zone{padding:16px 24px 20px 24px;border-left:3px solid hsl(0 60% 50%/0.25);margin:0 20px 4px 20px;border-radius:0}
+.acct-danger{padding:0 0 20px 0}
+.acct-danger:last-child{padding-bottom:0}
+.acct-danger+.acct-danger{border-top:0.5px solid hsl(var(--border-300)/0.15);padding-top:20px}
+.acct-danger-title{font-size:13px;font-weight:500;color:hsl(0 60% 50%);margin-bottom:4px}
+.acct-danger p{font-size:12.5px;color:hsl(var(--text-500));line-height:1.6;margin:0 0 14px 0;max-width:520px}
 
 /* Buttons */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all var(--anim-fast);border:none;font-family:inherit}
@@ -116,6 +126,8 @@
 .btn-ghost:hover{color:hsl(var(--text-100))!important}
 .btn-danger{background:hsl(0 60% 50%/0.1);color:hsl(0 60% 60%)!important;border:0.5px solid hsl(0 60% 50%/0.2)}
 .btn-danger:hover{background:hsl(0 60% 50%/0.18)}
+.btn-danger-outline{background:transparent;color:hsl(0 60% 50%)!important;border:0.5px solid hsl(0 60% 50%/0.25)}
+.btn-danger-outline:hover{background:hsl(0 60% 50%/0.06)}
 .btn-sm{padding:7px 16px;font-size:12px}
 
 /* Loading / error / sign-in states */
@@ -206,12 +218,11 @@
 </head>
 <body>
 <div class="bg-grid"></div>
-<div class="bg-glow"></div>
 <div class="page">
 
 <nav>
   <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px">Socrates</a>
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px"><span><em>S</em>ocrates</span></a>
     <div class="nav-links">
       <a href="/pricing">套餐</a>
       <a href="/guide">指南</a>
@@ -276,6 +287,8 @@
     <div class="footer-col">
       <div class="footer-col-title">账户</div>
       <a href="/account">我的账户</a>
+      <a href="/api-keys">API 密钥</a>
+      <a href="/profile">个人资料</a>
     </div>
     <div class="footer-col">
       <div class="footer-col-title">法律</div>
@@ -289,6 +302,7 @@
     <div class="footer-bottom">
       <p>&copy; 2026 Topodrive. All rights reserved.</p>
       <p>用心打造，服务全球学习者。</p>
+      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
     </div>
   </div>
 </footer>
@@ -412,22 +426,35 @@ var srObs = new IntersectionObserver(function(entries) {
           '<a href="/zh/profile" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>更新个人资料</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
           '<a href="https://app.topodrive.top" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>查看知识图谱</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
           '<a href="https://app.topodrive.top" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>错题本复习</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
-          '<a href="/api/account/export" class="btn btn-outline" style="justify-content:space-between;width:100%" download><span>下载数据导出</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
+          '<a href="javascript:void(0)" class="btn btn-outline" style="justify-content:space-between;width:100%" onclick="showExportModal()"><span>下载数据导出</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
         '</div>' +
       '</div>' +
 
       (isFree ? '' :
       '<div class="acct-card sr sr-d1">' +
-        '<div class="acct-card-header"><div class="acct-card-title">支付方式</div><button class="btn btn-ghost btn-sm">编辑</button></div>' +
-        '<div class="acct-pm"><div class="acct-pm-icon">VISA</div><div class="acct-pm-info"><div class="acct-pm-name">Visa 尾号 4242</div><div class="acct-pm-desc">有效期至 12/2027</div></div><span class="acct-pm-badge">默认</span></div>' +
+        '<div class="acct-card-header"><div class="acct-card-title">支付方式</div><button class="btn btn-ghost btn-sm" onclick="showPaymentModal()">编辑</button></div>' +
+        '<div class="acct-pm"><div class="acct-pm-icon">' + (u.paymentMethod ? brandSvg(u.paymentMethod.brand) : brandSvg('Visa')) + '</div><div class="acct-pm-info"><div class="acct-pm-name">' + (u.paymentMethod ? u.paymentMethod.brand + ' 尾号 ' + u.paymentMethod.last4 : 'Visa 尾号 4242') + '</div><div class="acct-pm-desc">' + (u.paymentMethod ? '有效期至 ' + String(u.paymentMethod.expMonth).padStart(2,'0') + '/' + u.paymentMethod.expYear : '有效期至 12/2027') + '</div></div><span class="acct-pm-badge">默认</span></div>' +
+      '</div>'
+      ) +
+
+      /* 付款方式 — 仅付费用户 */
+      (isFree ? '' :
+      '<div class="acct-card sr sr-d1" id="pmCardContainer">' +
+        (u.paymentMethod ?
+        '<div class="acct-card-header"><div class="acct-card-title">付款方式</div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" onclick="showPaymentModal()">编辑</button><button class="btn btn-ghost btn-sm" style="color:hsl(0 60% 60%)" onclick="deletePaymentMethod()">删除</button></div></div>' +
+        '<div class="acct-pm"><div class="acct-pm-icon">' + brandSvg(u.paymentMethod.brand) + '</div><div class="acct-pm-info"><div class="acct-pm-name">' + u.paymentMethod.brand + ' ending in ' + u.paymentMethod.last4 + '</div><div class="acct-pm-desc">过期日期 ' + String(u.paymentMethod.expMonth).padStart(2,'0') + '/' + u.paymentMethod.expYear + '</div></div><span class="acct-pm-badge">默认</span></div>'
+        :
+        '<div class="acct-card-header"><div class="acct-card-title">付款方式</div></div>' +
+        '<div style="text-align:center;padding:16px 0"><p style="font-size:13px;color:hsl(var(--text-400));margin-bottom:16px">尚未保存任何付款方式。</p><button class="btn btn-primary btn-sm" onclick="showPaymentModal()">添加付款方式</button></div>'
+        ) +
       '</div>'
       ) +
 
       /* 账单历史 — 仅付费用户 */
       (isFree ? '' :
       '<div class="acct-card sr sr-d2">' +
-        '<div class="acct-card-header"><div class="acct-card-title">账单历史</div><button class="btn btn-ghost btn-sm">查看全部</button></div>' +
-        '<table class="acct-table"><tr><th>日期</th><th>套餐</th><th>金额</th><th>状态</th></tr><tr><td>' + fmtDate(Date.now()) + '</td><td>' + p.name + '</td><td>$' + p.price.toFixed(2) + '</td><td class="paid">已支付</td></tr></table>' +
+        '<div class="acct-card-header"><div class="acct-card-title">账单历史</div><button class="btn btn-ghost btn-sm" onclick="showBillingModal()">查看全部</button></div>' +
+        '<div class="acct-table-wrap"><table class="acct-table"><tr><th>日期</th><th>套餐</th><th>金额</th><th>状态</th></tr><tr><td>' + fmtDate(Date.now()) + '</td><td>' + p.name + '</td><td>$' + p.price.toFixed(2) + '</td><td class="paid">已支付</td></tr></table></div>' +
       '</div>'
       ) +
 
@@ -446,15 +473,17 @@ var srObs = new IntersectionObserver(function(entries) {
 
       /* 危险区域 — 取消订阅（付费）+ 删除账号（始终） */
       '<div class="acct-card full sr sr-d3">' +
-        '<div class="acct-card-header"><div class="acct-card-title" style="color:hsl(0 60% 60%)">危险区域</div></div>' +
+        '<div class="acct-card-header" style="border-bottom:0"><div class="acct-card-title">危险区域</div></div>' +
+        '<div class="acct-danger-zone">' +
         (isFree ? '' :
-          '<div class="acct-danger" style="margin-bottom:14px"><div class="acct-danger-title">取消订阅</div>' +
+          '<div class="acct-danger"><div class="acct-danger-title">取消订阅</div>' +
           '<p>取消后，您的订阅将在当前计费周期结束前保持生效。之后，您的账户将降级为免费 Diophantus 套餐。会话历史和知识图谱将被保留，但仅限 5 个保存的会话。</p>' +
-          '<button class="btn btn-danger btn-sm" onclick="cancelSubscription()">取消订阅</button></div>'
+          '<button class="btn btn-danger-outline btn-sm" onclick="cancelSubscription()">取消订阅</button></div>'
         ) +
         '<div class="acct-danger"><div class="acct-danger-title">删除账号</div>' +
         '<p>永久删除您的账户及所有相关数据——会话、消息、知识图谱、错题本、API 密钥。此操作无法撤销。</p>' +
-        '<button class="btn btn-danger btn-sm" onclick="deleteAccount()">删除账号</button></div>' +
+        '<button class="btn btn-danger-outline btn-sm" onclick="deleteAccount()">删除账号</button></div>' +
+        '</div>' +
       '</div>';
   }
 
@@ -490,6 +519,7 @@ var srObs = new IntersectionObserver(function(entries) {
         if (!data || !data.user || !data.plan) return;
         try {
           grid.innerHTML = buildCards(data);
+          window.__pm = data.user.paymentMethod || null;
           document.querySelectorAll('.sr').forEach(function(el) { srObs.observe(el); });
           loadUsageHeatmap();
           if(typeof loadUsageTrend==='function')loadUsageTrend();
@@ -868,14 +898,103 @@ function showModal(title, bodyHTML) {
 }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
 
+function brandSvg(brand) {
+  var s = {Visa:'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><path d="M780 0H0v500h780V0Z" fill="#1434CB"/><path d="M489.823 143.111c-46.835 0-88.689 24.282-88.689 69.145 0 51.45 74.23 55.003 74.23 80.85 0 10.883-12.469 20.625-33.764 20.625-30.223 0-52.811-13.612-52.811-13.612l-9.666 45.272s26.022 11.498 60.569 11.498c51.206 0 91.498-25.474 91.498-71.105 0-54.365-74.538-57.813-74.538-81.803 0-8.526 10.235-17.867 31.47-17.867 23.959 0 43.506 9.9 43.506 9.9l9.459-43.725s-21.269-9.178-51.264-9.178ZM61.33 146.411l-1.135 6.6c0 0 19.704 3.607 37.45 10.803 22.85 8.25 24.477 13.054 28.326 27.972l41.934 161.7h56.213l86.601-207.075h-56.084l-45.646 140.791-22.707-119.341c-2.083-13.658-12.631-21.45-25.542-21.45H61.33ZM333.271 146.411l-43.996 207.075h53.481l43.842-207.075h-53.327ZM631.554 146.411c-12.896 0-19.729 6.907-24.743 18.975l-78.353 187.975h56.084l10.851-31.35h68.327l6.598 31.35h49.487l-43.172-207.075h-45.079Zm7.294 55.945 16.625 77.705h-44.538l27.913-77.705Z" fill="#FFF"/></svg>',
+    Mastercard:'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><path d="M780 0H0v500h780V0Z" fill="#253747"/><path d="M465.738 69.139H313.812v272.949h151.926V69.139Z" fill="#FF5A00"/><path d="M323.926 205.613c0-55.455 26.07-104.673 66.074-136.474-29.441-23.149-66.58-37.139-107.09-37.139-95.965 0-173.613 77.648-173.613 173.613s77.648 173.614 173.613 173.614c40.51 0 77.649-13.99 107.09-37.139-40.06-31.351-66.074-81.019-66.074-136.475Z" fill="#EB001B"/><path d="M670.711 205.613c0 95.965-77.649 173.614-173.613 173.614-40.51 0-77.649-13.99-107.09-37.139 40.51-31.857 66.074-81.019 66.074-136.475s-26.07-104.673-66.074-136.475c29.385-23.149 66.524-37.139 107.033-37.139 95.965 0 173.614 78.154 173.614 173.614h.056Z" fill="#F79E1B"/></svg>',
+    Amex:'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><rect width="780" height="500" fill="#2557D6"/><path d="m0.253 235.69h37.441l8.442-19.51h18.9l8.42 19.51h73.668v-14.915l6.576 14.98h38.243l6.576-15.202v15.138h183.08l-0.085-32.026h3.542c2.479 0.083 3.204 0.302 3.204 4.226v27.8h94.689v-7.455c7.639 3.92 19.518 7.455 35.148 7.455h39.836l8.525-19.51h18.9l8.337 19.51h76.765v-18.532l11.626 18.532h61.515v-122.51h-60.88v14.468l-8.522-14.468h-62.471v14.468l-7.828-14.468h-84.38c-14.123 0-26.539 1.889-36.569 7.153v-7.153h-58.229v7.153c-6.383-5.426-15.079-7.153-24.75-7.153h-212.74l-14.274 31.641-14.659-31.641h-67.005v14.468l-7.362-14.468h-57.145l-26.539 58.246v64.261h3e-3zm236.34-17.67h-22.464l-0.083-68.794-31.775 68.793h-19.24l-31.858-68.854v68.854h-44.57l-8.42-19.592h-45.627l-8.505 19.592h-23.801l39.241-87.837h32.559l37.269 83.164v-83.164h35.766l28.678 59.587 26.344-59.587h36.485l1e-3 87.838zm-165.9-37.823-14.998-35.017-14.915 35.017h29.913zm255.3 37.821h-73.203v-87.837h73.203v18.291h-51.289v15.833h50.06v18.005h-50.061v17.542h51.289l1e-3 18.166zm103.16-64.18c0 14.004-9.755 21.24-15.439 23.412 4.794 1.748 8.891 4.838 10.84 7.397 3.094 4.369 3.628 8.271 3.628 16.116v17.255h-22.104l-0.083-11.077c0-5.285 0.528-12.886-3.458-17.112-3.202-3.09-8.083-3.76-15.973-3.76h-23.523v31.95h-21.914v-87.838h50.401c11.199 0 19.451 0.283 26.535 4.207 6.933 3.924 11.09 9.652 11.09 19.45zm-27.699 13.042c-3.013 1.752-6.573 1.81-10.841 1.81h-26.62v-19.51h26.982c3.818 0 7.804 0.164 10.393 1.584 2.842 1.28 4.601 4.003 4.601 7.765 0 3.84-1.674 6.929-4.515 8.351zm62.844 51.138h-22.358v-87.837h22.358v87.837zm259.56 0h-31.053l-41.535-65.927v65.927h-44.628l-8.527-19.592h-45.521l-8.271 19.592h-25.648c-10.649 0-24.138-2.257-31.773-9.715-7.701-7.458-11.708-17.56-11.708-33.533 0-13.027 2.395-24.936 11.812-34.347 7.085-7.01 18.18-10.242 33.28-10.242h21.215v18.821h-20.771c-7.997 0-12.514 1.14-16.862 5.203-3.735 3.699-6.298 10.69-6.298 19.897 0 9.41 1.951 16.196 6.023 20.628 3.373 3.476 9.506 4.53 15.272 4.53h9.842l30.884-69.076h32.835l37.102 83.081v-83.08h33.366l38.519 61.174v-61.174h22.445v87.833zm-133.2-37.82-15.165-35.017-15.081 35.017h30.246z" fill="#fff"/></svg>',
+    Discover:'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><path d="M54.992 0C0 0 0 0 0 0v501h670.016C755.373 501 780 476.37 780 445.996V0H54.992z" fill="#4D4D4D"/><path d="M327.152 161.893c8.837 0 16.248 1.784 25.268 6.09v22.751c-8.544-7.863-15.955-11.154-25.756-11.154-19.264 0-34.414 15.015-34.414 34.05 0 20.075 14.681 34.196 35.37 34.196 9.312 0 16.586-3.12 24.8-10.857v22.763c-9.341 4.14-16.911 5.776-25.756 5.776-31.278 0-55.582-22.596-55.582-51.737 0-28.826 24.951-51.878 56.07-51.878zm-97.113.627c11.546 0 22.11 3.72 30.943 10.994l-10.748 13.248c-5.35-5.646-10.41-8.028-16.564-8.028-8.853 0-15.3 4.745-15.3 10.989 0 5.354 3.619 8.188 15.944 12.482 23.365 8.044 30.29 15.176 30.29 30.926 0 19.193-14.976 32.553-36.32 32.553-15.63 0-26.994-5.795-36.458-18.872l13.268-12.03c4.73 8.61 12.622 13.222 22.42 13.222 9.163 0 15.947-5.952 15.947-13.984 0-4.164-2.055-7.734-6.158-10.258-2.066-1.195-6.158-2.977-14.2-5.647-19.291-6.538-25.91-13.527-25.91-27.185 0-16.225 14.214-28.41 32.846-28.41zm234.723 1.728h22.437l28.084 66.592 28.446-66.592h22.267l-45.494 101.686h-11.053l-44.687-101.686z" fill="#FFF"/><path d="M415.13 161.213c30.941 0 56.022 23.58 56.022 52.709v.033c0 29.13-25.081 52.742-56.021 52.742s-56.022-23.613-56.022-52.742v-.033c0-29.13 25.082-52.71 56.022-52.71zM779.983 288.36c-26.05 18.33-221.077 149.34-558.754 212.623H724.99c30.365 0 54.992 0 54.992 0V0z" fill="#F47216"/></svg>',
+    'UnionPay':'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><rect width="780" height="500" fill="#FFF"/><path d="m216.4 69.791h142.39c19.87 0 32.287 16.406 27.63 36.47l-66.333 287.48c-4.656 20.063-24.629 36.47-44.498 36.47h-142.39c-19.87 0-32.287-16.406-27.63-36.47l66.331-287.48c4.657-20.168 24.526-36.47 44.395-36.47h0.104z" fill="#D10429"/><path d="m346.34 69.791h163.82c19.868 0 10.865 16.406 6.209 36.47l-66.334 287.48c-4.657 20.063-3.208 36.47-23.077 36.47h-163.81c-19.972 0-32.287-16.406-27.527-36.47l66.334-287.48c4.656-20.168 24.524-36.47 44.498-36.47h-0.104z" fill="#022E64"/><path d="m504.41 69.791h142.4c19.869 0 32.287 16.406 27.629 36.47l-66.332 287.48c-4.658 20.063-24.631 36.47-44.499 36.47h-142.39c-19.973 0-32.287-16.406-27.63-36.47l66.333-287.48c4.656-20.168 24.525-36.47 44.394-36.47h0.104z" fill="#076F74"/><path d="m498.86 256.54c11.684 0.253 23.437-0.516 35.076 0.4 11.787 2.199 14.629 20.043 4.156 25.888-7.141 3.851-15.633 1.433-23.379 2.113h-15.852l-1e-3 -28.401zm41.833-32.145c2.596 9.164-6.238 17.392-15.066 16.13h-26.767c0.185-8.642-0.368-18.021 0.271-26.208 10.725 0.301 21.549-0.616 32.21 0.479 4.581 1.151 8.414 4.917 9.352 9.599z" fill="#FFF"/></svg>',
+    JCB:'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><rect width="780" height="500" fill="#0E4C96"/><path d="m632.24 361.27c0 41.615-33.729 75.36-75.36 75.36h-409.13v-297.88c0-41.626 33.733-75.37 75.365-75.37l409.12-1e-3 1e-3 297.89z" fill="#fff"/><path d="m498.86 256.54c11.684 0.253 23.437-0.516 35.076 0.4 11.787 2.199 14.629 20.043 4.156 25.888-7.141 3.851-15.633 1.433-23.379 2.113h-15.852l-1e-3 -28.401zm41.833-32.145c2.596 9.164-6.238 17.392-15.066 16.13h-26.767c0.185-8.642-0.368-18.021 0.271-26.208 10.725 0.301 21.549-0.616 32.21 0.479 4.581 1.151 8.414 4.917 9.352 9.599z" fill="#007B40"/><path d="m174.74 139.54c0.674-27.163 24.889-50.611 51.875-51.007 26.944-0.083 53.891-0.012 80.837-0.036-0.074 90.885 0.148 181.78-0.112 272.66-1.038 26.835-24.99 49.835-51.679 50.308-26.996 0.099-53.995 0.014-80.992 0.042v-113.45c26.223 6.194 53.722 8.832 80.473 4.721 15.993-2.574 33.488-10.424 38.902-27.014 3.986-14.191 1.742-29.126 2.334-43.691v-33.824h-46.297c-0.208 22.369 0.426 44.779-0.335 67.125-1.248 13.734-14.846 22.46-27.8 21.994-16.066 0.17-47.898-11.639-47.898-11.639-0.08-41.918 0.466-94.409 0.692-136.18z" fill="#006DBA"/><path d="m324.72 211.89c-2.434 0.517-0.489-8.301-1.113-11.646 0.165-21.15-0.347-42.323 0.283-63.458 2.083-26.829 26.991-48.916 53.739-48.288h78.766c-0.073 90.884 0.147 181.78-0.111 272.66-1.039 26.834-24.992 49.833-51.681 50.308-26.997 0.1-53.997 0.015-80.997 0.043v-124.3c18.44 15.128 43.5 17.483 66.473 17.524 17.316-6e-3 34.534-2.674 51.35-6.67v-22.772c-18.953 9.446-41.232 15.446-62.243 10.019-14.655-3.65-25.294-17.812-25.056-32.937-1.699-15.728 7.524-32.335 22.981-37.011 19.189-6.008 40.107-1.413 58.096 6.397 3.854 2.019 7.765 4.521 6.222-1.921v-17.9c-30.084-7.156-62.101-9.792-92.329-2.004-8.749 2.469-17.271 6.212-24.38 11.958z" fill="#E30138"/></svg>',
+    Diners:'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><rect width="780" height="500" fill="#0079BE"/><path d="m599.93 251.45c0-99.415-82.98-168.13-173.9-168.1h-78.242c-92.003-0.033-167.73 68.705-167.73 168.1 0 90.93 75.727 165.64 167.73 165.2h78.242c90.914 0.436 173.9-74.294 173.9-165.2z" fill="#fff"/><path d="m348.28 97.43c-84.07 0.027-152.19 68.308-152.21 152.58 0.02 84.258 68.144 152.53 152.21 152.56 84.09-0.027 152.23-68.303 152.24-152.56-0.011-84.272-68.149-152.55-152.24-152.58z" fill="#0079BE"/><path d="m252.07 249.6c0.08-41.181 25.746-76.297 61.94-90.25v180.48c-36.194-13.948-61.861-49.045-61.94-90.23zm131 90.274v-180.53c36.207 13.92 61.914 49.057 61.979 90.257-0.065 41.212-25.772 76.322-61.979 90.269z" fill="#fff"/></svg>'};
+  return s[brand] || s.Visa;
+}
+
 function showPaymentModal() {
+  var pm = window.__pm;
+  var cardVal = pm ? pm.last4.padStart(16,'*').replace(/(.{4})/g,'$1 ').trim() : '4242 4242 4242 4242';
+  var expVal = pm ? String(pm.expMonth).padStart(2,'0') + '/' + pm.expYear : '12/27';
   showModal('编辑付款方式',
-    '<div style="margin-bottom:16px"><label class="modal-label">卡号</label><input class="modal-input" type="text" value="4242 4242 4242 4242" placeholder="卡号"></div>' +
-    '<div style="display:flex;gap:12px;margin-bottom:16px"><div style="flex:1"><label class="modal-label">有效期</label><input class="modal-input" type="text" value="12/27" placeholder="MM/YY"></div><div style="flex:1"><label class="modal-label">安全码</label><input class="modal-input" type="text" value="123" placeholder="CVC"></div></div>' +
-    '<button class="modal-btn primary full" onclick="savePayment()">保存付款方式</button>'
+    '<div style="margin-bottom:16px"><label class="modal-label">卡号</label><input class="modal-input" type="text" id="pmCard" value="' + cardVal + '" placeholder="卡号" maxlength="19" oninput="formatPmCard()"></div>' +
+    '<div style="display:flex;gap:12px;margin-bottom:16px"><div style="flex:1"><label class="modal-label">有效期</label><input class="modal-input" type="text" id="pmExp" value="' + expVal + '" placeholder="MM/YY" maxlength="7" oninput="formatPmExp()"></div><div style="flex:1"><label class="modal-label">安全码</label><input class="modal-input" type="text" id="pmCvc" value="" placeholder="CVC" maxlength="4"></div></div>' +
+    '<div id="pmError" style="font-size:13px;color:hsl(0 60% 60%);margin-bottom:10px;display:none"></div>' +
+    '<button class="modal-btn primary full" id="pmSaveBtn" onclick="savePayment()">保存付款方式</button>'
   );
 }
-function savePayment() { closeModal(); showToast('付款方式已更新成功。', 'success'); }
+function formatPmCard(){
+  var el=document.getElementById('pmCard');if(!el)return;
+  var raw=el.value.replace(/\D/g,'').slice(0,16);
+  var parts=[];for(var i=0;i<raw.length;i+=4)parts.push(raw.slice(i,i+4));
+  el.value=parts.join(' ');
+}
+function formatPmExp(){
+  var el=document.getElementById('pmExp');if(!el)return;
+  var raw=el.value.replace(/\D/g,'').slice(0,4);
+  el.value=raw.length>=3?raw.slice(0,2)+' / '+raw.slice(2):raw;
+}
+function detectBrand(num){
+  var c=num.replace(/\s/g,'');
+  if(/^62/.test(c))return'UnionPay';
+  if(/^81/.test(c))return'UnionPay';
+  if(/^4/.test(c))return'Visa';
+  if(/^5[1-5]/.test(c))return'Mastercard';
+  if(/^3[47]/.test(c))return'Amex';
+  if(/^35(?:2[89]|[3-8])/.test(c))return'JCB';
+  if(/^30[0-5]/.test(c)||/^36/.test(c)||/^38/.test(c))return'Diners';
+  if(/^6(?:011|5)/.test(c))return'Discover';
+  return'Visa';
+}
+function savePayment() {
+  var cardEl=document.getElementById('pmCard');
+  var expEl=document.getElementById('pmExp');
+  var cvcEl=document.getElementById('pmCvc');
+  var errEl=document.getElementById('pmError');
+  var btn=document.getElementById('pmSaveBtn');
+  if(!cardEl||!expEl)return;
+  var raw=cardEl.value.replace(/\s/g,'');
+  var expRaw=expEl.value.replace(/\s|\//g,'');
+  if(raw.length<13||raw.length>16){errEl.textContent='卡号无效';errEl.style.display='block';return;}
+  if(expRaw.length<4){errEl.textContent='有效期无效';errEl.style.display='block';return;}
+  var last4=raw.slice(-4);
+  var brand=detectBrand(raw);
+  var expMonth=parseInt(expRaw.slice(0,2),10);
+  var expYear=parseInt(expRaw.slice(2),10);
+  if(cvcEl)cvcEl.value='';
+  errEl.style.display='none';btn.textContent='保存中…';btn.disabled=true;
+  var csrf=getCookie('csrf');
+  fetch('/api/account/payment-method',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRF-Token':csrf||''},
+    body:JSON.stringify({brand:brand,last4:last4,expMonth:expMonth,expYear:expYear}),
+    credentials:'same-origin'
+  }).then(function(r){return r.json()}).then(function(d){
+    if(d.ok){closeModal();showToast('付款方式已更新。','success');window.__pm=d.paymentMethod;renderPaymentCard()}
+    else{errEl.textContent=d.message||'保存失败';errEl.style.display='block';btn.textContent='保存付款方式';btn.disabled=false}
+  }).catch(function(){errEl.textContent='连接错误';errEl.style.display='block';btn.textContent='保存付款方式';btn.disabled=false});
+}
+function deletePaymentMethod() {
+  showConfirm('删除付款方式', '确定要删除已保存的付款方式吗？', { okText:'删除', cancelText:'取消', danger:true }).then(function(confirmed){
+    if(!confirmed)return;
+    var csrf=getCookie('csrf');
+    fetch('/api/account/payment-method',{
+      method:'DELETE',
+      headers:{'Content-Type':'application/json','X-CSRF-Token':csrf||''},
+      credentials:'same-origin'
+    }).then(function(r){return r.json()}).then(function(d){
+      if(d.ok){window.__pm=null;renderPaymentCard();showToast('付款方式已删除。','success')}
+    });
+  });
+}
+function renderPaymentCard() {
+  var container=document.getElementById('pmCardContainer');
+  if(!container)return;
+  var pm=window.__pm;
+  container.innerHTML=pm?
+    '<div class="acct-card-header"><div class="acct-card-title">付款方式</div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" onclick="showPaymentModal()">编辑</button><button class="btn btn-ghost btn-sm" style="color:hsl(0 60% 60%)" onclick="deletePaymentMethod()">删除</button></div></div>' +
+    '<div class="acct-pm"><div class="acct-pm-icon">'+brandSvg(pm.brand)+'</div><div class="acct-pm-info"><div class="acct-pm-name">'+pm.brand+' ending in '+pm.last4+'</div><div class="acct-pm-desc">过期日期 '+String(pm.expMonth).padStart(2,'0')+'/'+pm.expYear+'</div></div><span class="acct-pm-badge">默认</span></div>'
+    :
+    '<div class="acct-card-header"><div class="acct-card-title">付款方式</div></div>' +
+    '<div style="text-align:center;padding:16px 0"><p style="font-size:13px;color:hsl(var(--text-400));margin-bottom:16px">尚未保存任何付款方式。</p><button class="btn btn-primary btn-sm" onclick="showPaymentModal()">添加付款方式</button></div>';
+}
 
 function showBillingModal() {
   var months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
@@ -886,7 +1005,7 @@ function showBillingModal() {
     if (m < 0) { m += 12; y--; }
     rows += '<tr><td>' + y + '年' + (m+1) + '月</td><td>当前计划</td><td>$29.00</td><td class="paid">已付款</td></tr>';
   }
-  showModal('账单历史', '<table class="acct-table"><tr><th>日期</th><th>计划</th><th>金额</th><th>状态</th></tr>' + rows + '</table>');
+  showModal('账单历史', '<div class="acct-table-wrap"><table class="acct-table"><tr><th>日期</th><th>计划</th><th>金额</th><th>状态</th></tr>' + rows + '</table></div>');
 }
 
 function showExportModal() {

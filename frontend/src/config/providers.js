@@ -105,6 +105,11 @@ function syncAppModeUI() {
   var tutorEl = document.getElementById("tutorModeToggle");
   if (chatEl) chatEl.classList.toggle("active", appMode === "chat");
   if (tutorEl) tutorEl.classList.toggle("active", appMode === "tutor");
+  /* Drive the .mode-segmented sliding indicator — the CSS pseudo-element
+     reacts to [data-seg-active="chat"|"tutor"] and slides to the matching
+     half. This produces the slide-between-Chat/Tutor animation. */
+  var segEl = document.getElementById("modeSegmented");
+  if (segEl) segEl.setAttribute("data-seg-active", appMode);
   try { localStorage.setItem("socrates-appmode", appMode); } catch (e) {}
   /* Mirror appMode to body[data-app-mode] so the CSS rule
      body[data-app-mode="chat"] .tutor-only{display:none !important}
