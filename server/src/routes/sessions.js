@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import { z } from 'zod';
+import { codeInterpreter } from '../services/codeInterpreter.js';
 import { getDb } from '../db/index.js';
 import {
   sessions, messages, mistakes, artifacts, artifactVersions,
@@ -427,6 +428,12 @@ router.delete('/:id', async (req, res, next) => {
       await fs.unlink(fp).catch(() => {});
     }
 
+    /* P_session-scoped-scratch — drop the on-disk scratch dir the
+       conversation was using. Best-effort: if the worker crashed
+       mid-run the dir might already be gone, and the TTL sweep
+       would catch that case anyway. */
+    await codeInterpreter._reapSessionScratch(req.params.id).catch(() => {});
+
     return res.status(204).end();
   } catch (err) { next(err); }
 });
@@ -436,6 +443,7 @@ router.delete('/', async (req, res, next) => {
   try {
     const db = getDb();
     let allDeletedPaths = [];
+    let allDeletedIds = [];
 
     const deleted = await db.transaction(async (tx) => {
       const rows = await tx.select({ id: sessions.id })
@@ -467,12 +475,19 @@ router.delete('/', async (req, res, next) => {
       await tx.delete(messages).where(inArray(messages.sessionId, ids));
       await tx.delete(sessions)
         .where(and(eq(sessions.userId, req.userId), isNull(sessions.archivedAt)));
+      allDeletedIds = ids;
       return ids.length;
     });
 
     for (const fp of allDeletedPaths) {
       await fs.unlink(fp).catch(() => {});
     }
+
+    /* P_session-scoped-scratch — reap every cleared session's
+       scratch dir. Parallel: each fs.rm is independent. */
+    await Promise.all(
+      allDeletedIds.map(id => codeInterpreter._reapSessionScratch(id).catch(() => {}))
+    );
 
     return res.json({ ok: true, deleted });
   } catch (err) { next(err); }

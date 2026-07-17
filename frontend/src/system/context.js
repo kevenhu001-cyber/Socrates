@@ -1,13 +1,9 @@
 /* system/context.js — system context (date, time, location) used as
  * the first user-context block in the LLM prompt. Location is now
- * derived from the browser's Intl API only — the previous version
- * also called out to ip-api.com for country / city, but that
- * service rate-limits anonymous requests with HTTP 403 and the
- * fallback HTTP 200/4xx in the dev-tools console created a noisy,
- * user-visible "Failed to load resource" error every time the
- * user opened a chat. The Intl-based timezone + locale provide
- * enough fidelity for the model's context-aware answers without
- * any third-party network call. */
+ * derived from the browser's Intl API plus a best-effort IP geolocation
+ * call (ip-api.com) for city / region granularity. The IP call is
+ * fire-and-forget with a silent fallback — if it fails or rate-limits,
+ * the Intl-based country + timezone are still available. */
 
 var _geoInfo = { country: "", region: "", city: "", tz: "", locale: "" };
 var _geoFetched = false;
@@ -20,12 +16,9 @@ export function resetGeoInfo(options) {
   }
 }
 
-/* Derive a coarse city / region hint from the browser's locale
- * string (e.g. "zh-CN" → country "CN"). We don't get a city this
- * way, but we can get a country code which is enough to ask the
- * LLM "the user is likely in <country>" without a third-party
- * request. The Intl.Locale API is widely supported (Chrome 74+,
-   Firefox 75+, Safari 14.1+). */
+/* Derive a coarse region hint from the browser's locale string
+ * (e.g. "zh-CN" → country "CN"). This is the fallback when the IP
+ * geolocation call fails or is rate-limited. */
 function deriveLocaleInfo() {
   try {
     var locales = (typeof Intl !== "undefined" && Intl.DateTimeFormat)
@@ -41,12 +34,30 @@ function deriveLocaleInfo() {
   } catch (_) {}
 }
 
-/* Populate _geoInfo from browser APIs only. We deliberately do NOT
- * call any third-party service (ip-api.com, ipwho.is, etc.) — they
- * rate-limit anonymous requests and produce user-visible 403/429
- * errors in the console. The Intl.DateTimeFormat timezone is the
-   most reliable signal and the only one the model strictly needs
-   for time-aware answers. */
+/* Try to fetch city+region+country from a free IP geolocation API.
+ * Fire-and-forget with silent catch — never shows user-visible errors.
+ * Falls back to Intl-based country if the API is unreachable. */
+function fetchIpGeo() {
+  var url = 'http://ip-api.com/json/?fields=status,country,countryCode,region,regionName,city,timezone';
+  try {
+    fetch(url, { cache: 'no-cache' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && data.status === 'success') {
+          if (data.countryCode) _geoInfo.country = data.countryCode;
+          if (data.regionName) _geoInfo.region = data.regionName;
+          if (data.city) _geoInfo.city = data.city;
+          if (data.timezone && !_geoInfo.tz) _geoInfo.tz = data.timezone;
+          try { localStorage.setItem("socrates-geo", JSON.stringify(_geoInfo)); } catch (_) {}
+        }
+      })
+      .catch(function () { /* silent fallback — Intl data still available */ });
+  } catch (_) { /* fetch not available or blocked */ }
+}
+
+/* Populate _geoInfo from browser APIs + best-effort IP geolocation.
+ * The IP call is fire-and-forget; if it fails, Intl-based country +
+ * timezone still provide useful context for the model. */
 export function fetchGeoInfo() {
   if (_geoFetched) return;
   _geoFetched = true;
@@ -58,6 +69,11 @@ export function fetchGeoInfo() {
   } catch (_) {}
   try { _geoInfo.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (_) {}
   deriveLocaleInfo();
+  /* Fire the IP geolocation call. It resolves asynchronously and
+     updates _geoInfo + localStorage when it completes. The first
+     system context block will use the Intl-based data; subsequent
+     turns pick up the cached IP result. */
+  fetchIpGeo();
   try { localStorage.setItem("socrates-geo", JSON.stringify(_geoInfo)); } catch (_) {}
 }
 
@@ -72,10 +88,14 @@ export function getSystemContext() {
     if (_geoInfo.tz) ctx += " (" + _geoInfo.tz + ")";
     ctx += ".";
     /* If Intl.Locale gave us a country code (e.g. "CN", "US"),
-       surface it. We avoid claiming a city unless we have one —
-       an incorrect city would mislead the LLM more than no city. */
-    if (_geoInfo.country) {
-      ctx += " User locale region: " + _geoInfo.country + ".";
+       surface it. When IP geolocation also provides city + region,
+       combine them into a precise location string. */
+    if (_geoInfo.city && _geoInfo.region && _geoInfo.country) {
+      ctx += " User location: " + _geoInfo.city + ", " + _geoInfo.region + ", " + _geoInfo.country + ".";
+    } else if (_geoInfo.region && _geoInfo.country) {
+      ctx += " User location: " + _geoInfo.region + ", " + _geoInfo.country + ".";
+    } else if (_geoInfo.country) {
+      ctx += " User location: " + _geoInfo.country + ".";
     }
     if (_geoInfo.locale) {
       ctx += " Locale: " + _geoInfo.locale + ".";

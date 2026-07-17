@@ -1443,6 +1443,11 @@ async function loadSession(id){
             if(Array.isArray(rtc.artifacts)&&rtc.artifacts.length){
               for(var ai=0;ai<rtc.artifacts.length;ai++){
                 appendInlineArtifact(rtc.artifacts[ai].id,rtc.artifacts[ai].mimeType,cardOut,rtc.artifacts[ai].name);
+                /* P_inline-artifact — render image artifacts inline in
+                   the message body so they are visible at a glance. */
+                if(rtc.artifacts[ai].id&&rtc.artifacts[ai].mimeType&&rtc.artifacts[ai].mimeType.indexOf("image/")===0){
+                  appendInlineArtifact(rtc.artifacts[ai].id,rtc.artifacts[ai].mimeType,body,rtc.artifacts[ai].name);
+                }
               }
             }
             var cEl=cardOut.closest(".agent-tool-card");
@@ -1462,6 +1467,13 @@ async function loadSession(id){
     try{processPendingMermaid()}catch(_){}
     try{processPendingViz()}catch(_){}
     try{processPendingVizActions()}catch(_){}
+    try{
+      var _bodies=msgList.querySelectorAll(".msg-body");
+      for(var _bi=0;_bi<_bodies.length;_bi++){
+        wireCodeBlockHeaders(_bodies[_bi]);
+        wireMsgBodyImages(_bodies[_bi]);
+      }
+    }catch(_){}
     /* P_streaming-survival — if the server has saved streaming_text
        (the previous stream was interrupted before completion), render
        it as a partial assistant message with a Retry button so the
@@ -4037,6 +4049,8 @@ function restoreMessageBody(entry,body){
   try{processPendingMermaid()}catch(_){}
   try{processPendingViz()}catch(_){}
   try{processPendingVizActions()}catch(_){}
+  try{wireCodeBlockHeaders(body)}catch(_){}
+  try{wireMsgBodyImages(body)}catch(_){}
 }
 function findMessageIndex(messageId){
   return state.messages.findIndex(function(m){
@@ -4187,6 +4201,8 @@ function addMessage(role,text,type,actions,attachmentsArg){
   try{processPendingMermaid()}catch(_){}
   try{processPendingViz()}catch(_){}
   try{processPendingVizActions()}catch(_){}
+  try{wireCodeBlockHeaders(body)}catch(_){}
+  try{wireMsgBodyImages(body)}catch(_){}
 
   var sc=scrollContainer();
   requestAnimationFrame(function(){sc.scrollTop=sc.scrollHeight});
@@ -4255,6 +4271,75 @@ function scrollMainToBottom(){
   var slack=64;
   var atBottom=sc.scrollHeight-sc.scrollTop-sc.clientHeight<=slack;
   if(atBottom)sc.scrollTop=sc.scrollHeight;
+}
+
+/* Add a minimal header bar atop .msg-body <pre> blocks with
+   a language label and an expand-to-fullscreen button.
+   Skips blocks that already have a header (re-entrant safe). */
+function wireCodeBlockHeaders(body){
+  if(!body)return;
+  var pres=body.querySelectorAll(".msg-body pre,.think-content pre");
+  for(var pi=0;pi<pres.length;pi++){
+    var pre=pres[pi];
+    if(pre.previousElementSibling&&pre.previousElementSibling.matches(".code-block-header"))continue;
+    if(pre.closest&&(pre.closest(".exec-artifact")||pre.closest(".agent-tool-card")||pre.closest(".viz")))continue;
+    var code=pre.querySelector("code");
+    if(!code)continue;
+    var lang="";
+    var cls=(code.className||"");
+    var lm=cls.match(/language-(\w+)/);
+    if(lm)lang=lm[1];
+    else{
+      var txt=(code.textContent||"").trimStart();
+      if(/^</.test(txt))lang="html";
+      else if(/^{/.test(txt))lang="json";
+      else if(/^from\s|^import\s/.test(txt))lang="python";
+      else if(/^function\s|^const\s|^let\s|^var\s/.test(txt))lang="js";
+    }
+    var header=document.createElement("div");
+    header.className="code-block-header";
+    var langLabel=document.createElement("span");
+    langLabel.className="code-block-header-lang";
+    langLabel.textContent=lang||"code";
+    header.appendChild(langLabel);
+    var expandBtn=document.createElement("button");
+    expandBtn.type="button";
+    expandBtn.className="code-block-expand";
+    expandBtn.setAttribute("aria-label","Expand code");
+    expandBtn.title="Expand";
+    expandBtn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><path d="M9 21 3 21 3 15"/><path d="M21 3 14 10"/><path d="M3 21 10 14"/></svg>';
+    expandBtn.addEventListener("click",function(ev){
+      ev.stopPropagation();
+      var rawCode=code.textContent||"";
+      var codeHtml='<pre style="margin:0;border:0;background:transparent;padding:18px 20px;font-family:var(--font-mono);font-size:13px;line-height:1.6;color:hsl(var(--text-200));white-space:pre-wrap;word-break:break-word;max-height:calc(100vh - 120px);overflow:auto"><code>'+esc(rawCode)+'</code></pre>';
+      if(typeof window.__vizOpenModalRaw==="function"){
+        window.__vizOpenModalRaw(codeHtml,(lang||"code")+" source");
+      }
+    });
+    header.appendChild(expandBtn);
+    pre.parentNode.insertBefore(header,pre);
+  }
+}
+
+/* Wire .msg-body img (outside artifacts) to open the viz-modal
+   fullscreen lightbox on click. Artifact images already have
+   their own lightbox handler in toolCards.js. */
+function wireMsgBodyImages(body){
+  if(!body)return;
+  var imgs=body.querySelectorAll(".msg-body img:not(.exec-artifact-image)");
+  for(var ii=0;ii<imgs.length;ii++){
+    var img=imgs[ii];
+    if(img.dataset.lightboxWired)continue;
+    img.dataset.lightboxWired="1";
+    img.addEventListener("click",function(ev){
+      ev.preventDefault();
+      var src=this.getAttribute("src")||"";
+      if(!src)return;
+      if(typeof window.__vizOpenModalRaw!=="function")return;
+      var html='<div class="img-lightbox"><img src="'+esc(src)+'" alt="" style="max-width:100%;max-height:calc(100vh - 140px);object-fit:contain;border-radius:6px"/></div>';
+      window.__vizOpenModalRaw(html,"Image");
+    });
+  }
 }
 
 
@@ -4877,6 +4962,18 @@ function teardownThinkStructure(){
         var savedPill=body.querySelector('.think-block');
         var savedToolContainer=body.querySelector('.think-tools');
         var savedToolCardArr=[];
+        /* P_inline-artifact-survival — inline artifacts (matplotlib PNGs,
+           CSV download links, etc.) mounted on the message body are
+           critical rich-media UX. Without saving them here, the
+           body.innerHTML="" reset would silently drop them when the
+           first text delta arrives after a tool result, producing
+           the "image appeared once then vanished" pattern. */
+        var savedArtifacts=[];
+        var artifactNodes=body.querySelectorAll('.exec-artifact');
+        for(var ai=0;ai<artifactNodes.length;ai++){
+          savedArtifacts.push(artifactNodes[ai]);
+          artifactNodes[ai].parentNode.removeChild(artifactNodes[ai]);
+        }
         /* If cards live inside the think-block (the normal case now),
            saving the pill already captures them. Only extract when
            there's no pill to host them. */
@@ -4909,6 +5006,14 @@ function teardownThinkStructure(){
         if(savedPill)body.insertBefore(savedPill,body.firstChild);
         for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
           body.appendChild(savedToolCardArr[sci2]);
+        }
+        /* Re-append saved artifacts AFTER streamContent + tool cards so
+           they appear in the order: pill → text → tool cards → images.
+           Visually this matches "tool produced this artifact" — the
+           image lands at the bottom of the message, which is where
+           users expect generated plots to appear. */
+        for(var ai2=0;ai2<savedArtifacts.length;ai2++){
+          body.appendChild(savedArtifacts[ai2]);
         }
       }
       /* P-H4 — stable-prefix incremental render. Split displayFull at the
@@ -5305,6 +5410,18 @@ function teardownThinkStructure(){
         var savedToolGroup=body.querySelector('.tool-run-group');
         var savedToolCards=body.querySelectorAll('.agent-tool-card');
         var savedToolCardArr=[];
+        /* P_inline-artifact-survival-finish — the final render at
+           finish() rewrites body's innerHTML. Tool cards are saved
+           and re-mounted above, but inline artifacts (matplotlib
+           PNGs) are NOT in the saved list, so they would silently
+           vanish at the streaming→final boundary. Save them here
+           too so the image is visible in the finalized bubble. */
+        var savedArtifacts=[];
+        var artifactNodes=body.querySelectorAll('.exec-artifact');
+        for(var ai=0;ai<artifactNodes.length;ai++){
+          savedArtifacts.push(artifactNodes[ai]);
+          artifactNodes[ai].parentNode.removeChild(artifactNodes[ai]);
+        }
         if(!savedPill&&!savedToolGroup){
           for(var sci=0;sci<savedToolCards.length;sci++){
             savedToolCardArr.push(savedToolCards[sci]);
@@ -5316,6 +5433,12 @@ function teardownThinkStructure(){
         else if(savedToolGroup)body.appendChild(savedToolGroup);
         for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
           body.appendChild(savedToolCardArr[sci2]);
+        }
+        /* Re-mount saved artifacts AFTER the final HTML + tool cards so
+           they sit at the bottom of the bubble (matching the streaming
+           layout). */
+        for(var ai2=0;ai2<savedArtifacts.length;ai2++){
+          body.appendChild(savedArtifacts[ai2]);
         }
         if(cursor){cursor.remove();cursor=null}
         if(msgIdx>=0&&state.messages[msgIdx]){
@@ -5356,6 +5479,8 @@ function teardownThinkStructure(){
         try{processPendingMermaid()}catch(_){}
         try{processPendingViz()}catch(_){}
         try{processPendingVizActions()}catch(_){}
+        try{wireCodeBlockHeaders(body)}catch(_){}
+        try{wireMsgBodyImages(body)}catch(_){}
         if(hasSources){
           var card=renderSourcesCard(sourcesSnapshot);
           if(card)div.appendChild(card);

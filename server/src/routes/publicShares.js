@@ -80,6 +80,7 @@ router.get('/:token', async (req, res, next) => {
       reasoningContent: messages.reasoningContent,
       parentId: messages.parentId,
       createdAt: messages.createdAt,
+      toolCalls: messages.toolCalls,
     }).from(messages)
       .where(eq(messages.sessionId, session.id))
       .orderBy(messages.createdAt)

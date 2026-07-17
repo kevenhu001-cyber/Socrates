@@ -83,7 +83,12 @@ test('tool activity is grouped by answer and reveals search, code, and artifacts
   await expect(code.locator('[data-tool-copy="code"]')).toContainText('Copied');
   await code.locator('.agent-tool-output-toggle').click();
   await expect(code.locator('.agent-tool-output-text')).not.toHaveClass(/is-collapsed/);
-  await expect(code.locator('img.exec-artifact-image')).toBeVisible();
+  // P_artifact-single-mount — image artifacts render inline in the
+  // message body (at-a-glance visibility), not inside the tool card.
+  // Document-wide dedup means exactly one copy per fileId exists;
+  // find it on the surrounding assistant bubble instead of the card.
+  const bubble = page.locator('.msg.assistant').last();
+  await expect(bubble.locator('img.exec-artifact-image')).toBeVisible();
 
   const header = code.locator('.agent-tool-head');
   await header.focus();

@@ -111,26 +111,21 @@ export const CODE_INTERPRETER_TOOL = {
   function: {
     name: 'code_interpreter',
     description:
-      'Execute Python code in a sandboxed Pyodide WASM runtime. ' +
-      /* P_tool-scope — be explicit at the tool-definition layer (which
-         the model sees when choosing tools) about what this tool is
-         NOT for. Without this, "draw a squirrel" gets routed here
-         because matplotlib can technically plot things. */
-      'Use ONLY for arithmetic, data manipulation, and DATA-VISUALIZATION PLOTS (line/scatter/bar/heatmap of numbers from numpy or pandas). ' +
-      'ABSOLUTELY DO NOT use for illustrations, drawings, pictures, or sketches of concrete subjects (animals, people, scenes, logos, icons) — those MUST go in a ```viz block as inline SVG, not Python. ' +
-      'When the user says "用 SVG 画" or "draw with SVG" or "draw a <concrete subject>" — that is an SVG illustration request, NOT a code_interpreter task. Output a ```viz block with hand-written SVG instead. ' +
-      'Each call is a fresh interpreter — no persistent state across calls. ' +
-      'Available libraries: Python 3.12 standard library (subset), NumPy, pandas, matplotlib. ' +
+      'Data analysis tool — executes Python in a sandboxed Pyodide WASM runtime and returns stdout plus any matplotlib PNGs / CSV exports the code wrote. ' +
+      /* P_tool-scope — lead with the "what for" framing so the model
+         doesn't reach for this tool when the user asked for an
+         illustration or a sketch (those belong in ```viz blocks). */
+      'Use ONLY for: arithmetic, numeric checks, unit conversions, quick computation, and DATA-VISUALIZATION PLOTS (line / scatter / bar / heatmap generated from numeric arrays via matplotlib). ' +
+      'Do NOT use for: illustrations, sketches, drawings, logos, icons, or pictures of concrete subjects (animals, people, scenes, logos). Those MUST go in a ```viz block as inline SVG. ' +
+      'Do NOT use for: explanations, conceptual answers, code review, prose. Answer those directly in markdown. ' +
+      /* P_sandbox-filesystem — describe the new session-scoped
+         scratch so the model knows files from earlier turns are
+         still on disk. The previous wording ("no upload path, no
+         network") scared it into thinking nothing persisted. */
+      'Filesystem: the run starts in a session-scoped scratch dir that persists across every code call in this conversation. Files you write (matplotlib.savefig, open(..., "w"), pandas.to_csv) remain available to the next call in the same conversation. Each run also prints a "[scratch]" header listing current files — YOU MUST READ IT BEFORE GUESSING ANY FILE PATH. If the header shows no matching file, write the file yourself in the same run instead of assuming it exists. There is still no access to the user\'s local disk, no upload path, and no network fetch from Python. ' +
+      'Available libraries: Python 3.12 standard library (subset), NumPy, pandas, matplotlib. Other packages: install in-run with `import micropip; micropip.install("pkg")`. ' +
       `Stdout/stderr are capped at ${MAX_OUTPUT_BYTES} bytes; runs that exceed it fail with output_limit_exceeded. ` +
-      'Files the code writes to the current directory are returned as artifacts (PNG charts, CSV exports, etc.) and surfaced as inline links. ' +
-      /* P_sandbox-filesystem — describe the file system constraints
-         directly in the tool description so the model never asks
-         the user to "load the data" from a path that isn't
-         available, and so any FileNotFoundError at runtime is
-         already pre-empted by the prompt the model sees. */
-      'Sandbox: only files the run itself writes are present in the working directory. There is no access to the user\'s local filesystem, no upload path, and no network fetch — so open() / read_csv() / Image.open() will FAIL with FileNotFoundError unless the file was just produced by an earlier statement in the SAME run. ' +
-      'To work with user-supplied data, the previous statement must have written the file first (e.g. by reading a base64 payload and decoding it), or you must generate the data inline (e.g. via numpy / random). ' +
-      'No network access, no filesystem access outside the artifact directory, no subprocess.',
+      'No subprocess, no network, no access outside the scratch dir.',
     parameters: {
       type: 'object',
       properties: {
@@ -140,11 +135,11 @@ export const CODE_INTERPRETER_TOOL = {
           default: 'python',
           description: 'Always "python" in v1.',
         },
-        code: {
-          type: 'string',
-          description: 'Python source code to execute. State does not persist across calls.',
-          maxLength: 200000,
-        },
+          code: {
+            type: 'string',
+            description: 'Python source code to execute. Files written to disk (matplotlib.savefig, open(..., "w"), pandas.to_csv) persist across every code call in this conversation — the scratch dir is session-scoped.',
+            maxLength: 200000,
+          },
       },
       required: ['code'],
       additionalProperties: false,
@@ -596,17 +591,30 @@ export const codeInterpreter = {
     }).returning();
     const executionId = inserted.id;
 
-    const executionScratchDir = path.join(SCRATCH_DIR, executionId);
-
+    /* P_session-scoped-scratch — files written by an earlier execution
+       in the same conversation remain available in the next run's
+       cwd. Without this, the model would write transcendental.png in
+       run N, then FileNotFoundError on the same path in run N+1.
+       The session-scoped dir lives under SCRATCH_DIR/<sessionId> and
+       is reused across every execution in the conversation. Reaping
+       is deferred to session-delete (deleteSession routes) plus a
+       boot-time TTL sweep for orphaned sessions. */
+    const sessionScratchDir = path.join(SCRATCH_DIR, sessionId || executionId);
     let result;
     try {
-      await fs.mkdir(executionScratchDir, { recursive: true });
+      await fs.mkdir(sessionScratchDir, { recursive: true });
+      /* P_scratch-header — prepend a small stdout header that lists
+         the current files in the scratch dir so the AI knows what's
+         available without guessing. This runs BEFORE the user's code
+         so the listing appears at the top of stdout. */
+      const scratchHeader = 'import os; __sd = os.getcwd(); print(f\'[scratch] cwd: {os.listdir(__sd) if os.path.isdir(__sd) else "(not a dir)"}\')';
+      const wrappedCode = code.includes('__sd') ? code : scratchHeader + '\n' + code;
       result = await runOnWorker({
         executionId,
-        code,
+        code: wrappedCode,
         timeoutMs,
         signal,
-        scratchDir: executionScratchDir,
+        scratchDir: sessionScratchDir,
         maxOutputBytes: MAX_OUTPUT_BYTES,
         onProgress,
       });
@@ -694,8 +702,11 @@ export const codeInterpreter = {
       }).catch(() => {});
     }
 
-    // Reap the scratch dir now that we've persisted everything we want.
-    fs.rm(executionScratchDir, { recursive: true, force: true }).catch(() => {});
+    // P_session-scoped-scratch — files in the session scratch dir
+    // outlive this run; they're reaped only when the session is
+    // deleted (see _reapSessionScratch below) or by the TTL sweep at
+    // boot for orphaned sessions whose conversation was abandoned.
+    // fs.rm(executionScratchDir, …) intentionally removed.
 
     // Emit final result to pubsub subscribers (SSE clients, possibly
     // on another process). Fire-and-forget — pubsub logs internally
@@ -758,5 +769,43 @@ export const codeInterpreter = {
     maxArtifactBytes: MAX_ARTIFACT_BYTES,
     scratchDir: SCRATCH_DIR,
     runner: EXEC_RUNNER,
+  },
+
+  /* P_session-scoped-scratch — delete the session's scratch dir
+     when the conversation is deleted. Best-effort: filesystem may
+     already be gone (TTL sweep, server crash, etc.). Safe to call
+     repeatedly. */
+  async _reapSessionScratch(sessionId) {
+    if (!sessionId) return;
+    const dir = path.join(SCRATCH_DIR, sessionId);
+    try { await fs.rm(dir, { recursive: true, force: true }); }
+    catch (e) { /* logged below if non-ENOENT */ }
+  },
+
+  /* TTL sweep — remove session dirs whose conversation hasn't run
+     any code in EXEC_SCRATCH_TTL_DAYS days. Called once at server
+     boot (index.js). Uses the session dir's mtime as the freshness
+     signal: every run touches the dir, so an active session stays
+     alive and a closed tab drops off after the TTL. */
+  async _reapStaleSessionScratches(ttlDays) {
+    const days = Number.isFinite(ttlDays) && ttlDays > 0 ? ttlDays : 7;
+    const ttlMs = days * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - ttlMs;
+    let removed = 0;
+    let entries = [];
+    try { entries = await fs.readdir(SCRATCH_DIR, { withFileTypes: true }); }
+    catch (e) { return { removed: 0, error: String(e && e.message || e) }; }
+    for (const ent of entries) {
+      if (!ent.isDirectory()) continue;
+      const dir = path.join(SCRATCH_DIR, ent.name);
+      try {
+        const st = await fs.stat(dir);
+        if (st.mtimeMs >= cutoff) continue;
+        await fs.rm(dir, { recursive: true, force: true });
+        removed++;
+      } catch (_) { /* skip — race with delete or transient ENOENT */ }
+    }
+    if (removed > 0) console.log(`[code-interpreter] TTL sweep reaped ${removed} stale session scratch dir(s) (older than ${days}d)`);
+    return { removed };
   },
 };

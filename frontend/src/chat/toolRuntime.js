@@ -450,12 +450,32 @@ export function createToolRuntime(options) {
       display = errorMessage + duration;
       if ((result.name || entry.name) === 'code_interpreter') {
         var stderr = String(result.stderr || '') + String(errorMessage || '');
-        if (/FileNotFoundError|No such file or directory/i.test(stderr)) {
-          display += "\n\nHint: Python's working directory is the run scratch dir; only files the previous run wrote there (matplotlib PNGs, CSV exports, etc.) are available. To load a new file, attach it to the chat as input and have the code read from the path the attachment handler exposes, or have the previous cell write the file first.";
+        /* P_pyerror-hints — when the model gets a Python exception
+           back, a one-line hint about the failure mode cuts redundant
+           "retry with the same broken code" attempts. Order matters:
+           check the more specific patterns first so a SyntaxError that
+           mentions "NameError" in its traceback doesn't get the
+           wrong hint. */
+        if (/SyntaxError|IndentationError/i.test(stderr)) {
+          display += '\n\nHint: Python refused to parse the source — fix the syntax / indentation in the same run, no need to retry the whole flow.';
         } else if (/ModuleNotFoundError/i.test(stderr)) {
           display += "\n\nHint: Pyodide ships numpy, pandas, and matplotlib pre-installed. For other packages, install them in the run with `import micropip; micropip.install('pkg')`.";
+        } else if (/FileNotFoundError|No such file or directory/i.test(stderr)) {
+          display += "\n\nHint: the scratch dir is session-scoped and persists across every code call in this conversation. Each run prints a `[scratch]` header listing the files currently in /artifacts — read it before guessing a path. If the file you want really isn't there, write it yourself in the same run (e.g. decode a base64 payload, or generate the data inline) instead of asking the user to attach it.";
         } else if (/PermissionError|IsADirectoryError|NotADirectoryError/i.test(stderr)) {
-          display += '\n\nHint: the path is a directory or not writable. Use the artifact paths from the previous run, or write to a fresh filename.';
+          display += '\n\nHint: the path is a directory or not writable. Write to a fresh filename inside /artifacts.';
+        } else if (/NameError/i.test(stderr)) {
+          display += '\n\nHint: a variable / function name is not defined. Either import it (e.g. `import json`) or define it earlier in the same run. Pyodide globals DO NOT persist across separate code_interpreter calls — re-import or recompute any state you need.';
+        } else if (/TypeError/i.test(stderr)) {
+          display += '\n\nHint: a value was passed to an operation with the wrong type. Check the call signature (e.g. str vs int, list vs dict) before retrying.';
+        } else if (/ValueError/i.test(stderr)) {
+          display += '\n\nHint: the value passed to a function is the right type but out of range or the wrong shape (e.g. math.sqrt(-1), int("abc"), unpacking mismatch). Validate the input first.';
+        } else if (/IndexError/i.test(stderr)) {
+          display += '\n\nHint: list/sequence index is out of range. Guard with `if i < len(xs):` or use a try/except before retrying.';
+        } else if (/KeyError/i.test(stderr)) {
+          display += '\n\nHint: dict lookup failed. Use `.get(key, default)` or `if key in d:` before indexing.';
+        } else if (/ZeroDivisionError/i.test(stderr)) {
+          display += '\n\nHint: division by zero. Add a guard for the denominator or skip the case explicitly.';
         }
       }
     } else {
@@ -472,6 +492,22 @@ export function createToolRuntime(options) {
     entry.isError = result.ok === false;
     entry.results = Array.isArray(result.results) ? result.results.slice(0, 20) : [];
     if (Array.isArray(result.artifacts)) entry.artifacts = normalizeArtifacts(result.artifacts);
+    /* P_artifact-summary-in-context — the model can't see the PNG the
+       run produced unless we tell it explicitly in the message
+       history. Without this block the next chat turn has zero
+       awareness that anything was generated, and re-runs the same
+       computation from scratch. Keep the summary compact: one line
+       per file with name, mime type, and id. */
+    if (entry.artifacts && entry.artifacts.length) {
+      var artifactLines = ['[artifacts]'];
+      for (var aIdx = 0; aIdx < entry.artifacts.length; aIdx++) {
+        var a = entry.artifacts[aIdx];
+        var aName = a.name || a.id || 'artifact';
+        var aMime = a.mimeType || 'application/octet-stream';
+        artifactLines.push('- ' + aName + ' (' + aMime + ', id=' + a.id + ')');
+      }
+      entry.output = entry.output ? entry.output + '\n\n' + artifactLines.join('\n') : artifactLines.join('\n');
+    }
     updateRunSummary(message);
     if (!output || entry._toolResultApplied) return;
     entry._toolResultApplied = true;
@@ -507,7 +543,22 @@ export function createToolRuntime(options) {
     }
     for (var artifactIndex = 0; artifactIndex < entry.artifacts.length; artifactIndex++) {
       var artifact = entry.artifacts[artifactIndex];
-      appendInlineArtifact(artifact.id, artifact.mimeType, output, artifact.name);
+      /* P_artifact-single-mount — image artifacts mount ONCE on the
+         message body (inline, at-a-glance). The previous code mounted
+         a second copy inside the tool card too, but appendInlineArtifact
+         switched to document-wide dedup (one copy per fileId total),
+         so the second mount would always be a no-op and just wasted
+         a retry tick on the parallel requestImage path. The tool card
+         still shows stdout/stderr so the user has the full transcript. */
+      if (artifact.id && artifact.mimeType && artifact.mimeType.indexOf('image/') === 0) {
+        appendInlineArtifact(artifact.id, artifact.mimeType, body, artifact.name);
+      } else if (artifact.id) {
+        /* Non-image artifacts (CSV, JSON, etc.) still mount in the
+           tool card where they belong — clicking the link downloads
+           them. No doc-wide dedup concern here because these don't
+           carry the same visual flicker risk. */
+        appendInlineArtifact(artifact.id, artifact.mimeType, output, artifact.name);
+      }
     }
   }
 

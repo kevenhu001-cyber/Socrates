@@ -700,7 +700,14 @@ export function appendInlineArtifact(fileId, mimeType, outEl, displayName) {
   if (!out || !fileId) return;
   const url = "/api/files/" + encodeURIComponent(fileId) + "/raw";
   const selectorId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(String(fileId)) : String(fileId).replace(/[^a-zA-Z0-9_-]/g, '');
-  if (out.querySelector(`[data-artifact-id="${selectorId}"]`)) return;
+  /* P_artifact-doc-wide-dedup — a single artifact fileId should
+     render exactly once per message, regardless of how many
+     mount points call us (tool card output + message body, on
+     every recordToolResult reentry, on SSE retries). The previous
+     per-out check let the same image appear twice (tool card +
+     inline) and re-trigger requestImage() in parallel, producing
+     the retry-storm flicker pattern. */
+  if (document.querySelector(`[data-artifact-id="${selectorId}"]`)) return;
   if ((mimeType || "").indexOf("image/") === 0) {
     appendInlineImage(fileId, mimeType, url, out);
   } else {
@@ -716,6 +723,20 @@ function appendInlineImage(fileId, mimeType, url, out) {
   skeleton.className = "exec-artifact-skeleton";
   skeleton.innerHTML = '<span class="exec-artifact-skeleton-pulse"></span>';
   wrap.appendChild(skeleton);
+
+  /* P_artifact-scaffold — actions overlay (fullscreen + download) sits
+     in the top-right of the figure so it visually parallels the viz
+     buttons. Always visible at low opacity, brightens on hover. */
+  const actions = document.createElement("div");
+  actions.className = "exec-artifact-actions";
+  actions.innerHTML =
+    '<button type="button" class="exec-artifact-btn" data-action="exec-expand" title="Fullscreen" aria-label="Fullscreen">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>' +
+    '</button>' +
+    '<a class="exec-artifact-btn" data-action="exec-download" href="' + esc(url) + '" download target="_blank" rel="noopener" title="Download" aria-label="Download">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>' +
+    '</a>';
+  wrap.appendChild(actions);
 
   const img = new Image();
   img.alt = "execution artifact";
@@ -744,6 +765,38 @@ function appendInlineImage(fileId, mimeType, url, out) {
     img.style.display = "";
     img.classList.add("loaded");
     wrap.appendChild(img);
+    /* P_artifact-meta — once the image is on the page we can read
+       its natural size to render a tight metadata strip under the
+       figure. We don't have the byte count client-side, so size
+       is a string from naturalWidth × naturalHeight. The filename
+       comes from the URL's last path segment (fileId is opaque,
+       but the original name survives in the `files` table — fetch
+       metadata lazily so we don't block the render). */
+    var meta = document.createElement("figcaption");
+    meta.className = "exec-artifact-meta";
+    var name = document.createElement("span");
+    name.className = "exec-artifact-meta-name";
+    name.textContent = (displayName(fileId, mimeType) || 'artifact');
+    var size = document.createElement("span");
+    size.className = "exec-artifact-meta-size";
+    size.textContent = (img.naturalWidth ? img.naturalWidth + '×' + img.naturalHeight + ' px' : 'image');
+    meta.appendChild(name);
+    meta.appendChild(size);
+    wrap.appendChild(meta);
+    if (typeof fetch === "function") {
+      try {
+        fetch("/api/files/" + encodeURIComponent(fileId), { credentials: "same-origin" })
+          .then(function (r) { return r && r.ok ? r.json() : null; })
+          .then(function (metaRow) {
+            if (metaRow && metaRow.name) name.textContent = metaRow.name;
+            if (metaRow && typeof metaRow.size === "number") {
+              var cur = size.textContent;
+              size.textContent = cur + ' · ' + formatBytes(metaRow.size);
+            }
+          })
+          .catch(function () {});
+      } catch (_) {}
+    }
   });
   img.addEventListener("error", function () {
     clearTimeout(loadTimer);
@@ -753,8 +806,48 @@ function appendInlineImage(fileId, mimeType, url, out) {
     } catch (_) {}
   });
   img.style.display = "none";
+  /* Click on the image (or the expand button) opens a fullscreen
+     lightbox that reuses the viz-modal shell. Pass raw HTML so
+     the image renders at natural size without sandboxing. */
+  function openLightbox(ev) {
+    if (ev) ev.preventDefault();
+    if (typeof window.__vizOpenModalRaw !== "function") return;
+    var fullSrc = url + (url.indexOf("?") >= 0 ? "&" : "?") + "_t=" + Date.now();
+    var html = '<div class="img-lightbox"><img src="' + esc(fullSrc) + '" alt="' + esc(displayName(fileId, mimeType) || 'artifact') + '"/></div>';
+    window.__vizOpenModalRaw(html, displayName(fileId, mimeType) || 'Artifact');
+  }
+  wrap.addEventListener("click", function (ev) {
+    var t = ev && ev.target;
+    if (!t) return;
+    if (t.closest && t.closest('[data-action="exec-download"]')) return;
+    if (t.closest && t.closest('[data-action="exec-expand"]')) {
+      openLightbox(ev);
+      return;
+    }
+    /* Image click → fullscreen. */
+    if (t === img) openLightbox(ev);
+  });
   out.appendChild(wrap);
   requestImage();
+}
+
+/* Best-effort display name for an artifact. fileId is opaque so we
+   fall back to a short id-derived label; the real name arrives via
+   the lazy /api/files/:id fetch above. */
+function displayName(fileId, mimeType) {
+  if (!fileId) return '';
+  var short = String(fileId).split('-')[0] || String(fileId);
+  if (mimeType && /^image\//.test(mimeType)) return short + (mimeType === 'image/png' ? '.png' : mimeType === 'image/jpeg' ? '.jpg' : '.img');
+  return short;
+}
+
+/* Format a byte count as a short human string (1.4 KB / 12.3 MB). */
+function formatBytes(n) {
+  if (!Number.isFinite(n) || n < 0) return '';
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  if (n < 1024 * 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MB';
+  return (n / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
 }
 
 function appendInlineFileLink(fileId, mimeType, url, out, t, displayName) {
