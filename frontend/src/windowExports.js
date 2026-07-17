@@ -84,8 +84,9 @@ window.sanitizeUrl = sanitizeUrl;
 window.sanitizeUrls = sanitizeUrls;
 
 /* ─── render/viz.js ─── */
-import { openVizModal, processPendingViz, processPendingVizActions } from './render/viz.js';
+import { openVizModal, openVizModalRaw, processPendingViz, processPendingVizActions } from './render/viz.js';
 window.__vizOpenModal = openVizModal;
+window.__vizOpenModalRaw = openVizModalRaw;
 window.processPendingViz = processPendingViz;
 window.processPendingVizActions = processPendingVizActions;
 
@@ -95,9 +96,10 @@ import { startSearchProgress } from './ui/searchProgress.js';
 window.__startSearchProgress = startSearchProgress;
 
 /* ─── render/markdown.js ─── */
-import { stripMarkdown, findLastUserMessage } from './render/markdown.js';
+import { stripMarkdown, findLastUserMessage, formatMsg } from './render/markdown.js';
 window.stripMarkdown = stripMarkdown;
 window.findLastUserMessage = findLastUserMessage;
+window.formatMsg = formatMsg;
 
 /* ─── auth/index.js ─── */
 import {
@@ -353,3 +355,8 @@ window.refreshExamNavTally = refreshExamNavTally;
 window.scheduleExamAnswerSave = scheduleExamAnswerSave;
 window.submitExam = submitExam;
 window.renderExamResults = renderExamResults;
+
+/* ─── ui/toolCards.js — needed by share.js to restore tool cards ─── */
+import { appendToolModule, appendInlineArtifact } from './ui/toolCards.js';
+window.appendToolModule = appendToolModule;
+window.appendInlineArtifact = appendInlineArtifact;

@@ -243,6 +243,27 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
   pyodide.FS.mount(pyodide.FS.filesystems.NODEFS, { root: artifactsDir }, '/artifacts');
   pyodide.runPython(`import os; os.chdir('/artifacts')`);
 
+  /* P_session-scoped-scratch — print the current contents of the
+     scratch dir on stdout so the model knows what files already
+     exist from earlier runs in this conversation. This makes
+     persistence explicit and avoids FileNotFoundError caused by
+     guessing paths the model never wrote. Cap at 20 entries so a
+     long list of CSVs doesn't crowd the real output. */
+  try {
+    const existing = await fs.readdir(artifactsDir).catch(() => []);
+    if (existing.length > 0) {
+      const shown = existing.slice(0, 20).map(n => '  ' + n).join('\\n');
+      const more = existing.length > 20 ? `\\n  …(+${existing.length - 20} more)` : '';
+      pyodide.runPython(
+        `print("[scratch] files available in this session (cwd=/artifacts):\\n${shown}${more}", flush=True)`
+      );
+    } else {
+      pyodide.runPython(
+        `print("[scratch] cwd=/artifacts is empty. Files you write here persist across every code call in this conversation.", flush=True)`
+      );
+    }
+  } catch (_) { /* non-fatal */ }
+
   const startedAt = Date.now();
   let status = 'completed';
   let exitCode = 0;

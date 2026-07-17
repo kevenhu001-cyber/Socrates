@@ -33,12 +33,9 @@ body.sidebar-resizing .sidebar{will-change:width;transition:none!important}
    the chat pane. Visible affordance is a 1px accent hairline on
    the panel's inner right edge that lights up on hover / drag —
    no central pill, no floating grip widget. */
-.sidebar-resize-handle{position:absolute;top:0;right:0;bottom:0;width:10px;cursor:col-resize;z-index:25;background:transparent;transition:background .15s}
-.sidebar-resize-handle::after{content:"";position:absolute;right:0;top:0;bottom:0;width:1px;background:transparent;transition:background .15s;pointer-events:none}
-.sidebar-resize-handle:hover::after,.sidebar-resize-handle.dragging::after{background:hsl(var(--accent-000)/0.8)}
-.sidebar-resize-handle:hover,.sidebar-resize-handle.dragging{background:hsl(var(--accent-000)/0.08)}
+.sidebar-resize-handle{position:absolute;top:0;right:0;bottom:0;width:10px;cursor:col-resize;z-index:25;background:transparent}
+.sidebar-resize-handle::after{content:"";position:absolute;right:0;top:0;bottom:0;width:1px;background:transparent;pointer-events:none}
 .sidebar-resize-handle:focus-visible{outline:none}
-.sidebar-resize-handle:focus-visible::after{background:hsl(var(--accent-000))}
 body.sidebar-resizing{cursor:col-resize;user-select:none}
 .sidebar.collapsed .sidebar-resize-handle{opacity:0;pointer-events:none}
 .sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}
@@ -1199,9 +1196,9 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
   padding-top:12px;
   padding-bottom:env(safe-area-inset-bottom, 0px);
 }
-.chat-input-wrap{background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.55);border-radius:24px;overflow:hidden;transition:border-color .25s cubic-bezier(.4,0,.2,1),box-shadow .25s cubic-bezier(.4,0,.2,1),transform .25s cubic-bezier(.4,0,.2,1);margin:0 12px;
+.chat-input-wrap{background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.55);border-radius:24px;overflow:hidden;transition:border-color .25s cubic-bezier(.4,0,.2,1);margin:0 12px;
   box-shadow:0 2px 12px hsl(var(--always-black)/8%)}
-.chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.6);box-shadow:0 2px 20px hsl(var(--accent-000)/12%);transform:translateY(-1px)}
+.chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.6)}
 #chatInputArea{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(15px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));min-height:36px;max-height:120px;overflow-y:auto;scrollbar-width:none;font-family:var(--font-sans);padding:8px 14px}
 #chatInputArea::-webkit-scrollbar{display:none}
 #chatInputArea::placeholder{color:hsl(var(--text-400))}
@@ -2049,13 +2046,14 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
   cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center;
   backdrop-filter:blur(4px);
-  opacity:0;
-  transform:translateY(-2px);
-  transition:color .08s,background .08s,opacity .12s,transform .12s;
+  opacity:.35;
+  transform:translateY(0);
+  transition:color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),opacity .18s cubic-bezier(.4,0,.2,1),transform .12s ease;
 }
-.viz:hover .viz-btn,.viz:focus-within .viz-btn{opacity:1;transform:none}
-.viz-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300)/0.95)}
-.viz-btn:focus-visible{opacity:1;transform:none;outline:2px solid hsl(var(--accent-000)/.45);outline-offset:1px}
+.viz:hover .viz-btn,.viz:focus-within .viz-btn{opacity:1}
+.viz-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300)/0.95);transform:translateY(-1px)}
+.viz-btn:active{transform:scale(.92)}
+.viz-btn:focus-visible{opacity:1;outline:2px solid hsl(var(--accent-000)/.45);outline-offset:1px}
 .viz-btn svg{width:13px;height:13px;display:block}
 .viz-body{position:relative}
 .viz-body iframe{
@@ -2179,6 +2177,9 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 .viz-modal-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .viz-modal-close svg{width:14px;height:14px;display:block}
 .viz-modal-body{flex:1;min-height:0;background:transparent}
+.viz-modal-body-raw{display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;background:hsl(var(--bg-200)/0.6)}
+.img-lightbox{display:flex;align-items:center;justify-content:center;max-width:100%;max-height:100%}
+.img-lightbox img{max-width:100%;max-height:calc(100vh - 140px);object-fit:contain;border-radius:6px;box-shadow:0 8px 24px hsl(var(--always-black)/0.3)}
 .viz-modal-body iframe{width:100%;height:100%;border:0;background:transparent;display:block}
 .viz-source-modal{width:min(92vw,920px);height:min(82vh,720px)}
 .viz-source-copy{
@@ -2230,7 +2231,18 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 .msg-body hr{border:none;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));margin:14px 0}
 .msg-body a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
 .msg-body a:hover{color:hsl(var(--accent-100))}
-.msg-body img{max-width:100%;border-radius:8px;margin:8px 0}
+.msg-body img{max-width:100%;border-radius:8px;margin:8px 0;cursor:zoom-in;transition:opacity .18s ease}
+.msg-body img:hover{opacity:.88}
+/* P_code-block-header — a minimal header bar atop <pre> blocks with
+   the language label + an expand button. Always visible at low opacity,
+   brightens on hover. Reuses the viz-btn visual language. */
+.msg-body .code-block-header{display:flex;align-items:center;gap:6px;height:26px;padding:0 4px 0 8px;margin-bottom:-2px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-bottom:none;border-radius:10px 10px 0 0;font-size:calc(10.5px * var(--app-font-scale,1));color:hsl(var(--text-500));opacity:.5;transition:opacity .18s ease}
+.msg-body .code-block-header:hover{opacity:1}
+.msg-body .code-block-header + pre{border-radius:0 0 10px 10px;margin-top:0;border-top:none}
+.code-block-header-lang{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-mono);text-transform:lowercase}
+.code-block-expand{width:22px;height:22px;border:0;border-radius:5px;background:transparent;color:hsl(var(--text-400));cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .12s,background .12s}
+.code-block-expand:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.code-block-expand svg{width:12px;height:12px;display:block}
 .stream-cursor{display:inline-block;animation:blink 1s step-end infinite;color:hsl(var(--text-400));font-size:calc(14px * var(--app-font-scale, 1));margin-left:1px;vertical-align:baseline}
 @keyframes blink{50%{opacity:0}}
 
@@ -2874,9 +2886,20 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    skeleton + the eventual image. A 240px max-height keeps a tall PNG
    from pushing the page; a fade-in transition keeps the user from
    being visually startled when the image lands. */
-.exec-artifact{display:block;margin:6px 0 2px;padding:0;border-radius:8px;overflow:hidden;background:hsl(var(--bg-200)/0.5);position:relative}
-.exec-artifact-image{display:block;max-width:100%;max-height:280px;border-radius:8px;background:transparent;object-fit:contain;margin:0 auto;opacity:0;transition:opacity .25s ease-out}
+.exec-artifact{display:block;margin:6px 0 2px;padding:0;border:0.5px solid hsl(var(--border-300)/0.28);border-radius:8px;overflow:hidden;background:hsl(var(--bg-200)/0.5);position:relative}
+.exec-artifact::before{content:"";position:absolute;top:0;left:0;right:0;height:1.5px;background:hsl(var(--accent-000)/0.45);border-radius:8px 8px 0 0;pointer-events:none;z-index:1}
+.exec-artifact-image{display:block;max-width:100%;max-height:280px;border-radius:0;background:transparent;object-fit:contain;margin:0 auto;opacity:0;transition:opacity .25s ease-out;cursor:zoom-in}
 .exec-artifact-image.loaded{opacity:1}
+.exec-artifact-image:hover{opacity:.92}
+.exec-artifact-actions{position:absolute;top:4px;right:4px;z-index:2;display:flex;align-items:center;gap:2px;opacity:.4;transition:opacity .18s cubic-bezier(.4,0,.2,1)}
+.exec-artifact:hover .exec-artifact-actions,.exec-artifact:focus-within .exec-artifact-actions{opacity:1}
+.exec-artifact-btn{width:24px;height:24px;border:0;border-radius:5px;background:hsl(var(--bg-200)/0.92);color:hsl(var(--text-400));cursor:pointer;display:inline-flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);transition:color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),transform .12s ease}
+.exec-artifact-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300)/0.95);transform:translateY(-1px)}
+.exec-artifact-btn:active{transform:scale(.9)}
+.exec-artifact-btn svg{width:12px;height:12px;display:block}
+.exec-artifact-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 10px 5px;font-size:calc(10.5px * var(--app-font-scale,1));color:hsl(var(--text-500));border-top:0.5px solid hsl(var(--border-300)/0.18);background:hsl(var(--bg-200)/0.4)}
+.exec-artifact-meta-name{font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.exec-artifact-meta-size{flex-shrink:0;font-variant-numeric:tabular-nums}
 .exec-artifact-skeleton{width:100%;height:160px;display:flex;align-items:center;justify-content:center;background:hsl(var(--bg-200)/0.6);position:relative;overflow:hidden}
 .exec-artifact-skeleton::after{content:"";position:absolute;left:50%;top:50%;width:24px;height:24px;margin-left:-12px;margin-top:-12px;border-radius:50%;border:2px solid hsl(var(--bg-300));border-top-color:hsl(var(--accent-000));animation:exec-artifact-spin 0.9s linear infinite}
 .exec-artifact-skeleton-pulse{display:none}
@@ -3046,6 +3069,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-progress .agent-tool-progress-spinner{width:8px;height:8px}
 .agent-tool-stream{padding:0;max-height:180px}
 .exec-artifact{border:1px solid hsl(var(--border-300)/.35);border-radius:5px;background:transparent}
+.exec-artifact::before{display:none}
 .exec-artifact-image{border-radius:4px;transition:none}
 .exec-artifact-skeleton{height:120px;background:hsl(var(--bg-200)/.35)}
 .artifact-error{align-items:flex-start;flex-wrap:wrap;margin:6px 0;padding:8px;border:1px solid hsl(0 45% 55%/.35);border-radius:5px;background:transparent}
@@ -3532,7 +3556,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
    conversation while giving attachments, offline states, and Stop room. */
 .chat-input-bar{background:linear-gradient(to bottom,transparent 0%,hsl(var(--surface-page))/26px);padding-top:18px}
 .chat-input-wrap{border-radius:18px;border-color:hsl(var(--border-300)/.42);box-shadow:0 8px 24px hsl(var(--always-black)/.07)}
-.chat-input-wrap:focus-within{box-shadow:0 0 0 3px hsl(var(--accent-000)/.10),0 8px 24px hsl(var(--always-black)/.07)}
+.chat-input-wrap:focus-within{box-shadow:0 8px 24px hsl(var(--always-black)/.07)}
 .attach-btn:focus-visible,.send-btn:focus-visible{outline:2px solid hsl(var(--accent-000)/.65);outline-offset:2px}
 @media(max-width:768px){
   .attach-btn,.send-btn{width:36px;height:36px}

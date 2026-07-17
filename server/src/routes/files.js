@@ -144,32 +144,6 @@ router.get('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/* GET /api/files/:id/raw — serve file bytes */
-router.get('/:id/raw', async (req, res, next) => {
-  try {
-    const db = getDb();
-    const [file] = await db.select().from(files)
-      .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId)))
-      .limit(1);
-    if (!file) throw new NotFound('File not found');
-    // X-Content-Type-Options: nosniff — prevents the browser from
-    // guessing a different content type than the one we send.
-    // Critical for SVG (which can contain JS) and for any file
-    // whose on-disk extension doesn't match its MIME.
-    res.set('X-Content-Type-Options', 'nosniff');
-    // No caching for artifact files so regenerated images with the
-    // same fileId always show the latest version.
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    // Force-download for any file that could execute script in the
-    // browser — text, SVG, JSON, XML, etc. Only images and PDFs are
-    // safe to render inline.
-    if (!file.mimeType.startsWith('image/') && file.mimeType !== 'application/pdf') {
-      res.set('Content-Disposition', 'attachment');
-    }
-    return res.sendFile(file.storagePath);
-  } catch (err) { next(err); }
-});
-
 /* DELETE /api/files/:id */
 router.delete('/:id', async (req, res, next) => {
   try {

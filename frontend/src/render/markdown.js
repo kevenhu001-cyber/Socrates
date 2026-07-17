@@ -200,6 +200,37 @@ export function formatTickSlice(full,len){
   return formatMsgProgressive(full.slice(0,len));
 }
 
+/* P_viz-stable-id — fence-key → stable viz-card-N. Persists across
+   rAF ticks inside one streaming message so the same <div class="viz">
+   is replaced in-place instead of torn down + re-created each frame.
+
+   Fingerprint key: "lang + '\x00' + content.slice(0, 50)". The first
+   50 chars are stable for an in-progress fence (the user is appending
+   to the tail), and the language tag prevents collision between two
+   fences of different languages whose first 50 chars happen to match.
+
+   The Map is append-only across a single streaming message. Each
+   entry is a few dozen bytes; even long sessions don't blow memory.
+   formatMsg (the one-shot final renderer) does NOT consult this Map —
+   its innerHTML swap is atomic and the iframe mount handshake is
+   handled by processPendingViz() in main.js's finish(). */
+var _streamingVizIds = new Map();
+function _streamingFingerprint(lang, content) {
+  return (lang || '') + '\x00' + String(content || '').slice(0, 50);
+}
+function _getStreamingVizId(lang, content) {
+  var key = _streamingFingerprint(lang, content);
+  var id = _streamingVizIds.get(key);
+  if (!id) {
+    /* Lazily mint an id. We don't call ++_vizId here because viz.js
+       owns the counter — instead we use a stable, prefix-tagged id
+       that viz.js can recognize and reuse via opts.stableId. */
+    id = 'viz-card-stream-' + key.replace(/[^\w]/g, '_');
+    _streamingVizIds.set(key, id);
+  }
+  return id;
+}
+
 export function formatMsgProgressive(t){
   if(!t)return"";
   var s=preprocessMarkdownForStreaming(String(t));
@@ -320,20 +351,22 @@ export function formatMsgProgressive(t){
      sees the diagram live instead of a code block. */
   s=s.replace(/```mermaid\s*\n?([\s\S]*?)```/g,function(_,code){
     var trimmed=code.trim();
-    return trimmed?saveViz(renderMermaid(trimmed)):'';
+    return trimmed?saveViz(renderMermaid(trimmed, { stableId: _getStreamingVizId('mermaid', trimmed) })):'';
   });
   s=s.replace(/```mermaid\s*\n?([\s\S]*?)$/g,function(_,body){
-    return saveViz(renderVizLoading({streaming:true}));
+    var trimmed=body.trim();
+    return saveViz(renderVizLoading({streaming:true, stableId: _getStreamingVizId('mermaid', trimmed)}));
   });
 
   /* 3. ```plot``` fence — JS-only math plot. Routed before generic
      code fences so plot isn't mistaken for a code-block language. */
   s=s.replace(/```plot\s*\n?([\s\S]*?)```/g,function(_,spec){
     var trimmed=spec.trim();
-    return trimmed?saveViz(renderPlot(trimmed)):'';
+    return trimmed?saveViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) })):'';
   });
-  s=s.replace(/```plot\s*\n?([\s\S]*?)$/g,function(){
-    return saveViz(renderVizLoading({streaming:true}));
+  s=s.replace(/```plot\s*\n?([\s\S]*?)$/g,function(_,body){
+    var trimmed=body.trim();
+    return saveViz(renderVizLoading({streaming:true, stableId: _getStreamingVizId('plot', trimmed)}));
   });
 
   /* 4. Closed code fences — detect HTML/SVG/viz content and render as
@@ -358,7 +391,7 @@ export function formatMsgProgressive(t){
        SVG tags are exempt from the length requirement since even
        a single <svg><circle r="10"/></svg> is valid rendered content. */
     if(isHtmlLang || looksLikeHtml && (trimmed.length>20 || hasSvgTag)){
-      return saveViz(renderViz(trimmed));
+      return saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang || 'html', trimmed) }));
     }
     var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
     return save('<pre><code'+langAttr+'>'+escHTML(trimmed)+'</code></pre>');
@@ -371,7 +404,7 @@ export function formatMsgProgressive(t){
     if(trimmed){
       var isHtmlLang=lang==="html"||lang==="viz"||lang==="svg";
       if(isHtmlLang){
-        return saveViz(renderVizLoading({streaming:true}));
+        return saveViz(renderVizLoading({streaming:true, stableId: _getStreamingVizId(lang || 'html', trimmed)}));
       }
       var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
       return save('<pre><code'+langAttr+'>'+escHTML(trimmed)+'</code></pre>');

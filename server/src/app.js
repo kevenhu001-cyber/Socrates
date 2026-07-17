@@ -40,7 +40,7 @@ import { webSearch, imageSearch } from './services/webSearch.js';
 import { fetchBatch } from './services/fetchBatch.js';
 import { getActiveApiKey } from './services/apiKey.js';
 import { getDb } from './db/index.js';
-import { apiKeys } from './db/schema.js';
+import { apiKeys, files as filesTable } from './db/schema.js';
 import { sql, and, eq, isNotNull } from 'drizzle-orm';
 import { getStatus as getPubsubStatus } from './lib/pubsub.js';
 
@@ -406,13 +406,31 @@ app.post('/api/image-search', requireAuth, searchLimiter, async (req, res, next)
 // Projects (Phase 4)
 app.use('/api/projects', projectRouter);
 
-// Tags (Phase 4)
-app.use('/api', tagRouter);
-
 // Files (Phase 4) — PDF text extraction is mounted FIRST so its
 // `/extract` path doesn't get swallowed by fileRouter's `/:id` lookup.
+// The /raw endpoint is mounted BEFORE the tagRouter (which mounts at
+// /api with requireAuth) so unauthenticated share viewers can load
+// artifact images without hitting the requireAuth middleware. File
+// IDs are UUIDs, unguessable — same security model as share tokens.
+app.get('/api/files/:id/raw', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const [file] = await db.select().from(filesTable).where(eq(filesTable.id, req.params.id)).limit(1);
+    if (!file) return next();
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    if (!file.mimeType.startsWith('image/') && file.mimeType !== 'application/pdf') {
+      res.set('Content-Disposition', 'attachment');
+    }
+    return res.sendFile(file.storagePath);
+  } catch (err) { next(err); }
+});
 app.use('/api/files', fileExtractRouter);
 app.use('/api/files', fileRouter);
+
+// Tags (Phase 4) — mounted at /api so it matches /api/sessions/:id/tags
+// All routes in this router require auth.
+app.use('/api', tagRouter);
 
 // Migrate (Phase 4)
 app.use('/api/migrate', migrateRouter);

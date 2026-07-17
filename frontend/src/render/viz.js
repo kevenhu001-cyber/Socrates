@@ -126,14 +126,20 @@ function validMermaid(code) {
   catch (_) { return false; }
 }
 
-export function renderMermaid(code) {
+export function renderMermaid(code, opts) {
+  opts = opts || {};
   if (typeof mermaid === "undefined") {
     return '<pre><code class="language-mermaid">' + esc(code) + '</code></pre>';
   }
   if (!validMermaid(code)) {
     return '<div class="viz" data-viz-state="error"><div class="viz-body">' + vizErrorHtml('Diagram syntax error', code) + '</div></div>';
   }
-  var id = "mermaid-card-" + (++_vizId);
+  /* P_viz-stable-id — accept opts.stableId so a streaming fence
+     keeps the same card id across rAF ticks. Without this the
+     streaming renderer (formatMsgProgressive) allocates a new
+     viz-card-N every tick, blowing away the previous iframe and
+     orphaning the postMessage handshake. */
+  var id = opts.stableId || "mermaid-card-" + (++_vizId);
   _pendingMermaid.push({ id: id, code: code });
   queueVizActions(id);
   return '<div class="viz" id="' + id + '" data-viz-state="loading">' +
@@ -205,6 +211,7 @@ function encodeSrcdoc(doc) {
 }
 
 export function renderVizLoading(opts) {
+  opts = opts || {};
   /* P_viz-no-streaming-spinner — when called during streaming
      (markdown.js passes opts.streaming=true), the spinner overlay
      is suppressed. The parent message's own thinking indicator
@@ -213,9 +220,13 @@ export function renderVizLoading(opts) {
      skeleton-fadeout animation each tick. The actual spinner
      still appears in the FINAL renderViz path (post-stream) so
      the user gets feedback when the iframe is mounting for
-     real. */
-  var streaming = opts && opts.streaming;
-  var id = (opts && opts.stableId) || ("viz-card-" + (++_vizId));
+     real.
+     P_viz-stable-id — when called during streaming with a stableId,
+     reuse that id so the same <div class="viz"> is replaced
+     in-place across rAF ticks instead of being torn down and
+     re-created. */
+  var streaming = opts.streaming;
+  var id = opts.stableId || ("viz-card-" + (++_vizId));
   var body = streaming ? '' : vizLoadingHtml();
   return '<div class="viz" id="' + id + '" data-viz-state="loading"' +
     (streaming ? ' data-streaming="1"' : '') + '>' +
@@ -243,8 +254,15 @@ function guardUserScripts(html, vizId) {
   });
 }
 
-export function renderViz(htmlStr) {
-  var id = "viz-card-" + (++_vizId);
+export function renderViz(htmlStr, opts) {
+  opts = opts || {};
+  /* P_viz-stable-id — when formatMsgProgressive closes a fence
+     and we transition from a loading placeholder to the real
+     iframe, the loading placeholder was already mounted under
+     a stable id. Reuse that id so the same <div class="viz"> is
+     updated in-place (innerHTML swap), which keeps the layout
+     stable and avoids the iframe tearing down + re-mounting. */
+  var id = opts.stableId || "viz-card-" + (++_vizId);
   var title = (window.state && window.state.topic || "Canvas").toString().slice(0, 40);
   // P_svg-no-xml-pi — strip the `<?xml version="1.0"?>` processing
   // instruction if the user pasted a standalone SVG document. Inside
@@ -317,8 +335,10 @@ function parsePlotRangeNumber(tok) {
   return isFinite(n) ? n : 0;
 }
 
-export function renderPlot(spec) {
-  var id = "viz-card-" + (++_vizId);
+export function renderPlot(spec, opts) {
+  opts = opts || {};
+  /* P_viz-stable-id — see renderViz for rationale. */
+  var id = opts.stableId || "viz-card-" + (++_vizId);
   var title = "Plot";
   var parsed = parsePlotSpec(spec);
   // Serialize the plot spec. We do NOT inject this into the iframe
@@ -658,6 +678,57 @@ export function openVizModal(srcdoc, title) {
   iframe.style.display = "block";
   iframe.srcdoc = decoded;
   modalBody.appendChild(iframe);
+
+  dialog.appendChild(head);
+  dialog.appendChild(modalBody);
+  modal.appendChild(dialog);
+  document.body.appendChild(modal);
+  closeButton.focus();
+}
+
+/* P_modal-raw — like openVizModal but the body is raw HTML, not a
+   sandboxed iframe. Used by the image lightbox (matplotlib output)
+   and the code-block fullscreen view where we don't need sandboxing
+   — the content is our own, not user-input. Shares the same shell,
+   close button, Esc handler, and click-outside-to-close behaviour
+   as the sandboxed version so the two modals feel identical. */
+export function openVizModalRaw(html, title) {
+  if (!html) return;
+  var opener = document.activeElement;
+  var modal = document.createElement("div");
+  modal.className = "viz-modal-backdrop";
+  modal.onclick = function (e) { if (e.target === modal) close(); };
+  function close() {
+    modal.remove();
+    document.removeEventListener("keydown", onKey);
+    if (opener && typeof opener.focus === "function") opener.focus();
+  }
+  function onKey(e) { if (e.key === "Escape") close(); }
+  document.addEventListener("keydown", onKey);
+  var dialog = document.createElement("div");
+  dialog.className = "viz-modal";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-label", title || "Fullscreen");
+  dialog.setAttribute("aria-modal", "true");
+
+  var head = document.createElement("div");
+  head.className = "viz-modal-head";
+  var titleEl = document.createElement("span");
+  titleEl.className = "viz-modal-title";
+  titleEl.textContent = title || "Fullscreen";
+  head.appendChild(titleEl);
+
+  var closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "viz-modal-close";
+  closeButton.setAttribute("aria-label", "Close");
+  closeButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  closeButton.addEventListener("click", close);
+  head.appendChild(closeButton);
+
+  var modalBody = document.createElement("div");
+  modalBody.className = "viz-modal-body viz-modal-body-raw";
+  modalBody.innerHTML = html;
 
   dialog.appendChild(head);
   dialog.appendChild(modalBody);

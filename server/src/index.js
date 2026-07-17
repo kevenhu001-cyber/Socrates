@@ -66,6 +66,24 @@ async function main() {
     }
   })();
 
+  // ── TTL sweep for stale session scratch dirs ──
+  // P_session-scoped-scratch — every code execution in a
+  // conversation reuses the same on-disk scratch dir so files
+  // (matplotlib PNGs, CSVs) persist between turns. When a session
+  // is deleted, the DELETE handler reaps the dir; this sweep
+  // catches the orphaned sessions whose tabs were closed or whose
+  // server crashed before the delete. TTL defaults to 7 days.
+  (async () => {
+    try {
+      const ttlDays = parseInt(process.env.EXEC_SCRATCH_TTL_DAYS || '7', 10);
+      const { codeInterpreter } = await import('./services/codeInterpreter.js');
+      const r = await codeInterpreter._reapStaleSessionScratches(ttlDays);
+      if (r && r.removed > 0) console.log(`[code-interpreter] startup TTL sweep removed ${r.removed} stale session scratch dir(s)`);
+    } catch (err) {
+      console.warn('[code-interpreter] TTL sweep skipped:', err.message);
+    }
+  })();
+
   // ── Warm up LLM provider connection (MiniMax) ──
   // Send a minimal chat completion request to the upstream provider
   // so the model is loaded into memory and the HTTP/2 connection pool

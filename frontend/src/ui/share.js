@@ -162,7 +162,8 @@ async function revokeShareLink() {
 
 /* Read-only message list used by loadSharedSession. Renders the
    server-projected messages without an input area, share button, or
-   any editing affordances. */
+   any editing affordances. Also restores tool-call cards (including
+   artifact images) when the persisted message has toolCalls data. */
 function _renderSharedMessageList(messages) {
   var msgList = document.getElementById("msgList");
   if (!msgList) return;
@@ -187,6 +188,36 @@ function _renderSharedMessageList(messages) {
     }
     body.innerHTML = renderHtml;
     div.appendChild(body);
+    /* P_tool-history-share — restore tool-call cards (including
+       artifact images) when viewing a shared session that has
+       saved tool entries. Reuses appendToolModule and
+       appendInlineArtifact from the live chat path. */
+    if (m.role === "assistant" && Array.isArray(m.toolCalls) && m.toolCalls.length > 0) {
+      for (var tci = 0; tci < m.toolCalls.length; tci++) {
+        var tc = m.toolCalls[tci];
+        if (!tc || !tc.name) continue;
+        var cardOut = null;
+        if (typeof window.appendToolModule === "function") {
+          cardOut = window.appendToolModule(tc.name, tc.input || {}, body, {
+            restored: true,
+            isError: !!tc.isError,
+          });
+        }
+        if (cardOut && Array.isArray(tc.artifacts) && tc.artifacts.length > 0 && typeof window.appendInlineArtifact === "function") {
+          for (var ai = 0; ai < tc.artifacts.length; ai++) {
+            var art = tc.artifacts[ai];
+            if (art && art.id) {
+              window.appendInlineArtifact(art.id, art.mimeType || "image/png", cardOut, art.name);
+              /* P_inline-artifact — render image artifacts inline in
+                 the message body so they are visible at a glance. */
+              if (art.mimeType && art.mimeType.indexOf("image/") === 0) {
+                window.appendInlineArtifact(art.id, art.mimeType, body, art.name);
+              }
+            }
+          }
+        }
+      }
+    }
     msgList.appendChild(div);
   });
 }
