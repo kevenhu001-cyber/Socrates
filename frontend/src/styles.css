@@ -1089,7 +1089,7 @@ a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.
    user drags files over the input. */
 .chat-input-wrap.drag-over{border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.2)}
 .chat-input-bar.drag-over-doc{position:relative}.chat-input-bar.drag-over-doc::after{content:'';position:absolute;inset:4px;border:2px dashed hsl(var(--accent-000)/0.4);border-radius:18px;pointer-events:none;z-index:20}
-.send-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .08s,color .08s;flex-shrink:0}
+.send-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .08s,color .08s;flex-shrink:0}
 .send-btn:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
 .send-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}.send-btn.active:hover{background:hsl(var(--accent-100))}
 .send-btn svg{width:16px;height:16px}
@@ -3377,7 +3377,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .chat-input-wrap:focus-within{box-shadow:0 0 0 3px hsl(var(--accent-000)/.10),0 8px 24px hsl(var(--always-black)/.07)}
 .attach-btn:focus-visible,.send-btn:focus-visible{outline:2px solid hsl(var(--accent-000)/.65);outline-offset:2px}
 @media(max-width:768px){
-  .attach-btn,.send-btn{width:44px;height:44px}
+  .attach-btn,.send-btn{width:36px;height:36px}
   .chat-input-footer{min-height:44px;padding:0 8px 6px}
   .chat-input-hint{display:none}
   .tool-run-summary{min-height:44px}

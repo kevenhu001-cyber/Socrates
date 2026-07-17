@@ -4252,6 +4252,37 @@ function scrollMainToBottom(){
 
 
 
+/* Morph the send button into a red Stop button during streaming,
+   or restore it to the normal send arrow when idle. */
+var _stopIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+var _sendIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+function setChatStopState(active){
+  var btn=document.getElementById("sendBtn");
+  if(!btn)return;
+  if(active){
+    btn.classList.add("chat-stop");
+    btn.innerHTML=_stopIcon;
+    btn.dataset.stop="1";
+  }else{
+    btn.classList.remove("chat-stop");
+    btn.innerHTML=_sendIcon;
+    btn.dataset.stop="0";
+  }
+}
+window.setChatStopState=setChatStopState;
+/* Wrapper for the send/stop button click. When a stream is active,
+   clicking stops it; otherwise it sends the message. */
+window.handleSendClick=function(){
+  var btn=document.getElementById("sendBtn");
+  if(btn&&btn.dataset.stop==="1"){
+    if(window._activeChatCtl){
+      window._activeChatCtl.abort();
+    }
+  }else{
+    submitChatMessage();
+  }
+};
+
 /* Add a streaming assistant message. Returns a controller object:
    { append(delta), finish(), abort() }.
    - append(delta): renders content on the next microtask with try/catch
@@ -5385,8 +5416,15 @@ function teardownThinkStructure(){
           try{_twCardsAb[_twAb]._cancelTypewriter()}catch(_){}
         }
       }
-      /* Delay remove so a pending rAF render doesn't throw on detached DOM */
-      requestAnimationFrame(function(){div.remove()});
+      /* Keep partial content if the stream produced any text —
+         otherwise remove the placeholder bubble entirely. */
+      if(state.messages[msgIdx]&&state.messages[msgIdx].type==="streaming"&&state.messages[msgIdx].rawText){
+        state.messages[msgIdx].type="text";
+        state.messages[msgIdx].state="done";
+        try{formatChatMsg(msgIdx,div,!0)}catch(_){}
+      }else{
+        requestAnimationFrame(function(){div.remove()});
+      }
     },
     /* Show an inline error state with a retry button so the user can
        recover from a transient failure (network, 429, 5xx) without
