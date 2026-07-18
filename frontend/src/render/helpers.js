@@ -16,6 +16,28 @@ export function decodeEntities(s){
 }
 export function stripTags(s){return s.replace(/<[^>]+>/g,"")}
 
+/* P_hljs-unknown-lang — validate a code-fence language tag against
+   the highlight.js instance on the page. Returns the lowercase tag
+   when hljs.getLanguage(name) recognises it; returns '' otherwise
+   so the caller emits `<pre><code>` without a `language-*` class and
+   hljs falls back to no-highlight silently. Used by:
+     • render/markdown.js — when parsing ``` fences in the markdown
+       renderer, drops unknown tags before they reach the DOM.
+     • main.js — a monkey-patch around hljs.highlightElement that
+       strips `language-*` classes from already-rendered DOM, so the
+       same safety net covers raw HTML the model emits without going
+       through the markdown renderer. */
+export function safeHljsLang(lang) {
+  var l = (lang || '').toLowerCase().trim();
+  if (!l) return '';
+  try {
+    if (typeof hljs !== 'undefined' && typeof hljs.getLanguage === 'function') {
+      if (!hljs.getLanguage(l)) return '';
+    }
+  } catch (_) { /* hljs missing or threw — fall through and keep the lang */ }
+  return l;
+}
+
 /* ── KaTeX macros and config ──
    \div → \operatorname{div}   (divergence, not ÷)
    \curl → \operatorname{curl} (curl)

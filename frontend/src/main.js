@@ -36,7 +36,7 @@ import {
   createProjectRecord, updateProjectRecord, deleteProjectFromList,
   randomProjectColor,
 } from './projects/store.js';
-import { esc, escAttr, escHTML, decodeEntities, stripTags } from './render/helpers.js';
+import { esc, escAttr, escHTML, decodeEntities, stripTags, safeHljsLang } from './render/helpers.js';
 import { parseQuizInner, parseExampleInner, parsePracticeInner, parseDefinitionInner, parseFlashcardInner, parseTheoremInner, parseProofInner, parseDerivationInner, parseKeyPointInner } from './render/widgetParsers.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions, renderViz, renderVizLoading, renderMermaid, openVizModal } from './render/viz.js';
 import { callAPI, callAPIChat } from './chat/api.js';
@@ -97,9 +97,11 @@ import {
    by emitting a raw `<code class="language-code_interpreter">`
    block (which the markdown renderer's safeHljsLang helper doesn't
    see, since that path only parses ``` fenced blocks). Before
-   handing the element to hljs, we check the language class against
-   hljs's registered list and drop it if unknown — hljs then falls
-   back to no-highlight silently instead of warning. */
+   handing the element to hljs, we walk the element's `language-*`
+   classes through the shared safeHljsLang helper and drop any that
+   hljs does not recognise — hljs then falls back to no-highlight
+   silently instead of warning. The helper itself lives in
+   render/helpers.js and is also used by the markdown renderer. */
 (function patchHljsHighlightElement(){
   if (typeof window === 'undefined') return;
   var hl = window.hljs;
@@ -112,9 +114,7 @@ import {
         for (var i = 0; i < classes.length; i++) {
           var c = classes[i];
           if (c.indexOf('language-') !== 0) continue;
-          var name = c.slice('language-'.length).toLowerCase();
-          if (!name) { el.classList.remove(c); continue; }
-          if (!hl.getLanguage(name)) el.classList.remove(c);
+          if (!safeHljsLang(c.slice('language-'.length))) el.classList.remove(c);
         }
       }
     } catch (_) { /* swallow — fall through to the original call */ }
