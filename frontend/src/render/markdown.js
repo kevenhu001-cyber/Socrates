@@ -12,6 +12,25 @@ import { preprocessMarkdown, preprocessMarkdownForStreaming } from './preprocess
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
 import { sanitizeUrls } from '../util/safe.js';
 
+/* P_hljs-unknown-lang — model sometimes fences code with the tool
+   name as the language tag ("```code_interpreter", "```web_search",
+   "```tool_result"). highlight.js logs a console WARN and falls back
+   to no-highlight for every unknown tag, which clutters devtools and
+   obscures real warnings. Validate the language against hljs's
+   registered list (when hljs is on the page) and drop the tag if it
+   isn't recognised. Keeps everything else — `python`, `js`, `json`,
+   `sql`, `bash`, etc. — working unchanged. */
+function safeHljsLang(lang) {
+  var l = (lang || '').toLowerCase().trim();
+  if (!l) return '';
+  try {
+    if (typeof hljs !== 'undefined' && typeof hljs.getLanguage === 'function') {
+      if (!hljs.getLanguage(l)) return '';
+    }
+  } catch (_) { /* hljs missing or threw — fall through and keep the lang */ }
+  return l;
+}
+
 /* ── DOMPurify configuration ──────────────────────────────────────
    Used by both formatMsg and formatMsgProgressive to sanitise the
    rendered HTML before it reaches the DOM.
@@ -393,7 +412,8 @@ export function formatMsgProgressive(t){
     if(isHtmlLang || looksLikeHtml && (trimmed.length>20 || hasSvgTag)){
       return saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang || 'html', trimmed) }));
     }
-    var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
+    var hljsLang=safeHljsLang(lang);
+    var langAttr=hljsLang?' class="language-'+escAttr(hljsLang)+'"':'';
     return save('<pre><code'+langAttr+'>'+escHTML(trimmed)+'</code></pre>');
   });
 
@@ -406,7 +426,8 @@ export function formatMsgProgressive(t){
       if(isHtmlLang){
         return saveViz(renderVizLoading({streaming:true, stableId: _getStreamingVizId(lang || 'html', trimmed)}));
       }
-      var langAttr=lang?' class="language-'+escAttr(lang)+'"':'';
+      var hljsLang=safeHljsLang(lang);
+      var langAttr=hljsLang?' class="language-'+escAttr(hljsLang)+'"':'';
       return save('<pre><code'+langAttr+'>'+escHTML(trimmed)+'</code></pre>');
     }
     return save('<span style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">\u2026</span>');
@@ -631,7 +652,8 @@ export function formatMsg(t){
     if(isHtmlLang || looksLikeHtml && (trimmed.length>20 || hasSvgTag)){
       return saveViz(renderViz(trimmed));
     }
-    var langAttr=lang?' class="language-'+esc(lang)+'"':'';
+    var hljsLang=safeHljsLang(lang);
+    var langAttr=hljsLang?' class="language-'+esc(hljsLang)+'"':'';
     return save('<pre><code'+langAttr+'>'+esc(trimmed)+'</code></pre>');
   });
 
