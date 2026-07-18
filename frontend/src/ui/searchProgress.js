@@ -71,7 +71,7 @@ export function _formatEngineBreakdown(engines) {
   return keys.map(function (k) {
     var labelMap = { bing: 'Bing', google: 'Google', baidu: 'Baidu',
                      wikipedia: 'Wikipedia', arxiv: 'arXiv', ddg: 'DDG',
-                     web: 'Web' };
+                     'minimax-cli': 'Search', web: 'Web' };
     var label = labelMap[k] || k;
     return label + ' \u00D7' + engines[k];
   }).join(', ');

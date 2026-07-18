@@ -2644,9 +2644,17 @@ async function startSession(){
      chat's turns. extractHistory() in askChatTurn() would then feed
      the LLM the old conversation + the new topic, producing the
      "AI kept answering along the old session's context" cross-talk.
-     Clear messages (and the diagnostic/teaching accumulators) here
-     so every startSession() begins from a clean slate regardless of
-     how we got here. The DOM msgList is cleared per-branch below. */
+
+     P_recents-pollution — clearing messages here is also what makes
+     the P_recents-auto save below safe to run BEFORE the chat starts.
+     Without this ordering, saveCurrentSession() would POST the prior
+     session's turns under the NEW session id; the server would UPSERT
+     them onto the new row, and every other device that syncs
+     /api/sessions would see a polluted session whose title is "new
+     topic" but whose messages are "old conversation". Clearing state
+     first guarantees the Begin-time POST carries an empty message
+     array regardless of which path called us. The DOM msgList is
+     cleared per-branch below (chat / tutor). */
   state.session.messages=[];
   state.diagQuestions=[];
   state.diagAnswers=[];
@@ -2656,6 +2664,14 @@ async function startSession(){
   state.session.stuckCheckOffered=false;
   state.session.stuckCheckRejected=0;
   state.session.fourOptionDialog=null;
+  /* P_recents-auto — save the session to the server immediately so it
+     appears in the Recent sessions list as soon as the user clicks
+     Begin, without waiting for the first AI response to finish. The
+     initial save carries the topic but no messages; subsequent saves
+     (from finishAfterRender / proceedToTeaching) fill in the content.
+     MUST run AFTER the message-clearing block above so the empty
+     state is what gets persisted. */
+  saveCurrentSession();
   /* F2b — flush cross-round transients (search cache, call metadata,
      composer draft, plan fields, _pendingChat*). Placed BEFORE the
      new-session abort so even if the abort fires during the helper,

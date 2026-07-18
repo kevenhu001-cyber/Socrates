@@ -11,7 +11,7 @@ export function renderSourcesCard(results) {
   var rest = results.slice(1);
   var html = "";
   html += '<div class="sources-head" onclick="this.parentElement.classList.toggle(\'open\')">';
-  html += '<span class="sources-icon">↗</span>';
+  html += '<span class="sources-icon"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M2 2.5A1.5 1.5 0 0 1 3.5 1h9A1.5 1.5 0 0 1 14 2.5v11a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V2.5Zm1.5-.5a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-11a.5.5 0 0 0-.5-.5H3.5Z"/><path d="M5 4.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5Zm0 3a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5Zm0 3a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5Z"/></svg></span>';
   html += '<span class="sources-label">Sources</span>';
   html += '<span class="sources-count">' + results.length + '</span>';
   if (rest.length) html += '<span class="sources-chev">▾</span>';
@@ -115,7 +115,7 @@ function renderSourceDetail(s, idx) {
   var url = String(s.url);
   var html = '<div class="sources-detail" role="region" aria-label="Source ' + idx + ' details">';
   var engine = s.source || 'web';
-  var engineLabel = ({ 'minimax-cli': 'MiniMax CLI', 'minimax': 'MiniMax', 'bing': 'Bing', 'searxng': 'SearXNG' })[engine] || engine;
+  var engineLabel = ({ 'minimax-cli': 'Search', 'minimax': 'MiniMax', 'bing': 'Bing', 'searxng': 'SearXNG' })[engine] || engine;
 
   html += '<div class="sources-meta-row">';
   html += '<span class="sources-engine-pill" data-engine="' + esc(engine) + '"><span class="sources-engine-dot"></span>' + esc(engineLabel) + '</span>';
