@@ -1005,6 +1005,7 @@ true) but the dropdown never shows — see commit history. */
 .sources-label{font-weight:500}
 .sources-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .26s cubic-bezier(.4,0,.2,1),color .2s ease}
 .sources-card.open .sources-chev{transform:rotate(180deg);color:hsl(var(--accent-000))}
+.sources-card:not(.open) .sources-row-wrap{display:none}
 .sources-rest{display:none}
 .sources-card.open .sources-rest{display:block}
 .sources-row-wrap{border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.3))}
