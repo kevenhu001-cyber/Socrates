@@ -1072,6 +1072,78 @@ function doSave(){
     }
   });
 }
+
+/* P_save-on-unload — page lifecycle handlers that prevent loss of
+ * the latest AI response when the user refreshes or closes the tab
+ * before the async saveCurrentSession() POST completes.
+ *
+ * beforeunload: Shows a "Leave site?" confirmation dialog if a save
+ *   is still in-flight, giving it time to complete. The user can
+ *   choose to stay (letting the save finish) or leave anyway.
+ *
+ * pagehide: Fires after beforeunload, right before the page is torn
+ *   down. Uses fetch(keepalive:true) as a last-chance save attempt
+ *   so the server receives the session data even if the page unloads. */
+(function(){
+  /* P_save-unload-ref — read CSRF token synchronously from the cookie
+     (available during page teardown). Same pattern as getCsrfToken in
+     util/api.js but inlined to avoid an import dependency. */
+  function _beaconCsrf(){
+    var m=document.cookie.match(/\bcsrf=([^;]+)/);
+    return m?m[1]:null;
+  }
+  function _beaconSave(){
+    /* Only fire if we have data worth saving and a save is pending. */
+    if(!_saveInFlight||!state.session.currentSessionId||!CURRENT_USER)return;
+    /* Snapshot only the data we need — rawText and role are enough
+       for recovery; html is regenerated client-side on load. */
+    var snapshot=state.messages
+      .filter(function(m){return m.type!=="streaming"})
+      .map(function(m){return{
+        clientId:m.clientId||null,
+        role:m.role,
+        rawText:m.rawText||null,
+        reasoningContent:m.reasoningContent||null,
+        attachments:Array.isArray(m.attachments)?m.attachments.slice(0,20):[],
+        toolCalls:Array.isArray(m.toolCalls)?m.toolCalls.slice(0,20):[],
+      }});
+    if(!snapshot.length)return;
+    var payload={
+      id:state.session.currentSessionId,
+      topic:state.session.topic||state.topic||"",
+      title:state.session.sessionTitle||state.session.topic||"",
+      mode:appMode,
+      messages:snapshot,
+    };
+    var csrf=_beaconCsrf();
+    try{
+      fetch("/api/sessions",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          ...(csrf?{"X-CSRF-Token":csrf}:{}),
+        },
+        body:JSON.stringify(payload),
+        credentials:"include",
+        keepalive:true,
+      }).catch(function(){});
+    }catch(_){}
+  }
+  /* beforeunload — show confirmation if a save is in-flight. */
+  window.addEventListener("beforeunload",function(e){
+    if(_saveInFlight){
+      e.preventDefault();
+      e.returnValue="";
+    }
+  });
+  /* pagehide — last-chance keepalive fetch (fires before the page is
+     torn down). Also fire on visibilitychange as a secondary guard. */
+  window.addEventListener("pagehide",_beaconSave);
+  window.addEventListener("visibilitychange",function(){
+    if(document.visibilityState==="hidden")_beaconSave();
+  });
+})();
+
 /* P_exam-history — open a previously-saved exam session. Re-uses
  * openExamModal() to flip the visible view, then rehydrates the
  * in-memory state (questions, answers, lang, etc.) and re-renders
@@ -1511,10 +1583,52 @@ async function loadSession(id){
         wireMsgBodyImages(_bodies[_bi]);
       }
     }catch(_){}
+    /* P_recover-local-fallback — if the server response is missing
+       the last assistant message (because the user refreshed before
+       saveCurrentSession()'s async POST completed), try to recover it
+       from the localStorage mirror that appendLocalMemory writes
+       synchronously in finishAfterRender().
+
+       Count server messages vs localStorage messages; if localStorage
+       has more, the extras are unpersisted and we add them. */
+    try{
+      var localRec=loadLocalMemory(s.id);
+      if(localRec&&Array.isArray(localRec.messages)&&localRec.messages.length>(s.messages||[]).length){
+        var serverCount=(s.messages||[]).length;
+        var extras=localRec.messages.slice(serverCount);
+        for(var ei=0;ei<extras.length;ei++){
+          var em=extras[ei];
+          if(!em||!em.content)continue;
+          /* Only recover assistant messages (user messages are always
+             persisted immediately via addMessage → saveCurrentSession). */
+          if(em.role!=="assistant")continue;
+          var extraDiv=document.createElement("div");
+          extraDiv.className="msg assistant";
+          var extraBody=document.createElement("div");
+          extraBody.className="msg-body";
+          var extraHtml;
+          try{extraHtml=renderAssistantHTML(em.content)}catch(_){extraHtml=formatMsg(em.content)}
+          extraBody.innerHTML=extraHtml;
+          extraDiv.appendChild(extraBody);
+          msgList.appendChild(extraDiv);
+          state.messages.push({
+            clientId:"local-recovered-"+generateId(),
+            role:"assistant",
+            rawText:em.content,
+            html:extraHtml,
+            type:"assistant",
+            reasoningContent:null,
+            attachments:[],
+            toolCalls:[],
+            actions:null,
+          });
+        }
+      }
+    }catch(_){}
     /* P_streaming-survival — if the server has saved streaming_text
-       (the previous stream was interrupted before completion), render
-       it as a partial assistant message with a Retry button so the
-       user can resume the interrupted response. */
+        (the previous stream was interrupted before completion), render
+        it as a partial assistant message with a Retry button so the
+        user can resume the interrupted response. */
     if(s.streamingText){
       var partialMsg=document.createElement("div");
       partialMsg.className="msg assistant";
