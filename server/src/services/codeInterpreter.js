@@ -111,21 +111,38 @@ export const CODE_INTERPRETER_TOOL = {
   function: {
     name: 'code_interpreter',
     description:
-      'Data analysis tool — executes Python in a sandboxed Pyodide WASM runtime and returns stdout plus any matplotlib PNGs / CSV exports the code wrote. ' +
-      /* P_tool-scope — lead with the "what for" framing so the model
-         doesn't reach for this tool when the user asked for an
-         illustration or a sketch (those belong in ```viz blocks). */
-      'Use ONLY for: arithmetic, numeric checks, unit conversions, quick computation, and DATA-VISUALIZATION PLOTS (line / scatter / bar / heatmap generated from numeric arrays via matplotlib). ' +
-      'Do NOT use for: illustrations, sketches, drawings, logos, icons, or pictures of concrete subjects (animals, people, scenes, logos). Those MUST go in a ```viz block as inline SVG. ' +
-      'Do NOT use for: explanations, conceptual answers, code review, prose. Answer those directly in markdown. ' +
-      /* P_sandbox-filesystem — describe the new session-scoped
-         scratch so the model knows files from earlier turns are
-         still on disk. The previous wording ("no upload path, no
-         network") scared it into thinking nothing persisted. */
-      'Filesystem: the run starts in a session-scoped scratch dir that persists across every code call in this conversation. Files you write (matplotlib.savefig, open(..., "w"), pandas.to_csv) remain available to the next call in the same conversation. Each run also prints a "[scratch]" header listing current files — YOU MUST READ IT BEFORE GUESSING ANY FILE PATH. If the header shows no matching file, write the file yourself in the same run instead of assuming it exists. There is still no access to the user\'s local disk, no upload path, and no network fetch from Python. ' +
-      'Available libraries: Python 3.12 standard library (subset), NumPy, pandas, matplotlib. Other packages: install in-run with `import micropip; micropip.install("pkg")`. ' +
-      `Stdout/stderr are capped at ${MAX_OUTPUT_BYTES} bytes; runs that exceed it fail with output_limit_exceeded. ` +
-      'No subprocess, no network, no access outside the scratch dir.',
+      '## What this tool does\n' +
+      'Executes Python 3.12 in a sandboxed Pyodide WASM runtime and returns stdout plus any matplotlib PNGs / CSV exports written to the current working directory.\n\n' +
+      '## When to call\n' +
+      '- Arithmetic, unit conversion, numeric verification, solving an equation, "is X > Y".\n' +
+      '- Data-viz plots (line / scatter / bar / heatmap) generated from numeric arrays via matplotlib.\n' +
+      '- Small data-exploration snippets (load inline data, summarize, sample-check a derivation).\n\n' +
+      '## When NOT to call\n' +
+      '- Illustrations of concrete subjects (animals, people, scenes, logos, icons) — those MUST go in a ```viz block as inline SVG. SVG output here is rejected with `illustration_not_supported`.\n' +
+      '- Conceptual answers, code review, prose, explanations — answer those directly in markdown.\n' +
+      '- Trivial single-step arithmetic you can do in your head.\n\n' +
+      `## Limits\n` +
+      `- Timeout: ${DEFAULT_TIMEOUT_MS / 1000}s default. Worker is killed if exceeded → status returns \`timeout\`.\n` +
+      `- stdout / stderr capped at ${MAX_OUTPUT_BYTES / 1024} KB each per stream; exceeding it returns \`output_limit_exceeded\`.\n` +
+      `- Source capped at ${MAX_CODE_CHARS / 1024} KB; oversized source returns \`code_too_large\` before any execution.\n` +
+      '- No subprocess, no network fetch from Python, no host filesystem access.\n\n' +
+      '## Filesystem\n' +
+      '- cwd is `/artifacts`, mapped to a session-scoped scratch dir that persists across every code call in this conversation.\n' +
+      '- Each run prints a `[scratch] cwd=/artifacts, files (sorted by mtime desc):` header listing current files with size + age. READ THE HEADER before guessing any path. If the header shows no matching file, write the file yourself in the same run — do not assume it exists.\n' +
+      '- Files persist; the directory is only reaped on session delete or a 14-day TTL sweep.\n\n' +
+      '## State across calls\n' +
+      '**Files persist. EVERYTHING ELSE DOES NOT.** Imports, function definitions, variables, module-level state — all reset between calls. Re-import or recompute anything you need; do not rely on a variable from a previous run.\n\n' +
+      '## matplotlib guidance\n' +
+      '- Backend is pinned to `Agg` (no display). Figures render headless.\n' +
+      '- Save with `plt.savefig("name.png", dpi=120, bbox_inches="tight")` — dpi=120 keeps PNGs under ~500 KB at typical sizes; bbox_inches="tight" crops margins.\n' +
+      '- Always call `plt.tight_layout()` before savefig or labels get clipped.\n' +
+      '- Close figures (`plt.close("all")` or `plt.close(fig)`) after saving — otherwise memory grows across runs.\n\n' +
+      '## Common errors and how to recover\n' +
+      '- `NameError: name X is not defined` → X was a variable from a previous run. Recompute it in THIS run, do not just re-call.\n' +
+      '- `ModuleNotFoundError` → install with `import micropip; micropip.install("pkg")` at the top of the run.\n' +
+      '- `output_limit_exceeded` → stdout was too verbose. Save the data to a file, print a summary, describe the summary.\n' +
+      '- `timeout` (status field) → the work exceeded the time budget. Split into smaller runs or pre-compute what you can.\n' +
+      '- Empty PNG / "figure not found" → forgot `plt.close()` from the previous run; close all figures at the top of this run.',
     parameters: {
       type: 'object',
       properties: {

@@ -942,7 +942,25 @@ data: ${JSON.stringify({
                 retryable: result.retryable, userMessage: result.userMessage, detail,
               })}\n\n`);
             } else if (searchResults && searchResults.length > 0) {
-              const output = searchResults.map((r) => `${r.title}\n${r.url}\n${r.snippet}`).join('\n\n');
+              /* P_search-numbered — results are formatted as a numbered
+                 list with [1], [2], … markers that match the system
+                 prompt's citation convention. Each block carries the
+                 date and source engine when available, and a trailing
+                 "Sources:" hint tells the model exactly how to format
+                 the citation list in its reply. Titles / snippets are
+                 length-capped so a single oversized result can't blow
+                 the SSE frame. */
+              const blocks = searchResults.map((r, i) => {
+                const idx = i + 1;
+                const title = String(r.title || '').slice(0, 240);
+                const url = String(r.url || '');
+                const snippet = String(r.snippet || '').slice(0, 400);
+                const date = r.date ? `    Date: ${String(r.date).slice(0, 30)}\n` : '';
+                const source = r.source ? `    Source: ${r.source}\n` : '';
+                return `[${idx}] ${title}\n    URL: ${url}\n${date}${source}    Snippet: ${snippet}`;
+              });
+              const footer = '\n\nCite these as [1], [2] in your reply and end with:\n  Sources:\n  [1] Title (URL)\n  [2] Title (URL)';
+              const output = blocks.join('\n\n') + footer;
               result = { status: 'completed', output, results: searchResults, retryable: false };
               writeSse(`event: tool_result\ndata: ${JSON.stringify({
                 id: tc.id, ok: true, status: 'completed',
@@ -958,10 +976,14 @@ data: ${JSON.stringify({
                 })),
               })}\n\n`);
             } else {
-              result = { status: 'completed', output: 'No search results found.', results: [], retryable: false };
+              result = {
+                status: 'completed',
+                output: 'No search results found. Try a shorter, more specific query, or wait a few minutes if you just queried the same topic.',
+                results: [], retryable: false,
+              };
               writeSse(`event: tool_result\ndata: ${JSON.stringify({
                 id: tc.id, ok: true, status: 'completed',
-                output: 'No search results found.', results: [], retryable: false,
+                output: result.output, results: [], retryable: false,
               })}\n\n`);
             }
           } else {
@@ -991,9 +1013,44 @@ data: ${JSON.stringify({
 
         // Feed the tool result back as role:'tool' so the next chat
         // completion sees it and can wrap up in prose.
-        const toolContent = result.status === 'completed'
-          ? (result.output || result.stdout || '(no output)')
-          : `[error] ${result.error || result.status}`;
+        // P_tool-result-structured — for code_interpreter, the LLM gets
+        // a structured summary (status, exit_code, duration, artifact
+        // list) so it can summarize / retry / pivot without parsing raw
+        // stdout. For other tools, fall back to the simple output/error
+        // text. The 60 KB hard cap is applied AFTER the metadata block
+        // so the structured header always survives a truncation.
+        let toolContent;
+        if (toolName === 'code_interpreter') {
+          const lines = [];
+          lines.push(`[status: ${result.status || 'unknown'}]`);
+          lines.push(`[exit_code: ${result.exitCode ?? 'n/a'}]`);
+          lines.push(`[duration_ms: ${result.durationMs ?? 'n/a'}]`);
+          const artifactList = (result.artifactFileIds || [])
+            .map(a => `${a.name}${a.mimeType ? ` (${a.mimeType})` : ''}`)
+            .join(', ');
+          lines.push(`[artifacts: ${artifactList || 'none'}]`);
+          if (result.status !== 'completed') {
+            lines.push(`[error_code: ${result.errorCode || result.errorMessage || 'execution_failed'}]`);
+            lines.push(`[retryable: ${result.retryable === false ? 'no' : 'yes'}]`);
+            lines.push(`[error: ${result.errorMessage || result.error || result.status}]`);
+          }
+          lines.push('--- stdout ---');
+          lines.push(result.stdout || '(empty)');
+          if (result.stderr) {
+            const stderrLines = String(result.stderr).split(/\r?\n/);
+            const tail = stderrLines.slice(-20).join('\n');
+            const prefix = stderrLines.length > 20
+              ? `…(${stderrLines.length - 20} earlier stderr lines truncated)\n`
+              : '';
+            lines.push('--- stderr (tail, last 20 lines) ---');
+            lines.push(prefix + tail);
+          }
+          toolContent = lines.join('\n');
+        } else {
+          toolContent = result.status === 'completed'
+            ? (result.output || result.stdout || '(no output)')
+            : `[error] ${result.error || result.status}`;
+        }
         workingMessages = workingMessages.concat([{
           role: 'tool',
           tool_call_id: tc.id,

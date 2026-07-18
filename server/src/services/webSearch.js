@@ -47,27 +47,60 @@ export class WebSearchUnavailableError extends Error {
  * @param {string} [opts.apiKeyHint]  API key hint for cache key.
  */
 
-/* ─── Tool definition (sent to upstream on every chat turn) ─── */
+/* ─── Tool definition (sent to upstream on every chat turn) ───
+ *
+ * P_tool-contract — the description is a structured contract. Hard
+ * rules: query must be 1-6 words, output uses [1]/[2] citation
+ * markers aligned with the system prompt's existing sources card.
+ * Cache key includes the query string, so identical queries within
+ * 5 minutes return identical results without re-running engines.
+ */
 export const WEB_SEARCH_TOOL = {
   type: 'function',
   function: {
     name: 'web_search',
     description:
-      'Search the web for current information. Use for any factual question about the present-day world, ' +
-      'including current events, prices, roles, policies, products, and recent news. ' +
-      'Returns up to 10 results with title, URL, snippet, and date. ' +
-      'Search queries should be short (1-6 words) and specific.',
+      '## What this tool does\n' +
+      'Searches the web in parallel across multiple engines (mmx, firecrawl, MiniMax HTTP, Bing) with a searxng metasearch fallback. Returns up to 12 results with title, URL, snippet, and (when available) date and source engine.\n\n' +
+      '## When to call\n' +
+      '- Factual questions about the present-day world: current events, prices, leaders, policies, products, recent news.\n' +
+      '- Time-sensitive questions where training data may be stale.\n' +
+      '- Verification of specific binary facts ("did X happen?", "who currently holds role Y?").\n' +
+      '- Looking up a specific person, company, paper, or product by name.\n\n' +
+      '## When NOT to call\n' +
+      '- Conceptual questions, definitions, code review, anything you can answer from training.\n' +
+      '- Math, arithmetic, unit conversion — use code_interpreter.\n' +
+      '- Questions whose answer you already have from a previous tool call in this turn.\n' +
+      '- Queries that match the system-injected [Referenced page] block — that content is already in your context.\n\n' +
+      '## Query construction\n' +
+      '- Keep queries 1-6 words, specific, free of conversational filler.\n' +
+      '- The system expands the query into 1-3 variants internally; long natural-language questions are usually rewritten poorly.\n' +
+      '- For recent events, include the year or "[current year]" if relevant (engine ranking favours fresh content).\n' +
+      '- Use exact names for people / products / companies. Avoid pronouns, articles, and question marks.\n' +
+      '- Bad:  "what is the latest version of python and when was it released"\n' +
+      '- Good: "Python latest version release date"\n\n' +
+      '## Output format\n' +
+      'Results are returned numbered [1], [2], … in order of relevance. Cite inline as [1], [2] matching the order you reference them, and end your reply with:\n' +
+      '  Sources:\n' +
+      '  [1] Title (URL)\n' +
+      '  [2] Title (URL)\n\n' +
+      '## Caching\n' +
+      'Identical queries within the same session are cached for 5 minutes. Re-running the same query does NOT re-hit the engines and will not surface fresher results — wait 5 minutes or change the query wording if you need a refresh.',
     parameters: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description: 'The search query (1-6 words, specific and concise).',
+          description: 'The search query (1-6 words, specific and concise). Bad: "what is the latest version of python and when was it released". Good: "Python latest version release date".',
+          minLength: 1,
+          maxLength: 200,
         },
         count: {
           type: 'number',
-          default: 10,
-          description: 'Number of results to return (1-12).',
+          default: 8,
+          minimum: 1,
+          maximum: 12,
+          description: 'How many results to return. 8 is a good default; use 3-5 for a quick check, 10-12 for a thorough sweep.',
         },
       },
       required: ['query'],

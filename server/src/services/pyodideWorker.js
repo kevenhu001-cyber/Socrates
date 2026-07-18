@@ -245,17 +245,42 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
 
   /* P_session-scoped-scratch — print the current contents of the
      scratch dir on stdout so the model knows what files already
-     exist from earlier runs in this conversation. This makes
-     persistence explicit and avoids FileNotFoundError caused by
-     guessing paths the model never wrote. Cap at 20 entries so a
-     long list of CSVs doesn't crowd the real output. */
+     exist from earlier runs in this conversation. The new format
+     (P_scratch-enriched) sorts by mtime desc and shows size + age
+     so the model can pick "the latest plot" reliably instead of
+     guessing among same-named artifacts. Cap at 20 entries; if
+     more, report the count of remaining. */
   try {
     const existing = await fs.readdir(artifactsDir).catch(() => []);
     if (existing.length > 0) {
-      const shown = existing.slice(0, 20).map(n => '  ' + n).join('\\n');
-      const more = existing.length > 20 ? `\\n  …(+${existing.length - 20} more)` : '';
+      const stats = await Promise.all(existing.map(async (n) => {
+        try {
+          const s = await fs.stat(path.join(artifactsDir, n));
+          return { name: n, size: s.size, mtimeMs: s.mtimeMs, isFile: s.isFile() };
+        } catch (_) { return { name: n, size: 0, mtimeMs: 0, isFile: true }; }
+      }));
+      const files = stats
+        .filter(e => e.isFile)
+        .sort((a, b) => b.mtimeMs - a.mtimeMs);
+      const head = files.slice(0, 20);
+      const more = files.length > 20 ? `\\n  …(+${files.length - 20} more)` : '';
+      const totalBytes = files.reduce((s, f) => s + f.size, 0);
+      const nowMs = Date.now();
+      const lines = head.map(f => {
+        const ageS = Math.max(0, Math.round((nowMs - f.mtimeMs) / 1000));
+        const sizeKB = f.size < 1024 ? `${f.size}B` : f.size < 1024 * 1024
+          ? `${(f.size / 1024).toFixed(1)}KB`
+          : `${(f.size / 1024 / 1024).toFixed(2)}MB`;
+        const ageLabel = ageS < 60 ? `${ageS}s ago` : ageS < 3600
+          ? `${Math.round(ageS / 60)}m ago`
+          : `${Math.round(ageS / 3600)}h ago`;
+        return `  ${f.name}  (${sizeKB}, ${ageLabel})`;
+      }).join('\\n');
+      const totalKB = totalBytes < 1024 * 1024
+        ? `${(totalBytes / 1024).toFixed(1)}KB`
+        : `${(totalBytes / 1024 / 1024).toFixed(2)}MB`;
       pyodide.runPython(
-        `print("[scratch] files available in this session (cwd=/artifacts):\\n${shown}${more}", flush=True)`
+        `print("[scratch] cwd=/artifacts — ${files.length} file${files.length === 1 ? '' : 's'}, ${totalKB} total, newest first:\\n${lines}${more}", flush=True)`
       );
     } else {
       pyodide.runPython(
