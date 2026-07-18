@@ -32,7 +32,7 @@ var I18N={
        still managed by syncAppModeUI() in main.js — only the
        zh-side strings change. */
     "topic.title":"What would you like to explore?",
-    "topic.subtitle":"Describe what you want to learn. Socrates will ask you questions to help you think deeper about it.",
+    "topic.subtitle":"",
     "topic.inputPlaceholder":"e.g. I want to understand how machine learning works...",
     "topic.start":"Begin",
     "topic.hint":"Be specific for better results",
@@ -414,7 +414,7 @@ var I18N={
     "share.notFoundMsg":"The link may be expired or invalid.",
     "share.readOnly":"Read-only",
     "topic.titleChat":"What can I help you with?",
-    "topic.subChat":"Ask me anything. Plain conversation — no diagnostic, no lesson plan.",
+    "topic.subChat":"",
     "topic.disclaimerChat":"Chat mode is a plain conversation.",
     "profile.savedAt":"Saved at {hh}:{mm}",
     "profile.instructionsSavedPlaceholder":"Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language.",
@@ -442,7 +442,7 @@ var I18N={
        The chat-mode equivalents (`topic.titleChat` / `topic.subChat`)
        above are already localized, so Tutor now mirrors that. */
     "topic.title":"今天想探索什么？",
-    "topic.subtitle":"描述你想学习的主题，Socrates 会通过提问引导你深入思考。",
+    "topic.subtitle":"",
     "topic.inputPlaceholder":"例如：我想了解机器学习是怎么工作的...",
     "topic.start":"开始",
     "topic.hint":"描述越具体效果越好",
@@ -821,7 +821,7 @@ var I18N={
     "share.notFoundMsg":"链接可能已过期或无效。",
     "share.readOnly":"只读",
     "topic.titleChat":"我能帮你什么？",
-    "topic.subChat":"随便聊 — 没有诊断，没有学习计划。",
+    "topic.subChat":"",
     "topic.disclaimerChat":"聊天模式为普通对话。",
     "profile.savedAt":"已保存 {hh}:{mm}",
     "profile.instructionsSavedPlaceholder":"例如：用简洁的项目符号回复。引用来源标为 [1]、[2]。避免模棱两可的措辞。",
@@ -829,7 +829,7 @@ var I18N={
   },
 };
 var _currentLang="en";
-function t(key){return (I18N[_currentLang]&&I18N[_currentLang][key])||I18N.en[key]||key;}
+function t(key){var v=I18N[_currentLang]&&I18N[_currentLang][key];if(typeof v!=="undefined")return v;v=I18N.en[key];if(typeof v!=="undefined")return v;return key;}
 function setLang(lang){
   if(!I18N[lang])return;
   _currentLang=lang;
