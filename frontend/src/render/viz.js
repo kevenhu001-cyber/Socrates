@@ -376,23 +376,24 @@ export function renderPlot(spec, opts) {
         'function peek(){return s[i];}' +
         'function eat(c){if(s[i]===c){i++;return true;}return false;}' +
         'function err(m){throw new Error(m);}' +
-        'function expr(){var v=term();while(peek()==="+"||peek()==="-"){var op=s[i++];v=op==="+"?term()+v:v-term();}return v;}' +
-        'function term(){var v=atom();while(peek()==="*"||peek()==="/"){var op=s[i++];var r=atom();v=op==="*"?v*r:v/r;}return v;}' +
+        'function bin(a,b,op){if(op==="+")return function(x){return a(x)+b(x)};if(op==="-")return function(x){return a(x)-b(x)};if(op==="*")return function(x){return a(x)*b(x)};if(op==="/")return function(x){return a(x)/b(x)};return function(x){return Math.pow(a(x),b(x))}}' +
+        'function expr(){var v=term();while(peek()==="+"||peek()==="-"){var op=s[i++];v=bin(v,term(),op);}return v;}' +
+        'function term(){var v=power();while(peek()==="*"||peek()==="/"){var op=s[i++];v=bin(v,power(),op);}return v;}' +
+        'function power(){var v=atom();if(eat("^")){v=bin(v,power(),"^");}return v;}' +
         'function atom(){' +
           'var c=peek();' +
           'if(c==="("){i++;var v=expr();if(!eat(")"))err("missing )");return v;}' +
-          'if(c==="-"){i++;return -atom();}' +
+          'if(c==="-"){i++;var n=atom();return function(x){return -n(x)}}' +
           'if(c==="+"){i++;return atom();}' +
-          'var n=s.slice(i).match(/^[0-9]*\\.?[0-9]+(?:[eE][-+]?[0-9]+)?/);if(n){i+=n[0].length;return parseFloat(n[0]);}' +
+          'var n=s.slice(i).match(/^[0-9]*\\.?[0-9]+(?:[eE][-+]?[0-9]+)?/);if(n){i+=n[0].length;var q=parseFloat(n[0]);return function(){return q};}' +
           'var id=s.slice(i).match(/^[A-Za-z][A-Za-z0-9]*/);if(id){var nm=id[0];i+=nm.length;' +
-            'if(nm==="x")return "x";if(nm==="pi")return Math.PI;if(nm==="e")return Math.E;' +
+            'if(nm==="x")return function(x){return x};if(nm==="pi")return function(){return Math.PI};if(nm==="e")return function(){return Math.E};' +
             'var F={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,exp:Math.exp,log:Math.log,ln:Math.log,sqrt:Math.sqrt,abs:Math.abs,floor:Math.floor,ceil:Math.ceil,round:Math.round,sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh};' +
-            'if(F[nm]){if(!eat("("))err("expected (");var a=expr();if(!eat(")"))err("missing )");return F[nm](a);}' +
+            'if(F[nm]){if(!eat("("))err("expected (");var a=expr();if(!eat(")"))err("missing )");return function(x){return F[nm](a(x))};}' +
             'err("unknown: "+nm);}' +
           'err("unexpected "+c);}' +
         'return expr();' +
       '}' +
-      'function ev(n,x){if(typeof n==="number")return n;if(n==="x")return x;return NaN;}' +
       'var tree=null;' +
       'try{tree=compile(p.expr||"");}catch(err2){' +
         'var c0=cv.getContext("2d");c0.fillStyle="#a04040";c0.font="13px sans-serif";c0.fillText("Parse error: "+err2.message,16,24);' +
@@ -402,7 +403,7 @@ export function renderPlot(spec, opts) {
         'var ctx=cv.getContext("2d");var w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);' +
         'if(p.error){ctx.fillStyle="#a04040";ctx.font="13px sans-serif";ctx.fillText("Plot error: "+p.error,16,24);return;}' +
         'var N=400;var xs=new Array(N);var ys=new Array(N);' +
-        'for(var k=0;k<N;k++){var xv=p.xMin+(p.xMax-p.xMin)*k/(N-1);xs[k]=xv;var yv=ev(tree,xv);ys[k]=isFinite(yv)?yv:NaN;}' +
+        'for(var k=0;k<N;k++){var xv=p.xMin+(p.xMax-p.xMin)*k/(N-1);xs[k]=xv;var yv=tree(xv);ys[k]=isFinite(yv)?yv:NaN;}' +
         'var yMin=Infinity,yMax=-Infinity;' +
         'for(var k2=0;k2<N;k2++){if(isFinite(ys[k2])){if(ys[k2]<yMin)yMin=ys[k2];if(ys[k2]>yMax)yMax=ys[k2];}}' +
         'if(!isFinite(yMin)){yMin=-1;yMax=1;}' +

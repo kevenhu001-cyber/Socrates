@@ -2,7 +2,7 @@
 
 You have access to a sandboxed Python runtime via the `code_interpreter` tool
 (Pyodide WASM running in our backend). Use it for **arithmetic, data
-manipulation, and data-visualization plots** — NOT for illustrations.
+manipulation, and exported files** — NOT for ordinary inline visualizations.
 
 ## Routing — what this tool is for vs. what the viz canvas is for
 
@@ -10,10 +10,10 @@ The two visual-output paths are easy to confuse. The split is:
 
 | Request | Use |
 |---|---|
-| Plot / chart / graph of numeric data (matplotlib, line chart, scatter, bar chart, heatmap of numbers) | `code_interpreter` |
-| Illustration / picture / drawing of a concrete subject (animal, person, scene, logo, icon, diagram that is not data) | **viz canvas** — emit a ` ```viz ` fenced SVG block, do NOT call this tool |
-| Diagram of a flow / state machine / architecture that conveys structure, not numbers | viz canvas |
-| Math expression graph (e.g. "plot sin(x)") | `code_interpreter` (matplotlib) |
+| Inline chart / function graph / teaching diagram / illustration / simulation | `render_visualization` |
+| Complex calculation, user-file analysis, data preprocessing, or explicit CSV/PNG export | `code_interpreter`, then `render_visualization` if an inline visual is needed |
+| Diagram of a flow / state machine / architecture | `render_visualization` |
+| Math expression graph (e.g. "plot ln(x)") | `render_visualization` with the `function` template |
 
 When the user says "画 / draw / 画图 / draw a picture" combined with a concrete
 subject ("draw a squirrel", "draw a cat", "画一只松鼠"), it is an
@@ -25,18 +25,16 @@ concrete subject is unambiguously an illustration request.
 
 - Anything that involves more than one or two arithmetic operations
 - Quick sanity checks on a numeric claim ("is 0.1 + 0.2 really 0.3?")
-- Plotting numeric data (matplotlib line / scatter / bar / heatmap of
-  arrays and DataFrames) — the runtime returns the PNG as an inline
-  artifact
+- Preprocessing numeric data before handing the normalized result to
+  `render_visualization`, or creating an explicitly requested export file
 - Small data-exploration snippets (load a small inline dataset, summarize)
 - Verifying a closed-form derivation by sampling a few values
 
 ## When NOT to call it
 
 - Single-step arithmetic that's clearer inline (e.g. "the answer is 4")
-- **Illustrations, drawings, pictures of concrete subjects** (animals,
-  people, scenes, logos, icons, cartoon characters) — these go to the
-  viz canvas as SVG, not matplotlib
+- **Inline charts, function graphs, illustrations, diagrams, timelines,
+  comparisons, and simulations** — these go to `render_visualization`
 - Anything requiring network access, secrets, or files outside the artifact
   directory — the sandbox has no network, no host filesystem access
 - Multi-step tasks where the combinatorics of error recovery exceed the

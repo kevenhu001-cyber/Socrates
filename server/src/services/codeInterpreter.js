@@ -115,7 +115,7 @@ export const CODE_INTERPRETER_TOOL = {
       'Executes Python 3.12 in a sandboxed Pyodide WASM runtime and returns stdout plus any matplotlib PNGs / CSV exports written to the current working directory.\n\n' +
       '## When to call\n' +
       '- Arithmetic, unit conversion, numeric verification, solving an equation, "is X > Y".\n' +
-      '- Data-viz plots (line / scatter / bar / heatmap) generated from numeric arrays via matplotlib.\n' +
+      '- Complex computation, user-file analysis, data preprocessing, or explicitly requested CSV/PNG exports. For ordinary inline charts and function graphs, use render_visualization instead.\n' +
       '- Small data-exploration snippets (load inline data, summarize, sample-check a derivation).\n\n' +
       '## When NOT to call\n' +
       '- Illustrations of concrete subjects (animals, people, scenes, logos, icons) — those MUST go in a ```viz block as inline SVG. SVG output here is rejected with `illustration_not_supported`.\n' +

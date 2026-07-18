@@ -203,6 +203,9 @@ function _renderSharedMessageList(messages) {
             isError: !!tc.isError,
           });
         }
+        if (tc.name === "render_visualization" && tc.input && tc.input.version === 1 && typeof window.mountVisualization === "function") {
+          window.mountVisualization(tc.input, body, { toolCallId: tc.id || ("share-viz-" + tci) });
+        }
         if (cardOut && Array.isArray(tc.artifacts) && tc.artifacts.length > 0 && typeof window.appendInlineArtifact === "function") {
           for (var ai = 0; ai < tc.artifacts.length; ai++) {
             var art = tc.artifacts[ai];
