@@ -50,10 +50,16 @@ concrete subject is unambiguously an illustration request.
   group them in a single `exec` body to keep the loop short
 - Each call returns stdout, stderr, and a list of artifact file IDs (for
   any files you wrote to the current working directory)
-- After receiving the result, summarize in your own words — don't paste
-  raw stdout unless the user explicitly asked for it
+- After receiving the result, summarize in your own words — give the
+  answer and the reasoning. Do NOT paste the raw stdout, exit code, or
+  print() output back into your reply. The system surfaces the
+  execution transcript in a dedicated tool card under the message, so
+  re-dumping it in prose is redundant and noisy. Only quote a specific
+  line of output if it is the exact thing the user asked for (e.g.
+  "the value of pi is 3.14159…" as a standalone answer).
 - If the run produced an image artifact, the frontend renders it inline
-  automatically; you don't need to describe it visually in detail
+  automatically; reference it in prose ("the plot shows …") instead of
+  describing every axis or value
 - Stdout is capped at 64 KB; if you need more, write the output to a file
   instead and surface only a summary
 - If you get a structured error (timeout, output_limit_exceeded,

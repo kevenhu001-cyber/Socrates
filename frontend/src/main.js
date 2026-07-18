@@ -91,6 +91,38 @@ import {
   toggleWebSearch, syncWebSearchUI,
 } from './pickers.js';
 
+/* P_hljs-unknown-lang — monkey-patch hljs.highlightElement so the
+   model can no longer trigger
+   `WARN: Could not find the language 'code_interpreter'`
+   by emitting a raw `<code class="language-code_interpreter">`
+   block (which the markdown renderer's safeHljsLang helper doesn't
+   see, since that path only parses ``` fenced blocks). Before
+   handing the element to hljs, we check the language class against
+   hljs's registered list and drop it if unknown — hljs then falls
+   back to no-highlight silently instead of warning. */
+(function patchHljsHighlightElement(){
+  if (typeof window === 'undefined') return;
+  var hl = window.hljs;
+  if (!hl || typeof hl.highlightElement !== 'function' || hl.__socratesSafePatched) return;
+  var orig = hl.highlightElement.bind(hl);
+  hl.highlightElement = function patchedHighlightElement(el){
+    try {
+      if (el && el.classList && typeof hl.getLanguage === 'function') {
+        var classes = Array.prototype.slice.call(el.classList || []);
+        for (var i = 0; i < classes.length; i++) {
+          var c = classes[i];
+          if (c.indexOf('language-') !== 0) continue;
+          var name = c.slice('language-'.length).toLowerCase();
+          if (!name) { el.classList.remove(c); continue; }
+          if (!hl.getLanguage(name)) el.classList.remove(c);
+        }
+      }
+    } catch (_) { /* swallow — fall through to the original call */ }
+    return orig(el);
+  };
+  hl.__socratesSafePatched = true;
+})();
+
 /* P_batch-storage & localMemory — 已抽到 src/batchStorage.js 与
    src/storage/localMemory.js(顶部 import)。 */
 
