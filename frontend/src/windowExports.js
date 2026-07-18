@@ -85,9 +85,12 @@ window.sanitizeUrls = sanitizeUrls;
 
 /* ─── render/viz.js ─── */
 import { openVizModal, openVizModalRaw, processPendingViz, processPendingVizActions } from './render/viz.js';
+import { mountVisualization, disposeVisualizations } from './render/visualization.js';
 window.__vizOpenModal = openVizModal;
 window.__vizOpenModalRaw = openVizModalRaw;
 window.processPendingViz = processPendingViz;
+window.mountVisualization = mountVisualization;
+window.disposeVisualizations = disposeVisualizations;
 window.processPendingVizActions = processPendingVizActions;
 
 /* ─── ui/searchProgress.js — internal bridge used by smoke tests and

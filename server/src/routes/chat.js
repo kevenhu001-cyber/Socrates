@@ -17,7 +17,9 @@ import { getBeagleQuota } from '../lib/tiers.js';
 import { getExecutionsPerDay } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
 import { codeInterpreter, CODE_INTERPRETER_TOOL } from '../services/codeInterpreter.js';
-import { webSearch, WEB_SEARCH_TOOL } from '../services/webSearch.js';
+import { webSearch } from '../services/webSearch.js';
+import { executeVisualization } from '../services/visualization.js';
+import { createToolRegistry } from '../services/toolRegistry.js';
 import { isMultimodalProvider } from '../lib/multimodal.js';
 import { trackSseConnection } from '../lib/sse.js';
 
@@ -622,15 +624,17 @@ router.post('/stream', requireAuth, chatRateLimitDispatch, audit('chat:stream'),
      * ───────────────────────────────────────────────────────────── */
     const MAX_TOOL_ITERATIONS = 4;
     const codeInterpreterToolDef = codeInterpreter.getToolDefinition();
-    const toolDefs = [];
-    if (codeInterpreterToolDef) toolDefs.push(codeInterpreterToolDef);
+    const toolRegistry = createToolRegistry({ codeInterpreterToolDef, mode });
+    const toolDefs = toolRegistry.definitions;
+    // Enabled by default. Existing visual cards remain readable when an
+    // operator disables new visual generation during a rollout.
     /* P_tutor-no-search — Tutor mode (the guided Socratic teacher)
        does not need web search. Its answers are rooted in the
        built-in knowledge map, not live results. Disabling web search
        in tutor mode prevents unnecessary tool calls that slow down
        the conversation and confuse the teaching flow. */
-    if (mode !== 'tutor') toolDefs.push(WEB_SEARCH_TOOL);
     let workingMessages = finalMessages;
+    let visualizationValidationFailures = 0;
 
     const writeSse = (payload) => {
       if (abortController.signal.aborted) return;
@@ -904,6 +908,35 @@ data: ${JSON.stringify({
               executionId: execResult.executionId,
               durationMs: execResult.durationMs,
             })}\n\n`);
+          } else if (toolName === 'render_visualization') {
+            result = executeVisualization(args);
+            if (result.status !== 'completed') {
+              visualizationValidationFailures += 1;
+              result.retryable = visualizationValidationFailures <= 1;
+              if (!result.retryable) {
+                result.userMessage = '可视化规格连续两次无效，本次不再自动重试。';
+              }
+            }
+            writeSse(`event: tool_result\ndata: ${JSON.stringify({
+              id: tc.id,
+              name: 'render_visualization',
+              ok: result.status === 'completed',
+              status: result.status,
+              output: result.output || '',
+              visualization: result.visualization || null,
+              error: result.errorCode || null,
+              errorCode: result.errorCode || null,
+              retryable: result.retryable,
+              userMessage: result.userMessage,
+              detail: result.detail,
+              durationMs: result.durationMs,
+            })}\n\n`);
+            console.info('[visualization]', JSON.stringify({
+              template: result.visualization && result.visualization.template || null,
+              status: result.status,
+              durationMs: result.durationMs,
+              corrected: visualizationValidationFailures > 0,
+            }));
           } else if (toolName === 'web_search') {
             // Execute web search as an LLM tool.
             const searchQuery = args.query || '';
@@ -1046,6 +1079,12 @@ data: ${JSON.stringify({
             lines.push(prefix + tail);
           }
           toolContent = lines.join('\n');
+        } else if (toolName === 'render_visualization') {
+          if (result.status === 'completed' && result.visualization) {
+            toolContent = `[status: completed]\n[visualization: ${result.visualization.template}]\n[title: ${result.visualization.title}]\nThe visual card is now rendered in the conversation. Refer to it briefly in prose and do not output a legacy viz/html/plot fence.`;
+          } else {
+            toolContent = `[status: failed]\n[error_code: ${result.errorCode || 'visual_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]\n${result.retryable ? 'Correct the visual specification and call render_visualization once more. Do not fall back to Python or legacy fenced visualization.' : 'Explain the issue concisely without using Python or a legacy fenced visualization.'}`;
+          }
         } else {
           toolContent = result.status === 'completed'
             ? (result.output || result.stdout || '(no output)')

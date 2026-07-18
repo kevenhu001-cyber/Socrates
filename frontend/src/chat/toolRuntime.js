@@ -14,6 +14,7 @@ import {
   renderWebSearchResults,
   updateToolCardCode,
 } from '../ui/toolCards.js';
+import { mountVisualization } from '../render/visualization.js';
 import { TOOL_RUN_PHASES, isTerminalToolPhase, phaseFromProgress, summarizeToolRuns, transitionToolRun } from './toolRunState.js';
 
 function cssEscape(value) {
@@ -491,6 +492,12 @@ export function createToolRuntime(options) {
     entry.output = display;
     entry.isError = result.ok === false;
     entry.results = Array.isArray(result.results) ? result.results.slice(0, 20) : [];
+    if (result.visualization && result.visualization.version === 1) {
+      // Persist the normalized server spec in the existing JSON tool input.
+      // Session restore and public share therefore use the same renderer.
+      entry.input = result.visualization;
+      entry.visualization = result.visualization;
+    }
     if (Array.isArray(result.artifacts)) entry.artifacts = normalizeArtifacts(result.artifacts);
     /* P_artifact-summary-in-context — the model can't see the PNG the
        run produced unless we tell it explicitly in the message
@@ -514,6 +521,9 @@ export function createToolRuntime(options) {
     var liveProgress = output.querySelector('.agent-tool-progress');
     if (liveProgress) liveProgress.remove();
     var toolName = entry.name || result.name || '';
+    if (toolName === 'render_visualization' && result.visualization && !entry.isError) {
+      mountVisualization(result.visualization, body, { toolCallId: entry.id });
+    }
     var rich = false;
     if (toolName === 'web_search' && Array.isArray(result.results) && result.results.length) {
       rich = renderWebSearchResults(output, result.results, (entry.input && entry.input.query) || result.query || '');

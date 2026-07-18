@@ -24,6 +24,7 @@ import { batchSetItem, batchRemoveItem } from './batchStorage.js';
 import { LOCAL_MEMORY_MAX, loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from './storage/localMemory.js';
 import { formatTickSlice, formatMsgProgressive, formatMsg, stripMarkdown, findLastUserMessage } from './render/markdown.js';
 import { SOCRATIC_SYSTEM_PROMPT } from './prompts/socratic.js';
+import { VISUALIZATION_ROUTING_PROMPT } from './prompts/visualization.js';
 import { fetchGeoInfo, getSystemContext, resetGeoInfo } from './system/context.js';
 import {
   getChatIdFromURL, setChatIdInURL, pushChatIdToURL,
@@ -1303,6 +1304,7 @@ async function loadSession(id){
     toggleChatTopBarEls(true);
     syncChatModel();
     var msgList=document.getElementById("msgList");
+    if(typeof window.disposeVisualizations === "function") window.disposeVisualizations(msgList);
     msgList.innerHTML="";
     // P-arch context-resume — reset the authoritative message list so
     // extractHistory() sees the loaded history when the user sends
@@ -1461,6 +1463,9 @@ async function loadSession(id){
             restored:true,
             isError:!!rtc.isError
           });
+          if(rtc.name === "render_visualization" && rtc.input && rtc.input.version === 1 && typeof window.mountVisualization === "function"){
+            window.mountVisualization(rtc.input,body,{toolCallId:rtc.id});
+          }
           if(cardOut){
             var cardEl=cardOut.closest(".agent-tool-card");
             if(cardEl)cardEl.setAttribute("data-tcid",rtc.id);
@@ -7204,7 +7209,7 @@ function buildSocraticPrompt(topic,level,context){
   }else{
     full+="\n\nNote: no [Web research] block is present. You do not have live web access for this turn — say so honestly rather than guessing about current events, prices, dates, or anything that may have changed since your training cutoff.";
   }
-  return sysCtx+"\n\n"+SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+beagleSuffix()+thinkingSuffix()+memoriesSuffix();
+  return sysCtx+"\n\n"+SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+VISUALIZATION_ROUTING_PROMPT+beagleSuffix()+thinkingSuffix()+memoriesSuffix();
 }
 
 /* ============================================================

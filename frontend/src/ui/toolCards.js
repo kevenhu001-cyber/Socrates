@@ -28,6 +28,7 @@ import { sanitizeUrl } from '../util/safe.js';
    several tools run in sequence. The `short` label is what appears
    in the collapsed header; `tone` controls the accent colour. */
 export var TOOL_META = {
+  render_visualization: { letter: "V", cls: "tool-visual", short: "Visual", tone: "purple" },
   Read:    { letter: "R", cls: "read",     short: "Read",    tone: "blue"   },
   Write:   { letter: "W", cls: "write",    short: "Write",   tone: "green"  },
   Edit:    { letter: "E", cls: "edit",     short: "Edit",    tone: "amber"  },
@@ -58,6 +59,7 @@ export function toolFormatInput(name, inp) {
       return `${inp.language || "python"}  -  ${first}`;
     }
     case "web_search":  return inp.query || "";
+    case "render_visualization": return (inp.template || "visual") + "  -  " + (inp.title || "");
     case "code_interpreter": {
       if (!inp.code) return "";
       const first = ((inp.code || "").split("\n")[0] || "").slice(0, 80);
