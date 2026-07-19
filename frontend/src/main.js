@@ -9,6 +9,7 @@ import './i18n.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
 import { scrollContainer, scrollToBottomIfPinned } from './ui/scroll.js';
 import { initKeyboardViewport } from './ui/keyboardViewport.js';
+import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
 import { showNewReplyPill, hideNewReplyPill, wireScrollPill } from './ui/scrollPill.js';
 import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
@@ -703,6 +704,13 @@ initKeyboardViewport({
   input: document.getElementById('chatInputArea'),
   container: document.getElementById('appShell'),
 });
+
+/* Capacitor native bridge — StatusBar theme sync, keyboard signal
+   forwarding, hardware back button. No-op when window.Capacitor is
+   absent (i.e. regular web browser). */
+if (isNativeApp()) {
+  setupNativeBridge();
+}
 
 function switchTab(tab){
   var tk=document.getElementById("tabKnowledge");if(tk)tk.classList.toggle("active",tab==="knowledge");
@@ -5839,8 +5847,21 @@ function teardownThinkStructure(){
         try{processPendingVizActions()}catch(_){}
         try{wireCodeBlockHeaders(body)}catch(_){}
         try{wireMsgBodyImages(body)}catch(_){}
-        if(hasSources){
-          var card=renderSourcesCard(sourcesSnapshot);
+        /* Source Card. The mid-stream snapshot is kept so a fresh
+           background fetch that lands while the model is still streaming
+           can't silently swap the cards underneath the user. But the
+           snapshot is captured at addStreamingMessage() time — for the
+           FIRST message of a session (or after any state reset) the
+           background fetchWebContext hasn't completed yet, so
+           state.searchResults is still [] and the snapshot is empty
+           even though the fetch will populate it a beat later. Falling
+           back to the live state at finish-time is safe because we
+           only render once here: after this card is appended, no later
+           render path will mutate it. */
+        var liveResults=Array.isArray(state.searchResults)?state.searchResults:[];
+        var sourcesToRender=hasSources?sourcesSnapshot:liveResults;
+        if(sourcesToRender.length){
+          var card=renderSourcesCard(sourcesToRender);
           if(card)div.appendChild(card);
         }
         /* Streaming AI bubbles skip addMessage(), so attach the
@@ -6037,6 +6058,32 @@ function teardownThinkStructure(){
    marked unchanged. */
 function renderAssistantHTML(rawText){
   var text=rawText||"";
+  /* Chat mode: strip the citation apparatus so the Source Card (added
+     at finish()) is the SOLE source view. Two passes:
+
+       (a) a trailing "Sources: …" block — the model often generates
+           its own markdown list of cited URLs ([1] title (url) …) at
+           the end of its answer. Matched to end-of-text ([\s\S]*$),
+           so it never accidentally removes a mid-prose mention; it
+           runs unconditionally in chat mode so the block is gone
+           regardless of whether the Source Card actually fires
+           (e.g. when state.searchResults is still empty at render
+           time but a Source Card is appended afterwards — see the
+           finishAfterRender fallback).
+
+       (b) inline [N] markers like "[1]", "[1, 2]", "[1][2]" — only
+           when state.searchResults has results, so we don't chew
+           through legit numeric references in a chat turn that has
+           no sources to point at. */
+  if(appMode==="chat"){
+    text=text.replace(
+      /(?:^|\n)\s*(?:Sources?|参考来源|来源|参考资料|参考文献|引用|参考)\s*[:：][\s\S]*$/i,
+      ""
+    );
+  }
+  if(appMode==="chat" && Array.isArray(state.searchResults) && state.searchResults.length){
+    text=text.replace(/\[\s*\d+(?:\s*,\s*\d+)*\s*\]/g,"");
+  }
   /* All placeholder lists — collected during the scan, mounted at the end. */
   var quizPH=[];
   var examplePH=[];
