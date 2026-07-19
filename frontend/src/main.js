@@ -447,7 +447,15 @@ function cycleActiveProject(){
   for(var i=0;i<PROJECTS.length;i++){if(PROJECTS[i].id===cur){idx=i;break;}}
   var next=PROJECTS[(idx+1)%PROJECTS.length];
   state.session.currentProjectId=next.id===INBOX_PROJECT_ID?null:next.id;
-  state.session.activeProjectFilter=next.id;
+  /* P_cycle-inbox-filter — match onProjectChipClick's Inbox behavior:
+     cycling to Inbox clears the filter (so the user sees the full
+     unfiltered Recents list), instead of setting activeProjectFilter
+     to INBOX_PROJECT_ID. The old code set the filter to "inbox" even
+     for Inbox, which then ran filterRecentsForProject with "inbox" —
+     if the user had zero Inbox-scoped sessions, the list showed the
+     "No sessions in this project yet." empty state, another instance
+     of the "Recent list empty" bug. */
+  state.session.activeProjectFilter=next.id===INBOX_PROJECT_ID?null:next.id;
   renderProjects();
   renderRecents();
   showToast("Project: "+next.name);
@@ -664,11 +672,23 @@ var RECENTS_KEY_OLD="socrates-sessions";
    tabs without a roundtrip on every action. We keep it fresh via
    getRecents() / setRecents() — which now hit the server. */
 var SERVER_SESSIONS=[];
+/* P_recents-fetch-fail — tracks whether the last refreshServerSessions()
+   fetch failed. When true, doRenderRecents shows a "couldn't load" empty
+   state with a Retry button instead of the misleading "No recent sessions
+   yet." message. This is the root cause of "Recent list empty on some
+   devices": devices with network issues, ad blockers, proxies, or hitting
+   a transient 5xx saw an empty list with no indication that their data
+   was still on the server. */
+var SERVER_SESSIONS_FETCH_FAILED=false;
 try{
   Object.defineProperty(window,"SERVER_SESSIONS",{
     configurable:true,
     get:function(){return SERVER_SESSIONS},
     set:function(v){SERVER_SESSIONS=capSessions(v)}
+  });
+  Object.defineProperty(window,"SERVER_SESSIONS_FETCH_FAILED",{
+    configurable:true,
+    get:function(){return SERVER_SESSIONS_FETCH_FAILED}
   });
 }catch(_){}
 
@@ -780,10 +800,33 @@ async function refreshServerSessions(){
      the console on every login / save / delete. Demoted to
      console.debug so they stay available under Verbose level without
      polluting the default console. */
+  var ok=false;
   try{
     var r=await apiFetch("/api/sessions?limit=200");
     SERVER_SESSIONS=Array.isArray(r&&r.sessions)?r.sessions:[];
-    }catch(e){/* refresh failed */}
+    ok=true;
+  }catch(e){
+    /* P_recents-fetch-fail — retry ONCE on transient failures (network
+       blip, 5xx, 429). This covers the "some devices" report where a
+       flaky connection or a momentary 502/503 left the user with an
+       empty Recents list. Non-retryable errors (401/403/404) skip the
+       retry so we don't waste a roundtrip on a definitely-broken
+       request. The original bug silently swallowed ALL errors here,
+       leaving SERVER_SESSIONS=[] and showing "No recent sessions yet."
+       even when the user had sessions on the server. */
+    var status=e&&e.status;
+    var retryable = status===0 || status===408 || status===429 ||
+                    (typeof status==="number" && status>=500 && status<600);
+    if(retryable){
+      try{
+        await new Promise(function(res){setTimeout(res,400)});
+        var r2=await apiFetch("/api/sessions?limit=200");
+        SERVER_SESSIONS=Array.isArray(r2&&r2.sessions)?r2.sessions:[];
+        ok=true;
+      }catch(e2){/* still failing — surface below */}
+    }
+  }
+  SERVER_SESSIONS_FETCH_FAILED=!ok;
   /* Recompute the sidebar project counts now that the session
      list is fresh. renderProjects reads SERVER_SESSIONS for the
      per-project session-count badge, so without this re-render
@@ -791,6 +834,15 @@ async function refreshServerSessions(){
   try{renderProjects()}catch(_){}
   return SERVER_SESSIONS.slice();
 }
+/* P_recents-fetch-fail — manual retry entry point bound from the
+   "Couldn't load sessions — Retry" empty state. Re-runs the fetch,
+   then re-renders so the user sees the result immediately. */
+async function retryRecentsFetch(){
+  try{showToast("Loading sessions…")}catch(_){}
+  try{await refreshServerSessions()}catch(_){}
+  try{renderRecents()}catch(_){}
+}
+try{window.retryRecentsFetch=retryRecentsFetch}catch(_){}
 /* ============================================================
    P1.2 — Global search (Cmd / Ctrl + K)
    Client-side fuzzy index over:
@@ -2486,9 +2538,14 @@ function doRenderRecents(){
     }
   }
   if(recents.length===0){
-    /* Three distinct empty states so the user never sees a
-       misleading "No recent sessions yet." when the real cause
-       is an active pinned/tag filter that matches nothing:
+    /* Four distinct empty states so the user never sees a misleading
+       "No recent sessions yet." when the real cause is something else:
+         0) fetch failed — the user HAS sessions on the server, we just
+            couldn't load them (network blip, ad blocker, 5xx, proxy).
+            Show a "Couldn't load sessions" message with a Retry button.
+            This is the root cause of the "Recent list empty on some
+            devices" report: devices with network issues silently saw
+            an empty list with no indication that their data existed.
          1) project filter active, no sessions in that project
          2) no project filter, but a pinned/tag filter is active
             and matched zero rows — surface the filter name and a
@@ -2497,7 +2554,15 @@ function doRenderRecents(){
             "Inbox says 12 but list is empty" report).
          3) no filter at all — the truly-empty state. */
     var emptyMsg;
-    if(filter){
+    if(SERVER_SESSIONS_FETCH_FAILED && !filter && !recentsFilter){
+      /* P_recents-fetch-fail — only show the failure state when no
+         filter is active. If a filter is active and matches nothing,
+         the filter-specific empty messages below are still accurate
+         (we just couldn't load the data to match). The Retry button
+         re-runs refreshServerSessions() and re-renders. */
+      emptyMsg='<div class="recents-empty">Couldn\'t load sessions. Check your connection and try again.<br>'+
+        '<a href="#" onclick="retryRecentsFetch();return false">Retry</a></div>';
+    }else if(filter){
       emptyMsg='<div class="recents-empty">No sessions in this project yet.<br><a href="#" onclick="resetApp();return false">Start a new chat</a> in this project.</div>';
     }else if(recentsFilter){
       var filterLabel=recentsFilter==="pinned"?"pinned":("#"+recentsFilter);
@@ -7036,6 +7101,15 @@ window.__vizOpenModal=openVizModal;
 function clearPerUserClientState(){
   /* In-memory module-level caches. */
   try{if(Array.isArray(SERVER_SESSIONS))SERVER_SESSIONS.length=0}catch(_){}
+  /* P_recents-fetch-fail — reset the fetch-failed flag on user switch
+     so the new user doesn't inherit the previous user's failure state. */
+  try{SERVER_SESSIONS_FETCH_FAILED=false}catch(_){}
+  /* P_filter-leak — defensively reset the project filter + current
+     project. On a fresh page load these are already null (state.js
+     initial values), but if signOut → signIn happens without a reload,
+     the previous user's filter could persist and silently scope the
+     new user's Recents to a project they may not own. */
+  try{if(state&&state.session){state.session.activeProjectFilter=null;state.session.currentProjectId=null}}catch(_){}
   try{apiConfig.activeId=null;apiConfig.providers=[]}catch(_){}
   try{PROJECTS=[INBOX_PROJECT]}catch(_){}
   try{_cmdKIndex=null;_cmdKIndexDocs=[];_cmdKResults=[];_cmdKSelected=0;_cmdKRecent=[]}catch(_){}
