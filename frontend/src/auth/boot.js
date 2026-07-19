@@ -15,7 +15,7 @@ export var SERVER_HAS_BEAGLE_KEY=false;
 
 export async function authBoot(){
   /* Prime the CSRF cookie before any API calls. */
-  try{await fetch("/api/auth/csrf-token",{credentials:"include"})}catch(_){}
+  try{await fetch("/api/v2/auth/csrf-token",{credentials:"include"})}catch(_){}
   var params=new URLSearchParams(location.search);
   var oauthError=params.get("oauth_error");
   if(oauthError){
@@ -80,7 +80,7 @@ export async function authBoot(){
      endpoint so the key lives in the server environment, not the source. */
   var cfgOk=false;
   try{
-    var cfg=await fetch("/api/config",{credentials:"include"}).then(function(r){return r.json()}).catch(function(){return{}});
+    var cfg=await fetch("/api/v2/config",{credentials:"include"}).then(function(r){return r.json()}).catch(function(){return{}});
     if(cfg&&cfg.hasBeagleKey){
       /* The server proxies Beagle requests using its own env key.
          The raw key is never sent to the client, so cfg.beagleKey

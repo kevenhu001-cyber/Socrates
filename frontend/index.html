@@ -430,6 +430,7 @@
                container; src/attachments/render.js fans the render
                out to every wired composer. -->
           <div class="attachment-chips hidden" id="topicAttachmentChips"></div>
+          <div class="template-mode-chip hidden" id="topicTemplateModeChip" aria-live="polite"></div>
           <textarea id="topicInput" name="topicInput" aria-label="What would you like to explore?" placeholder="e.g. I want to understand how machine learning works..." data-i18n-placeholder="topic.inputPlaceholder" rows="2" oninput="autoResize(this);updateStartBtn()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startSession()}"></textarea>
           <div class="topic-footer">
             <button class="attach-btn" id="topicAttachBtn" type="button" data-i18n-aria="chat.attach.aria" data-i18n-title="chat.attach" aria-label="Attach files" title="Attach files">
