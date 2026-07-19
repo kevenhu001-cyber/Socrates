@@ -341,6 +341,7 @@ router.post('/', writeLimiter, async (req, res, next) => {
 /* ─── Get session detail ─── */
 router.get('/:id', async (req, res, next) => {
   try {
+    if (!isUuid(req.params.id)) throw new NotFound('Session not found');
     const db = getDb();
     const [session] = await db.select().from(sessions)
       .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId)))
@@ -358,6 +359,7 @@ router.get('/:id', async (req, res, next) => {
 /* ─── Update session (partial) ─── */
 router.patch('/:id', async (req, res, next) => {
   try {
+    if (!isUuid(req.params.id)) throw new NotFound('Session not found');
     const db = getDb();
     const [existing] = await db.select().from(sessions)
       .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId)))
@@ -393,9 +395,21 @@ router.delete('/:id', async (req, res, next) => {
     let deletedFilePaths = [];
 
     await db.transaction(async (tx) => {
+      /* P_serialize-delete — acquire FOR UPDATE lock on the session
+       * row BEFORE attempting to delete it. This serializes with the
+       * POST handler's existence check (which also uses FOR UPDATE),
+       * preventing a race where a concurrent POST's SELECT ... FOR UPDATE
+       * sees the row, then our DELETE completes, then the POST's
+       * INSERT ... ON CONFLICT resurrects the just-deleted row.
+       * Without the lock, the DELETE's no-lock SELECT would see the row
+       * and proceed to delete it, but the POST's FOR-UPDATE SELECT
+       * (which blocked on our row-level lock during the delete) would
+       * re-check after our commit, find no row, and generate a fresh
+       * UUID — creating a duplicate session. */
       const [session] = await tx.select({ id: sessions.id })
         .from(sessions)
         .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId)))
+        .for('update')
         .limit(1);
       if (!session) throw new NotFound('Session not found');
 

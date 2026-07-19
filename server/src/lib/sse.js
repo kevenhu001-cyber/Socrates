@@ -100,7 +100,14 @@ export function writeSseComment(res, text) {
  * @returns {{ stop: () => void, intervalMs: number }}
  */
 export function startSseKeepalive(res, opts = {}) {
-  const intervalMs = Math.max(1000, opts.intervalMs || DEFAULT_KEEPALIVE_MS);
+  /* Floor: 250 ms. Anything shorter risks a tight write loop if a
+     buggy caller passes `intervalMs: 0` and the comment write ever
+     becomes non-trivial. 250 ms is still ≪ nginx's 60 s default
+     upstream-idle timeout, so the keepalive keeps the socket warm
+     with plenty of margin. The floor also keeps integration tests
+     fast — a 1 s floor would force every test to wait >1 s to catch
+     a single periodic tick. */
+  const intervalMs = Math.max(250, opts.intervalMs || DEFAULT_KEEPALIVE_MS);
   const text = opts.text || 'keepalive';
   let stopped = false;
 
