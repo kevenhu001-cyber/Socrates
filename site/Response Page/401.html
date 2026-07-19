@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="socrates" data-mode="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/logo.png">
+<title>401 Unauthorized — Socrates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="/base.css" rel="stylesheet">
+</head>
+<body>
+<div class="bg-ambient"></div>
+<div class="page">
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt=""><span><em>S</em>ocrates</span></a>
+    <div class="nav-links">
+      <a href="/pricing">Pricing</a>
+      <a href="/guide">Guide</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+      <a href="/account">Account</a>
+      <a class="lang-switch">中文</a>
+      <a href="https://app.topodrive.top" class="cta-btn">Start learning</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero sub">
+  <div class="section-inner">
+    <div class="hero-platform" style="padding:60px 48px">
+      <div class="hero-label">401 &mdash; Unauthorized</div>
+      <h1>Authentication <strong>required</strong></h1>
+      <p>You need to sign in to access this resource. Please provide valid credentials and try again.</p>
+      <div class="hero-actions">
+        <a href="/account" class="cta-btn">Sign in</a>
+        <a href="/" class="cta-btn ghost">Back to home</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sr" style="padding:48px 32px">
+  <div class="section-inner">
+    <div class="feat-list" style="max-width:520px;margin:0 auto">
+      <div class="feat-item">
+        <div class="feat-bullet">01</div>
+        <div>
+          <div class="feat-item-title">Check your session</div>
+          <div class="feat-item-desc">Your login session may have expired. Try signing in again.</div>
+        </div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-bullet">02</div>
+        <div>
+          <div class="feat-item-title">Verify your credentials</div>
+          <div class="feat-item-desc">Make sure you're using the correct email and password combination.</div>
+        </div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-bullet">03</div>
+        <div>
+          <div class="feat-item-title">Need an account?</div>
+          <div class="feat-item-desc">Create one free and start learning in minutes.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-tag"><em>S</em>ocrates</div>
+      <p>An AI-powered Socratic tutor. Learn anything, step by step.</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Product</div>
+      <a href="/pricing">Pricing</a>
+      <a href="/guide">Guide</a>
+      <a href="https://app.topodrive.top">App</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Company</div>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Account</div>
+      <a href="/account">My Account</a>
+      <a href="/api-keys">API Keys</a>
+      <a href="/profile">Profile</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Legal</div>
+      <a href="/terms">Terms of Service</a>
+      <a href="/privacy">Privacy Policy</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Support</div>
+      <a href="mailto:help@addtech.site">help@addtech.site</a>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Topodrive. All rights reserved.</p>
+      <p>Built with care, for learners everywhere.</p>
+      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
+    </div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('in');
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.sr').forEach(el => observer.observe(el));
+</script>
+<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/\.html$/,'');b.href=p==='/'||p===''?'/zh/':'/zh'+p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","zh")}catch(e){}});})();</script>
+</body>
+</html>
