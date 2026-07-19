@@ -151,9 +151,9 @@ export async function callAPI(messages,maxTokens,timeoutMs){
            by a server restart, document.cookie will be empty and
            /api/minimax will reject the POST with 403
            "CSRF token required for authenticated requests". */
-        try{await fetch("/api/auth/csrf-token",{credentials:"include"})}catch(_){}
+        try{await fetch("/api/v2/auth/csrf-token",{credentials:"include"})}catch(_){}
         var csrfBeagle=getCsrfToken();
-        var resp=await fetch("/api/minimax/v1/chat/completions",{
+        var resp=await fetch("/api/v2/minimax/v1/chat/completions",{
           method:"POST",
           credentials:"include",
           headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key,"X-CSRF-Token":csrfBeagle||""},

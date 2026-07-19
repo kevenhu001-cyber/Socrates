@@ -9,6 +9,7 @@ import './i18n.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
 import { scrollContainer, scrollToBottomIfPinned } from './ui/scroll.js';
 import { initKeyboardViewport } from './ui/keyboardViewport.js';
+import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
 import { showNewReplyPill, hideNewReplyPill, wireScrollPill } from './ui/scrollPill.js';
 import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
@@ -91,6 +92,132 @@ import {
   toggleExtensionsPicker, openExtensionsPicker, closeExtensionsPicker,
   toggleWebSearch, syncWebSearchUI,
 } from './pickers.js';
+
+/* P_global-error-guard — install one-shot handlers for `error` and
+   `unhandledrejection` so a stray throw inside an SSE callback, an
+   image upload, or any of the ~140 module-level functions in this
+   file doesn't white-screen the SPA. Without these handlers, an
+   unhandled rejection in a promise chain (e.g. fetch() returning
+   body=null during a flaky mobile network) lands only in the JS
+   console; the user sees a frozen UI with no recovery hint. The
+   handlers:
+     1. log the full reason to console.error so dev tools / future
+        remote-error reporters (Sentry etc.) pick it up,
+     2. surface a small, sanitized banner with a correlation token
+        so the user can copy it into a bug report,
+     3. never throw — a re-entrant handler would loop forever,
+     4. are installed exactly once even if main.js is re-evaluated
+        (module re-imports on Vite HMR).
+   The banner deliberately omits the raw stack trace / message: long
+   stack frames can leak session ids, file ids, or share tokens from
+   the surrounding URL, which is exactly what the prompt-exfil
+   threat model tries to surface in logs.
+   ─────────────────────────────────────────────────────────────────── */
+(function installGlobalErrorGuard(){
+  if (typeof window === 'undefined') return;
+  if (window.__socratesGlobalErrorHandlerInstalled) return;
+  window.__socratesGlobalErrorHandlerInstalled = true;
+
+  // Re-entrancy flag — if our own banner code throws, we MUST NOT
+  // dispatch the handler again (would loop and lock the page).
+  let inHandler = false;
+
+  function shortCorrel() {
+    // 8 hex chars from time + 4 random hex — enough for a user to
+    // quote in a bug report; not enough to be a guessable secret.
+    return (
+      Date.now().toString(36).slice(-6) +
+      Math.floor(Math.random() * 0xffff).toString(16).padStart(4, '0')
+    );
+  }
+
+  function ensureBanner() {
+    let el = document.getElementById('__socrates_global_err_banner');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = '__socrates_global_err_banner';
+    el.setAttribute('role', 'status');
+    el.style.cssText = [
+      'position:fixed', 'left:16px', 'right:16px', 'bottom:16px',
+      'z-index:2147483647',
+      'padding:10px 14px',
+      'border-radius:8px',
+      'background:rgba(178,34,34,0.92)',
+      'color:#fff',
+      'font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif',
+      'box-shadow:0 4px 16px rgba(0,0,0,0.18)',
+      'display:flex', 'align-items:center', 'justify-content:space-between', 'gap:12px',
+      'pointer-events:auto',
+    ].join(';');
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function showBanner(correl, hint) {
+    try {
+      const el = ensureBanner();
+      // Clear any previous banner content first (multiple errors
+      // before the user dismisses — keep the latest).
+      while (el.firstChild) el.removeChild(el.firstChild);
+
+      const msg = document.createElement('span');
+      msg.textContent = hint;
+      const id = document.createElement('code');
+      id.textContent = '#' + correl;
+      id.style.cssText = 'background:rgba(0,0,0,0.25);padding:2px 6px;border-radius:4px;font-size:12px';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = 'Dismiss';
+      btn.style.cssText = 'background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.6);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px';
+      btn.addEventListener('click', () => {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      });
+
+      el.appendChild(msg);
+      el.appendChild(id);
+      el.appendChild(btn);
+      // Auto-dismiss after 12 s so it doesn't pile up.
+      setTimeout(() => {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, 12000);
+    } catch (_) { /* banner creation failed — swallow */ }
+  }
+
+  function handle(label, payload) {
+    if (inHandler) return;
+    inHandler = true;
+    try {
+      const correl = shortCorrel();
+      // Full detail to console so dev tools / remote reporters can
+      // see the stack; banner shows only the correlation token.
+      // eslint-disable-next-line no-console
+      console.error('[global-error]', label, correl, payload);
+      if (typeof document !== 'undefined' && document.body) {
+        const hint = label === 'unhandledrejection'
+          ? 'Something went off-script. Try refreshing — if it repeats, share the code below.'
+          : 'Something broke. Try refreshing — if it repeats, share the code below.';
+        showBanner(correl, hint);
+      }
+    } finally {
+      inHandler = false;
+    }
+  }
+
+  window.addEventListener('error', (ev) => {
+    // ev.error holds the Error object when available; fall back to
+    // ev.message for the rare case the browser only reports a string.
+    handle('error', ev && (ev.error || ev.message) || 'unknown');
+    // Returning true suppresses the browser's default handler so we
+    // don't double-report via onerror("…", "…", line, col).
+    return true;
+  });
+
+  window.addEventListener('unhandledrejection', (ev) => {
+    handle('unhandledrejection', ev && (ev.reason || ev) || 'unknown');
+    // Don't preventDefault — let the dev tools still flag it.
+  });
+})();
 
 /* P_hljs-unknown-lang — monkey-patch hljs.highlightElement so the
    model can no longer trigger
@@ -585,6 +712,13 @@ initKeyboardViewport({
   input: document.getElementById('chatInputArea'),
   container: document.getElementById('appShell'),
 });
+
+/* Capacitor native bridge — StatusBar theme sync, keyboard signal
+   forwarding, hardware back button. No-op when window.Capacitor is
+   absent (i.e. regular web browser). */
+if (isNativeApp()) {
+  setupNativeBridge();
+}
 
 function switchTab(tab){
   var tk=document.getElementById("tabKnowledge");if(tk)tk.classList.toggle("active",tab==="knowledge");
@@ -1169,7 +1303,7 @@ function doSave(){
     };
     var csrf=_beaconCsrf();
     try{
-      fetch("/api/sessions",{
+      fetch("/api/v2/sessions",{
         method:"POST",
         headers:{
           "Content-Type":"application/json",
@@ -1323,17 +1457,19 @@ function setCurrentSessionId(id){
 }
 
 async function loadSession(id){
-  /* P_context-race — wait for any in-flight save to complete before
-     switching sessions. Without this, doSave() captures the snapshot
-     (sessionId + messages) at the start, but by the time the async
-     POST resolves, state.messages may have been replaced with the
-     new session's data — causing the old session's DB row to be
-     overwritten with the new session's messages ("会话串台").
-     Additionally, the _saveDirty cascade must be drained before
-     _loadingSession is set, otherwise the dirty cascade would be
-     blocked by the _loadingSession guard and the old session's
-     pending messages would be silently dropped. */
-  if(_saveInFlight){
+  /* P_context-race — prevent saveCurrentSession() during session
+     loading. Set BEFORE draining _saveInFlight so no new save can
+     sneak in during the drain window. Without this, a save that
+     fires between the drain and _loadingSession=true would capture
+     mismatched state (sessionId vs messages), causing "会话串台". */
+  _loadingSession=true;
+  /* Drain the entire save pipeline — including the _saveDirty
+     cascade. Loop because the cascade may fire a new doSave()
+     after the current one completes; the _loadingSession guard
+     above prevents any new saves from being initiated during
+     this drain, so the loop terminates when the cascade is fully
+     exhausted. */
+  while(_saveInFlight){
     try{await _saveInFlight}catch(_){}
   }
   /* Abort any active chat stream so its onDelta/finish callbacks
@@ -1344,10 +1480,6 @@ async function loadSession(id){
   window._activeChatAbort=null;
   _chatStreaming=false;
   _chatStopMode=false;
-  /* P_context-race — prevent saveCurrentSession() during session
-     loading. Event handlers that fire during the async loading window
-     could otherwise capture mismatched state. */
-  _loadingSession=true;
   /* P_stale-loadSession — record the target id before the async
      fetch. If another loadSession() call races ahead and completes
      first, _loadSessionId will have moved past ours; we check
@@ -1828,10 +1960,40 @@ async function loadSession(id){
        confusing the user — clear it and let them start a new topic
        rather than showing a blank chat panel.
        
-       P_loadSession-404 — also clean up when the failing session
-       matches the URL even if another session is already loaded,
-       so clicking a stale/deleted entry in Recents gives visual
-       feedback instead of silently doing nothing. */
+        P_loadSession-404 — also clean up when the failing session
+        matches the URL even if another session is already loaded,
+        so clicking a stale/deleted entry in Recents gives visual
+        feedback instead of silently doing nothing.
+
+        P_404-splice-guard — only splice when `id` is a well-formed
+        UUID. A 404 can ALSO be returned by GET /api/sessions/:id when
+        the id is NOT a UUID (the server's uuid guard rejects the
+        format before even hitting the DB). That happens whenever the
+        client's cached `s.id` drifted from the server's canonical id
+        (e.g. an older session saved with a non-UUID client id, or a
+        generateId() fallback that wasn't a UUID). In that case the
+        session is STILL valid server-side under a different id — it is
+        NOT "deleted", so removing it from SERVER_SESSIONS would make a
+        real history entry vanish from Recents the moment the user
+        clicks it ("点开历史会话就从列表消失"). For malformed ids we skip
+        the splice and re-sync from the server instead, which corrects
+        the stale cache. */
+    var _idIsUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id||"");
+    try{
+      if(_idIsUuid){
+        for(var si=0; si<SERVER_SESSIONS.length; si++){
+          if(SERVER_SESSIONS[si].id===id){
+            SERVER_SESSIONS.splice(si,1);
+            break;
+          }
+        }
+      }
+    }catch(_){}
+    /* Re-sync the cache from the server so the Recents list reflects
+       the authoritative state (drops genuinely-gone rows, restores
+       any id-mismatched rows under their real ids). Fire-and-forget;
+       failure is harmless — the list simply keeps its current shape. */
+    try{refreshServerSessions().then(function(){renderRecents()}).catch(function(){})}catch(_){}
     var isUrlMatch=typeof location!=="undefined"&&location.search.indexOf("chat="+encodeURIComponent(id))>=0;
     if(state.currentSessionId===id||!state.currentSessionId||isUrlMatch){
       /* Only if no other session was loaded in the meantime. */
@@ -2103,7 +2265,7 @@ function findServerSessionIndex(id){
   return -1;
 }
 
-function actuallyDeleteSession(id,ev){
+async function actuallyDeleteSession(id,ev){
   if(!CURRENT_USER)return;
   /* Helper declared first so the click-log below can read it. */
   function inFlightId(){try{return _saveInFlight?"in-flight":null}catch(e){return null}}
@@ -2117,6 +2279,16 @@ function actuallyDeleteSession(id,ev){
      cleanup branch fired. */
   if(ev&&ev.stopPropagation)ev.stopPropagation();
   if(ev&&ev.preventDefault)ev.preventDefault();
+  /* P_serialize-delete — await any in-flight save before sending
+     the DELETE. Without this, a concurrent saveCurrentSession()
+     POST could land on the server AFTER the DELETE has committed,
+     and the upsert would silently re-insert the deleted row —
+     the session "comes back to life". Drain the pipeline first
+     (including the _saveDirty cascade), then register the tombstone
+     so no subsequent save can race with the delete. */
+  if(_saveInFlight){
+    try{await _saveInFlight}catch(_){}
+  }
   /* P_delete-stale — bounce the user out of the chat view if the
      deleted session is EITHER (a) the one currently on screen
      (state.session.currentSessionId) OR (b) referenced by the
@@ -2671,6 +2843,10 @@ import { detectLanguage, languageDirectiveFor } from './chat/lang.js';
 
 
 async function startSession(){
+  /* P_slash-topic — if the slash command palette is open, don't
+     start a session; the Enter key will be handled by the palette's
+     keydown listener to insert the selected template. */
+  if(isSlashCommandPaletteOpen()) return;
   var input=document.getElementById("topicInput");
   var topic=input.value.trim();
   if(!topic)return;
@@ -3361,23 +3537,25 @@ function clearActiveTemplate(){setActiveTemplate(null);}
 /* Surface the active template as a chip above the input so
    the user always knows the system is in a specialized mode.
    Clicking × clears it; the click handler is wired inline. */
+/* P_slash-topic — also render the chip in the topic setup area. */
 function renderTemplateModeChip(){
   var chip=document.getElementById("templateModeChip");
-  if(!chip)return;
+  var topicChip=document.getElementById("topicTemplateModeChip");
   if(!_activeTemplate){
-    chip.classList.add("hidden");
-    chip.innerHTML="";
+    if(chip){chip.classList.add("hidden");chip.innerHTML="";}
+    if(topicChip){topicChip.classList.add("hidden");topicChip.innerHTML="";}
     return;
   }
   var iconHtml=_activeTemplate.icon&&_activeTemplate.icon.indexOf("<svg")===0
     ? _activeTemplate.icon
     : esc(_activeTemplate.icon||"");
-  chip.innerHTML=
+  var html=
     '<span class="template-mode-chip-icon">'+iconHtml+'</span>'+
     '<span class="template-mode-chip-label">Mode: <strong>'+esc(_activeTemplate.title)+'</strong></span>'+
     '<span class="template-mode-chip-hint">System prompt is set for this turn</span>'+
     '<button class="template-mode-chip-close" type="button" onclick="clearActiveTemplate()" aria-label="Exit template mode" title="Exit template mode">×</button>';
-  chip.classList.remove("hidden");
+  if(chip){chip.innerHTML=html;chip.classList.remove("hidden");}
+  if(topicChip){topicChip.innerHTML=html;topicChip.classList.remove("hidden");}
 }
 /* Inject the active template's system prompt as a fresh
    system message right after the base system message.
@@ -3419,9 +3597,20 @@ function injectTemplateSystemPrompt(messages){
        end:  4 }       — character index where tail begins
    Used both for filtering and for the insert step (so the
    user's ` foo` argument survives the click). */
+/* P_slash-topic — also support slash commands in the topic-setup
+   textarea (#topicInput), not just the chat composer. */
+function _getSlashInput(){
+  var input = document.getElementById("chatInputArea");
+  if(input && input.value && input.value.charAt(0)==="/") return input;
+  input = document.getElementById("topicInput");
+  if(input && input.value && input.value.charAt(0)==="/") return input;
+  return null;
+}
+var _slashActiveInput = null;
 function _currentSlashQuery(){
-  var input=document.getElementById("chatInputArea");
+  var input=_getSlashInput();
   if(!input) return null;
+  _slashActiveInput = input;
   var v=input.value;
   if(!v || v.charAt(0)!=="/") return null;
   var i=1;
@@ -3474,7 +3663,12 @@ function closeSlashCommandPalette(){
 function positionSlashCommandPalette(){
   var p=document.getElementById("slashCommandPalette");
   if(!p) return;
-  var anchor=document.getElementById("chatInputWrap")||document.getElementById("chatInputArea");
+  /* P_slash-topic — anchor to the active input's wrapper. */
+  var anchor=null;
+  if(_slashActiveInput && _slashActiveInput.id==="topicInput"){
+    anchor=document.getElementById("topicInputWrap");
+  }
+  if(!anchor) anchor=document.getElementById("chatInputWrap")||document.getElementById("chatInputArea");
   if(!anchor){
     p.style.left="50%";
     p.style.right="";
@@ -3553,8 +3747,10 @@ function insertSelectedSlashTemplate(){
   if(!_slashList.length)return;
   var t=_slashList[_slashSelected];
   if(!t)return;
-  var input=document.getElementById("chatInputArea");
-  if(!input)return;
+  /* P_slash-topic — use whichever input triggered the palette
+     (chatInputArea or topicInput) instead of always chatInputArea. */
+  var input=_slashActiveInput;
+  if(!input) return;
   /* Replace ONLY the leading `/query` chunk with the
      template body, preserving any text the user typed
      after the first whitespace. This matters because
@@ -3581,6 +3777,8 @@ function insertSelectedSlashTemplate(){
   /* Trigger autoResize so the textarea grows. */
   if(typeof autoResize==="function")autoResize(input);
   if(typeof updateSendBtn==="function")updateSendBtn();
+  /* P_slash-topic — also sync the Begin button when on topic input. */
+  if(input.id==="topicInput" && typeof updateStartBtn==="function") updateStartBtn();
   closeSlashCommandPalette();
 }
 /* Wire arrow / Enter / Esc handling for the palette itself. */
@@ -3609,8 +3807,9 @@ document.addEventListener("keydown",function(e){
    leading `/` is gone (e.g. user backspaces past it or
    pastes over it). */
 document.addEventListener("input",function(e){
+  /* P_slash-topic — also listen for slash commands on the topic input. */
   var t=e.target;
-  if(!t || t.id!=="chatInputArea") return;
+  if(!t || (t.id!=="chatInputArea" && t.id!=="topicInput")) return;
   var v=t.value;
   if(v.charAt(0)==="/"){
     if(!isSlashCommandPaletteOpen()) openSlashCommandPalette();
@@ -5713,8 +5912,21 @@ function teardownThinkStructure(){
         try{processPendingVizActions()}catch(_){}
         try{wireCodeBlockHeaders(body)}catch(_){}
         try{wireMsgBodyImages(body)}catch(_){}
-        if(hasSources){
-          var card=renderSourcesCard(sourcesSnapshot);
+        /* Source Card. The mid-stream snapshot is kept so a fresh
+           background fetch that lands while the model is still streaming
+           can't silently swap the cards underneath the user. But the
+           snapshot is captured at addStreamingMessage() time — for the
+           FIRST message of a session (or after any state reset) the
+           background fetchWebContext hasn't completed yet, so
+           state.searchResults is still [] and the snapshot is empty
+           even though the fetch will populate it a beat later. Falling
+           back to the live state at finish-time is safe because we
+           only render once here: after this card is appended, no later
+           render path will mutate it. */
+        var liveResults=Array.isArray(state.searchResults)?state.searchResults:[];
+        var sourcesToRender=hasSources?sourcesSnapshot:liveResults;
+        if(sourcesToRender.length){
+          var card=renderSourcesCard(sourcesToRender);
           if(card)div.appendChild(card);
         }
         /* Streaming AI bubbles skip addMessage(), so attach the
@@ -5911,6 +6123,32 @@ function teardownThinkStructure(){
    marked unchanged. */
 function renderAssistantHTML(rawText){
   var text=rawText||"";
+  /* Chat mode: strip the citation apparatus so the Source Card (added
+     at finish()) is the SOLE source view. Two passes:
+
+       (a) a trailing "Sources: …" block — the model often generates
+           its own markdown list of cited URLs ([1] title (url) …) at
+           the end of its answer. Matched to end-of-text ([\s\S]*$),
+           so it never accidentally removes a mid-prose mention; it
+           runs unconditionally in chat mode so the block is gone
+           regardless of whether the Source Card actually fires
+           (e.g. when state.searchResults is still empty at render
+           time but a Source Card is appended afterwards — see the
+           finishAfterRender fallback).
+
+       (b) inline [N] markers like "[1]", "[1, 2]", "[1][2]" — only
+           when state.searchResults has results, so we don't chew
+           through legit numeric references in a chat turn that has
+           no sources to point at. */
+  if(appMode==="chat"){
+    text=text.replace(
+      /(?:^|\n)\s*(?:Sources?|参考来源|来源|参考资料|参考文献|引用|参考)\s*[:：][\s\S]*$/i,
+      ""
+    );
+  }
+  if(appMode==="chat" && Array.isArray(state.searchResults) && state.searchResults.length){
+    text=text.replace(/\[\s*\d+(?:\s*,\s*\d+)*\s*\]/g,"");
+  }
   /* All placeholder lists — collected during the scan, mounted at the end. */
   var quizPH=[];
   var examplePH=[];
@@ -7174,7 +7412,7 @@ async function signOut(){
     document.cookie=name+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain="+host;
   });
   /* Re-fetch the CSRF token cookie so subsequent auth POSTs succeed. */
-  try{await fetch("/api/auth/csrf-token",{credentials:"include"})}catch(_){}
+  try{await fetch("/api/v2/auth/csrf-token",{credentials:"include"})}catch(_){}
   /* P_bleed-signout — wait for any in-flight save before clearing
      CURRENT_USER. Without this, doSave()'s POST could complete AFTER
      CURRENT_USER is null and write the just-loaded messages into the

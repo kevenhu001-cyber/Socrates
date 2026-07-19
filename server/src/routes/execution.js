@@ -5,7 +5,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { executions, files } from '../db/schema.js';
 import { isUuid } from '../lib/validate.js';
 import { NotFound } from '../lib/errors.js';
-import { trackSseConnection } from '../lib/sse.js';
+import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
 import { subscribeExecution, subscribeExecutionResult, unsubscribeExecution, unsubscribeExecutionResult } from '../services/codeInterpreter.js';
 
 const router = Router();
@@ -47,9 +47,12 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
 
     trackSseConnection(req.app, +1);
 
-    const heartbeat = setInterval(() => {
-      try { res.write(': keepalive\n\n'); try { res.flush?.(); } catch {} } catch {}
-    }, 10_000);
+    /* SSE keepalive — periodic `:keepalive` comment so the reverse
+       proxy (nginx / EdgeOne) doesn't idle-kill the upstream while
+       a long-running execution emits no progress events. The helper
+       emits one comment immediately (so a slow first event doesn't
+       look like a hang) and self-cleans on res close/finish/error. */
+    startSseKeepalive(res, { intervalMs: 10_000 });
 
     if (exec.status === 'completed' || exec.status === 'failed' || exec.status === 'timeout' || exec.status === 'cancelled') {
       let artifactFileIds = [];
@@ -73,7 +76,6 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
         artifactFileIds,
       })}\n\n`);
       res.flush?.();
-      clearInterval(heartbeat);
       res.end();
       trackSseConnection(req.app, -1);
       return;
@@ -106,7 +108,6 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
     const unsubResult = await subscribeExecutionResult(executionId, onResult);
 
     req.on('close', () => {
-      clearInterval(heartbeat);
       trackSseConnection(req.app, -1);
       if (unsubProgress) { try { unsubProgress(); } catch {} }
       if (unsubResult) { try { unsubResult(); } catch {} }

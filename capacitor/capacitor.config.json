@@ -3,16 +3,40 @@
   "appName": "Socrates",
   "webDir": "../frontend/dist",
   "server": {
-    "androidScheme": "https"
+    "url": "https://app.topodrive.top",
+    "hostname": "app.topodrive.top",
+    "androidScheme": "https",
+    "allowNavigation": [
+      "app.topodrive.top",
+      "topodrive.top",
+      "github.com",
+      "api.github.com"
+    ],
+    "cleartext": false
   },
   "android": {
     "allowMixedContent": false
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 0,
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
       "backgroundColor": "#101318",
-      "showSpinner": false
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "splashFullScreen": true,
+      "splashImmersive": true
+    },
+    "StatusBar": {
+      "overlaysWebView": false,
+      "style": "DEFAULT",
+      "backgroundColor": "#101318"
+    },
+    "Keyboard": {
+      "resize": "native",
+      "resizeOnFullScreen": true,
+      "style": "DEFAULT",
+      "scrollAdjustment": false
     }
   }
 }

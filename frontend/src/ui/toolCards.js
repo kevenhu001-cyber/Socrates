@@ -787,7 +787,7 @@ function appendInlineImage(fileId, mimeType, url, out) {
     wrap.appendChild(meta);
     if (typeof fetch === "function") {
       try {
-        fetch("/api/files/" + encodeURIComponent(fileId), { credentials: "same-origin" })
+        fetch("/api/v2/files/" + encodeURIComponent(fileId), { credentials: "same-origin" })
           .then(function (r) { return r && r.ok ? r.json() : null; })
           .then(function (metaRow) {
             if (metaRow && metaRow.name) name.textContent = metaRow.name;
