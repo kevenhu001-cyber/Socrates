@@ -80,21 +80,14 @@ export async function afterAuthEnter(){
   /* P_bleed-v2 — wipe the previous user's module-level caches
      BEFORE we start fetching the new user's data. Without this,
      the brief window between hideGate() and the completion of
-     refreshServerSessions / refreshApiConfig / loadProjects would
-     show the previous user's sessions in the sidebar, providers
-     in the model picker, and custom projects above Recents.
-     clearPerUserClientState also re-renders the affected UI
-     surfaces (renderRecents, renderProviderList, renderProjects)
-     so the empty state appears immediately. */
+     refreshServerSessions / refreshApiConfig would show the
+     previous user's sessions in the sidebar or providers in the
+     model picker. clearPerUserClientState also re-renders the
+     affected UI surfaces (renderRecents, renderProviderList) so
+     the empty state appears immediately. */
   if(typeof window.clearPerUserClientState==="function"){
     try{window.clearPerUserClientState()}catch(e){/* ignore */}
   }
-  /* P2.1 — hydrate the project list from localStorage and
-     paint the chip row. Server-side /api/projects is
-     fire-and-forget after this; local copy is the source of
-     truth until that endpoint is live. */
-  window.loadProjects&&window.loadProjects();
-  window.renderProjects&&window.renderProjects();
   /* Run the localStorage -> server migration once if there's anything to bring. */
   try{
     var localApi=localStorage.getItem("socrates-api");

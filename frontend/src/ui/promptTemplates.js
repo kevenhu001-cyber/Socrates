@@ -36,9 +36,9 @@ function renderPromptTemplatesModal() {
   var customs = all.filter(function (t) { return !t.isBuiltin; });
   var builtins = all.filter(function (t) { return t.isBuiltin; });
   var html =
-    '<div class="project-editor-head">' +
-      '<span class="project-editor-title">Prompt templates</span>' +
-      '<button class="project-editor-close" onclick="closePromptTemplatesModal()">×</button>' +
+    '<div class="modal-head">' +
+      '<span class="modal-title">Prompt templates</span>' +
+      '<button class="modal-close" onclick="closePromptTemplatesModal()">×</button>' +
     '</div>' +
     '<div class="prompt-templates-body">' +
       '<div class="prompt-templates-section-label">Built-in (' + builtins.length + ')</div>' +
@@ -80,9 +80,9 @@ function openPromptTemplateEditor(existing) {
   if (!body) return;
   var t = existing || { id: "tpl-" + Date.now().toString(36), title: "", description: "", body: "", systemPrompt: "", icon: "pg", category: "writing", shortcut: "/my-template" };
   body.innerHTML =
-    '<div class="project-editor-head">' +
-      '<span class="project-editor-title">' + (existing ? "Edit template" : "New template") + '</span>' +
-      '<button class="project-editor-close" onclick="renderPromptTemplatesModal()">×</button>' +
+    '<div class="modal-head">' +
+      '<span class="modal-title">' + (existing ? "Edit template" : "New template") + '</span>' +
+      '<button class="modal-close" onclick="renderPromptTemplatesModal()">×</button>' +
     '</div>' +
     '<div class="prompt-templates-body">' +
       '<div class="prompt-editor-grid">' +
@@ -103,10 +103,10 @@ function openPromptTemplateEditor(existing) {
       '<label class="prompt-editor-label">Body<textarea class="prompt-editor-textarea" id="ptBody" rows="4" placeholder="' + window.t("prompt.placeholderBody") + '">' + window.esc(t.body || "") + '</textarea></label>' +
       '<label class="prompt-editor-label">System prompt<textarea class="prompt-editor-textarea" id="ptSystemPrompt" rows="6" placeholder="' + window.t("prompt.placeholderSystem") + '">' + window.esc(t.systemPrompt || "") + '</textarea></label>' +
     '</div>' +
-    '<div class="project-editor-foot">' +
-      '<div class="project-editor-spacer"></div>' +
-      '<button class="project-editor-cancel" onclick="renderPromptTemplatesModal()">Cancel</button>' +
-      '<button class="project-editor-save" onclick="onPromptTemplateEditorSave(\'' + window.esc(t.id) + '\',' + (existing ? '1' : '0') + ')">Save</button>' +
+    '<div class="modal-foot">' +
+      '<div class="modal-spacer"></div>' +
+      '<button class="modal-cancel" onclick="renderPromptTemplatesModal()">Cancel</button>' +
+      '<button class="modal-save" onclick="onPromptTemplateEditorSave(\'' + window.esc(t.id) + '\',' + (existing ? '1' : '0') + ')">Save</button>' +
     '</div>';
   var title = document.getElementById("ptTitle");
   if (title) { setTimeout(function () { title.focus(); title.select(); }, 0); }

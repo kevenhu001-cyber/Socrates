@@ -22,9 +22,9 @@ export function openCheatsheet(){
   }
   var body=overlay.querySelector(".cheatsheet");
   body.innerHTML=
-    '<div class="project-editor-head">'+
-      '<span class="project-editor-title">Keyboard shortcuts</span>'+
-      '<button class="project-editor-close" onclick="closeCheatsheet()">×</button>'+
+    '<div class="modal-head">'+
+      '<span class="modal-title">Keyboard shortcuts</span>'+
+      '<button class="modal-close" onclick="closeCheatsheet()">×</button>'+
     '</div>'+
     '<div class="cheatsheet-body">'+
       buildCheatsheetSection("Navigation",[

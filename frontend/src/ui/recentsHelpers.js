@@ -19,14 +19,6 @@ export function getKnownTagsFromSessions(sessions) {
   return Object.keys(seen).sort();
 }
 
-export function filterRecentsForProject(recents, projectId, inboxProjectId) {
-  if (!projectId) return recents;
-  return (recents || []).filter(function (s) {
-    var pid = s.projectId || inboxProjectId;
-    return pid === projectId;
-  });
-}
-
 export function filterRecentsByChip(recents, recentsFilter) {
   if (recentsFilter && recentsFilter !== "all") {
     return (recents || []).filter(function (s) {
