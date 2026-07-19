@@ -269,12 +269,6 @@
         </button>
       </div>
     </div>
-    <!-- P2.1 — Projects row at the top of the sidebar. The
-         Inbox project is the system default; user-created
-         projects live as horizontal chips. Each chip is
-         clickable to filter the Recents panel; a long-press
-         (or the + button) opens the project editor. -->
-    <div class="sidebar-projects" id="sidebarProjects"></div>
 
     <!-- Unified sidebar search + view switch. The search box filters the
          session list in place (setRecentsSearch → renderRecents). The two
@@ -308,14 +302,8 @@
           <span data-i18n-key="sidebar.new">New</span>
         </button>
       </div>
-      <!-- P2.1 — active project filter chip. Renders only when
-           the user is filtered to a specific project; clicking
-           the × restores "All projects". -->
-      <div class="recents-filter" id="recentsFilter"></div>
-      <!-- P2.2 — secondary filter chips. "All" / "Pinned" plus
-           a few of the user's most-used tags. Renders inline
-           below the project filter; the active chip is
-           highlighted. -->
+      <!-- P2.2 — tag filter chip row. "All" plus a few of the user's
+           most-used tags. Renders inline; the active chip is highlighted. -->
       <div class="recents-filter-chips" id="recentsFilterChips"></div>
       <div id="recentsList"></div>
     </div>

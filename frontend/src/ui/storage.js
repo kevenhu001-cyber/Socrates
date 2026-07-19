@@ -33,9 +33,9 @@ function renderArchivedList() {
   if (!body) return;
   var archived = window.getArchivedSessions();
   var html =
-    '<div class="project-editor-head">' +
-      '<span class="project-editor-title">Archived sessions (' + archived.length + ')</span>' +
-      '<button class="project-editor-close" onclick="closeStorageModal()">×</button>' +
+    '<div class="modal-head">' +
+      '<span class="modal-title">Archived sessions (' + archived.length + ')</span>' +
+      '<button class="modal-close" onclick="closeStorageModal()">×</button>' +
     '</div>' +
     '<div class="storage-modal-body">' +
       '<div class="storage-modal-desc">These sessions are pending permanent deletion. Deleting a session in Recents first archives it for up to 30 days as a safety net; this list shows any that have not yet been purged. Use Restore to bring one back, or Delete forever to remove it now.</div>' +

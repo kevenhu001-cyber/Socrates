@@ -33,12 +33,6 @@ import {
   capSessions, getVisibleSessions, getArchivedSessionsFrom,
   sweepExpiredArchivesFrom, createDeletedSessionGuard,
 } from './session/store.js';
-import {
-  INBOX_PROJECT_ID, INBOX_PROJECT, PROJECT_COLOR_PALETTE,
-  loadProjectsFromStorage, saveProjectsToStorage, getProjectByIdFrom,
-  createProjectRecord, updateProjectRecord, deleteProjectFromList,
-  randomProjectColor,
-} from './projects/store.js';
 import { esc, escAttr, escHTML, decodeEntities, stripTags, safeHljsLang } from './render/helpers.js';
 import { parseQuizInner, parseExampleInner, parsePracticeInner, parseDefinitionInner, parseFlashcardInner, parseTheoremInner, parseProofInner, parseDerivationInner, parseKeyPointInner } from './render/widgetParsers.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions, renderViz, renderVizLoading, renderMermaid, openVizModal } from './render/viz.js';
@@ -76,7 +70,7 @@ import { stripChatArtifacts } from './util/stripChatArtifacts.js';
 import { renderRecentsFilterChips as renderRecentsFilterChipsUI } from './ui/recentsFilterChips.js';
 import {
   formatRelativeTime, getKnownTagsFromSessions,
-  filterRecentsForProject, filterRecentsByChip,
+  filterRecentsByChip,
 } from './ui/recentsHelpers.js';
 import {
   displayPrefs, loadDisplayPrefs, applyDisplayPrefs, saveDisplayPrefs,
@@ -424,9 +418,6 @@ document.addEventListener("keydown",function(e){
     if(!document.getElementById("cmdKOverlay").classList.contains("hidden")){
       e.preventDefault();closeCmdK();return;
     }
-    if(document.getElementById("projectEditorOverlay")&&!document.getElementById("projectEditorOverlay").classList.contains("hidden")){
-      e.preventDefault();closeProjectEditor();return;
-    }
     if(document.getElementById("storageModalOverlay")&&!document.getElementById("storageModalOverlay").classList.contains("hidden")){
       e.preventDefault();closeStorageModal();return;
     }
@@ -503,20 +494,6 @@ document.addEventListener("keydown",function(e){
     }
     return;
   }
-  /* Cmd+Shift+A — open projects picker (focus the chip row). */
-  if(cmd&&!e.altKey&&e.shiftKey&&key==="a"){
-    e.preventDefault();
-    var row=document.getElementById("sidebarProjects");
-    if(row){row.scrollIntoView({behavior:"smooth",block:"center"})}
-    showToast("Project chips ↑ — click to switch");
-    return;
-  }
-  /* Cmd+Shift+P — cycle to next project. */
-  if(cmd&&!e.altKey&&e.shiftKey&&key==="p"){
-    e.preventDefault();
-    cycleActiveProject();
-    return;
-  }
   /* Cmd+Shift+T — toggle theme. */
   if(cmd&&!e.altKey&&e.shiftKey&&key==="t"){
     e.preventDefault();
@@ -567,29 +544,6 @@ document.addEventListener("keydown",function(e){
     }
   }
 });
-
-/* P5.6 — cycle to the next project in the sidebar. Used by
-   the Cmd+Shift+P shortcut. */
-function cycleActiveProject(){
-  if(typeof PROJECTS==="undefined"||!PROJECTS.length)return;
-  var cur=state.session.currentProjectId||INBOX_PROJECT_ID;
-  var idx=-1;
-  for(var i=0;i<PROJECTS.length;i++){if(PROJECTS[i].id===cur){idx=i;break;}}
-  var next=PROJECTS[(idx+1)%PROJECTS.length];
-  state.session.currentProjectId=next.id===INBOX_PROJECT_ID?null:next.id;
-  /* P_cycle-inbox-filter — match onProjectChipClick's Inbox behavior:
-     cycling to Inbox clears the filter (so the user sees the full
-     unfiltered Recents list), instead of setting activeProjectFilter
-     to INBOX_PROJECT_ID. The old code set the filter to "inbox" even
-     for Inbox, which then ran filterRecentsForProject with "inbox" —
-     if the user had zero Inbox-scoped sessions, the list showed the
-     "No sessions in this project yet." empty state, another instance
-     of the "Recent list empty" bug. */
-  state.session.activeProjectFilter=next.id===INBOX_PROJECT_ID?null:next.id;
-  renderProjects();
-  renderRecents();
-  showToast("Project: "+next.name);
-}
 
 /* P5.6 — find the most recent user-authored message in
    state.session.messages. Used by the Up-arrow-in-empty-input
@@ -851,67 +805,7 @@ try{
   });
 }catch(_){}
 
-/* P2.1 — Projects. The web SPA has a built-in "Inbox" project
-   (the default for legacy sessions) and supports user-created
-   projects as a way to group related sessions. Schema:
-     { id, name, description, color, icon, systemPrompt,
-       createdAt, archivedAt }
-   Stored client-side in `socrates-projects` while the server-
-   side /api/projects endpoint (docs/api/openapi.yaml P2.1) is
-   not yet live; switched to fetch once the backend ships.
-   Sessions get a `projectId` field; missing → "inbox".
-   The default Recents list shows everything; clicking a
-   project chip filters to that project only. */
-var PROJECTS=[INBOX_PROJECT];
-try{
-  Object.defineProperty(window,"PROJECTS",{
-    configurable:true,
-    get:function(){return PROJECTS},
-    set:function(v){PROJECTS=Array.isArray(v)?v:[INBOX_PROJECT]}
-  });
-}catch(_){}
-function loadProjects(){
-  PROJECTS=loadProjectsFromStorage();
-}
-function saveProjects(){
-  saveProjectsToStorage(PROJECTS);
-}
-function getProjectById(id){
-  return getProjectByIdFrom(PROJECTS,id);
-}
-function createProject(opts){
-  var p=createProjectRecord(opts,generateId);
-  PROJECTS.push(p);
-  saveProjects();
-  renderProjects();
-  return p;
-}
-function updateProject(id,patch){
-  var p=getProjectById(id);
-  if(p.isSystem)return p;
-  updateProjectRecord(p,patch);
-  saveProjects();
-  renderProjects();
-  return p;
-}
-function deleteProject(id){
-  if(id===INBOX_PROJECT_ID)return;
-  /* Re-parent affected sessions back to Inbox. */
-  for(var i=0;i<SERVER_SESSIONS.length;i++){
-    if(SERVER_SESSIONS[i].projectId===id)SERVER_SESSIONS[i].projectId=null;
-  }
-  /* Same for in-memory active session. */
-  if(state.session.currentProjectId===id)state.session.currentProjectId=null;
-  /* Clear the Recents filter too — otherwise the user is stuck
-     looking at an empty list filtered to a project that no longer
-     exists, with no chip to click to clear it (the project is gone
-     from PROJECTS). */
-  if(state.session.activeProjectFilter===id)state.session.activeProjectFilter=null;
-  PROJECTS=deleteProjectFromList(PROJECTS,id);
-  saveProjects();
-  renderProjects();
-  renderRecents();
-}
+/* P2.1 — Projects were removed; sessions are un-categorized now. */
 function generateId(){
   /* Use the standard UUIDv4 when the browser supports it — the
    * server's `sessions.id` column is typed as `uuid`, so anything
@@ -986,11 +880,6 @@ async function refreshServerSessions(){
     }
   }
   SERVER_SESSIONS_FETCH_FAILED=!ok;
-  /* Recompute the sidebar project counts now that the session
-     list is fresh. renderProjects reads SERVER_SESSIONS for the
-     per-project session-count badge, so without this re-render
-     the chip row stays at 0 even when sessions are present. */
-  try{renderProjects()}catch(_){}
   return SERVER_SESSIONS.slice();
 }
 /* P_recents-fetch-fail — manual retry entry point bound from the
@@ -1157,15 +1046,6 @@ function doSave(){
     title:state.session.sessionTitle||state.session.topic,
     domain:state.session.domain||state.session.topic,
     mode:appMode,
-    /* P2.1 — project-to-session mapping. The client creates projects
-       locally with client-generated UUIDs. Patching these to the
-       server session would fail the FK constraint (projects.id)
-       because the server projects table uses different UUIDs
-       (server auto-generated). Until project sync is bidirectional,
-       projectId is NOT sent to the server; project filtering is
-       done entirely client-side via SERVER_SESSIONS + PROJECTS.
-       `null` = Inbox (no project). */
-    projectId: null, // client-only; see P2.1 comment above
     messages:messages,
     kbNodes:state.kb.kbNodes,
     mistakes:state.kb.mistakes||[],
@@ -2490,172 +2370,6 @@ function deleteSession(id,e){
   actuallyDeleteSession(actualId);
 }
 
-/* P2.1 — Project sidebar + filter UI. The chip row is
-   always visible (above the tab strip) and is the canonical
-   way to scope the Recents panel. The active session's
-   `currentProjectId` defaults to whatever the chip row shows,
-   so the user always knows where new chats will land. */
-function renderProjects(){
-  loadProjects();
-  var cont=document.getElementById("sidebarProjects");
-  if(!cont)return;
-  var html=[];
-  PROJECTS.forEach(function(p){
-    if(p.isSystem)return; /* hide the system Inbox chip — sessions still default to it, just no top-bar indicator */
-    var isActive=p.id===state.session.currentProjectId;
-    var isFilter=p.id===state.session.activeProjectFilter;
-    var count=SERVER_SESSIONS.filter(function(s){return (s.projectId||INBOX_PROJECT_ID)===p.id;}).length;
-    html.push(
-      '<button class="sidebar-project-chip'+(isActive?" active":"")+(isFilter?" filter":"")+'" data-project-id="'+esc(p.id)+'" style="--chip-color:'+esc(p.color)+'" onclick="onProjectChipClick(\''+esc(p.id)+'\',event)" oncontextmenu="event.preventDefault();openProjectEditor(\''+esc(p.id)+'\')" title="'+esc(p.name)+(p.isSystem?"": " — right-click to edit")+'">'+
-        '<span class="sidebar-project-icon" aria-hidden="true"></span>'+
-        '<span class="sidebar-project-name">'+esc(p.name)+'</span>'+
-        '<span class="sidebar-project-count">'+count+'</span>'+
-      '</button>'
-    );
-  });
-  html.push('<button class="sidebar-project-chip sidebar-project-add" onclick="openProjectEditor(null)" title="New project"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M12 5v14M5 12h14"/></svg></button>');
-  cont.innerHTML=html.join("");
-}
-function onProjectChipClick(projectId,ev){
-  if(ev&&(ev.shiftKey||ev.metaKey||ev.ctrlKey)){
-    /* Multi-select: toggle this project as a filter while
-       keeping the active project unchanged. */
-    if(state.session.activeProjectFilter===projectId){
-      state.session.activeProjectFilter=null;
-    }else{
-      state.session.activeProjectFilter=projectId;
-    }
-  }else if(projectId===INBOX_PROJECT_ID){
-    /* P2.1 — Inbox is the "default" view, NOT a regular filter.
-       A plain click on Inbox should always take the user back
-       to "show everything that isn't assigned to a project"
-       (i.e. the unfiltered Recents list) — clearing whatever
-       custom-project filter was active. This matches the user
-       mental model: "Inbox = home", and avoids the trap where
-       the user clicks Inbox and still sees an empty list
-       because some other project's filter is still on. */
-    state.session.currentProjectId=null;
-    state.session.activeProjectFilter=null;
-  }else{
-    /* Plain click on a custom project: pin the active project
-       to it, and scope Recents to it. */
-    state.session.currentProjectId=projectId;
-    state.session.activeProjectFilter=projectId;
-  }
-  renderProjects();
-  renderRecents();
-}
-function clearProjectFilter(){
-  state.session.activeProjectFilter=null;
-  renderProjects();
-  renderRecents();
-}
-function openProjectEditor(projectId){
-  var existing=projectId?getProjectById(projectId):null;
-  if(existing&&existing.isSystem){
-    showToast("The Inbox project is permanent");
-    return;
-  }
-  /* Lightweight modal — uses the existing shareOverlay
-     structure as a generic dialog shell. */
-  var overlay=document.getElementById("projectEditorOverlay");
-  if(!overlay){
-    overlay=document.createElement("div");
-    overlay.id="projectEditorOverlay";
-    overlay.className="cmd-k-overlay hidden";
-    overlay.onclick=function(ev){if(ev.target===overlay)closeProjectEditor()};
-    overlay.innerHTML='<div class="cmd-k-modal project-editor" onclick="event.stopPropagation()"></div>';
-    document.body.appendChild(overlay);
-  }
-  var body=overlay.querySelector(".project-editor");
-  body.innerHTML=
-    '<div class="project-editor-head">'+
-      '<span class="project-editor-title">'+(existing?"Edit project":"New project")+'</span>'+
-      '<button class="project-editor-close" onclick="closeProjectEditor()">×</button>'+
-    '</div>'+
-    '<div class="project-editor-body">'+
-      '<label class="project-editor-label">Name<input class="project-editor-input" id="projName" maxlength="80" placeholder="'+t("project.placeholderName")+'" value="'+esc(existing?existing.name:"")+'"></label>'+
-      '<label class="project-editor-label">Description<textarea class="project-editor-textarea" id="projDescription" maxlength="500" placeholder="'+t("project.placeholderDesc")+'">'+esc(existing&&existing.description||"")+'</textarea></label>'+
-      '<label class="project-editor-label">Icon<input class="project-editor-input project-editor-icon" id="projIcon" maxlength="4" value="'+esc(existing&&existing.icon||"pg")+'"></label>'+
-      '<div class="project-editor-label">Color'+
-        '<div class="project-editor-colors" id="projColors">'+
-          PROJECT_COLOR_PALETTE.map(function(c){
-            return '<button class="project-editor-swatch" data-color="'+c+'" style="background:'+c+'" onclick="pickProjectColor(\''+c+'\')" '+(existing&&existing.color===c?"data-selected=\"1\"":"" )+'></button>';
-          }).join("")+
-        '</div>'+
-      '</div>'+
-    '</div>'+
-    '<div class="project-editor-foot">'+
-      (existing?'<button class="project-editor-delete" onclick="onProjectDelete(\''+esc(existing.id)+'\')">Delete</button>':'')+
-      '<div class="project-editor-spacer"></div>'+
-      '<button class="project-editor-cancel" onclick="closeProjectEditor()">Cancel</button>'+
-      '<button class="project-editor-save" onclick="onProjectEditorSave(\''+(existing?esc(existing.id):"")+'\')">Save</button>'+
-    '</div>';
-  /* Stash the picked color on the body so the save handler
-     can read it without a hidden input. */
-  body.dataset.pickedColor=existing?existing.color:randomProjectColor();
-  overlay.classList.remove("hidden");
-  var nameEl=document.getElementById("projName");
-  if(nameEl){setTimeout(function(){nameEl.focus();nameEl.select()},0)}
-}
-function pickProjectColor(c){
-  var body=document.querySelector("#projectEditorOverlay .project-editor");
-  if(!body)return;
-  body.dataset.pickedColor=c;
-  /* Visual selection state. */
-  Array.from(body.querySelectorAll(".project-editor-swatch")).forEach(function(s){
-    if(s.dataset.color===c)s.setAttribute("data-selected","1");
-    else s.removeAttribute("data-selected");
-  });
-}
-function onProjectEditorSave(projectId){
-  var body=document.querySelector("#projectEditorOverlay .project-editor");
-  if(!body)return;
-  var name=(document.getElementById("projName")||{}).value||"";
-  var description=(document.getElementById("projDescription")||{}).value||"";
-  var icon=(document.getElementById("projIcon")||{}).value||"fl";
-  var color=body.dataset.pickedColor||randomProjectColor();
-  if(!name.trim()){
-    showToast("Project name is required");
-    return;
-  }
-  if(projectId){
-    updateProject(projectId,{name:name,description:description,color:color,icon:icon});
-  }else{
-    var p=createProject({name:name,description:description,color:color,icon:icon});
-    state.session.currentProjectId=p.id;
-    state.session.activeProjectFilter=p.id;
-  }
-  closeProjectEditor();
-  renderRecents();
-  /* Best-effort server sync — non-blocking. */
-  try{
-    apiFetch(projectId?"/api/projects/"+encodeURIComponent(projectId):"/api/projects",{
-      method:projectId?"PATCH":"POST",
-      body:{name:name,description:description,color:color,icon:icon},
-      timeoutMs:8000
-    }).catch(function(e){/* project sync failed */});
-  }catch(_){}
-}
-function onProjectDelete(projectId){
-  if(!projectId)return;
-  showConfirm("Delete project?","Sessions in this project will move back to Inbox. This cannot be undone.",true).then(function(yes){
-    if(!yes)return;
-    deleteProject(projectId);
-    closeProjectEditor();
-    try{
-      apiFetch("/api/projects/"+encodeURIComponent(projectId),{method:"DELETE",timeoutMs:8000}).catch(function(){});
-    }catch(_){}
-  });
-}
-function closeProjectEditor(){
-  var overlay=document.getElementById("projectEditorOverlay");
-  if(overlay)overlay.classList.add("hidden");
-}
-/* P2.1 — when starting a new chat, persist the active project
-   binding to the new session record. Called from resetApp(). */
-function getActiveProjectId(){return state.session.currentProjectId||null;}
-
 /* P_render-throttle — coalesce rapid renderRecents() calls into a
    single animation frame. Without this, saveCurrentSession (called
    3-5x per chat turn) triggers 3-5 full list rebuilds, causing
@@ -2672,33 +2386,12 @@ function renderRecents(){
 function doRenderRecents(){
   var cont=document.getElementById("recentsList");
   if(!cont)return;
-  /* Self-heal: if the active project filter points to a non-system
-     project id that's no longer in PROJECTS (e.g. the project was
-     deleted from another tab / by another client, or the local
-     project list was wiped), drop the filter so the user isn't
-     stuck on an empty list. The system Inbox project is the only
-     id that's always valid. */
-  var filter=state.session.activeProjectFilter;
-  if(filter&&filter!==INBOX_PROJECT_ID){
-    var stillExists=PROJECTS.some(function(p){return p.id===filter});
-    if(!stillExists){
-      state.session.activeProjectFilter=null;
-      filter=null;
-    }
-  }
   var recents=getRecents();
-  /* P2.1 — apply the active project filter. `null` = show all.
-     A project id (including INBOX_PROJECT_ID) scopes the list
-     to that project. */
-  if(filter){
-    recents=filterRecentsForProject(recents,filter,INBOX_PROJECT_ID);
-  }
-  /* P2.2 — apply the persistent tag filter, layered on
-     top of the project filter. */
+  /* P2.2 — apply the persistent tag filter. */
   var recentsFilter=getRecentsFilter();
   recents=filterRecentsByChip(recents,recentsFilter);
   /* Unified sidebar search — client-side title/topic match layered on
-     top of the project + chip filters. Complements (does not replace)
+     top of the chip filters. Complements (does not replace)
      the global Cmd-K fuse search. Empty query is a no-op. */
   var searchQ=(RECENTS_SEARCH_QUERY||"").trim().toLowerCase();
   if(searchQ){
@@ -2707,23 +2400,8 @@ function doRenderRecents(){
       return hay.indexOf(searchQ)!==-1;
     });
   }
-  /* Render the project filter chip showing what's currently
-     shown. */
-  var filterEl=document.getElementById("recentsFilter");
-  if(filterEl){
-    if(filter){
-      var proj=getProjectById(filter);
-      filterEl.innerHTML='<span class="recents-filter-chip" style="--chip-color:'+esc(proj.color)+'">'+
-        '<span class="recents-filter-icon" aria-hidden="true"></span>'+
-        '<span class="recents-filter-name">'+esc(proj.name)+'</span>'+
-        '<button class="recents-filter-clear" onclick="clearProjectFilter()" title="Show all projects">×</button>'+
-      '</span>';
-    }else{
-      filterEl.innerHTML="";
-    }
-  }
   if(recents.length===0){
-    /* Four distinct empty states so the user never sees a misleading
+    /* Three distinct empty states so the user never sees a misleading
        "No recent sessions yet." when the real cause is something else:
          0) fetch failed — the user HAS sessions on the server, we just
             couldn't load them (network blip, ad blocker, 5xx, proxy).
@@ -2731,27 +2409,21 @@ function doRenderRecents(){
             This is the root cause of the "Recent list empty on some
             devices" report: devices with network issues silently saw
             an empty list with no indication that their data existed.
-         1) project filter active, no sessions in that project
-         2) no project filter, but a tag filter is active
+         1) no fetch failure, but a tag filter is active
             and matched zero rows — surface the filter name and a
             one-click clear action so the user isn't left thinking
-            their data is gone (this is the root cause of the
-            "Inbox says 12 but list is empty" report).
-         3) no filter at all — the truly-empty state. */
+            their data is gone.
+         2) no filter at all — the truly-empty state. */
     var emptyMsg;
     if(searchQ){
       emptyMsg='<div class="recents-empty">No sessions match <strong>&ldquo;'+esc(searchQ)+'&rdquo;</strong>.<br>'+
         '<a href="#" onclick="setRecentsSearch(\'\');return false">Clear search</a> to see all sessions.</div>';
-    }else if(SERVER_SESSIONS_FETCH_FAILED && !filter && !recentsFilter){
+    }else if(SERVER_SESSIONS_FETCH_FAILED && !recentsFilter){
       /* P_recents-fetch-fail — only show the failure state when no
-         filter is active. If a filter is active and matches nothing,
-         the filter-specific empty messages below are still accurate
-         (we just couldn't load the data to match). The Retry button
-         re-runs refreshServerSessions() and re-renders. */
+         filter is active. The Retry button re-runs
+         refreshServerSessions() and re-renders. */
       emptyMsg='<div class="recents-empty">Couldn\'t load sessions. Check your connection and try again.<br>'+
         '<a href="#" onclick="retryRecentsFetch();return false">Retry</a></div>';
-    }else if(filter){
-      emptyMsg='<div class="recents-empty">No sessions in this project yet.<br><a href="#" onclick="resetApp();return false">Start a new chat</a> in this project.</div>';
     }else if(recentsFilter){
       var filterLabel="#"+recentsFilter;
       emptyMsg='<div class="recents-empty">No sessions match the <strong>'+esc(filterLabel)+'</strong> filter.<br>'+
@@ -7108,9 +6780,6 @@ async function resetApp(){
   window._shareToken=null;
   resetState();
   
-  /* P2.1 — preserve the project binding so a new chat in the
-     same project keeps the user in their context. */
-  state.session.currentProjectId=getActiveProjectId();
   toggleShareBtn();
   /* Go back to the main page — no chat session yet. */
   setChatIdInURL(null);
@@ -7214,7 +6883,7 @@ function handleAuthExpired(cause){
     try{window._pendingChatContent=null}catch(_){}
     /* P_bleed-auth-expired — same comprehensive wipe as signOut(). A
        401 may fire mid-session; without clearing SERVER_SESSIONS /
-       apiConfig / PROJECTS / _cmdKIndex, the sign-in gate's flash of
+       apiConfig / _cmdKIndex, the sign-in gate's flash of
        stale sidebar or model-picker data could briefly show the
        previous user's sessions before the next signin's fetch
        resolves. */
@@ -7346,14 +7015,7 @@ function clearPerUserClientState(){
   /* P_recents-fetch-fail — reset the fetch-failed flag on user switch
      so the new user doesn't inherit the previous user's failure state. */
   try{SERVER_SESSIONS_FETCH_FAILED=false}catch(_){}
-  /* P_filter-leak — defensively reset the project filter + current
-     project. On a fresh page load these are already null (state.js
-     initial values), but if signOut → signIn happens without a reload,
-     the previous user's filter could persist and silently scope the
-     new user's Recents to a project they may not own. */
-  try{if(state&&state.session){state.session.activeProjectFilter=null;state.session.currentProjectId=null}}catch(_){}
   try{apiConfig.activeId=null;apiConfig.providers=[]}catch(_){}
-  try{PROJECTS=[INBOX_PROJECT]}catch(_){}
   try{_cmdKIndex=null;_cmdKIndexDocs=[];_cmdKResults=[];_cmdKSelected=0;_cmdKRecent=[]}catch(_){}
   try{_deleteConfirmTimers={};_deleteConfirmStates={}}catch(_){}
   try{resetCrossSessionKBCache()}catch(_){}
@@ -7392,7 +7054,6 @@ function clearPerUserClientState(){
   try{if(typeof updateMistakesBadge==="function")updateMistakesBadge()}catch(_){}
   try{if(typeof renderProviderList==="function")renderProviderList()}catch(_){}
   try{if(typeof syncModelPills==="function")syncModelPills()}catch(_){}
-  try{if(typeof renderProjects==="function")renderProjects()}catch(_){}
 }
 /* Expose so /auth/index.js afterAuthEnter can call it before
  * fetching the new user's data. */
@@ -7429,7 +7090,7 @@ async function signOut(){
   /* P_bleed-signout — wipe every per-user cache so the next user on
      this browser starts from a clean slate. Clears _userMemories /
      geo info / _pendingChatContent (in-memory) AND the full module-
-     level set (SERVER_SESSIONS, apiConfig, PROJECTS, _cmdKIndex, …)
+     level set (SERVER_SESSIONS, apiConfig, _cmdKIndex, …)
      plus localStorage entries that survive sign-out. */
   clearPerUserClientState();
   CURRENT_USER=null;
@@ -7994,7 +7655,6 @@ window.submitChatMessage = submitChatMessage;
 window.switchTab = switchTab;
 window.syncSidebarBtns = syncSidebarBtns;
 window.toggleAppLang = toggleAppLang;
-window.closeProjectEditor = closeProjectEditor;
 window.closeTagEditor = closeTagEditor;
 window.actuallyDeleteSession = actuallyDeleteSession;
 window.confirmPurgeSession = confirmPurgeSession;
@@ -8005,16 +7665,11 @@ window.finishDiagnostic = finishDiagnostic;
 window.proceedToTeaching = proceedToTeaching;
 window.loadSession = loadSession;
 window.nextDiagQuestion = nextDiagQuestion;
-window.onProjectChipClick = onProjectChipClick;
-window.onProjectDelete = onProjectDelete;
-window.onProjectEditorSave = onProjectEditorSave;
 window.onSlashRowClick = onSlashRowClick;
 window.updateSlashSelected = updateSlashSelected;
 window.updateCmdKSelected = updateCmdKSelected;
 window.openCmdKResult = openCmdKResult;
-window.openProjectEditor = openProjectEditor;
 window.openTagEditor = openTagEditor;
-window.pickProjectColor = pickProjectColor;
 window.prevDiagQuestion = prevDiagQuestion;
 window.restoreSession = restoreSession;
 window.selectDiag = selectDiag;
@@ -8028,11 +7683,8 @@ window.toggleKBDetail = toggleKBDetail;
  * (silently consumed by the browser since the oninput is an
  * attribute handler, not a try/catch), so the typed value was
  * discarded and saveSettings POSTed an empty row. Expose it. */
-window.clearProjectFilter = clearProjectFilter;
 window.handleChatKey = handleChatKey;
 window.markAuthSuccess = markAuthSuccess;
-window.loadProjects = loadProjects;
-window.renderProjects = renderProjects;
 window.refreshServerSessions = refreshServerSessions;
 window.refreshApiConfig = refreshApiConfig;
 window.renderRecents = renderRecents;

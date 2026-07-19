@@ -81,29 +81,6 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .recents-panel.hidden{display:none}.panel-enter{animation:panelFadeIn .15s ease}
 .recents-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
 
-/* P2.1 — project chip row at the top of the sidebar. A clean
-   segmented row: a small color dot + project name + muted count.
-   The active chip gets a subtle background and a hairline accent
-   underline in the project color; the filter state (shift/cmd-
-   click) draws a thin outline so multi-select reads at a glance.
-   The + chip is a bare icon button — no chip chrome. */
-.sidebar-projects{display:flex;align-items:center;gap:2px;padding:6px 8px;overflow-x:auto;flex-shrink:0;scrollbar-width:thin}
-.sidebar-project-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:5px;background:transparent;border:0;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-400));cursor:pointer;flex-shrink:0;transition:color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),transform .12s ease;line-height:1.2;position:relative}
-.sidebar-project-chip:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
-.sidebar-project-chip:active{transform:scale(.95)}
-.sidebar-project-chip.active{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
-.sidebar-project-chip.active::after{content:"";position:absolute;left:8px;right:8px;bottom:1px;height:1.5px;border-radius:1px;background:var(--chip-color,hsl(var(--accent-000)));opacity:.85}
-.sidebar-project-chip.filter{box-shadow:0 0 0 1px var(--chip-color,hsl(var(--accent-000))/0.7);border-radius:5px}
-.sidebar-project-icon{width:8px;height:8px;border-radius:2px;background:var(--chip-color,hsl(var(--text-500)));flex-shrink:0;display:inline-block}
-.sidebar-project-name{white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis;font-weight:500}
-.sidebar-project-count{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-variant-numeric:tabular-nums;margin-left:-2px}
-.sidebar-project-add{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:5px;background:transparent;border:0;color:hsl(var(--text-500));cursor:pointer;flex-shrink:0;transition:color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),transform .15s cubic-bezier(.4,0,.2,1);margin-left:2px}
-.sidebar-project-add:hover{background:hsl(var(--bg-200));color:hsl(var(--accent-000));transform:rotate(90deg)}
-.sidebar-project-add:active{transform:rotate(90deg) scale(.88)}
-
-/* P2.1 — Recents filter chip ("Showing: Math ›") */
-.recents-filter{padding:0 4px 6px;flex-shrink:0}
-
 /* P2.2 — secondary filter chip row. A horizontal scroll of
    short tag/preset chips below the project filter. Mirrors the
    minimal project-chip style: small radius, no border, the
@@ -154,33 +131,24 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .tag-editor-foot{display:flex;justify-content:flex-end;padding-top:6px;border-top:0.5px solid hsl(var(--border-300)/0.15)}
 .tag-editor-done{padding:4px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:12px;cursor:pointer;font-family:inherit}
 .tag-editor-done:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-/* Recents scope chip ("Showing: Math ›"). Passive display, not
-   a toggle. Mirrors the project-chip style: small radius, a
-   coloured dot in place of the "in" text icon, no border, no
-   left colour bar. The × clear button is a bare icon. */
-.recents-filter-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 4px 3px 8px;border-radius:5px;background:hsl(var(--bg-200));border:0;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-200))}
-.recents-filter-icon{width:8px;height:8px;border-radius:2px;background:var(--chip-color,hsl(var(--text-500)));flex-shrink:0;display:inline-block}
-.recents-filter-name{font-weight:500}
-.recents-filter-clear{width:18px;height:18px;border-radius:4px;background:transparent;border:0;color:hsl(var(--text-400));font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .1s,color .1s}
-.recents-filter-clear:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 
-/* P2.1 — Project editor modal */
-.project-editor{padding:0;max-height:75vh;overflow-y:auto}
-.project-editor-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:0.5px solid hsl(var(--border-300)/0.18)}
-.project-editor-title{font-size:15px;font-weight:600}
-.project-editor-close{width:28px;height:28px;border-radius:6px;background:transparent;border:0;font-size:18px;color:hsl(var(--text-400));cursor:pointer}
-.project-editor-close:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
-.project-editor-body{padding:18px;display:flex;flex-direction:column;gap:12px}
-.project-editor-label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:hsl(var(--text-400))}
-.project-editor-input,.project-editor-textarea{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:6px;padding:8px 10px;font:inherit;font-size:14px;color:hsl(var(--text-100));outline:none}
-.project-editor-input:focus,.project-editor-textarea:focus{border-color:hsl(var(--accent-000)/0.6);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.15)}
-.project-editor-icon{max-width:60px}
-.project-editor-textarea{min-height:60px;resize:vertical;font-family:var(--font-sans)}
-.project-editor-colors{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-.project-editor-swatch{width:24px;height:24px;border-radius:50%;border:1.5px solid transparent;cursor:pointer;padding:0;transition:transform .1s}
-.project-editor-swatch:hover{transform:scale(1.1)}
-.project-editor-swatch[data-selected]{border-color:hsl(var(--text-100));box-shadow:0 0 0 1.5px hsl(var(--bg-100))}
-.project-editor-foot{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:0.5px solid hsl(var(--border-300)/0.18);background:hsl(var(--bg-200))}
+/* Shared modal chrome — head/title/close/foot/spacer/cancel/save.
+   Originally the project editor modal's CSS, now used by every
+   command-palette modal (storage / cheatsheet / prompt templates)
+   after the project feature was removed. */
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:0.5px solid hsl(var(--border-300)/0.18)}
+.modal-title{font-size:15px;font-weight:600}
+.modal-close{width:28px;height:28px;border-radius:6px;background:transparent;border:0;font-size:18px;color:hsl(var(--text-400));cursor:pointer}
+.modal-close:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.modal-foot{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:0.5px solid hsl(var(--border-300)/0.18);background:hsl(var(--bg-200))}
+.modal-spacer{flex:1}
+.modal-cancel,.modal-save,.modal-delete{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid transparent}
+.modal-cancel{background:transparent;color:hsl(var(--text-300));border-color:hsl(var(--border-300)/0.4)}
+.modal-cancel:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.modal-save{background:hsl(var(--accent-000));color:hsl(var(--always-white))}
+.modal-save:hover{filter:brightness(1.1)}
+.modal-delete{background:transparent;color:hsl(0 60% 70%);border-color:hsl(0 60% 30%/0.5)}
+.modal-delete:hover{background:hsl(0 60% 30%/0.4)}
 
 /* P5.6 — shortcut cheatsheet modal */
 .cheatsheet{max-height:75vh;width:min(520px,92vw);display:flex;flex-direction:column}
@@ -264,14 +232,6 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .cheatsheet-row{display:flex;align-items:center;gap:6px;padding:4px 0}
 .cheatsheet-kbd{font-family:var(--font-mono);font-size:10px;padding:2px 6px;min-width:18px;text-align:center;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:4px;background:hsl(var(--bg-000));color:hsl(var(--text-200))}
 .cheatsheet-desc{margin-left:8px;font-size:13px;color:hsl(var(--text-200))}
-.project-editor-spacer{flex:1}
-.project-editor-cancel,.project-editor-save,.project-editor-delete{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid transparent}
-.project-editor-cancel{background:transparent;color:hsl(var(--text-300));border-color:hsl(var(--border-300)/0.4)}
-.project-editor-cancel:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.project-editor-save{background:hsl(var(--accent-000));color:hsl(var(--always-white))}
-.project-editor-save:hover{filter:brightness(1.1)}
-.project-editor-delete{background:transparent;color:hsl(0 60% 70%);border-color:hsl(0 60% 30%/0.5)}
-.project-editor-delete:hover{background:hsl(0 60% 30%/0.4)}
 .recents-title{font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
 .recents-new-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-300));background:transparent;border:0.5px solid hsl(var(--border-300)/0.5);transition:background-color .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),border-color .2s cubic-bezier(.4,0,.2,1),transform .12s ease;cursor:pointer;line-height:1}
 .recents-new-btn:hover{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.08)}
@@ -3597,7 +3557,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   .attach-btn:active,
   .icon-btn:active,
   .sidebar-tab:active,
-  .sidebar-project-chip:active,
   .recent-item:active,
   .recent-item-del:active,
   .recent-item-del:hover,
@@ -3613,9 +3572,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   .attach-btn:hover svg,
   .recents-new-btn:hover svg,
   .recent-item-del:hover svg,
-  .send-btn:hover svg,
-  .sidebar-project-add:hover,
-  .sidebar-project-add:active{transform:none !important}
+  .send-btn:hover svg{transform:none !important}
   /* Disable hover translateX shifts that move content. */
   .recent-item:hover,
   .sources-row:hover{transform:none !important}
