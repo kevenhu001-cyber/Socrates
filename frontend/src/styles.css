@@ -47,13 +47,26 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .icon-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
 .icon-btn:active{transform:scale(.92)}
 .icon-btn svg{width:16px;height:16px;transition:transform .2s cubic-bezier(.4,0,.2,1)}
-.sidebar-tabs{display:flex;flex-shrink:0;padding:6px 8px;gap:4px}
-.sidebar-tab{flex:1;text-align:center;padding:6px 4px;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));border-radius:8px;transition:color .2s cubic-bezier(.4,0,.2,1),background .2s cubic-bezier(.4,0,.2,1),transform .12s ease;cursor:pointer;font-weight:500;position:relative}
-.sidebar-tab:hover{color:hsl(var(--text-200));background:hsl(var(--bg-200)/0.3)}
-.sidebar-tab:active{transform:scale(.97)}
-.sidebar-tab.active{color:hsl(var(--text-000));background:hsl(var(--bg-200));box-shadow:0 1px 3px hsl(var(--always-black)/0.06)}
-.sidebar-tab.active::after{content:"";position:absolute;left:50%;bottom:-1px;width:0;height:2px;border-radius:1px;background:hsl(var(--accent-000));transform:translateX(-50%);transition:width .26s cubic-bezier(.4,0,.2,1)}
-.sidebar-tab.active:hover::after{width:30%}
+/* Compose (new chat) button — the sidebar's primary action anchor.
+   Gets a subtle amber tint on hover so it reads as the accent action,
+   echoing the brand accent used on the logo's italic "S". */
+.compose-btn:hover{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.10)}
+/* Unified search + view-switch row. Replaces the old three text tabs.
+   The search box is the default way to filter the single session list;
+   the tutor-only icon buttons open the Knowledge / Mistakes views. */
+.sidebar-search-row{display:flex;align-items:center;gap:4px;padding:2px 8px 6px;flex-shrink:0}
+.sidebar-search{flex:1;min-width:0;display:flex;align-items:center;gap:7px;height:32px;padding:0 10px;border-radius:8px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.14);transition:border-color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),box-shadow .18s cubic-bezier(.4,0,.2,1)}
+.sidebar-search:focus-within{background:hsl(var(--bg-000));border-color:hsl(var(--accent-000)/0.55);box-shadow:0 0 0 3px hsl(var(--accent-000)/0.12)}
+.sidebar-search-icon{width:15px;height:15px;flex-shrink:0;color:hsl(var(--text-500));transition:color .18s cubic-bezier(.4,0,.2,1)}
+.sidebar-search:focus-within .sidebar-search-icon{color:hsl(var(--accent-000))}
+.sidebar-search input{flex:1;min-width:0;border:0;background:transparent;outline:none;color:hsl(var(--text-100));font-size:calc(13px * var(--app-font-scale, 1));line-height:1;padding:0}
+.sidebar-search input::placeholder{color:hsl(var(--text-500))}
+.sidebar-view-btn{position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:0;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),transform .12s ease}
+.sidebar-view-btn svg{width:17px;height:17px}
+.sidebar-view-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+.sidebar-view-btn:active{transform:scale(.92)}
+.sidebar-view-btn.active{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12)}
+.sidebar-view-btn .tab-badge{position:absolute;top:-3px;right:-3px;margin:0}
 .knowledge-panel{flex:1;overflow-y:auto;padding:12px 8px;display:flex;flex-direction:column;gap:6px;opacity:1;transition:opacity .15s ease}
 .knowledge-panel.hidden{display:none}
 .kb-section-title{font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 2px}
@@ -281,6 +294,11 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .recent-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));transform:translateX(2px)}
 .recent-item:active{transform:translateX(2px) scale(.99)}
 .recent-item.active{background:hsl(var(--bg-300))}
+/* Active session gets a 2px amber accent bar on its left edge —
+   the same accent language used on the project chip underline and
+   the logo's italic "S", so the current chat reads as "selected"
+   at a glance without a heavy fill. */
+.recent-item.active::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:2px;border-radius:0 2px 2px 0;background:hsl(var(--accent-000))}
 .recent-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .recent-item-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:hsl(var(--text-200))}
 .recent-item:hover .recent-item-text{color:hsl(var(--text-100))}
@@ -346,7 +364,12 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .recent-item-confirm-delete{padding:3px 8px;border-radius:6px;background:hsl(0 60% 30%/0.6);color:hsl(0 60% 80%);font-size:12px;cursor:pointer;border:0.5px solid hsl(0 60% 50%/0.4)}
 .recent-item-confirm-delete:hover{background:hsl(0 60% 35%/0.8);color:#fff}
 .recents-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--app-font-scale, 1));padding:32px 12px;line-height:1.6}
-.sidebar-footer{display:flex;align-items:center;gap:8px;padding:6px 8px;flex-shrink:0;border-top:0.5px solid hsl(var(--border-300)/0.10)}
+.sidebar-footer{display:flex;align-items:center;gap:4px;padding:6px 8px;flex-shrink:0;border-top:0.5px solid hsl(var(--border-300)/0.10)}
+/* The clickable user block takes the main width; the utility icons
+   (theme / display / settings) collapse into a tidy right-aligned
+   cluster instead of being pushed apart with margin-left:auto. */
+.sidebar-footer .user-row{flex:1;min-width:0}
+.sidebar-footer-actions{display:flex;align-items:center;gap:2px;flex-shrink:0;position:relative}
 .theme-toggle .theme-sun,.theme-toggle .theme-moon{width:16px;height:16px}
 [data-mode=dark] .theme-toggle .theme-sun{display:none}
 [data-mode=light] .theme-toggle .theme-moon{display:none}

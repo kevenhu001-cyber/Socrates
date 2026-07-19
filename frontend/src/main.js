@@ -286,6 +286,8 @@ window.toggleDisplayPrefs=toggleDisplayPrefs;window.toggleTheme=toggleTheme;
    them without an explicit window bridge. */
 function bridgeMainJsFunctions(){
   window.switchTab=switchTab;
+  window.setRecentsSearch=setRecentsSearch;
+  window.toggleSidebarView=toggleSidebarView;
   window.resetApp=resetApp;
   window.submitChatMessage=submitChatMessage;
   window.startSession=startSession;
@@ -736,6 +738,28 @@ function switchTab(tab){
      Knowledge tab is shown, so the stage / current sub-topic
      stay in sync after in-chat advances. */
   if(tab==="knowledge")renderKnowledgeView();
+}
+
+/* Unified sidebar search state. Read by doRenderRecents() as a
+   client-side title/topic filter. The setter keeps the input box in
+   sync (so the empty-state "Clear search" link can reset it) and
+   re-renders. */
+var RECENTS_SEARCH_QUERY="";
+function setRecentsSearch(q){
+  RECENTS_SEARCH_QUERY=q||"";
+  var input=document.getElementById("sidebarSearch");
+  if(input&&input.value!==RECENTS_SEARCH_QUERY)input.value=RECENTS_SEARCH_QUERY;
+  renderRecents();
+}
+
+/* Sidebar view switch used by the tutor-only Knowledge / Mistakes icon
+   entries. Clicking an already-active view toggles back to the unified
+   Recents list; otherwise it opens the requested view. switchTab owns
+   the actual panel show/hide. */
+function toggleSidebarView(view){
+  var el=document.getElementById(view==="knowledge"?"tabKnowledge":"tabMistakes");
+  var isActive=el&&el.classList.contains("active");
+  switchTab(isActive?"recents":view);
 }
 
 /* ============================================================
@@ -2695,6 +2719,16 @@ function doRenderRecents(){
      in this project" is just (project==P) ∧ (filter==pinned). */
   var recentsFilter=getRecentsFilter();
   recents=filterRecentsByChip(recents,recentsFilter);
+  /* Unified sidebar search — client-side title/topic match layered on
+     top of the project + chip filters. Complements (does not replace)
+     the global Cmd-K fuse search. Empty query is a no-op. */
+  var searchQ=(RECENTS_SEARCH_QUERY||"").trim().toLowerCase();
+  if(searchQ){
+    recents=recents.filter(function(s){
+      var hay=((s.title||"")+" "+(s.topic||"")).toLowerCase();
+      return hay.indexOf(searchQ)!==-1;
+    });
+  }
   /* Render the project filter chip showing what's currently
      shown. */
   var filterEl=document.getElementById("recentsFilter");
@@ -2727,7 +2761,10 @@ function doRenderRecents(){
             "Inbox says 12 but list is empty" report).
          3) no filter at all — the truly-empty state. */
     var emptyMsg;
-    if(SERVER_SESSIONS_FETCH_FAILED && !filter && !recentsFilter){
+    if(searchQ){
+      emptyMsg='<div class="recents-empty">No sessions match <strong>&ldquo;'+esc(searchQ)+'&rdquo;</strong>.<br>'+
+        '<a href="#" onclick="setRecentsSearch(\'\');return false">Clear search</a> to see all sessions.</div>';
+    }else if(SERVER_SESSIONS_FETCH_FAILED && !filter && !recentsFilter){
       /* P_recents-fetch-fail — only show the failure state when no
          filter is active. If a filter is active and matches nothing,
          the filter-specific empty messages below are still accurate
