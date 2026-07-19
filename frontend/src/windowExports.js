@@ -141,40 +141,6 @@ window.setRecentsFilter = setRecentsFilter;
 window.clearRecentsFilter = clearRecentsFilter;
 window.onRecentsFilterChipClick = onRecentsFilterChipClick;
 
-/* ─── sidebar/filterState.js (P_socratic-sidebar)
-   Unified filter store — single entry point for chip / panel / search
-   sync. filterState.js intentionally does NOT import sidebar/index.js
-   to avoid a circular import (window.<=>window), so it talks to
-   legacy main.js setters via window.* instead. ─── */
-import {
-  setFilter,
-  applySidebarFilter,
-  bootSidebarFilter,
-  refreshSidebarFilterState,
-  onSidebarChipClick,
-  sidebarFilterState,
-} from './sidebar/filterState.js';
-window.setFilter = setFilter;
-window.applySidebarFilter = applySidebarFilter;
-window.bootSidebarFilter = bootSidebarFilter;
-window.refreshSidebarFilterState = refreshSidebarFilterState;
-window.onSidebarChipClick = onSidebarChipClick;
-window.sidebarFilterState = sidebarFilterState;
-
-/* ─── sidebar/branding.js (P_socratic-sidebar)
-   Branded SVG icons (lamp / bookmark / seal / empty-state) + the
-   mount* helpers that swap them into the live DOM at boot. ─── */
-import {
-  KN_LAMP_SVG, BOOKMARK_SVG, SEAL_SVG, EMPTY_OVEN_SVG,
-  mountBrandingIcons, mountSidebarEmptyState,
-} from './sidebar/branding.js';
-window.KN_LAMP_SVG = KN_LAMP_SVG;
-window.BOOKMARK_SVG = BOOKMARK_SVG;
-window.SEAL_SVG = SEAL_SVG;
-window.EMPTY_OVEN_SVG = EMPTY_OVEN_SVG;
-window.mountBrandingIcons = mountBrandingIcons;
-window.mountSidebarEmptyState = mountSidebarEmptyState;
-
 /* ─── pickers.js ─── */
 import {
   getActiveProvider, pickActiveProviderById,
