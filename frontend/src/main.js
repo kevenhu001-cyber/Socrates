@@ -2501,6 +2501,7 @@ function renderProjects(){
   if(!cont)return;
   var html=[];
   PROJECTS.forEach(function(p){
+    if(p.isSystem)return; /* hide the system Inbox chip — sessions still default to it, just no top-bar indicator */
     var isActive=p.id===state.session.currentProjectId;
     var isFilter=p.id===state.session.activeProjectFilter;
     var count=SERVER_SESSIONS.filter(function(s){return (s.projectId||INBOX_PROJECT_ID)===p.id;}).length;
