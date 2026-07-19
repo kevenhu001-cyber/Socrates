@@ -7,7 +7,9 @@
  */
 
 import { esc } from '../render/helpers.js';
-import { formatMsg } from '../render/markdown.js';
+import { formatMsg, formatMsgProgressive } from '../render/markdown.js';
+import { getStreamRenderInterval, splitStreamingMarkdown } from '../render/streaming.js';
+import { scrollContainer } from '../ui/scroll.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions } from '../render/viz.js';
 
 /* Stream agent text into a single assistant bubble. Returns the
@@ -27,6 +29,24 @@ export function beginAgentTextStream(){
   var full="";
   var finished=false;
   var pending=null;
+  var pendingTimer=null;
+  var lastRenderAt=0;
+  var settledText=null;
+  var settled=document.createElement("div");
+  settled.className="stream-settled-content";
+  var live=document.createElement("div");
+  live.className="stream-live-content";
+  var cursor=document.createElement("span");
+  cursor.className="stream-cursor";
+  cursor.textContent="▍";
+  body.classList.add("stream-content");
+  body.appendChild(settled);
+  body.appendChild(live);
+  body.appendChild(cursor);
+  function cancelScheduled(){
+    if(pending){cancelAnimationFrame(pending);pending=null}
+    if(pendingTimer){clearTimeout(pendingTimer);pendingTimer=null}
+  }
   /* First-delta watchdog: if no text chunk arrives within 45s, surface an
      error so the user isn't left looking at an empty assistant bubble. */
   var FIRST_DELTA_TIMEOUT_MS=45000;
@@ -34,7 +54,7 @@ export function beginAgentTextStream(){
   var firstDeltaTimer=setTimeout(function(){
     if(finished||firstDelta===false)return;
     finished=true;
-    if(pending){cancelAnimationFrame(pending);pending=null}
+    cancelScheduled();
     body.innerHTML=
       '<div class="msg-error">'+
         '<span class="msg-error-text">Response timed out</span>'+
@@ -43,26 +63,37 @@ export function beginAgentTextStream(){
   function doRender(){
     pending=null;
     if(finished)return;
+    lastRenderAt=performance.now();
+    var sc=list||scrollContainer();
+    var wasPinned=!!sc&&(!window.state||!window.state._userScrolledAway)&&
+      sc.scrollHeight-sc.scrollTop-sc.clientHeight<=96;
     try{
-      body.innerHTML=formatMsg(full);
-      if(typeof hljs!=="undefined"){
-        body.querySelectorAll("pre code").forEach(function(c){
-          if(c.dataset&&c.dataset.hljsDone)return;
-          if(/```\s*$/.test(c.textContent||""))return;
-          try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
-        });
+      var parts=splitStreamingMarkdown(full);
+      if(parts.prefix){
+        if(parts.prefix!==settledText){
+          settled.innerHTML=formatMsgProgressive(parts.prefix);
+          settledText=parts.prefix;
+        }
+        live.innerHTML=parts.tail?formatMsgProgressive(parts.tail):"";
+      }else{
+        if(settledText!==null){settled.innerHTML="";settledText=null}
+        live.innerHTML=formatMsgProgressive(full);
       }
-      try{processPendingMermaid()}catch(_){}
       try{processPendingViz()}catch(_){}
       try{processPendingVizActions()}catch(_){}
     }catch(e){
-      body.innerHTML='<p>'+esc(full)+'</p>';
+      live.innerHTML='<p>'+esc(full)+'</p>';
     }
-    if(typeof window.scrollMainToBottom==="function")window.scrollMainToBottom();
+    if(wasPinned&&sc)sc.scrollTop=sc.scrollHeight;
   }
   function schedule(){
-    if(pending||finished)return;
-    pending=requestAnimationFrame(doRender);
+    if(pending||pendingTimer||finished)return;
+    var wait=Math.max(0,getStreamRenderInterval(full.length)-(performance.now()-lastRenderAt));
+    if(wait<=1){pending=requestAnimationFrame(doRender);return}
+    pendingTimer=setTimeout(function(){
+      pendingTimer=null;
+      if(!finished)pending=requestAnimationFrame(doRender);
+    },wait);
   }
   return {
     append:function(delta){
@@ -78,12 +109,21 @@ export function beginAgentTextStream(){
       if(finished)return;
       finished=true;
       clearTimeout(firstDeltaTimer);
-      if(pending){cancelAnimationFrame(pending);pending=null}
+      cancelScheduled();
+      var sc=list||scrollContainer();
+      var wasPinned=!!sc&&(!window.state||!window.state._userScrolledAway)&&
+        sc.scrollHeight-sc.scrollTop-sc.clientHeight<=96;
       try{body.innerHTML=formatMsg(full)}catch(_){body.innerHTML='<p>'+esc(full)+'</p>'}
+      body.classList.remove("stream-content");
+      if(typeof hljs!=="undefined"){
+        body.querySelectorAll("pre code").forEach(function(c){
+          try{hljs.highlightElement(c)}catch(_){}
+        });
+      }
       try{processPendingMermaid()}catch(_){}
       try{processPendingViz()}catch(_){}
       try{processPendingVizActions()}catch(_){}
-      if(typeof window.scrollMainToBottom==="function")window.scrollMainToBottom();
+      if(wasPinned&&sc)sc.scrollTop=sc.scrollHeight;
     }
   };
 }

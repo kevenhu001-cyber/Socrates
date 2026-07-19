@@ -14,7 +14,7 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('viz card renders a user canvas and flips to ready via postMessage', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.route('**/api/chat/stream', async (route) => {
+  await page.route('**/api/**/chat/stream', async (route) => {
     // Use a real newline so the ```html fence in formatMsg regex
     // matches. The formatMsg regex requires a literal \n between
     // the opening fence and the body. Sent as a single chunk —
@@ -135,7 +135,7 @@ test('viz card renders a user canvas and flips to ready via postMessage', async 
 test('viz fullscreen preserves the complete iframe srcdoc', async ({ page }) => {
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await mockAuthedApp(page);
-  await page.route('**/api/chat/stream', async (route) => {
+  await page.route('**/api/**/chat/stream', async (route) => {
     const htmlBody = [
       '```html',
       '<canvas id="cv" width="80" height="40" style="display:block;width:100%;height:120px"></canvas>',
@@ -197,7 +197,7 @@ test('viz fullscreen preserves the complete iframe srcdoc', async ({ page }) => 
 
 test('viz card surfaces a synchronous script failure instead of claiming readiness', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.route('**/api/chat/stream', async (route) => {
+  await page.route('**/api/**/chat/stream', async (route) => {
     const broken = '```html\n<div>before failure</div><script>throw new Error("chart exploded")</script>\n```';
     await route.fulfill({
       status: 200,
@@ -222,7 +222,7 @@ test('viz card surfaces a synchronous script failure instead of claiming readine
 
 test('plot card draws the function and posts viz-ready', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.route('**/api/chat/stream', async (route) => {
+  await page.route('**/api/**/chat/stream', async (route) => {
     const plotBody = '```plot\nsin(x) from -pi to pi\n```';
     const stream = [
       'data: ' + JSON.stringify({ choices: [{ delta: { content: plotBody } }] }) + '\n\n',
@@ -263,7 +263,7 @@ test('plot card draws the function and posts viz-ready', async ({ page }) => {
 
 test('ready viz cards release the iframe registry; late viz-error still surfaces', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.route('**/api/chat/stream', async (route) => {
+  await page.route('**/api/**/chat/stream', async (route) => {
     const htmlBody = [
       '```html',
       '<canvas id="cv" width="40" height="20" style="display:block;width:100%;height:60px"></canvas>',

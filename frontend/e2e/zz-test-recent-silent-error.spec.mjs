@@ -21,7 +21,7 @@ test('Recent list surfaces fetch failure instead of misleading "no sessions" mes
   let sessionsFetchCount = 0;
 
   await page.route('**/api/**', async (route) => {
-    const url = route.request().url();
+    const url = route.request().url().replace('/api/v2/', '/api/');
     const method = route.request().method();
     if (url.includes('/api/auth/me')) {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ user: { id: 'u1', email: 't@t.com', verifiedAt: '2026-01-01' } }) });
@@ -35,7 +35,7 @@ test('Recent list surfaces fetch failure instead of misleading "no sessions" mes
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ csrfToken: 'test-csrf', ok: true }) });
       return;
     }
-    if (url.includes('/api/sessions') && method === 'GET') {
+    if (/\/api\/(?:v2\/)?sessions/.test(url) && method === 'GET') {
       sessionsFetchCount++;
       // Simulate a server-side failure (5xx) — e.g. transient outage,
       // database connection issue, or rate limiting.
@@ -120,7 +120,7 @@ test('auto-retry recovers sessions when the server comes back after a transient 
   ];
 
   await page.route('**/api/**', async (route) => {
-    const url = route.request().url();
+    const url = route.request().url().replace('/api/v2/', '/api/');
     const method = route.request().method();
     if (url.includes('/api/auth/me')) {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ user: { id: 'u1', email: 't@t.com', verifiedAt: '2026-01-01' } }) });
@@ -134,7 +134,7 @@ test('auto-retry recovers sessions when the server comes back after a transient 
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ csrfToken: 'test-csrf', ok: true }) });
       return;
     }
-    if (url.includes('/api/sessions') && method === 'GET') {
+    if (/\/api\/(?:v2\/)?sessions/.test(url) && method === 'GET') {
       sessionsFetchCount++;
       if (sessionsFetchCount === 1) {
         // First attempt: transient 503 (service unavailable).
