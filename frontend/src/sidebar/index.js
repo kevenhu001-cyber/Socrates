@@ -5,7 +5,6 @@
    extraction a separate dedicated PR.
    Reads main.js globals via window.* (sidebarOpen, RECENTS_FILTER_KEY,
    syncSidebarBtns, renderRecents, getRecentsFilter, etc.). */
-import { applySidebarFilter } from './filterState.js';
 
 /* Persisted sidebar collapsed/expanded state. main.js sets up
    sidebarOpen=true and reads the persisted pref on boot.
@@ -43,13 +42,6 @@ export function getRecentsFilter(){
 export function setRecentsFilter(v){
   try{if(v)localStorage.setItem(window.RECENTS_FILTER_KEY,v);else localStorage.removeItem(window.RECENTS_FILTER_KEY)}catch(_){}
   window.renderRecents&&window.renderRecents();
-  /* P_chip-dom-sync — pipe through the unified apply so the chip
-     DOM (aria-pressed + .is-active) stays in sync, regardless of
-     which entry point (tag pill click, empty-state "Clear filter",
-     or chip click) changed the filter. The apply is coalesced
-     inside requestAnimationFrame so multiple writes per frame
-     collapse to a single DOM sync. */
-  try{ applySidebarFilter() }catch(_){}
 }
 
 /* Drop the pinned/tag filter and re-render. Used by the empty-state
