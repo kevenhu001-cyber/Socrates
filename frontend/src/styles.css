@@ -2661,41 +2661,14 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .thinking-pulse::before{border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--accent-000)/0.6);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite}
 .thinking-pulse::after{inset:2.5px;border-top-color:hsl(var(--accent-000)/0.7);border-left-color:hsl(var(--accent-000)/0.4);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite reverse}
 
-/* P_arch typewriter — during streaming we show raw text only (no
-   markdown rendering, no KaTeX). Newlines need to be preserved so
-   the streamed source reflects the model's actual line breaks
-   instead of all collapsing into one run-on line. */
+/* Streaming Markdown is split into a settled prefix and a live tail.
+   Only the tail is replaced at token cadence, keeping completed blocks,
+   selection, and expensive code/math DOM stable. */
 .stream-content{white-space:normal;word-wrap:break-word;overflow-wrap:break-word}
 .stream-content.stream-typing{white-space:pre-wrap;word-wrap:break-word}
-
-/* Skeleton placeholder — 5 shimmer lines below the "Thinking…" badge
-   while waiting for the first delta. The shimmer is a moving highlight
-   bar that sweeps across neutral bars of varying widths, mirroring the
-   placeholders used by Notion / Linear / ChatGPT. Once the first text
-   delta lands, the skeleton is removed alongside the placeholder. */
-.stream-skeleton{display:flex;flex-direction:column;gap:10px;padding:2px 0 4px;max-width:100%}
-.stream-skeleton-line{position:relative;overflow:hidden;height:13px;border-radius:6px;background:hsl(var(--bg-200)/0.85)}
-.stream-skeleton-line::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(90deg,
-    transparent 0%,
-    hsl(var(--accent-000)/0.10) 50%,
-    transparent 100%);
-  transform:translateX(-100%);
-  animation:shimmerSweep 1.6s cubic-bezier(.4,0,.2,1) infinite;
-}
-.stream-skeleton-line:nth-child(1){width:88%}
-.stream-skeleton-line:nth-child(2){width:72%}
-.stream-skeleton-line:nth-child(3){width:94%}
-.stream-skeleton-line:nth-child(4){width:58%}
-.stream-skeleton-line:nth-child(5){width:80%}
-/* Stagger the shimmer so the lines don't all flash together. */
-.stream-skeleton-line:nth-child(2)::after{animation-delay:.15s}
-.stream-skeleton-line:nth-child(3)::after{animation-delay:.3s}
-.stream-skeleton-line:nth-child(4)::after{animation-delay:.45s}
-.stream-skeleton-line:nth-child(5)::after{animation-delay:.6s}
+.stream-settled-content,.stream-live-content{min-width:0}
+.stream-settled-content:not(:empty)>p:last-child{margin-bottom:8px}
+.stream-live-content:empty{display:none}
 
 /* Inline error/retry state — replaces the streaming bubble on failure */
 .msg-error{display:flex;align-items:center;gap:8px;padding:6px 10px;border:0.5px solid hsl(0 60% 50%/0.25);border-radius:8px;background:transparent;color:hsl(0 60% 70%);font-size:calc(12px * var(--app-font-scale, 1))}

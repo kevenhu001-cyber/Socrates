@@ -36,3 +36,42 @@ test('clicking send mounts a streaming bubble or surfaces a notice without throw
   );
   expect(realErrors, `submitChatMessage threw:\n${realErrors.join('\n')}`).toEqual([]);
 });
+
+test('mobile send stays pinned to the newest message after focused input submit', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window.state.phase = 'chat';
+    window.state.topic = 'Mobile scroll smoke';
+    window.state.currentSessionId = '22222222-2222-4222-8222-222222222222';
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    document.documentElement.style.setProperty('--keyboard-inset', '280px');
+
+    for (let i = 0; i < 24; i += 1) {
+      window.addMessage(i % 2 ? 'assistant' : 'user', `Existing message ${i + 1}: enough text to make the mobile transcript scroll.`);
+    }
+    const list = document.getElementById('msgList');
+    list.scrollTop = list.scrollHeight;
+    window.state._userScrolledAway = false;
+  });
+
+  const chatInput = page.locator('#chatInputArea').first();
+  const sendBtn = page.locator('#sendBtn').first();
+
+  await chatInput.focus();
+  await chatInput.fill('A focused mobile send should remain at the newest message.');
+  await sendBtn.click();
+  await page.waitForTimeout(250);
+
+  const distanceFromBottom = await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    return Math.round(list.scrollHeight - list.scrollTop - list.clientHeight);
+  });
+
+  expect(distanceFromBottom).toBeLessThanOrEqual(4);
+});

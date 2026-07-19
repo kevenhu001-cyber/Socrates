@@ -24,6 +24,7 @@ import { createMistakeBook } from './ui/mistakeBook.js';
 import { batchSetItem, batchRemoveItem } from './batchStorage.js';
 import { LOCAL_MEMORY_MAX, loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from './storage/localMemory.js';
 import { formatTickSlice, formatMsgProgressive, formatMsg, stripMarkdown, findLastUserMessage } from './render/markdown.js';
+import { getStreamRenderInterval, splitStreamingMarkdown } from './render/streaming.js';
 import { SOCRATIC_SYSTEM_PROMPT } from './prompts/socratic.js';
 import { VISUALIZATION_ROUTING_PROMPT } from './prompts/visualization.js';
 import { fetchGeoInfo, getSystemContext, resetGeoInfo } from './system/context.js';
@@ -3868,6 +3869,7 @@ async function submitChatMessage(textOverride,opts){
   if(textOverride==null){
     addMessage("user",persistText,null,null,attList);
     input.value="";autoResize(input);updateSendBtn();
+    scheduleScrollMainToBottom({force:true});
     input.focus();
   }else{
     /* Origin: quiz — synthetic message from a quiz pick. */
@@ -4695,13 +4697,23 @@ var _chatStreaming=false;
 /* beginAgentTextStream, appendRunFooter extracted to
    src/chat/agentStream.js (Phase 1D split). Imported at the top. */
 
-function scrollMainToBottom(){
-  if(state._userScrolledAway)return;
+function scrollMainToBottom(opts){
+  opts=opts||{};
+  if(!opts.force&&state._userScrolledAway)return;
   var sc=scrollContainer();
   if(!sc)return;
   var slack=64;
   var atBottom=sc.scrollHeight-sc.scrollTop-sc.clientHeight<=slack;
-  if(atBottom)sc.scrollTop=sc.scrollHeight;
+  if(opts.force||atBottom)sc.scrollTop=sc.scrollHeight;
+}
+
+function scheduleScrollMainToBottom(opts){
+  requestAnimationFrame(function(){
+    scrollMainToBottom(opts);
+    requestAnimationFrame(function(){
+      scrollMainToBottom(opts);
+    });
+  });
 }
 
 /* Add a minimal header bar atop .msg-body <pre> blocks with
@@ -4893,18 +4905,16 @@ function addStreamingMessage(opts){
     return true;
   }
   var pendingRender=null;
-  /* P_speed-cap / P-H4 — throttle streaming renders so fast reasoning
-     models don't overwhelm the browser. formatMsgProgressive cost grows
-     with response length; at 60fps this causes visible layout jank on
-     long responses. 250ms between actual render passes (~4fps, per the
-     perf audit) keeps text readable while cutting render work sharply.
-     The stable-prefix cache below does the heavy lifting: it turns the
-     per-frame full re-parse (O(n²) over a stream) into a tail-only
-     re-parse (O(n) total). */
-  /* Throttle so fast reasoning models don't overwhelm the browser.
-     ~250ms is the upper bound on how often formatMsg runs. */
+  var pendingRenderTimer=null;
+  /* Adaptive perceptual cadence: the first screen can paint at ~20fps,
+     while very long answers progressively back off to protect input and
+     scrolling. A timer sleeps until the next useful paint rather than
+     waking the main thread on every animation frame. */
   var _lastRenderAt=0;
-  var _renderThrottleMs=250;
+  function cancelScheduledRender(){
+    if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
+    if(pendingRenderTimer){clearTimeout(pendingRenderTimer);pendingRenderTimer=null}
+  }
   /* P-H4 — skip an entire render pass when no new characters have
      arrived since the last one (e.g. the trailing rAF the throttle
      schedules after the stream goes idle). */
@@ -5049,12 +5059,8 @@ function addStreamingMessage(opts){
      timeout swaps placeholder for the error block via replaceChild
      so other children survive. */
   var FIRST_DELTA_TIMEOUT_MS=120000;
-  /* Thinking-placeholder = the "Thinking…" rotating-ring badge stacked
-     on top of a 5-line skeleton shimmer. The skeleton is the visual
-     loading cue while waiting for the first delta (mimics Notion /
-     Linear / ChatGPT placeholders). On the first text delta the entire
-     placeholder is removed as a single unit, since the streaming text
-     itself doesn't use any chunked fade-in. */
+  /* A compact status row avoids the large height collapse caused by the
+     old five-line skeleton when the first real token arrived. */
   var placeholder=document.createElement("div");
   placeholder.className="thinking-placeholder";
   var placeholderRow=document.createElement("span");
@@ -5066,14 +5072,6 @@ function addStreamingMessage(opts){
   placeholderRow.appendChild(placeholderRing);
   placeholderRow.appendChild(placeholderText);
   placeholder.appendChild(placeholderRow);
-  var _skeleton=document.createElement("div");
-  _skeleton.className="stream-skeleton";
-  for(var _si=0;_si<5;_si++){
-    var _sl=document.createElement("div");
-    _sl.className="stream-skeleton-line";
-    _skeleton.appendChild(_sl);
-  }
-  placeholder.appendChild(_skeleton);
   body.appendChild(placeholder);
   function setPlaceholderText(label){
     /* Fast text-node rewrite — no DOM rebuild, no parse, no
@@ -5098,7 +5096,7 @@ function addStreamingMessage(opts){
     if(_elapsedTick)clearInterval(_elapsedTick);
     finished=true;
     if(toolRuntime)toolRuntime.dispose();
-    if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
+    cancelScheduledRender();
     state.lastCallError="No response for "+Math.round(FIRST_DELTA_TIMEOUT_MS/1000)+"s";
     /* Cancel the underlying stream so it doesn't keep running in the
        background holding resources for the full timeout window. */
@@ -5298,18 +5296,6 @@ function teardownThinkStructure(){
     thinkState.lastRenderedAfter=null;
   }
 
-  /* P-H4 — a prefix is only safe to freeze into the stable cache when it
-     doesn't end inside an open construct. An odd number of ``` fences,
-     $$ math delimiters, or \[ vs \] display-math brackets means the cut
-     point falls inside an unfinished block; splitting there would render
-     both halves wrong, so we decline the optimization for that frame. */
-  function _prefixIsSafeToCache(s){
-    if((s.split("```").length-1)%2!==0)return false;
-    if((s.split("$$").length-1)%2!==0)return false;
-    if((s.split("\\[").length-1)!==(s.split("\\]").length-1))return false;
-    return true;
-  }
-
   function doRender(){
     pendingRender=null;
     /* P_session-stream-dispose — rAF guard. cancelAnimationFrame in
@@ -5317,16 +5303,17 @@ function teardownThinkStructure(){
        be running on this very tick. Bail before touching state.messages. */
     if(finished||_disposed)return;
 
-    /* P_speed-cap — cap render rate so fast reasoning models don't
-       overwhelm the browser. At 60fps the cost of formatMsgProgressive
-       grows linearly with response length, causing layout jank. An 80ms
-       cooldown (~12fps) keeps streaming smooth while cutting work ~5x. */
-    var _srNow=Date.now();
-    if(_srNow-_lastRenderAt<_renderThrottleMs){
-      pendingRender=requestAnimationFrame(function(){doRender()});
-      return;
-    }
-    _lastRenderAt=_srNow;
+    _lastRenderAt=performance.now();
+
+    /* Measure pinning BEFORE the DOM grows. Measuring afterwards made a
+       single tall Markdown/code update look like a manual scroll-away,
+       so streaming abruptly stopped following the answer. */
+    /* Keep using the message list even on the exact frame where it grows
+       from non-scrollable to scrollable; scrollContainer() otherwise
+       switches surfaces at that boundary and loses the bottom anchor. */
+    var _streamScroller=list||scrollContainer();
+    var _wasPinned=!state._userScrolledAway&&!!_streamScroller&&
+      (_streamScroller.scrollHeight-_streamScroller.scrollTop-_streamScroller.clientHeight<=96);
 
     /* P0 — chat-template artifact strip. The upstream LLM (Beagle,
      * DeepSeek, MiniMax M2, etc.) can leak <|im_start|>...<|im_end|>,
@@ -5394,13 +5381,13 @@ function teardownThinkStructure(){
         var savedToolContainer=body.querySelector('.think-tools');
         var savedToolCardArr=[];
         /* P_inline-artifact-survival — inline artifacts (matplotlib PNGs,
-           CSV download links, etc.) mounted on the message body are
-           critical rich-media UX. Without saving them here, the
+           native visualization cards, CSV links, etc.) mounted on the
+           message body are critical rich-media UX. Without saving them,
            body.innerHTML="" reset would silently drop them when the
            first text delta arrives after a tool result, producing
            the "image appeared once then vanished" pattern. */
         var savedArtifacts=[];
-        var artifactNodes=body.querySelectorAll('.exec-artifact');
+        var artifactNodes=body.querySelectorAll('.exec-artifact,.visualization-card');
         for(var ai=0;ai<artifactNodes.length;ai++){
           savedArtifacts.push(artifactNodes[ai]);
           artifactNodes[ai].parentNode.removeChild(artifactNodes[ai]);
@@ -5428,11 +5415,16 @@ function teardownThinkStructure(){
         streamContent=document.createElement("div");
         streamContent.className="stream-content";
         body.appendChild(streamContent);
+        settledContent=document.createElement("div");
+        settledContent.className="stream-settled-content";
+        liveContent=document.createElement("div");
+        liveContent.className="stream-live-content";
+        streamContent.appendChild(settledContent);
+        streamContent.appendChild(liveContent);
         cursor=document.createElement("span");
         cursor.className="stream-cursor";
         cursor.textContent="▍";
-        /* Cursor is a child of streamContent (see note in the other
-           appendChild(cursor) callsites). */
+        /* Keep the cursor outside the frequently replaced live tail. */
         streamContent.appendChild(cursor);
         if(savedPill)body.insertBefore(savedPill,body.firstChild);
         for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
@@ -5453,26 +5445,31 @@ function teardownThinkStructure(){
          unfinished block is re-parsed each frame. This turns the old
          O(n²) "re-parse the whole accumulated text every frame" into an
          O(tail) pass. The split is only trusted when the prefix has
-         balanced code fences / math delimiters (see _prefixIsSafeToCache);
+         balanced code fences / math delimiters (see splitStreamingMarkdown);
          otherwise we fall back to a full parse for this frame. finish()
          always re-runs the full formatMsg, so any streaming-time seam is
          corrected once the message completes. */
       var rendered;
-      var _cut=displayFull.lastIndexOf("\n\n");
-      var _prefix=_cut>0?displayFull.slice(0,_cut):"";
-      if(_prefix&&_prefixIsSafeToCache(_prefix)){
+      var _parts=splitStreamingMarkdown(displayFull);
+      var _prefix=_parts.prefix;
+      if(_prefix){
         if(_prefix!==_stablePrefixText){
           _stablePrefixHtml=formatMsgProgressive(_prefix);
           _stablePrefixText=_prefix;
+          settledContent.innerHTML=_stablePrefixHtml;
         }
-        var _tail=displayFull.slice(_cut+2);
-        rendered=_stablePrefixHtml+(_tail?formatMsgProgressive(_tail):"");
+        rendered=_parts.tail?formatMsgProgressive(_parts.tail):"";
       }else{
         rendered=formatMsgProgressive(displayFull);
+        if(_stablePrefixText!==null){
+          _stablePrefixText=null;
+          _stablePrefixHtml="";
+          settledContent.innerHTML="";
+        }
       }
-      if(streamContent.dataset.lastRendered!==rendered){
-        streamContent.innerHTML=rendered;
-        streamContent.dataset.lastRendered=rendered;
+      if(liveContent.dataset.lastRendered!==rendered){
+        liveContent.innerHTML=rendered;
+        liveContent.dataset.lastRendered=rendered;
         /* Wire viz/mermaid iframes that were just injected by the
            streaming renderer so the loading spinner is hidden and
            the card transitions to the "ready" state. */
@@ -5557,27 +5554,32 @@ function teardownThinkStructure(){
     if(stillOwnsSlot()){
       state.messages[msgIdx].rawText=full;
     }
-    /* Only auto-scroll if the user has NOT manually scrolled away and
-       is still near the bottom — otherwise leave them alone. */
-    if(!state._userScrolledAway){
-      var slack=64; /* pixels from bottom considered "at bottom" */
-      var sc=scrollContainer();
-      var atBottom=sc.scrollHeight-sc.scrollTop-sc.clientHeight<=slack;
-      if(atBottom){sc.scrollTop=sc.scrollHeight}
-      else{showNewReplyPill()}  /* P1.4 — show pill when scrolled up + new delta */
+    if(_wasPinned&&_streamScroller){
+      _streamScroller.scrollTop=_streamScroller.scrollHeight;
+    }else if(state._userScrolledAway){
+      showNewReplyPill();
     }
   }
   var streamContent=null;
+  var settledContent=null;
+  var liveContent=null;
   var cursor=null;
   /* P_arch typewriter — no chunked bookkeeping needed. The streaming
      surface is a single text node; new deltas are appended by
      overwriting streamContent.textContent on each rAF frame. */
   function scheduleRender(){
-    if(pendingRender||finished)return;
-    /* rAF coalesces multiple deltas that land in the same frame into
-       a single formatMsg pass. This is critical for streaming: if 30
-       small deltas arrive within 16ms we re-render only once. */
-    pendingRender=requestAnimationFrame(function(){doRender()});
+    if(pendingRender||pendingRenderTimer||finished)return;
+    var elapsed=performance.now()-_lastRenderAt;
+    var wait=Math.max(0,getStreamRenderInterval(full.length)-elapsed);
+    if(wait<=1){
+      pendingRender=requestAnimationFrame(function(){doRender()});
+      return;
+    }
+    pendingRenderTimer=setTimeout(function(){
+      pendingRenderTimer=null;
+      if(finished||_disposed)return;
+      pendingRender=requestAnimationFrame(function(){doRender()});
+    },wait);
   }
 
   /* First delta renders immediately so the user sees content right away */
@@ -5605,7 +5607,7 @@ function teardownThinkStructure(){
         firstDelta=false;
         clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
-        if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
+        cancelScheduledRender();
         pendingRender=requestAnimationFrame(function(){doRender()});
       }
     }
@@ -5640,7 +5642,7 @@ function teardownThinkStructure(){
       full+=delta;
       if(wasFirst){
         /* Schedule on rAF so the msg element is definitely in the DOM */
-        if(pendingRender)cancelAnimationFrame(pendingRender);
+        cancelScheduledRender();
         pendingRender=requestAnimationFrame(function(){doRender()});
       }else{
         scheduleRender();
@@ -5689,7 +5691,7 @@ function teardownThinkStructure(){
         /* Still tear down timers / SSE so nothing leaks. */
         clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
-        if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
+        cancelScheduledRender();
         toolRuntime.dispose();
         return;
       }
@@ -5699,10 +5701,7 @@ function teardownThinkStructure(){
       toolRuntime.dispose();
       clearTimeout(firstDeltaTimer);
       if(_elapsedTick)clearInterval(_elapsedTick);
-      if(pendingRender){
-        cancelAnimationFrame(pendingRender);
-        pendingRender=null;
-      }
+      cancelScheduledRender();
       /* Cancel any active typewriter animation on tool cards so the
          setTimeout chain doesn't keep updating detached DOM nodes. */
       var _twCards=div.querySelectorAll('.agent-tool-card');
@@ -5718,6 +5717,9 @@ function teardownThinkStructure(){
          now also uses marked + KaTeX via formatMsgProgressive for live streaming. */
       var total=full.length;
       var firstChunkDuration=Date.now()-(thinkStarted||Date.now());
+      var _finishScroller=list||scrollContainer();
+      var _finishWasPinned=!state._userScrolledAway&&!!_finishScroller&&
+        (_finishScroller.scrollHeight-_finishScroller.scrollTop-_finishScroller.clientHeight<=96);
       /* Skip the char-by-char animation when the response contains
        * a <think> marker. The animation writes formatted HTML into
        * a text node, so mid-stream the user would see literal
@@ -5843,12 +5845,12 @@ function teardownThinkStructure(){
         var savedToolCardArr=[];
         /* P_inline-artifact-survival-finish — the final render at
            finish() rewrites body's innerHTML. Tool cards are saved
-           and re-mounted above, but inline artifacts (matplotlib
-           PNGs) are NOT in the saved list, so they would silently
+           and re-mounted above, but inline artifacts (plots and native
+           visualization cards) need the same treatment or they silently
            vanish at the streaming→final boundary. Save them here
            too so the image is visible in the finalized bubble. */
         var savedArtifacts=[];
-        var artifactNodes=body.querySelectorAll('.exec-artifact');
+        var artifactNodes=body.querySelectorAll('.exec-artifact,.visualization-card');
         for(var ai=0;ai<artifactNodes.length;ai++){
           savedArtifacts.push(artifactNodes[ai]);
           artifactNodes[ai].parentNode.removeChild(artifactNodes[ai]);
@@ -5937,12 +5939,9 @@ function teardownThinkStructure(){
         }
         try{appendLocalMemory("assistant",full)}catch(_){}
         requestAnimationFrame(function(){
-          if(state._userScrolledAway)return;
-          var s=scrollContainer();
-          if(!s)return;
-          var slack=64;
-          var atBottom=s.scrollHeight-s.scrollTop-s.clientHeight<=slack;
-          if(atBottom)s.scrollTo({top:s.scrollHeight,behavior:"smooth"});
+          if(_finishWasPinned&&_finishScroller){
+            _finishScroller.scrollTop=_finishScroller.scrollHeight;
+          }
         });
         if(state.phase==="chat"||(state.topic&&state.kbNodes.length)){
           saveCurrentSession();
@@ -5977,10 +5976,7 @@ function teardownThinkStructure(){
       _disposed=true;
       clearTimeout(firstDeltaTimer);
       if(_elapsedTick)clearInterval(_elapsedTick);
-      if(pendingRender){
-        cancelAnimationFrame(pendingRender);
-        pendingRender=null;
-      }
+      cancelScheduledRender();
       /* Restore the send button — but only if no new stream has
        * already taken over (the new wrapper cancels the OLD
        * controller when the user sends a follow-up, and the new
@@ -6032,7 +6028,7 @@ function teardownThinkStructure(){
         toolRuntime.cancel();
         clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
-        if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
+        cancelScheduledRender();
         /* Cancel typewriter animations before replacing body content */
         var _twErr=div.querySelectorAll('.agent-tool-card');
         for(var _te=0;_te<_twErr.length;_te++){

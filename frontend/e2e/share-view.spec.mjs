@@ -32,7 +32,7 @@ const SHARED_PAYLOAD = {
 };
 
 async function mockShareRoute(page) {
-  await page.route('**/api/shares/*', async (route) => {
+  await page.route('**/api/**/shares/*', async (route) => {
     const url = route.request().url();
     if (url.includes(SHARE_TOKEN)) {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(SHARED_PAYLOAD) });
@@ -100,7 +100,7 @@ test('public ?share=TOKEN loads the read-only chat view without auth', async ({ 
 test('create + revoke share uses /api/sessions/:id/share', async ({ page }) => {
   await mockAuthedApp(page);
   const calls = [];
-  await page.route('**/api/sessions/*/share', async (route) => {
+  await page.route('**/api/**/sessions/*/share', async (route) => {
     calls.push(route.request().method() + ' ' + route.request().url());
     if (route.request().method() === 'POST') {
       await route.fulfill({
@@ -123,8 +123,8 @@ test('create + revoke share uses /api/sessions/:id/share', async ({ page }) => {
   await expect(page.locator('#shareLinkInput')).toBeVisible();
   await expect(page.locator('#shareLinkInput')).toHaveValue(/tok-abc/);
   await page.evaluate(async () => { await window.revokeShareLink(); });
-  const shareCalls = calls.filter((c) => c.includes('/api/sessions/') && c.includes('/share'));
+  const shareCalls = calls.filter((c) => /\/api\/(?:v2\/)?sessions\//.test(c) && c.includes('/share'));
   expect(shareCalls.some((c) => c.startsWith('POST'))).toBe(true);
   expect(shareCalls.some((c) => c.startsWith('DELETE'))).toBe(true);
-  expect(shareCalls.some((c) => c.includes('/api/shares/'))).toBe(false);
+  expect(shareCalls.some((c) => /\/api\/(?:v2\/)?shares\//.test(c))).toBe(false);
 });

@@ -12,7 +12,7 @@ const lnSpec = {
 
 async function renderLn(page) {
   await mockAuthedApp(page);
-  await page.route('**/api/chat/stream', async (route) => {
+  await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
       'event: tool_use\ndata: ' + JSON.stringify([{ id: 'visual-ln', name: 'render_visualization', input: lnSpec }]) + '\n\n',
       'event: tool_result\ndata: ' + JSON.stringify({ id: 'visual-ln', name: 'render_visualization', ok: true, status: 'completed', visualization: lnSpec, output: 'Visualization ready', durationMs: 1 }) + '\n\n',
@@ -31,6 +31,9 @@ async function renderLn(page) {
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('draw y = ln(x)');
   });
+  const summary = page.locator('.tool-run-summary').last();
+  await expect(summary).toBeVisible();
+  await summary.click();
 }
 
 test('native function card renders an actual SVG curve for ln(x)', async ({ page }) => {

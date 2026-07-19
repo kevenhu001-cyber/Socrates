@@ -64,19 +64,23 @@ export async function mockAuthedApp(page) {
   await page.route('**/api/**', async (route) => {
     const req = route.request();
     const url = req.url();
-    if (url.endsWith('/api/auth/me') || url.includes('/api/auth/me?')) {
+    /* Production clients rewrite /api/* to /api/v2/* to bypass stale CDN
+       caches. Normalize the versioned prefix so mocks follow the same
+       endpoint branches instead of falling through to { ok: true }. */
+    const apiUrl = url.replace('/api/v2/', '/api/');
+    if (apiUrl.endsWith('/api/auth/me') || apiUrl.includes('/api/auth/me?')) {
       await route.fulfill(jsonResponse({ user: MOCK_USER }));
       return;
     }
-    if (url.endsWith('/api/config') || url.includes('/api/config?')) {
+    if (apiUrl.endsWith('/api/config') || apiUrl.includes('/api/config?')) {
       await route.fulfill(jsonResponse(MOCK_CFG));
       return;
     }
-    if (url.endsWith('/api/auth/csrf-token')) {
+    if (apiUrl.endsWith('/api/auth/csrf-token')) {
       await route.fulfill(jsonResponse({ csrfToken: CSRF_COOKIE_VALUE, ok: true }));
       return;
     }
-    if (url.includes('/api/sessions')) {
+    if (apiUrl.includes('/api/sessions')) {
       if (req.method() === 'GET') {
         await route.fulfill(jsonResponse(MOCK_SESSIONS));
       } else {
@@ -84,13 +88,13 @@ export async function mockAuthedApp(page) {
       }
       return;
     }
-    if (url.includes('/api/api-key')) {
+    if (apiUrl.includes('/api/api-key')) {
       await route.fulfill(jsonResponse(MOCK_API_KEYS));
       return;
     }
-    if (url.includes('/api/memories') || url.includes('/api/usage') ||
-        url.includes('/api/projects') || url.includes('/api/share') ||
-        url.includes('/api/mistakes')) {
+    if (apiUrl.includes('/api/memories') || apiUrl.includes('/api/usage') ||
+        apiUrl.includes('/api/projects') || apiUrl.includes('/api/share') ||
+        apiUrl.includes('/api/mistakes')) {
       await route.fulfill(jsonResponse({ items: [], list: [], count: 0, ok: true }));
       return;
     }

@@ -14,10 +14,10 @@ test('tool activity is grouped by answer and reveals search, code, and artifacts
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   const longStdout = 'answer: 42\n' + Array.from({ length: 140 }, (_, i) => `line ${i + 1}: streamed diagnostic output`).join('\n');
   await mockAuthedApp(page);
-  await page.route('**/api/files/plot-1/raw**', async (route) => {
+  await page.route('**/api/**/files/plot-1/raw**', async (route) => {
     await route.fulfill({ status: 200, contentType: 'image/png', body: ONE_PIXEL_PNG });
   });
-  await page.route('**/api/chat/stream', async (route) => {
+  await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
       'event: tool_use\ndata: [{"id":"search-1","name":"web_search","input":{"query":"Socrates learning"}}]\n\n',
       'event: tool_result\ndata: {"id":"search-1","ok":true,"status":"completed","output":"two sources","results":[{"title":"Trusted source","url":"https://example.test/source","snippet":"A concise result.","date":"2026-07-15"},{"title":"Unsafe source","url":"javascript:alert(1)","snippet":"Must not become executable."}]}\n\n',
@@ -107,7 +107,7 @@ test('tool activity is grouped by answer and reveals search, code, and artifacts
 
 test('tool cards replay tool_call_delta frames that arrive before tool_use', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.route('**/api/chat/stream', async (route) => {
+  await page.route('**/api/**/chat/stream', async (route) => {
     const args = JSON.stringify({
       language: 'python',
       code: 'print("early delta")\nvalue = 7',
