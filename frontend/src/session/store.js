@@ -21,9 +21,6 @@ export function getVisibleSessions(sessions, now) {
   var swept = sweepExpiredArchivesFrom(sessions, now).sessions;
   var copy = swept.filter(function (s) { return !s || !s.archivedAt; });
   copy.sort(function (a, b) {
-    var ap = a && a.pinned ? 1 : 0;
-    var bp = b && b.pinned ? 1 : 0;
-    if (ap !== bp) return bp - ap;
     var at = (a && (a.updated_at || a.updatedAt || a.created_at || a.createdAt)) || 0;
     var bt = (b && (b.updated_at || b.updatedAt || b.created_at || b.createdAt)) || 0;
     return bt - at;
