@@ -1,4 +1,4 @@
-export var RECENTS_CAP = 20;
+export var RECENTS_CAP = 200;
 export var ARCHIVE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function getChatIdFromURL() {

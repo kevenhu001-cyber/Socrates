@@ -20,6 +20,12 @@
  * function once at boot.
  */
 
+/* P_cdn-bypass — the CDN (Tencent EdgeOne) has cached stale responses
+ * for /api/ paths and ignores Cache-Control headers. Use /api/v2/ prefix
+ * which the CDN has never seen, so every request hits the origin fresh.
+ * Nginx rewrites /api/v2/* → /api/* before proxying to the backend. */
+const API_PREFIX = '/api/v2';
+
 let _on401 = null;
 let _isInGraceWindow = () => false;
 
@@ -61,6 +67,8 @@ export function getCsrfToken() {
  * For ordinary JSON endpoints, use apiFetch.
  */
 export async function apiFetchRaw(path, opts = {}) {
+  /* P_cdn-bypass — prepend /api/v2 prefix to bypass stale CDN cache. */
+  path = path.replace(/^\/api\//, '/api/v2/');
   opts.credentials = 'include';
   if (!opts.headers) opts.headers = {};
   if (opts.body && typeof opts.body !== 'string') {
@@ -107,7 +115,7 @@ export async function apiFetchRaw(path, opts = {}) {
     if (r.status === 401 && !opts._authEndpoint && !_isInGraceWindow()) {
       try { _on401 && _on401('apiFetchRaw:' + method + ' ' + path); } catch (_) {}
     } else if (r.status === 403 && !opts._csrfRetried && method !== 'GET' && method !== 'HEAD') {
-      try { await fetch('/api/auth/csrf-token', { credentials: 'include' }); } catch (_) {}
+      try { await fetch('/api/v2/auth/csrf-token', { credentials: 'include' }); } catch (_) {}
       await new Promise((res) => setTimeout(res, 0));
       return apiFetchRaw(path, Object.assign({}, opts, { _csrfRetried: true }));
     }
@@ -122,6 +130,8 @@ export async function apiFetchRaw(path, opts = {}) {
 }
 
 export async function apiFetch(path, opts = {}) {
+  /* P_cdn-bypass — prepend /api/v2 prefix to bypass stale CDN cache. */
+  path = path.replace(/^\/api\//, '/api/v2/');
   opts.credentials = 'include';
   if (!opts.headers) opts.headers = {};
   if (opts.body && typeof opts.body !== 'string') {
@@ -132,6 +142,19 @@ export async function apiFetch(path, opts = {}) {
   if (method !== 'GET' && method !== 'HEAD') {
     const token = getCsrfToken();
     if (token) opts.headers['X-CSRF-Token'] = token;
+  }
+  /* P_cache-busting — append a timestamp to GET requests so CDN
+   * edge caches (e.g. Tencent EdgeOne) always fetch fresh content
+   * from the origin. Without this, a CDN that cached an early
+   * empty response from /api/sessions will keep serving it even
+   * after the backend has real data, because the CDN doesn't
+   * re-validate until the cached entry's TTL expires. The server
+   * now sets Cache-Control: no-cache but the old cached entry
+   * persists in the CDN until purged. A unique query param makes
+   * every URL a new cache key, bypassing the stale entry. */
+  if (method === 'GET') {
+    const sep = path.indexOf('?') >= 0 ? '&' : '?';
+    path = path + sep + '_t=' + Date.now();
   }
   const timeoutMs = typeof opts.timeoutMs === 'number' ? opts.timeoutMs : 30000;
   const userSignal = opts.signal || null;
@@ -187,7 +210,7 @@ export async function apiFetch(path, opts = {}) {
       // without a valid token, causing a permanent 403 loop.
       const csrfController = new AbortController();
       const csrfTimer = setTimeout(() => { try { csrfController.abort(); } catch (_) {} }, 5000);
-      try { await fetch('/api/auth/csrf-token', { credentials: 'include', signal: csrfController.signal }); } catch (_) {}
+      try { await fetch('/api/v2/auth/csrf-token', { credentials: 'include', signal: csrfController.signal }); } catch (_) {}
       clearTimeout(csrfTimer);
       await new Promise((res) => setTimeout(res, 0));
       return apiFetch(path, Object.assign({}, opts, { _csrfRetried: true }));

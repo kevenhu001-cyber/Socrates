@@ -35,7 +35,10 @@ function renderUserFooter() {
 function openProfile() {
   if (!window.CURRENT_USER) return;
   loadCustomInstructionsIntoUI();
-  document.getElementById("profileAvatar").textContent = (window.CURRENT_USER.displayName || window.CURRENT_USER.email || "?").slice(0, 2).toUpperCase();
+  var name = window.CURRENT_USER.displayName || window.CURRENT_USER.email || "?";
+  var parts = name.trim().split(/\s+/);
+  var initials = parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
+  document.getElementById("profileAvatar").textContent = initials;
   document.getElementById("profileName").textContent = window.CURRENT_USER.displayName || "User";
   document.getElementById("profileEmail").textContent = window.CURRENT_USER.email || "";
   var joinedEl = document.getElementById("profileJoined");

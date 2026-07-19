@@ -4,6 +4,28 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Socrates</title>
 <link rel="icon" type="image/png" href="/favicon.png">
+<script>
+/* Capacitor early-detect — runs before the body parses any module.
+   When the app is loaded inside a Capacitor WebView, window.Capacitor
+   is injected synchronously by the runtime, so we can:
+     1. tag <html data-capacitor-platform="android|ios"> for CSS hooks,
+     2. paint the body background immediately to match the in-app theme
+        (avoids the white flash that the default WebView shows before
+        the bundle's first paint). */
+(function () {
+  try {
+    var cap = window.Capacitor;
+    if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) {
+      var platform = typeof cap.getPlatform === 'function' ? cap.getPlatform() : 'native';
+      document.documentElement.setAttribute('data-capacitor-platform', platform);
+      document.documentElement.classList.add('is-native-app');
+      /* Paint the root with the dark surface colour so the first frame
+         is not white. The bundled CSS overrides this once it loads. */
+      document.documentElement.style.backgroundColor = '#101318';
+    }
+  } catch (_) { /* not in Capacitor — fall through */ }
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- P5.1 — Google Fonts CSS is intentionally NOT SRI-pinned: the CSS
      response is generated per-user-agent and is tiny; the actual
@@ -430,6 +452,7 @@
                container; src/attachments/render.js fans the render
                out to every wired composer. -->
           <div class="attachment-chips hidden" id="topicAttachmentChips"></div>
+          <div class="template-mode-chip hidden" id="topicTemplateModeChip" aria-live="polite"></div>
           <textarea id="topicInput" name="topicInput" aria-label="What would you like to explore?" placeholder="e.g. I want to understand how machine learning works..." data-i18n-placeholder="topic.inputPlaceholder" rows="2" oninput="autoResize(this);updateStartBtn()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startSession()}"></textarea>
           <div class="topic-footer">
             <button class="attach-btn" id="topicAttachBtn" type="button" data-i18n-aria="chat.attach.aria" data-i18n-title="chat.attach" aria-label="Attach files" title="Attach files">

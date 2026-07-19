@@ -5,7 +5,7 @@ import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/
 import { requireAuth } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../lib/sanitize.js';
-import { trackSseConnection } from '../lib/sse.js';
+import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
 import { getBeagleSystemPrompt } from '../lib/prompts.js';
 
 const router = Router();
@@ -123,11 +123,12 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       trackSseConnection(req.app, +1);
 
       const abortController = new AbortController();
-      const proxyHeartbeat = setInterval(() => {
-        try { res.write(': keepalive\n\n'); try { res.flush?.(); } catch {} } catch { clearInterval(proxyHeartbeat); }
-      }, 10_000);
+      /* SSE keepalive — shared helper emits one comment immediately
+         and then every 10 s, and self-cleans on res close/finish/error.
+         Self-cleanup means the abortController below stays focused
+         on cancelling the upstream LLM fetch. */
+      startSseKeepalive(res, { intervalMs: 10_000 });
       req.on('close', () => {
-        clearInterval(proxyHeartbeat);
         trackSseConnection(req.app, -1);
         abortController.abort();
       });

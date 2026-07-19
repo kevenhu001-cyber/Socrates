@@ -276,6 +276,14 @@ export function toggleDisplayPrefs() {
     p.style.top = "auto";
   }
   p.classList.remove("hidden");
+  /* Resync now that the popover is visible. loadDisplayPrefs() ran
+     at module init when this was display:none, so offsetWidth was 0
+     and the indicator-position rAF inside syncDisplayPrefsUI bailed
+     before --seg-x / --seg-w were ever set — meaning the sliding
+     ::before pill stayed at the CSS default (0px, 0px) until the
+     user picked a new size. Forcing a re-sync here lets the rAF
+     actually measure and place the indicator for the saved values. */
+  syncDisplayPrefsUI();
   setTimeout(function () {
     function onDoc(e) {
       if (p.contains(e.target)) return;

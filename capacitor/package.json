@@ -2,16 +2,21 @@
   "name": "socrates-capacitor",
   "private": true,
   "version": "1.0.0",
-  "description": "Bundled Android Capacitor client for Socrates",
+  "description": "Capacitor Android app for Socrates — loads frontend from https://app.topodrive.top",
   "scripts": {
     "web:build": "npm --prefix ../frontend run build",
     "sync": "npm run web:build && npx cap sync android",
-    "apk:debug": "npm run sync && cd android && gradlew.bat assembleDebug",
-    "apk:release": "npm run sync && cd android && gradlew.bat assembleRelease"
+    "apk:debug": "npm run sync && cd android && ./gradlew assembleDebug",
+    "apk:release": "npm run sync && cd android && ./gradlew assembleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
-    "@capacitor/core": "^7.4.3"
+    "@capacitor/app": "^7.0.1",
+    "@capacitor/browser": "^7.0.0",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/keyboard": "^7.0.1",
+    "@capacitor/splash-screen": "^7.0.0",
+    "@capacitor/status-bar": "^7.0.1"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",

@@ -141,10 +141,25 @@ app.use(helmet({
       // Inline scripts are gated by hash; the dev-only 'unsafe-eval'
       // is required for Vite HMR. Production emits NO inline scripts
       // (Vite bundles to /assets/index-*.js).
+      //
+      // P_csp-dev-eval — previously this branch was gated on
+      // `process.env.NODE_ENV === 'production'`, which had two
+      // failure modes:
+      //   1. NODE_ENV unset → defaults to 'development' → unsafe-eval
+      //      silently allowed in production. (Node's default for an
+      //      unset NODE_ENV is 'development'; pm2 / systemd / Docker
+      //      setups that omit NODE_ENV would weaken CSP without any
+      //      log warning.)
+      //   2. NODE_ENV='staging' / 'preview' / 'qa' (any non-'production'
+      //      value) → same silent weakening.
+      // Replace with an explicit opt-in: an operator who wants Vite
+      // HMR / dev tooling must set ALLOW_DEV_EVAL=1 deliberately.
+      // Leaving it unset (the production default) keeps the strict
+      // policy regardless of NODE_ENV.
       scriptSrc: [
         ...CSP_SCRIPT_SOURCES,
         ...CSP_SCRIPT_HASHES,
-        ...(process.env.NODE_ENV === 'production' ? [] : ["'unsafe-eval'"]),
+        ...(process.env.ALLOW_DEV_EVAL === '1' ? ["'unsafe-eval'"] : []),
       ],
       styleSrc: CSP_STYLE_SOURCES,
       fontSrc: CSP_FONT_SOURCES,
@@ -272,6 +287,20 @@ app.use((req, _res, next) => {
 /* ────────────────────────────
    Routes
    ──────────────────────────── */
+
+/* P_cache-invalidation — set Cache-Control headers on EVERY API
+   response so CDN edge caches (e.g. Tencent EdgeOne) never serve
+   stale user-specific data. Without this, a CDN may cache the
+   response to /api/sessions and serve an empty "sessions:[]" to
+   all subsequent requests, even after the backend has real data.
+   The `private` directive prevents shared-cache storage; `no-cache`
+   forces revalidation; `no-store` forbids any caching at all. */
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'private, no-cache, no-store, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
 
 app.get('/api/health', async (_req, res) => {
   try {
