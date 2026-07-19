@@ -44,7 +44,7 @@ export function setRecentsFilter(v){
   window.renderRecents&&window.renderRecents();
 }
 
-/* Drop the pinned/tag filter and re-render. Used by the empty-state
+/* Drop the active tag filter and re-render. Used by the empty-state
    "Clear filter" link so a user who's stuck looking at an empty list
    (because a stale filter matches nothing) can recover in one click. */
 export function clearRecentsFilter(){

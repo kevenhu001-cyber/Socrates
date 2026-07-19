@@ -13,15 +13,9 @@ export function buildRecentsFilterChipsHTML(currentFilter, tags) {
   var html = [];
   html.push(chip("All", null, !currentFilter));
 
-  var pinActive = currentFilter === "pinned";
-  html.push('<button class="recents-filter-chip-btn' + (pinActive ? " active" : "") +
-    '" data-filter="pinned" onclick="onRecentsFilterChipClick(\'pinned\')" title="Pinned">' +
-    '<svg class="icon-inline" viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2 H12 V14 L8 11 L4 14 Z"/></svg>' +
-    '<span class="recents-filter-chip-label">Pinned</span></button>');
-
   var tagSet = {};
   tags.forEach(function (t) { tagSet[t] = true; });
-  if (currentFilter && currentFilter !== "pinned" && !tagSet[currentFilter]) {
+  if (currentFilter && !tagSet[currentFilter]) {
     tags.push(currentFilter);
   }
   if (tags.length) {

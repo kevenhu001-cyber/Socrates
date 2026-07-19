@@ -28,9 +28,6 @@ export function filterRecentsForProject(recents, projectId, inboxProjectId) {
 }
 
 export function filterRecentsByChip(recents, recentsFilter) {
-  if (recentsFilter === "pinned") {
-    return (recents || []).filter(function (s) { return s && s.pinned; });
-  }
   if (recentsFilter && recentsFilter !== "all") {
     return (recents || []).filter(function (s) {
       return Array.isArray(s.tags) && s.tags.indexOf(recentsFilter) >= 0;

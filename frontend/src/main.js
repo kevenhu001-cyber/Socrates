@@ -940,9 +940,9 @@ function getRecents(){
 }
 function setRecents(arr){SERVER_SESSIONS=capSessions(arr)}
 
-/* P2.2 — filter chip state. `null` = all; otherwise one of
-   "pinned" or a tag string. Persisted in localStorage so
-   the user's last filter survives a reload. */
+/* P2.2 — filter chip state. `null` = all; otherwise a tag
+   string. Persisted in localStorage so the user's last filter
+   survives a reload. */
 var RECENTS_FILTER_KEY="socrates-recents-filter";
 try{window.RECENTS_FILTER_KEY=RECENTS_FILTER_KEY}catch(_){}
 
@@ -2126,28 +2126,6 @@ function showDeleteConfirm(clientId){
     if(_deleteConfirmStates[clientId])cancelDeleteConfirm(clientId)}
   ,5000);
 }
-/* P2.2 — toggle a session's pinned state. The UI re-renders
-   immediately; the server sync is fire-and-forget. */
-function togglePinSession(id,e){
-  if(e){e.stopPropagation();e.preventDefault()}
-  var idx=findServerSessionIndex(id);
-  if(idx<0)return;
-  var s=SERVER_SESSIONS[idx];
-  s.pinned=!s.pinned;
-  /* Persist via PATCH so the same value flows to other
-     devices the next time /api/sessions is called. The
-     server-side PATCH accepts any subset of SessionSummary
-     fields. */
-  apiFetch("/api/sessions/"+encodeURIComponent(id),{
-    method:"PATCH",
-    body:{pinned:s.pinned},
-    timeoutMs:8000
-  }).catch(function(err){
-    /* pin sync failed */
-  });
-  renderRecents();
-}
-
 /* P2.2 — open the inline tag editor popover anchored to a
    session row. The popover accepts comma / Enter separated
    tags and persists via PATCH. */
@@ -2714,9 +2692,8 @@ function doRenderRecents(){
   if(filter){
     recents=filterRecentsForProject(recents,filter,INBOX_PROJECT_ID);
   }
-  /* P2.2 — apply the persistent tag / pin filter, layered on
-     top of the project filter. The two compose: "show pinned
-     in this project" is just (project==P) ∧ (filter==pinned). */
+  /* P2.2 — apply the persistent tag filter, layered on
+     top of the project filter. */
   var recentsFilter=getRecentsFilter();
   recents=filterRecentsByChip(recents,recentsFilter);
   /* Unified sidebar search — client-side title/topic match layered on
@@ -2754,7 +2731,7 @@ function doRenderRecents(){
             devices" report: devices with network issues silently saw
             an empty list with no indication that their data existed.
          1) project filter active, no sessions in that project
-         2) no project filter, but a pinned/tag filter is active
+         2) no project filter, but a tag filter is active
             and matched zero rows — surface the filter name and a
             one-click clear action so the user isn't left thinking
             their data is gone (this is the root cause of the
@@ -2775,7 +2752,7 @@ function doRenderRecents(){
     }else if(filter){
       emptyMsg='<div class="recents-empty">No sessions in this project yet.<br><a href="#" onclick="resetApp();return false">Start a new chat</a> in this project.</div>';
     }else if(recentsFilter){
-      var filterLabel=recentsFilter==="pinned"?"pinned":("#"+recentsFilter);
+      var filterLabel="#"+recentsFilter;
       emptyMsg='<div class="recents-empty">No sessions match the <strong>'+esc(filterLabel)+'</strong> filter.<br>'+
         '<a href="#" onclick="clearRecentsFilter();return false">Clear filter</a> to see all sessions.</div>';
     }else{
@@ -2817,14 +2794,7 @@ function doRenderRecents(){
     var modeLabel=isExam?"Exam":(resolvedMode==="chat"?"Chat":"Tutor");
     var modeCls=isExam?"mode-exam":(resolvedMode==="chat"?"mode-chat":"mode-tutor");
     var safeId="r-"+Math.abs((s.id||"").split("").reduce(function(a,b){a=(a<<5)-a+b.charCodeAt(0);return a&a},0));
-    var pinned=!!(s.pinned);
-    html+='<div class="recent-item'+(active?" active":"")+(pinned?" pinned":"")+'" data-recent-id="'+safeId+'" data-recent-actual="'+esc(s.id)+'" onclick="loadSession(\''+esc(s.id)+'\')">';
-    /* P2.2 — pin button on the left edge of the row. Tapping
-       toggles the pinned state; pinned rows float to the top
-       automatically because getRecents() sorts them first. */
-    html+='<button class="recent-item-pin'+(pinned?" pinned":"")+'" title="'+(pinned?"Unpin":"Pin to top")+'" onclick="togglePinSession(\''+esc(s.id)+'\',event)">';
-    html+='<svg viewBox="0 0 24 24" fill="'+(pinned?"currentColor":"none")+'" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><line x1="12" y1="12" x2="12" y2="20"/></svg>';
-    html+='</button>';
+    html+='<div class="recent-item'+(active?" active":"")+'" data-recent-id="'+safeId+'" data-recent-actual="'+esc(s.id)+'" onclick="loadSession(\''+esc(s.id)+'\')">';
     /* P2.2 — mode-coloured dot. The visible text is hidden via CSS
        (font-size:0; overflow:hidden) so the span is just a 6 px circle;
        the title attribute provides a hover tooltip. */
@@ -2859,9 +2829,9 @@ function doRenderRecents(){
   });
   cont.innerHTML=html;
   /* P2.2 — render the secondary filter chip row. "All" is the
-     default; "Pinned" filters to pinned sessions; the user's
-     most-used tags are also surfaced. The active chip is
-     highlighted; clicking a chip toggles its filter state. */
+     default; the user's most-used tags are surfaced as chips.
+     The active chip is highlighted; clicking a chip toggles
+     its filter state. */
   renderRecentsFilterChips();
 }
 
@@ -8048,7 +8018,6 @@ window.prevDiagQuestion = prevDiagQuestion;
 window.restoreSession = restoreSession;
 window.selectDiag = selectDiag;
 window.toggleKBDetail = toggleKBDetail;
-window.togglePinSession = togglePinSession;
 /* P_input-fields-not-persisted — renderProviderList builds the
  * settings provider-row inputs with inline oninput="updateProviderField(...)".
  * Inline HTML attribute handlers are resolved on the global object
