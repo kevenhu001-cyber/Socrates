@@ -743,23 +743,31 @@ function switchTab(tab){
 /* Unified sidebar search state. Read by doRenderRecents() as a
    client-side title/topic filter. The setter keeps the input box in
    sync (so the empty-state "Clear search" link can reset it) and
-   re-renders. */
+   re-renders. P_socratic-sidebar: also fan out to the unified
+   applySidebarFilter() so chip aria-pressed + panel state stay in
+   sync regardless of which entry point fired (search box, chip
+   click, view switch, empty-state "Clear filter", etc.). */
 var RECENTS_SEARCH_QUERY="";
 function setRecentsSearch(q){
   RECENTS_SEARCH_QUERY=q||"";
   var input=document.getElementById("sidebarSearch");
   if(input&&input.value!==RECENTS_SEARCH_QUERY)input.value=RECENTS_SEARCH_QUERY;
   renderRecents();
+  try{ if(typeof window.applySidebarFilter==="function") window.applySidebarFilter(); }catch(_){}
 }
 
 /* Sidebar view switch used by the tutor-only Knowledge / Mistakes icon
    entries. Clicking an already-active view toggles back to the unified
    Recents list; otherwise it opens the requested view. switchTab owns
-   the actual panel show/hide. */
+   the actual panel show/hide. P_socratic-sidebar: also fan out to the
+   unified applySidebarFilter() so the new chip / panel aria-pressed
+   classes (driven by syncChipDOM / syncPanelButtons) refresh in the
+   same frame. */
 function toggleSidebarView(view){
   var el=document.getElementById(view==="knowledge"?"tabKnowledge":"tabMistakes");
   var isActive=el&&el.classList.contains("active");
   switchTab(isActive?"recents":view);
+  try{ if(typeof window.applySidebarFilter==="function") window.applySidebarFilter(); }catch(_){}
 }
 
 /* ============================================================
@@ -8098,3 +8106,13 @@ syncWebSearchUI();
 syncExtensionsUI();
 syncAppModeUI();
 syncSidebarForMode();
+/* P_socratic-sidebar — boot the unified sidebar filter store and
+   swap the Lucide-style header icons for the branded Socratic SVGs.
+   Both helpers are idempotent: mountBrandingIcons checks
+   [data-branded] before re-writing innerHTML, and bootSidebarFilter
+   guards against re-entry via its _booted flag. They read localStorage
+   directly (no need for window state to be ready), so running them
+   here — after syncSidebarForMode but before the first paint of any
+   panel — is safe. */
+try{ if(typeof window.mountBrandingIcons==="function") window.mountBrandingIcons(); }catch(_){}
+try{ if(typeof window.bootSidebarFilter==="function") window.bootSidebarFilter(); }catch(_){}
