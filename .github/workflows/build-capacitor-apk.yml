@@ -75,9 +75,8 @@ jobs:
 
       - name: Locate APK
         id: apk
-        working-directory: capacitor
         run: |
-          APK=$(ls android/app/build/outputs/apk/${{ steps.build-type.outputs.type }}/app-*.apk 2>/dev/null | head -1)
+          APK=$(ls capacitor/android/app/build/outputs/apk/${{ steps.build-type.outputs.type }}/app-*.apk 2>/dev/null | head -1)
           echo "path=$APK" >> $GITHUB_OUTPUT
           echo "name=$(basename $APK)" >> $GITHUB_OUTPUT
           echo "Found APK: $APK"
