@@ -2443,21 +2443,17 @@ function doRenderRecents(){
     var meta=[];
     meta.push(formatRelativeTime(s.updated_at||s.updatedAt||s.created_at||s.createdAt||Date.now()));
     if(s.total_q||s.totalQ)meta.push((s.total_q||s.totalQ)+" Qs");
-    /* Resolve the displayed mode. Three sources, in order:
+    /* Resolve the displayed mode. Always reflect the SESSION's own
+       persisted mode, never the global appMode — otherwise clicking a
+       Chat session while the app is in Tutor mode would flip its dot to
+       amber, misrepresenting the session type. Sources, in order:
          1) the session's persisted s.mode  (truthful for sessions saved
             after we added the field)
          2) the persisted s.phase === "chat" hint (older sessions that
-            had no mode field but did have phase)
-         3) the active appMode — if this row IS the currently active
-            session and we know we're in chat mode, show Chat even if
-            the server hasn't been updated yet (e.g. session just
-            created, the async save hasn't completed) */
+            had no mode field but did have phase) */
     var resolvedMode=s.mode;
     if(resolvedMode!=="chat"&&resolvedMode!=="tutor"){
       if(s.phase==="chat"){resolvedMode="chat"}
-    }
-    if(active){
-      resolvedMode=appMode;
     }
     /* P_exam-history — exam sessions get their own label and CSS
      * class on the recent-row badge. We check s.kind first because
