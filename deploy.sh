@@ -123,6 +123,21 @@ if [ -d "$SITE_DIR" ]; then
       -print0)
 fi
 
+# ─── 2b. Status page (status.topodrive.top) ──────────────────────────
+# Uses a versioned filename (status.<TS>.html) so EdgeOne CDN sees a
+# new URL on every deploy. nginx's try_files points directly to the
+# versioned file — no symlink or status.html needed.
+STATUS_DIR="/var/www/status.topodrive.top"
+STATUS_SRC="/home/ubuntu/User/Socrates/server/src/status.html"
+if [ -f "$STATUS_SRC" ]; then
+  STATUS_TS=$(date +%s)
+  STATUS_FILE="status.${STATUS_TS}.html"
+  $SUDO install -m 644 -o www-data -g www-data "$STATUS_SRC" "$STATUS_DIR/$STATUS_FILE"
+  # Update nginx try_files to point to the new versioned file
+  $SUDO sed -ri "s|try_files /status\.[0-9]+\.html =404;|try_files /$STATUS_FILE =404;|" /etc/nginx/sites-available/status.topodrive.top
+  echo "  status:  ${STATUS_FILE}"
+fi
+
 # ─── 3. Restart backend server ────────────────────────────────────────
 echo "Restarting backend via systemd…"
 # The server runs as a systemd unit (Restart=always). Use systemctl to

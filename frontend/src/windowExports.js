@@ -177,8 +177,38 @@ window.markProvidersFetched = markProvidersFetched;
 // main.js keeps them on window itself.
 
 /* ─── ui/cheatsheet.js ─── */
-import { closeCheatsheet } from './ui/cheatsheet.js';
+import { closeCheatsheet, openCheatsheet } from './ui/cheatsheet.js';
 window.closeCheatsheet = closeCheatsheet;
+/* PR-A — openCheatsheet is referenced inline by the More popover
+   (More → Keyboard shortcuts) and was previously only reachable
+   through the main.js keydown handler. Re-bridge it here so
+   inline-handlers.spec.mjs sees a window.openCheatsheet binding. */
+window.openCheatsheet = openCheatsheet;
+
+/* ─── sidebar/nav.js (PR-A of the sidebar overhaul) ─── */
+import { openNav, setActiveNav, closeAllPanels } from './sidebar/nav.js';
+/* `openNav` is the dispatcher wired to the .sidebar-nav-btn onclick
+   in index.html. `setActiveNav` is exposed for the morePopover
+   module to clear the More button's active state on close (avoids
+   a nav.js ↔ morePopover.js import cycle). `closeAllPanels` is
+   public for tests and any future cross-panel navigators. */
+window.openNav = openNav;
+window.setActiveNav = setActiveNav;
+window.closeAllPanels = closeAllPanels;
+/* PR-B/C/D/E — panel inline handlers. nav.js defines these on
+   window.* directly, but we re-affirm the bridge here so the
+   export audit trail is complete. */
+import './sidebar/nav.js';
+
+/* ─── sidebar/morePopover.js (PR-A) ─── */
+import { closeMorePopover, toggleMorePopover } from './sidebar/morePopover.js';
+/* `closeMorePopover` is called inline by each More-menu item's
+   onclick so the popover dismisses before the underlying action
+   (openSettings / signOut / etc.) runs. `toggleMorePopover` is
+   also exposed for completeness (tests may want to open/close
+   the popover programmatically). */
+window.closeMorePopover = closeMorePopover;
+window.toggleMorePopover = toggleMorePopover;
 
 /* ─── ui/confirm.js ─── */
 import { closeConfirm, showConfirm } from './ui/confirm.js';

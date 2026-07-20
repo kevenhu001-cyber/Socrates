@@ -110,11 +110,11 @@ function shell({ preheader, title, body }) {
     <td align="center" style="padding:64px 16px 48px">
       <table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" style="max-width:100%;width:100%">
 
-        <!-- Wordmark — small, tight, left-aligned.
-             No icon. -->
+        <!-- Brand — logo mark + wordmark, tight left-aligned. -->
         <tr>
           <td align="left" style="padding:0 0 56px">
-            <div style="font-family:'Inter',-apple-system,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.025em;color:#111;line-height:20px">
+            <img src="https://app.topodrive.top/logo.png" alt="Socrates" width="28" height="28" style="display:block;width:28px;height:28px;border:0;border-radius:7px" />
+            <div style="margin-top:12px;font-family:'Inter',-apple-system,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.025em;color:#111;line-height:20px">
               Socrates
             </div>
           </td>
@@ -334,10 +334,109 @@ export async function sendDuplicateRegistrationEmail(email) {
       'The address is already on file, so no account was created.',
       "If this was you trying to sign back in, use the sign-in screen or request a password reset. If it wasn't you, you can safely ignore this email — your account is still secure.",
     ]),
-    html: shell({
-      preheader: 'A registration was attempted with your email address.',
-      title: 'New registration attempt on your Socrates account',
+      html: shell({
+        preheader: 'A registration was attempted with your email address.',
+        title: 'New registration attempt on your Socrates account',
+        body,
+      }),
+  });
+}
+
+/**
+ * Send the status-page subscription confirmation email.
+ *
+ * Branded for the Topodrive Status site (not the Socrates wordmark),
+ * but follows the same restrained monochrome transactional language:
+ * single 540px column, generous rhythm, one hairline, no card/shadow.
+ * `confirmUrl` is the public status host link the subscriber clicks.
+ */
+export async function sendStatusSubscriptionEmail(email, confirmUrl) {
+  const wordmark = 'Topodrive <span style="font-weight:400;color:#8a8a8a">Status</span>';
+
+  const body = `
+    <h1 style="margin:0 0 14px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#111;line-height:1.25;letter-spacing:-0.02em">
+      Almost there — confirm your subscription
+    </h1>
+    <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.65;color:#4a4a4a">
+      Thanks for subscribing to <strong style="color:#111;font-weight:500">Topodrive Status</strong> updates. We'll email you the moment a service goes down or recovers — no noise, only when it matters.
+    </p>
+    ${ctaButton('Confirm subscription', confirmUrl)}
+    ${fallbackLink(confirmUrl)}
+    <p style="margin:36px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#8a8a8a">
+      This confirmation link expires in 7 days. If you didn't request this subscription, you can safely ignore this email — nothing has been set up yet.
+    </p>
+  `;
+
+  await sendEmail({
+    to: email,
+    subject: 'Confirm your Topodrive Status subscription',
+    text: textWrap([
+      'Thanks for subscribing to Topodrive Status updates.',
+      'Please confirm your email by opening this link:',
+      confirmUrl,
+      'We will only email you when a service goes down or recovers.',
+      'This link expires in 7 days. If you did not request this, you can ignore this email.',
+    ]),
+    html: statusShell({
+      preheader: 'One tap to confirm your Topodrive Status alerts.',
+      title: 'Confirm your Topodrive Status subscription',
+      wordmark,
       body,
     }),
   });
+}
+
+/* Status-site email layout — mirrors the Socrates shell's monochrome
+ * discipline but carries the Topodrive Status wordmark and links back
+ * to the status page rather than the app. */
+function statusShell({ preheader, title, wordmark, body }) {
+  const pre = preheader || '';
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>${title}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+</style>
+</head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility">
+<span style="display:none!important;opacity:0;color:transparent;height:0;width:0;overflow:hidden">${pre}</span>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff">
+  <tr>
+    <td align="center" style="padding:64px 16px 48px">
+      <table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" style="max-width:100%;width:100%">
+
+        <tr>
+          <td align="left" style="padding:0 0 56px">
+            <img src="https://app.topodrive.top/logo.png" alt="Topodrive Status" width="28" height="28" style="display:block;width:28px;height:28px;border:0;border-radius:7px" />
+            <div style="margin-top:12px;font-family:'Inter',-apple-system,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.025em;color:#111;line-height:20px">
+              ${wordmark}
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="font-size:15px;line-height:1.6;color:#4a4a4a">
+            ${body}
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:48px 0 0">
+            <div style="height:1px;background:#ececec;line-height:1px;font-size:1px">&nbsp;</div>
+            <div style="padding-top:20px;font-size:12px;line-height:1.5;color:#8a8a8a;letter-spacing:-0.005em">
+              <a href="https://status.topodrive.top" style="color:#8a8a8a;text-decoration:none">Topodrive Status</a> · real-time service health for Topodrive.
+            </div>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`;
 }

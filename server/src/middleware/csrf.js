@@ -119,11 +119,14 @@ export function csrfProtection(req, res, next) {
   }
 
   // Skip for the CSRF token endpoint itself (chicken-and-egg).
-  // Compare against the *exact* path. Use baseUrl+path rather than
-  // originalUrl.startsWith(...) so that paths like
-  // `/api/auth/csrf-token-foo` are NOT treated as the csrf endpoint
-  // and would still require a valid token.
   if (req.baseUrl === '/api/auth' && req.path === '/csrf-token') {
+    return next();
+  }
+
+  // Skip for public status API (status.topodrive.top subscribe/confirm).
+  // This middleware runs at the app level, so the path is the full
+  // request path (/api/status/subscribe), not the router-relative one.
+  if (req.path === '/api/status/subscribe' || req.path === '/api/status/confirm') {
     return next();
   }
 

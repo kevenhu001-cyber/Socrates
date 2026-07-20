@@ -340,6 +340,82 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .recent-item-confirm-delete{padding:3px 8px;border-radius:6px;background:hsl(0 60% 30%/0.6);color:hsl(0 60% 80%);font-size:12px;cursor:pointer;border:0.5px solid hsl(0 60% 50%/0.4)}
 .recent-item-confirm-delete:hover{background:hsl(0 60% 35%/0.8);color:#fff}
 .recents-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
+
+/* PR-B: Library panel — files & artifacts list */
+.library-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
+.library-panel.hidden{display:none}
+.library-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.library-title{font-size:calc(11px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-200));text-transform:uppercase;letter-spacing:.04em}
+.library-count{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500))}
+.library-tabs{display:flex;gap:2px;padding:0 12px 6px;flex-shrink:0}
+.library-tab{padding:4px 10px;border-radius:6px;border:none;background:transparent;color:hsl(var(--text-400));font-size:calc(11px * var(--sidebar-font-scale));cursor:pointer;transition:background .12s,color .12s;font-family:var(--font-sans)}
+.library-tab:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.library-tab.active{background:hsl(var(--accent-000)/.12);color:hsl(var(--accent-000))}
+.library-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.library-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;cursor:pointer;transition:background .12s}
+.library-item:hover{background:hsl(var(--bg-300))}
+.library-item-icon{width:14px;height:14px;flex-shrink:0;color:hsl(var(--text-400))}
+.library-item-info{flex:1;min-width:0}
+.library-item-name{font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-200));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.library-item-meta{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500))}
+.library-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
+
+/* PR-C: Spaces panel — projects list */
+.spaces-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
+.spaces-panel.hidden{display:none}
+.spaces-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.spaces-title{font-size:calc(11px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-200));text-transform:uppercase;letter-spacing:.04em}
+.spaces-add-btn{width:24px;height:24px;border-radius:6px;border:none;background:transparent;color:hsl(var(--text-400));cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s}
+.spaces-add-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.spaces-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.spaces-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s}
+.spaces-item:hover{background:hsl(var(--bg-300))}
+.spaces-item-color{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.spaces-item-info{flex:1;min-width:0}
+.spaces-item-name{font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-200));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spaces-item-count{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500))}
+.spaces-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
+
+/* PR-D: Scheduled panel — scheduled tasks */
+.scheduled-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
+.scheduled-panel.hidden{display:none}
+.scheduled-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.scheduled-title{font-size:calc(11px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-200));text-transform:uppercase;letter-spacing:.04em}
+.scheduled-add-btn{width:24px;height:24px;border-radius:6px;border:none;background:transparent;color:hsl(var(--text-400));cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s}
+.scheduled-add-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.scheduled-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.scheduled-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s}
+.scheduled-item:hover{background:hsl(var(--bg-300))}
+.scheduled-item-icon{width:14px;height:14px;flex-shrink:0;color:hsl(var(--text-400))}
+.scheduled-item-info{flex:1;min-width:0}
+.scheduled-item-title{font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-200));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scheduled-item-meta{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));display:flex;gap:6px;align-items:center}
+.scheduled-item-status{display:inline-block;width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.scheduled-item-status.active{background:hsl(145 50% 50%)}
+.scheduled-item-status.paused{background:hsl(40 80% 50%)}
+.scheduled-item-status.completed{background:hsl(var(--text-500))}
+.scheduled-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
+
+/* PR-E: Plugins panel — installed extensions */
+.plugins-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
+.plugins-panel.hidden{display:none}
+.plugins-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.plugins-title{font-size:calc(11px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-200));text-transform:uppercase;letter-spacing:.04em}
+.plugins-browse-btn{padding:4px 10px;border-radius:6px;border:none;background:hsl(var(--accent-000)/.12);color:hsl(var(--accent-000));font-size:calc(10px * var(--sidebar-font-scale));font-weight:500;cursor:pointer;transition:background .12s;font-family:var(--font-sans)}
+.plugins-browse-btn:hover{background:hsl(var(--accent-000)/.2)}
+.plugins-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.plugins-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s}
+.plugins-item:hover{background:hsl(var(--bg-300))}
+.plugins-item-icon{width:14px;height:14px;flex-shrink:0;color:hsl(var(--text-400))}
+.plugins-item-info{flex:1;min-width:0}
+.plugins-item-name{font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-200));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plugins-item-desc{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plugins-item-toggle{width:28px;height:16px;border-radius:8px;border:none;background:hsl(var(--bg-300));cursor:pointer;position:relative;transition:background .15s;flex-shrink:0}
+.plugins-item-toggle.on{background:hsl(var(--accent-000)/.5)}
+.plugins-item-toggle::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:hsl(var(--text-400));transition:transform .15s,background .15s}
+.plugins-item-toggle.on::after{transform:translateX(12px);background:hsl(var(--accent-000))}
+.plugins-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
+
 .sidebar-footer{display:flex;align-items:center;gap:4px;padding:6px 8px;flex-shrink:0;border-top:0.5px solid hsl(var(--border-300)/0.10)}
 /* The clickable user block takes the main width; the utility icons
    (theme / display / settings) collapse into a tidy right-aligned
@@ -357,6 +433,22 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 /* Display / reading preferences (font size + content width) */
 .display-prefs-popover{position:fixed;min-width:240px;max-width:280px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.5);border-radius:10px;padding:10px 12px;box-shadow:0 8px 24px hsl(var(--always-black)/0.2);z-index:80;display:flex;flex-direction:column;gap:10px;font-size:calc(12px * var(--app-font-scale, 1))}
 .display-prefs-popover.hidden{display:none}
+
+/* PR-A — "More" popover (anchored to #navMore). Mirrors the
+   display-prefs popover chrome but is narrower and lays out as a
+   flat list of clickable rows. z-index sits above the sidebar
+   (z 50) but below the display-prefs popover (z 80) so the two
+   can co-exist if the user opens Display & theme from inside More. */
+.sidebar-more-popover{position:fixed;min-width:220px;max-width:260px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.5);border-radius:10px;padding:6px;box-shadow:0 8px 24px hsl(var(--always-black)/0.25);z-index:75;display:flex;flex-direction:column;gap:2px;font-size:calc(13px * var(--app-font-scale, 1))}
+.sidebar-more-popover.hidden{display:none}
+.sidebar-more-item{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border-radius:7px;background:transparent;border:none;color:hsl(var(--text-200));font-size:inherit;font-family:var(--font-sans);text-align:left;cursor:pointer;transition:background .12s var(--ease-out),color .12s var(--ease-out)}
+.sidebar-more-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.sidebar-more-item:active{transform:scale(.985)}
+.sidebar-more-item svg{width:14px;height:14px;flex-shrink:0;color:hsl(var(--text-400))}
+.sidebar-more-item:hover svg{color:hsl(var(--text-200))}
+.sidebar-more-item-danger{color:hsl(var(--text-200))}
+.sidebar-more-item-danger:hover{background:hsl(0 60% 30% / .25);color:hsl(0 70% 80%)}
+.sidebar-more-item-danger:hover svg{color:hsl(0 70% 80%)}
 .display-prefs-row{display:flex;flex-direction:column;gap:4px}
 .display-prefs-label{display:flex;justify-content:space-between;align-items:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em}
 .display-prefs-label .value{color:hsl(var(--text-200));font-weight:600;text-transform:none;letter-spacing:0}
@@ -3315,6 +3407,16 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .sidebar-nav-btn svg{width:16px;height:16px;flex-shrink:0;color:hsl(var(--text-400));transition:color .15s var(--ease-out)}
 .sidebar-nav-btn:hover:not([disabled]) svg{color:hsl(var(--text-200))}
 .sidebar-nav-btn[disabled]{opacity:.4;cursor:not-allowed}
+/* PR-A — active highlight on the currently-focused sidebar nav button.
+   Subtle accent tint, same shape as the hover, no transform (so the
+   active state doesn't compete with the :active press-down scale). */
+.sidebar-nav-btn.active{background:hsl(var(--accent-000) / .12);color:hsl(var(--accent-000))}
+.sidebar-nav-btn.active svg{color:hsl(var(--accent-000))}
+/* PR-A — "is-soon" used by the Scheduled button in PR-A. Faded but
+   still clickable (so the click handler can fire a toast). Lighter
+   than the [disabled] treatment (which is reserved for true disables). */
+.sidebar-nav-btn.is-soon{opacity:.55}
+.sidebar-nav-btn.is-soon:hover{opacity:.8}
 .sidebar-nav-soon{margin-left:auto;font-size:10px;padding:2px 6px;border-radius:999px;background:hsl(var(--bg-300));color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em;font-weight:500}
 
 /* Top bar — center segmented control */
