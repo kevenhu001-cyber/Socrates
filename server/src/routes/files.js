@@ -74,6 +74,40 @@ const upload = multer({
 const router = Router();
 router.use(requireAuth);
 
+/* GET /api/files — list all files for the authenticated user.
+ * Supports cursor-based pagination via ?cursor=<id>&limit=<n>.
+ * Ordered by uploaded_at descending so the most recent files appear first. */
+router.get('/', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+    const cursor = req.query.cursor || null;
+
+    let query = db.select({
+      id: files.id, name: files.name, mimeType: files.mimeType,
+      size: files.size, kind: files.kind, sha256: files.sha256,
+      sessionId: files.sessionId, uploadedAt: files.uploadedAt,
+    }).from(files)
+      .where(eq(files.userId, req.userId));
+
+    if (cursor) {
+      query = query.where(sql`${files.id} < ${cursor}::uuid`);
+    }
+
+    const rows = await query
+      .orderBy(sql`${files.uploadedAt} DESC, ${files.id} DESC`)
+      .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    if (hasMore) rows.pop();
+
+    return res.json({
+      files: rows,
+      nextCursor: hasMore ? rows[rows.length - 1]?.id : null,
+    });
+  } catch (err) { next(err); }
+});
+
 /**
  * Compute the user's current storage footprint so the upload
  * endpoint can reject new files that would push them over quota.

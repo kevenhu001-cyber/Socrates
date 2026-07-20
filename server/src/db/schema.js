@@ -538,3 +538,93 @@ export const loginFailures = pgTable('login_failures', {
 }, (table) => [
   index('login_failures_locked_until_idx').on(table.lockedUntil),
 ]);
+
+/* ──────────────────────────────────────────────
+   Plugins — user-installed extensions / tools
+   Builtin plugins are seeded with isBuiltin=true for the global
+   marketplace catalog. User-installed plugins have isBuiltin=false
+   and are scoped to the user. The config column stores arbitrary
+   JSON for the plugin's settings.
+   ────────────────────────────────────────────── */
+export const plugins = pgTable('plugins', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description').notNull().default(''),
+  type: text('type').notNull().default('extension'),  // extension | tool | agent | integration
+  config: jsonb('config').default({}),
+  isBuiltin: boolean('is_builtin').notNull().default(false),
+  isEnabled: boolean('is_enabled').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('plugins_user_id_idx').on(table.userId),
+  index('plugins_builtin_idx').on(table.isBuiltin),
+]);
+
+/* ──────────────────────────────────────────────
+   Scheduled Tasks — recurring tasks / reminders
+   One row per scheduled task. The task runs at the next scheduled
+   time (nextRunAt) and is rescheduled according to cronExpression.
+   The scheduler daemon (src/services/scheduler.js) polls for
+   overdue tasks, runs them, and updates nextRunAt.
+   ────────────────────────────────────────────── */
+export const scheduledTasks = pgTable('scheduled_tasks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  prompt: text('prompt').notNull().default(''),
+  sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
+  cronExpression: text('cron_expression'),
+  /* once | hourly | daily | weekly | monthly | custom */
+  frequency: text('frequency').notNull().default('once'),
+  /* pending | active | paused | completed | failed */
+  status: text('status').notNull().default('pending'),
+  nextRunAt: timestamp('next_run_at', { withTimezone: true }),
+  lastRunAt: timestamp('last_run_at', { withTimezone: true }),
+  runCount: integer('run_count').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('scheduled_tasks_user_id_idx').on(table.userId),
+  index('scheduled_tasks_next_run_at_idx').on(table.nextRunAt),
+  index('scheduled_tasks_status_idx').on(table.status),
+]);
+
+/* ──────────────────────────────────────────────
+   Status monitor events — self-hosted uptime tracking.
+   One row per component state transition, recorded by the
+   background monitor (src/services/statusMonitor.js). History is
+   derived from these rows: a component is "down"/"degraded" for the
+   interval between a transition INTO that state and the next
+   transition OUT. Uptime over a window = 1 − (down+degraded time)/window.
+   ────────────────────────────────────────────── */
+export const statusMonitorEvents = pgTable('status_monitor_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  component: text('component').notNull(),    // e.g. "Database", "API Gateway"
+  fromState: text('from_state'),             // previous state (null on first record)
+  toState: text('to_state').notNull(),       // ok | warn | down
+  detail: jsonb('detail').default({}),       // probe metadata / error message
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('status_monitor_events_component_idx').on(table.component),
+  index('status_monitor_events_created_at_idx').on(table.createdAt),
+  index('status_monitor_events_component_created_at_idx').on(table.component, table.createdAt),
+]);
+
+/* ──────────────────────────────────────────────
+   Status Subscribers — email addresses subscribed to
+   status.topodrive.top notifications. One row per email.
+   confirmedAt is set when the subscriber clicks the
+   confirmation link in the verification email.
+   ────────────────────────────────────────────── */
+export const statusSubscribers = pgTable('status_subscribers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: text('email').notNull().unique(),
+  token: text('token').notNull().unique(),
+  confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('status_subscribers_email_idx').on(table.email),
+  index('status_subscribers_token_idx').on(table.token),
+]);

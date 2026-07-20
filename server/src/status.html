@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="socrates">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Topodrive Status</title>
+<meta name="description" content="Real-time status of Topodrive services." />
+<link rel="icon" href="/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f5f5f0; --panel:#ffffff; --border:rgba(0,0,0,.06);
+  --text:#1a1a1a; --text-soft:#6b6b6b; --text-faint:#a3a3a3;
+  --ok:#22c55e; --ok-bg:rgba(34,197,94,.08);
+  --warn:#f59e0b; --warn-bg:rgba(245,158,11,.08);
+  --down:#ef4444; --down-bg:rgba(239,68,68,.08);
+  --accent:#d97706;
+  --shadow:0 1px 3px rgba(0,0,0,.04);
+  --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+[data-mode=dark]{
+  --bg:#111111; --panel:#1a1a1a; --border:rgba(255,255,255,.06);
+  --text:#f0f0f0; --text-soft:#888888; --text-faint:#666666;
+  --ok:#4ade80; --ok-bg:rgba(74,222,128,.1);
+  --warn:#fbbf24; --warn-bg:rgba(251,191,36,.1);
+  --down:#f87171; --down-bg:rgba(248,113,113,.1);
+  --shadow:0 1px 3px rgba(0,0,0,.2);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font);background:var(--bg);color:var(--text);
+  line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
+}
+.wrap{max-width:680px;margin:0 auto;padding:0 16px 80px}
+
+/* Header */
+header{display:flex;align-items:center;justify-content:space-between;padding:24px 0 32px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;letter-spacing:-.01em}
+.brand img{width:18px;height:18px;border-radius:4px;flex-shrink:0}
+.header-actions{display:flex;gap:4px}
+.header-btn{
+  border:none;background:transparent;color:var(--text-faint);cursor:pointer;
+  padding:6px 10px;border-radius:8px;font-size:13px;font-family:var(--font);
+  transition:background .15s,color .15s;
+}
+.header-btn:hover{background:var(--border);color:var(--text-soft)}
+
+/* Status card */
+.status-card{
+  background:var(--panel);border-radius:16px;padding:28px 32px;
+  margin-bottom:12px;box-shadow:var(--shadow);
+}
+.status-card .top{display:flex;align-items:flex-start;gap:14px}
+.status-dot{width:12px;height:12px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.status-dot.ok{background:var(--ok)}
+.status-dot.warn{background:var(--warn)}
+.status-dot.down{background:var(--down)}
+.status-card h1{font-size:17px;font-weight:600;letter-spacing:-.01em;line-height:1.4}
+.status-card .sub{font-size:13px;color:var(--text-soft);margin-top:2px;line-height:1.4}
+.status-card .meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text-faint)}
+.status-card .meta span{color:var(--text-soft);font-weight:500}
+
+/* Metrics row */
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.metric{
+  background:var(--panel);border-radius:12px;padding:18px 16px;box-shadow:var(--shadow);
+  text-align:center;
+}
+.metric-val{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.metric-label{font-size:11px;color:var(--text-faint);margin-top:2px;text-transform:uppercase;letter-spacing:.06em}
+
+/* Section */
+.section{margin-top:24px}
+.section-title{font-size:12px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;padding:0 4px}
+
+/* Timeline heatmap */
+.timeline-card{background:var(--panel);border-radius:14px;padding:20px;box-shadow:var(--shadow);overflow-x:auto}
+.timeline-grid{display:grid;gap:2px}
+.timeline-header{display:grid;gap:2px;margin-bottom:6px}
+.timeline-month{font-size:9px;color:var(--text-faint);text-align:center;font-weight:500;text-transform:uppercase;letter-spacing:.04em;padding-bottom:4px}
+.timeline-row{display:grid;gap:2px;align-items:center;margin-bottom:6px}
+.timeline-row:last-child{margin-bottom:0}
+.timeline-row-label{font-size:11px;color:var(--text-soft);padding-right:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timeline-cell{width:100%;height:14px;border-radius:3px;min-width:8px}
+.heat-5{background:var(--ok)}
+.heat-4{background:color-mix(in srgb,var(--ok) 70%,var(--ok-bg) 30%)}
+.heat-3{background:color-mix(in srgb,var(--ok) 45%,var(--warn-bg) 55%)}
+.heat-2{background:var(--warn-bg)}
+.heat-1{background:color-mix(in srgb,var(--warn-bg) 50%,var(--down-bg) 50%)}
+.heat-0{background:var(--down-bg)}
+.heat-na{background:var(--border);opacity:.3}
+.timeline-legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;justify-content:flex-end;margin-top:12px;font-size:10px;color:var(--text-faint)}
+.timeline-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+/* Incidents */
+.inc-card{
+  background:var(--panel);border-radius:12px;padding:14px 16px;
+  box-shadow:var(--shadow);margin-bottom:6px;display:flex;align-items:center;gap:10px;
+}
+.inc-card:last-child{margin-bottom:0}
+.inc-card .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.inc-card .dot.warn{background:var(--warn)}
+.inc-card .dot.down{background:var(--down)}
+.inc-card .info{flex:1;min-width:0}
+.inc-card .title{font-size:13px;font-weight:500}
+.inc-card .time{font-size:11px;color:var(--text-faint);margin-top:1px}
+.inc-card .body{font-size:12px;color:var(--text-soft);margin-top:4px;line-height:1.4}
+
+/* Incident expand/collapse toggle */
+.inc-toggle{
+  display:block;width:100%;margin-top:6px;padding:11px 16px;border:1px solid var(--border);
+  border-radius:10px;background:transparent;color:var(--text-soft);cursor:pointer;
+  font-family:var(--font);font-size:13px;font-weight:500;transition:background .15s,color .15s;
+}
+.inc-toggle:hover{background:var(--border);color:var(--text)}
+
+/* Subscribe */
+.subscribe-card{
+  background:var(--panel);border-radius:14px;padding:20px;
+  box-shadow:var(--shadow);margin-top:24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.subscribe-card .label{font-size:13px;color:var(--text-soft);flex:1;min-width:140px}
+.subscribe-card .input-group{display:flex;gap:6px;flex:2;min-width:200px}
+.subscribe-card input{
+  flex:1;min-width:0;padding:11px 12px;border:1px solid var(--border);border-radius:8px;
+  background:var(--bg);color:var(--text);font-size:16px;font-family:var(--font);
+  outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none;
+}
+.subscribe-card .btn{
+  padding:11px 16px;border-radius:8px;border:none;background:var(--text);color:var(--bg);
+  font-size:15px;font-weight:500;cursor:pointer;font-family:var(--font);
+  transition:opacity .15s;white-space:nowrap;
+}
+.subscribe-card .btn:hover{opacity:.85}
+.subscribe-card .btn:disabled{opacity:.4;cursor:not-allowed}
+.subscribe-card .msg{font-size:12px;color:var(--ok);width:100%;padding-top:4px}
+.subscribe-card .msg.err{color:var(--down)}
+
+/* Empty / loading */
+.empty-state{text-align:center;color:var(--text-faint);font-size:13px;padding:24px 0}
+.loading{text-align:center;padding:40px 0;color:var(--text-faint);font-size:14px}
+
+/* Footer */
+footer{margin-top:32px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--text-faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+footer a{color:var(--text-soft);text-decoration:none}
+footer a:hover{text-decoration:underline}
+
+@media(max-width:600px){
+  :root{--label-col:84px}
+  .wrap{padding:0 14px 80px}
+  header{padding:18px 0 24px}
+  .brand{font-size:14px}
+  .status-card{padding:18px}
+  .status-card h1{font-size:16px}
+  .status-card .meta{gap:6px 16px}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .timeline-card{padding:14px}
+  .timeline-row-label{font-size:10px;padding-right:4px}
+  .timeline-cell{height:12px;min-width:5px}
+  .timeline-legend{justify-content:flex-start;font-size:9px;gap:4px 7px}
+  .subscribe-card{flex-direction:column;align-items:stretch;gap:12px;padding:16px}
+  .subscribe-card .label{font-size:14px}
+  .subscribe-card .input-group{flex-direction:column;min-width:0}
+  .subscribe-card .btn{padding:12px 16px;font-size:15px}
+  .inc-card{padding:12px 14px}
+  footer{font-size:10px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><img src="/logo.png" width="18" height="18" alt="" /><span>Topodrive Status</span></div>
+    <div class="header-actions">
+      <button class="header-btn" id="langToggle" onclick="toggleLang()"><span id="langLabel">中文</span></button>
+      <button class="header-btn" id="themeToggle" onclick="toggleTheme()"><span id="themeLabel">Dark</span></button>
+    </div>
+  </header>
+
+  <div class="status-card" id="hero">
+    <div class="top">
+      <div class="status-dot" id="heroDot"></div>
+      <div style="flex:1">
+        <h1 id="heroTitle">Loading...</h1>
+        <div class="sub" id="heroSub">Checking service status</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div><span data-i18n="updated">Updated</span> <span id="mUpdated">--</span></div>
+      <div><span data-i18n="avgUptime">90-day uptime</span> <span id="mUptime">--</span></div>
+      <div><span id="mComponents">--</span> <span data-i18n="operational">operational</span></div>
+    </div>
+  </div>
+
+  <div class="metrics" id="metricsRow"></div>
+
+  <div class="section">
+    <div class="section-title" data-i18n="timelineTitle">Uptime timeline (30 days)</div>
+    <div class="timeline-card" id="timelineWrap">
+      <div class="empty-state" data-i18n="timelineEmpty">No timeline data available yet.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title" data-i18n="incidentsTitle">Incident history</div>
+    <div id="incidentsList"></div>
+  </div>
+
+  <div class="subscribe-card" id="subscribeBox">
+    <div class="label" data-i18n="subscribeLabel">Get notified when a service goes down:</div>
+    <div class="input-group">
+      <input type="email" id="subscribeEmail" placeholder="you@example.com" data-i18n-placeholder="subscribePlaceholder" />
+      <button class="btn" id="subscribeBtn" onclick="subscribe()" data-i18n="subscribeBtn">Subscribe</button>
+    </div>
+    <div class="msg hidden" id="subscribeMsg"></div>
+  </div>
+
+  <footer>
+    <div><a href="https://topodrive.top">topodrive.top</a> &middot; <span id="footTime"></span></div>
+    <div><span data-i18n="probed">Probed every 30s</span></div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var LANG = 'en';
+  try { var saved = localStorage.getItem('socrates-status-lang'); if (saved) LANG = saved; } catch (_) {}
+
+  var I18N = {
+    en: {
+      updated: 'Updated', avgUptime: '90-day uptime', components: 'Components',
+      timelineTitle: 'Uptime timeline (30 days)', timelineEmpty: 'No timeline data available yet.',
+      componentsTitle: 'Components', incidentsTitle: 'Incident history',
+      incidentsEmpty: 'No incidents recorded in the last 90 days.',
+      incidentsShowMore: 'Show %d more', incidentsCollapse: 'Show less',
+      subscribeLabel: 'Get notified when a service goes down:',
+      subscribePlaceholder: 'you@example.com', subscribeBtn: 'Subscribe',
+      subscribeSuccess: 'Subscribed! Check your email to confirm.',
+      subscribeError: 'Subscription failed. Try again.',
+      heroAllOk: 'All Systems Operational', heroWarn: 'Some Systems Degraded', heroDown: 'Systems Outage',
+      heroAllOkSub: 'All services are running normally.',
+      heroWarnSub: 'Some services are experiencing degraded performance.',
+      heroDownSub: 'One or more services are currently unavailable.',
+      stateOk: 'Operational', stateWarn: 'Degraded', stateDown: 'Outage',
+      operational: 'operational', probed: 'Probed every 30s',
+      themeDark: 'Dark', themeLight: 'Light', langLabel: '中文',
+      justNow: 'just now', ago: 'ago', ongoing: 'ongoing',
+      metricAvgResponse: 'Avg Response', metricAvailability: 'Availability',
+      legendTitle: 'Availability', legend0: '0-50%', legend1: '50-80%', legend2: '80-95%',
+      legend3: '95-99%', legend4: '99-99.99%', legend5: '100%',
+      incRebootTitle: 'Server restart',
+      incRebootBody: 'The server was restarted from %s until %e. All services were briefly unavailable during the reboot.',
+      incComponentBody: '%c was %s from %f until %e.',
+    },
+    zh: {
+      updated: '更新时间', avgUptime: '90天可用率', components: '组件',
+      timelineTitle: '可用性时间线 (30天)', timelineEmpty: '暂无可用性时间线数据。',
+      componentsTitle: '服务组件', incidentsTitle: '故障事件',
+      incidentsEmpty: '过去90天内无故障记录。',
+      incidentsShowMore: '展开其余 %d 条', incidentsCollapse: '收起',
+      subscribeLabel: '服务故障时邮件通知我：',
+      subscribePlaceholder: 'you@example.com', subscribeBtn: '订阅',
+      subscribeSuccess: '订阅成功！请查收确认邮件。',
+      subscribeError: '订阅失败，请重试。',
+      heroAllOk: '所有系统运行正常', heroWarn: '部分系统异常', heroDown: '系统故障',
+      heroAllOkSub: '所有服务运行正常。',
+      heroWarnSub: '部分服务出现性能下降。',
+      heroDownSub: '一个或多个服务当前不可用。',
+      stateOk: '正常', stateWarn: '异常', stateDown: '故障',
+      operational: '正常', probed: '每30秒探测一次',
+      themeDark: '深色', themeLight: '浅色', langLabel: 'English',
+      justNow: '刚刚', ago: '前', ongoing: '进行中',
+      metricAvgResponse: '平均响应', metricAvailability: '可用率',
+      legendTitle: '可用率', legend0: '0-50%', legend1: '50-80%', legend2: '80-95%',
+      legend3: '95-99%', legend4: '99-99.99%', legend5: '100%',
+      incRebootTitle: '服务器重启',
+      incRebootBody: '服务器于 %s 至 %e 期间重启，重启过程中所有服务短暂不可用。',
+      incComponentBody: '%c 在 %f 至 %e 期间%s。',
+    }
+  };
+
+  function t(key, arg, vars) {
+    var m = I18N[LANG] || I18N.en;
+    var s = m[key] || key;
+    if (arg != null) s = s.replace('%d', arg);
+    if (vars) {
+      if (vars.c != null) s = s.replace(/%c/g, vars.c);
+      if (vars.s != null) s = s.replace(/%s/g, vars.s);
+      if (vars.f != null) s = s.replace(/%f/g, vars.f);
+      if (vars.e != null) s = s.replace(/%e/g, vars.e);
+    }
+    return s;
+  }
+
+  function applyI18n() {
+    var els = document.querySelectorAll('[data-i18n]');
+    for (var i = 0; i < els.length; i++) els[i].textContent = t(els[i].getAttribute('data-i18n'));
+    var phs = document.querySelectorAll('[data-i18n-placeholder]');
+    for (var j = 0; j < phs.length; j++) phs[j].placeholder = t(phs[j].getAttribute('data-i18n-placeholder'));
+    var el = document.getElementById('langLabel'); if (el) el.textContent = t('langLabel');
+  }
+
+  var FALLBACK = {
+    updated: Date.now(), overall: 'ok',
+    components: [
+      { name: 'API Gateway', state: 'ok', uptime: 100 }, { name: 'Authentication', state: 'ok', uptime: 100 },
+      { name: 'Database', state: 'ok', uptime: 100 }, { name: 'Realtime Sync', state: 'ok', uptime: 100 },
+      { name: 'AI Inference Engine', state: 'ok', uptime: 100 }, { name: 'Web Application', state: 'ok', uptime: 100 },
+      { name: 'Notification Service', state: 'ok', uptime: 100 }, { name: 'Document Storage', state: 'ok', uptime: 100 },
+      { name: 'Billing & Payments', state: 'ok', uptime: 100 },
+    ],
+    metrics: [], timeline: { days: [], componentDays: {} }, incidents: [],
+  };
+
+  var STATUS = FALLBACK;
+  var _ = document.getElementById.bind(document);
+
+  function fmtTime(ts) {
+    try { return new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+    catch (_) { return String(ts); }
+  }
+
+  function fmtDate(iso) {
+    try {
+      var d = new Date(iso), now = new Date(), diff = now - d;
+      if (diff < 60000) return t('justNow');
+      if (diff < 3600000) return Math.floor(diff / 60000) + 'm ' + t('ago');
+      if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ' + t('ago');
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    } catch (_) { return String(iso); }
+  }
+
+  function heatClass(pct) {
+    if (pct == null || pct < 0) return 'heat-na';
+    if (pct >= 99.99) return 'heat-5'; if (pct >= 99) return 'heat-4';
+    if (pct >= 95) return 'heat-3'; if (pct >= 80) return 'heat-2';
+    if (pct >= 50) return 'heat-1'; return 'heat-0';
+  }
+
+  function render() {
+    var c = STATUS.components, overall = STATUS.overall, metrics = STATUS.metrics || [];
+    var timeline = STATUS.timeline || { days: [], componentDays: {} };
+    var incidents = STATUS.incidents || [];
+
+    var dot = _('heroDot'); dot.className = 'status-dot ' + overall;
+    _('heroTitle').textContent = overall === 'ok' ? t('heroAllOk') : overall === 'warn' ? t('heroWarn') : t('heroDown');
+    _('heroSub').textContent = overall === 'ok' ? t('heroAllOkSub') : overall === 'warn' ? t('heroWarnSub') : t('heroDownSub');
+    _('mUpdated').textContent = fmtTime(STATUS.updated);
+    var avgUptime = c.length ? (c.reduce(function (s, x) { return s + (x.uptime || 0); }, 0) / c.length) : 100;
+    _('mUptime').textContent = avgUptime.toFixed(2) + '%';
+    var okCount = c.filter(function (x) { return x.state === 'ok'; }).length;
+    _('mComponents').textContent = okCount + '/' + c.length;
+
+    var mr = _('metricsRow'); mr.innerHTML = '';
+    metrics.forEach(function (m) {
+      if (m.key === 'active_users') return;
+      var label = m.key === 'avg_response' ? t('metricAvgResponse')
+        : m.key === 'availability' ? t('metricAvailability')
+        : (m.k || m.key);
+      var el = document.createElement('div'); el.className = 'metric';
+      el.innerHTML = '<div class="metric-val">' + m.v + '<span style="font-size:11px;color:var(--text-faint);margin-left:2px">' + m.unit + '</span></div><div class="metric-label">' + esc(label) + '</div>';
+      mr.appendChild(el);
+    });
+
+    renderTimeline(timeline, c);
+    renderIncidents(incidents);
+    applyI18n();
+  }
+
+  function renderTimeline(timeline, components) {
+    var wrap = _('timelineWrap');
+    var days = timeline.days || [], compDays = timeline.componentDays || {};
+    if (!days.length || !components.length) { wrap.innerHTML = '<div class="empty-state">' + t('timelineEmpty') + '</div>'; return; }
+
+    var months = [], lastMonth = '';
+    days.forEach(function (d, i) { var m = d.slice(0, 7); if (m !== lastMonth) { months.push({ label: m, start: i, count: 0 }); lastMonth = m; } months[months.length - 1].count++; });
+
+    var cols = 'repeat(' + days.length + ', 1fr)';
+    var html = '<div class="timeline-grid" style="grid-template-columns:var(--label-col,110px) ' + cols + '">';
+    html += '<div></div>';
+    months.forEach(function (m) { html += '<div class="timeline-month" style="grid-column:span ' + m.count + '">' + m.label + '</div>'; });
+
+    components.forEach(function (comp) {
+      var series = compDays[comp.name] || [];
+      html += '<div class="timeline-row-label">' + esc(comp.name) + '</div>';
+      series.forEach(function (pct) {
+        html += '<div class="timeline-cell ' + heatClass(pct) + '" title="' + (pct != null ? pct.toFixed(2) + '%' : 'N/A') + '"></div>';
+      });
+      for (var i = series.length; i < days.length; i++) html += '<div class="timeline-cell heat-na"></div>';
+    });
+    html += '</div>';
+    html += '<div class="timeline-legend">'
+      + '<span class="dot heat-0"></span>' + t('legend0') + ' <span class="dot heat-1"></span>' + t('legend1') + ' <span class="dot heat-2"></span>' + t('legend2')
+      + ' <span class="dot heat-3"></span>' + t('legend3') + ' <span class="dot heat-4"></span>' + t('legend4') + ' <span class="dot heat-5"></span>' + t('legend5')
+      + '</div>';
+    wrap.innerHTML = html;
+  }
+
+  function incidentTitle(inc) {
+    if (inc.kind === 'reboot') return t('incRebootTitle');
+    var st = inc.severity === 'down' ? t('stateDown') : inc.severity === 'warn' ? t('stateWarn') : t('stateOk');
+    return inc.component + ' ' + st;
+  }
+
+  function incidentBody(inc) {
+    var sStr = inc.start ? new Date(inc.start).toUTCString() : '';
+    var eStr = inc.end ? new Date(inc.end).toUTCString() : t('ongoing');
+    if (inc.kind === 'reboot') return t('incRebootBody', null, { s: sStr, e: eStr });
+    var st = inc.severity === 'down' ? t('stateDown') : inc.severity === 'warn' ? t('stateWarn') : t('stateOk');
+    return t('incComponentBody', null, { c: inc.component, s: st, f: sStr, e: eStr });
+  }
+
+  function renderIncidents(incidents) {
+    var list = _('incidentsList');
+    if (!incidents || !incidents.length) { list.innerHTML = '<div class="empty-state">' + t('incidentsEmpty') + '</div>'; return; }
+    var VISIBLE = 3;
+    var expanded = list.getAttribute('data-expanded') === '1';
+    var html = '';
+    var shown = expanded ? incidents.length : Math.min(VISIBLE, incidents.length);
+    for (var n = 0; n < shown; n++) {
+      var inc = incidents[n];
+      var sev = inc.severity || inc.state || 'warn';
+      html += '<div class="inc-card"><span class="dot ' + sev + '"></span><div class="info">'
+        + '<div class="title">' + esc(incidentTitle(inc)) + '</div>'
+        + '<div class="time">' + fmtDate(inc.time) + (inc.end ? ' - ' + fmtDate(inc.end) : ' - ' + t('ongoing')) + '</div>'
+        + '<div class="body">' + esc(incidentBody(inc)) + '</div>'
+        + '</div></div>';
+    }
+    var hidden = incidents.length - shown;
+    if (hidden > 0) {
+      html += '<button class="inc-toggle" onclick="toggleIncidents(' + hidden + ')">'
+        + (expanded ? t('incidentsCollapse') : t('incidentsShowMore', hidden))
+        + '</button>';
+    }
+    list.innerHTML = html;
+  }
+
+  function toggleIncidents() {
+    var list = _('incidentsList');
+    var expanded = list.getAttribute('data-expanded') === '1';
+    list.setAttribute('data-expanded', expanded ? '0' : '1');
+    renderIncidents(STATUS.incidents || []);
+  }
+  window.toggleIncidents = toggleIncidents;
+
+  function esc(s) { if (typeof s !== 'string') return String(s); return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function fetchStatus() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/status', true); xhr.timeout = 15000;
+    xhr.onload = function () { if (xhr.status === 200) { try { STATUS = JSON.parse(xhr.responseText); } catch (_) {} render(); } };
+    xhr.onerror = function () {};
+    xhr.send();
+  }
+
+  function toggleTheme() {
+    var html = document.documentElement, mode = html.getAttribute('data-mode') === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-mode', mode);
+    try { localStorage.setItem('socrates-status-theme', mode); } catch (_) {}
+    var el = _('themeLabel'); if (el) el.textContent = mode === 'dark' ? t('themeDark') : t('themeLight');
+  }
+
+  function toggleLang() {
+    LANG = LANG === 'en' ? 'zh' : 'en'; try { localStorage.setItem('socrates-status-lang', LANG); } catch (_) {}
+    applyI18n(); render();
+  }
+
+  function subscribe() {
+    var email = _('subscribeEmail').value.trim(), btn = _('subscribeBtn'), msg = _('subscribeMsg');
+    if (!email) return; btn.disabled = true; msg.classList.add('hidden');
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/status/subscribe', true); xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function () { btn.disabled = false;
+      if (xhr.status === 200 || xhr.status === 201) { msg.textContent = t('subscribeSuccess'); msg.className = 'msg'; _('subscribeEmail').value = ''; }
+      else { msg.textContent = t('subscribeError'); msg.className = 'msg err'; }
+    };
+    xhr.onerror = function () { btn.disabled = false; msg.textContent = t('subscribeError'); msg.className = 'msg err'; };
+    xhr.send(JSON.stringify({ email: email }));
+  }
+
+  window.toggleTheme = toggleTheme; window.toggleLang = toggleLang; window.subscribe = subscribe;
+
+  try { var saved = localStorage.getItem('socrates-status-theme'); if (saved) document.documentElement.setAttribute('data-mode', saved); } catch (_) {}
+
+  applyI18n(); render(); fetchStatus(); setInterval(fetchStatus, 30000);
+  setInterval(function () { var el = _('footTime'); if (el) el.textContent = new Date().toLocaleString(); }, 1000);
+  _('footTime').textContent = new Date().toLocaleString();
+
+  if (window.location.search.indexOf('confirmed=1') !== -1) {
+    var msg = _('subscribeMsg'); msg.textContent = t('subscribeSuccess'); msg.className = 'msg';
+    var box = _('subscribeBox'); if (box) box.style.border = '1px solid var(--ok)';
+    if (window.history && window.history.replaceState) window.history.replaceState({}, document.title, '/');
+  }
+})();
+</script>
+</body>
+</html>

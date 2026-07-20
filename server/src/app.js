@@ -34,7 +34,11 @@ import minimaxRouter from './routes/minimaxProxy.js';
 import mistakesRouter from './routes/mistakes.js';
 import knowledgeBoundaryRouter from './routes/knowledgeBoundary.js';
 import visionRouter from './routes/vision.js';
+import statusRouter from './routes/status.js';
+import { recordRequestSample } from './services/statusMonitor.js';
 import executionRouter from './routes/execution.js';
+import scheduledTasksRouter from './routes/scheduledTasks.js';
+import pluginsRouter from './routes/plugins.js';
 import { searchContent } from './services/search.js';
 import { webSearch, imageSearch } from './services/webSearch.js';
 import { fetchBatch } from './services/fetchBatch.js';
@@ -205,6 +209,23 @@ app.use(helmet({
   crossOriginOpenerPolicy: { policy: 'same-origin' },
 }));
 
+// Request-timing sampler for the public status metrics. Records each
+// completed request's duration + success into a rolling in-memory
+// window (no persistence) consumed by GET /api/status. Mounted early
+// so SSE/streaming responses are also timed from here.
+app.use(function requestTiming(req, res, next) {
+  const start = process.hrtime.bigint();
+  res.once('finish', () => {
+    const ms = Number(process.hrtime.bigint() - start) / 1e6;
+    // Success = a completed 2xx/3xx response. 4xx (incl. 429 rate-limit)
+    // and 5xx count as failures so the rate reflects real error traffic
+    // instead of pinning at 100% (only <500 would hide 429/404/400).
+    const ok = res.statusCode >= 200 && res.statusCode < 400;
+    recordRequestSample(ms, ok);
+  });
+  next();
+});
+
 // Request id — set before anything else so downstream middleware
 // (csrf, auth, error handler) can include it in logs / headers for
 // log correlation across server + browser.
@@ -249,7 +270,7 @@ app.use(timeoutMiddleware);
 // so an operator can add / remove hosts without redeploying the
 // server.
 const DEFAULT_CORS_HOSTS = [
-  'app.topodrive.top', 'topodrive.top', 'www.topodrive.top',
+  'app.topodrive.top', 'topodrive.top', 'www.topodrive.top', 'status.topodrive.top',
   'localhost:8080', 'localhost:3000', 'localhost:5173', 'localhost:5174', 'localhost:5175',
   '127.0.0.1:8080', '127.0.0.1:3000', '127.0.0.1:5173', '127.0.0.1:5174', '127.0.0.1:5175',
 ];
@@ -326,6 +347,10 @@ app.get('/api/hello', (_req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json({ message: 'hello' });
 });
+
+/* ─── Public system status feed (status.topodrive.top) ─── */
+/* Unauthenticated, no secrets. Mounted before auth-gated routes. */
+app.use('/api/status', statusRouter);
 
 // Public configuration endpoint (no auth required).
 // Tells the SPA whether the built-in Beagle provider is available.
@@ -434,6 +459,12 @@ app.post('/api/image-search', requireAuth, searchLimiter, async (req, res, next)
 
 // Projects (Phase 4)
 app.use('/api/projects', projectRouter);
+
+/* ─── Scheduled Tasks ─── */
+app.use('/api/scheduled-tasks', scheduledTasksRouter);
+
+/* ─── Plugins ─── */
+app.use('/api/plugins', pluginsRouter);
 
 // Files (Phase 4) — PDF text extraction is mounted FIRST so its
 // `/extract` path doesn't get swallowed by fileRouter's `/:id` lookup.

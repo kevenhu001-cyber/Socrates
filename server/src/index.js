@@ -137,6 +137,17 @@ async function main() {
   // ── Start periodic DB cleanup ──
   startExpiredCleanup();
 
+  // ── Start self-hosted status monitor (records component state
+  //     transitions to status_monitor_events for real uptime history) ──
+  (async () => {
+    try {
+      const { startStatusMonitor } = await import('./services/statusMonitor.js');
+      startStatusMonitor();
+    } catch (err) {
+      console.warn('[status-monitor] not started:', err.message);
+    }
+  })();
+
   // ── Start HTTP server ──
   const server = app.listen(PORT, () => {
     console.log(`[server] Listening on http://0.0.0.0:${PORT} (${process.env.NODE_ENV || 'development'})`);
@@ -151,6 +162,7 @@ async function main() {
     server.close(async () => {
       console.log('[server] HTTP server closed — draining connections');
       stopExpiredCleanup();
+      try { const { stopStatusMonitor } = await import('./services/statusMonitor.js'); stopStatusMonitor(); } catch {}
       await closeDb().catch(() => {});
       console.log('[db] Pool closed');
       process.exit(0);
