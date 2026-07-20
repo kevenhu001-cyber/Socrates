@@ -19,7 +19,6 @@
     "vite": "^5.4.10"
   },
   "dependencies": {
-    "@lobehub/icons": "^5.14.0",
     "@lobehub/icons-static-svg": "^1.94.0",
     "echarts": "^6.1.0"
   }

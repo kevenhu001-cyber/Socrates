@@ -190,13 +190,16 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 /* P5.8 — Slash-command palette (Spotlight-style). Anchored
    above the chat input bar; the active row is highlighted
    and the kbd hints sit at the bottom. */
-.slash-command-palette{position:fixed;left:50%;bottom:120px;transform:translateX(-50%) translateY(8px);width:min(520px,92vw);max-height:60vh;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:12px;box-shadow:0 16px 50px hsl(var(--always-black)/0.4);overflow:hidden;display:none;flex-direction:column;z-index:850;opacity:0;transition:opacity .12s,transform .12s}
+.slash-command-palette{position:fixed;left:50%;bottom:120px;transform:translateX(-50%) translateY(8px);width:min(520px,92vw);max-height:60vh;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:12px;box-shadow:0 16px 50px hsl(var(--always-black)/0.4);overflow:hidden;display:none;flex-direction:column;z-index:850;opacity:0;transition:opacity .16s var(--ease-out),transform .16s var(--ease-out)}
 .slash-command-palette.visible{display:flex;opacity:1;transform:translateX(-50%) translateY(0)}
 .slash-command-head{padding:10px 14px;font-size:11px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:hsl(var(--text-500));border-bottom:0.5px solid hsl(var(--border-300)/0.15)}
 .slash-command-empty{padding:20px 14px;text-align:center;color:hsl(var(--text-400));font-size:12px}
 .slash-command-row{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;transition:background .1s}
 .slash-command-row:hover,.slash-command-row.selected{background:hsl(var(--bg-200))}
 .slash-command-icon{font-size:18px;line-height:1;flex-shrink:0;width:24px;text-align:center}
+.slash-command-icon svg{width:18px;height:18px;vertical-align:middle}
+/* Section label separating connected apps from prompt templates. */
+.slash-command-group{padding:8px 14px 4px;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:hsl(var(--text-500))}
 .slash-command-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .slash-command-title{font-size:13px;font-weight:500;color:hsl(var(--text-100));display:flex;align-items:center;gap:8px}
 .slash-command-shortcut{font-size:11px;color:hsl(var(--accent-000));font-family:var(--font-mono);background:hsl(var(--accent-900));padding:1px 6px;border-radius:3px}
@@ -314,7 +317,14 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .visualization-header h3{margin:0;font:600 14px/1.35 'Inter','Helvetica Neue',Arial,system-ui,sans-serif;letter-spacing:-.01em}.visualization-header p,.visualization-caption{margin:4px 0 0;color:hsl(var(--text-300));font-size:12px;line-height:1.45}
 .visualization-actions{display:flex;align-items:center;gap:3px;flex:none}.visualization-actions button{appearance:none;border:0;border-radius:7px;padding:5px 7px;background:transparent;color:hsl(var(--text-300));font:500 11px/1 'Inter','Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer}.visualization-actions button:hover,.visualization-actions button:focus-visible{color:hsl(var(--text-100));background:hsl(var(--bg-200));outline:none}
 .visualization-stage{height:350px;min-width:0;padding:4px 4px 0;position:relative}
-.visualization-stage>div{width:100%;height:100%}
+/* Size the ECharts render root only. The `:first-child` scope is critical:
+   ECharts appends its tooltip as a second direct child <div> of the stage,
+   and a bare `.visualization-stage>div` rule would stretch that tooltip to
+   fill the whole stage, producing a full-card overlay on hover (the x value
+   pinned top-left, the series value flung to the right edge) that hides the
+   chart. Scoping to the first child leaves the absolutely-positioned tooltip
+   at its natural content size. */
+.visualization-stage>div:first-child{width:100%;height:100%}
 /* Force ECharts chart background transparent — the default theme sets white. */
 .visualization-stage canvas,.visualization-stage svg{background:transparent!important}.visualization-data{padding:0 16px 14px}.visualization-table-wrap{overflow:auto;border:1px solid hsl(var(--border-100));border-radius:9px;max-height:260px}.visualization-table{width:100%;border-collapse:collapse;font-size:12px;font-family:'Inter','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-table th,.visualization-table td{padding:8px 10px;text-align:left;border-bottom:1px solid hsl(var(--border-100));white-space:nowrap;color:hsl(var(--text-100))}.visualization-table th{position:sticky;top:0;background:hsl(var(--bg-100));color:hsl(var(--text-300));font-weight:600}.visualization-table tr:last-child td{border-bottom:0}
 .visualization-diagram{display:block;width:100%;height:100%;color:hsl(var(--text-300));font-family:'Inter','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-edge{fill:none;stroke:currentColor;stroke-width:1.4}.visualization-edge-label{fill:currentColor;font:500 12px 'Inter','Helvetica Neue',Arial,system-ui,sans-serif;text-anchor:middle}.visualization-node rect{fill:hsl(var(--bg-100));stroke:hsl(var(--border-200));stroke-width:1.4}.visualization-node text{fill:hsl(var(--text-100));font:600 13px 'Inter','Helvetica Neue',Arial,system-ui,sans-serif;text-anchor:middle}.visualization-node .visualization-node-detail{fill:hsl(var(--text-300));font:11px 'Inter','Helvetica Neue',Arial,system-ui,sans-serif}
