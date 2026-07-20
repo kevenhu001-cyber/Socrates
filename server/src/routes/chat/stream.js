@@ -26,7 +26,7 @@
 
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
-import { sessions, executions } from '../../db/schema.js';
+import { sessions, executions, connectorConnections } from '../../db/schema.js';
 import { isUuid } from '../../lib/validate.js';
 import { getExecutionsPerDay } from '../../lib/tiers.js';
 import { streamChatCompletion } from '../../services/llm.js';
@@ -34,6 +34,7 @@ import { codeInterpreter } from '../../services/codeInterpreter.js';
 import { webSearch } from '../../services/webSearch.js';
 import { executeVisualization } from '../../services/visualization.js';
 import { createToolRegistry } from '../../services/toolRegistry.js';
+import { executeConnectorTool, CONNECTOR_TOOL_NAMES } from '../../services/connectorTools.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../../services/usageTracker.js';
 import { trackSseConnection, startSseKeepalive } from '../../lib/sse.js';
 
@@ -157,7 +158,25 @@ export function registerStreamRoute(router) {
        * ───────────────────────────────────────────────────────────── */
       const MAX_TOOL_ITERATIONS = 4;
       const codeInterpreterToolDef = codeInterpreter.getToolDefinition();
-      const toolRegistry = createToolRegistry({ codeInterpreterToolDef, mode });
+
+      // Fetch the user's connector connections so the tool registry can
+      // gate connector tools on whether the user has actually connected
+      // each provider.  arXiv is always enabled (public API).
+      let connectorConnectionsByProvider = {};
+      if (req.userId) {
+        try {
+          const db = getDb();
+          const rows = await db.select().from(connectorConnections)
+            .where(eq(connectorConnections.userId, req.userId));
+          for (const row of rows) {
+            connectorConnectionsByProvider[row.provider] = row;
+          }
+        } catch (err) {
+          console.error('[chat/stream] failed to load connector connections:', err.message);
+          // Non-blocking — connector tools simply won't be available.
+        }
+      }
+      const toolRegistry = createToolRegistry({ codeInterpreterToolDef, mode, connectorConnectionsByProvider });
       const toolDefs = toolRegistry.definitions;
       // P_tutor-no-search — Tutor mode (the guided Socratic teacher)
       // does not need web search. Its answers are rooted in the
@@ -550,6 +569,28 @@ data: ${JSON.stringify({
                   output: result.output, results: [], retryable: false,
                 })}\n\n`);
               }
+            } else if (Object.values(CONNECTOR_TOOL_NAMES).includes(toolName)) {
+              // Connector tools — execute via the shared connectorTools executor.
+              const TOOL_TO_PROVIDER = {
+                [CONNECTOR_TOOL_NAMES.ZOTERO]: 'zotero',
+                [CONNECTOR_TOOL_NAMES.NOTION]: 'notion',
+                [CONNECTOR_TOOL_NAMES.GITHUB]: 'github',
+                [CONNECTOR_TOOL_NAMES.GITEE]: 'gitee',
+              };
+              const provider = TOOL_TO_PROVIDER[toolName];
+              const connection = provider ? (connectorConnectionsByProvider?.[provider] || null) : null;
+              const toolResult = await executeConnectorTool(toolName, args, connection);
+              const ok = toolResult.status === 'completed';
+              writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                id: tc.id, ok, status: toolResult.status,
+                output: toolResult.output || '',
+                error: toolResult.error || null,
+                errorCode: toolResult.errorCode || null,
+                retryable: false,
+                userMessage: ok ? null : (toolResult.userMessage || '该工具暂不可用。'),
+                detail: toolResult.error || null,
+              })}\n\n`);
+              result = toolResult;
             } else {
               // Unknown tool — tell the model so it can recover instead of looping.
               writeSse(`event: tool_result\ndata: ${JSON.stringify({

@@ -43,7 +43,7 @@ const functionPayload = z.object({
   xLabel: z.string().max(80).optional(),
   yLabel: z.string().max(80).optional(),
   description: z.string().max(800).optional(),
-}).strict();
+}).passthrough();
 
 const chartPayload = z.object({
   categories: z.array(z.union([z.string().max(120), finiteNumber])).max(5000).optional(),
@@ -75,7 +75,7 @@ const teachingPayload = z.object({
 const extensionPayload = z.object({
   source: z.string().min(1).max(100000),
   description: z.string().max(800).optional(),
-}).strict();
+}).passthrough();
 
 const envelope = z.object({
   version: z.literal(1),
@@ -101,7 +101,32 @@ function compactIssues(error) {
   }));
 }
 
+const ENVELOPE_KEYS = new Set(['version', 'template', 'title', 'caption', 'accessibilitySummary', 'payload']);
+
+/**
+ * Normalize a possibly-malformed spec before validation.
+ * LLMs often place template-specific keys (e.g. functions, expressions,
+ * xAxis, yAxis, grid, xRange, yRange) at the top level instead of
+ * nesting them under `payload`. This step silently moves them into
+ * payload so the strict envelope schema does not reject them.
+ */
+function normalizeSpec(input) {
+  if (!input || typeof input !== 'object') return input;
+  const extra = {};
+  for (const key of Object.keys(input)) {
+    if (!ENVELOPE_KEYS.has(key)) {
+      extra[key] = input[key];
+      delete input[key];
+    }
+  }
+  if (Object.keys(extra).length > 0) {
+    input.payload = { ...(input.payload || {}), ...extra };
+  }
+  return input;
+}
+
 export function validateVisualizationSpec(input) {
+  normalizeSpec(input);
   const parsed = envelope.safeParse(input);
   if (!parsed.success) return { ok: false, issues: compactIssues(parsed.error) };
   const byteLength = Buffer.byteLength(JSON.stringify(input), 'utf8');

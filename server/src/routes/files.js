@@ -178,6 +178,21 @@ router.get('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* PATCH /api/files/:id — rename file */
+router.patch('/:id', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const [file] = await db.select().from(files)
+      .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId)))
+      .limit(1);
+    if (!file) throw new NotFound('File not found');
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : null;
+    if (!name) throw new BadRequest('name is required');
+    await db.update(files).set({ name }).where(eq(files.id, req.params.id));
+    return res.json({ id: file.id, name });
+  } catch (err) { next(err); }
+});
+
 /* DELETE /api/files/:id */
 router.delete('/:id', async (req, res, next) => {
   try {

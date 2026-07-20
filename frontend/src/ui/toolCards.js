@@ -37,8 +37,13 @@ export var TOOL_META = {
   Bash:    { letter: "$", cls: "bash",     short: "Shell",   tone: "purple" },
   WebFetch:{ letter: ">", cls: "webfetch", short: "Fetch",   tone: "orange" },
   Code:    { letter: "py", cls: "code",    short: "Python",  tone: "python" },
-  web_search:    { letter: "Q", cls: "websearch", short: "Search", tone: "teal"   },
-  code_interpreter: { letter: "{}", cls: "codeint", short: "Code", tone: "python" },
+  web_search:        { letter: "Q", cls: "websearch", short: "Search", tone: "teal"   },
+  code_interpreter:  { letter: "{}", cls: "codeint", short: "Code", tone: "python" },
+  arxiv_search:      { letter: "X", cls: "arxiv",    short: "arXiv",  tone: "red"    },
+  zotero_search:     { letter: "Z", cls: "zotero",   short: "Zotero", tone: "blue"   },
+  notion_search_pages: { letter: "N", cls: "notion", short: "Notion", tone: "gray"   },
+  github_list_repos: { letter: "GH", cls: "github",   short: "GitHub", tone: "gray"   },
+  gitee_list_repos:  { letter: "GL", cls: "gitee",    short: "Gitee",  tone: "orange" },
 };
 
 /* Extract the human-readable input preview shown in the collapsed
@@ -65,7 +70,12 @@ export function toolFormatInput(name, inp) {
       const first = ((inp.code || "").split("\n")[0] || "").slice(0, 80);
       return `${inp.language || "python"}  -  ${first}`;
     }
-    default:        return stringifyPreview(inp, 160);
+    case "arxiv_search":       return inp.query || "";
+    case "zotero_search":      return inp.query || "(all items)";
+    case "notion_search_pages": return inp.query || "";
+    case "github_list_repos":  return inp.query ? `filter: ${inp.query}` : "(all repos)";
+    case "gitee_list_repos":   return inp.query ? `filter: ${inp.query}` : "(all repos)";
+    default:                   return stringifyPreview(inp, 160);
   }
 }
 
