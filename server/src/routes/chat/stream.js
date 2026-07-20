@@ -462,9 +462,9 @@ data: ${JSON.stringify({
               result = executeVisualization(args);
               if (result.status !== 'completed') {
                 visualizationValidationFailures += 1;
-                result.retryable = visualizationValidationFailures <= 1;
+                result.retryable = visualizationValidationFailures <= 2;
                 if (!result.retryable) {
-                  result.userMessage = '可视化规格连续两次无效，本次不再自动重试。';
+                  result.userMessage = '可视化规格连续三次无效，本次不再自动重试。';
                 }
               }
               writeSse(`event: tool_result\ndata: ${JSON.stringify({

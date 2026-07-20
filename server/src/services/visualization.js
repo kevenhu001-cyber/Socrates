@@ -167,7 +167,7 @@ export const VISUALIZATION_TOOL = {
         title: { type: 'string', maxLength: 120 },
         caption: { type: 'string', maxLength: 500 },
         accessibilitySummary: { type: 'string', maxLength: 800 },
-        payload: { type: 'object', description: 'Template-specific semantic content, data, expressions, nodes, edges, or restricted extension source.' },
+        payload: { type: 'object', description: 'Template-specific semantic content. function: {functions:[{expression,label?,domain?,role?}],xLabel?,yLabel?}. line/area/bar/scatter/pie/histogram/heatmap/radar/boxplot: {categories?,series:[{name?,role?,data:[numbers]}],xLabel?,yLabel?} (scatter data items are [x,y] pairs). flowchart/sequence/state/tree/mindmap/network/concept_map: {nodes:[{id,label,detail?}],edges:[{from,to,label?}],direction?}. timeline/comparison/process/number_line/geometry: {items:[{label,detail?,value?,role?}]}. svg_illustration/interactive_simulation: {source}. Exact field names: use data not points, expression not expr, name not title in a series, from/to not source/target in an edge.' },
       },
       additionalProperties: false,
     },
