@@ -25,6 +25,10 @@ export function openExamModal() {
   others.forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.add("hidden"); });
   ev.classList.remove("hidden");
   var tb = document.querySelector(".main > .top-bar"); if (tb) tb.style.display = "none";
+  /* Hide the disclaimer that lives in .main-inner so its text
+     doesn't peek through under the exam overlay. */
+  var disc = document.getElementById("topicDisclaimer");
+  if (disc) disc.style.display = "none";
   window.toggleChatTopBarEls(false);
   window.state._examInView = true;
   if (!window.state._examScrollBound) {
@@ -49,6 +53,9 @@ export function closeExamView() {
   var ev = document.getElementById("examView");
   ev.classList.add("hidden");
   var tb = document.querySelector(".main > .top-bar"); if (tb) tb.style.display = "";
+  /* Restore disclaimer visibility. */
+  var disc = document.getElementById("topicDisclaimer");
+  if (disc) disc.style.display = "";
   window.state.examCancel = true;
   window.state._examInView = false;
   window.state.examReadOnly = false;
@@ -79,92 +86,122 @@ export function renderExamForm() {
   window.state.examSubmitted = false;
   _examSelectedTypes = { mc: true, fb: true, sa: false };
   var L = function (en, zh) { return window._currentLang === "zh" ? zh : en };
-  var provOptions = "";
+
+  /* Build provider options for the custom dropdown */
+  var provItems = [];
+  var activeId = "";
   if (Array.isArray(window.apiConfig.providers)) {
     window.apiConfig.providers.forEach(function (p) {
       if (!p || !p.id) return;
-      var label = p.label || p.model || p.id;
-      var selected = (p.id === window.apiConfig.activeId) ? " selected" : "";
-      provOptions += '<option value="' + esc(p.id) + '"' + selected + '>' + esc(label) + '</option>';
+      provItems.push({ id: p.id, label: p.label || p.model || p.id });
+      if (p.id === window.apiConfig.activeId) activeId = p.id;
     });
   }
-  if (!provOptions) {
-    provOptions = '<option value="">' + (L("无可用模型", "No models available")) + '</option>';
-  }
+  var activeLabel = activeId
+    ? (provItems.find(function (p) { return p.id === activeId }) || {}).label || activeId
+    : L("Select a model", "选择模型");
 
-  /* SVG icons for section headers and toggle cards — inline so no external deps */
-  var ICON_TOPIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>';
-  var ICON_SETTINGS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
-  var ICON_TYPES = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>';
-  var ICON_INSTRUCTIONS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
-
-  /* Toggle card icons */
-  var ICON_MC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="9 12 11 14 15 10"/></svg>';
-  var ICON_FB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="14" x2="21" y2="14"/><line x1="8" y1="10" x2="8" y2="18"/><line x1="16" y1="10" x2="16" y2="18"/></svg>';
-  var ICON_SA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
-
-  var CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-
-  function section(icon, title, content) {
-    return '<div class="exam-form-section">'
-      + '<div class="exam-form-section-header">'
-      + '<span class="exam-form-section-icon">' + icon + '</span>'
-      + '<span class="exam-form-section-title">' + title + '</span>'
-      + '</div>'
-      + content
-      + '</div>';
-  }
-
-  var topicSection = section(ICON_TOPIC, window.t("exam.topic"),
-    '<div class="exam-form-row">'
-    + '<input class="exam-form-input" id="examTopic" name="examTopic" placeholder="' + (window._currentLang === "zh" ? "如：线性代数、量子力学、二战…" : "e.g. Linear Algebra, Quantum Mechanics, World War II...") + '">'
-    + '</div>');
-
-  var settingsSection = section(ICON_SETTINGS, (L("出题设置", "Settings")),
-    '<div class="exam-form-row">'
-    + '<div class="exam-form-grid3">'
-    + '<div class="exam-form-cell"><label class="exam-form-label" for="examModel">' + (L("生成模型", "Model")) + '</label>'
-    + '<select class="exam-form-input exam-form-select" id="examModel" name="examModel">' + provOptions + '</select></div>'
-    + '<div class="exam-form-cell"><label class="exam-form-label" for="examDifficulty">' + window.t("exam.difficulty") + '</label>'
-    + '<input class="exam-form-input" id="examDifficulty" name="examDifficulty" placeholder="' + (window._currentLang === "zh" ? "入门 / 中级 / 困难 / 专家 / 自定义" : "beginner / intermediate / hard / expert / custom") + '" value="intermediate"></div>'
-    + '<div class="exam-form-cell exam-form-cell-narrow"><label class="exam-form-label" for="examCount">' + window.t("exam.count") + '</label>'
-    + '<input class="exam-form-input" id="examCount" name="examCount" type="number" min="1" max="50" value="5"></div>'
-    + '</div></div>');
-
-  function toggleCard(type, icon, label, sublabel, isActive) {
+  function togglePill(type, label, isActive) {
     var activeClass = isActive ? ' active' : '';
-    var checkedHtml = isActive
-      ? '<span class="tog-check">' + CHECK_SVG + '</span>'
-      : '<span class="tog-check"></span>';
-    return '<button class="exam-form-toggle-card' + activeClass + '" data-type="' + type + '" onclick="toggleExamType(\'' + type + '\')">'
-      + checkedHtml
-      + '<span class="tog-icon">' + icon + '</span>'
-      + '<span class="tog-label">' + label + '</span>'
-      + '<span class="tog-sublabel">' + sublabel + '</span>'
-      + '</button>';
+    return '<button class="exam-form-toggle-card' + activeClass + '" data-type="' + type + '" onclick="toggleExamType(\'' + type + '\')"><span class="tog-dot"></span>' + esc(label) + '</button>';
   }
 
-  var typesSection = section(ICON_TYPES, window.t("exam.types"),
-    '<div class="exam-form-card-toggles" id="examTypePicker">'
-    + toggleCard("mc", ICON_MC, L("选择题", "Multiple choice"), L("从选项中选", "Pick from options"), true)
-    + toggleCard("fb", ICON_FB, L("填空题", "Fill blank"), L("输入关键词", "Type the answer"), true)
-    + toggleCard("sa", ICON_SA, L("简答题", "Short answer"), L("自由作答", "Free response"), false)
-    + '</div>');
+  /* Build custom model dropdown HTML */
+  var modelOptsHtml = "";
+  provItems.forEach(function (p) {
+    modelOptsHtml += '<button class="exam-model-opt' + (p.id === activeId ? ' active' : '') + '" data-mid="' + esc(p.id) + '" onclick="selectExamModel(\'' + esc(p.id) + '\')">' + esc(p.label) + '</button>';
+  });
+  if (!modelOptsHtml) {
+    modelOptsHtml = '<button class="exam-model-opt" disabled style="color:hsl(var(--text-500));cursor:default">' + L("No models available", "无可用模型") + '</button>';
+  }
 
-  var instructionsSection = section(ICON_INSTRUCTIONS, window.t("exam.instructions"),
-    '<div class="exam-form-row">'
-    + '<textarea class="exam-form-textarea" id="examInstructions" name="examInstructions" placeholder="' + (window._currentLang === "zh" ? "具体说明要覆盖的知识点，留空则由 AI 决定…" : "Specific topics to cover, or leave blank for AI to decide...") + '" rows="3"></textarea>'
-    + '</div>');
+  var html = '<div class="exam-form-container">';
 
-  var html = '<div class="exam-form-container">'
-    + topicSection
-    + settingsSection
-    + typesSection
-    + instructionsSection
+  /* Topic */
+  html += '<div class="exam-form-section">'
+    + '<div class="exam-form-section-header"><span class="exam-form-section-title">' + window.t("exam.topic") + '</span></div>'
+    + '<input class="exam-form-input" id="examTopic" name="examTopic" placeholder="' + L("e.g. Linear Algebra, World War II...", "如：线性代数、量子力学、二战…") + '">'
     + '</div>';
 
+  /* Settings row */
+  html += '<div class="exam-form-section">'
+    + '<div class="exam-form-section-header"><span class="exam-form-section-title">' + L("Settings", "出题设置") + '</span></div>'
+    + '<div class="exam-form-grid3">'
+    + '<div class="exam-form-cell"><label class="exam-form-label" for="examModel">' + L("Model", "生成模型") + '</label>'
+    + '<div class="exam-model-wrap">'
+    + '<button class="exam-model-trigger" id="examModelTrigger" type="button" onclick="toggleExamModelMenu()">'
+    + '<span class="exam-model-label" id="examModelLabel">' + esc(activeLabel) + '</span>'
+    + '<svg class="exam-model-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
+    + '</button>'
+    + '<div class="exam-model-menu" id="examModelMenu">' + modelOptsHtml + '</div>'
+    + '<input type="hidden" id="examModel" value="' + esc(activeId) + '">'
+    + '</div></div>'
+    + '<div class="exam-form-cell"><label class="exam-form-label" for="examDifficulty">' + window.t("exam.difficulty") + '</label>'
+    + '<input class="exam-form-input" id="examDifficulty" name="examDifficulty" placeholder="' + L("beginner / hard / expert", "入门 / 中级 / 困难") + '" value="intermediate"></div>'
+    + '<div class="exam-form-cell exam-form-cell-narrow"><label class="exam-form-label" for="examCount">' + window.t("exam.count") + '</label>'
+    + '<input class="exam-form-input" id="examCount" name="examCount" type="number" min="1" max="50" value="5"></div>'
+    + '</div></div>';
+
+  /* Question types */
+  html += '<div class="exam-form-section">'
+    + '<div class="exam-form-section-header"><span class="exam-form-section-title">' + window.t("exam.types") + '</span></div>'
+    + '<div class="exam-form-card-toggles" id="examTypePicker">'
+    + togglePill("mc", L("Multiple choice", "选择题"), true)
+    + togglePill("fb", L("Fill blank", "填空题"), true)
+    + togglePill("sa", L("Short answer", "简答题"), false)
+    + '</div></div>';
+
+  /* Instructions */
+  html += '<div class="exam-form-section">'
+    + '<div class="exam-form-section-header"><span class="exam-form-section-title">' + window.t("exam.instructions") + '</span></div>'
+    + '<textarea class="exam-form-textarea" id="examInstructions" name="examInstructions" placeholder="' + L("Specific topics to cover, or leave blank...", "具体说明要覆盖的知识点，留空则由 AI 决定…") + '" rows="3"></textarea>'
+    + '</div>';
+
+  html += '</div>';
   body.innerHTML = html;
-  footer.innerHTML = '<button class="exam-btn secondary" onclick="closeExamView()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>' + window.t("common.cancel") + '</button><button class="exam-btn primary" onclick="startExamGeneration()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>' + window.t("exam.generate") + '</button>';
+  footer.innerHTML = '<button class="exam-btn secondary" onclick="closeExamView()">' + window.t("common.cancel") + '</button><button class="exam-btn primary" onclick="startExamGeneration()">' + window.t("exam.generate") + '</button>';
+}
+
+/* ── Custom model dropdown ── */
+export function toggleExamModelMenu() {
+  var menu = document.getElementById("examModelMenu");
+  var trigger = document.getElementById("examModelTrigger");
+  if (!menu) return;
+  var isOpen = menu.classList.contains("open");
+  /* Close all exam-model-menus first */
+  document.querySelectorAll(".exam-model-menu").forEach(function (m) { m.classList.remove("open"); });
+  document.querySelectorAll(".exam-model-trigger").forEach(function (t) { t.classList.remove("open"); });
+  if (!isOpen) {
+    menu.classList.add("open");
+    if (trigger) trigger.classList.add("open");
+    /* Click outside to close */
+    setTimeout(function () {
+      function onDoc(e) {
+        if (!e.target.closest(".exam-model-wrap")) {
+          menu.classList.remove("open");
+          if (trigger) trigger.classList.remove("open");
+          document.removeEventListener("click", onDoc, true);
+        }
+      }
+      document.addEventListener("click", onDoc, true);
+    }, 0);
+  }
+}
+
+export function selectExamModel(id) {
+  var input = document.getElementById("examModel");
+  var label = document.getElementById("examModelLabel");
+  var opts = document.querySelectorAll(".exam-model-opt");
+  if (input) input.value = id;
+  opts.forEach(function (o) {
+    o.classList.toggle("active", o.dataset.mid === id);
+    if (o.dataset.mid === id && label) label.textContent = o.textContent;
+  });
+  /* Close menu */
+  var menu = document.getElementById("examModelMenu");
+  var trigger = document.getElementById("examModelTrigger");
+  if (menu) menu.classList.remove("open");
+  if (trigger) trigger.classList.remove("open");
 }
 
 export function toggleExamType(type) {

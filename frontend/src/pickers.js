@@ -19,6 +19,36 @@ function getActiveProvider(){
   return (window.apiConfig.providers||[]).find(function(p){return p.id===window.apiConfig.activeId})||null;
 }
 
+/* ─── Shared: render provider items HTML ───
+   Used by syncModelPills() and toggleChatModelMenu() to avoid
+   duplicating the same item rendering code. */
+function renderProviderItemsHTML(providers, activeId){
+  var html = "";
+  if (!providers.length) {
+    return '<div class="model-picker-empty">No models yet. Open Settings to add one.</div>';
+  }
+  var sorted = providers.slice().sort(function(a, b){
+    if (a.isBuiltIn && !b.isBuiltIn) return -1;
+    if (!a.isBuiltIn && b.isBuiltIn) return 1;
+    return 0;
+  });
+  sorted.forEach(function(p){
+    var isActive = p && p.id === activeId;
+    var name = esc(p.label || p.model || "Model");
+    var sub = p.isBuiltIn ? "" : esc(p.model || "");
+    var url = esc(p.url || "");
+    var subLine = sub && sub !== name ? sub : (p.isBuiltIn ? "" : url);
+    html += '<button type="button" class="model-picker-item' + (isActive ? " active" : "") +
+            '" data-id="' + esc(p.id || "") + '" role="option" aria-selected="' + isActive + '">';
+    html += '<span class="model-picker-item-main"><span class="model-picker-item-name">' + name + '</span>';
+    if (subLine) html += '<span class="model-picker-item-sub">' + subLine + '</span>';
+    html += '</span>';
+    html += '<svg class="model-picker-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/><circle cx="20" cy="5" r="1.2" opacity="0.4"/></svg>';
+    html += '</button>';
+  });
+  return html;
+}
+
 /* ============================================================
    MODEL PICKER
    ============================================================ */
@@ -66,7 +96,7 @@ function syncModelPills(){
     label.title="";
     trigger.classList.remove("has-model");
     menu.innerHTML='<div class="model-picker-empty" style="opacity:0.5">Loading…</div>';
-    syncChatModel();
+    _syncChatModelInternal();
     return;
   }
   var active=providers.find(function(p){return p&&p.id===window.apiConfig.activeId});
@@ -89,36 +119,16 @@ function syncModelPills(){
     label.title="";
     trigger.classList.remove("has-model");
   }
-  var sorted=providers.slice().sort(function(a,b){
-    if(a.isBuiltIn&&!b.isBuiltIn)return -1;
-    if(!a.isBuiltIn&&b.isBuiltIn)return 1;
-    return 0;
-  });
-  var html="";
-  if(!providers.length){
-    html='<div class="model-picker-empty">No models yet. Open Settings to add one.</div>';
-  }else{
-    sorted.forEach(function(p){
-      var isActive=p&&p.id===window.apiConfig.activeId;
-      var name=esc(p.label||p.model||"Model");
-      var sub=p.isBuiltIn?"":esc(p.model||"");
-      var url=esc(p.url||"");
-      var subLine=sub&&sub!==name?sub:(p.isBuiltIn?"":url);
-      html+='<button type="button" class="model-picker-item'+(isActive?" active":"")+'" data-id="'+esc(p.id||"")+'" onclick="pickActiveProviderById(this.getAttribute(\'data-id\'))" role="option" aria-selected="'+isActive+'">';
-      html+='<span class="model-picker-item-main"><span class="model-picker-item-name">'+name+'</span>';
-      if(subLine)html+='<span class="model-picker-item-sub">'+subLine+'</span>';
-      html+='</span>';
-      html+='<svg class="model-picker-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/><circle cx="20" cy="5" r="1.2" opacity="0.4"/></svg>';
-      html+='</button>';
-    });
-    html+='<div class="model-picker-divider"></div>';
+  var html = renderProviderItemsHTML(providers, window.apiConfig.activeId);
+  if (html) {
+    html += '<div class="model-picker-divider"></div>';
   }
-  html+='<button type="button" class="model-picker-add" onclick="closeModelPicker();window.openSettings()">';
-  html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="5" opacity="0.25"/><path d="M12 8v8M8 12h8"/></svg>';
-  html+=providers.length?'Manage models…':'Add a model…';
-  html+='</button>';
+  html += '<button type="button" class="model-picker-add" onclick="closeModelPicker();window.openSettings()">';
+  html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="5" opacity="0.25"/><path d="M12 8v8M8 12h8"/></svg>';
+  html += providers.length ? 'Manage models…' : 'Add a model…';
+  html += '</button>';
   menu.innerHTML=html;
-  syncChatModel();
+  _syncChatModelInternal();
 }
 /* Click outside the picker closes the menu. */
 document.addEventListener("click",function(e){
@@ -136,11 +146,26 @@ document.addEventListener("keydown",function(e){
     e.stopPropagation();
   }
 });
+/* Event delegation on model picker menu items */
+document.addEventListener("click", function(e){
+  var item = e.target.closest(".model-picker-item");
+  if (!item) return;
+  var menu = item.closest("#modelPickerMenu, #chatModelMenu");
+  if (!menu) return;
+  var id = item.getAttribute("data-id");
+  if (!id) return;
+  if (menu.id === "modelPickerMenu") {
+    pickActiveProviderById(id);
+  } else {
+    pickChatModel(id);
+  }
+});
 
 /* ============================================================
    CHAT MODEL — display active model in chat header, switch mid-conversation
    ============================================================ */
-function syncChatModel(){
+/* Internal version used by syncModelPills to avoid redundant calls */
+function _syncChatModelInternal(){
   var label=document.getElementById("chatModelLabel");
   if(!label)return;
   var trigger=document.getElementById("chatModel");
@@ -151,6 +176,9 @@ function syncChatModel(){
     if(p)trigger.classList.add("has-model");
     else trigger.classList.remove("has-model");
   }
+}
+function syncChatModel(){
+  _syncChatModelInternal();
 }
 function toggleChatModelMenu(){
   var wrap=document.getElementById("chatModelWrap");
@@ -163,32 +191,13 @@ function toggleChatModelMenu(){
   if(trigger)trigger.classList.add("menu-open");
   if(trigger)trigger.setAttribute("aria-expanded","true");
   var providers=window.apiConfig.providers||[];
-  var sorted=providers.slice().sort(function(a,b){
-    if(a.isBuiltIn&&!b.isBuiltIn)return -1;
-    if(!a.isBuiltIn&&b.isBuiltIn)return 1;
-    return 0;
-  });
-  var html="";
-  if(!providers.length){
-    html='<div class="model-picker-empty">No models yet. Open Settings to add one.</div>';
-  }else{
-    sorted.forEach(function(p){
-      var isActive=p&&p.id===window.apiConfig.activeId;
-      var name=esc(p.label||p.model||"Model");
-      var sub=p.isBuiltIn?"":esc(p.model||"");
-      var url=esc(p.url||"");
-      var subLine=sub&&sub!==name?sub:(p.isBuiltIn?"":url);
-      html+='<button type="button" class="model-picker-item'+(isActive?" active":"")+'" data-id="'+esc(p.id||"")+'" onclick="pickChatModel(this.getAttribute(\'data-id\'))" role="option" aria-selected="'+isActive+'">';
-      html+='<span class="model-picker-item-main"><span class="model-picker-item-name">'+name+'</span>';
-      if(subLine)html+='<span class="model-picker-item-sub">'+subLine+'</span>';
-      html+='</span>';
-      html+='<svg class="model-picker-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/><circle cx="20" cy="5" r="1.2" opacity="0.4"/></svg>';
-      html+='</button>';
-    });
-    html+='<div class="model-picker-divider"></div>';
+  /* Reuse the shared renderProviderItemsHTML to avoid duplication */
+  var html = renderProviderItemsHTML(providers, window.apiConfig.activeId);
+  if (html) {
+    html += '<div class="model-picker-divider"></div>';
   }
-  html+='<button type="button" class="model-picker-add" onclick="closeChatModelMenu();window.openSettings()">';
-  html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="5" opacity="0.25"/><path d="M12 8v8M8 12h8"/></svg>';
+  html += '<button type="button" class="model-picker-add" onclick="closeChatModelMenu();window.openSettings()">';
+  html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="5" opacity="0.25"/><path d="M12 8v8M8 12h8"/></svg>';
   html+=providers.length?'Manage models…':'Add a model…';
   html+='</button>';
   menu.innerHTML=html;

@@ -238,7 +238,7 @@ export async function addFiles(fileList, onUpdate, onProgress) {
   /* P_attachments-multimodal — proactive gate for image attachments. */
   const activeProvider = (typeof window !== 'undefined' && typeof window.getActiveProvider === 'function')
     ? window.getActiveProvider() : null;
-  const activeIsMultimodal = !!(activeProvider && activeProvider.isMultimodal === true);
+  const activeIsMultimodal = !!(activeProvider && activeProvider.vision === true);
   for (const file of files) {
     if (attachments.length >= MAX_TOTAL_ATTACHMENTS) {
       result.rejected.push(`${file.name || 'file'}: max ${MAX_TOTAL_ATTACHMENTS} attachments per turn`);

@@ -2,6 +2,15 @@
  * Settings modal: API provider list + CRUD.
  * Extracted from main.js L11743-L12058.
  *
+ * Optimizations:
+ *   - Event delegation on providerList (no inline onclick/oninput/onchange).
+ *   - API Key never exposed in input value attribute; uses placeholder mask.
+ *   - Input validation (URL format, key length) with inline error messages.
+ *   - saveSettings uses Promise.allSettled + disables button during save.
+ *   - setActiveProvider rolls back on PATCH failure.
+ *   - removeProvider deletes server-side first, then updates local state.
+ *   - clearSettings uses confirmClearSettings from dangerConfirms.js.
+ *
  * Touches via window.*:
  *   apiConfig (mutate in place — CRITICAL!), BEAGLE_BUILT_IN, SERVER_HAS_BEAGLE_KEY,
  *   TIER_KEY_LIMITS, LAST_ACTIVE_ID_KEY, CURRENT_USER, loadLastActiveId,
@@ -9,8 +18,13 @@
  *   markProvidersFetched, renderProviderList (self-call, recurses via saveSettings)
  */
 
+/* ─── Track keys that are masked (existing saved keys not shown in DOM) ─── */
+var _maskedKeys = {};
+
+/* ─── Open / Close ─── */
 function openSettings() {
   document.getElementById("settingsOverlay").classList.remove("hidden");
+  syncToggleUI();
   renderProviderList();
 }
 
@@ -18,21 +32,89 @@ function closeSettings() {
   document.getElementById("settingsOverlay").classList.add("hidden");
 }
 
+/* ─── Bind settings UI events (called once from main.js boot) ─── */
+function bindSettingsUI() {
+  var overlay = document.getElementById("settingsOverlay");
+  if (overlay) {
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) closeSettings();
+    });
+  }
+  var closeBtn = document.getElementById("settingsCloseBtn");
+  if (closeBtn) closeBtn.addEventListener("click", closeSettings);
+  var toggle = document.getElementById("stgToggle");
+  if (toggle) toggle.addEventListener("click", toggleAPI);
+  var addBtn = document.getElementById("addProviderBtn");
+  if (addBtn) addBtn.addEventListener("click", addProvider);
+  var clearBtn = document.getElementById("clearSettingsBtn");
+  if (clearBtn) clearBtn.addEventListener("click", clearSettings);
+  var cancelBtn = document.getElementById("cancelSettingsBtn");
+  if (cancelBtn) cancelBtn.addEventListener("click", closeSettings);
+  var saveBtn = document.getElementById("saveSettingsBtn");
+  if (saveBtn) saveBtn.addEventListener("click", saveSettings);
+}
+
+/* ─── "Use External API" toggle — now actually tracked and functional ─── */
+var _externalApiOn = true;
+try {
+  var saved = localStorage.getItem("socrates-external-api");
+  if (saved !== null) _externalApiOn = saved === "true";
+} catch (e) {}
+
 function toggleAPI() {
+  _externalApiOn = !_externalApiOn;
+  try { localStorage.setItem("socrates-external-api", JSON.stringify(_externalApiOn)); } catch (e) {}
+  syncToggleUI();
+  /* Collapse/expand the provider list as a visual hint */
   var rows = document.getElementById("providerList");
-  if (rows) rows.classList.toggle("collapsed");
+  if (rows) rows.classList.toggle("collapsed", !_externalApiOn);
+}
+
+function syncToggleUI() {
+  var track = document.getElementById("stgToggleTrack");
+  if (track) track.classList.toggle("on", _externalApiOn);
+  var rows = document.getElementById("providerList");
+  if (rows) rows.classList.toggle("collapsed", !_externalApiOn);
 }
 
 function syncSettingsUI() {
-  var rows = document.getElementById("providerList");
-  if (rows) rows.classList.remove("collapsed");
+  syncToggleUI();
 }
 
+/* ─── Validation helpers ─── */
+function _validateUrl(val) {
+  if (!val || !val.trim()) return null; /* empty is OK (optional) */
+  var v = val.trim();
+  if (!/^https?:\/\//i.test(v)) return "URL must start with http:// or https://";
+  try { new URL(v); return null; } catch (_) { return "Invalid URL format"; }
+}
+
+function _validateKey(val) {
+  if (!val || !val.trim()) return null; /* empty is OK (optional) */
+  if (val.trim().length < 8) return "Key is too short (min 8 characters)";
+  return null;
+}
+
+function _clearFieldError(el) {
+  var err = el.parentNode && el.parentNode.querySelector(".settings-field-error");
+  if (err) err.remove();
+  el.classList.remove("input-error");
+}
+
+function _showFieldError(el, msg) {
+  _clearFieldError(el);
+  el.classList.add("input-error");
+  var err = document.createElement("span");
+  err.className = "settings-field-error";
+  err.textContent = msg;
+  el.parentNode.appendChild(err);
+}
+
+/* ─── Render provider list ─── */
 function renderProviderList() {
   var cont = document.getElementById("providerList");
   if (!cont) return;
   var apiConfig = window.apiConfig;
-  /* Filter out built-in / Beagle — not shown in API Configuration. */
   var userProviders = (apiConfig.providers || []).filter(function (p) { return !p.isBuiltIn && p.id !== "beagle-built-in"; });
   if (!userProviders.length) {
     cont.innerHTML = '<div class="provider-empty">No models yet. Click "+ Add" to configure your first one.</div>';
@@ -43,30 +125,134 @@ function renderProviderList() {
   var html = "";
   userProviders.forEach(function (p) {
     var isActive = p.id === apiConfig.activeId;
-    var displayKey = p.key ? "" : (p.id && p.id.indexOf("new-") !== 0 ? "••••••••" : "");
-    if (displayKey === "••••••••") {
-      /* masked — no value attr */
-    }
-    var keyVal = p.key ? "" : (p.id && p.id.indexOf("new-") !== 0 ? "••••••••" : "");
+    var hasKey = !!p.key;
+    var keyIsMasked = hasKey && !p.id.startsWith("new-");
+    if (keyIsMasked) _maskedKeys[p.id] = true;
+    /* Key field: use a placeholder-only approach for security.
+       Existing keys show "••••••••" as placeholder with no value.
+       New keys (new-*) show the actual key in value. */
+    var keyValue = (!hasKey || keyIsMasked) ? "" : esc(p.key);
+    var keyPlaceholder = keyIsMasked ? "••••••••" : (esc(t("provider.placeholderKey") || "sk-..."));
     html += '<div class="provider-row' + (isActive ? " active" : "") + '" data-id="' + esc(p.id || "") + '">';
-    html += '<button class="provider-active-btn" onclick="setActiveProvider(\'' + esc(p.id || "") + '\')" title="' + (isActive ? "Active model" : "Set as active") + '">' + (isActive ? "●" : "○") + '</button>';
+    html += '<button class="provider-active-btn" data-action="set-active" title="' + (isActive ? "Active model" : "Set as active") + '">' + (isActive ? "●" : "○") + '</button>';
     html += '<div class="provider-fields">';
-    html += '<input class="settings-input" name="providerLabel" placeholder="' + esc(t("provider.placeholderLabel") || "Label") + '" value="' + esc(p.label || "") + '" oninput="updateProviderField(\'' + esc(p.id || "") + '\',\'label\',this.value)">';
-    html += '<input class="settings-input" name="providerUrl" placeholder="' + esc(t("provider.placeholderUrl") || "Base URL") + '" value="' + esc(p.url || "") + '" oninput="updateProviderField(\'' + esc(p.id || "") + '\',\'url\',this.value)">';
-    html += '<form style="display:contents" onsubmit="return false"><input type="text" name="username" autocomplete="username" style="display:none" aria-hidden="true"><input class="settings-input" name="providerKey" type="password" autocomplete="new-password" placeholder="' + esc(t("provider.placeholderKey") || "sk-...") + '" value="' + esc(keyVal) + '" oninput="updateProviderField(\'' + esc(p.id || "") + '\',\'key\',this.value)"></form>';
-    html += '<input class="settings-input" name="providerModel" placeholder="' + esc(t("provider.placeholderModel") || "Model ID") + '" value="' + esc(p.model || "") + '" oninput="updateProviderField(\'' + esc(p.id || "") + '\',\'model\',this.value)">';
+    html += '<input class="settings-input" data-field="label" placeholder="' + esc(t("provider.placeholderLabel") || "Label") + '" value="' + esc(p.label || "") + '">';
+    html += '<input class="settings-input" data-field="url" placeholder="' + esc(t("provider.placeholderUrl") || "Base URL") + '" value="' + esc(p.url || "") + '">';
+    html += '<form style="display:contents" onsubmit="return false"><input type="text" name="username" autocomplete="username" style="display:none" aria-hidden="true"><input class="settings-input" data-field="key" type="password" autocomplete="new-password" placeholder="' + keyPlaceholder + '" value="' + keyValue + '"></form>';
+    html += '<input class="settings-input" data-field="model" placeholder="' + esc(t("provider.placeholderModel") || "Model ID") + '" value="' + esc(p.model || "") + '">';
     html += '<label class="provider-multimodal" title="' + esc(t("provider.multimodalHint") || "") + '">'
-       + '<input type="checkbox" name="providerMultimodal"'
+       + '<input type="checkbox" data-field="vision"'
        + (p.vision ? ' checked' : '')
-       + ' onchange="updateProviderField(\'' + esc(p.id || "") + '\',\'vision\',this.checked)">'
+       + '>'
        + '<span data-i18n-key="provider.multimodal">Multimodal (vision-capable)</span>'
        + '</label>';
     html += '</div>';
-    html += '<button class="provider-del" onclick="removeProvider(\'' + esc(p.id || "") + '\')" title="Remove">&times;</button>';
+    html += '<button class="provider-del" data-action="remove-provider" title="Remove">&times;</button>';
     html += '</div>';
   });
   cont.innerHTML = html;
+  /* Re-bind event delegation after innerHTML replace */
+  _bindProviderListEvents(cont);
 }
+
+/* ─── Event delegation ─── */
+var _providerListBound = false;
+function _bindProviderListEvents(cont) {
+  /* We use a fresh listener each render since innerHTML replaces the DOM.
+     Remove old listener by cloning a new approach: we use capturing on the
+     container with a single handler for all events. */
+  if (_providerListBound) {
+    cont.removeEventListener("click", _onProviderListClick);
+    cont.removeEventListener("input", _onProviderListInput);
+    cont.removeEventListener("change", _onProviderListChange);
+    cont.removeEventListener("focusin", _onProviderListFocusIn);
+  }
+  cont.addEventListener("click", _onProviderListClick);
+  cont.addEventListener("input", _onProviderListInput);
+  cont.addEventListener("change", _onProviderListChange);
+  cont.addEventListener("focusin", _onProviderListFocusIn);
+  _providerListBound = true;
+}
+
+function _getProviderId(el) {
+  var row = el && el.closest && el.closest(".provider-row");
+  return row ? row.getAttribute("data-id") : null;
+}
+
+function _getProvider(id) {
+  var apiConfig = window.apiConfig;
+  return (apiConfig.providers || []).find(function (x) { return x.id === id; });
+}
+
+function _onProviderListClick(e) {
+  var target = e.target;
+  if (target.classList.contains("provider-active-btn")) {
+    var id = _getProviderId(target);
+    if (id) setActiveProvider(id);
+    return;
+  }
+  if (target.classList.contains("provider-del")) {
+    var id = _getProviderId(target);
+    if (id) removeProvider(id);
+    return;
+  }
+}
+
+function _onProviderListInput(e) {
+  var target = e.target;
+  if (!target.classList.contains("settings-input")) return;
+  var field = target.getAttribute("data-field");
+  if (!field) return;
+  var id = _getProviderId(target);
+  if (!id) return;
+  /* Clear any previous error for this field on input */
+  _clearFieldError(target);
+  var value = target.value;
+  var p = _getProvider(id);
+  if (!p) return;
+  if (field === "key") {
+    /* If the field was masked and user types, the mask placeholder is gone.
+       If the user clears the field, treat as "keep existing key" (no-op). */
+    if (value === "" && _maskedKeys[id]) {
+      /* User cleared a masked field — don't delete the key, just leave it */
+      return;
+    }
+    /* If user types something, unmask and store */
+    delete _maskedKeys[id];
+    p.key = value;
+  } else if (field === "vision") {
+    /* handled by change event */
+  } else {
+    p[field] = value;
+  }
+}
+
+function _onProviderListChange(e) {
+  var target = e.target;
+  if (target.getAttribute("data-field") === "vision" && target.type === "checkbox") {
+    var id = _getProviderId(target);
+    if (!id) return;
+    var p = _getProvider(id);
+    if (p) p.vision = target.checked;
+  }
+}
+
+function _onProviderListFocusIn(e) {
+  var target = e.target;
+  if (!target.classList.contains("settings-input")) return;
+  var field = target.getAttribute("data-field");
+  if (field !== "key") return;
+  var id = _getProviderId(target);
+  if (!id) return;
+  /* If this field was masked (existing key not shown), clear the value
+     so the user can type a new key. The empty value means "keep existing". */
+  if (_maskedKeys[id]) {
+    target.value = "";
+    /* Don't delete _maskedKeys yet — we keep it until the user actually types */
+  }
+}
+
+/* ─── CRUD operations ─── */
 
 function addProvider() {
   var apiConfig = window.apiConfig;
@@ -84,123 +270,195 @@ function addProvider() {
   /* Focus the first input in the newly added row. */
   var rows = document.getElementById("providerList");
   if (rows) {
-    var inputs = rows.querySelectorAll('input[name="providerLabel"]');
+    var inputs = rows.querySelectorAll('input[data-field="label"]');
     var last = inputs[inputs.length - 1];
     if (last) setTimeout(function () { last.focus(); }, 0);
   }
 }
 
 function removeProvider(id) {
+  /* Server-first: delete on server before updating local state */
+  if (id.startsWith("new-")) {
+    /* Not yet saved on server — just remove locally */
+    _removeProviderLocal(id);
+    return;
+  }
+  window.apiFetch("/api/api-key/" + encodeURIComponent(id), { method: "DELETE" }).then(function () {
+    _removeProviderLocal(id);
+  }).catch(function (err) {
+    window.showToast("Failed to remove provider: " + (err.message || "server error") + ". Try again.");
+  });
+}
+
+function _removeProviderLocal(id) {
   var apiConfig = window.apiConfig;
   var idx = apiConfig.providers.findIndex(function (p) { return p.id === id; });
   if (idx < 0) return;
   apiConfig.providers.splice(idx, 1);
   if (apiConfig.activeId === id) apiConfig.activeId = null;
-  window.apiFetch("/api/api-key/" + encodeURIComponent(id), { method: "DELETE" }).catch(function () {});
+  delete _maskedKeys[id];
   renderProviderList();
+  window.syncModelPills();
+  window.syncChatModel();
 }
 
 function setActiveProvider(id) {
   var apiConfig = window.apiConfig;
   var prevActiveId = apiConfig.activeId;
+  /* Optimistic update */
   apiConfig.activeId = id;
   window.saveLastActiveId(id);
-  /* Built-in providers (beagle-built-in) are not real DB records for
-     this user — skip the PATCH to avoid a 404. But we still need to
-     tell the server to deactivate the previously active provider so
-     the server's isActive flag stays in sync. */
-  if (id === "beagle-built-in") {
-    if (prevActiveId && prevActiveId !== "beagle-built-in") {
-      window.apiFetch("/api/api-key/" + encodeURIComponent(prevActiveId), { method: "PATCH", body: { isActive: false } }).catch(function () {});
-    }
-  } else {
-    window.apiFetch("/api/api-key/" + encodeURIComponent(id), { method: "PATCH", body: { isActive: true } }).catch(function () {});
-  }
+  renderProviderList();
   window.syncModelPills();
   window.syncChatModel();
-  renderProviderList();
+  /* Sync with server; rollback on failure */
+  if (id === "beagle-built-in") {
+    if (prevActiveId && prevActiveId !== "beagle-built-in") {
+      window.apiFetch("/api/api-key/" + encodeURIComponent(prevActiveId), { method: "PATCH", body: { isActive: false } }).catch(function () {
+        /* Non-critical — server will reconcile on next refreshApiConfig */
+      });
+    }
+  } else {
+    window.apiFetch("/api/api-key/" + encodeURIComponent(id), { method: "PATCH", body: { isActive: true } }).catch(function () {
+      /* Rollback on failure */
+      apiConfig.activeId = prevActiveId;
+      window.saveLastActiveId(prevActiveId);
+      renderProviderList();
+      window.syncModelPills();
+      window.syncChatModel();
+      window.showToast("Failed to activate provider on server. Changes reverted.");
+    });
+  }
 }
 
 function updateProviderField(id, field, value) {
-  var apiConfig = window.apiConfig;
-  var p = apiConfig.providers.find(function (x) { return x.id === id; });
+  /* Legacy API kept for any external callers; new code uses event delegation */
+  var p = _getProvider(id);
   if (!p) return;
-  if (field === "key" && value && value.trim()) {
-    /* P_key-placeholder-pollution — the `••••••••` placeholder mask is
-     * a visual-only placeholder; if the user types into a masked field,
-     * the caret position produced the `••••••••` value as literal text
-     * rather than an intent to change the key. Detect and discard this
-     * degenerate case. */
-    var clean = value.trim();
-    if (clean === "••••••••") return;
-    p.key = clean;
+  if (field === "key") {
+    delete _maskedKeys[id];
+    p.key = value;
   } else if (field === "vision") {
     p.vision = !!value;
-    p.isMultimodal = !!value; /* backward compat for attachments.js */
   } else {
     p[field] = value;
   }
 }
 
+/* ─── Save with validation, loading state, and proper error handling ─── */
+var _saving = false;
+
+function _validateProvider(p) {
+  var errors = [];
+  if (p.url && p.url.trim()) {
+    var urlErr = _validateUrl(p.url);
+    if (urlErr) errors.push({ field: "url", msg: urlErr + " for \"" + (p.label || p.model || p.id) + "\"" });
+  }
+  if (p.key && p.key.trim()) {
+    var keyErr = _validateKey(p.key);
+    if (keyErr) errors.push({ field: "key", msg: keyErr + " for \"" + (p.label || p.model || p.id) + "\"" });
+  }
+  return errors;
+}
+
+function _highlightFieldErrors(providerId, errors) {
+  var cont = document.getElementById("providerList");
+  if (!cont) return;
+  var row = cont.querySelector('.provider-row[data-id="' + providerId + '"]');
+  if (!row) return;
+  errors.forEach(function (e) {
+    var input = row.querySelector('input[data-field="' + e.field + '"]');
+    if (input) _showFieldError(input, e.msg);
+  });
+}
+
 function saveSettings() {
+  if (_saving) return;
   var apiConfig = window.apiConfig;
   var providers = apiConfig.providers || [];
   var newRows = providers.filter(function (p) { return !p.isBuiltIn && p.id !== "beagle-built-in"; });
   if (!newRows.length) { window.showToast("Add at least one provider"); return; }
-  var lastValid = null;
-  var lastErr = null;
-  Promise.all(newRows.map(function (p) {
+
+  /* Validate all providers first */
+  var allErrors = [];
+  newRows.forEach(function (p) {
+    var errs = _validateProvider(p);
+    if (errs.length) {
+      allErrors = allErrors.concat(errs);
+      _highlightFieldErrors(p.id, errs);
+    }
+  });
+  if (allErrors.length) {
+    window.showToast("Please fix the highlighted errors before saving.");
+    return;
+  }
+
+  _saving = true;
+  _setSaveButtonState(true);
+
+  var results = { saved: 0, failed: 0, lastError: null, lastValidId: null };
+
+  Promise.allSettled(newRows.map(function (p) {
     if (p.id.startsWith("new-")) {
       var body = { label: p.label || "", url: p.url || "", key: p.key || "", model: p.model || "", vision: !!p.vision };
       return window.apiFetch("/api/api-key", { method: "POST", body: body, timeoutMs: 10_000 }).then(function (r) {
-        if (r && r.id) { p.id = r.id; lastValid = p.id; }
-      }).catch(function (e) { lastErr = e; });
+        if (r && r.id) { p.id = r.id; results.lastValidId = p.id; }
+        results.saved++;
+      });
     } else {
       var body = { label: p.label, url: p.url, key: p.key || "", model: p.model, vision: !!p.vision };
-      return window.apiFetch("/api/api-key/" + encodeURIComponent(p.id), { method: "PATCH", body: body, timeoutMs: 10_000 }).then(function () { lastValid = p.id; }).catch(function (e) { lastErr = e; });
+      return window.apiFetch("/api/api-key/" + encodeURIComponent(p.id), { method: "PATCH", body: body, timeoutMs: 10_000 }).then(function () {
+        results.lastValidId = p.id;
+        results.saved++;
+      });
     }
-  })).then(function () {
+  })).then(function (settled) {
+    settled.forEach(function (r) {
+      if (r.status === "rejected") {
+        results.failed++;
+        results.lastError = r.reason;
+      }
+    });
+  }).finally(function () {
+    _saving = false;
+    _setSaveButtonState(false);
     renderProviderList();
-    if (lastValid) apiConfig.activeId = lastValid;
-    /* P_saveLastActive-bug — only persist when the server actually
-       acknowledged at least one provider save. Saving the string "null"
-       on a fully-failed run would be loaded back as truthy on next
-       boot and confuse the active-provider resolver. */
-    if (lastValid) {
-      window.saveLastActiveId(lastValid);
+    if (results.lastValidId) {
+      apiConfig.activeId = results.lastValidId;
+      window.saveLastActiveId(results.lastValidId);
     } else {
       window.saveLastActiveId(null);
     }
     window.syncModelPills();
     try { window.syncModels(); } catch (e) {}
     window.syncChatModel();
-    if (lastErr) {
-      window.showToast("Saved, but one provider sync failed: " + (lastErr.message || "unknown error") + ". Try saving again.");
+    if (results.failed > 0 && results.saved > 0) {
+      window.showToast("Saved " + results.saved + " provider(s), but " + results.failed + " failed: " + ((results.lastError && results.lastError.message) || "unknown error") + ". Try saving again.");
+    } else if (results.failed > 0) {
+      window.showToast("Save failed: " + ((results.lastError && results.lastError.message) || "unknown error"));
     } else if (apiConfig.activeId) {
       window.showToast("Saved — " + window.t("api.saved"));
     }
   });
 }
 
+function _setSaveButtonState(disabled) {
+  var saveBtn = document.querySelector(".settings-btn.primary");
+  if (!saveBtn) return;
+  saveBtn.disabled = disabled;
+  saveBtn.textContent = disabled ? "Saving…" : "Save";
+  saveBtn.classList.toggle("saving", disabled);
+}
+
+/* ─── Clear all (delegates to confirmClearSettings) ─── */
 function clearSettings() {
-  var apiConfig = window.apiConfig;
-  var providers = apiConfig.providers || [];
-  Promise.all(providers
-    .filter(function (p) { return !p.isBuiltIn && p.id !== "beagle-built-in" && !p.id.startsWith("new-"); })
-    .map(function (p) { return window.apiFetch("/api/api-key/" + encodeURIComponent(p.id), { method: "DELETE" }).catch(function () {}); })
-  ).then(function () {
-    apiConfig.activeId = null;
-    apiConfig.providers = [Object.assign({}, window.BEAGLE_BUILT_IN)];
-    try { localStorage.removeItem("socrates-provider-keys"); } catch (e) {}
-    try { localStorage.removeItem(window.LAST_ACTIVE_ID_KEY); } catch (e) {}
-    renderProviderList();
-    window.syncModelPills();
-    window.syncSettingsUI();
-  });
+  /* Use the existing confirm dialog from dangerConfirms.js */
+  window.confirmClearSettings();
 }
 
 export {
   openSettings, closeSettings, toggleAPI, syncSettingsUI,
   renderProviderList, addProvider, removeProvider,
   setActiveProvider, updateProviderField, saveSettings, clearSettings,
+  bindSettingsUI,
 };

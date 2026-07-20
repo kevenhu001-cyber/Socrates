@@ -12,7 +12,7 @@ export const FONT_LABELS  = ["S","M","L","XL"];
 export const WIDTH_LABELS = ["S","M","L","XL"];
 
 /* ── state ── */
-export var displayPrefs = { font: 1.125, width: 1, darkBg: "", lightBg: "", showGrid: true };
+export var displayPrefs = { font: 1.125, width: 1, darkBg: "", lightBg: "", showGrid: false };
 
 /* ── helpers ── */
 export function loadDisplayPrefs() {
@@ -24,7 +24,8 @@ export function loadDisplayPrefs() {
       if (typeof p.width === "number" && p.width > 0) displayPrefs.width = p.width;
       if (typeof p.darkBg === "string") displayPrefs.darkBg = p.darkBg;
       if (typeof p.lightBg === "string") displayPrefs.lightBg = p.lightBg;
-      if (p.showGrid === false) displayPrefs.showGrid = false;
+      if (p.showGrid === true) displayPrefs.showGrid = true;
+      else displayPrefs.showGrid = false;
     }
   } catch (e) { /* ignore */ }
   applyDisplayPrefs();

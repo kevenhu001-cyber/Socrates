@@ -25,24 +25,33 @@ export function autoResize(el){
 /* Light up the "Start" button when the topic input has non-empty
    text OR pending attachments (P_attachments-tutor — a user can drop
    a PDF in tutor mode, leave the textarea empty, and Begin must
-   still be active). */
+   still be active).
+   P_chatgpt-landing — also toggle .has-text on the input wrap so the
+   CSS can swap the mic icon for the up-arrow on the send button. */
 export function updateStartBtn(){
-  var v = document.getElementById("topicInput").value.trim();
+  var ti = document.getElementById("topicInput");
+  var v = ti ? ti.value.trim() : "";
   var b = document.getElementById("startBtn");
   var hasAtt = typeof window.attachments !== "undefined"
     && Array.isArray(window.attachments)
     && window.attachments.length > 0;
   if(v || hasAtt) b.classList.add("active"); else b.classList.remove("active");
+  var wrap = document.getElementById("topicInputWrap");
+  if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }
 
 /* Light up the "Send" button when there's text OR pending attachments
    (P_attachments: a user can attach an image, leave the textarea
-   empty, and the send button must still look active). */
+   empty, and the send button must still look active).
+   P_chatgpt-landing — also toggle .has-text on the chat-input wrap. */
 export function updateSendBtn(){
-  var v = document.getElementById("chatInputArea").value.trim();
+  var ci = document.getElementById("chatInputArea");
+  var v = ci ? ci.value.trim() : "";
   var b = document.getElementById("sendBtn");
   var hasAtt = typeof window.attachments !== "undefined"
     && Array.isArray(window.attachments)
     && window.attachments.length > 0;
   if(v || hasAtt) b.classList.add("active"); else b.classList.remove("active");
+  var wrap = document.getElementById("chatInputWrap");
+  if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }

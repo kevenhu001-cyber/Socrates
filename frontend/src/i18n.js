@@ -38,6 +38,21 @@ var I18N={
     "topic.hint":"Be specific for better results",
     "topic.model":"Model",
     "topic.extensions":"Extensions",
+    /* P_chatgpt-landing — ChatGPT-style main page (2026-07-20) */
+    "greeting.chat":"Hello, {name}.",
+    "greeting.tutor":"Let's explore, {name}.",
+    "greeting.guest":"Guest",
+    "sidebar.nav.new":"New chat",
+    "sidebar.nav.library":"Library",
+    "sidebar.nav.projects":"Projects",
+    "sidebar.nav.scheduled":"Scheduled",
+    "sidebar.nav.plugins":"Plugins",
+    "sidebar.nav.more":"More",
+    "sidebar.nav.soon":"Soon",
+    "topbar.modeChat":"Chat",
+    "topbar.modeTutor":"Work",
+    "voice.soon":"Voice input coming soon",
+    "voice.toast":"Voice input coming soon",
     "profile.usage":"Token usage",
     "profile.usage.desc":"View daily token usage heatmap and monthly breakdown.",
     "profile.view":"View",
@@ -439,6 +454,21 @@ var I18N={
     "topic.hint":"描述越具体效果越好",
     "topic.model":"模型",
     "topic.extensions":"扩展",
+    /* P_chatgpt-landing — ChatGPT-style main page (2026-07-20) */
+    "greeting.chat":"你好，{name}。",
+    "greeting.tutor":"一起探索，{name}。",
+    "greeting.guest":"访客",
+    "sidebar.nav.new":"新聊天",
+    "sidebar.nav.library":"文件库",
+    "sidebar.nav.projects":"项目",
+    "sidebar.nav.scheduled":"已安排",
+    "sidebar.nav.plugins":"插件",
+    "sidebar.nav.more":"更多",
+    "sidebar.nav.soon":"即将",
+    "topbar.modeChat":"聊天",
+    "topbar.modeTutor":"工作",
+    "voice.soon":"语音输入即将上线",
+    "voice.toast":"语音输入即将上线",
     "profile.usage":"Token 用量",
     "profile.usage.desc":"查看每日 token 用量热力图和月度统计。",
     "profile.view":"查看",
@@ -893,7 +923,14 @@ function applyI18n(){
      paint tutor text. */
   var appMode=(typeof window!=="undefined"&&window.appMode)||"chat";
   var tt=document.getElementById("topicTitle");
-  if(tt)tt.textContent=t(appMode==="chat"?"topic.titleChat":"topic.title");
+  /* P_chatgpt-landing — #topicTitle is now the personalized greeting
+     (renderGreeting from src/ui/greeting.js). When a localized
+     greeting renderer is wired up, defer to it so the name survives
+     language toggles. Otherwise fall back to the legacy static copy. */
+  if(tt){
+    if(typeof window.renderGreeting==="function")window.renderGreeting();
+    else tt.textContent=t(appMode==="chat"?"topic.titleChat":"topic.title");
+  }
   var ts=document.getElementById("topicSub");
   if(ts)ts.textContent=t(appMode==="chat"?"topic.subChat":"topic.subtitle");
   var tdisc=document.getElementById("topicDisclaimer");
