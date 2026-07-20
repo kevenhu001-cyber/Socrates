@@ -1489,6 +1489,7 @@ async function loadSession(id){
     document.getElementById("topicSetup").classList.add("hidden");
     document.getElementById("diagnosticView").classList.add("hidden");
     document.getElementById("chatView").classList.remove("hidden");
+    if (typeof window.hideMainPages === "function") window.hideMainPages();
     toggleChatTopBarEls(true);
     syncChatModel();
     var msgList=document.getElementById("msgList");
@@ -1946,6 +1947,7 @@ async function loadSession(id){
         document.getElementById("chatView").classList.add("hidden");
         toggleChatTopBarEls(false);
         document.getElementById("topicSetup").classList.remove("hidden");
+        if (typeof window.hideMainPages === "function") window.hideMainPages();
         /* Friendly notice so the user knows what just happened. */
         try{
           var pill=document.getElementById("searchPill");
@@ -2374,6 +2376,7 @@ function bounceOutOfArchivedSession(){
   document.getElementById("topicSetup").classList.remove("hidden");
   document.getElementById("diagnosticView").classList.add("hidden");
   document.getElementById("chatView").classList.add("hidden");
+  if (typeof window.hideMainPages === "function") window.hideMainPages();
   toggleChatTopBarEls(false);
   document.getElementById("msgList").innerHTML="";
   document.getElementById("topicInput").value="";
@@ -2892,6 +2895,7 @@ async function startSession(){
     document.getElementById("topicSetup").classList.add("hidden");
     document.getElementById("diagnosticView").classList.add("hidden");
     document.getElementById("chatView").classList.remove("hidden");
+    if (typeof window.hideMainPages === "function") window.hideMainPages();
     toggleChatTopBarEls(true);
     document.getElementById("msgList").innerHTML="";
     /* P_attachments-start — assemble the first user message the same
@@ -7060,6 +7064,7 @@ async function resetApp(){
   document.getElementById("topicSetup").classList.remove("hidden");
   document.getElementById("diagnosticView").classList.add("hidden");
   document.getElementById("chatView").classList.add("hidden");
+  if (typeof window.hideMainPages === "function") window.hideMainPages();
   toggleChatTopBarEls(false);
   document.getElementById("msgList").innerHTML="";
   document.getElementById("topicInput").value="";

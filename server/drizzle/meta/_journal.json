@@ -148,6 +148,13 @@
       "when": 1784521900000,
       "tag": "0020_add_status_subscribers",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1787389900000,
+      "tag": "0021_add_connector_connections",
+      "breakpoints": true
     }
   ]
 }

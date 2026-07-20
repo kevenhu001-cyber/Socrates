@@ -377,62 +377,7 @@
       <div class="recents-header"><span class="recents-title" data-i18n-key="sidebar.mistakeBook">Mistake Book</span></div>
       <div id="mistakesList"></div>
     </div>
-    <!-- PR-B: Library panel — lists user's uploaded files and artifacts.
-         Rendered by renderLibraryPanel() in windowExports.js. -->
-    <div class="library-panel hidden" id="libraryPanel">
-      <div class="library-header">
-        <span class="library-title" data-i18n-key="sidebar.library.title">Library</span>
-        <div class="workspace-header-actions">
-          <span class="library-count" id="libraryCount"></span>
-          <button type="button" class="workspace-add-btn" onclick="openLibraryUpload()" title="Upload to Library" aria-label="Upload to Library">Upload</button>
-        </div>
-      </div>
-      <div class="library-tabs">
-        <button type="button" class="library-tab active" data-library-tab="files" onclick="switchLibraryTab('files')" data-i18n-key="sidebar.library.files">Uploaded</button>
-        <button type="button" class="library-tab" data-library-tab="artifacts" onclick="switchLibraryTab('artifacts')" data-i18n-key="sidebar.library.artifacts">Created</button>
-      </div>
-      <div class="workspace-search"><input id="librarySearch" type="search" placeholder="Search your library" aria-label="Search your library" oninput="filterLibrary(this.value)"></div>
-      <div class="library-list" id="libraryList">
-        <div class="library-empty" data-i18n-key="sidebar.library.empty">No files yet. Upload files in a chat to see them here.</div>
-      </div>
-      <input type="file" id="libraryUploadInput" multiple hidden>
-    </div>
-    <!-- PR-C: Spaces panel — user's projects and their sessions.
-         Rendered by renderSpacesPanel() in windowExports.js. -->
-    <div class="spaces-panel hidden" id="spacesPanel">
-      <div class="spaces-header">
-        <span class="spaces-title" data-i18n-key="sidebar.spaces.title">Projects</span>
-        <button type="button" class="workspace-add-btn" onclick="openCreateProject()" title="Create project" aria-label="Create project">New</button>
-      </div>
-      <p class="workspace-intro">Keep chats, files, and instructions together.</p>
-      <div class="spaces-list" id="spacesList">
-        <div class="spaces-empty" data-i18n-key="sidebar.spaces.empty">No projects yet. Create a project to organize your sessions.</div>
-      </div>
-    </div>
-    <!-- PR-D: Scheduled panel — user's scheduled tasks / reminders.
-         Rendered by renderScheduledPanel() in windowExports.js. -->
-    <div class="scheduled-panel hidden" id="scheduledPanel">
-      <div class="scheduled-header">
-        <span class="scheduled-title" data-i18n-key="sidebar.scheduled.title">Scheduled</span>
-        <button type="button" class="workspace-add-btn" onclick="openCreateScheduledTask()" title="Schedule a task" aria-label="Schedule a task">New</button>
-      </div>
-      <p class="workspace-intro">Run a prompt once or on a recurring schedule.</p>
-      <div class="scheduled-list" id="scheduledList">
-        <div class="scheduled-empty" data-i18n-key="sidebar.scheduled.empty">No scheduled tasks. Click + to create one.</div>
-      </div>
-    </div>
-    <!-- PR-E: Plugins panel — user's installed extensions / marketplace.
-         Rendered by renderPluginsPanel() in windowExports.js. -->
-    <div class="plugins-panel hidden" id="pluginsPanel">
-      <div class="plugins-header">
-        <span class="plugins-title">Apps</span>
-        <button type="button" class="workspace-add-btn" onclick="openPluginMarketplace()">Refresh</button>
-      </div>
-      <p class="workspace-intro">Connect tools and data sources for use in chat.</p>
-      <div class="plugins-list" id="pluginsList">
-        <div class="plugins-empty" data-i18n-key="sidebar.plugins.empty">No plugins installed. Browse the marketplace to find extensions.</div>
-      </div>
-    </div>
+
     <div class="sidebar-footer">
       <div class="user-row"><div class="user-avatar">JH</div><div><div class="user-name">Jiacheng Hu</div><div class="user-plan">Free plan</div></div></div>
       <div class="sidebar-footer-actions">
@@ -683,7 +628,57 @@
         </div>
       </div>
 
-      <p class="disclaimer" id="topicDisclaimer">Socrates asks questions to help you think. It does not judge your answers.</p>
+    <!-- Main-content pages for Library, Projects, Scheduled, Plugins -->
+    <div class="library-panel main-page hidden" id="libraryPanel">
+      <div class="library-header">
+        <span class="library-title" data-i18n-key="sidebar.library.title">Library</span>
+        <div class="workspace-header-actions">
+          <span class="library-count" id="libraryCount"></span>
+          <button type="button" class="workspace-add-btn" onclick="openLibraryUpload()" title="Upload to Library" aria-label="Upload to Library">Upload</button>
+        </div>
+      </div>
+      <div class="library-tabs">
+        <button type="button" class="library-tab active" data-library-tab="files" onclick="switchLibraryTab('files')" data-i18n-key="sidebar.library.files">Uploaded</button>
+        <button type="button" class="library-tab" data-library-tab="artifacts" onclick="switchLibraryTab('artifacts')" data-i18n-key="sidebar.library.artifacts">Created</button>
+      </div>
+      <div class="workspace-search"><input id="librarySearch" type="search" placeholder="Search your library" aria-label="Search your library" oninput="filterLibrary(this.value)"></div>
+      <div class="library-list" id="libraryList">
+        <div class="library-empty" data-i18n-key="sidebar.library.empty">No files yet. Upload files in a chat to see them here.</div>
+      </div>
+      <input type="file" id="libraryUploadInput" multiple hidden>
+    </div>
+    <div class="spaces-panel main-page hidden" id="spacesPanel">
+      <div class="spaces-header">
+        <span class="spaces-title" data-i18n-key="sidebar.spaces.title">Projects</span>
+        <button type="button" class="workspace-add-btn" onclick="openCreateProject()" title="Create project" aria-label="Create project">New</button>
+      </div>
+      <p class="workspace-intro">Keep chats, files, and instructions together.</p>
+      <div class="spaces-list" id="spacesList">
+        <div class="spaces-empty" data-i18n-key="sidebar.spaces.empty">No projects yet. Create a project to organize your sessions.</div>
+      </div>
+    </div>
+    <div class="scheduled-panel main-page hidden" id="scheduledPanel">
+      <div class="scheduled-header">
+        <span class="scheduled-title" data-i18n-key="sidebar.scheduled.title">Scheduled</span>
+        <button type="button" class="workspace-add-btn" onclick="openCreateScheduledTask()" title="Schedule a task" aria-label="Schedule a task">New</button>
+      </div>
+      <p class="workspace-intro">Run a prompt once or on a recurring schedule.</p>
+      <div class="scheduled-list" id="scheduledList">
+        <div class="scheduled-empty" data-i18n-key="sidebar.scheduled.empty">No scheduled tasks. Click + to create one.</div>
+      </div>
+    </div>
+    <div class="plugins-panel main-page hidden" id="pluginsPanel">
+      <div class="plugins-header">
+        <span class="plugins-title">Apps</span>
+        <button type="button" class="workspace-add-btn" onclick="openPluginMarketplace()">Refresh</button>
+      </div>
+      <p class="workspace-intro">Connect tools and data sources for use in chat.</p>
+      <div class="plugins-list" id="pluginsList">
+        <div class="plugins-empty" data-i18n-key="sidebar.plugins.empty">No plugins installed. Browse the marketplace to find extensions.</div>
+      </div>
+    </div>
+
+    <p class="disclaimer" id="topicDisclaimer">Socrates asks questions to help you think. It does not judge your answers.</p>
 
     </div>
 

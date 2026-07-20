@@ -3,6 +3,11 @@
 
 var echartsPromise = null;
 var visualCounter = 0;
+/* Track every live ECharts instance so we can re-apply the theme palette
+ * when the user toggles day/night mode. The observer is installed lazily
+ * on the first mount so this module stays side-effect-free when unused. */
+var _liveCharts = [];
+var _themeObserver = null;
 
 async function loadEcharts() {
   if (!echartsPromise) {
@@ -158,35 +163,74 @@ export function sampleFunction(expression, domain, count) {
 }
 
 function normalizeFunction(spec) {
-  var payload = spec.payload, allValues = [], minX = Infinity, maxX = -Infinity;
-  var series = payload.functions.map(function (fn, index) {
-    var sample = sampleFunction(fn.expression, fn.domain, 760);
-    allValues = allValues.concat(sample.points.map(function (point) { return point[1]; }).filter(Number.isFinite));
+  var payload = spec.payload || {}, allValues = [], minX = Infinity, maxX = -Infinity;
+  var rawFunctions = Array.isArray(payload.functions) ? payload.functions : [];
+  var series = [];
+  rawFunctions.forEach(function (fn, index) {
+    if (!fn || typeof fn.expression !== 'string' || !fn.expression.trim()) return;
+    var sample;
+    try { sample = sampleFunction(fn.expression, fn.domain, 760); }
+    catch (_) { return; }
+    if (!sample || !Array.isArray(sample.points)) return;
+    var finitePoints = sample.points.filter(function (point) { return point && Number.isFinite(point[1]); });
+    if (!finitePoints.length) return;
+    allValues = allValues.concat(finitePoints.map(function (point) { return point[1]; }));
     minX = Math.min(minX, sample.domain[0]); maxX = Math.max(maxX, sample.domain[1]);
-    return { name: fn.label || fn.expression, role: fn.role, data: sample.points, expression: fn.expression };
+    series.push({ name: fn.label || fn.expression, role: fn.role, data: sample.points, expression: fn.expression });
   });
   var yExtent = robustExtent(allValues);
   return { series: series, xExtent: [minX, maxX], yExtent: yExtent };
 }
 
+/* ECharts ignores CSS variables read at runtime, so we pass concrete HSL
+ * strings. The chart is re-rendered when the user toggles the theme
+ * (see _watchTheme). Keep `Inter` (loaded from Google Fonts) as the
+ * authoritative font family — system-ui is a fallback only if Inter is
+ * unavailable, never the default. */
+var VIZ_FONT_FAMILY = "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif";
 function optionForChart(spec, colors) {
   var payload = spec.payload, chartType = spec.template === 'area' ? 'line' : spec.template;
+  var fontFamily = VIZ_FONT_FAMILY;
+  var textStyle = { fontFamily: fontFamily };
+  /* The ECharts tooltip has had two failure modes here:
+   *  - In dark mode the default white background made the tooltip appear
+   *     as a "white patch" hiding the default gray text.
+   *  - The tooltip sometimes anchors outside the visible stage and
+   *    `confine` is required to keep it on-screen.
+   * Passing concrete themed `backgroundColor` / `borderColor` /
+   * `textStyle.color` fixes both. `extraCssText` adds rounded corners
+   * and shadow that the inline `style.cssText` setter wipes on update.
+   * `_refreshCharts()` re-applies these options when the user toggles
+   * day/night mode so the colours track the active theme. */
+  var tooltipBase = {
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderWidth: 1,
+    padding: [6, 9],
+    confine: true,
+    showDelay: 0,
+    hideDelay: 80,
+    textStyle: { color: colors.text, fontFamily: fontFamily },
+    extraCssText: 'border-radius:7px!important;box-shadow:0 2px 8px rgba(0,0,0,.18)!important',
+  };
   if (spec.template === 'function') {
     var normalized = normalizeFunction(spec);
-    var hasLn = payload.functions.some(function (fn) { return /\b(?:ln|log)\s*\(/i.test(fn.expression); });
+    if (!normalized.series.length) return null;
+    var hasLn = normalized.series.some(function (item) { return /\b(?:ln|log)\s*\(/i.test(item.expression || ''); });
     return {
-      backgroundColor: 'transparent', color: normalized.series.map(function (item, index) { return colorFor(item.role, index, colors); }),
+      backgroundColor: 'transparent', textStyle: textStyle,
+      color: normalized.series.map(function (item, index) { return colorFor(item.role, index, colors); }),
       aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
-      tooltip: { trigger: 'axis', confine: true, valueFormatter: function (value) { return Number(value).toPrecision(5); } },
-      legend: normalized.series.length > 1 ? { top: 4, textStyle: { color: colors.muted } } : undefined,
+      tooltip: Object.assign({ trigger: 'axis', valueFormatter: function (value) { return Number(value).toPrecision(5); } }, tooltipBase),
+      legend: normalized.series.length > 1 ? { top: 4, textStyle: { color: colors.text, fontFamily: fontFamily } } : undefined,
       grid: { left: 56, right: 20, top: normalized.series.length > 1 ? 38 : 18, bottom: 50, containLabel: false },
-      xAxis: { type: 'value', name: payload.xLabel || 'x', min: Math.min(0, normalized.xExtent[0]), max: normalized.xExtent[1], nameTextStyle: { color: colors.muted }, axisLine: { lineStyle: { color: colors.line } }, axisLabel: { color: colors.muted }, splitLine: { lineStyle: { color: colors.grid } } },
-      yAxis: { type: 'value', name: payload.yLabel || 'y', min: normalized.yExtent[0], max: normalized.yExtent[1], nameTextStyle: { color: colors.muted }, axisLine: { lineStyle: { color: colors.line } }, axisLabel: { color: colors.muted }, splitLine: { lineStyle: { color: colors.grid } } },
+      xAxis: { type: 'value', name: payload.xLabel || 'x', min: Math.min(0, normalized.xExtent[0]), max: normalized.xExtent[1], nameTextStyle: { color: colors.text, fontFamily: fontFamily }, axisLine: { lineStyle: { color: colors.line } }, axisLabel: { color: colors.text, fontFamily: fontFamily }, splitLine: { lineStyle: { color: colors.grid } } },
+      yAxis: { type: 'value', name: payload.yLabel || 'y', min: normalized.yExtent[0], max: normalized.yExtent[1], nameTextStyle: { color: colors.text, fontFamily: fontFamily }, axisLine: { lineStyle: { color: colors.line } }, axisLabel: { color: colors.text, fontFamily: fontFamily }, splitLine: { lineStyle: { color: colors.grid } } },
       dataZoom: [{ type: 'inside', zoomOnMouseWheel: true, moveOnMouseMove: true }],
       series: normalized.series.map(function (item, index) {
         var series = { type: 'line', name: item.name, data: item.data, showSymbol: false, connectNulls: false, smooth: false, lineStyle: { width: 2.35, color: colorFor(item.role, index, colors) }, emphasis: { focus: 'series' } };
         if (index === 0 && hasLn) {
-          series.markPoint = { symbolSize: 8, data: [{ coord: [1, 0], name: '(1, 0)', label: { formatter: '(1, 0)', color: colors.muted } }] };
+          series.markPoint = { symbolSize: 8, data: [{ coord: [1, 0], name: '(1, 0)', label: { formatter: '(1, 0)', color: colors.text, fontFamily: fontFamily } }] };
           series.markLine = { silent: true, symbol: 'none', lineStyle: { type: 'dashed', color: colors.baseline }, data: [{ xAxis: 0 }] };
         }
         return series;
@@ -194,17 +238,24 @@ function optionForChart(spec, colors) {
     };
   }
   var categories = payload.categories || [];
-  if (chartType === 'pie') return { color: [colors.primary, colors.secondary, colors.comparison, colors.highlight, colors.baseline], aria: { enabled: true, description: { summary: spec.accessibilitySummary } }, tooltip: { trigger: 'item' }, legend: { bottom: 0, textStyle: { color: colors.muted } }, series: payload.series.map(function (series) { return { type: 'pie', radius: spec.template === 'pie' ? '62%' : ['38%', '66%'], data: series.data.map(function (value, index) { return typeof value === 'object' ? value : { name: String(categories[index] || index + 1), value: value }; }), label: { color: colors.text } }; }) };
+  if (chartType === 'pie') return {
+    backgroundColor: 'transparent', textStyle: textStyle, color: [colors.primary, colors.secondary, colors.comparison, colors.highlight, colors.baseline],
+    aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
+    tooltip: Object.assign({ trigger: 'item' }, tooltipBase),
+    legend: { bottom: 0, textStyle: { color: colors.text, fontFamily: fontFamily } },
+    series: payload.series.map(function (series) { return { type: 'pie', radius: spec.template === 'pie' ? '62%' : ['38%', '66%'], data: series.data.map(function (value, index) { return typeof value === 'object' ? value : { name: String(categories[index] || index + 1), value: value }; }), label: { color: colors.text, fontFamily: fontFamily } }; }),
+  };
   var typeMap = { line: 'line', area: 'line', bar: 'bar', scatter: 'scatter', histogram: 'bar', heatmap: 'heatmap', radar: 'radar', boxplot: 'boxplot' };
   var seriesType = typeMap[chartType] || 'line';
   return {
+    backgroundColor: 'transparent', textStyle: textStyle,
     color: payload.series.map(function (item, index) { return colorFor(item.role, index, colors); }),
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
-    tooltip: { trigger: chartType === 'scatter' ? 'item' : 'axis', confine: true },
-    legend: payload.series.length > 1 ? { top: 4, textStyle: { color: colors.muted } } : undefined,
+    tooltip: Object.assign({ trigger: chartType === 'scatter' ? 'item' : 'axis' }, tooltipBase),
+    legend: payload.series.length > 1 ? { top: 4, textStyle: { color: colors.text, fontFamily: fontFamily } } : undefined,
     grid: { left: 56, right: 22, top: payload.series.length > 1 ? 38 : 18, bottom: 46 },
-    xAxis: { type: chartType === 'scatter' ? 'value' : 'category', data: categories, name: payload.xLabel || '', nameTextStyle: { color: colors.muted }, axisLabel: { color: colors.muted }, axisLine: { lineStyle: { color: colors.line } }, splitLine: { show: chartType === 'scatter', lineStyle: { color: colors.grid } } },
-    yAxis: { type: 'value', name: payload.yLabel || '', nameTextStyle: { color: colors.muted }, axisLabel: { color: colors.muted }, axisLine: { lineStyle: { color: colors.line } }, splitLine: { lineStyle: { color: colors.grid } } },
+    xAxis: { type: chartType === 'scatter' ? 'value' : 'category', data: categories, name: payload.xLabel || '', nameTextStyle: { color: colors.text, fontFamily: fontFamily }, axisLabel: { color: colors.text, fontFamily: fontFamily }, axisLine: { lineStyle: { color: colors.line } }, splitLine: { show: chartType === 'scatter', lineStyle: { color: colors.grid } } },
+    yAxis: { type: 'value', name: payload.yLabel || '', nameTextStyle: { color: colors.text, fontFamily: fontFamily }, axisLabel: { color: colors.text, fontFamily: fontFamily }, axisLine: { lineStyle: { color: colors.line } }, splitLine: { lineStyle: { color: colors.grid } } },
     dataZoom: ['line', 'area', 'bar', 'scatter', 'histogram'].includes(chartType) ? [{ type: 'inside' }] : undefined,
     series: payload.series.map(function (series, index) { return { name: series.name || 'Series ' + (index + 1), type: seriesType, data: series.data, showSymbol: chartType === 'scatter', symbolSize: chartType === 'scatter' ? 8 : undefined, areaStyle: spec.template === 'area' ? { opacity: 0.16 } : undefined, smooth: chartType === 'line' || spec.template === 'area', emphasis: { focus: 'series' } }; }),
   };
@@ -212,7 +263,7 @@ function optionForChart(spec, colors) {
 
 function dataRows(spec) {
   var payload = spec.payload || {};
-  if (spec.template === 'function') return payload.functions.map(function (fn) { return [fn.label || fn.expression, fn.expression, fn.domain ? fn.domain.join(' to ') : 'Automatic domain']; });
+  if (spec.template === 'function') return (payload.functions || []).map(function (fn) { return [fn.label || fn.expression, fn.expression, fn.domain ? fn.domain.join(' to ') : 'Automatic domain']; });
   if (!payload.series) return (payload.items || []).map(function (item) { return [item.label, item.value || '', item.detail || '']; });
   var rows = [['Category'].concat(payload.series.map(function (series) { return series.name || 'Series'; }))];
   var max = Math.max.apply(null, payload.series.map(function (series) { return series.data.length; }));
@@ -232,7 +283,7 @@ function renderStructure(spec) {
   var width = 760, height = Math.max(260, 130 + Math.ceil(nodes.length / 3) * 95);
   var positions = {};
   nodes.forEach(function (node, index) { positions[node.id || String(index)] = { x: 110 + (index % 3) * 270, y: 70 + Math.floor(index / 3) * 100 }; });
-  var svg = '<svg class="visualization-diagram" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="' + esc(spec.accessibilitySummary) + '"><defs><marker id="visual-arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="currentColor"/></marker></defs>';
+  var svg = '<svg class="visualization-diagram" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="' + esc(spec.accessibilitySummary) + '" style="font-family:' + VIZ_FONT_FAMILY + '"><defs><marker id="visual-arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="currentColor"/></marker></defs>';
   edges.forEach(function (edge) { var a = positions[edge.from], b = positions[edge.to]; if (!a || !b) return; svg += '<path class="visualization-edge" d="M' + (a.x + 75) + ' ' + a.y + ' C' + (a.x + 130) + ' ' + a.y + ', ' + (b.x - 130) + ' ' + b.y + ', ' + (b.x - 75) + ' ' + b.y + '" marker-end="url(#visual-arrow)"/><text class="visualization-edge-label" x="' + ((a.x + b.x) / 2) + '" y="' + ((a.y + b.y) / 2 - 8) + '">' + esc(edge.label || '') + '</text>'; });
   nodes.forEach(function (node, index) { var point = positions[node.id || String(index)]; svg += '<g class="visualization-node"><rect x="' + (point.x - 78) + '" y="' + (point.y - 28) + '" width="156" height="56" rx="10"/><text x="' + point.x + '" y="' + (point.y - 3) + '">' + esc(node.label) + '</text>' + (node.detail ? '<text class="visualization-node-detail" x="' + point.x + '" y="' + (point.y + 15) + '">' + esc(node.detail) + '</text>' : '') + '</g>'; });
   return svg + '</svg>';
@@ -270,6 +321,7 @@ function bindCard(card, spec, chart) {
 export async function mountVisualization(spec, host, options) {
   if (!spec || spec.version !== 1 || !host) return null;
   options = options || {};
+  _ensureThemeWatcher();
   var cardId = options.toolCallId || ('visual-' + (++visualCounter));
   if (host.querySelector('[data-visualization-id="' + cardId + '"]')) return host.querySelector('[data-visualization-id="' + cardId + '"]');
   var card = document.createElement('section');
@@ -277,17 +329,35 @@ export async function mountVisualization(spec, host, options) {
   card.setAttribute('aria-label', spec.title + '. ' + spec.accessibilitySummary);
   var chartTemplates = ['function', 'line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap', 'radar', 'boxplot'];
   var extension = ['svg_illustration', 'interactive_simulation'].includes(spec.template);
-  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3>' + (spec.caption ? '<p>' + esc(spec.caption) + '</p>' : '') + '</div><div class="visualization-actions"><button type="button" data-viz-action="table" aria-expanded="false" title="显示数据表">数据</button><button type="button" data-viz-action="reset" title="重置视图">重置</button><button type="button" data-viz-action="download" title="下载 PNG">下载</button><button type="button" data-viz-action="fullscreen" title="全屏">全屏</button></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><div class="visualization-stage"></div><div class="visualization-data" hidden>' + renderTable(spec) + '</div>';
+  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3>' + (spec.caption ? '<p class="visualization-caption">' + esc(spec.caption) + '</p>' : '') + '</div><div class="visualization-actions"><button type="button" data-viz-action="table" aria-expanded="false" title="显示数据表">数据</button><button type="button" data-viz-action="reset" title="重置视图">重置</button><button type="button" data-viz-action="download" title="下载 PNG">下载</button><button type="button" data-viz-action="fullscreen" title="全屏">全屏</button></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><div class="visualization-stage"></div><div class="visualization-data" hidden>' + renderTable(spec) + '</div>';
   host.appendChild(card);
-  var stage = card.querySelector('.visualization-stage'), chart = null;
+  try { if (typeof renderMathInElement === 'function') renderMathInElement(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] }); } catch (_) {}
+  var stage = card.querySelector('.visualization-stage'), chart = null, liveEntry = null;
   try {
     if (chartTemplates.includes(spec.template)) {
       var echarts = await loadEcharts();
       var useCanvas = spec.template === 'heatmap' || (spec.payload.series || []).some(function (series) { return series.data && series.data.length > 1200; });
       chart = echarts.init(stage, null, { renderer: useCanvas ? 'canvas' : 'svg' });
-      chart.setOption(optionForChart(spec, palette()), { notMerge: true });
-      var resize = new ResizeObserver(function () { chart.resize(); }); resize.observe(stage);
-      card._visualizationCleanup = function () { resize.disconnect(); chart.dispose(); };
+      var chartOpts = optionForChart(spec, palette());
+      if (!chartOpts) {
+        chart.dispose();
+        stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><button type="button">本地重试</button></div>';
+        stage.querySelector('button').addEventListener('click', function () { card.remove(); mountVisualization(spec, host, options); });
+        chart = null;
+      } else {
+        chart.setOption(chartOpts, { notMerge: true });
+        liveEntry = { chart: chart, spec: spec };
+        _liveCharts.push(liveEntry);
+        var resize = new ResizeObserver(function () { chart.resize(); }); resize.observe(stage);
+        card._visualizationCleanup = function () {
+          resize.disconnect();
+          chart.dispose();
+          if (liveEntry) {
+            var idx = _liveCharts.indexOf(liveEntry);
+            if (idx >= 0) _liveCharts.splice(idx, 1);
+          }
+        };
+      }
     } else if (extension) {
       stage.innerHTML = renderExtension(spec, cardId);
       var frame = stage.querySelector('iframe');
@@ -313,4 +383,38 @@ export async function mountVisualization(spec, host, options) {
 export function disposeVisualizations(host) {
   if (!host) return;
   host.querySelectorAll('.visualization-card').forEach(function (card) { if (card._visualizationCleanup) card._visualizationCleanup(); });
+}
+
+/* Re-apply the current theme palette to every live ECharts instance and
+ * re-run KaTeX so LaTeX labels stay themed. Called from a MutationObserver
+ * hooked on `data-mode` / `data-theme` in the <html> element. */
+function _refreshCharts() {
+  var colors = palette();
+  for (var i = 0; i < _liveCharts.length; i++) {
+    var entry = _liveCharts[i];
+    if (!entry || !entry.chart || !entry.spec || !entry.chart.isDisposed || entry.chart.isDisposed()) {
+      _liveCharts.splice(i, 1); i--;
+      continue;
+    }
+    try {
+      entry.chart.setOption(optionForChart(entry.spec, colors), { notMerge: true });
+      entry.chart.resize();
+    } catch (_) { /* ignore */ }
+  }
+  /* Re-run KaTeX on every live card so LaTeX renders pick up any token
+   * change tied to the theme. We re-discover the cards via the data
+   * attribute each time to avoid keeping strong references ourselves. */
+  if (typeof renderMathInElement === 'function') {
+    document.querySelectorAll('.visualization-card').forEach(function (card) {
+      try { renderMathInElement(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] }); } catch (_) {}
+    });
+  }
+}
+
+function _ensureThemeWatcher() {
+  if (_themeObserver || typeof MutationObserver === 'undefined') return;
+  try {
+    _themeObserver = new MutationObserver(function () { _refreshCharts(); });
+    _themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode', 'data-theme'] });
+  } catch (_) { /* ignore */ }
 }
