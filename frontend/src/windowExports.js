@@ -209,7 +209,7 @@ window.openPromptTemplateEditor = openPromptTemplateEditor;
 window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
 
 /* ─── ui/settings.js ─── */
-import { openSettings, closeSettings, toggleAPI, syncSettingsUI, renderProviderList, addProvider, removeProvider, setActiveProvider, updateProviderField, saveSettings, clearSettings } from './ui/settings.js';
+import { openSettings, closeSettings, toggleAPI, syncSettingsUI, renderProviderList, addProvider, removeProvider, setActiveProvider, updateProviderField, saveSettings, clearSettings, bindSettingsUI } from './ui/settings.js';
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 window.toggleAPI = toggleAPI;
@@ -221,6 +221,7 @@ window.setActiveProvider = setActiveProvider;
 window.updateProviderField = updateProviderField;
 window.saveSettings = saveSettings;
 window.clearSettings = clearSettings;
+window.bindSettingsUI = bindSettingsUI;
 
 /* ─── ui/share.js ─── */
 import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal, selectShareVis, createShareLink, copyShareLink, revokeShareLink, loadSharedSession, loadSharedExamSession, renderSharedQuestionCard, _shareToken, _shareUrl, _shareVisibility } from './ui/share.js';
@@ -331,7 +332,7 @@ window.esc = esc;
    functions on window.* — all of them must be bridged here. */
 import {
   openExamModal, closeExamModal, closeExamView,
-  renderExamForm, toggleExamType,
+  renderExamForm, toggleExamType, toggleExamModelMenu, selectExamModel,
   startExamGeneration, cancelExamGeneration,
   parseExamArrayJSON,
   paintQuestionCard, replaceStreamingCardWithQuestion, appendExamErrorCard,
@@ -345,6 +346,8 @@ window.closeExamModal = closeExamModal;
 window.closeExamView = closeExamView;
 window.renderExamForm = renderExamForm;
 window.toggleExamType = toggleExamType;
+window.toggleExamModelMenu = toggleExamModelMenu;
+window.selectExamModel = selectExamModel;
 window.startExamGeneration = startExamGeneration;
 window.cancelExamGeneration = cancelExamGeneration;
 window.parseExamArrayJSON = parseExamArrayJSON;
@@ -363,3 +366,25 @@ window.renderExamResults = renderExamResults;
 import { appendToolModule, appendInlineArtifact } from './ui/toolCards.js';
 window.appendToolModule = appendToolModule;
 window.appendInlineArtifact = appendInlineArtifact;
+
+/* ─── ui/greeting.js — ChatGPT-style personalized greeting (P_chatgpt-landing) ─── */
+import { renderGreeting } from './ui/greeting.js';
+window.renderGreeting = renderGreeting;
+
+/* ─── ui/voiceInput.js — Mic button placeholder ─── */
+import { wireVoiceInput } from './ui/voiceInput.js';
+window.wireVoiceInput = wireVoiceInput;
+
+/* ─── Sidebar-nav "Library" alias (P_chatgpt-landing) — opens the
+   existing knowledge panel. toggleSidebarView('knowledge') is in main.js
+   and not yet bridged here, so we mirror the call inline. ─── */
+window.openKnowledge = function () {
+  try {
+    if (typeof window.toggleSidebarView === "function") {
+      window.toggleSidebarView("knowledge");
+      return;
+    }
+    var btn = document.getElementById("tabKnowledge");
+    if (btn) btn.click();
+  } catch (_) { /* swallow — no-op fallback */ }
+};

@@ -1,5 +1,5 @@
 :root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px}
-[data-theme=socrates][data-mode=dark]{--bg-000:42 4% 18%;--bg-100:40 3.3% 14.5%;--bg-200:36 3.6% 11.8%;--bg-300:39 3.2% 7.8%;--bg-400:0 0% 0%;--text-000:45 30% 96%;--text-100:45 30% 96%;--text-200:45 8% 72%;--text-300:45 8% 72%;--text-400:44 4.5% 58%;--text-500:44 4.5% 58%;--border-100:45 20% 82%;--border-200:45 20% 82%;--border-300:45 20% 82%;--border-400:45 20% 82%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
+[data-theme=socrates][data-mode=dark]{--bg-000:0 0% 11%;--bg-100:0 0% 8%;--bg-200:0 0% 13%;--bg-300:0 0% 18%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
 [data-theme=socrates][data-mode=light]{--bg-000:40 24% 91%;--bg-100:40 18% 87%;--bg-200:40 14% 81%;--bg-300:40 10% 73%;--bg-400:0 0% 100%;--text-000:40 12% 10%;--text-100:40 10% 16%;--text-200:40 8% 32%;--text-300:40 8% 32%;--text-400:40 6% 38%;--text-500:40 6% 38%;--border-100:40 10% 62%;--border-200:40 10% 62%;--border-300:40 10% 62%;--border-400:40 10% 62%;--accent-000:43 65% 42%;--accent-100:43 65% 38%;--accent-900:43 40% 90%;--brand-000:36 55% 42%;--brand-100:36 60% 47%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.6}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
@@ -108,6 +108,37 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .recent-item-del{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-500));opacity:1;transition:opacity .1s,background .1s,color .1s;flex-shrink:0;background:transparent;border:0;cursor:pointer;padding:0}
 .recent-item-del:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
 .recent-item-del svg{width:12px;height:12px}
+/* Pin indicator in the recent item title row. */
+.recent-item-title-row{display:flex;align-items:center;gap:4px;min-width:0}
+.recent-item-pin-icon{flex-shrink:0;display:inline-flex;align-items:center;color:hsl(var(--accent-500))}
+.recent-item-pin-icon svg{display:block}
+.recent-item.pinned .recent-item-text,
+.recent-item.pinned:hover .recent-item-text{color:hsl(var(--accent-300))}
+/* Custom label badge in recent item. */
+.recent-item-label{font-size:calc(9px * var(--sidebar-font-scale));padding:1px 6px;border-radius:4px;background:hsl(var(--accent-900)/0.25);color:hsl(var(--accent-300));font-weight:500;flex-shrink:0;line-height:1.4;white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis}
+
+/* Long-press context menu for recent items. */
+.session-context-menu{position:fixed;width:240px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:10px;box-shadow:0 12px 36px hsl(var(--always-black)/0.35);z-index:960;padding:6px;display:none;flex-direction:column;gap:2px;animation:contextMenuIn .15s ease}
+.session-context-menu.visible{display:flex}
+@keyframes contextMenuIn{from{opacity:0;transform:translateY(-4px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.session-context-head{padding:6px 8px 8px;border-bottom:0.5px solid hsl(var(--border-300)/0.15);margin-bottom:4px}
+.session-context-title{font-size:12px;font-weight:600;color:hsl(var(--text-100));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4}
+.session-context-body{display:flex;flex-direction:column;gap:2px}
+.session-context-btn{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;background:transparent;border:0;color:hsl(var(--text-200));font-size:12px;font-family:inherit;cursor:pointer;transition:background .1s,color .1s;text-align:left;width:100%}
+.session-context-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.session-context-btn-danger:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
+.session-context-icon{flex-shrink:0;display:inline-flex;align-items:center;width:16px;justify-content:center}
+.session-context-icon svg{display:block}
+.session-context-label-row{display:flex;align-items:center;gap:6px;padding:3px 8px}
+.session-context-label-input-wrap{flex:1;display:flex;align-items:center;gap:6px;background:hsl(var(--bg-300));border-radius:6px;padding:4px 8px;border:0.5px solid hsl(var(--border-300)/0.2)}
+.session-context-label-input{flex:1;background:transparent;border:0;color:hsl(var(--text-100));font-size:12px;font-family:inherit;outline:none;padding:0;min-width:0}
+.session-context-label-input::placeholder{color:hsl(var(--text-500))}
+.session-context-label-set{padding:4px 10px;border-radius:6px;background:hsl(var(--accent-900));color:hsl(var(--accent-100));font-size:11px;font-weight:500;border:0;cursor:pointer;font-family:inherit;transition:background .15s;flex-shrink:0}
+.session-context-label-set:hover{background:hsl(var(--accent-800))}
+
+/* Block pointer events on all recent items while context menu is
+   open. Prevents mobile synthetic clicks from navigating. */
+#sidebar.ctx-menu-block .recent-item{pointer-events:none}
 
 /* P2.2 — tag editor popover */
 .tag-editor-popover{position:fixed;width:320px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:10px;box-shadow:0 12px 36px hsl(var(--always-black)/0.35);z-index:950;padding:14px;display:none;flex-direction:column;gap:10px}
@@ -238,7 +269,7 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .recents-new-btn:active{transform:scale(.96)}
 .recents-new-btn svg{stroke:currentColor;transition:transform .25s cubic-bezier(.4,0,.2,1)}
 .recents-new-btn:hover svg{transform:rotate(90deg)}
-.recent-item{display:flex;align-items:center;padding:8px 12px;border-radius:8px;font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-200));transition:background .18s cubic-bezier(.4,0,.2,1),color .18s cubic-bezier(.4,0,.2,1),transform .12s ease;cursor:pointer;gap:8px;position:relative}
+.recent-item{display:flex;align-items:center;padding:8px 12px;border-radius:8px;font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-200));transition:background .18s cubic-bezier(.4,0,.2,1),color .18s cubic-bezier(.4,0,.2,1),transform .12s ease;cursor:pointer;gap:8px;position:relative;-webkit-touch-callout:none}
 .recent-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));transform:translateX(2px)}
 .recent-item:active{transform:translateX(2px) scale(.99)}
 .recent-item.active{background:hsl(var(--bg-300))}
@@ -520,7 +551,8 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 .topic-input-wrap:focus-within{box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/8%);border-color:hsl(var(--accent-000)/0.35)}
 #topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(15.5px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-100));min-height:88px;max-height:320px;overflow-y:auto;font-family:var(--font-sans);padding:14px 20px}
 #topicInput::placeholder{color:hsl(var(--text-400))}
-.topic-footer{display:flex;align-items:center;justify-content:space-between;padding:0 20px 16px}
+.topic-footer{display:flex;align-items:center;padding:0 20px 16px}
+.footer-left-group{display:flex;align-items:center;gap:4px;margin-right:auto}
 /* .start-btn has no :hover rule — drop transition: all (was paying compositor
    cost watching properties that never animate). Active state still flips
    color/background instantly. */
@@ -892,7 +924,7 @@ true) but the dropdown never shows — see commit history. */
    instead of snapping instantly. The `badgeSwap` keyframe runs once per
    class change (driven by JS clearing & re-adding the class). */
 .chat-mode-badge{display:inline-flex;align-items:center;gap:4px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;padding:2px 9px;border-radius:999px;letter-spacing:.03em;vertical-align:middle;border:0.5px solid hsl(var(--border-300)/0.35);color:hsl(var(--text-400));background:hsl(var(--bg-300));transition:background-color .3s ease,color .3s ease,border-color .3s ease;animation:badgeSwap .35s cubic-bezier(.16,1,.3,1) both}
-.chat-mode-badge.mode-tutor{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12);border-color:hsl(var(--accent-000)/0.25)}
+.chat-mode-badge.mode-tutor,
 .chat-mode-badge.mode-chat{color:hsl(var(--text-300));background:hsl(var(--bg-300))}
 @keyframes badgeSwap{
   0%{transform:scale(.92);opacity:.5;filter:blur(1px)}
@@ -1179,7 +1211,7 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 #chatInputArea{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(15px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));min-height:36px;max-height:120px;overflow-y:auto;scrollbar-width:none;font-family:var(--font-sans);padding:8px 14px}
 #chatInputArea::-webkit-scrollbar{display:none}
 #chatInputArea::placeholder{color:hsl(var(--text-400))}
-.chat-input-footer{display:flex;align-items:center;justify-content:space-between;padding:0 12px 8px}
+.chat-input-footer{display:flex;align-items:center;padding:0 12px 8px}
 .chat-input-hint{flex:1;text-align:left;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
 /* P_attachments — paperclip button to the left of the hint. Same
    circle footprint as the send button so the footer stays balanced
@@ -1308,6 +1340,12 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 .settings-btn.secondary:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
 .settings-btn.danger{background:transparent;color:hsl(0 60% 55%)}
 .settings-btn.danger:hover{background:hsl(0 60% 15%)}
+/* Settings validation and state styles */
+.settings-btn.primary:disabled,.settings-btn.primary.saving{opacity:0.6;cursor:not-allowed;pointer-events:none}
+.settings-input.input-error{border-color:hsl(0 60% 50%)!important;box-shadow:0 0 0 1px hsl(0 60% 50%/0.3)!important}
+.settings-field-error{display:block;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(0 60% 55%);padding:2px 0 0 4px;line-height:1.3}
+/* Collapsed provider list — "Use External API" off state */
+.provider-list.collapsed{display:none}
 
 /* profile modal */
 .profile-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
@@ -1417,523 +1455,213 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 .usage-loading{display:flex;align-items:center;justify-content:center;padding:40px 20px;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale, 1));gap:8px}
 
 /* Exam view (standalone page within the SPA) */
-.exam-view{position:absolute;inset:0;display:flex;flex-direction:column;background:hsl(var(--bg-000))}
+.exam-view{position:absolute;inset:0;display:flex;flex-direction:column;background:hsl(var(--bg-100))}
 .exam-view.hidden{display:none}
-/* Exam view header — three-region layout (left | center | right)
-   with generous vertical padding so the back button, title, and
-   optional meta line up cleanly. The title is left-aligned within
-   its center region; the right region hosts a meta chip (e.g. the
-   topic name) when in the exam view. */
-.exam-view-header{display:flex;align-items:center;gap:24px;padding:18px 28px;flex-shrink:0;background:hsl(var(--bg-000));border-bottom:0.5px solid hsl(var(--border-300)/0.12)}
-.exam-view-title-wrap{flex:1;min-width:0;display:flex;align-items:baseline;gap:12px}
-.exam-view-title{font-size:calc(16px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-100));margin:0;letter-spacing:-.01em;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
-.exam-view-meta{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));letter-spacing:.02em;flex-shrink:0;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.exam-view-header-right{flex-shrink:0;min-width:80px;display:flex;justify-content:flex-end;align-items:center;gap:8px}
-.exam-back-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.25);color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:7px 14px;border-radius:8px;cursor:pointer;transition:color .12s,background .12s,border-color .12s;font-family:inherit;line-height:1;flex-shrink:0}
-.exam-back-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200));border-color:hsl(var(--border-300)/0.5)}
-.exam-back-btn svg{width:14px;height:14px}
-.exam-view-body{flex:1;overflow-y:auto;padding:32px 36px 32px;width:100%;box-sizing:border-box;display:flex;flex-direction:column}
-@media(max-width:720px){.exam-view-body{padding:20px 16px 20px}}
-.exam-view-footer{flex-shrink:0;padding:24px 56px;background:hsl(var(--bg-000));border-top:0.5px solid hsl(var(--border-300)/0.12);display:flex;justify-content:flex-end;gap:12px;width:100%;box-sizing:border-box}
-.exam-q-card-streaming{opacity:0.55;border-top:0;padding-top:0}
-.exam-q-card-streaming .exam-q-text{font-family:var(--font-mono);color:hsl(var(--text-400));font-size:calc(12px * var(--app-font-scale, 1))}
-.exam-q-card-streaming .exam-q-num{color:hsl(var(--text-500))}
-.exam-q-card-streaming .exam-q-type{font-style:italic;color:hsl(var(--text-500))}
+.exam-view-header{display:flex;align-items:center;gap:10px;padding:10px 16px;flex-shrink:0;background:hsl(var(--bg-000));border-bottom:0.5px solid hsl(var(--border-300)/0.10)}
+.exam-view-title{font-size:calc(15px * var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-100));margin:0;letter-spacing:-.01em;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.exam-view-meta{font-size:calc(11px * var(--app-font-scale,1));color:hsl(var(--text-500));flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exam-back-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;background:transparent;border:none;color:hsl(var(--text-400));cursor:pointer;transition:color .12s,background .12s;flex-shrink:0}
+.exam-back-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200))}
+.exam-back-btn svg{width:16px;height:16px}
+.exam-view-body{flex:1;overflow-y:auto;padding:28px 24px 24px;width:100%;max-width:640px;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column}
+@media(max-width:720px){.exam-view-body{padding:20px 16px 16px}}
+.exam-view-footer{flex-shrink:0;padding:14px 24px;display:flex;justify-content:center;gap:10px;width:100%;box-sizing:border-box;background:hsl(var(--bg-000));border-top:0.5px solid hsl(var(--border-300)/0.08)}
 
-/* P_exam-nav — bottom-anchored Prev / counter / Next bar plus a
-   row of "jump to question N" pills. Lives inside .exam-view-body
-   so it scrolls with the questions, but is always rendered first
-   so it sits at the top of the question list visually. The pills
-   turn green when answered, and the active pill (closest to the
-   top of the viewport) gets the accent border. */
-.exam-nav-bar{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin:0 0 18px;
-  padding:10px 14px;
-  background:hsl(var(--bg-200)/0.5);
-  border:0.5px solid hsl(var(--border-300)/0.18);
-  border-radius:10px;
-  position:sticky;
-  top:0;
-  z-index:2;
-  backdrop-filter:blur(6px);
-}
-.exam-nav-btn{
-  width:34px;
-  height:34px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  background:transparent;
-  border:0.5px solid hsl(var(--border-300)/0.3);
-  border-radius:8px;
-  color:hsl(var(--text-200));
-  font-size:18px;
-  line-height:1;
-  cursor:pointer;
-  font-family:inherit;
-  transition:background .12s,color .12s,border-color .12s;
-}
-.exam-nav-btn:hover:not(:disabled){
-  background:hsl(var(--bg-300));
-  color:hsl(var(--text-100));
-  border-color:hsl(var(--border-300)/0.5);
-}
-.exam-nav-btn:disabled{
-  opacity:0.35;
-  cursor:default;
-}
-.exam-nav-counter{
-  flex:1;
-  text-align:center;
-  font-size:calc(13px * var(--app-font-scale, 1));
-  color:hsl(var(--text-300));
-  display:flex;
-  align-items:baseline;
-  justify-content:center;
-  gap:6px;
-  font-variant-numeric:tabular-nums;
-}
-.exam-nav-current{font-weight:600;color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1))}
-.exam-nav-sep{color:hsl(var(--text-500))}
-.exam-nav-progress{color:hsl(var(--text-400));font-size:calc(11.5px * var(--app-font-scale, 1));margin-left:6px}
-.exam-nav-pills{
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  margin:0 0 22px;
-  padding:0;
-}
-.exam-nav-pill{
-  min-width:34px;
-  height:30px;
-  padding:0 10px;
-  background:transparent;
-  border:0.5px solid hsl(var(--border-300)/0.25);
-  border-radius:7px;
-  color:hsl(var(--text-300));
-  font-size:calc(12px * var(--app-font-scale, 1));
-  cursor:pointer;
-  font-family:inherit;
-  font-variant-numeric:tabular-nums;
-  transition:background-color .12s,color .12s,border-color .12s;
-}
-.exam-nav-pill:hover{
-  background:hsl(var(--bg-200));
-  color:hsl(var(--text-100));
-  border-color:hsl(var(--border-300)/0.45);
-}
-.exam-nav-pill.answered{
-  background:hsl(145 50% 50%/0.10);
-  border-color:hsl(145 50% 50%/0.45);
-  color:hsl(145 50% 45%);
-}
-.exam-nav-pill.current{
-  background:hsl(var(--accent-000)/0.10);
-  border-color:hsl(var(--accent-000)/0.55);
-  color:hsl(var(--text-100));
-  font-weight:600;
-}
-.exam-nav-pill.answered.current{
-  background:hsl(var(--accent-000)/0.14);
-  border-color:hsl(var(--accent-000)/0.6);
-}
-
-/* P_exam-share — the read-only pill shown in the footer when an
-   external visitor opens a shared exam. Matches the size of the
-   primary/secondary buttons so the footer stays balanced. */
-.exam-readonly-pill{
-  display:inline-flex;
-  align-items:center;
-  padding:8px 18px;
-  font-size:calc(12.5px * var(--app-font-scale, 1));
-  font-weight:500;
-  color:hsl(var(--text-400));
-  background:hsl(var(--bg-200)/0.5);
-  border:0.5px solid hsl(var(--border-300)/0.25);
-  border-radius:6px;
-  letter-spacing:.01em;
-}
-
-/* Exam modal */
-.exam-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
-.exam-overlay.hidden{display:none}
-.exam-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:min(680px,94vw);max-height:90vh;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out);display:flex;flex-direction:column}
-.exam-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0}
-.exam-title{font-size:calc(15px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
-.exam-close{cursor:pointer;color:hsl(var(--text-500));padding:4px;border-radius:6px;transition:background-color .1s,color .1s}
-.exam-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.exam-body{padding:16px 20px 20px;overflow-y:auto;flex:1}
-/* ── Exam Config Form (redesigned) ──
-   Card-based sections with subtle backgrounds, refined inputs,
-   and toggle-card type pickers. Everything uses theme tokens. */
-
-.exam-form-container{max-width:600px;margin:0 auto;padding:4px 0 12px}
-/* Section card — groups related fields with a soft background */
+/* ── Exam Config Form ── */
+.exam-form-container{max-width:480px;margin:0 auto;padding:4px 0 8px;width:100%}
 .exam-form-section{
-  background:hsl(var(--bg-200)/0.35);
+  background:hsl(var(--bg-000));
   border:0.5px solid hsl(var(--border-300)/0.10);
-  border-radius:14px;
-  padding:20px 22px 22px;
-  margin-bottom:16px;
-  transition:border-color .15s;
+  border-radius:12px;
+  padding:18px 20px 20px;
+  margin-bottom:14px;
 }
-.exam-form-section:focus-within{border-color:hsl(var(--accent-000)/0.20)}
-
-/* Section header with inline SVG icon + label */
-.exam-form-section-header{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-bottom:16px;
-}
-.exam-form-section-icon{
-  width:20px;height:20px;
-  color:hsl(var(--accent-000));
-  flex-shrink:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.exam-form-section-title{
-  font-size:calc(13px * var(--app-font-scale, 1));
-  font-weight:600;
-  color:hsl(var(--text-200));
-  letter-spacing:.01em;
-}
-
-/* Rows within a section */
-.exam-form-row{margin-bottom:0}
-.exam-form-row:last-child{margin-bottom:0}
-/* Labels */
-.exam-form-label{
-  font-size:calc(12.5px * var(--app-font-scale, 1));
-  font-weight:500;
-  color:hsl(var(--text-400));
-  margin-bottom:8px;
-  display:block;
-  letter-spacing:.01em;
-}
-
-/* Shared input/select/textarea styling */
-.exam-form-input{
-  width:100%;
-  padding:12px 14px;
-  border-radius:10px;
-  border:0.5px solid hsl(var(--border-300)/0.18);
-  background:hsl(var(--bg-000));
-  color:hsl(var(--text-100));
-  font-size:calc(14px * var(--app-font-scale, 1));
-  font-family:inherit;
-  outline:none;
-  transition:border-color .18s,background .18s,box-shadow .18s;
-  box-sizing:border-box;
-}
-.exam-form-input:focus{
-  border-color:hsl(var(--accent-000)/0.5);
-  background:hsl(var(--bg-100));
-  box-shadow:0 0 0 3px hsl(var(--accent-000)/0.06);
-}
-.exam-form-input::placeholder{color:hsl(var(--text-500))}
-
-.exam-form-textarea{
-  width:100%;
-  padding:12px 14px;
-  border-radius:10px;
-  border:0.5px solid hsl(var(--border-300)/0.18);
-  background:hsl(var(--bg-000));
-  color:hsl(var(--text-100));
-  font-size:calc(14px * var(--app-font-scale, 1));
-  font-family:inherit;
-  outline:none;
-  transition:border-color .18s,background .18s,box-shadow .18s;
-  resize:vertical;
-  min-height:82px;
-  box-sizing:border-box;
-}
-.exam-form-textarea:focus{
-  border-color:hsl(var(--accent-000)/0.5);
-  background:hsl(var(--bg-100));
-  box-shadow:0 0 0 3px hsl(var(--accent-000)/0.06);
-}
-.exam-form-textarea::placeholder{color:hsl(var(--text-500))}
-
-/* Select with dropdown arrow */
-.exam-form-select{
-  padding-right:32px;
-  appearance:none;
-  -webkit-appearance:none;
-  -moz-appearance:none;
-  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;
-  background-position:right 12px center;
-  background-size:12px;
-  cursor:pointer;
-}
-/* Three-column grid for model / difficulty / count */
-.exam-form-grid3{display:grid;grid-template-columns:1.4fr 1.4fr 0.8fr;gap:16px;align-items:end}
+.exam-form-section-header{margin-bottom:12px}
+.exam-form-section-title{font-size:calc(12px*var(--app-font-scale,1));font-weight:600;color:hsl(var(--text-400));letter-spacing:.015em}
+.exam-form-label{font-size:calc(12px*var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-400));margin-bottom:6px;display:block}
+.exam-form-input,.exam-form-textarea{width:100%;padding:10px 13px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:calc(14px*var(--app-font-scale,1));font-family:inherit;outline:none;transition:border-color .18s,box-shadow .18s;box-sizing:border-box}
+.exam-form-textarea{resize:vertical;min-height:72px}
+.exam-form-input:focus,.exam-form-textarea:focus{border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 3px hsl(var(--accent-000)/0.06)}
+.exam-form-input::placeholder,.exam-form-textarea::placeholder{color:hsl(var(--text-500))}
+.exam-form-grid3{display:grid;grid-template-columns:1.4fr 1.4fr 0.8fr;gap:12px;align-items:end}
 .exam-form-cell{display:flex;flex-direction:column;min-width:0}
 .exam-form-cell-narrow .exam-form-input{text-align:center;font-variant-numeric:tabular-nums;padding-left:8px;padding-right:8px}
-@media(max-width:720px){
-  .exam-form-grid3{grid-template-columns:1fr;gap:14px}
-}
+@media(max-width:560px){.exam-form-grid3{grid-template-columns:1fr;gap:10px}}
 
-/* ── Toggle cards for question types ── */
-.exam-form-card-toggles{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-}
-@media(max-width:560px){
-  .exam-form-card-toggles{grid-template-columns:1fr}
-}
-
+/* ── Question type toggles ── */
+.exam-form-card-toggles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:480px){.exam-form-card-toggles{grid-template-columns:1fr}}
 .exam-form-toggle-card{
   display:flex;
-  flex-direction:column;
   align-items:center;
-  gap:8px;
-  padding:16px 12px 14px;
-  border-radius:12px;
-  border:0.5px solid hsl(var(--border-300)/0.16);
-  background:hsl(var(--bg-000));
+  justify-content:center;
+  gap:7px;
+  padding:10px 8px;
+  border-radius:9px;
+  border:0.5px solid hsl(var(--border-300)/0.18);
+  background:transparent;
   cursor:pointer;
   font-family:inherit;
-  transition:all .18s ease;
-  position:relative;
+  font-size:calc(13px*var(--app-font-scale,1));
+  font-weight:500;
+  color:hsl(var(--text-400));
+  transition:color .15s,background .15s,border-color .15s;
   user-select:none;
   -webkit-user-select:none;
-}
-.exam-form-toggle-card:hover{
-  border-color:hsl(var(--border-300)/0.35);
-  background:hsl(var(--bg-100)/0.6);
-}
-.exam-form-toggle-card.active{
-  border-color:hsl(var(--accent-000)/0.50);
-  background:hsl(var(--accent-000)/0.06);
-  box-shadow:0 0 0 1px hsl(var(--accent-000)/0.12);
-}
-.exam-form-toggle-card.active:hover{
-  background:hsl(var(--accent-000)/0.10);
-  border-color:hsl(var(--accent-000)/0.60);
-}
-
-/* Check circle indicator */
-.exam-form-toggle-card .tog-check{
-  position:absolute;
-  top:8px;
-  right:8px;
-  width:18px;
-  height:18px;
-  border-radius:50%;
-  border:1.5px solid hsl(var(--border-300)/0.25);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  transition:all .18s ease;
-  flex-shrink:0;
-  background:transparent;
-}
-.exam-form-toggle-card.active .tog-check{
-  background:hsl(var(--accent-000));
-  border-color:hsl(var(--accent-000));
-}
-.exam-form-toggle-card.active .tog-check svg{
-  display:block;
-  width:11px;height:11px;
-  color:#fff;
-  stroke-width:3;
-}
-
-/* Toggle card icon */
-.exam-form-toggle-card .tog-icon{
-  width:28px;height:28px;
-  border-radius:8px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:hsl(var(--text-400));
-  background:hsl(var(--bg-200)/0.5);
-  transition:all .18s ease;
-  margin-top:2px;
-}
-.exam-form-toggle-card.active .tog-icon{
-  color:hsl(var(--accent-000));
-  background:hsl(var(--accent-000)/0.12);
-}
-.exam-form-toggle-card .tog-icon svg{width:16px;height:16px}
-
-/* Toggle card label */
-.exam-form-toggle-card .tog-label{
-  font-size:calc(12.5px * var(--app-font-scale, 1));
-  font-weight:500;
-  color:hsl(var(--text-300));
-  transition:color .18s ease;
   text-align:center;
   line-height:1.3;
 }
-.exam-form-toggle-card.active .tog-label{
-  color:hsl(var(--text-100));
+.exam-form-toggle-card:hover{color:hsl(var(--text-200));background:hsl(var(--bg-200)/0.5);border-color:hsl(var(--border-300)/0.3)}
+.exam-form-toggle-card.active{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.45);background:hsl(var(--accent-000)/0.06)}
+.exam-form-toggle-card .tog-dot{
+  width:6px;height:6px;
+  border-radius:50%;
+  background:hsl(var(--border-300)/0.25);
+  flex-shrink:0;
+  transition:background .15s;
 }
+.exam-form-toggle-card.active .tog-dot{background:hsl(var(--accent-000))}
 
-/* Toggle card sub-label */
-.exam-form-toggle-card .tog-sublabel{
-  font-size:calc(10.5px * var(--app-font-scale, 1));
-  color:hsl(var(--text-500));
-  text-align:center;
-  line-height:1.2;
+/* ── Custom model dropdown ── */
+.exam-model-wrap{position:relative}
+.exam-model-trigger{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  width:100%;
+  padding:10px 13px;
+  border-radius:8px;
+  border:0.5px solid hsl(var(--border-300)/0.2);
+  background:hsl(var(--bg-100));
+  color:hsl(var(--text-100));
+  font-size:calc(14px*var(--app-font-scale,1));
+  font-family:inherit;
+  cursor:pointer;
+  transition:border-color .18s,box-shadow .18s;
+  text-align:left;
+  line-height:1.3;
 }
+.exam-model-trigger:hover{border-color:hsl(var(--border-300)/0.4)}
+.exam-model-trigger.open{border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 3px hsl(var(--accent-000)/0.06)}
+.exam-model-trigger .exam-model-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exam-model-trigger .exam-model-chevron{width:12px;height:12px;flex-shrink:0;color:hsl(var(--text-500));transition:transform .2s}
+.exam-model-trigger.open .exam-model-chevron{transform:rotate(180deg)}
+.exam-model-menu{
+  position:absolute;
+  top:calc(100% + 4px);
+  left:0;
+  right:0;
+  z-index:50;
+  background:hsl(var(--bg-000));
+  border:0.5px solid hsl(var(--border-300)/0.2);
+  border-radius:8px;
+  box-shadow:0 6px 20px hsl(0 0% 0%/0.15);
+  padding:4px;
+  display:none;
+}
+.exam-model-menu.open{display:block}
+.exam-model-opt{
+  display:block;
+  width:100%;
+  padding:8px 10px;
+  border:none;
+  border-radius:6px;
+  background:transparent;
+  color:hsl(var(--text-200));
+  font-size:calc(13px*var(--app-font-scale,1));
+  font-family:inherit;
+  cursor:pointer;
+  text-align:left;
+  transition:background .1s,color .1s;
+}
+.exam-model-opt:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.exam-model-opt.active{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.06);font-weight:500}
 
 /* ── Buttons ── */
-.exam-btn{
-  padding:11px 24px;
-  border-radius:10px;
-  font-size:calc(13.5px * var(--app-font-scale, 1));
-  font-weight:500;
-  cursor:pointer;
-  transition:background-color .15s,color .15s,border-color .15s,transform .12s,box-shadow .15s,filter .15s;
-  border:none;
-  font-family:inherit;
-  letter-spacing:-.01em;
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-}
-.exam-btn.primary{
-  background:hsl(var(--accent-000));
-  color:hsl(var(--bg-400));
-  padding:12px 30px;
-}
-.exam-btn.primary:hover{
-  filter:brightness(1.08);
-  transform:translateY(-1px);
-  box-shadow:0 4px 16px hsl(var(--accent-000)/0.25);
-}
-.exam-btn.primary:disabled{
-  opacity:0.3;
-  cursor:default;
-  transform:none;
-  box-shadow:none;
-  filter:none;
-}
-.exam-btn.secondary{
-  background:transparent;
-  color:hsl(var(--text-300));
-  border:0.5px solid hsl(var(--border-300)/0.25);
-}
-.exam-btn.secondary:hover{
-  color:hsl(var(--text-100));
-  background:hsl(var(--bg-200));
-  border-color:hsl(var(--border-300)/0.5);
-}
-.exam-btn.success{
-  background:hsl(145 50% 45%);
-  color:#fff;
-}
-.exam-btn.success:hover{
-  background:hsl(145 50% 40%);
-  transform:translateY(-1px);
-  box-shadow:0 4px 14px hsl(145 50% 45%/0.25);
-}
+.exam-btn{padding:9px 20px;border-radius:8px;font-size:calc(13px*var(--app-font-scale,1));font-weight:500;cursor:pointer;transition:color .12s,background .12s,border-color .12s;border:0.5px solid transparent;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+.exam-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400));border-color:hsl(var(--accent-000))}
+.exam-btn.primary:hover{filter:brightness(1.08)}
+.exam-btn.primary:disabled{opacity:0.3;cursor:default}
+.exam-btn.secondary{background:transparent;color:hsl(var(--text-300));border-color:hsl(var(--border-300)/0.25)}
+.exam-btn.secondary:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200));border-color:hsl(var(--border-300)/0.5)}
+.exam-btn.success{background:hsl(145 50% 45%);color:#fff;border-color:hsl(145 50% 45%)}
+.exam-btn.success:hover{filter:brightness(1.08)}
 .exam-btn svg{width:14px;height:14px;flex-shrink:0}
 
-/* ── Loading / progress states ── */
-.exam-loading{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:80px 20px;
-  color:hsl(var(--text-400));
-  font-size:calc(14px * var(--app-font-scale, 1));
-  gap:20px;
-  flex-direction:column;
-  text-align:center;
-  flex:1;
-  min-height:300px;
-}
-.exam-loading .loading{display:inline-flex;gap:7px}
-.exam-loading .loading span{
-  width:9px;height:9px;
-  border-radius:50%;
-  background:hsl(var(--accent-000));
-  animation:examDotPulse 1.4s infinite ease-in-out;
-}
+/* ── Loading / progress ── */
+.exam-loading{display:flex;align-items:center;justify-content:center;padding:60px 20px;gap:16px;flex-direction:column;text-align:center;flex:1;min-height:260px}
+.exam-loading .loading{display:inline-flex;gap:6px}
+.exam-loading .loading span{width:8px;height:8px;border-radius:50%;background:hsl(var(--accent-000));animation:examDotPulse 1.4s infinite ease-in-out}
 .exam-loading .loading span:nth-child(2){animation-delay:.2s}
 .exam-loading .loading span:nth-child(3){animation-delay:.4s}
-@keyframes examDotPulse{
-  0%,80%,100%{transform:scale(.6);opacity:.4}
-  40%{transform:scale(1);opacity:1}
-}
-.exam-loading-msg{font-weight:500;color:hsl(var(--text-200));font-size:calc(15px * var(--app-font-scale,1))}
-.exam-loading-sub{font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));max-width:400px;line-height:1.6}
-.exam-progress{width:100%;max-width:280px;margin:4px auto 0}
-.exam-progress-bar{width:100%;height:4px;border-radius:3px;background:hsl(var(--border-300)/0.12);overflow:hidden;position:relative}
-.exam-progress-fill{height:100%;border-radius:3px;background:hsl(var(--accent-000));transition:width .45s cubic-bezier(.4,0,.2,1);width:0%}
-.exam-progress-step{font-size:calc(12px * var(--app-font-scale,1));color:hsl(var(--text-400));margin-top:10px;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;transition:color .3s}
-.exam-progress-step .exam-progress-spin{display:inline-block;width:10px;height:10px;border:1.5px solid hsl(var(--border-300)/0.2);border-top-color:hsl(var(--accent-000));border-radius:50%;animation:loadingSpin .8s linear infinite;flex-shrink:0}
+@keyframes examDotPulse{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+.exam-loading-msg{font-weight:500;color:hsl(var(--text-200));font-size:calc(14px*var(--app-font-scale,1))}
+.exam-loading-sub{font-size:calc(12px*var(--app-font-scale,1));color:hsl(var(--text-500));max-width:360px;line-height:1.5}
+.exam-progress{width:100%;max-width:260px;margin:2px auto 0}
+.exam-progress-bar{width:100%;height:3px;border-radius:2px;background:hsl(var(--border-300)/0.10);overflow:hidden}
+.exam-progress-fill{height:100%;border-radius:2px;background:hsl(var(--accent-000));transition:width .4s ease;width:0%}
+.exam-progress-step{font-size:calc(11px*var(--app-font-scale,1));color:hsl(var(--text-400));margin-top:8px;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px}
+.exam-progress-step .exam-progress-spin{display:inline-block;width:9px;height:9px;border:1.5px solid hsl(var(--border-300)/0.2);border-top-color:hsl(var(--accent-000));border-radius:50%;animation:loadingSpin .8s linear infinite;flex-shrink:0}
+.exam-empty{display:flex;align-items:center;justify-content:center;padding:80px 20px;flex:1;min-height:260px;text-align:center;color:hsl(var(--text-400));font-size:calc(14px*var(--app-font-scale,1));flex-direction:column;gap:6px}
+.exam-empty strong{color:hsl(var(--text-200));font-weight:500}
 
-.exam-empty{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:100px 20px;
-  flex:1;
-  min-height:300px;
-  text-align:center;
-  color:hsl(var(--text-400));
-  font-size:calc(14px * var(--app-font-scale, 1));
-  flex-direction:column;
-  gap:8px;
-}
-.exam-empty strong{color:hsl(var(--text-200));font-weight:500;font-size:calc(14px * var(--app-font-scale, 1))}
-/* P_exam-spacing — first question card used to add 24px top padding
-   (its own internal air) on top of the body's padding. With body
-   padding now 0, the first card still adds 24px above its content.
-   Trim to 18px so the title "Question 1 of N" sits a touch closer
-   to the page header. Subsequent cards keep the larger breathing
-   room (selector below) so question-to-question separation stays
-   clear. */
-.exam-q-card{background:transparent;border:0;border-top:0.5px solid hsl(var(--border-300)/0.15);border-radius:0;padding:28px 0 32px;margin-bottom:0;scroll-margin-top:80px}
-.exam-q-card:first-of-type{border-top:0}
-.exam-q-card + .exam-q-card{margin-top:0}
-.exam-q-num{font-size:calc(12px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--accent-000));margin-bottom:12px;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:.06em}
-.exam-q-type{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-weight:400}
-.exam-q-text{font-size:calc(14px * var(--app-font-scale, 1));line-height:1.65;color:hsl(var(--text-100));margin-bottom:16px}
+/* ── Questions ── */
+.exam-q-card{padding:20px 0 24px;border-bottom:0.5px solid hsl(var(--border-300)/0.10);scroll-margin-top:80px}
+.exam-q-card:last-of-type{border-bottom:none}
+.exam-q-num{font-size:calc(11px*var(--app-font-scale,1));font-weight:600;color:hsl(var(--accent-000));margin-bottom:10px;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:.05em}
+.exam-q-type{font-size:calc(10px*var(--app-font-scale,1));color:hsl(var(--text-500));font-weight:400}
+.exam-q-text{font-size:calc(14px*var(--app-font-scale,1));line-height:1.6;color:hsl(var(--text-100));margin-bottom:14px}
 .exam-q-text p{margin-bottom:6px}.exam-q-text p:last-child{margin-bottom:0}
-.exam-q-opts{display:flex;flex-direction:column;gap:10px;margin-top:8px}
-.exam-q-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:0.5px solid hsl(var(--border-300)/0.2);border-radius:10px;background:hsl(var(--bg-000));font-size:calc(13.5px * var(--app-font-scale, 1));color:hsl(var(--text-200));cursor:pointer;transition:color .12s,background .12s,border-color .12s;text-align:left;width:100%;font-family:inherit;line-height:1.5}
-.exam-q-opt:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200));border-color:hsl(var(--border-300)/0.4)}
-.exam-q-opt:last-child{border-bottom:0.5px solid hsl(var(--border-300)/0.2)}
-.exam-q-opt.selected{color:hsl(var(--text-100))}
-.exam-q-opt-letter{width:18px;height:18px;border-radius:3px;border:0.5px solid hsl(var(--text-500)/0.4);display:flex;align-items:center;justify-content:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));flex-shrink:0;transition:background-color .12s,color .12s,border-color .12s;margin-top:2px}
-.exam-q-opt:hover .exam-q-opt-letter{border-color:hsl(var(--text-400))}
+.exam-q-opts{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.exam-q-opt{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:0.5px solid hsl(var(--border-300)/0.2);border-radius:8px;background:transparent;font-size:calc(13px*var(--app-font-scale,1));color:hsl(var(--text-200));cursor:pointer;transition:color .1s,background .1s,border-color .1s;text-align:left;width:100%;font-family:inherit;line-height:1.5}
+.exam-q-opt:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200)/0.4);border-color:hsl(var(--border-300)/0.35)}
+.exam-q-opt.selected{background:hsl(var(--accent-000)/0.06);border-color:hsl(var(--accent-000)/0.35);color:hsl(var(--text-100))}
+.exam-q-opt-letter{width:18px;height:18px;border-radius:3px;border:0.5px solid hsl(var(--text-500)/0.35);display:flex;align-items:center;justify-content:center;font-size:calc(11px*var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-400));flex-shrink:0;transition:background .12s,color .12s,border-color .12s;margin-top:1px}
 .exam-q-opt.selected .exam-q-opt-letter{border-color:hsl(var(--accent-000));background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border-width:0}
-.exam-q-opt.correct{border-color:hsl(var(--text-300)/0.3)}
 .exam-q-opt.correct .exam-q-opt-letter{border-color:hsl(145 50% 45%);background:hsl(145 50% 45%);color:#fff;border-width:0}
-.exam-q-opt.wrong{border-color:hsl(var(--text-300)/0.3)}
 .exam-q-opt.wrong .exam-q-opt-letter{border-color:hsl(0 60% 55%);background:hsl(0 60% 55%);color:#fff;border-width:0}
-.exam-q-fill-input{width:100%;padding:12px 14px;border:0.5px solid hsl(var(--border-300)/0.25);border-radius:10px;background:hsl(var(--bg-000));color:hsl(var(--text-100));font-size:calc(14px * var(--app-font-scale, 1));font-family:inherit;outline:none;transition:border-color .15s,background .15s;box-sizing:border-box}
-.exam-q-fill-input:focus{border-color:hsl(var(--accent-000)/0.6);background:hsl(var(--bg-100))}
+.exam-q-fill-input{width:100%;padding:10px 12px;border:0.5px solid hsl(var(--border-300)/0.25);border-radius:8px;background:hsl(var(--bg-000));color:hsl(var(--text-100));font-size:calc(14px*var(--app-font-scale,1));font-family:inherit;outline:none;transition:border-color .12s;box-sizing:border-box}
 .exam-q-fill-input:focus{border-color:hsl(var(--accent-000)/0.6)}
-.exam-q-fill-input.correct{border-color:hsl(145 50% 45%/0.6)}
-.exam-q-fill-input.wrong{border-color:hsl(0 60% 55%/0.6)}
-.exam-q-result{margin-top:12px;padding:10px 0;font-size:calc(13px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-300))}
-.exam-q-result.correct{color:hsl(var(--text-200))}
-.exam-q-result.wrong{color:hsl(var(--text-200))}
+.exam-q-fill-input.correct{border-color:hsl(145 50% 45%/0.5)}
+.exam-q-fill-input.wrong{border-color:hsl(0 60% 55%/0.5)}
+.exam-q-result{margin-top:10px;padding:8px 0;font-size:calc(13px*var(--app-font-scale,1));line-height:1.5;color:hsl(var(--text-300));border-top:0.5px solid hsl(var(--border-300)/0.08)}
 .exam-q-result .label{font-weight:500;color:hsl(var(--text-400))}
 .exam-q-result .explain{margin-top:4px;color:hsl(var(--text-300))}
-.exam-score{text-align:left;padding:8px 0 28px;border-bottom:0.5px solid hsl(var(--border-300)/0.15);margin-bottom:8px}
-.exam-score-val{font-size:calc(24px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-100));letter-spacing:-.01em;display:inline-flex;align-items:baseline;gap:4px}
-.exam-score-val .score-correct{font-weight:500}
-.exam-score-val .score-total{font-size:calc(16px * var(--app-font-scale, 1));color:hsl(var(--text-400));font-weight:400}
-.exam-score-lbl{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-top:2px}
+.exam-score{padding:4px 0 20px;margin-bottom:4px}
+.exam-score-val{font-size:calc(22px*var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-100));letter-spacing:-.01em;display:inline-flex;align-items:baseline;gap:3px}
+.exam-score-val .score-total{font-size:calc(15px*var(--app-font-scale,1));color:hsl(var(--text-400));font-weight:400}
+.exam-score-lbl{font-size:calc(12px*var(--app-font-scale,1));color:hsl(var(--text-500));margin-top:1px}
 .exam-footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0}
 .exam-actions{display:flex;justify-content:center;gap:10px;margin-top:10px}
 .exam-result-correct{color:hsl(145 50% 45%);font-weight:500}
 .exam-result-wrong{color:hsl(0 60% 55%);font-weight:500}
+
+/* ── Exam Nav ── */
+.exam-nav-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 14px;padding:0 0 14px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
+.exam-nav-btn{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:0.5px solid hsl(var(--border-300)/0.25);border-radius:6px;color:hsl(var(--text-300));font-size:16px;line-height:1;cursor:pointer;font-family:inherit;transition:background .1s,color .1s;flex-shrink:0}
+.exam-nav-btn:hover:not(:disabled){background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.exam-nav-btn:disabled{opacity:0.3;cursor:default}
+.exam-nav-counter{flex:1;text-align:center;font-size:calc(12px*var(--app-font-scale,1));color:hsl(var(--text-400));display:flex;align-items:baseline;justify-content:center;gap:4px;font-variant-numeric:tabular-nums}
+.exam-nav-current{font-weight:600;color:hsl(var(--text-100));font-size:calc(13px*var(--app-font-scale,1))}
+.exam-nav-progress{color:hsl(var(--text-500));font-size:calc(11px*var(--app-font-scale,1));margin-left:4px}
+.exam-nav-pills{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 16px}
+.exam-nav-pill{min-width:28px;height:26px;padding:0 7px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.2);border-radius:5px;color:hsl(var(--text-400));font-size:calc(11px*var(--app-font-scale,1));cursor:pointer;font-family:inherit;font-variant-numeric:tabular-nums;transition:color .1s,background .1s,border-color .1s}
+.exam-nav-pill:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.35)}
+.exam-nav-pill.answered{color:hsl(145 50% 45%);border-color:hsl(145 50% 45%/0.35);background:hsl(145 50% 45%/0.06)}
+.exam-nav-pill.current{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);font-weight:600}
+.exam-nav-pill.answered.current{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.08)}
+.exam-nav-total{color:hsl(var(--text-500))}
+
+/* exam-readonly and modal minimal */
+.exam-readonly-pill{display:inline-flex;align-items:center;padding:6px 14px;font-size:calc(12px*var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.2);border-radius:6px}
+.exam-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+.exam-overlay.hidden{display:none}
+.exam-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:14px;width:min(640px,94vw);max-height:90vh;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out);display:flex;flex-direction:column}
+.exam-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0}
+.exam-title{font-size:calc(14px*var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-100))}
+.exam-close{cursor:pointer;color:hsl(var(--text-500));padding:4px;border-radius:6px;transition:background-color .1s,color .1s}
+.exam-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.exam-body{padding:14px 18px 18px;overflow-y:auto;flex:1}
 /* Share modal */
 .share-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
 .share-overlay.hidden{display:none}
@@ -3575,4 +3303,59 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   .sources-row:hover{transform:none !important}
   /* Disable focus-within lift on the chat input. */
   .chat-input-wrap:focus-within{transform:none}
+}
+
+/* ─── ChatGPT-style main page (added 2026-07-20) ─── */
+
+/* Sidebar nav block — sits between header and search row */
+.sidebar-nav{display:flex;flex-direction:column;gap:1px;padding:6px 8px 4px;flex-shrink:0}
+.sidebar-nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border-radius:8px;background:transparent;border:none;color:hsl(var(--text-200));font-size:calc(13.5px * var(--sidebar-font-scale));font-weight:400;cursor:pointer;text-align:left;transition:background .15s var(--ease-out),color .15s var(--ease-out);font-family:var(--font-sans)}
+.sidebar-nav-btn:hover:not([disabled]){background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.sidebar-nav-btn:active:not([disabled]){transform:scale(.98)}
+.sidebar-nav-btn svg{width:16px;height:16px;flex-shrink:0;color:hsl(var(--text-400));transition:color .15s var(--ease-out)}
+.sidebar-nav-btn:hover:not([disabled]) svg{color:hsl(var(--text-200))}
+.sidebar-nav-btn[disabled]{opacity:.4;cursor:not-allowed}
+.sidebar-nav-soon{margin-left:auto;font-size:10px;padding:2px 6px;border-radius:999px;background:hsl(var(--bg-300));color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em;font-weight:500}
+
+/* Top bar — center segmented control */
+.top-bar{justify-content:space-between}
+
+/* Greeting — Newsreader serif, large, like ChatGPT */
+.topic-title.greeting{font-family:var(--font-display);font-weight:400;font-size:calc(clamp(2rem, 1.5rem + 2vw, 2.75rem) * var(--app-font-scale, 1));color:hsl(var(--text-100));letter-spacing:-.02em;line-height:1.15;margin:0 0 24px}
+
+/* Suggestion chips under the input (removed 2026-07-20 per user request) */
+
+/* Mic button (next to attach) */
+.mic-btn{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:transparent;color:hsl(var(--text-400));border:none;cursor:pointer;transition:background .15s var(--ease-out),color .15s var(--ease-out),transform .12s ease;flex-shrink:0}
+.mic-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.mic-btn:active{transform:scale(.92)}
+.mic-btn svg{width:16px;height:16px}
+
+/* Send / start button — mic↔waveform swap based on .has-text on the wrap.
+   The button keeps two SVG children; CSS shows the right one. */
+.start-btn .icon-waveform,
+.send-btn .icon-waveform{display:inline-flex}
+.start-btn .icon-arrow,
+.send-btn .icon-arrow{display:none}
+/* When the textarea has text or attachments, swap to the up-arrow. */
+.topic-input-wrap.has-text .start-btn .icon-waveform,
+.chat-input-wrap.has-text .send-btn .icon-waveform{display:none}
+.topic-input-wrap.has-text .start-btn .icon-arrow,
+.chat-input-wrap.has-text .send-btn .icon-arrow{display:inline-flex}
+/* Hide the mic button whenever the textarea has text (send takes over). */
+.topic-input-wrap.has-text #topicMicBtn,
+.chat-input-wrap.has-text #chatMicBtn{display:none}
+
+/* Default state of the start/send button: keep the existing 'active'
+   style (filled pill) only when text/attachments present, otherwise
+   a subtle ring to match ChatGPT's gray waveform button. */
+.start-btn:not(.active){background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.start-btn:not(.active):hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.send-btn:not(.active){background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.send-btn:not(.active):hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+
+/* Reduce-motion respect — keep transforms on chips but drop bounces */
+@media (prefers-reduced-motion: reduce){
+  .sidebar-nav-btn:active:not([disabled]),
+  .mic-btn:active{transform:none}
 }

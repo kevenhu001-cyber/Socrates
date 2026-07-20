@@ -21,6 +21,14 @@ export function getVisibleSessions(sessions, now) {
   var swept = sweepExpiredArchivesFrom(sessions, now).sessions;
   var copy = swept.filter(function (s) { return !s || !s.archivedAt; });
   copy.sort(function (a, b) {
+    /* Pinned sessions first, sorted by pin time descending. */
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    if (a.pinned && b.pinned) {
+      var ap = a.pinnedAt || a.updated_at || a.updatedAt || 0;
+      var bp = b.pinnedAt || b.updated_at || b.updatedAt || 0;
+      return bp - ap;
+    }
     var at = (a && (a.updated_at || a.updatedAt || a.created_at || a.createdAt)) || 0;
     var bt = (b && (b.updated_at || b.updatedAt || b.created_at || b.createdAt)) || 0;
     return bt - at;

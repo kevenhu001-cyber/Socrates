@@ -46,9 +46,10 @@
      boot-loading screen respects the user's choice immediately. */
   try{
     var _g=JSON.parse(localStorage.getItem("socrates-display"));
-    if(_g&&_g.showGrid===false)document.documentElement.dataset.showGrid="false";
+    if(_g&&_g.showGrid===true){document.documentElement.dataset.showGrid="true";}
+    else{document.documentElement.dataset.showGrid="false";}
   }catch(_){}
-  /* If no preference stored, grid is on by default (no attribute needed). */
+  /* If no preference stored, grid is off by default. */
   /* Safety net: if authBoot() never replaces bootState within 12s
    * (offline / backend hung / unexpected error), default to the
    * sign-in form so the user always has a way out. */
@@ -270,6 +271,39 @@
       </div>
     </div>
 
+    <!-- P_chatgpt-landing — ChatGPT-style sidebar nav. Six buttons modeled
+         after ChatGPT's primary navigation (新聊天 / 文件库 / 项目 /
+         已安排 / 插件 / 更多). Wired to existing functions where there
+         is a mapping; Scheduled has no app equivalent so it's disabled
+         with a "Soon" pill to set expectations. -->
+    <nav class="sidebar-nav" id="sidebarNav" aria-label="Primary navigation">
+      <button type="button" class="sidebar-nav-btn" data-nav="new" onclick="resetApp()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+        <span data-i18n-key="sidebar.nav.new">New chat</span>
+      </button>
+      <button type="button" class="sidebar-nav-btn" data-nav="library" onclick="window.openKnowledge && window.openKnowledge()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span data-i18n-key="sidebar.nav.library">Library</span>
+      </button>
+      <button type="button" class="sidebar-nav-btn" data-nav="projects" onclick="switchTab('recents')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18"/><path d="M3 12h18"/><path d="M3 17h12"/></svg>
+        <span data-i18n-key="sidebar.nav.projects">Projects</span>
+      </button>
+      <button type="button" class="sidebar-nav-btn" data-nav="scheduled" disabled aria-disabled="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+        <span data-i18n-key="sidebar.nav.scheduled">Scheduled</span>
+        <span class="sidebar-nav-soon" data-i18n-key="sidebar.nav.soon">Soon</span>
+      </button>
+      <button type="button" class="sidebar-nav-btn" data-nav="plugins" onclick="toggleExtensionsPicker()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><rect x="5" y="10" width="6" height="4" rx="1"/><rect x="13" y="10" width="6" height="4" rx="1"/></svg>
+        <span data-i18n-key="sidebar.nav.plugins">Plugins</span>
+      </button>
+      <button type="button" class="sidebar-nav-btn" data-nav="more" onclick="openSettings()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5"  r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        <span data-i18n-key="sidebar.nav.more">More</span>
+      </button>
+    </nav>
+
     <!-- Unified sidebar search + view switch. The search box filters the
          session list in place (setRecentsSearch → renderRecents). The two
          icon buttons are tutor-only entries to the Knowledge map and the
@@ -297,10 +331,6 @@
     <div class="recents-panel" id="recentsPanel">
       <div class="recents-header">
         <span class="recents-title" data-i18n-key="sidebar.recentSessions">Recent Sessions</span>
-        <button class="recents-new-btn" id="newChatBtnRecents" title="Start a new chat" onclick="resetApp()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M12 5v14M5 12h14"/></svg>
-          <span data-i18n-key="sidebar.new">New</span>
-        </button>
       </div>
       <!-- P2.2 — tag filter chip row. "All" plus a few of the user's
            most-used tags. Renders inline; the active chip is highlighted. -->
@@ -371,7 +401,7 @@
           <!-- Grid background toggle -->
           <div class="display-prefs-row display-prefs-toggle-row">
             <div class="display-prefs-label"><span>Background grid</span></div>
-            <button class="grid-toggle on" id="gridToggle" type="button" onclick="toggleGrid()" title="Toggle background grid" aria-label="Toggle background grid">
+            <button class="grid-toggle" id="gridToggle" type="button" onclick="toggleGrid()" title="Toggle background grid" aria-label="Toggle background grid">
               <div class="toggle-knob"></div>
             </button>
           </div>
@@ -437,13 +467,22 @@
     <div class="main-inner" id="mainInner">
 
       <div class="topic-setup" id="topicSetup">
-        <h1 class="topic-title" id="topicTitle">What would you like to explore?</h1>
+        <!-- P_chatgpt-landing — Personalized greeting replaces the static
+             "What would you like to explore?" copy. renderGreeting()
+             (src/ui/greeting.js) writes the localized "{greeting} {name}."
+             string into this element on boot and after profile changes.
+             The data-i18n-key provides a fallback for the very first
+             paint before JS runs. -->
+        <h1 class="topic-title greeting" id="topicTitle" data-i18n-key="greeting.chat"></h1>
         <p class="topic-sub" id="topicSub"></p>
-        <!-- U-H1 — Tutor/Chat segmented control. The buttons carry the
-             .app-mode-toggle class + data-mode so syncAppModeUI() keeps
-             the active segment in sync; clicking the inactive segment
-             routes through window.toggleAppMode() which owns the
-             session-save / confirm logic. -->
+        <!-- U-H1 — Tutor/Chat segmented control (restored 2026-07-20 per
+             user request). The buttons carry the .app-mode-toggle
+             class + data-mode so syncAppModeUI() keeps the active
+             segment in sync; clicking the inactive segment routes
+             through window.toggleAppMode() which owns the session-save
+             / confirm logic. The CSS sliding ::before indicator reacts
+             to [data-seg-active="chat"|"tutor"] and animates between
+             the two halves. -->
         <div class="mode-segmented" id="modeSegmented" role="tablist" aria-label="Session mode">
           <button type="button" class="app-mode-toggle" data-mode="chat" role="tab" data-i18n-key="tutor.modeChat" onclick="if(window.appMode!=='chat'&&typeof window.toggleAppMode==='function')window.toggleAppMode()">Chat</button>
           <button type="button" class="app-mode-toggle" data-mode="tutor" role="tab" data-i18n-key="tutor.modeTutor" onclick="if(window.appMode!=='tutor'&&typeof window.toggleAppMode==='function')window.toggleAppMode()">Tutor</button>
@@ -458,14 +497,28 @@
           <div class="template-mode-chip hidden" id="topicTemplateModeChip" aria-live="polite"></div>
           <textarea id="topicInput" name="topicInput" aria-label="What would you like to explore?" placeholder="e.g. I want to understand how machine learning works..." data-i18n-placeholder="topic.inputPlaceholder" rows="2" oninput="autoResize(this);updateStartBtn()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startSession()}"></textarea>
           <div class="topic-footer">
-            <button class="attach-btn" id="topicAttachBtn" type="button" data-i18n-aria="chat.attach.aria" data-i18n-title="chat.attach" aria-label="Attach files" title="Attach files">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            <div class="footer-left-group">
+              <button class="attach-btn" id="topicAttachBtn" type="button" data-i18n-aria="chat.attach.aria" data-i18n-title="chat.attach" aria-label="Attach files" title="Attach files">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              </button>
+              <input type="file" id="topicAttachInput" multiple
+                     accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
+                     hidden>
+              <!-- P_chatgpt-landing — Voice input placeholder. Clicking it
+                   shows a toast (see src/ui/voiceInput.js). The button is
+                   hidden when the textarea has text (the mic↔waveform
+                   swap is driven by the .has-text class on this wrap). -->
+              <button class="mic-btn" id="topicMicBtn" type="button" aria-label="Voice input" title="Voice input">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10a7 7 0 0 1-14 0"/><path d="M12 19v3"/></svg>
+              </button>
+            </div>
+            <!-- P_chatgpt-landing — Send/start button now holds two icons.
+                 CSS in styles.css shows the waveform when the textarea
+                 is empty and the up-arrow when it has text. -->
+            <button class="start-btn" id="startBtn" onclick="startSession()">
+              <svg class="icon-waveform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="12" x2="3" y2="12"/><line x1="6" y1="9" x2="6" y2="15"/><line x1="9" y1="6" x2="9" y2="18"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="15" y1="6" x2="15" y2="18"/><line x1="18" y1="9" x2="18" y2="15"/><line x1="21" y1="12" x2="21" y2="12"/></svg>
+              <svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             </button>
-            <input type="file" id="topicAttachInput" multiple
-                   accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
-                   hidden>
-            <span style="font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))" id="topicHint">Be specific for better results</span>
-            <button class="start-btn" id="startBtn" onclick="startSession()">Begin</button>
           </div>
         </div>
 
@@ -481,7 +534,7 @@
 
         <div class="extensions-picker" id="extensionsPicker" data-open="false">
           <button class="extensions-trigger" id="extensionsTrigger" type="button" onclick="toggleExtensionsPicker()" aria-haspopup="listbox" aria-expanded="false" title="Toggle extensions for this conversation">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/><circle cx="20" cy="5" r="1.5" opacity="0.5"/><circle cx="4" cy="19" r="1.5" opacity="0.5"/><path d="M8 20l1-2-1-2" opacity="0.7"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><rect x="5" y="10" width="6" height="4" rx="1"/><rect x="13" y="10" width="6" height="4" rx="1"/></svg>
             <span class="extensions-label" id="extensionsLabel">Extensions</span>
             <svg class="extensions-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 10l6 5 6-5"/></svg>
           </button>
@@ -512,15 +565,26 @@
             <div class="template-mode-chip hidden" id="templateModeChip" aria-live="polite"></div>
             <textarea id="chatInputArea" name="chatInputArea" aria-label="Type your thinking" placeholder="Type your thinking..." rows="1" oninput="autoResize(this);updateSendBtn()" onkeydown="handleChatKey(event)"></textarea>
             <div class="chat-input-footer">
-              <button class="attach-btn" id="attachBtn" type="button" data-i18n-aria="chat.attach.aria" data-i18n-title="chat.attach" aria-label="Attach files" title="Attach files">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-              </button>
-              <input type="file" id="attachInput" multiple
-                     accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
-                     hidden>
+              <div class="footer-left-group">
+                <button class="attach-btn" id="attachBtn" type="button" data-i18n-aria="chat.attach.aria" data-i18n-title="chat.attach" aria-label="Attach files" title="Attach files">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                </button>
+                <input type="file" id="attachInput" multiple
+                       accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
+                       hidden>
+                <!-- P_chatgpt-landing — Mic button in the chat composer.
+                     Same behavior as the topic-setup mic: surface a toast
+                     on click and hide when the textarea has text. -->
+                <button class="mic-btn" id="chatMicBtn" type="button" aria-label="Voice input" title="Voice input">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10a7 7 0 0 1-14 0"/><path d="M12 19v3"/></svg>
+                </button>
+              </div>
               <span class="chat-input-hint" id="chatInputHint">Shift+Enter for new line</span>
+              <!-- P_chatgpt-landing — Send button holds two SVGs.
+                   CSS swaps which one is visible based on .has-text. -->
               <button class="send-btn" id="sendBtn" onclick="handleSendClick()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                <svg class="icon-waveform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="12" x2="3" y2="12"/><line x1="6" y1="9" x2="6" y2="15"/><line x1="9" y1="6" x2="9" y2="18"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="15" y1="6" x2="15" y2="18"/><line x1="18" y1="9" x2="18" y2="15"/><line x1="21" y1="12" x2="21" y2="12"/></svg>
+                <svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
               </button>
             </div>
           </div>
@@ -535,14 +599,9 @@
       <header class="exam-view-header">
         <button class="exam-back-btn" onclick="closeExamView()" title="Back to chat" aria-label="Back to chat">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          <span>Back</span>
         </button>
-        <div class="exam-view-title-wrap">
-          <h2 class="exam-view-title" id="examViewTitle">Generate Exam</h2>
-        </div>
-        <div class="exam-view-header-right">
-          <span class="exam-view-meta" id="examViewMeta"></span>
-        </div>
+        <h2 class="exam-view-title" id="examViewTitle">Generate Exam</h2>
+        <span class="exam-view-meta" id="examViewMeta"></span>
       </header>
       <div class="exam-view-body" id="examViewBody"></div>
       <div class="exam-view-footer" id="examViewFooter"></div>
@@ -651,23 +710,23 @@
   </div>
 </div>
 
-<div class="settings-overlay hidden" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
-  <div class="settings-modal" onclick="event.stopPropagation()">
+<div class="settings-overlay hidden" id="settingsOverlay" data-action="close-settings-overlay">
+  <div class="settings-modal">
     <div class="settings-header">
       <span class="settings-title">API Configuration</span>
-      <button class="settings-close" onclick="closeSettings()">
+      <button class="settings-close" id="settingsCloseBtn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>
     <div class="settings-body">
-      <div class="stg-toggle" onclick="toggleAPI()">
+      <div class="stg-toggle" id="stgToggle">
         <span class="settings-label" style="margin-bottom:0">Use External API</span>
         <div class="stg-toggle-track" id="stgToggleTrack"><div class="stg-toggle-knob"></div></div>
       </div>
       <div class="settings-field">
         <div class="settings-label-row">
           <span class="settings-label">Models</span>
-          <button class="settings-btn-mini" onclick="addProvider()">+ Add</button>
+          <button class="settings-btn-mini" id="addProviderBtn">+ Add</button>
         </div>
         <span class="settings-hint">Configure one or more providers. Click the circle to set one as active.</span>
         <div class="provider-list" id="providerList"></div>
@@ -675,9 +734,9 @@
       <div id="stgStatus"></div>
 
       <div class="settings-actions">
-        <button class="settings-btn danger" onclick="clearSettings()">Clear all</button>
-        <button class="settings-btn secondary" onclick="closeSettings()">Cancel</button>
-        <button class="settings-btn primary" onclick="saveSettings()">Save</button>
+        <button class="settings-btn danger" id="clearSettingsBtn">Clear all</button>
+        <button class="settings-btn secondary" id="cancelSettingsBtn">Cancel</button>
+        <button class="settings-btn primary" id="saveSettingsBtn">Save</button>
       </div>
     </div>
   </div>

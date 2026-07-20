@@ -107,7 +107,12 @@ function syncAppModeUI() {
   if (tutorEl) tutorEl.classList.toggle("active", appMode === "tutor");
   /* Drive the .mode-segmented sliding indicator — the CSS pseudo-element
      reacts to [data-seg-active="chat"|"tutor"] and slides to the matching
-     half. This produces the slide-between-Chat/Tutor animation. */
+     half. This produces the slide-between-Chat/Tutor animation.
+     P_chatgpt-landing — the segmented control now lives in the top bar
+     (#modeSegmentedTop). Mirror the attribute there too for any
+     downstream CSS hooks (the new top-bar pill uses :not(::before)
+     styling so the indicator itself stays hidden, but data-seg-active
+     is still useful as a JS-readable signal). */
   var segEl = document.getElementById("modeSegmented");
   if (segEl) segEl.setAttribute("data-seg-active", appMode);
   try { localStorage.setItem("socrates-appmode", appMode); } catch (e) {}

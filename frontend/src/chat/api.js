@@ -221,11 +221,11 @@ export async function callAPI(messages,maxTokens,timeoutMs){
     try{
       var resp=await apiFetch("/api/chat",{method:"POST",body:{messages:messages,temperature:0.7,max_tokens:maxTokens},signal:wdN.ac.signal,timeoutMs:EFFECTIVE_TIMEOUT_MS});
       wdN.stop("done");
-      if(!resp||!resp.choices||!resp.choices[0]||!resp.choices[0].message){
+      if(!resp||typeof resp.content!=="string"){
         state.lastCallError="malformed response";
         return null;
       }
-      return resp.choices[0].message.content;
+      return resp.content;
     }catch(e){
       var wdReasonN=wdN.reason()||"";
       wdN.stop("error");

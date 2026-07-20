@@ -87,19 +87,7 @@ function languageDirectiveFor(text){
       "\u0627\u0644\u0627\u0633\u062a\u062b\u0646\u0627\u0621\u0627\u062a (\u064a\u0628\u0642\u0649 \u0643\u0645\u0627 \u0647\u0648): \u0627\u0644\u0634\u0641\u0631\u0629 \u0627\u0644\u0628\u0631\u0645\u062c\u064a\u0629\u060c \u0627\u0644\u0631\u0645\u0648\u0632 \u0627\u0644\u0631\u064a\u0627\u0636\u064a\u0629\u060c \u0627\u0644\u0645\u0635\u0637\u0644\u062d\u0627\u062a \u0627\u0644\u062a\u0642\u0646\u064a\u0629 \u0627\u0644\u0631\u0627\u0633\u062e\u0629 (API, HTTP, JSON)\u060c \u0627\u0644\u0646\u0635\u0648\u0635 \u0627\u0644\u0645\u0642\u062a\u0628\u0633\u0629 \u0645\u0646 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645.\n\n"+
       "\u0623\u064a \u062e\u0644\u0637 \u063a\u064a\u0631 \u0645\u0628\u0631\u0631 \u0628\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629 \u0623\u0648 \u0627\u0644\u0635\u064a\u0646\u064a\u0629 \u064a\u064f\u0639\u062f \u0627\u0646\u062a\u0647\u0627\u0643\u064b\u0627.";
   }
-  return "\n\n## LANGUAGE DIRECTIVE (highest priority) \u2014 English only, no Chinese bleed-through\n\n"+
-    "Respond entirely in English. Every word, sentence, paragraph, heading, list item, and label in your output must be in English. No Chinese (\u4e2d\u6587) characters are permitted in your prose.\n\n"+
-    "Allowed exceptions (these may remain in their original form, not language violations):\n"+
-    "- Programming code: variable names, function names, class names, commands, file paths\n"+
-    "- Mathematical notation: Latin and Greek letters in formulas (x, y, n, sum, integral, sin, cos)\n"+
-    "- Established technical proper nouns (API, HTTP, JSON, SQL, CPU, GPU, URL, HTML)\n"+
-    "- Quoted text the user has supplied: block quotes, file names, URLs, error messages\n\n"+
-    "When introducing a technical term that has a standard Chinese translation, give the English term first with the Chinese translation in parentheses on first use, e.g. \"gradient descent (\u68af\u5ea6\u4e0b\u964d)\". Subsequent uses: English only.\n\n"+
-    "Any of the following is a language violation:\n"+
-    "- Half a sentence switches to Chinese\n"+
-    "- The body is mostly Chinese with only a sentence or two of English framing\n"+
-    "- Unnecessary Chinese words scattered inside English prose (e.g. \"First \u6211\u4eec consider \u8fd9\u4e2a case\")\n\n"+
-    "When in doubt about whether to use an English or Chinese word, prefer English.";
+  return "";
 }
 
 export { detectLanguage, languageDirectiveFor };

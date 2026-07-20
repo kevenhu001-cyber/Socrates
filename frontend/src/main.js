@@ -840,6 +840,22 @@ function setRecents(arr){SERVER_SESSIONS=capSessions(arr)}
 var RECENTS_FILTER_KEY="socrates-recents-filter";
 try{window.RECENTS_FILTER_KEY=RECENTS_FILTER_KEY}catch(_){}
 
+/* Session custom labels, stored client-side (keyed by session id).
+   Displayed prominently in the recent-item row next to the title. */
+var SESSION_LABELS_KEY="socrates-session-labels";
+function getSessionLabel(id){
+  if(!id)return"";
+  try{var m=JSON.parse(localStorage.getItem(SESSION_LABELS_KEY)||"{}");return m[id]||""}catch(e){return""}
+}
+function setSessionLabelStore(id,label){
+  if(!id)return;
+  try{
+    var m=JSON.parse(localStorage.getItem(SESSION_LABELS_KEY)||"{}");
+    if(label){m[id]=label}else{delete m[id]}
+    localStorage.setItem(SESSION_LABELS_KEY,JSON.stringify(m));
+  }catch(e){}
+}
+
 /* P2.2 — set of tag strings the user has ever used. Powers
    the autocomplete suggestions in the tag editor popover. */
 function getKnownTags(){
@@ -1362,6 +1378,9 @@ function setCurrentSessionId(id){
 }
 
 async function loadSession(id){
+  /* Guard: if the context menu is open for this session, suppress
+     navigation (synthetic click from mobile long-press). */
+  if(_ctxMenuSessionId===id)return;
   /* P_context-race — prevent saveCurrentSession() during session
      loading. Set BEFORE draining _saveInFlight so no new save can
      sneak in during the drain window. Without this, a save that
@@ -2370,6 +2389,236 @@ function deleteSession(id,e){
   actuallyDeleteSession(actualId);
 }
 
+/* ─── Session context menu (long-press / right-click) ───
+   Delete, pin/unpin, and custom label via a floating popover.
+   Uses touch timer for mobile, contextmenu for desktop. */
+
+/* When non-null, the context menu is open for this session id.
+   While set, click events on the corresponding .recent-item are
+   blocked via pointer-events:none on the row element, preventing
+   the synthetic click from navigating. */
+var _ctxMenuSessionId = null;
+
+function attachLongPress(el){
+  if(!el||el.dataset._lpAttached)return;
+  el.dataset._lpAttached="1";
+  var sid=el.getAttribute("data-recent-actual");
+  if(!sid)return;
+  var timer=null;
+
+  function touchStart(ev){
+    if(ev.target.closest("button"))return;
+    if(timer)return;
+    timer=setTimeout(function(){
+      timer=null;
+      openSessionContextMenu(sid,el);
+    },600);
+  }
+  function touchEnd(){
+    if(timer){clearTimeout(timer);timer=null}
+  }
+  function touchMove(){
+    if(timer){clearTimeout(timer);timer=null}
+  }
+
+  el.addEventListener("touchstart",touchStart,{passive:true});
+  el.addEventListener("touchend",touchEnd,{passive:true});
+  el.addEventListener("touchmove",touchMove,{passive:true});
+
+  el.addEventListener("contextmenu",function(ev){
+    if(ev.target.closest("button"))return;
+    ev.preventDefault();
+    openSessionContextMenu(sid,el);
+  });
+}
+
+/* Delegated click handler on #recentsList for navigation.
+   Replaces the previous inline onclick="loadSession()" on each
+   .recent-item. While the context menu is open, all .recent-item
+   have pointer-events:none (via #sidebar.ctx-menu-block), so
+   synthetic clicks from mobile long-press never reach here.
+   Setup is called from doRenderRecents (DOM is definitely ready). */
+var _recentsListDelegated = false;
+function setupRecentsListDelegated(){
+  if(_recentsListDelegated)return;
+  var listEl=document.getElementById("recentsList");
+  if(!listEl)return;
+  _recentsListDelegated=true;
+  listEl.addEventListener("click",function(ev){
+    if(ev.target.closest("button"))return;
+    var row=ev.target.closest(".recent-item");
+    if(!row)return;
+    var sid=row.getAttribute("data-recent-actual");
+    if(sid)loadSession(sid);
+  });
+}
+
+/* Open the context menu popover anchored near the clicked row. */
+function openSessionContextMenu(id,rowEl){
+  /* Close any existing menu first. */
+  closeSessionContextMenu();
+  /* Block all recent-item pointer events via a CSS class on #sidebar.
+     This physically prevents the synthetic click (from mobile
+     long-press) from reaching any .recent-item, at the browser
+     compositor level — before any JS runs. */
+  var sb=document.getElementById("sidebar");
+  if(sb)sb.classList.add("ctx-menu-block");
+  _ctxMenuSessionId=id;
+  var idx=findServerSessionIndex(id);
+  if(idx<0)return;
+  var s=SERVER_SESSIONS[idx];
+  if(!s)return;
+
+  var pop=document.createElement("div");
+  pop.id="sessionContextMenu";
+  pop.className="session-context-menu";
+  pop.dataset.sessionId=id;
+
+  var label=getSessionLabel(id);
+  var isPinned=!!s.pinned;
+
+  pop.innerHTML=
+    '<div class="session-context-head">'+
+      '<div class="session-context-title">'+esc(s.title||s.topic||"(untitled)")+'</div>'+
+    '</div>'+
+    '<div class="session-context-body">'+
+      /* Pin / Unpin */
+      '<button class="session-context-btn" data-action="pin">'+
+        '<span class="session-context-icon">'+(isPinned?unpinSvg():pinSvg())+'</span>'+
+        '<span>'+(isPinned?"Unpin":"Pin to top")+'</span>'+
+      '</button>'+
+      /* Custom label */
+      '<div class="session-context-label-row">'+
+        '<div class="session-context-label-input-wrap">'+
+          '<span class="session-context-icon">'+labelSvg()+'</span>'+
+          '<input class="session-context-label-input" id="sessionCtxLabelInput" type="text" placeholder="Custom label…" maxlength="30" value="'+esc(label)+'">'+
+        '</div>'+
+        '<button class="session-context-label-set" id="sessionCtxLabelSet">Set</button>'+
+      '</div>'+
+      /* Delete */
+      '<button class="session-context-btn session-context-btn-danger" data-action="delete">'+
+        '<span class="session-context-icon">'+deleteSvg()+'</span>'+
+        '<span>Delete session</span>'+
+      '</button>'+
+    '</div>';
+
+  document.body.appendChild(pop);
+
+  /* Position near the row. The element is in the DOM but hidden
+     (CSS display:none), so getBoundingClientRect works. */
+  var r=rowEl.getBoundingClientRect();
+  var popW=260;
+  var left=r.left+window.scrollX;
+  var top=r.bottom+window.scrollY+4;
+  /* Keep within viewport. */
+  if(left+popW>window.innerWidth-8)left=window.innerWidth-popW-8;
+  if(left<8)left=8;
+  pop.style.left=left+"px";
+  pop.style.top=top+"px";
+  /* Make visible synchronously so click events occurring in the same
+     event-loop iteration (e.g. synthetic clicks after long-press on
+     mobile) see the menu and are suppressed. */
+  pop.classList.add("visible");
+
+  /* Wire handlers. */
+  pop.querySelector("[data-action='pin']").onclick=function(ev){
+    ev.stopPropagation();
+    togglePinSession(id);
+    closeSessionContextMenu();
+  };
+  pop.querySelector("[data-action='delete']").onclick=function(ev){
+    ev.stopPropagation();
+    closeSessionContextMenu();
+    actuallyDeleteSession(id);
+  };
+  var input=pop.querySelector("#sessionCtxLabelInput");
+  var setBtn=pop.querySelector("#sessionCtxLabelSet");
+  function commitLabel(){
+    var v=(input.value||"").trim().slice(0,30);
+    setSessionLabel(id,v||"");
+    closeSessionContextMenu();
+  }
+  setBtn.onclick=commitLabel;
+  input.onkeydown=function(ev){
+    if(ev.key==="Enter"){ev.preventDefault();commitLabel()}
+    else if(ev.key==="Escape"){ev.preventDefault();closeSessionContextMenu()}
+  };
+  /* Focus the label input after a short delay. */
+  setTimeout(function(){input.focus();input.select()},100);
+}
+
+function closeSessionContextMenu(){
+  _ctxMenuSessionId=null;
+  var sb=document.getElementById("sidebar");
+  if(sb)sb.classList.remove("ctx-menu-block");
+  var pop=document.getElementById("sessionContextMenu");
+  if(pop){pop.classList.remove("visible");setTimeout(function(){if(pop&&pop.parentNode)pop.parentNode.removeChild(pop)},200)}
+}
+/* Click-outside dismiss for context menu.
+   When ctx-menu-block is active (synthetic click from long-press),
+   clicks inside #sidebar are ignored — they passed through the
+   pointer-events:none barrier and are not intentional. */
+;(function(){
+  document.addEventListener("click",function(ev){
+    var pop=document.getElementById("sessionContextMenu");
+    if(!pop||!pop.classList.contains("visible"))return;
+    if(pop.contains(ev.target))return;
+    var sb=document.getElementById("sidebar");
+    if(sb){
+      /* If the block class is active and the click is inside the
+         sidebar, it's a synthetic click from long-press — ignore. */
+      if(sb.classList.contains("ctx-menu-block")&&sb.contains(ev.target))return;
+    }
+    closeSessionContextMenu();
+  });
+})();
+
+/* Toggle the pinned state of a session via PATCH. */
+async function togglePinSession(id){
+  if(!id||!CURRENT_USER)return;
+  var idx=findServerSessionIndex(id);
+  if(idx<0)return;
+  var s=SERVER_SESSIONS[idx];
+  var nextPinned=!s.pinned;
+  /* Optimistic update. */
+  s.pinned=nextPinned;
+  if(nextPinned)s.pinnedAt=Date.now();
+  renderRecents();
+  try{
+    await apiFetch("/api/sessions/"+encodeURIComponent(id),{
+      method:"PATCH",
+      body:{pinned:nextPinned},
+      timeoutMs:5000,
+    });
+  }catch(e){
+    /* Revert on failure. */
+    s.pinned=!nextPinned;
+    if(!nextPinned)delete s.pinnedAt;
+    renderRecents();
+  }
+}
+
+/* Set a custom display label for a session (client-side). */
+function setSessionLabel(id,label){
+  if(!id)return;
+  setSessionLabelStore(id,label);
+  renderRecents();
+}
+
+/* SVG icons for the context menu. */
+function pinSvg(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M12 2v10l4 4v2H8v-2l4-4V2"/><line x1="12" y1="18" x2="12" y2="22"/></svg>';
+}
+function unpinSvg(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M12 2v10l4 4v2H8v-2l4-4V2"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
+}
+function labelSvg(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
+}
+function deleteSvg(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+}
+
 /* P_render-throttle — coalesce rapid renderRecents() calls into a
    single animation frame. Without this, saveCurrentSession (called
    3-5x per chat turn) triggers 3-5 full list rebuilds, causing
@@ -2463,13 +2712,25 @@ function doRenderRecents(){
     var modeLabel=isExam?"Exam":(resolvedMode==="chat"?"Chat":"Tutor");
     var modeCls=isExam?"mode-exam":(resolvedMode==="chat"?"mode-chat":"mode-tutor");
     var safeId="r-"+Math.abs((s.id||"").split("").reduce(function(a,b){a=(a<<5)-a+b.charCodeAt(0);return a&a},0));
-    html+='<div class="recent-item'+(active?" active":"")+'" data-recent-id="'+safeId+'" data-recent-actual="'+esc(s.id)+'" onclick="loadSession(\''+esc(s.id)+'\')">';
+    var sessionLabel=getSessionLabel(s.id);
+    html+='<div class="recent-item'+(active?" active":"")+(s.pinned?" pinned":"")+'" data-recent-id="'+safeId+'" data-recent-actual="'+esc(s.id)+'">';
     /* P2.2 — mode-coloured dot. The visible text is hidden via CSS
        (font-size:0; overflow:hidden) so the span is just a 6 px circle;
        the title attribute provides a hover tooltip. */
     html+='<span class="recent-mode-badge '+modeCls+'" title="'+modeLabel+'">'+modeLabel+'</span>';
     html+='<div class="recent-item-main">';
+    html+='<div class="recent-item-title-row">';
+    /* Pin indicator for pinned sessions. */
+    if(s.pinned){
+      html+='<span class="recent-item-pin-icon" title="Pinned">'+
+        '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M12 2v10l4 4v2H8v-2l4-4V2"/></svg></span>';
+    }
     html+='<div class="recent-item-text">'+esc(s.title||s.topic||"(untitled)")+'</div>';
+    /* Custom label badge. */
+    if(sessionLabel){
+      html+='<span class="recent-item-label">'+esc(sessionLabel)+'</span>';
+    }
+    html+='</div>';
     html+='<div class="recent-item-meta">'+meta.map(function(m){return"<span>"+esc(m)+"</span>"}).join('<span class="dot"></span>')+'</div>';
     /* P2.2 — tag pills row. Tapping the row's tag button
        opens the tag editor popover; clicking an individual
@@ -2497,6 +2758,10 @@ function doRenderRecents(){
     html+='</div>';
   });
   cont.innerHTML=html;
+  /* Attach long-press listeners to each recent item. */
+  cont.querySelectorAll(".recent-item").forEach(function(el){attachLongPress(el)});
+  /* Ensure the delegated navigation click handler is set up (lazy, one-time). */
+  setupRecentsListDelegated();
   /* P2.2 — render the secondary filter chip row. "All" is the
      default; the user's most-used tags are surfaced as chips.
      The active chip is highlighted; clicking a chip toggles
@@ -7187,6 +7452,7 @@ import {
   openSettings, closeSettings, toggleAPI, syncSettingsUI,
   renderProviderList, addProvider, removeProvider,
   setActiveProvider, updateProviderField, saveSettings, clearSettings,
+  bindSettingsUI,
 } from './ui/settings.js';
 
 /* ============================================================
@@ -7671,14 +7937,10 @@ window.restoreSession = restoreSession;
 window.selectDiag = selectDiag;
 window.toggleKBDetail = toggleKBDetail;
 /* P_input-fields-not-persisted — renderProviderList builds the
- * settings provider-row inputs with inline oninput="updateProviderField(...)".
- * Inline HTML attribute handlers are resolved on the global object
- * (i.e. window.updateProviderField), and updateProviderField was
- * previously only a closure-local function inside the IIFE bundle.
- * Typing in the URL / key / model input then threw ReferenceError
- * (silently consumed by the browser since the oninput is an
- * attribute handler, not a try/catch), so the typed value was
- * discarded and saveSettings POSTed an empty row. Expose it. */
+ /* P_input-fields-not-persisted — (legacy) settings provider-row inputs
+ * previously used inline oninput="updateProviderField(...)". That was
+ * replaced by event delegation in settings.js. The window bridge is
+ * kept for any external callers still referencing it. */
 window.handleChatKey = handleChatKey;
 window.markAuthSuccess = markAuthSuccess;
 window.refreshServerSessions = refreshServerSessions;
@@ -7716,3 +7978,5 @@ syncWebSearchUI();
 syncExtensionsUI();
 syncAppModeUI();
 syncSidebarForMode();
+/* Bind settings UI event handlers (replaces inline onclick attributes) */
+bindSettingsUI();
