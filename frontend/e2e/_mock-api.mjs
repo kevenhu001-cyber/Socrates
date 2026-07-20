@@ -98,6 +98,22 @@ export async function mockAuthedApp(page) {
       await route.fulfill(jsonResponse({ items: [], list: [], count: 0, ok: true }));
       return;
     }
+    if (apiUrl.includes('/api/connectors/zotero/items')) {
+      await route.fulfill(jsonResponse({ items: [{ id: 'TEST1234', title: 'A test reference', itemType: 'journalArticle', creators: ['Ada Lovelace'], date: '1843' }] }));
+      return;
+    }
+    if (apiUrl.includes('/api/connectors/arxiv/papers')) {
+      await route.fulfill(jsonResponse({ papers: [{ id: '2501.00001', title: 'A test preprint', summary: 'A concise test abstract.', authors: ['Claude Shannon'], categories: ['cs.AI'], publishedAt: '2025-01-01T00:00:00Z', abstractUrl: 'https://arxiv.org/abs/2501.00001', pdfUrl: 'https://arxiv.org/pdf/2501.00001.pdf' }] }));
+      return;
+    }
+    if (apiUrl.includes('/api/connectors/zotero') && req.method() === 'POST') {
+      await route.fulfill(jsonResponse({ connection: { status: 'connected', displayName: 'Smoke Zotero' } }, 201));
+      return;
+    }
+    if (apiUrl.includes('/api/connectors')) {
+      await route.fulfill(jsonResponse({ connectors: [{ id: 'github', name: 'GitHub', description: 'Connect repositories, issues, and pull requests.', availability: 'available', configured: true, connection: null }, { id: 'feishu', name: 'Feishu', description: 'Connect documents you can access.', availability: 'available', configured: true, connection: null }, { id: 'gitee', name: 'Gitee', description: 'Connect repositories, issues, and pull requests.', availability: 'available', configured: true, connection: null }, { id: 'notion', name: 'Notion', description: 'Search pages you share with Socrates.', availability: 'available', configured: true, connection: null }, { id: 'zotero', name: 'Zotero', description: 'Search your research library with your own read-only API Key.', auth: 'api_key', availability: 'available', configured: true, connection: null }, { id: 'arxiv', name: 'arXiv', description: 'Search public preprints without connecting an account.', auth: 'public', availability: 'available', configured: true, connection: null }] }));
+      return;
+    }
     // Default: pretend success so callers don't throw on offline fetches.
     await route.fulfill(jsonResponse({ ok: true, stub: true }));
   });

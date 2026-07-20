@@ -1,0 +1,27 @@
+# Copy these values to the production server's secret environment. Do not
+# commit a real client secret, webhook secret, or private key.
+CONNECTOR_GITHUB_APP_ID=your_github_app_id
+CONNECTOR_GITHUB_CLIENT_ID=your_github_client_id
+CONNECTOR_GITHUB_CLIENT_SECRET=store_in_your_secret_manager
+CONNECTOR_GITHUB_WEBHOOK_SECRET=store_in_your_secret_manager
+CONNECTOR_GITHUB_PRIVATE_KEY_PATH=./secrets/github-app.pem
+CONNECTOR_GITHUB_CALLBACK_URL=https://app.topodrive.top/api/connectors/github/callback
+# Optional, enables the in-app "Install" button after OAuth authorization.
+CONNECTOR_GITHUB_APP_SLUG=your-github-app-slug
+
+# Feishu browser OAuth. Add the callback URL in the Feishu app's security
+# settings and request the matching least-privilege scopes before publishing.
+CONNECTOR_FEISHU_APP_ID=your_feishu_app_id
+CONNECTOR_FEISHU_APP_SECRET=store_in_your_secret_manager
+CONNECTOR_FEISHU_CALLBACK_URL=https://app.topodrive.top/api/connectors/feishu/callback
+
+# Gitee browser OAuth, initially read-only for user and repository context.
+CONNECTOR_GITEE_CLIENT_ID=your_gitee_client_id
+CONNECTOR_GITEE_CLIENT_SECRET=store_in_your_secret_manager
+CONNECTOR_GITEE_CALLBACK_URL=https://app.topodrive.top/api/connectors/gitee/callback
+
+# Notion public connection OAuth. User-selected pages remain the only pages
+# this connector can search.
+CONNECTOR_NOTION_CLIENT_ID=your_notion_client_id
+CONNECTOR_NOTION_CLIENT_SECRET=store_in_your_secret_manager
+CONNECTOR_NOTION_CALLBACK_URL=https://app.topodrive.top/api/connectors/notion/callback

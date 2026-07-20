@@ -71,7 +71,7 @@ export async function apiFetchRaw(path, opts = {}) {
   path = path.replace(/^\/api\//, '/api/v2/');
   opts.credentials = 'include';
   if (!opts.headers) opts.headers = {};
-  if (opts.body && typeof opts.body !== 'string') {
+  if (opts.body && typeof opts.body !== 'string' && !(opts.body instanceof FormData)) {
     opts.body = JSON.stringify(opts.body);
     opts.headers['Content-Type'] = 'application/json';
   }
@@ -134,7 +134,7 @@ export async function apiFetch(path, opts = {}) {
   path = path.replace(/^\/api\//, '/api/v2/');
   opts.credentials = 'include';
   if (!opts.headers) opts.headers = {};
-  if (opts.body && typeof opts.body !== 'string') {
+  if (opts.body && typeof opts.body !== 'string' && !(opts.body instanceof FormData)) {
     opts.body = JSON.stringify(opts.body);
     opts.headers['Content-Type'] = 'application/json';
   }

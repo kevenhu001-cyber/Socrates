@@ -84,3 +84,24 @@ test('Scheduled button opens the scheduled panel (PR-D)', async ({ page }) => {
   /* The panel should contain the scheduled list container. */
   await expect(page.locator('#scheduledList')).toBeAttached();
 });
+
+test('Zotero opens a private API Key connection dialog', async ({ page }) => {
+  await page.locator('#navPlugins').click();
+  await expect(page.getByText('Zotero', { exact: true })).toBeVisible();
+  await page.locator('.connector-row').filter({ hasText: 'Zotero' }).getByRole('button', { name: 'Connect' }).click();
+  await expect(page.getByRole('heading', { name: 'Connect Zotero' })).toBeVisible();
+  const key = page.locator('#zoteroConnectForm input[name="apiKey"]');
+  await expect(key).toHaveAttribute('type', 'password');
+  await key.fill('abcdefghijklmnopqrstuvwx');
+  await page.locator('#zoteroConnectForm').getByRole('button', { name: 'Connect', exact: true }).click();
+  await expect(page.locator('#workspaceDialog')).toBeHidden();
+});
+
+test('arXiv opens a public paper search without account connection', async ({ page }) => {
+  await page.locator('#navPlugins').click();
+  await page.locator('.connector-row').filter({ hasText: 'arXiv' }).getByRole('button', { name: 'Explore' }).click();
+  await expect(page.getByRole('heading', { name: 'Search arXiv' })).toBeVisible();
+  await page.locator('#arxivSearchForm input[name="query"]').fill('information theory');
+  await page.locator('#arxivSearchForm').getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(page.getByText('A test preprint', { exact: true })).toBeVisible();
+});

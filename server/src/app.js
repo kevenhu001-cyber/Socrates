@@ -39,6 +39,7 @@ import { recordRequestSample } from './services/statusMonitor.js';
 import executionRouter from './routes/execution.js';
 import scheduledTasksRouter from './routes/scheduledTasks.js';
 import pluginsRouter from './routes/plugins.js';
+import connectorRouter, { githubWebhookHandler } from './routes/connectors.js';
 import { searchContent } from './services/search.js';
 import { webSearch, imageSearch } from './services/webSearch.js';
 import { fetchBatch } from './services/fetchBatch.js';
@@ -246,6 +247,10 @@ app.use(compression({
     return compression.filter(req, res);
   }
 }));
+
+// GitHub signatures cover the exact bytes. This must precede express.json
+// and CSRF, otherwise the body is mutated before signature verification.
+app.post('/api/connectors/github/webhook', express.raw({ type: 'application/json', limit: '2mb' }), githubWebhookHandler);
 
 // Body parsing
 app.use(express.json({ limit: '2mb' }));
@@ -465,6 +470,7 @@ app.use('/api/scheduled-tasks', scheduledTasksRouter);
 
 /* ─── Plugins ─── */
 app.use('/api/plugins', pluginsRouter);
+app.use('/api/connectors', connectorRouter);
 
 // Files (Phase 4) — PDF text extraction is mounted FIRST so its
 // `/extract` path doesn't get swallowed by fileRouter's `/:id` lookup.

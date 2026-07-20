@@ -1061,6 +1061,7 @@ function doSave(){
     topic:state.session.topic,
     title:state.session.sessionTitle||state.session.topic,
     domain:state.session.domain||state.session.topic,
+    projectId:state.currentProjectId||null,
     mode:appMode,
     messages:messages,
     kbNodes:state.kb.kbNodes,
@@ -1422,6 +1423,13 @@ async function loadSession(id){
     state.currentNode=s.currentNode||0;
     state.totalQ=s.totalQ||0;
     state.phase=s.phase||"chat";
+    state.currentProjectId=s.projectId||null;
+    if(s.projectId){
+      apiFetch("/api/projects").then(function(r){
+        var rows=(r&&r.projects)||[];
+        window.__activeProject=rows.filter(function(p){return p.id===s.projectId})[0]||null;
+      }).catch(function(){});
+    }else{ window.__activeProject=null; }
     /* P_context-race — currentSessionId and URL are set DEFERRED
        after messages are rebuilt below. Setting currentSessionId before
        messages creates a window where state.session.currentSessionId
@@ -3322,7 +3330,7 @@ async function askChatTurn(userText){
    * modes (they're orthogonal to verbosity). */
   var chatPrompt = window.extensiveThinkingOn ? CHAT_SYSTEM_PROMPT : CHAT_CONCISE_PROMPT;
   var thinkSuffix = window.extensiveThinkingOn ? thinkingSuffix() : "";
-  var msgs=[{role:"system",content:langDir+sysCtx+"\n\n"+chatPrompt+beagleSuffix()+thinkSuffix+memoriesSuffix()}];
+  var msgs=[{role:"system",content:langDir+sysCtx+"\n\n"+chatPrompt+beagleSuffix()+thinkSuffix+memoriesSuffix()+projectContextSuffix()}];
   /* P5.8 — active prompt template: inject the template's
      specialized system prompt as a fresh system message so
      the model commits to that role for this turn. */
@@ -7016,7 +7024,7 @@ import { updateChatStats } from './chat/stats.js';
 async function resetApp(){
   if(state.topic||state.kbNodes.length>0||document.getElementById("msgList").children.length>0){
     var ok=await showConfirm("Start a new session?","You have an active session. Starting a new one will save your progress to Recents.",false);
-    if(!ok)return;
+    if(!ok){ window._nextProjectId=null; return; }
   }
   /* Drain any previous in-flight save first so the dirty cascade
      fires before resetState. Then fire the new save with the current
@@ -7040,7 +7048,12 @@ async function resetApp(){
   _chatStopMode=false;
   window._shareToken=null;
   resetState();
-  
+  /* Preserve a project selected immediately before a fresh chat. */
+  if(window._nextProjectId){
+    state.currentProjectId=window._nextProjectId;
+    window._nextProjectId=null;
+  }
+
   toggleShareBtn();
   /* Go back to the main page — no chat session yet. */
   setChatIdInURL(null);
@@ -7525,6 +7538,14 @@ function memoriesSuffix(){
   if(!_userMemories||!_userMemories.length)return"";
   return"\n\n## User's saved memories (long-term context)\n"+_userMemories.map(function(t){return"- "+t}).join("\n");
 }
+function projectContextSuffix(){
+  var project=window.__activeProject;
+  if(!project||project.id!==state.currentProjectId)return"";
+  var suffix="\n\n## Active project\nProject: "+String(project.name||"Untitled");
+  if(project.description)suffix+="\nPurpose: "+String(project.description);
+  if(project.systemPrompt)suffix+="\nProject instructions: "+String(project.systemPrompt);
+  return suffix;
+}
 
 function beagleSuffix(){
   /* The full Beagle behavior spec (Socratic tutor rules, copyright
@@ -7578,7 +7599,7 @@ function buildSocraticPrompt(topic,level,context){
   }else{
     full+="\n\nNote: no [Web research] block is present. You do not have live web access for this turn — say so honestly rather than guessing about current events, prices, dates, or anything that may have changed since your training cutoff.";
   }
-  return sysCtx+"\n\n"+SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+VISUALIZATION_ROUTING_PROMPT+beagleSuffix()+thinkingSuffix()+memoriesSuffix();
+  return sysCtx+"\n\n"+SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+VISUALIZATION_ROUTING_PROMPT+beagleSuffix()+thinkingSuffix()+memoriesSuffix()+projectContextSuffix();
 }
 
 /* ============================================================

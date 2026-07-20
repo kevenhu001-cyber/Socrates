@@ -225,6 +225,18 @@ export const searchLimiter = rateLimit({
   message: jsonLimit('TOO_MANY_REQUESTS', 'Search rate limit exceeded.'),
 });
 
+/* Connector credential verification makes an outbound request. Keep it
+ * deliberately tighter than ordinary reads so a compromised session cannot
+ * repeatedly probe third-party credentials or exhaust a provider quota. */
+export const connectorAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => req.userId || req.ip,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: jsonLimit('TOO_MANY_REQUESTS', 'Too many connection attempts; try again later.'),
+});
+
 export const fetchLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 15,

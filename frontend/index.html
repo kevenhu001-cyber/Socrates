@@ -382,25 +382,29 @@
     <div class="library-panel hidden" id="libraryPanel">
       <div class="library-header">
         <span class="library-title" data-i18n-key="sidebar.library.title">Library</span>
-        <span class="library-count" id="libraryCount"></span>
+        <div class="workspace-header-actions">
+          <span class="library-count" id="libraryCount"></span>
+          <button type="button" class="workspace-add-btn" onclick="openLibraryUpload()" title="Upload to Library" aria-label="Upload to Library">Upload</button>
+        </div>
       </div>
       <div class="library-tabs">
-        <button type="button" class="library-tab active" data-library-tab="files" onclick="switchLibraryTab('files')" data-i18n-key="sidebar.library.files">Files</button>
-        <button type="button" class="library-tab" data-library-tab="artifacts" onclick="switchLibraryTab('artifacts')" data-i18n-key="sidebar.library.artifacts">Artifacts</button>
+        <button type="button" class="library-tab active" data-library-tab="files" onclick="switchLibraryTab('files')" data-i18n-key="sidebar.library.files">Uploaded</button>
+        <button type="button" class="library-tab" data-library-tab="artifacts" onclick="switchLibraryTab('artifacts')" data-i18n-key="sidebar.library.artifacts">Created</button>
       </div>
+      <div class="workspace-search"><input id="librarySearch" type="search" placeholder="Search your library" aria-label="Search your library" oninput="filterLibrary(this.value)"></div>
       <div class="library-list" id="libraryList">
         <div class="library-empty" data-i18n-key="sidebar.library.empty">No files yet. Upload files in a chat to see them here.</div>
       </div>
+      <input type="file" id="libraryUploadInput" multiple hidden>
     </div>
     <!-- PR-C: Spaces panel — user's projects and their sessions.
          Rendered by renderSpacesPanel() in windowExports.js. -->
     <div class="spaces-panel hidden" id="spacesPanel">
       <div class="spaces-header">
         <span class="spaces-title" data-i18n-key="sidebar.spaces.title">Projects</span>
-        <button type="button" class="spaces-add-btn" onclick="openCreateProject()" title="Create project" aria-label="Create project">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-        </button>
+        <button type="button" class="workspace-add-btn" onclick="openCreateProject()" title="Create project" aria-label="Create project">New</button>
       </div>
+      <p class="workspace-intro">Keep chats, files, and instructions together.</p>
       <div class="spaces-list" id="spacesList">
         <div class="spaces-empty" data-i18n-key="sidebar.spaces.empty">No projects yet. Create a project to organize your sessions.</div>
       </div>
@@ -410,10 +414,9 @@
     <div class="scheduled-panel hidden" id="scheduledPanel">
       <div class="scheduled-header">
         <span class="scheduled-title" data-i18n-key="sidebar.scheduled.title">Scheduled</span>
-        <button type="button" class="scheduled-add-btn" onclick="openCreateScheduledTask()" title="Schedule a task" aria-label="Schedule a task">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-        </button>
+        <button type="button" class="workspace-add-btn" onclick="openCreateScheduledTask()" title="Schedule a task" aria-label="Schedule a task">New</button>
       </div>
+      <p class="workspace-intro">Run a prompt once or on a recurring schedule.</p>
       <div class="scheduled-list" id="scheduledList">
         <div class="scheduled-empty" data-i18n-key="sidebar.scheduled.empty">No scheduled tasks. Click + to create one.</div>
       </div>
@@ -422,9 +425,10 @@
          Rendered by renderPluginsPanel() in windowExports.js. -->
     <div class="plugins-panel hidden" id="pluginsPanel">
       <div class="plugins-header">
-        <span class="plugins-title" data-i18n-key="sidebar.plugins.title">Plugins</span>
-        <button type="button" class="plugins-browse-btn" onclick="openPluginMarketplace()" data-i18n-key="sidebar.plugins.browse">Browse</button>
+        <span class="plugins-title">Apps</span>
+        <button type="button" class="workspace-add-btn" onclick="openPluginMarketplace()">Refresh</button>
       </div>
+      <p class="workspace-intro">Connect tools and data sources for use in chat.</p>
       <div class="plugins-list" id="pluginsList">
         <div class="plugins-empty" data-i18n-key="sidebar.plugins.empty">No plugins installed. Browse the marketplace to find extensions.</div>
       </div>
