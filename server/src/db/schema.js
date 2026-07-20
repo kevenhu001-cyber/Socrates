@@ -628,3 +628,27 @@ export const statusSubscribers = pgTable('status_subscribers', {
   index('status_subscribers_email_idx').on(table.email),
   index('status_subscribers_token_idx').on(table.token),
 ]);
+
+/* OAuth connector credentials. Ciphertext fields are never returned by APIs. */
+export const connectorConnections = pgTable('connector_connections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  provider: text('provider').notNull(),
+  externalAccountId: text('external_account_id'),
+  displayName: text('display_name'),
+  avatarUrl: text('avatar_url'),
+  accessTokenCiphertext: text('access_token_ciphertext').notNull(),
+  refreshTokenCiphertext: text('refresh_token_ciphertext'),
+  tokenExpiresAt: timestamp('token_expires_at', { withTimezone: true }),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at', { withTimezone: true }),
+  scopes: text('scopes'),
+  installationIds: jsonb('installation_ids').notNull().default([]),
+  status: text('status').notNull().default('connected'),
+  lastError: text('last_error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('connector_connections_user_provider_idx').on(table.userId, table.provider),
+  index('connector_connections_user_id_idx').on(table.userId),
+  index('connector_connections_provider_idx').on(table.provider),
+]);
