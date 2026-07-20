@@ -1,5 +1,26 @@
 import { toggleMorePopover } from "./morePopover.js";
 
+/* Connector brand marks come from the maintained @lobehub/icons-static-svg
+   set (Vite inlines each file as a raw string via the `?raw` suffix) so the
+   icons stay in one source of truth. Lobehub ships github/notion/gitee/baidu
+   but not feishu/onedrive/outlook/zotero/arxiv/qq-mail, so those keep their
+   hand-drawn SVGs below. `lobehubIcon` strips Lobehub's inline 1em sizing,
+   inline style, xmlns, and <title> so every mark renders with the same
+   viewBox + `currentColor` contract as the bespoke icons. */
+import githubRaw from "@lobehub/icons-static-svg/icons/github.svg?raw";
+import notionRaw from "@lobehub/icons-static-svg/icons/notion.svg?raw";
+import giteeRaw from "@lobehub/icons-static-svg/icons/giteeai.svg?raw";
+import baiduCloudRaw from "@lobehub/icons-static-svg/icons/baiducloud.svg?raw";
+
+function lobehubIcon(raw) {
+  return String(raw || "")
+    .replace(/<title>[\s\S]*?<\/title>/i, "")
+    .replace(/\s(?:width|height)="1em"/gi, "")
+    .replace(/\sstyle="[^"]*"/i, "")
+    .replace(/\sxmlns="[^"]*"/i, "")
+    .replace(/<svg /i, '<svg aria-hidden="true" ');
+}
+
 var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "more"];
 var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [] };
 
@@ -20,19 +41,57 @@ function icon(name) {
 }
 function connectorIcon(provider) {
   var icons = {
-    github: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c6.63 0 12 5.276 12 11.79-.001 5.067-3.29 9.567-8.175 11.187-.6.118-.825-.25-.825-.56 0-.398.015-1.665.015-3.242 0-1.105-.375-1.813-.81-2.181 2.67-.295 5.475-1.297 5.475-5.822 0-1.297-.465-2.344-1.23-3.169.12-.295.54-1.503-.12-3.125 0 0-1.005-.324-3.3 1.209a11.32 11.32 0 00-3-.398c-1.02 0-2.04.133-3 .398-2.295-1.518-3.3-1.209-3.3-1.209-.66 1.622-.24 2.83-.12 3.125-.765.825-1.23 1.887-1.23 3.169 0 4.51 2.79 5.527 5.46 5.822-.345.294-.66.81-.765 1.577-.69.31-2.415.81-3.495-.973-.225-.354-.9-1.223-1.845-1.209-1.005.015-.405.56.015.781.51.28 1.095 1.327 1.23 1.666.24.663 1.02 1.93 4.035 1.385 0 .988.015 1.916.015 2.196 0 .31-.225.664-.825.56C3.303 21.374-.003 16.867 0 11.791 0 5.276 5.37 0 12 0z"></path></svg>',
+    github: lobehubIcon(githubRaw),
     feishu: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14.944 18.587l-1.704-.445V10.01l1.824-.462c1-.254 1.84-.461 1.88-.453.032 0 .056 2.235.056 4.972v4.973l-.176-.008c-.104 0-.952-.207-1.88-.446z"/><path d="M7 16.542c0-2.736.024-4.98.064-4.98.032-.008.872.2 1.88.454l1.816.461-.016 4.05-.024 4.049-1.632.422c-.896.23-1.736.445-1.856.469L7 21.523v-4.98z"/><path d="M19.24 12.477c0-9.03.008-9.515.144-9.475.072.024.784.207 1.576.406.792.207 1.576.405 1.744.445l.296.08-.016 8.56-.024 8.568-1.624.414c-.888.23-1.728.437-1.856.47l-.24.055v-9.523z"/><path d="M1 12.509c0-4.678.024-8.505.064-8.505.032 0 .872.207 1.872.454l1.824.461v7.582c0 4.16-.016 7.574-.032 7.574-.024 0-.872.215-1.88.47L1 21.013v-8.505z"/></svg>',
-    'baidu-netdisk': '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8.859 11.735c1.017-1.71 4.059-3.083 6.202.286 1.579 2.284 4.284 4.397 4.284 4.397s2.027 1.601.73 4.684c-1.24 2.956-5.64 1.607-6.005 1.49l-.024-.009s-1.746-.568-3.776-.112c-2.026.458-3.773.286-3.773.286l-.045-.001c-.328-.01-2.38-.187-3.001-2.968-.675-3.028 2.365-4.687 2.592-4.968.226-.288 1.802-1.37 2.816-3.085zm.986 1.738v2.032h-1.64s-1.64.138-2.213 2.014c-.2 1.252.177 1.99.242 2.148.067.157.596 1.073 1.927 1.342h3.078v-7.514l-1.394-.022zm3.588 2.191l-1.44.024v3.956s.064.985 1.44 1.344h3.541v-5.3h-1.528v3.979h-1.46s-.466-.068-.553-.447v-3.556zM9.82 16.715v3.06H8.58s-.863-.045-1.126-1.049c-.136-.445.02-.959.088-1.16.063-.203.353-.671.951-.85H9.82zm9.525-9.036c2.086 0 2.646 2.06 2.646 2.742 0 .688.284 3.597-2.309 3.655-2.595.057-2.704-1.77-2.704-3.08 0-1.374.277-3.317 2.367-3.317zM4.24 6.08c1.523-.135 2.645 1.55 2.762 2.513.07.625.393 3.486-1.975 4-2.364.515-3.244-2.249-2.984-3.544 0 0 .28-2.797 2.197-2.969zm8.847-1.483c.14-1.31 1.69-3.316 2.931-3.028 1.236.285 2.367 1.944 2.137 3.37-.224 1.428-1.345 3.313-3.095 3.082-1.748-.226-2.143-1.823-1.973-3.424zM9.425 1c1.307 0 2.364 1.519 2.364 3.398 0 1.879-1.057 3.4-2.364 3.4s-2.367-1.521-2.367-3.4C7.058 2.518 8.118 1 9.425 1z"/></svg>',
-    gitee: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path clip-rule="evenodd" d="M15.08 14.637c.218.815.46 1.648.72 2.513.238.79-.472 1.1-.755.356a66.148 66.148 0 01-.864-2.402c-1.542.775-3.08 1.421-4.823 2.148.697 2.563 1.34 4.707 2.34 6.744.1.003.2.004.302.004 6.628 0 12-5.373 12-12 0-2.38-.693-4.598-1.888-6.464-3.117.281-5.881.738-8.42 1.308a39.775 39.775 0 001.077 6.587 97.459 97.459 0 003.64-1.718c.92-.46 1.808-.49.312.683a37.134 37.134 0 01-3.642 2.24zm6.614-9.712A11.993 11.993 0 0013.557.1c-.101 1.617-.07 3.658.052 5.603 2.44-.37 5.094-.627 8.085-.778zM11.962 0a37.821 37.821 0 00.152 5.948c-1.69.298-3.28.656-4.818 1.074-.067-.767-.1-1.467-.1-2.077a.8.8 0 00-1.6 0c0 .742.061 1.594.172 2.518-.767.234-1.524.484-2.276.75a.8.8 0 00.533 1.508c.65-.23 1.306-.458 1.969-.681.32 1.96.807 4.126 1.368 6.21.098.363.202.726.31 1.086-2.067.712-4.176 1.29-6.105 1.597A11.945 11.945 0 010 12C0 5.385 5.352.02 11.962 0zM2.515 19.352a11.985 11.985 0 008.237 4.584c-.797-1.463-1.792-3.706-2.628-6.182-1.86.712-3.769 1.208-5.61 1.598zm11.27-5.484a39.054 39.054 0 01-1.232-5.302 15.441 15.441 0 01-.277-1.388A74.043 74.043 0 007.46 8.556c.248 1.93.666 4.124 1.246 6.277l.264.983v.002l.013.046a56.801 56.801 0 002.134-.849 174.05 174.05 0 002.666-1.147z"></path></svg>',
+    'baidu-netdisk': lobehubIcon(baiduCloudRaw),
+    gitee: lobehubIcon(giteeRaw),
     onedrive: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.5 6.5a5.5 5.5 0 0 1 4.52 8.4c.01.06.02.12.02.18a4 4 0 0 1-3.1 3.9l-10.2.02A3.5 3.5 0 1 1 5.53 13a5.5 5.5 0 0 1 8.35-6.17A5.5 5.5 0 0 1 15.5 6.5z"/></svg>',
     outlook: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.5 2a3.5 3.5 0 0 0-3.5 3.5h.01v5.73L5 10.5V5.5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v.67L11 11.68V20H7.5a2 2 0 0 1-2-2v-1.01l-1.1.56A3.5 3.5 0 0 0 10 20h6.5a3.5 3.5 0 0 0 3.5-3.5V5.5A3.5 3.5 0 0 0 16.5 2H7.5zM7 13.4l-2.62 1.3A1.5 1.5 0 0 1 2 13.4V9.6a1.5 1.5 0 0 1 2.38-1.3L7 9.6v3.8z"/></svg>',
-    notion: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path clip-rule="evenodd" d="M15.257.055l-13.31.98C.874 1.128.5 1.83.5 2.667v14.559c0 .654.233 1.213.794 1.96l3.129 4.06c.513.653.98.794 1.962.745l15.457-.932c1.307-.093 1.681-.7 1.681-1.727V4.954c0-.53-.21-.684-.829-1.135l-.106-.078L18.34.755c-1.027-.746-1.45-.84-3.083-.7zm-8.521 4.63c-1.263.086-1.549.105-2.266-.477L2.647 2.76c-.186-.187-.092-.42.375-.466l12.796-.933c1.074-.094 1.634.28 2.054.606l2.195 1.587c.093.047.326.326.047.326l-13.216.794-.162.01zM5.263 21.193V7.287c0-.606.187-.886.748-.933l15.176-.886c.515-.047.748.28.748.886v13.81c0 .609-.093 1.122-.934 1.168l-14.523.84c-.842.047-1.215-.232-1.215-.98zm14.338-13.16c.093.422 0 .842-.422.89l-.699.139v10.264c-.608.327-1.168.513-1.635.513-.747 0-.934-.232-1.495-.932l-4.576-7.185v6.952l1.448.327s0 .84-1.169.84l-3.221.186c-.094-.187 0-.654.327-.747l.84-.232V9.853L7.832 9.76c-.093-.42.14-1.026.794-1.073l3.456-.232 4.763 7.279v-6.44l-1.214-.14c-.094-.513.28-.887.747-.933l3.223-.187z"></path></svg>',
+    notion: lobehubIcon(notionRaw),
     zotero: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.231 2.462 7.18 20.923h14.564V24H2.256v-2.462L16.308 3.076H2.975V0h18.256v2.462z"/></svg>',
     arxiv: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.842 0a1.004 1.004 0 0 0-.922.608c-.154.368-.044.627.294 1.111l6.918 8.36-1.022 1.106a1.04 1.04 0 0 0 .003 1.423l1.23 1.313-5.44 6.445c-.28.299-.453.823-.297 1.199a1.025 1.025 0 0 0 .959.635.913.913 0 0 0 .689-.34l5.783-6.127 7.49 8.005a.853.853 0 0 0 .684.26.958.958 0 0 0 .878-.614c.157-.377-.017-.75-.306-1.14l-7.052-8.343 1.063-1.13a.963.963 0 0 0 .01-1.316L4.634.464S4.26.01 3.866 0h-.024z"/></svg>',
     'qq-mail': '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.976 1L24 9.8l-10.587.015L10.723 23H5.489L8.18 9.8H3.244L1 5.4h8.077L9.976 1z"/></svg>'
   };
   return icons[provider] || icon("app");
 }
+
+/* Connected-app slash commands. Each connector that has a matching
+   server-side function-calling tool (see server/src/services/
+   connectorTools.js) gets a slash entry so the user can invoke it
+   by name from the composer. Selecting an entry drops a natural-
+   language directive into the input; the model then auto-calls the
+   tool via tool_choice:'auto'. Connectors without a callable tool
+   (feishu/onedrive/outlook/baidu-netdisk/qq-mail) are omitted. */
+var APP_SLASH_HINTS = {
+  arxiv: { insert: "Search arXiv for ", description: "Find academic papers and preprints on arXiv" },
+  zotero: { insert: "Search my Zotero library for ", description: "Search your connected Zotero references" },
+  notion: { insert: "Search my Notion workspace for ", description: "Search pages in your connected Notion" },
+  github: { insert: "List my GitHub repositories matching ", description: "List repos from your connected GitHub" },
+  gitee: { insert: "List my Gitee repositories matching ", description: "List repos from your connected Gitee" }
+};
+var _slashConnectorsLoaded = false;
+/* Fetch the connector list once so the slash palette can show which
+   apps are actually callable. Fire-and-forget; safe to call repeatedly. */
+function ensureSlashApps() {
+  if (_slashConnectorsLoaded && workspaceCache.connectors.length) return Promise.resolve();
+  return api("/api/connectors").then(function (res) {
+    workspaceCache.connectors = (res && res.connectors) || [];
+    _slashConnectorsLoaded = true;
+  }).catch(function () { /* offline / not signed in — palette just shows templates */ });
+}
+window.ensureSlashApps = ensureSlashApps;
+/* Return the slash-command entries for apps that are callable right
+   now: public connectors (arxiv) plus any connector with a live
+   connection. Shape mirrors what the palette renderer expects. */
+window.getSlashApps = function () {
+  return (workspaceCache.connectors || []).filter(function (c) {
+    if (!APP_SLASH_HINTS[c.id]) return false;
+    return c.auth === "public" || !!c.connection;
+  }).map(function (c) {
+    var hint = APP_SLASH_HINTS[c.id];
+    return { id: c.id, title: c.name, shortcut: "/" + c.id, description: hint.description, icon: connectorIcon(c.id), insert: hint.insert };
+  });
+};
 function formatTime(value) {
   if (!value) return "No next run";
   var date = new Date(value);

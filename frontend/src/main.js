@@ -3571,12 +3571,24 @@ function _currentSlashQuery(){
   while(i<v.length && !/\s/.test(v.charAt(i))) i++;
   return { raw:v.slice(0,i), query:v.slice(1,i).toLowerCase(), tail:v.slice(i), end:i };
 }
-/* Filter templates by the current query. Substring match
-   against shortcut, title, and description — shortcut first
-   because that's the fastest / most expected match (typing
-   `sum` should land on `/summarize`). */
+/* Filter the unified command list by the current query. The list
+   is connected apps first (so `/github` lands on the app, not a
+   template that mentions github), then prompt templates. Each entry
+   carries a `_kind` tag ('app' | 'template') so the renderer can
+   group them and the insert step can branch. Substring match against
+   shortcut, title, and description. */
+function _slashAppEntries(){
+  var apps=(typeof window.getSlashApps==="function")?window.getSlashApps():[];
+  return (apps||[]).map(function(a){
+    return { _kind:"app", id:a.id, title:a.title, shortcut:a.shortcut, description:a.description, icon:a.icon, insert:a.insert };
+  });
+}
 function _filterSlashList(query){
-  var list=loadPromptTemplates();
+  var apps=_slashAppEntries();
+  var templates=loadPromptTemplates().map(function(t){
+    return { _kind:"template", id:t.id, title:t.title, shortcut:t.shortcut, description:t.description, icon:t.icon, body:t.body, systemPrompt:t.systemPrompt };
+  });
+  var list=apps.concat(templates);
   if(!query) return list;
   return list.filter(function(t){
     var s=(t.shortcut||"").toLowerCase();
@@ -3600,6 +3612,13 @@ function openSlashCommandPalette(){
   renderSlashCommandPalette();
   positionSlashCommandPalette();
   p.classList.add("visible");
+  /* Lazily fetch the connector list the first time the palette
+     opens, then re-filter so connected apps appear inline. */
+  if(typeof window.ensureSlashApps==="function"){
+    window.ensureSlashApps().then(function(){
+      if(isSlashCommandPaletteOpen()) updateSlashCommandPaletteFilter();
+    });
+  }
 }
 function isSlashCommandPaletteOpen(){
   var p=document.getElementById("slashCommandPalette");
@@ -3665,16 +3684,21 @@ function renderSlashCommandPalette(){
   var p=document.getElementById("slashCommandPalette");
   if(!p)return;
   var html=[];
-  html.push('<div class="slash-command-head">Prompt templates'
+  html.push('<div class="slash-command-head">Commands'
              +(_slashQuery?' — filter: /'+esc(_slashQuery):"")
              +'</div>');
   if(!_slashList.length){
     var emptyMsg=_slashQuery
-      ? 'No templates matching "/'+esc(_slashQuery)+'". Press Esc to close.'
-      : 'No templates yet. Add one from the Profile → Data section.';
+      ? 'No commands matching "/'+esc(_slashQuery)+'". Press Esc to close.'
+      : 'No templates yet. Connect an app in Plugins or add a template in Profile → Data.';
     html.push('<div class="slash-command-empty">'+emptyMsg+'</div>');
   }else{
+    var lastKind="";
     _slashList.forEach(function(t,i){
+      if(t._kind!==lastKind){
+        lastKind=t._kind;
+        html.push('<div class="slash-command-group">'+(t._kind==="app"?"Connected apps":"Prompt templates")+'</div>');
+      }
       html.push(
         '<div class="slash-command-row '+(i===_slashSelected?"selected":"")+'" onclick="onSlashRowClick('+i+')" onmouseenter="_slashSelected='+i+';updateSlashSelected()">'+
           '<span class="slash-command-icon">'+(t.icon&&t.icon.indexOf("<svg")===0?t.icon:esc(t.icon||"pg"))+'</span>'+
@@ -3705,29 +3729,42 @@ function insertSelectedSlashTemplate(){
      (chatInputArea or topicInput) instead of always chatInputArea. */
   var input=_slashActiveInput;
   if(!input) return;
-  /* Replace ONLY the leading `/query` chunk with the
-     template body, preserving any text the user typed
-     after the first whitespace. This matters because
-     users often type `/explain this code` and expect
-     ` this code` to survive the click. */
-  var body=t.body||"";
   var q=_currentSlashQuery();
   var tail=q?q.tail:"";
-  input.value=body+tail;
-  input.focus();
-  /* Place cursor at end of body, so the user lands on
-     the placeholder line (e.g. just before the code
-     fence of /explain) instead of at the end of the
-     pasted tail. */
-  var end=body.length;
-  try{input.setSelectionRange(end,end)}catch(_){}
-  /* Activate the template so the next LLM call gets the
-     specialized system prompt. The chip surfaces the
-     mode so the user can see (and dismiss) what's
-     happening — without the chip, the model would
-     silently switch modes and the user would have no
-     idea why the response shape changed. */
-  setActiveTemplate(t);
+  if(t._kind==="app"){
+    /* Connected app: drop a natural-language directive into the
+       composer and place the cursor at the end so the user can type
+       the specifics (e.g. "Search arXiv for |"). The model auto-calls
+       the matching connector tool via tool_choice:'auto' — no template
+       mode is activated, so follow-up turns stay unconstrained. */
+    var directive=t.insert||"";
+    input.value=directive+tail;
+    input.focus();
+    var pos=directive.length;
+    try{input.setSelectionRange(pos,pos)}catch(_){}
+  }else{
+    /* Replace ONLY the leading `/query` chunk with the
+       template body, preserving any text the user typed
+       after the first whitespace. This matters because
+       users often type `/explain this code` and expect
+       ` this code` to survive the click. */
+    var body=t.body||"";
+    input.value=body+tail;
+    input.focus();
+    /* Place cursor at end of body, so the user lands on
+       the placeholder line (e.g. just before the code
+       fence of /explain) instead of at the end of the
+       pasted tail. */
+    var end=body.length;
+    try{input.setSelectionRange(end,end)}catch(_){}
+    /* Activate the template so the next LLM call gets the
+       specialized system prompt. The chip surfaces the
+       mode so the user can see (and dismiss) what's
+       happening — without the chip, the model would
+       silently switch modes and the user would have no
+       idea why the response shape changed. */
+    setActiveTemplate(t);
+  }
   /* Trigger autoResize so the textarea grows. */
   if(typeof autoResize==="function")autoResize(input);
   if(typeof updateSendBtn==="function")updateSendBtn();
