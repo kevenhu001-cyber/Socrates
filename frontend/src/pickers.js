@@ -260,13 +260,33 @@ var EXTENSIONS=[
    on:false, onChange:function(v){
      var ext = EXTENSIONS.find(function(e){return e.key==="deepResearch"});
      if(ext) ext.on = !!v;
-     if(v && typeof window.startDeepResearch === "function"){
-       /* Toggle on — trigger research from the chat input. */
-       var input = document.getElementById("chatInputArea") || document.getElementById("topicInput");
-       if(input && input.value.trim()){
+     /* P_deep-research-fix — mirror the mode onto a window-level flag.
+        main.js runs in a separate module scope and cannot see the
+        module-local EXTENSIONS array, so the send path must read
+        window.deepResearchOn to know whether to route to research. */
+     try{ window.deepResearchOn = !!v; }catch(_){}
+     if(v){
+       /* Prefer the VISIBLE composer (chat when a session is live,
+          else the landing topic input) — the hidden one is empty and
+          would swallow the launch. */
+       var input = document.getElementById("chatInputArea");
+       if(!input || input.offsetParent === null){
+         var ti = document.getElementById("topicInput");
+         if(ti) input = ti;
+       }
+       if(input && input.value.trim() && typeof window.launchDeepResearch === "function"){
+         /* There's already a query — kick off research immediately. */
          window.launchDeepResearch();
+       }else{
+         /* No query yet — focus the composer and tell the user what to
+            do next so the click has visible, understandable effect. */
+         if(input && input.focus) input.focus();
+         if(typeof window.showToast === "function"){
+           window.showToast((typeof window.t === "function" && window.t("composer.deepResearch.hint")) || "Enter a research topic, then press send.");
+         }
        }
      }
+     if(typeof window.syncQuickChips === "function") window.syncQuickChips();
      syncExtensionsUI();
    }},
   {key:"exam",         name:"Generate exam",

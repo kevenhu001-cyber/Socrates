@@ -513,13 +513,15 @@ window.researchAction = function () {
   window.syncQuickChips();
 };
 
-/* Mirror toggle-style extension/search state onto the quick-action chips
-   (深度思考 reflects extensiveThinkingOn; 查找资料 reflects webSearchOn). */
+/* Mirror toggle-style state onto the quick-action chips (查找资料 reflects
+   webSearchOn; 深度研究 reflects window.deepResearchOn). The 深度思考 chip
+   was removed — deep thinking is now tied to the reasoning-effort picker
+   (High = deep thinking). */
 window.syncQuickChips = function () {
-  var think = document.getElementById("quickThinkChip");
-  if (think) think.classList.toggle("active", !!window.extensiveThinkingOn);
   var research = document.getElementById("quickResearchChip");
   if (research) research.classList.toggle("active", !!window.webSearchOn);
+  var deep = document.getElementById("quickDeepResearchChip");
+  if (deep) deep.classList.toggle("active", !!window.deepResearchOn);
 };
 if (typeof document !== "undefined") {
   var _syncChips = function () { try { window.syncQuickChips(); } catch (_) {} };
