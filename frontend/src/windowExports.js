@@ -467,30 +467,55 @@ window.openKnowledge = function () {
    introduced. Defined inline here (the single window-bridge file) to
    keep them next to the other lightweight UI globals. ─── */
 
-/* 撰写或编辑 — prime the visible composer with a writing scaffold so the
-   action does something tangible, then focus with the caret at the end.
-   Targets the chat textarea when a session is live, else the landing one. */
+/* 撰写或编辑 — activate a dedicated Writing/Editing assistant by injecting
+   a specialized system prompt for the turn (via setActiveTemplate, the
+   same mechanism slash-command templates use). This replaces the old
+   "prepend a scaffold string" behaviour with a real mode: the model
+   commits to the writing-assistant role, the template-mode chip surfaces
+   so the user can see (and dismiss) it, and the prompt scaffolds the
+   available tools (web_search for fact-checking). */
+var WRITE_EDIT_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+var WRITE_EDIT_SYSTEM_PROMPT =
+  "You are an expert writing and editing assistant. Help the user compose, rewrite, or polish any text \u2014 essays, emails, posts, reports, documentation, scripts, or creative writing.\n\n" +
+  "Workflow:\n" +
+  "- If the request is clear, produce the writing directly.\n" +
+  "- If a key detail is missing (audience, tone, length, format, or language), ask at most 2 focused questions first; otherwise proceed with sensible defaults.\n" +
+  "- When editing text the user supplied, preserve their voice and intent. Return the revised version, and add a short bullet summary of substantive changes only when the edits are non-obvious or the user asked.\n\n" +
+  "Tools:\n" +
+  "- You may call the web_search tool to verify facts, gather current information, or find references when the writing depends on real-world accuracy. Cite sources briefly when you searched.\n\n" +
+  "Output rules:\n" +
+  "- Always match the user's language.\n" +
+  "- Use Markdown for structure (headings, lists, short paragraphs) when the piece is long.\n" +
+  "- Return the requested writing with minimal framing \u2014 no 'Here is your text:' preambles.";
 window.composeAction = function () {
   var chat = document.getElementById("chatInputArea");
   var topic = document.getElementById("topicInput");
   var chatVisible = chat && chat.offsetParent !== null;
   var input = chatVisible ? chat : (topic || chat);
-  if (!input) return;
-  var scaffold = (typeof window.t === "function" && window.t("composer.write.scaffold")) || "Help me write or edit: ";
-  if (scaffold && scaffold !== "composer.write.scaffold" &&
-      input.value.indexOf(scaffold) !== 0) {
-    input.value = scaffold + (input.value || "");
+  var title = (typeof window.t === "function" && window.t("composer.write")) || "Write or edit";
+  if (title === "composer.write") title = "Write or edit";
+  if (typeof window.setActiveTemplate === "function") {
+    window.setActiveTemplate({
+      id: "tpl-write-edit",
+      title: title,
+      shortcut: "/write",
+      icon: WRITE_EDIT_ICON,
+      systemPrompt: WRITE_EDIT_SYSTEM_PROMPT,
+      body: ""
+    });
   }
-  input.focus();
-  try {
-    var end = input.value.length;
-    input.setSelectionRange(end, end);
-  } catch (_) {}
-  try {
-    if (typeof window.autoResize === "function") window.autoResize(input);
-    if (typeof window.updateStartBtn === "function") window.updateStartBtn();
-    if (typeof window.updateSendBtn === "function") window.updateSendBtn();
-  } catch (_) {}
+  if (input) {
+    input.focus();
+    try {
+      var end = input.value.length;
+      input.setSelectionRange(end, end);
+    } catch (_) {}
+    try {
+      if (typeof window.autoResize === "function") window.autoResize(input);
+      if (typeof window.updateStartBtn === "function") window.updateStartBtn();
+      if (typeof window.updateSendBtn === "function") window.updateSendBtn();
+    } catch (_) {}
+  }
 };
 
 /* 查找资料 — toggle web search on/off. When turning on with existing text,

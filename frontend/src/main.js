@@ -8324,6 +8324,9 @@ window.autoResize = autoResize;
    windowExports.js. */
 window.skipDiagQuestion = skipDiagQuestion;
 window.clearActiveTemplate = clearActiveTemplate;
+/* Exposed so windowExports.js composeAction (撰写或编辑) can activate a
+   Writing/Editing template on demand, injecting its system prompt. */
+window.setActiveTemplate = setActiveTemplate;
 
 /* P_bulk-restore-2026-07-07-chat — chat module helpers missing from
    the bridge. stream.js:91 / api.js consume `window.isReasoningProvider`
