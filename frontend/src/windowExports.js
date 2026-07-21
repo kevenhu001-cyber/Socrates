@@ -228,6 +228,16 @@ window.onCmdKKey = onCmdKKey;
 window.openCmdK = openCmdK;
 window.rebuildCmdKIndex = rebuildCmdKIndex;
 
+/* ─── ui/findInSession.js — P0.2 in-session find (Ctrl-F) ─── */
+import { openFindInSession, closeFindInSession, onFindInput, onFindKey, findNext, findPrev, isFindOpen } from './ui/findInSession.js';
+window.openFindInSession = openFindInSession;
+window.closeFindInSession = closeFindInSession;
+window.onFindInput = onFindInput;
+window.onFindKey = onFindKey;
+window.findNext = findNext;
+window.findPrev = findPrev;
+window.isFindOpen = isFindOpen;
+
 /* ─── ui/storage.js ─── */
 import { openStorageModal, closeStorageModal, renderArchivedList } from './ui/storage.js';
 window.openStorageModal = openStorageModal;

@@ -25,6 +25,16 @@ function toggleShareBtn() {
      the class itself, not the style attribute. */
   var show = !!(window.CURRENT_USER && (window.state.session.currentSessionId || window.state._examInView));
   btn.classList.toggle("hidden", !show);
+  /* P0.2 — the in-session Find button lives next to Share in the
+     top bar and shares the exact same visibility rule (only useful
+     when a conversation is on screen). Toggle it in lock-step here
+     so we don't need a second lifecycle hook. When hidden, also make
+     sure the find bar itself is dismissed. */
+  var findBtn = document.getElementById("findBtn");
+  if (findBtn) findBtn.classList.toggle("hidden", !show);
+  if (!show && typeof window.closeFindInSession === "function") {
+    try { window.closeFindInSession(); } catch (_) {}
+  }
 }
 
 function toggleChatTopBarEls(show) {

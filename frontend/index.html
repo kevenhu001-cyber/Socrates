@@ -494,6 +494,12 @@
         </button>
         <div class="chat-model-menu model-picker-menu hidden" id="chatModelMenu" role="listbox" aria-label="Available models"></div>
       </div>
+      <!-- P0.2 — In-session find (Ctrl-F). Shown alongside Share once a
+           conversation is active (toggled by toggleShareBtn in
+           ui/share.js). Opens the floating find bar over #chatView. -->
+      <button class="find-btn hidden" id="findBtn" onclick="openFindInSession()" data-i18n-title="find.title" data-i18n-aria="find.title" title="Find in conversation" aria-label="Find in conversation">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      </button>
       <button class="share-btn hidden" id="shareBtn" onclick="openShareModal()" title="Share this conversation" aria-label="Share this conversation">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         <span class="share-btn-label" data-i18n-key="sidebar.share">Share</span>
@@ -587,6 +593,24 @@
         <span>Read-only view — this is a shared conversation.</span>
       </div>
       <div class="chat-view hidden" id="chatView">
+        <!-- P0.2 — In-session find bar. A browser-style "find on page"
+             control scoped to #msgList (distinct from the global Cmd-K
+             palette). Opened by Ctrl-F / the #findBtn header button;
+             logic lives in src/ui/findInSession.js. -->
+        <div class="find-bar hidden" id="findBar" role="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="find-bar-icon" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="findInput" name="findInput" data-i18n-placeholder="find.placeholder" data-i18n-aria="find.placeholder" aria-label="Find in conversation" placeholder="Find in conversation…" autocomplete="off" spellcheck="false" oninput="onFindInput(this.value)" onkeydown="onFindKey(event)">
+          <span class="find-count" id="findCount" aria-live="polite"></span>
+          <button class="find-nav-btn" type="button" onclick="findPrev()" title="Previous match" aria-label="Previous match">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+          </button>
+          <button class="find-nav-btn" type="button" onclick="findNext()" title="Next match" aria-label="Next match">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <button class="find-close-btn" type="button" onclick="closeFindInSession()" title="Close find" aria-label="Close find">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
         <div class="msg-list" id="msgList"></div>
         <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
         <div class="chat-input-bar" id="chatInputBar">
