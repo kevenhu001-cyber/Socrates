@@ -1322,9 +1322,9 @@ async function loadExamSession(s){
   }):[];
   state.examAnswers=(s.examData&&s.examData.answers)||{};
   state.examSubmitted=!!(s.examData&&s.examData.submitted);
-  _examTitle().textContent=state.examSubmitted?("Exam Results: "+state.examTopic):(state.examTopic);
-  var body=_examBody();
-  var footer=_examFooter();
+  document.getElementById("examViewTitle").textContent=state.examSubmitted?("Exam Results: "+state.examTopic):(state.examTopic);
+  var body=document.getElementById("examViewBody");
+  var footer=document.getElementById("examViewFooter");
   /* Build the same DOM that a fresh generation would build, but
      skip the streaming cards and use the saved data. The unified
      paintQuestionCard helper handles the option pre-selection /
