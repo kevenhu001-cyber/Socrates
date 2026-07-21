@@ -39,7 +39,8 @@ function openProfile() {
   var parts = name.trim().split(/\s+/);
   var initials = parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
   document.getElementById("profileAvatar").textContent = initials;
-  document.getElementById("profileName").textContent = window.CURRENT_USER.displayName || "User";
+  var nameInput = document.getElementById("profileName");
+  nameInput.value = window.CURRENT_USER.displayName || "";
   document.getElementById("profileEmail").textContent = window.CURRENT_USER.email || "";
   var joinedEl = document.getElementById("profileJoined");
   if (window.CURRENT_USER.createdAt) {
@@ -68,6 +69,28 @@ function openProfile() {
 
 function closeProfile() {
   document.getElementById("profileOverlay").classList.add("hidden");
+}
+
+/* ─── Rename user ─── */
+
+function saveProfileName(newName) {
+  var name = (newName || "").trim();
+  if (!name || !window.CURRENT_USER) return;
+  if (name === window.CURRENT_USER.displayName) return;
+  window.apiFetch("/api/users/me", {
+    method: "PATCH",
+    body: { displayName: name },
+    timeoutMs: 8000,
+  }).then(function () {
+    window.CURRENT_USER.displayName = name;
+    renderUserFooter();
+    var el = document.getElementById("profileName");
+    if (el) el.value = name;
+  }).catch(function () {
+    /* revert */
+    var el = document.getElementById("profileName");
+    if (el) el.value = window.CURRENT_USER.displayName || "";
+  });
 }
 
 /* ─── Custom instructions persistence ─── */
@@ -200,7 +223,7 @@ function loadUserMemories() {
 }
 
 export {
-  renderUserFooter, openProfile, closeProfile,
+  renderUserFooter, openProfile, closeProfile, saveProfileName,
   loadCustomInstructions, saveCustomInstructions, loadCustomInstructionsIntoUI,
   onCustomInstructionsChange, buildCustomInstructionsString, updateInstSaveState,
   getCustomInstructionsString, toggleProfileWebSearch, syncProfileWebSearchUI,

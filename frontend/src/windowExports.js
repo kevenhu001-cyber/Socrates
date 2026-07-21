@@ -282,13 +282,14 @@ window.confirmClearSettings = confirmClearSettings;
 window.confirmDeleteAccount = confirmDeleteAccount;
 
 /* ─── ui/profile.js ─── */
-import { closeProfile, onCustomInstructionsChange, toggleProfileWebSearch, renderUserFooter, openProfile, loadUserMemories } from './ui/profile.js';
+import { closeProfile, onCustomInstructionsChange, toggleProfileWebSearch, renderUserFooter, openProfile, loadUserMemories, saveProfileName } from './ui/profile.js';
 window.loadUserMemories = loadUserMemories;
 window.closeProfile = closeProfile;
 window.onCustomInstructionsChange = onCustomInstructionsChange;
 window.toggleProfileWebSearch = toggleProfileWebSearch;
 window.renderUserFooter = renderUserFooter;
 window.openProfile = openProfile;
+window.saveProfileName = saveProfileName;
 
 /* ─── ui/scroll.js ─── */
 import { scrollContainer } from './ui/scroll.js';
