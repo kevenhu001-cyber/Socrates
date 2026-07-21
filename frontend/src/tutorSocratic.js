@@ -217,6 +217,117 @@
    * §6.3. The header carries the "最后更新" date and a button that
    * snapshots the current state into the version history.
    * ---------------------------------------------------------------- */
+  /* ----------------------------------------------------------------
+   * P1.2 — force-directed knowledge graph.
+   * Renders state.kbNodes as an SVG force-directed graph at the top of
+   * the knowledge panel. Node COLOR encodes mastery (internalized /
+   * fuzzy / blank) shaded by confidence_score; node SIZE encodes the
+   * number of questions asked. Nodes are linked in learning order
+   * (i -> i+1) to show progression. The layout is a deterministic,
+   * index-seeded force simulation (Fruchterman-Reingold style) so the
+   * graph is stable across renders and reproducible in tests — no RNG.
+   * Clicking / Enter on a node opens the SAME detail panel the list
+   * view uses (window.toggleKBDetail), which carries the confidence
+   * dots / notes / history / "-> go" jump. Data is read straight from
+   * state.kbNodes — zero backend changes. The three-section text view
+   * below remains as the accessible / screen-reader fallback. */
+  var KB_GRAPH_W = 320, KB_GRAPH_H = 240, KB_PAD = 26;
+  function kbNodeRadius(n) {
+    var q = (n && typeof n.questions === 'number') ? n.questions : 0;
+    /* sub-linear (sqrt) so one very busy node doesn't dwarf the rest */
+    return Math.max(7, Math.min(22, 7 + Math.sqrt(q) * 4));
+  }
+  function kbLayout(nodes) {
+    var N = nodes.length;
+    var cx = KB_GRAPH_W / 2, cy = KB_GRAPH_H / 2;
+    var R = Math.min(KB_GRAPH_W, KB_GRAPH_H) / 2 - KB_PAD - 6;
+    var pos = [];
+    for (var i = 0; i < N; i++) {
+      var a = (2 * Math.PI * i) / N - Math.PI / 2;   // deterministic ring seed
+      pos.push({ x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) });
+    }
+    if (N < 2) { if (N === 1) pos[0] = { x: cx, y: cy }; return pos; }
+    var k = Math.max(30, Math.min(KB_GRAPH_W, KB_GRAPH_H) / Math.sqrt(N)); // ideal spacing
+    var iters = 160;
+    for (var it = 0; it < iters; it++) {
+      var temp = 1 - it / iters;
+      var disp = pos.map(function () { return { x: 0, y: 0 }; });
+      /* repulsion between every pair */
+      for (var p = 0; p < N; p++) {
+        for (var qi = p + 1; qi < N; qi++) {
+          var dx = pos[p].x - pos[qi].x, dy = pos[p].y - pos[qi].y;
+          var d = Math.sqrt(dx * dx + dy * dy) || 0.01;
+          var f = (k * k) / d, ux = dx / d, uy = dy / d;
+          disp[p].x += ux * f; disp[p].y += uy * f;
+          disp[qi].x -= ux * f; disp[qi].y -= uy * f;
+        }
+      }
+      /* attraction along sequential learning-path edges */
+      for (var e = 0; e < N - 1; e++) {
+        var dx2 = pos[e].x - pos[e + 1].x, dy2 = pos[e].y - pos[e + 1].y;
+        var d2 = Math.sqrt(dx2 * dx2 + dy2 * dy2) || 0.01;
+        var f2 = (d2 * d2) / k, ux2 = dx2 / d2, uy2 = dy2 / d2;
+        disp[e].x -= ux2 * f2; disp[e].y -= uy2 * f2;
+        disp[e + 1].x += ux2 * f2; disp[e + 1].y += uy2 * f2;
+      }
+      /* mild gravity to the centre + temperature-limited step + clamp */
+      for (var m = 0; m < N; m++) {
+        disp[m].x += (cx - pos[m].x) * 0.03;
+        disp[m].y += (cy - pos[m].y) * 0.03;
+        var dd = Math.sqrt(disp[m].x * disp[m].x + disp[m].y * disp[m].y) || 0.01;
+        var step = Math.min(dd, 8 * temp + 0.5);
+        pos[m].x = Math.max(KB_PAD, Math.min(KB_GRAPH_W - KB_PAD, pos[m].x + (disp[m].x / dd) * step));
+        pos[m].y = Math.max(KB_PAD, Math.min(KB_GRAPH_H - KB_PAD, pos[m].y + (disp[m].y / dd) * step));
+      }
+    }
+    return pos;
+  }
+  function buildKBGraphHtml(nodes) {
+    var N = nodes.length;
+    if (!N) return '';
+    var pos = kbLayout(nodes);
+    var cur = (window.state && typeof window.state.currentNode === 'number') ? window.state.currentNode : -1;
+    var s = '<div class="kb-graph-wrap">';
+    s += '<div class="kb-graph-caption">'
+      + (currentLang() === 'zh' ? '知识图谱 · 颜色=掌握度 · 大小=提问数' : 'Knowledge map · color = mastery · size = questions')
+      + '</div>';
+    s += '<svg class="kb-graph" viewBox="0 0 ' + KB_GRAPH_W + ' ' + KB_GRAPH_H + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="'
+      + (currentLang() === 'zh' ? '知识点力导向图' : 'Force-directed knowledge graph') + '">';
+    s += '<g class="kb-graph-edges">';
+    for (var e = 0; e < N - 1; e++) {
+      s += '<line x1="' + pos[e].x.toFixed(1) + '" y1="' + pos[e].y.toFixed(1)
+         + '" x2="' + pos[e + 1].x.toFixed(1) + '" y2="' + pos[e + 1].y.toFixed(1) + '"></line>';
+    }
+    s += '</g><g class="kb-graph-nodes">';
+    for (var i = 0; i < N; i++) {
+      var n = nodes[i];
+      var status = n.status === 'internalized' ? 'internalized' : n.status === 'fuzzy' ? 'fuzzy' : 'blank';
+      var r = kbNodeRadius(n);
+      var cs = (typeof n.confidence_score === 'number') ? Math.max(0, Math.min(5, n.confidence_score)) : 0;
+      var op = (0.35 + 0.13 * cs).toFixed(2);   // confidence shading: faint -> solid
+      var full = n.name || ('Node ' + (i + 1));
+      var disp = full.length > 10 ? full.slice(0, 9) + '…' : full;
+      s += '<g class="kb-graph-node kb-graph-node-' + status + (i === cur ? ' kb-graph-node-active' : '')
+        + '" data-node-idx="' + i + '" tabindex="0" role="button" aria-label="' + esc(full) + '">';
+      s += '<circle cx="' + pos[i].x.toFixed(1) + '" cy="' + pos[i].y.toFixed(1) + '" r="' + r.toFixed(1) + '" fill-opacity="' + op + '"></circle>';
+      s += '<text x="' + pos[i].x.toFixed(1) + '" y="' + (pos[i].y + r + 9).toFixed(1) + '" text-anchor="middle">' + esc(disp) + '</text>';
+      s += '</g>';
+    }
+    s += '</g></svg></div>';
+    return s;
+  }
+  function wireKBGraph(cont) {
+    var els = cont.querySelectorAll('.kb-graph-node');
+    els.forEach(function (g) {
+      var idx = parseInt(g.getAttribute('data-node-idx'), 10);
+      function open() { if (typeof window.toggleKBDetail === 'function') window.toggleKBDetail(idx); }
+      g.addEventListener('click', open);
+      g.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); open(); }
+      });
+    });
+  }
+
   function renderKnowledgeBoundaryFile(opts) {
     opts = opts || {};
     var cont = document.getElementById('kbContent');
@@ -266,6 +377,10 @@
          + ti('tutor.kbSnapshot', currentLang() === 'zh' ? '存档当前版本' : 'Save snapshot')
          + '</button>';
     html += '</div>';
+
+    /* P1.2 — force-directed graph sits at the top of the panel; the
+       sectioned text view below stays as the accessible fallback. */
+    html += buildKBGraphHtml(nodes);
 
     if (sections.internalized.length) {
       html += '<div class="kb-section-title">'
@@ -330,6 +445,10 @@
       html += '</ul>';
     }
     cont.innerHTML = html;
+    /* P1.2 — attach node click / keyboard handlers via addEventListener
+       (NOT inline onclick) so the boot inline-handler hash guard is
+       unaffected. Each node opens the shared detail panel. */
+    wireKBGraph(cont);
     /* Wire the snapshot button. We capture a one-line summary of
        the section sizes so the user can compare past snapshots
        at a glance (§6.6). */
