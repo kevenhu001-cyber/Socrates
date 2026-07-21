@@ -84,7 +84,7 @@ import {
   pickActiveProviderById, toggleModelPicker, openModelPicker, closeModelPicker, syncModelPills,
   syncChatModel, toggleChatModelMenu, closeChatModelMenu, pickChatModel,
   renderExtensionsMenu, toggleExtensionByKey, countActiveExtensions, syncExtensionsUI,
-  toggleExtensionsPicker, openExtensionsPicker, closeExtensionsPicker,
+  toggleExtensionsPicker, openExtensionsPicker, closeExtensionsPicker, EXTENSIONS,
   toggleWebSearch, syncWebSearchUI,
 } from './pickers.js';
 
@@ -4031,6 +4031,21 @@ async function submitChatMessage(textOverride,opts){
     fetchWebContext(state.topic,{background:true});
   }
   setTimeout(async function(){
+    /* Deep Research mode — if the extension is active, run research
+       instead of a normal chat turn. */
+    var deepResearchOn = false;
+    try{
+      if(typeof EXTENSIONS !== "undefined"){
+        var ext = EXTENSIONS.find(function(e){ return e.key === "deepResearch"; });
+        if(ext && ext.on) deepResearchOn = true;
+      }
+    }catch(_){}
+    if(deepResearchOn && text){
+      if(typeof window.startDeepResearch === "function"){
+        await window.startDeepResearch(text);
+      }
+      return;
+    }
     /* Chat mode: plain conversation, no Socratic / KB / mistake book.
        Just stream a reply and save. */
     if(appMode==="chat"){

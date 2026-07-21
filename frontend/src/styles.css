@@ -3512,12 +3512,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .mic-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
 .mic-btn:active{transform:scale(.92)}
 .mic-btn svg{width:16px;height:16px}
-/* Research button (next to mic) */
-.research-btn{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:transparent;color:hsl(var(--text-400));border:none;cursor:pointer;transition:background .15s var(--ease-out),color .15s var(--ease-out),transform .12s ease;flex-shrink:0}
-.research-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--accent-000))}
-.research-btn:active{transform:scale(.92)}
-.research-btn svg{width:16px;height:16px}
-.research-btn.is-researching{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/.16);box-shadow:0 0 0 3px hsl(var(--accent-000)/.07);animation:voicePulse 1.15s ease-in-out infinite}
 .mic-btn.is-listening{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/.16);box-shadow:0 0 0 3px hsl(var(--accent-000)/.07);animation:voicePulse 1.15s ease-in-out infinite}.mic-btn.is-listening svg{animation:voiceGlyph .75s ease-in-out infinite alternate}@keyframes voicePulse{50%{box-shadow:0 0 0 6px hsl(var(--accent-000)/0)}}@keyframes voiceGlyph{to{transform:translateY(-1px)}}
 
 /* Send / start button — mic↔waveform swap based on .has-text on the wrap.
