@@ -2976,6 +2976,18 @@ async function startSession(){
   var topic=input.value.trim();
   if(!topic)return;
 
+  /* Deep Research mode — if the extension is active, route the landing
+     topic straight into the research agent instead of starting a normal
+     tutor/chat session. The chip toggles window.deepResearchOn; without
+     this check the Begin button on the landing page would bypass
+     research entirely (P_deep-research-fix). */
+  var _deepResearchOn=false;
+  try{ _deepResearchOn=!!window.deepResearchOn; }catch(_){}
+  if(_deepResearchOn && typeof window.launchDeepResearch==="function"){
+    window.launchDeepResearch();
+    return;
+  }
+
   state.topic=topic;
   state.diagIndex=0;
   state.diagAnswers=[];
@@ -4053,14 +4065,12 @@ async function submitChatMessage(textOverride,opts){
   }
   setTimeout(async function(){
     /* Deep Research mode — if the extension is active, run research
-       instead of a normal chat turn. */
+       instead of a normal chat turn. Read the window-level flag set by
+       pickers.js: the EXTENSIONS array is module-scoped in pickers.js
+       and is NOT visible here, so `typeof EXTENSIONS` was always
+       "undefined" and this branch never fired (P_deep-research-fix). */
     var deepResearchOn = false;
-    try{
-      if(typeof EXTENSIONS !== "undefined"){
-        var ext = EXTENSIONS.find(function(e){ return e.key === "deepResearch"; });
-        if(ext && ext.on) deepResearchOn = true;
-      }
-    }catch(_){}
+    try{ deepResearchOn = !!window.deepResearchOn; }catch(_){}
     if(deepResearchOn && text){
       if(typeof window.startDeepResearch === "function"){
         await window.startDeepResearch(text);
