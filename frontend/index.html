@@ -843,7 +843,7 @@
   <div class="profile-modal" onclick="event.stopPropagation()">
     <div class="profile-header">
       <div class="profile-avatar" id="profileAvatar">JH</div>
-      <div class="profile-name" id="profileName">Jiacheng Hu</div>
+      <input class="profile-name-input" id="profileName" type="text" maxlength="50" onchange="saveProfileName(this.value)" onkeydown="if(event.key==='Enter')this.blur()">
       <div class="profile-email" id="profileEmail">jiacheng@example.com</div>
     </div>
     <div class="profile-body" id="profileBody">

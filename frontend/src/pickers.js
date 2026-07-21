@@ -257,7 +257,9 @@ var EXTENSIONS=[
      syncExtensionsUI();
    }},
   {key:"deepResearch", name:"Deep Research",
-   on:false, onChange:async function(v){
+   on:false, onChange:function(v){
+     var ext = EXTENSIONS.find(function(e){return e.key==="deepResearch"});
+     if(ext) ext.on = !!v;
      if(v && typeof window.startDeepResearch === "function"){
        /* Toggle on — trigger research from the chat input. */
        var input = document.getElementById("chatInputArea") || document.getElementById("topicInput");

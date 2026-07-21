@@ -1517,6 +1517,10 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 .profile-header{display:flex;flex-direction:column;align-items:center;padding:28px 20px 20px;gap:12px;background:hsl(var(--bg-100))}
 .profile-avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(24px * var(--app-font-scale, 1));font-weight:600;background:hsl(var(--text-200));color:hsl(var(--bg-100));flex-shrink:0}
 .profile-name{font-size:calc(17px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100));text-align:center}
+/* Editable name input in the profile header. */
+.profile-name-input{font-size:calc(17px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100));text-align:center;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:inherit;padding:2px 4px;width:90%;max-width:280px;transition:border-color .15s}
+.profile-name-input:focus{border-bottom-color:hsl(var(--accent-000)/0.4)}
+.profile-name-input:hover{border-bottom-color:hsl(var(--border-300)/0.3)}
 .profile-email{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center}
 .profile-body{padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1}
 .profile-row{display:flex;align-items:center;justify-content:space-between;font-size:calc(13px * var(--app-font-scale, 1));padding:8px 0;border-bottom:0.5px solid hsl(var(--border-300)/0.06)}
