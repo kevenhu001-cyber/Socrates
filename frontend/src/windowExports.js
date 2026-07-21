@@ -461,3 +461,84 @@ window.openKnowledge = function () {
     if (btn) btn.click();
   } catch (_) { /* swallow — no-op fallback */ }
 };
+
+/* ─── P_chatgpt-landing — composer quick-action chips (撰写或编辑 /
+   查找资料). Both reuse existing capabilities so no new backend is
+   introduced. Defined inline here (the single window-bridge file) to
+   keep them next to the other lightweight UI globals. ─── */
+
+/* 撰写或编辑 — prime the visible composer with a writing scaffold so the
+   action does something tangible, then focus with the caret at the end.
+   Targets the chat textarea when a session is live, else the landing one. */
+window.composeAction = function () {
+  var chat = document.getElementById("chatInputArea");
+  var topic = document.getElementById("topicInput");
+  var chatVisible = chat && chat.offsetParent !== null;
+  var input = chatVisible ? chat : (topic || chat);
+  if (!input) return;
+  var scaffold = (typeof window.t === "function" && window.t("composer.write.scaffold")) || "Help me write or edit: ";
+  if (scaffold && scaffold !== "composer.write.scaffold" &&
+      input.value.indexOf(scaffold) !== 0) {
+    input.value = scaffold + (input.value || "");
+  }
+  input.focus();
+  try {
+    var end = input.value.length;
+    input.setSelectionRange(end, end);
+  } catch (_) {}
+  try {
+    if (typeof window.autoResize === "function") window.autoResize(input);
+    if (typeof window.updateStartBtn === "function") window.updateStartBtn();
+    if (typeof window.updateSendBtn === "function") window.updateSendBtn();
+  } catch (_) {}
+};
+
+/* 查找资料 — toggle web search on/off. When turning on with existing text,
+   launch Deep Research directly (same entry the old Extensions toggle used).
+   The chip's .active state mirrors window.webSearchOn via syncQuickChips(). */
+window.researchAction = function () {
+  var chat = document.getElementById("chatInputArea");
+  var topic = document.getElementById("topicInput");
+  var input = (chat && chat.offsetParent !== null) ? chat : (topic || chat);
+  var hasText = input && input.value && input.value.trim().length > 0;
+  var wasOn = (typeof window.webSearchOn !== "undefined") && !!window.webSearchOn;
+  if (typeof window.toggleWebSearch === "function") window.toggleWebSearch();
+  /* If we just turned search ON and there's already a prompt, kick off
+     Deep Research on it immediately. */
+  if (!wasOn && hasText && typeof window.launchDeepResearch === "function") {
+    window.launchDeepResearch();
+  } else if (input) {
+    input.focus();
+  }
+  window.syncQuickChips();
+};
+
+/* Mirror toggle-style extension/search state onto the quick-action chips
+   (深度思考 reflects extensiveThinkingOn; 查找资料 reflects webSearchOn). */
+window.syncQuickChips = function () {
+  var think = document.getElementById("quickThinkChip");
+  if (think) think.classList.toggle("active", !!window.extensiveThinkingOn);
+  var research = document.getElementById("quickResearchChip");
+  if (research) research.classList.toggle("active", !!window.webSearchOn);
+};
+if (typeof document !== "undefined") {
+  var _syncChips = function () { try { window.syncQuickChips(); } catch (_) {} };
+  window.addEventListener("DOMContentLoaded", _syncChips);
+  if (document.readyState !== "loading") _syncChips();
+}
+
+
+/* ─── ui/effortPicker.js — reasoning-effort (高/中/低) selector
+   (P_chatgpt-landing). Exposes getReasoningEffort() consumed by
+   chat/stream.js and the picker toggles used by inline handlers. ─── */
+import { getReasoningEffort, setReasoningEffort, toggleEffortPicker, syncEffortUI } from './ui/effortPicker.js';
+window.getReasoningEffort = getReasoningEffort;
+window.setReasoningEffort = setReasoningEffort;
+window.toggleEffortPicker = toggleEffortPicker;
+window.syncEffortUI = syncEffortUI;
+
+/* ─── ui/readAloud.js — browser TTS read-aloud for assistant messages
+   (P_chatgpt-landing). No backend; uses window.speechSynthesis. ─── */
+import { toggleReadAloud, stopSpeaking } from './ui/readAloud.js';
+window.toggleReadAloud = toggleReadAloud;
+window.stopSpeaking = stopSpeaking;

@@ -713,7 +713,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
    (140px) so the input bar has its own breathing room without
    affecting other views. The .main-inner itself doesn't need
    extra bottom padding. */
-.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:10vh;flex:1;min-height:0;overflow-y:auto}
+.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:8vh;flex:1;min-height:0;overflow-y:auto}
 .topic-title{font-family:var(--font-display);font-size:calc(clamp(1.75rem,1.25rem + 1.8vw,2.4rem) * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-200));text-align:center;line-height:1.4}
 .topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:640px;white-space:nowrap}
 .topic-input-wrap{width:100%;max-width:720px;background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.2);border-radius:24px;overflow:hidden;box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/4%);transition:box-shadow .2s,border-color .2s}
@@ -863,6 +863,38 @@ true) but the dropdown never shows — see commit history. */
 }
 
 .topic-setup-row{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:720px;width:100%;padding:0 6px;position:relative}
+/* P_chatgpt-landing — composer quick-action chips row (撰写或编辑 /
+   查找资料), shown under the landing composer like ChatGPT. Pill
+   buttons with an icon + label; hover raises the surface subtly. */
+.composer-quick-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:720px;width:100%;margin:14px 0 4px;padding:0 6px}
+.composer-quick-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;border:1px solid hsl(var(--border-300)/0.35);background:transparent;color:hsl(var(--text-300));font-size:calc(14px * var(--app-font-scale, 1));font-family:var(--font-sans);cursor:pointer;line-height:1.2;transition:background-color .18s ease,color .18s ease,border-color .18s ease,transform .12s ease}
+.composer-quick-chip svg{width:18px;height:18px;flex-shrink:0;color:hsl(var(--text-400))}
+.composer-quick-chip:hover{background:hsl(var(--bg-300)/0.6);color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.5)}
+.composer-quick-chip:hover svg{color:hsl(var(--accent-000))}
+.composer-quick-chip:active{transform:scale(.97)}
+.composer-quick-chip.active{background:hsl(var(--accent-000)/0.1);color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.4)}
+.composer-quick-chip.active svg{color:hsl(var(--accent-000))}
+/* P_chatgpt-landing — reasoning-effort selector (高/中/低) inside the
+   composer footer. Compact pill trigger + a small pop-up menu that
+   opens upward (the picker sits at the bottom of the composer). */
+.effort-picker{position:relative;display:inline-flex}
+.effort-trigger{display:inline-flex;align-items:center;gap:3px;padding:4px 8px;border-radius:8px;border:1px solid transparent;background:transparent;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale, 1));font-family:var(--font-sans);line-height:1.2;cursor:pointer;transition:background-color .18s ease,color .18s ease}
+.effort-trigger:hover{background:hsl(var(--bg-300)/0.6);color:hsl(var(--text-100))}
+.effort-caret{width:13px;height:13px;opacity:.7;transition:transform .18s ease}
+.effort-picker[data-open="true"] .effort-caret{transform:rotate(180deg)}
+.effort-menu{position:absolute;bottom:calc(100% + 6px);left:0;min-width:220px;max-width:300px;max-height:min(60vh,360px);overflow-y:auto;padding:4px;border-radius:10px;background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.3);box-shadow:0 8px 28px hsl(var(--always-black)/16%);display:none;flex-direction:column;gap:1px;z-index:1200}
+.effort-picker[data-open="true"] .effort-menu{display:flex}
+.picker-section-label{padding:6px 10px 3px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;letter-spacing:.02em;color:hsl(var(--text-500));text-transform:none}
+.effort-divider{height:1px;background:hsl(var(--border-300)/0.25);margin:4px 2px}
+.effort-menu .model-picker-item{display:flex;align-items:center;gap:8px;width:100%;padding:6px 9px;border:none;background:transparent;border-radius:7px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));line-height:1.3;transition:background .1s,color .1s}
+.effort-menu .model-picker-item:hover{background:hsl(var(--bg-300)/0.7);color:hsl(var(--text-100))}
+.effort-menu .model-picker-item.active{background:hsl(var(--accent-000)/0.08);color:hsl(var(--accent-000))}
+.effort-menu .model-picker-add{display:block;width:100%;padding:6px 10px;border:none;background:transparent;border-radius:7px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-400));font-size:calc(12px * var(--app-font-scale, 1));transition:background .1s,color .1s}
+.effort-menu .model-picker-add:hover{background:hsl(var(--bg-300)/0.7);color:hsl(var(--text-200))}
+.effort-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border:0;border-radius:7px;background:transparent;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));font-family:var(--font-sans);cursor:pointer;text-align:left;transition:background-color .15s ease}
+.effort-item:hover{background:hsl(var(--bg-300)/0.7)}
+.effort-item.active{color:hsl(var(--accent-000))}
+.effort-item.active::after{content:"";width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000));flex-shrink:0}
 .topic-setup-row .model-picker,.topic-setup-row .extensions-picker{position:relative;max-width:none;width:auto}
 .extensions-picker{position:relative}
 .extensions-trigger{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid hsl(var(--border-300)/0.4);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));background:transparent;cursor:pointer;font-family:var(--font-sans);line-height:1.2;transition:background-color .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),border-color .2s cubic-bezier(.4,0,.2,1),box-shadow .2s cubic-bezier(.4,0,.2,1)}
@@ -1108,58 +1140,49 @@ true) but the dropdown never shows — see commit history. */
   60%{transform:scale(1.04);opacity:1;filter:blur(0)}
   100%{transform:scale(1);opacity:1;filter:blur(0)}
 }
-/* U-H1 — Tutor/Chat segmented control on the topic-setup screen.
-   Uses a pseudo-element (.mode-segmented::before) as the sliding
-   indicator behind the active segment. JS keeps --seg-active set
-   on the container (an index 0/1) and the indicator translates
-   accordingly. This is cheaper and smoother than animating the
-   active segment's background because the indicator is a single
-   layer that moves, not a layout-shifting box repaint. */
-.mode-segmented{position:relative;display:flex;width:max-content;margin:0 auto 14px;gap:0;padding:3px;border-radius:10px;background:hsl(var(--bg-300));border:0.5px solid hsl(var(--border-300)/0.3);isolation:isolate}
-.mode-segmented::before{
-  content:"";
+/* P_chatgpt-top — centered Chat/Tutor tabs in the top bar. Absolutely
+   centered inside .top-bar (which is position:relative) so it stays
+   visually centered regardless of the width of the left/right groups,
+   mirroring ChatGPT's 聊天/工作 top control. Reuses .app-mode-toggle
+   segments; the active segment gets a subtle raised pill background. */
+.top-mode-tabs{
   position:absolute;
-  top:3px;bottom:3px;
-  /* default (chat active) — left half of the pill */
-  left:3px;
-  width:calc(50% - 3px);
-  background:hsl(var(--bg-100));
-  border-radius:8px;
-  box-shadow:0 1px 2px hsl(0 0% 0%/0.12);
-  transition:left .26s cubic-bezier(.4,0,.2,1),width .26s cubic-bezier(.4,0,.2,1),background-color .26s ease;
-  z-index:-1;
-  pointer-events:none;
+  left:50%;top:calc(50% + 14px);
+  transform:translate(-50%,-50%);
+  display:flex;
+  align-items:center;
+  gap:2px;
+  padding:3px;
+  border-radius:999px;
+  background:hsl(var(--bg-300)/0.6);
+  z-index:1;
+  pointer-events:auto;
 }
-.mode-segmented[data-seg-active="tutor"]::before{
-  left:calc(50% + 0px);
-  width:calc(50% - 3px);
-  background:hsl(var(--accent-000)/0.14);
-}
-[data-mode=light] .mode-segmented::before {
-  background: hsl(var(--bg-400));
-  box-shadow: 0 1px 3px hsl(0 0% 0%/0.15);
-}
-.mode-segmented .app-mode-toggle{
-  position:relative;
+.top-mode-tabs .app-mode-toggle{
   appearance:none;-webkit-appearance:none;
   border:0;cursor:pointer;
   background:transparent;
   color:hsl(var(--text-400));
-  font-size:calc(13px * var(--app-font-scale, 1));
+  font-size:calc(14px * var(--app-font-scale, 1));
   font-weight:600;
-  padding:6px 18px;
-  border-radius:8px;
-  transition:color .18s ease,transform .12s ease;
-  min-width:80px;
+  padding:5px 18px;
+  border-radius:999px;
+  transition:color .18s ease,background-color .18s ease,transform .12s ease;
   user-select:none;
+  white-space:nowrap;
 }
-.mode-segmented .app-mode-toggle:hover{color:hsl(var(--text-100))}
-.mode-segmented .app-mode-toggle.active{color:hsl(var(--text-100))}
-.mode-segmented .app-mode-toggle:active{transform:scale(.97)}
-.mode-segmented .app-mode-toggle[data-mode="tutor"].active{color:hsl(var(--accent-000))}
-@keyframes segIconPop{0%{transform:scale(.85);opacity:.6}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}
-.mode-segmented .app-mode-toggle.active svg,
-.mode-segmented .app-mode-toggle .seg-icon{animation:segIconPop .28s ease-out both}
+.top-mode-tabs .app-mode-toggle:hover{color:hsl(var(--text-100))}
+.top-mode-tabs .app-mode-toggle:active{transform:scale(.97)}
+.top-mode-tabs .app-mode-toggle.active{
+  color:hsl(var(--text-100));
+  background:hsl(var(--bg-100));
+  box-shadow:0 1px 2px hsl(0 0% 0%/0.18);
+}
+[data-mode=light] .top-mode-tabs .app-mode-toggle.active{background:hsl(var(--bg-400))}
+/* On narrow viewports the centered pill can collide with side buttons;
+   hide it there and fall back to the landing #modeSegmented control. */
+@media (max-width:640px){.top-mode-tabs{display:none}}
+
 /* API status indicator — small colored dot in the top-bar; full
    status text appears in the tooltip (title attr). */
 .chat-api-badge{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:hsl(var(--text-500));cursor:help;margin:0 4px;overflow:hidden;text-indent:-9999px;vertical-align:middle}
@@ -1279,6 +1302,10 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 .msg-toolbar-btn.active:hover{background:hsl(var(--accent-100))}
 .msg-toolbar-btn.active[data-action="thumbs-down"]{background:hsl(var(--brand-000))}
 .msg-toolbar-btn.active[data-action="thumbs-down"]:hover{background:hsl(var(--brand-100))}
+/* Read-aloud active state: pulse the accent so it's clear TTS is playing. */
+.msg-toolbar-btn.is-speaking{color:hsl(var(--oncolor-100));background:hsl(var(--accent-000));animation:readAloudPulse 1.4s ease-in-out infinite}
+.msg-toolbar-btn.is-speaking:hover{background:hsl(var(--accent-100))}
+@keyframes readAloudPulse{0%,100%{opacity:1}50%{opacity:.55}}
 .msg-toolbar-btn svg{width:14px;height:14px}
 /* Edit-in-place textarea */
 .msg-edit-area{width:100%;min-height:60px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);border-radius:6px;padding:6px 8px;font:inherit;color:inherit;resize:vertical}
@@ -3463,11 +3490,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
    the hover-lift/active-press-down transforms on buttons. Basic color/border
    transitions are kept because those convey state, not motion. */
 @media (prefers-reduced-motion: reduce){
-  .mode-segmented::before{transition:none}
-  .mode-segmented .app-mode-toggle{transition:color .12s ease}
-  .mode-segmented .app-mode-toggle:active{transform:none}
-  .mode-segmented .app-mode-toggle.active svg,
-  .mode-segmented .app-mode-toggle .seg-icon{animation:none}
   .model-picker-menu,.extensions-menu{transition:opacity .12s ease;transform:none !important}
   .model-picker-menu .model-picker-item,
   .model-picker-menu .model-picker-divider,
