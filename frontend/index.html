@@ -592,13 +592,11 @@
             <span data-i18n-key="composer.research">Find resources</span>
           </button>
           <!-- Extensions surfaced as inline chips (replaces the old
-               #extensionsPicker dropdown). All reuse pickers.js logic
-               via window.toggleExtensionByKey(); syncQuickChips() mirrors
-               the on/off state onto #quickThinkChip. -->
-          <button type="button" class="composer-quick-chip" id="quickThinkChip" onclick="toggleExtensionByKey('extensiveThinking');if(typeof window.syncQuickChips==='function')window.syncQuickChips()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a7 7 0 0 0-4 12.7V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3A7 7 0 0 0 12 2z"/><path d="M9 22h6"/></svg>
-            <span data-i18n-key="composer.deepThinking">Deep thinking</span>
-          </button>
+               #extensionsPicker dropdown). Deep Research + Generate exam
+               reuse pickers.js logic via window.toggleExtensionByKey();
+               syncQuickChips() mirrors on/off state onto the chips.
+               The old 深度思考 chip was removed — deep thinking is now tied
+               to the reasoning-effort picker (High = deep thinking). -->
           <button type="button" class="composer-quick-chip" id="quickDeepResearchChip" onclick="toggleExtensionByKey('deepResearch')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg>
             <span data-i18n-key="composer.deepResearch">Deep Research</span>

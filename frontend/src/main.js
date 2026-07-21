@@ -3509,15 +3509,17 @@ async function askChatTurn(userText){
    * prompt and any tendency to default to the prompt's own language. */
   var langDir=languageDirectiveFor(userText||(state.topic||""));
   /* P_chat-prompt-switch — chat-mode prompt is one of two siblings:
-   * CHAT_SYSTEM_PROMPT (default, "Extensive thinking" on) — verbose
-   * scholar voice + <think> suffix requested; or CHAT_CONCISE_PROMPT
-   * (toggle off) — direct, no preamble, no thinking block requested.
-   * The thinkingSuffix is also suppressed in concise mode so the
-   * model emits a plain reply without an opening <think> scratch
-   * block. The beagle identity and memories still apply in both
-   * modes (they're orthogonal to verbosity). */
-  var chatPrompt = window.extensiveThinkingOn ? CHAT_SYSTEM_PROMPT : CHAT_CONCISE_PROMPT;
-  var thinkSuffix = window.extensiveThinkingOn ? thinkingSuffix() : "";
+   * CHAT_SYSTEM_PROMPT (verbose scholar voice + <think> suffix) or
+   * CHAT_CONCISE_PROMPT (direct, no preamble, no thinking block).
+   * Deep thinking is no longer a standalone toggle: it is driven by the
+   * reasoning-effort picker — High effort selects the verbose prompt,
+   * Medium/Low select the concise one. We derive it here (and keep
+   * window.extensiveThinkingOn in sync) so the choice always matches the
+   * picker regardless of load order. */
+  var _effortHigh = (typeof window.getReasoningEffort === "function" && window.getReasoningEffort() === "high");
+  try{ window.extensiveThinkingOn = _effortHigh; }catch(_){}
+  var chatPrompt = _effortHigh ? CHAT_SYSTEM_PROMPT : CHAT_CONCISE_PROMPT;
+  var thinkSuffix = _effortHigh ? thinkingSuffix() : "";
   var toneSuffix = toneVoiceSuffix();
   var msgs=[{role:"system",content:langDir+sysCtx+"\n\n"+chatPrompt+toneSuffix+beagleSuffix()+thinkSuffix+memoriesSuffix()+projectContextSuffix()}];
   /* P5.8 — active prompt template: inject the template's

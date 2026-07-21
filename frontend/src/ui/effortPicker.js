@@ -29,7 +29,17 @@ function _load() {
   var v = null;
   try { v = localStorage.getItem(STORAGE_KEY); } catch (_) {}
   _effort = VALID.indexOf(v) >= 0 ? v : "medium";
+  _syncThinking(_effort);
   return _effort;
+}
+
+/* Deep thinking is now derived from reasoning effort: High effort turns
+   on the verbose "careful scholar" chat prompt (extensive thinking),
+   Medium/Low use the concise prompt. main.js reads
+   window.extensiveThinkingOn when building the system prompt, so keep it
+   in sync here whenever the effort changes or loads. */
+function _syncThinking(v) {
+  try { window.extensiveThinkingOn = (v === "high"); } catch (_) {}
 }
 
 /* Public read used by chat/stream.js. Always returns a valid value. */
@@ -61,6 +71,7 @@ export function setReasoningEffort(v) {
   if (VALID.indexOf(v) < 0) return;
   _effort = v;
   try { localStorage.setItem(STORAGE_KEY, v); } catch (_) {}
+  _syncThinking(v);
   _closeAll();
   syncEffortUI();
 }
@@ -103,10 +114,15 @@ function _modelSectionHTML() {
 function _effortSectionHTML(v) {
   var html = '<div class="effort-divider"></div>';
   html += '<div class="picker-section-label">' + _esc(_t("picker.effortSection", "Reasoning")) + "</div>";
+  var note = _t("effort.high.note", "Deeper, more thorough thinking");
   ["high", "medium", "low"].forEach(function (e) {
     html += '<button type="button" class="effort-item' + (e === v ? " active" : "") +
             '" data-effort="' + e + '" role="option" aria-selected="' + (e === v) + '"><span>' +
-            _esc(_labelFor(e)) + "</span></button>";
+            _esc(_labelFor(e)) + "</span>";
+    /* Surface that High effort == deep thinking, so removing the old
+       standalone "Deep thinking" toggle stays discoverable. */
+    if (e === "high") html += '<span class="effort-item-note">' + _esc(note) + "</span>";
+    html += "</button>";
   });
   return html;
 }
