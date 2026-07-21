@@ -158,6 +158,8 @@ export function renderExamForm() {
     + '<div class="exam-model-menu" id="examModelMenu">' + modelOptsHtml + '</div>'
     + '<input type="hidden" id="examModel" value="' + esc(activeId) + '">'
     + '</div></div>'
+    /* Difficulty + Count share a row on desktop, stack on narrow screens */
+    + '<div class="exam-form-row">'
     /* Difficulty */
     + '<div class="exam-form-field"><label class="exam-form-label">' + window.t("exam.difficulty") + '</label>'
     + '<div class="exam-seg" id="examDifficultySeg">' + diffHtml + '</div></div>'
@@ -169,6 +171,7 @@ export function renderExamForm() {
     + '<button type="button" class="exam-stepper-btn" aria-label="' + L("More", "增加") + '" onclick="adjustExamCount(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>'
     + '<input type="hidden" id="examCount" value="5">'
     + '</div></div>'
+    + '</div>'
     + '</div>';
 
   /* Question types */
@@ -314,10 +317,17 @@ export function startExamGeneration() {
   window.state.examTypes = types.slice();
   window.state._examPrevActiveId = window.apiConfig.activeId;
   if (chosenModel && Array.isArray(window.apiConfig.providers)) {
-    var exists = window.apiConfig.providers.some(function (p) { return p && p.id === chosenModel; });
-    if (exists) {
+    var chosenProv = window.apiConfig.providers.find(function (p) { return p && p.id === chosenModel; });
+    if (chosenProv) {
       window.apiConfig.activeId = chosenModel;
-      try { window.apiFetch("/api/api-key/" + encodeURIComponent(chosenModel), { method: "PATCH", body: { isActive: true } }).catch(function () { }) } catch (_) { }
+      /* The built-in Beagle provider (id "beagle-built-in") is a client-only
+         pseudo-provider — it has no DB row, so its id is not a UUID. Sending a
+         PATCH /api/api-key/beagle-built-in hits the server's UUID guard and
+         404s (harmless but noisy). Activation for the built-in is purely a
+         client-side apiConfig.activeId change; only persist for real DB rows. */
+      if (!chosenProv.isBuiltIn && chosenModel !== "beagle-built-in") {
+        try { window.apiFetch("/api/api-key/" + encodeURIComponent(chosenModel), { method: "PATCH", body: { isActive: true } }).catch(function () { }) } catch (_) { }
+      }
     }
   }
   _examTitle().textContent = topic;
@@ -340,9 +350,14 @@ function restoreExamActiveProvider() {
   var prev = window.state._examPrevActiveId;
   if (!prev) return;
   if (window.apiConfig.activeId === prev) return;
-  if (Array.isArray(window.apiConfig.providers) && window.apiConfig.providers.some(function (p) { return p && p.id === prev })) {
+  var prevProv = Array.isArray(window.apiConfig.providers) ? window.apiConfig.providers.find(function (p) { return p && p.id === prev }) : null;
+  if (prevProv) {
     window.apiConfig.activeId = prev;
-    try { window.apiFetch("/api/api-key/" + encodeURIComponent(prev), { method: "PATCH", body: { isActive: true } }).catch(function () { }) } catch (_) { }
+    /* Skip the PATCH for the built-in provider — its id isn't a UUID and the
+       server would 404. See startExamGeneration for the full rationale. */
+    if (!prevProv.isBuiltIn && prev !== "beagle-built-in") {
+      try { window.apiFetch("/api/api-key/" + encodeURIComponent(prev), { method: "PATCH", body: { isActive: true } }).catch(function () { }) } catch (_) { }
+    }
   }
   window.state._examPrevActiveId = null;
 }
@@ -411,7 +426,13 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
       (instructions ? "Specifics: " + instructions + "\n" : "") +
       "Previously generated questions (DO NOT repeat the same topic angle):\n" + prevBlock;
     var msgs = [{ role: "system", content: prompt }, { role: "user", content: "Generate question " + (i + 1) + " now." }];
-    var tokens = Math.max(400, 600);
+    /* Reasoning models (MiniMax-M2/DeepSeek-R1) spend part of max_tokens on
+       hidden chain-of-thought (reasoning_content) before emitting any visible
+       content. A tight budget (the old 600) could be fully consumed by
+       reasoning, so the model returned empty content and the exam failed with
+       "模型无响应". Give each question a generous budget so there's always room
+       for the answer JSON after reasoning. Matches the diagnostic generator. */
+    var tokens = 8000;
     var result = await callAPI(msgs, tokens);
     if (window.state.examCancel) return;
     var text = typeof result === "string" ? result : (result && (result.text || result.content)) || "";
