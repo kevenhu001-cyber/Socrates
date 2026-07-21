@@ -256,6 +256,17 @@ var EXTENSIONS=[
      try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch(e){}
      syncExtensionsUI();
    }},
+  {key:"deepResearch", name:"Deep Research",
+   on:false, onChange:async function(v){
+     if(v && typeof window.startDeepResearch === "function"){
+       /* Toggle on — trigger research from the chat input. */
+       var input = document.getElementById("chatInputArea") || document.getElementById("topicInput");
+       if(input && input.value.trim()){
+         window.launchDeepResearch();
+       }
+     }
+     syncExtensionsUI();
+   }},
   {key:"exam",         name:"Generate exam",
    on:false, onChange:function(){window.openExamModal(); syncExtensionsUI();}},
 ];
