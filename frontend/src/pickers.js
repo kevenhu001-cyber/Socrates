@@ -290,7 +290,16 @@ var EXTENSIONS=[
      syncExtensionsUI();
    }},
   {key:"exam",         name:"Generate exam",
-   on:false, onChange:function(){window.openExamModal(); syncExtensionsUI();}},
+   on:false, onChange:function(){
+     /* P_exam-nav — Route the Extensions chip through the same sidebar
+        dispatcher the user would land on from the new Exam nav entry.
+        openNav('exam') drives the full panel lifecycle (visibility,
+        top-bar elements, URL), keeping both entry points in lock-step. */
+     if(typeof window.openNav==="function"){window.openNav('exam');}
+     else if(typeof window.openExamPanel==="function"){window.openExamPanel();}
+     else if(typeof window.openExamModal==="function"){window.openExamModal();}
+     syncExtensionsUI();
+   }},
 ];
 function renderExtensionsMenu(){
   var menu=document.getElementById("extensionsMenu");

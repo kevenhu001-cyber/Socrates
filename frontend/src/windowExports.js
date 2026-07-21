@@ -404,7 +404,7 @@ window.esc = esc;
    callAPI). It renders inline onclick="..." handlers that reference
    functions on window.* — all of them must be bridged here. */
 import {
-  openExamModal, closeExamModal, closeExamView,
+  openExamModal, openExamPanel, prepareExamView, closeExamModal, closeExamView,
   renderExamForm, toggleExamType, toggleExamModelMenu, selectExamModel,
   selectExamDifficulty, adjustExamCount,
   startExamGeneration, cancelExamGeneration,
@@ -415,6 +415,11 @@ import {
   scheduleExamAnswerSave,
   submitExam, renderExamResults,
 } from './exam.js';
+/* P_exam-nav — openExamPanel / prepareExamView replace openExamModal as
+   the canonical entry. openExamModal is kept as a thin alias for the
+   Extensions picker's backwards compatibility (see pickers.js). */
+window.openExamPanel = openExamPanel;
+window.prepareExamView = prepareExamView;
 window.openExamModal = openExamModal;
 window.closeExamModal = closeExamModal;
 window.closeExamView = closeExamView;

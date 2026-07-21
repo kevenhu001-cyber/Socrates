@@ -139,6 +139,11 @@ function syncAppModeUI() {
   if (typeof window.updateModeBadge === 'function') {
     try { window.updateModeBadge(); } catch (_) {}
   }
+  /* P_mobile-topbar — keep the mobile top-bar mode dropdown label +
+     active item in sync with the current mode. */
+  if (typeof window.syncMobileModeSwitch === 'function') {
+    try { window.syncMobileModeSwitch(); } catch (_) {}
+  }
 }
 
 /* Setter for appMode — updates the module-level variable so

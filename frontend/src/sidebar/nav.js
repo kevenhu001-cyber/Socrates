@@ -21,7 +21,7 @@ function lobehubIcon(raw) {
     .replace(/<svg /i, '<svg aria-hidden="true" ');
 }
 
-var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "more"];
+var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "exam", "more"];
 var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [] };
 
 function byId(id) { return document.getElementById(id); }
@@ -124,9 +124,9 @@ export function closeAllPanels() {
   ["tabKnowledge", "tabRecents", "tabMistakes"].forEach(function (id) { var b = byId(id); if (b) b.classList.remove("active"); });
 }
 
-/* Hide all main-content pages (library, projects, scheduled, plugins). */
+/* Hide all main-content pages (library, projects, scheduled, plugins, exam). */
 function hideMainPages() {
-  ["libraryPanel", "spacesPanel", "scheduledPanel", "pluginsPanel"].forEach(function (id) { var p = byId(id); if (p) p.classList.add("hidden"); });
+  ["libraryPanel", "spacesPanel", "scheduledPanel", "pluginsPanel", "examView"].forEach(function (id) { var p = byId(id); if (p) p.classList.add("hidden"); });
 }
 window.hideMainPages = hideMainPages;
 
@@ -135,10 +135,17 @@ function showMainPage(pageId) {
   hideMainPages();
   var page = byId(pageId);
   if (page) page.classList.remove("hidden");
+  /* Restore .main-inner visibility — exam-view (a sibling of
+     .main-inner inside .main-content) may have hidden it. */
+  var mi = byId("mainInner");
+  if (mi) mi.classList.remove("hidden");
+  /* Hide exam-only top bar elements when leaving exam mode. */
+  var examEls = document.querySelectorAll("[data-exam-only='true']");
+  examEls.forEach(function (el) { el.classList.add("hidden"); });
 }
 
 export function openNav(name) {
-  var openers = { library: openLibrary, projects: openProjects, scheduled: openScheduled, plugins: openPlugins, more: openMoreNav };
+  var openers = { library: openLibrary, projects: openProjects, scheduled: openScheduled, plugins: openPlugins, exam: openExam, more: openMoreNav };
   if (!openers[name]) return;
   setActiveNav(name);
   if (name !== "more") closeAllPanels();
@@ -331,6 +338,19 @@ function paintProjects() {
 }
 
 export function openScheduled() { hideChatAndTopic(); showMainPage("scheduledPanel"); renderScheduled(); }
+
+/* P_exam-nav — Exam is a main-content panel (not a sidebar nav into
+   a workspace). We delegate the heavy lifting to exam.openExamPanel(),
+   which renders the form, hydrates state.exam.*, and shows/hides the
+   top-bar exam-only elements (#examBackBtn / #examTitleBar). hideChatAndTopic()
+   is intentionally NOT called here — exam.openExamPanel() performs the
+   equivalent DOM swap internally so the chat/topic setup panes stay
+   hidden without forcing the top-bar elements to disappear (the user
+   still needs the back-button to leave the exam). */
+export function openExam() {
+  if (typeof window.openExamPanel !== "function") return;
+  window.openExamPanel();
+}
 async function renderScheduled() {
   var list = byId("scheduledList");
   if (!list) return;

@@ -40,6 +40,20 @@ function toggleShareBtn() {
 function toggleChatTopBarEls(show) {
   var els = document.querySelectorAll(".chat-top-bar .btn-group .icon-btn, .chat-top-bar .btn-group .start-btn");
   els.forEach(function (el) { el.style.display = show ? "" : "none"; });
+  /* P_mobile-topbar — the mobile mode switcher (#mobileMode) and the
+     incognito toggle (#mobileIncognitoBtn) live in the new top-bar, not
+     in the legacy .chat-top-bar selectors above. They are only useful
+     while the user is composing the first message (topic-setup screen);
+     once a conversation starts they should be hidden so the chat-view
+     header reads cleanly. We mirror the show flag onto their `display`
+     style here so every existing toggleChatTopBarEls(true|false) call
+     site (main.js + exam.js + sidebar/nav.js) automatically hides them
+     when the conversation starts and re-shows them on resetApp().
+     The desktop #modeSegmentedTop pill (the centered Chat/Tutor
+     segmented control in the top-bar) shares the same lifecycle — it
+     only makes sense during topic setup, so it gets the same treatment. */
+  var mobileEls = document.querySelectorAll("#mobileMode, #mobileIncognitoBtn, #modeSegmentedTop");
+  mobileEls.forEach(function (el) { el.style.display = show ? "none" : ""; });
 }
 
 function _show(el) { if (el) el.classList.remove("hidden"); }
