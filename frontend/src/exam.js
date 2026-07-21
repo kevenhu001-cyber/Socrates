@@ -5,7 +5,7 @@
 
 import { esc } from './render/helpers.js';
 import { formatMsg } from './render/markdown.js';
-import { callAPI } from './chat/api.js';
+import { callAPIStream } from './chat/stream.js';
 
 /* ── module-level state ── */
 var _examSelectedTypes = { mc: true, fb: true, sa: false };
@@ -426,16 +426,19 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
       (instructions ? "Specifics: " + instructions + "\n" : "") +
       "Previously generated questions (DO NOT repeat the same topic angle):\n" + prevBlock;
     var msgs = [{ role: "system", content: prompt }, { role: "user", content: "Generate question " + (i + 1) + " now." }];
-    /* Use the same token policy as the main chat (window.MAX_TOKENS_CHAT,
-       normally undefined) so we honour the system-configured model default
-       instead of hardcoding a cap. A hardcoded small cap (600) let reasoning
-       models spend the whole budget on hidden chain-of-thought and return
-       empty content ("模型无响应"); a hardcoded large cap (8000) forced long
-       non-streaming generations that tripped the CDN's 524 origin timeout.
-       Omitting max_tokens lets the model emit its short answer JSON and stop
-       naturally (finish_reason=stop). */
+    /* Generate via the STREAMING path (same as the main chat), not the
+       non-streaming /api/minimax proxy. The built-in Beagle is a reasoning
+       model that regularly takes 2-4 minutes to think; a non-streaming call
+       leaves the CDN waiting with no bytes and it returns a 524 origin
+       timeout at ~100s. The streaming endpoint flushes SSE immediately
+       (SSE_PRIME) so the connection stays alive and deltas arrive as the
+       model produces them. We accumulate the full text and parse the JSON
+       once the stream completes.
+       Token budget follows the system config (window.MAX_TOKENS_CHAT,
+       normally undefined) so the backend/model default applies — no
+       hardcoded cap. */
     var tokens = window.MAX_TOKENS_CHAT;
-    var result = await callAPI(msgs, tokens);
+    var result = await callAPIStream(msgs, tokens, function () { });
     if (window.state.examCancel) return;
     var text = typeof result === "string" ? result : (result && (result.text || result.content)) || "";
     if (!text || !text.trim()) {
