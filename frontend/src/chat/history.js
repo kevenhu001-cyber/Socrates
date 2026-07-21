@@ -22,6 +22,35 @@ function compressMessages(msgs){
   return"[Earlier conversation: "+parts.join(" | ")+"]";
 }
 
+/* P0.1 BUG-P01-03 — rebuild a multimodal content parts array from a
+   user message's stored attachments so an edit-and-resend (or a
+   regenerate) carries the original image / PDF / text to the model
+   instead of degrading to plain text. Mirrors the reconstruction inside
+   extractHistory() below. Returns the parts array when the message has
+   usable multimodal attachments, or null when it's text-only (callers
+   then send the plain string). Unlike the history path this does NOT
+   truncate — it is the CURRENT turn's content, not compressed context. */
+export function buildUserContentParts(rawText, attachments){
+  if(!Array.isArray(attachments)||!attachments.length)return null;
+  var hasMultimodal=attachments.some(function(att){return att&&((att.kind==="image"&&att.dataUrl)||((att.kind==="text"||att.kind==="pdf")&&att.text));});
+  if(!hasMultimodal)return null;
+  var txt=String(rawText||"").trim();
+  var parts=[];
+  if(txt)parts.push({type:"text",text:txt});
+  for(var ai=0;ai<attachments.length;ai++){
+    var att=attachments[ai];
+    if(!att)continue;
+    if(att.kind==="image"&&att.dataUrl){
+      parts.push({type:"image_url",image_url:{url:att.dataUrl,detail:"auto"}});
+    }else if(att.kind==="text"&&att.text){
+      parts.push({type:"text",text:"[Parsed file: "+(att.name||"file")+"]\n"+att.text});
+    }else if(att.kind==="pdf"&&att.text){
+      parts.push({type:"text",text:"[Parsed PDF: "+(att.name||"document")+"]\n"+att.text});
+    }
+  }
+  return parts.length?parts:null;
+}
+
 export function extractHistory(){
   /* P1.1 — three-tier source-of-truth, preferred in order:
      1. getState().messages.rawText (authoritative, in-memory, never
