@@ -2678,6 +2678,10 @@ function onProjectDrop(event, projectId){
   moveSessionToProject(sessionId, projectId);
 }
 /* eslint-enable no-unused-vars */
+/* Expose drag functions globally so inline ondragstart/ondragend work. */
+window.onSessionDragStart = onSessionDragStart;
+window.onSessionDragEnd = onSessionDragEnd;
+window.onProjectDrop = onProjectDrop;
 
 /* Move a session to a project. */
 function moveSessionToProject(sessionId, projectId){
