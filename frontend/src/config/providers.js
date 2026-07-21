@@ -22,11 +22,12 @@ var apiConfig = { activeId: null, providers: [] };
  * toggle; existing localStorage values still win for users who
  * explicitly turned it off before the toggle was hidden. */
 var webSearchOn = true;
-/* Extensive thinking: chat-mode prompt switch. When on (default), the
- * full CHAT_SYSTEM_PROMPT (verbose "careful scholar" voice + thinking
- * suffix) is injected. When off, CHAT_CONCISE_PROMPT replaces both —
- * shorter, more direct answers with no reasoning block requested. */
-var extensiveThinkingOn = true;
+/* Extensive thinking: chat-mode prompt switch. When on, the full
+ * CHAT_SYSTEM_PROMPT (verbose "careful scholar" voice + thinking suffix)
+ * is injected; when off, CHAT_CONCISE_PROMPT replaces both. This is no
+ * longer a standalone toggle — it is derived from the reasoning-effort
+ * picker (High = deep thinking on). See ui/effortPicker.js. */
+var extensiveThinkingOn = false;
 var appMode = "chat";
 var thinkingOn = true;
 
@@ -38,9 +39,13 @@ try {
   var saved = localStorage.getItem("socrates-websearch");
   if (saved !== null) webSearchOn = saved === "true";
 } catch (e) {}
+/* Deep thinking now follows the reasoning-effort picker: High effort
+ * enables the verbose prompt, Medium/Low use the concise one. Derive the
+ * initial value from the persisted effort so the first turn matches the
+ * picker before ui/effortPicker.js finishes loading. */
 try {
-  var savedExt = localStorage.getItem("socrates-extensive-thinking");
-  if (savedExt !== null) extensiveThinkingOn = savedExt === "true";
+  var savedEffort = localStorage.getItem("socrates-reasoning-effort");
+  extensiveThinkingOn = (savedEffort === "high");
 } catch (e) {}
 
 /* P_privacy-leak — built-in providers don't expose their model name,

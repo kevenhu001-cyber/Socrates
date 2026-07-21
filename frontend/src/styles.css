@@ -895,6 +895,8 @@ true) but the dropdown never shows — see commit history. */
 .effort-item:hover{background:hsl(var(--bg-300)/0.7)}
 .effort-item.active{color:hsl(var(--accent-000))}
 .effort-item.active::after{content:"";width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000));flex-shrink:0}
+.effort-item-note{margin-left:auto;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-align:right;line-height:1.25;max-width:150px}
+.effort-item.active .effort-item-note{color:hsl(var(--accent-000)/0.7)}
 .topic-setup-row .model-picker,.topic-setup-row .extensions-picker{position:relative;max-width:none;width:auto}
 .extensions-picker{position:relative}
 .extensions-trigger{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid hsl(var(--border-300)/0.4);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));background:transparent;cursor:pointer;font-family:var(--font-sans);line-height:1.2;transition:background-color .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),border-color .2s cubic-bezier(.4,0,.2,1),box-shadow .2s cubic-bezier(.4,0,.2,1)}
