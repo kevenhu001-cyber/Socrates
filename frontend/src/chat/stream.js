@@ -113,7 +113,9 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
          in the stack trace. Reading window.isReasoningProvider
          lazily keeps the source-level name visible in dev too. */
       if(typeof window.isReasoningProvider==="function" && window.isReasoningProvider()){
-        apiBody.reasoning_effort="medium";
+        /* P_chatgpt-landing — user-selected effort (高/中/低) from the
+           composer picker; falls back to "medium" when unset. */
+        apiBody.reasoning_effort=(typeof window.getReasoningEffort==="function"&&window.getReasoningEffort())||"medium";
         /* P_minimax-reasoning-split — MiniMax-M3 needs reasoning_split
            in extra_body to emit reasoning_content in SSE deltas.
            Without this, its thinking is hidden even though adaptive

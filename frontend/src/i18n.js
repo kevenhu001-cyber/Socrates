@@ -253,6 +253,25 @@ var I18N={
     "tutor.modeTutorDesc":"AI asks, follows up, and tracks what you know",
     "tutor.modeSwitchToTutor":"Switch to Tutor",
     "tutor.modeSwitchToChat":"Switch to Chat",
+    /* Composer quick actions + reasoning effort + read-aloud */
+    "composer.write":"Write or edit",
+    "composer.research":"Find resources",
+    "composer.write.hint":"Describe what you'd like to write or edit",
+    "composer.write.scaffold":"Help me write or edit: ",
+    "composer.research.hint":"Web search is on — ask your research question",
+    "composer.deepThinking":"Deep thinking",
+    "composer.deepResearch":"Deep Research",
+    "composer.exam":"Generate exam",
+    "picker.modelSection":"Model",
+    "picker.effortSection":"Reasoning",
+    "picker.manageModels":"Manage models…",
+    "picker.addModel":"Add a model…",
+    "picker.noModels":"No models yet.",
+    "effort.label":"Effort",
+    "effort.high":"High",
+    "effort.medium":"Medium",
+    "effort.low":"Low",
+    "msg.readAloud":"Read aloud",
     /* Math-textbook scaffold blocks (proof / theorem / key-point / derivation) */
     "tutor.proofLabel":"Proof",
     "tutor.theoremLabel":"Theorem",
@@ -722,6 +741,25 @@ var I18N={
     "tutor.modeTutorDesc":"AI 主动提问并跟踪你的学习",
     "tutor.modeSwitchToTutor":"切换到引导模式",
     "tutor.modeSwitchToChat":"切换到对话模式",
+    /* Composer quick actions + reasoning effort + read-aloud (zh) */
+    "composer.write":"撰写或编辑",
+    "composer.research":"查找资料",
+    "composer.write.hint":"描述你想撰写或编辑的内容",
+    "composer.write.scaffold":"帮我撰写或编辑：",
+    "composer.research.hint":"联网搜索已开启 — 输入你的研究问题",
+    "composer.deepThinking":"深度思考",
+    "composer.deepResearch":"深度研究",
+    "composer.exam":"生成测验",
+    "picker.modelSection":"模型",
+    "picker.effortSection":"思维强度",
+    "picker.manageModels":"管理模型…",
+    "picker.addModel":"添加模型…",
+    "picker.noModels":"暂无模型。",
+    "effort.label":"强度",
+    "effort.high":"高",
+    "effort.medium":"中",
+    "effort.low":"低",
+    "msg.readAloud":"朗读",
     /* Math-textbook scaffold blocks (zh) */
     "tutor.proofLabel":"证明",
     "tutor.theoremLabel":"定理",
@@ -1068,6 +1106,9 @@ function applyI18n(){
   if(el)el.textContent=t("topic.extensions");
   var ev=document.getElementById("examViewTitle");
   if(ev&&window.state&&window.state._examInView)ev.textContent=ev.textContent; /* already localized by render */
+  /* P_chatgpt-landing — the reasoning-effort trigger label (高/中/低) is
+     driven by JS, not a data-i18n-key element, so refresh it here too. */
+  if(typeof window.syncEffortUI==="function"){try{window.syncEffortUI();}catch(_){}}
 }
 /* Load saved language preference. _currentLang is the single source
    of truth at runtime; setLang() persists changes and applyI18n()

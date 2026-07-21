@@ -1886,6 +1886,11 @@ async function loadSession(id){
        firing in that window would cross-contaminate contexts. */
     setCurrentSessionId(s.id);
     pushChatIdToURL(s.id);
+    /* P_share-btn — loadSession() already had a toggleShareBtn()
+       call early (before setCurrentSessionId fixed the id), but
+       at that point currentSessionId was still null so the button
+       stayed hidden. Run it again now that the id is set. */
+    toggleShareBtn();
     /* Mirror the server history into the localStorage cache so the
        next chat turn can read it via extractHistory() (fast path) instead
        of falling back to the slower DOM scrape. Skip if the local cache
@@ -4479,6 +4484,18 @@ function buildMessageToolbar(opts){
       '<path d="M6 4v16"/><path d="M18 4v16"/><path d="M6 8h8a2 2 0 0 1 2 2v4"/><path d="M6 16h8a2 2 0 0 0 2-2v-4"/><path d="M16 10l3 3-3 3"/>',
       function(){
         branchFromMessage(messageId);
+      }
+    );
+    /* P_chatgpt-landing — Read aloud (browser TTS, no backend). Toggles
+       speaking on/off for this message; the text is taken from rawText
+       (falling back to the rendered HTML flattened to plain text). */
+    addBtn("read-aloud","Read aloud",
+      '<path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>',
+      function(ev){
+        var txt="";
+        if(typeof entry.rawText==="string"&&entry.rawText.length>0)txt=entry.rawText;
+        else if(typeof entry.html==="string"&&entry.html.length>0)txt=stripHtmlToText(entry.html);
+        if(typeof window.toggleReadAloud==="function")window.toggleReadAloud(ev.currentTarget,txt);
       }
     );
   }
