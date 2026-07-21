@@ -406,6 +406,7 @@ window.esc = esc;
 import {
   openExamModal, closeExamModal, closeExamView,
   renderExamForm, toggleExamType, toggleExamModelMenu, selectExamModel,
+  selectExamDifficulty, adjustExamCount,
   startExamGeneration, cancelExamGeneration,
   parseExamArrayJSON,
   paintQuestionCard, replaceStreamingCardWithQuestion, appendExamErrorCard,
@@ -421,6 +422,8 @@ window.renderExamForm = renderExamForm;
 window.toggleExamType = toggleExamType;
 window.toggleExamModelMenu = toggleExamModelMenu;
 window.selectExamModel = selectExamModel;
+window.selectExamDifficulty = selectExamDifficulty;
+window.adjustExamCount = adjustExamCount;
 window.startExamGeneration = startExamGeneration;
 window.cancelExamGeneration = cancelExamGeneration;
 window.parseExamArrayJSON = parseExamArrayJSON;

@@ -9,6 +9,7 @@ import { callAPI } from './chat/api.js';
 
 /* ── module-level state ── */
 var _examSelectedTypes = { mc: true, fb: true, sa: false };
+var _examDifficulty = "intermediate";
 var _examAnswerSaveTimer = null;
 var _examSaveInFlight = null;
 var _examSaveDirty = false;
@@ -74,6 +75,10 @@ export function closeExamModal() {
 }
 
 /* ── render form ── */
+/* P_exam-ui — redesigned as a clean, ChatGPT-style setup card:
+   an intro line, a required Topic field, a Settings card with the model
+   dropdown + segmented Difficulty control + a stepper for the question
+   count, question-type pills, and an optional instructions box. */
 export function renderExamForm() {
   var body = _examBody();
   var footer = _examFooter();
@@ -85,6 +90,7 @@ export function renderExamForm() {
   window.state.examAnswers = {};
   window.state.examSubmitted = false;
   _examSelectedTypes = { mc: true, fb: true, sa: false };
+  _examDifficulty = "intermediate";
   var L = function (en, zh) { return window._currentLang === "zh" ? zh : en };
 
   /* Build provider options for the custom dropdown */
@@ -106,6 +112,19 @@ export function renderExamForm() {
     return '<button class="exam-form-toggle-card' + activeClass + '" data-type="' + type + '" onclick="toggleExamType(\'' + type + '\')"><span class="tog-dot"></span>' + esc(label) + '</button>';
   }
 
+  /* Difficulty segmented control. Canonical values stay English (models
+     understand them); labels localize. */
+  var DIFFS = [
+    { v: "beginner", label: L("Beginner", "入门") },
+    { v: "intermediate", label: L("Intermediate", "中级") },
+    { v: "hard", label: L("Hard", "困难") },
+    { v: "expert", label: L("Expert", "专家") }
+  ];
+  var diffHtml = DIFFS.map(function (d) {
+    return '<button type="button" class="exam-seg-btn' + (d.v === _examDifficulty ? ' active' : '') +
+      '" data-diff="' + d.v + '" onclick="selectExamDifficulty(\'' + d.v + '\')">' + esc(d.label) + '</button>';
+  }).join("");
+
   /* Build custom model dropdown HTML */
   var modelOptsHtml = "";
   provItems.forEach(function (p) {
@@ -117,17 +136,20 @@ export function renderExamForm() {
 
   var html = '<div class="exam-form-container">';
 
+  /* Intro */
+  html += '<p class="exam-form-intro">' + L("Set up a practice exam. Adjust the options below, then generate.", "配置一份练习考卷，调整下列选项后开始出题。") + '</p>';
+
   /* Topic */
   html += '<div class="exam-form-section">'
     + '<div class="exam-form-section-header"><span class="exam-form-section-title">' + window.t("exam.topic") + '</span></div>'
-    + '<input class="exam-form-input" id="examTopic" name="examTopic" placeholder="' + L("e.g. Linear Algebra, World War II...", "如：线性代数、量子力学、二战…") + '">'
+    + '<input class="exam-form-input" id="examTopic" name="examTopic" autocomplete="off" placeholder="' + L("e.g. Linear Algebra, World War II...", "如：线性代数、量子力学、二战…") + '">'
     + '</div>';
 
-  /* Settings row */
+  /* Settings: model + difficulty + count */
   html += '<div class="exam-form-section">'
     + '<div class="exam-form-section-header"><span class="exam-form-section-title">' + L("Settings", "出题设置") + '</span></div>'
-    + '<div class="exam-form-grid3">'
-    + '<div class="exam-form-cell"><label class="exam-form-label" for="examModel">' + L("Model", "生成模型") + '</label>'
+    /* Model */
+    + '<div class="exam-form-field"><label class="exam-form-label" for="examModel">' + L("Model", "生成模型") + '</label>'
     + '<div class="exam-model-wrap">'
     + '<button class="exam-model-trigger" id="examModelTrigger" type="button" onclick="toggleExamModelMenu()">'
     + '<span class="exam-model-label" id="examModelLabel">' + esc(activeLabel) + '</span>'
@@ -136,11 +158,18 @@ export function renderExamForm() {
     + '<div class="exam-model-menu" id="examModelMenu">' + modelOptsHtml + '</div>'
     + '<input type="hidden" id="examModel" value="' + esc(activeId) + '">'
     + '</div></div>'
-    + '<div class="exam-form-cell"><label class="exam-form-label" for="examDifficulty">' + window.t("exam.difficulty") + '</label>'
-    + '<input class="exam-form-input" id="examDifficulty" name="examDifficulty" placeholder="' + L("beginner / hard / expert", "入门 / 中级 / 困难") + '" value="intermediate"></div>'
-    + '<div class="exam-form-cell exam-form-cell-narrow"><label class="exam-form-label" for="examCount">' + window.t("exam.count") + '</label>'
-    + '<input class="exam-form-input" id="examCount" name="examCount" type="number" min="1" max="50" value="5"></div>'
-    + '</div></div>';
+    /* Difficulty */
+    + '<div class="exam-form-field"><label class="exam-form-label">' + window.t("exam.difficulty") + '</label>'
+    + '<div class="exam-seg" id="examDifficultySeg">' + diffHtml + '</div></div>'
+    /* Count */
+    + '<div class="exam-form-field"><label class="exam-form-label">' + window.t("exam.count") + '</label>'
+    + '<div class="exam-stepper">'
+    + '<button type="button" class="exam-stepper-btn" aria-label="' + L("Fewer", "减少") + '" onclick="adjustExamCount(-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg></button>'
+    + '<span class="exam-stepper-val" id="examCountDisplay">5</span>'
+    + '<button type="button" class="exam-stepper-btn" aria-label="' + L("More", "增加") + '" onclick="adjustExamCount(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>'
+    + '<input type="hidden" id="examCount" value="5">'
+    + '</div></div>'
+    + '</div>';
 
   /* Question types */
   html += '<div class="exam-form-section">'
@@ -213,6 +242,26 @@ export function toggleExamType(type) {
   _examSelectedTypes[type] = btn.classList.contains("active");
 }
 
+/* Difficulty segmented control — pick one value and highlight it. */
+export function selectExamDifficulty(val) {
+  _examDifficulty = val;
+  document.querySelectorAll("#examDifficultySeg .exam-seg-btn").forEach(function (b) {
+    b.classList.toggle("active", b.getAttribute("data-diff") === val);
+  });
+}
+
+/* Question-count stepper — clamp to 1..50 and mirror to the hidden input
+   that startExamGeneration reads. */
+export function adjustExamCount(delta) {
+  var input = document.getElementById("examCount");
+  var display = document.getElementById("examCountDisplay");
+  var cur = parseInt(input && input.value, 10);
+  if (!(cur >= 1)) cur = 5;
+  var next = Math.max(1, Math.min(50, cur + delta));
+  if (input) input.value = String(next);
+  if (display) display.textContent = String(next);
+}
+
 function detectExamLang(topic) {
   if (!topic) return "English";
   if (/[一-鿿]/.test(topic)) return "Chinese";
@@ -242,7 +291,7 @@ export function startExamGeneration() {
     return;
   }
   var count = Math.max(1, Math.min(50, parseInt(document.getElementById("examCount").value, 10) || 5));
-  var difficulty = document.getElementById("examDifficulty").value.trim() || "intermediate";
+  var difficulty = _examDifficulty || "intermediate";
   var instructions = document.getElementById("examInstructions").value.trim() || "";
   var modelSel = document.getElementById("examModel");
   var chosenModel = modelSel ? modelSel.value : "";
