@@ -169,13 +169,23 @@ export async function afterAuthEnter(){
   window.syncAppModeUI&&window.syncAppModeUI();
   window.syncSidebarForMode&&window.syncSidebarForMode();
   /* If the URL carries a chat session ID, load it. Otherwise, stay on the
-     main page (topic setup) — no session exists until the user clicks Begin. */
+     main page (topic setup) — no session exists until the user clicks Begin.
+     P_exam-route — exam sessions live under a different query key
+     (?exam=<uuid>) so a pasted chat link can't accidentally open an exam
+     and vice versa. Both keys share the /api/sessions/<id> endpoint, so
+     loadSession() handles either via its existing kind==='exam' branch. */
   var chatId=window.getChatIdFromURL&&window.getChatIdFromURL();
+  var examId=window.getExamIdFromURL&&window.getExamIdFromURL();
   var state=window.state;
   if(chatId){
     try{await window.loadSession(chatId)}catch(e){/* failed to load session */
       state.currentSessionId=null;
       window.setChatIdInURL&&window.setChatIdInURL(null);
+    }
+  }else if(examId){
+    try{await window.loadSession(examId)}catch(e){/* failed to load session */
+      state.currentSessionId=null;
+      window.setExamIdInURL&&window.setExamIdInURL(null);
     }
   }
   /* Trigger initial data load. */

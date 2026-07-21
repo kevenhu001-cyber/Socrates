@@ -681,17 +681,6 @@ html[data-show-grid="false"] .main-bg{background-image:none}
   display:flex;
   flex-direction:column;
 }
-/* P_exam-fill — the exam view uses `position:absolute; inset:0` so it
-   relies on the nearest positioned ancestor having a defined height.
-   `.main-content` is `flex:1; position:relative` BUT the exam view
-   was appearing smaller than the window because the parent's
-   intrinsic height was being driven by the (smaller) sibling
-   .main-inner, not the available flex space. Switching overflow to
-   `hidden` (was `visible`) so the absolute child is clipped to the
-   available area, plus giving the exam overlay a higher z-index
-   and explicit full-bleed sizing, ensures the exam view covers the
-   entire right pane from the top-bar down. */
-.main-content .exam-view{z-index:2;top:0;right:0;bottom:0;left:0;height:100%;width:100%}
 .main-inner{
   display:flex;
   flex-direction:column;
@@ -1165,9 +1154,9 @@ true) but the dropdown never shows — see commit history. */
   border:0;cursor:pointer;
   background:transparent;
   color:hsl(var(--text-400));
-  font-size:calc(14px * var(--app-font-scale, 1));
+  font-size:calc(13px * var(--app-font-scale, 1));
   font-weight:600;
-  padding:5px 18px;
+  padding:4px 14px;
   border-radius:999px;
   transition:color .18s ease,background-color .18s ease,transform .12s ease;
   user-select:none;
@@ -1184,6 +1173,121 @@ true) but the dropdown never shows — see commit history. */
 /* On narrow viewports the centered pill can collide with side buttons;
    hide it there and fall back to the landing #modeSegmented control. */
 @media (max-width:640px){.top-mode-tabs{display:none}}
+
+/* P_mobile-topbar — mobile top bar. On desktop the centered mode
+   dropdown and the incognito button are hidden (the desktop segmented
+   pill covers mode switching). Under 640px we reveal the centered
+   "Chat ˅" mode dropdown and a right-side incognito toggle; the left
+   sidebar toggle keeps its original (non-circular) style. */
+.mobile-mode{display:none}
+.mobile-incognito-btn{display:none}
+@media (max-width:640px){
+  .mobile-mode{
+    display:block;
+    position:absolute;
+    left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    z-index:6;
+  }
+  .mobile-mode-trigger{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    padding:6px 10px;
+    border:0;
+    background:transparent;
+    color:hsl(var(--text-100));
+    font-size:calc(17px * var(--app-font-scale, 1));
+    font-weight:700;
+    line-height:1;
+    border-radius:999px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background-color .15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mobile-mode-trigger:active{background:hsl(var(--bg-300)/0.6)}
+  .mobile-mode-caret{
+    width:16px;height:16px;
+    color:hsl(var(--text-400));
+    transition:transform .2s cubic-bezier(.16,1,.3,1);
+  }
+  .mobile-mode[data-open="true"] .mobile-mode-caret{transform:rotate(180deg)}
+  .mobile-mode-menu{
+    position:absolute;
+    top:calc(100% + 6px);
+    left:50%;
+    transform:translateX(-50%) translateY(-6px) scale(.97);
+    transform-origin:top center;
+    min-width:230px;
+    max-width:calc(100vw - 32px);
+    padding:6px;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    background:hsl(var(--bg-200));
+    border:0.5px solid hsl(var(--border-300)/0.5);
+    border-radius:16px;
+    box-shadow:0 12px 40px -6px hsl(var(--always-black)/0.5),0 2px 8px hsl(var(--always-black)/0.3);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .16s ease,transform .2s cubic-bezier(.16,1,.3,1);
+  }
+  .mobile-mode[data-open="true"] .mobile-mode-menu{
+    opacity:1;
+    pointer-events:auto;
+    transform:translateX(-50%) translateY(0) scale(1);
+  }
+  .mobile-mode-item{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:2px;
+    width:100%;
+    padding:10px 12px;
+    border:0;
+    background:transparent;
+    border-radius:12px;
+    text-align:left;
+    cursor:pointer;
+    transition:background-color .12s ease;
+  }
+  .mobile-mode-item:active{background:hsl(var(--bg-300)/0.7)}
+  .mobile-mode-item-title{
+    font-size:calc(15px * var(--app-font-scale, 1));
+    font-weight:600;
+    color:hsl(var(--text-100));
+    line-height:1.2;
+  }
+  .mobile-mode-item-desc{
+    font-size:calc(12px * var(--app-font-scale, 1));
+    color:hsl(var(--text-400));
+    line-height:1.3;
+  }
+  .mobile-mode-item.active{background:hsl(var(--bg-300))}
+  .mobile-mode-item.active .mobile-mode-item-title{color:hsl(var(--accent-000))}
+
+  /* Right-side incognito toggle — matches the left sidebar toggle's
+     original look (not a filled circle). Active state shows when
+     incognito is on. */
+  .mobile-incognito-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;height:28px;
+    border-radius:6px;
+    border:0;
+    background:transparent;
+    color:hsl(var(--text-300));
+    cursor:pointer;
+    flex-shrink:0;
+    transition:color .06s,background .06s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mobile-incognito-btn svg{width:16px;height:16px}
+  .mobile-incognito-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+  .mobile-incognito-btn[aria-pressed="true"]{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12)}
+}
 
 /* API status indicator — small colored dot in the top-bar; full
    status text appears in the tooltip (title attr). */
@@ -1688,14 +1792,12 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .usage-loading{display:flex;align-items:center;justify-content:center;padding:40px 20px;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale, 1));gap:8px}
 
 /* Exam view (standalone page within the SPA) */
-.exam-view{position:absolute;inset:0;display:flex;flex-direction:column;background:hsl(var(--bg-100))}
+.exam-view{width:100%;display:flex;flex-direction:column;flex:1;min-height:0;position:relative;background:hsl(var(--bg-100))}
 .exam-view.hidden{display:none}
 .exam-view-header{display:flex;align-items:center;gap:10px;padding:10px 16px;flex-shrink:0;background:hsl(var(--bg-000));border-bottom:0.5px solid hsl(var(--border-300)/0.10)}
 .exam-view-title{font-size:calc(15px * var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-100));margin:0;letter-spacing:-.01em;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .exam-view-meta{font-size:calc(11px * var(--app-font-scale,1));color:hsl(var(--text-500));flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.exam-back-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;background:transparent;border:none;color:hsl(var(--text-400));cursor:pointer;transition:color .12s,background .12s;flex-shrink:0}
-.exam-back-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-200))}
-.exam-back-btn svg{width:16px;height:16px}
+.exam-title-bar{font-size:calc(13px * var(--app-font-scale,1));color:hsl(var(--text-100));font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .exam-view-body{flex:1;overflow-y:auto;padding:32px 24px 24px;width:100%;max-width:680px;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column}
 @media(max-width:720px){.exam-view-body{padding:20px 16px 16px}}
 .exam-view-footer{flex-shrink:0;padding:14px 24px;display:flex;justify-content:center;gap:10px;width:100%;box-sizing:border-box;background:hsl(var(--bg-000));border-top:0.5px solid hsl(var(--border-300)/0.08)}

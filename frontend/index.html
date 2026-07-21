@@ -310,6 +310,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><rect x="5" y="10" width="6" height="4" rx="1"/><rect x="13" y="10" width="6" height="4" rx="1"/></svg>
         <span data-i18n-key="sidebar.nav.plugins">Plugins</span>
       </button>
+      <button type="button" class="sidebar-nav-btn" data-nav="exam" id="navExam" onclick="openNav('exam')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+        <span data-i18n-key="sidebar.nav.exam">Exam</span>
+      </button>
       <button type="button" class="sidebar-nav-btn" data-nav="more" id="navMore" onclick="openNav('more')" aria-haspopup="menu" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5"  r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
         <span data-i18n-key="sidebar.nav.more">More</span>
@@ -478,18 +482,42 @@
       <button type="button" class="app-mode-toggle" data-mode="chat" role="tab" data-i18n-key="tutor.modeChat" onclick="if(window.appMode!=='chat'&&typeof window.toggleAppMode==='function')window.toggleAppMode()">Chat</button>
       <button type="button" class="app-mode-toggle" data-mode="tutor" role="tab" data-i18n-key="tutor.modeTutor" onclick="if(window.appMode!=='tutor'&&typeof window.toggleAppMode==='function')window.toggleAppMode()">Tutor</button>
     </div>
+    <!-- P_mobile-topbar — mobile-only centered mode switcher. The desktop
+         segmented pill (#modeSegmentedTop) is hidden under 640px, so this
+         compact "Chat ˅" dropdown gives touch users the 对话/导师 switch
+         that the pill provided on desktop. Toggle + label sync live in
+         src/ui/mobileModeSwitch.js. -->
+    <div class="mobile-mode" id="mobileMode">
+      <button type="button" class="mobile-mode-trigger" id="mobileModeTrigger" aria-haspopup="menu" aria-expanded="false" onclick="if(window.toggleMobileModeMenu)window.toggleMobileModeMenu()">
+        <span class="mobile-mode-label" id="mobileModeLabel" data-i18n-key="tutor.modeChat">Chat</span>
+        <svg class="mobile-mode-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="mobile-mode-menu" id="mobileModeMenu" role="menu" aria-label="Session mode">
+        <button type="button" class="mobile-mode-item" data-mode="chat" role="menuitem" onclick="if(window.selectAppMode)window.selectAppMode('chat')">
+          <span class="mobile-mode-item-title" data-i18n-key="tutor.modeChat">Chat</span>
+          <span class="mobile-mode-item-desc" data-i18n-key="tutor.modeChatDesc">Plain conversation, no scaffolding</span>
+        </button>
+        <button type="button" class="mobile-mode-item" data-mode="tutor" role="menuitem" onclick="if(window.selectAppMode)window.selectAppMode('tutor')">
+          <span class="mobile-mode-item-title" data-i18n-key="tutor.modeTutor">Tutor</span>
+          <span class="mobile-mode-item-desc" data-i18n-key="tutor.modeTutorDesc">AI asks, follows up, and tracks what you know</span>
+        </button>
+      </div>
+    </div>
     <div class="top-bar-left">
       <button class="toggle-sidebar" id="sidebarOpenBtn" onclick="toggleSidebar()" title="Toggle sidebar (⌘B)" aria-controls="sidebar" aria-expanded="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
-      </button>
-      <button class="exam-back-btn hidden" id="examBackBtn" onclick="closeExamView()" title="Back to chat">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        <span>Back to chat</span>
       </button>
       <span class="chat-stats hidden" id="chatStats"></span>
       <span class="exam-title-bar hidden" id="examTitleBar"></span>
     </div>
     <div class="top-bar-right">
+      <!-- P_mobile-topbar — mobile-only incognito ("无痕对话") toggle,
+           top-right. Starts a temporary chat that is not saved to
+           Recents. Styled like the left sidebar toggle (not a filled
+           circle). Hidden on desktop. -->
+      <button type="button" class="mobile-incognito-btn" id="mobileIncognitoBtn" onclick="event.preventDefault();if(window.toggleIncognito)window.toggleIncognito()" aria-pressed="false" aria-label="Incognito chat" title="Incognito chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 13h20"/><path d="M5 13l1.4-5.1A2 2 0 0 1 8.3 6.4h7.4a2 2 0 0 1 1.9 1.5L19 13"/><circle cx="7" cy="17" r="2.6"/><circle cx="17" cy="17" r="2.6"/><path d="M9.6 16.4h4.8"/></svg>
+      </button>
       <span class="chat-api-badge hidden" id="chatApiBadge"></span>
       <span class="search-pill hidden" id="searchPill"></span>
       <div class="chat-model-wrap hidden" id="chatModelWrap">
@@ -744,9 +772,6 @@
 
     <div class="exam-view hidden" id="examView">
       <header class="exam-view-header">
-        <button class="exam-back-btn" onclick="closeExamView()" title="Back to chat" aria-label="Back to chat">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        </button>
         <h2 class="exam-view-title" id="examViewTitle">Generate Exam</h2>
         <span class="exam-view-meta" id="examViewMeta"></span>
       </header>
@@ -1056,20 +1081,6 @@
       <button class="confirm-btn cancel" onclick="closeConfirm()">Cancel</button>
       <button class="confirm-btn primary" id="confirmOkBtn" onclick="closeConfirm()">OK</button>
     </div>
-  </div>
-</div>
-
-<!-- exam modal -->
-<div class="exam-overlay hidden" id="examOverlay" onclick="if(event.target===this)closeExamModal()">
-  <div class="exam-modal" onclick="event.stopPropagation()">
-    <div class="exam-header">
-      <span class="exam-title" id="examTitle">Generate Exam</span>
-      <span class="exam-close" onclick="closeExamModal()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </span>
-    </div>
-    <div class="exam-body" id="examBody"></div>
-    <div class="exam-footer" id="examFooter"></div>
   </div>
 </div>
 

@@ -20,17 +20,47 @@ function _examFooter() { return document.getElementById("examViewFooter"); }
 function _examTitle() { return document.getElementById("examViewTitle"); }
 
 /* ── open / close ── */
-export function openExamModal() {
+/* prepareExamView — DOM + state scaffolding for any "exam is now
+   visible" path (fresh open via sidebar, restore from /api/sessions,
+   or deep-link from ?exam=<uuid>). Does NOT render the form — callers
+   are responsible for painting content into #examViewBody so this
+   helper can be reused by loadExamSession (which has its own
+   paintRestoredQuestionCard loop instead of renderExamForm). */
+export function prepareExamView() {
   var ev = document.getElementById("examView");
-  var others = ["topicSetup", "diagnosticView", "chatView"];
-  others.forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.add("hidden"); });
+  if (!ev) return;
+  /* P_exam-nav — Exam is now a first-class sidebar panel (was an overlay
+     modal). We hide the chat/topic/diagnostic pages and any sibling
+     workspace panels (library / projects / scheduled / plugins) the same
+     way the other panel openers do — via hideMainPages() exposed by
+     sidebar/nav.js — and we leave the top-bar visible so the back-button
+     + exam-title-bar can carry the user back home. */
+  if (typeof window.hideMainPages === "function") {
+    try { window.hideMainPages(); } catch (_) {}
+  }
+  /* Hide chat/topic/diagnostic pages — hideMainPages() only covers
+     workspace panels, not the core chat pages. */
+  var corePages = ["topicSetup", "diagnosticView", "chatView"];
+  corePages.forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.add("hidden"); });
+  /* Hide .main-inner so it doesn't take up flex space (exam-view is
+     its sibling inside .main-content). */
+  var mi = document.getElementById("mainInner");
+  if (mi) mi.classList.add("hidden");
   ev.classList.remove("hidden");
-  var tb = document.querySelector(".main > .top-bar"); if (tb) tb.style.display = "none";
-  /* Hide the disclaimer that lives in .main-inner so its text
-     doesn't peek through under the exam overlay. */
-  var disc = document.getElementById("topicDisclaimer");
-  if (disc) disc.style.display = "none";
-  window.toggleChatTopBarEls(false);
+  /* Show the exam-only top-bar elements (#examBackBtn / #examTitleBar);
+     hide the chat/tutor mode switcher + incognito (they're useless inside
+     an exam). toggleChatTopBarEls(true) hides the mode tabs, matching the
+     visual rhythm of a chat-session top bar. */
+  toggleExamOnlyTopBar(true);
+  /* Set the exam title bar in the top bar. */
+  var titleBar = document.getElementById("examTitleBar");
+  if (titleBar) titleBar.textContent = window.state.examTopic || "Generate Exam";
+  window.toggleChatTopBarEls(true);
+  /* Hide chat-specific top-bar elements that are meaningless in exam mode. */
+  ["chatStats", "chatApiBadge", "searchPill", "chatModelWrap"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.add("hidden");
+  });
   window.state._examInView = true;
   if (!window.state._examScrollBound) {
     var cont = document.getElementById("examViewBody");
@@ -47,31 +77,60 @@ export function openExamModal() {
     }
     window.state._examScrollBound = true;
   }
+}
+
+export function openExamPanel() {
+  prepareExamView();
   renderExamForm();
 }
 
+/* Legacy alias — the Extensions picker and any other callers that still
+   reach for window.openExamModal() keep working. */
+export function openExamModal() { openExamPanel(); }
+
 export function closeExamView() {
   var ev = document.getElementById("examView");
-  ev.classList.add("hidden");
-  var tb = document.querySelector(".main > .top-bar"); if (tb) tb.style.display = "";
-  /* Restore disclaimer visibility. */
-  var disc = document.getElementById("topicDisclaimer");
-  if (disc) disc.style.display = "";
+  if (ev) ev.classList.add("hidden");
+  /* Restore .main-inner visibility (was hidden when exam opened). */
+  var mi = document.getElementById("mainInner");
+  if (mi) mi.classList.remove("hidden");
+  toggleExamOnlyTopBar(false);
+  /* Mark the cancel flag so any in-flight generation loop bails. The
+     state itself (questions / answers / topic) is preserved — closing
+     the view is not the same as discarding the exam; resetState()
+     handles the latter and is called from resetApp(). */
   window.state.examCancel = true;
   window.state._examInView = false;
   window.state.examReadOnly = false;
   try { restoreExamActiveProvider() } catch (_) { }
+  /* Decide what to reveal behind the exam panel. Mirrors the
+     chat/tutor pattern: if a session is open, go back to chatView;
+     otherwise surface the topic-setup landing page. */
   if (window.state.currentSessionId) {
     document.getElementById("chatView").classList.remove("hidden");
     window.toggleChatTopBarEls(true);
+    try { window.pushChatIdToURL(window.state.currentSessionId) } catch (_) { }
   } else {
     document.getElementById("topicSetup").classList.remove("hidden");
     window.toggleChatTopBarEls(false);
+    try { window.setExamIdInURL(null) } catch (_) { }
   }
 }
 
 export function closeExamModal() {
   closeExamView();
+}
+
+/* Show / hide the top-bar elements that are only meaningful while an
+   exam is in view (#examBackBtn / #examTitleBar). Everything else in
+   the top-bar keeps its current visibility — toggleChatTopBarEls is
+   the single source of truth for the chat/tutor/incognito trio. */
+function toggleExamOnlyTopBar(show) {
+  var els = document.querySelectorAll("[data-exam-only='true']");
+  els.forEach(function (el) {
+    if (show) el.classList.remove("hidden");
+    else el.classList.add("hidden");
+  });
 }
 
 /* ── render form ── */
@@ -818,7 +877,7 @@ function doSaveExamSession(opts) {
     .then(function (r) {
       if (r && r.id) {
         window.state.currentSessionId = r.id;
-        try { window.pushChatIdToURL(r.id) } catch (_) { }
+        try { window.pushExamIdToURL(r.id) } catch (_) { }
       }
       return window.refreshServerSessions().then(function () {
         try { window.renderRecents() } catch (_) { }

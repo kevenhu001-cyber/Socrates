@@ -13,6 +13,24 @@ export function pushChatIdToURL(id) {
   history.pushState({ chatId: id }, "", id ? "?chat=" + encodeURIComponent(id) : location.pathname);
 }
 
+/* P_exam-route — exam sessions live under ?exam=<uuid> instead of ?chat=<uuid>.
+ * Same URL-key shape (uuid) so refresh / shared link round-trips through the
+ * same /api/sessions/<id> endpoint; only the query-param name differs so a
+ * pasted chat link doesn't accidentally route into an exam view (and vice
+ * versa). On boot, the two keys are mutually exclusive — callers decide
+ * which wins (loadSession + loadExamSession handle their own keys). */
+export function getExamIdFromURL() {
+  return new URLSearchParams(location.search).get("exam") || null;
+}
+
+export function setExamIdInURL(id) {
+  history.replaceState({ examId: id }, "", id ? "?exam=" + encodeURIComponent(id) : location.pathname);
+}
+
+export function pushExamIdToURL(id) {
+  history.pushState({ examId: id }, "", id ? "?exam=" + encodeURIComponent(id) : location.pathname);
+}
+
 export function capSessions(arr) {
   return Array.isArray(arr) ? arr.slice(0, RECENTS_CAP) : [];
 }

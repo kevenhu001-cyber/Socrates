@@ -14,6 +14,7 @@ import { initSidebarDrag } from './ui/sidebarResize.js';
 import { showNewReplyPill, hideNewReplyPill, wireScrollPill } from './ui/scrollPill.js';
 import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
 import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal } from './ui/share.js';
+import './ui/mobileModeSwitch.js';
 import { renderAttachmentChips, setupAttachmentInput } from './attachments/render.js';
 import {
   STREAM_TIMEOUT_MS, STREAM_HEARTBEAT_MS, STREAM_MAX_ATTEMPTS, STREAM_RETRYABLE_STATUS,
@@ -30,6 +31,7 @@ import { VISUALIZATION_ROUTING_PROMPT } from './prompts/visualization.js';
 import { fetchGeoInfo, getSystemContext, resetGeoInfo } from './system/context.js';
 import {
   getChatIdFromURL, setChatIdInURL, pushChatIdToURL,
+  getExamIdFromURL, setExamIdInURL, pushExamIdToURL,
   capSessions, getVisibleSessions, getArchivedSessionsFrom,
   sweepExpiredArchivesFrom, createDeletedSessionGuard,
 } from './session/store.js';
@@ -435,9 +437,6 @@ document.addEventListener("keydown",function(e){
     }
     if(document.getElementById("cheatsheetOverlay")&&!document.getElementById("cheatsheetOverlay").classList.contains("hidden")){
       e.preventDefault();closeCheatsheet();return;
-    }
-    if(document.getElementById("examOverlay")&&!document.getElementById("examOverlay").classList.contains("hidden")){
-      e.preventDefault();closeExamModal();return;
     }
     if(document.getElementById("usageOverlay")&&!document.getElementById("usageOverlay").classList.contains("hidden")){
       e.preventDefault();closeUsageModal();return;
@@ -1014,6 +1013,11 @@ function rememberDeletedSession(id){
 }
 function forgetDeletedSession(id){_deletedSessionGuard.forget(id)}
 function saveCurrentSession(){
+  /* P_mobile-topbar — incognito ("无痕对话") sessions are never
+     persisted. Entering incognito first saves any prior real session
+     (toggleIncognito calls resetApp before flipping this flag), so
+     bailing here only blocks the temporary conversation itself. */
+  if(window.incognitoOn)return;
   if(!state.topic)return;
   if(!CURRENT_USER)return; /* not signed in; do nothing */
   /* P_context-race — discard saves during session loading. The
@@ -1297,18 +1301,29 @@ function doSave(){
 })();
 
 /* P_exam-history — open a previously-saved exam session. Re-uses
- * openExamModal() to flip the visible view, then rehydrates the
- * in-memory state (questions, answers, lang, etc.) and re-renders
- * the question cards. If the saved exam was already submitted, jump
- * straight to the results view; otherwise show the questions with
- * the user's previous answers already selected/filled. */
+ * exam.prepareExamView() to flip the visible view + top-bar state,
+ * then rehydrates the in-memory state (questions, answers, lang, etc.)
+ * and re-renders the question cards. If the saved exam was already
+ * submitted, jump straight to the results view; otherwise show the
+ * questions with the user's previous answers already selected/filled.
+ *
+ * prepareExamView() (not openExamPanel()) is the right entry here:
+ * openExamPanel() calls renderExamForm() which would wipe the saved
+ * questions before we paint them. */
 async function loadExamSession(s){
-  var ev=document.getElementById("examView");
-  var others=["topicSetup","diagnosticView","chatView"];
-  others.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.add("hidden");});
-  ev.classList.remove("hidden");
+  if(typeof window.prepareExamView==="function"){
+    try{window.prepareExamView()}catch(_){}
+  }else{
+    var ev=document.getElementById("examView");
+    var others=["topicSetup","diagnosticView","chatView"];
+    others.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.add("hidden");});
+    var mi=document.getElementById("mainInner");
+    if(mi)mi.classList.add("hidden");
+    if(ev)ev.classList.remove("hidden");
+  }
   state._examInView=true;
   state.currentSessionId=s.id;
+  try { window.pushExamIdToURL(s.id); } catch (_) { }
   state.examCancel=false;
   state.examTopic=(s.examData&&s.examData.topic)||s.topic||"";
   state.examCount=(s.examData&&s.examData.count)||((s.examData&&s.examData.questions&&s.examData.questions.length)||0);
@@ -1323,6 +1338,8 @@ async function loadExamSession(s){
   state.examAnswers=(s.examData&&s.examData.answers)||{};
   state.examSubmitted=!!(s.examData&&s.examData.submitted);
   document.getElementById("examViewTitle").textContent=state.examSubmitted?("Exam Results: "+state.examTopic):(state.examTopic);
+  var titleBar=document.getElementById("examTitleBar");
+  if(titleBar)titleBar.textContent=state.examTopic||"Generate Exam";
   var body=document.getElementById("examViewBody");
   var footer=document.getElementById("examViewFooter");
   /* Build the same DOM that a fresh generation would build, but
@@ -1533,6 +1550,13 @@ async function loadSession(id){
     document.getElementById("topicSetup").classList.add("hidden");
     document.getElementById("diagnosticView").classList.add("hidden");
     document.getElementById("chatView").classList.remove("hidden");
+    /* Restore .main-inner visibility — exam-view may have hidden it. */
+    var mi=document.getElementById("mainInner");
+    if(mi)mi.classList.remove("hidden");
+    /* Hide exam-only top-bar elements (e.g. #examTitleBar) that may
+       still be visible if the previous session was an exam. */
+    var examEls=document.querySelectorAll("[data-exam-only='true']");
+    examEls.forEach(function(el){el.classList.add("hidden")});
     if (typeof window.hideMainPages === "function") window.hideMainPages();
     toggleChatTopBarEls(true);
     syncChatModel();
@@ -7434,12 +7458,26 @@ async function resetApp(){
   }
 
   toggleShareBtn();
-  /* Go back to the main page — no chat session yet. */
+  /* Go back to the main page — no chat session yet.
+     P_exam-nav — also drop the ?exam=<uuid> URL and clear the
+     #examView body + exam-only top bar elements so resetApp from
+     inside an exam view (via the +New chat button or sidebar) lands
+     on a clean topicSetup page instead of leaving the exam panel
+     visible behind it. */
   setChatIdInURL(null);
+  try { setExamIdInURL(null); } catch (_) {}
   document.getElementById("topicSetup").classList.remove("hidden");
   document.getElementById("diagnosticView").classList.add("hidden");
   document.getElementById("chatView").classList.add("hidden");
   if (typeof window.hideMainPages === "function") window.hideMainPages();
+  /* Hide the exam-only top-bar elements (#examBackBtn / #examTitleBar)
+     that openExamPanel() would have shown — the data-exam-only
+     attribute is the selector used by exam.toggleExamOnlyTopBar. */
+  document.querySelectorAll("[data-exam-only='true']").forEach(function (el) { el.classList.add("hidden"); });
+  /* Drop the exam view's body content so a stale exam title / form
+     doesn't bleed into the next view via a delayed render. */
+  var _examBody = document.getElementById("examViewBody");
+  if (_examBody) _examBody.innerHTML = "";
   toggleChatTopBarEls(false);
   document.getElementById("msgList").innerHTML="";
   document.getElementById("topicInput").value="";
@@ -7475,6 +7513,44 @@ async function resetApp(){
     if(ti&&!ti.closest(".hidden")){ti.focus()}
   },50);
 }
+
+/* P_mobile-topbar — incognito ("无痕对话") chat. A temporary session
+   that saveCurrentSession() refuses to persist (see the guard there).
+   The mobile top-right button toggles it; entering incognito clears the
+   current view (via resetApp, which also saves any prior real session)
+   so the user starts on a clean, unsaved conversation. */
+function syncIncognitoBtn(){
+  var on=!!window.incognitoOn;
+  try{document.body.setAttribute("data-incognito",on?"true":"false")}catch(_){}
+  var btn=document.getElementById("mobileIncognitoBtn");
+  if(btn){
+    btn.setAttribute("aria-pressed",on?"true":"false");
+    var title=on?"Incognito on — this chat won't be saved":"Incognito chat";
+    btn.setAttribute("title",title);
+    btn.setAttribute("aria-label",title);
+  }
+}
+async function toggleIncognito(){
+  if(window.incognitoOn){
+    /* Leaving incognito — reset the view while the flag is STILL on so
+       saveCurrentSession() bails and the temporary chat is discarded,
+       then turn incognito off for future (saved) sessions. */
+    await resetApp();
+    window.incognitoOn=false;
+    syncIncognitoBtn();
+    if(typeof showToast==="function")showToast("Incognito off");
+    return;
+  }
+  /* Entering incognito — resetApp() saves any prior real session and
+     wipes the view, THEN we flip the flag so the fresh conversation is
+     never persisted. */
+  await resetApp();
+  window.incognitoOn=true;
+  syncIncognitoBtn();
+  if(typeof showToast==="function")showToast("Incognito on · this chat won't be saved");
+}
+window.toggleIncognito=toggleIncognito;
+window.syncIncognitoBtn=syncIncognitoBtn;
 
 /* ============================================================
    AUTH GATE — client-side
@@ -8403,6 +8479,10 @@ window.renderMistakes = renderMistakes;
 window.updateMistakesBadge = updateMistakesBadge;
 window.getChatIdFromURL = getChatIdFromURL;
 window.setChatIdInURL = setChatIdInURL;
+window.pushChatIdToURL = pushChatIdToURL;
+window.getExamIdFromURL = getExamIdFromURL;
+window.setExamIdInURL = setExamIdInURL;
+window.pushExamIdToURL = pushExamIdToURL;
 window.pushChatIdToURL = pushChatIdToURL;
 /* P_bulk-restore-2026-07-14 — Phase C module bridges.
    These are main.js-local functions referenced by extracted modules
