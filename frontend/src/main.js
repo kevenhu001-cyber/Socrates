@@ -48,7 +48,7 @@ import { generateTopicKBNodes } from './chat/topicKbNodes.js';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from './chat/teachingPlan.js';
 import { BASELINE_LEVEL, stageInstruction, fromBasicsDirective } from './chat/socraticDirectives.js';
 import { aiGenerate } from './chat/mockDiagnostic.js';
-import { extractHistory } from './chat/history.js';
+import { extractHistory, buildUserContentParts } from './chat/history.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './chat/systemPrompts.js';
 import { appendInlineArtifact } from './ui/toolCards.js';
 import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
@@ -415,6 +415,9 @@ document.addEventListener("keydown",function(e){
      examOverlay, usageOverlay, promptTemplatesOverlay, and
      tagEditorPopover (the last two are dynamically created). */
   if(k==="Escape"){
+    if(typeof window.isFindOpen==="function"&&window.isFindOpen()){
+      e.preventDefault();window.closeFindInSession();return;
+    }
     if(!document.getElementById("cmdKOverlay").classList.contains("hidden")){
       e.preventDefault();closeCmdK();return;
     }
@@ -452,6 +455,17 @@ document.addEventListener("keydown",function(e){
     e.preventDefault();
     if(typeof openCmdK==="function")openCmdK();
     return;
+  }
+  /* Cmd/Ctrl+F — in-session find. Only intercept the browser's
+     native find when a conversation is actually on screen; on the
+     landing / topic-setup page we let the default behaviour run. */
+  if(cmd&&!e.altKey&&!e.shiftKey&&key==="f"){
+    var _cv=document.getElementById("chatView");
+    if(_cv&&!_cv.classList.contains("hidden")){
+      e.preventDefault();
+      if(typeof window.openFindInSession==="function")window.openFindInSession();
+      return;
+    }
   }
   /* Cmd+/ — shortcut cheatsheet. Some keyboards send "?" for
      Shift+/; we accept both. */
@@ -1049,12 +1063,14 @@ function doSave(){
      (the in-progress placeholder that addStreamingMessage pushes into
      state.messages). If we save while a stream is in flight, the
      placeholder gets committed to the messages table with an empty /
-     partial rawText. The server-side deduplication by clientId is
-     insert-only and has no update path, so the final content from
-     finish() never overwrites the placeholder — the AI response is
-     permanently lost on reload. Filtering streaming placeholders here
-     is the root fix; they are only persisted after finish() flips
-     type to "assistant". */
+     partial rawText. The server now upserts by clientId (sessions.js
+     onConflictDoUpdate, NOTE-P01-05: this replaced the old insert-only
+     path), so a later finish() save CAN overwrite the placeholder, but
+     persisting half-rendered content is still wrong: a reload between
+     the streaming save and the finish() save would surface a truncated
+     reply, and it churns needless writes. Filtering streaming
+     placeholders here is the root fix; they are only persisted after
+     finish() flips type to "assistant". */
   var messages=state.messages
     .filter(function(m){return m.type!=="streaming"})
     .map(function(m){
@@ -4369,7 +4385,7 @@ function buildMessageToolbar(opts){
            element so paragraph / list / heading boundaries survive
            the textContent flatten. Without this, "<p>a</p><p>b</p>"
            pastes as "ab" instead of "a\nb". */
-        el.appendChild(d.createTextNode("\n"));
+        blocks[j].appendChild(d.createTextNode("\n"));
       }
       return (c.textContent||"").replace(/\n{3,}/g,"\n\n").trim();
     }catch(e){
@@ -4546,18 +4562,35 @@ function editUserMessage(messageId,bar){
       console.log("[msg-edit] PATCH failed");
       showToast("Saved locally — will sync when back online");
     });
+    /* P0.1 BUG-P01-03 — if the edited message carried image / PDF /
+       text attachments, rebuild the multimodal content parts and stash
+       them on window._pendingChatContent so the resend still includes
+       the attachments. After the previous send this global is null
+       (cleared post-send), so without this the edited turn would
+       degrade to text-only even though extractHistory can rebuild the
+       parts — askChatTurn slices the trailing user history entry and
+       sends _pendingChatContent (or the plain text fallback) instead.
+       A text-only edit yields null → askChatTurn falls back to text. */
+    try{ window._pendingChatContent=buildUserContentParts(editedText,entry.attachments); }catch(_){ window._pendingChatContent=null; }
     /* Replay from the edited turn. askChatTurn writes a fresh
        streaming assistant bubble into the now-empty tail of the
-       conversation. */
+       conversation. P0.1 NOTE-P01-06 — start the new turn only AFTER
+       the PATCH settles. discardFollowing deletes assistant rows with
+       createdAt >= this user turn; the regenerated reply also gets
+       createdAt = now, so if the server delete landed AFTER the fresh
+       reply was saved it would wipe the new answer. Chaining the re-ask
+       on patchPromise (which resolves even on failure via .catch) closes
+       that window — the sub-second PATCH is imperceptible against model
+       latency, and the abort below stops any in-flight stream at once. */
     if(typeof window.askChatTurn==="function"){
-      try{
-        /* If a stream is already in flight (e.g. user clicked edit
-           while the previous reply was still arriving), abort it
-           first so the new turn isn't racing the old one. */
-        if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
-        if(window._activeChatAbort){try{window._activeChatAbort("msg-edit")}catch(_){}}
-        window.askChatTurn(editedText);
-      }catch(e){/* msg-edit replay failed */}
+      /* If a stream is already in flight (e.g. user clicked edit
+         while the previous reply was still arriving), abort it
+         first so the new turn isn't racing the old one. */
+      if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+      if(window._activeChatAbort){try{window._activeChatAbort("msg-edit")}catch(_){}}
+      patchPromise.then(function(){
+        try{ window.askChatTurn(editedText); }catch(e){/* msg-edit replay failed */}
+      });
     }
     /* Avoid leaving the patch promise dangling — reference it so
        linters don't drop it. */
@@ -4612,12 +4645,9 @@ function deleteUserMessage(messageId,bar){
   });
 }
 function regenerateAssistantMessage(messageId,bar){
-  /* Hook into the existing streaming pipeline. The simplest
-     path: clear this bubble and the user message that precedes
-     it, then call askChatTurn on the user text. The full
-     backend integration (POST /api/messages/<id>/regenerate)
-     streams a fresh reply; once that endpoint is live, replace
-     this body with a SseFactory.open call. */
+  /* Hook into the existing streaming pipeline. Locate the user turn
+     that produced this assistant reply, rewind the conversation to it
+     (locally + server-side), then re-ask. */
   var assistantIdx=findMessageIndex(messageId);
   if(assistantIdx<0)return;
   var userIdx=assistantIdx-1;
@@ -4625,12 +4655,50 @@ function regenerateAssistantMessage(messageId,bar){
   var userEntry=userIdx>=0?state.messages[userIdx]:null;
   var userText=userEntry&&userEntry.rawText;
   if(!userText)return;
-  /* Splice out the assistant bubble from state + DOM. */
-  state.messages.splice(assistantIdx,1);
-  var div=document.querySelector('[data-client-id="'+messageId+'"]');
-  if(div)div.remove();
+  var userMessageId=userEntry.id||userEntry.clientId;
+  /* P0.1 BUG-P01-04 — rewind to the user turn instead of splicing only
+     the single assistant bubble. Regenerating a reply invalidates every
+     message that followed it, so drop them all from state + DOM (matches
+     editUserMessage semantics). For the common case (the last assistant
+     reply) this removes exactly that bubble; for a mid-conversation
+     regenerate it prevents the new reply from being appended out of
+     order after stale later turns. */
+  rollbackMessagesAfter(userMessageId);
+  /* P0.1 BUG-P01-02 — delete the replaced assistant rows server-side so
+     a hard reload doesn't resurrect the stale reply. saveCurrentSession
+     only upserts (never deletes rows absent from the payload), so the
+     old assistant would otherwise persist as an orphan. Reuse the proven
+     edit cleanup (PATCH …&discardFollowing) but with regenerate:false —
+     the client re-asks locally via askChatTurn, so the server must NOT
+     also generate a reply. Requires the user message to have a server
+     UUID; a client-only id 400s and is caught (same limitation as edit,
+     where the local rewind still holds until the next successful sync). */
+  var patchPromise=Promise.resolve();
+  if(userMessageId){
+    patchPromise=apiFetch("/api/messages/"+encodeURIComponent(userMessageId),{
+      method:"PATCH",
+      body:{content:userText,regenerate:false,discardFollowing:true},
+      timeoutMs:15000
+    }).catch(function(e){
+      console.log("[msg-regen] server cleanup failed");
+    });
+  }
+  /* P0.1 BUG-P01-03 (regenerate parity) — carry the original turn's
+     attachments so a regenerate of a message that had an image / PDF /
+     text doesn't degrade to text-only. Null for text-only turns. */
+  try{ window._pendingChatContent=buildUserContentParts(userText,userEntry.attachments); }catch(_){ window._pendingChatContent=null; }
   if(typeof window.askChatTurn==="function"){
-    try{window.askChatTurn(userText)}catch(e){/* regen failed */}
+    /* Abort any in-flight stream so the regenerated turn isn't racing
+       a previous reply that's still arriving. */
+    if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+    if(window._activeChatAbort){try{window._activeChatAbort("msg-regen")}catch(_){}}
+    /* P0.1 NOTE-P01-06 — re-ask only AFTER the server discardFollowing
+       settles, so the delete (assistant rows createdAt >= user turn)
+       can't land after the fresh reply is saved and wipe it. Mirrors
+       editUserMessage. patchPromise resolves even on failure (.catch). */
+    patchPromise.then(function(){
+      try{ window.askChatTurn(userText); }catch(e){/* regen failed */}
+    });
   }
 }
 /* Branch from a message — fork the conversation at this point.
@@ -8331,5 +8399,13 @@ syncSidebarForMode();
 /* Init tone presets and memory store. */
 if (typeof window.loadTonePreset === "function") window.loadTonePreset();
 if (typeof window.loadMemories === "function") window.loadMemories();
+/* Bind settings UI event handlers (replaces inline onclick attributes) */
+bindSettingsUI();
+/* Bind settings UI event handlers (replaces inline onclick attributes) */
+bindSettingsUI();
+/* Bind settings UI event handlers (replaces inline onclick attributes) */
+bindSettingsUI();
+/* Bind settings UI event handlers (replaces inline onclick attributes) */
+bindSettingsUI();
 /* Bind settings UI event handlers (replaces inline onclick attributes) */
 bindSettingsUI();
