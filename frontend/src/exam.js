@@ -149,7 +149,7 @@ export function renderExamForm() {
   html += '<div class="exam-form-section">'
     + '<div class="exam-form-section-header"><span class="exam-form-section-title">' + L("Settings", "出题设置") + '</span></div>'
     /* Model */
-    + '<div class="exam-form-field"><label class="exam-form-label" for="examModel">' + L("Model", "生成模型") + '</label>'
+    + '<div class="exam-form-field"><label class="exam-form-label" for="examModelTrigger">' + L("Model", "生成模型") + '</label>'
     + '<div class="exam-model-wrap">'
     + '<button class="exam-model-trigger" id="examModelTrigger" type="button" onclick="toggleExamModelMenu()">'
     + '<span class="exam-model-label" id="examModelLabel">' + esc(activeLabel) + '</span>'
@@ -426,13 +426,15 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
       (instructions ? "Specifics: " + instructions + "\n" : "") +
       "Previously generated questions (DO NOT repeat the same topic angle):\n" + prevBlock;
     var msgs = [{ role: "system", content: prompt }, { role: "user", content: "Generate question " + (i + 1) + " now." }];
-    /* Reasoning models (MiniMax-M2/DeepSeek-R1) spend part of max_tokens on
-       hidden chain-of-thought (reasoning_content) before emitting any visible
-       content. A tight budget (the old 600) could be fully consumed by
-       reasoning, so the model returned empty content and the exam failed with
-       "模型无响应". Give each question a generous budget so there's always room
-       for the answer JSON after reasoning. Matches the diagnostic generator. */
-    var tokens = 8000;
+    /* Use the same token policy as the main chat (window.MAX_TOKENS_CHAT,
+       normally undefined) so we honour the system-configured model default
+       instead of hardcoding a cap. A hardcoded small cap (600) let reasoning
+       models spend the whole budget on hidden chain-of-thought and return
+       empty content ("模型无响应"); a hardcoded large cap (8000) forced long
+       non-streaming generations that tripped the CDN's 524 origin timeout.
+       Omitting max_tokens lets the model emit its short answer JSON and stop
+       naturally (finish_reason=stop). */
+    var tokens = window.MAX_TOKENS_CHAT;
     var result = await callAPI(msgs, tokens);
     if (window.state.examCancel) return;
     var text = typeof result === "string" ? result : (result && (result.text || result.content)) || "";

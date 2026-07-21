@@ -8037,6 +8037,9 @@ function buildSocraticPrompt(topic,level,context){
 /* No max_tokens cap — let the model produce as much as it wants.
    Backend (server/src/routes/chat.js) defaults to its model max when omitted. */
 var MAX_TOKENS_CHAT=undefined;  /* omit entirely; backend passes through */
+/* Bridge to window so other modules (e.g. exam.js) consume the same
+   system-configured token policy instead of hardcoding their own cap. */
+window.MAX_TOKENS_CHAT=MAX_TOKENS_CHAT;
 /* ============================================================
    API OVERRIDES — try API first (streaming when possible), fall back to mock.
    Each generator has TWO variants:
