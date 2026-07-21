@@ -1,8 +1,8 @@
 import { esc } from '../render/helpers.js';
 
 function getState() { return window.state; }
-function tr(key) { return typeof window.t === 'function' ? window.tr(key) : key; }
-function saveCurrentSessionSafe() { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSessionSafe(); }
+function tr(key) { return typeof window.t === 'function' ? window.t(key) : key; }
+function saveCurrentSessionSafe() { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); }
 
 export function kbNodeHtml(n,cls){
   /* Click on the row toggles the boundary detail panel. A separate small
