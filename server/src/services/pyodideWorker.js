@@ -304,10 +304,11 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
 
   try {
     // Wrap the user's code in a Python try/except that emits a clean,
-    // parseable error marker on stderr. Pyodide's runPythonAsync discards
-    // the original Python traceback when the JS boundary catches it
-    // (err.message becomes the literal "PythonError"), so we have to
-    // extract the human-readable error from Python ourselves.
+    // parseable error marker on stderr. Pyodide's runPythonAsync
+    // discards the original Python traceback when the JS boundary
+    // catches it (err.message becomes the literal "PythonError"), so
+    // we have to extract the human-readable error from Python
+    // ourselves.
     //
     // We pass the user's code through compile() so multi-line Python
     // (defs, loops, indented blocks) is parsed as a single unit. This
@@ -320,25 +321,95 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     // Pyodide's eval_code_async splits on newlines before handing the
     // body to Python's parser, so a multi-line exec body that contains
     // an unterminated string literal on the first line fails to parse.
+    //
+    // P_no-top-level-await — the wrapper previously `raise`d after
+    // printing the error marker. That re-raise made Python's default
+    // unhandled-exception handler ALSO print a multi-line traceback
+    // (frame names, file `<socrates>`, line numbers) to stderr,
+    // showing the user the raw internals. We now exit the wrapper
+    // cleanly via sys.exit(1) — the marker is the only diagnostic
+    // they see, and the JS side reads it via the deferred-error
+    // path below. The `_socrates_user_failed` flag lets the JS catch
+    // distinguish "user code raised" from "Pyodide itself blew up".
     const oneLine = code
       .replace(/\\/g, '\\\\')   // backslash → double-backslash
       .replace(/"/g, '\\"')     // double-quote → backslash-quote
       .replace(/\r?\n/g, '\\n');    // physical newline → \n escape
     const wrapped = [
       '_socrates_user_code = "' + oneLine + '"',
+      '_socrates_user_failed = False',
       'try:',
       '    _socrates_compiled = compile(_socrates_user_code, "<socrates>", "exec")',
       '    exec(_socrates_compiled, {"__name__": "__main__"})',
-      'except SystemExit:',
+      'except SystemExit as _socrates_se:',
       '    raise',
       'except BaseException as _socrates_e:',
       '    import sys',
       '    print("---SOCRATES-ERROR-BEGIN---", file=sys.stderr)',
       '    print(type(_socrates_e).__name__ + ": " + str(_socrates_e), file=sys.stderr)',
       '    print("---SOCRATES-ERROR-END---", file=sys.stderr)',
-      '    raise',
+      '    _socrates_user_failed = True',
+      '    sys.exit(1)',
     ].join('\n');
-    await pyodide.runPythonAsync(wrapped);
+    let pyodideThrew = false;
+    let sysExitCode = null;
+    try {
+      await pyodide.runPythonAsync(wrapped);
+    } catch (err) {
+      // P_pyodide-throw-classify — `runPythonAsync` re-raises the
+      // Python exception across the JS bridge. The user-side
+      // traceback frames (file `<exec>`, etc.) leak into
+      // err.message. We ignore that here and rely on the stderr
+      // marker for the friendly message. Distinguish three cases:
+      //   - User code called sys.exit(N)            → re-raised SystemExit
+      //   - User code raised any other BaseException → re-raised as a PythonError
+      //   - Pyodide itself blew up                  → some other JS error
+      // We use the err.type / err.name / err.code to tell them apart.
+      pyodideThrew = true;
+      const errType = String(err && (err.type || err.constructor?.name) || '');
+      const errMsg = String(err && err.message || err);
+      if (errType === 'SystemExit' || /SystemExit/.test(errMsg)) {
+        // A clean sys.exit from user code. The exit code is on
+        // err.args / err.code in Pyodide 0.26. Pull it if we can;
+        // otherwise default to 0 (Python's sys.exit() with no arg).
+        const code = (err && (err.code != null ? err.code : (Array.isArray(err.args) ? err.args[0] : null))) ?? 0;
+        sysExitCode = typeof code === 'number' ? code : (code == null ? 0 : 1);
+      }
+      void err;
+    }
+    // P_user-failed-finalise — if the wrapper hit a user-code
+    // error, the JS-side status/errorMessage haven't been set yet.
+    // Finalise them now from the marker that was just printed.
+    if (pyodideThrew) {
+      const userFailed = (() => {
+        try { return pyodide.runPython('_socrates_user_failed'); } catch (_) { return true; }
+      })();
+      if (userFailed) {
+        status = 'failed';
+        exitCode = 1;
+        pendingPyType = 'PythonError';
+      } else if (sysExitCode !== null) {
+        // User called sys.exit(N). Treat as completed unless the
+        // code is non-zero. Pyodide's `runPythonAsync` propagates
+        // SystemExit as a JS exception regardless of the exit code;
+        // we discriminate here so a clean sys.exit(0) doesn't
+        // surface as a worker crash.
+        if (sysExitCode === 0) {
+          status = 'completed';
+          exitCode = 0;
+        } else {
+          status = 'failed';
+          exitCode = typeof sysExitCode === 'number' ? sysExitCode : 1;
+          errorMessage = `sys.exit(${sysExitCode})`;
+        }
+      } else {
+        // Pyodide-level failure (worker died, OOM, etc.) — surface
+        // the raw JS error so the operator can diagnose.
+        status = 'failed';
+        exitCode = 1;
+        errorMessage = 'pyodide_internal_error: code_interpreter worker failed; see server logs';
+      }
+    }
   } catch (err) {
     const name = err && (err.constructor?.name || '');
     const pyType = (err && err.type) || '';

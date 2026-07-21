@@ -37,6 +37,7 @@ import { createToolRegistry } from '../../services/toolRegistry.js';
 import { executeConnectorTool, CONNECTOR_TOOL_NAMES } from '../../services/connectorTools.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../../services/usageTracker.js';
 import { trackSseConnection, startSseKeepalive } from '../../lib/sse.js';
+import { requireAuth } from '../../middleware/auth.js';
 
 import {
   prepareChatRequest,
@@ -49,7 +50,18 @@ import {
  * @param {import('express').Router} router
  */
 export function registerStreamRoute(router) {
-  router.post('/stream', async (req, res, next) => {
+  /* P_stream-auth — the streaming route previously had no auth
+   * middleware, leaving `req.userId` undefined when an unauthenticated
+   * caller (or a mis-wired client) hit /stream. The downstream
+   * code_interpreter tool then tried to insert into the
+   * `executions` table with userId=null, which fails the
+   * `user_id NOT NULL REFERENCES users(id)` constraint and surfaces
+   * to the user as a confusing "Failed query: insert into executions…"
+   * with no actionable error. Mount `requireAuth` here for parity
+   * with the sync POST / route in chat.js — both endpoints spend
+   * the user's LLM quota and write per-user rows, so both must be
+   * gated identically. */
+  router.post('/stream', requireAuth, async (req, res, next) => {
     try {
       const prep = await prepareChatRequest(req, res);
       if (!prep.ok) return;
@@ -339,7 +351,6 @@ export function registerStreamRoute(router) {
                 /<svg[\s>]/,              // building SVG strings
                 /turtle\.(forward|backward|left|right|circle|goto)/,  // turtle graphics
                 /print\(.*<svg/i,         // printing SVG from Python
-                /svg.*draw|draw.*svg/i,   // SVG drawing
                 /plt\.savefig.*\.svg/i,   // saving matplotlib as SVG
                 /matplotlib.*svg/i,       // matplotlib SVG output
               ];
@@ -348,18 +359,18 @@ export function registerStreamRoute(router) {
                 writeSse(`event: tool_result\ndata: ${JSON.stringify({
                   id: tc.id, ok: false, status: 'failed',
                   output: '', stderr: '',
-                  error: 'SVG illustrations should use ```viz blocks, not code_interpreter. Output a ```viz fenced block with hand-written SVG instead.',
+                  error: 'Illustrations should use render_visualization with the svg_illustration template, not code_interpreter. Call render_visualization instead.',
                   errorCode: 'illustration_not_supported',
                   retryable: false,
-                  userMessage: 'SVG 插画请使用 ```viz 代码块输出手写 SVG，不要使用代码执行工具。',
-                  detail: 'code_interpreter is for data analysis, not SVG illustrations. SVG belongs in a ```viz block.',
+                  userMessage: '插画请使用 render_visualization 工具的 svg_illustration 模板，不要使用代码执行工具。',
+                  detail: 'code_interpreter is for data analysis, not illustrations. Call render_visualization with the svg_illustration template.',
                   artifacts: [], executionId: null, durationMs: 0,
                 })}\n\n`);
                 result = { status: 'failed', error: 'illustration_not_supported' };
                 workingMessages = workingMessages.concat([{
                   role: 'tool',
                   tool_call_id: tc.id,
-                  content: '[error] illustration_not_supported: SVG illustrations must go in a ```viz block as hand-written SVG, not through code_interpreter. Output a ```viz fenced block with inline SVG instead.',
+                  content: '[error] illustration_not_supported: Illustrations must use render_visualization with the svg_illustration template, not code_interpreter. Call render_visualization.',
                 }]);
                 continue;
               }
@@ -638,6 +649,29 @@ data: ${JSON.stringify({
               lines.push(`[error_code: ${result.errorCode || result.errorMessage || 'execution_failed'}]`);
               lines.push(`[retryable: ${result.retryable === false ? 'no' : 'yes'}]`);
               lines.push(`[error: ${result.errorMessage || result.error || result.status}]`);
+              // P_exec-remediation-preamble — the structured header
+              // tells the model WHAT failed; this preamble tells it
+              // the most likely fix. Without it, models tend to
+              // re-emit the same code on retry, especially for the
+              // common `SyntaxError: 'await' outside function` case
+              // (model writes `await foo()` at top level, gets a
+              // SyntaxError, retries with the same code). The
+              // preamble is appended only on failure so it does
+              // not bloat the success path.
+              lines.push('');
+              lines.push('Likely fixes by error_code:');
+              lines.push('- `code_too_large` → split into multiple smaller runs.');
+              lines.push('- `daily_execution_limit_reached` → tell the user the per-day cap; do not retry.');
+              lines.push('- `execution_timeout` → the work exceeded the time budget. Split into smaller runs, or pre-compute in numpy/pandas instead of Python loops.');
+              lines.push('- `output_limit_exceeded` → stdout/stderr hit the 64 KB cap. Save the data to a file, print a summary, describe the summary in prose.');
+              lines.push('- `code_interpreter_unavailable` / `skipped` → the runner is off; do not retry. Tell the user.');
+              lines.push('- `illustration_not_supported` → you tried to draw an SVG / illustration via code_interpreter. Call render_visualization with the svg_illustration template instead.');
+              lines.push('- `SyntaxError: \'await\' outside function` → you wrote top-level `await`. Wrap in `def main(): await ...` and call `asyncio.run(main())` at the end.');
+              lines.push('- `SyntaxError` (other) / `IndentationError` → re-read the source as if it were the body of `def __main__():`; fix indentation; nothing is permitted at module scope that would not be valid in `python -c`.');
+              lines.push('- `NameError` → the variable was from a previous call. Recompute it in this run.');
+              lines.push('- `ModuleNotFoundError` → use `import micropip; micropip.install("pkg")` at the top. NEVER use `pip install` or `subprocess` (the runner is WASM, no shell, no network).');
+              lines.push('- `FileNotFoundError` → you guessed a path without reading the `[scratch]` header. Re-read the header; if the file is not listed, write it yourself in this run.');
+              lines.push('- Empty PNG / "figure not found" → forgot `plt.close()` from the previous run. Add `plt.close("all")` at the top of this run.');
             }
             lines.push('--- stdout ---');
             lines.push(result.stdout || '(empty)');

@@ -21,6 +21,14 @@ export function getKnownTagsFromSessions(sessions) {
 
 export function filterRecentsByChip(recents, recentsFilter) {
   if (recentsFilter && recentsFilter !== "all") {
+    /* Project filter: "project:<id>" */
+    if (recentsFilter.indexOf("project:") === 0) {
+      var projectId = recentsFilter.slice(8);
+      return (recents || []).filter(function (s) {
+        return s.projectId === projectId || (!s.projectId && !projectId);
+      });
+    }
+    /* Tag filter */
     return (recents || []).filter(function (s) {
       return Array.isArray(s.tags) && s.tags.indexOf(recentsFilter) >= 0;
     });

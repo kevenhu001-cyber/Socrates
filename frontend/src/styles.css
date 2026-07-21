@@ -91,6 +91,11 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .recents-filter-chip-btn:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
 .recents-filter-chip-btn.active{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
 .recents-filter-chip-btn.active::after{content:"";position:absolute;left:6px;right:6px;bottom:1px;height:1.5px;border-radius:1px;background:hsl(var(--accent-000));opacity:.85}
+.recents-filter-chip-icon{font-size:8px;line-height:1;opacity:0.7}
+/* Drag state for recent items. */
+.recent-item.dragging{opacity:0.4}
+/* Drop target highlight for project rows. */
+.project-row[dragover="true"]{outline:2px dashed hsl(var(--accent-000)/0.4);outline-offset:-2px;background:hsl(var(--accent-000)/0.04)}
 
 /* P2.2 — recent-item layout: mode badge + title/meta/tags in the
    middle, action buttons on the right. */
@@ -139,6 +144,16 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 /* Block pointer events on all recent items while context menu is
    open. Prevents mobile synthetic clicks from navigating. */
 #sidebar.ctx-menu-block .recent-item{pointer-events:none}
+
+/* "Move to project" sub-section in the session context menu. */
+.session-context-move-to-project{border-top:0.5px solid hsl(var(--border-300)/0.1);margin-top:4px;padding-top:4px}
+.session-context-move-header{font-size:10px;font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.04em;padding:2px 8px 4px}
+.session-context-project-list{display:flex;flex-direction:column;gap:1px;max-height:120px;overflow-y:auto}
+.session-context-project-item{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:5px;background:transparent;border:0;color:hsl(var(--text-200));font-size:12px;font-family:inherit;cursor:pointer;transition:background .1s;text-align:left;width:100%}
+.session-context-project-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.session-context-project-item.active{color:hsl(var(--accent-000))}
+.session-context-project-check{margin-left:auto;font-size:11px;color:hsl(var(--accent-000))}
+.session-context-project-item .project-swatch{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
 /* P2.2 — tag editor popover */
 .tag-editor-popover{position:fixed;width:320px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:10px;box-shadow:0 12px 36px hsl(var(--always-black)/0.35);z-index:950;padding:14px;display:none;flex-direction:column;gap:10px}
@@ -874,6 +889,14 @@ true) but the dropdown never shows — see commit history. */
 .provider-row.active{border-color:hsl(var(--accent-000)/0.4);background:hsl(var(--accent-000)/0.05)}
 .provider-active-btn{background:transparent;border:none;cursor:pointer;font-size:calc(18px * var(--app-font-scale, 1));line-height:1;color:hsl(var(--text-300));padding:2px 4px;flex-shrink:0;transition:color .1s}
 .provider-row.active .provider-active-btn{color:hsl(var(--accent-000))}
+/* Tone preset selector -- radio-button-style card grid in the settings modal. */
+.tone-preset-options{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px 0}
+.tone-preset-btn{display:flex;flex-direction:column;gap:3px;padding:8px 10px;border-radius:8px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.2);color:hsl(var(--text-200));cursor:pointer;transition:background-color .12s,border-color .12s;text-align:left;font-family:inherit}
+.tone-preset-btn:hover{background:hsl(var(--bg-200));border-color:hsl(var(--border-300)/0.4)}
+.tone-preset-btn.active{background:hsl(var(--accent-000)/0.08);border-color:hsl(var(--accent-000)/0.4);color:hsl(var(--text-100))}
+.tone-preset-label{font-size:calc(13px * var(--app-font-scale, 1));font-weight:600}
+.tone-preset-desc{font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.3}
+.tone-preset-btn.active .tone-preset-desc{color:hsl(var(--text-300))}
 .provider-active-btn:hover{color:hsl(var(--accent-000))}
 .provider-fields{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
 .provider-fields .settings-input{padding:7px 10px;font-size:calc(12px * var(--app-font-scale, 1))}
@@ -1093,6 +1116,10 @@ true) but the dropdown never shows — see commit history. */
   left:calc(50% + 0px);
   width:calc(50% - 3px);
   background:hsl(var(--accent-000)/0.14);
+}
+[data-mode=light] .mode-segmented::before {
+  background: hsl(var(--bg-400));
+  box-shadow: 0 1px 3px hsl(0 0% 0%/0.15);
 }
 .mode-segmented .app-mode-toggle{
   position:relative;
@@ -1902,18 +1929,21 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 }
 /* Loading-skeleton lifecycle:
    - Card mounts → JS sets data-viz-state="loading"; .viz-loading
-     shows the "Rendering…" placeholder; iframe is hidden.
+     shows the "Rendering…" placeholder; iframe stays visible
+     (visibility:visible) so any content the browser parses from
+     srcdoc shows up immediately.
    - Normal path: processPendingViz() runs after the iframe is in
-     the DOM. It attaches a 'load' listener AND a setTimeout(80ms)
-     fallback that flips data-viz-state to "ready". At that point:
-       .viz-loading hides, iframe becomes visible.
-   - Safety net (this CSS): the skeleton ALSO auto-hides 600ms
-     after mount via animation. So even if processPendingViz() never
-     runs (e.g. the legacy session-reload path that mounted cards
-     before this wiring existed), the user sees at most a 600ms
-     spinner and then the iframe. The iframe was always going to
-     render once the browser parsed srcdoc — this just removes the
-     visual dependency on the JS path. */
+     the DOM. The iframe's runtime posts {type:'viz-ready'} via
+     parent.postMessage; the parent flips data-viz-state to
+     "ready" and adopts the reported height. At that point:
+       .viz-loading hides, the card adopts the real height.
+   - Safety net (this CSS): the skeleton auto-hides via a CSS
+     animation ~800ms after mount, so even if processPendingViz()
+     never runs (e.g. legacy session-reload path, or postMessage
+     handshake missed) the user sees at most ~800ms of "Rendering…"
+     and then the iframe content. The JS-side max-wait timer is a
+     separate fallback (VIZ_MAX_WAIT_MS = 5000) that surfaces a
+     "Canvas took too long" banner. */
 .viz[data-viz-state="ready"] .viz-loading,
 .viz[data-viz-state="error"] .viz-loading{display:none}
 /* P_viz-no-blank — the iframe is left visible while in the
@@ -2051,6 +2081,12 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
   word-break:break-word;
 }
 @media (hover:none){.viz-btn{opacity:1;transform:none}.viz-status-label{display:none}}
+/* P_viz-btn-reduced-motion — when the user opts out of motion,
+   the `.viz:hover` reveal never fires (no hover intent) and the
+   0.35 opacity leaves ghost buttons. Force the buttons to full
+   opacity so they're discoverable via keyboard or screen reader
+   even when animations/hover are off. */
+@media (prefers-reduced-motion: reduce){.viz-btn{opacity:1;transform:none}}
 
 
 .hidden{display:none !important}
@@ -3476,6 +3512,12 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .mic-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
 .mic-btn:active{transform:scale(.92)}
 .mic-btn svg{width:16px;height:16px}
+/* Research button (next to mic) */
+.research-btn{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:transparent;color:hsl(var(--text-400));border:none;cursor:pointer;transition:background .15s var(--ease-out),color .15s var(--ease-out),transform .12s ease;flex-shrink:0}
+.research-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--accent-000))}
+.research-btn:active{transform:scale(.92)}
+.research-btn svg{width:16px;height:16px}
+.research-btn.is-researching{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/.16);box-shadow:0 0 0 3px hsl(var(--accent-000)/.07);animation:voicePulse 1.15s ease-in-out infinite}
 .mic-btn.is-listening{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/.16);box-shadow:0 0 0 3px hsl(var(--accent-000)/.07);animation:voicePulse 1.15s ease-in-out infinite}.mic-btn.is-listening svg{animation:voiceGlyph .75s ease-in-out infinite alternate}@keyframes voicePulse{50%{box-shadow:0 0 0 6px hsl(var(--accent-000)/0)}}@keyframes voiceGlyph{to{transform:translateY(-1px)}}
 
 /* Send / start button — mic↔waveform swap based on .has-text on the wrap.

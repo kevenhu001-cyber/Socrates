@@ -113,12 +113,28 @@ export const CODE_INTERPRETER_TOOL = {
     description:
       '## What this tool does\n' +
       'Executes Python 3.12 in a sandboxed Pyodide WASM runtime and returns stdout plus any matplotlib PNGs / CSV exports written to the current working directory.\n\n' +
+      // P_code-must-be-module-level — the runner is
+      // `exec(compile(src, "<socrates>", "exec"), {"__name__": "__main__"})`.
+      // This is a SYNCHRONOUS module-level exec, not a Jupyter cell. The
+      // model used to hit `SyntaxError: 'await' outside function` and
+      // similar compile-time errors on the first attempt, wasting a
+      // round trip. These rules are stated up-front so the model writes
+      // valid Python on the first try.
+      '## Source must be valid module-level Python (NOT a Jupyter cell)\n' +
+      '- **No top-level `await`.** This runner is synchronous. Wrap async code: `def main(): await some_async(); asyncio.run(main())`. The same applies to top-level `yield` (must be inside a generator function).\n' +
+      '- **No top-level `return value`.** `return` with a value is only valid inside a function. If you want a final result, print it.\n' +
+      '- **No `break`/`continue` outside loops.** If you need early exit, use `return` inside a function or `sys.exit(N)` at the top level.\n' +
+      '- **Indentation must form valid compound statements.** Every `def`, `for`, `if`, `try`, `with`, `while`, `class` needs a properly indented body. Empty bodies need `pass` or `...`.\n' +
+      '- **Never call `input()`.** There is no stdin — it blocks until the 30s timeout. Pass data as a literal, read from a file in `/artifacts`, or generate it inline.\n' +
+      '- **Never call `plt.show()`.** matplotlib is pinned to `Agg` (no GUI). Use `plt.savefig("name.png", ...)` and the file will be returned as an artifact.\n' +
+      '- **Never use `pip install`.** This is WASM; no `subprocess`, no network. Use `import micropip; micropip.install("pkg")` at the top of the run. Pyodide ships numpy, pandas, matplotlib, seaborn pre-installed.\n' +
+      '- **Group multi-step work in a single call.** Several independent calculations belong in one `code` body — the runner is one exec per tool call, and the model only gets 4 tool iterations per turn.\n\n' +
       '## When to call\n' +
       '- Arithmetic, unit conversion, numeric verification, solving an equation, "is X > Y".\n' +
       '- Complex computation, user-file analysis, data preprocessing, or explicitly requested CSV/PNG exports. For ordinary inline charts and function graphs, use render_visualization instead.\n' +
       '- Small data-exploration snippets (load inline data, summarize, sample-check a derivation).\n\n' +
       '## When NOT to call\n' +
-      '- Illustrations of concrete subjects (animals, people, scenes, logos, icons) — those MUST go in a ```viz block as inline SVG. SVG output here is rejected with `illustration_not_supported`.\n' +
+      '- Illustrations of concrete subjects (animals, people, scenes, logos, icons) — those MUST go through render_visualization with the svg_illustration template. SVG output here is rejected with `illustration_not_supported`. Never use code_interpreter for illustrations.\n' +
       '- Conceptual answers, code review, prose, explanations — answer those directly in markdown.\n' +
       '- Trivial single-step arithmetic you can do in your head.\n\n' +
       `## Limits\n` +
@@ -138,8 +154,10 @@ export const CODE_INTERPRETER_TOOL = {
       '- Always call `plt.tight_layout()` before savefig or labels get clipped.\n' +
       '- Close figures (`plt.close("all")` or `plt.close(fig)`) after saving — otherwise memory grows across runs.\n\n' +
       '## Common errors and how to recover\n' +
+      '- `SyntaxError` (any kind) → indentation / module-level rules above. Re-read the source as if it were the body of a `def __main__():` and fix.\n' +
       '- `NameError: name X is not defined` → X was a variable from a previous run. Recompute it in THIS run, do not just re-call.\n' +
       '- `ModuleNotFoundError` → install with `import micropip; micropip.install("pkg")` at the top of the run.\n' +
+      '- `FileNotFoundError` → you guessed a path without reading the `[scratch]` header. Re-read the header; if the file is not listed, write it yourself in this run.\n' +
       '- `output_limit_exceeded` → stdout was too verbose. Save the data to a file, print a summary, describe the summary.\n' +
       '- `timeout` (status field) → the work exceeded the time budget. Split into smaller runs or pre-compute what you can.\n' +
       '- Empty PNG / "figure not found" → forgot `plt.close()` from the previous run; close all figures at the top of this run.',
@@ -293,6 +311,19 @@ class WorkerSlot {
       // loop, burning CPU until the worker boots).
       if (!this._readyResolved && this.ready) {
         await this.ready;
+        continue;
+      }
+      // Worker is dead (crashed without terminate()) — spawn a
+      // replacement. Without this, the exit handler sets worker=null
+      // and ready=null, so tryClaim() returns false forever, and
+      // _claimChain resolves immediately — creating a CPU-burning
+      // infinite spin loop until failedBoots > 3.
+      if (!this.worker && !this.terminated) {
+        this.terminated = false;
+        this.failedBoots = 0;
+        this.spawn();
+        // Wait for the new worker to boot before retrying
+        if (this.ready) await this.ready;
         continue;
       }
       // Worker is ready but busy (or respawning) — wait for the
@@ -494,10 +525,6 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
       }
       const onMessage = (msg) => {
         if (!msg || msg.id !== id) return;
-        /* P_progress — forward incremental stdout/stderr from the
-           worker so the chat route can stream them as
-           `tool_progress` SSE events. The terminal `result` message
-           has type='result'; everything else is incremental output. */
         if (msg.type === 'stdout' || msg.type === 'stderr' || msg.type === 'phase') {
           emitProgress(executionId, {
             phase: msg.type,
@@ -512,6 +539,12 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
           worker.off('message', onMessage);
           if (signal) signal.removeEventListener('abort', onAbort);
           slot._inflightReject = null;
+          // Clear termination timers immediately so a concurrent
+          // terminateTimer fire doesn't kill the worker after a
+          // normal completion (race between resolve and finally).
+          clearTimeout(sigintTimer);
+          clearTimeout(terminateTimer);
+          for (const t of timeoutWarnings) clearTimeout(t);
           resolve(msg);
         }
       };
@@ -570,6 +603,29 @@ export const codeInterpreter = {
     const signal = opts.signal || null;
     const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
 
+    /* P_exec-missing-user — the `executions.user_id` column is
+     * NOT NULL and references users(id). When a caller (currently
+     * the chat SSE route) hands us `opts.userId` of null/undefined,
+     * the previous code coerced it to null and let the INSERT fail
+     * at the DB layer with a confusing "Failed query: insert into
+     * executions… params: ,,…" that the model surfaced verbatim.
+     * Fail fast here with a structured error so the chat route can
+     * log it cleanly and tell the user that the request was not
+     * authenticated. Catching this at the boundary also makes the
+     * tool behave predictably if it is ever called from a context
+     * without an authenticated user (background job, test, etc). */
+    if (!userId) {
+      if (typeof onProgress === 'function') {
+        try { onProgress({ phase: 'skipped', reason: 'missing_user' }); } catch (_) {}
+      }
+      return {
+        status: 'failed',
+        errorMessage: 'missing_user: code_interpreter requires an authenticated user (req.userId was not set on the call)',
+        stdout: '', stderr: '', exitCode: 1, durationMs: 0,
+        artifacts: [], artifactFileIds: [], artifactCount: 0,
+      };
+    }
+
     /* P_code-size-cap — reject oversized sources BEFORE we touch
        the database, the scratch dir, or the worker pool. The user
        sees a stable 'failed/code_too_large' status and we never
@@ -623,9 +679,11 @@ export const codeInterpreter = {
       /* P_scratch-header — prepend a small stdout header that lists
          the current files in the scratch dir so the AI knows what's
          available without guessing. This runs BEFORE the user's code
-         so the listing appears at the top of stdout. */
-      const scratchHeader = 'import os; __sd = os.getcwd(); print(f\'[scratch] cwd: {os.listdir(__sd) if os.path.isdir(__sd) else "(not a dir)"}\')';
-      const wrappedCode = code.includes('__sd') ? code : scratchHeader + '\n' + code;
+         so the listing appears at the top of stdout. Use a unique
+         marker name that cannot collide with user code. */
+      const scratchMarker = '___socrates_scratch_' + executionId.replace(/-/g, '_') + '___';
+      const scratchHeader = 'import os; ' + scratchMarker + ' = os.getcwd(); print(f\'[scratch] cwd: {os.listdir(' + scratchMarker + ') if os.path.isdir(' + scratchMarker + ') else "(not a dir)"}\')';
+      const wrappedCode = code.includes(scratchMarker) ? code : scratchHeader + '\n' + code;
       result = await runOnWorker({
         executionId,
         code: wrappedCode,

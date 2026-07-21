@@ -26,6 +26,10 @@ function openSettings() {
   document.getElementById("settingsOverlay").classList.remove("hidden");
   syncToggleUI();
   renderProviderList();
+  /* Render tone presets if the module is loaded. */
+  if (typeof window.renderTonePresets === "function") {
+    window.renderTonePresets();
+  }
 }
 
 function closeSettings() {

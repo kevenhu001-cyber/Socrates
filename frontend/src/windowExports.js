@@ -84,7 +84,7 @@ window.sanitizeUrl = sanitizeUrl;
 window.sanitizeUrls = sanitizeUrls;
 
 /* ─── render/viz.js ─── */
-import { openVizModal, openVizModalRaw, processPendingViz, processPendingVizActions } from './render/viz.js';
+import { openVizModal, openVizModalRaw, processPendingViz, processPendingVizActions, getLiveVizCardIds } from './render/viz.js';
 import { mountVisualization, disposeVisualizations } from './render/visualization.js';
 window.__vizOpenModal = openVizModal;
 window.__vizOpenModalRaw = openVizModalRaw;
@@ -92,6 +92,11 @@ window.processPendingViz = processPendingViz;
 window.mountVisualization = mountVisualization;
 window.disposeVisualizations = disposeVisualizations;
 window.processPendingVizActions = processPendingVizActions;
+/* E2E test surface: viz-canvas.spec.mjs asserts the iframe registry
+   releases the entry after `viz-ready` fires. Expose a snapshot
+   helper so the test can do `getLiveVizCardIds()` instead of
+   poking the live map directly. */
+window.getLiveVizCardIds = getLiveVizCardIds;
 
 /* ─── ui/searchProgress.js — internal bridge used by smoke tests and
    non-chat surfaces that need to mount the same search activity UI. ─── */
@@ -300,6 +305,33 @@ import { loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from '.
 window.loadLocalMemory = loadLocalMemory;
 window.appendLocalMemory = appendLocalMemory;
 window.clearLocalMemory = clearLocalMemory;
+
+/* ─── storage/memoryStore.js — cross-session memory ─── */
+import { memoryStore, setMemory, removeMemory, getAllMemories, clearAllMemories, injectMemoryContext, loadFromServer, loadMemories } from './storage/memoryStore.js';
+window.memoryStore = memoryStore;
+window.setMemory = setMemory;
+window.removeMemory = removeMemory;
+window.getAllMemories = getAllMemories;
+window.clearAllMemories = clearAllMemories;
+window.injectMemoryContext = injectMemoryContext;
+window.loadMemories = loadMemories;
+window.loadFromServer = loadFromServer;
+
+/* ─── config/tonePresets.js — AI tone/voice presets ─── */
+import { loadTonePreset, setTonePreset, getTonePreset, getToneVoice, getAvailablePresets, renderTonePresets, syncTonePresetUI } from './config/tonePresets.js';
+window.loadTonePreset = loadTonePreset;
+window.setTonePreset = setTonePreset;
+window.getTonePreset = getTonePreset;
+window.getToneVoice = getToneVoice;
+window.getAvailablePresets = getAvailablePresets;
+window.renderTonePresets = renderTonePresets;
+window.syncTonePresetUI = syncTonePresetUI;
+
+/* ─── agent/researchAgent.js — Deep Research / Agent Mode ─── */
+import { startDeepResearch, launchDeepResearch } from './agent/researchAgent.js';
+window.startDeepResearch = startDeepResearch;
+window.launchDeepResearch = launchDeepResearch;
+
 window._memKey = _memKey;
 
 /* ─── attachments.js ─── */

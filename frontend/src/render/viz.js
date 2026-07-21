@@ -148,6 +148,13 @@ export function renderMermaid(code, opts) {
   '</div>';
 }
 
+/* Track in-flight mermaid renders per id so a streaming re-render
+   of the same id (rAF tick while a previous `mermaid.render` is
+   still pending) doesn't race the first promise's `.then`. The
+   previous implementation stomped the second render's output with
+   the first `.then` callback, or vice versa. */
+var _mermaidInFlight = Object.create(null);
+
 export function processPendingMermaid() {
   if (typeof mermaid === "undefined") return;
   var pending = _pendingMermaid;
@@ -162,8 +169,11 @@ export function processPendingMermaid() {
       el.setAttribute('data-viz-state', 'error');
       return;
     }
+    if (_mermaidInFlight[item.id]) return;
     try {
-      mermaid.render('mermaid-svg-' + item.id, item.code)
+      var inflight = mermaid.render('mermaid-svg-' + item.id, item.code);
+      _mermaidInFlight[item.id] = inflight;
+      inflight
         .then(function (result) {
           var el = document.getElementById(item.id);
           if (!el) return;
@@ -184,6 +194,9 @@ export function processPendingMermaid() {
           var src = esc(item.code || '');
           body.innerHTML = vizErrorHtml(msg, src);
           el.setAttribute('data-viz-state', 'error');
+        })
+        .then(function () {
+          delete _mermaidInFlight[item.id];
         });
     } catch (e) {
       var el = document.getElementById(item.id);
@@ -194,6 +207,7 @@ export function processPendingMermaid() {
       var src = esc(item.code || '');
       body.innerHTML = vizErrorHtml(msg, src);
       el.setAttribute('data-viz-state', 'error');
+      delete _mermaidInFlight[item.id];
     }
   });
   try { processPendingVizActions(); } catch (_) {}
@@ -493,9 +507,26 @@ export function processPendingViz() {
         // user can re-trigger via the Reload button, which
         // surfaces the error to them with full intent. We never
         // re-enter `loading` state from a timeout.
+        //
+        // P_viz-timeout-only-on-empty — only show the warning
+        // banner when the iframe actually appears blank. Many
+        // user canvases post viz-ready synchronously inside
+        // DOMContentLoaded, which races the parent listener and
+        // can lose the message if the parent subscribed after
+        // the post. A successful render should not be downgraded
+        // to "Needs attention" just because our handshake missed
+        // the post.
         var card = entry.card;
         if (!card || card.getAttribute('data-viz-state') === 'ready') return;
         if (!card.isConnected) return;
+        if (!iframeIsBlank(iframe)) {
+          card.setAttribute('data-viz-state', 'ready');
+          _hideLoading(card);
+          clearTimeout(entry.maxTimer);
+          delete _pendingReady[item.id];
+          delete _vizCards[item.id];
+          return;
+        }
         card.setAttribute('data-viz-state', 'error');
         var body = card.querySelector('.viz-body');
         if (body) {
@@ -532,6 +563,27 @@ function _hideLoading(card) {
   if (!card) return;
   var loading = card.querySelector('.viz-loading');
   if (loading) loading.style.display = 'none';
+}
+
+/* P_viz-blank-probe — best-effort check that the iframe has
+   actually rendered something. Under `sandbox="allow-scripts"`
+   (no `allow-same-origin`) the parent cannot read the
+   contentDocument, so we can only inspect attributes and the
+   intrinsic sizing. If the iframe still reports its declared
+   min-height and no inner content hints, it's reasonable to
+   assume it's blank. This is heuristic, not authoritative —
+   the goal is to avoid downgrading a successful-but-uncounted
+   render to "Needs attention". */
+function iframeIsBlank(iframe) {
+  if (!iframe) return true;
+  var h = parseInt(iframe.style.height, 10);
+  if (h && h > 32) return false;
+  if (iframe.dataset && iframe.dataset.ready === 'true') return false;
+  var cs;
+  try { cs = iframe.contentWindow && iframe.contentWindow.document && iframe.contentWindow.document.body; }
+  catch (_) { return true; }
+  if (!cs) return true;
+  return !cs || (cs.childElementCount === 0 && (!cs.textContent || !cs.textContent.trim()));
 }
 
 function _markReady(id) {
@@ -799,6 +851,21 @@ function openVizSourceModal(srcdoc, title) {
   modal.appendChild(dialog);
   document.body.appendChild(modal);
   closeButton.focus();
+}
+
+/* P_viz-testability — expose the live card registry on window so
+   E2E tests can assert iframe GC-eligibility. We only expose a
+   read-only view (a frozen snapshot) rather than the live
+   mutable map, to keep the module's GC assumptions intact while
+   letting the test harness verify that the registry entry was
+   released after `viz-ready` fires. The internal `_pendingReady`
+   is still mutated directly by `_markReady` / `_markError`. */
+export function getLiveVizCardIds() {
+  var ids = [];
+  for (var id in _vizCards) {
+    if (Object.prototype.hasOwnProperty.call(_vizCards, id)) ids.push(id);
+  }
+  return ids;
 }
 
 var _pendingActions = [];

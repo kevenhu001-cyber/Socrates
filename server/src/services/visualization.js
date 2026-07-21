@@ -135,8 +135,30 @@ export function validateVisualizationSpec(input) {
   if (!payload.success) return { ok: false, issues: compactIssues(payload.error) };
   if (['svg_illustration', 'interactive_simulation'].includes(parsed.data.template)) {
     const source = payload.data.source;
-    if (/<(?:iframe|object|embed|form)\b|\son\w+\s*=|\b(?:fetch|xmlhttprequest|websocket)\b|(?:src|href)\s*=\s*["']?https?:/i.test(source)) {
-      return { ok: false, issues: [{ path: 'payload.source', message: '扩展源不能包含网络、表单、嵌套页面或事件属性。' }] };
+    // Match the frontend's extensionIsSafe() logic exactly. We block
+    // only the actually-dangerous patterns: script/iframe/object/embed/form
+    // tags, inline event handlers, network-request APIs, and dangerous
+    // URL schemes. HTTPS URLs are allowed — the iframe's CSP
+    // (default-src 'none'; img-src data: blob:) already blocks external
+    // loads at the browser level, and legitimate CDN images / CSS imports
+    // inside svg_illustration templates need them.
+    if (/<(?:script|iframe|object|embed|form)\b/i.test(source)) {
+      return { ok: false, issues: [{ path: 'payload.source', message: '扩展源不能包含脚本、iframe、object、embed 或 form 标签。' }] };
+    }
+    if (/\son\w+\s*=/i.test(source)) {
+      return { ok: false, issues: [{ path: 'payload.source', message: '扩展源不能包含内联事件处理函数。' }] };
+    }
+    if (/\b(?:fetch|xmlhttprequest|websocket)\b/i.test(source)) {
+      return { ok: false, issues: [{ path: 'payload.source', message: '扩展源不能包含网络请求 API。' }] };
+    }
+    // Check for dangerous URL schemes on src/href attributes
+    const attrRe = /\b(?:src|href|action|formaction|xlink:href)\s*=\s*["']?\s*([^\s"'>]+)/gi;
+    let match;
+    while ((match = attrRe.exec(source)) !== null) {
+      const value = String(match[1] || '').trim();
+      if (/^(?:javascript|vbscript|livescript|mocha|data\s*:\s*text\/html)/i.test(value)) {
+        return { ok: false, issues: [{ path: 'payload.source', message: '扩展源包含危险 URL 协议。' }] };
+      }
     }
   }
   return { ok: true, spec: { ...parsed.data, payload: payload.data } };
