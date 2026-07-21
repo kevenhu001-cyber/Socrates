@@ -20,6 +20,7 @@ import {
   sanitizeExtraBody,
   transformContentForModel,
   transformMessagesForModel,
+  prependCodeInterpreterPrompt,
   ChatPayloadSchema,
 } from '../src/routes/chat/helpers.js';
 

@@ -62,6 +62,7 @@ function openProfile() {
     subEndEl.textContent = "—";
   }
   syncProfileWebSearchUI();
+  syncProfileLangToggle();
   document.getElementById("profileOverlay").classList.remove("hidden");
 }
 
@@ -159,6 +160,22 @@ function syncProfileWebSearchUI() {
   var track = document.getElementById("profileWebSearchTrack");
   if (!track) return;
   if (webSearchOn) { track.classList.add("on"); } else { track.classList.remove("on"); }
+}
+
+/* Reflect window._currentLang onto the EN/中文 chips in the profile
+ * modal. The same sync lives inside applyI18n() at module init, but
+ * opening the profile is the moment the user actually sees the chip,
+ * so we re-sync on every open to defend against any future flow that
+ * mutates _currentLang without going through setLang/applyI18n. */
+function syncProfileLangToggle() {
+  var ids = ["profileLangEn", "profileLangZh"];
+  var current = (typeof window._currentLang === "string") ? window._currentLang : "en";
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (!el) continue;
+    var optLang = ids[i].replace("profileLang", "").toLowerCase();
+    el.classList.toggle("active", optLang === current);
+  }
 }
 
 /* ─── Cross-session memory loader ─── */

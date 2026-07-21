@@ -14,9 +14,26 @@ import { codeInterpreter, CODE_INTERPRETER_TOOL } from '../src/services/codeInte
 describe('codeInterpreter.execute — input guard rails', () => {
   test('rejects sources larger than MAX_CODE_CHARS without touching the pool', async () => {
     const huge = 'x'.repeat(400_000);
-    const res = await codeInterpreter.execute({ code: huge, language: 'python' });
+    const res = await codeInterpreter.execute({ userId: '00000000-0000-4000-8000-000000000001', sessionId: null, code: huge, language: 'python' });
     assert.equal(res.status, 'failed');
     assert.match(res.errorMessage, /code_too_large/);
+    assert.equal(res.exitCode, 1);
+    assert.equal(res.artifactCount, 0);
+  });
+
+  /* P_exec-missing-user — the `executions.user_id` column is
+   * NOT NULL and references users(id). Without an explicit guard,
+   * the previous behaviour coerced a null userId to null and let
+   * the INSERT fail at the DB layer with a confusing error
+   * (`Failed query: insert into executions … params: ,,…`). The
+   * chat route would surface that verbatim, which the model
+   * couldn't pivot from. Reject the call at the boundary with a
+   * structured error so the model and the operator both get an
+   * actionable message. */
+  test('rejects calls without an authenticated user without touching the pool', async () => {
+    const res = await codeInterpreter.execute({ userId: null, sessionId: null, code: 'print(1)', language: 'python' });
+    assert.equal(res.status, 'failed');
+    assert.match(res.errorMessage, /missing_user/);
     assert.equal(res.exitCode, 1);
     assert.equal(res.artifactCount, 0);
   });

@@ -30,7 +30,8 @@ import { pickChatLimiterFor } from '../../middleware/rateLimit.js';
    src/lib/prompts.js (mtime-keyed cache, placeholder substitution).
    We re-export it from here so the call sites inside this route
    family (`prependTeacherModePrompt`) keep a single import path. */
-export { getTeacherModePrompt } from '../../lib/prompts.js';
+import { getTeacherModePrompt, getCodeInterpreterPrompt } from '../../lib/prompts.js';
+export { getTeacherModePrompt, getCodeInterpreterPrompt };
 
 /* Prepends the teacher-mode system prompt unless the frontend already
    sent a system message containing the teacher-mode marker (in which
@@ -45,6 +46,34 @@ export async function prependTeacherModePrompt(messages) {
     first.role === 'system' &&
     typeof first.content === 'string' &&
     first.content.includes(TEACHER_MODE_MARKER)
+  ) {
+    return messages;
+  }
+  return [{ role: 'system', content: prompt }, ...messages];
+}
+
+/* P_code-interpreter-prompt-prepend — the tool's function-calling
+ * `description` field carries the runnable-Python rules; this
+ * markdown carries the dispatch logic ("when to call
+ * code_interpreter vs render_visualization vs a hand-written
+ * ```viz block"). The model is told NOT to use code_interpreter
+ * for SVG illustrations and the like — but the upstream
+ * provider's `description` field is sometimes truncated, and a
+ * few providers don't surface tool descriptions at all to the
+ * model. Prepending the markdown as a system message defends
+ * the common case. Skipped for tutor mode (which has its own
+ * prompt) and for chats that already include a copy (e.g. the
+ * frontend layered dynamic context on top). */
+const CODE_INTERPRETER_PROMPT_MARKER = '# Code Interpreter';
+export async function prependCodeInterpreterPrompt(messages) {
+  const prompt = await getCodeInterpreterPrompt();
+  if (!prompt) return messages;
+  const first = messages[0];
+  if (
+    first &&
+    first.role === 'system' &&
+    typeof first.content === 'string' &&
+    first.content.includes(CODE_INTERPRETER_PROMPT_MARKER)
   ) {
     return messages;
   }
@@ -396,6 +425,7 @@ export async function prepareChatRequest(req, res) {
 
   let finalMessages = injectUserContext(messages, req.user);
   if (mode === 'tutor') finalMessages = await prependTeacherModePrompt(finalMessages);
+  if (mode === 'chat' || mode === 'concise') finalMessages = await prependCodeInterpreterPrompt(finalMessages);
 
   const safeExtraBody = sanitizeExtraBody(extra_body);
 

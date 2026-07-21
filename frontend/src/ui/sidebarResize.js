@@ -107,16 +107,30 @@ export function initSidebarDrag(){
 
 /* Auto-collapse on viewport shrink to mobile width, expand on grow
    to desktop. The handler is exported so main.js can register it
-   from its central keyboard/resize dispatcher. */
+   from its central keyboard/resize dispatcher.
+
+   Track the last known width so we only act when the width actually
+   changes.  On Android, opening the virtual keyboard fires a resize
+   event with the same innerWidth, and without this guard the sidebar
+   would close every time the user taps the search input. */
+let _lastResizeWidth = window.innerWidth;
 export function onViewportResize(){
+  const w = window.innerWidth;
+  const sameWidth = w === _lastResizeWidth;
+  _lastResizeWidth = w;
+  /* If the width did not change, this is a height-only resize
+     (e.g. keyboard open/close on Android). Do not touch the sidebar. */
+  if(sameWidth) return;
   const bd = document.getElementById("sidebarBackdrop");
   const s = document.getElementById("sidebar");
   const open = s && !s.classList.contains("collapsed");
-  if(window.innerWidth < 768 && open){
+  if(w < 768 && open){
     if(s) s.classList.add("collapsed");
     if(window.sidebarOpen !== undefined) window.sidebarOpen = false;
     if(bd) bd.classList.remove("show");
-  } else if(window.innerWidth >= 768 && bd){
+    // Persist so a mobile refresh restores the collapsed state.
+    try{ localStorage.setItem("socrates-sb", "0"); }catch(_){}
+  } else if(w >= 768 && bd){
     bd.classList.remove("show");
   }
   /* syncSidebarBtns is still in main.js — call it via window so the

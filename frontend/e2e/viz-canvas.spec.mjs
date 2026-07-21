@@ -293,7 +293,8 @@ test('ready viz cards release the iframe registry; late viz-error still surfaces
   // asserting the id is no longer present.
   const released = await page.evaluate(() => {
     const id = document.querySelector('.viz[data-viz-state="ready"]').id;
-    return id && (!window.__vizCards || !window.__vizCards[id]);
+    const live = typeof window.getLiveVizCardIds === 'function' ? window.getLiveVizCardIds() : [];
+    return id && !live.includes(id);
   });
   expect(released).toBe(true);
   // Inject a viz-error postMessage from the iframe. The card should

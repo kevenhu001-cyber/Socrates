@@ -167,6 +167,14 @@ async function revokeShareLink() {
 function _renderSharedMessageList(messages) {
   var msgList = document.getElementById("msgList");
   if (!msgList) return;
+  /* P_viz-dispose-shared — dispose any live visualization
+     cards/ECharts instances before wiping the DOM. Mirrors the
+     call in main.js#enterChat (line 1496) so the shared-session
+     path doesn't leak ECharts instances, ResizeObservers, or
+     window `message` listeners across navigations. */
+  if (typeof window.disposeVisualizations === "function") {
+    try { window.disposeVisualizations(msgList); } catch (_) {}
+  }
   msgList.innerHTML = "";
   (messages || []).forEach(function (m) {
     if (!m) return;

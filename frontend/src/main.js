@@ -50,7 +50,7 @@ import { BASELINE_LEVEL, stageInstruction, fromBasicsDirective } from './chat/so
 import { aiGenerate } from './chat/mockDiagnostic.js';
 import { extractHistory } from './chat/history.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './chat/systemPrompts.js';
-import { appendToolModule, appendInlineArtifact, renderWebSearchResults, renderToolTextOutput } from './ui/toolCards.js';
+import { appendInlineArtifact } from './ui/toolCards.js';
 import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
 import { SEARCH_PROGRESS_LABELS, trSearchLabel, _formatEngineBreakdown, startSearchProgress } from './ui/searchProgress.js';
 import { createToolRuntime } from './chat/toolRuntime.js';
@@ -528,6 +528,22 @@ document.addEventListener("keydown",function(e){
     }
     return;
   }
+  /* Cmd+Shift+A — open projects picker. */
+  if(cmd&&!e.altKey&&e.shiftKey&&key==="a"){
+    e.preventDefault();
+    if(typeof openNav==="function"){
+      openNav("projects");
+    }else if(typeof openProjects==="function"){
+      openProjects();
+    }
+    return;
+  }
+  /* Cmd+Shift+P — cycle active project. */
+  if(cmd&&!e.altKey&&e.shiftKey&&key==="p"){
+    e.preventDefault();
+    cycleActiveProject();
+    return;
+  }
   /* Up arrow in an empty textarea — load the last user
      message into the input for editing. Skipped when the
      textarea has text (so the user can still navigate within
@@ -568,6 +584,18 @@ document.addEventListener("click",function(e){
   /* Clicks inside the sidebar or on the toggle button are not "outside". */
   if(e.target.closest("#sidebar"))return;
   if(e.target.closest(".toggle-sidebar"))return;
+  /* If the context menu is open (long-press on a recent item), do NOT
+     close the sidebar. The context menu popover lives outside #sidebar
+     (appended to document.body), so it is not caught by the #sidebar
+     guard above. Tapping on the context menu or its label input should
+     not collapse the sidebar. */
+  if(e.target.closest("#sessionContextMenu"))return;
+  /* If ctx-menu-block is active, the user just long-pressed a recent
+     item. The synthetic click event that follows has its target resolved
+     outside .recent-item (because pointer-events:none), so the #sidebar
+     guard above does not catch it. Ignore all clicks while the block
+     class is present. */
+  if(sbEl.classList.contains("ctx-menu-block"))return;
   /* Don't fight the user when they're interacting with form fields, the
      model picker, the extensions picker, or any other transient menu.
      If the click target is inside an open dropdown / form / modal
@@ -1643,41 +1671,63 @@ async function loadSession(id){
         }
       }
       div.appendChild(body);
-      /* P_tool-history — restore tool-call cards (including artifact
-         images) when reloading a session that has saved tool entries. */
+      /* P_tool-history-restore — on page refresh, restore ONLY the
+         user-visible output of each past tool call. We deliberately
+         skip the `.agent-tool-card` chrome (the "Code · Done · 12s"
+         header and collapsible body) because that chrome is meant
+         for live streaming where the user wants to watch the
+         transcript in real time. After refresh, the conversation
+         is in a settled state and the LLM has already summarised
+         the result in its prose — the chrome would just be
+         duplicated visual noise on top of that summary.
+
+         What we KEEP:
+         - render_visualization → mountVisualization() mounts a
+           fresh .visualization-card directly in `body` (line below).
+           The user sees the chart exactly as it was.
+         - code_interpreter image artifacts → appendInlineArtifact()
+           with the message body mounts the <img> in `body` so
+           matplotlib PNGs / chart exports appear inline.
+         - web_search → sources are already cited inline in the
+           LLM's reply as [1], [2], so no separate card is needed.
+
+         What we DROP:
+         - The .agent-tool-card chrome itself (no header, no status
+           pill, no collapsible body).
+         - Non-image artifacts (CSV exports, JSON dumps, etc.) —
+           these previously lived inside the tool card body and have
+           no equivalent inline mount point. The LLM's prose
+           usually names the file and purpose, which is enough.
+         - renderToolTextOutput's stdout — same reasoning: the
+           LLM has already quoted the relevant numbers / errors in
+           its reply. Re-rendering the full transcript is noise.
+
+         The original toolCalls array on the message is untouched
+         (restoredToolCalls is still pushed onto state.messages),
+         so a future code path that wants the chrome back has
+         everything it needs. */
       if(restoredToolCalls.length && m.role==="assistant"){
         for(var tci=0;tci<restoredToolCalls.length;tci++){
           var rtc=restoredToolCalls[tci];
-          var cardOut=appendToolModule(rtc.name||"code_interpreter",rtc.input||{},body,{
-            restored:true,
-            isError:!!rtc.isError
-          });
+          /* render_visualization: mount directly into the body so
+             the chart reappears. The tool's own mountVisualization
+             writes into the supplied host (body), NOT into a tool
+             card, so the viz card is independent of the chrome. */
           if(rtc.name === "render_visualization" && rtc.input && rtc.input.version === 1 && typeof window.mountVisualization === "function"){
-            window.mountVisualization(rtc.input,body,{toolCallId:rtc.id});
+            try { window.mountVisualization(rtc.input,body,{toolCallId:rtc.id}); } catch(_) {}
           }
-          if(cardOut){
-            var cardEl=cardOut.closest(".agent-tool-card");
-            if(cardEl)cardEl.setAttribute("data-tcid",rtc.id);
-            if(rtc.name==="web_search"&&Array.isArray(rtc.results)&&rtc.results.length){
-              renderWebSearchResults(cardOut,rtc.results,(rtc.input&&rtc.input.query)||"");
-            }else{
-              renderToolTextOutput(cardOut,rtc.output||"",{
-                isError: rtc.isError,
-                kind: rtc.isError ? "error" : "output"
-              });
-            }
-            if(Array.isArray(rtc.artifacts)&&rtc.artifacts.length){
-              for(var ai=0;ai<rtc.artifacts.length;ai++){
-                appendInlineArtifact(rtc.artifacts[ai].id,rtc.artifacts[ai].mimeType,cardOut,rtc.artifacts[ai].name);
-                /* P_inline-artifact — render image artifacts inline in
-                   the message body so they are visible at a glance. */
-                if(rtc.artifacts[ai].id&&rtc.artifacts[ai].mimeType&&rtc.artifacts[ai].mimeType.indexOf("image/")===0){
-                  appendInlineArtifact(rtc.artifacts[ai].id,rtc.artifacts[ai].mimeType,body,rtc.artifacts[ai].name);
-                }
+          /* code_interpreter (and any tool with image artifacts):
+             render images inline in the message body. Non-image
+             artifacts (CSV / JSON) are skipped — they previously
+             lived inside the .agent-tool-card body that we no
+             longer render. */
+          if(Array.isArray(rtc.artifacts) && rtc.artifacts.length){
+            for(var ai=0;ai<rtc.artifacts.length;ai++){
+              var art=rtc.artifacts[ai];
+              if(art && art.id && art.mimeType && art.mimeType.indexOf("image/")===0){
+                try { appendInlineArtifact(art.id, art.mimeType, body, art.name); } catch(_) {}
               }
             }
-            var cEl=cardOut.closest(".agent-tool-card");
-            if(cEl)cEl.classList.add("open");
           }
         }
       }
@@ -2506,6 +2556,11 @@ function openSessionContextMenu(id,rowEl){
         '</div>'+
         '<button class="session-context-label-set" id="sessionCtxLabelSet">Set</button>'+
       '</div>'+
+      /* Move to project */
+      '<div class="session-context-move-to-project">'+
+        '<div class="session-context-move-header">Move to project</div>'+
+        '<div class="session-context-project-list" id="sessionCtxProjectList"></div>'+
+      '</div>'+
       /* Delete */
       '<button class="session-context-btn session-context-btn-danger" data-action="delete">'+
         '<span class="session-context-icon">'+deleteSvg()+'</span>'+
@@ -2554,6 +2609,8 @@ function openSessionContextMenu(id,rowEl){
     if(ev.key==="Enter"){ev.preventDefault();commitLabel()}
     else if(ev.key==="Escape"){ev.preventDefault();closeSessionContextMenu()}
   };
+  /* Populate the "Move to project" list. */
+  populateProjectList(id);
   /* Focus the label input after a short delay. */
   setTimeout(function(){input.focus();input.select()},100);
 }
@@ -2564,6 +2621,87 @@ function closeSessionContextMenu(){
   if(sb)sb.classList.remove("ctx-menu-block");
   var pop=document.getElementById("sessionContextMenu");
   if(pop){pop.classList.remove("visible");setTimeout(function(){if(pop&&pop.parentNode)pop.parentNode.removeChild(pop)},200)}
+}
+
+/* Populate the "Move to project" sub-list in the session context menu. */
+function populateProjectList(sessionId){
+  var list = document.getElementById("sessionCtxProjectList");
+  if(!list) return;
+  var projects = window.__projectsCache || [];
+  if(!projects.length){
+    /* Fetch projects first. */
+    if(typeof apiFetch === "function"){
+      apiFetch("/api/projects").then(function(r){
+        window.__projectsCache = (r && r.projects) || [];
+        renderProjectListItems(list, sessionId);
+      }).catch(function(){});
+    }
+    list.innerHTML = '<div class="session-context-project-item">Loading projects...</div>';
+    return;
+  }
+  renderProjectListItems(list, sessionId);
+}
+function renderProjectListItems(list, sessionId){
+  var projects = window.__projectsCache || [];
+  var currentProjectId = state ? state.currentProjectId : null;
+  list.innerHTML = projects.map(function(p){
+    var active = p.id === currentProjectId;
+    var color = /^#[0-9a-f]{3,8}$/i.test(p.color || "") ? p.color : "hsl(var(--accent-000))";
+    return '<button class="session-context-project-item' + (active ? ' active' : '') +
+      '" data-project-id="' + esc(p.id) + '" onclick="moveSessionToProject(\'' + esc(sessionId) + '\',\'' + esc(p.id) + '\')">' +
+      '<span class="project-swatch" style="background:' + esc(color) + '"></span>' +
+      '<span>' + esc(p.name) + '</span>' +
+      (active ? '<span class="session-context-project-check">✓</span>' : '') +
+      '</button>';
+  }).join("");
+}
+/* Drag-and-drop session onto a project. */
+var _dragSessionId = null;
+/* eslint-disable no-unused-vars */
+function onSessionDragStart(event, sessionId){
+  _dragSessionId = sessionId;
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", sessionId);
+  /* Add a class to the dragged element. */
+  event.target.classList.add("dragging");
+}
+function onSessionDragEnd(event){
+  event.target.classList.remove("dragging");
+  _dragSessionId = null;
+}
+/* Drop handler for project rows. This is called from the spaces panel. */
+function onProjectDrop(event, projectId){
+  event.preventDefault();
+  event.stopPropagation();
+  var sessionId = _dragSessionId || event.dataTransfer.getData("text/plain");
+  if(!sessionId || !projectId) return;
+  moveSessionToProject(sessionId, projectId);
+}
+/* eslint-enable no-unused-vars */
+
+/* Move a session to a project. */
+function moveSessionToProject(sessionId, projectId){
+  var projects = window.__projectsCache || [];
+  var project = projects.filter(function(p){ return p.id === projectId; })[0];
+  if(!project) return;
+  /* Update the session on the server. */
+  if(typeof apiFetch === "function"){
+    apiFetch("/api/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: { projectId: projectId } })
+      .then(function(){
+        /* Update local state. */
+        if(state && state.currentSessionId === sessionId){
+          state.currentProjectId = projectId;
+          window.__activeProject = project;
+        }
+        closeSessionContextMenu();
+        if(typeof refreshServerSessions === "function") refreshServerSessions();
+        if(typeof renderRecents === "function") renderRecents();
+        if(typeof showToast === "function") showToast("Moved to " + project.name);
+      })
+      .catch(function(){
+        if(typeof showToast === "function") showToast("Could not move session");
+      });
+  }
 }
 /* Click-outside dismiss for context menu.
    When ctx-menu-block is active (synthetic click from long-press),
@@ -2685,7 +2823,7 @@ function doRenderRecents(){
       emptyMsg='<div class="recents-empty">Couldn\'t load sessions. Check your connection and try again.<br>'+
         '<a href="#" onclick="retryRecentsFetch();return false">Retry</a></div>';
     }else if(recentsFilter){
-      var filterLabel="#"+recentsFilter;
+      var filterLabel = recentsFilter.indexOf("project:") === 0 ? "Project" : "#" + recentsFilter;
       emptyMsg='<div class="recents-empty">No sessions match the <strong>'+esc(filterLabel)+'</strong> filter.<br>'+
         '<a href="#" onclick="clearRecentsFilter();return false">Clear filter</a> to see all sessions.</div>';
     }else{
@@ -2724,7 +2862,7 @@ function doRenderRecents(){
     var modeCls=isExam?"mode-exam":(resolvedMode==="chat"?"mode-chat":"mode-tutor");
     var safeId="r-"+Math.abs((s.id||"").split("").reduce(function(a,b){a=(a<<5)-a+b.charCodeAt(0);return a&a},0));
     var sessionLabel=getSessionLabel(s.id);
-    html+='<div class="recent-item'+(active?" active":"")+(s.pinned?" pinned":"")+'" data-recent-id="'+safeId+'" data-recent-actual="'+esc(s.id)+'">';
+    html+='<div class="recent-item'+(active?" active":"")+(s.pinned?" pinned":"")+'" data-recent-id="'+safeId+'" data-recent-actual="'+esc(s.id)+'" draggable="true" ondragstart="onSessionDragStart(event,\''+esc(s.id)+'\')" ondragend="onSessionDragEnd(event)">';
     /* P2.2 — mode-coloured dot. The visible text is hidden via CSS
        (font-size:0; overflow:hidden) so the span is just a 6 px circle;
        the title attribute provides a hover tooltip. */
@@ -2781,9 +2919,18 @@ function doRenderRecents(){
 }
 
 function renderRecentsFilterChips(){
+  /* Fetch projects for the filter chips if not cached. */
+  var projects = window.__projectsCache || [];
+  if (!projects.length && typeof apiFetch === "function") {
+    apiFetch("/api/projects").then(function(r){
+      window.__projectsCache = (r && r.projects) || [];
+      renderRecentsFilterChips();
+    }).catch(function(){});
+  }
   renderRecentsFilterChipsUI({
     currentFilter:getRecentsFilter(),
-    tags:getKnownTags().slice(0,8)
+    tags:getKnownTags().slice(0,8),
+    projects: projects
   });
 }
 
@@ -3334,7 +3481,8 @@ async function askChatTurn(userText){
    * modes (they're orthogonal to verbosity). */
   var chatPrompt = window.extensiveThinkingOn ? CHAT_SYSTEM_PROMPT : CHAT_CONCISE_PROMPT;
   var thinkSuffix = window.extensiveThinkingOn ? thinkingSuffix() : "";
-  var msgs=[{role:"system",content:langDir+sysCtx+"\n\n"+chatPrompt+beagleSuffix()+thinkSuffix+memoriesSuffix()+projectContextSuffix()}];
+  var toneSuffix = toneVoiceSuffix();
+  var msgs=[{role:"system",content:langDir+sysCtx+"\n\n"+chatPrompt+toneSuffix+beagleSuffix()+thinkSuffix+memoriesSuffix()+projectContextSuffix()}];
   /* P5.8 — active prompt template: inject the template's
      specialized system prompt as a fresh system message so
      the model commits to that role for this turn. */
@@ -4286,6 +4434,18 @@ function buildMessageToolbar(opts){
         sendFeedback(messageId,"down",bar);
       }
     );
+    /* Branch — fork the conversation from this message. Creates a
+       new session whose history starts from the beginning of the
+       current conversation and ends at the branched message. The
+       current session is saved first; the new session opens in
+       place so the user can explore a different direction without
+       polluting the main thread. */
+    addBtn("branch","Branch from here",
+      '<path d="M6 4v16"/><path d="M18 4v16"/><path d="M6 8h8a2 2 0 0 1 2 2v4"/><path d="M6 16h8a2 2 0 0 0 2-2v-4"/><path d="M16 10l3 3-3 3"/>',
+      function(){
+        branchFromMessage(messageId);
+      }
+    );
   }
   return bar;
 }
@@ -4453,6 +4613,68 @@ function regenerateAssistantMessage(messageId,bar){
   if(typeof window.askChatTurn==="function"){
     try{window.askChatTurn(userText)}catch(e){/* regen failed */}
   }
+}
+/* Branch from a message — fork the conversation at this point.
+   Saves the current session first, then creates a new session
+   whose history only includes messages up to and including the
+   branched message. The user can then continue in a different
+   direction without affecting the original thread. */
+function branchFromMessage(messageId){
+  var branchIdx=findMessageIndex(messageId);
+  if(branchIdx<0){showToast("Message not found");return}
+  /* Save the current session first so the original branch is
+     persisted. */
+  saveCurrentSession();
+  /* Build the new session state from messages up to this point.
+     We copy the relevant fields from the current state. */
+  var branchMessages=state.messages.slice(0,branchIdx+1).map(function(m){
+    return {clientId:m.clientId,role:m.role,rawText:m.rawText,html:m.html,type:m.type,attachments:Array.isArray(m.attachments)?m.attachments.slice(0,20):[]};
+  });
+  var branchTopic=state.session.topic||state.topic||"";
+  var branchTitle=(state.session.sessionTitle||branchTopic)+" (branch)";
+  /* Reset the app to a clean state, then inject the branched
+     messages. We set a flag so the new session starts with the
+     branch context instead of a blank topic. */
+  var _branchContext={messages:branchMessages,topic:branchTopic,title:branchTitle};
+  window._pendingBranchContext=_branchContext;
+  /* Navigate to a new session. resetApp clears state, then we
+     re-hydrate from the branch context. */
+  resetApp().then(function(){
+    /* After resetApp completes, restore the branch context. */
+    if(window._pendingBranchContext){
+      var ctx=window._pendingBranchContext;
+      window._pendingBranchContext=null;
+      state.messages=ctx.messages;
+      state.session.topic=ctx.topic;
+      state.session.sessionTitle=ctx.title;
+      /* Re-render the branched messages in the DOM. */
+      var list=document.getElementById("msgList");
+      if(list){
+        list.innerHTML="";
+        state.messages.forEach(function(msg){
+          var div=document.createElement("div");
+          div.className="msg "+msg.role;
+          div.dataset.clientId=msg.clientId;
+          var body=document.createElement("div");
+          body.className="msg-body";
+          body.innerHTML=msg.html||formatMsg(msg.rawText||"");
+          div.appendChild(body);
+          /* Attach toolbar for each message. */
+          var toolbar=buildMessageToolbar({role:msg.role,entry:msg});
+          if(toolbar)div.appendChild(toolbar);
+          list.appendChild(div);
+        });
+      }
+      /* Clear the greeting/topic setup so the user sees the
+         branched conversation immediately. */
+      var ts=document.getElementById("topicSetup");
+      if(ts)ts.classList.add("hidden");
+      var cv=document.getElementById("chatView");
+      if(cv)cv.classList.remove("hidden");
+      saveCurrentSession();
+      showToast("Branched from previous conversation");
+    }
+  });
 }
 function restoreMessageBody(entry,body){
   if(entry.rawText){
@@ -7118,7 +7340,8 @@ async function resetApp(){
   renderMistakes();
   updateMistakesBadge();
   scrollContainer().scrollTop=0;
-  /* Mobile: close the drawer if it's open. */
+  /* Mobile: close the drawer if it's open, and persist so a
+     subsequent refresh doesn't re-open it. */
   if(window.innerWidth<768){
     var sb=document.getElementById("sidebar");
     var bd=document.getElementById("sidebarBackdrop");
@@ -7126,6 +7349,7 @@ async function resetApp(){
       sb.classList.add("collapsed");
       sidebarOpen=false;
       if(bd)bd.classList.remove("show");
+      try{localStorage.setItem("socrates-sb","0")}catch(e){}
     }
   }
   syncSidebarBtns();
@@ -7577,9 +7801,41 @@ import { loadUserMemories } from './ui/profile.js';
 /* Return a prefix with the user's saved memories for long-term context.
    Memories are fetched from /api/memory and cached in _userMemories. */
 function memoriesSuffix(){
-  if(!_userMemories||!_userMemories.length)return"";
-  return"\n\n## User's saved memories (long-term context)\n"+_userMemories.map(function(t){return"- "+t}).join("\n");
+  var s="";
+  if(_userMemories&&_userMemories.length){
+    s+="\n\n## User's saved memories (long-term context)\n"+_userMemories.map(function(t){return"- "+t}).join("\n");
+  }
+  /* Also include the client-side memory store. */
+  if(typeof window.injectMemoryContext==="function"){
+    var local=window.injectMemoryContext();
+    if(local)s+=local;
+  }
+  return s;
 }
+/* Cycle through active projects. If the current session is in a
+   project, move to the next one; if not, pick the first project. */
+function cycleActiveProject(){
+  var projects = window.__projectsCache || [];
+  if(!projects.length) return;
+  var current = state.currentProjectId;
+  var idx = -1;
+  if(current) idx = projects.findIndex(function(p){ return p.id === current; });
+  var next = projects[(idx + 1) % projects.length];
+  if(!next) return;
+  /* Move current chat to the next project. */
+  state.currentProjectId = next.id;
+  window.__activeProject = next;
+  var sessionId = state.currentSessionId;
+  if(sessionId){
+    try{
+      apiFetch("/api/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: { projectId: next.id } });
+    }catch(_){}
+  }
+  if(typeof refreshServerSessions === "function") refreshServerSessions();
+  if(typeof renderRecents === "function") renderRecents();
+  if(typeof showToast === "function") showToast("Project: " + next.name);
+}
+
 function projectContextSuffix(){
   var project=window.__activeProject;
   if(!project||project.id!==state.currentProjectId)return"";
@@ -7587,6 +7843,18 @@ function projectContextSuffix(){
   if(project.description)suffix+="\nPurpose: "+String(project.description);
   if(project.systemPrompt)suffix+="\nProject instructions: "+String(project.systemPrompt);
   return suffix;
+}
+
+/* Return a voice instruction based on the selected tone preset.
+   Overrides the default VOICE section of the system prompt. */
+function toneVoiceSuffix(){
+  if(typeof window.getTonePreset!=="function")return"";
+  var tone=window.getTonePreset();
+  if(tone==="default"||!tone)return"";
+  if(typeof window.getToneVoice!=="function")return"";
+  var voice=window.getToneVoice();
+  if(!voice)return"";
+  return"\n\n## VOICE (override)\n"+voice+"\n";
 }
 
 function beagleSuffix(){
@@ -7641,7 +7909,7 @@ function buildSocraticPrompt(topic,level,context){
   }else{
     full+="\n\nNote: no [Web research] block is present. You do not have live web access for this turn — say so honestly rather than guessing about current events, prices, dates, or anything that may have changed since your training cutoff.";
   }
-  return sysCtx+"\n\n"+SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+VISUALIZATION_ROUTING_PROMPT+beagleSuffix()+thinkingSuffix()+memoriesSuffix()+projectContextSuffix();
+  return sysCtx+"\n\n"+SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+VISUALIZATION_ROUTING_PROMPT+toneVoiceSuffix()+beagleSuffix()+thinkingSuffix()+memoriesSuffix()+projectContextSuffix();
 }
 
 /* ============================================================
@@ -8041,5 +8309,8 @@ syncWebSearchUI();
 syncExtensionsUI();
 syncAppModeUI();
 syncSidebarForMode();
+/* Init tone presets and memory store. */
+if (typeof window.loadTonePreset === "function") window.loadTonePreset();
+if (typeof window.loadMemories === "function") window.loadMemories();
 /* Bind settings UI event handlers (replaces inline onclick attributes) */
 bindSettingsUI();

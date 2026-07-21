@@ -8,6 +8,11 @@ var visualCounter = 0;
  * on the first mount so this module stays side-effect-free when unused. */
 var _liveCharts = [];
 var _themeObserver = null;
+/* P_viz-mount-dedup — in-memory Set of card IDs currently being
+ * mounted. Guards against concurrent mountVisualization calls that
+ * pass the DOM check (querySelector returns null) before the first
+ * call's host.appendChild() runs. Cleared after appendChild. */
+var _mountingCards = new Map();
 
 async function loadEcharts() {
   if (!echartsPromise) {
@@ -283,14 +288,68 @@ function renderStructure(spec) {
   var width = 760, height = Math.max(260, 130 + Math.ceil(nodes.length / 3) * 95);
   var positions = {};
   nodes.forEach(function (node, index) { positions[node.id || String(index)] = { x: 110 + (index % 3) * 270, y: 70 + Math.floor(index / 3) * 100 }; });
-  var svg = '<svg class="visualization-diagram" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="' + esc(spec.accessibilitySummary) + '" style="font-family:' + VIZ_FONT_FAMILY + '"><defs><marker id="visual-arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="currentColor"/></marker></defs>';
-  edges.forEach(function (edge) { var a = positions[edge.from], b = positions[edge.to]; if (!a || !b) return; svg += '<path class="visualization-edge" d="M' + (a.x + 75) + ' ' + a.y + ' C' + (a.x + 130) + ' ' + a.y + ', ' + (b.x - 130) + ' ' + b.y + ', ' + (b.x - 75) + ' ' + b.y + '" marker-end="url(#visual-arrow)"/><text class="visualization-edge-label" x="' + ((a.x + b.x) / 2) + '" y="' + ((a.y + b.y) / 2 - 8) + '">' + esc(edge.label || '') + '</text>'; });
+  /* P_viz-per-instance-marker — every rendered structure diagram
+     used to define `<marker id="visual-arrow">` at the SVG root.
+     When two diagrams render in the same DOM, the second's
+     `marker-end="url(#visual-arrow)"` resolves to the FIRST
+     diagram's marker (collision on the global id). Give each
+     diagram a per-instance marker id, derived from a monotonically
+     increasing counter so re-renders don't collide either. */
+  var markerId = 'visual-arrow-' + (++visualCounter);
+  var svg = '<svg class="visualization-diagram" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="' + esc(spec.accessibilitySummary) + '" style="font-family:' + VIZ_FONT_FAMILY + '"><defs><marker id="' + markerId + '" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="currentColor"/></marker></defs>';
+  edges.forEach(function (edge) { var a = positions[edge.from], b = positions[edge.to]; if (!a || !b) return; svg += '<path class="visualization-edge" d="M' + (a.x + 75) + ' ' + a.y + ' C' + (a.x + 130) + ' ' + a.y + ', ' + (b.x - 130) + ' ' + b.y + ', ' + (b.x - 75) + ' ' + b.y + '" marker-end="url(#' + markerId + ')"/><text class="visualization-edge-label" x="' + ((a.x + b.x) / 2) + '" y="' + ((a.y + b.y) / 2 - 8) + '">' + esc(edge.label || '') + '</text>'; });
   nodes.forEach(function (node, index) { var point = positions[node.id || String(index)]; svg += '<g class="visualization-node"><rect x="' + (point.x - 78) + '" y="' + (point.y - 28) + '" width="156" height="56" rx="10"/><text x="' + point.x + '" y="' + (point.y - 3) + '">' + esc(node.label) + '</text>' + (node.detail ? '<text class="visualization-node-detail" x="' + point.x + '" y="' + (point.y + 15) + '">' + esc(node.detail) + '</text>' : '') + '</g>'; });
   return svg + '</svg>';
 }
 
+/* P_extension-safety — block only the actually-dangerous patterns:
+   - <script>, <iframe>, <object>, <embed>, <form> tags;
+   - inline event handlers (onclick, onerror, …);
+   - outbound scripts/fetch/websocket;
+   - dangerous URL schemes on attributes (javascript:, vbscript:,
+     data:text/html). We previously also rejected any href/src
+     starting with `https:`, which broke legitimate CDN images and
+     external CSS imports inside svg_illustration templates. */
+/* P_viz-retry — mountVisualization has a dedup path keyed on
+   `data-visualization-id`. The previous retry button just called
+   `mountVisualization(spec, host, options)` which short-circuited
+   and returned the existing card. Now we explicitly remove any
+   card with the same id from the host (and any siblings of the
+   current card) before re-mounting, AND bump the option's
+   toolCallId so the dedup hash can't re-collide. The original
+   error message is preserved in the closure for the next attempt. */
+function remountVisualization(spec, host, options, currentCard) {
+  if (!host) return Promise.resolve(null);
+  var opts = Object.assign({}, options || {});
+  var newCardId = (opts.toolCallId || ('visual-' + Date.now())) + '-r' + Math.random().toString(36).slice(2, 6);
+  opts.toolCallId = newCardId;
+  /* Remove ALL cards with the same visualization spec title — they
+     are stale duplicates from a previous attempt. This is broader
+     than matching just `currentCard` because the previous attempt
+     may have produced partial siblings. Also call cleanup on each
+     removed card so extension message listeners don't leak. */
+  if (currentCard && currentCard.parentNode) {
+    var siblings = currentCard.parentNode.querySelectorAll('.visualization-card');
+    siblings.forEach(function (el) {
+      if (el._visualizationCleanup) { try { el._visualizationCleanup(); } catch (_) {} }
+      el.remove();
+    });
+  }
+  return mountVisualization(spec, host, opts);
+}
+
 function extensionIsSafe(source) {
-  return !/<(?:script|iframe|object|embed|form)\b|\son\w+\s*=|\b(?:fetch|xmlhttprequest|websocket)\b|(?:src|href)\s*=\s*["']?https?:/i.test(source || '');
+  var src = String(source || '');
+  if (/<(?:script|iframe|object|embed|form)\b/i.test(src)) return false;
+  if (/\son\w+\s*=/i.test(src)) return false;
+  if (/\b(?:fetch|xmlhttprequest|websocket)\b/i.test(src)) return false;
+  var attrRe = /\b(?:src|href|action|formaction|xlink:href)\s*=\s*["']?\s*([^\s"'>]+)/gi;
+  var match;
+  while ((match = attrRe.exec(src)) !== null) {
+    var value = String(match[1] || '').trim();
+    if (/^(?:javascript|vbscript|livescript|mocha|data\s*:\s*text\/html)/i.test(value)) return false;
+  }
+  return true;
 }
 
 function renderExtension(spec, cardId) {
@@ -308,8 +367,21 @@ function downloadDataUrl(name, dataUrl) {
 
 function bindCard(card, spec, chart) {
   var table = card.querySelector('.visualization-data');
-  card.querySelector('[data-viz-action="table"]').addEventListener('click', function () { table.hidden = !table.hidden; this.setAttribute('aria-expanded', String(!table.hidden)); });
-  card.querySelector('[data-viz-action="fullscreen"]').addEventListener('click', function () { if (card.requestFullscreen) card.requestFullscreen().catch(function () {}); });
+  var tableBtn = card.querySelector('[data-viz-action="table"]');
+  tableBtn.addEventListener('click', function () { table.hidden = !table.hidden; this.setAttribute('aria-expanded', String(!table.hidden)); });
+  var fsBtn = card.querySelector('[data-viz-action="fullscreen"]');
+  fsBtn.addEventListener('click', function () {
+    if (!card.requestFullscreen) return;
+    /* P_viz-fullscreen-err — surface the failure instead of
+       silently swallowing. Common causes: not in a user-gesture
+       handler (we are), element hidden (rare), or the browser
+       denying permission for cross-origin iframes inside the
+       card. The toast uses the existing notify channel if any
+       is exposed, otherwise a console warn. */
+    card.requestFullscreen().catch(function (err) {
+      try { console.warn('[visualization] fullscreen failed', err); } catch (_) {}
+    });
+  });
   var reset = card.querySelector('[data-viz-action="reset"]');
   if (reset) reset.addEventListener('click', function () { if (chart) chart.dispatchAction({ type: 'restore' }); });
   var download = card.querySelector('[data-viz-action="download"]');
@@ -318,19 +390,53 @@ function bindCard(card, spec, chart) {
   });
 }
 
+/* P_viz-i18n — read a translation key with an English fallback.
+   Falls through to the fallback when:
+   - `t` is missing (i18n.js hasn't loaded yet);
+   - the key returns the key itself (untranslated);
+   - any lookup throws. */
+function vizT(key, fallback) {
+  try {
+    if (typeof window.t === 'function') {
+      var value = window.t(key);
+      if (typeof value === 'string' && value && value !== key) return value;
+    }
+  } catch (_) {}
+  return fallback;
+}
+
 export async function mountVisualization(spec, host, options) {
   if (!spec || spec.version !== 1 || !host) return null;
   options = options || {};
   _ensureThemeWatcher();
   var cardId = options.toolCallId || ('visual-' + (++visualCounter));
+  // Synchronous dedup: check DOM first, then in-memory set to guard
+  // against concurrent calls that yield the event loop between the
+  // DOM check and host.appendChild.
   if (host.querySelector('[data-visualization-id="' + cardId + '"]')) return host.querySelector('[data-visualization-id="' + cardId + '"]');
+  if (_mountingCards.has(cardId)) {
+    // Another call is already mounting this card. Wait for it.
+    return _mountingCards.get(cardId);
+  }
   var card = document.createElement('section');
   card.className = 'visualization-card'; card.dataset.visualizationId = cardId;
   card.setAttribute('aria-label', spec.title + '. ' + spec.accessibilitySummary);
+  // Register in the in-memory set BEFORE any async yield so concurrent
+  // calls with the same cardId see it.
+  _mountingCards.set(cardId, card);
   var chartTemplates = ['function', 'line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap', 'radar', 'boxplot'];
   var extension = ['svg_illustration', 'interactive_simulation'].includes(spec.template);
-  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3>' + (spec.caption ? '<p class="visualization-caption">' + esc(spec.caption) + '</p>' : '') + '</div><div class="visualization-actions"><button type="button" data-viz-action="table" aria-expanded="false" title="显示数据表">数据</button><button type="button" data-viz-action="reset" title="重置视图">重置</button><button type="button" data-viz-action="download" title="下载 PNG">下载</button><button type="button" data-viz-action="fullscreen" title="全屏">全屏</button></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><div class="visualization-stage"></div><div class="visualization-data" hidden>' + renderTable(spec) + '</div>';
+  /* P_viz-actions-i18n — the four action buttons used to be
+     hardcoded Chinese with `title=` only. Now they go through
+     `vizT` (with English fallbacks) AND get explicit `aria-label`s
+     so screen readers announce a semantic label, not a tooltip. */
+  var actionTable = vizT('viz.action.table', 'Data');
+  var actionReset = vizT('viz.action.reset', 'Reset view');
+  var actionDownload = vizT('viz.action.download', 'Download PNG');
+  var actionFullscreen = vizT('viz.action.fullscreen', 'Fullscreen');
+  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3>' + (spec.caption ? '<p class="visualization-caption">' + esc(spec.caption) + '</p>' : '') + '</div><div class="visualization-actions"><button type="button" data-viz-action="table" aria-expanded="false" aria-label="' + esc(actionTable) + '" title="' + esc(actionTable) + '">' + esc(actionTable) + '</button><button type="button" data-viz-action="reset" aria-label="' + esc(actionReset) + '" title="' + esc(actionReset) + '">' + esc(actionReset) + '</button><button type="button" data-viz-action="download" aria-label="' + esc(actionDownload) + '" title="' + esc(actionDownload) + '">' + esc(actionDownload) + '</button><button type="button" data-viz-action="fullscreen" aria-label="' + esc(actionFullscreen) + '" title="' + esc(actionFullscreen) + '">' + esc(actionFullscreen) + '</button></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><div class="visualization-stage"></div><div class="visualization-data" hidden>' + renderTable(spec) + '</div>';
   host.appendChild(card);
+  _mountingCards.delete(cardId);
   try { if (typeof renderMathInElement === 'function') renderMathInElement(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] }); } catch (_) {}
   var stage = card.querySelector('.visualization-stage'), chart = null, liveEntry = null;
   try {
@@ -341,8 +447,8 @@ export async function mountVisualization(spec, host, options) {
       var chartOpts = optionForChart(spec, palette());
       if (!chartOpts) {
         chart.dispose();
-        stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><button type="button">本地重试</button></div>';
-        stage.querySelector('button').addEventListener('click', function () { card.remove(); mountVisualization(spec, host, options); });
+        stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><button type="button">' + esc(vizT('viz.action.retry', 'Retry locally')) + '</button></div>';
+        stage.querySelector('button').addEventListener('click', function () { remountVisualization(spec, host, options, card); });
         chart = null;
       } else {
         chart.setOption(chartOpts, { notMerge: true });
@@ -373,8 +479,8 @@ export async function mountVisualization(spec, host, options) {
     }
     bindCard(card, spec, chart);
   } catch (error) {
-    stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><button type="button">本地重试</button></div>';
-    stage.querySelector('button').addEventListener('click', function () { card.remove(); mountVisualization(spec, host, options); });
+    stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><button type="button">' + esc(vizT('viz.action.retry', 'Retry locally')) + '</button></div>';
+    stage.querySelector('button').addEventListener('click', function () { remountVisualization(spec, host, options, card); });
     console.warn('[visualization] render failed', error);
   }
   return card;

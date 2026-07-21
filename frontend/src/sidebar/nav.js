@@ -49,7 +49,6 @@ function connectorIcon(provider) {
     outlook: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.5 2a3.5 3.5 0 0 0-3.5 3.5h.01v5.73L5 10.5V5.5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v.67L11 11.68V20H7.5a2 2 0 0 1-2-2v-1.01l-1.1.56A3.5 3.5 0 0 0 10 20h6.5a3.5 3.5 0 0 0 3.5-3.5V5.5A3.5 3.5 0 0 0 16.5 2H7.5zM7 13.4l-2.62 1.3A1.5 1.5 0 0 1 2 13.4V9.6a1.5 1.5 0 0 1 2.38-1.3L7 9.6v3.8z"/></svg>',
     notion: lobehubIcon(notionRaw),
     zotero: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.231 2.462 7.18 20.923h14.564V24H2.256v-2.462L16.308 3.076H2.975V0h18.256v2.462z"/></svg>',
-    arxiv: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.842 0a1.004 1.004 0 0 0-.922.608c-.154.368-.044.627.294 1.111l6.918 8.36-1.022 1.106a1.04 1.04 0 0 0 .003 1.423l1.23 1.313-5.44 6.445c-.28.299-.453.823-.297 1.199a1.025 1.025 0 0 0 .959.635.913.913 0 0 0 .689-.34l5.783-6.127 7.49 8.005a.853.853 0 0 0 .684.26.958.958 0 0 0 .878-.614c.157-.377-.017-.75-.306-1.14l-7.052-8.343 1.063-1.13a.963.963 0 0 0 .01-1.316L4.634.464S4.26.01 3.866 0h-.024z"/></svg>',
     'qq-mail': '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.976 1L24 9.8l-10.587.015L10.723 23H5.489L8.18 9.8H3.244L1 5.4h8.077L9.976 1z"/></svg>'
   };
   return icons[provider] || icon("app");
@@ -61,9 +60,12 @@ function connectorIcon(provider) {
    by name from the composer. Selecting an entry drops a natural-
    language directive into the input; the model then auto-calls the
    tool via tool_choice:'auto'. Connectors without a callable tool
-   (feishu/onedrive/outlook/baidu-netdisk/qq-mail) are omitted. */
+   (feishu/onedrive/outlook/baidu-netdisk/qq-mail/arxiv) are omitted.
+   P_slash-no-arxiv — arxiv_search was removed from the slash palette
+   per product request. The connector itself, the in-workspace
+   "Search arXiv" dialog, and the underlying tool registration stay
+   intact — users can still find arxiv via the Connectors panel. */
 var APP_SLASH_HINTS = {
-  arxiv: { insert: "Search arXiv for ", description: "Find academic papers and preprints on arXiv" },
   zotero: { insert: "Search my Zotero library for ", description: "Search your connected Zotero references" },
   notion: { insert: "Search my Notion workspace for ", description: "Search pages in your connected Notion" },
   github: { insert: "List my GitHub repositories matching ", description: "List repos from your connected GitHub" },
@@ -81,8 +83,9 @@ function ensureSlashApps() {
 }
 window.ensureSlashApps = ensureSlashApps;
 /* Return the slash-command entries for apps that are callable right
-   now: public connectors (arxiv) plus any connector with a live
-   connection. Shape mirrors what the palette renderer expects. */
+   now: any connector with a live connection (arxiv_search is exposed
+   only via the Connectors panel, never via the slash palette). Shape
+   mirrors what the palette renderer expects. */
 window.getSlashApps = function () {
   return (workspaceCache.connectors || []).filter(function (c) {
     if (!APP_SLASH_HINTS[c.id]) return false;
@@ -159,7 +162,13 @@ async function renderLibrary() {
     workspaceCache.library.files = results[0].files || [];
     workspaceCache.library.artifacts = results[1].artifacts || [];
     paintLibrary();
-  } catch (_) { list.innerHTML = '<div class="library-empty">Your library could not be loaded. Try again.</div>'; }
+  } catch (err) {
+    if (err && err.status === 401) {
+      list.innerHTML = '<div class="library-empty">Sign in to upload files and create artifacts.</div>';
+    } else {
+      list.innerHTML = '<div class="library-empty">Your library could not be loaded. Try again.</div>';
+    }
+  }
 }
 function paintLibrary() {
   var list = byId("libraryList");
@@ -295,8 +304,17 @@ async function renderProjects() {
   var list = byId("spacesList");
   if (!list) return;
   list.innerHTML = '<div class="workspace-loading">Loading projects…</div>';
-  try { workspaceCache.projects = (await api("/api/projects")).projects || []; paintProjects(); }
-  catch (_) { list.innerHTML = '<div class="spaces-empty">Projects could not be loaded. Try again.</div>'; }
+  try {
+    var res = await api("/api/projects");
+    workspaceCache.projects = (res && res.projects) || [];
+    paintProjects();
+  } catch (err) {
+    if (err && err.status === 401) {
+      list.innerHTML = '<div class="workspace-empty"><strong>Sign in to create projects</strong><span>Projects keep related chats, files, and instructions together.</span></div>';
+    } else {
+      list.innerHTML = '<div class="spaces-empty">Projects could not be loaded. Try again.</div>';
+    }
+  }
 }
 function paintProjects() {
   var list = byId("spacesList");
@@ -308,7 +326,7 @@ function paintProjects() {
   list.innerHTML = workspaceCache.projects.map(function (project) {
     var count = sessions.filter(function (session) { return session.projectId === project.id; }).length;
     var color = /^#[0-9a-f]{3,8}$/i.test(project.color || "") ? project.color : "hsl(var(--accent-000))";
-    return '<div class="workspace-row project-row"><button class="project-main" onclick="openProjectWorkspace(\'' + esc(project.id) + '\')"><span class="project-swatch" style="background:' + esc(color) + '"></span><span class="workspace-row-copy"><strong>' + esc(project.name) + '</strong><span>' + count + " chat" + (count === 1 ? "" : "s") + (project.description ? " · " + esc(project.description) : "") + '</span></span></button><button class="workspace-row-action" onclick="openEditProject(\'' + esc(project.id) + '\')" aria-label="Edit ' + esc(project.name) + '">Edit</button></div>';
+    return '<div class="workspace-row project-row" ondragover="event.preventDefault()" ondrop="onProjectDrop(event,\'' + esc(project.id) + '\')"><button class="project-main" onclick="openProjectWorkspace(\'' + esc(project.id) + '\')"><span class="project-swatch" style="background:' + esc(color) + '"></span><span class="workspace-row-copy"><strong>' + esc(project.name) + '</strong><span>' + count + " chat" + (count === 1 ? "" : "s") + (project.description ? " · " + esc(project.description) : "") + '</span></span></button><button class="workspace-row-action" onclick="openEditProject(\'' + esc(project.id) + '\')" aria-label="Edit ' + esc(project.name) + '">Edit</button></div>';
   }).join("");
 }
 
@@ -317,8 +335,17 @@ async function renderScheduled() {
   var list = byId("scheduledList");
   if (!list) return;
   list.innerHTML = '<div class="workspace-loading">Loading tasks…</div>';
-  try { workspaceCache.tasks = (await api("/api/scheduled-tasks")).tasks || []; paintScheduled(); }
-  catch (_) { list.innerHTML = '<div class="scheduled-empty">Scheduled tasks could not be loaded. Try again.</div>'; }
+  try {
+    var res = await api("/api/scheduled-tasks");
+    workspaceCache.tasks = (res && res.tasks) || [];
+    paintScheduled();
+  } catch (err) {
+    if (err && err.status === 401) {
+      list.innerHTML = '<div class="workspace-empty"><strong>Sign in to schedule tasks</strong><span>Reminders, briefings, and monitoring tasks appear once you sign in.</span></div>';
+    } else {
+      list.innerHTML = '<div class="scheduled-empty">Scheduled tasks could not be loaded. Try again.</div>';
+    }
+  }
 }
 function paintScheduled() {
   var list = byId("scheduledList");
@@ -338,8 +365,18 @@ async function renderPlugins() {
   var list = byId("pluginsList");
   if (!list) return;
   list.innerHTML = '<div class="workspace-loading">Loading apps…</div>';
-  try { workspaceCache.connectors = (await api("/api/connectors")).connectors || []; paintPlugins(); }
-  catch (_) { list.innerHTML = '<div class="plugins-empty">Apps could not be loaded. Try again.</div>'; }
+  try {
+    var res = await api("/api/connectors");
+    workspaceCache.connectors = (res && res.connectors) || [];
+    paintPlugins();
+  } catch (err) {
+    /* 401 — user is not signed in. Show a friendly message instead of an error. */
+    if (err && err.status === 401) {
+      list.innerHTML = '<div class="workspace-empty"><strong>Sign in to connect apps</strong><span>Apps like GitHub, Notion, Zotero, and arXiv become available once you sign in.</span></div>';
+    } else {
+      list.innerHTML = '<div class="plugins-empty">Apps could not be loaded. Try again.</div>';
+    }
+  }
 }
 function paintPlugins() {
   var list = byId("pluginsList");

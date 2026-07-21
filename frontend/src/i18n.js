@@ -453,6 +453,15 @@ var I18N={
     "tool.copyCitation":"Copy citation",
     "tool.copied":"Copied",
     "tool.copyFailed":"Copy failed",
+    /* P_viz-actions — native visualization card action buttons.
+       Previously hardcoded Chinese in render/visualization.js —
+       these keys localize the four actions plus the fallback
+       retry button. */
+    "viz.action.table":"Data",
+    "viz.action.reset":"Reset view",
+    "viz.action.download":"Download PNG",
+    "viz.action.fullscreen":"Fullscreen",
+    "viz.action.retry":"Retry locally",
     "share.linkExpired":"Link expired — start a new topic.",
     "share.creatingLink":"Creating link…",
     "share.failedCreate":"Failed to create link: {msg}",
@@ -910,6 +919,12 @@ var I18N={
     "tool.copyCitation":"复制引用",
     "tool.copied":"已复制",
     "tool.copyFailed":"复制失败",
+    /* P_viz-actions (zh) — see en block for context. */
+    "viz.action.table":"数据",
+    "viz.action.reset":"重置视图",
+    "viz.action.download":"下载 PNG",
+    "viz.action.fullscreen":"全屏",
+    "viz.action.retry":"本地重试",
     "share.linkExpired":"链接已过期 — 请开启新的会话。",
     "share.creatingLink":"正在创建链接…",
     "share.failedCreate":"创建链接失败：{msg}",
@@ -969,6 +984,22 @@ function applyI18n(){
     var val=t(key);
     if(val&&val!==key)els[i].textContent=val;
   }
+  /* P_profile-lang-active — sync the profile modal language toggle's
+     `active` class with the current language. The toggle's static HTML
+     hard-codes "English" as `.active` so on first paint with
+     `_currentLang === "zh"` the chip stayed on English until the user
+     clicked. Sync here so both the sidebar quick-toggle and any consumer
+     of applyI18n share one source of truth. setLang() also calls this
+     block (kept its loop for redundancy with the sidebar path). */
+  try{
+    var langIds=["profileLangEn","profileLangZh"];
+    for(var li=0;li<langIds.length;li++){
+      var langEl=document.getElementById(langIds[li]);
+      if(!langEl)continue;
+      var langOpt=langIds[li].replace("profileLang","").toLowerCase();
+      langEl.classList.toggle("active",langOpt===_currentLang);
+    }
+  }catch(_){}
   /* Translate all elements with data-i18n-placeholder attribute
      (used on <input>/<textarea> where textContent doesn't apply). */
   var phs=document.querySelectorAll("[data-i18n-placeholder]");

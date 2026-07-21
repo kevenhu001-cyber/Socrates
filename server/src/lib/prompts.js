@@ -19,6 +19,15 @@ const __dirname = path.dirname(__filename);
 
 const BEAGLE_PROMPT_PATH = path.resolve(__dirname, '../../../prompts/beagle.md');
 const TEACHER_MODE_PROMPT_PATH = path.resolve(__dirname, '../../../prompts/teacher-mode.md');
+/* P_code-interpreter-prompt — the routing/when-NOT-to-call guidance
+ * for code_interpreter. The tool's own `description` field already
+ * covers the runnable-Python rules (no top-level await, etc.) — the
+ * markdown file complements that with the dispatch logic the model
+ * needs to choose between code_interpreter, render_visualization, and
+ * a hand-written ```viz block. The file is intended to be
+ * hot-reloaded; the loader reads mtime on every call and re-caches
+ * when it changes. */
+const CODE_INTERPRETER_PROMPT_PATH = path.resolve(__dirname, '../../../prompts/code-interpreter.md');
 
 /* Per-file mtime-keyed cache. Key = absolute path, value = { mtime, content }. */
 const cache = new Map();
@@ -98,6 +107,22 @@ export async function getBeagleSystemPrompt() {
  */
 export async function getTeacherModePrompt() {
   return loadPrompt(TEACHER_MODE_PROMPT_PATH);
+}
+
+/**
+ * Load the code_interpreter routing guidance from
+ * prompts/code-interpreter.md. The file complements (does not
+ * duplicate) the tool's function-calling `description` field: the
+ * `description` field is canonical for the runnable-Python rules,
+ * while this markdown is canonical for "when to call this tool vs.
+ * render_visualization vs. a hand-written ```viz block".
+ *
+ * Returns null if the file can't be read; the caller should fall
+ * back to not injecting anything (the `description` field still
+ * carries the most-important rules).
+ */
+export async function getCodeInterpreterPrompt() {
+  return loadPrompt(CODE_INTERPRETER_PROMPT_PATH);
 }
 
 /* Test hook — wipe the in-memory cache so tests can simulate file edits
