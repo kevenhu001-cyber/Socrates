@@ -143,6 +143,9 @@ var I18N={
     "sidebar.share":"Share",
     "sidebar.shareConversation":"Share conversation",
     "sidebar.copy":"Copy",
+    /* P0.2 — in-session find (Ctrl-F) */
+    "find.title":"Find in conversation",
+    "find.placeholder":"Find in conversation…",
     "sidebar.revokeShare":"× Revoke share link",
     "sidebar.createShareLink":"Create share link",
     "sidebar.textSize":"Text size",
@@ -612,6 +615,9 @@ var I18N={
     "sidebar.share":"分享",
     "sidebar.shareConversation":"分享对话",
     "sidebar.copy":"复制",
+    /* P0.2 — 会话内查找（Ctrl-F） */
+    "find.title":"在对话中查找",
+    "find.placeholder":"在对话中查找…",
     "sidebar.revokeShare":"× 撤销分享链接",
     "sidebar.createShareLink":"创建分享链接",
     "sidebar.textSize":"文字大小",
