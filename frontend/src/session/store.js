@@ -6,11 +6,13 @@ export function getChatIdFromURL() {
 }
 
 export function setChatIdInURL(id) {
-  history.replaceState({ chatId: id }, "", id ? "?chat=" + encodeURIComponent(id) : location.pathname);
+  var base = /^\/(library|projects|scheduled|plugins|exam)\/?$/.test(location.pathname) ? "/" : location.pathname;
+  history.replaceState({ chatId: id }, "", id ? "/?chat=" + encodeURIComponent(id) : base);
 }
 
 export function pushChatIdToURL(id) {
-  history.pushState({ chatId: id }, "", id ? "?chat=" + encodeURIComponent(id) : location.pathname);
+  var base = /^\/(library|projects|scheduled|plugins|exam)\/?$/.test(location.pathname) ? "/" : location.pathname;
+  history.pushState({ chatId: id }, "", id ? "/?chat=" + encodeURIComponent(id) : base);
 }
 
 /* P_exam-route — exam sessions live under ?exam=<uuid> instead of ?chat=<uuid>.
@@ -24,11 +26,13 @@ export function getExamIdFromURL() {
 }
 
 export function setExamIdInURL(id) {
-  history.replaceState({ examId: id }, "", id ? "?exam=" + encodeURIComponent(id) : location.pathname);
+  var base = /^\/(library|projects|scheduled|plugins|exam)\/?$/.test(location.pathname) ? "/" : location.pathname;
+  history.replaceState({ examId: id }, "", id ? "/?exam=" + encodeURIComponent(id) : base);
 }
 
 export function pushExamIdToURL(id) {
-  history.pushState({ examId: id }, "", id ? "?exam=" + encodeURIComponent(id) : location.pathname);
+  var base = /^\/(library|projects|scheduled|plugins|exam)\/?$/.test(location.pathname) ? "/" : location.pathname;
+  history.pushState({ examId: id }, "", id ? "/?exam=" + encodeURIComponent(id) : base);
 }
 
 export function capSessions(arr) {

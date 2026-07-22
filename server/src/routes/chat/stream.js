@@ -26,7 +26,7 @@
 
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
-import { sessions, executions, connectorConnections } from '../../db/schema.js';
+import { sessions, executions, connectorConnections, projectConnectorConnections } from '../../db/schema.js';
 import { isUuid } from '../../lib/validate.js';
 import { getExecutionsPerDay } from '../../lib/tiers.js';
 import { streamChatCompletion } from '../../services/llm.js';
@@ -35,6 +35,7 @@ import { webSearch } from '../../services/webSearch.js';
 import { executeVisualization } from '../../services/visualization.js';
 import { createToolRegistry } from '../../services/toolRegistry.js';
 import { executeConnectorTool, CONNECTOR_TOOL_NAMES } from '../../services/connectorTools.js';
+import { executeProjectConnectorTool, PROJECT_CONNECTOR_TOOL_NAMES } from '../../services/projectConnectorTools.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../../services/usageTracker.js';
 import { trackSseConnection, startSseKeepalive } from '../../lib/sse.js';
 import { requireAuth } from '../../middleware/auth.js';
@@ -175,6 +176,7 @@ export function registerStreamRoute(router) {
       // gate connector tools on whether the user has actually connected
       // each provider.  arXiv is always enabled (public API).
       let connectorConnectionsByProvider = {};
+      let projectConnectorConnectionsByProvider = {};
       if (req.userId) {
         try {
           const db = getDb();
@@ -183,12 +185,15 @@ export function registerStreamRoute(router) {
           for (const row of rows) {
             connectorConnectionsByProvider[row.provider] = row;
           }
+          const projectRows = await db.select().from(projectConnectorConnections)
+            .where(and(eq(projectConnectorConnections.userId, req.userId), eq(projectConnectorConnections.status, 'connected')));
+          for (const row of projectRows) projectConnectorConnectionsByProvider[row.provider] = row;
         } catch (err) {
           console.error('[chat/stream] failed to load connector connections:', err.message);
           // Non-blocking — connector tools simply won't be available.
         }
       }
-      const toolRegistry = createToolRegistry({ codeInterpreterToolDef, mode, connectorConnectionsByProvider });
+      const toolRegistry = createToolRegistry({ codeInterpreterToolDef, mode, connectorConnectionsByProvider, projectConnectorConnectionsByProvider });
       const toolDefs = toolRegistry.definitions;
       // P_tutor-no-search — Tutor mode (the guided Socratic teacher)
       // does not need web search. Its answers are rooted in the
@@ -580,6 +585,14 @@ data: ${JSON.stringify({
                   output: result.output, results: [], retryable: false,
                 })}\n\n`);
               }
+            } else if (Object.values(PROJECT_CONNECTOR_TOOL_NAMES).includes(toolName)) {
+              const projectToolResult = await executeProjectConnectorTool(
+                toolName, args, req.userId,
+                toolName === PROJECT_CONNECTOR_TOOL_NAMES.GITHUB_IDENTITY ? projectConnectorConnectionsByProvider.github : projectConnectorConnectionsByProvider.gmail,
+              );
+              const ok = projectToolResult.status === 'completed';
+              writeSse(`event: tool_result\ndata: ${JSON.stringify({ id: tc.id, ok, status: projectToolResult.status, output: projectToolResult.output || '', error: projectToolResult.error || null, errorCode: projectToolResult.errorCode || null, retryable: false, userMessage: projectToolResult.userMessage || null })}\n\n`);
+              result = projectToolResult;
             } else if (Object.values(CONNECTOR_TOOL_NAMES).includes(toolName)) {
               // Connector tools — execute via the shared connectorTools executor.
               const TOOL_TO_PROVIDER = {

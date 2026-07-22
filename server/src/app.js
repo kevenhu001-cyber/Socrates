@@ -40,6 +40,7 @@ import executionRouter from './routes/execution.js';
 import scheduledTasksRouter from './routes/scheduledTasks.js';
 import pluginsRouter from './routes/plugins.js';
 import connectorRouter, { githubWebhookHandler } from './routes/connectors.js';
+import projectConnectorRouter from './routes/projectConnectors.js';
 import { searchContent } from './services/search.js';
 import { webSearch, imageSearch } from './services/webSearch.js';
 import { fetchBatch } from './services/fetchBatch.js';
@@ -471,6 +472,7 @@ app.use('/api/scheduled-tasks', scheduledTasksRouter);
 /* ─── Plugins ─── */
 app.use('/api/plugins', pluginsRouter);
 app.use('/api/connectors', connectorRouter);
+app.use('/api/project-connectors', projectConnectorRouter);
 
 // Files (Phase 4) — PDF text extraction is mounted FIRST so its
 // `/extract` path doesn't get swallowed by fileRouter's `/:id` lookup.

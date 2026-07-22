@@ -1,0 +1,9 @@
+# OOMOL hosted ProjectConnector for Socrates Plugin Center.
+# This is a project credential, never a browser credential and never an LLM key.
+OOMOL_PROJECT_API_KEY=oo_proj_replace_with_your_project_key
+
+# Optional only for a non-production OOMOL gateway.
+# OOMOL_PROJECT_CONNECTOR_BASE_URL=https://connector.oomol.com/v1
+
+# Public origin used by OOMOL to return the browser after OAuth.
+APP_URL=https://your-socrates-domain.example

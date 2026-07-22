@@ -23,6 +23,7 @@ function lobehubIcon(raw) {
 
 var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "exam", "more"];
 var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [] };
+var WORKSPACE_ROUTES = { library: "/library", projects: "/projects", scheduled: "/scheduled", plugins: "/plugins", exam: "/exam" };
 
 function byId(id) { return document.getElementById(id); }
 function t(key, fallback) { return typeof window.t === "function" ? window.t(key) : fallback; }
@@ -144,13 +145,29 @@ function showMainPage(pageId) {
   examEls.forEach(function (el) { el.classList.add("hidden"); });
 }
 
-export function openNav(name) {
+function workspaceForPath(pathname) {
+  var clean = String(pathname || "/").replace(/\/+$/, "") || "/";
+  return Object.keys(WORKSPACE_ROUTES).find(function (name) { return WORKSPACE_ROUTES[name] === clean; }) || null;
+}
+function pushWorkspaceRoute(name) {
+  var next = WORKSPACE_ROUTES[name];
+  if (next && location.pathname !== next) history.pushState({ workspace: name }, "", next);
+}
+export function openNav(name, options) {
   var openers = { library: openLibrary, projects: openProjects, scheduled: openScheduled, plugins: openPlugins, exam: openExam, more: openMoreNav };
   if (!openers[name]) return;
+  if (name !== "more" && !(options && options.fromRoute)) pushWorkspaceRoute(name);
   setActiveNav(name);
   if (name !== "more") closeAllPanels();
   openers[name]();
 }
+export function syncWorkspaceRoute() {
+  var page = workspaceForPath(location.pathname);
+  if (page) openNav(page, { fromRoute: true });
+}
+window.addEventListener("popstate", function () { syncWorkspaceRoute(); });
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", syncWorkspaceRoute, { once: true });
+else setTimeout(syncWorkspaceRoute, 0);
 
 function hideChatAndTopic() {
   var ts = byId("topicSetup"); if (ts) ts.classList.add("hidden");
@@ -384,46 +401,48 @@ export function openPlugins() { hideChatAndTopic(); showMainPage("pluginsPanel")
 async function renderPlugins() {
   var list = byId("pluginsList");
   if (!list) return;
-  list.innerHTML = '<div class="workspace-loading">Loading apps…</div>';
+  list.innerHTML = '<div class="workspace-loading">Loading connector catalog...</div>';
   try {
-    var res = await api("/api/connectors");
+    var res = await api("/api/project-connectors");
     workspaceCache.connectors = (res && res.connectors) || [];
+    workspaceCache.projectConnectorConfigured = !!(res && res.configured);
     paintPlugins();
   } catch (err) {
-    /* 401 — user is not signed in. Show a friendly message instead of an error. */
-    if (err && err.status === 401) {
-      list.innerHTML = '<div class="workspace-empty"><strong>Sign in to connect apps</strong><span>Apps like GitHub, Notion, Zotero, and arXiv become available once you sign in.</span></div>';
-    } else {
-      list.innerHTML = '<div class="plugins-empty">Apps could not be loaded. Try again.</div>';
-    }
+    list.innerHTML = err && err.status === 401
+      ? '<div class="workspace-empty"><strong>Sign in to connect apps</strong><span>Your app connections are isolated to your Socrates account.</span></div>'
+      : '<div class="plugins-empty">Apps could not be loaded. Try again.</div>';
   }
 }
 function paintPlugins() {
   var list = byId("pluginsList");
   if (!workspaceCache.connectors.length) { list.innerHTML = '<div class="workspace-empty"><strong>Apps are unavailable</strong><span>Refresh and try again.</span></div>'; return; }
+  var setup = workspaceCache.projectConnectorConfigured
+    ? '<div class="workspace-note">OAuth tokens stay in the OOMOL gateway. Neither the browser nor the model receives a provider token.</div>'
+    : '<div class="workspace-empty"><strong>Connector service needs setup</strong><span>Add OOMOL_PROJECT_API_KEY to the server environment. Authorization remains disabled until then.</span></div>';
   list.innerHTML = workspaceCache.connectors.map(function (connector) {
-    var connected = !!connector.connection;
-    var comingSoon = connector.availability !== "available";
-    var needsInstall = connected && connector.connection.status === "needs_installation";
-    var meta = connected
-      ? (needsInstall ? "Authorization complete · install the app to choose repositories" : "Connected" + (connector.connection.displayName ? " · " + connector.connection.displayName : ""))
-      : (comingSoon ? "Coming soon" : connector.description);
-    var action = comingSoon
-      ? '<span class="connector-coming-soon">Soon</span>'
-      : connector.auth === "public"
-        ? '<button class="workspace-secondary connector-connect" onclick="openArxivSearch()">Explore</button>'
-      : needsInstall && connector.installUrl
-        ? '<button class="workspace-secondary connector-connect" onclick="installConnector(\'' + esc(connector.installUrl) + '\')">Install</button>'
-        : connected
-        ? (connector.id === "zotero"
-          ? '<span class="connector-actions"><button class="workspace-secondary connector-connect" onclick="openZoteroLibrary()">Browse</button><button class="workspace-row-action connector-disconnect" onclick="disconnectConnector(\'zotero\')">Disconnect</button></span>'
-          : '<button class="workspace-row-action connector-disconnect" onclick="disconnectConnector(\'' + esc(connector.id) + '\')">Disconnect</button>')
-        : connector.configured === false
-          ? '<span class="connector-coming-soon">Setup needed</span>'
-          : '<button class="workspace-secondary connector-connect" onclick="connectConnector(\'' + esc(connector.id) + '\')">Connect</button>';
-    return '<div class="workspace-row connector-row ' + (connected ? "is-connected" : "") + '"><span class="workspace-row-icon connector-icon connector-' + esc(connector.id) + '">' + connectorIcon(connector.id) + '</span><div class="workspace-row-copy"><strong>' + esc(connector.name) + '</strong><span>' + esc(meta) + '</span></div>' + action + '</div>';
-  }).join("");
+    var connection = connector.connection || null;
+    var connected = connection && connection.status === "connected";
+    var pending = connection && connection.status === "initiated";
+    var meta = connected ? "Connected" + (connection.displayName ? " · " + connection.displayName : "")
+      : pending ? "Waiting for authorization to finish" : connector.description;
+    var action = connected ? '<span class="connector-coming-soon">Connected</span>'
+      : pending ? '<button class="workspace-secondary connector-connect" onclick="refreshProjectConnector(\'' + esc(connector.id) + '\')">Refresh status</button>'
+      : workspaceCache.projectConnectorConfigured ? '<button class="workspace-secondary connector-connect" onclick="connectProjectConnector(\'' + esc(connector.id) + '\')">Connect</button>'
+      : '<span class="connector-coming-soon">Server setup needed</span>';
+    return '<div class="workspace-row connector-row ' + (connected ? "is-connected" : "") + '"><span class="workspace-row-icon connector-icon connector-' + esc(connector.id) + '">' + connectorIcon(connector.id) + '</span><div class="workspace-row-copy"><strong>' + esc(connector.name) + '</strong><span>' + esc(meta) + '</span><small class="workspace-note">' + esc((connector.capabilities || []).join(" · ")) + '</small></div>' + action + '</div>';
+  }).join("") + setup;
 }
+window.connectProjectConnector = async function (id) {
+  try {
+    var result = await api("/api/project-connectors/" + encodeURIComponent(id) + "/connect", { method: "POST" });
+    if (!result || !result.authorizationUrl) throw new Error("No authorization URL was returned");
+    window.location.assign(result.authorizationUrl);
+  } catch (error) { toast((error && error.message) || "Could not start authorization"); }
+};
+window.refreshProjectConnector = async function (id) {
+  try { await api("/api/project-connectors/" + encodeURIComponent(id) + "/status"); await renderPlugins(); }
+  catch (error) { toast((error && error.message) || "Could not refresh authorization status"); }
+};
 
 function ensureDialog() {
   var dialog = byId("workspaceDialog");
