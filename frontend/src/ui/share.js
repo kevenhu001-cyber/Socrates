@@ -49,10 +49,11 @@ function toggleChatTopBarEls(show) {
      style here so every existing toggleChatTopBarEls(true|false) call
      site (main.js + exam.js + sidebar/nav.js) automatically hides them
      when the conversation starts and re-shows them on resetApp().
-     The desktop #modeSegmentedTop pill (the centered Chat/Tutor
-     segmented control in the top-bar) shares the same lifecycle — it
-     only makes sense during topic setup, so it gets the same treatment. */
-  var mobileEls = document.querySelectorAll("#mobileMode, #mobileIncognitoBtn, #modeSegmentedTop");
+     Note: #modeSegmentedTop is the DESKTOP Chat/Tutor pill (CSS hides it
+     under 640px in favor of #mobileMode). It must NOT be in this list —
+     toggling its inline `style.display` here would invisibly defeat the
+     desktop mode switcher on chat start. */
+  var mobileEls = document.querySelectorAll("#mobileMode, #mobileIncognitoBtn");
   mobileEls.forEach(function (el) { el.style.display = show ? "none" : ""; });
 }
 
