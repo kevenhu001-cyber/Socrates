@@ -114,7 +114,7 @@
 
 **问题描述**
 
-MiniMax 代理路由挂载在 `/api/minimax`，未应用 requireAuth，未限流。匿名用户可 POST 任意 messages 使用内置 MINIMAX_API_KEY 流式调用。
+MiniMax 代理路由挂载在 `/api/minimax`，未应用 requireAuth，未限流。匿名用户可 POST 任意 messages 使用内置 BEAGLE_SYSTEM_KEY 流式调用。
 
 **影响**：无限制滥用内置 LLM provider，产生无上限 API 费用。
 

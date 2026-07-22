@@ -73,9 +73,9 @@ function decryptProvider(key) {
  * the provider already exists, otherwise creates it.
  */
 export async function seedBuiltInProvider() {
-  const apiKey = process.env.MINIMAX_API_KEY;
+  const apiKey = process.env.BEAGLE_SYSTEM_KEY;
   if (!apiKey) {
-    console.log('[seed] MINIMAX_API_KEY not set — skipping built-in Beagle provider');
+    console.log('[seed] BEAGLE_SYSTEM_KEY not set — skipping built-in Beagle provider');
     return;
   }
 

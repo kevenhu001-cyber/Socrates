@@ -425,10 +425,12 @@ function paintPlugins() {
     var pending = connection && connection.status === "initiated";
     var meta = connected ? "Connected" + (connection.displayName ? " · " + connection.displayName : "")
       : pending ? "Waiting for authorization to finish" : connector.description;
-    var action = connected ? '<span class="connector-coming-soon">Connected</span>'
-      : pending ? '<button class="workspace-secondary connector-connect" onclick="refreshProjectConnector(\'' + esc(connector.id) + '\')">Refresh status</button>'
-      : workspaceCache.projectConnectorConfigured ? '<button class="workspace-secondary connector-connect" onclick="connectProjectConnector(\'' + esc(connector.id) + '\')">Connect</button>'
-      : '<span class="connector-coming-soon">Server setup needed</span>';
+    var action;
+    if (connected) action = '<span class="connector-coming-soon">Connected</span>';
+    else if (pending) action = '<button class="workspace-secondary connector-connect" onclick="refreshProjectConnector(\'' + esc(connector.id) + '\')">Refresh status</button>';
+    else if (!workspaceCache.projectConnectorConfigured) action = '<span class="connector-coming-soon">Server setup needed</span>';
+    else if (connector.authType === "api_key" || connector.authType === "custom_credential") action = '<button class="workspace-secondary connector-connect" onclick="openProjectConnectorForm(\'' + esc(connector.id) + '\')">Connect</button>';
+    else action = '<button class="workspace-secondary connector-connect" onclick="connectProjectConnector(\'' + esc(connector.id) + '\')">Connect</button>';
     return '<div class="workspace-row connector-row ' + (connected ? "is-connected" : "") + '"><span class="workspace-row-icon connector-icon connector-' + esc(connector.id) + '">' + connectorIcon(connector.id) + '</span><div class="workspace-row-copy"><strong>' + esc(connector.name) + '</strong><span>' + esc(meta) + '</span><small class="workspace-note">' + esc((connector.capabilities || []).join(" · ")) + '</small></div>' + action + '</div>';
   }).join("") + setup;
 }
@@ -442,6 +444,41 @@ window.connectProjectConnector = async function (id) {
 window.refreshProjectConnector = async function (id) {
   try { await api("/api/project-connectors/" + encodeURIComponent(id) + "/status"); await renderPlugins(); }
   catch (error) { toast((error && error.message) || "Could not refresh authorization status"); }
+};
+window.openProjectConnectorForm = function (id) {
+  var connector = (workspaceCache.connectors || []).filter(function (c) { return c.id === id; })[0];
+  if (!connector || !connector.credentialInput || !connector.credentialInput.fields) {
+    toast("This connector is missing a credential form."); return;
+  }
+  var fieldsHtml = connector.credentialInput.fields.map(function (f) {
+    var help = f.help ? '<p class="workspace-note">' + esc(f.help) + '</p>' : "";
+    var required = f.required ? " required" : "";
+    return '<label class="workspace-field"><span>' + esc(f.label) + '</span><input name="' + esc(f.key) + '" type="' + esc(f.type || "text") + '"' + required + ' autocomplete="off" spellcheck="false"></label>' + help;
+  }).join("");
+  showDialog('<div class="workspace-dialog-title"><div><h2>Connect ' + esc(connector.name) + '</h2><p>' + esc(connector.description) + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="Close">×</button></div><form id="projectConnectorForm" class="workspace-form">' + fieldsHtml + '<div class="workspace-dialog-actions"><span></span><button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">Cancel</button><button class="workspace-primary" type="submit">Connect</button></div></form>');
+  var authType = connector.authType;
+  byId("projectConnectorForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    var form = event.currentTarget;
+    var submit = form.querySelector('button[type="submit"]');
+    submit.disabled = true; submit.textContent = "Connecting…";
+    var body;
+    if (authType === "api_key") {
+      body = { apiKey: form.elements[connector.credentialInput.fields[0].key].value };
+    } else {
+      var values = {};
+      connector.credentialInput.fields.forEach(function (f) { values[f.key] = form.elements[f.key].value; });
+      body = { values: values };
+    }
+    try {
+      var result = await api("/api/project-connectors/" + encodeURIComponent(id) + "/connect", { method: "POST", body: body });
+      if (!result || result.status !== "connected") throw new Error((result && result.error) || "Could not connect.");
+      closeWorkspaceDialog(); renderPlugins(); toast(connector.name + " connected");
+    } catch (err) {
+      toast((err && err.message) || (connector.name + " could not be connected"));
+      submit.disabled = false; submit.textContent = "Connect";
+    }
+  });
 };
 
 function ensureDialog() {

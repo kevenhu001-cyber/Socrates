@@ -7,7 +7,7 @@
 #
 # What this does:
 #   1. Reads /home/ubuntu/socrates-api.env (contains SESSION_SECRET,
-#      DATABASE_URL, MINIMAX_API_KEY, SMTP_PASS, GITHUB_CLIENT_SECRET,
+#      DATABASE_URL, BEAGLE_SYSTEM_KEY, SMTP_PASS, GITHUB_CLIENT_SECRET,
 #      etc.).
 #   2. Writes two GPG-encrypted artefacts under /var/backups/socrates/:
 #        a. socrates-env-<TIMESTAMP>.tar.gz.gpg  — full env + checksum + host

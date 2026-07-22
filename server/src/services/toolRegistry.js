@@ -31,6 +31,10 @@ export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConn
     { name: CONNECTOR_TOOL_NAMES.GITEE,  modelDefinition: GITEE_TOOL,   enabled: Boolean(connectorConnectionsByProvider?.gitee), pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
     { name: PROJECT_CONNECTOR_TOOL_NAMES.GITHUB_IDENTITY, modelDefinition: PROJECT_CONNECTOR_TOOLS[0], enabled: Boolean(projectConnectorConnectionsByProvider?.github), pure: true, sessionSerial: false, maxConcurrency: 2, retries: 0 },
     { name: PROJECT_CONNECTOR_TOOL_NAMES.GMAIL_SEARCH, modelDefinition: PROJECT_CONNECTOR_TOOLS[1], enabled: Boolean(projectConnectorConnectionsByProvider?.gmail), pure: true, sessionSerial: false, maxConcurrency: 2, retries: 0 },
+    { name: PROJECT_CONNECTOR_TOOL_NAMES.GOOGLE_CALENDAR_LIST_EVENTS, modelDefinition: PROJECT_CONNECTOR_TOOLS[2], enabled: Boolean(projectConnectorConnectionsByProvider?.googlecalendar), pure: true, sessionSerial: false, maxConcurrency: 2, retries: 0 },
+    { name: PROJECT_CONNECTOR_TOOL_NAMES.TODOIST_LIST_TASKS, modelDefinition: PROJECT_CONNECTOR_TOOLS[3], enabled: Boolean(projectConnectorConnectionsByProvider?.todoist), pure: true, sessionSerial: false, maxConcurrency: 2, retries: 0 },
+    { name: PROJECT_CONNECTOR_TOOL_NAMES.GITLAB_IDENTITY, modelDefinition: PROJECT_CONNECTOR_TOOLS[4], enabled: Boolean(projectConnectorConnectionsByProvider?.gitlab), pure: true, sessionSerial: false, maxConcurrency: 2, retries: 0 },
+    { name: PROJECT_CONNECTOR_TOOL_NAMES.QQ_MAIL_SEARCH, modelDefinition: PROJECT_CONNECTOR_TOOLS[5], enabled: Boolean(projectConnectorConnectionsByProvider?.qq_mail), pure: true, sessionSerial: false, maxConcurrency: 2, retries: 0 },
   ];
   return {
     entries,
