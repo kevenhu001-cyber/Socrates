@@ -110,6 +110,24 @@ export async function mockAuthedApp(page) {
       await route.fulfill(jsonResponse({ connection: { status: 'connected', displayName: 'Smoke Zotero' } }, 201));
       return;
     }
+    if (apiUrl.endsWith('/api/project-connectors') || apiUrl.includes('/api/project-connectors?')) {
+      await route.fulfill(jsonResponse({
+        mode: 'oomol-project-connector',
+        configured: true,
+        connectors: [
+          { id: 'github', name: 'GitHub', description: 'Bring repositories, issues, pull requests, and CI context into a chat.', capabilities: ['Repositories', 'Issues', 'Pull requests'], authType: 'oauth', connection: null },
+          { id: 'gmail', name: 'Gmail', description: 'Search mail context that you explicitly authorize.', capabilities: ['Mail search'], authType: 'oauth', connection: null },
+          { id: 'googledrive', name: 'Google Drive', description: 'Bring files and folders from your Google Drive into a chat.', capabilities: ['Files', 'Folders'], authType: 'oauth', connection: null },
+          { id: 'googlecalendar', name: 'Google Calendar', description: 'Use your schedule and event context when planning study sessions.', capabilities: ['Events'], authType: 'oauth', connection: null },
+          { id: 'notion', name: 'Notion', description: 'Search pages and knowledge you share with Socrates.', capabilities: ['Page search'], authType: 'oauth', connection: null },
+        ],
+      }));
+      return;
+    }
+    if (apiUrl.includes('/api/project-connectors/') && apiUrl.endsWith('/connect')) {
+      await route.fulfill(jsonResponse({ requestId: 'request-smoke-1', authorizationUrl: '/plugins?connector=smoke', expiresAt: '2026-01-01T00:10:00Z' }, 201));
+      return;
+    }
     if (apiUrl.includes('/api/connectors')) {
       await route.fulfill(jsonResponse({ connectors: [{ id: 'github', name: 'GitHub', description: 'Connect repositories, issues, and pull requests.', availability: 'available', configured: true, connection: null }, { id: 'feishu', name: 'Feishu', description: 'Connect documents you can access.', availability: 'available', configured: true, connection: null }, { id: 'gitee', name: 'Gitee', description: 'Connect repositories, issues, and pull requests.', availability: 'available', configured: true, connection: null }, { id: 'notion', name: 'Notion', description: 'Search pages you share with Socrates.', availability: 'available', configured: true, connection: null }, { id: 'zotero', name: 'Zotero', description: 'Search your research library with your own read-only API Key.', auth: 'api_key', availability: 'available', configured: true, connection: null }, { id: 'arxiv', name: 'arXiv', description: 'Search public preprints without connecting an account.', auth: 'public', availability: 'available', configured: true, connection: null }] }));
       return;
