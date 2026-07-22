@@ -652,3 +652,26 @@ export const connectorConnections = pgTable('connector_connections', {
   index('connector_connections_user_id_idx').on(table.userId),
   index('connector_connections_provider_idx').on(table.provider),
 ]);
+
+/* Metadata for OOMOL ProjectConnector accounts. OAuth tokens deliberately do
+ * not appear here: they are held, refreshed, and isolated by OOMOL's gateway.
+ * This table lets Socrates render a user's connection state and resume a
+ * pending OAuth request after a browser navigation or server restart. */
+export const projectConnectorConnections = pgTable('project_connector_connections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  provider: text('provider').notNull(),
+  connectionName: text('connection_name').notNull().default('socrates'),
+  requestId: text('request_id'),
+  connectedAccountId: text('connected_account_id'),
+  displayName: text('display_name'),
+  status: text('status').notNull().default('disconnected'),
+  scopes: jsonb('scopes').notNull().default([]),
+  lastError: text('last_error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('project_connector_connections_user_provider_idx').on(table.userId, table.provider),
+  index('project_connector_connections_user_id_idx').on(table.userId),
+  index('project_connector_connections_request_id_idx').on(table.requestId),
+]);

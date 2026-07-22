@@ -191,7 +191,7 @@ window.closeCheatsheet = closeCheatsheet;
 window.openCheatsheet = openCheatsheet;
 
 /* ─── sidebar/nav.js (PR-A of the sidebar overhaul) ─── */
-import { openNav, setActiveNav, closeAllPanels } from './sidebar/nav.js';
+import { openNav, setActiveNav, closeAllPanels, syncWorkspaceRoute } from './sidebar/nav.js';
 /* `openNav` is the dispatcher wired to the .sidebar-nav-btn onclick
    in index.html. `setActiveNav` is exposed for the morePopover
    module to clear the More button's active state on close (avoids
@@ -200,6 +200,7 @@ import { openNav, setActiveNav, closeAllPanels } from './sidebar/nav.js';
 window.openNav = openNav;
 window.setActiveNav = setActiveNav;
 window.closeAllPanels = closeAllPanels;
+window.syncWorkspaceRoute = syncWorkspaceRoute;
 /* PR-B/C/D/E — panel inline handlers. nav.js defines these on
    window.* directly, but we re-affirm the bridge here so the
    export audit trail is complete. */

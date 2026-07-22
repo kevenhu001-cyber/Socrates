@@ -195,6 +195,7 @@ export async function afterAuthEnter(){
     if(typeof window.renderRecents==="function")window.renderRecents();
     if(typeof window.renderMistakes==="function"){window.renderMistakes();window.updateMistakesBadge&&window.updateMistakesBadge()}
   }
+  window.syncWorkspaceRoute&&window.syncWorkspaceRoute();
 }
 
 /* ── Submit handlers ── */

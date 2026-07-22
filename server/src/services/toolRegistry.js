@@ -4,6 +4,7 @@ import {
   ARXIV_TOOL, ZOTERO_TOOL, NOTION_TOOL, GITHUB_TOOL, GITEE_TOOL,
   CONNECTOR_TOOL_NAMES,
 } from './connectorTools.js';
+import { PROJECT_CONNECTOR_TOOLS, PROJECT_CONNECTOR_TOOL_NAMES } from './projectConnectorTools.js';
 
 /** The model-facing capability registry. Route-specific executors retain
  * their streaming/session semantics while availability is defined once.
@@ -16,7 +17,7 @@ import {
  *   Only providers with a live row get their tool enabled.  arXiv is always
  *   enabled (public, no auth needed).
  */
-export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConnectionsByProvider }) {
+export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConnectionsByProvider, projectConnectorConnectionsByProvider }) {
   const entries = [
     { name: 'code_interpreter', modelDefinition: codeInterpreterToolDef, enabled: Boolean(codeInterpreterToolDef), pure: false, sessionSerial: true, maxConcurrency: 1, retries: 0 },
     { name: 'render_visualization', modelDefinition: VISUALIZATION_TOOL, enabled: process.env.VISUALIZATION_TOOL_ENABLED !== 'false', pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
@@ -28,6 +29,8 @@ export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConn
     { name: CONNECTOR_TOOL_NAMES.NOTION, modelDefinition: NOTION_TOOL,  enabled: Boolean(connectorConnectionsByProvider?.notion), pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
     { name: CONNECTOR_TOOL_NAMES.GITHUB, modelDefinition: GITHUB_TOOL,  enabled: Boolean(connectorConnectionsByProvider?.github), pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
     { name: CONNECTOR_TOOL_NAMES.GITEE,  modelDefinition: GITEE_TOOL,   enabled: Boolean(connectorConnectionsByProvider?.gitee), pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
+    { name: PROJECT_CONNECTOR_TOOL_NAMES.GITHUB_IDENTITY, modelDefinition: PROJECT_CONNECTOR_TOOLS[0], enabled: Boolean(projectConnectorConnectionsByProvider?.github), pure: true, sessionSerial: false, maxConcurrency: 2, retries: 0 },
+    { name: PROJECT_CONNECTOR_TOOL_NAMES.GMAIL_SEARCH, modelDefinition: PROJECT_CONNECTOR_TOOLS[1], enabled: Boolean(projectConnectorConnectionsByProvider?.gmail), pure: true, sessionSerial: false, maxConcurrency: 2, retries: 0 },
   ];
   return {
     entries,
