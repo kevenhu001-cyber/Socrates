@@ -1449,6 +1449,13 @@ async function loadSession(id){
      fires between the drain and _loadingSession=true would capture
      mismatched state (sessionId vs messages), causing "会话串台". */
   _loadingSession=true;
+  /* A history rebuild used to clear #msgList before all legacy messages
+     had been rendered.  One malformed/obsolete message could then throw
+     part-way through and leave the whole conversation blank until refresh.
+     Keep a recoverable snapshot until the new history has committed. */
+  var previousMessages=null;
+  var previousMessageMarkup="";
+  var historyRebuildStarted=false;
   /* Drain the entire save pipeline — including the _saveDirty
      cascade. Loop because the cascade may fire a new doSave()
      after the current one completes; the _loadingSession guard
@@ -1474,6 +1481,7 @@ async function loadSession(id){
   try{
     var s=await apiFetch("/api/sessions/"+encodeURIComponent(id));
     ensureSessionShape(s);
+    s.messages=Array.isArray(s.messages)?s.messages:[];
     /* P_stale-loadSession — if a newer loadSession() was already
        requested while this fetch was in-flight, skip the stale
        response so we don't overwrite the newer session's state. */
@@ -1561,6 +1569,9 @@ async function loadSession(id){
     toggleChatTopBarEls(true);
     syncChatModel();
     var msgList=document.getElementById("msgList");
+    previousMessages=state.messages.slice();
+    previousMessageMarkup=msgList.innerHTML;
+    historyRebuildStarted=true;
     if(typeof window.disposeVisualizations === "function") window.disposeVisualizations(msgList);
     msgList.innerHTML="";
     // P-arch context-resume — reset the authoritative message list so
@@ -1571,7 +1582,7 @@ async function loadSession(id){
     // state.messages was still pointing at the previous (or empty)
     // session's list.
     state.messages.length = 0;
-    (s.messages||[]).forEach(function(m){
+    s.messages.forEach(function(m){
       var div=document.createElement("div");
       div.className="msg "+m.role;
       var body=document.createElement("div");
@@ -1956,6 +1967,17 @@ async function loadSession(id){
        while this one was in-flight, the error (if any) belongs to
        the stale request; don't disrupt the newer session's state. */
     if(_loadSessionId!==id) return;
+    /* Preserve the last stable conversation when a legacy record cannot be
+       rendered.  The server copy remains untouched; this only prevents a
+       transient client rendering failure from blanking the current view. */
+    if(historyRebuildStarted && previousMessages){
+      try{
+        state.messages.length=0;
+        Array.prototype.push.apply(state.messages,previousMessages);
+        var rollbackList=document.getElementById("msgList");
+        if(rollbackList)rollbackList.innerHTML=previousMessageMarkup;
+      }catch(_){}
+    }
     
     /* Distinguish session-not-found (404) from transient errors
        (429 rate limit, 5xx server error, network failure) so we

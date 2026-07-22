@@ -93,7 +93,9 @@ function _modelSectionHTML() {
     });
     providers.forEach(function (p) {
       var isActive = p && p.id === activeId;
-      var name = _esc(p.label || p.model || "Model");
+      /* "Default" is the server-side fallback provider label, not a
+         meaningful model name for people choosing a model. */
+      var name = _esc((p.label && p.label !== "Default") ? p.label : (p.model || p.label || "Model"));
       var sub = p.isBuiltIn ? "" : _esc(p.model || "");
       var subLine = sub && sub !== name ? sub : (p.isBuiltIn ? "" : _esc(p.url || ""));
       html += '<button type="button" class="model-picker-item' + (isActive ? " active" : "") +

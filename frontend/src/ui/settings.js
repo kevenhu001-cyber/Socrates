@@ -358,7 +358,9 @@ function _validateProvider(p) {
     var urlErr = _validateUrl(p.url);
     if (urlErr) errors.push({ field: "url", msg: urlErr + " for \"" + (p.label || p.model || p.id) + "\"" });
   }
-  if (p.key && p.key.trim()) {
+  /* `key` is a non-secret configured sentinel after a refresh.  It
+     represents an existing encrypted key, not user input to validate. */
+  if (!_maskedKeys[p.id] && p.key && p.key.trim()) {
     var keyErr = _validateKey(p.key);
     if (keyErr) errors.push({ field: "key", msg: keyErr + " for \"" + (p.label || p.model || p.id) + "\"" });
   }
@@ -403,14 +405,18 @@ function saveSettings() {
   var results = { saved: 0, failed: 0, lastError: null, lastValidId: null };
 
   Promise.allSettled(newRows.map(function (p) {
+    var hasReplacementKey = !_maskedKeys[p.id] && !!(p.key && p.key.trim());
     if (p.id.startsWith("new-")) {
-      var body = { label: p.label || "", url: p.url || "", key: p.key || "", model: p.model || "", vision: !!p.vision };
+      var body = { label: p.label || "", url: p.url || "", key: p.key || "", model: p.model || "", isMultimodal: !!p.vision };
       return window.apiFetch("/api/api-key", { method: "POST", body: body, timeoutMs: 10_000 }).then(function (r) {
         if (r && r.id) { p.id = r.id; results.lastValidId = p.id; }
         results.saved++;
       });
     } else {
-      var body = { label: p.label, url: p.url, key: p.key || "", model: p.model, vision: !!p.vision };
+      var body = { label: p.label, url: p.url, model: p.model, isMultimodal: !!p.vision };
+      /* Empty password fields mean "keep the encrypted key", never
+         replace it with an encryption of an empty string. */
+      if (hasReplacementKey) body.key = p.key;
       return window.apiFetch("/api/api-key/" + encodeURIComponent(p.id), { method: "PATCH", body: body, timeoutMs: 10_000 }).then(function () {
         results.lastValidId = p.id;
         results.saved++;
