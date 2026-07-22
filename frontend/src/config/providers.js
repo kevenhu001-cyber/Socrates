@@ -144,6 +144,14 @@ function syncAppModeUI() {
   if (typeof window.syncMobileModeSwitch === 'function') {
     try { window.syncMobileModeSwitch(); } catch (_) {}
   }
+  /* P_hide-mode-switch-in-conversation — re-evaluate the conversation-
+     active body attribute whenever the mode UI is re-synced. State
+     changes that don't touch msgList (e.g. setting a topic in tutor
+     mode, switching phase) are caught here; message-driven changes are
+     covered by the MutationObserver in mobileModeSwitch. */
+  if (typeof window.syncConversationActive === 'function') {
+    try { window.syncConversationActive(); } catch (_) {}
+  }
 }
 
 /* Setter for appMode — updates the module-level variable so

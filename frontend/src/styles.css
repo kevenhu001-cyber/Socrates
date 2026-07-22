@@ -1178,6 +1178,16 @@ body.workspace-active #modeSegmentedTop,
 body.workspace-active #mobileMode,
 body.workspace-active #mobileIncognitoBtn,
 body.workspace-active #topicDisclaimer{display:none!important}
+/* P_hide-mode-switch-in-conversation — once a conversation has started
+   (topic set, KB nodes populated, phase===chat, or any message in
+   msgList — same heuristic as toggleAppMode's inSession check), hide
+   the top-bar Chat/Tutor switch on both desktop and mobile. Users
+   mid-session shouldn't be tempted to flip modes; toggleAppMode() still
+   has a destructive confirm, but the toggle shouldn't be reachable in
+   the first place. Synced from ui/mobileModeSwitch.syncConversationActive
+   via body[data-conversation-active]. */
+body[data-conversation-active="true"] #modeSegmentedTop,
+body[data-conversation-active="true"] #mobileMode{display:none!important}
 [data-mode=light] .top-mode-tabs .app-mode-toggle.active{background:hsl(var(--bg-400))}
 /* On narrow viewports the centered pill can collide with side buttons;
    hide it there and fall back to the landing #modeSegmented control. */

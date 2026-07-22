@@ -66,12 +66,52 @@ export function selectAppMode(mode) {
   }
 }
 
+/* P_hide-mode-switch-in-conversation — mirror toggleAppMode()'s
+   inSession heuristic so the top-bar Chat/Tutor switch disappears at
+   exactly the same moment the existing destructive-confirm kicks in.
+   Triggers on any of: state.topic set, kbNodes populated,
+   state.phase==="chat", or any child inside #msgList. State changes
+   that don't touch msgList (e.g. setting a topic) are caught when
+   callers invoke this via syncAppModeUI() / resetApp() — the
+   MutationObserver on msgList covers the message-driven path. */
+function _isConversationActive() {
+  var state = (typeof window !== "undefined") ? window.state : null;
+  if (!state) return false;
+  if (state.topic) return true;
+  if (state.kbNodes && state.kbNodes.length > 0) return true;
+  if (state.phase === "chat") return true;
+  var msgList = (typeof document !== "undefined") ? document.getElementById("msgList") : null;
+  if (msgList && msgList.children.length > 0) return true;
+  return false;
+}
+
+export function syncConversationActive() {
+  var active = _isConversationActive();
+  try {
+    document.body.setAttribute("data-conversation-active", active ? "true" : "false");
+  } catch (_) {}
+}
+
+/* P_hide-mode-switch-in-conversation — wire a MutationObserver on
+   msgList so the body attribute flips automatically when messages are
+   added or cleared (covers loadSession, resetApp, appendMessage). */
+function _watchMsgList() {
+  var msgList = document.getElementById("msgList");
+  if (!msgList || typeof MutationObserver === "undefined") return;
+  try {
+    new MutationObserver(function () {
+      try { syncConversationActive(); } catch (_) {}
+    }).observe(msgList, { childList: true });
+  } catch (_) {}
+}
+
 /* Register window globals used by the inline onclick handlers in
    index.html, and wire outside-click / Escape to close the popover. */
 if (typeof document !== "undefined") {
   window.toggleMobileModeMenu = toggleMobileModeMenu;
   window.selectAppMode = selectAppMode;
   window.syncMobileModeSwitch = syncMobileModeSwitch;
+  window.syncConversationActive = syncConversationActive;
 
   document.addEventListener("click", function (e) {
     if (e.target.closest && e.target.closest("#mobileMode")) return;
@@ -82,8 +122,12 @@ if (typeof document !== "undefined") {
   });
   window.addEventListener("DOMContentLoaded", function () {
     try { syncMobileModeSwitch(); } catch (_) {}
+    try { syncConversationActive(); } catch (_) {}
+    _watchMsgList();
   });
   if (document.readyState !== "loading") {
     try { syncMobileModeSwitch(); } catch (_) {}
+    try { syncConversationActive(); } catch (_) {}
+    _watchMsgList();
   }
 }
