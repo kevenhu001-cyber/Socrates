@@ -15,7 +15,7 @@ import { showNewReplyPill, hideNewReplyPill, wireScrollPill } from './ui/scrollP
 import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
 import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal } from './ui/share.js';
 import './ui/mobileModeSwitch.js';
-import { renderAttachmentChips, setupAttachmentInput } from './attachments/render.js';
+import { renderAttachmentChips, setupAttachmentInput, openAttachmentPicker } from './attachments/render.js';
 import {
   STREAM_TIMEOUT_MS, STREAM_HEARTBEAT_MS, STREAM_MAX_ATTEMPTS, STREAM_RETRYABLE_STATUS,
   offlineGuard, sleepBackoff, makeAIWatchdog,
@@ -8523,6 +8523,7 @@ window.saveCurrentSession = saveCurrentSession;
 window.fetchWebContext = fetchWebContext;
 window.setSearchPill = setSearchPill;
 window.loadPromptTemplates = loadPromptTemplates;
+window.openAttachmentPicker = openAttachmentPicker;
 window.deleteCustomTemplate = deleteCustomTemplate;
 window.findTemplateByShortcut = findTemplateByShortcut;
 window.upsertCustomTemplate = upsertCustomTemplate;

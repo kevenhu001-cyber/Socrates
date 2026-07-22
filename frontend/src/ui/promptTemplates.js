@@ -37,16 +37,17 @@ function renderPromptTemplatesModal() {
   var builtins = all.filter(function (t) { return t.isBuiltin; });
   var html =
     '<div class="modal-head">' +
-      '<span class="modal-title">Prompt templates</span>' +
+      '<span class="modal-title">Skills &amp; shortcuts</span>' +
       '<button class="modal-close" onclick="closePromptTemplatesModal()">×</button>' +
     '</div>' +
     '<div class="prompt-templates-body">' +
-      '<div class="prompt-templates-section-label">Built-in (' + builtins.length + ')</div>' +
+      '<p class="prompt-templates-intro">Use a skill for a focused workflow, or create one with your own instructions and <code>/shortcut</code>.</p>' +
+      '<div class="prompt-templates-section-label">Built-in skills (' + builtins.length + ')</div>' +
       builtins.map(function (t) { return renderPromptRow(t, false); }).join("") +
-      '<div class="prompt-templates-section-label" style="margin-top:14px">Your templates (' + customs.length + ')</div>' +
+      '<div class="prompt-templates-section-label" style="margin-top:14px">Your skills (' + customs.length + ')</div>' +
       (customs.length ? customs.map(function (t) { return renderPromptRow(t, true); }).join("") :
-        '<div class="prompt-templates-empty">No custom templates yet.</div>') +
-      '<button class="prompt-templates-new" onclick="openPromptTemplateEditor()">+ New template</button>' +
+        '<div class="prompt-templates-empty">No custom skills yet.</div>') +
+      '<button class="prompt-templates-new" onclick="openPromptTemplateEditor()">+ Create skill</button>' +
     '</div>';
   body.innerHTML = html;
 }
@@ -81,7 +82,7 @@ function openPromptTemplateEditor(existing) {
   var t = existing || { id: "tpl-" + Date.now().toString(36), title: "", description: "", body: "", systemPrompt: "", icon: "pg", category: "writing", shortcut: "/my-template" };
   body.innerHTML =
     '<div class="modal-head">' +
-      '<span class="modal-title">' + (existing ? "Edit template" : "New template") + '</span>' +
+      '<span class="modal-title">' + (existing ? "Edit skill" : "Create skill") + '</span>' +
       '<button class="modal-close" onclick="renderPromptTemplatesModal()">×</button>' +
     '</div>' +
     '<div class="prompt-templates-body">' +
@@ -126,7 +127,7 @@ function onPromptTemplateEditorSave(id, wasExisting) {
   if (existing && existing.id !== id) { window.showToast("That shortcut is already in use"); return; }
   window.upsertCustomTemplate({ id: id, title: title, description: description, icon: icon || "pg", category: category, shortcut: shortcut, body: body, systemPrompt: systemPrompt, isBuiltin: false });
   renderPromptTemplatesModal();
-  window.showToast("Template saved");
+  window.showToast("Skill saved");
 }
 
 export {

@@ -253,6 +253,7 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .prompt-templates-modal{width:min(620px,92vw);max-height:80vh;display:flex;flex-direction:column}
 .prompt-templates-body{padding:14px 18px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
 .prompt-templates-section-label{font-size:11px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:hsl(var(--text-500));padding:4px 0 2px}
+.prompt-templates-intro{margin:0 0 4px;color:hsl(var(--text-400));font-size:12px;line-height:1.45}
 .prompt-templates-empty{padding:14px;border:0.5px dashed hsl(var(--border-300)/0.3);border-radius:8px;text-align:center;color:hsl(var(--text-400));font-size:12px}
 .prompt-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.15)}
 .prompt-row-icon{font-size:18px;line-height:1;width:24px;text-align:center;flex-shrink:0}
@@ -521,6 +522,23 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .sidebar-more-item-danger{color:hsl(var(--text-200))}
 .sidebar-more-item-danger:hover{background:hsl(0 60% 30% / .25);color:hsl(0 70% 80%)}
 .sidebar-more-item-danger:hover svg{color:hsl(0 70% 80%)}
+
+/* Compact action menu used by the + button in both rounded composers. */
+.composer-tools-menu{position:fixed;z-index:1300;width:min(284px,calc(100vw - 16px));padding:6px;background:hsl(var(--bg-100));border:1px solid hsl(var(--border-300)/.42);border-radius:16px;box-shadow:0 16px 42px hsl(var(--always-black)/.24);font-family:var(--font-sans)}
+.composer-tools-menu.hidden{display:none}
+.composer-tools-item{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:7px 9px;border:0;border-radius:11px;background:transparent;color:hsl(var(--text-200));font:inherit;font-size:calc(13px * var(--app-font-scale,1));text-align:left;cursor:pointer;transition:background .14s ease,color .14s ease}
+.composer-tools-item:hover,.composer-tools-item:focus-visible{background:hsl(var(--bg-300)/.8);color:hsl(var(--text-100));outline:0}
+.composer-tools-item:active{transform:scale(.985)}
+.composer-tools-icon{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:hsl(var(--bg-300)/.7);color:hsl(var(--text-300));flex-shrink:0}
+.composer-tools-item:hover .composer-tools-icon{background:hsl(var(--accent-000)/.12);color:hsl(var(--accent-000))}
+.composer-tools-icon svg{width:16px;height:16px;stroke-linecap:round;stroke-linejoin:round}
+.composer-tools-copy{display:flex;flex:1;min-width:0;align-items:baseline;justify-content:space-between;gap:8px}
+.composer-tools-copy small{color:hsl(var(--text-500));font-size:calc(11px * var(--app-font-scale,1));white-space:nowrap}
+.composer-tools-divider{height:1px;margin:5px 3px;background:hsl(var(--border-300)/.28)}
+.composer-tools-trigger{border-radius:12px!important}
+
+/* Voice capture has been removed. Sending is always the familiar arrow. */
+.start-btn .icon-arrow,.send-btn .icon-arrow{display:inline-flex}
 .display-prefs-row{display:flex;flex-direction:column;gap:4px}
 .display-prefs-label{display:flex;justify-content:space-between;align-items:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em}
 .display-prefs-label .value{color:hsl(var(--text-200));font-weight:600;text-transform:none;letter-spacing:0}
@@ -3750,18 +3768,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 
 /* Send / start button — mic↔waveform swap based on .has-text on the wrap.
    The button keeps two SVG children; CSS shows the right one. */
-.start-btn .icon-waveform,
-.send-btn .icon-waveform{display:inline-flex}
-.start-btn .icon-arrow,
-.send-btn .icon-arrow{display:none}
-/* When the textarea has text or attachments, swap to the up-arrow. */
-.topic-input-wrap.has-text .start-btn .icon-waveform,
-.chat-input-wrap.has-text .send-btn .icon-waveform{display:none}
-.topic-input-wrap.has-text .start-btn .icon-arrow,
-.chat-input-wrap.has-text .send-btn .icon-arrow{display:inline-flex}
-/* Hide the mic button whenever the textarea has text (send takes over). */
-.topic-input-wrap.has-text #topicMicBtn:not(.is-listening),
-.chat-input-wrap.has-text #chatMicBtn:not(.is-listening){display:none}
 
 /* Default state of the start/send button: keep the existing 'active'
    style (filled pill) only when text/attachments present, otherwise
@@ -3774,5 +3780,9 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 /* Reduce-motion respect — keep transforms on chips but drop bounces */
 @media (prefers-reduced-motion: reduce){
   .sidebar-nav-btn:active:not([disabled]),
-  .mic-btn:active{transform:none}.mic-btn.is-listening,.mic-btn.is-listening svg{animation:none}
+  .composer-tools-item:active{transform:none}
 }
+
+/* No waveform/voice state remains in the composer: show the send arrow in
+   its neutral and active states alike. */
+.start-btn .icon-arrow,.send-btn .icon-arrow{display:inline-flex}
