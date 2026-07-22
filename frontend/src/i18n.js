@@ -52,6 +52,7 @@ var I18N={
     "sidebar.nav.soon":"Soon",
     /* PR-A — More popover items */
     "sidebar.more.settings":"API settings",
+    "sidebar.more.skills":"Skills & shortcuts",
     "sidebar.more.display":"Display & theme",
     "sidebar.more.shortcuts":"Keyboard shortcuts",
     "sidebar.more.signOut":"Sign out",
@@ -259,6 +260,9 @@ var I18N={
     /* Composer quick actions + reasoning effort + read-aloud */
     "composer.write":"Write or edit",
     "composer.research":"Find resources",
+    "composer.menu.upload":"Upload files",
+    "composer.menu.skills":"Skills & shortcuts",
+    "composer.menu.skillsHint":"Create your own",
     "composer.write.hint":"Describe what you'd like to write or edit",
     "composer.write.scaffold":"Help me write or edit: ",
     "composer.research.hint":"Web search is on — ask your research question",
@@ -554,6 +558,7 @@ var I18N={
     "sidebar.nav.soon":"即将",
     /* PR-A — More popover items */
     "sidebar.more.settings":"API 设置",
+    "sidebar.more.skills":"技能与快捷键",
     "sidebar.more.display":"显示与主题",
     "sidebar.more.shortcuts":"键盘快捷键",
     "sidebar.more.signOut":"退出登录",
@@ -757,6 +762,9 @@ var I18N={
     /* Composer quick actions + reasoning effort + read-aloud (zh) */
     "composer.write":"撰写或编辑",
     "composer.research":"查找资料",
+    "composer.menu.upload":"上传文件",
+    "composer.menu.skills":"技能与快捷键",
+    "composer.menu.skillsHint":"创建自定义技能",
     "composer.write.hint":"描述你想撰写或编辑的内容",
     "composer.write.scaffold":"帮我撰写或编辑：",
     "composer.research.hint":"联网搜索已开启 — 输入你的研究问题",

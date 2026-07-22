@@ -254,6 +254,10 @@ window.onPromptRowDelete = onPromptRowDelete;
 window.openPromptTemplateEditor = openPromptTemplateEditor;
 window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
 
+/* ─── ui/composerTools.js ─── */
+import { toggleComposerTools } from './ui/composerTools.js';
+window.toggleComposerTools = toggleComposerTools;
+
 /* ─── ui/settings.js ─── */
 import { openSettings, closeSettings, toggleAPI, syncSettingsUI, renderProviderList, addProvider, removeProvider, setActiveProvider, updateProviderField, saveSettings, clearSettings, bindSettingsUI } from './ui/settings.js';
 window.openSettings = openSettings;
@@ -452,10 +456,6 @@ window.appendInlineArtifact = appendInlineArtifact;
 /* ─── ui/greeting.js — ChatGPT-style personalized greeting (P_chatgpt-landing) ─── */
 import { renderGreeting } from './ui/greeting.js';
 window.renderGreeting = renderGreeting;
-
-/* ─── ui/voiceInput.js — Mic button placeholder ─── */
-import { wireVoiceInput } from './ui/voiceInput.js';
-window.wireVoiceInput = wireVoiceInput;
 
 /* ─── Sidebar-nav "Library" alias (P_chatgpt-landing) — opens the
    existing knowledge panel. toggleSidebarView('knowledge') is in main.js

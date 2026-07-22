@@ -218,7 +218,7 @@ function findWiredForTarget(target){
  * Called once per composer; safe to call multiple times for the same
  * ids (de-duplicated by chipsId). */
 export function setupAttachmentInput(opts){
-  if(!opts || !opts.btnId || !opts.inputId || !opts.wrapId) return;
+  if(!opts || !opts.inputId || !opts.wrapId) return;
   // De-dup: if a config with the same chipsId is already wired, skip.
   if(opts.chipsId && WIRED_INPUTS.some(function(w){ return w.chipsId === opts.chipsId; })) return;
 
@@ -227,7 +227,7 @@ export function setupAttachmentInput(opts){
   const wrap = document.getElementById(opts.wrapId);
   const textarea = opts.textareaId ? document.getElementById(opts.textareaId) : null;
   const bar = opts.barId ? document.getElementById(opts.barId) : null;
-  if(!btn || !input || !wrap) return;
+  if(!input || !wrap) return;
 
   const cfg = {
     btnId: opts.btnId,
@@ -240,7 +240,7 @@ export function setupAttachmentInput(opts){
   };
   WIRED_INPUTS.push(cfg);
 
-  btn.onclick = function(){
+  if(btn) btn.onclick = function(){
     /* Reset value first so re-selecting the same file fires `change`. */
     input.value = "";
     input.click();
@@ -250,8 +250,10 @@ export function setupAttachmentInput(opts){
     const res = await addFiles(input.files, renderAndRefresh, updateProgressOnly);
     refreshAllSendBtns();
     if(res.rejected && res.rejected.length){
-      btn.classList.add("has-error");
-      setTimeout(function(){ btn.classList.remove("has-error"); }, 1500);
+      if(btn) {
+        btn.classList.add("has-error");
+        setTimeout(function(){ btn.classList.remove("has-error"); }, 1500);
+      }
       surfaceRejectionToast(res);
     }
   };
@@ -303,6 +305,15 @@ e.preventDefault();
       surfaceRejectionToast(res);
     });
   }
+}
+
+/* The compact composer menu owns the visible + button; file upload is one
+ * of its actions rather than the only action. */
+export function openAttachmentPicker(inputId){
+  const input = document.getElementById(inputId);
+  if(!input) return;
+  input.value = "";
+  input.click();
 }
 
 /* Hook into module load — wire document-level drag/drop once,
@@ -389,7 +400,6 @@ function autoWire(){
   wireDocumentDrag();
   // Chat-mode composer.
   setupAttachmentInput({
-    btnId: "attachBtn",
     inputId: "attachInput",
     wrapId: "chatInputWrap",
     textareaId: "chatInputArea",
@@ -399,7 +409,6 @@ function autoWire(){
   });
   // Tutor-mode topic setup.
   setupAttachmentInput({
-    btnId: "topicAttachBtn",
     inputId: "topicAttachInput",
     wrapId: "topicInputWrap",
     textareaId: "topicInput",

@@ -152,12 +152,9 @@ export async function afterAuthEnter(){
   try{await window.loadUserMemories()}catch(_){/* handled inside */}
   /* Update sidebar footer with user info. */
   window.renderUserFooter&&window.renderUserFooter();
-  /* P_chatgpt-landing — once the user object is on window, paint the
-     personalized greeting on the landing screen, and wire the mic
-     buttons so they respond to clicks immediately. */
+  /* Once the user object is available, paint the personalized greeting. */
   try {
     if (typeof window.renderGreeting === "function") window.renderGreeting();
-    if (typeof window.wireVoiceInput === "function") window.wireVoiceInput();
   } catch (_) { /* first-paint helpers — never block sign-in */ }
   /* Re-render sidebar lists now that the cache is fresh. */
   window.renderRecents&&window.renderRecents();
