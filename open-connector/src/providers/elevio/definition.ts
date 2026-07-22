@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://elev.io",
+  iconUrl: "https://elev.io/favicon.ico",
   actions: elevioActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://brightdata.com",
+  iconUrl: "https://brightdata.com/favicon.ico",
   actions: brightDataActions,
 };

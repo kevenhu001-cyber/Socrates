@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.pingdom.com",
+  iconUrl: "https://www.pingdom.com/favicon.ico",
   actions: pingdomActions,
 };

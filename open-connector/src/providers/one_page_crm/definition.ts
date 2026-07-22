@@ -43,5 +43,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.onepagecrm.com",
+  iconUrl: "https://www.onepagecrm.com/favicon.ico",
   actions: onePageCrmActions,
 };

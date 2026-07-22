@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://shotstack.io",
+  iconUrl: "https://shotstack.io/favicon.ico",
   actions: shotstackActions,
 };

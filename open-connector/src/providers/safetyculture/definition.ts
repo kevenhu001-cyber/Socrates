@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://safetyculture.com",
+  iconUrl: "https://safetyculture.com/favicon.ico",
   actions: safetycultureActions,
 };

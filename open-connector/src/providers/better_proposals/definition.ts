@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://betterproposals.io",
+  iconUrl: "https://betterproposals.io/favicon.ico",
   actions: betterProposalsActions,
 };

@@ -21,5 +21,6 @@ export const provider: ProviderDefinition = {
   ],
   homepageUrl:
     "https://clarivate.com/academia-government/scientific-and-academic-research/research-discovery-and-referencing/web-of-science/",
+  iconUrl: "https://clarivate.com/favicon.ico",
   actions: webOfScienceActions,
 };

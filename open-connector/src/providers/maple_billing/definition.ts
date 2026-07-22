@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://getmeasure.com",
+  iconUrl: "https://getmeasure.com/favicon.ico",
   actions: mapleBillingActions,
 };

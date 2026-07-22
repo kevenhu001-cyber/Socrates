@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://amplitude.com",
+  iconUrl: "https://amplitude.com/favicon.ico",
   actions: amplitudeActions,
 };

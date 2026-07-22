@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://agenty.com",
+  iconUrl: "https://agenty.com/favicon.ico",
   actions: agentyActions,
 };

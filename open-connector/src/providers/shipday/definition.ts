@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.shipday.com/",
+  iconUrl: "https://www.shipday.com/favicon.ico",
   actions: shipdayActions,
 };

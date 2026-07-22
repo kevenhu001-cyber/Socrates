@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://asana.com",
+  iconUrl: "https://asana.com/favicon.ico",
   actions: asanaActions,
 };

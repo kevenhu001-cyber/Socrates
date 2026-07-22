@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://heyzine.com",
+  iconUrl: "https://heyzine.com/favicon.ico",
   actions: heyzineActions,
 };

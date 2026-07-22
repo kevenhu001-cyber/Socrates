@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://home.sensibo.com",
+  iconUrl: "https://home.sensibo.com/favicon.ico",
   actions: sensiboActions,
 };

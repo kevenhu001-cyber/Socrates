@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.freshworks.com/crm/sales/",
+  iconUrl: "https://www.freshworks.com/favicon.ico",
   actions: freshsalesActions,
 };

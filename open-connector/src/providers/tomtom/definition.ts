@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://developer.tomtom.com",
+  iconUrl: "https://developer.tomtom.com/favicon.ico",
   actions: tomtomActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://openrouter.ai",
+  iconUrl: "https://openrouter.ai/favicon.ico",
   actions: openrouterActions,
 };

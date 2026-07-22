@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.dixa.com",
+  iconUrl: "https://www.dixa.com/favicon.ico",
   actions: dixaActions,
 };

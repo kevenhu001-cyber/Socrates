@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.lumos.com/",
+  iconUrl: "https://www.lumos.com/favicon.ico",
   actions: lumosActions,
 };

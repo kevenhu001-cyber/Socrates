@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.figma.com",
+  iconUrl: "https://static.figma.com/app/icon/1/icon-192.png",
   actions: figmaActions,
 };

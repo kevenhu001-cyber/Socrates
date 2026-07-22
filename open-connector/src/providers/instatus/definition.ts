@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://instatus.com",
+  iconUrl: "https://instatus.com/favicon.ico",
   actions: instatusActions,
 };

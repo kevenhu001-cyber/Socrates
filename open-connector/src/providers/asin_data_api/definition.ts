@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.asindataapi.com",
+  iconUrl: "https://www.asindataapi.com/favicon.ico",
   actions: asinDataApiActions,
 };

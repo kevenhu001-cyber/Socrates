@@ -705,9 +705,15 @@ if(false && window.visualViewport){
 }
 
 /* Use a CSS inset instead of imperative scroll compensation. This keeps the
-   composer stable when browsers report VisualViewport measurements differently. */
+   composer stable when browsers report VisualViewport measurements differently.
+   Track both composers so the data-keyboard-open attribute and
+   --keyboard-inset variable reflect whichever input is currently focused —
+   critical for the topic-setup view's keyboard-aware layout. */
 initKeyboardViewport({
-  input: document.getElementById('chatInputArea'),
+  inputs: [
+    document.getElementById('chatInputArea'),
+    document.getElementById('topicInput'),
+  ].filter(Boolean),
   container: document.getElementById('appShell'),
 });
 

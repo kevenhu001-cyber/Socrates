@@ -37,5 +37,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://customer.io/",
+  iconUrl: "https://customer.io/favicon.ico",
   actions: customerioActions,
 };

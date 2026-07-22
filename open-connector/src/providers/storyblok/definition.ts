@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.storyblok.com",
+  iconUrl: "https://www.storyblok.com/favicon.ico",
   actions: storyblokActions,
 };

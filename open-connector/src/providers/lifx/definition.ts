@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.lifx.com",
+  iconUrl: "https://www.lifx.com/favicon.ico",
   actions: lifxActions,
 };

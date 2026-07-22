@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.home-assistant.io",
+  iconUrl: "https://www.home-assistant.io/favicon.ico",
   actions: homeAssistantActions,
 };

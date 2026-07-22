@@ -11,5 +11,6 @@ export const provider: ProviderDefinition = {
   authTypes: ["no_auth"],
   auth: [{ type: "no_auth" }],
   homepageUrl: "https://docsend2pdf.com",
+  iconUrl: "https://docsend2pdf.com/favicon.ico",
   actions: docsend2PdfActions,
 };

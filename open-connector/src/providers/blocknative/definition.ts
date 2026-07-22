@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.blocknative.com",
+  iconUrl: "https://www.blocknative.com/favicon.ico",
   actions: blocknativeActions,
 };

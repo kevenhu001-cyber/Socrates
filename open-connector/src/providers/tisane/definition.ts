@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://tisane.ai",
+  iconUrl: "https://tisane.ai/favicon.ico",
   actions: tisaneActions,
 };

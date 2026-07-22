@@ -42,5 +42,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.workday.com",
+  iconUrl: "https://www.workday.com/favicon.ico",
   actions: workdayActions,
 };

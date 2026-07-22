@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.neutrinoapi.com/",
+  iconUrl: "https://www.neutrinoapi.com/favicon.ico",
   actions: neutrinoActions,
 };

@@ -42,5 +42,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.freshworks.com/freshservice/",
+  iconUrl: "https://www.freshworks.com/favicon.ico",
   actions: freshserviceActions,
 };

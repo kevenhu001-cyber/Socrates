@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://moonclerk.com",
+  iconUrl: "https://moonclerk.com/favicon.ico",
   actions: moonclerkActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://nango.dev",
+  iconUrl: "https://nango.dev/favicon.ico",
   actions: nangoActions,
 };

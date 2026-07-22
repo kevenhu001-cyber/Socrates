@@ -67,5 +67,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.alibabacloud.com",
+  iconUrl: "https://www.alibabacloud.com/favicon.ico",
   actions: aliyunOssActions,
 };

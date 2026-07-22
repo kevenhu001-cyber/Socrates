@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.moorcheh.ai",
+  iconUrl: "https://www.moorcheh.ai/favicon.ico",
   actions: moorchehActions,
 };

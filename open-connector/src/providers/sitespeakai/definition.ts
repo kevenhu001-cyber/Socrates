@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://sitespeak.ai",
+  iconUrl: "https://sitespeak.ai/favicon.ico",
   actions: sitespeakaiActions,
 };

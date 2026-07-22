@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.chargebee.com",
+  iconUrl: "https://www.chargebee.com/favicon.ico",
   actions: chargebeeActions,
 };

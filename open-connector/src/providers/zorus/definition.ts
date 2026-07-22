@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.zorustech.com",
+  iconUrl: "https://www.zorustech.com/favicon.ico",
   actions: zorusActions,
 };

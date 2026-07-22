@@ -33,5 +33,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.strava.com",
+  iconUrl: "https://www.strava.com/favicon.ico",
   actions: stravaActions,
 };

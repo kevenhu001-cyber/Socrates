@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://apiverve.com/",
+  iconUrl: "https://apiverve.com/favicon.ico",
   actions: apiverveActions,
 };

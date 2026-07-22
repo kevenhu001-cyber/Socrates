@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://aivoov.com",
+  iconUrl: "https://aivoov.com/favicon.ico",
   actions: aivoovActions,
 };

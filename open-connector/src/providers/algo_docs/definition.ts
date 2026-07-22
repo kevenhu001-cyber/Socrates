@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://algodocs.com",
+  iconUrl: "https://algodocs.com/favicon.ico",
   actions: algoDocsActions,
 };

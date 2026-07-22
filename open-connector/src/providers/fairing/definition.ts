@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://fairing.co",
+  iconUrl: "https://fairing.co/favicon.ico",
   actions: fairingActions,
 };

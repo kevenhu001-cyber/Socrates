@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://callerapi.com",
+  iconUrl: "https://callerapi.com/favicon.ico",
   actions: callerapiActions,
 };

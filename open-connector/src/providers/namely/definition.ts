@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.namely.com",
+  iconUrl: "https://www.namely.com/favicon.ico",
   actions: namelyActions,
 };

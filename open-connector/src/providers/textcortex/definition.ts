@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://textcortex.com/",
+  iconUrl: "https://textcortex.com/favicon.ico",
   actions: textcortexActions,
 };

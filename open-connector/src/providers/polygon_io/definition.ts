@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://massive.com/",
+  iconUrl: "https://massive.com/favicon.ico",
   actions: polygonIoActions,
 };

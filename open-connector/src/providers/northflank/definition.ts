@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://northflank.com",
+  iconUrl: "https://northflank.com/favicon.ico",
   actions: northflankActions,
 };

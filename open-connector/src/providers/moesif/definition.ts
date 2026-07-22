@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.moesif.com/",
+  iconUrl: "https://www.moesif.com/favicon.ico",
   actions: moesifActions,
 };

@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://hub.docker.com",
+  iconUrl: "https://hub.docker.com/favicon.ico",
   actions: dockerHubActions,
 };

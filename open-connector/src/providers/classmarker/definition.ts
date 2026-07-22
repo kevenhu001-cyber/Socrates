@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.classmarker.com",
+  iconUrl: "https://www.classmarker.com/favicon.ico",
   actions: classmarkerActions,
 };

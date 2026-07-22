@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://front.com",
+  iconUrl: "https://front.com/favicon.ico",
   actions: frontActions,
 };

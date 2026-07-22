@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://clerk.com",
+  iconUrl: "https://clerk.com/favicon.ico",
   actions: clerkActions,
 };

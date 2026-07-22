@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://appdrag.com",
+  iconUrl: "https://appdrag.com/favicon.ico",
   actions: appdragActions,
 };

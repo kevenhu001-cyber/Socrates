@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://sunoapi.org",
+  iconUrl: "https://sunoapi.org/favicon.ico",
   actions: sunoapiActions,
 };

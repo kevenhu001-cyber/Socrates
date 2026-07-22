@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://discolike.com/",
+  iconUrl: "https://discolike.com/favicon.ico",
   actions: discolikeActions,
 };

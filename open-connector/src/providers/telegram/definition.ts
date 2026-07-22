@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://core.telegram.org/bots",
+  iconUrl: "https://telegram.org/favicon.ico",
   actions: telegramActions,
 };

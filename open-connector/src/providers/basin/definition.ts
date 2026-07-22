@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://usebasin.com",
+  iconUrl: "https://usebasin.com/favicon.ico",
   actions: basinActions,
 };

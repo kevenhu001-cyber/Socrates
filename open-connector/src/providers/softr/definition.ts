@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.softr.io/",
+  iconUrl: "https://www.softr.io/favicon.ico",
   actions: softrActions,
 };

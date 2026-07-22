@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.rebrandly.com",
+  iconUrl: "https://www.rebrandly.com/favicon.ico",
   actions: rebrandlyActions,
 };

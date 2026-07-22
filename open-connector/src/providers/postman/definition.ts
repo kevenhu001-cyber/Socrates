@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.postman.com",
+  iconUrl: "https://www.postman.com/favicon.ico",
   actions: postmanActions,
 };

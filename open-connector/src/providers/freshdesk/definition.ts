@@ -33,5 +33,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.freshworks.com/freshdesk/",
+  iconUrl: "https://www.freshworks.com/favicon.ico",
   actions: freshdeskActions,
 };

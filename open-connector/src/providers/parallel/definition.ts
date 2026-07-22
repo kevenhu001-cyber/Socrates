@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://parallel.ai",
+  iconUrl: "https://parallel.ai/favicon.ico",
   actions: parallelActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mistral.ai",
+  iconUrl: "https://mistral.ai/favicon.ico",
   actions: mistralAiActions,
 };

@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://pilvio.com/",
+  iconUrl: "https://pilvio.com/favicon.ico",
   actions: pilvioActions,
 };

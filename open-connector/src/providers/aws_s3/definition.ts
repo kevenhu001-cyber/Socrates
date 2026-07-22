@@ -67,5 +67,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://aws.amazon.com/s3/",
+  iconUrl: "https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_1200x630.png",
   actions: awsActions,
 };

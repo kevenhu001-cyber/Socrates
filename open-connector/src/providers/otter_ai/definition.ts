@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://otter.ai",
+  iconUrl: "https://otter.ai/favicon.ico",
   actions: otterAiActions,
 };

@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://prospeo.io",
+  iconUrl: "https://prospeo.io/favicon.ico",
   actions: prospeoActions,
 };

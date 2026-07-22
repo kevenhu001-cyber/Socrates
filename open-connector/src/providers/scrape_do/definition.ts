@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://scrape.do",
+  iconUrl: "https://scrape.do/favicon.ico",
   actions: scrapeDoActions,
 };

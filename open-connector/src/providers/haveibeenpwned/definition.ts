@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://haveibeenpwned.com/",
+  iconUrl: "https://haveibeenpwned.com/favicon.ico",
   actions: haveibeenpwnedActions,
 };

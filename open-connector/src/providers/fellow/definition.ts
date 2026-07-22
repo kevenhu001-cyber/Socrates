@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://fellow.app",
+  iconUrl: "https://fellow.app/favicon.ico",
   actions: fellowActions,
 };

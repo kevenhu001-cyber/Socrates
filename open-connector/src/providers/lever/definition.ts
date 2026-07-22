@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.lever.co",
+  iconUrl: "https://www.lever.co/favicon.ico",
   actions: leverActions,
 };

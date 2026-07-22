@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://aeroleads.com",
+  iconUrl: "https://aeroleads.com/favicon.ico",
   actions: aeroleadsActions,
 };

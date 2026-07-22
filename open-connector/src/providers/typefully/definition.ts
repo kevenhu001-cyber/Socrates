@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://typefully.com",
+  iconUrl: "https://typefully.com/favicon.ico",
   actions: typefullyActions,
 };

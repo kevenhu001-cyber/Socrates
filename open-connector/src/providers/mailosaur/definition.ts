@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mailosaur.com",
+  iconUrl: "https://mailosaur.com/favicon.ico",
   actions: mailosaurActions,
 };

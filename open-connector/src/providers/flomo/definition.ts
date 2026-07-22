@@ -37,5 +37,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://flomoapp.com",
+  iconUrl: "https://flomoapp.com/favicon.ico",
   actions: flomoActions,
 };

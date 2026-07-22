@@ -24,5 +24,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://workspace.google.com/products/forms/",
+  iconUrl: "https://docs.google.com/favicon.ico",
   actions: googleFormsActions,
 };

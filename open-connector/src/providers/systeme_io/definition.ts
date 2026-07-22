@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://systeme.io",
+  iconUrl: "https://systeme.io/favicon.ico",
   actions: systemeIoActions,
 };

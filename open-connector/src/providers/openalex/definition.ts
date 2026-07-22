@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://openalex.org/",
+  iconUrl: "https://openalex.org/favicon.ico",
   actions: openalexActions,
 };

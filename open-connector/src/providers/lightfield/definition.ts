@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://lightfield.app",
+  iconUrl: "https://lightfield.app/favicon.ico",
   actions: lightfieldActions,
 };

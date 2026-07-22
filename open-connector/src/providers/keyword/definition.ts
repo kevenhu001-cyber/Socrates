@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://keyword.com",
+  iconUrl: "https://keyword.com/favicon.ico",
   actions: keywordActions,
 };

@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.lemonsqueezy.com",
+  iconUrl: "https://www.lemonsqueezy.com/favicon.ico",
   actions: lemonSqueezyActions,
 };

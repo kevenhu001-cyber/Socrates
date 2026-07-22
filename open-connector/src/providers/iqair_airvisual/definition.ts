@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.iqair.com",
+  iconUrl: "https://www.iqair.com/favicon.ico",
   actions: iqairAirvisualActions,
 };

@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://clockify.me",
+  iconUrl: "https://clockify.me/favicon.ico",
   actions: clockifyActions,
 };

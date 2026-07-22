@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://langbase.com",
+  iconUrl: "https://langbase.com/favicon.ico",
   actions: langbaseActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://coda.io",
+  iconUrl: "https://coda.io/favicon.ico",
   actions: codaActions,
 };

@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.blazemeter.com/",
+  iconUrl: "https://www.blazemeter.com/favicon.ico",
   actions: blazeMeterServiceVirtualizationActions,
 };

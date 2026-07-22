@@ -32,5 +32,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://docs.qq.com",
+  iconUrl: "https://docs.qq.com/favicon.ico",
   actions: tencentDocsActions,
 };

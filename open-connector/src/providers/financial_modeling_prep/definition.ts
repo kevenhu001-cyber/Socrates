@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://financialmodelingprep.com",
+  iconUrl: "https://financialmodelingprep.com/favicon.ico",
   actions: financialModelingPrepActions,
 };

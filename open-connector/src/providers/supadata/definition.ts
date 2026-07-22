@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://supadata.ai/",
+  iconUrl: "https://supadata.ai/favicon.ico",
   actions: supadataActions,
 };

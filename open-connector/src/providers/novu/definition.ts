@@ -33,5 +33,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://novu.co",
+  iconUrl: "https://novu.co/favicon.ico",
   actions: novuActions,
 };

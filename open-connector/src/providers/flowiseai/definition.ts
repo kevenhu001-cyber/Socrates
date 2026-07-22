@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://flowiseai.com",
+  iconUrl: "https://flowiseai.com/favicon.ico",
   actions: flowiseaiActions,
 };

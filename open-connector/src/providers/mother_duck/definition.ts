@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://motherduck.com",
+  iconUrl: "https://motherduck.com/favicon.ico",
   actions: motherDuckActions,
 };

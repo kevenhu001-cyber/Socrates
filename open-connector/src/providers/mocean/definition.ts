@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://moceanapi.com",
+  iconUrl: "https://moceanapi.com/favicon.ico",
   actions: moceanActions,
 };

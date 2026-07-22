@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://webinarjam.com",
+  iconUrl: "https://webinarjam.com/favicon.ico",
   actions: webinarjamActions,
 };

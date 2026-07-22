@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://wakatime.com",
+  iconUrl: "https://wakatime.com/favicon.ico",
   actions: wakatimeActions,
 };

@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.merriam-webster.com",
+  iconUrl: "https://www.merriam-webster.com/favicon.ico",
   actions: collegiateActions,
 };

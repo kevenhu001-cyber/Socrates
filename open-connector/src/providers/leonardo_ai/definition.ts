@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://leonardo.ai",
+  iconUrl: "https://leonardo.ai/favicon.ico",
   actions: leonardoAiActions,
 };

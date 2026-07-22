@@ -43,5 +43,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.forcemanager.com/",
+  iconUrl: "https://www.forcemanager.com/favicon.ico",
   actions: sageSalesManagementActions,
 };

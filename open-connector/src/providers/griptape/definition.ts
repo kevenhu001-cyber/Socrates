@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.griptape.ai",
+  iconUrl: "https://www.griptape.ai/favicon.ico",
   actions: griptapeActions,
 };

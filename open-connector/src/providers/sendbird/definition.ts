@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://sendbird.com",
+  iconUrl: "https://sendbird.com/favicon.ico",
   actions: sendbirdActions,
 };

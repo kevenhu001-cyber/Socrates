@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ghost.org",
+  iconUrl: "https://ghost.org/favicon.ico",
   actions: ghostActions,
 };

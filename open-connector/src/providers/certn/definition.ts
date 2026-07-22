@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://certn.co",
+  iconUrl: "https://certn.co/favicon.ico",
   actions: certnActions,
 };

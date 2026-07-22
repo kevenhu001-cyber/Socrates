@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.boloforms.com",
+  iconUrl: "https://www.boloforms.com/favicon.ico",
   actions: boloformsActions,
 };

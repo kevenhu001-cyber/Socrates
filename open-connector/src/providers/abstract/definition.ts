@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.abstractapi.com/",
+  iconUrl: "https://www.abstractapi.com/favicon.ico",
   actions: abstractActions,
 };

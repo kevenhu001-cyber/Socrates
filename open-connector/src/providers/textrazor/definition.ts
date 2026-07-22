@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.textrazor.com",
+  iconUrl: "https://www.textrazor.com/favicon.ico",
   actions: textrazorActions,
 };

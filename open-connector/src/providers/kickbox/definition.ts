@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://kickbox.com/",
+  iconUrl: "https://kickbox.com/favicon.ico",
   actions: kickboxActions,
 };

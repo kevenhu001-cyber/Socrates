@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.chatpdf.com",
+  iconUrl: "https://www.chatpdf.com/favicon.ico",
   actions: chatpdfActions,
 };

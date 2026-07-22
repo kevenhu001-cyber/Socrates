@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://postmarkapp.com",
+  iconUrl: "https://postmarkapp.com/favicon.ico",
   actions: postmarkActions,
 };

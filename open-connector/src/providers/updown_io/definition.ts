@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://updown.io",
+  iconUrl: "https://updown.io/favicon.ico",
   actions: updownIoActions,
 };

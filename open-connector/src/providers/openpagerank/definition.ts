@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://openpagerank.com",
+  iconUrl: "https://openpagerank.com/favicon.ico",
   actions: openPageRankActions,
 };

@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.knack.com",
+  iconUrl: "https://www.knack.com/favicon.ico",
   actions: knackActions,
 };

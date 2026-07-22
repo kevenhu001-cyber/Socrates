@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://geokeo.com",
+  iconUrl: "https://geokeo.com/favicon.ico",
   actions: geokeoActions,
 };

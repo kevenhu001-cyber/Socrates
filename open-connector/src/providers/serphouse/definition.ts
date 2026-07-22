@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.serphouse.com",
+  iconUrl: "https://www.serphouse.com/favicon.ico",
   actions: serphouseActions,
 };

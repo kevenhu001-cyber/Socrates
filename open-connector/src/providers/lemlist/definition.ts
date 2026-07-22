@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.lemlist.com",
+  iconUrl: "https://www.lemlist.com/favicon.ico",
   actions: lemlistActions,
 };

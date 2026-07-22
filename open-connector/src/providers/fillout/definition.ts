@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.fillout.com/",
+  iconUrl: "https://www.fillout.com/favicon.ico",
   actions: filloutActions,
 };

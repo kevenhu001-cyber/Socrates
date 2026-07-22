@@ -27,5 +27,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mail.google.com",
+  iconUrl: "https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico",
   actions: gmailActions,
 };

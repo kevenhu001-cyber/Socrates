@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.process.st/",
+  iconUrl: "https://www.process.st/favicon.ico",
   actions: processStreetActions,
 };

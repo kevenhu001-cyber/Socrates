@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://agilitycms.com/",
+  iconUrl: "https://agilitycms.com/favicon.ico",
   actions: agilityActions,
 };

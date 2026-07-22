@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.bestbuy.com",
+  iconUrl: "https://www.bestbuy.com/favicon.ico",
   actions: bestbuyActions,
 };

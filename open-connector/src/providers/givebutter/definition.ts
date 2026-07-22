@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://givebutter.com",
+  iconUrl: "https://givebutter.com/favicon.ico",
   actions: givebutterActions,
 };

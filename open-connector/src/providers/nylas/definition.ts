@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.nylas.com",
+  iconUrl: "https://www.nylas.com/favicon.ico",
   actions: nylasActions,
 };

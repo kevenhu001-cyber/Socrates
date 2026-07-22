@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://onesignal.com",
+  iconUrl: "https://onesignal.com/favicon.ico",
   actions: onesignalRestApiActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://stormglass.io/",
+  iconUrl: "https://stormglass.io/favicon.ico",
   actions: stormglassIoActions,
 };

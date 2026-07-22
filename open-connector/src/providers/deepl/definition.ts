@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.deepl.com",
+  iconUrl: "https://www.deepl.com/favicon.ico",
   actions: deeplActions,
 };

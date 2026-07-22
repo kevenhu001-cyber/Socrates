@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.simplesat.io/",
+  iconUrl: "https://www.simplesat.io/favicon.ico",
   actions: simplesatActions,
 };

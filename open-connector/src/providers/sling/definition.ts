@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://getsling.com",
+  iconUrl: "https://getsling.com/favicon.ico",
   actions: slingActions,
 };

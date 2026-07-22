@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://unione.io",
+  iconUrl: "https://unione.io/favicon.ico",
   actions: unioneActions,
 };

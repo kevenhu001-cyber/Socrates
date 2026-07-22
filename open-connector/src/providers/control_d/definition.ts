@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://controld.com",
+  iconUrl: "https://controld.com/favicon.ico",
   actions: controlDActions,
 };

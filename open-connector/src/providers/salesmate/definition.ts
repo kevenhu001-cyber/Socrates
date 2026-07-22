@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.salesmate.io",
+  iconUrl: "https://www.salesmate.io/favicon.ico",
   actions: salesmateActions,
 };

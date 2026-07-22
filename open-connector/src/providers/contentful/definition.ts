@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.contentful.com",
+  iconUrl: "https://www.contentful.com/favicon.ico",
   actions: contentfulActions,
 };

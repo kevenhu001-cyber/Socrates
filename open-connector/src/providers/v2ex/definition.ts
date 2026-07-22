@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.v2ex.com",
+  iconUrl: "https://www.v2ex.com/favicon.ico",
   actions: v2exActions,
 };

@@ -39,5 +39,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.atlassian.com/software/confluence",
+  iconUrl: "https://www.atlassian.com/favicon.ico",
   actions: confluenceActions,
 };

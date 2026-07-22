@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://document360.com",
+  iconUrl: "https://document360.com/favicon.ico",
   actions: document360Actions,
 };

@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://recurly.com",
+  iconUrl: "https://recurly.com/favicon.ico",
   actions: recurlyActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.crunchbase.com",
+  iconUrl: "https://www.crunchbase.com/favicon.ico",
   actions: crunchbaseActions,
 };

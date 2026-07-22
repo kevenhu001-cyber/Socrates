@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://cloudconvert.com",
+  iconUrl: "https://cloudconvert.com/favicon.ico",
   actions: cloudconvertActions,
 };

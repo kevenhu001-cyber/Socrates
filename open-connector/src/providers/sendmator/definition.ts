@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://sendmator.com",
+  iconUrl: "https://sendmator.com/favicon.ico",
   actions: sendmatorActions,
 };

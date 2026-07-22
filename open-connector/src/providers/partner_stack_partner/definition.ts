@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://partnerstack.com",
+  iconUrl: "https://partnerstack.com/favicon.ico",
   actions: partnerStackPartnerActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.ongage.com/",
+  iconUrl: "https://www.ongage.com/favicon.ico",
   actions: ongageActions,
 };

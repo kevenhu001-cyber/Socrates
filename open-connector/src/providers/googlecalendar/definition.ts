@@ -27,5 +27,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://workspace.google.com/products/calendar/",
+  iconUrl: "https://calendar.google.com/favicon.ico",
   actions: googlecalendarActions,
 };

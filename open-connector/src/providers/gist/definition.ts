@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://gist.github.com",
+  iconUrl: "https://gist.github.com/favicon.ico",
   actions: gistActions,
 };

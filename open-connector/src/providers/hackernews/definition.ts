@@ -14,5 +14,6 @@ export const provider: ProviderDefinition = {
   authTypes: ["no_auth"],
   auth: [{ type: "no_auth" }],
   homepageUrl: "https://news.ycombinator.com",
+  iconUrl: "https://news.ycombinator.com/favicon.ico",
   actions: hackernewsActions,
 };

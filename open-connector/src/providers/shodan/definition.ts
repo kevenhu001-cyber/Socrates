@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.shodan.io",
+  iconUrl: "https://www.shodan.io/favicon.ico",
   actions: shodanActions,
 };

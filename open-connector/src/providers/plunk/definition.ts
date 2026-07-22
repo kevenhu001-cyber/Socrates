@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.useplunk.com",
+  iconUrl: "https://www.useplunk.com/favicon.ico",
   actions: plunkActions,
 };

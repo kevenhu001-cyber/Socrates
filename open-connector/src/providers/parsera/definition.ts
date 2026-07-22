@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://parsera.org",
+  iconUrl: "https://parsera.org/favicon.ico",
   actions: parseraActions,
 };

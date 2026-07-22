@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://documenso.com",
+  iconUrl: "https://documenso.com/favicon.ico",
   actions: documensoActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://corp.evenium.com",
+  iconUrl: "https://corp.evenium.com/favicon.ico",
   actions: eveniumActions,
 };

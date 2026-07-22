@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.affinda.com",
+  iconUrl: "https://www.affinda.com/favicon.ico",
   actions: affindaActions,
 };

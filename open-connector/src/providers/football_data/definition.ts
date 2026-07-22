@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.football-data.org/",
+  iconUrl: "https://www.football-data.org/favicon.ico",
   actions: footballDataActions,
 };

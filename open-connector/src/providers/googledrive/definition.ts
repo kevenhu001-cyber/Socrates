@@ -27,5 +27,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://workspace.google.com/products/drive/",
+  iconUrl: "https://drive.google.com/favicon.ico",
   actions: googledriveActions,
 };

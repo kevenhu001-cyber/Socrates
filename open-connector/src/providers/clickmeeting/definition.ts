@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://clickmeeting.com/",
+  iconUrl: "https://clickmeeting.com/favicon.ico",
   actions: clickMeetingActions,
 };

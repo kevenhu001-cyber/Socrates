@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://imgbb.com",
+  iconUrl: "https://imgbb.com/favicon.ico",
   actions: imgbbActions,
 };

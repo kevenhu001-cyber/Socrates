@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ffhub.io",
+  iconUrl: "https://ffhub.io/favicon.ico",
   actions: ffhubActions,
 };

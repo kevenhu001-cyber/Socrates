@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://businessmap.io",
+  iconUrl: "https://businessmap.io/favicon.ico",
   actions: businessmapActions,
 };

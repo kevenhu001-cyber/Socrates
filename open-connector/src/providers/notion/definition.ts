@@ -37,5 +37,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.notion.so",
+  iconUrl: "https://www.notion.so/images/logo-ios.png",
   actions: notionActions,
 };

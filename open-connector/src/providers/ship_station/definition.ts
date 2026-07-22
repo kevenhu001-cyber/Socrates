@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.shipstation.com/",
+  iconUrl: "https://www.shipstation.com/favicon.ico",
   actions: shipStationActions,
 };

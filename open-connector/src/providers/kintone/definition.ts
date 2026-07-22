@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.kintone.com/",
+  iconUrl: "https://www.kintone.com/favicon.ico",
   actions: kintoneActions,
 };

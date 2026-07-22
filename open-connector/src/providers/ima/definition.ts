@@ -38,5 +38,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ima.qq.com",
+  iconUrl: "https://ima.qq.com/favicon.ico",
   actions: imaActions,
 };

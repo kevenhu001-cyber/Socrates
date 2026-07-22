@@ -53,5 +53,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.gong.io/",
+  iconUrl: "https://www.gong.io/favicon.ico",
   actions: gongActions,
 };

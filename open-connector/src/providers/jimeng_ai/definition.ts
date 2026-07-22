@@ -49,5 +49,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.volcengine.com/product/jimeng",
+  iconUrl: "https://www.volcengine.com/favicon.ico",
   actions: jimengAiActions,
 };

@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://kit.com/",
+  iconUrl: "https://kit.com/favicon.ico",
   actions: kitActions,
 };

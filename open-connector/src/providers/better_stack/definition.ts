@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://betterstack.com",
+  iconUrl: "https://betterstack.com/favicon.ico",
   actions: betterStackActions,
 };

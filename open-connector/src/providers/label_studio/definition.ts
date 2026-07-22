@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://labelstud.io",
+  iconUrl: "https://labelstud.io/favicon.ico",
   actions: labelStudioActions,
 };

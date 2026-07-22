@@ -38,5 +38,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.discourse.org/",
+  iconUrl: "https://www.discourse.org/favicon.ico",
   actions: discourseActions,
 };

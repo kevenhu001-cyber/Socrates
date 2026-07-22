@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://apipie.ai",
+  iconUrl: "https://apipie.ai/favicon.ico",
   actions: apipieAiActions,
 };

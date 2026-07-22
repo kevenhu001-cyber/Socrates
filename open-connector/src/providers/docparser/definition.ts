@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://docparser.com",
+  iconUrl: "https://docparser.com/favicon.ico",
   actions: docparserActions,
 };

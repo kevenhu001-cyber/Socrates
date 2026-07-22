@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://wiza.co",
+  iconUrl: "https://wiza.co/favicon.ico",
   actions: wizaActions,
 };

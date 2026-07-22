@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.getambee.com",
+  iconUrl: "https://www.getambee.com/favicon.ico",
   actions: ambeeActions,
 };

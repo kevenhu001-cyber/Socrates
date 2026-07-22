@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://app.gladia.io/",
+  iconUrl: "https://app.gladia.io/favicon.ico",
   actions: gladiaActions,
 };

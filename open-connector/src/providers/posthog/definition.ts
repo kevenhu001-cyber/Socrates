@@ -72,5 +72,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://posthog.com",
+  iconUrl: "https://posthog.com/favicon.ico",
   actions: posthogActions,
 };

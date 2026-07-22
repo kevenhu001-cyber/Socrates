@@ -44,5 +44,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://fivetran.com",
+  iconUrl: "https://fivetran.com/favicon.ico",
   actions: fivetranActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://esignatures.com",
+  iconUrl: "https://esignatures.com/favicon.ico",
   actions: esignaturesIoActions,
 };

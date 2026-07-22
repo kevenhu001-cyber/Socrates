@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://botsonic.com",
+  iconUrl: "https://botsonic.com/favicon.ico",
   actions: botsonicActions,
 };

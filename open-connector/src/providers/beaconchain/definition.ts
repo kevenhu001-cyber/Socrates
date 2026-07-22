@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://beaconcha.in",
+  iconUrl: "https://beaconcha.in/favicon.ico",
   actions: beaconchainActions,
 };

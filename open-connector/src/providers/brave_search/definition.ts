@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://search.brave.com/",
+  iconUrl: "https://brave.com/favicon.ico",
   actions: braveSearchActions,
 };

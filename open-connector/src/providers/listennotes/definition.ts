@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.listennotes.com",
+  iconUrl: "https://www.listennotes.com/favicon.ico",
   actions: listennotesActions,
 };

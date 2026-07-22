@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.teamcamp.app",
+  iconUrl: "https://www.teamcamp.app/favicon.ico",
   actions: teamcampActions,
 };

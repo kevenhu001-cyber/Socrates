@@ -16,29 +16,43 @@ export function getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop = 0
   return Math.max(0, Math.round(layoutHeight - (visualHeight + Math.max(0, visualOffsetTop))));
 }
 
-export function initKeyboardViewport({ input, container, root = document.documentElement } = {}) {
+export function initKeyboardViewport({ inputs, input, container, root = document.documentElement } = {}) {
   if (!root) return () => {};
+
+  /* P_multi-input — `input` (single element) is the legacy shape; pass
+   * `inputs` (single element, array of elements, or CSS selector) to
+   * track more than one composer — e.g. the chat composer AND the
+   * topic-setup composer. Without this, focus on a non-primary input
+   * leaves data-keyboard-open stuck false and any layout keyed off
+   * that attribute (e.g. .topic-input-wrap margin-top) never applies. */
+  const trackedInputs = (() => {
+    const source = inputs ?? input;
+    if (!source) return [];
+    if (typeof source === 'string') return Array.from(document.querySelectorAll(source));
+    if (Array.isArray(source)) return source.filter(Boolean);
+    return [source];
+  })();
 
   const viewport = window.visualViewport;
   let smoothFrame = 0;
   let targetInset = 0;
   let currentInset = 0;
   /* P_kb-stuck — the user reported the input bar sometimes stays
-     lifted after the keyboard closes. Cause: some Android keyboards
-     (Samsung, Gboard in certain WebView versions) dismiss without
-     firing a paired `visualViewport.resize` — viewport.height stays
-     at the shrunken value, so targetInset never returns to 0.
+      lifted after the keyboard closes. Cause: some Android keyboards
+      (Samsung, Gboard in certain WebView versions) dismiss without
+      firing a paired `visualViewport.resize` — viewport.height stays
+      at the shrunken value, so targetInset never returns to 0.
 
-     Defence-in-depth fix:
-       1. Force targetInset=0 when the input isn't focused. The
-          keyboard can only be open while the input has focus, so the
-          activeElement check is authoritative — visualViewport can
-          be stale but focus cannot.
-       2. On blur, schedule a delayed re-check (300ms) to catch a
-          late-firing resize that arrives after the blur event.
-       3. Listen for focusout on the document so the dismissal path
-          also fires when focus moves to a non-input element (e.g.
-          user taps a message in the chat). */
+      Defence-in-depth fix:
+        1. Force targetInset=0 when the input isn't focused. The
+           keyboard can only be open while the input has focus, so the
+           activeElement check is authoritative — visualViewport can
+           be stale but focus cannot.
+        2. On blur, schedule a delayed re-check (300ms) to catch a
+           late-firing resize that arrives after the blur event.
+        3. Listen for focusout on the document so the dismissal path
+           also fires when focus moves to a non-input element (e.g.
+           user taps a message in the chat). */
   let blurRecheckTimer = 0;
 
   const applyInset = (inset) => {
@@ -67,22 +81,40 @@ export function initKeyboardViewport({ input, container, root = document.documen
   };
 
   const isInputFocused = () => {
-    if (!input) return false;
+    if (!trackedInputs.length) return false;
     var active = document.activeElement;
-    if (active === input) return true;
-    /* The input may contain nested focusable children in some
-       composer variants — match on the element OR a descendant.
-       `:focus` walks the focus chain so this covers both. */
-    try { return input.matches(':focus'); } catch (_) { return false; }
+    for (var i = 0; i < trackedInputs.length; i++) {
+      var el = trackedInputs[i];
+      if (!el) continue;
+      if (active === el) return true;
+      /* The input may contain nested focusable children in some
+         composer variants — match on the element OR a descendant.
+         `:focus` walks the focus chain so this covers both. */
+      try { if (el.matches(':focus')) return true; } catch (_) { /* ignore */ }
+    }
+    return false;
   };
 
   const update = () => {
-    // Measure the app shell first. If `100dvh` already shrank it (the
-    // Firefox/Android behaviour), adding a second inset would over-correct.
+    /* P_kb-inset-android — the previous formula (containerHeight ||
+     * window.innerHeight) gave inset=0 on Android Chrome because
+     * .app = 100dvh shrinks together with visualViewport.height —
+     * both end up at the same post-keyboard value. iOS Safari takes the
+     * opposite path: window.innerHeight stays unchanged and the page
+     * scrolls up (visualViewport.offsetTop turns negative). Use the
+     * larger of {innerHeight, visualHeight + |offsetTop|} so both
+     * platforms give a real keyboard height and the CSS bottom-padding
+     * / fixed-bottom pickers land flush against the keyboard top. */
     const containerHeight = container?.getBoundingClientRect().height || 0;
-    const layoutHeight = containerHeight || window.innerHeight || document.documentElement.clientHeight || 0;
+    const visualHeight = viewport?.height || 0;
+    const visualOffsetTop = viewport?.offsetTop || 0;
+    const layoutHeight = Math.max(
+      window.innerHeight || 0,
+      visualHeight + Math.max(0, visualOffsetTop),
+      containerHeight,
+    ) || document.documentElement.clientHeight || 0;
     const measuredInset = viewport
-      ? getKeyboardInset(layoutHeight, viewport.height, viewport.offsetTop)
+      ? getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop)
       : 0;
 
     /* Authoritative check: keyboard cannot be open while the input is
@@ -130,8 +162,11 @@ export function initKeyboardViewport({ input, container, root = document.documen
      the keyboard by tapping a message or the page background, where
      blur may or may not fire depending on the platform. */
   document.addEventListener('focusout', onBlur);
-  input?.addEventListener('focus', schedule);
-  input?.addEventListener('blur', onBlur);
+  trackedInputs.forEach((el) => {
+    if (!el) return;
+    el.addEventListener('focus', schedule);
+    el.addEventListener('blur', onBlur);
+  });
   update();
 
   return () => {
@@ -143,7 +178,10 @@ export function initKeyboardViewport({ input, container, root = document.documen
     }
     window.removeEventListener('resize', schedule);
     document.removeEventListener('focusout', onBlur);
-    input?.removeEventListener('focus', schedule);
-    input?.removeEventListener('blur', onBlur);
+    trackedInputs.forEach((el) => {
+      if (!el) return;
+      el.removeEventListener('focus', schedule);
+      el.removeEventListener('blur', onBlur);
+    });
   };
 }

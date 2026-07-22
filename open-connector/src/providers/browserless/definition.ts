@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.browserless.io",
+  iconUrl: "https://www.browserless.io/favicon.ico",
   actions: browserlessActions,
 };

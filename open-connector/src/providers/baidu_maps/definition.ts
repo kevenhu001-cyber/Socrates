@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://lbsyun.baidu.com",
+  iconUrl: "https://lbsyun.baidu.com/favicon.ico",
   actions: baiduMapsActions,
 };

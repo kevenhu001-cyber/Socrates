@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.upsales.com/",
+  iconUrl: "https://www.upsales.com/favicon.ico",
   actions: upsalesActions,
 };

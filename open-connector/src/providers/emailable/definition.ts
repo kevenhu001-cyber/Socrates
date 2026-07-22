@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://emailable.com",
+  iconUrl: "https://emailable.com/favicon.ico",
   actions: emailableActions,
 };

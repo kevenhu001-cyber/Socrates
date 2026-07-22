@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.findymail.com/",
+  iconUrl: "https://www.findymail.com/favicon.ico",
   actions: findymailActions,
 };

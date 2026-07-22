@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ipstack.com",
+  iconUrl: "https://ipstack.com/favicon.ico",
   actions: ipstackActions,
 };

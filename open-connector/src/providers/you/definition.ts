@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://you.com/",
+  iconUrl: "https://you.com/favicon.ico",
   actions: youActions,
 };

@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://workiom.com",
+  iconUrl: "https://workiom.com/favicon.ico",
   actions: workiomActions,
 };

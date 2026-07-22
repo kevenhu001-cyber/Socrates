@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://vectorshift.ai",
+  iconUrl: "https://vectorshift.ai/favicon.ico",
   actions: vectorshiftActions,
 };

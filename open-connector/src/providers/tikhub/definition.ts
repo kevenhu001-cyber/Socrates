@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://tikhub.io/",
+  iconUrl: "https://tikhub.io/favicon.ico",
   actions: tikhubActions,
 };

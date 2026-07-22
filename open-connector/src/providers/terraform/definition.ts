@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.hashicorp.com/products/terraform",
+  iconUrl: "https://www.hashicorp.com/favicon.ico",
   actions: terraformActions,
 };

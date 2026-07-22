@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://nextdns.io/",
+  iconUrl: "https://nextdns.io/favicon.ico",
   actions: nextDnsActions,
 };

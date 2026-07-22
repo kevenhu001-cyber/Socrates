@@ -28,5 +28,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://gitee.com",
+  iconUrl: "https://gitee.com/favicon.ico",
   actions: giteeActions,
 };

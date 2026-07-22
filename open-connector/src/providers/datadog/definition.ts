@@ -43,5 +43,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.datadoghq.com/",
+  iconUrl: "https://www.datadoghq.com/favicon.ico",
   actions: datadogActions,
 };

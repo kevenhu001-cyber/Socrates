@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://instantly.ai",
+  iconUrl: "https://instantly.ai/favicon.ico",
   actions: instantlyAiActions,
 };

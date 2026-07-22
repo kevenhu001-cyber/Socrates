@@ -28,5 +28,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.teamtailor.com/",
+  iconUrl: "https://www.teamtailor.com/favicon.ico",
   actions: teamtailorActions,
 };

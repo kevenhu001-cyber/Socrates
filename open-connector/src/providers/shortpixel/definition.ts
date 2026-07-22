@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://shortpixel.com",
+  iconUrl: "https://shortpixel.com/favicon.ico",
   actions: shortpixelActions,
 };

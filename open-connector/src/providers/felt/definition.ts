@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://felt.com/",
+  iconUrl: "https://felt.com/favicon.ico",
   actions: feltActions,
 };

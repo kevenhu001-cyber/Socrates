@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://truvera.io",
+  iconUrl: "https://truvera.io/favicon.ico",
   actions: truveraActions,
 };

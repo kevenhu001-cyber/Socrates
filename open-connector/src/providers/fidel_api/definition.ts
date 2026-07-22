@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://fidel.uk",
+  iconUrl: "https://fidel.uk/favicon.ico",
   actions: fidelApiActions,
 };

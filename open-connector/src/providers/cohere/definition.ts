@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://cohere.com",
+  iconUrl: "https://cohere.com/favicon.ico",
   actions: cohereActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.dnsfilter.com",
+  iconUrl: "https://www.dnsfilter.com/favicon.ico",
   actions: dnsFilterActions,
 };

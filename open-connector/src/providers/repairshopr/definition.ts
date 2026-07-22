@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.repairshopr.com",
+  iconUrl: "https://www.repairshopr.com/favicon.ico",
   actions: repairshoprActions,
 };

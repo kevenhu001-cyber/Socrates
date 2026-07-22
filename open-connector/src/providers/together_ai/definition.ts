@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.together.ai",
+  iconUrl: "https://www.together.ai/favicon.ico",
   actions: togetherAiActions,
 };

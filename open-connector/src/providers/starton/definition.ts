@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://starton.com",
+  iconUrl: "https://starton.com/favicon.ico",
   actions: startonActions,
 };

@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.quo.com",
+  iconUrl: "https://www.quo.com/favicon.ico",
   actions: quoActions,
 };

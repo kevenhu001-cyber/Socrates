@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.signwell.com",
+  iconUrl: "https://www.signwell.com/favicon.ico",
   actions: signwellActions,
 };

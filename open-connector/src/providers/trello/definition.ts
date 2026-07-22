@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://trello.com",
+  iconUrl: "https://trello.com/favicon.ico",
   actions: trelloActions,
 };

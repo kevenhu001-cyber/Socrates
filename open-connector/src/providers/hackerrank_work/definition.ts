@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.hackerrank.com/work",
+  iconUrl: "https://www.hackerrank.com/favicon.ico",
   actions: hackerrankWorkActions,
 };

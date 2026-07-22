@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://builtwith.com",
+  iconUrl: "https://builtwith.com/favicon.ico",
   actions: builtwithActions,
 };

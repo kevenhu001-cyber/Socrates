@@ -40,5 +40,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.contentstack.com/",
+  iconUrl: "https://www.contentstack.com/favicon.ico",
   actions: contentstackContentDeliveryActions,
 };

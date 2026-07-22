@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.feathery.io/",
+  iconUrl: "https://www.feathery.io/favicon.ico",
   actions: featheryActions,
 };

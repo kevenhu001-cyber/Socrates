@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.cyberimpact.com/",
+  iconUrl: "https://www.cyberimpact.com/favicon.ico",
   actions: cyberimpactActions,
 };

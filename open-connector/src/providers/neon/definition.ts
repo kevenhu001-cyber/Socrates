@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://neon.com",
+  iconUrl: "https://neon.com/favicon.ico",
   actions: neonActions,
 };

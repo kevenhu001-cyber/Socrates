@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://gamma.app",
+  iconUrl: "https://gamma.app/favicon.ico",
   actions: gammaActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://fernhq.com",
+  iconUrl: "https://fernhq.com/favicon.ico",
   actions: fernActions,
 };

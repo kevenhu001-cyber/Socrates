@@ -50,5 +50,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.rocket.chat",
+  iconUrl: "https://www.rocket.chat/favicon.ico",
   actions: rocketChatActions,
 };

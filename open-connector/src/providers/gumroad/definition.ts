@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://gumroad.com",
+  iconUrl: "https://gumroad.com/favicon.ico",
   actions: gumroadActions,
 };

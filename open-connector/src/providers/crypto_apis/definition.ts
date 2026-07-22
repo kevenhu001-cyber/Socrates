@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://cryptoapis.io",
+  iconUrl: "https://cryptoapis.io/favicon.ico",
   actions: cryptoApisActions,
 };

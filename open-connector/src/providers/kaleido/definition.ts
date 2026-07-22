@@ -35,5 +35,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.kaleido.io",
+  iconUrl: "https://www.kaleido.io/favicon.ico",
   actions: kaleidoActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://loyverse.com/",
+  iconUrl: "https://loyverse.com/favicon.ico",
   actions: loyverseActions,
 };

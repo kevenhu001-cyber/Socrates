@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.workable.com/",
+  iconUrl: "https://www.workable.com/favicon.ico",
   actions: workableActions,
 };

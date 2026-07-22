@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ipregistry.co",
+  iconUrl: "https://ipregistry.co/favicon.ico",
   actions: ipregistryActions,
 };

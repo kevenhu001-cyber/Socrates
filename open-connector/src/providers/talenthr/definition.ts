@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.talenthr.io/",
+  iconUrl: "https://www.talenthr.io/favicon.ico",
   actions: talenthrActions,
 };

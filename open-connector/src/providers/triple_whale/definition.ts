@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.triplewhale.com",
+  iconUrl: "https://www.triplewhale.com/favicon.ico",
   actions: tripleWhaleActions,
 };

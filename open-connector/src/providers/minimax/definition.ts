@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.minimax.io",
+  iconUrl: "https://minimax.io/favicon.ico",
   actions: minimaxActions,
 };

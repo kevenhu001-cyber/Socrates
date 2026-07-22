@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://urlscan.io",
+  iconUrl: "https://urlscan.io/favicon.ico",
   actions: urlscanActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://zixflow.com",
+  iconUrl: "https://zixflow.com/favicon.ico",
   actions: zixflowActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.daffy.org/",
+  iconUrl: "https://www.daffy.org/favicon.ico",
   actions: daffyActions,
 };

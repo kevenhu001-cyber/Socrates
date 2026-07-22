@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://e2b.dev",
+  iconUrl: "https://e2b.dev/favicon.ico",
   actions: e2bActions,
 };

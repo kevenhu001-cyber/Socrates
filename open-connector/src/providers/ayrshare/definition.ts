@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.ayrshare.com/",
+  iconUrl: "https://www.ayrshare.com/favicon.ico",
   actions: ayrshareActions,
 };

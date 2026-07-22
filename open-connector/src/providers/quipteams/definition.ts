@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.quipteams.com",
+  iconUrl: "https://www.quipteams.com/favicon.ico",
   actions: quipteamsActions,
 };

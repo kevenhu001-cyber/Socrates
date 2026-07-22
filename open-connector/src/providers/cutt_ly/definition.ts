@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://cutt.ly",
+  iconUrl: "https://cutt.ly/favicon.ico",
   actions: cuttLyActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.paymoapp.com",
+  iconUrl: "https://www.paymoapp.com/favicon.ico",
   actions: paymoActions,
 };

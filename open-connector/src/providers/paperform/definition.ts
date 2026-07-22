@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://paperform.co",
+  iconUrl: "https://paperform.co/favicon.ico",
   actions: paperformActions,
 };

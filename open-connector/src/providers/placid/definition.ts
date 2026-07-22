@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://placid.app",
+  iconUrl: "https://placid.app/favicon.ico",
   actions: placidActions,
 };

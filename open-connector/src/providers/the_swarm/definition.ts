@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.theswarm.com",
+  iconUrl: "https://www.theswarm.com/favicon.ico",
   actions: theSwarmActions,
 };

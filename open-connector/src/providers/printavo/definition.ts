@@ -32,5 +32,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.printavo.com",
+  iconUrl: "https://www.printavo.com/favicon.ico",
   actions: printavoActions,
 };

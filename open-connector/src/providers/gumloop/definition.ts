@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.gumloop.com",
+  iconUrl: "https://www.gumloop.com/favicon.ico",
   actions: gumloopActions,
 };

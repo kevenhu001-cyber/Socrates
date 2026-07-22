@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://kraken.io",
+  iconUrl: "https://kraken.io/favicon.ico",
   actions: krakenIoActions,
 };

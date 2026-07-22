@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.oksign.be/en/",
+  iconUrl: "https://www.oksign.be/favicon.ico",
   actions: oksignActions,
 };

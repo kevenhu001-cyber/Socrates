@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.zigpoll.com",
+  iconUrl: "https://www.zigpoll.com/favicon.ico",
   actions: zigpollActions,
 };

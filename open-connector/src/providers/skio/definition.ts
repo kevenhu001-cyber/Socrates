@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://skio.com",
+  iconUrl: "https://skio.com/favicon.ico",
   actions: skioActions,
 };

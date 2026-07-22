@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ipgeolocation.io/",
+  iconUrl: "https://ipgeolocation.io/favicon.ico",
   actions: ipgeolocationIoActions,
 };

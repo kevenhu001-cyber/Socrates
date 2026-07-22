@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.superchat.com",
+  iconUrl: "https://www.superchat.com/favicon.ico",
   actions: superchatActions,
 };

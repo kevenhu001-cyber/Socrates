@@ -44,5 +44,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.formsite.com",
+  iconUrl: "https://www.formsite.com/favicon.ico",
   actions: formsiteActions,
 };

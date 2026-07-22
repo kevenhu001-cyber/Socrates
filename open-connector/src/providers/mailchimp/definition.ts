@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mailchimp.com",
+  iconUrl: "https://mailchimp.com/favicon.ico",
   actions: mailchimpActions,
 };

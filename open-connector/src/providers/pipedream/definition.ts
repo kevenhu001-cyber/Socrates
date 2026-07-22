@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://pipedream.com",
+  iconUrl: "https://pipedream.com/favicon.ico",
   actions: pipedreamActions,
 };

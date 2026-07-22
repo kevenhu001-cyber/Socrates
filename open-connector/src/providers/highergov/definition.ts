@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.highergov.com/",
+  iconUrl: "https://www.highergov.com/favicon.ico",
   actions: highergovActions,
 };

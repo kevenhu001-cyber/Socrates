@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://a-leads.co",
+  iconUrl: "https://a-leads.co/favicon.ico",
   actions: aLeadsActions,
 };

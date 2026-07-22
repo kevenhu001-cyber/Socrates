@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.pandadoc.com",
+  iconUrl: "https://www.pandadoc.com/favicon.ico",
   actions: pandadocActions,
 };

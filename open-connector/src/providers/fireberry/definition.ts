@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.fireberry.com",
+  iconUrl: "https://www.fireberry.com/favicon.ico",
   actions: fireberryActions,
 };

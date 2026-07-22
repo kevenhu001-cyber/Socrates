@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ecologi.com",
+  iconUrl: "https://ecologi.com/favicon.ico",
   actions: ecologiActions,
 };

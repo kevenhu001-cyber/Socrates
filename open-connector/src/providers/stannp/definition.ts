@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.stannp.com",
+  iconUrl: "https://www.stannp.com/favicon.ico",
   actions: stannpActions,
 };

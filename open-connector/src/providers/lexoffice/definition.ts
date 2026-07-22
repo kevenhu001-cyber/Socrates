@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://office.lexware.de/",
+  iconUrl: "https://office.lexware.de/favicon.ico",
   actions: lexofficeActions,
 };

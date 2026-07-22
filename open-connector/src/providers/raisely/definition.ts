@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://raisely.com/",
+  iconUrl: "https://raisely.com/favicon.ico",
   actions: raiselyActions,
 };

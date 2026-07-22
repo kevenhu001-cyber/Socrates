@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.dartai.com",
+  iconUrl: "https://www.dartai.com/favicon.ico",
   actions: dartActions,
 };

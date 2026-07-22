@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mailgun.com",
+  iconUrl: "https://www.mailgun.com/favicon.ico",
   actions: mailgunActions,
 };

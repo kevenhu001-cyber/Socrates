@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://elevenlabs.io",
+  iconUrl: "https://elevenlabs.io/favicon.ico",
   actions: elevenlabsActions,
 };

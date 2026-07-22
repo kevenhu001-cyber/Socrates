@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.vitally.io/",
+  iconUrl: "https://www.vitally.io/favicon.ico",
   actions: vitallyActions,
 };

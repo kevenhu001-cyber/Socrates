@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.retellai.com/",
+  iconUrl: "https://www.retellai.com/favicon.ico",
   actions: retellAiActions,
 };

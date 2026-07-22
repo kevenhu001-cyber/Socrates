@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://sevdesk.com",
+  iconUrl: "https://sevdesk.com/favicon.ico",
   actions: sevdeskActions,
 };

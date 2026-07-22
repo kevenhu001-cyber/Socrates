@@ -21,5 +21,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.hotspotsystem.com",
+  iconUrl: "https://www.hotspotsystem.com/favicon.ico",
   actions: hotspotsystemActions,
 };

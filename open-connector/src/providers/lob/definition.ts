@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.lob.com",
+  iconUrl: "https://www.lob.com/favicon.ico",
   actions: lobActions,
 };

@@ -21,5 +21,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://hoop.dev",
+  iconUrl: "https://hoop.dev/favicon.ico",
   actions: hoopActions,
 };

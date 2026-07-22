@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.bugsnag.com",
+  iconUrl: "https://www.bugsnag.com/favicon.ico",
   actions: bugsnagActions,
 };

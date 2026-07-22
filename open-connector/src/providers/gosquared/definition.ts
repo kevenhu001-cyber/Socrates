@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.gosquared.com/",
+  iconUrl: "https://www.gosquared.com/favicon.ico",
   actions: gosquaredActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://slab.com",
+  iconUrl: "https://slab.com/favicon.ico",
   actions: slabActions,
 };

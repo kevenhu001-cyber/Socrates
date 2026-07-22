@@ -24,5 +24,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.youtube.com/",
+  iconUrl: "https://www.youtube.com/favicon.ico",
   actions: youtubeActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.webshare.io/",
+  iconUrl: "https://www.webshare.io/favicon.ico",
   actions: webshareActions,
 };

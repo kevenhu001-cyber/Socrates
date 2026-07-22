@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://wise.com",
+  iconUrl: "https://wise.com/favicon.ico",
   actions: wiseActions,
 };

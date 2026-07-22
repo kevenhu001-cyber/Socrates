@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://vatlayer.com",
+  iconUrl: "https://vatlayer.com/favicon.ico",
   actions: vatlayerActions,
 };

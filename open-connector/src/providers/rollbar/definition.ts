@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://rollbar.com",
+  iconUrl: "https://rollbar.com/favicon.ico",
   actions: rollbarActions,
 };

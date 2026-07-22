@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://turso.tech",
+  iconUrl: "https://turso.tech/favicon.ico",
   actions: tursoActions,
 };

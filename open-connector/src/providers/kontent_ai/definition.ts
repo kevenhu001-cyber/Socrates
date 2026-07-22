@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://kontent.ai",
+  iconUrl: "https://kontent.ai/favicon.ico",
   actions: kontentAiActions,
 };

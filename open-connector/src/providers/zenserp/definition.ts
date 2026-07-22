@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://zenserp.com",
+  iconUrl: "https://zenserp.com/favicon.ico",
   actions: zenserpActions,
 };

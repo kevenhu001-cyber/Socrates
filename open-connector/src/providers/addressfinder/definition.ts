@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://addressfinder.com/au",
+  iconUrl: "https://addressfinder.com/favicon.ico",
   actions: addressfinderActions,
 };

@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://keygen.sh",
+  iconUrl: "https://keygen.sh/favicon.ico",
   actions: keygenActions,
 };

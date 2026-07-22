@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://radar.com",
+  iconUrl: "https://radar.com/favicon.ico",
   actions: radarActions,
 };

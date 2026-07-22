@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.bolna.ai",
+  iconUrl: "https://www.bolna.ai/favicon.ico",
   actions: bolnaActions,
 };

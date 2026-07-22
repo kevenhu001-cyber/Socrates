@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://openexchangerates.org",
+  iconUrl: "https://openexchangerates.org/favicon.ico",
   actions: openExchangeRatesActions,
 };

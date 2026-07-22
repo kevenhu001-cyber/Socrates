@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.opengraph.io",
+  iconUrl: "https://www.opengraph.io/favicon.ico",
   actions: opengraphIoActions,
 };

@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://rentman.io",
+  iconUrl: "https://rentman.io/favicon.ico",
   actions: rentmanActions,
 };

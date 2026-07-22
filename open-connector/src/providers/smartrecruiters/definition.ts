@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.smartrecruiters.com/",
+  iconUrl: "https://www.smartrecruiters.com/favicon.ico",
   actions: smartrecruitersActions,
 };

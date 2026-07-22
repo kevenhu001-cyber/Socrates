@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.lodgify.com/",
+  iconUrl: "https://www.lodgify.com/favicon.ico",
   actions: lodgifyActions,
 };

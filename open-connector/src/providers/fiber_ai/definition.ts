@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://fiber.ai",
+  iconUrl: "https://fiber.ai/favicon.ico",
   actions: fiberAiActions,
 };

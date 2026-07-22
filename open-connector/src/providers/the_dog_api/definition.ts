@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://thedogapi.com/",
+  iconUrl: "https://thedogapi.com/favicon.ico",
   actions: theDogApiActions,
 };

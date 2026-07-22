@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://agiled.app",
+  iconUrl: "https://agiled.app/favicon.ico",
   actions: agiledActions,
 };

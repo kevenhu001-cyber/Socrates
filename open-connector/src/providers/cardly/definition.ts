@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.card.ly",
+  iconUrl: "https://www.card.ly/favicon.ico",
   actions: cardlyActions,
 };

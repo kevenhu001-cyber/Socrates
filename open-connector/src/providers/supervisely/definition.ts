@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://supervisely.com",
+  iconUrl: "https://supervisely.com/favicon.ico",
   actions: superviselyActions,
 };

@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.algolia.com",
+  iconUrl: "https://www.algolia.com/favicon.ico",
   actions: algoliaActions,
 };

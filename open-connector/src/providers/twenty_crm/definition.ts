@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://twenty.com",
+  iconUrl: "https://twenty.com/favicon.ico",
   actions: twentyCrmActions,
 };

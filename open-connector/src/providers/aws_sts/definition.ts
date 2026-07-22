@@ -57,5 +57,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://aws.amazon.com/iam/",
+  iconUrl: "https://aws.amazon.com/favicon.ico",
   actions: awsStsActions,
 };

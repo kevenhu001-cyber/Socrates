@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://newsdata.io",
+  iconUrl: "https://newsdata.io/favicon.ico",
   actions: newsdataIoActions,
 };

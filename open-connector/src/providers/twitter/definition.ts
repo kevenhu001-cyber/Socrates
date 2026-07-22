@@ -83,5 +83,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://x.com",
+  iconUrl: "https://x.com/favicon.ico",
   actions: twitterActions,
 };

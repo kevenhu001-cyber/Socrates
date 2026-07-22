@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.oncehub.com",
+  iconUrl: "https://www.oncehub.com/favicon.ico",
   actions: oncehubActions,
 };

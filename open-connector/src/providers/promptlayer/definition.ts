@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://promptlayer.com/",
+  iconUrl: "https://promptlayer.com/favicon.ico",
   actions: promptLayerActions,
 };

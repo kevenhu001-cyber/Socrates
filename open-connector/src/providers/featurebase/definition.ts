@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.featurebase.app/",
+  iconUrl: "https://www.featurebase.app/favicon.ico",
   actions: featurebaseActions,
 };

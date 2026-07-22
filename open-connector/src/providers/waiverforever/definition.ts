@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.waiverforever.com",
+  iconUrl: "https://www.waiverforever.com/favicon.ico",
   actions: waiverforeverActions,
 };

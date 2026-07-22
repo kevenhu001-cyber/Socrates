@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://currentsapi.services",
+  iconUrl: "https://currentsapi.services/favicon.ico",
   actions: currentsApiActions,
 };

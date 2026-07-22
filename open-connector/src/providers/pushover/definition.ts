@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://pushover.net",
+  iconUrl: "https://pushover.net/favicon.ico",
   actions: pushoverActions,
 };

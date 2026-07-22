@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.unipile.com/",
+  iconUrl: "https://www.unipile.com/favicon.ico",
   actions: unipileActions,
 };

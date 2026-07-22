@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.usercheck.com",
+  iconUrl: "https://www.usercheck.com/favicon.ico",
   actions: mailcheckActions,
 };

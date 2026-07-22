@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.avoma.com/",
+  iconUrl: "https://www.avoma.com/favicon.ico",
   actions: avomaActions,
 };

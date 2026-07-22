@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://api-ninjas.com",
+  iconUrl: "https://api-ninjas.com/favicon.ico",
   actions: apiNinjasActions,
 };

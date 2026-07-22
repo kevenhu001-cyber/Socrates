@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://riveterhq.com",
+  iconUrl: "https://riveterhq.com/favicon.ico",
   actions: riveterActions,
 };

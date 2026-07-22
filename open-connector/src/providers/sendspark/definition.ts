@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://sendspark.com/",
+  iconUrl: "https://sendspark.com/favicon.ico",
   actions: sendsparkActions,
 };

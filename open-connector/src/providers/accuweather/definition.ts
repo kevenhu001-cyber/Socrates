@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.accuweather.com",
+  iconUrl: "https://www.accuweather.com/favicon.ico",
   actions: accuweatherActions,
 };

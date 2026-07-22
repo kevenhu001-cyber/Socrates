@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.rocketlane.com",
+  iconUrl: "https://www.rocketlane.com/favicon.ico",
   actions: rocketlaneActions,
 };

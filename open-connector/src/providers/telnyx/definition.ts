@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://telnyx.com/",
+  iconUrl: "https://telnyx.com/favicon.ico",
   actions: telnyxActions,
 };

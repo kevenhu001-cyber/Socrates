@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://pdfmonkey.io",
+  iconUrl: "https://pdfmonkey.io/favicon.ico",
   actions: pdfmonkeyActions,
 };

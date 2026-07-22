@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.usemotion.com",
+  iconUrl: "https://www.usemotion.com/favicon.ico",
   actions: motionActions,
 };

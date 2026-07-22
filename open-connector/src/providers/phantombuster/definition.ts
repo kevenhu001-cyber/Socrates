@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://phantombuster.com",
+  iconUrl: "https://phantombuster.com/favicon.ico",
   actions: phantombusterActions,
 };

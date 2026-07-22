@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://expofp.com",
+  iconUrl: "https://expofp.com/favicon.ico",
   actions: expofpActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://codemagic.io",
+  iconUrl: "https://codemagic.io/favicon.ico",
   actions: codemagicActions,
 };

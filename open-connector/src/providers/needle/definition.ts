@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://needle.app",
+  iconUrl: "https://needle.app/favicon.ico",
   actions: needleActions,
 };

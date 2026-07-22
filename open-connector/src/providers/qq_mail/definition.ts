@@ -42,5 +42,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mail.qq.com/",
+  iconUrl: "https://mail.qq.com/favicon.ico",
   actions: qqMailActions,
 };

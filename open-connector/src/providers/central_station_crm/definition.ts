@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://centralstationcrm.de",
+  iconUrl: "https://centralstationcrm.de/favicon.ico",
   actions: centralStationCrmActions,
 };

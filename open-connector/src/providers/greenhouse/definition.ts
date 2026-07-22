@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.greenhouse.com",
+  iconUrl: "https://www.greenhouse.com/favicon.ico",
   actions: greenhouseActions,
 };

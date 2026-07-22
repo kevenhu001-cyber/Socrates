@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.feishu.cn",
+  iconUrl: "https://www.feishu.cn/favicon.ico",
   actions: feishuCustomBotActions,
 };

@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://formcarry.com",
+  iconUrl: "https://formcarry.com/favicon.ico",
   actions: formcarryActions,
 };

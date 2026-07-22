@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.tryordinal.com",
+  iconUrl: "https://www.tryordinal.com/favicon.ico",
   actions: ordinalActions,
 };

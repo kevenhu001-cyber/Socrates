@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://scripture.api.bible/",
+  iconUrl: "https://scripture.api.bible/favicon.ico",
   actions: apiBibleActions,
 };

@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://btcpayserver.org",
+  iconUrl: "https://btcpayserver.org/favicon.ico",
   actions: btcpayServerActions,
 };

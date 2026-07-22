@@ -33,5 +33,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://github.com",
+  iconUrl: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
   actions: githubActions,
 };

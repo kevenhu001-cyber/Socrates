@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.geocod.io",
+  iconUrl: "https://www.geocod.io/favicon.ico",
   actions: geocodioActions,
 };

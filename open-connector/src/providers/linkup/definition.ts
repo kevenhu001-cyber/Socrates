@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.linkup.so",
+  iconUrl: "https://www.linkup.so/favicon.ico",
   actions: linkupActions,
 };

@@ -27,5 +27,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.convex.dev",
+  iconUrl: "https://www.convex.dev/favicon.ico",
   actions: convexActions,
 };

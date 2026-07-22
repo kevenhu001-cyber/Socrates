@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.moosend.com/",
+  iconUrl: "https://www.moosend.com/favicon.ico",
   actions: moosendActions,
 };

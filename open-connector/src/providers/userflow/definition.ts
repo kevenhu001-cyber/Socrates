@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://userflow.com",
+  iconUrl: "https://userflow.com/favicon.ico",
   actions: userflowActions,
 };

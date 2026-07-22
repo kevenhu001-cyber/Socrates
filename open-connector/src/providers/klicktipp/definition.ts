@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.klicktipp.com",
+  iconUrl: "https://www.klicktipp.com/favicon.ico",
   actions: klicktippActions,
 };

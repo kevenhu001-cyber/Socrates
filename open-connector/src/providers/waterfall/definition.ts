@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.waterfall.io",
+  iconUrl: "https://www.waterfall.io/favicon.ico",
   actions: waterfallActions,
 };

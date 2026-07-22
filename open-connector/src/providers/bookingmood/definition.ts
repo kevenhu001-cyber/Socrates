@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.bookingmood.com",
+  iconUrl: "https://www.bookingmood.com/favicon.ico",
   actions: bookingmoodActions,
 };

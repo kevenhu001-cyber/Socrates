@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.here.com",
+  iconUrl: "https://www.here.com/favicon.ico",
   actions: hereActions,
 };

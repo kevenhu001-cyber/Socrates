@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://eodhd.com",
+  iconUrl: "https://eodhd.com/favicon.ico",
   actions: eodhdApisActions,
 };

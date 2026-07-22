@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://marketstack.com",
+  iconUrl: "https://marketstack.com/favicon.ico",
   actions: marketstackActions,
 };

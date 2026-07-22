@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.abuseipdb.com/",
+  iconUrl: "https://www.abuseipdb.com/favicon.ico",
   actions: abuseipdbActions,
 };

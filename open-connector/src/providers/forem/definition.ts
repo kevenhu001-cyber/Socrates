@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.forem.com",
+  iconUrl: "https://www.forem.com/favicon.ico",
   actions: foremActions,
 };

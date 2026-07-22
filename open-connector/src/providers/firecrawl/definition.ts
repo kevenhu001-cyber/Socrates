@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.firecrawl.dev",
+  iconUrl: "https://www.firecrawl.dev/favicon.ico",
   actions: firecrawlActions,
 };

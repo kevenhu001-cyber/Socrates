@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.shortcut.com",
+  iconUrl: "https://www.shortcut.com/favicon.ico",
   actions: shortcutActions,
 };

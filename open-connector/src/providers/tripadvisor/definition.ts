@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.tripadvisor.com/developers",
+  iconUrl: "https://www.tripadvisor.com/favicon.ico",
   actions: tripadvisorActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://wejam.ai",
+  iconUrl: "https://wejam.ai/favicon.ico",
   actions: wejamAiActions,
 };

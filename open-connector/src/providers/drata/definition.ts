@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://drata.com",
+  iconUrl: "https://drata.com/favicon.ico",
   actions: drataActions,
 };

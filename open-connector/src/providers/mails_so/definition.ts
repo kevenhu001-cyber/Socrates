@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mails.so",
+  iconUrl: "https://mails.so/favicon.ico",
   actions: mailsSoActions,
 };

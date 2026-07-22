@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.granola.ai",
+  iconUrl: "https://www.granola.ai/favicon.ico",
   actions: granolaActions,
 };

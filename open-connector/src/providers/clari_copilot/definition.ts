@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.clari.com/products/copilot/",
+  iconUrl: "https://www.clari.com/favicon.ico",
   actions: clariCopilotActions,
 };

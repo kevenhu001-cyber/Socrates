@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ro.am",
+  iconUrl: "https://ro.am/favicon.ico",
   actions: roamScimActions,
 };

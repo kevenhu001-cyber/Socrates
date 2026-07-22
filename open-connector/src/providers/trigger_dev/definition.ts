@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://trigger.dev",
+  iconUrl: "https://trigger.dev/favicon.ico",
   actions: triggerDevActions,
 };

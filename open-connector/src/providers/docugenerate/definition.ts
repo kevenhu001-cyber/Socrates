@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.docugenerate.com",
+  iconUrl: "https://www.docugenerate.com/favicon.ico",
   actions: docugenerateActions,
 };

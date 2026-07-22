@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://short.io",
+  iconUrl: "https://short.io/favicon.ico",
   actions: shortIoActions,
 };

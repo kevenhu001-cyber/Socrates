@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://humanitix.com",
+  iconUrl: "https://humanitix.com/favicon.ico",
   actions: humanitixActions,
 };

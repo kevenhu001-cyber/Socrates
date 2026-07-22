@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://crustdata.com",
+  iconUrl: "https://crustdata.com/favicon.ico",
   actions: crustdataActions,
 };

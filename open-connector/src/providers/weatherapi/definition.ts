@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.weatherapi.com",
+  iconUrl: "https://www.weatherapi.com/favicon.ico",
   actions: weatherapiActions,
 };

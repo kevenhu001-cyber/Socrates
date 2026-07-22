@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://zipcodebase.com/",
+  iconUrl: "https://zipcodebase.com/favicon.ico",
   actions: zipcodebaseActions,
 };

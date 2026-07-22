@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://dune.com/",
+  iconUrl: "https://dune.com/favicon.ico",
   actions: duneActions,
 };

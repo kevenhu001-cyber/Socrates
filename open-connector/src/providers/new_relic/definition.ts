@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://newrelic.com",
+  iconUrl: "https://newrelic.com/favicon.ico",
   actions: newRelicActions,
 };

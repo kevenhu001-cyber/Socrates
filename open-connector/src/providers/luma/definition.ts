@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://lu.ma",
+  iconUrl: "https://lu.ma/favicon.ico",
   actions: lumaActions,
 };

@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.braze.com",
+  iconUrl: "https://www.braze.com/favicon.ico",
   actions: brazeActions,
 };

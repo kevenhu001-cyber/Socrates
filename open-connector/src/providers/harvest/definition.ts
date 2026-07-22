@@ -39,5 +39,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.getharvest.com",
+  iconUrl: "https://www.getharvest.com/favicon.ico",
   actions: harvestActions,
 };

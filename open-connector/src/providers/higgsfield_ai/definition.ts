@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://higgsfield.ai/",
+  iconUrl: "https://higgsfield.ai/favicon.ico",
   actions: higgsfieldAiActions,
 };

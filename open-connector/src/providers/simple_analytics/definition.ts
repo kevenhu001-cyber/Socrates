@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://simpleanalytics.com",
+  iconUrl: "https://simpleanalytics.com/favicon.ico",
   actions: simpleAnalyticsActions,
 };

@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://imagekit.io",
+  iconUrl: "https://imagekit.io/favicon.ico",
   actions: imagekitActions,
 };

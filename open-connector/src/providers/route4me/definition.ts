@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://route4me.com",
+  iconUrl: "https://route4me.com/favicon.ico",
   actions: route4meActions,
 };

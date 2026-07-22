@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://leadmagic.io",
+  iconUrl: "https://leadmagic.io/favicon.ico",
   actions: leadmagicActions,
 };

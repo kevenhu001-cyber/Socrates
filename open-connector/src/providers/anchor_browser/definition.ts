@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://anchorbrowser.io",
+  iconUrl: "https://anchorbrowser.io/favicon.ico",
   actions: anchorBrowserActions,
 };

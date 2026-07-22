@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.metabase.com",
+  iconUrl: "https://www.metabase.com/favicon.ico",
   actions: metabaseActions,
 };

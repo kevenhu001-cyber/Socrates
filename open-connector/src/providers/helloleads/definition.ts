@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.helloleads.io/",
+  iconUrl: "https://www.helloleads.io/favicon.ico",
   actions: helloleadsActions,
 };

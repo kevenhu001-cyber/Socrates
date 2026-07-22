@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.magnific.com/freepik",
+  iconUrl: "https://www.magnific.com/favicon.ico",
   actions: freepikActions,
 };

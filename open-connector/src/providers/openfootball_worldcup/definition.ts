@@ -11,5 +11,6 @@ export const provider: ProviderDefinition = {
   authTypes: ["no_auth"],
   auth: [{ type: "no_auth" }],
   homepageUrl: "https://github.com/openfootball/worldcup.json",
+  iconUrl: "https://github.com/favicon.ico",
   actions: openfootballWorldcupActions,
 };

@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://codegen.com",
+  iconUrl: "https://codegen.com/favicon.ico",
   actions: codegenActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.postgrid.com",
+  iconUrl: "https://www.postgrid.com/favicon.ico",
   actions: postgridActions,
 };

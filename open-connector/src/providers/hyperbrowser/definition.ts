@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.hyperbrowser.ai",
+  iconUrl: "https://www.hyperbrowser.ai/favicon.ico",
   actions: hyperbrowserActions,
 };

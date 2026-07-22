@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://brandfetch.com",
+  iconUrl: "https://brandfetch.com/favicon.ico",
   actions: brandfetchActions,
 };

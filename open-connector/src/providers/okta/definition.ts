@@ -42,5 +42,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.okta.com/",
+  iconUrl: "https://www.okta.com/favicon.ico",
   actions: oktaActions,
 };

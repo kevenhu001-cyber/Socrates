@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.anthropic.com",
+  iconUrl: "https://www.anthropic.com/images/icons/apple-touch-icon.png",
   actions: anthropicActions,
 };

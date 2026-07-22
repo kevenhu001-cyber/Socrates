@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://paradym.id",
+  iconUrl: "https://paradym.id/favicon.ico",
   actions: paradymActions,
 };

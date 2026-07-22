@@ -163,11 +163,117 @@ else
   NGINX_STATUS="RELOAD FAILED — files are in place but nginx did not pick them up; check 'sudo nginx -t' manually"
 fi
 
+# ─── 4.5. Post-deploy health gate ─────────────────────────────────────
+# Verify what we just deployed is actually serving correctly. Catches
+# silent regressions that earlier deploys missed (e.g. nginx proxy_pass
+# pointing at a stale upstream port, copy step silently failing, etc).
+# On any gate failure, the state file is left untouched so the last
+# known-good deploy stays recorded, and the script exits non-zero.
+GATE_FAILED=0
+GATE_RESULTS=()
+
+gate_check() {
+  local label="$1" url="$2"; shift 2
+  local code
+  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "$@" "$url" || echo 000)
+  if [[ "$code" =~ ^2 ]]; then
+    GATE_RESULTS+=("  $label $code")
+  else
+    GATE_RESULTS+=("  $label $code  ← FAIL")
+    echo "GATE FAIL: $label returned $code ($url)" >&2
+    GATE_FAILED=1
+  fi
+}
+
+# 4.5a. Frontend bundle integrity: md5 of just-built == md5 on disk.
+if [[ -n "${DIST_DIR:-}" && -f "${DIST_DIR}/index.html" && -f "$APP_WEB_ROOT/index.html" ]]; then
+  BUILT_MD5=$(md5sum "$DIST_DIR/index.html" | cut -d' ' -f1)
+  DEPLOYED_MD5=$(md5sum "$APP_WEB_ROOT/index.html" | cut -d' ' -f1)
+  if [[ "$BUILT_MD5" == "$DEPLOYED_MD5" ]]; then
+    GATE_RESULTS+=("  bundle.md5 match ($DEPLOYED_MD5)")
+  else
+    echo "GATE FAIL: bundle md5 mismatch — built=$BUILT_MD5 deployed=$DEPLOYED_MD5" >&2
+    GATE_FAILED=1
+    GATE_RESULTS+=("  bundle.md5 MISMATCH  ← FAIL")
+  fi
+fi
+
+# 4.5b. Public endpoints — catches nginx→wrong port, DNS/SSL/firewall issues.
+gate_check "app.topodrive.top   " "https://app.topodrive.top/"
+gate_check "topodrive.top       " "https://topodrive.top/"
+gate_check "status.topodrive.top" "https://status.topodrive.top/"
+gate_check "api.topodrive.top   " "https://api.topodrive.top/api/config"
+
+# 4.5c. API JSON shape — catches nginx 200'ing an HTML error page from wrong upstream.
+API_BODY=$(curl -sf --max-time 8 https://api.topodrive.top/api/config || true)
+if [[ -n "$API_BODY" ]] && echo "$API_BODY" | jq -e . >/dev/null 2>&1; then
+  GATE_RESULTS+=("  api.config JSON ok ($(echo "$API_BODY" | jq -c .))")
+else
+  echo "GATE FAIL: /api/config returned non-JSON or empty: ${API_BODY:0:120}" >&2
+  GATE_FAILED=1
+  GATE_RESULTS+=("  api.config INVALID  ← FAIL")
+fi
+
+# 4.5d. Direct backend port — disambiguates "nginx broken" vs "backend broken".
+DIRECT_API=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:3037/api/config || echo 000)
+if [[ "$DIRECT_API" =~ ^2 ]]; then
+  GATE_RESULTS+=("  backend:3037 $DIRECT_API")
+else
+  GATE_RESULTS+=("  backend:3037 $DIRECT_API  ← FAIL")
+  echo "GATE FAIL: direct backend on :3037 returned $DIRECT_API" >&2
+  GATE_FAILED=1
+fi
+
+# 4.5e. State file: update only on full success so last-known-good is preserved.
+STATE_FILE="/home/ubuntu/User/Socrates/.deploy-state.json"
+if [[ $GATE_FAILED -eq 0 ]]; then
+  DEPLOY_COMMIT=$(git -C "$(dirname "$(readlink -f "$0")")" rev-parse HEAD 2>/dev/null || echo unknown)
+  DEPLOY_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  tmp=$(mktemp "${STATE_FILE}.XXXXXX.tmp")
+  cat > "$tmp" <<EOF
+{
+  "lastSuccessfulDeploy": {
+    "commit": "${DEPLOY_COMMIT}",
+    "timestamp": "${DEPLOY_TS}",
+    "frontendBundleMd5": "${DEPLOYED_MD5:-}",
+    "frontendBundleSize": ${SRC_SIZE:-0},
+    "srcDesc": "${SRC_DESC:-}",
+    "checks": {
+      "frontendReachable": true,
+      "siteReachable": true,
+      "statusReachable": true,
+      "apiReachable": true,
+      "apiConfigJsonValid": true,
+      "backendDirectReachable": true,
+      "bundleMd5Integrity": true,
+      "nginxReloaded": $([ "$NGINX_STATUS" = "reloaded" ] && echo true || echo false)
+    }
+  }
+}
+EOF
+  mv "$tmp" "$STATE_FILE"
+  GATE_RESULTS+=("  state: $STATE_FILE updated")
+else
+  GATE_RESULTS+=("  state: NOT updated (gate failed — last known-good preserved)")
+fi
+
 # ─── 5. Report ────────────────────────────────────────────────────────
-echo "✓ $SRC_DESC"
-echo "  size:    $SRC_SIZE bytes"
-echo "  md5:     $SRC_MD5"
-echo "  served:  $(curl -s -o /dev/null -w '%{http_code}' --max-time 5 https://app.topodrive.top/)"
-echo "  nginx:   $NGINX_STATUS"
-echo "  backend: $(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:3037/api/config) (systemd: $($SUDO systemctl is-active socrates-api))"
-echo "  rollback (if needed): sudo cp -a $APP_WEB_ROOT/.previous/* $APP_WEB_ROOT/"
+if [[ $GATE_FAILED -eq 0 ]]; then
+  echo "✓ $SRC_DESC"
+  echo "  size:    ${SRC_SIZE:-?} bytes"
+  echo "  md5:     ${SRC_MD5:-?}"
+  echo "  nginx:   $NGINX_STATUS"
+  echo "─── gate ───"
+  printf '%s\n' "${GATE_RESULTS[@]}"
+  echo "────────────"
+  echo "  rollback (if needed): sudo cp -a $APP_WEB_ROOT/.previous/* $APP_WEB_ROOT/"
+else
+  echo "✗ DEPLOY GATE FAILED ($GATE_FAILED check(s))" >&2
+  echo "─── gate ───"
+  printf '%s\n' "${GATE_RESULTS[@]}" >&2
+  echo "────────────" >&2
+  echo "The previous bundle is preserved at $APP_WEB_ROOT/.previous/" >&2
+  echo "To roll back: sudo cp -a $APP_WEB_ROOT/.previous/* $APP_WEB_ROOT/ && sudo systemctl restart socrates-api" >&2
+  echo "State file $STATE_FILE was NOT updated — last known-good deploy is still recorded there." >&2
+  exit 1
+fi

@@ -27,5 +27,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://todoist.com",
+  iconUrl: "https://todoist.com/favicon.ico",
   actions: todoistActions,
 };

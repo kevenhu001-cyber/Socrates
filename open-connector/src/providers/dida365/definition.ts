@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://dida365.com",
+  iconUrl: "https://dida365.com/favicon.ico",
   actions: dida365Actions,
 };

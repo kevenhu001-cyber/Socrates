@@ -21,5 +21,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.holded.com",
+  iconUrl: "https://www.holded.com/favicon.ico",
   actions: holdedActions,
 };

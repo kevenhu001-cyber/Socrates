@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://bugbug.io",
+  iconUrl: "https://bugbug.io/favicon.ico",
   actions: bugbugActions,
 };

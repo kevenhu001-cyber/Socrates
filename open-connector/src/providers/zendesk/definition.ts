@@ -60,5 +60,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.zendesk.com",
+  iconUrl: "https://www.zendesk.com/favicon.ico",
   actions: zendeskActions,
 };

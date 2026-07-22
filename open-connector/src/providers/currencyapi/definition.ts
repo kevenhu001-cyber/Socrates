@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://currencyapi.com",
+  iconUrl: "https://currencyapi.com/favicon.ico",
   actions: currencyapiActions,
 };

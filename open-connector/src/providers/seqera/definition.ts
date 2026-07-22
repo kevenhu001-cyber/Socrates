@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://seqera.io",
+  iconUrl: "https://seqera.io/favicon.ico",
   actions: seqeraActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://tally.so",
+  iconUrl: "https://tally.so/favicon.ico",
   actions: tallyActions,
 };

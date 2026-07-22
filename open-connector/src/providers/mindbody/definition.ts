@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mindbodyonline.com",
+  iconUrl: "https://www.mindbodyonline.com/favicon.ico",
   actions: mindbodyActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.workpath.com/",
+  iconUrl: "https://www.workpath.com/favicon.ico",
   actions: workpathActions,
 };

@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://plane.so",
+  iconUrl: "https://plane.so/favicon.ico",
   actions: planeActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://spotify.com",
+  iconUrl: "https://spotify.com/favicon.ico",
   actions: spotifyActions,
 };

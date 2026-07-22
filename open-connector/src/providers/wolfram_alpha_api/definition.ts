@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://products.wolframalpha.com/api/",
+  iconUrl: "https://products.wolframalpha.com/favicon.ico",
   actions: wolframAlphaApiActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://apiflash.com",
+  iconUrl: "https://apiflash.com/favicon.ico",
   actions: apiflashActions,
 };

@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.gorgias.com",
+  iconUrl: "https://www.gorgias.com/favicon.ico",
   actions: gorgiasActions,
 };

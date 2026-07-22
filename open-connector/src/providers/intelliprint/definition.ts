@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.intelliprint.net",
+  iconUrl: "https://www.intelliprint.net/favicon.ico",
   actions: intelliprintActions,
 };

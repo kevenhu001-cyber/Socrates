@@ -21,5 +21,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.revenuecat.com",
+  iconUrl: "https://www.revenuecat.com/favicon.ico",
   actions: revenueCatActions,
 };

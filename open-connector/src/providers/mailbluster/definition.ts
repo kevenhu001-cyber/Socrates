@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mailbluster.com",
+  iconUrl: "https://mailbluster.com/favicon.ico",
   actions: mailblusterActions,
 };

@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://sendgrid.com",
+  iconUrl: "https://sendgrid.com/favicon.ico",
   actions: sendgridActions,
 };

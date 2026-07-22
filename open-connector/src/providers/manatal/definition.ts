@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.manatal.com/",
+  iconUrl: "https://www.manatal.com/favicon.ico",
   actions: manatalActions,
 };

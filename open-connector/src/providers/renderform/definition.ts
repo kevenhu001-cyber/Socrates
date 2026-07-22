@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://renderform.io",
+  iconUrl: "https://renderform.io/favicon.ico",
   actions: renderformActions,
 };

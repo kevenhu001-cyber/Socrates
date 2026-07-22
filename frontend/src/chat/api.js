@@ -21,6 +21,32 @@ function formatMinutesApi(seconds) {
   return rem ? (h + "h " + rem + "m") : (h + "h");
 }
 
+/* P_reasoning_effort_sync — same intent as chat/stream.js's
+   apiBody.reasoning_effort wiring. chat/stream.js already attaches the
+   user-selected effort (high/medium/low) when the active provider is a
+   reasoning model so the upstream gets a real reasoning_budget / thinking
+   knob. The sync path (webSearch, topic-KB nodes, diagnostic generator)
+   used to drop it, which meant the round-1 detection probe and any
+   non-stream background call silently disagreed with the streamed answer
+   about how much thinking the model should do. Centralising the body
+   shape here keeps both paths in lock-step. */
+function _chatRequestBodyWithEffort(messages, maxTokens, temperature) {
+  var body = { messages: messages, temperature: temperature, max_tokens: maxTokens };
+  var isReasoning = (typeof window.isReasoningProvider === "function" && window.isReasoningProvider());
+  if (isReasoning) {
+    var effort = (typeof window.getReasoningEffort === "function" && window.getReasoningEffort()) || "medium";
+    body.reasoning_effort = effort;
+    /* P_minimax-reasoning-split — MiniMax-M3 needs reasoning_split in
+       extra_body to emit reasoning_content in SSE deltas. Without this
+       its thinking is hidden even though adaptive thinking is on by
+       default. */
+    if (typeof window.isMiniMaxProvider === "function" && window.isMiniMaxProvider()) {
+      body.extra_body = { reasoning_split: true };
+    }
+  }
+  return body;
+}
+
 /* Non-streaming variant of callAPIStream for round-1 detection.
    Returns the same {text,html,widgets,cancelled} shape (or null on failure).
    Reuses the streaming call but accumulates without rendering. */
@@ -46,7 +72,7 @@ export async function callAPIChat(messages,maxTokens,timeoutMs){
      * Pre-stringified bodies cause express.json() to skip parsing. */
     r=await apiFetchRaw("/api/chat/stream",{
       method:"POST",
-      body:{messages:messages,temperature:0.2,max_tokens:maxTokens},
+      body:_chatRequestBodyWithEffort(messages,maxTokens,0.2),
       signal:ac.signal
     });
   }catch(e){
@@ -157,7 +183,7 @@ export async function callAPI(messages,maxTokens,timeoutMs){
           method:"POST",
           credentials:"include",
           headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key,"X-CSRF-Token":csrfBeagle||""},
-          body:JSON.stringify({messages:beagleMsgs,temperature:0.7,max_tokens:maxTokens}),
+          body:JSON.stringify(_chatRequestBodyWithEffort(beagleMsgs,maxTokens,0.7)),
           signal:wdB.ac.signal
         });
         /* Read the response body BEFORE stopping the watchdog.
@@ -219,7 +245,7 @@ export async function callAPI(messages,maxTokens,timeoutMs){
     nsAttempt++;
     var wdN=makeAIWatchdog(EFFECTIVE_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdN&&wdN.stop("non-builtin-watchdog")}catch(_){}});
     try{
-      var resp=await apiFetch("/api/chat",{method:"POST",body:{messages:messages,temperature:0.7,max_tokens:maxTokens},signal:wdN.ac.signal,timeoutMs:EFFECTIVE_TIMEOUT_MS});
+      var resp=await apiFetch("/api/chat",{method:"POST",body:_chatRequestBodyWithEffort(messages,maxTokens,0.7),signal:wdN.ac.signal,timeoutMs:EFFECTIVE_TIMEOUT_MS});
       wdN.stop("done");
       if(!resp||typeof resp.content!=="string"){
         state.lastCallError="malformed response";

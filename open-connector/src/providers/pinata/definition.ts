@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://pinata.cloud",
+  iconUrl: "https://pinata.cloud/favicon.ico",
   actions: pinataActions,
 };

@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://hunter.io",
+  iconUrl: "https://hunter.io/favicon.ico",
   actions: hunterActions,
 };

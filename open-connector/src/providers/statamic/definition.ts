@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://statamic.com",
+  iconUrl: "https://statamic.com/favicon.ico",
   actions: statamicActions,
 };

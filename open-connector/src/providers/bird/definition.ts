@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://bird.com",
+  iconUrl: "https://bird.com/favicon.ico",
   actions: birdActions,
 };

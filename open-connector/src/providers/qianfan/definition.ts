@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://qianfan.cloud.baidu.com",
+  iconUrl: "https://qianfan.cloud.baidu.com/favicon.ico",
   actions: qianfanActions,
 };

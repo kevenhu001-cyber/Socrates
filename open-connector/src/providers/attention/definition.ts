@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://attention.com",
+  iconUrl: "https://attention.com/favicon.ico",
   actions: attentionActions,
 };

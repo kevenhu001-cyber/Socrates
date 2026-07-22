@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.deck.co",
+  iconUrl: "https://www.deck.co/favicon.ico",
   actions: deckCoActions,
 };

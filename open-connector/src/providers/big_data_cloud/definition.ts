@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.bigdatacloud.com",
+  iconUrl: "https://www.bigdatacloud.com/favicon.ico",
   actions: bigDataCloudActions,
 };

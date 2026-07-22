@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.api2pdf.com",
+  iconUrl: "https://www.api2pdf.com/favicon.ico",
   actions: api2pdfActions,
 };

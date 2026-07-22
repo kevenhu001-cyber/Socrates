@@ -26,5 +26,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://crowdin.com",
+  iconUrl: "https://crowdin.com/favicon.ico",
   actions: crowdinActions,
 };

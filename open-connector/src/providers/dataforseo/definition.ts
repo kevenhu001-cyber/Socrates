@@ -37,5 +37,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://dataforseo.com",
+  iconUrl: "https://dataforseo.com/favicon.ico",
   actions: dataForSeoActions,
 };

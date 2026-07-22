@@ -70,5 +70,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.netsuite.com",
+  iconUrl: "https://www.netsuite.com/favicon.ico",
   actions: netsuiteActions,
 };

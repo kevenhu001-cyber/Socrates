@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://readwise.io",
+  iconUrl: "https://readwise.io/favicon.ico",
   actions: readwiseActions,
 };

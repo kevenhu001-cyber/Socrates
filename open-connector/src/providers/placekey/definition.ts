@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.placekey.io",
+  iconUrl: "https://www.placekey.io/favicon.ico",
   actions: placekeyActions,
 };

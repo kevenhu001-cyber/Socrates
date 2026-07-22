@@ -32,5 +32,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://datalust.co/seq",
+  iconUrl: "https://datalust.co/favicon.ico",
   actions: datalustActions,
 };

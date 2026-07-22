@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://vercel.com",
+  iconUrl: "https://assets.vercel.com/image/upload/front/favicon/vercel/favicon.ico",
   actions: vercelActions,
 };

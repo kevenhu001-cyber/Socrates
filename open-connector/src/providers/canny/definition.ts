@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://canny.io",
+  iconUrl: "https://canny.io/favicon.ico",
   actions: cannyActions,
 };

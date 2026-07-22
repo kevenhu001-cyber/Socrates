@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://recruitcrm.io",
+  iconUrl: "https://recruitcrm.io/favicon.ico",
   actions: recruitcrmActions,
 };

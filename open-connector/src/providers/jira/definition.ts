@@ -52,5 +52,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.atlassian.com/software/jira",
+  iconUrl: "https://wac-cdn.atlassian.com/assets/img/favicons/jira/favicon.png",
   actions: jiraActions,
 };

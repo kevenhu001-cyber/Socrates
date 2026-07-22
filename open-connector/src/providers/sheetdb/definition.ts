@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://sheetdb.io",
+  iconUrl: "https://sheetdb.io/favicon.ico",
   actions: sheetDbActions,
 };

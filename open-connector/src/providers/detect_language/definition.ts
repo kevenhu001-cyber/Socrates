@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://detectlanguage.com/",
+  iconUrl: "https://detectlanguage.com/favicon.ico",
   actions: detectLanguageActions,
 };

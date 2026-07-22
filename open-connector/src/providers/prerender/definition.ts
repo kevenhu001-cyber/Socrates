@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://prerender.io",
+  iconUrl: "https://prerender.io/favicon.ico",
   actions: prerenderActions,
 };

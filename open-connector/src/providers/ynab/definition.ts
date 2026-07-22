@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.ynab.com",
+  iconUrl: "https://www.ynab.com/favicon.ico",
   actions: ynabActions,
 };

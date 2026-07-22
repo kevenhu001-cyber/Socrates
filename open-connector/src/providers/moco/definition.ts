@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mocoapp.com",
+  iconUrl: "https://www.mocoapp.com/favicon.ico",
   actions: mocoActions,
 };

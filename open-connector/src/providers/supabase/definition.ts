@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://supabase.com",
+  iconUrl: "https://supabase.com/brand-assets/supabase-logo-icon.png",
   actions: supabaseActions,
 };

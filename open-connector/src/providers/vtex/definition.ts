@@ -51,5 +51,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://vtex.com",
+  iconUrl: "https://vtex.com/favicon.ico",
   actions: vtexActions,
 };

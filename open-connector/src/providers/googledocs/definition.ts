@@ -27,5 +27,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://workspace.google.com/products/docs/",
+  iconUrl: "https://docs.google.com/favicon.ico",
   actions: googledocsActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://webscraping.ai",
+  iconUrl: "https://webscraping.ai/favicon.ico",
   actions: webscrapingAiActions,
 };

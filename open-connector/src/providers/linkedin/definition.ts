@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.linkedin.com",
+  iconUrl: "https://www.linkedin.com/favicon.ico",
   actions: linkedinActions,
 };

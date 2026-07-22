@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://raygun.com",
+  iconUrl: "https://raygun.com/favicon.ico",
   actions: raygunActions,
 };

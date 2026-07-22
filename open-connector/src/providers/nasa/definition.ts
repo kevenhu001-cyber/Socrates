@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.nasa.gov",
+  iconUrl: "https://www.nasa.gov/favicon.ico",
   actions: nasaActions,
 };

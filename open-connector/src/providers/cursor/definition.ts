@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://cursor.com",
+  iconUrl: "https://cursor.com/favicon.ico",
   actions: cursorActions,
 };

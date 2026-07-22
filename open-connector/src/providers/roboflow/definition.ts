@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://roboflow.com/",
+  iconUrl: "https://roboflow.com/favicon.ico",
   actions: roboflowActions,
 };

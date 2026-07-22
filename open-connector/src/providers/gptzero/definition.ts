@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://gptzero.me",
+  iconUrl: "https://gptzero.me/favicon.ico",
   actions: gptzeroActions,
 };

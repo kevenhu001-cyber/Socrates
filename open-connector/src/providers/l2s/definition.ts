@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.l2s.is",
+  iconUrl: "https://www.l2s.is/favicon.ico",
   actions: l2sActions,
 };

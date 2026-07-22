@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://laposta.nl/",
+  iconUrl: "https://laposta.nl/favicon.ico",
   actions: lapostaActions,
 };

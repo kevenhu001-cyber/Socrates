@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mineru.net",
+  iconUrl: "https://mineru.net/favicon.ico",
   actions: mineruActions,
 };

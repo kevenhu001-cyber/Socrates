@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.dailybot.com",
+  iconUrl: "https://www.dailybot.com/favicon.ico",
   actions: dailybotActions,
 };

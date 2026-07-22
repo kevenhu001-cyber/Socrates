@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://twelvedata.com",
+  iconUrl: "https://twelvedata.com/favicon.ico",
   actions: twelveDataActions,
 };

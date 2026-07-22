@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.breezechms.com",
+  iconUrl: "https://www.breezechms.com/favicon.ico",
   actions: breezeActions,
 };

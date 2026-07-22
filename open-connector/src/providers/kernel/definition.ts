@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://kernel.sh",
+  iconUrl: "https://kernel.sh/favicon.ico",
   actions: kernelActions,
 };

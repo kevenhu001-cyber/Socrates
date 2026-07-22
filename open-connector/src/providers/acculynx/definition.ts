@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://acculynx.com",
+  iconUrl: "https://acculynx.com/favicon.ico",
   actions: acculynxActions,
 };

@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mxtoolbox.com",
+  iconUrl: "https://mxtoolbox.com/favicon.ico",
   actions: mxToolboxActions,
 };

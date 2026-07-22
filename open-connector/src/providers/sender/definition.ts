@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.sender.net",
+  iconUrl: "https://www.sender.net/favicon.ico",
   actions: senderActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.statuspal.io",
+  iconUrl: "https://www.statuspal.io/favicon.ico",
   actions: statuspalActions,
 };

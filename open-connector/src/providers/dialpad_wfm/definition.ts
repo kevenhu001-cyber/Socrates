@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.dialpad.com/features/workforce-management-software/",
+  iconUrl: "https://www.dialpad.com/favicon.ico",
   actions: dialpadWfmActions,
 };

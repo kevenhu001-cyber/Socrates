@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.onedesk.com",
+  iconUrl: "https://www.onedesk.com/favicon.ico",
   actions: onedeskActions,
 };

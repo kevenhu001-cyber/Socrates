@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.browse.ai",
+  iconUrl: "https://www.browse.ai/favicon.ico",
   actions: browseAiActions,
 };

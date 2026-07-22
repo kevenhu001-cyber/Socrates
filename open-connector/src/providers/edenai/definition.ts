@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.edenai.co",
+  iconUrl: "https://www.edenai.co/favicon.ico",
   actions: edenaiActions,
 };

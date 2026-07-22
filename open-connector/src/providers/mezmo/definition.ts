@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mezmo.com",
+  iconUrl: "https://www.mezmo.com/favicon.ico",
   actions: mezmoActions,
 };

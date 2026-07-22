@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.wrike.com",
+  iconUrl: "https://www.wrike.com/favicon.ico",
   actions: wrikeActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://attio.com",
+  iconUrl: "https://attio.com/favicon.ico",
   actions: attioActions,
 };

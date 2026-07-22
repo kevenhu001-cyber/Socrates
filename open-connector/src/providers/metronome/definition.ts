@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://metronome.com",
+  iconUrl: "https://metronome.com/favicon.ico",
   actions: metronomeActions,
 };

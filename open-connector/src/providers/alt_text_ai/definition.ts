@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://alttext.ai",
+  iconUrl: "https://alttext.ai/favicon.ico",
   actions: altTextAiActions,
 };

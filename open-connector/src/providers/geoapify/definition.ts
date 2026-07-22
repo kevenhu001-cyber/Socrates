@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.geoapify.com",
+  iconUrl: "https://www.geoapify.com/favicon.ico",
   actions: geoapifyActions,
 };

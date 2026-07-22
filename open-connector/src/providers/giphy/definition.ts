@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://giphy.com",
+  iconUrl: "https://giphy.com/favicon.ico",
   actions: giphyActions,
 };

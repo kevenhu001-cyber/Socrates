@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://weaviate.io",
+  iconUrl: "https://weaviate.io/favicon.ico",
   actions: weaviateActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://positionstack.com",
+  iconUrl: "https://positionstack.com/favicon.ico",
   actions: positionstackActions,
 };

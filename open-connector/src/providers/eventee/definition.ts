@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://eventee.co",
+  iconUrl: "https://eventee.co/favicon.ico",
   actions: eventeeActions,
 };

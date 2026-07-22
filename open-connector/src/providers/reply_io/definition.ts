@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://reply.io",
+  iconUrl: "https://reply.io/favicon.ico",
   actions: replyIoActions,
 };

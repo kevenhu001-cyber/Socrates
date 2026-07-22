@@ -21,5 +21,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://context7.com",
+  iconUrl: "https://context7.com/favicon.ico",
   actions: context7Actions,
 };

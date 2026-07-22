@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://readme.com",
+  iconUrl: "https://readme.com/favicon.ico",
   actions: readmeActions,
 };

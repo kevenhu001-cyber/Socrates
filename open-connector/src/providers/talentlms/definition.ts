@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.talentlms.com",
+  iconUrl: "https://www.talentlms.com/favicon.ico",
   actions: talentlmsActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.weatherbit.io",
+  iconUrl: "https://www.weatherbit.io/favicon.ico",
   actions: weatherbitActions,
 };

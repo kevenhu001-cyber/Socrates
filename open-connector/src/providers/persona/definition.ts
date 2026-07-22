@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://withpersona.com/",
+  iconUrl: "https://withpersona.com/favicon.ico",
   actions: personaActions,
 };

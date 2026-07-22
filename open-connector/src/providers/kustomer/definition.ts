@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.kustomer.com",
+  iconUrl: "https://www.kustomer.com/favicon.ico",
   actions: kustomerActions,
 };

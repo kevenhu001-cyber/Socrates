@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.whatsapp.com",
+  iconUrl: "https://static.whatsapp.net/rsrc.php/yc/r/logos/whatsapp-icon.svg",
   actions: whatsappActions,
 };

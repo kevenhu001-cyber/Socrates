@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://aviationstack.com/",
+  iconUrl: "https://aviationstack.com/favicon.ico",
   actions: aviationstackActions,
 };

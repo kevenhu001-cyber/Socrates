@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://twitterapi.io",
+  iconUrl: "https://twitterapi.io/favicon.ico",
   actions: twitterapiIoActions,
 };

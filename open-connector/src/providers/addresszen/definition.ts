@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://addresszen.com",
+  iconUrl: "https://addresszen.com/favicon.ico",
   actions: addresszenActions,
 };

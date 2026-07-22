@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.apollo.io",
+  iconUrl: "https://www.apollo.io/favicon.ico",
   actions: apolloActions,
 };

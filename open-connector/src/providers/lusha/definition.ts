@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.lusha.com",
+  iconUrl: "https://www.lusha.com/favicon.ico",
   actions: lushaActions,
 };

@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://alpaca.markets/",
+  iconUrl: "https://alpaca.markets/favicon.ico",
   actions: alpacaActions,
 };

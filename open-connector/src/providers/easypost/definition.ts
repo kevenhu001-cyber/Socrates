@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.easypost.com/",
+  iconUrl: "https://www.easypost.com/favicon.ico",
   actions: easypostActions,
 };

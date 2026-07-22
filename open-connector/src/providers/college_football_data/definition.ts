@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://collegefootballdata.com/",
+  iconUrl: "https://collegefootballdata.com/favicon.ico",
   actions: collegeFootballDataActions,
 };

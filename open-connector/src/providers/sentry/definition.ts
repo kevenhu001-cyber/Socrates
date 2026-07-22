@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://sentry.io",
+  iconUrl: "https://sentry.io/favicon.ico",
   actions: sentryActions,
 };

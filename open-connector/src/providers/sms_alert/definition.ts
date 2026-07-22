@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.smsalert.co.in/",
+  iconUrl: "https://www.smsalert.co.in/favicon.ico",
   actions: smsAlertActions,
 };

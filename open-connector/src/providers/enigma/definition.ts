@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.enigma.com",
+  iconUrl: "https://www.enigma.com/favicon.ico",
   actions: enigmaActions,
 };

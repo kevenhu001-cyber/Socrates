@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.dingtalk.com",
+  iconUrl: "https://www.dingtalk.com/favicon.ico",
   actions: dingtalkBotActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://anysearch.com/home",
+  iconUrl: "https://anysearch.com/favicon.ico",
   actions: anySearchActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://hasdata.com",
+  iconUrl: "https://hasdata.com/favicon.ico",
   actions: hasdataActions,
 };

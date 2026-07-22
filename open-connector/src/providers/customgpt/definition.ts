@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://customgpt.ai",
+  iconUrl: "https://customgpt.ai/favicon.ico",
   actions: customgptActions,
 };

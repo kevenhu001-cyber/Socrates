@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.7shifts.com/",
+  iconUrl: "https://www.7shifts.com/favicon.ico",
   actions: sevenShiftsActions,
 };

@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.conductor.com",
+  iconUrl: "https://www.conductor.com/favicon.ico",
   actions: conductorActions,
 };

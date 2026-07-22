@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://incident.io",
+  iconUrl: "https://incident.io/favicon.ico",
   actions: incidentIoActions,
 };

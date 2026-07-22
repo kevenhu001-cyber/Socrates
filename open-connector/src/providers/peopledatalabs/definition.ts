@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.peopledatalabs.com",
+  iconUrl: "https://www.peopledatalabs.com/favicon.ico",
   actions: peopledatalabsActions,
 };

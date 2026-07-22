@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ambientweather.net/",
+  iconUrl: "https://ambientweather.net/favicon.ico",
   actions: ambientWeatherActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://contactout.com",
+  iconUrl: "https://contactout.com/favicon.ico",
   actions: contactoutActions,
 };

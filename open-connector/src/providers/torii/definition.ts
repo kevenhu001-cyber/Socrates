@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.toriihq.com",
+  iconUrl: "https://www.toriihq.com/favicon.ico",
   actions: toriiActions,
 };

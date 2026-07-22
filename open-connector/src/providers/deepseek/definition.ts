@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://platform.deepseek.com",
+  iconUrl: "https://www.deepseek.com/favicon.ico",
   actions: deepseekActions,
 };

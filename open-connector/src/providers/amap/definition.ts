@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.amap.com",
+  iconUrl: "https://www.amap.com/favicon.ico",
   actions: amapActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://claid.ai",
+  iconUrl: "https://claid.ai/favicon.ico",
   actions: claidAiActions,
 };

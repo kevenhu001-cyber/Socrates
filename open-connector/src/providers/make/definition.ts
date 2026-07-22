@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.make.com",
+  iconUrl: "https://www.make.com/favicon.ico",
   actions: makeActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://scrapegraphai.com",
+  iconUrl: "https://scrapegraphai.com/favicon.ico",
   actions: scrapeGraphAiActions,
 };

@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://botpress.com",
+  iconUrl: "https://botpress.com/favicon.ico",
   actions: botpressActions,
 };

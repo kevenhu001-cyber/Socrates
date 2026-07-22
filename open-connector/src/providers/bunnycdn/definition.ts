@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://bunny.net/",
+  iconUrl: "https://bunny.net/favicon.ico",
   actions: bunnycdnActions,
 };

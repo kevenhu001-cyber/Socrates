@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.getguru.com",
+  iconUrl: "https://www.getguru.com/favicon.ico",
   actions: guruActions,
 };

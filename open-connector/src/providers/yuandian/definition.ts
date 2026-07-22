@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://open.chineselaw.com",
+  iconUrl: "https://open.chineselaw.com/favicon.ico",
   actions: yuandianActions,
 };

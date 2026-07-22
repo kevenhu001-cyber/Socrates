@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.keepersecurity.com/",
+  iconUrl: "https://www.keepersecurity.com/favicon.ico",
   actions: keeperScimActions,
 };

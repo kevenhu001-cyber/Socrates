@@ -25,5 +25,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ticktick.com",
+  iconUrl: "https://ticktick.com/favicon.ico",
   actions: ticktickActions,
 };

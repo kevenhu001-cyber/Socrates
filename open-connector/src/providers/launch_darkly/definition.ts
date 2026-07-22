@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://launchdarkly.com",
+  iconUrl: "https://launchdarkly.com/favicon.ico",
   actions: launchDarklyActions,
 };

@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.productboard.com",
+  iconUrl: "https://www.productboard.com/favicon.ico",
   actions: productboardActions,
 };

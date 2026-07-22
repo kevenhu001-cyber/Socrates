@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.openstatus.dev",
+  iconUrl: "https://www.openstatus.dev/favicon.ico",
   actions: openstatusActions,
 };

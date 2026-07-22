@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.coinbase.com",
+  iconUrl: "https://www.coinbase.com/favicon.ico",
   actions: coinbaseActions,
 };

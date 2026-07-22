@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.interzoid.com/",
+  iconUrl: "https://www.interzoid.com/favicon.ico",
   actions: interzoidActions,
 };

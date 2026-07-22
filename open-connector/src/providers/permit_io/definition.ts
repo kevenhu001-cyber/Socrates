@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.permit.io",
+  iconUrl: "https://www.permit.io/favicon.ico",
   actions: permitIoActions,
 };

@@ -24,5 +24,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://tasks.google.com",
+  iconUrl: "https://tasks.google.com/favicon.ico",
   actions: googleTasksActions,
 };

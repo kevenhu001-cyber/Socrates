@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.memberstack.com/",
+  iconUrl: "https://www.memberstack.com/favicon.ico",
   actions: memberstackActions,
 };

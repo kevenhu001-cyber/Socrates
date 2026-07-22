@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.canva.com",
+  iconUrl: "https://canva.com/favicon.ico",
   actions: canvaActions,
 };

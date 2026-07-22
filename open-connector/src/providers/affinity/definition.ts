@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.affinity.co",
+  iconUrl: "https://www.affinity.co/favicon.ico",
   actions: affinityActions,
 };

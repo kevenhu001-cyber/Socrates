@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://lagrowthmachine.com",
+  iconUrl: "https://lagrowthmachine.com/favicon.ico",
   actions: laGrowthMachineActions,
 };

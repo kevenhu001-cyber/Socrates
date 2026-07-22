@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://buildkite.com",
+  iconUrl: "https://buildkite.com/favicon.ico",
   actions: buildkiteActions,
 };

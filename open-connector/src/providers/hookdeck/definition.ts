@@ -21,5 +21,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://hookdeck.com",
+  iconUrl: "https://hookdeck.com/favicon.ico",
   actions: hookdeckActions,
 };

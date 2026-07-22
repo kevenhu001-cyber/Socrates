@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://airtable.com",
+  iconUrl: "https://airtable.com/favicon.ico",
   actions: airtableActions,
 };

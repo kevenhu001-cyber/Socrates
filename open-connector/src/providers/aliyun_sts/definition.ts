@@ -47,5 +47,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.alibabacloud.com/product/ram",
+  iconUrl: "https://www.alibabacloud.com/favicon.ico",
   actions: aliyunStsActions,
 };

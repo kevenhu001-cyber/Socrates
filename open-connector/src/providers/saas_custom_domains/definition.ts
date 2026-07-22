@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://saascustomdomains.com",
+  iconUrl: "https://saascustomdomains.com/favicon.ico",
   actions: saasCustomDomainsActions,
 };
