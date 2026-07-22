@@ -282,7 +282,7 @@ Socrates/
 
 1. **前端 SPA**（[`frontend/`](frontend/)）— Vite 开发服务器或构建产物
 2. **后端 API 服务**（[`server/`](server/)）— Node 22+、PostgreSQL 14+
-3. **LLM 提供商**（可选）— 用户在"账号 → API 密钥"中配置，或服务端设置 `MINIMAX_API_KEY` 后自动内置
+3. **LLM 提供商**（可选）— 用户在"账号 → API 密钥"中配置，或服务端设置 `BEAGLE_SYSTEM_KEY` 后自动内置
 
 ### 1. 前端（Vite SPA）
 
@@ -338,10 +338,10 @@ CI 工作流在每次推送到 `main` 分支时自动构建 APK。
 | `NODE_ENV` | 否 | `development` | `production` 开启 cookie `secure` 标志，禁用详细日志 |
 | `COOKIE_DOMAIN` | 否 | 自动 | API 和 SPA 在不同子域时设置 |
 | `COOKIE_SECURE` | 否 | 生产环境为 `true` | 强制 `sid` cookie 的 `Secure` 标志 |
-| `MINIMAX_API_KEY` | 否 | — | 设置后自动内置 "Beagle" LLM 提供商，新用户开箱即用 |
+| `BEAGLE_SYSTEM_KEY` | 否 | — | 设置后自动内置 "Beagle" LLM 提供商，新用户开箱即用 |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | 否 | — | 邮箱验证和密码重置必需 |
 | `FCM_SERVER_KEY` | 否 | — | Android 客户端推送通知 |
-| `BEAGLE_BUILT_IN.key` | 否 | 空 | 覆盖内置提供商密钥（优先级高于 `MINIMAX_API_KEY`） |
+| `BEAGLE_BUILT_IN.key` | 否 | 空 | 覆盖内置提供商密钥（优先级高于 `BEAGLE_SYSTEM_KEY`） |
 
 用户在"账号 → API 密钥"中自行配置提供商，后端不会记录明文密钥。
 

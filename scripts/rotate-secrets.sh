@@ -12,7 +12,7 @@
 #      You decide what to copy over.
 #
 # SECURITY: After running this, you MUST also:
-#   - Revoke and reissue the MINIMAX_API_KEY at your provider's dashboard
+#   - Revoke and reissue the BEAGLE_SYSTEM_KEY at your provider's dashboard
 #     (this script CANNOT do that for you — it has no provider credentials).
 #   - Rotate the SMTP_PASSWORD at your mail provider.
 #   - Restart the Socrates server so it picks up the new SESSION_SECRET.
@@ -74,12 +74,13 @@ echo "#    Once rotated, the next outbound mail will use the new password."
 echo
 echo "SMTP_PASS=<rotate-at-mail-provider>"
 echo
-echo "# 5. MINIMAX_API_KEY"
-echo "#    Rotate at https://api.minimax.chat or your provider dashboard."
+echo "# 5. BEAGLE_SYSTEM_KEY"
+echo "#    Rotate at your LLM provider's dashboard. This is the key for"
+echo "#    the built-in \"Beagle\" LLM provider auto-seeded at boot."
 echo "#    Mark the old key as disabled BEFORE deploying the new .env so"
 echo "#    a parallel deployment cannot drain both."
 echo
-echo "MINIMAX_API_KEY=<rotate-at-provider-dashboard>"
+echo "BEAGLE_SYSTEM_KEY=<rotate-at-provider-dashboard>"
 echo
 echo "──────────────────────────────────────────────────────────────"
 echo "Next steps:"

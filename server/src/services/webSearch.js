@@ -163,7 +163,7 @@ export async function webSearch(query, count = 10, opts = {}) {
   const ac = new AbortController();
   const totalTimer = setTimeout(() => ac.abort('total_timeout'), TOTAL_SEARCH_TIMEOUT);
 
-  const hasMinimaxKey = !!(process.env.MINIMAX_SEARCH_KEY || process.env.MINIMAX_API_KEY);
+  const hasMinimaxKey = !!(process.env.MINIMAX_SEARCH_KEY || process.env.BEAGLE_SYSTEM_KEY);
   const acSignal = ac.signal;
 
   /* P_mmx-cli-search — per project policy (2026-07-10), web search is

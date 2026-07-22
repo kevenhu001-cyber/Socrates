@@ -69,13 +69,51 @@ router.post('/:provider/connect', requireAuth, async (req, res, next) => {
   const project = getProjectConnector();
   if (!project) return res.status(503).json({ error: 'OOMOL ProjectConnector is not configured', code: 'project_connector_not_configured' });
   try {
+    if (provider.authType === 'api_key') {
+      /* Per-user upstream API key (e.g. GitLab PAT). Synchronous: the SDK
+       * returns a ConnectedAccount immediately; we never see the key again. */
+      const apiKey = req.body && typeof req.body.apiKey === 'string' ? req.body.apiKey.trim() : '';
+      if (!apiKey) return res.status(400).json({ error: 'Missing apiKey', code: 'missing_api_key' });
+      const account = await project.connect.apiKey(externalUserId(req.userId), {
+        service: provider.service,
+        connectionName: CONNECTION_NAME,
+        apiKey,
+      });
+      await saveRequest(req.userId, provider.id, {
+        id: `sync_${Date.now()}`,
+        status: 'connected',
+        connectedAccountId: account.connectedAccountId,
+        connectionName: CONNECTION_NAME,
+      });
+      return res.status(201).json({ status: 'connected', connectedAccountId: account.connectedAccountId, displayName: account.displayName || null });
+    }
+    if (provider.authType === 'custom_credential') {
+      /* Per-user custom credential fields (e.g. QQ Mail address + auth code).
+       * Synchronous: SDK returns a ConnectedAccount; we never see the values again. */
+      const values = req.body && req.body.values && typeof req.body.values === 'object' && !Array.isArray(req.body.values)
+        ? req.body.values : null;
+      if (!values) return res.status(400).json({ error: 'Missing values object', code: 'missing_values' });
+      const account = await project.connect.customCredential(externalUserId(req.userId), {
+        service: provider.service,
+        connectionName: CONNECTION_NAME,
+        values,
+      });
+      await saveRequest(req.userId, provider.id, {
+        id: `sync_${Date.now()}`,
+        status: 'connected',
+        connectedAccountId: account.connectedAccountId,
+        connectionName: CONNECTION_NAME,
+      });
+      return res.status(201).json({ status: 'connected', connectedAccountId: account.connectedAccountId, displayName: account.displayName || null });
+    }
+    /* Default: OAuth2 redirect flow. The gateway owns the OAuth callback. Persist
+     * only opaque request/account IDs, never a credential, then monitor in the
+     * background for a responsive UI. */
     const request = await project.connect.oauth(externalUserId(req.userId), {
       service: provider.service,
       connectionName: CONNECTION_NAME,
       returnUri: appReturnUri(req, provider.id),
     });
-    /* The gateway owns the OAuth callback. Persist only opaque request/account IDs,
-       never a credential, then monitor in the background for a responsive UI. */
     await saveRequest(req.userId, provider.id, request);
     void project.waitForConnection(request, { maxWaitMs: 610_000 }).then(
       (finalRequest) => saveRequest(req.userId, provider.id, finalRequest),

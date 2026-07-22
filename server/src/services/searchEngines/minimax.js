@@ -25,13 +25,22 @@ function unavailable(reason) {
 }
 
 /**
- * Build the search endpoint URL from the existing MINIMAX_BASE_URL config.
- * The user's .env has MINIMAX_BASE_URL=https://api.minimaxi.com/v1,
- * so the resulting endpoint will be:
- *   https://api.minimaxi.com/v1/coding_plan/search
+ * Build the search endpoint URL.
+ * Prefers MINIMAX_SEARCH_BASE_URL (so the search feature can target a
+ * different upstream than the LLM, e.g. Minimax Coding Plan while the
+ * built-in Beagle LLM still points at SenseNova). Falls back to the
+ * shared MINIMAX_BASE_URL, then to the Minimax Coding Plan default.
+ *
+ * Examples:
+ *   MINIMAX_SEARCH_BASE_URL=https://api.minimaxi.com/v1
+ *     → https://api.minimaxi.com/v1/coding_plan/search
+ *   MINIMAX_BASE_URL=https://token.sensenova.cn/v1
+ *     → https://token.sensenova.cn/v1/coding_plan/search
  */
 function buildEndpoint() {
-  const base = (process.env.MINIMAX_BASE_URL || 'https://api.minimaxi.com/v1').replace(/\/+$/, '');
+  const base = (process.env.MINIMAX_SEARCH_BASE_URL
+             || process.env.MINIMAX_BASE_URL
+             || 'https://api.minimaxi.com/v1').replace(/\/+$/, '');
   if (base.endsWith('/v1/coding_plan/search')) return base;
   if (base.endsWith('/v1/coding_plan')) return `${base}/search`;
   if (base.endsWith('/v1')) return `${base}/coding_plan/search`;
@@ -41,11 +50,10 @@ function buildEndpoint() {
 /**
  * Get the MiniMax search API key.
  * Uses MINIMAX_SEARCH_KEY if set (dedicated search key), otherwise
- * falls back to the existing MINIMAX_API_KEY (Token Plan key already
- * configured for the Beagle provider).
+ * falls back to BEAGLE_SYSTEM_KEY (the built-in Beagle provider key).
  */
 function getApiKey() {
-  return process.env.MINIMAX_SEARCH_KEY || process.env.MINIMAX_API_KEY || '';
+  return process.env.MINIMAX_SEARCH_KEY || process.env.BEAGLE_SYSTEM_KEY || '';
 }
 
 /**

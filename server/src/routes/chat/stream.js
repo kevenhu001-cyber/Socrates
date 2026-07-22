@@ -176,6 +176,7 @@ export function registerStreamRoute(router) {
       // gate connector tools on whether the user has actually connected
       // each provider.  arXiv is always enabled (public API).
       let connectorConnectionsByProvider = {};
+      /** @type {Record<string, import('../../db/schema.js').projectConnectorConnections.$inferSelect | undefined>} */
       let projectConnectorConnectionsByProvider = {};
       if (req.userId) {
         try {
@@ -586,10 +587,15 @@ data: ${JSON.stringify({
                 })}\n\n`);
               }
             } else if (Object.values(PROJECT_CONNECTOR_TOOL_NAMES).includes(toolName)) {
-              const projectToolResult = await executeProjectConnectorTool(
-                toolName, args, req.userId,
-                toolName === PROJECT_CONNECTOR_TOOL_NAMES.GITHUB_IDENTITY ? projectConnectorConnectionsByProvider.github : projectConnectorConnectionsByProvider.gmail,
-              );
+              const PROJECT_TOOL_TO_PROVIDER = {
+                [PROJECT_CONNECTOR_TOOL_NAMES.GITHUB_IDENTITY]:             projectConnectorConnectionsByProvider.github,
+                [PROJECT_CONNECTOR_TOOL_NAMES.GMAIL_SEARCH]:                projectConnectorConnectionsByProvider.gmail,
+                [PROJECT_CONNECTOR_TOOL_NAMES.GOOGLE_CALENDAR_LIST_EVENTS]: projectConnectorConnectionsByProvider.googlecalendar,
+                [PROJECT_CONNECTOR_TOOL_NAMES.TODOIST_LIST_TASKS]:          projectConnectorConnectionsByProvider.todoist,
+                [PROJECT_CONNECTOR_TOOL_NAMES.GITLAB_IDENTITY]:             projectConnectorConnectionsByProvider.gitlab,
+                [PROJECT_CONNECTOR_TOOL_NAMES.QQ_MAIL_SEARCH]:              projectConnectorConnectionsByProvider.qq_mail,
+              };
+              const projectToolResult = await executeProjectConnectorTool(toolName, args, req.userId, PROJECT_TOOL_TO_PROVIDER[toolName]);
               const ok = projectToolResult.status === 'completed';
               writeSse(`event: tool_result\ndata: ${JSON.stringify({ id: tc.id, ok, status: projectToolResult.status, output: projectToolResult.output || '', error: projectToolResult.error || null, errorCode: projectToolResult.errorCode || null, retryable: false, userMessage: projectToolResult.userMessage || null })}\n\n`);
               result = projectToolResult;

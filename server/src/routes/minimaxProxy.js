@@ -24,7 +24,7 @@ const SSE_PRIME = ': open\n' + Array.from({ length: 32 }, () => ':' + 'o'.repeat
  * The SPA calls /api/minimax/v1/chat/completions directly instead of
  * going through /api/chat (which is reserved for user-configured providers).
  * This route reads the built-in provider key from the database so the
- * raw MINIMAX_API_KEY never touches the browser.
+ * raw BEAGLE_SYSTEM_KEY never touches the browser.
  *
  * Supports both streaming (?stream=true in body → SSE) and
  * non-streaming (regular JSON) modes — same contract as the MiniMax API.

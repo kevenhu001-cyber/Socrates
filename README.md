@@ -350,7 +350,7 @@ You need three things running:
 2. The API server ([`server/`](server/)) — Node 22+, PostgreSQL 14+.
 3. (Optional) An LLM provider — the user configures their own
    OpenAI-compatible key in *Account → API keys*, or the built-in
-   "Beagle" provider is auto-seeded if the operator's `MINIMAX_API_KEY`
+   "Beagle" provider is auto-seeded if the operator's `BEAGLE_SYSTEM_KEY`
    env var is set.
 
 ### 1. Frontend (Vite SPA)
@@ -410,10 +410,10 @@ the SPA reads no config from disk (its settings live in
 | `NODE_ENV` | no | `development` | `production` flips cookie `secure` flag and disables verbose logs |
 | `COOKIE_DOMAIN` | no | auto | Set when the API and SPA are on different subdomains |
 | `COOKIE_SECURE` | no | `true` in production | Force `Secure` flag on the `sid` cookie |
-| `MINIMAX_API_KEY` | no | — | If set, a built-in "Beagle" LLM provider is auto-seeded so the app works out-of-the-box for new users |
+| `BEAGLE_SYSTEM_KEY` | no | — | If set, a built-in "Beagle" LLM provider is auto-seeded so the app works out-of-the-box for new users |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | no | — | Required for email verification and password reset |
 | `FCM_SERVER_KEY` | no | — | Push notifications for the Android client |
-| `BEAGLE_BUILT_IN.key` | no | empty | If set, the built-in provider uses this key (overrides `MINIMAX_API_KEY`) |
+| `BEAGLE_BUILT_IN.key` | no | empty | If set, the built-in provider uses this key (overrides `BEAGLE_SYSTEM_KEY`) |
 
 The user configures their own provider at runtime in
 *Account → API keys* — the backend never logs the key in plaintext,

@@ -35,7 +35,7 @@ async function main() {
     process.exit(1);
   }
 
-  // ── Seed built-in Beagle provider if MINIMAX_API_KEY is set ──
+  // ── Seed built-in Beagle provider if BEAGLE_SYSTEM_KEY is set ──
   try {
     const { seedBuiltInProvider } = await import('./services/apiKey.js');
     await seedBuiltInProvider();
@@ -92,7 +92,7 @@ async function main() {
   // (5-15s for model loading), which the frontend can't distinguish
   // from a stuck connection.
   // Uses the built-in provider key from the DB (seeded on a previous
-  // deploy with MINIMAX_API_KEY set), not the env var directly.
+  // deploy with BEAGLE_SYSTEM_KEY set), not the env var directly.
   (async () => {
     try {
       const { getActiveApiKey } = await import('./services/apiKey.js');
