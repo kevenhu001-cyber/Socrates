@@ -26,6 +26,9 @@ test('the 5 secondary nav buttons exist and have stable ids', async ({ page }) =
 test('clicking Library lights up the active state', async ({ page }) => {
   await page.locator('#navLibrary').click();
   await expect(page.locator('#navLibrary')).toHaveClass(/active/);
+  await expect(page.locator('#modeSegmentedTop')).toBeHidden();
+  await expect(page.locator('#topicDisclaimer')).toBeHidden();
+  await expect(page.locator('body')).toHaveClass(/workspace-active/);
   /* No other secondary nav should be active. */
   for (const id of ['navProjects', 'navScheduled', 'navPlugins', 'navMore']) {
     await expect(page.locator(`#${id}`)).not.toHaveClass(/active/);
@@ -81,27 +84,17 @@ test('Scheduled button opens the scheduled panel (PR-D)', async ({ page }) => {
   await page.locator('#navScheduled').click();
   await expect(page.locator('#navScheduled')).toHaveClass(/active/);
   await expect(page.locator('#scheduledPanel')).toBeVisible();
+  await expect(page.locator('#modeSegmentedTop')).toBeHidden();
   /* The panel should contain the scheduled list container. */
   await expect(page.locator('#scheduledList')).toBeAttached();
 });
 
-test('Zotero opens a private API Key connection dialog', async ({ page }) => {
+test('Plugins shows the project connector catalog with brand icons', async ({ page }) => {
   await page.locator('#navPlugins').click();
-  await expect(page.getByText('Zotero', { exact: true })).toBeVisible();
-  await page.locator('.connector-row').filter({ hasText: 'Zotero' }).getByRole('button', { name: 'Connect' }).click();
-  await expect(page.getByRole('heading', { name: 'Connect Zotero' })).toBeVisible();
-  const key = page.locator('#zoteroConnectForm input[name="apiKey"]');
-  await expect(key).toHaveAttribute('type', 'password');
-  await key.fill('abcdefghijklmnopqrstuvwx');
-  await page.locator('#zoteroConnectForm').getByRole('button', { name: 'Connect', exact: true }).click();
-  await expect(page.locator('#workspaceDialog')).toBeHidden();
-});
-
-test('arXiv opens a public paper search without account connection', async ({ page }) => {
-  await page.locator('#navPlugins').click();
-  await page.locator('.connector-row').filter({ hasText: 'arXiv' }).getByRole('button', { name: 'Explore' }).click();
-  await expect(page.getByRole('heading', { name: 'Search arXiv' })).toBeVisible();
-  await page.locator('#arxivSearchForm input[name="query"]').fill('information theory');
-  await page.locator('#arxivSearchForm').getByRole('button', { name: 'Search', exact: true }).click();
-  await expect(page.getByText('A test preprint', { exact: true })).toBeVisible();
+  await expect(page.locator('#modeSegmentedTop')).toBeHidden();
+  await expect(page.locator('#topicDisclaimer')).toBeHidden();
+  await expect(page.locator('.connector-row')).toHaveCount(5);
+  await expect(page.locator('.connector-row').filter({ hasText: 'Gmail' }).locator('.connector-gmail svg')).toBeVisible();
+  await expect(page.locator('.connector-row').filter({ hasText: 'Google Drive' }).locator('.connector-googledrive svg')).toBeVisible();
+  await expect(page.locator('.connector-row').first()).toHaveCSS('min-height', '66px');
 });
