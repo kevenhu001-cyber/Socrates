@@ -7522,6 +7522,15 @@ async function resetApp(){
     }
   }
   syncSidebarBtns();
+  /* P_hide-mode-switch-in-conversation — re-sync the conversation-
+     active body attribute after a reset so the top-bar Chat/Tutor
+     switch reappears for the new session. The MutationObserver in
+     mobileModeSwitch.js will already have fired when msgList was
+     cleared (line above), this is belt-and-suspenders for the
+     state.topic / state.phase / state.kbNodes fields. */
+  if (typeof window.syncConversationActive === 'function') {
+    try { window.syncConversationActive(); } catch (_) {}
+  }
   /* Focus the topic input so the user can start typing right away. */
   setTimeout(function(){
     var ti=document.getElementById("topicInput");
