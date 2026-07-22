@@ -38,6 +38,18 @@ function translate(key, fallback) {
   return fallback;
 }
 
+function activeToolLabel(entry) {
+  var name = entry && entry.name;
+  if (name === 'web_search' || name === 'arxiv_search' || name === 'zotero_search' || name === 'notion_search_pages') {
+    return translate('tool.actionSearch', 'Searching the web');
+  }
+  if (name === 'code_interpreter' || name === 'Code') return translate('tool.actionAnalyze', 'Analyzing data');
+  if (name === 'render_visualization') return translate('tool.actionVisual', 'Creating a visual');
+  if (name === 'Read' || name === 'Glob' || name === 'Grep' || name === 'WebFetch') return translate('tool.actionRead', 'Reading files');
+  if (name === 'Write' || name === 'Edit' || name === 'Bash') return translate('tool.actionWrite', 'Updating files');
+  return translate('tool.actionDefault', 'Using a tool');
+}
+
 function findEntry(message, id) {
   if (!message || !Array.isArray(message.toolCalls)) return null;
   for (var i = 0; i < message.toolCalls.length; i++) {
@@ -113,7 +125,15 @@ export function createToolRuntime(options) {
     if (!label || !meta) return;
     if (summary.active) {
       group.dataset.state = 'running';
-      label.textContent = translate('tool.groupWorking', 'Working');
+      var activeEntry = null;
+      for (var i = (message.toolCalls || []).length - 1; i >= 0; i--) {
+        var candidate = message.toolCalls[i];
+        var run = getRun(candidate);
+        if (candidate && (!run || !isTerminalToolPhase(run.phase))) { activeEntry = candidate; break; }
+      }
+      label.textContent = summary.active === 1
+        ? activeToolLabel(activeEntry)
+        : translate('tool.groupWorking', 'Working');
       meta.textContent = summary.total > 1 ? summary.active + ' of ' + summary.total + ' tools' : 'Running';
     } else if (summary.failed || summary.timed_out) {
       group.dataset.state = 'error';

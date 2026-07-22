@@ -1169,6 +1169,11 @@ true) but the dropdown never shows — see commit history. */
   background:hsl(var(--bg-100));
   box-shadow:0 1px 2px hsl(0 0% 0%/0.18);
 }
+/* Exam is a focused workspace. The regular chat/tutor controls are hidden
+   independently of inline styles so neither desktop nor mobile can leak in. */
+body.exam-active #modeSegmentedTop,
+body.exam-active #mobileMode,
+body.exam-active #mobileIncognitoBtn{display:none!important}
 [data-mode=light] .top-mode-tabs .app-mode-toggle.active{background:hsl(var(--bg-400))}
 /* On narrow viewports the centered pill can collide with side buttons;
    hide it there and fall back to the landing #modeSegmented control. */
@@ -2708,6 +2713,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .thinking-dot{display:inline-flex;align-items:center;gap:6px;color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:4px 0;line-height:1.3}
 .thinking-dot[data-mode="chat"]{color:hsl(var(--accent-000))}
 .thinking-dot .loading{width:14px;height:14px}
+.thinking-status{display:inline-flex;align-items:center;gap:7px;margin:4px 0;padding:5px 0;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale,1));line-height:1.3}
 /* Container that stacks the "Thinking…" badge above the skeleton
    shimmer lines. Used by addStreamingMessage in main.js. The skeleton
    is the visual cue while waiting for the first delta — the streaming
@@ -3569,15 +3575,15 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 /* Chat-first tool runs. One answer owns one quiet, collapsible activity
    group; individual cards are evidence, not a competing dashboard. */
 .tool-run-group{
-  margin:10px 0 4px;
-  border:1px solid hsl(var(--border-300)/.28);
-  border-radius:10px;
+  margin:8px 0 4px;
+  border:0;
+  border-radius:8px;
   overflow:hidden;
-  background:hsl(var(--bg-100)/.72);
+  background:transparent;
 }
 .tool-run-summary{
-  width:100%; min-height:38px; display:flex; align-items:center; gap:7px;
-  padding:8px 10px; border:0; background:transparent; color:hsl(var(--text-300));
+  width:100%; min-height:34px; display:flex; align-items:center; gap:7px;
+  padding:6px 8px; border:0; border-radius:8px; background:transparent; color:hsl(var(--text-300));
   font:500 calc(12px * var(--app-font-scale,1)) var(--font-sans); text-align:left; cursor:pointer;
   transition:background .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),transform .12s ease;
 }
@@ -3593,10 +3599,10 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .tool-run-summary-meta{color:hsl(var(--text-500));font-size:calc(11px * var(--app-font-scale,1));font-variant-numeric:tabular-nums}
 .tool-run-summary-chev{margin-left:auto;color:hsl(var(--text-500));transition:transform .26s cubic-bezier(.4,0,.2,1),color .2s ease}
 .tool-run-group.open .tool-run-summary-chev{transform:rotate(180deg);color:hsl(var(--accent-000))}
-.tool-run-list{padding:0 8px 8px;border-top:1px solid hsl(var(--border-300)/.18)}
-.tool-run-list .agent-tool-card{margin-top:7px;background:hsl(var(--bg-000)/.45);border-color:hsl(var(--border-300)/.3)}
+.tool-run-list{padding:0 8px 8px;border-top:0}
+.tool-run-list .agent-tool-card{margin-top:4px;background:hsl(var(--bg-200)/.38);border-color:transparent}
 .tool-run-list .agent-tool-card.open{box-shadow:none}
-.tool-run-list .agent-tool-head{min-height:34px}
+.tool-run-list .agent-tool-head{min-height:32px;padding:6px 8px}
 .tool-run-list .agent-tool-icon{display:none}
 .tool-run-list .agent-tool-name{font-size:calc(11px * var(--app-font-scale,1))}
 .tool-run-list .agent-tool-input{font-family:var(--font-sans);font-size:calc(11px * var(--app-font-scale,1));opacity:.72}
@@ -3604,9 +3610,28 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 
 /* Composer: a stable, tactile control surface that stays secondary to the
    conversation while giving attachments, offline states, and Stop room. */
-.chat-input-bar{background:linear-gradient(to bottom,transparent 0%,hsl(var(--surface-page))/26px);padding-top:18px}
-.chat-input-wrap{border-radius:18px;border-color:hsl(var(--border-300)/.42);box-shadow:0 8px 24px hsl(var(--always-black)/.07)}
-.chat-input-wrap:focus-within{box-shadow:0 8px 24px hsl(var(--always-black)/.07)}
+.chat-input-bar{background:linear-gradient(to bottom,transparent 0%,hsl(var(--surface-page))/26px);padding-top:18px;padding-inline:12px}
+.chat-input-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:4px;min-height:58px;margin:0 auto;width:min(100%,880px);padding:7px 8px;border-radius:30px;border-color:hsl(var(--border-300)/.42);background:hsl(var(--bg-000));box-shadow:0 8px 24px hsl(var(--always-black)/.07)}
+.chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/.55);box-shadow:0 8px 24px hsl(var(--always-black)/.07)}
+.chat-input-wrap .attachment-chips,.chat-input-wrap .template-mode-chip{order:0;flex-basis:100%}
+#chatInputArea{order:2;flex:1;min-width:120px;min-height:28px;padding:6px 4px;line-height:1.45}
+.chat-input-footer{display:contents}
+.chat-input-footer .footer-left-group{order:1;display:flex;align-items:center;gap:2px;flex-shrink:0}
+.chat-input-footer .chat-input-hint{order:3;display:none}
+.chat-input-footer .send-btn{order:4;width:42px;height:42px;margin-left:2px;background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.chat-input-footer .send-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.chat-input-footer .attach-btn{width:38px;height:38px;color:hsl(var(--text-300))}
+.chat-input-footer .attach-btn svg{width:20px;height:20px}
+.chat-input-footer .mic-btn{width:34px;height:34px}
+.chat-input-footer .effort-trigger{padding:6px 8px;border-radius:12px;color:hsl(var(--text-300))}
+@media(max-width:768px){
+  .chat-input-bar{padding-inline:8px}
+  .chat-input-wrap{min-height:54px;padding:6px;gap:2px}
+  .chat-input-footer .send-btn{width:38px;height:38px}
+  .chat-input-footer .attach-btn{width:34px;height:34px}
+  .chat-input-footer .mic-btn{display:none}
+  .chat-input-footer .effort-trigger{padding:5px 6px;font-size:calc(12px * var(--app-font-scale, 1))}
+}
 .attach-btn:focus-visible,.send-btn:focus-visible{outline:2px solid hsl(var(--accent-000)/.65);outline-offset:2px}
 @media(max-width:768px){
   .attach-btn,.send-btn{width:36px;height:36px}

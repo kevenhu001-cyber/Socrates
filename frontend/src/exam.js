@@ -18,6 +18,12 @@ var _examSaveDirty = false;
 function _examBody() { return document.getElementById("examViewBody"); }
 function _examFooter() { return document.getElementById("examViewFooter"); }
 function _examTitle() { return document.getElementById("examViewTitle"); }
+function _setExamTitle(title) {
+  var viewTitle = _examTitle();
+  var barTitle = document.getElementById("examTitleBar");
+  if (viewTitle) viewTitle.textContent = title;
+  if (barTitle) barTitle.textContent = title;
+}
 
 /* ── open / close ── */
 /* prepareExamView — DOM + state scaffolding for any "exam is now
@@ -52,9 +58,8 @@ export function prepareExamView() {
      an exam). toggleChatTopBarEls(true) hides the mode tabs, matching the
      visual rhythm of a chat-session top bar. */
   toggleExamOnlyTopBar(true);
-  /* Set the exam title bar in the top bar. */
-  var titleBar = document.getElementById("examTitleBar");
-  if (titleBar) titleBar.textContent = window.state.examTopic || "Generate Exam";
+  /* The top bar is the single visible exam title. */
+  _setExamTitle(window.state.examTopic || (window._currentLang === "zh" ? "生成考卷" : "Generate Exam"));
   window.toggleChatTopBarEls(true);
   /* Hide chat-specific top-bar elements that are meaningless in exam mode. */
   ["chatStats", "chatApiBadge", "searchPill", "chatModelWrap"].forEach(function (id) {
@@ -126,6 +131,7 @@ export function closeExamModal() {
    the top-bar keeps its current visibility — toggleChatTopBarEls is
    the single source of truth for the chat/tutor/incognito trio. */
 function toggleExamOnlyTopBar(show) {
+  document.body.classList.toggle("exam-active", show);
   var els = document.querySelectorAll("[data-exam-only='true']");
   els.forEach(function (el) {
     if (show) el.classList.remove("hidden");
@@ -141,7 +147,7 @@ function toggleExamOnlyTopBar(show) {
 export function renderExamForm() {
   var body = _examBody();
   var footer = _examFooter();
-  _examTitle().textContent = (window._currentLang === "zh" ? "生成考卷" : "Generate Exam");
+  _setExamTitle(window._currentLang === "zh" ? "生成考卷" : "Generate Exam");
   var meta = document.getElementById("examViewMeta");
   if (meta) meta.textContent = "";
   window.state.examCancel = false;
@@ -389,7 +395,7 @@ export function startExamGeneration() {
       }
     }
   }
-  _examTitle().textContent = topic;
+  _setExamTitle(topic);
   var meta = document.getElementById("examViewMeta");
   var provLabel = (Array.isArray(window.apiConfig.providers) ? window.apiConfig.providers.find(function (p) { return p && p.id === window.apiConfig.activeId }) : null) || {};
   if (meta) meta.textContent = count + " " + (lang === "Chinese" ? "题 · " : "questions · ") + (provLabel.label || provLabel.model || "") + " · " + difficulty;
@@ -429,7 +435,7 @@ export function cancelExamGeneration() {
   var L = function (en, zh) { return lang === "Chinese" ? zh : en };
   body.innerHTML = '<div class="exam-empty">' + (L("已取消出题", "Generation cancelled") + '.</div>');
   _examFooter().innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + L("重新出题", "Try again") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + L("关闭", "Close") + '</button>';
-  _examTitle().textContent = L("已取消", "Cancelled");
+  _setExamTitle(L("已取消", "Cancelled"));
 }
 
 async function generateAllQuestions(topic, count, difficulty, typeStr, instructions, lang) {
@@ -901,7 +907,7 @@ export function renderExamResults() {
   var ans = window.state.examAnswers;
   var body = _examBody();
   var footer = _examFooter();
-  _examTitle().textContent = "Exam Results: " + window.state.examTopic;
+  _setExamTitle("Exam Results: " + window.state.examTopic);
   var correct = 0, total = 0;
   var resultDetails = [];
   qs.forEach(function (q, i) {
