@@ -29,6 +29,7 @@ Thumbs.db
 .omo/
 .opencode/
 apply_patch_example.txt
+*.tmp.cjs
 
 # ── Firecrawl CLI cache ──
 .firecrawl/
