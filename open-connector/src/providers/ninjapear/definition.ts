@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://nubela.co/",
+  iconUrl: "https://nubela.co/favicon.ico",
   actions: ninjapearActions,
 };

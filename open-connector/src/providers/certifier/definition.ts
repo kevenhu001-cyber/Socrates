@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://certifier.io",
+  iconUrl: "https://certifier.io/favicon.ico",
   actions: certifierActions,
 };

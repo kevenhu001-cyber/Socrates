@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://umami.is",
+  iconUrl: "https://umami.is/favicon.ico",
   actions: umamiActions,
 };

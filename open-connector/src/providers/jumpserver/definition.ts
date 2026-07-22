@@ -40,5 +40,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.jumpserver.org",
+  iconUrl: "https://www.jumpserver.org/favicon.ico",
   actions: jumpServerActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.doppler.com",
+  iconUrl: "https://www.doppler.com/favicon.ico",
   actions: dopplerActions,
 };

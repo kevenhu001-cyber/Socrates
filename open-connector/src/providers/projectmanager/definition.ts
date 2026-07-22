@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.projectmanager.com",
+  iconUrl: "https://www.projectmanager.com/favicon.ico",
   actions: projectmanagerActions,
 };

@@ -61,5 +61,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://clickhouse.com",
+  iconUrl: "https://clickhouse.com/favicon.ico",
   actions: clickhouseActions,
 };

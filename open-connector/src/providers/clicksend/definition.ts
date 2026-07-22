@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.clicksend.com/",
+  iconUrl: "https://www.clicksend.com/favicon.ico",
   actions: clicksendActions,
 };

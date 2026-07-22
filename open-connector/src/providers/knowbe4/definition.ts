@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.knowbe4.com",
+  iconUrl: "https://www.knowbe4.com/favicon.ico",
   actions: knowbe4Actions,
 };

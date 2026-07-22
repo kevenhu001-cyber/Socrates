@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://realphonevalidation.com",
+  iconUrl: "https://realphonevalidation.com/favicon.ico",
   actions: realPhoneValidationActions,
 };

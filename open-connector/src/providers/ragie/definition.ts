@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.ragie.ai",
+  iconUrl: "https://www.ragie.ai/favicon.ico",
   actions: ragieActions,
 };

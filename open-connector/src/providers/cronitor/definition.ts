@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://cronitor.io",
+  iconUrl: "https://cronitor.io/favicon.ico",
   actions: cronitorActions,
 };

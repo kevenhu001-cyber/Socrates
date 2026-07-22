@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.oomol.com",
+  iconUrl: "https://www.oomol.com/favicon.ico",
   actions: fusionApiActions,
 };

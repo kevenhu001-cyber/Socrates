@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://campaigncleaner.com",
+  iconUrl: "https://campaigncleaner.com/favicon.ico",
   actions: campaignCleanerActions,
 };

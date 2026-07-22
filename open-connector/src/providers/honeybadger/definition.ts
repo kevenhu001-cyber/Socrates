@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.honeybadger.io",
+  iconUrl: "https://www.honeybadger.io/favicon.ico",
   actions: honeybadgerActions,
 };

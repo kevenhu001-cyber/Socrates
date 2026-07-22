@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://templated.io",
+  iconUrl: "https://templated.io/favicon.ico",
   actions: templatedActions,
 };

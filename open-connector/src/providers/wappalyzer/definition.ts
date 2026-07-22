@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.wappalyzer.com/",
+  iconUrl: "https://www.wappalyzer.com/favicon.ico",
   actions: wappalyzerActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://baselinker.com",
+  iconUrl: "https://baselinker.com/favicon.ico",
   actions: baseLinkerActions,
 };

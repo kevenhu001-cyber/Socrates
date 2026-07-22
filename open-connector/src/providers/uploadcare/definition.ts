@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://uploadcare.com",
+  iconUrl: "https://uploadcare.com/favicon.ico",
   actions: uploadcareActions,
 };

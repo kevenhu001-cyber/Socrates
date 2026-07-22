@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://data.nasdaq.com",
+  iconUrl: "https://data.nasdaq.com/favicon.ico",
   actions: nasdaqActions,
 };

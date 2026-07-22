@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.pagerduty.com",
+  iconUrl: "https://www.pagerduty.com/favicon.ico",
   actions: pagerDutyActions,
 };

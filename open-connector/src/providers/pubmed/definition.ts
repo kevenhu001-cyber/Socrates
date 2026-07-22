@@ -25,5 +25,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://pubmed.ncbi.nlm.nih.gov/",
+  iconUrl: "https://pubmed.ncbi.nlm.nih.gov/favicon.ico",
   actions: pubmedActions,
 };

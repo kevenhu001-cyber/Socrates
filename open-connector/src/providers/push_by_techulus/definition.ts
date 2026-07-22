@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://push.techulus.com",
+  iconUrl: "https://push.techulus.com/favicon.ico",
   actions: pushByTechulusActions,
 };

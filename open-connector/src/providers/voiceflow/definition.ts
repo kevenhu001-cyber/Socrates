@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.voiceflow.com",
+  iconUrl: "https://www.voiceflow.com/favicon.ico",
   actions: voiceflowActions,
 };

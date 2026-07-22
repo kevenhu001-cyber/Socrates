@@ -63,5 +63,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.elastic.co/elasticsearch",
+  iconUrl: "https://www.elastic.co/favicon.ico",
   actions: elasticsearchActions,
 };

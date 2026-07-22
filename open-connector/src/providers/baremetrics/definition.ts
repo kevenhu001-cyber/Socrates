@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://baremetrics.com",
+  iconUrl: "https://baremetrics.com/favicon.ico",
   actions: baremetricsActions,
 };

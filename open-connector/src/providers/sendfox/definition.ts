@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://sendfox.com",
+  iconUrl: "https://sendfox.com/favicon.ico",
   actions: sendfoxActions,
 };

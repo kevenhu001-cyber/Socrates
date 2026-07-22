@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://bugherd.com/",
+  iconUrl: "https://bugherd.com/favicon.ico",
   actions: bugHerdActions,
 };

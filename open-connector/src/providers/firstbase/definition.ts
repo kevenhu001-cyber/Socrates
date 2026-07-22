@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.firstbase.com",
+  iconUrl: "https://www.firstbase.com/favicon.ico",
   actions: firstbaseActions,
 };

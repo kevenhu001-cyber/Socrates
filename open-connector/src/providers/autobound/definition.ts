@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.autobound.ai",
+  iconUrl: "https://www.autobound.ai/favicon.ico",
   actions: autoboundActions,
 };

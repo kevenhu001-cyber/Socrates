@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://reducto.ai",
+  iconUrl: "https://reducto.ai/favicon.ico",
   actions: reductoActions,
 };

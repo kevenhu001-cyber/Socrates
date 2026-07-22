@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.blazemeter.com/api-monitoring",
+  iconUrl: "https://www.blazemeter.com/favicon.ico",
   actions: runscopeActions,
 };

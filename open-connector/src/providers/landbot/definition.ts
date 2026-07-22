@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://landbot.io",
+  iconUrl: "https://landbot.io/favicon.ico",
   actions: landbotActions,
 };

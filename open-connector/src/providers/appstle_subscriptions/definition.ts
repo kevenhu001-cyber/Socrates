@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://appstle.com",
+  iconUrl: "https://appstle.com/favicon.ico",
   actions: appstleSubscriptionsActions,
 };

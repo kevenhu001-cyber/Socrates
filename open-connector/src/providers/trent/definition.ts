@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://trent.ai/",
+  iconUrl: "https://trent.ai/favicon.ico",
   actions: trentActions,
 };

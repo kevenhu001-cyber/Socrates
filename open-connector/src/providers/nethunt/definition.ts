@@ -33,5 +33,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://nethunt.com",
+  iconUrl: "https://nethunt.com/favicon.ico",
   actions: nethuntActions,
 };

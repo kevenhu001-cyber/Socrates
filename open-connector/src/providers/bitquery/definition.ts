@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://bitquery.io",
+  iconUrl: "https://bitquery.io/favicon.ico",
   actions: bitqueryActions,
 };

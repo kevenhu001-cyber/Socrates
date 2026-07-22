@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://coinranking.com",
+  iconUrl: "https://coinranking.com/favicon.ico",
   actions: coinrankingActions,
 };

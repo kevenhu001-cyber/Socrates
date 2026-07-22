@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://apaleo.com",
+  iconUrl: "https://apaleo.com/favicon.ico",
   actions: apaleoActions,
 };

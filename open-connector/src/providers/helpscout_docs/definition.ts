@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.helpscout.com",
+  iconUrl: "https://www.helpscout.com/favicon.ico",
   actions: helpscoutDocsActions,
 };

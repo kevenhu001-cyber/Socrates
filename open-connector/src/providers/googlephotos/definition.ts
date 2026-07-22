@@ -24,5 +24,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.google.com/photos/about/",
+  iconUrl: "https://www.google.com/favicon.ico",
   actions: googlePhotosActions,
 };

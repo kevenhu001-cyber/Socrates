@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://tomba.io",
+  iconUrl: "https://tomba.io/favicon.ico",
   actions: tombaActions,
 };

@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://folk.app",
+  iconUrl: "https://folk.app/favicon.ico",
   actions: folkActions,
 };

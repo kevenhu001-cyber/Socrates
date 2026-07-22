@@ -16,5 +16,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://resend.com",
+  iconUrl: "https://resend.com/favicon.ico",
   actions: resendActions,
 };

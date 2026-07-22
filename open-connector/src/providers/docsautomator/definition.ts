@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.docsautomator.co",
+  iconUrl: "https://www.docsautomator.co/favicon.ico",
   actions: docsautomatorActions,
 };

@@ -16,5 +16,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://tinypng.com",
+  iconUrl: "https://tinypng.com/favicon.ico",
   actions: tinypngActions,
 };

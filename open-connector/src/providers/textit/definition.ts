@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://textit.com",
+  iconUrl: "https://textit.com/favicon.ico",
   actions: textitActions,
 };

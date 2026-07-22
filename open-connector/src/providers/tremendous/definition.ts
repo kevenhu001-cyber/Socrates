@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.tremendous.com",
+  iconUrl: "https://www.tremendous.com/favicon.ico",
   actions: tremendousActions,
 };

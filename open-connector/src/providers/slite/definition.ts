@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://slite.com",
+  iconUrl: "https://slite.com/favicon.ico",
   actions: sliteActions,
 };

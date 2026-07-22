@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://chatbotkit.com",
+  iconUrl: "https://chatbotkit.com/favicon.ico",
   actions: chatbotkitActions,
 };

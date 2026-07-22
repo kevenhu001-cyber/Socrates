@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://aircall.io",
+  iconUrl: "https://aircall.io/favicon.ico",
   actions: aircallActions,
 };

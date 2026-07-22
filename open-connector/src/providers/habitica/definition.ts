@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://habitica.com",
+  iconUrl: "https://habitica.com/favicon.ico",
   actions: habiticaActions,
 };

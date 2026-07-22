@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://discord.com/developers/docs",
+  iconUrl: "https://discord.com/favicon.ico",
   actions: discordbotActions,
 };

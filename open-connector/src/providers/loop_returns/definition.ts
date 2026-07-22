@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.loopreturns.com",
+  iconUrl: "https://www.loopreturns.com/favicon.ico",
   actions: loopReturnsActions,
 };

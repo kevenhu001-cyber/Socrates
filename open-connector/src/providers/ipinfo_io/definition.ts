@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ipinfo.io",
+  iconUrl: "https://ipinfo.io/favicon.ico",
   actions: ipinfoIoActions,
 };

@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.smartsheet.com",
+  iconUrl: "https://www.smartsheet.com/favicon.ico",
   actions: smartsheetActions,
 };

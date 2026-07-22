@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.talenox.com/",
+  iconUrl: "https://www.talenox.com/favicon.ico",
   actions: talenoxActions,
 };

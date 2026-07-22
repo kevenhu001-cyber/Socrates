@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://paystack.com",
+  iconUrl: "https://paystack.com/favicon.ico",
   actions: paystackActions,
 };

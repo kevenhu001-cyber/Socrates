@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.taggun.io/",
+  iconUrl: "https://www.taggun.io/favicon.ico",
   actions: taggunActions,
 };

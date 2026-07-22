@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.retently.com/",
+  iconUrl: "https://www.retently.com/favicon.ico",
   actions: retentlyActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://hashnode.com",
+  iconUrl: "https://hashnode.com/favicon.ico",
   actions: hashnodeActions,
 };

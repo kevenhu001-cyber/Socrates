@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mailercloud.com/",
+  iconUrl: "https://www.mailercloud.com/favicon.ico",
   actions: mailercloudActions,
 };

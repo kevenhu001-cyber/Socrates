@@ -42,5 +42,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.microsoft.com/microsoft-365/outlook/email-and-calendar-software-microsoft-outlook",
+  iconUrl: "https://outlook.live.com/favicon.ico",
   actions: outlookActions,
 };

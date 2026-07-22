@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.supersaas.com/",
+  iconUrl: "https://www.supersaas.com/favicon.ico",
   actions: superSaasActions,
 };

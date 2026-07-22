@@ -71,5 +71,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://woocommerce.com",
+  iconUrl: "https://woocommerce.com/favicon.ico",
   actions: woocommerceActions,
 };

@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.agentql.com",
+  iconUrl: "https://www.agentql.com/favicon.ico",
   actions: agentqlActions,
 };

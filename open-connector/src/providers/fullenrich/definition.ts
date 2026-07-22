@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.fullenrich.com",
+  iconUrl: "https://www.fullenrich.com/favicon.ico",
   actions: fullenrichActions,
 };

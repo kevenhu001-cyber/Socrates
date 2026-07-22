@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.flagsmith.com",
+  iconUrl: "https://www.flagsmith.com/favicon.ico",
   actions: flagsmithActions,
 };

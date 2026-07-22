@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://bsky.social",
+  iconUrl: "https://bsky.social/favicon.ico",
   actions: blueskyActions,
 };

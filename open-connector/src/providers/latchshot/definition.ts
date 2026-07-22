@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://latchshot.fly.dev",
+  iconUrl: "https://latchshot.fly.dev/favicon.ico",
   actions: latchshotActions,
 };

@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://podscribe.com",
+  iconUrl: "https://podscribe.com/favicon.ico",
   actions: podscribeActions,
 };

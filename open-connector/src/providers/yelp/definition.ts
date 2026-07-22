@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.yelp.com",
+  iconUrl: "https://www.yelp.com/favicon.ico",
   actions: yelpActions,
 };

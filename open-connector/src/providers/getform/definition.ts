@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://forminit.com",
+  iconUrl: "https://forminit.com/favicon.ico",
   actions: getformActions,
 };

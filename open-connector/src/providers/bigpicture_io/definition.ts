@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://bigpicture.io",
+  iconUrl: "https://bigpicture.io/favicon.ico",
   actions: bigpictureIoActions,
 };

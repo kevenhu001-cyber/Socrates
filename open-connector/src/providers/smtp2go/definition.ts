@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.smtp2go.com/",
+  iconUrl: "https://www.smtp2go.com/favicon.ico",
   actions: smtp2goActions,
 };

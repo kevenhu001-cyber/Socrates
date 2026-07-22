@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.aftership.com/",
+  iconUrl: "https://www.aftership.com/favicon.ico",
   actions: aftershipActions,
 };

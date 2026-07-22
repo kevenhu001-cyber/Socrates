@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ahrefs.com/",
+  iconUrl: "https://ahrefs.com/favicon.ico",
   actions: ahrefsActions,
 };

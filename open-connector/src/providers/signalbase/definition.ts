@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.trysignalbase.com",
+  iconUrl: "https://www.trysignalbase.com/favicon.ico",
   actions: signalbaseActions,
 };

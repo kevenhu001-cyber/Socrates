@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.appveyor.com",
+  iconUrl: "https://www.appveyor.com/favicon.ico",
   actions: appveyorActions,
 };

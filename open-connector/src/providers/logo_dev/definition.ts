@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://logo.dev",
+  iconUrl: "https://logo.dev/favicon.ico",
   actions: logoDevActions,
 };

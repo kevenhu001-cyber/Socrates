@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://coresignal.com",
+  iconUrl: "https://coresignal.com/favicon.ico",
   actions: coresignalActions,
 };

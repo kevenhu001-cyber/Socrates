@@ -21,5 +21,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.fireflies.ai",
+  iconUrl: "https://www.fireflies.ai/favicon.ico",
   actions: firefliesActions,
 };

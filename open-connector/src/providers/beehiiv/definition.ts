@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.beehiiv.com",
+  iconUrl: "https://www.beehiiv.com/favicon.ico",
   actions: beehiivActions,
 };

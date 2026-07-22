@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.gem.com",
+  iconUrl: "https://www.gem.com/favicon.ico",
   actions: gemActions,
 };

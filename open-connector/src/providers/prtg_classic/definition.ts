@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.paessler.com/prtg",
+  iconUrl: "https://www.paessler.com/favicon.ico",
   actions: prtgClassicActions,
 };

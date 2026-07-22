@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.textmagic.com/",
+  iconUrl: "https://www.textmagic.com/favicon.ico",
   actions: textmagicActions,
 };

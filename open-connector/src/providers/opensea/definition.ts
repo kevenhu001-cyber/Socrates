@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://opensea.io",
+  iconUrl: "https://opensea.io/favicon.ico",
   actions: openseaActions,
 };

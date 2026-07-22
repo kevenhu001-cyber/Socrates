@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.scrapingdog.com",
+  iconUrl: "https://www.scrapingdog.com/favicon.ico",
   actions: scrapingdogActions,
 };

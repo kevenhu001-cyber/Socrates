@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://business.meta.com/",
+  iconUrl: "https://business.meta.com/favicon.ico",
   actions: metaActions,
 };

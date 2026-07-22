@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mopinion.com",
+  iconUrl: "https://www.mopinion.com/favicon.ico",
   actions: mopinionActions,
 };

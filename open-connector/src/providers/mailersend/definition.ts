@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mailersend.com",
+  iconUrl: "https://www.mailersend.com/favicon.ico",
   actions: mailersendActions,
 };

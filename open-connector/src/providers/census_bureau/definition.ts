@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.census.gov",
+  iconUrl: "https://www.census.gov/favicon.ico",
   actions: censusBureauActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://userlist.com",
+  iconUrl: "https://userlist.com/favicon.ico",
   actions: userlistActions,
 };

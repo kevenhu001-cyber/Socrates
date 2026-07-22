@@ -28,5 +28,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.typeform.com",
+  iconUrl: "https://www.typeform.com/favicon.ico",
   actions: typeformActions,
 };

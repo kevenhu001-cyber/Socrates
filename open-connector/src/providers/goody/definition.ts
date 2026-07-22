@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.ongoody.com",
+  iconUrl: "https://www.ongoody.com/favicon.ico",
   actions: goodyActions,
 };

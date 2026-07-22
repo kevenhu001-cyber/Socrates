@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://io.adafruit.com/",
+  iconUrl: "https://io.adafruit.com/favicon.ico",
   actions: adafruitIoActions,
 };

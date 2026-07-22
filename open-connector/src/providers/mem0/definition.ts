@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mem0.ai",
+  iconUrl: "https://mem0.ai/favicon.ico",
   actions: mem0Actions,
 };

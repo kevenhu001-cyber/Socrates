@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.heyreach.io",
+  iconUrl: "https://www.heyreach.io/favicon.ico",
   actions: heyreachActions,
 };

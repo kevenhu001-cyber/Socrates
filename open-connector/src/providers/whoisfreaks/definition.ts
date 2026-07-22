@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://whoisfreaks.com",
+  iconUrl: "https://whoisfreaks.com/favicon.ico",
   actions: whoisfreaksActions,
 };

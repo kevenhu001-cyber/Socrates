@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.iru.com/",
+  iconUrl: "https://www.iru.com/favicon.ico",
   actions: kandjiActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.subvisory.com",
+  iconUrl: "https://www.subvisory.com/favicon.ico",
   actions: subvisoryActions,
 };

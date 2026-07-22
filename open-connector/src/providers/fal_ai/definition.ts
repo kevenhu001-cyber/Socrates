@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://fal.ai",
+  iconUrl: "https://fal.ai/favicon.ico",
   actions: falAiActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://dev.to",
+  iconUrl: "https://dev.to/favicon.ico",
   actions: devtoActions,
 };

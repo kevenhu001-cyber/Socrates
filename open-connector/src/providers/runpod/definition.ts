@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.runpod.io",
+  iconUrl: "https://www.runpod.io/favicon.ico",
   actions: runpodActions,
 };

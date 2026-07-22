@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.callpage.io",
+  iconUrl: "https://www.callpage.io/favicon.ico",
   actions: callpageActions,
 };

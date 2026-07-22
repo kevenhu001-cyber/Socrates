@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.leadfeeder.com",
+  iconUrl: "https://www.leadfeeder.com/favicon.ico",
   actions: leadfeederActions,
 };

@@ -25,5 +25,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.intercom.com",
+  iconUrl: "https://www.intercom.com/favicon.ico",
   actions: intercomActions,
 };

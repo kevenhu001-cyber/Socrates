@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://solcast.com",
+  iconUrl: "https://solcast.com/favicon.ico",
   actions: solcastActions,
 };

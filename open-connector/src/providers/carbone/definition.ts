@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://carbone.io",
+  iconUrl: "https://carbone.io/favicon.ico",
   actions: carboneActions,
 };

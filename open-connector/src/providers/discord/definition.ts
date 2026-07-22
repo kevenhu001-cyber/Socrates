@@ -28,5 +28,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://discord.com",
+  iconUrl: "https://discord.com/assets/847ad504c8b2169d0f08f17ac88b0e44.svg",
   actions: discordActions,
 };

@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://redfox.hk",
+  iconUrl: "https://redfox.hk/favicon.ico",
   actions: redfoxActions,
 };

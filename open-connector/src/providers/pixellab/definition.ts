@@ -21,5 +21,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.pixellab.ai/",
+  iconUrl: "https://www.pixellab.ai/favicon.ico",
   actions: pixellabActions,
 };

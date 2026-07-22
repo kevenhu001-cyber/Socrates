@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.recall.ai",
+  iconUrl: "https://www.recall.ai/favicon.ico",
   actions: recallaiActions,
 };

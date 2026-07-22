@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.passslot.com",
+  iconUrl: "https://www.passslot.com/favicon.ico",
   actions: passslotActions,
 };

@@ -11,5 +11,6 @@ export const provider: ProviderDefinition = {
   authTypes: ["no_auth"],
   auth: [{ type: "no_auth" }],
   homepageUrl: "https://linux.do",
+  iconUrl: "https://linux.do/favicon.ico",
   actions: linuxDoActions,
 };

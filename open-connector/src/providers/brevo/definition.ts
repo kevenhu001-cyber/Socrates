@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.brevo.com",
+  iconUrl: "https://www.brevo.com/favicon.ico",
   actions: brevoActions,
 };

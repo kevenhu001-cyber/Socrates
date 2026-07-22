@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://platerecognizer.com",
+  iconUrl: "https://platerecognizer.com/favicon.ico",
   actions: platerecognizerActions,
 };

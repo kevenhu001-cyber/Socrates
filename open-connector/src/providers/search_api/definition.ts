@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.searchapi.io",
+  iconUrl: "https://www.searchapi.io/favicon.ico",
   actions: searchApiActions,
 };

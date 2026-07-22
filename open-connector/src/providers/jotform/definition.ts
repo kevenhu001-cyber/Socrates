@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.jotform.com",
+  iconUrl: "https://www.jotform.com/favicon.ico",
   actions: jotformActions,
 };

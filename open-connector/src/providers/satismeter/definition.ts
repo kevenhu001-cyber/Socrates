@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://satismeter.com",
+  iconUrl: "https://satismeter.com/favicon.ico",
   actions: satismeterActions,
 };

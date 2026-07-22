@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.iplocate.io/",
+  iconUrl: "https://www.iplocate.io/favicon.ico",
   actions: iplocateActions,
 };

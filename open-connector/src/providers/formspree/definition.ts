@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://formspree.io",
+  iconUrl: "https://formspree.io/favicon.ico",
   actions: formspreeActions,
 };

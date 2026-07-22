@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://razorpay.com",
+  iconUrl: "https://razorpay.com/favicon.ico",
   actions: razorpayActions,
 };

@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.encodian.com",
+  iconUrl: "https://www.encodian.com/favicon.ico",
   actions: encodianActions,
 };

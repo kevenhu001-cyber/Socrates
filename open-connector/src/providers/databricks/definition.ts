@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.databricks.com",
+  iconUrl: "https://www.databricks.com/favicon.ico",
   actions: databricksActions,
 };

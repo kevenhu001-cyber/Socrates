@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://quaderno.io/",
+  iconUrl: "https://quaderno.io/favicon.ico",
   actions: quadernoActions,
 };

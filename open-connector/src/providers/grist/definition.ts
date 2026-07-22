@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.getgrist.com",
+  iconUrl: "https://www.getgrist.com/favicon.ico",
   actions: gristActions,
 };

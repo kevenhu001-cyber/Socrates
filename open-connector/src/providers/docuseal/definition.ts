@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.docuseal.com",
+  iconUrl: "https://www.docuseal.com/favicon.ico",
   actions: docusealActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.alphavantage.co",
+  iconUrl: "https://www.alphavantage.co/favicon.ico",
   actions: alphaVantageActions,
 };

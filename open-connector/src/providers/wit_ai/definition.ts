@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://wit.ai",
+  iconUrl: "https://wit.ai/favicon.ico",
   actions: witAiActions,
 };

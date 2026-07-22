@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.checkhq.com",
+  iconUrl: "https://www.checkhq.com/favicon.ico",
   actions: checkActions,
 };

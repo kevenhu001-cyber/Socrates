@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.docsumo.com",
+  iconUrl: "https://www.docsumo.com/favicon.ico",
   actions: docsumoActions,
 };

@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ai.google.dev/gemini-api",
+  iconUrl: "https://ai.google.dev/favicon.ico",
   actions: geminiActions,
 };

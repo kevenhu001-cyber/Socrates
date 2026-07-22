@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://stay.ai",
+  iconUrl: "https://stay.ai/favicon.ico",
   actions: stayAiActions,
 };

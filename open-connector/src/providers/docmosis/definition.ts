@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.docmosis.com",
+  iconUrl: "https://www.docmosis.com/favicon.ico",
   actions: docmosisActions,
 };

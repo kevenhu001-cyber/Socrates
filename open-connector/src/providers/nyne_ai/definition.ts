@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://nyne.ai",
+  iconUrl: "https://nyne.ai/favicon.ico",
   actions: nyneAiActions,
 };

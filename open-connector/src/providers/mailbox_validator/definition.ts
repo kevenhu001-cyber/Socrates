@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mailboxvalidator.com",
+  iconUrl: "https://www.mailboxvalidator.com/favicon.ico",
   actions: mailboxValidatorActions,
 };

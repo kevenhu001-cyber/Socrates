@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.usebouncer.com/",
+  iconUrl: "https://www.usebouncer.com/favicon.ico",
   actions: bouncerActions,
 };

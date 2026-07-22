@@ -32,5 +32,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.tinybird.co",
+  iconUrl: "https://www.tinybird.co/favicon.ico",
   actions: tinybirdActions,
 };

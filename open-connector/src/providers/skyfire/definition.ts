@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://skyfire.xyz",
+  iconUrl: "https://skyfire.xyz/favicon.ico",
   actions: skyfireActions,
 };

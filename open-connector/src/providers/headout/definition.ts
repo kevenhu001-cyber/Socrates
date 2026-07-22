@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.headout.com",
+  iconUrl: "https://www.headout.com/favicon.ico",
   actions: headoutActions,
 };

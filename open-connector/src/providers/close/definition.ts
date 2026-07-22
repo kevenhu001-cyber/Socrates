@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.close.com",
+  iconUrl: "https://www.close.com/favicon.ico",
   actions: closeActions,
 };

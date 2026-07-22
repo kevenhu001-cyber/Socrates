@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://quentn.com",
+  iconUrl: "https://quentn.com/favicon.ico",
   actions: quentnActions,
 };

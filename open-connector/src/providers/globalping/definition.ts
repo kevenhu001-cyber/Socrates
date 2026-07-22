@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://globalping.io",
+  iconUrl: "https://globalping.io/favicon.ico",
   actions: globalpingActions,
 };

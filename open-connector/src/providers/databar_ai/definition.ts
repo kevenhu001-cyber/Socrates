@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://databar.ai/",
+  iconUrl: "https://databar.ai/favicon.ico",
   actions: databarAiActions,
 };

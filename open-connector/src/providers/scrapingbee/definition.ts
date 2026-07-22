@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.scrapingbee.com",
+  iconUrl: "https://www.scrapingbee.com/favicon.ico",
   actions: scrapingbeeActions,
 };

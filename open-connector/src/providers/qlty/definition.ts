@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://qlty.sh",
+  iconUrl: "https://qlty.sh/favicon.ico",
   actions: qltyActions,
 };

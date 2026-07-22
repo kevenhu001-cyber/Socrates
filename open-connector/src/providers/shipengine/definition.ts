@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.shipengine.com/",
+  iconUrl: "https://www.shipengine.com/favicon.ico",
   actions: shipengineActions,
 };

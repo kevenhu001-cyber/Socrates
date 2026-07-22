@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://auth0.com",
+  iconUrl: "https://auth0.com/favicon.ico",
   actions: auth0ManagementActions,
 };

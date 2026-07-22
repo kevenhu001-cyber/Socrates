@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://xata.io/",
+  iconUrl: "https://xata.io/favicon.ico",
   actions: xataActions,
 };

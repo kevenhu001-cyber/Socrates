@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.timecamp.com",
+  iconUrl: "https://www.timecamp.com/favicon.ico",
   actions: timecampActions,
 };

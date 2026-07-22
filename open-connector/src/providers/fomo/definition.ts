@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://fomo.com",
+  iconUrl: "https://fomo.com/favicon.ico",
   actions: fomoActions,
 };

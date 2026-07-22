@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://pinboard.in/",
+  iconUrl: "https://pinboard.in/favicon.ico",
   actions: pinboardActions,
 };

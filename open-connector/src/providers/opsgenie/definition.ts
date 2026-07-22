@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.atlassian.com/software/opsgenie",
+  iconUrl: "https://www.atlassian.com/favicon.ico",
   actions: opsgenieActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://axiom.co",
+  iconUrl: "https://axiom.co/favicon.ico",
   actions: axiomActions,
 };

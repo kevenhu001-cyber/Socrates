@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.pivotaltracker.com",
+  iconUrl: "https://www.pivotaltracker.com/favicon.ico",
   actions: pivotalTrackerActions,
 };

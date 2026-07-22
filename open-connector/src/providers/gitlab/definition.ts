@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://gitlab.com",
+  iconUrl: "https://about.gitlab.com/images/press/logo/svg/gitlab-icon-rgb.svg",
   actions: gitlabActions,
 };

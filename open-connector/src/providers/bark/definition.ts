@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://bark.day.app",
+  iconUrl: "https://bark.day.app/favicon.ico",
   actions: barkActions,
 };

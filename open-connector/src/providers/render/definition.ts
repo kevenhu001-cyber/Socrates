@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://render.com",
+  iconUrl: "https://render.com/favicon.ico",
   actions: renderActions,
 };

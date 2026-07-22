@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://docraptor.com",
+  iconUrl: "https://docraptor.com/favicon.ico",
   actions: docraptorActions,
 };

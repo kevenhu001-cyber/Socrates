@@ -38,5 +38,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.microsoft.com/microsoft-365/excel",
+  iconUrl: "https://www.microsoft.com/favicon.ico",
   actions: excelActions,
 };

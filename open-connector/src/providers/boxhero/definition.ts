@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.boxhero-app.com",
+  iconUrl: "https://www.boxhero-app.com/favicon.ico",
   actions: boxheroActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://zeplin.io",
+  iconUrl: "https://zeplin.io/favicon.ico",
   actions: zeplinActions,
 };

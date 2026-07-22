@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://delighted.com",
+  iconUrl: "https://delighted.com/favicon.ico",
   actions: delightedActions,
 };

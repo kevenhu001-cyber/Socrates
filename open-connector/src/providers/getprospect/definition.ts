@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://getprospect.com",
+  iconUrl: "https://getprospect.com/favicon.ico",
   actions: getprospectActions,
 };

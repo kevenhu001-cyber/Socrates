@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://viggle.ai",
+  iconUrl: "https://viggle.ai/favicon.ico",
   actions: viggleActions,
 };

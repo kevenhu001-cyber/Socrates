@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.browserbase.com",
+  iconUrl: "https://www.browserbase.com/favicon.ico",
   actions: browserbaseActions,
 };

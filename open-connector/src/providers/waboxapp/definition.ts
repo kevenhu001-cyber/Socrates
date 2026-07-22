@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.waboxapp.com",
+  iconUrl: "https://www.waboxapp.com/favicon.ico",
   actions: waboxappActions,
 };

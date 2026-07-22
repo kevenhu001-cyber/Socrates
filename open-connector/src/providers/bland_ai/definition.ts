@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.bland.ai/",
+  iconUrl: "https://www.bland.ai/favicon.ico",
   actions: blandAiActions,
 };

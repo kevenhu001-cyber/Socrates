@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://fly.io/",
+  iconUrl: "https://fly.io/static/images/brand/fly-logo-2019.png",
   actions: flyActions,
 };

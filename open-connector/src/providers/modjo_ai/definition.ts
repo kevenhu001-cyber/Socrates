@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.modjo.ai",
+  iconUrl: "https://www.modjo.ai/favicon.ico",
   actions: modjoAiActions,
 };

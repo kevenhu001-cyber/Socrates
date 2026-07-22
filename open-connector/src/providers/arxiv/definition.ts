@@ -11,5 +11,6 @@ export const provider: ProviderDefinition = {
   authTypes: ["no_auth"],
   auth: [{ type: "no_auth" }],
   homepageUrl: "https://arxiv.org/",
+  iconUrl: "https://arxiv.org/favicon.ico",
   actions: arxivActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.parsehub.com",
+  iconUrl: "https://www.parsehub.com/favicon.ico",
   actions: parsehubActions,
 };

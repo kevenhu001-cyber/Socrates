@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.itglue.com/",
+  iconUrl: "https://www.itglue.com/favicon.ico",
   actions: itGlueActions,
 };

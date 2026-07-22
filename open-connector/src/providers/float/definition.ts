@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.float.com/",
+  iconUrl: "https://www.float.com/favicon.ico",
   actions: floatActions,
 };

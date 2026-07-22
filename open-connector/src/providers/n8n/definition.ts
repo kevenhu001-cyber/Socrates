@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://n8n.io",
+  iconUrl: "https://n8n.io/favicon.ico",
   actions: n8nActions,
 };

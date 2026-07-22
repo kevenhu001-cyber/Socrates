@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://tapfiliate.com/",
+  iconUrl: "https://tapfiliate.com/favicon.ico",
   actions: tapfiliateActions,
 };

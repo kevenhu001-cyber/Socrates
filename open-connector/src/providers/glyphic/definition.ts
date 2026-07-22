@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.goairspeed.com",
+  iconUrl: "https://www.goairspeed.com/favicon.ico",
   actions: glyphicActions,
 };

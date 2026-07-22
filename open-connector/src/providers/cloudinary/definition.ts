@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://cloudinary.com",
+  iconUrl: "https://cloudinary.com/favicon.ico",
   actions: cloudinaryActions,
 };

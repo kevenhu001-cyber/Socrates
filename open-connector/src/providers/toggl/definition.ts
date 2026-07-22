@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://toggl.com/track",
+  iconUrl: "https://toggl.com/favicon.ico",
   actions: togglActions,
 };

@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.buildium.com",
+  iconUrl: "https://www.buildium.com/favicon.ico",
   actions: buildiumActions,
 };

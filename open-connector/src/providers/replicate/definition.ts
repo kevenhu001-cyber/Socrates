@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://replicate.com",
+  iconUrl: "https://replicate.com/favicon.ico",
   actions: replicateActions,
 };

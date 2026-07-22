@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://gowinston.ai",
+  iconUrl: "https://gowinston.ai/favicon.ico",
   actions: winstonAiActions,
 };

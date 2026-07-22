@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://surecontact.com/",
+  iconUrl: "https://surecontact.com/favicon.ico",
   actions: surecontactActions,
 };

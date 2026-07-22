@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.agora.io",
+  iconUrl: "https://www.agora.io/favicon.ico",
   actions: agoraActions,
 };

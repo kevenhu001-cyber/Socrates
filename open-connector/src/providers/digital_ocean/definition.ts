@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.digitalocean.com",
+  iconUrl: "https://www.digitalocean.com/favicon.ico",
   actions: digitalOceanActions,
 };

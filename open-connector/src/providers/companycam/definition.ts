@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://companycam.com",
+  iconUrl: "https://companycam.com/favicon.ico",
   actions: companycamActions,
 };

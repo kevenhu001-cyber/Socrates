@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://lokalise.com",
+  iconUrl: "https://lokalise.com/favicon.ico",
   actions: lokaliseActions,
 };

@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.cin7.com/solutions/core/",
+  iconUrl: "https://www.cin7.com/favicon.ico",
   actions: cin7CoreActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.autom.dev",
+  iconUrl: "https://www.autom.dev/favicon.ico",
   actions: automActions,
 };

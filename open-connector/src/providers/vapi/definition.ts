@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://vapi.ai",
+  iconUrl: "https://vapi.ai/favicon.ico",
   actions: vapiActions,
 };

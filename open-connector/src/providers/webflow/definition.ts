@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://webflow.com",
+  iconUrl: "https://webflow.com/favicon.ico",
   actions: webflowActions,
 };

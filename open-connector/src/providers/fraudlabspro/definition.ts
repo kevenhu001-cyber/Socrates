@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.fraudlabspro.com/",
+  iconUrl: "https://www.fraudlabspro.com/favicon.ico",
   actions: fraudlabsproActions,
 };

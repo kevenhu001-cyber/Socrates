@@ -21,5 +21,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://heyy.io",
+  iconUrl: "https://heyy.io/favicon.ico",
   actions: heyyActions,
 };

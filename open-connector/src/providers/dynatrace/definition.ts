@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.dynatrace.com",
+  iconUrl: "https://www.dynatrace.com/favicon.ico",
   actions: dynatraceActions,
 };

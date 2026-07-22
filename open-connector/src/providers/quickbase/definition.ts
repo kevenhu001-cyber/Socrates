@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.quickbase.com",
+  iconUrl: "https://www.quickbase.com/favicon.ico",
   actions: quickbaseActions,
 };

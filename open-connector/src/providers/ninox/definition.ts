@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ninox.com",
+  iconUrl: "https://ninox.com/favicon.ico",
   actions: ninoxActions,
 };

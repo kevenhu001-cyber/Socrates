@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://bitly.com",
+  iconUrl: "https://bitly.com/favicon.ico",
   actions: bitlyActions,
 };

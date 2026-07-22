@@ -24,5 +24,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://workspace.google.com/products/slides/",
+  iconUrl: "https://slides.google.com/favicon.ico",
   actions: googleSlidesActions,
 };

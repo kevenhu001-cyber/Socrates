@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://api-sports.io",
+  iconUrl: "https://api-sports.io/favicon.ico",
   actions: apiSportsActions,
 };

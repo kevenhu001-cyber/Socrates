@@ -40,5 +40,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://wordpress.org",
+  iconUrl: "https://wordpress.org/favicon.ico",
   actions: wordpressActions,
 };

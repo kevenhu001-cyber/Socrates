@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ipdata.co",
+  iconUrl: "https://ipdata.co/favicon.ico",
   actions: ipdataCoActions,
 };

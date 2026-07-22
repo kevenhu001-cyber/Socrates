@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://newsapi.org",
+  iconUrl: "https://newsapi.org/favicon.ico",
   actions: newsApiActions,
 };

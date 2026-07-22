@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.getoutline.com",
+  iconUrl: "https://www.getoutline.com/favicon.ico",
   actions: outlineActions,
 };

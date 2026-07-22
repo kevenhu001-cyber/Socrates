@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://serpdog.io",
+  iconUrl: "https://serpdog.io/favicon.ico",
   actions: serpdogActions,
 };

@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://huggingface.co",
+  iconUrl: "https://huggingface.co/front/assets/huggingface_logo-noborder.svg",
   actions: huggingfaceActions,
 };

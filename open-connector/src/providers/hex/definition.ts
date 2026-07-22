@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://hex.tech",
+  iconUrl: "https://hex.tech/favicon.ico",
   actions: hexActions,
 };

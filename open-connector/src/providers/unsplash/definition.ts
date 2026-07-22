@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://unsplash.com",
+  iconUrl: "https://unsplash.com/favicon.ico",
   actions: unsplashActions,
 };

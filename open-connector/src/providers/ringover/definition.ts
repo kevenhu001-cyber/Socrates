@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.ringover.com/",
+  iconUrl: "https://www.ringover.com/favicon.ico",
   actions: ringoverActions,
 };

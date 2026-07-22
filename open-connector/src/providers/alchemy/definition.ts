@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.alchemy.com",
+  iconUrl: "https://www.alchemy.com/favicon.ico",
   actions: alchemyActions,
 };

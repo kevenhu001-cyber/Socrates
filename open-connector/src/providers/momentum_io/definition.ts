@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.momentum.io",
+  iconUrl: "https://www.momentum.io/favicon.ico",
   actions: momentumIoActions,
 };

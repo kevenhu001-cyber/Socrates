@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mailboxlayer.com",
+  iconUrl: "https://mailboxlayer.com/favicon.ico",
   actions: mailboxlayerActions,
 };

@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.shopify.com/partners",
+  iconUrl: "https://www.shopify.com/favicon.ico",
   actions: shopifyPartnerActions,
 };

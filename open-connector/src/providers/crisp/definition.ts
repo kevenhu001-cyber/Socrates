@@ -51,5 +51,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://crisp.chat/",
+  iconUrl: "https://crisp.chat/favicon.ico",
   actions: crispActions,
 };

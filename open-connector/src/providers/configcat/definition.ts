@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://configcat.com/",
+  iconUrl: "https://configcat.com/favicon.ico",
   actions: configcatActions,
 };

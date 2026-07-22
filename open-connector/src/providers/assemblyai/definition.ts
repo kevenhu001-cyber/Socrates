@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.assemblyai.com/",
+  iconUrl: "https://www.assemblyai.com/favicon.ico",
   actions: assemblyaiActions,
 };

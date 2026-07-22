@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.benzinga.com/",
+  iconUrl: "https://www.benzinga.com/favicon.ico",
   actions: benzingaActions,
 };

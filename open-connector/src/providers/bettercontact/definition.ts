@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://bettercontact.rocks",
+  iconUrl: "https://bettercontact.rocks/favicon.ico",
   actions: bettercontactActions,
 };

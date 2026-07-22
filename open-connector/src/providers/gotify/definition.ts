@@ -32,5 +32,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://gotify.net",
+  iconUrl: "https://gotify.net/favicon.ico",
   actions: gotifyActions,
 };

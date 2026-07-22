@@ -49,5 +49,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.stack-ai.com",
+  iconUrl: "https://www.stack-ai.com/favicon.ico",
   actions: stackAiActions,
 };

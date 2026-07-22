@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ngrok.com",
+  iconUrl: "https://ngrok.com/favicon.ico",
   actions: ngrokActions,
 };

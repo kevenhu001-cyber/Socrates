@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ocr.space",
+  iconUrl: "https://ocr.space/favicon.ico",
   actions: ocrspaceActions,
 };

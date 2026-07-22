@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://desktime.com/",
+  iconUrl: "https://desktime.com/favicon.ico",
   actions: desktimeActions,
 };

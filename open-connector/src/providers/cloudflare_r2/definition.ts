@@ -45,5 +45,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.cloudflare.com/developer-platform/products/r2/",
+  iconUrl: "https://www.cloudflare.com/favicon.ico",
   actions: cloudflareR2Actions,
 };

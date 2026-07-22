@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://loops.so",
+  iconUrl: "https://loops.so/favicon.ico",
   actions: loopsActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://what3words.com",
+  iconUrl: "https://what3words.com/favicon.ico",
   actions: what3wordsActions,
 };

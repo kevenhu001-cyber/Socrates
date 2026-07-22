@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.imgix.com",
+  iconUrl: "https://www.imgix.com/favicon.ico",
   actions: imgixActions,
 };

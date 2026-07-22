@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://exa.ai",
+  iconUrl: "https://exa.ai/favicon.ico",
   actions: exaActions,
 };

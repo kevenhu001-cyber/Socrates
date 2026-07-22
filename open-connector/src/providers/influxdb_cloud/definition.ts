@@ -32,5 +32,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.influxdata.com/products/influxdb-cloud/",
+  iconUrl: "https://www.influxdata.com/favicon.ico",
   actions: influxdbCloudActions,
 };

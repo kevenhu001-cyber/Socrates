@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://aimfox.com",
+  iconUrl: "https://aimfox.com/favicon.ico",
   actions: aimfoxActions,
 };

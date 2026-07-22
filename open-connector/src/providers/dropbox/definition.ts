@@ -26,5 +26,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.dropbox.com",
+  iconUrl: "https://www.dropbox.com/favicon.ico",
   actions: dropboxActions,
 };

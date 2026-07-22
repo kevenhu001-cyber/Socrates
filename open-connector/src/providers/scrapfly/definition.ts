@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://scrapfly.io/",
+  iconUrl: "https://scrapfly.io/favicon.ico",
   actions: scrapflyActions,
 };

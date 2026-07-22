@@ -49,5 +49,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://tailscale.com",
+  iconUrl: "https://tailscale.com/favicon.ico",
   actions: tailscaleActions,
 };

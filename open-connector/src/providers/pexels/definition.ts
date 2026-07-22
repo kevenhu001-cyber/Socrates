@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.pexels.com",
+  iconUrl: "https://www.pexels.com/favicon.ico",
   actions: pexelsActions,
 };

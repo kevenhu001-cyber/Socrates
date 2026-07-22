@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.plasmic.app",
+  iconUrl: "https://www.plasmic.app/favicon.ico",
   actions: plasmicActions,
 };

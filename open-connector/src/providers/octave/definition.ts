@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.octavehq.com/",
+  iconUrl: "https://www.octavehq.com/favicon.ico",
   actions: octaveActions,
 };

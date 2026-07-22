@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://worldnewsapi.com",
+  iconUrl: "https://worldnewsapi.com/favicon.ico",
   actions: worldNewsApiActions,
 };

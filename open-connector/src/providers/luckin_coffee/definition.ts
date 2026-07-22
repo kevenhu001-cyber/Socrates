@@ -24,5 +24,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://open.lkcoffee.com/mcp",
+  iconUrl: "https://open.lkcoffee.com/favicon.ico",
   actions: luckinCoffeeActions,
 };

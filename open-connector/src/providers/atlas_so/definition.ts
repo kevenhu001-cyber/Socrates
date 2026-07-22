@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://atlas.so",
+  iconUrl: "https://atlas.so/favicon.ico",
   actions: atlasSoActions,
 };

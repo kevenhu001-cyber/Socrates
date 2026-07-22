@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.eventzilla.net",
+  iconUrl: "https://www.eventzilla.net/favicon.ico",
   actions: eventzillaActions,
 };

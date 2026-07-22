@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://spider.cloud",
+  iconUrl: "https://spider.cloud/favicon.ico",
   actions: spiderActions,
 };

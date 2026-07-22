@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://salesflare.com",
+  iconUrl: "https://salesflare.com/favicon.ico",
   actions: salesflareActions,
 };

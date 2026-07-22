@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.data247.com/",
+  iconUrl: "https://www.data247.com/favicon.ico",
   actions: data247Actions,
 };

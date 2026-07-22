@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://u301.com",
+  iconUrl: "https://u301.com/favicon.ico",
   actions: u301Actions,
 };

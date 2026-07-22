@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://cal.com",
+  iconUrl: "https://cal.com/favicon.ico",
   actions: calActions,
 };

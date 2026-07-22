@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://the-odds-api.com",
+  iconUrl: "https://the-odds-api.com/favicon.ico",
   actions: theOddsApiActions,
 };

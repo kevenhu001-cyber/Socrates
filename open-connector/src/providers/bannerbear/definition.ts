@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.bannerbear.com/",
+  iconUrl: "https://www.bannerbear.com/favicon.ico",
   actions: bannerbearActions,
 };

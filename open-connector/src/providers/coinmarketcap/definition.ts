@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://coinmarketcap.com",
+  iconUrl: "https://coinmarketcap.com/favicon.ico",
   actions: coinmarketcapActions,
 };

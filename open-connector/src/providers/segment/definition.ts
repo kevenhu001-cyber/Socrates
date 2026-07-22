@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://segment.com",
+  iconUrl: "https://segment.com/favicon.ico",
   actions: segmentActions,
 };

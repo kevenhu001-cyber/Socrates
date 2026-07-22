@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.celigo.com",
+  iconUrl: "https://www.celigo.com/favicon.ico",
   actions: celigoActions,
 };

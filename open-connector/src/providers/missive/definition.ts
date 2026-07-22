@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://missiveapp.com",
+  iconUrl: "https://missiveapp.com/favicon.ico",
   actions: missiveActions,
 };

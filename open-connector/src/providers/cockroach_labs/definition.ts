@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.cockroachlabs.com",
+  iconUrl: "https://www.cockroachlabs.com/favicon.ico",
   actions: cockroachLabsActions,
 };

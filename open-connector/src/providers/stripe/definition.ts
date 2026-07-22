@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://stripe.com",
+  iconUrl: "https://stripe.com/favicon.ico",
   actions: stripeActions,
 };

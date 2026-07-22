@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.tanium.com",
+  iconUrl: "https://www.tanium.com/favicon.ico",
   actions: taniumActions,
 };

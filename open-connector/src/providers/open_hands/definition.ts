@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.all-hands.dev",
+  iconUrl: "https://www.all-hands.dev/favicon.ico",
   actions: openHandsActions,
 };

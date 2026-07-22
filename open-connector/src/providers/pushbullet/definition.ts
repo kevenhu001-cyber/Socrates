@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.pushbullet.com",
+  iconUrl: "https://www.pushbullet.com/favicon.ico",
   actions: pushbulletActions,
 };

@@ -54,5 +54,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.cloudflare.com",
+  iconUrl: "https://www.cloudflare.com/favicon.ico",
   actions: cloudflareEmailRoutingActions,
 };

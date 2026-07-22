@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mapbox.com",
+  iconUrl: "https://www.mapbox.com/favicon.ico",
   actions: mapboxActions,
 };

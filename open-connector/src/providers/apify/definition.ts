@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://apify.com",
+  iconUrl: "https://apify.com/favicon.ico",
   actions: apifyActions,
 };

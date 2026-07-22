@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://beebole.com",
+  iconUrl: "https://beebole.com/favicon.ico",
   actions: beeboleActions,
 };

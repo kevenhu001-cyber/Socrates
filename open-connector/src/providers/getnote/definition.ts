@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.biji.com/",
+  iconUrl: "https://www.biji.com/favicon.ico",
   actions: getnoteActions,
 };

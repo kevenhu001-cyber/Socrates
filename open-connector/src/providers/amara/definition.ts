@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://amara.org",
+  iconUrl: "https://amara.org/favicon.ico",
   actions: amaraActions,
 };

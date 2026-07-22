@@ -64,5 +64,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://open.mcd.cn",
+  iconUrl: "https://open.mcd.cn/favicon.ico",
   actions: mcdonaldsCnActions,
 };

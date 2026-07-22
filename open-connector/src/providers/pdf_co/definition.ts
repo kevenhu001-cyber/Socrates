@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://pdf.co",
+  iconUrl: "https://pdf.co/favicon.ico",
   actions: pdfCoActions,
 };

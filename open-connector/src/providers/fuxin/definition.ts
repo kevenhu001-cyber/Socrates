@@ -44,5 +44,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://cloudapi.fuxinsoft.cn",
+  iconUrl: "https://cloudapi.fuxinsoft.cn/favicon.ico",
   actions: fuxinActions,
 };

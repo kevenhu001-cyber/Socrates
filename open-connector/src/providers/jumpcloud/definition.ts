@@ -44,5 +44,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://jumpcloud.com/",
+  iconUrl: "https://jumpcloud.com/favicon.ico",
   actions: jumpcloudActions,
 };

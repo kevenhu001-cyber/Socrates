@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://gender-api.com/",
+  iconUrl: "https://gender-api.com/favicon.ico",
   actions: genderApiActions,
 };

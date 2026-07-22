@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.wachete.com/",
+  iconUrl: "https://www.wachete.com/favicon.ico",
   actions: wacheteActions,
 };

@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://timelink.io",
+  iconUrl: "https://timelink.io/favicon.ico",
   actions: timelinkActions,
 };

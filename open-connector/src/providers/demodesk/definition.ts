@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://demodesk.com",
+  iconUrl: "https://demodesk.com/favicon.ico",
   actions: demodeskActions,
 };

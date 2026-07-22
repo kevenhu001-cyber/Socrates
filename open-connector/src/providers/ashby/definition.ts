@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.ashbyhq.com",
+  iconUrl: "https://www.ashbyhq.com/favicon.ico",
   actions: ashbyActions,
 };

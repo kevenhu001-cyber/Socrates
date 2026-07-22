@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://plisio.net",
+  iconUrl: "https://plisio.net/favicon.ico",
   actions: plisioActions,
 };

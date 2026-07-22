@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://finage.co.uk",
+  iconUrl: "https://finage.co.uk/favicon.ico",
   actions: finageActions,
 };

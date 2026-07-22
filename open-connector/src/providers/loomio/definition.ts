@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.loomio.com",
+  iconUrl: "https://www.loomio.com/favicon.ico",
   actions: loomioActions,
 };

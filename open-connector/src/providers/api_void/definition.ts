@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.apivoid.com/",
+  iconUrl: "https://www.apivoid.com/favicon.ico",
   actions: apiVoidActions,
 };

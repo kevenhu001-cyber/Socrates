@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.statuscake.com",
+  iconUrl: "https://www.statuscake.com/favicon.ico",
   actions: statuscakeActions,
 };

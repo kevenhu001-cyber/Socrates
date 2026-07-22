@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.zenrows.com/",
+  iconUrl: "https://www.zenrows.com/favicon.ico",
   actions: zenrowsActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://emailoctopus.com",
+  iconUrl: "https://emailoctopus.com/favicon.ico",
   actions: emailoctopusActions,
 };

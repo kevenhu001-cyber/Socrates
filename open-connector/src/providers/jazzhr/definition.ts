@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.jazzhr.com",
+  iconUrl: "https://www.jazzhr.com/favicon.ico",
   actions: jazzhrActions,
 };

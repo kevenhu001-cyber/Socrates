@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://lbs.qq.com",
+  iconUrl: "https://lbs.qq.com/favicon.ico",
   actions: tencentMapsActions,
 };

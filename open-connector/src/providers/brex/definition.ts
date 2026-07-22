@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.brex.com/",
+  iconUrl: "https://www.brex.com/favicon.ico",
   actions: brexActions,
 };

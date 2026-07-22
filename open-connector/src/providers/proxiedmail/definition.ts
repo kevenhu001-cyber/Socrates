@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://proxiedmail.com/",
+  iconUrl: "https://proxiedmail.com/favicon.ico",
   actions: proxiedmailActions,
 };

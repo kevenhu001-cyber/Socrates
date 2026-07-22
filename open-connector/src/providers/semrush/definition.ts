@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.semrush.com/",
+  iconUrl: "https://www.semrush.com/favicon.ico",
   actions: semrushActions,
 };

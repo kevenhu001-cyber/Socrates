@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.ticketmaster.com",
+  iconUrl: "https://www.ticketmaster.com/favicon.ico",
   actions: ticketmasterActions,
 };

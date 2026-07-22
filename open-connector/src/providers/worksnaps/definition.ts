@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.worksnaps.com",
+  iconUrl: "https://www.worksnaps.com/favicon.ico",
   actions: worksnapsActions,
 };

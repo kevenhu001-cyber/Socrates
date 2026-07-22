@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://personal.ai",
+  iconUrl: "https://personal.ai/favicon.ico",
   actions: personalAiActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://lucid.co",
+  iconUrl: "https://lucid.co/favicon.ico",
   actions: lucidScimActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://capsulecrm.com",
+  iconUrl: "https://capsulecrm.com/favicon.ico",
   actions: capsuleCrmActions,
 };

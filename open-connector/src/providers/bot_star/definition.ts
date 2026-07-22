@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://botstar.com",
+  iconUrl: "https://botstar.com/favicon.ico",
   actions: botStarActions,
 };

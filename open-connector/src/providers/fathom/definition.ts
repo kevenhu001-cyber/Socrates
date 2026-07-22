@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://usefathom.com",
+  iconUrl: "https://usefathom.com/favicon.ico",
   actions: fathomActions,
 };

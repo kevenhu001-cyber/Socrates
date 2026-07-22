@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.klaviyo.com",
+  iconUrl: "https://www.klaviyo.com/favicon.ico",
   actions: klaviyoActions,
 };

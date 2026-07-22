@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://work.weixin.qq.com",
+  iconUrl: "https://work.weixin.qq.com/favicon.ico",
   actions: wecomBotActions,
 };

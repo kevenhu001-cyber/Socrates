@@ -42,5 +42,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mail.163.com/",
+  iconUrl: "https://mail.163.com/favicon.ico",
   actions: neteaseMailActions,
 };

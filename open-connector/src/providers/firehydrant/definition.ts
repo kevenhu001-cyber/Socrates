@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://firehydrant.com",
+  iconUrl: "https://firehydrant.com/favicon.ico",
   actions: firehydrantActions,
 };

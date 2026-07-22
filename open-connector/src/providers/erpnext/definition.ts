@@ -40,5 +40,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://erpnext.com",
+  iconUrl: "https://erpnext.com/favicon.ico",
   actions: erpnextActions,
 };

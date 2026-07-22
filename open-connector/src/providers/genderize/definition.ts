@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://genderize.io/",
+  iconUrl: "https://genderize.io/favicon.ico",
   actions: genderizeActions,
 };

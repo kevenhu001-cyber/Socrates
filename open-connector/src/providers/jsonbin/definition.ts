@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://jsonbin.io/",
+  iconUrl: "https://jsonbin.io/favicon.ico",
   actions: jsonbinActions,
 };

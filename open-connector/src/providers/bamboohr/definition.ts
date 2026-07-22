@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.bamboohr.com",
+  iconUrl: "https://www.bamboohr.com/favicon.ico",
   actions: bamboohrActions,
 };

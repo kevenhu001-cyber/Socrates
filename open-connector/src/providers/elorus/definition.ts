@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.elorus.com",
+  iconUrl: "https://www.elorus.com/favicon.ico",
   actions: elorusActions,
 };

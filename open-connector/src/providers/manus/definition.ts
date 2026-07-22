@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://manus.im",
+  iconUrl: "https://manus.im/favicon.ico",
   actions: manusActions,
 };

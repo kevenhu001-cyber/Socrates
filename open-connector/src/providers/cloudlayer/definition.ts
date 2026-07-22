@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://cloudlayer.io",
+  iconUrl: "https://cloudlayer.io/favicon.ico",
   actions: cloudlayerActions,
 };

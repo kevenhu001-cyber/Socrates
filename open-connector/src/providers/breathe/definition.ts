@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.breathehr.com/",
+  iconUrl: "https://www.breathehr.com/favicon.ico",
   actions: breatheActions,
 };

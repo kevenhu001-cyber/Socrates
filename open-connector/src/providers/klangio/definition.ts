@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://klang.io",
+  iconUrl: "https://klang.io/favicon.ico",
   actions: klangioActions,
 };

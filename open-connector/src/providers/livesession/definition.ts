@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://livesession.io",
+  iconUrl: "https://livesession.io/favicon.ico",
   actions: livesessionActions,
 };

@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.langchain.com/langsmith",
+  iconUrl: "https://www.langchain.com/favicon.ico",
   actions: langSmithActions,
 };

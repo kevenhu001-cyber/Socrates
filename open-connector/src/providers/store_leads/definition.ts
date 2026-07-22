@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://storeleads.app",
+  iconUrl: "https://storeleads.app/favicon.ico",
   actions: storeLeadsActions,
 };

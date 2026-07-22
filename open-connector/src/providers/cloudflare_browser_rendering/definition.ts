@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://developers.cloudflare.com/browser-run/",
+  iconUrl: "https://www.cloudflare.com/favicon.ico",
   actions: cloudflareBrowserRenderingActions,
 };

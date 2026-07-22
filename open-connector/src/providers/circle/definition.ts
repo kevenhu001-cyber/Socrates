@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://circle.so",
+  iconUrl: "https://circle.so/favicon.ico",
   actions: circleActions,
 };

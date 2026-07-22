@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://calendarific.com/",
+  iconUrl: "https://calendarific.com/favicon.ico",
   actions: calendarificActions,
 };

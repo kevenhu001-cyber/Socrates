@@ -24,5 +24,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://slack.com",
+  iconUrl: "https://a.slack-edge.com/80588/marketing/img/meta/slack_hash_256.png",
   actions: slackActions,
 };

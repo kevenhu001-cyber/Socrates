@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://encharge.io",
+  iconUrl: "https://encharge.io/favicon.ico",
   actions: enchargeActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.abyssale.com/",
+  iconUrl: "https://www.abyssale.com/favicon.ico",
   actions: abyssaleActions,
 };

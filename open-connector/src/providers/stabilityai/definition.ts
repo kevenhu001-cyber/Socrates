@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://stability.ai",
+  iconUrl: "https://stability.ai/favicon.ico",
   actions: stabilityaiActions,
 };

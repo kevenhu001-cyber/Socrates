@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://railway.com",
+  iconUrl: "https://railway.com/favicon.ico",
   actions: railwayActions,
 };

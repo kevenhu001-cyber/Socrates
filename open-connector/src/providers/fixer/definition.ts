@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://fixer.io",
+  iconUrl: "https://fixer.io/favicon.ico",
   actions: fixerActions,
 };

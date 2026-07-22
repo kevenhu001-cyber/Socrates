@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.anrok.com",
+  iconUrl: "https://www.anrok.com/favicon.ico",
   actions: anrokActions,
 };

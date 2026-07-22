@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://metatext.ai",
+  iconUrl: "https://metatext.ai/favicon.ico",
   actions: metatextaiActions,
 };

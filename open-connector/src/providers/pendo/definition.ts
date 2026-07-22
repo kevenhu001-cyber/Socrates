@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.pendo.io",
+  iconUrl: "https://www.pendo.io/favicon.ico",
   actions: pendoActions,
 };

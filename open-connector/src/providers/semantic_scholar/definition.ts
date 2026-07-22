@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.semanticscholar.org/",
+  iconUrl: "https://www.semanticscholar.org/favicon.ico",
   actions: semanticScholarActions,
 };

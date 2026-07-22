@@ -21,5 +21,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.zoom.com",
+  iconUrl: "https://www.zoom.com/favicon.ico",
   actions: zoomActions,
 };

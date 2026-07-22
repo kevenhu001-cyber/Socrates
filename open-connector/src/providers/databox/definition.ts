@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://databox.com/",
+  iconUrl: "https://databox.com/favicon.ico",
   actions: databoxActions,
 };

@@ -21,5 +21,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.heygen.com",
+  iconUrl: "https://www.heygen.com/favicon.ico",
   actions: heygenActions,
 };

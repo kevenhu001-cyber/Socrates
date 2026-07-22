@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.usepylon.com",
+  iconUrl: "https://www.usepylon.com/favicon.ico",
   actions: pylonActions,
 };

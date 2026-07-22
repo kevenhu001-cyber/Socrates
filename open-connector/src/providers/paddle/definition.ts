@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.paddle.com",
+  iconUrl: "https://www.paddle.com/favicon.ico",
   actions: paddleActions,
 };

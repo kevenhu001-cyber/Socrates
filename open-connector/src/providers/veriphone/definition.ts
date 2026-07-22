@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://veriphone.io",
+  iconUrl: "https://veriphone.io/favicon.ico",
   actions: veriphoneActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://pdfless.com",
+  iconUrl: "https://pdfless.com/favicon.ico",
   actions: pdflessActions,
 };

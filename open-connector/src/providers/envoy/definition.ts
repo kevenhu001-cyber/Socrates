@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://envoy.com",
+  iconUrl: "https://envoy.com/favicon.ico",
   actions: envoyActions,
 };

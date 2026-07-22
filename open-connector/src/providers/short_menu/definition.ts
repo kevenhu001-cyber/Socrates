@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://shortmenu.com",
+  iconUrl: "https://shortmenu.com/favicon.ico",
   actions: shortMenuActions,
 };

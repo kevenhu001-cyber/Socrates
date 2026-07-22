@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.getbeamer.com",
+  iconUrl: "https://www.getbeamer.com/favicon.ico",
   actions: beamerActions,
 };

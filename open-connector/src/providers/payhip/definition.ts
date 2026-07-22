@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://payhip.com/",
+  iconUrl: "https://payhip.com/favicon.ico",
   actions: payhipActions,
 };

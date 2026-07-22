@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.cincopa.com/",
+  iconUrl: "https://www.cincopa.com/favicon.ico",
   actions: cincopaActions,
 };

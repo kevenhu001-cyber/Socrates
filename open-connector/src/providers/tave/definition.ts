@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.vsco.co/workspace",
+  iconUrl: "https://www.vsco.co/favicon.ico",
   actions: taveActions,
 };

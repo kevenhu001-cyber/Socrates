@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.activecampaign.com",
+  iconUrl: "https://www.activecampaign.com/favicon.ico",
   actions: activecampaignActions,
 };

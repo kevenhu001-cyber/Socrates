@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://getrecharge.com/",
+  iconUrl: "https://getrecharge.com/favicon.ico",
   actions: rechargeActions,
 };

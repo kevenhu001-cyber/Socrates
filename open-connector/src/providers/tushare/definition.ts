@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://tushare.pro",
+  iconUrl: "https://tushare.pro/favicon.ico",
   actions: tushareActions,
 };

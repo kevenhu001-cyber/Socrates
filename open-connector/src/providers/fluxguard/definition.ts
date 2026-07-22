@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://fluxguard.com/",
+  iconUrl: "https://fluxguard.com/favicon.ico",
   actions: fluxguardActions,
 };

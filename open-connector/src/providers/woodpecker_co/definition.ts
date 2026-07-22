@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://woodpecker.co/",
+  iconUrl: "https://woodpecker.co/favicon.ico",
   actions: woodpeckerCoActions,
 };

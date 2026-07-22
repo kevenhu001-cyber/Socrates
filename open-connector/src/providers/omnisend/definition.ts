@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.omnisend.com",
+  iconUrl: "https://www.omnisend.com/favicon.ico",
   actions: omnisendActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.statsig.com/",
+  iconUrl: "https://www.statsig.com/favicon.ico",
   actions: statsigActions,
 };

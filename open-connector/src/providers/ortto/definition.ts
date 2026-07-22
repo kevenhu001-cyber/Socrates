@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ortto.com",
+  iconUrl: "https://ortto.com/favicon.ico",
   actions: orttoActions,
 };

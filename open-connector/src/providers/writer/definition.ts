@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://writer.com",
+  iconUrl: "https://writer.com/favicon.ico",
   actions: writerActions,
 };

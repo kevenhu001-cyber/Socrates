@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.zhihu.com",
+  iconUrl: "https://www.zhihu.com/favicon.ico",
   actions: zhihuActions,
 };

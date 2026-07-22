@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://snipeitapp.com",
+  iconUrl: "https://snipeitapp.com/favicon.ico",
   actions: snipeItActions,
 };

@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://openai.com/api/",
+  iconUrl: "https://openai.com/favicon.ico",
   actions: openaiActions,
 };

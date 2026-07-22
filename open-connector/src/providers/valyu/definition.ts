@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://valyu.ai",
+  iconUrl: "https://valyu.ai/favicon.ico",
   actions: valyuActions,
 };

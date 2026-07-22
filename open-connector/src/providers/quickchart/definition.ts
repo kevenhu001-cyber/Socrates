@@ -9,5 +9,6 @@ export const provider: ProviderDefinition = {
   authTypes: ["no_auth"],
   auth: [{ type: "no_auth" }],
   homepageUrl: "https://quickchart.io",
+  iconUrl: "https://quickchart.io/favicon.ico",
   actions: quickchartActions,
 };

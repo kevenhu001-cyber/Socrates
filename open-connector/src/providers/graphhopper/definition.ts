@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.graphhopper.com",
+  iconUrl: "https://www.graphhopper.com/favicon.ico",
   actions: graphhopperActions,
 };

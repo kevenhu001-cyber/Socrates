@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mydatascope.com",
+  iconUrl: "https://www.mydatascope.com/favicon.ico",
   actions: datascopeActions,
 };

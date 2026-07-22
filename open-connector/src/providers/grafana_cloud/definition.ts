@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://grafana.com/products/cloud/",
+  iconUrl: "https://grafana.com/favicon.ico",
   actions: grafanaCloudActions,
 };

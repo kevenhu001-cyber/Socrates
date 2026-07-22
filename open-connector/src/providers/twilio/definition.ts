@@ -37,5 +37,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.twilio.com",
+  iconUrl: "https://www.twilio.com/favicon.ico",
   actions: twilioActions,
 };

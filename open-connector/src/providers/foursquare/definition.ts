@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://foursquare.com",
+  iconUrl: "https://foursquare.com/favicon.ico",
   actions: foursquareActions,
 };

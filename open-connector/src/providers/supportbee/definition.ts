@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://supportbee.com",
+  iconUrl: "https://supportbee.com/favicon.ico",
   actions: supportbeeActions,
 };

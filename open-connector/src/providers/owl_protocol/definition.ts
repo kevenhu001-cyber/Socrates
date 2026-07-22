@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://owlprotocol.xyz",
+  iconUrl: "https://owlprotocol.xyz/favicon.ico",
   actions: owlProtocolActions,
 };

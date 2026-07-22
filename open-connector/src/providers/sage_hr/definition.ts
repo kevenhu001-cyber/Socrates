@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.sage.com/en-us/sage-business-cloud/people/",
+  iconUrl: "https://www.sage.com/favicon.ico",
   actions: sageHrActions,
 };

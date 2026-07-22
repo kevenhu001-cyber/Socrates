@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://workos.com",
+  iconUrl: "https://workos.com/favicon.ico",
   actions: workosActions,
 };

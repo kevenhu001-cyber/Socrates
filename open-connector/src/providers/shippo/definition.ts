@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://goshippo.com",
+  iconUrl: "https://goshippo.com/favicon.ico",
   actions: shippoActions,
 };

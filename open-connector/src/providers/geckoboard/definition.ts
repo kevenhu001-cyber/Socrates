@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.geckoboard.com/",
+  iconUrl: "https://www.geckoboard.com/favicon.ico",
   actions: geckoboardActions,
 };

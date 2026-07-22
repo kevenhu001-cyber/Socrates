@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://polar.sh",
+  iconUrl: "https://polar.sh/favicon.ico",
   actions: polarActions,
 };

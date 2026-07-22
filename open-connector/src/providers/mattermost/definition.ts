@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mattermost.com",
+  iconUrl: "https://mattermost.com/favicon.ico",
   actions: mattermostActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.amplemarket.com",
+  iconUrl: "https://www.amplemarket.com/favicon.ico",
   actions: amplemarketActions,
 };

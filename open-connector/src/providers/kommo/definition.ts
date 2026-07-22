@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.kommo.com/",
+  iconUrl: "https://www.kommo.com/favicon.ico",
   actions: kommoActions,
 };

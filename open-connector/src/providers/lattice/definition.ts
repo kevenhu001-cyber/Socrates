@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://lattice.com",
+  iconUrl: "https://lattice.com/favicon.ico",
   actions: latticeActions,
 };

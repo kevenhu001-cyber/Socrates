@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.rippling.com/",
+  iconUrl: "https://www.rippling.com/favicon.ico",
   actions: ripplingActions,
 };

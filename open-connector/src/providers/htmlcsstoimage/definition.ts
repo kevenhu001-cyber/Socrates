@@ -32,5 +32,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://htmlcsstoimage.com",
+  iconUrl: "https://htmlcsstoimage.com/favicon.ico",
   actions: htmlcsstoimageActions,
 };

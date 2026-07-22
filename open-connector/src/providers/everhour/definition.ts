@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://everhour.com",
+  iconUrl: "https://everhour.com/favicon.ico",
   actions: everhourActions,
 };

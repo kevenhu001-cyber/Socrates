@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mailjet.com",
+  iconUrl: "https://www.mailjet.com/favicon.ico",
   actions: mailjetActions,
 };

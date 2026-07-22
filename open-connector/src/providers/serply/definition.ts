@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://serply.io",
+  iconUrl: "https://serply.io/favicon.ico",
   actions: serplyActions,
 };

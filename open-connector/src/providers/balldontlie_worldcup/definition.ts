@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://fifa.balldontlie.io/",
+  iconUrl: "https://fifa.balldontlie.io/favicon.ico",
   actions: balldontlieWorldcupActions,
 };

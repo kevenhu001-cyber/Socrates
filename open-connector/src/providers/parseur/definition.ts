@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://parseur.com",
+  iconUrl: "https://parseur.com/favicon.ico",
   actions: parseurActions,
 };

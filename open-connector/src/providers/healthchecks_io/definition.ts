@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://healthchecks.io",
+  iconUrl: "https://healthchecks.io/favicon.ico",
   actions: healthchecksIoActions,
 };

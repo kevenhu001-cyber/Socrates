@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://rocketreach.co",
+  iconUrl: "https://rocketreach.co/favicon.ico",
   actions: rocketReachActions,
 };

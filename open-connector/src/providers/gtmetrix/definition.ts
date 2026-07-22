@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://gtmetrix.com",
+  iconUrl: "https://gtmetrix.com/favicon.ico",
   actions: gtmetrixActions,
 };

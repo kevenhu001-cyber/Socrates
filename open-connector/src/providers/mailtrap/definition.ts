@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mailtrap.io/",
+  iconUrl: "https://mailtrap.io/favicon.ico",
   actions: mailtrapActions,
 };

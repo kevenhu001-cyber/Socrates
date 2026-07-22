@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://stormboard.com",
+  iconUrl: "https://stormboard.com/favicon.ico",
   actions: stormboardActions,
 };

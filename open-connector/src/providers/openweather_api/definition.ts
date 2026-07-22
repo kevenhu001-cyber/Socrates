@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://openweathermap.org",
+  iconUrl: "https://openweathermap.org/favicon.ico",
   actions: openweatherApiActions,
 };

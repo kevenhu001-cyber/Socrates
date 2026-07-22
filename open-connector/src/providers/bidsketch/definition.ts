@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.bidsketch.com/",
+  iconUrl: "https://www.bidsketch.com/favicon.ico",
   actions: bidsketchActions,
 };

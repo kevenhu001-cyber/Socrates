@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://calendly.com",
+  iconUrl: "https://calendly.com/favicon.ico",
   actions: calendlyActions,
 };

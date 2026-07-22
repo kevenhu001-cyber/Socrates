@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.shipbob.com/",
+  iconUrl: "https://www.shipbob.com/favicon.ico",
   actions: shipBobActions,
 };

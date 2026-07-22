@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.adyen.com",
+  iconUrl: "https://www.adyen.com/favicon.ico",
   actions: adyenActions,
 };

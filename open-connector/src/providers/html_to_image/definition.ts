@@ -21,5 +21,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://html2img.com",
+  iconUrl: "https://html2img.com/favicon.ico",
   actions: htmlToImageActions,
 };

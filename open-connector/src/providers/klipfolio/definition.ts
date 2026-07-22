@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.klipfolio.com",
+  iconUrl: "https://www.klipfolio.com/favicon.ico",
   actions: klipfolioActions,
 };

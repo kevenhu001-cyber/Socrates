@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.ip2location.com/web-service/ip2proxy",
+  iconUrl: "https://www.ip2location.com/favicon.ico",
   actions: ip2proxyActions,
 };

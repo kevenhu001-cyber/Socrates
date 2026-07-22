@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://securitytrails.com",
+  iconUrl: "https://securitytrails.com/favicon.ico",
   actions: securitytrailsActions,
 };

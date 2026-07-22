@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.ipqualityscore.com/",
+  iconUrl: "https://www.ipqualityscore.com/favicon.ico",
   actions: ipqualityscoreActions,
 };

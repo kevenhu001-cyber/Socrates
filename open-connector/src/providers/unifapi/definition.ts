@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://unifapi.com",
+  iconUrl: "https://unifapi.com/favicon.ico",
   actions: unifapiActions,
 };

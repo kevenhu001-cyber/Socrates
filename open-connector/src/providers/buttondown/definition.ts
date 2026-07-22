@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://buttondown.com",
+  iconUrl: "https://buttondown.com/favicon.ico",
   actions: buttondownActions,
 };

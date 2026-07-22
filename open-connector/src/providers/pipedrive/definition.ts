@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.pipedrive.com",
+  iconUrl: "https://www.pipedrive.com/favicon.ico",
   actions: pipedriveActions,
 };

@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.espocrm.com/",
+  iconUrl: "https://www.espocrm.com/favicon.ico",
   actions: espocrmActions,
 };

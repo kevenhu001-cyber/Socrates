@@ -33,5 +33,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.honeycomb.io/",
+  iconUrl: "https://www.honeycomb.io/favicon.ico",
   actions: honeycombActions,
 };

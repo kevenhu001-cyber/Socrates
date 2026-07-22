@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://1password.com",
+  iconUrl: "https://1password.com/favicon.ico",
   actions: onePasswordActions,
 };

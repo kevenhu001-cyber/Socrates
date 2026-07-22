@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://harmonic.ai",
+  iconUrl: "https://harmonic.ai/favicon.ico",
   actions: harmonicAiActions,
 };

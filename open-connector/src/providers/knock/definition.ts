@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://knock.app/",
+  iconUrl: "https://knock.app/favicon.ico",
   actions: knockActions,
 };

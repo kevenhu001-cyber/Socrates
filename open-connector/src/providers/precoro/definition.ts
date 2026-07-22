@@ -39,5 +39,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://precoro.com/",
+  iconUrl: "https://precoro.com/favicon.ico",
   actions: precoroActions,
 };

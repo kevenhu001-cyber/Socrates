@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://recruiterflow.com",
+  iconUrl: "https://recruiterflow.com/favicon.ico",
   actions: recruiterflowActions,
 };

@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.meetjamie.ai",
+  iconUrl: "https://www.meetjamie.ai/favicon.ico",
   actions: jamieActions,
 };

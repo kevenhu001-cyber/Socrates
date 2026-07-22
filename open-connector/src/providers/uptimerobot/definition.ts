@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://uptimerobot.com",
+  iconUrl: "https://uptimerobot.com/favicon.ico",
   actions: uptimerobotActions,
 };

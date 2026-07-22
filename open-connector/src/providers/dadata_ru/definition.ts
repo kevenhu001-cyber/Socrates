@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://dadata.ru",
+  iconUrl: "https://dadata.ru/favicon.ico",
   actions: dadataRuActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://bitrise.io",
+  iconUrl: "https://bitrise.io/favicon.ico",
   actions: bitriseActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.bigmailer.io/",
+  iconUrl: "https://www.bigmailer.io/favicon.ico",
   actions: bigmailerActions,
 };

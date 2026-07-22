@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://vimeo.com",
+  iconUrl: "https://vimeo.com/favicon.ico",
   actions: vimeoActions,
 };

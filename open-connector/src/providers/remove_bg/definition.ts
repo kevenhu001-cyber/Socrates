@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.remove.bg",
+  iconUrl: "https://www.remove.bg/favicon.ico",
   actions: removeBgActions,
 };

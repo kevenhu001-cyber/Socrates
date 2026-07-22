@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.perplexity.ai",
+  iconUrl: "https://www.perplexity.ai/favicon.ico",
   actions: perplexityActions,
 };

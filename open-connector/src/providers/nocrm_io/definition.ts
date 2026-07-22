@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.nocrm.io",
+  iconUrl: "https://www.nocrm.io/favicon.ico",
   actions: nocrmIoActions,
 };

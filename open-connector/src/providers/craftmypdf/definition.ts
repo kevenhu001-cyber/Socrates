@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://craftmypdf.com",
+  iconUrl: "https://craftmypdf.com/favicon.ico",
   actions: craftmypdfActions,
 };

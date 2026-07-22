@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.pinecone.io/",
+  iconUrl: "https://www.pinecone.io/favicon.ico",
   actions: pineconeActions,
 };

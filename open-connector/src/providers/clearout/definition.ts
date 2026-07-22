@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://clearout.io",
+  iconUrl: "https://clearout.io/favicon.ico",
   actions: clearoutActions,
 };

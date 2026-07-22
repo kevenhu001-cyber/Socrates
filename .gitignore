@@ -40,3 +40,6 @@ codegraph.db
 openai-codex-*.tgz
 .vite/
 server.log.bak.*
+
+# ── Deploy state (written by deploy.sh on successful deploys) ──
+.deploy-state.json

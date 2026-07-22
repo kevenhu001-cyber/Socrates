@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.bigcommerce.com",
+  iconUrl: "https://www.bigcommerce.com/favicon.ico",
   actions: bigCommerceActions,
 };

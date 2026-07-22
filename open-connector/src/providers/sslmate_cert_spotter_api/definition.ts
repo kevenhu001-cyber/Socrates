@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://sslmate.com/certspotter/",
+  iconUrl: "https://sslmate.com/favicon.ico",
   actions: certSpotterActions,
 };

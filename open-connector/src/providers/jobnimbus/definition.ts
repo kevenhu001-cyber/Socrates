@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.jobnimbus.com",
+  iconUrl: "https://www.jobnimbus.com/favicon.ico",
   actions: jobnimbusActions,
 };

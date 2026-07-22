@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://emaillistverify.com",
+  iconUrl: "https://emaillistverify.com/favicon.ico",
   actions: emailListVerifyActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.linguapop.eu/",
+  iconUrl: "https://www.linguapop.eu/favicon.ico",
   actions: linguapopActions,
 };

@@ -42,5 +42,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.microsoft.com/microsoft-365/onedrive/online-cloud-storage",
+  iconUrl: "https://www.microsoft.com/favicon.ico",
   actions: oneDriveActions,
 };

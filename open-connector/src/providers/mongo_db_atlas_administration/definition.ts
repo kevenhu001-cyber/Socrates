@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mongodb.com/products/platform/atlas-database",
+  iconUrl: "https://www.mongodb.com/favicon.ico",
   actions: mongoDbAtlasAdministrationActions,
 };

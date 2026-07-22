@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.streak.com/",
+  iconUrl: "https://www.streak.com/favicon.ico",
   actions: streakActions,
 };

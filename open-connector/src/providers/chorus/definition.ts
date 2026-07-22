@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.chorus.ai",
+  iconUrl: "https://www.chorus.ai/favicon.ico",
   actions: chorusActions,
 };

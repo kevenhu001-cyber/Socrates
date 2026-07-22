@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://optimoroute.com/",
+  iconUrl: "https://optimoroute.com/favicon.ico",
   actions: optimorouteActions,
 };

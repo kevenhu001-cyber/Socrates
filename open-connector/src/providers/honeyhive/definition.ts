@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.honeyhive.ai/",
+  iconUrl: "https://www.honeyhive.ai/favicon.ico",
   actions: honeyhiveActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://clarity.microsoft.com",
+  iconUrl: "https://clarity.microsoft.com/favicon.ico",
   actions: microsoftClarityActions,
 };

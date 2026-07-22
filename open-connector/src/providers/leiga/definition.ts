@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.leiga.com/",
+  iconUrl: "https://www.leiga.com/favicon.ico",
   actions: leigaActions,
 };

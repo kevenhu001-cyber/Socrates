@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.netlify.com",
+  iconUrl: "https://www.netlify.com/favicon.ico",
   actions: netlifyActions,
 };

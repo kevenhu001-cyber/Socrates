@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://baserow.io",
+  iconUrl: "https://baserow.io/favicon.ico",
   actions: baserowActions,
 };

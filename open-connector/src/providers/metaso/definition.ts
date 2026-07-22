@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://metaso.cn",
+  iconUrl: "https://metaso.cn/favicon.ico",
   actions: metasoActions,
 };

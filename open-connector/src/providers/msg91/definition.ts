@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://msg91.com",
+  iconUrl: "https://msg91.com/favicon.ico",
   actions: msg91Actions,
 };

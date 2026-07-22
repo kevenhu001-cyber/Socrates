@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://docsbot.ai",
+  iconUrl: "https://docsbot.ai/favicon.ico",
   actions: docsbotAiActions,
 };

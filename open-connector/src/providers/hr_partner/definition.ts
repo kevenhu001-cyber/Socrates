@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.hrpartner.io/",
+  iconUrl: "https://www.hrpartner.io/favicon.ico",
   actions: hrPartnerActions,
 };

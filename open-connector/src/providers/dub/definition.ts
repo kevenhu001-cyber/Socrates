@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://dub.co",
+  iconUrl: "https://dub.co/favicon.ico",
   actions: dubActions,
 };

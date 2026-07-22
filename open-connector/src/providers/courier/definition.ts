@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.courier.com",
+  iconUrl: "https://www.courier.com/favicon.ico",
   actions: courierActions,
 };

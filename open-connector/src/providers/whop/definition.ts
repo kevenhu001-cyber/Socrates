@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://whop.com",
+  iconUrl: "https://whop.com/favicon.ico",
   actions: whopActions,
 };

@@ -60,5 +60,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://business.tiktok.com",
+  iconUrl: "https://business.tiktok.com/favicon.ico",
   actions: tiktokBusinessActions,
 };

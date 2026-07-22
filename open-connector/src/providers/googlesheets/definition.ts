@@ -27,5 +27,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://workspace.google.com/products/sheets/",
+  iconUrl: "https://sheets.google.com/favicon.ico",
   actions: googlesheetsActions,
 };

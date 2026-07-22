@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://keen.io/",
+  iconUrl: "https://keen.io/favicon.ico",
   actions: keenIoActions,
 };

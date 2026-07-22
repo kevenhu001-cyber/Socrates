@@ -32,5 +32,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://dokploy.com",
+  iconUrl: "https://dokploy.com/favicon.ico",
   actions: dokployActions,
 };

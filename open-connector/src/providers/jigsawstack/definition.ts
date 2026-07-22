@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://jigsawstack.com",
+  iconUrl: "https://jigsawstack.com/favicon.ico",
   actions: jigsawstackActions,
 };

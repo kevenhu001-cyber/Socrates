@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://tavily.com",
+  iconUrl: "https://tavily.com/favicon.ico",
   actions: tavilyActions,
 };

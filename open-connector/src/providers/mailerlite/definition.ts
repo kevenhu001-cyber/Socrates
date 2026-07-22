@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mailerlite.com",
+  iconUrl: "https://www.mailerlite.com/favicon.ico",
   actions: mailerliteActions,
 };

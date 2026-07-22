@@ -96,5 +96,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.oracle.com/cloud/",
+  iconUrl: "https://www.oracle.com/favicon.ico",
   actions: oracleCloudActions,
 };

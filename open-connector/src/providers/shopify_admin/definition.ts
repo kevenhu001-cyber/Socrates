@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.shopify.com",
+  iconUrl: "https://www.shopify.com/favicon.ico",
   actions: shopifyAdminActions,
 };

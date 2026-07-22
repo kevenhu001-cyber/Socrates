@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.gleap.io",
+  iconUrl: "https://www.gleap.io/favicon.ico",
   actions: gleapActions,
 };

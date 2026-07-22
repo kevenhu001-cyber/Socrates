@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.tpscheck.uk",
+  iconUrl: "https://www.tpscheck.uk/favicon.ico",
   actions: tpscheckActions,
 };

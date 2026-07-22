@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://get-energy-performance-data.communities.gov.uk",
+  iconUrl: "https://get-energy-performance-data.communities.gov.uk/favicon.ico",
   actions: energyPerformanceCertificatesActions,
 };

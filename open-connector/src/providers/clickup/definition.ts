@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://clickup.com",
+  iconUrl: "https://clickup.com/favicon.ico",
   actions: clickupActions,
 };

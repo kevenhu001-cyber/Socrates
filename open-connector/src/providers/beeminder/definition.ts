@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.beeminder.com",
+  iconUrl: "https://www.beeminder.com/favicon.ico",
   actions: beeminderActions,
 };

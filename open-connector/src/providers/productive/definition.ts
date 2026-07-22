@@ -28,5 +28,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://productive.io",
+  iconUrl: "https://productive.io/favicon.ico",
   actions: productiveActions,
 };

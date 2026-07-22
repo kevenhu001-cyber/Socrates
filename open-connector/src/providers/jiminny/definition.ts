@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://jiminny.com",
+  iconUrl: "https://jiminny.com/favicon.ico",
   actions: jiminnyActions,
 };

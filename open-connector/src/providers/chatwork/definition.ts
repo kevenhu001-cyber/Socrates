@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://go.chatwork.com",
+  iconUrl: "https://go.chatwork.com/favicon.ico",
   actions: chatworkActions,
 };

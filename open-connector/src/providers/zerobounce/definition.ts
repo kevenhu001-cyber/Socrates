@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.zerobounce.net",
+  iconUrl: "https://www.zerobounce.net/favicon.ico",
   actions: zerobounceActions,
 };

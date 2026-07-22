@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://longbridge.com",
+  iconUrl: "https://longbridge.com/favicon.ico",
   actions: longbridgeActions,
 };

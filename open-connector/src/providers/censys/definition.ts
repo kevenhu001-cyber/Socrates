@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://censys.com",
+  iconUrl: "https://censys.com/favicon.ico",
   actions: censysActions,
 };

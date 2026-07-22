@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://cloud.laravel.com",
+  iconUrl: "https://cloud.laravel.com/favicon.ico",
   actions: laravelCloudActions,
 };

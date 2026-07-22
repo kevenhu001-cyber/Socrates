@@ -23,5 +23,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.gigasheet.com",
+  iconUrl: "https://www.gigasheet.com/favicon.ico",
   actions: gigasheetActions,
 };

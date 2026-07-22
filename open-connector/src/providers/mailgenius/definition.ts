@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.mailgenius.com/",
+  iconUrl: "https://www.mailgenius.com/favicon.ico",
   actions: mailgeniusActions,
 };

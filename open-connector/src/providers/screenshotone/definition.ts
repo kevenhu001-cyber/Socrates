@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://screenshotone.com",
+  iconUrl: "https://screenshotone.com/favicon.ico",
   actions: screenshotoneActions,
 };

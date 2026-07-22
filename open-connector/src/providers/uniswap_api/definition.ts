@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://uniswap.org",
+  iconUrl: "https://uniswap.org/favicon.ico",
   actions: uniswapApiActions,
 };

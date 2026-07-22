@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://swagger.io/tools/swaggerhub/",
+  iconUrl: "https://swagger.io/favicon.ico",
   actions: swaggerhubActions,
 };

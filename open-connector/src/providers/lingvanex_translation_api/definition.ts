@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://lingvanex.com/products/translationapi/",
+  iconUrl: "https://lingvanex.com/favicon.ico",
   actions: lingvanexTranslationApiActions,
 };

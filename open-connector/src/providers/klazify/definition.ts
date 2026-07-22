@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.klazify.com",
+  iconUrl: "https://www.klazify.com/favicon.ico",
   actions: klazifyActions,
 };

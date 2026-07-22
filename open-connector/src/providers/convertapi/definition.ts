@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.convertapi.com",
+  iconUrl: "https://www.convertapi.com/favicon.ico",
   actions: convertapiActions,
 };

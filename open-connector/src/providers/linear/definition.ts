@@ -33,5 +33,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://linear.app",
+  iconUrl: "https://linear.app/favicon.ico",
   actions: linearActions,
 };

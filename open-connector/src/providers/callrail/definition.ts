@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.callrail.com",
+  iconUrl: "https://www.callrail.com/favicon.ico",
   actions: callrailActions,
 };

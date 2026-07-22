@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://countdownapi.com/",
+  iconUrl: "https://countdownapi.com/favicon.ico",
   actions: countdownApiActions,
 };

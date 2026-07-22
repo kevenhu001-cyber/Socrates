@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://catsone.com/",
+  iconUrl: "https://catsone.com/favicon.ico",
   actions: catsActions,
 };

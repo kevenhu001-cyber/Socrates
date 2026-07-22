@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.northbeam.io",
+  iconUrl: "https://www.northbeam.io/favicon.ico",
   actions: northbeamActions,
 };

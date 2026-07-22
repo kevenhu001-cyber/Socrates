@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mediastack.com",
+  iconUrl: "https://mediastack.com/favicon.ico",
   actions: mediastackActions,
 };

@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.vestaboard.com",
+  iconUrl: "https://www.vestaboard.com/favicon.ico",
   actions: vestaboardActions,
 };

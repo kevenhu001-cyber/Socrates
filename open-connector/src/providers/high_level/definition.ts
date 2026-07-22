@@ -30,5 +30,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.gohighlevel.com",
+  iconUrl: "https://www.gohighlevel.com/favicon.ico",
   actions: highLevelActions,
 };

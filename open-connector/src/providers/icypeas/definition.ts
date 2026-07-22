@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.icypeas.com",
+  iconUrl: "https://www.icypeas.com/favicon.ico",
   actions: icypeasActions,
 };

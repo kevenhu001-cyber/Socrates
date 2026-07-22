@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://tldv.io",
+  iconUrl: "https://tldv.io/favicon.ico",
   actions: tldvActions,
 };

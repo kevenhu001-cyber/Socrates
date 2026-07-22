@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.screenshot.fyi",
+  iconUrl: "https://www.screenshot.fyi/favicon.ico",
   actions: screenshotFyiActions,
 };

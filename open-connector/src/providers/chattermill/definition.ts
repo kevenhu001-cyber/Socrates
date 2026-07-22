@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://chattermill.com",
+  iconUrl: "https://chattermill.com/favicon.ico",
   actions: chattermillActions,
 };

@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://kie.ai",
+  iconUrl: "https://kie.ai/favicon.ico",
   actions: kieAiActions,
 };

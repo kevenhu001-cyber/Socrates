@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.giftup.com/",
+  iconUrl: "https://www.giftup.com/favicon.ico",
   actions: giftUpActions,
 };

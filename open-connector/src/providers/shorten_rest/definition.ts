@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://shorten.rest",
+  iconUrl: "https://shorten.rest/favicon.ico",
   actions: shortenRestActions,
 };

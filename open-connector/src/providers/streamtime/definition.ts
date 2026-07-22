@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.streamtime.net",
+  iconUrl: "https://www.streamtime.net/favicon.ico",
   actions: streamtimeActions,
 };

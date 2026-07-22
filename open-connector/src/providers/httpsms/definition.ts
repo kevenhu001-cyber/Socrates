@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://httpsms.com/",
+  iconUrl: "https://httpsms.com/favicon.ico",
   actions: httpsmsActions,
 };

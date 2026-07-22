@@ -33,5 +33,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.files.com",
+  iconUrl: "https://www.files.com/favicon.ico",
   actions: filesComActions,
 };

@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.smartlead.ai",
+  iconUrl: "https://www.smartlead.ai/favicon.ico",
   actions: smartleadAiActions,
 };

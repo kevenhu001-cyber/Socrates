@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.zyte.com/zyte-api/",
+  iconUrl: "https://www.zyte.com/favicon.ico",
   actions: zyteApiActions,
 };

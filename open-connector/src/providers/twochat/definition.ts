@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://2chat.co",
+  iconUrl: "https://2chat.co/favicon.ico",
   actions: twochatActions,
 };

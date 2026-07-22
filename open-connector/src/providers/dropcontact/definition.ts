@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.dropcontact.com/",
+  iconUrl: "https://www.dropcontact.com/favicon.ico",
   actions: dropcontactActions,
 };

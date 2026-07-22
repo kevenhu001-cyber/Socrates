@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://formbricks.com",
+  iconUrl: "https://formbricks.com/favicon.ico",
   actions: formbricksActions,
 };

@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ably.com",
+  iconUrl: "https://ably.com/favicon.ico",
   actions: ablyControlActions,
 };

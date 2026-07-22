@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ln.ht",
+  iconUrl: "https://ln.ht/favicon.ico",
   actions: linkhutActions,
 };

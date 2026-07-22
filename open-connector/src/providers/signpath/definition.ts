@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://signpath.io/",
+  iconUrl: "https://signpath.io/favicon.ico",
   actions: signpathActions,
 };

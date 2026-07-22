@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://rawg.io",
+  iconUrl: "https://rawg.io/favicon.ico",
   actions: rawgActions,
 };

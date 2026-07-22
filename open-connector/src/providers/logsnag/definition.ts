@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://logsnag.com",
+  iconUrl: "https://logsnag.com/favicon.ico",
   actions: logsnagActions,
 };

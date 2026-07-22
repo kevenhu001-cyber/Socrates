@@ -59,5 +59,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://mixpanel.com",
+  iconUrl: "https://mixpanel.com/favicon.ico",
   actions: mixpanelActions,
 };

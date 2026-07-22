@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.teltel.io",
+  iconUrl: "https://www.teltel.io/favicon.ico",
   actions: teltelActions,
 };

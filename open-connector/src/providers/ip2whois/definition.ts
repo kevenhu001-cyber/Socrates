@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.ip2location.io/ip2whois-documentation",
+  iconUrl: "https://www.ip2location.io/favicon.ico",
   actions: ip2whoisActions,
 };

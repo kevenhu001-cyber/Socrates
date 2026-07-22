@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.similarweb.com",
+  iconUrl: "https://www.similarweb.com/favicon.ico",
   actions: similarwebDigitalRankApiActions,
 };

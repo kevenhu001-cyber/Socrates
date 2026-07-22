@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://faraday.ai",
+  iconUrl: "https://faraday.ai/favicon.ico",
   actions: faradayActions,
 };

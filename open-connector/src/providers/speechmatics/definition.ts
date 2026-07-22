@@ -33,5 +33,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.speechmatics.com/",
+  iconUrl: "https://www.speechmatics.com/favicon.ico",
   actions: speechmaticsActions,
 };

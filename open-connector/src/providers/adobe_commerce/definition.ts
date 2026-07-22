@@ -41,5 +41,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://business.adobe.com/products/magento/magento-commerce.html",
+  iconUrl: "https://business.adobe.com/favicon.ico",
   actions: adobeCommerceActions,
 };

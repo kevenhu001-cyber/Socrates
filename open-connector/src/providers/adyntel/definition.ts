@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.adyntel.com",
+  iconUrl: "https://www.adyntel.com/favicon.ico",
   actions: adyntelActions,
 };

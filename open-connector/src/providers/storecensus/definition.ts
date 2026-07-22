@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.storecensus.com",
+  iconUrl: "https://www.storecensus.com/favicon.ico",
   actions: storecensusActions,
 };

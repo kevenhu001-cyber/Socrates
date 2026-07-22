@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://squareup.com",
+  iconUrl: "https://squareup.com/favicon.ico",
   actions: squareActions,
 };

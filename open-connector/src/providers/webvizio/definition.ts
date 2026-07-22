@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://webvizio.com",
+  iconUrl: "https://webvizio.com/favicon.ico",
   actions: webvizioActions,
 };

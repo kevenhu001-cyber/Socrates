@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://agentmail.to",
+  iconUrl: "https://agentmail.to/favicon.ico",
   actions: agentMailActions,
 };

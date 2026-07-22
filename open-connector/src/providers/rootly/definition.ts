@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://rootly.com",
+  iconUrl: "https://rootly.com/favicon.ico",
   actions: rootlyActions,
 };

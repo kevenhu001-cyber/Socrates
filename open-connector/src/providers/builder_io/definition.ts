@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.builder.io",
+  iconUrl: "https://www.builder.io/favicon.ico",
   actions: builderIoActions,
 };

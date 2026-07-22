@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.benchmarkemail.com",
+  iconUrl: "https://www.benchmarkemail.com/favicon.ico",
   actions: benchmarkEmailActions,
 };

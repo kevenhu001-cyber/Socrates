@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://chartmogul.com/",
+  iconUrl: "https://chartmogul.com/favicon.ico",
   actions: chartmogulActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://deepgram.com/",
+  iconUrl: "https://deepgram.com/favicon.ico",
   actions: deepgramActions,
 };

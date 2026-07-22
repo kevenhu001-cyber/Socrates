@@ -17,5 +17,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.plain.com",
+  iconUrl: "https://www.plain.com/favicon.ico",
   actions: plainActions,
 };

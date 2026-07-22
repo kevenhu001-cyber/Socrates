@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.taxjar.com/",
+  iconUrl: "https://www.taxjar.com/favicon.ico",
   actions: taxjarActions,
 };

@@ -19,5 +19,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://ntfy.sh",
+  iconUrl: "https://ntfy.sh/favicon.ico",
   actions: ntfyActions,
 };

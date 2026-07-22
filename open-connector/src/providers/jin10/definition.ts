@@ -22,5 +22,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.jin10.com",
+  iconUrl: "https://www.jin10.com/favicon.ico",
   actions: jin10Actions,
 };

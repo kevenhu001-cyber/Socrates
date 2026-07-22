@@ -34,5 +34,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.thelessonspace.com",
+  iconUrl: "https://www.thelessonspace.com/favicon.ico",
   actions: lessonspaceActions,
 };

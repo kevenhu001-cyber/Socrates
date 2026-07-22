@@ -29,5 +29,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.svix.com",
+  iconUrl: "https://www.svix.com/favicon.ico",
   actions: svixActions,
 };

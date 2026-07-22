@@ -32,5 +32,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.scopus.com/",
+  iconUrl: "https://www.scopus.com/favicon.ico",
   actions: scopusActions,
 };

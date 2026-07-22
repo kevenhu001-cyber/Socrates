@@ -31,5 +31,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://recruitee.com",
+  iconUrl: "https://recruitee.com/favicon.ico",
   actions: recruiteeActions,
 };

@@ -28,5 +28,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://monday.com",
+  iconUrl: "https://cdn.monday.com/images/logos/monday_logo_icon.png",
   actions: mondayActions,
 };

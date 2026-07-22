@@ -18,5 +18,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://refiner.io",
+  iconUrl: "https://refiner.io/favicon.ico",
   actions: refinerActions,
 };

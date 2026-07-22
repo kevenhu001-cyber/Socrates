@@ -20,5 +20,6 @@ export const provider: ProviderDefinition = {
     },
   ],
   homepageUrl: "https://www.virustotal.com",
+  iconUrl: "https://www.virustotal.com/favicon.ico",
   actions: virustotalActions,
 };
