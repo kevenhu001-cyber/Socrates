@@ -8106,6 +8106,11 @@ var MAX_TOKENS_CHAT=undefined;  /* omit entirely; backend passes through */
 /* Bridge to window so other modules (e.g. exam.js) consume the same
    system-configured token policy instead of hardcoding their own cap. */
 window.MAX_TOKENS_CHAT=MAX_TOKENS_CHAT;
+/* Incognito ("无痕对话") flag — explicitly false until the mobile
+   top-bar button flips it on. Initializing here keeps saveCurrentSession()
+   and syncIncognitoBtn() reading a deterministic false instead of
+   relying on `undefined` coercing to falsy. */
+window.incognitoOn=false;
 /* ============================================================
    API OVERRIDES — try API first (streaming when possible), fall back to mock.
    Each generator has TWO variants:
