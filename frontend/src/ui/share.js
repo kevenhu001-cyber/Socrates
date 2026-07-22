@@ -357,8 +357,12 @@ async function loadSharedExamSession(session, token) {
   });
   var examView = document.getElementById("examView");
   if (examView) examView.classList.remove("hidden");
+  var sharedExamTitle = (exam.submitted ? "Exam Results: " : "") + (exam.topic || session.topic || "");
   var titleEl = document.getElementById("examViewTitle");
-  if (titleEl) titleEl.textContent = (exam.submitted ? "Exam Results: " : "") + (exam.topic || session.topic || "");
+  if (titleEl) titleEl.textContent = sharedExamTitle;
+  var titleBar = document.getElementById("examTitleBar");
+  if (titleBar) { titleBar.textContent = sharedExamTitle; titleBar.classList.remove("hidden"); }
+  document.body.classList.add("exam-active");
   var body = document.getElementById("examViewBody");
   if (body) {
     body.innerHTML = '<div id="examQuestionsContainer"></div>';

@@ -1702,14 +1702,8 @@ async function loadSession(id){
         });
         body.appendChild(strip);
       }
-      /* P_reasoning-persist — render the thinking pill if the loaded
-         message has saved reasoning_content and thinking is on. */
-      if(m.role==="assistant" && m.reasoning_content && window.thinkingOn){
-        var tp=appendThinking(m.reasoning_content||"");
-        if(tp&&typeof tp.finalize==="function"){
-          try{setTimeout(function(){tp.finalize()},0)}catch(_){}
-        }
-      }
+      /* Saved reasoning is retained for provider continuity, but is never
+         rendered into historical chat messages. */
       div.appendChild(body);
       /* P_tool-history-restore — on page refresh, restore ONLY the
          user-visible output of each past tool call. We deliberately
@@ -4822,7 +4816,7 @@ function restoreMessageBody(entry,body){
        scaffold widgets) applies to every message — not the frozen
        html from when it was first saved. */
     var raw = entry.rawText;
-    if(entry.role === "assistant" && /<(quiz|example|practice|definition|step|flashcard)\b/i.test(raw)){
+    if(entry.role === "assistant"){
       try { body.innerHTML = renderAssistantHTML(raw); try{processPendingMermaid()}catch(_){} try{processPendingViz()}catch(_){} try{processPendingVizActions()}catch(_){} return; } catch(_) {}
     }
     body.innerHTML = formatMsg(raw);
@@ -5346,31 +5340,6 @@ function addStreamingMessage(opts){
        real reasoning_content arrives. Remove it here so the user
        sees only the thinking pill ("正在思考"), not both. */
     try{placeholder.remove()}catch(_){}
-    if(!window.thinkingOn){
-      /* P_thinking-off-indicator — even when "Show AI thinking" is
-         off, show a minimal "正在思考…" badge so the user knows the
-         AI is reasoning. When thinking finishes it switches to
-         "思考过程" (static, no spinner). */
-      var _dot=document.createElement("span");
-      _dot.className="thinking-dot thinking-off-indicator";
-      _dot.style.cssText="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;margin:2px 0;border-radius:6px;background:hsl(var(--bg-200)/0.3);font-size:calc(12px * var(--app-font-scale,1));color:hsl(var(--text-400))";
-      _dot.innerHTML='<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>'+esc(t("think.thinking"));
-      body.appendChild(_dot);
-      thinkCtl={
-        append:function(){},
-        finalize:function(){
-          try{
-            _dot.innerHTML=esc(t("think.title"));
-            _dot.style.background="transparent";
-            _dot.style.padding="2px 10px";
-          }catch(_){}
-        },
-        remove:function(){
-          try{if(_dot.parentNode)_dot.parentNode.removeChild(_dot)}catch(_){}
-        }
-      };
-      return thinkCtl;
-    }
     thinkCtl=appendThinking("");
     /* If appendThinking returned null (DOM not ready), fall back to no-op. */
     if(!thinkCtl)thinkCtl={append:function(){},finalize:function(){},remove:function(){}};
@@ -5677,7 +5646,19 @@ function teardownThinkStructure(){
      * text node) operates on the cleaned version. The raw `full`
      * is still kept in state.messages[msgIdx].rawText for save /
      * history so a later formatMsg can re-process it. */
-    var displayFull=stripChatArtifacts(full);
+    var rawDisplayFull=stripChatArtifacts(full);
+    var inlineThinkStart=rawDisplayFull.indexOf("<think>");
+    var inlineThinkEnd=inlineThinkStart===-1?-1:rawDisplayFull.indexOf("</think>",inlineThinkStart);
+    if(inlineThinkStart!==-1){
+      /* Some providers emit reasoning inside <think> instead of the
+         reasoning_content field. Keep the same temporary status while
+         preventing the internal block from reaching the renderer. */
+      try{ensureThinkCtl()}catch(_){}
+      if(inlineThinkEnd!==-1){try{ensureThinkCtl().finalize()}catch(_){}}
+    }
+    var displayFull=inlineThinkStart===-1
+      ?rawDisplayFull
+      :rawDisplayFull.slice(0,inlineThinkStart)+(inlineThinkEnd===-1?"":rawDisplayFull.slice(inlineThinkEnd+"</think>".length));
 
     /* P-H4 — nothing new since the last render; skip the whole parse. */
     if(displayFull.length===_lastParsedLen)return;
@@ -5730,6 +5711,7 @@ function teardownThinkStructure(){
            text — the tool cards were added during SSE parsing and
            must not be wiped). */
         var savedPill=body.querySelector('.think-block');
+        var savedThinkingStatus=body.querySelector('.thinking-status');
         var savedToolContainer=body.querySelector('.think-tools');
         var savedToolCardArr=[];
         /* P_inline-artifact-survival — inline artifacts (matplotlib PNGs,
@@ -5762,6 +5744,9 @@ function teardownThinkStructure(){
             }
           }
         }
+        if(savedThinkingStatus&&savedThinkingStatus.parentNode){
+          savedThinkingStatus.parentNode.removeChild(savedThinkingStatus);
+        }
         try{placeholder.remove()}catch(_){}
         body.innerHTML="";
         streamContent=document.createElement("div");
@@ -5779,6 +5764,7 @@ function teardownThinkStructure(){
         /* Keep the cursor outside the frequently replaced live tail. */
         streamContent.appendChild(cursor);
         if(savedPill)body.insertBefore(savedPill,body.firstChild);
+        if(savedThinkingStatus)body.insertBefore(savedThinkingStatus,body.firstChild);
         for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
           body.appendChild(savedToolCardArr[sci2]);
         }
@@ -6174,10 +6160,13 @@ function teardownThinkStructure(){
            Without this, no scaffold widgets ever rendered in live mode. */
         var finalHtml;
         try{
-          finalHtml=renderAssistantHTML(full);
+          var visibleFinal=stripChatArtifacts(full)
+            .replace(/<think>[\s\S]*?<\/think>/gi,"")
+            .replace(/<think>[\s\S]*$/gi,"");
+          finalHtml=renderAssistantHTML(visibleFinal);
         }catch(e){
           console.log("[finish] render error");
-          finalHtml="<p>"+esc(full)+"</p>";
+          finalHtml="<p>"+esc(stripChatArtifacts(full).replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,""))+"</p>";
         }
         /* P_stop-spinner — finalize the thinking pill BEFORE saving
            it so the spinner stops spinning once the response is
@@ -6236,7 +6225,7 @@ function teardownThinkStructure(){
         }
       }catch(e){
         console.log("[finish] formatMsg error");
-        var fb="<p>"+esc(full)+"</p>";
+        var fb="<p>"+esc(stripChatArtifacts(full).replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,""))+"</p>";
         var savedPill2=body.querySelector('.think-block');
         var savedToolGroup2=body.querySelector('.tool-run-group');
         var savedTC2=body.querySelectorAll('.agent-tool-card');
@@ -6470,7 +6459,11 @@ function teardownThinkStructure(){
    destroy our placeholders. Empty <div> blocks are passed through by
    marked unchanged. */
 function renderAssistantHTML(rawText){
-  var text=rawText||"";
+  /* Never render provider scratch work, including historical messages that
+     were saved before this policy changed. */
+  var text=String(rawText||"")
+    .replace(/<think>[\s\S]*?<\/think>/gi,"")
+    .replace(/<think>[\s\S]*$/gi,"");
   /* Chat mode: strip the citation apparatus so the Source Card (added
      at finish()) is the SOLE source view. Two passes:
 
@@ -8083,10 +8076,7 @@ function beagleSuffix(){
    prose / chain-of-thought" phrasing the model tends to echo. The
    appendThinking() front-end filter is a second line of defense. */
 function thinkingSuffix(){
-  if(window.thinkingOn){
-    return "\n\nYou MAY include a brief <think>…</think> block at the start of each reply showing your step-by-step reasoning. The block will be rendered as a collapsible section for the user.";
-  }
-  return "\n\nKeep your reply focused on the final answer. Avoid exposing step-by-step scratch work to the reader.";
+  return "\n\nKeep your reply focused on the final answer. Do not expose scratch work, chain-of-thought, or <think> blocks to the reader.";
 }
 
 function buildSocraticPrompt(topic,level,context){
