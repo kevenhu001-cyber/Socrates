@@ -34,7 +34,11 @@ function renderProviderItemsHTML(providers, activeId){
   });
   sorted.forEach(function(p){
     var isActive = p && p.id === activeId;
-    var name = esc(p.label || p.model || "Model");
+    /* The backend assigns "Default" when a user leaves the optional
+       provider label blank.  In a picker that is not a useful model name;
+       prefer the configured model id in that case. */
+    var displayName = (p.label && p.label !== "Default") ? p.label : (p.model || p.label || "Model");
+    var name = esc(displayName);
     var sub = p.isBuiltIn ? "" : esc(p.model || "");
     var url = esc(p.url || "");
     var subLine = sub && sub !== name ? sub : (p.isBuiltIn ? "" : url);
@@ -111,7 +115,7 @@ function syncModelPills(){
     }
   }
   if(active){
-    label.textContent=(active.label||active.model||"Model");
+    label.textContent=(active.label && active.label!=="Default") ? active.label : (active.model||active.label||"Model");
     label.title=active.isBuiltIn?"":((active.url||"")+" · "+(active.model||""));
     trigger.classList.add("has-model");
   }else{
@@ -170,7 +174,7 @@ function _syncChatModelInternal(){
   if(!label)return;
   var trigger=document.getElementById("chatModel");
   var p=getActiveProvider();
-  label.textContent=p?(p.label||p.model||"Model"):"Model";
+  label.textContent=p?((p.label&&p.label!=="Default")?p.label:(p.model||p.label||"Model")):"Model";
   label.title=p&&!p.isBuiltIn?(p.model||""):"";
   if(trigger){
     if(p)trigger.classList.add("has-model");

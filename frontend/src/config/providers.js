@@ -175,7 +175,25 @@ async function refreshApiConfig() {
   }
   try {
     var r = await window.apiFetch("/api/api-key");
-    var rows = Array.isArray(r && r.providers) ? r.providers : [];
+    /* The API deliberately never returns plaintext keys.  Normalise its
+       safe wire shape once at the boundary so the rest of the UI can keep
+       using the established provider contract (`vision`, masked `key`).
+       Previously `isMultimodal` / `hasKey` were left untranslated, which
+       made saved models look unconfigured and silently lost their vision
+       capability after every refresh. */
+    var rows = Array.isArray(r && r.providers) ? r.providers.map(function (p) {
+      p = p || {};
+      var label = String(p.label || "").trim();
+      var model = String(p.model || "").trim();
+      return Object.assign({}, p, {
+        label: label,
+        model: model,
+        /* A non-secret sentinel lets settings render the masked-key state
+           without ever putting a credential back in browser memory. */
+        key: p.hasKey === true ? "__configured__" : "",
+        vision: p.vision === true || p.isMultimodal === true,
+      });
+    }) : [];
     var serverBeagleModel = null;
     var serverBeagleRow = rows.find(function (p) { return p.id === BEAGLE_BUILT_IN.id; });
     if (serverBeagleRow) serverBeagleModel = serverBeagleRow.model;
@@ -205,7 +223,11 @@ async function refreshApiConfig() {
     /* Priority 4: first user provider. */
     if (!activeId && rows.length > 0) { activeId = rows[0].id; }
     apiConfig.activeId = activeId;
-    apiConfig.providers = [BEAGLE_BUILT_IN].concat(rows);
+    /* Do not expose Beagle as a selectable fallback when the server has no
+       configured built-in key.  The old unconditional insertion made the
+       picker show a plausible-but-unusable model and could replace a saved
+       selection with it on cold start. */
+    apiConfig.providers = (window.SERVER_HAS_BEAGLE_KEY ? [BEAGLE_BUILT_IN] : []).concat(rows);
     try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (_) {}
     try { window.syncModelPills(); } catch (_) {}
     try { window.renderProviderList(); } catch (_) {}

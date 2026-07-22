@@ -702,12 +702,12 @@ html[data-show-grid="false"] .main-bg{background-image:none}
    (140px) so the input bar has its own breathing room without
    affecting other views. The .main-inner itself doesn't need
    extra bottom padding. */
-.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:8vh;flex:1;min-height:0;overflow-y:auto}
-.topic-title{font-family:var(--font-display);font-size:calc(clamp(1.75rem,1.25rem + 1.8vw,2.4rem) * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-200));text-align:center;line-height:1.4}
+.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;padding-top:clamp(56px,12vh,136px);flex:1;min-height:0;overflow-y:auto}
+.topic-title{font-family:var(--font-display);font-size:calc(clamp(1.8rem,1.32rem + 1.9vw,2.5rem) * var(--app-font-scale, 1));font-weight:560;color:hsl(var(--text-200));text-align:center;line-height:1.28}
 .topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:640px;white-space:nowrap}
-.topic-input-wrap{width:100%;max-width:720px;background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.2);border-radius:24px;overflow:hidden;box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/4%);transition:box-shadow .2s,border-color .2s}
+.topic-input-wrap{width:100%;max-width:720px;background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:26px;overflow:hidden;box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);transition:box-shadow .2s,border-color .2s}
 .topic-input-wrap:focus-within{box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/8%);border-color:hsl(var(--accent-000)/0.35)}
-#topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(15.5px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-100));min-height:88px;max-height:320px;overflow-y:auto;font-family:var(--font-sans);padding:14px 20px}
+#topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(16px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-100));min-height:76px;max-height:320px;overflow-y:auto;font-family:var(--font-sans);padding:16px 20px 12px}
 #topicInput::placeholder{color:hsl(var(--text-400))}
 .topic-footer{display:flex;align-items:center;padding:0 20px 16px}
 .footer-left-group{display:flex;align-items:center;gap:4px;margin-right:auto}
