@@ -14,7 +14,7 @@
     "db:seed": "tsx src/db/seed.js",
     "lint": "npm run typecheck",
     "test": "node scripts/run-tests.mjs",
-    "test:strict": "node scripts/run-tests.mjs"
+    "test:strict": "node scripts/run-tests.mjs --strict"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
@@ -56,7 +56,7 @@
     "typescript": "~5.8.3"
   },
   "engines": {
-    "node": ">=20"
+    "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
   },
   "allowScripts": {
     "bcrypt@5.1.1": true

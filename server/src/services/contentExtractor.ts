@@ -142,11 +142,12 @@ class WorkerSlot {
     // hung because slot 0's release() never reset busy=true.)
     this.busy = false;
   }
-  terminate() {
+  terminate(): Promise<number> | null {
     this.terminated = true;
     this.busy = false;
+    let termination: Promise<number> | null = null;
     if (this.worker) {
-      try { this.worker.terminate(); } catch {}
+      try { termination = this.worker.terminate(); } catch {}
     }
     if (this._inflightReject) {
       const r = this._inflightReject;
@@ -158,6 +159,7 @@ class WorkerSlot {
       this._nextRelease = null;
       r();
     }
+    return termination;
   }
 }
 
@@ -194,6 +196,16 @@ class ExtractorPool {
         slot.spawn();
       }
     }
+  }
+  async terminate() {
+    await Promise.all(this.slots.map(async (slot) => {
+      const termination = slot.terminate();
+      if (termination) {
+        try {
+          await termination;
+        } catch {}
+      }
+    }));
   }
 }
 
@@ -266,6 +278,19 @@ export async function extractArticle(html: string, url: string): Promise<Extract
     return await runOne(html, url);
   } catch {
     return null;
+  }
+}
+
+/**
+ * Stops the lazily-created worker pool. Production keeps the pool alive for
+ * process lifetime; tests and graceful shutdown paths can call this to prove
+ * that no worker handles are leaked.
+ */
+export async function stopContentExtractorPool(): Promise<void> {
+  const activePool = pool;
+  pool = null;
+  if (activePool) {
+    await activePool.terminate();
   }
 }
 

@@ -81,6 +81,12 @@ The migration is **not complete**.
       intentionally preserved as the only `.js` file (it imports the compiled
       runtime and stays outside the TS include set); delete it once the systemd
       unit is repointed at `dist/index.runtime.js`.)
+- [x] Harden the production gate: builds perform full strict checking,
+      deployment installs exact lockfile dependencies, emits into an isolated
+      candidate directory, keeps the previous compiled tree, and automatically
+      restores it when restart or post-deploy health checks fail.
+- [x] Restore strict test semantics by closing the content-extractor worker
+      pool explicitly and running `test:strict` without Node force-exit.
 
 ## Required gates
 
@@ -95,7 +101,7 @@ npx playwright test e2e/react-compat.spec.mjs --config=playwright.config.mjs
 cd ../server
 npm run typecheck
 npm run build
-npm test
+npm run test:strict
 ```
 
 Existing baseline failures must be recorded separately and must not be hidden

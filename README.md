@@ -6,7 +6,7 @@
 
 [![Repo visibility](https://img.shields.io/badge/visibility-private-7a6c4d?style=flat-square)](#-repository-visibility)
 [![App status](https://img.shields.io/badge/app-online-d8a85b?style=flat-square)](https://app.topodrive.top/)
-[![Backend](https://img.shields.io/badge/backend-Node.js%2022%20%2B%20ESM-3c873a?style=flat-square&logo=node.js&logoColor=white)](server/)
+[![Backend](https://img.shields.io/badge/backend-TypeScript%20%2B%20Node.js-3178c6?style=flat-square&logo=typescript&logoColor=white)](server/)
 [![Frontend](https://img.shields.io/badge/frontend-Vite%20SPA-f3c769?style=flat-square&logo=vite&logoColor=black)](frontend/)
 [![Android](https://img.shields.io/badge/android-Kotlin%20%2B%20Compose-3DDC84?style=flat-square&logo=android&logoColor=white)](android/)
 [![Database](https://img.shields.io/badge/database-PostgreSQL%2014%2B-4169e1?style=flat-square&logo=postgresql&logoColor=white)](server/src/db/)
@@ -277,18 +277,18 @@ sequenceDiagram
 
 | Layer | Technology | Notes |
 | --- | --- | --- |
-| Web SPA | Vanilla JS, Vite build | [`frontend/`](frontend/) — modular JS, tree-shaken via Vite |
+| Web SPA | Vanilla JS + opt-in React compatibility slice, Vite build | [`frontend/`](frontend/) — incremental React/TypeScript migration |
 | Markdown | `marked` 4.3 + custom progressive renderer | see [Custom rendering pipeline](#-custom-rendering-pipeline) |
 | Math | `katex` 0.16.9 (CDN, SRI-pinned) | display + inline modes |
 | Code highlight | `highlight.js` (loaded lazily at finish time) | |
 | Search | `fuse.js` for the Cmd-K palette | |
-| Auth | Cookie (`sid`) + CSRF double-submit | see [`server/src/middleware/auth.js`](server/src/middleware/auth.js) and [`server/src/middleware/csrf.js`](server/src/middleware/csrf.js) |
-| Backend | Node.js 22+, Express 5, ESM | [`server/src/`](server/src/) |
+| Auth | Cookie (`sid`) + CSRF double-submit | see [`server/src/middleware/auth.ts`](server/src/middleware/auth.ts) and [`server/src/middleware/csrf.ts`](server/src/middleware/csrf.ts) |
+| Backend | TypeScript, Express 5, Node.js ESM | [`server/src/`](server/src/) |
 | ORM | Drizzle ORM 0.40+ + `drizzle-kit` migrations | [`server/src/db/`](server/src/db/) |
 | Database | PostgreSQL 14+ | `DATABASE_URL` env var |
-| LLM proxy | `fetch` to any OpenAI-compatible endpoint | [`server/src/services/llm.js`](server/src/services/llm.js) |
+| LLM proxy | `fetch` to any OpenAI-compatible endpoint | [`server/src/services/llm.ts`](server/src/services/llm.ts) |
 | Document parsing | mammoth, SheetJS, jszip+xml2js, EPub, rtf2text | [`server/src/services/fileParsers/`](server/src/services/fileParsers/) |
-| Web search | MiniMax + Bing (parallel race), SearXNG fallback | [`server/src/services/webSearch.js`](server/src/services/webSearch.js) |
+| Web search | MiniMax + Bing (parallel race), SearXNG fallback | [`server/src/services/webSearch.ts`](server/src/services/webSearch.ts) |
 | Image processing | `sharp` for upload thumbnails | |
 | Email | `nodemailer` (SMTP) for verification, magic-link reset | |
 | File upload | `multer` | |
@@ -318,12 +318,13 @@ Socrates/
 │   ├── index.html
 │   ├── base.css
 │   └── zh/                 # Chinese translations
-├── server/                 # Node 22+ / Express 5 / Drizzle / PostgreSQL
+├── server/                 # TypeScript / Express 5 / Drizzle / PostgreSQL
 │   ├── package.json
 │   ├── drizzle/            # Migrations
 │   └── src/
-│       ├── index.js        # Entry point
-│       ├── app.js          # Express app, middleware wiring
+│       ├── index.js        # Stable production compatibility shim
+│       ├── index.runtime.ts # Runtime entry point
+│       ├── app.ts          # Express app, middleware wiring
 │       ├── db/             # Drizzle schema, migrations, client
 │       ├── lib/            # errors, crypto helpers
 │       ├── middleware/     # auth, csrf, error
@@ -380,6 +381,7 @@ npm run db:migrate
 npm run dev
 
 # Or production
+npm run build
 npm start
 ```
 
