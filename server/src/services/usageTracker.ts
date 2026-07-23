@@ -28,22 +28,26 @@ import { usageEvents } from '../db/schema.js';
  * the heatmap only needs magnitude, not exactness. */
 export const IMAGE_TOKEN_ESTIMATE = 765;
 
-export function estimateTokens(text) {
+export function estimateTokens(text: unknown): number {
   if (!text) return 0;
   return Math.max(1, Math.round(String(text).length / 4));
 }
 
-export function estimateMessageTokens(messages) {
+export function estimateMessageTokens(messages: unknown): number {
   if (!Array.isArray(messages)) return 0;
   let total = 0;
-  for (const m of messages) {
-    const c = m && m.content;
+  for (const message of messages) {
+    const c = message && typeof message === 'object'
+      ? (message as { content?: unknown }).content
+      : undefined;
     if (typeof c === 'string') total += estimateTokens(c);
     else if (Array.isArray(c)) {
       for (const part of c) {
-        if (part && typeof part.text === 'string') {
-          total += estimateTokens(part.text);
-        } else if (part && part.type === 'image_url') {
+        if (!part || typeof part !== 'object') continue;
+        const typedPart = part as { text?: unknown; type?: unknown };
+        if (typeof typedPart.text === 'string') {
+          total += estimateTokens(typedPart.text);
+        } else if (typedPart.type === 'image_url') {
           /* P_attachments — count each image_url part as ~765
            * tokens so the heatmap accurately reflects the cost of
            * multimodal messages. If the upstream degraded the
@@ -60,10 +64,30 @@ export function estimateMessageTokens(messages) {
   return total + messages.length * 4;
 }
 
+interface RecordUsageInput {
+  userId?: string | null;
+  model?: string | null;
+  sessionId?: string | null;
+  promptTokens?: number | null;
+  completionTokens?: number | null;
+  source?: string;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 /* Persist a usage event. Safe to call fire-and-forget — errors are
    logged but never thrown so a usage-tracking bug never breaks the
    chat stream itself. */
-export function recordUsage({ userId, model, sessionId, promptTokens, completionTokens, source = 'chat' }) {
+export function recordUsage({
+  userId,
+  model,
+  sessionId,
+  promptTokens,
+  completionTokens,
+  source = 'chat',
+}: RecordUsageInput): void {
   if (!userId) return;
   const total = (promptTokens || 0) + (completionTokens || 0);
   if (total <= 0) return;
@@ -79,10 +103,10 @@ export function recordUsage({ userId, model, sessionId, promptTokens, completion
       completionTokens: completionTokens || 0,
       totalTokens: total,
       source,
-    }).catch((err) => {
-      console.warn('[usage] record failed:', err.message);
+    }).catch((err: unknown) => {
+      console.warn('[usage] record failed:', errorMessage(err));
     });
   } catch (err) {
-    console.warn('[usage] record failed:', err.message);
+    console.warn('[usage] record failed:', errorMessage(err));
   }
 }

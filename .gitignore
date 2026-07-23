@@ -6,6 +6,7 @@ node_modules/
 server/secrets/
 *.pem
 server.log
+server/dist/
 
 # ── Android / Gradle ──
 android/.gradle/
@@ -40,6 +41,9 @@ codegraph.db
 openai-codex-*.tgz
 .vite/
 server.log.bak.*
+
+# ── Kilo Code (local IDE extension) ──
+.kilo/
 
 # ── Deploy state (written by deploy.sh on successful deploys) ──
 .deploy-state.json

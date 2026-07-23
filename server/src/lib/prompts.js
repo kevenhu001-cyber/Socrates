@@ -4,6 +4,11 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+/* `src/lib` and compiled `dist/lib` have the same depth below server/.
+   Resolve through the stable server root so prompt loading works in both
+   development and the compiled production runtime. */
+const SERVER_ROOT = path.resolve(__dirname, '../..');
+const REPO_ROOT = path.dirname(SERVER_ROOT);
 
 /* ─────────────────────────────────────────────────────────────────
    PROMPT LOADERS
@@ -17,8 +22,8 @@ const __dirname = path.dirname(__filename);
    event loop on disk I/O even at cold-start when the cache is empty.
    ───────────────────────────────────────────────────────────────── */
 
-const BEAGLE_PROMPT_PATH = path.resolve(__dirname, '../../../prompts/beagle.md');
-const TEACHER_MODE_PROMPT_PATH = path.resolve(__dirname, '../../../prompts/teacher-mode.md');
+const BEAGLE_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/beagle.md');
+const TEACHER_MODE_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/teacher-mode.md');
 /* P_code-interpreter-prompt — the routing/when-NOT-to-call guidance
  * for code_interpreter. The tool's own `description` field already
  * covers the runnable-Python rules (no top-level await, etc.) — the
@@ -27,7 +32,7 @@ const TEACHER_MODE_PROMPT_PATH = path.resolve(__dirname, '../../../prompts/teach
  * a hand-written ```viz block. The file is intended to be
  * hot-reloaded; the loader reads mtime on every call and re-caches
  * when it changes. */
-const CODE_INTERPRETER_PROMPT_PATH = path.resolve(__dirname, '../../../prompts/code-interpreter.md');
+const CODE_INTERPRETER_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/code-interpreter.md');
 
 /* Per-file mtime-keyed cache. Key = absolute path, value = { mtime, content }. */
 const cache = new Map();

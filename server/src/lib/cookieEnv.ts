@@ -27,13 +27,19 @@ const SHARED_DOMAIN_HOSTS = new Set([
 /** The shared cookie domain. Exported for tests + clearCookie symmetry. */
 export const SHARED_COOKIE_DOMAIN = '.topodrive.top';
 
+interface HostRequest {
+  headers?: {
+    host?: string;
+  };
+}
+
 /**
  * Decide whether the current request should receive the
  * `.topodrive.top` cookie domain. Returns true ONLY for actual
  * production hosts; localhost / 127.0.0.1 / LAN IPs return false
  * so the browser will accept the cookie.
  */
-export function shouldUseSharedDomain(req) {
+export function shouldUseSharedDomain(req?: HostRequest | null): boolean {
   const host = (req?.headers?.host || '').toLowerCase().split(':')[0];
   return SHARED_DOMAIN_HOSTS.has(host);
 }

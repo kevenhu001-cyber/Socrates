@@ -20,27 +20,27 @@ if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
 const BCRYPT_ROUNDS = 12;
 
 /** Hash a plaintext password. */
-export function hashPassword(plain) {
+export function hashPassword(plain: string): Promise<string> {
   return bcrypt.hash(plain, BCRYPT_ROUNDS);
 }
 
 /** Compare a plaintext password against a bcrypt hash. */
-export function comparePassword(plain, hash) {
+export function comparePassword(plain: string, hash: string): Promise<boolean> {
   return bcrypt.compare(plain, hash);
 }
 
 /** Generate a session ID (128-bit URL-safe token). */
-export function generateSessionToken() {
+export function generateSessionToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
 /** Generate a share token (192-bit URL-safe). */
-export function generateShareToken() {
+export function generateShareToken(): string {
   return crypto.randomBytes(24).toString('base64url');
 }
 
 /** Generate a verification / password-reset token (64-bit hex). */
-export function generateShortToken() {
+export function generateShortToken(): string {
   return crypto.randomBytes(8).toString('hex');
 }
 
@@ -48,7 +48,7 @@ export function generateShortToken() {
 const LOGIN_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 /** 8-char alphanumeric login code (replaces brute-forceable 6-digit). */
-export function generateLoginCode() {
+export function generateLoginCode(): string {
   let code = '';
   for (let i = 0; i < 8; i++) {
     code += LOGIN_CODE_ALPHABET[crypto.randomInt(0, LOGIN_CODE_ALPHABET.length)];
@@ -60,7 +60,7 @@ export function generateLoginCode() {
  * Encrypt a plaintext string (e.g. an API key) with AES-256-GCM.
  * Returns a colon-delimited string: iv:authTag:ciphertext (all hex).
  */
-export function encrypt(plain, key) {
+export function encrypt(plain: string, key: Buffer): string {
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
   let encrypted = cipher.update(plain, 'utf8', 'hex');
@@ -72,7 +72,7 @@ export function encrypt(plain, key) {
 /**
  * Decrypt a string produced by encrypt().
  */
-export function decrypt(payload, key) {
+export function decrypt(payload: string, key: Buffer): string {
   const parts = payload.split(':');
   if (parts.length !== 3) throw new Error('Invalid encrypted payload');
   const iv = Buffer.from(parts[0], 'hex');
@@ -91,7 +91,14 @@ export function decrypt(payload, key) {
  * key derivation because it provides domain separation and is
  * resistant to length-extension attacks.
  */
-export function deriveEncryptionKey(secret) {
-  return crypto.hkdfSync('sha256', Buffer.from(secret, 'utf8'),
-    Buffer.from('socrates-key-v1'), Buffer.from('aes-256-gcm'), 32);
+export function deriveEncryptionKey(secret: string): Buffer {
+  return Buffer.from(
+    crypto.hkdfSync(
+      'sha256',
+      Buffer.from(secret, 'utf8'),
+      Buffer.from('socrates-key-v1'),
+      Buffer.from('aes-256-gcm'),
+      32,
+    ),
+  );
 }

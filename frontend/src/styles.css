@@ -1639,6 +1639,7 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .chat-input-wrap.drag-over{border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.2)}
 .chat-input-bar.drag-over-doc{position:relative}.chat-input-bar.drag-over-doc::after{content:'';position:absolute;inset:4px;border:2px dashed hsl(var(--accent-000)/0.4);border-radius:18px;pointer-events:none;z-index:20}
 .send-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),box-shadow .22s cubic-bezier(.4,0,.2,1),transform .12s ease;flex-shrink:0;cursor:pointer;border:none;padding:0}
+#sendBtnContent{display:contents}
 .send-btn:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
 .send-btn:active{transform:scale(.88)}
 .send-btn svg{width:16px;height:16px;transition:transform .25s cubic-bezier(.4,0,.2,1)}

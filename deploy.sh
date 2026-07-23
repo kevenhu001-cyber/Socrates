@@ -93,6 +93,13 @@ else
   SRC_MD5=$(md5sum "$APP_WEB_ROOT/index.html" | cut -d' ' -f1)
 fi
 
+# ─── 1b. Build the backend (mixed JavaScript / TypeScript) ───────────
+# The stable src/index.js systemd entry delegates to dist/index.runtime.js.
+# Build before touching the running service so a type or emit failure leaves
+# the currently running backend undisturbed.
+echo "Building backend (TypeScript)…"
+(cd "$SERVER_DIR" && npm run build)
+
 # ─── 2. Marketing site (topodrive.top) ───────────────────────────────
 SITE_DIR="/home/ubuntu/User/Socrates/site"
 if [ -d "$SITE_DIR" ]; then
