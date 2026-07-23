@@ -50,15 +50,6 @@ function makeKey(
   return h.digest('hex');
 }
 
-/**
- * @param {object} args
- * @param {string=} args.userId
- * @param {string} args.query
- * @param {number} args.count
- * @param {(string|null)=} args.locale
- * @param {string=} args.apiKeyHint
- * @returns {unknown|null}  cached result array or null
- */
 export function get({
   userId,
   query,
@@ -85,15 +76,6 @@ export function get({
   return entry.result;
 }
 
-/**
- * @param {object} args
- * @param {string=} args.userId
- * @param {string} args.query
- * @param {number} args.count
- * @param {(string|null)=} args.locale
- * @param {string=} args.apiKeyHint
- * @param {unknown} args.result   the result array returned to the client
- */
 export function set({
   userId,
   query,
@@ -127,9 +109,6 @@ export function set({
  */
 export function clear() { _cache.clear(); }
 
-/**
- * @returns {{entries:number, hits:number, misses:number}}
- */
 export function stats() {
   return { entries: _cache.size };
 }

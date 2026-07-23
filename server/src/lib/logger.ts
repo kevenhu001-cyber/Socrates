@@ -60,7 +60,7 @@ const SENSITIVE_KEYS = new Set([
 ]);
 
 function redactExtra(extra: Record<string, unknown>): Record<string, unknown> {
-  if (!extra || typeof extra !== 'object') return extra;
+  if (!extra || typeof extra !== 'object') return {};
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(extra)) {
     if (SENSITIVE_KEYS.has(k.toLowerCase())) {

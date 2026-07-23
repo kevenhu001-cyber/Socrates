@@ -155,7 +155,7 @@ builds and copies the bundle into the nginx web root.
 ### Backend
 
 - **Express 5 + Drizzle ORM + PostgreSQL** with a typed schema
-  (see [`server/src/db/schema.js`](server/src/db/schema.js)).
+  (see [`server/src/db/schema.ts`](server/src/db/schema.ts)).
 - **Cookie-based auth** (`sid` cookie + CSRF double-submit), with
   pending-registration email verification, captcha, and 401-replay
   handling on the client.
@@ -292,8 +292,7 @@ sequenceDiagram
 | Image processing | `sharp` for upload thumbnails | |
 | Email | `nodemailer` (SMTP) for verification, magic-link reset | |
 | File upload | `multer` | |
-| Captcha | Server-issued image captcha | [`server/src/services/captcha.js`](server/src/services/captcha.js) |
-| Code execution | Pyodide WASM (Python sandbox) | [`server/src/services/codeInterpreter.js`](server/src/services/codeInterpreter.js) |
+| Code execution | Pyodide WASM (Python sandbox) | [`server/src/services/codeInterpreter.ts`](server/src/services/codeInterpreter.ts) |
 | Android UI | Jetpack Compose (Material 3) | [`android/app/src/main/`](android/app/src/main/) |
 | Android networking | OkHttp + Kotlinx Serialization | |
 | CI | GitHub Actions: build Android APK on push to `main` | [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) |
@@ -490,19 +489,35 @@ Other notable endpoints: `/api/agent/run` (tool-using agent),
 The included [`deploy.sh`](deploy.sh) is the canonical "ship it"
 script for the production environment. It:
 
-1. Runs `vite build` in the frontend directory.
-2. Copies the built `dist/` bundle to `/var/www/app.topodrive.top/`.
-3. Copies the marketing site (`site/`) to `/var/www/topodrive.top/`.
-4. Validates and reloads nginx.
+1. Installs lockfile-pinned dependencies for the frontend and
+   backend (`npm ci --include=dev`).
+2. Builds the Vite SPA (`npm run build`) and copies `dist/` into
+   `/var/www/app.topodrive.top/`.
+3. Compiles the TypeScript backend into an isolated candidate
+   directory (`server/.dist-next.<rand>/`). Only after the build
+   succeeds does the candidate get swapped into `server/dist/`;
+   the previous `dist/` is preserved as `dist.previous/` for
+   one-step rollback. `server/src/index.js` (the stable systemd
+   shim) delegates to `dist/index.runtime.js`.
+4. Builds and copies the marketing site (`site/`) into
+   `/var/www/topodrive.top/`.
+5. Restarts the backend via `systemctl restart socrates-api`. If
+   the restart or the post-restart health check fails, the previous
+   backend build is restored automatically before the script exits
+   with a non-zero status — operators never have to chase a
+   half-deployed binary by hand.
+6. Validates the deploy gate (frontend `index.html` MD5,
+   `/api/health` reachable from the local host) and writes the
+   result to the state file. A failed gate keeps the previous
+   known-good state recorded, and prints the exact rollback command.
 
 ```bash
 ./deploy.sh                              # build + deploy
 ```
 
-For the backend, run `server/` under your process supervisor of
-choice (`systemd`, `pm2`, Docker, etc.). The server is stateless
-beyond PostgreSQL, so horizontal scaling is just a matter of running
-more processes behind the same nginx.
+The backend runs as a systemd unit (`Restart=always`). The
+server is stateless beyond PostgreSQL, so horizontal scaling is
+just a matter of running more processes behind the same nginx.
 
 The Android client is built by
 [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml);
