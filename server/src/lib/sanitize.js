@@ -50,7 +50,7 @@ const ALLOWED_EXTRA_BODY_KEYS = new Set([
  * cannot nest functions / Dates / class instances.
  *
  * @param {unknown} raw
- * @returns {object|undefined}
+ * @returns {Record<string, unknown>|undefined}
  */
 export function sanitizeExtraBody(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;

@@ -49,11 +49,11 @@ function makeKey(userId, query, count, enrich, locale, apiKeyHint) {
 
 /**
  * @param {object} args
- * @param {string} args.userId
+ * @param {string=} args.userId
  * @param {string} args.query
  * @param {number} args.count
  * @param {boolean=} args.enrich
- * @param {string=} args.locale
+ * @param {(string|null)=} args.locale
  * @param {string=} args.apiKeyHint
  * @returns {object|null}  cached result array or null
  */
@@ -73,11 +73,11 @@ export function get({ userId, query, count, enrich, locale, apiKeyHint }) {
 
 /**
  * @param {object} args
- * @param {string} args.userId
+ * @param {string=} args.userId
  * @param {string} args.query
  * @param {number} args.count
  * @param {boolean=} args.enrich
- * @param {string=} args.locale
+ * @param {(string|null)=} args.locale
  * @param {string=} args.apiKeyHint
  * @param {object} args.result   the result array returned to the client
  */
