@@ -7,6 +7,9 @@ server/secrets/
 *.pem
 server.log
 server/dist/
+server/dist.previous/
+server/.dist-next.*/
+server/dist.failed.*/
 
 # ── Android / Gradle ──
 android/.gradle/

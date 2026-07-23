@@ -7,7 +7,7 @@
 # /var/www/app.topodrive.top/. The frontend/ project bundles with Vite
 # to frontend/dist/, and we copy the bundle into that web root.
 
-set -euo pipefail
+set -Eeuo pipefail
 
 FRONTEND_DIR="/home/ubuntu/User/Socrates/frontend"
 SERVER_DIR="/home/ubuntu/User/Socrates/server"
@@ -47,6 +47,65 @@ backup_previous() {
   fi
 }
 
+# Build the backend into a candidate directory and only swap it into place
+# immediately before restart. Keep one known-good dist tree for rollback.
+BACKEND_DIST="$SERVER_DIR/dist"
+BACKEND_PREVIOUS="$SERVER_DIR/dist.previous"
+BACKEND_CANDIDATE=""
+BACKEND_SWAPPED=0
+
+cleanup_backend_candidate() {
+  case "${BACKEND_CANDIDATE:-}" in
+    "$SERVER_DIR"/.dist-next.*)
+      rm -rf -- "$BACKEND_CANDIDATE"
+      ;;
+  esac
+}
+trap cleanup_backend_candidate EXIT
+
+rollback_backend() {
+  if [[ "$BACKEND_SWAPPED" != "1" ]]; then
+    return 0
+  fi
+  if [[ ! -d "$BACKEND_PREVIOUS" ]]; then
+    echo "WARNING: no previous backend build is available for automatic rollback" >&2
+    return 0
+  fi
+
+  local failed_dist="$SERVER_DIR/dist.failed.$(date +%s).$$"
+  if [[ -d "$BACKEND_DIST" ]]; then
+    mv "$BACKEND_DIST" "$failed_dist"
+  fi
+  mv "$BACKEND_PREVIOUS" "$BACKEND_DIST"
+  BACKEND_SWAPPED=0
+
+  echo "Restored previous backend build; restarting socrates-api…" >&2
+  if ! $SUDO systemctl restart socrates-api; then
+    echo "ERROR: previous backend build was restored but failed to restart" >&2
+  fi
+}
+
+handle_deploy_error() {
+  local exit_code=$?
+  trap - ERR
+  rollback_backend
+  exit "$exit_code"
+}
+trap handle_deploy_error ERR
+
+# Dependencies are part of the release input. In particular, the TypeScript
+# migration adds build-only tooling that will not exist in an older checkout.
+echo "Installing backend dependencies from package-lock.json…"
+(cd "$SERVER_DIR" && npm ci --include=dev)
+
+BACKEND_CANDIDATE=$(mktemp -d "$SERVER_DIR/.dist-next.XXXXXX")
+echo "Building backend candidate (TypeScript)…"
+(cd "$SERVER_DIR" && ./node_modules/.bin/tsc -p tsconfig.build.json --outDir "$BACKEND_CANDIDATE")
+if [[ ! -f "$BACKEND_CANDIDATE/index.runtime.js" ]]; then
+  echo "ERROR: backend build did not produce index.runtime.js" >&2
+  exit 1
+fi
+
 # ─── 1. Build the frontend (Vite) ─────────────────────────────────────
 if [[ "${1:-}" != "" && -f "${1}" ]]; then
   # Legacy mode: deploy a single index.html file directly.
@@ -59,8 +118,10 @@ if [[ "${1:-}" != "" && -f "${1}" ]]; then
   SRC_MD5=$(md5sum "$LEGACY_SRC" | cut -d' ' -f1)
 else
   # Production mode: build the Vite bundle and copy dist/* into the web root.
+  echo "Installing frontend dependencies from package-lock.json…"
+  (cd "$FRONTEND_DIR" && npm ci --include=dev)
   echo "Building frontend (Vite)…"
-  (cd "$FRONTEND_DIR" && npx vite build 2>&1 | tail -5)
+  (cd "$FRONTEND_DIR" && npm run build 2>&1 | tail -5)
   DIST_DIR="$FRONTEND_DIR/dist"
 
   if [[ ! -f "$DIST_DIR/index.html" ]]; then
@@ -92,13 +153,6 @@ else
   SRC_SIZE=$(stat -c%s "$APP_WEB_ROOT/index.html")
   SRC_MD5=$(md5sum "$APP_WEB_ROOT/index.html" | cut -d' ' -f1)
 fi
-
-# ─── 1b. Build the backend (mixed JavaScript / TypeScript) ───────────
-# The stable src/index.js systemd entry delegates to dist/index.runtime.js.
-# Build before touching the running service so a type or emit failure leaves
-# the currently running backend undisturbed.
-echo "Building backend (TypeScript)…"
-(cd "$SERVER_DIR" && npm run build)
 
 # ─── 2. Marketing site (topodrive.top) ───────────────────────────────
 SITE_DIR="/home/ubuntu/User/Socrates/site"
@@ -146,11 +200,25 @@ if [ -f "$STATUS_SRC" ]; then
 fi
 
 # ─── 3. Restart backend server ────────────────────────────────────────
+if [[ -d "$BACKEND_PREVIOUS" ]]; then
+  rm -rf -- "$BACKEND_PREVIOUS"
+fi
+if [[ -d "$BACKEND_DIST" ]]; then
+  mv "$BACKEND_DIST" "$BACKEND_PREVIOUS"
+fi
+mv "$BACKEND_CANDIDATE" "$BACKEND_DIST"
+BACKEND_CANDIDATE=""
+BACKEND_SWAPPED=1
+
 echo "Restarting backend via systemd…"
 # The server runs as a systemd unit (Restart=always). Use systemctl to
 # restart cleanly instead of pkill+nohup which races with systemd and
 # can leave zombie processes occupying no port (causing 502 errors).
-$SUDO systemctl restart socrates-api
+if ! $SUDO systemctl restart socrates-api; then
+  echo "ERROR: backend restart failed; rolling back its compiled build" >&2
+  rollback_backend
+  exit 1
+fi
 # Give it a few seconds to bind, then check for startup errors.
 sleep 5
 if $SUDO systemctl is-active --quiet socrates-api; then
@@ -261,6 +329,7 @@ EOF
   mv "$tmp" "$STATE_FILE"
   GATE_RESULTS+=("  state: $STATE_FILE updated")
 else
+  rollback_backend
   GATE_RESULTS+=("  state: NOT updated (gate failed — last known-good preserved)")
 fi
 
@@ -273,14 +342,16 @@ if [[ $GATE_FAILED -eq 0 ]]; then
   echo "─── gate ───"
   printf '%s\n' "${GATE_RESULTS[@]}"
   echo "────────────"
-  echo "  rollback (if needed): sudo cp -a $APP_WEB_ROOT/.previous/* $APP_WEB_ROOT/"
+  echo "  frontend rollback: sudo cp -a $APP_WEB_ROOT/.previous/* $APP_WEB_ROOT/"
+  echo "  backend rollback build: $BACKEND_PREVIOUS"
 else
   echo "✗ DEPLOY GATE FAILED ($GATE_FAILED check(s))" >&2
   echo "─── gate ───"
   printf '%s\n' "${GATE_RESULTS[@]}" >&2
   echo "────────────" >&2
   echo "The previous bundle is preserved at $APP_WEB_ROOT/.previous/" >&2
-  echo "To roll back: sudo cp -a $APP_WEB_ROOT/.previous/* $APP_WEB_ROOT/ && sudo systemctl restart socrates-api" >&2
+  echo "The backend build was restored automatically when a previous build was available." >&2
+  echo "To restore the frontend: sudo cp -a $APP_WEB_ROOT/.previous/* $APP_WEB_ROOT/" >&2
   echo "State file $STATE_FILE was NOT updated — last known-good deploy is still recorded there." >&2
   exit 1
 fi

@@ -6,7 +6,7 @@
 
 [![仓库可见性](https://img.shields.io/badge/可见性-私有-7a6c4d?style=flat-square)](#-仓库可见性)
 [![应用状态](https://img.shields.io/badge/应用-在线-d8a85b?style=flat-square)](https://app.topodrive.top/)
-[![后端](https://img.shields.io/badge/后端-Node.js%2022%20%2B%20ESM-3c873a?style=flat-square&logo=node.js&logoColor=white)](server/)
+[![后端](https://img.shields.io/badge/后端-TypeScript%20%2B%20Node.js-3178c6?style=flat-square&logo=typescript&logoColor=white)](server/)
 [![前端](https://img.shields.io/badge/前端-Vite%20SPA-f3c769?style=flat-square&logo=vite&logoColor=black)](frontend/)
 [![Android](https://img.shields.io/badge/Android-Kotlin%20%2B%20Compose-3DDC84?style=flat-square&logo=android&logoColor=white)](android/)
 [![数据库](https://img.shields.io/badge/数据库-PostgreSQL%2014%2B-4169e1?style=flat-square&logo=postgresql&logoColor=white)](server/src/db/)
@@ -211,18 +211,18 @@ sequenceDiagram
 
 | 层 | 技术 | 说明 |
 | --- | --- | --- |
-| Web SPA | 原生 JS，Vite 构建 | [`frontend/`](frontend/) — 模块化 JS，Vite 摇树优化 |
+| Web SPA | 原生 JS + 可选 React 兼容层，Vite 构建 | [`frontend/`](frontend/) — 正在渐进迁移至 React/TypeScript |
 | Markdown | `marked` 4.3 + 自定义渐进渲染器 | 见[自定义渲染管线](#-自定义渲染管线) |
 | 数学公式 | `katex` 0.16.9 (CDN, SRI 固定) | 显示模式 + 行内模式 |
 | 代码高亮 | `highlight.js`（完成时延迟加载） | |
 | 搜索 | `fuse.js` 用于 Cmd-K 面板 | |
-| 认证 | Cookie (`sid`) + CSRF 双重提交 | 见 `server/src/middleware/auth.js` |
-| 后端 | Node.js 22+, Express 5, ESM | [`server/src/`](server/src/) |
+| 认证 | Cookie (`sid`) + CSRF 双重提交 | 见 `server/src/middleware/auth.ts` |
+| 后端 | TypeScript, Express 5, Node.js ESM | [`server/src/`](server/src/) |
 | ORM | Drizzle ORM 0.40+ + `drizzle-kit` | [`server/src/db/`](server/src/db/) |
 | 数据库 | PostgreSQL 14+ | `DATABASE_URL` 环境变量 |
-| LLM 代理 | `fetch` 到任意 OpenAI 兼容端点 | [`server/src/services/llm.js`](server/src/services/llm.js) |
+| LLM 代理 | `fetch` 到任意 OpenAI 兼容端点 | [`server/src/services/llm.ts`](server/src/services/llm.ts) |
 | 文档解析 | mammoth, SheetJS, jszip+xml2js, EPub, rtf2text | [`server/src/services/fileParsers/`](server/src/services/fileParsers/) |
-| Web 搜索 | MiniMax + Bing (并行竞速), SearXNG 降级 | [`server/src/services/webSearch.js`](server/src/services/webSearch.js) |
+| Web 搜索 | MiniMax + Bing (并行竞速), SearXNG 降级 | [`server/src/services/webSearch.ts`](server/src/services/webSearch.ts) |
 | 图片处理 | `sharp` 生成缩略图 | |
 | 邮件 | `nodemailer` (SMTP) 用于验证和密码重置 | |
 | 文件上传 | `multer` | |
@@ -252,12 +252,13 @@ Socrates/
 │   ├── index.html
 │   ├── base.css
 │   └── zh/                 # 中文版
-├── server/                 # Node 22+ / Express 5 / Drizzle / PostgreSQL
+├── server/                 # TypeScript / Express 5 / Drizzle / PostgreSQL
 │   ├── package.json
 │   ├── drizzle/            # 数据库迁移
 │   └── src/
-│       ├── index.js        # 入口
-│       ├── app.js          # Express 应用、中间件
+│       ├── index.js        # 稳定的生产兼容入口
+│       ├── index.runtime.ts # 运行时入口
+│       ├── app.ts          # Express 应用、中间件
 │       ├── db/             # Drizzle schema、迁移、客户端
 │       ├── lib/            # 错误处理、加密
 │       ├── middleware/     # 认证、CSRF、错误处理
@@ -311,6 +312,7 @@ npm run db:migrate
 npm run dev
 
 # 或生产模式
+npm run build
 npm start
 ```
 

@@ -12,21 +12,18 @@
  *   3. fetchBatch(urls)   — scheme validation, redirect-to-private
  *      rejection, content-type filtering, redirect-loop cap
  *
- * NOTE: fetchBatch.js imports contentExtractor.js, which boots a
- * worker_threads pool that keeps the Node process alive after the
- * test runner finishes its last assertion. The npm test script
- * runs THIS file with `--test-force-exit` (and only this file) so
- * the leaked worker threads don't hang CI. This is a deliberate
- * tradeoff: we'd rather test the SSRF defence than fight a worker
- * pool we don't care about for these tests.
+ * NOTE: fetchBatch.js imports contentExtractor.js, which lazily boots a
+ * worker_threads pool. The suite closes that pool explicitly so strict test
+ * mode can detect any future handle leak without relying on force-exit.
  *
  * Run with: npm test
  */
-import { test, describe, mock, afterEach } from 'node:test';
+import { test, describe, mock, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import dns from 'node:dns/promises';
 
 import { fetchBatch } from '../src/services/fetchBatch.js';
+import { stopContentExtractorPool } from '../src/services/contentExtractor.js';
 
 const ORIG_DNS_LOOKUP = dns.lookup;
 const ORIG_FETCH = globalThis.fetch;
@@ -34,6 +31,10 @@ const ORIG_FETCH = globalThis.fetch;
 afterEach(() => {
   dns.lookup = ORIG_DNS_LOOKUP;
   globalThis.fetch = ORIG_FETCH;
+});
+
+after(async () => {
+  await stopContentExtractorPool();
 });
 
 /* ── DNS stub ─────────────────────────────────────────────────── */
