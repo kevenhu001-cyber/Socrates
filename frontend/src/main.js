@@ -2617,11 +2617,15 @@ function openSessionContextMenu(id,rowEl){
       '</button>'+
       /* Custom label */
       '<div class="session-context-label-row">'+
-        '<div class="session-context-label-input-wrap">'+
+        '<button class="session-context-label-trigger" id="sessionCtxLabelTrigger" type="button">'+
           '<span class="session-context-icon">'+labelSvg()+'</span>'+
-          '<input class="session-context-label-input" id="sessionCtxLabelInput" type="text" placeholder="Custom label…" maxlength="30" value="'+esc(label)+'">'+
+          '<span>Custom label'+(label?' <mark>'+esc(label)+'</mark>':'')+'</span>'+
+        '</button>'+
+        '<div class="session-context-label-input-wrap hidden" id="sessionCtxLabelWrap">'+
+          '<span class="session-context-icon">'+labelSvg()+'</span>'+
+          '<input class="session-context-label-input" id="sessionCtxLabelInput" type="text" placeholder="Custom label\u2026" maxlength="30" value="'+esc(label)+'">'+
         '</div>'+
-        '<button class="session-context-label-set" id="sessionCtxLabelSet">Set</button>'+
+        '<button class="session-context-label-set hidden" id="sessionCtxLabelSet">Set</button>'+
       '</div>'+
       /* Move to project */
       '<div class="session-context-move-to-project">'+
@@ -2664,8 +2668,18 @@ function openSessionContextMenu(id,rowEl){
     closeSessionContextMenu();
     actuallyDeleteSession(id);
   };
+  /* Custom label: clicking the trigger shows the input. */
+  var trigger=pop.querySelector("#sessionCtxLabelTrigger");
+  var wrap=pop.querySelector("#sessionCtxLabelWrap");
   var input=pop.querySelector("#sessionCtxLabelInput");
   var setBtn=pop.querySelector("#sessionCtxLabelSet");
+  trigger.onclick=function(ev){
+    ev.stopPropagation();
+    trigger.classList.add("hidden");
+    wrap.classList.remove("hidden");
+    setBtn.classList.remove("hidden");
+    setTimeout(function(){input.focus();input.select()},50);
+  };
   function commitLabel(){
     var v=(input.value||"").trim().slice(0,30);
     setSessionLabel(id,v||"");
@@ -2678,8 +2692,6 @@ function openSessionContextMenu(id,rowEl){
   };
   /* Populate the "Move to project" list. */
   populateProjectList(id);
-  /* Focus the label input after a short delay. */
-  setTimeout(function(){input.focus();input.select()},100);
 }
 
 function closeSessionContextMenu(){
@@ -2695,15 +2707,23 @@ function populateProjectList(sessionId){
   var list = document.getElementById("sessionCtxProjectList");
   if(!list) return;
   var projects = window.__projectsCache || [];
-  if(!projects.length){
+  if(!projects.length && !window.__projectsFetchFailed){
     /* Fetch projects first. */
     if(typeof apiFetch === "function"){
       apiFetch("/api/projects").then(function(r){
         window.__projectsCache = (r && r.projects) || [];
+        window.__projectsFetchFailed = false;
         renderProjectListItems(list, sessionId);
-      }).catch(function(){});
+      }).catch(function(){
+        window.__projectsFetchFailed = true;
+        list.innerHTML = '<div class="session-context-project-item">No projects available</div>';
+      });
     }
     list.innerHTML = '<div class="session-context-project-item">Loading projects...</div>';
+    return;
+  }
+  if(!projects.length){
+    list.innerHTML = '<div class="session-context-project-item">No projects available</div>';
     return;
   }
   renderProjectListItems(list, sessionId);
@@ -2992,11 +3012,15 @@ function doRenderRecents(){
 function renderRecentsFilterChips(){
   /* Fetch projects for the filter chips if not cached. */
   var projects = window.__projectsCache || [];
-  if (!projects.length && typeof apiFetch === "function") {
+  if (!projects.length && !window.__projectsFetchFailed && typeof apiFetch === "function") {
     apiFetch("/api/projects").then(function(r){
       window.__projectsCache = (r && r.projects) || [];
       renderRecentsFilterChips();
-    }).catch(function(){});
+    }).catch(function(){
+      /* Mark failure so we don't retry on every renderRecents call.
+         The user can refresh the page to retry. */
+      window.__projectsFetchFailed = true;
+    });
   }
   renderRecentsFilterChipsUI({
     currentFilter:getRecentsFilter(),

@@ -67,7 +67,10 @@ var state={
   /* ui: ephemeral UI state (per-tab, never persisted). */
   ui:{_userScrolledAway:false,_examInView:false},
   /* exam: exam-mode state (ephemeral, never persisted). */
-  exam:{cancel:false,questions:[],answers:{},submitted:false,topic:"",count:0,_examScrollBound:false,readOnly:false,lang:"",difficulty:"intermediate",instructions:"",types:[],_examPrevActiveId:null}
+  exam:{cancel:false,questions:[],answers:{},submitted:false,topic:"",count:0,_examScrollBound:false,readOnly:false,lang:"",difficulty:"intermediate",instructions:"",types:[],_examPrevActiveId:null},
+  /* tutor: ephemeral working state for the tutoring feature. */
+  tutorAttachments:null,
+  tutorPartsTemplate:null
 };
 
 /* P1.5 — flat-name lookup table for the Proxy. Maps a legacy
