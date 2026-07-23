@@ -67,8 +67,10 @@ export function getCsrfToken() {
  * For ordinary JSON endpoints, use apiFetch.
  */
 export async function apiFetchRaw(path, opts = {}) {
-  /* P_cdn-bypass — prepend /api/v2 prefix to bypass stale CDN cache. */
-  path = path.replace(/^\/api\//, '/api/v2/');
+  /* P_cdn-bypass — prepend /api/v2 prefix to bypass stale CDN cache.
+     Idempotent: if the path is already /api/v2/* (or starts with the
+     prefix from a wrapper), don't double-prepend into /api/v2/v2/*. */
+  if (!/^\/api\/v2\//.test(path)) path = path.replace(/^\/api\//, '/api/v2/');
   opts.credentials = 'include';
   if (!opts.headers) opts.headers = {};
   if (opts.body && typeof opts.body !== 'string' && !(opts.body instanceof FormData)) {
@@ -130,8 +132,9 @@ export async function apiFetchRaw(path, opts = {}) {
 }
 
 export async function apiFetch(path, opts = {}) {
-  /* P_cdn-bypass — prepend /api/v2 prefix to bypass stale CDN cache. */
-  path = path.replace(/^\/api\//, '/api/v2/');
+  /* P_cdn-bypass — prepend /api/v2 prefix to bypass stale CDN cache.
+     Idempotent: see apiFetchRaw. */
+  if (!/^\/api\/v2\//.test(path)) path = path.replace(/^\/api\//, '/api/v2/');
   opts.credentials = 'include';
   if (!opts.headers) opts.headers = {};
   if (opts.body && typeof opts.body !== 'string' && !(opts.body instanceof FormData)) {
@@ -143,7 +146,7 @@ export async function apiFetch(path, opts = {}) {
     const token = getCsrfToken();
     if (token) opts.headers['X-CSRF-Token'] = token;
   }
-  /* P_cache-busting — append a timestamp to GET requests so CDN
+  /* P_cache-busting — append a cache nonce to GET requests so CDN
    * edge caches (e.g. Tencent EdgeOne) always fetch fresh content
    * from the origin. Without this, a CDN that cached an early
    * empty response from /api/sessions will keep serving it even
@@ -151,10 +154,15 @@ export async function apiFetch(path, opts = {}) {
    * re-validate until the cached entry's TTL expires. The server
    * now sets Cache-Control: no-cache but the old cached entry
    * persists in the CDN until purged. A unique query param makes
-   * every URL a new cache key, bypassing the stale entry. */
+   * every URL a new cache key, bypassing the stale entry.
+   *
+   * NOTE: Use `cb=` (not `_t=`) to avoid Chromium's Tracking
+   * Prevention, which blocks requests with timestamp-like query
+   * parameters (e.g. `_t=`, `_ts=`, `timestamp=`) as suspected
+   * fingerprinting vectors. */
   if (method === 'GET') {
     const sep = path.indexOf('?') >= 0 ? '&' : '?';
-    path = path + sep + '_t=' + Date.now();
+    path = path + sep + 'cb=' + Date.now();
   }
   const timeoutMs = typeof opts.timeoutMs === 'number' ? opts.timeoutMs : 30000;
   const userSignal = opts.signal || null;
