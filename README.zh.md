@@ -226,8 +226,7 @@ sequenceDiagram
 | 图片处理 | `sharp` 生成缩略图 | |
 | 邮件 | `nodemailer` (SMTP) 用于验证和密码重置 | |
 | 文件上传 | `multer` | |
-| 验证码 | 服务端生成的图片验证码 | [`server/src/services/captcha.js`](server/src/services/captcha.js) |
-| 代码执行 | Pyodide WASM (Python 沙箱) | [`server/src/services/codeInterpreter.js`](server/src/services/codeInterpreter.js) |
+| 代码执行 | Pyodide WASM (Python 沙箱) | [`server/src/services/codeInterpreter.ts`](server/src/services/codeInterpreter.ts) |
 | Android UI | Jetpack Compose (Material 3) | [`android/app/src/main/`](android/app/src/main/) |
 | Android 网络 | OkHttp + Kotlinx Serialization | |
 | CI | GitHub Actions: push 到 `main` 时构建 APK | [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) |
@@ -398,16 +397,20 @@ data: [DONE]
 
 [`deploy.sh`](deploy.sh) 是生产环境的规范部署脚本：
 
-1. 在前端目录运行 `vite build`
-2. 将构建产物 `dist/` 复制到 `/var/www/app.topodrive.top/`
-3. 将市场站点复制到 `/var/www/topodrive.top/`
-4. 验证并重载 nginx
+1. 通过 `npm ci --include=dev` 安装前后端 lockfile 锁定的依赖
+2. 构建 Vite SPA（`npm run build`）并将 `dist/` 复制到 `/var/www/app.topodrive.top/`
+3. 将 TypeScript 后端编译到独立的候选目录（`server/.dist-next.<rand>/`），编译成功后才替换为 `server/dist/`，旧版本保留为 `dist.previous/` 用于一键回滚。`server/src/index.js`（稳定的 systemd shim）会委托给 `dist/index.runtime.js`
+4. 构建并将市场站点复制到 `/var/www/topodrive.top/`
+5. 通过 `systemctl restart socrates-api` 重启后端。如果重启或重启后的健康检查失败，脚本会自动恢复上一次的后端构建，再以非零状态退出 —— 操作员不需要手工追踪半部署的二进制
+6. 校验部署门禁（前端 `index.html` MD5、本机可访问 `/api/health`）并写入状态文件。门禁失败时保留上一次已知良好的状态，并打印准确的回滚命令
 
 ```bash
 ./deploy.sh                              # 构建 + 部署
 ```
 
-后端可使用 `systemd`、`pm2`、Docker 等进程管理工具运行。后端除 PostgreSQL 外无状态，水平扩展只需在 nginx 后增加进程。
+后端以 systemd unit 运行（`Restart=always`）。后端除 PostgreSQL 外无状态，水平扩展只需在 nginx 后增加进程。
+
+Android 客户端由 GitHub Actions 自动构建，产物可在 Actions 页下载。
 
 ## 安全模型
 
