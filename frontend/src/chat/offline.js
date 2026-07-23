@@ -16,9 +16,19 @@ export const STREAM_TIMEOUT_MS    = 300000;   /* 5 min — balances reasoning mo
 export const STREAM_HEARTBEAT_MS  = 60000;    /* 60 s silence before we treat as stall */
 export const STREAM_MAX_ATTEMPTS  = 5;
 export const STREAM_RETRY_DELAYS  = [600, 1500, 3500];   /* ms, per attempt index */
+/* P_524-no-retry — HTTP 524 is "A Timeout Occurred" (Cloudflare / EdgeOne
+   origin timeout). It's structural — the CDN closed the upstream socket
+   because the origin exceeded the response-time budget. Retrying within
+   600ms–3.5s backoff (the rest of STREAM_RETRY_DELAYS) just opens fresh
+   connections that hit the same wall, amplifying load on an already-
+   overloaded upstream and producing duplicate 524s. Surface it as a
+   terminal error so the user sees a clear "upstream timed out" toast
+   instead of watching the spinner burn through four useless retries.
+   Other 5xx codes (502/503/504/520/522) are upstream-glitchy and DO
+   benefit from retry. */
 export const STREAM_RETRYABLE_STATUS = {
   408: true, 425: true, 429: true, 500: true, 502: true,
-  503: true, 504: true, 520: true, 522: true, 524: true,
+  503: true, 504: true, 520: true, 522: true,
 };
 
 /* Wraps a single fetch + stream read loop with:

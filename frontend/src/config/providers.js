@@ -15,12 +15,9 @@
  * Reasoning/vision flags stay on (Beagle supports both by default). */
 var BEAGLE_BUILT_IN = { id: "beagle-built-in", label: "Beagle", url: "/api/minimax/v1", model: "", vision: true, isBuiltIn: true, key: "" };
 var apiConfig = { activeId: null, providers: [] };
-/* Web Search is now a backend-default-on feature. The Extension panel
- * no longer surfaces this toggle; only the legacy profile.js switch
- * and Cmd+Shift+F remain as override paths. Default true so new users
- * get the search-augmented response without having to discover the
- * toggle; existing localStorage values still win for users who
- * explicitly turned it off before the toggle was hidden. */
+/* Web Search default differs by mode — see the post-init block below
+ * that runs after appMode is loaded from localStorage. We initialise
+ * to true here and override below. */
 var webSearchOn = true;
 /* Extensive thinking: chat-mode prompt switch. When on, the full
  * CHAT_SYSTEM_PROMPT (verbose "careful scholar" voice + thinking suffix)
@@ -35,10 +32,20 @@ try {
   var savedMode = localStorage.getItem("socrates-appmode");
   if (savedMode === "chat" || savedMode === "tutor") appMode = savedMode;
 } catch (e) {}
+/* Web Search mode-aware default: chat mode → on, tutor mode → off.
+   Tutor-mode Socratic tutoring doesn't need web search for conceptual
+   topics (e.g. 复变函数), and the diagnostic-phase auto-search at
+   submitChatMessage adds 12s+ of latency to the first turn. An
+   existing explicit user preference (any non-null value) still wins
+   so switching modes doesn't silently flip the toggle. */
 try {
-  var saved = localStorage.getItem("socrates-websearch");
-  if (saved !== null) webSearchOn = saved === "true";
-} catch (e) {}
+  var _wsSaved = localStorage.getItem("socrates-websearch");
+  if (_wsSaved !== null) {
+    webSearchOn = _wsSaved === "true";
+  } else if (appMode === "tutor") {
+    webSearchOn = false;
+  }
+} catch (e) { /* localStorage blocked — keep chat-mode default (true) */ }
 /* Deep thinking now follows the reasoning-effort picker: High effort
  * enables the verbose prompt, Medium/Low use the concise one. Derive the
  * initial value from the persisted effort so the first turn matches the
