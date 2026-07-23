@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test:unit": "node --test test/*.test.mjs",
     "test:smoke": "playwright test --config=playwright.config.mjs",
@@ -15,11 +16,15 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "typescript": "~5.8",
     "vite": "^5.4.10"
   },
   "dependencies": {
     "@lobehub/icons-static-svg": "^1.94.0",
-    "echarts": "^6.1.0"
+    "echarts": "^6.1.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   }
 }

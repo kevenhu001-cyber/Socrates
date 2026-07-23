@@ -90,6 +90,16 @@ import {
   toggleWebSearch, syncWebSearchUI,
 } from './pickers.js';
 
+/* React migration bridge. The bridge only exists when `?react=1` loaded the
+   dynamic compatibility runtime; default mode pays no React bundle cost.
+   Payloads contain lifecycle metadata only — never prompt or response text. */
+function publishReactChatRuntime(event){
+  try{
+    var bridge=window.__socratesReactChatBridge;
+    if(bridge&&typeof bridge.publish==="function")bridge.publish(event);
+  }catch(_){}
+}
+
 /* P_global-error-guard — install one-shot handlers for `error` and
    `unhandledrejection` so a stray throw inside an SSE callback, an
    image upload, or any of the ~140 module-level functions in this
@@ -1443,6 +1453,7 @@ function setCurrentSessionId(id){
   state.currentSessionId=id;
   state.session.currentSessionId=id;
   try{window._currentSessionId=id;}catch(_){}
+  publishReactChatRuntime({type:"state-synced",reason:"session-id-changed"});
 }
 
 async function loadSession(id){
@@ -1968,6 +1979,7 @@ async function loadSession(id){
     }
     var sc=scrollContainer();
     sc.scrollTop=sc.scrollHeight;
+    publishReactChatRuntime({type:"state-synced",reason:"session-loaded"});
   }catch(e){
     /* P_stale-loadSession — if a newer loadSession was requested
        while this one was in-flight, the error (if any) belongs to
@@ -4938,6 +4950,7 @@ function addMessage(role,text,type,actions,attachmentsArg){
   var atts = Array.isArray(attachmentsArg) ? attachmentsArg.slice(0, 20) : [];
   var entry={clientId:clientId,role:role,rawText:String(text||""),html:html,type:type||null,actions:actions||null,modelInfo:modelInfo,attachments:atts};
   state.messages.push(entry);
+  publishReactChatRuntime({type:"message-added",messageId:clientId});
 
   var list=document.getElementById("msgList");
   var div=document.createElement("div");
@@ -5192,14 +5205,19 @@ var _sendIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 function setChatStopState(active){
   var btn=document.getElementById("sendBtn");
   if(!btn)return;
+  var content=document.getElementById("sendBtnContent")||btn;
   if(active){
     btn.classList.add("chat-stop");
-    btn.innerHTML=_stopIcon;
     btn.dataset.stop="1";
   }else{
     btn.classList.remove("chat-stop");
-    btn.innerHTML=_sendIcon;
     btn.dataset.stop="0";
+  }
+  /* In React compatibility mode the subscribed SendButtonContent owns
+     this inner node. Default mode keeps the original synchronous legacy
+     mutation so both paths preserve the same icon and click contract. */
+  if(!content.dataset.reactMigrationRuntime){
+    content.innerHTML=active?_stopIcon:_sendIcon;
   }
 }
 window.setChatStopState=setChatStopState;
@@ -5257,6 +5275,7 @@ function addStreamingMessage(opts){
     type:"streaming",
     actions:null
   })-1;
+  publishReactChatRuntime({type:"stream-started",messageId:clientId});
   var full="";
   /* P_reasoning-persist — accumulate reasoning_content deltas so we
      can save them to state.messages at finish() and include them in
@@ -6030,6 +6049,7 @@ function teardownThinkStructure(){
         if(_elapsedTick)clearInterval(_elapsedTick);
       }
       full+=delta;
+      publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:full.length});
       if(wasFirst){
         /* Schedule on rAF so the msg element is definitely in the DOM */
         cancelScheduledRender();
@@ -6083,6 +6103,12 @@ function teardownThinkStructure(){
         if(_elapsedTick)clearInterval(_elapsedTick);
         cancelScheduledRender();
         toolRuntime.dispose();
+        publishReactChatRuntime({
+          type:"stream-aborted",
+          messageId:clientId,
+          textLength:full.length,
+          reason:"session-replaced"
+        });
         return;
       }
       if(finished)return;
@@ -6354,6 +6380,11 @@ function teardownThinkStructure(){
              keeps the closure (and DOM refs) eligible for GC. */
           window._activeChatCtl=null;
         }
+        publishReactChatRuntime({
+          type:"stream-finished",
+          messageId:clientId,
+          textLength:full.length
+        });
       }
     },
     abort:function(){
@@ -6411,6 +6442,11 @@ function teardownThinkStructure(){
       }else{
         requestAnimationFrame(function(){div.remove()});
       }
+      publishReactChatRuntime({
+        type:"stream-aborted",
+        messageId:clientId,
+        textLength:full.length
+      });
     },
     /* Show an inline error state with a retry button so the user can
        recover from a transient failure (network, 429, 5xx) without
@@ -6462,6 +6498,12 @@ function teardownThinkStructure(){
          _chatStreaming=false;
          try{setChatStopState(false)}catch(_){}
        }
+       publishReactChatRuntime({
+         type:"stream-failed",
+         messageId:clientId,
+         textLength:full.length,
+         error:String(errMsg||"Generation failed").slice(0,160)
+       });
      },
     /* Phase 3 — attach a search-progress controller to this bubble.
      * `progress` is the object returned by startSearchProgress(). The
@@ -7561,6 +7603,7 @@ async function resetApp(){
   if (typeof window.syncConversationActive === 'function') {
     try { window.syncConversationActive(); } catch (_) {}
   }
+  publishReactChatRuntime({type:"state-synced",reason:"session-reset"});
   /* Focus the topic input so the user can start typing right away. */
   setTimeout(function(){
     var ti=document.getElementById("topicInput");
@@ -8581,3 +8624,13 @@ bindSettingsUI();
 bindSettingsUI();
 /* Bind settings UI event handlers (replaces inline onclick attributes) */
 bindSettingsUI();
+/* React migration gate. The legacy runtime remains the default and owns the
+   complete visible document. `?react=1` hydrates a verified React feature
+   slice only after all legacy initialization has completed. */
+if (new URLSearchParams(window.location.search).get("react")==="1") {
+  import("./react/bootstrap.tsx").then(function(mod){
+    mod.bootstrapReactCompatibilityRuntime();
+  }).catch(function(error){
+    console.error("[react-migration] compatibility runtime failed to initialize",error);
+  });
+}

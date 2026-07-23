@@ -13,7 +13,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * @param {unknown} s
  * @returns {boolean} true when s is a string matching a v4 UUID shape.
  */
-export function isUuid(s) {
+export function isUuid(s: unknown): s is string {
   return typeof s === 'string' && UUID_RE.test(s);
 }
 

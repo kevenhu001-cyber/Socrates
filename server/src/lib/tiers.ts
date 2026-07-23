@@ -10,6 +10,16 @@
  * rank: 0=Free, 1=Basic, 2=Standard, 3=Premium (front-end expectation)
  */
 
+export interface TierPlan {
+  name: string;
+  rank: number;
+  price: number;
+  maxSessions: number;
+  maxKeys: number;
+  beagleTokenQuota: number;
+  executionsPerDay: number;
+}
+
 export const TIERS = {
   diophantus: {
     name: 'Diophantus',
@@ -49,23 +59,26 @@ export const TIERS = {
     beagleTokenQuota: 800_000_000,
     executionsPerDay: 0, // 0 = unlimited
   },
-};
+} as const satisfies Record<string, TierPlan>;
 
-export const DEFAULT_TIER = 'diophantus';
+export type TierId = keyof typeof TIERS;
+
+export const DEFAULT_TIER: TierId = 'diophantus';
 
 /**
  * Resolve the plan object for a user row, falling back to the
  * default tier for unknown / null values.
  */
-export function getTierPlan(tier) {
-  return TIERS[tier] || TIERS[DEFAULT_TIER];
+export function getTierPlan(tier: unknown): TierPlan {
+  const plan = (TIERS as Record<string, TierPlan>)[String(tier)];
+  return plan || TIERS[DEFAULT_TIER];
 }
 
 /**
  * Resolve the per-tier monthly token quota for the built-in
  * Beagle / MiniMax provider. 0 means unlimited.
  */
-export function getBeagleQuota(tier) {
+export function getBeagleQuota(tier: unknown): number {
   return getTierPlan(tier).beagleTokenQuota;
 }
 
@@ -73,7 +86,7 @@ export function getBeagleQuota(tier) {
  * Maximum number of sessions a user is allowed to own under
  * the given tier. 0 means unlimited (Euclid).
  */
-export function getSessionLimit(tier) {
+export function getSessionLimit(tier: unknown): number {
   return getTierPlan(tier).maxSessions;
 }
 
@@ -81,7 +94,7 @@ export function getSessionLimit(tier) {
  * Maximum number of API keys / providers a user is allowed to
  * register under the given tier.
  */
-export function getApiKeyLimit(tier) {
+export function getApiKeyLimit(tier: unknown): number {
   return getTierPlan(tier).maxKeys;
 }
 
@@ -92,6 +105,6 @@ export function getApiKeyLimit(tier) {
  * a structured error back through the tool-call loop rather than a hard
  * 429 on the chat request.
  */
-export function getExecutionsPerDay(tier) {
+export function getExecutionsPerDay(tier: unknown): number {
   return getTierPlan(tier).executionsPerDay || 0;
 }

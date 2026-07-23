@@ -6,13 +6,17 @@
  */
 
 export class ApiError extends Error {
+  status: number;
+  code: string;
+  detail: unknown | null;
+
   /**
    * @param {number} status  HTTP status code
    * @param {string} code    Machine-readable error code, e.g. "UNVERIFIED"
    * @param {string} message Human-readable description
    * @param {object} [detail] Optional extra payload
    */
-  constructor(status, code, message, detail) {
+  constructor(status: number, code: string, message: string, detail?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
@@ -22,7 +26,7 @@ export class ApiError extends Error {
 }
 
 export class BadRequest extends ApiError {
-  constructor(message = 'Bad request', detail) {
+  constructor(message = 'Bad request', detail?: unknown) {
     super(400, 'BAD_REQUEST', message, detail);
   }
 }

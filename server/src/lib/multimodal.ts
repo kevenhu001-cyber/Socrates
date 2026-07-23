@@ -36,7 +36,7 @@
  *   shape) is treated as text-only.
  * @returns {boolean}
  */
-export function isMultimodalProvider(provider) {
+export function isMultimodalProvider(provider: unknown): boolean {
   if (!provider || typeof provider !== 'object') return false;
-  return provider.isMultimodal === true;
+  return (provider as { isMultimodal?: unknown }).isMultimodal === true;
 }

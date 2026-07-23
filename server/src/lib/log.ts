@@ -48,7 +48,7 @@ const SENSITIVE_PARAMS = new Set([
  * because the fragment is never sent to the server; if it shows
  * up in a log it means someone is logging the wrong thing.
  */
-export function safeUrl(rawUrl) {
+export function safeUrl(rawUrl: unknown): string {
   if (typeof rawUrl !== 'string' || rawUrl.length === 0) return '';
   const qIdx = rawUrl.indexOf('?');
   if (qIdx < 0) return rawUrl; // no query string — safe
@@ -82,7 +82,7 @@ export function safeUrl(rawUrl) {
  * Strip every query parameter from a URL — used when we don't even
  * want to leak the *names* of the parameters an endpoint accepts.
  */
-export function stripQuery(rawUrl) {
+export function stripQuery(rawUrl: unknown): string {
   if (typeof rawUrl !== 'string' || rawUrl.length === 0) return '';
   const qIdx = rawUrl.indexOf('?');
   return qIdx < 0 ? rawUrl : rawUrl.slice(0, qIdx);

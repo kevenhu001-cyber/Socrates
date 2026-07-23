@@ -53,3 +53,31 @@ The remaining modules (`api.js` for API calls, `views.js` for page
 controllers, `utils.js` for helpers) are Phase 3 — deferred because
 they have circular dependencies on each other that require
 refactoring the cross-references into proper import/export chains.
+
+## React + TypeScript migration
+
+The rewrite is incremental. The legacy application remains the default
+runtime and continues to own the visible document. Add `?react=1` to the
+URL to load the React compatibility chunk after legacy initialization.
+
+The current React boundary lives in `src/react/`:
+
+- `bootstrap.tsx` hydrates the deliberately small new-reply-pill slice.
+- The existing send/stop button content is hydrated from the derived stream
+  status while its outer button, classes, click handler, and CSS stay legacy.
+- `chatRuntimeStore.ts` exposes an immutable, `useSyncExternalStore`-
+  compatible summary of legacy chat state and stream lifecycle events.
+- `useChatRuntime.ts` provides full-snapshot and derived streaming hooks.
+- `types/domain.ts` holds the migration-side chat and stream contracts.
+
+The bridge never publishes prompt or response text. Stream deltas are
+represented by their accumulated length and coalesced to one notification
+per animation frame. Default mode does not import the React chunk.
+
+Validation commands:
+
+```sh
+npm run typecheck
+npm run build
+npx playwright test e2e/react-compat.spec.mjs --config=playwright.config.mjs
+```
