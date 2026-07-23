@@ -9,3 +9,5 @@ declare module 'rtf2text';
 declare module 'jsdom';
 declare module 'multer';
 declare module 'pdf-parse';
+declare module 'cors';
+declare module 'cookie-parser';

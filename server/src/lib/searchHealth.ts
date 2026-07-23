@@ -20,7 +20,14 @@
  *   - 'langBad'  (results returned but no overlap with query language)
  */
 
-const _ring = [];
+interface HealthEntry {
+  engine: string;
+  langCluster: string;
+  outcome: string;
+  ts: number;
+}
+
+let _ring: HealthEntry[] = [];
 const RING_MAX = 200;
 const DECAY_MS = 30 * 60 * 1000;
 const MIN_ENGINES = 2;
@@ -31,7 +38,7 @@ const MIN_ENGINES = 2;
  * @param {string} langCluster  'cjk' | 'latin' | 'cyrillic' | 'other'
  * @param {string} outcome      'ok' | 'empty' | 'captcha' | 'error' | 'langBad'
  */
-export function record(engine, langCluster, outcome) {
+export function record(engine: string, langCluster: string, outcome: string) {
   if (!engine) return;
   _ring.push({ engine, langCluster, outcome, ts: Date.now() });
   if (_ring.length > RING_MAX) _ring.shift();
@@ -47,7 +54,7 @@ export function record(engine, langCluster, outcome) {
  * @param {string}   langCluster
  * @returns {string[]}         engines to skip (subset of `engines`)
  */
-export function shouldSkip(engines, langCluster) {
+export function shouldSkip(engines: string[], langCluster: string) {
   if (!Array.isArray(engines) || engines.length <= MIN_ENGINES) return [];
   const cutoff = Date.now() - DECAY_MS;
 

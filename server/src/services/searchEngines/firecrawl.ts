@@ -53,7 +53,7 @@ export async function searchFirecrawl(query: string, limit = 10, signal?: AbortS
 
   const cap = Math.max(1, Math.min(100, Number.isFinite(limit) ? limit : 10));
 
-  let stdout;
+  let stdout: string;
   try {
     stdout = await runFirecrawl(
       ['search', String(query).trim(), '--limit', String(cap), '--json'],

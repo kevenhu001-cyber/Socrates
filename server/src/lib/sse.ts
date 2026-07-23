@@ -25,15 +25,29 @@
  *     same boilerplate).
  */
 
+import type { Response, Application } from 'express';
+
 const DEFAULT_KEEPALIVE_MS = 15_000;
 const COMMENT_PREFIX = ':';
+
+/**
+ * Options for {@link startSseKeepalive}. The declared fields are the
+ * ones actually read by the implementation; the index signature keeps
+ * the door open for forward-compatible extra options without forcing
+ * every caller to know about them.
+ */
+interface SseKeepaliveOpts {
+  intervalMs?: number;
+  text?: string;
+  [key: string]: unknown;
+}
 
 /**
  * Write the standard SSE response headers and flush them immediately.
  * Returns true if headers flushed, false if the socket was already
  * closed (caller should bail out).
  */
-export function writeSseHeaders(res) {
+export function writeSseHeaders(res: Response) {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -54,7 +68,7 @@ export function writeSseHeaders(res) {
  * value (will be JSON.stringify'd). Returns false if the socket is
  * no longer writable so callers can abort cleanly.
  */
-export function writeSseEvent(res, event, data) {
+export function writeSseEvent(res: Response, event: string, data: unknown) {
   if (res.writableEnded || res.destroyed) return false;
   const payload = typeof data === 'string' ? data : JSON.stringify(data);
   return res.write(`event: ${event}\ndata: ${payload}\n\n`);
@@ -65,7 +79,7 @@ export function writeSseEvent(res, event, data) {
  * Equivalent to `writeSseEvent(res, null, data)` but omits the
  * `event:` line. Convention for chat-style deltas.
  */
-export function writeSseData(res, data) {
+export function writeSseData(res: Response, data: unknown) {
   if (res.writableEnded || res.destroyed) return false;
   const payload = typeof data === 'string' ? data : JSON.stringify(data);
   return res.write(`data: ${payload}\n\n`);
@@ -76,7 +90,7 @@ export function writeSseData(res, data) {
  * these. Used to keep the TCP socket warm across long reasoning-model
  * silences (which can exceed reverse-proxy idle timeouts).
  */
-export function writeSseComment(res, text) {
+export function writeSseComment(res: Response, text: string) {
   if (res.writableEnded || res.destroyed) return false;
   return res.write(`${COMMENT_PREFIX} ${text}\n\n`);
 }
@@ -99,7 +113,7 @@ export function writeSseComment(res, text) {
  * @param {string} [opts.text='keepalive']
  * @returns {{ stop: () => void, intervalMs: number }}
  */
-export function startSseKeepalive(res, opts = {}) {
+export function startSseKeepalive(res: Response, opts: SseKeepaliveOpts = {}) {
   /* Floor: 250 ms. Anything shorter risks a tight write loop if a
      buggy caller passes `intervalMs: 0` and the comment write ever
      becomes non-trivial. 250 ms is still ≪ nginx's 60 s default
@@ -158,8 +172,8 @@ export function startSseKeepalive(res, opts = {}) {
  * Idempotent if you forget the closing delta — the server process
  * exiting will just leak a single number that resets next boot.
  */
-export function trackSseConnection(app, delta) {
+export function trackSseConnection(app: Application, delta: unknown) {
   if (!app || !app.locals) return;
   const cur = Number.isFinite(app.locals.sseCount) ? app.locals.sseCount : 0;
-  app.locals.sseCount = Math.max(0, cur + delta);
+  app.locals.sseCount = Math.max(0, cur + (delta as number));
 }

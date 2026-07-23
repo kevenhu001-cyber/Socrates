@@ -35,9 +35,9 @@ const TEACHER_MODE_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/teacher-mode.m
 const CODE_INTERPRETER_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/code-interpreter.md');
 
 /* Per-file mtime-keyed cache. Key = absolute path, value = { mtime, content }. */
-const cache = new Map();
+const cache = new Map<string, { mtime: number; content: string }>();
 
-async function loadPrompt(filePath) {
+async function loadPrompt(filePath: string): Promise<string | null> {
   try {
     const stat = await fs.stat(filePath);
     const mtime = stat.mtimeMs;
@@ -49,7 +49,7 @@ async function loadPrompt(filePath) {
     cache.set(filePath, { mtime, content });
     return content;
   } catch (err) {
-    console.error('[prompts] Failed to load', filePath + ':', err.message);
+    console.error('[prompts] Failed to load', filePath + ':', (err as Error).message);
     return null;
   }
 }
@@ -64,9 +64,9 @@ async function loadPrompt(filePath) {
    request (every chat turn) is one Date.toLocaleDateString call —
    cheaper than re-reading disk. If we ever need per-request date
    freshness within the same minute, switch to a per-call wrapper. */
-let substitutedForDate = null;
-let substitutedContent = null;
-function substitutePlaceholders(raw, filePath) {
+let substitutedForDate: string | null = null;
+let substitutedContent: string | null = null;
+function substitutePlaceholders(raw: string, filePath: string): string {
   if (filePath !== BEAGLE_PROMPT_PATH) return raw;
   const now = new Date();
   const today = now.toLocaleDateString('en-US', {

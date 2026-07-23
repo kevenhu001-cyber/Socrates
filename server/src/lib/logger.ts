@@ -59,14 +59,14 @@ const SENSITIVE_KEYS = new Set([
   'phonenumber',
 ]);
 
-function redactExtra(extra) {
+function redactExtra(extra: Record<string, unknown>): Record<string, unknown> {
   if (!extra || typeof extra !== 'object') return extra;
-  const out = {};
+  const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(extra)) {
     if (SENSITIVE_KEYS.has(k.toLowerCase())) {
       out[k] = '[REDACTED]';
     } else if (v && typeof v === 'object' && !Array.isArray(v)) {
-      out[k] = redactExtra(v);
+      out[k] = redactExtra(v as Record<string, unknown>);
     } else {
       out[k] = v;
     }
@@ -77,12 +77,20 @@ function redactExtra(extra) {
 const LEVELS = { debug: 10, info: 20, warn: 30, error: 40 };
 
 const envLevel = (process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug')).toLowerCase();
-const threshold = LEVELS[envLevel] || LEVELS.info;
+const threshold = LEVELS[envLevel as keyof typeof LEVELS] || LEVELS.info;
 
 /* Pick the underlying stream method — console.log writes to stdout
  * and is line-buffered in production; console.error goes to stderr,
  * which we want for warn/error so operators can split the streams. */
-function emit(level, payload) {
+interface LogPayload {
+  t: string;
+  level: string;
+  msg: string;
+  extra?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+function emit(level: string, payload: Record<string, unknown>) {
   const line = JSON.stringify(payload);
   if (level === 'error' || level === 'warn') {
     process.stderr.write(line + '\n');
@@ -100,10 +108,10 @@ function emit(level, payload) {
  *   import { logger } from '../lib/logger.js';
  *   logger.info('pool_ready', { poolSize: 2 });
  */
-function makeLogger(bindings = {}) {
-  function log(level, msg, extra) {
+function makeLogger(bindings: Record<string, unknown> = {}) {
+  function log(level: keyof typeof LEVELS, msg: string, extra?: Record<string, unknown>) {
     if (LEVELS[level] < threshold) return;
-    const payload = {
+    const payload: LogPayload = {
       t: new Date().toISOString(),
       level,
       msg: typeof msg === 'string' ? msg : JSON.stringify(msg),
@@ -114,18 +122,18 @@ function makeLogger(bindings = {}) {
     }
     try {
       emit(level, payload);
-    } catch (e) {
+    } catch (e: unknown) {
       /* Serialisation can fail on circular refs / BigInt. Fall back to
        * a plain text line so we never lose the log entirely. */
-      process.stderr.write(`[logger-fallback] ${level} ${payload.msg}: ${e.message}\n`);
+      process.stderr.write(`[logger-fallback] ${level} ${payload.msg}: ${(e as Error).message}\n`);
     }
   }
   return {
-    debug: (msg, extra) => log('debug', msg, extra),
-    info:  (msg, extra) => log('info',  msg, extra),
-    warn:  (msg, extra) => log('warn',  msg, extra),
-    error: (msg, extra) => log('error', msg, extra),
-    child(extraBindings) {
+    debug: (msg: string, extra?: Record<string, unknown>) => log('debug', msg, extra),
+    info:  (msg: string, extra?: Record<string, unknown>) => log('info',  msg, extra),
+    warn:  (msg: string, extra?: Record<string, unknown>) => log('warn',  msg, extra),
+    error: (msg: string, extra?: Record<string, unknown>) => log('error', msg, extra),
+    child(extraBindings: Record<string, unknown>) {
       return makeLogger({ ...bindings, ...extraBindings });
     },
   };
@@ -144,8 +152,16 @@ export const logger = makeLogger();
  *     ...
  *   });
  */
-export function createReqLogger(req) {
-  const bindings = {
+interface ReqLike {
+  id?: string;
+  method?: string;
+  path?: string;
+  userId?: string;
+  log?: ReturnType<typeof makeLogger>;
+}
+
+export function createReqLogger(req: ReqLike) {
+  const bindings: Record<string, unknown> = {
     rid: req.id || 'no-id',
     method: req.method,
     path: req.path,
@@ -159,7 +175,7 @@ export function createReqLogger(req) {
  * the request-id middleware (e.g. helmet) and won't have a logger
  * pre-attached. This helper ensures we never crash on `req.log.info`.
  */
-export function reqLog(req) {
+export function reqLog(req: ReqLike) {
   if (req && req.log) return req.log;
   return createReqLogger(req || {});
 }

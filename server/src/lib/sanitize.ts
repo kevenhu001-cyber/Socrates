@@ -52,9 +52,9 @@ const ALLOWED_EXTRA_BODY_KEYS = new Set([
  * @param {unknown} raw
  * @returns {Record<string, unknown>|undefined}
  */
-export function sanitizeExtraBody(raw) {
+export function sanitizeExtraBody(raw: unknown) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
-  const out = {};
+  const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(raw)) {
     if (!ALLOWED_EXTRA_BODY_KEYS.has(k)) continue;
     if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
@@ -81,7 +81,7 @@ export function sanitizeExtraBody(raw) {
  * to 'unlisted' for anything else so legacy clients that send
  * `link` keep working. */
 const ALLOWED_VISIBILITY = new Set(['public', 'unlisted', 'private']);
-export function normalizeVisibility(v) {
+export function normalizeVisibility(v: unknown) {
   if (typeof v === 'string' && ALLOWED_VISIBILITY.has(v)) return v;
   return 'unlisted';
 }
@@ -94,7 +94,7 @@ export function normalizeVisibility(v) {
  * @param {unknown} html
  * @returns {string}
  */
-export function sanitizeStoredHtml(html) {
+export function sanitizeStoredHtml(html: unknown) {
   if (typeof html !== 'string' || html.length === 0) return '';
   return purify.sanitize(html, {
     // FORBID_TAGS is additive to the default tag list — DOMPurify
@@ -116,7 +116,7 @@ export function sanitizeStoredHtml(html) {
  * (except \n \r \t), collapses NULs, and trims surrounding whitespace.
  * Used for rawText fields that are rendered with markdown later.
  */
-export function sanitizePlainText(text) {
+export function sanitizePlainText(text: unknown) {
   if (typeof text !== 'string') return '';
   // Strip C0 control chars except newline / carriage return / tab.
   // eslint-disable-next-line no-control-regex

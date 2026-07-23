@@ -24,7 +24,7 @@ let _hits = 0;
 let _misses = 0;
 
 const DEFAULT_MAX_BYTES = 50 * 1024 * 1024; // 50 MB
-const MAX_BYTES = parseInt(process.env.URL_CACHE_MAX_BYTES, 10) || DEFAULT_MAX_BYTES;
+const MAX_BYTES = parseInt(process.env.URL_CACHE_MAX_BYTES ?? '', 10) || DEFAULT_MAX_BYTES;
 
 /**
  * @typedef {Object} CacheEntry
@@ -38,13 +38,24 @@ const MAX_BYTES = parseInt(process.env.URL_CACHE_MAX_BYTES, 10) || DEFAULT_MAX_B
  * @property {number}  fetchedAt        ms-since-epoch
  * @property {boolean} truncated        Whether fetchBatch already truncated
  */
+export interface CacheEntry {
+  url: string;
+  status: number;
+  etag?: string;
+  lastModified?: string;
+  contentType: string;
+  html: string;
+  bytes: number;
+  fetchedAt: number;
+  truncated: boolean;
+}
 
 /**
  * Look up a cached entry. Bumps LRU position by re-inserting.
  * @param {string} url
  * @returns {CacheEntry|null}
  */
-export function get(url) {
+export function get(url: string) {
   if (!url) return null;
   const entry = _cache.get(url);
   if (!entry) { _misses++; return null; }
@@ -60,7 +71,7 @@ export function get(url) {
  * @param {string} url
  * @param {CacheEntry} entry
  */
-export function set(url, entry) {
+export function set(url: string, entry: CacheEntry) {
   if (!url || !entry || typeof entry.html !== 'string') return;
   const existing = _cache.get(url);
   if (existing) {
@@ -96,7 +107,7 @@ export function set(url, entry) {
  * Drop a single entry (e.g., when a URL is known-bad).
  * @param {string} url
  */
-export function invalidate(url) {
+export function invalidate(url: string) {
   const entry = _cache.get(url);
   if (!entry) return;
   _totalBytes -= entry.bytes;
