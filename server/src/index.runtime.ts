@@ -31,7 +31,7 @@ async function main() {
     initDb(DATABASE_URL);
     console.log('[db] Connected to PostgreSQL');
   } catch (err) {
-    console.error('[db] Failed to connect:', err.message);
+    console.error('[db] Failed to connect:', (err as Error).message);
     process.exit(1);
   }
 
@@ -40,7 +40,7 @@ async function main() {
     const { seedBuiltInProvider } = await import('./services/apiKey.js');
     await seedBuiltInProvider();
   } catch (err) {
-    console.warn('[seed] Beagle provider skipped:', err.message);
+    console.warn('[seed] Beagle provider skipped:', (err as Error).message);
   }
 
   // ── Validate all API keys (detect corrupted ciphertext) ──
@@ -48,7 +48,7 @@ async function main() {
     const { validateApiKeys } = await import('./services/apiKey.js');
     await validateApiKeys();
   } catch (err) {
-    console.warn('[validate] API key validation skipped:', err.message);
+    console.warn('[validate] API key validation skipped:', (err as Error).message);
   }
 
   // ── Warm up Pyodide code-interpreter pool ──
@@ -62,7 +62,7 @@ async function main() {
       await codeInterpreter.warm();
       console.log('[code-interpreter] Pyodide pool warmed');
     } catch (err) {
-      console.warn('[code-interpreter] warmup skipped:', err.message);
+      console.warn('[code-interpreter] warmup skipped:', (err as Error).message);
     }
   })();
 
@@ -80,7 +80,7 @@ async function main() {
       const r = await codeInterpreter._reapStaleSessionScratches(ttlDays);
       if (r && r.removed > 0) console.log(`[code-interpreter] startup TTL sweep removed ${r.removed} stale session scratch dir(s)`);
     } catch (err) {
-      console.warn('[code-interpreter] TTL sweep skipped:', err.message);
+      console.warn('[code-interpreter] TTL sweep skipped:', (err as Error).message);
     }
   })();
 
@@ -127,10 +127,10 @@ async function main() {
           console.warn(`[llm-warmup] Warmup returned ${resp.status}: ${text.slice(0, 100)}`);
         }
       } catch (err) {
-        console.warn(`[llm-warmup] Skipped (${err.message || err}) — first request may be slow`);
+        console.warn(`[llm-warmup] Skipped (${(err as Error).message || err}) — first request may be slow`);
       }
     } catch (err) {
-      console.warn(`[llm-warmup] Skipped (import error: ${err.message})`);
+      console.warn(`[llm-warmup] Skipped (import error: ${(err as Error).message})`);
     }
   })();
 
@@ -144,7 +144,7 @@ async function main() {
       const { startStatusMonitor } = await import('./services/statusMonitor.js');
       startStatusMonitor();
     } catch (err) {
-      console.warn('[status-monitor] not started:', err.message);
+      console.warn('[status-monitor] not started:', (err as Error).message);
     }
   })();
 
@@ -154,7 +154,7 @@ async function main() {
   });
 
   // ── Graceful shutdown ──
-  const shutdown = async (signal) => {
+  const shutdown = async (signal: string) => {
     console.log(`[server] Received ${signal}, shutting down…`);
     // Stop accepting new connections immediately. Active SSE streams
     // and in-flight LLM calls get a 30s grace period to finish before
@@ -186,7 +186,7 @@ async function main() {
     process.exit(1);
   });
   process.on('unhandledRejection', (reason, promise) => {
-    console.error('[fatal] unhandledRejection:', reason && reason.stack || reason);
+    console.error('[fatal] unhandledRejection:', reason && (reason as Error).stack || reason);
     // Promise rejections are not always fatal — route-level error
     // handlers may have already caught and logged the rejection.
     // Only crash if the rejection is truly fatal:
@@ -194,7 +194,7 @@ async function main() {
     //   - ERR_MEMORY_ALLOCATION_FAILED → OOM
     // Otherwise log, let the process continue, and rely on the
     // uncaughtException handler for truly terminal states.
-    const errMsg = reason && (reason.message || String(reason));
+    const errMsg = reason ? ((reason as Error).message || String(reason)) : '';
     if (errMsg && (
       errMsg.includes('ERR_SOCKET_BAD_PORT') ||
       errMsg.includes('ERR_INVALID_ARG_TYPE') ||

@@ -64,8 +64,23 @@ The migration is **not complete**.
       `messages` type for multimodal content. Removed the same latent
       `clearInterval(<undeclared>)` reference bug in the minimaxProxy stream
       path (keepalive is self-cleaning via startSseKeepalive).
-- [ ] Application and runtime entry modules
-- [ ] Remove JavaScript compilation compatibility
+- [x] Application and runtime entry modules (`app.ts`, `index.runtime.ts`, and
+      `db/migrate.ts` migrated to TypeScript; `dev`/`db:migrate` scripts repointed
+      to the `.ts` sources). Added `declare module` shims for cors/cookie-parser;
+      typed the CORS `origin` callback, asserted the auth-gated `req.userId` at the
+      local/web/image search handlers, dropped the dead `enrich` option (webSearch
+      never read it), and hardened the `unknown` catch/reason handling in the
+      runtime bootstrap. The stable `src/index.js` systemd shim is intentionally
+      left as JS (delegates to `dist/index.runtime.js`) until the JS-compilation
+      removal batch.
+- [x] Remove JavaScript compilation compatibility (all 10 remaining
+      `src/lib/*.js` helpers — logger, prompts, pubsub, sanitize, searchHealth,
+      searchResultCache, spawnFirecrawl, spawnMmx, sse, urlCache — migrated to
+      TypeScript. `tsconfig.json` now has `allowJs: false` and `tsconfig.build.json`
+      only includes `src/**/*.ts`. The stable `src/index.js` systemd shim is
+      intentionally preserved as the only `.js` file (it imports the compiled
+      runtime and stays outside the TS include set); delete it once the systemd
+      unit is repointed at `dist/index.runtime.js`.)
 
 ## Required gates
 

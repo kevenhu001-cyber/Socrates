@@ -61,8 +61,8 @@ const RECONNECT_BACKOFF_MS = [500, 1000, 2000, 5000, 10000, 30000]; // capped at
  * form; `pgClient.on('notification')` echoes the same encoded name
  * back, so we decode it for the handler lookup. The user-facing
  * handler receives the original topic verbatim. */
-const encodeChannel = (topic) => topic.replace(/[^A-Za-z0-9_]/g, '_');
-const decodeChannel = (channel) => channel; // identity — names round-trip via the map
+const encodeChannel = (topic: string) => topic.replace(/[^A-Za-z0-9_]/g, '_');
+const decodeChannel = (channel: string) => channel; // identity — names round-trip via the map
 
 /* In-process fallback for development / degraded mode. The fallback
  * is consulted only when the PG listener is unavailable; otherwise
@@ -84,10 +84,10 @@ const handlers = new Map();
    wire on hot subscribe paths (every SSE connect calls subscribe). */
 const listenedTopics = new Set();
 
-let pgClient = null;
-let pgConnectPromise = null;
+let pgClient: any = null;
+let pgConnectPromise: Promise<void> | null = null;
 let reconnectAttempt = 0;
-let reconnectTimer = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
 /* ─── Public API ──────────────────────────────────────────────────── */
 
@@ -103,7 +103,7 @@ let reconnectTimer = null;
  * @param {object} [opts]
  * @param {boolean} [opts.local]  force the local emitter (bypass PG)
  */
-export async function publish(topic, payload, opts = {}) {
+export async function publish(topic: string, payload: any, opts: { local?: boolean } = {}) {
   if (!isValidTopic(topic)) {
     logger.child({ module: 'pubsub' }).warn('publish_invalid_topic', { topic });
     return;
@@ -119,7 +119,7 @@ export async function publish(topic, payload, opts = {}) {
   return publishRaw(topic, json, !!opts.local);
 }
 
-async function publishRaw(topic, json, forceLocal) {
+async function publishRaw(topic: string, json: string, forceLocal: boolean) {
   /* If the listener is up AND the caller did not opt into the local
      emitter, route through PG. */
   if (!forceLocal && pgListenerReady && pgClient) {
@@ -139,7 +139,7 @@ async function publishRaw(topic, json, forceLocal) {
       // brief PG hiccup doesn't strand the SSE consumer. PG-down is
       // a degraded mode; a single failed NOTIFY is too.
       logger.child({ module: 'pubsub', op: 'publish' }).warn('publish_pg_failed_using_local', {
-        topic, error: err.message,
+        topic, error: (err as Error).message,
       });
       _localEmitter.emit('local', topic, json);
       return;
@@ -163,7 +163,7 @@ async function publishRaw(topic, json, forceLocal) {
  * @param {string} topic
  * @param {function} handler  called with the JSON-parsed payload
  */
-export async function subscribe(topic, handler) {
+export async function subscribe(topic: string, handler: (payload: any) => void) {
   if (!isValidTopic(topic)) {
     throw new Error(`pubsub.subscribe: invalid topic "${topic}" (must start with one of: ${ALLOWED_TOPIC_PREFIXES.join(', ')})`);
   }
@@ -208,7 +208,7 @@ export async function subscribe(topic, handler) {
  * regardless of PG state. Used by the test harness. NOT for production
  * callers.
  */
-export function subscribeLocal(topic, handler) {
+export function subscribeLocal(topic: string, handler: (payload: any) => void) {
   if (!isValidTopic(topic)) throw new Error(`invalid topic ${topic}`);
   const enc = encodeChannel(topic);
   if (!handlers.has(enc)) handlers.set(enc, new Set());
@@ -244,7 +244,7 @@ export function getStatus() {
 
 /* ─── Internals ──────────────────────────────────────────────────── */
 
-function isValidTopic(topic) {
+function isValidTopic(topic: string) {
   if (typeof topic !== 'string' || topic.length === 0 || topic.length > 63) {
     return false;
   }
@@ -280,7 +280,7 @@ async function doConnect() {
   } catch (err) {
     pgClient = null;
     logger.child({ module: 'pubsub', op: 'connect' }).warn('pg_connect_failed', {
-      error: err.message, attempt: reconnectAttempt,
+      error: (err as Error).message, attempt: reconnectAttempt,
     });
     scheduleReconnect();
     throw err;
@@ -299,7 +299,7 @@ async function doConnect() {
   });
 }
 
-async function safeListen(topic) {
+async function safeListen(topic: string) {
   if (listenedTopics.has(topic) || !pgClient) return;
   try {
     // P_pg-channel-identifier — LISTEN takes an identifier, not a
@@ -310,12 +310,12 @@ async function safeListen(topic) {
     listenedTopics.add(topic);
   } catch (err) {
     logger.child({ module: 'pubsub', op: 'listen' }).warn('listen_failed', {
-      topic, error: err.message,
+      topic, error: (err as Error).message,
     });
   }
 }
 
-function onNotification(msg) {
+function onNotification(msg: { channel: string; payload?: string }) {
   /* P_pg-channel-identifier — msg.channel arrives in encoded form
      (matches the key used by subscribe()). No re-encode needed. */
   const enc = msg.channel;
@@ -324,7 +324,7 @@ function onNotification(msg) {
     payload = msg.payload ? JSON.parse(msg.payload) : {};
   } catch (err) {
     logger.child({ module: 'pubsub', op: 'dispatch' }).warn('payload_parse_failed', {
-      channel: enc, error: err.message,
+      channel: enc, error: (err as Error).message,
     });
     return;
   }
@@ -333,13 +333,13 @@ function onNotification(msg) {
   for (const h of set) {
     try { h(payload); } catch (err) {
       logger.child({ module: 'pubsub', op: 'dispatch' }).warn('handler_threw', {
-        channel: enc, error: err.message,
+        channel: enc, error: (err as Error).message,
       });
     }
   }
 }
 
-function onPgError(err) {
+function onPgError(err: Error) {
   /* The `error` event fires before `end`. We tear down state and let
      the reconnect loop reconnect. Subscribers will not receive events
      during the gap — that's the documented eventual-consistency
@@ -376,7 +376,7 @@ _localEmitter.on('local', (topic, json) => {
   let payload;
   try { payload = JSON.parse(json); } catch (_) { return; }
   for (const h of set) {
-    try { h(payload); } catch (err) { console.error('[pubsub] handler error:', err.message); }
+    try { h(payload); } catch (err) { console.error('[pubsub] handler error:', (err as Error).message); }
   }
 });
 

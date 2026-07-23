@@ -287,7 +287,7 @@ const CORS_ALLOWED_HOSTS = (process.env.CORS_ALLOWED_HOSTS || '')
 const ALLOWED_HOSTS = new Set([...DEFAULT_CORS_HOSTS, ...CORS_ALLOWED_HOSTS]);
 
 app.use(cors({
-  origin(origin, cb) {
+  origin(origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) {
     // Same-origin (no Origin header) is always allowed — covers direct
     // browser nav and same-origin fetches.
     if (!origin) return cb(null, true);
@@ -426,7 +426,7 @@ app.use('/api/users', userRouter);
 app.post('/api/search', requireAuth, searchLimiter, async (req, res, next) => {
   try {
     const { q, scope, limit } = req.body;
-    const result = await searchContent(req.userId, { q, scope, limit });
+    const result = await searchContent(req.userId!, { q, scope, limit });
     return res.json(result);
   } catch (err) { next(err); }
 });
@@ -437,7 +437,7 @@ app.post('/api/search', requireAuth, searchLimiter, async (req, res, next) => {
 // per user and surface 429 if needed in the future.
 app.post('/api/web-search', requireAuth, searchLimiter, async (req, res, next) => {
   try {
-    const { query, count, enrich } = req.body || {};
+    const { query, count } = req.body || {};
     // Resolve the user's active LLM key hint so the cross-request
     // result cache invalidates automatically when they switch providers.
     let apiKeyHint = 'no-key';
@@ -445,9 +445,9 @@ app.post('/api/web-search', requireAuth, searchLimiter, async (req, res, next) =
       const cfg = await getActiveApiKey(req.userId);
       if (cfg && cfg.keyHint) apiKeyHint = `${cfg.keyHint}:${cfg.url || ''}:${cfg.model || ''}`;
     } catch { /* leave placeholder hint */ }
-    const locale = (req.headers['accept-language'] || '').split(',')[0].trim() || null;
+    const locale = (req.headers['accept-language'] || '').split(',')[0].trim() || undefined;
     const results = await webSearch(query, count, {
-      userId: req.userId, enrich, locale, apiKeyHint,
+      userId: req.userId ?? undefined, locale, apiKeyHint,
     });
     return res.json({ results, query: String(query || '').slice(0, 200) });
   } catch (err) { next(err); }

@@ -13,7 +13,6 @@
  *                       query expansions, so cross-user sharing is wrong)
  *   - query            (the raw user query)
  *   - count            (returned result count)
- *   - enrich flag      (legacy fast-path skips fetch+extract)
  *   - locale hint      (different hosts for CJK vs Latin)
  *   - apiKeyHint       (active LLM config hash — auto-invalidates when
  *                       the user switches providers)
@@ -31,15 +30,19 @@ const MAX_QUERY_LEN = 500;
 /**
  * Build a stable cache key.
  */
-function makeKey(userId, query, count, enrich, locale, apiKeyHint) {
+function makeKey(
+  userId: string | undefined,
+  query: string,
+  count: number,
+  locale: string | null,
+  apiKeyHint: string,
+) {
   const h = createHash('sha256');
   h.update(String(userId || ''));
   h.update('\x1f');
   h.update(String(query || '').slice(0, MAX_QUERY_LEN));
   h.update('\x1f');
   h.update(String(count | 0));
-  h.update('\x1f');
-  h.update(enrich === false ? '0' : '1');
   h.update('\x1f');
   h.update(String(locale || '').slice(0, 32));
   h.update('\x1f');
@@ -52,13 +55,24 @@ function makeKey(userId, query, count, enrich, locale, apiKeyHint) {
  * @param {string=} args.userId
  * @param {string} args.query
  * @param {number} args.count
- * @param {boolean=} args.enrich
  * @param {(string|null)=} args.locale
  * @param {string=} args.apiKeyHint
- * @returns {object|null}  cached result array or null
+ * @returns {unknown|null}  cached result array or null
  */
-export function get({ userId, query, count, enrich, locale, apiKeyHint }) {
-  const key = makeKey(userId, query, count, enrich, locale, apiKeyHint);
+export function get({
+  userId,
+  query,
+  count,
+  locale,
+  apiKeyHint,
+}: {
+  userId: string | undefined;
+  query: string;
+  count: number;
+  locale: string | null;
+  apiKeyHint: string;
+}): unknown | null {
+  const key = makeKey(userId, query, count, locale, apiKeyHint);
   const entry = _cache.get(key);
   if (!entry) return null;
   if (Date.now() > entry.expiresAt) {
@@ -76,14 +90,27 @@ export function get({ userId, query, count, enrich, locale, apiKeyHint }) {
  * @param {string=} args.userId
  * @param {string} args.query
  * @param {number} args.count
- * @param {boolean=} args.enrich
  * @param {(string|null)=} args.locale
  * @param {string=} args.apiKeyHint
- * @param {object} args.result   the result array returned to the client
+ * @param {unknown} args.result   the result array returned to the client
  */
-export function set({ userId, query, count, enrich, locale, apiKeyHint, result }) {
+export function set({
+  userId,
+  query,
+  count,
+  locale,
+  apiKeyHint,
+  result,
+}: {
+  userId: string | undefined;
+  query: string;
+  count: number;
+  locale: string | null;
+  apiKeyHint: string;
+  result: unknown;
+}) {
   if (!result) return;
-  const key = makeKey(userId, query, count, enrich, locale, apiKeyHint);
+  const key = makeKey(userId, query, count, locale, apiKeyHint);
   // Drop oldest entries when over the limit.
   while (_cache.size >= MAX_ENTRIES) {
     const oldest = _cache.keys().next().value;

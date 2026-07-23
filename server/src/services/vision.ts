@@ -115,7 +115,7 @@ export async function describeImage({ dataUrl, prompt }: { dataUrl?: string; pro
   }
 
   let data;
-  try { data = JSON.parse(stdout); }
+  try { data = JSON.parse(stdout as string); }
   catch (_) {
     throw reject(502, 'mmx returned non-JSON output');
   }

@@ -28,11 +28,11 @@ const DEFAULT_TIMEOUT_MS = 10_000;
  * Prepends the global-node prefix directories to PATH so the binary
  * is found.
  */
-export function buildFirecrawlSpawnEnv(extra = {}) {
+export function buildFirecrawlSpawnEnv(extra: Record<string, string> = {}) {
   const sep = process.platform === 'win32' ? ';' : ':';
-  const env = { ...process.env, ...extra };
+  const env: Record<string, string> = { ...(process.env as Record<string, string>), ...extra } as Record<string, string>;
   const extraPaths = DEFAULT_EXTRA_PATHS.join(sep);
-  env.PATH = extraPaths + sep + (env.PATH || process.env.PATH || '');
+  env.PATH = extraPaths + sep + (env.PATH || (process.env.PATH as string) || '');
   return env;
 }
 
@@ -46,7 +46,7 @@ export function buildFirecrawlSpawnEnv(extra = {}) {
  * @param {AbortSignal} [opts.signal]
  * @returns {Promise<string>}  child stdout
  */
-export function runFirecrawl(args, opts = {}) {
+export function runFirecrawl(args: string[], opts: { timeoutMs?: number; signal?: AbortSignal; [key: string]: unknown } = {}): Promise<string> {
   const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : DEFAULT_TIMEOUT_MS;
   return new Promise((resolve, reject) => {
     let proc;

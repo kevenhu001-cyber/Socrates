@@ -39,9 +39,9 @@ const DEFAULT_TIMEOUT_MS = 8_000;
  * env var whose name matches one of MMX_CONFLICTING_ENV_PREFIXES and
  * prepends the global-node prefix directories to PATH.
  */
-export function buildSpawnEnv(extra = {}) {
+export function buildSpawnEnv(extra: Record<string, string> = {}) {
   const sep = process.platform === 'win32' ? ';' : ':';
-  const env = { ...process.env, ...extra, MMX_QUIET: '1' };
+  const env: Record<string, string> = { ...process.env, ...extra, MMX_QUIET: '1' } as Record<string, string>;
   for (const k of Object.keys(env)) {
     if (MMX_CONFLICTING_ENV_PREFIXES.some((rx) => rx.test(k))) delete env[k];
   }
@@ -61,7 +61,10 @@ export function buildSpawnEnv(extra = {}) {
  * @param {AbortSignal} [opts.signal]
  * @returns {Promise<string>}   child stdout
  */
-export function runMmx(args, opts = {}) {
+export function runMmx(
+  args: string[],
+  opts: { timeoutMs?: number; signal?: AbortSignal; [key: string]: unknown } = {},
+): Promise<string> {
   const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : DEFAULT_TIMEOUT_MS;
   return new Promise((resolve, reject) => {
     let proc;
