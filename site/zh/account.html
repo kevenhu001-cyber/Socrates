@@ -430,13 +430,6 @@ var srObs = new IntersectionObserver(function(entries) {
         '</div>' +
       '</div>' +
 
-      (isFree ? '' :
-      '<div class="acct-card sr sr-d1">' +
-        '<div class="acct-card-header"><div class="acct-card-title">支付方式</div><button class="btn btn-ghost btn-sm" onclick="showPaymentModal()">编辑</button></div>' +
-        '<div class="acct-pm"><div class="acct-pm-icon">' + (u.paymentMethod ? brandSvg(u.paymentMethod.brand) : brandSvg('Visa')) + '</div><div class="acct-pm-info"><div class="acct-pm-name">' + (u.paymentMethod ? u.paymentMethod.brand + ' 尾号 ' + u.paymentMethod.last4 : 'Visa 尾号 4242') + '</div><div class="acct-pm-desc">' + (u.paymentMethod ? '有效期至 ' + String(u.paymentMethod.expMonth).padStart(2,'0') + '/' + u.paymentMethod.expYear : '有效期至 12/2027') + '</div></div><span class="acct-pm-badge">默认</span></div>' +
-      '</div>'
-      ) +
-
       /* 付款方式 — 仅付费用户 */
       (isFree ? '' :
       '<div class="acct-card sr sr-d1" id="pmCardContainer">' +

@@ -779,7 +779,7 @@ function appendInlineImage(fileId, mimeType, url, out) {
   let attempts = 0;
   function requestImage() {
     clearTimeout(loadTimer);
-    img.src = url + (url.indexOf("?") >= 0 ? "&" : "?") + "_t=" + Date.now();
+    img.src = url + (url.indexOf("?") >= 0 ? "&" : "?") + "cb=" + Date.now();
     loadTimer = setTimeout(function () {
       if (!wrap.parentNode || img.complete) return;
       if (attempts++ === 0) return requestImage();
@@ -841,7 +841,7 @@ function appendInlineImage(fileId, mimeType, url, out) {
   function openLightbox(ev) {
     if (ev) ev.preventDefault();
     if (typeof window.__vizOpenModalRaw !== "function") return;
-    var fullSrc = url + (url.indexOf("?") >= 0 ? "&" : "?") + "_t=" + Date.now();
+    var fullSrc = url + (url.indexOf("?") >= 0 ? "&" : "?") + "cb=" + Date.now();
     var html = '<div class="img-lightbox"><img src="' + esc(fullSrc) + '" alt="' + esc(displayName(fileId, mimeType) || 'artifact') + '"/></div>';
     window.__vizOpenModalRaw(html, displayName(fileId, mimeType) || 'Artifact');
   }
