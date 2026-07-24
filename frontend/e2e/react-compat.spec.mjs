@@ -4,7 +4,7 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('React compatibility mode preserves the legacy application shell', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/?react=1');
+  await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -19,6 +19,11 @@ test('React compatibility mode preserves the legacy application shell', async ({
     'send-button',
   );
   await expect(page.locator('#sendBtnContent .icon-arrow')).toHaveCount(1);
+
+  await expect(page.locator('#msgList')).toHaveAttribute(
+    'data-react-migration-runtime',
+    'msg-list',
+  );
 
   await page.evaluate(() => {
     window.setChatStopState(true);
@@ -41,19 +46,20 @@ test('React compatibility mode preserves the legacy application shell', async ({
   await expect(page.locator('#sendBtnContent path')).toHaveCount(1);
 });
 
-test('default mode leaves the React migration slice disabled', async ({ page }) => {
+test('React compatibility mode always loads (no ?react=1 flag needed)', async ({ page }) => {
   await mockAuthedApp(page);
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  await expect(page.locator('#newReplyPill')).not.toHaveAttribute('data-react-migration-runtime');
-  await expect(page.locator('#sendBtnContent')).not.toHaveAttribute('data-react-migration-runtime');
+  await expect(page.locator('#newReplyPill')).toHaveAttribute('data-react-migration-runtime', 'new-reply-pill');
+  await expect(page.locator('#sendBtnContent')).toHaveAttribute('data-react-migration-runtime', 'send-button');
+  await expect(page.locator('#sidebarUserRow')).toHaveAttribute('data-react-migration-runtime', 'sidebar-user-row');
 });
 
 test('React chat store observes legacy message and stream lifecycle', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/?react=1');
+  await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
