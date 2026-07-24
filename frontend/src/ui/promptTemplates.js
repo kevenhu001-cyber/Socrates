@@ -24,38 +24,18 @@ function _publishPromptTemplatesState() {
   } catch (_) { /* swallow */ }
 }
 
-function _reactOwnsPromptTemplates() {
-  return !!(document.getElementById("promptTemplatesReactRoot") && document.getElementById("promptTemplatesReactRoot").dataset.reactMigrationRuntime === "prompt-templates");
-}
+/* React owns the prompt-templates modal always under the always-on
+   runtime. The publish path is the only thing React reads. */
 
 function openPromptTemplatesModal() {
-  if (_reactOwnsPromptTemplates()) {
-    renderPromptTemplatesModal();
-    document.getElementById("promptTemplatesOverlay").classList.remove("hidden");
-    _publishPromptTemplatesState();
-    return;
-  }
-  var overlay = document.getElementById("promptTemplatesOverlay");
-  if (!overlay) {
-    overlay = document.createElement("div");
-    overlay.id = "promptTemplatesOverlay";
-    overlay.className = "cmd-k-overlay hidden";
-    overlay.onclick = function (ev) { if (ev.target === overlay) closePromptTemplatesModal(); };
-    overlay.innerHTML = '<div class="cmd-k-modal prompt-templates-modal" onclick="event.stopPropagation()"></div>';
-    document.body.appendChild(overlay);
-  }
-  overlay.classList.remove("hidden");
   renderPromptTemplatesModal();
+  document.getElementById("promptTemplatesOverlay").classList.remove("hidden");
+  _publishPromptTemplatesState();
 }
 
 function closePromptTemplatesModal() {
-  if (_reactOwnsPromptTemplates()) {
-    document.getElementById("promptTemplatesOverlay").classList.add("hidden");
-    _publishPromptTemplatesState();
-    return;
-  }
-  var overlay = document.getElementById("promptTemplatesOverlay");
-  if (overlay) overlay.classList.add("hidden");
+  document.getElementById("promptTemplatesOverlay").classList.add("hidden");
+  _publishPromptTemplatesState();
 }
 
 function renderPromptTemplatesModal() {
@@ -79,7 +59,7 @@ function renderPromptTemplatesModal() {
       '<button class="prompt-templates-new" onclick="openPromptTemplateEditor()">+ Create skill</button>' +
     '</div>';
   body.innerHTML = html;
-  if (_reactOwnsPromptTemplates()) { _publishPromptTemplatesState(); }
+  _publishPromptTemplatesState();
 }
 
 function renderPromptRow(t, editable) {
@@ -139,7 +119,7 @@ function openPromptTemplateEditor(existing) {
       '<button class="modal-cancel" onclick="renderPromptTemplatesModal()">Cancel</button>' +
       '<button class="modal-save" onclick="onPromptTemplateEditorSave(\'' + window.esc(t.id) + '\',' + (existing ? '1' : '0') + ')">Save</button>' +
     '</div>';
-  if (_reactOwnsPromptTemplates()) { _publishPromptTemplatesState(); }
+  _publishPromptTemplatesState();
   var title = document.getElementById("ptTitle");
   if (title) { setTimeout(function () { title.focus(); title.select(); }, 0); }
 }
