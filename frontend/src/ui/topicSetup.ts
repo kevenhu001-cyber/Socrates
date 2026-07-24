@@ -1,0 +1,59 @@
+// src/ui/topicSetup.ts — Phase C-2.3 extraction
+// Small helpers for the topic-setup and chat composer areas:
+//
+//   autoResize(el)            — grow a textarea up to its max-height as
+//                               the user types, then stop.
+//   updateStartBtn()          — toggle the topic-setup "Start" button's
+//                               active state based on the input value.
+//   updateSendBtn()           — toggle the chat "Send" button's active
+//                               state based on the chat input value AND
+//                               any pending attachments.
+//
+// All three are called from inline `oninput=` / `onclick=` handlers
+// in index.html, so they are also exposed on `window` via
+// src/windowExports.js (see C-2.3 mirror block).
+
+/* autoResize — the chat composer is capped at 120px (≈6 lines),
+   the topic setup textarea at 160px (≈8 lines). Reset height to
+   "auto" first so shrinking text reflows correctly. */
+export function autoResize(el: HTMLTextAreaElement | HTMLInputElement): void {
+  var maxH = el.id === "chatInputArea" ? 120 : 160;
+  el.style.height = "auto";
+  el.style.height = Math.min(el.scrollHeight, maxH) + "px";
+}
+
+/* Light up the "Start" button when the topic input has non-empty
+   text OR pending attachments (P_attachments-tutor — a user can drop
+   a PDF in tutor mode, leave the textarea empty, and Begin must
+   still be active).
+   P_chatgpt-landing — also toggle .has-text on the input wrap so the
+   CSS can swap the mic icon for the up-arrow on the send button. */
+export function updateStartBtn(): void {
+  var ti = document.getElementById("topicInput") as HTMLTextAreaElement | null;
+  var v = ti ? ti.value.trim() : "";
+  var b = document.getElementById("startBtn");
+  if (!b) return;
+  var hasAtt = typeof (window as any).attachments !== "undefined"
+    && Array.isArray((window as any).attachments)
+    && (window as any).attachments.length > 0;
+  if (v || hasAtt) b.classList.add("active"); else b.classList.remove("active");
+  var wrap = document.getElementById("topicInputWrap");
+  if (wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
+}
+
+/* Light up the "Send" button when there's text OR pending attachments
+   (P_attachments: a user can attach an image, leave the textarea
+   empty, and the send button must still look active).
+   P_chatgpt-landing — also toggle .has-text on the chat-input wrap. */
+export function updateSendBtn(): void {
+  var ci = document.getElementById("chatInputArea") as HTMLTextAreaElement | null;
+  var v = ci ? ci.value.trim() : "";
+  var b = document.getElementById("sendBtn");
+  if (!b) return;
+  var hasAtt = typeof (window as any).attachments !== "undefined"
+    && Array.isArray((window as any).attachments)
+    && (window as any).attachments.length > 0;
+  if (v || hasAtt) b.classList.add("active"); else b.classList.remove("active");
+  var wrap = document.getElementById("chatInputWrap");
+  if (wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
+}

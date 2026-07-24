@@ -259,19 +259,15 @@ import { toggleComposerTools } from './ui/composerTools.js';
 window.toggleComposerTools = toggleComposerTools;
 
 /* ─── ui/settings.js ─── */
-import { openSettings, closeSettings, toggleAPI, syncSettingsUI, renderProviderList, addProvider, removeProvider, setActiveProvider, updateProviderField, saveSettings, clearSettings, bindSettingsUI } from './ui/settings.js';
+import { openSettings, closeSettings, syncSettingsUI, renderProviderList, addProvider, removeProvider, setActiveProvider, saveSettings } from './ui/settings.js';
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
-window.toggleAPI = toggleAPI;
 window.syncSettingsUI = syncSettingsUI;
 window.renderProviderList = renderProviderList;
 window.addProvider = addProvider;
 window.removeProvider = removeProvider;
 window.setActiveProvider = setActiveProvider;
-window.updateProviderField = updateProviderField;
 window.saveSettings = saveSettings;
-window.clearSettings = clearSettings;
-window.bindSettingsUI = bindSettingsUI;
 
 /* ─── ui/share.js ─── */
 import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal, selectShareVis, createShareLink, copyShareLink, revokeShareLink, loadSharedSession, loadSharedExamSession, renderSharedQuestionCard, _shareToken, _shareUrl, _shareVisibility } from './ui/share.js';
