@@ -1,4 +1,4 @@
-import { hydrateRoot, type Root } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 
 import {
   installComposerToolsBridge,
@@ -120,7 +120,8 @@ export function hydrateComposerToolsMenu(): ComposerToolsHandle | null {
 
   installComposerToolsBridge();
 
-  const root = hydrateRoot(menu, <ComposerToolsMenu />);
+  const root = createRoot(menu);
+  root.render(<ComposerToolsMenu />);
   return {
     menu,
     root,

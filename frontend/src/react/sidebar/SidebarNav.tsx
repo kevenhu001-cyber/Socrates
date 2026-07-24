@@ -1,4 +1,4 @@
-import { hydrateRoot, type Root } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 
 import { seedSidebarBridgesFromLegacy, useActiveNav, useSidebarNavCommands } from './legacyAdapter';
 import type { SidebarNavKey } from './types';
@@ -148,7 +148,8 @@ export function hydrateSidebarNav(): SidebarNavHandle | null {
 
   seedSidebarBridgesFromLegacy();
 
-  const root = hydrateRoot(nav, <SidebarNav />);
+  const root = createRoot(nav);
+  root.render(<SidebarNav />);
   return {
     nav,
     root,

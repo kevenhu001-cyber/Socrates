@@ -1,4 +1,4 @@
-import { hydrateRoot, type Root } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 
 import { getKnownTagsFromSessions } from '../../ui/recentsHelpers.js';
 import {
@@ -177,7 +177,8 @@ export function hydrateRecentsFilterChips(): RecentsChipsHandle | null {
   target.dataset.recentChipsReactHydrated = '1';
   target.setAttribute('data-react-migration-runtime', 'recents-filter-chips');
 
-  const root = hydrateRoot(target, <RecentsFilterChips />);
+  const root = createRoot(target);
+  root.render(<RecentsFilterChips />);
   return {
     target,
     root,
