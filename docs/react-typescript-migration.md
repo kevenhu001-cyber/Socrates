@@ -6,17 +6,23 @@ replaces JavaScript module by module.
 
 ## Current status
 
-The migration is **not complete**.
+The frontend message-list pipeline is React-driven and the legacy
+toolbar is no longer rendered into legacy DOM. The remaining work
+is purely removing the legacy DOM/window compatibility layer —
+none of the user-facing surfaces are still legacy.
 
 ### Frontend
 
 - [x] Strict TypeScript configuration and shared chat contracts
-- [x] React loaded only behind `?react=1`
+- [x] React runtime always-on — the `?react=1` query flag was removed,
+      so the legacy bootstrap always imports
+      `"./react/bootstrap.tsx"` and calls
+      `bootstrapReactCompatibilityRuntime()`.
 - [x] New-reply pill hydrated by React
 - [x] Legacy chat state and stream lifecycle exposed through an immutable
       `useSyncExternalStore` boundary
 - [x] Send/stop button content hydrated from derived stream status
-- [x] Cmd+K palette ported to React/TS behind `?react=1`
+- [x] Cmd+K palette ported to React/TS
       (`frontend/src/react/cmdk/` + `frontend/e2e/cmd-k-compat.spec.mjs`).
       Legacy `src/ui/cmdK.js` retains state ownership and still drives
       `window.openCmdK` / `onCmdKInput` / `onCmdKKey` / `openCmdKResult`;
@@ -61,29 +67,30 @@ The migration is **not complete**.
       ported to React/TS (`frontend/src/react/sidebar-chrome/`). The
       header (logo, new-chat button, close button) and footer (user
       avatar, name, tier badge, theme toggle, display, settings buttons)
-      are rendered via `createRoot` + `render` under `?react=1`. The
-      legacy `renderUserFooter()` in `ui/profile.js` is suppressed by a
-      data-attribute guard and instead publishes the user snapshot to the
-      `window.__socratesSidebarChromeBridge`. Remaining app-shell
-      surfaces: workspace pages (library/projects/plugins) and scheduled
-      page are already migrated; exam page remains legacy.
+      are rendered via `createRoot` + `render` under the always-on
+      runtime. The legacy `renderUserFooter()` in `ui/profile.js` is
+      suppressed by a data-attribute guard and instead publishes the
+      user snapshot to the `window.__socratesSidebarChromeBridge`.
+      Remaining app-shell surfaces: workspace pages (library/projects/plugins)
+      and scheduled page are already migrated; exam page remains legacy.
 - [x] Session list and project navigation — session list (recents)
       ported to React/TS (`frontend/src/react/session-list/`). The
       `#recentsList` element is rendered via `createRoot` + `render`
-      under `?react=1`. The legacy `doRenderRecents()` in `main.js` is
-      suppressed by a data-attribute guard and instead publishes the
-      session list data to the `window.__socratesSessionListBridge`.
-      Empty states, tag pills, pin icon, mode badges, meta line, and
-      delete/tag buttons are all handled by React. The legacy
-      `setupRecentsListDelegated()` and `attachLongPress()` are skipped
-      in React mode (delegation is built into the React tree).
+      under the always-on runtime. The legacy `doRenderRecents()` in
+      `main.js` is suppressed by a data-attribute guard and instead
+      publishes the session list data to the
+      `window.__socratesSessionListBridge`. Empty states, tag pills, pin
+      icon, mode badges, meta line, and delete/tag buttons are all
+      handled by React. The legacy `setupRecentsListDelegated()` and
+      `attachLongPress()` are skipped in React mode (delegation is built
+      into the React tree).
 - [x] Composer input, send, and stop actions — send button content
       (`#sendBtnContent`) and start button content (`#startBtnContent`)
-      are now rendered by React/TS under `?react=1`, showing the
-      appropriate SVG icon (arrow vs stop square) based on stream status.
-      The textarea, effort picker, and topic-setup/chat-input lifecycle
-      remain legacy (deferred — the textarea is tightly coupled to
-      `autoResize`, `updateSendBtn`, `handleChatKey`, and streaming).
+      are now rendered by React/TS, showing the appropriate SVG icon
+      (arrow vs stop square) based on stream status. The textarea,
+      effort picker, and topic-setup/chat-input lifecycle remain legacy
+      (deferred — the textarea is tightly coupled to `autoResize`,
+      `updateSendBtn`, `handleChatKey`, and streaming).
 - [x] Settings modal ported to React/TS (`frontend/src/react/settings/`).
       The legacy `ui/settings.js` still generates the provider-list HTML;
       React owns the overlay shell (header, close button, backdrop click).
@@ -92,11 +99,6 @@ The migration is **not complete**.
 - [x] Account, library, scheduled tasks, and plugins — all migrated as
       part of the workspace/scheduled page React components
       (`frontend/src/react/pages/workspace/`, `frontend/src/react/pages/scheduled/`).
-- [x] `?react=1` query flag removed — React compatibility runtime now
-      boots on every load. The legacy bootstrap in `main.js` always
-      calls `import("./react/bootstrap.tsx")` and invokes
-      `bootstrapReactCompatibilityRuntime()`. E2E tests updated to
-      navigate to `'/'` instead of `'/?react=1'`.
 - [x] Message list, editing, regeneration, branching, and feedback
       (`frontend/src/react/message-list/` +
       `frontend/e2e/message-list-compat.spec.mjs`). React owns
@@ -123,15 +125,50 @@ The migration is **not complete**.
       already on `window` via `windowExports.js`. Each helper is
       idempotent so repeated React re-renders remain safe.
 - [ ] Remove legacy DOM/window compatibility layer
-      (`windowExports.js`, `window.X = X` self-bridge in `main.js`,
-      inline `onclick=` handlers, per-surface `data-react-rendered`
-      guards). The migration plan in
-      `~/.qoder/plans/slim-wilderness-crane.md` lays out batches C1
-      (trim `windowExports.js`), C2 (shrink `main.js` — drop legacy
-      `buildMessageToolbar` / `stripHtmlToText`, drop the 116-line
-      `window.X = X` block), C3 (drop per-surface guards now that
-      every owned surface is React-driven), and C4 (delete
-      `windowExports.js` entirely once no legacy reader remains).
+      (`windowExports.js`, the 116-line `window.X = X` self-bridge in
+      `main.js`, `buildMessageToolbar` / `stripHtmlToText` /
+      `legacyCopy` in `main.js`, inline `onclick=` handlers,
+      per-surface `data-react-rendered` guards). Two partial
+      landings shipped already (`9e121cd`): `finishAfterRender`'s
+      legacy `buildMessageToolbar` call is now a React-mode no-op,
+      and `branchFromMessage`'s DOM-rebuild loop is replaced with a
+      `state-synced` bridge publish. Full plan in
+      `~/.qoder/plans/slim-wilderness-crane.md`:
+      - **C1**: trim `windowExports.js` (drop bindings nothing reads
+        any more — most are still in active use today, so this is a
+        careful pass)
+      - **C2 (full)**: delete dead `buildMessageToolbar` /
+        `stripHtmlToText` / `legacyCopy` (still defined for fallback
+        paths but unreachable under the always-on React runtime)
+      - **C3**: drop per-surface `data-react-rendered` guards now
+        that every owned surface is React-driven
+      - **C4**: delete `windowExports.js` once no legacy reader
+        remains
+      - **B3**: TS migrate `render/widgetParsers.js` and
+        `chat/toolRuntime.js` (independent of C, low priority)
+
+## Required gates
+
+Each migration batch must keep these commands green:
+
+```sh
+cd frontend
+npm run typecheck
+npm run build
+npx playwright test e2e/react-compat.spec.mjs e2e/message-list-compat.spec.mjs --config=playwright.config.mjs
+
+cd ../server
+npm run typecheck
+npm run build
+npm run test:strict
+```
+
+Pass `--retries=1` on the Playwright suite to absorb the Vite
+preview cold-start flakiness the message-list specs trigger when a
+brand-new preview server is launched at the start of the run.
+
+Existing baseline failures must be recorded separately and must not be hidden
+by changing snapshots or weakening assertions.
 
 ### Backend
 
