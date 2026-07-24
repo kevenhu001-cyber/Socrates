@@ -1901,14 +1901,6 @@ async function loadSession(id){
 var _deleteConfirmTimers={};   /* clientId → setTimeout handle */
 var _deleteConfirmStates={};   /* clientId → true while showing */
 
-function startDeleteConfirm(clientId,evOrBtn){
-  if(_deleteConfirmStates[clientId])return;
-  if(evOrBtn&&evOrBtn.stopPropagation)evOrBtn.stopPropagation();
-  /* Support both direct call (from legacy deleteSession) and event call. */
-  var btnEl=evOrBtn&&evOrBtn.currentTarget?evOrBtn.currentTarget:evOrBtn;
-  if(btnEl&&btnEl.classList)btnEl.classList.add("holding");
-  showDeleteConfirm(clientId);
-}
 function clearDeleteConfirmTimer(clientId){
   if(_deleteConfirmTimers[clientId]){
     clearTimeout(_deleteConfirmTimers[clientId]);
@@ -2204,11 +2196,6 @@ async function actuallyDeleteSession(id,ev){
    Recents, surfaced in the Storage modal). The server mirrors
    it via the POST /api/sessions/<id>/archive call in
    actuallyDeleteSession. */
-function archiveSessionLocal(id,when){
-  var idx=findServerSessionIndex(id);
-  if(idx<0)return;
-  SERVER_SESSIONS[idx].archivedAt=when||Date.now();
-}
 function restoreSession(id){
   if(!CURRENT_USER)return;
   var idx=findServerSessionIndex(id);
@@ -2331,60 +2318,6 @@ function deleteSession(id,e){
    blocked via pointer-events:none on the row element, preventing
    the synthetic click from navigating. */
 var _ctxMenuSessionId = null;
-
-function attachLongPress(el){
-  if(!el||el.dataset._lpAttached)return;
-  el.dataset._lpAttached="1";
-  var sid=el.getAttribute("data-recent-actual");
-  if(!sid)return;
-  var timer=null;
-
-  function touchStart(ev){
-    if(ev.target.closest("button"))return;
-    if(timer)return;
-    timer=setTimeout(function(){
-      timer=null;
-      openSessionContextMenu(sid,el);
-    },600);
-  }
-  function touchEnd(){
-    if(timer){clearTimeout(timer);timer=null}
-  }
-  function touchMove(){
-    if(timer){clearTimeout(timer);timer=null}
-  }
-
-  el.addEventListener("touchstart",touchStart,{passive:true});
-  el.addEventListener("touchend",touchEnd,{passive:true});
-  el.addEventListener("touchmove",touchMove,{passive:true});
-
-  el.addEventListener("contextmenu",function(ev){
-    if(ev.target.closest("button"))return;
-    ev.preventDefault();
-    openSessionContextMenu(sid,el);
-  });
-}
-
-/* Delegated click handler on #recentsList for navigation.
-   Replaces the previous inline onclick="loadSession()" on each
-   .recent-item. While the context menu is open, all .recent-item
-   have pointer-events:none (via #sidebar.ctx-menu-block), so
-   synthetic clicks from mobile long-press never reach here.
-   Setup is called from doRenderRecents (DOM is definitely ready). */
-var _recentsListDelegated = false;
-function setupRecentsListDelegated(){
-  if(_recentsListDelegated)return;
-  var listEl=document.getElementById("recentsList");
-  if(!listEl)return;
-  _recentsListDelegated=true;
-  listEl.addEventListener("click",function(ev){
-    if(ev.target.closest("button"))return;
-    var row=ev.target.closest(".recent-item");
-    if(!row)return;
-    var sid=row.getAttribute("data-recent-actual");
-    if(sid)loadSession(sid);
-  });
-}
 
 /* Open the context menu popover anchored near the clicked row. */
 function openSessionContextMenu(id,rowEl){
@@ -3437,10 +3370,6 @@ var _slashQuery="";
    on every turn while the template is active. The chip in the
    input bar shows the current mode; clicking × clears it. */
 var _activeTemplate=null;
-function isActiveTemplate(){return !!_activeTemplate;}
-function getActiveTemplateSystemPrompt(){
-  return(_activeTemplate&&_activeTemplate.systemPrompt)||"";
-}
 /* Strip the template body's leading prefix from the user-typed
    text, so the LLM sees only the user's actual content instead
    of "Paste the text you want summarized:\n\n<their text>".
@@ -4390,14 +4319,6 @@ function findMessageIndex(messageId){
     return m.clientId===messageId||m.id===messageId;
   });
 }
-function findFollowingAssistantId(userMessageId){
-  var idx=findMessageIndex(userMessageId);
-  if(idx<0)return null;
-  for(var i=idx+1;i<state.messages.length;i++){
-    if(state.messages[i].role==="assistant")return state.messages[i].clientId;
-  }
-  return null;
-}
 function showToast(msg){
   /* P1.1 — minimal toast for action confirmations. Distinct
      from the chatStatus pill and the share link toast. */
@@ -4468,24 +4389,6 @@ function addMessage(role,text,type,actions,attachmentsArg){
     }
   }catch(_){}
 }
-
-/* P1.1 — DOM → state sync. If a DOM mutation happened outside of
-   addMessage (e.g. mistake-redo rebuilt a widget), update the
-   authoritative entry's html to match. The DOM remains the rendered
-   view; state is what we save + send to the model. */
-function syncMessageFromDom(clientId){
-  if(!clientId)return;
-  var idx=state.messages.findIndex(function(m){return m.clientId===clientId});
-  if(idx<0)return;
-  var el=document.querySelector('[data-client-id="'+clientId+'"] .msg-body');
-  if(el){
-    var clone=el.cloneNode(true);
-    var opts=clone.querySelectorAll(".quick-opts");
-    opts.forEach(function(o){o.remove()});
-    state.messages[idx].html=clone.innerHTML;
-  }
-}
-
 
 /* Tool-card restoration helpers live in src/ui/toolCards.js. Live
    tool orchestration is owned by src/chat/toolRuntime.js. */
@@ -5045,43 +4948,7 @@ function addStreamingMessage(opts){
     cursor=null;
   }
 
-function teardownThinkStructure(){
-    /* Roll back to the simple [text][cursor] layout. Called when
-       the user / 答案 boundary was a false alarm (e.g. the
-       model wrote the literal text 答案 somewhere) and the
-       marker actually never closes — in that case we collapse
-       the think block and stream the raw text as a normal
-       answer. Currently we do not roll back automatically;
-       finish() always re-runs formatMsg which is the source of
-       truth. */
-    body.innerHTML="";
-    streamContent=document.createElement("div");
-    streamContent.className="stream-content";
-    streamContent.innerHTML=formatMsgProgressive(full);
-    try{processPendingMermaid()}catch(_){}
-    try{processPendingViz()}catch(_){}
-    try{processPendingVizActions()}catch(_){}
-    body.appendChild(streamContent);
-    cursor=document.createElement("span");
-    cursor.className="stream-cursor";
-    cursor.textContent="▍";
-    /* Cursor is a child of streamContent (see note in the other
-       appendChild(cursor) callsites). */
-    streamContent.appendChild(cursor);
-    thinkState.beforeNode=null;
-    thinkState.details=null;
-    thinkState.summary=null;
-    thinkState.thinkDiv=null;
-    thinkState.afterNode=null;
-    thinkState.cursorNode=null;
-    thinkState.startIdx=-1;
-    thinkState.endIdx=-1;
-    thinkState.lastRenderedThink=null;
-    thinkState.lastRenderedBefore=null;
-    thinkState.lastRenderedAfter=null;
-  }
-
-  function doRender(){
+function doRender(){
     pendingRender=null;
     /* P_session-stream-dispose — rAF guard. cancelAnimationFrame in
        abort()/finish() usually wins, but a doRender body may already
