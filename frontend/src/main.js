@@ -4973,9 +4973,16 @@ function branchFromMessage(messageId){
       state.messages=ctx.messages;
       state.session.topic=ctx.topic;
       state.session.sessionTitle=ctx.title;
-      /* Re-render the branched messages in the DOM. */
+      /* React-runtime guard: the legacy DOM rebuild below would
+         clobber the React-rendered children of #msgList. Push
+         a state-synced event so the React message list picks up
+         the branched messages from the snapshot. */
       var list=document.getElementById("msgList");
-      if(list){
+      var branchReactOwns=!!(list && list.dataset && list.dataset.reactMigrationRuntime==="msg-list");
+      if(branchReactOwns){
+        publishReactChatRuntime({type:"state-synced",reason:"branch-context-restored"});
+      }else if(list){
+        /* Re-render the branched messages in the DOM. */
         list.innerHTML="";
         state.messages.forEach(function(msg){
           var div=document.createElement("div");
@@ -6500,8 +6507,14 @@ function teardownThinkStructure(){
           if(card)div.appendChild(card);
         }
         /* Streaming AI bubbles skip addMessage(), so attach the
-           toolbar here. Guarded against duplicate stacking. */
-        if(!div.querySelector(".msg-toolbar")&&msgIdx>=0&&state.messages[msgIdx]){
+           toolbar here. Guarded against duplicate stacking. In React
+           mode the React MessageToolbar component renders the same
+           action buttons from the snapshot, so the legacy toolbar
+           would just be discarded with the bubble in the same
+           microtask. */
+        if(msgList && msgList.dataset.reactMigrationRuntime==="msg-list"){
+          // legacy toolbar skipped under React ownership
+        }else if(!div.querySelector(".msg-toolbar")&&msgIdx>=0&&state.messages[msgIdx]){
           var toolbar=buildMessageToolbar({role:"assistant",entry:state.messages[msgIdx]});
           if(toolbar)div.appendChild(toolbar);
         }
