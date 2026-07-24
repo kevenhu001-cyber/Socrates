@@ -72,14 +72,11 @@ function _publishComposerTools() {
   } catch (_) { /* swallow — bridge is best-effort */ }
 }
 
-/* React mode owns the menu's children. The legacy renderer becomes a
-   no-op the moment React sets this attribute so its writes don't clobber
-   the React tree. Legacy mode never sees the attribute, so the guard
-   never trips. */
-function _reactOwnsMenu() {
-  var el = document.getElementById(MENU_ID);
-  return !!(el && el.dataset && el.dataset.reactMigrationRuntime === "composer-tools-menu");
-}
+/* React owns the composer-tools menu's children unconditionally under
+   the always-on runtime — the menu element is pre-created on module
+   load (line above) and hydrated by `bootstrapReactCompatibilityRuntime`.
+   The legacy `render(el)` mutation is never reachable; the publish
+   helper `_publishComposerTools()` is the only path that drives React. */
 
 function close() {
   var el = document.getElementById(MENU_ID);
@@ -108,7 +105,6 @@ export function toggleComposerTools(trigger, mode) {
   close();
   activeTrigger = trigger;
   trigger.dataset.composerMode = mode;
-  if (!_reactOwnsMenu()) render(el);
   el.classList.remove("hidden");
   trigger.setAttribute("aria-expanded", "true");
   position(el, trigger);
