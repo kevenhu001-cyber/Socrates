@@ -6,10 +6,54 @@ replaces JavaScript module by module.
 
 ## Current status
 
-The frontend message-list pipeline is React-driven and the legacy
-toolbar is no longer rendered into legacy DOM. The remaining work
-is purely removing the legacy DOM/window compatibility layer —
-none of the user-facing surfaces are still legacy.
+All user-facing surfaces are React-driven under the always-on runtime.
+The legacy DOM/window compatibility layer has been progressively
+shredded: every `_reactOwnsXxx()` guard is gone, and most of the
+legacy renderers that lived behind those guards have been deleted
+or collapsed into React-only paths.
+
+Concrete progress since the runtime landed:
+
+- `_reactOwnsXxx()` guards deleted from `main.js`, every `ui/*.js`,
+  and every module surface (commits `40dd5d7`, `b2668ab`,
+  `a0de1fc`, `ca22389`, `d63279c`, `f8d9460`, `2dacaa3`).
+- `addMessage` collapsed to React-only (commit `1b5a081`).
+- `loadIntoHistory` collapsed to React-only: 130-line legacy DOM
+  rebuild loop, the viz/mermaid/code-block post-process pass, the
+  legacy local-recovery DOM mount, and the legacy
+  streamingText-recovery DOM mount all deleted; state push + bridge
+  publish is authoritative; retry click delegated on `msgList`
+  (commit `526c19d`).
+- `branchFromMessage` legacy DOM-rebuild loop replaced with a
+  direct `state-synced` publish (commit `526c19d`).
+- `doRenderRecents` collapsed to `_publishSessionList()` +
+  `renderRecentsFilterChips()`; 130-line legacy innerHTML render
+  path (filter / search / per-row HTML / `attachLongPress` /
+  `setupRecentsListDelegated`) deleted (commit `526c19d`).
+- `replaceWithError` legacy `body.innerHTML=errHtml` fallback
+  collapsed to React-mode state push + click delegation
+  (commit `526c19d`).
+- `setChatStopState` legacy innerHTML icon swap deleted; React
+  re-renders `#sendBtnContent` from `dataset.stop` (commit
+  `526c19d`).
+- Bug fix: streaming-finish / streaming-abort / streaming-error
+  cleanup paths referenced an undeclared `msgList` instead of the
+  closure's `list`, so the guard never fired and the legacy
+  bubble persisted in the DOM after every stream — visible as a
+  duplicate bubble. Also, the retry-click delegation on
+  React-rendered error bubbles never fired. Fixed by using the
+  declared `list` and dropping the redundant
+  `dataset.reactMigrationRuntime === "msg-list"` guard (commit
+  `069e82d`).
+- 47 dead `*.ts` duplicates outside `react/` deleted — only the
+  `src/render/*.ts` files are wired through re-export bridges
+  (`export * from './foo.ts'`) in the `.js` siblings; everything
+  else was stale code drifting away from its live `.js` twin
+  (commits `77394bc`, `734e5f3`).
+
+Remaining work is described in the [legacy DOM/window
+compatibility layer removal section](#legacy-domwindow-compatibility-layer-removal)
+below.
 
 ### Frontend
 
@@ -56,34 +100,27 @@ none of the user-facing surfaces are still legacy.
       (chat composer) and `#topicAttachmentChips` (tutor topic setup) are
       hydrated; the pending-attachment store in `src/attachments.js`
       remains the source of truth, and React renders via a typed bridge
-      (`window.__socratesAttachmentsBridge`). The legacy
-      `renderAttachmentChips()` renderer is suppressed by a data-attribute
-      guard; remove button dispatches through `window.removeAttachment`.
-      Scope pivot from message list (Batch 4 original) to attachment chips:
-      the message list is too tightly coupled to streaming + tool cards
-      + thinking pills to port in one batch (each sub-component would
-      need its own bridge + port).
+      (`window.__socratesAttachmentsBridge`). Remove button dispatches
+      through `window.removeAttachment`. Scope pivot from message list
+      (Batch 4 original) to attachment chips: the message list is too
+      tightly coupled to streaming + tool cards + thinking pills to port
+      in one batch (each sub-component would need its own bridge + port).
 - [x] React application shell and routing — sidebar header and footer
       ported to React/TS (`frontend/src/react/sidebar-chrome/`). The
       header (logo, new-chat button, close button) and footer (user
       avatar, name, tier badge, theme toggle, display, settings buttons)
       are rendered via `createRoot` + `render` under the always-on
-      runtime. The legacy `renderUserFooter()` in `ui/profile.js` is
-      suppressed by a data-attribute guard and instead publishes the
-      user snapshot to the `window.__socratesSidebarChromeBridge`.
-      Remaining app-shell surfaces: workspace pages (library/projects/plugins)
-      and scheduled page are already migrated; exam page remains legacy.
+      runtime. Remaining app-shell surfaces: workspace pages
+      (library/projects/plugins) and scheduled page are already migrated;
+      exam page remains legacy.
 - [x] Session list and project navigation — session list (recents)
       ported to React/TS (`frontend/src/react/session-list/`). The
       `#recentsList` element is rendered via `createRoot` + `render`
-      under the always-on runtime. The legacy `doRenderRecents()` in
-      `main.js` is suppressed by a data-attribute guard and instead
+      under the always-on runtime; `doRenderRecents()` in `main.js`
       publishes the session list data to the
       `window.__socratesSessionListBridge`. Empty states, tag pills, pin
       icon, mode badges, meta line, and delete/tag buttons are all
-      handled by React. The legacy `setupRecentsListDelegated()` and
-      `attachLongPress()` are skipped in React mode (delegation is built
-      into the React tree).
+      handled by React.
 - [x] Composer input, send, and stop actions — send button content
       (`#sendBtnContent`) and start button content (`#startBtnContent`)
       are now rendered by React/TS, showing the appropriate SVG icon
@@ -92,7 +129,6 @@ none of the user-facing surfaces are still legacy.
       (deferred — the textarea is tightly coupled to `autoResize`,
       `updateSendBtn`, `handleChatKey`, and streaming).
 - [x] Settings modal ported to React/TS (`frontend/src/react/settings/`).
-      The legacy `ui/settings.js` still generates the provider-list HTML;
       React owns the overlay shell (header, close button, backdrop click).
       The bridge publishes `open` state + `bodyHTML` through
       `window.__socratesSettingsBridge`.
@@ -103,12 +139,12 @@ none of the user-facing surfaces are still legacy.
       (`frontend/src/react/message-list/` +
       `frontend/e2e/message-list-compat.spec.mjs`). React owns
       `#msgList`; `addMessage()` and the loadSession history rebuild
-      detect `data-react-migration-runtime="msg-list"` and skip their
-      DOM-mutation blocks. The streaming pipeline's `finish()` /
-      `abort()` / `replaceWithError()` paths drop the legacy bubble
-      before the bridge publishes, so the snapshot-driven re-render
-      paints exactly one finalized bubble. Toolbar callbacks dispatch
-      to legacy `window.editUserMessage` /
+      push into `state.messages` and let React paint from the snapshot.
+      The streaming pipeline's `finish()` / `abort()` /
+      `replaceWithError()` paths drop the legacy bubble before the
+      bridge publishes, so the snapshot-driven re-render paints exactly
+      one finalized bubble. Toolbar callbacks dispatch to legacy
+      `window.editUserMessage` /
       `regenerateAssistantMessage` / `deleteUserMessage` /
       `branchFromMessage` / `sendFeedback` / `openShareModal` /
       `toggleReadAloud`. Streaming bubbles stay legacy-managed during
@@ -124,28 +160,48 @@ none of the user-facing surfaces are still legacy.
       `main.js`; `processPendingViz` / `processPendingVizActions` are
       already on `window` via `windowExports.js`. Each helper is
       idempotent so repeated React re-renders remain safe.
-- [ ] Remove legacy DOM/window compatibility layer
-      (`windowExports.js`, the 116-line `window.X = X` self-bridge in
-      `main.js`, `buildMessageToolbar` / `stripHtmlToText` /
-      `legacyCopy` in `main.js`, inline `onclick=` handlers,
-      per-surface `data-react-rendered` guards). Two partial
-      landings shipped already (`9e121cd`): `finishAfterRender`'s
-      legacy `buildMessageToolbar` call is now a React-mode no-op,
-      and `branchFromMessage`'s DOM-rebuild loop is replaced with a
-      `state-synced` bridge publish. Full plan in
-      `~/.qoder/plans/slim-wilderness-crane.md`:
-      - **C1**: trim `windowExports.js` (drop bindings nothing reads
-        any more — most are still in active use today, so this is a
-        careful pass)
-      - **C2 (full)**: delete dead `buildMessageToolbar` /
-        `stripHtmlToText` / `legacyCopy` (still defined for fallback
-        paths but unreachable under the always-on React runtime)
-      - **C3**: drop per-surface `data-react-rendered` guards now
-        that every owned surface is React-driven
-      - **C4**: delete `windowExports.js` once no legacy reader
-        remains
-      - **B3**: TS migrate `render/widgetParsers.js` and
-        `chat/toolRuntime.js` (independent of C, low priority)
+
+### Legacy DOM/window compatibility layer removal
+
+- [x] **C2 (full)** — `buildMessageToolbar` / `stripHtmlToText` /
+      `legacyCopy` already deleted (commit `223d7b4`); only comments
+      referencing the migration remain in `main.js`.
+- [x] **Per-surface `data-react-rendered` guards dropped** — every
+      `_reactOwnsXxx()` guard is gone (commits `40dd5d7`,
+      `b2668ab`, `a0de1fc`, `ca22389`, `d63279c`, `f8d9460`,
+      `2dacaa3`). The remaining `data-react-rendered` /
+      `reactMigrationRuntime` checks in `main.js` are limited to
+      streaming bubble cleanup (detach the legacy bubble so React's
+      snapshot-driven re-render doesn't duplicate it), which still
+      does real work.
+- [x] **`main.js` legacy render paths collapsed** — `addMessage`,
+      `loadIntoHistory`, `branchFromMessage`, `doRenderRecents`,
+      `replaceWithError`, `setChatStopState` are now React-only.
+      Net: ~458 lines of dead DOM-mutation code removed (commit
+      `526c19d`).
+- [x] **Bug fix** — streaming controllers' cleanup guards referenced
+      an undeclared `msgList`, so the legacy bubble was never detached
+      before React re-rendered (visible as a duplicate bubble after
+      every stream). Fixed by using the closure's `list` and dropping
+      the redundant `dataset.reactMigrationRuntime === "msg-list"`
+      guard (commit `069e82d`).
+- [x] **Dead `*.ts` duplicates removed** — 47 stale `.ts` files
+      outside `react/` deleted. Only `src/render/*.ts` are wired
+      through re-export bridges in the `.js` siblings; every other
+      `.ts` twin was drifting away from its live `.js` version and
+      was never reached at runtime (commits `77394bc`, `734e5f3`).
+- [ ] **C1** — trim `windowExports.js` (drop bindings nothing reads
+      anymore — most are still in active use today, so this is a
+      careful pass).
+- [ ] **C1'** — trim the `bridgeMainJsFunctions()` self-bridge in
+      `main.js` (the 11-line `window.switchTab / setRecentsSearch /
+      toggleSidebarView / resetApp / submitChatMessage / startSession /
+      signOut / showToast` set) and the 97 other inline
+      `window.X = X` lines. Audit each binding before deleting.
+- [ ] **C4** — delete `windowExports.js` once no legacy reader
+      remains.
+- [ ] **B3** — TS migrate `render/widgetParsers.js` and
+      `chat/toolRuntime.js` (independent of C, low priority).
 
 ## Required gates
 
