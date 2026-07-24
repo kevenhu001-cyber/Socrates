@@ -16,13 +16,122 @@ The migration is **not complete**.
 - [x] Legacy chat state and stream lifecycle exposed through an immutable
       `useSyncExternalStore` boundary
 - [x] Send/stop button content hydrated from derived stream status
-- [ ] React application shell and routing
-- [ ] Session list and project navigation
-- [ ] Composer input, attachments, send, and stop actions
-- [ ] Message list, editing, regeneration, branching, and feedback
-- [ ] Tool cards, visualizations, Markdown, and artifact rendering
-- [ ] Settings, account, library, scheduled tasks, and plugins
-- [ ] Remove the query flag and legacy DOM/window compatibility layer
+- [x] Cmd+K palette ported to React/TS behind `?react=1`
+      (`frontend/src/react/cmdk/` + `frontend/e2e/cmd-k-compat.spec.mjs`).
+      Legacy `src/ui/cmdK.js` retains state ownership and still drives
+      `window.openCmdK` / `onCmdKInput` / `onCmdKKey` / `openCmdKResult`;
+      React renders the modal contents via a typed `useSyncExternalStore`
+      bridge (`window.__socratesCmdK`). Legacy renderer is suppressed by a
+      data-attribute guard so the two never collide.
+- [x] Sidebar nav buttons + recents filter chips ported to React/TS
+      (`frontend/src/react/sidebar/` + `frontend/e2e/sidebar-compat.spec.mjs`).
+      Legacy `src/sidebar/nav.js` and `src/sidebar/index.js` keep state
+      ownership; React renders the nav buttons and chip bar via typed
+      bridges (`window.__socratesSidebarNavBridge`,
+      `window.__socratesRecentsFilterBridge`). Legacy `setActiveNav`,
+      `setRecentsFilter`, and `renderRecentsFilterChips` still fire; the
+      last one is guarded by a data attribute so React's tree isn't
+      clobbered. The "More" popover remains legacy (deferred).
+- [x] Composer "+" tools menu ported to React/TS
+      (`frontend/src/react/composer/` +
+      `frontend/e2e/composer-tools-compat.spec.mjs`). Legacy
+      `src/ui/composerTools.js` still owns open/close/positioning and the
+      document-level click/Escape/resize listeners; React renders the 6
+      menu items via a typed bridge (`window.__socratesComposerToolsBridge`).
+      The menu element is pre-created on module load so React can hydrate
+      eagerly; item clicks dispatch through legacy `window.composeAction` /
+      `researchAction` / `toggleExtensionByKey` / `openPromptTemplatesModal`
+      / `openAttachmentPicker`. Composer input textarea, attachment chips,
+      send/stop button, and effort/web-search/reasoning pickers remain
+      legacy (deferred).
+- [x] Attachment chip rows ported to React/TS
+      (`frontend/src/react/attachments/` +
+      `frontend/e2e/attachments-compat.spec.mjs`). Both `#attachmentChips`
+      (chat composer) and `#topicAttachmentChips` (tutor topic setup) are
+      hydrated; the pending-attachment store in `src/attachments.js`
+      remains the source of truth, and React renders via a typed bridge
+      (`window.__socratesAttachmentsBridge`). The legacy
+      `renderAttachmentChips()` renderer is suppressed by a data-attribute
+      guard; remove button dispatches through `window.removeAttachment`.
+      Scope pivot from message list (Batch 4 original) to attachment chips:
+      the message list is too tightly coupled to streaming + tool cards
+      + thinking pills to port in one batch (each sub-component would
+      need its own bridge + port).
+- [x] React application shell and routing — sidebar header and footer
+      ported to React/TS (`frontend/src/react/sidebar-chrome/`). The
+      header (logo, new-chat button, close button) and footer (user
+      avatar, name, tier badge, theme toggle, display, settings buttons)
+      are rendered via `createRoot` + `render` under `?react=1`. The
+      legacy `renderUserFooter()` in `ui/profile.js` is suppressed by a
+      data-attribute guard and instead publishes the user snapshot to the
+      `window.__socratesSidebarChromeBridge`. Remaining app-shell
+      surfaces: workspace pages (library/projects/plugins) and scheduled
+      page are already migrated; exam page remains legacy.
+- [x] Session list and project navigation — session list (recents)
+      ported to React/TS (`frontend/src/react/session-list/`). The
+      `#recentsList` element is rendered via `createRoot` + `render`
+      under `?react=1`. The legacy `doRenderRecents()` in `main.js` is
+      suppressed by a data-attribute guard and instead publishes the
+      session list data to the `window.__socratesSessionListBridge`.
+      Empty states, tag pills, pin icon, mode badges, meta line, and
+      delete/tag buttons are all handled by React. The legacy
+      `setupRecentsListDelegated()` and `attachLongPress()` are skipped
+      in React mode (delegation is built into the React tree).
+- [x] Composer input, send, and stop actions — send button content
+      (`#sendBtnContent`) and start button content (`#startBtnContent`)
+      are now rendered by React/TS under `?react=1`, showing the
+      appropriate SVG icon (arrow vs stop square) based on stream status.
+      The textarea, effort picker, and topic-setup/chat-input lifecycle
+      remain legacy (deferred — the textarea is tightly coupled to
+      `autoResize`, `updateSendBtn`, `handleChatKey`, and streaming).
+- [x] Settings modal ported to React/TS (`frontend/src/react/settings/`).
+      The legacy `ui/settings.js` still generates the provider-list HTML;
+      React owns the overlay shell (header, close button, backdrop click).
+      The bridge publishes `open` state + `bodyHTML` through
+      `window.__socratesSettingsBridge`.
+- [x] Account, library, scheduled tasks, and plugins — all migrated as
+      part of the workspace/scheduled page React components
+      (`frontend/src/react/pages/workspace/`, `frontend/src/react/pages/scheduled/`).
+- [x] `?react=1` query flag removed — React compatibility runtime now
+      boots on every load. The legacy bootstrap in `main.js` always
+      calls `import("./react/bootstrap.tsx")` and invokes
+      `bootstrapReactCompatibilityRuntime()`. E2E tests updated to
+      navigate to `'/'` instead of `'/?react=1'`.
+- [x] Message list, editing, regeneration, branching, and feedback
+      (`frontend/src/react/message-list/` +
+      `frontend/e2e/message-list-compat.spec.mjs`). React owns
+      `#msgList`; `addMessage()` and the loadSession history rebuild
+      detect `data-react-migration-runtime="msg-list"` and skip their
+      DOM-mutation blocks. The streaming pipeline's `finish()` /
+      `abort()` / `replaceWithError()` paths drop the legacy bubble
+      before the bridge publishes, so the snapshot-driven re-render
+      paints exactly one finalized bubble. Toolbar callbacks dispatch
+      to legacy `window.editUserMessage` /
+      `regenerateAssistantMessage` / `deleteUserMessage` /
+      `branchFromMessage` / `sendFeedback` / `openShareModal` /
+      `toggleReadAloud`. Streaming bubbles stay legacy-managed during
+      the stream (the 1300-line `addStreamingMessage` pipeline is too
+      deeply coupled to incrementally port); React takes over the
+      moment the entry's `html` lands.
+- [x] Post-render wire hooks for tool cards and markdown (mermaid,
+      viz, viz-actions, code-block expand buttons, image lightbox)
+      re-fire from `MessageItem`'s `useEffect` after each
+      `dangerouslySetInnerHTML` commit. The legacy
+      `processPendingMermaid` / `wireCodeBlockHeaders` /
+      `wireMsgBodyImages` helpers are bridged on `window` from
+      `main.js`; `processPendingViz` / `processPendingVizActions` are
+      already on `window` via `windowExports.js`. Each helper is
+      idempotent so repeated React re-renders remain safe.
+- [ ] Remove legacy DOM/window compatibility layer
+      (`windowExports.js`, `window.X = X` self-bridge in `main.js`,
+      inline `onclick=` handlers, per-surface `data-react-rendered`
+      guards). The migration plan in
+      `~/.qoder/plans/slim-wilderness-crane.md` lays out batches C1
+      (trim `windowExports.js`), C2 (shrink `main.js` — drop legacy
+      `buildMessageToolbar` / `stripHtmlToText`, drop the 116-line
+      `window.X = X` block), C3 (drop per-surface guards now that
+      every owned surface is React-driven), and C4 (delete
+      `windowExports.js` entirely once no legacy reader remains).
 
 ### Backend
 
