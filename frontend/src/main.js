@@ -8447,43 +8447,19 @@ async function generateFollowUpStream(answer,node,domain,onDelta,onThinking){
 };
 
 
-/* ─── Expose all onclick-required functions on window ─── */
-window.closeUsageModal = closeUsageModal;
-window.openUsageModal = openUsageModal;
-window.resendAuthCode = resendAuthCode;
-window.resendVerification = resendVerification;
+/* ─── Expose main.js-unique onclick-required functions on window ───
+   Duplicate bindings for surfaces already exported by
+   `frontend/src/windowExports.js` (cmdK, share, profile, usage, settings,
+   storage, etc.) live there and are imported by main.js as a side effect.
+   This block keeps only what main.js owns locally. */
 window.resetApp = resetApp;
-window.setAuthError = setAuthError;
-window.showAuthCodeLogin = showAuthCodeLogin;
-window.showAuthForgotPassword = showAuthForgotPassword;
-window.showAuthRegister = showAuthRegister;
-window.showAuthSignin = showAuthSignin;
-window.showAuthView = showAuthView;
-window.showGate = showGate;
-window.hideGate = hideGate;
-window.submitAuthVerify = submitAuthVerify;
 window.signOut = signOut;
 window.startSession = startSession;
-window.submitAuthLoginWithCode = submitAuthLoginWithCode;
-window.submitAuthSendCode = submitAuthSendCode;
 window.submitChatMessage = submitChatMessage;
 window.askChatTurn = askChatTurn;
-window.switchAuthTab = switchAuthTab;
 window.switchTab = switchTab;
 window.syncSidebarBtns = syncSidebarBtns;
 window.toggleAppLang = toggleAppLang;
-window.toggleDisplayPrefs = toggleDisplayPrefs;
-window.toggleExtensionsPicker = toggleExtensionsPicker;
-window.toggleModelPicker = toggleModelPicker;
-window.toggleChatModelMenu = toggleChatModelMenu;
-window.pickChatModel = pickChatModel;
-window.toggleSidebar = toggleSidebar;
-window.toggleTheme = toggleTheme;
-
-window.showUsageTip = showUsageTip;
-window.hideUsageTip = hideUsageTip;
-window.closeCheatsheet = closeCheatsheet;
-window.autoResize = autoResize;
 /* P_apiconfig-bridge — apiConfig / appMode / webSearchOn / thinkingOn
    are declared with `var` further up in main.js (line 10401 etc.)
    but legacy callers + several module scripts (chat/api.js line 83,
@@ -8648,14 +8624,6 @@ syncSidebarForMode();
 /* Init tone presets and memory store. */
 if (typeof window.loadTonePreset === "function") window.loadTonePreset();
 if (typeof window.loadMemories === "function") window.loadMemories();
-/* Bind settings UI event handlers (replaces inline onclick attributes) */
-bindSettingsUI();
-/* Bind settings UI event handlers (replaces inline onclick attributes) */
-bindSettingsUI();
-/* Bind settings UI event handlers (replaces inline onclick attributes) */
-bindSettingsUI();
-/* Bind settings UI event handlers (replaces inline onclick attributes) */
-bindSettingsUI();
 /* Bind settings UI event handlers (replaces inline onclick attributes) */
 bindSettingsUI();
 /* React migration. Bootstrap the React compatibility runtime on every
