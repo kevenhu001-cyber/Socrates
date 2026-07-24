@@ -5777,14 +5777,17 @@ function teardownThinkStructure(){
            the next render. Detach the legacy bubble first so the
            user never sees a duplicate during the bridge → React
            re-render gap. */
-        if(msgList && msgList.dataset.reactMigrationRuntime==="msg-list"){
-          try{
-            var _finLegacy=msgList.querySelector('[data-client-id="'+clientId+'"]');
-            if(_finLegacy && _finLegacy.parentNode===msgList){
-              msgList.removeChild(_finLegacy);
-            }
-          }catch(_){}
-        }
+        /* Drop the legacy bubble so React's next snapshot-driven render
+           doesn't render a duplicate. (The previous version referenced
+           an undeclared `msgList` here, so this guard never fired and
+           the legacy bubble persisted in the DOM after every stream
+           finish — visible as a duplicate bubble.) */
+        try{
+          var _finLegacy=list.querySelector('[data-client-id="'+clientId+'"]');
+          if(_finLegacy && _finLegacy.parentNode===list){
+            list.removeChild(_finLegacy);
+          }
+        }catch(_){}
         publishReactChatRuntime({
           type:"stream-finished",
           messageId:clientId,
@@ -5847,18 +5850,16 @@ function teardownThinkStructure(){
       }else{
         requestAnimationFrame(function(){div.remove()});
       }
-      /* P_streaming-abort-handoff — React owns #msgList. Drop the
-         legacy bubble so React's next snapshot-driven render
-         doesn't render a duplicate. When the entry survives
-         (partial text path), React renders the finalized version
-         from the snapshot; when the entry was spliced, React just
-         shrinks the list to match. */
+      /* Drop the legacy bubble so React's next snapshot-driven render
+         doesn't render a duplicate. When the entry survives (partial
+         text path), React renders the finalized version from the
+         snapshot; when the entry was spliced, React just shrinks the
+         list to match. (Same bug as the finish path — `msgList` was
+         undeclared here too, so the cleanup never ran.) */
       try{
-        if(msgList && msgList.dataset.reactMigrationRuntime==="msg-list"){
-          var _abLegacy=list && list.querySelector('[data-client-id="'+clientId+'"]');
-          if(_abLegacy && _abLegacy.parentNode===msgList){
-            msgList.removeChild(_abLegacy);
-          }
+        var _abLegacy=list.querySelector('[data-client-id="'+clientId+'"]');
+        if(_abLegacy && _abLegacy.parentNode===list){
+          list.removeChild(_abLegacy);
         }
       }catch(_){}
       publishReactChatRuntime({
@@ -5909,12 +5910,16 @@ function teardownThinkStructure(){
             };
             if(typeof btn.addEventListener==="function"){
               btn.addEventListener("click",retryHandler);
-            }else if(msgList && msgList.dataset.reactMigrationRuntime==="msg-list"){
-              /* Delegate retry clicks for React-rendered error bubbles. */
-              msgList.addEventListener("click",function _retryDelegated(ev){
+            }else{
+              /* Delegate retry clicks for React-rendered error bubbles.
+                 (Previously this was an `else if(msgList && ...)`
+                 guard, but `msgList` was undeclared in this closure
+                 scope so the delegation never fired — retry clicks on
+                 React-rendered error bubbles were silently dead.) */
+              list.addEventListener("click",function _retryDelegated(ev){
                 var t=ev.target;
                 if(t && t.id===retryBtnId){
-                  msgList.removeEventListener("click",_retryDelegated);
+                  list.removeEventListener("click",_retryDelegated);
                   retryHandler();
                 }
               });
@@ -5931,15 +5936,13 @@ function teardownThinkStructure(){
          _chatStreaming=false;
          try{setChatStopState(false)}catch(_){}
        }
-       /* P_streaming-error-handoff — drop the legacy bubble under
-          React ownership so the next snapshot-driven re-render
-          doesn't duplicate the finalized error bubble. */
+       /* Drop the legacy bubble so the next snapshot-driven re-render
+          doesn't duplicate the finalized error bubble. (Same bug as
+          finish/abort — `msgList` was undeclared here too.) */
        try{
-         if(msgList && msgList.dataset.reactMigrationRuntime==="msg-list"){
-           var _errLegacy=msgList.querySelector('[data-client-id="'+clientId+'"]');
-           if(_errLegacy && _errLegacy.parentNode===msgList){
-             msgList.removeChild(_errLegacy);
-           }
+         var _errLegacy=list.querySelector('[data-client-id="'+clientId+'"]');
+         if(_errLegacy && _errLegacy.parentNode===list){
+           list.removeChild(_errLegacy);
          }
        }catch(_){}
        publishReactChatRuntime({
