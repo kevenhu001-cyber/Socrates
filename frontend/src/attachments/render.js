@@ -33,19 +33,6 @@ function _publishAttachments(){
   }catch(_){ /* swallow — bridge is best-effort */ }
 }
 
-/* React mode owns the chip row's children. The legacy renderer becomes a
-   no-op the moment React sets this attribute so its writes don't clobber
-   the React tree. Legacy mode never sees the attribute, so the guard
-   never trips. */
-function _reactOwnsChips(targetId){
-  var el = targetId ? document.getElementById(targetId) : document.getElementById("attachmentChips");
-  if(!el){
-    var any = document.querySelector("[data-react-migration-runtime='attachment-chips']");
-    return !!any;
-  }
-  return !!(el.dataset && el.dataset.reactMigrationRuntime === "attachment-chips");
-}
-
 /* showToast is still defined in main.js — we read it lazily so this
    module doesn't take a hard dependency on main.js's internal state. */
 function toast(msg, ms){
@@ -85,84 +72,6 @@ const WIRED_INPUTS = [];
    resetAttachments. */
 export function renderAttachmentChips(){
   _publishAttachments();
-  const ids = WIRED_INPUTS.map(function(w){ return w.chipsId; }).filter(Boolean);
-  if(!ids.length){
-    // Backwards-compat: legacy single chat-mode chips container.
-    const fallback = document.getElementById("attachmentChips");
-    if(fallback) ids.push("attachmentChips");
-  }
-  ids.forEach(function(id){
-    if(_reactOwnsChips(id)) return;
-    const wrap = document.getElementById(id);
-    if(!wrap) return;
-    // Clear previous chips.
-    while(wrap.firstChild) wrap.removeChild(wrap.firstChild);
-    if(!attachments.length){
-      wrap.classList.add("hidden");
-      return;
-    }
-    wrap.classList.remove("hidden");
-
-    attachments.forEach(function(a){
-      const chip = document.createElement("div");
-      chip.className = "attachment-chip" + (a.error ? " error" : "") + (a.pending ? " pending" : "");
-      chip.dataset.id = a.id;
-
-      if(a.pending){
-        // Pending chip: spinner + progress bar.
-        const spinner = document.createElement("span");
-        spinner.className = "attachment-chip-spinner";
-        spinner.innerHTML = '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>';
-        chip.appendChild(spinner);
-      } else if(a.kind === "image" && a.dataUrl){
-        const img = document.createElement("img");
-        img.className = "attachment-chip-thumb";
-        img.src = a.dataUrl;
-        img.alt = a.name || "";
-        chip.appendChild(img);
-      } else {
-        // File-type icon — generic doc glyph for text / pdf.
-        const icon = document.createElement("span");
-        icon.className = "attachment-chip-icon";
-        icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
-        chip.appendChild(icon);
-      }
-
-      const name = document.createElement("span");
-      name.className = "attachment-chip-name";
-      name.textContent = a.name || "file";
-      chip.appendChild(name);
-
-      if(a.pending && typeof a.progress === "number" && a.progress >= 0){
-        const bar = document.createElement("div");
-        bar.className = "attachment-chip-progress-bar";
-        const fill = document.createElement("div");
-        fill.className = "attachment-chip-progress-fill";
-        fill.style.width = Math.min(a.progress, 100) + "%";
-        bar.appendChild(fill);
-        chip.appendChild(bar);
-      } else if(a.truncated){
-        const meta = document.createElement("span");
-        meta.className = "attachment-chip-meta";
-        meta.textContent = "(truncated)";
-        chip.appendChild(meta);
-      }
-
-      const rm = document.createElement("button");
-      rm.type = "button";
-      rm.className = "attachment-chip-remove";
-      rm.setAttribute("aria-label", "Remove attachment");
-      rm.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
-      rm.onclick = function(){
-        removeAttachment(a.id);
-        renderAttachmentChips();
-        refreshAllSendBtns();
-      };
-      chip.appendChild(rm);
-
-      wrap.appendChild(chip);
-    });
-  });
 }
 
 /* RAF-throttled full rebuild — called on structural changes (add /

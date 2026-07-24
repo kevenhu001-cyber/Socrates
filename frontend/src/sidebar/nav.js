@@ -18,12 +18,6 @@ function _publishScheduledState() {
   } catch (_) { /* swallow */ }
 }
 
-/* React mode owns the scheduled panel. The legacy renderer skips
-   its DOM writes so they don't clobber the React tree. */
-function _reactOwnsScheduled() {
-  return !!(document.getElementById("scheduledPanel") && document.getElementById("scheduledPanel").dataset.reactMigrationRuntime === "scheduled-page");
-}
-
 /* React migration bridge — publishes workspace page state (library,
    projects, plugins) so the React compatibility root can render.
    Installed by frontend/src/react/pages/workspace/workspaceStore.ts
@@ -43,11 +37,6 @@ function _publishWorkspaceState() {
       });
     }
   } catch (_) { /* swallow */ }
-}
-
-function _reactOwnsWorkspacePage(pageId) {
-  var el = document.getElementById(pageId);
-  return !!(el && el.dataset.reactMigrationRuntime === "workspace-page");
 }
 
 /* Connector brand marks come from the maintained @lobehub/icons-static-svg
@@ -276,12 +265,8 @@ function hideChatAndTopic() {
 export function openLibrary() {
   hideChatAndTopic();
   showMainPage("libraryPanel");
-  if (_reactOwnsWorkspacePage("libraryPanel")) {
-    if (typeof window.__socratesMountWorkspace === "function") {
-      window.__socratesMountWorkspace("library");
-    }
-    renderLibrary();
-    return;
+  if (typeof window.__socratesMountWorkspace === "function") {
+    window.__socratesMountWorkspace("library");
   }
   renderLibrary();
 }
@@ -305,58 +290,7 @@ async function renderLibrary() {
   }
 }
 function paintLibrary() {
-  if (_reactOwnsWorkspacePage("libraryPanel")) return;
-  var list = byId("libraryList");
-  var tab = document.querySelector(".library-tab.active");
-  var key = tab && tab.dataset.libraryTab === "artifacts" ? "artifacts" : "files";
-  var query = workspaceCache.library.query.toLowerCase();
-  var items = workspaceCache.library[key].filter(function (item) { return !query || String(item.name || item.title || "").toLowerCase().indexOf(query) >= 0; });
-  var count = byId("libraryCount");
-  if (count) count.textContent = items.length ? items.length + " item" + (items.length === 1 ? "" : "s") : "";
-  if (!items.length) {
-    list.innerHTML = '<div class="workspace-empty"><strong>' + (query ? "No matching items" : key === "files" ? "Your library is ready" : "No created items yet") + '</strong><span>' + (query ? "Try a different search." : key === "files" ? "Upload a file or attach one in a chat." : "Generated documents and artifacts will appear here.") + "</span></div>";
-    return;
-  }
-  var renaming = workspaceCache.library.renameItem;
-  var sel = workspaceCache.library.selection;
-  var anySelected = false;
-  items.forEach(function (item) { if (sel[item.id]) anySelected = true; });
-  var allSelected = items.length > 0 && items.every(function (item) { return sel[item.id]; });
-  list.innerHTML =
-    '<div class="library-selection-bar' + (anySelected ? ' visible' : '') + '" id="librarySelectionBar">' +
-      '<label class="library-select-all">' +
-        '<input type="checkbox" class="library-checkbox" onchange="toggleSelectAllLibrary(this.checked)" ' + (allSelected ? 'checked' : '') + ' aria-label="Select all">' +
-        '<span>' + (anySelected ? Object.keys(sel).length + ' selected' : 'Select all') + '</span>' +
-      '</label>' +
-      '<button class="workspace-row-action library-bulk-delete" onclick="deleteSelectedLibrary()" ' + (anySelected ? '' : 'disabled') + '>Delete selected</button>' +
-    '</div>' +
-    items.map(function (item) {
-    var name = item.name || item.title || "Untitled";
-    var kind = item.kind === "image" ? "image" : "file";
-    var checked = sel[item.id] ? 'checked' : '';
-    var deleting = sel[item.id] ? ' library-row-selected' : '';
-    var nameHtml;
-    if (renaming === item.id) {
-      nameHtml = '<input class="library-rename-input" type="text" value="' + esc(name) + '" maxlength="255" data-rename-id="' + esc(item.id) + '" data-rename-key="' + key + '" onkeydown="if(event.key===\'Enter\')saveLibraryRename(this);if(event.key===\'Escape\')cancelLibraryRename();" autofocus>';
-    } else {
-      nameHtml = '<strong class="library-name" onclick="event.stopPropagation();startLibraryRename(\'' + esc(item.id) + '\',\'' + key + '\')" title="Click to rename">' + esc(name) + '</strong>';
-    }
-    var actions = key === "files"
-      ? '<button class="workspace-row-action" onclick="event.stopPropagation();deleteLibraryFile(\'' + esc(item.id) + '\')" aria-label="Delete ' + esc(name) + '">Delete</button>'
-      : '<button class="workspace-row-action" onclick="event.stopPropagation();renameArtifact(\'' + esc(item.id) + '\')">Rename</button>';
-    return '<div class="workspace-row library-row' + deleting + '">' +
-      '<label class="library-checkbox-label" onclick="event.stopPropagation()">' +
-        '<input type="checkbox" class="library-checkbox" onchange="toggleLibrarySelect(\'' + esc(item.id) + '\',this.checked)" ' + checked + ' aria-label="Select ' + esc(name) + '">' +
-      '</label>' +
-      '<span class="workspace-row-icon" onclick="openLibraryItem(\'' + esc(item.id) + '\',\'' + key + '\')">' + icon(kind) + '</span>' +
-      '<div class="workspace-row-copy" onclick="openLibraryItem(\'' + esc(item.id) + '\',\'' + key + '\')">' + nameHtml + '<span>' + esc(fileMeta(item)) + '</span></div>' +
-      actions +
-    '</div>';
-  }).join("");
-  if (renaming) {
-    var inp = list.querySelector('.library-rename-input');
-    if (inp) { inp.focus(); inp.select(); }
-  }
+  return;
 }
 
 function getLibraryKey() {
@@ -442,12 +376,8 @@ window.renameArtifact = async function (id) {
 export function openProjects() {
   hideChatAndTopic();
   showMainPage("spacesPanel");
-  if (_reactOwnsWorkspacePage("spacesPanel")) {
-    if (typeof window.__socratesMountWorkspace === "function") {
-      window.__socratesMountWorkspace("projects");
-    }
-    renderProjects();
-    return;
+  if (typeof window.__socratesMountWorkspace === "function") {
+    window.__socratesMountWorkspace("projects");
   }
   renderProjects();
 }
@@ -470,30 +400,15 @@ async function renderProjects() {
   }
 }
 function paintProjects() {
-  if (_reactOwnsWorkspacePage("spacesPanel")) return;
-  var list = byId("spacesList");
-  var sessions = Array.isArray(window.SERVER_SESSIONS) ? window.SERVER_SESSIONS : [];
-  if (!workspaceCache.projects.length) {
-    list.innerHTML = '<div class="workspace-empty"><strong>Make space for ongoing work</strong><span>Projects keep related chats, files, and instructions together.</span><button class="workspace-primary" onclick="openCreateProject()">Create project</button></div>';
-    return;
-  }
-  list.innerHTML = workspaceCache.projects.map(function (project) {
-    var count = sessions.filter(function (session) { return session.projectId === project.id; }).length;
-    var color = /^#[0-9a-f]{3,8}$/i.test(project.color || "") ? project.color : "hsl(var(--accent-000))";
-    return '<div class="workspace-row project-row" ondragover="event.preventDefault()" ondrop="onProjectDrop(event,\'' + esc(project.id) + '\')"><button class="project-main" onclick="openProjectWorkspace(\'' + esc(project.id) + '\')"><span class="project-swatch" style="background:' + esc(color) + '"></span><span class="workspace-row-copy"><strong>' + esc(project.name) + '</strong><span>' + count + " chat" + (count === 1 ? "" : "s") + (project.description ? " · " + esc(project.description) : "") + '</span></span></button><button class="workspace-row-action" onclick="openEditProject(\'' + esc(project.id) + '\')" aria-label="Edit ' + esc(project.name) + '">Edit</button></div>';
-  }).join("");
+  return;
 }
 
 export function openScheduled() {
   hideChatAndTopic();
   showMainPage("scheduledPanel");
-  if (_reactOwnsScheduled()) {
-    if (typeof window.__socratesMountScheduled === "function") {
-      window.__socratesMountScheduled();
-    }
-    return;
+  if (typeof window.__socratesMountScheduled === "function") {
+    window.__socratesMountScheduled();
   }
-  renderScheduled();
 }
 
 /* Expose renderScheduled on window so the React mount can trigger the
@@ -513,47 +428,17 @@ export function openExam() {
   window.openExamPanel();
 }
 async function renderScheduled() {
-  if (_reactOwnsScheduled()) { _publishScheduledState(); return; }
-  var list = byId("scheduledList");
-  if (!list) return;
-  list.innerHTML = '<div class="workspace-loading">Loading tasks…</div>';
-  try {
-    var res = await api("/api/scheduled-tasks");
-    workspaceCache.tasks = (res && res.tasks) || [];
-    paintScheduled();
-    _publishScheduledState();
-  } catch (err) {
-    if (err && err.status === 401) {
-      list.innerHTML = '<div class="workspace-empty"><strong>Sign in to schedule tasks</strong><span>Reminders, briefings, and monitoring tasks appear once you sign in.</span></div>';
-    } else {
-      list.innerHTML = '<div class="scheduled-empty">Scheduled tasks could not be loaded. Try again.</div>';
-    }
-    _publishScheduledState();
-  }
+  _publishScheduledState();
 }
 function paintScheduled() {
-  if (_reactOwnsScheduled()) return;
-  var list = byId("scheduledList");
-  if (!workspaceCache.tasks.length) {
-    list.innerHTML = '<div class="workspace-empty"><strong>Let Socrates follow up</strong><span>Create a reminder, recurring briefing, or monitoring task.</span><button class="workspace-primary" onclick="openCreateScheduledTask()">Create task</button></div>';
-    return;
-  }
-  list.innerHTML = workspaceCache.tasks.map(function (task) {
-    var active = task.status !== "paused" && task.status !== "completed";
-    var state = active ? "Active" : task.status === "paused" ? "Paused" : "Complete";
-    return '<div class="workspace-row task-row"><span class="workspace-row-icon">' + icon("calendar") + '</span><button class="task-main" onclick="openEditScheduledTask(\'' + esc(task.id) + '\')"><span class="workspace-row-copy"><strong>' + esc(task.title) + '</strong><span><i class="task-status ' + (active ? "on" : "") + '"></i>' + esc(state + " · " + (task.frequency || "once") + " · " + formatTime(task.nextRunAt)) + '</span></span></button><button class="workspace-row-action" onclick="toggleScheduledTask(\'' + esc(task.id) + '\', ' + active + ')" aria-label="' + (active ? "Pause" : "Resume") + ' task">' + (active ? "Pause" : "Resume") + "</button></div>";
-  }).join("");
+  return;
 }
 
 export function openPlugins() {
   hideChatAndTopic();
   showMainPage("pluginsPanel");
-  if (_reactOwnsWorkspacePage("pluginsPanel")) {
-    if (typeof window.__socratesMountWorkspace === "function") {
-      window.__socratesMountWorkspace("plugins");
-    }
-    renderPlugins();
-    return;
+  if (typeof window.__socratesMountWorkspace === "function") {
+    window.__socratesMountWorkspace("plugins");
   }
   renderPlugins();
 }
@@ -575,26 +460,7 @@ async function renderPlugins() {
   }
 }
 function paintPlugins() {
-  if (_reactOwnsWorkspacePage("pluginsPanel")) return;
-  var list = byId("pluginsList");
-  if (!workspaceCache.connectors.length) { list.innerHTML = '<div class="workspace-empty"><strong>Apps are unavailable</strong><span>Refresh and try again.</span></div>'; return; }
-  var setup = workspaceCache.projectConnectorConfigured
-    ? '<div class="workspace-note">OAuth tokens stay in the OOMOL gateway. Neither the browser nor the model receives a provider token.</div>'
-    : '<div class="workspace-empty"><strong>Connector service needs setup</strong><span>Add OOMOL_PROJECT_API_KEY to the server environment. Authorization remains disabled until then.</span></div>';
-  list.innerHTML = workspaceCache.connectors.map(function (connector) {
-    var connection = connector.connection || null;
-    var connected = connection && connection.status === "connected";
-    var pending = connection && connection.status === "initiated";
-    var meta = connected ? "Connected" + (connection.displayName ? " · " + connection.displayName : "")
-      : pending ? "Waiting for authorization to finish" : connector.description;
-    var action;
-    if (connected) action = '<span class="connector-coming-soon">Connected</span>';
-    else if (pending) action = '<button class="workspace-secondary connector-connect" onclick="refreshProjectConnector(\'' + esc(connector.id) + '\')">Refresh status</button>';
-    else if (!workspaceCache.projectConnectorConfigured) action = '<span class="connector-coming-soon">Server setup needed</span>';
-    else if (connector.authType === "api_key" || connector.authType === "custom_credential") action = '<button class="workspace-secondary connector-connect" onclick="openProjectConnectorForm(\'' + esc(connector.id) + '\')">Connect</button>';
-    else action = '<button class="workspace-secondary connector-connect" onclick="connectProjectConnector(\'' + esc(connector.id) + '\')">Connect</button>';
-    return '<div class="workspace-row connector-row ' + (connected ? "is-connected" : "") + '"><span class="workspace-row-icon connector-icon connector-' + esc(connector.id) + '">' + connectorIcon(connector.id) + '</span><div class="workspace-row-copy"><strong>' + esc(connector.name) + '</strong><span>' + esc(meta) + '</span><small class="workspace-note">' + esc((connector.capabilities || []).join(" · ")) + '</small></div>' + action + '</div>';
-  }).join("") + setup;
+  return;
 }
 window.connectProjectConnector = async function (id) {
   try {

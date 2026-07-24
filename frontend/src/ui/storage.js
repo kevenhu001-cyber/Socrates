@@ -26,35 +26,12 @@ function _publishStorageState(open) {
   } catch (_) { /* swallow */ }
 }
 
-function _reactOwnsStorage() {
-  return !!(document.getElementById("storageModalReactRoot") && document.getElementById("storageModalReactRoot").dataset.reactMigrationRuntime === "storage-modal");
-}
-
 function openStorageModal() {
-  if (_reactOwnsStorage()) {
-    _publishStorageState(true);
-    return;
-  }
-  var overlay = document.getElementById("storageModalOverlay");
-  if (!overlay) {
-    overlay = document.createElement("div");
-    overlay.id = "storageModalOverlay";
-    overlay.className = "cmd-k-overlay hidden";
-    overlay.onclick = function (ev) { if (ev.target === overlay) closeStorageModal(); };
-    overlay.innerHTML = '<div class="cmd-k-modal storage-modal" onclick="event.stopPropagation()"></div>';
-    document.body.appendChild(overlay);
-  }
-  overlay.classList.remove("hidden");
-  renderArchivedList();
+  _publishStorageState(true);
 }
 
 function closeStorageModal() {
-  if (_reactOwnsStorage()) {
-    _publishStorageState(false);
-    return;
-  }
-  var overlay = document.getElementById("storageModalOverlay");
-  if (overlay) overlay.classList.add("hidden");
+  _publishStorageState(false);
 }
 
 function renderArchivedList() {

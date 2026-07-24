@@ -17,54 +17,8 @@ function _publishCheatsheetState(open) {
   } catch (_) { /* swallow */ }
 }
 
-function _reactOwnsCheatsheet() {
-  return !!(document.getElementById("cheatsheetReactRoot") && document.getElementById("cheatsheetReactRoot").dataset.reactMigrationRuntime === "cheatsheet");
-}
-
-/* P5.6 — open / close the shortcut cheatsheet modal. The
-   content is a small static table so the user can learn the
-   shortcuts without leaving the app. */
 export function openCheatsheet(){
-  if (_reactOwnsCheatsheet()) { _publishCheatsheetState(true); return; }
-  var overlay=document.getElementById("cheatsheetOverlay");
-  if(!overlay){
-    overlay=document.createElement("div");
-    overlay.id="cheatsheetOverlay";
-    overlay.className="cmd-k-overlay hidden";
-    overlay.onclick=function(ev){if(ev.target===overlay)closeCheatsheet()};
-    overlay.innerHTML='<div class="cmd-k-modal cheatsheet" onclick="event.stopPropagation()"></div>';
-    document.body.appendChild(overlay);
-  }
-  var body=overlay.querySelector(".cheatsheet");
-  body.innerHTML=
-    '<div class="modal-head">'+
-      '<span class="modal-title">Keyboard shortcuts</span>'+
-      '<button class="modal-close" onclick="closeCheatsheet()">×</button>'+
-    '</div>'+
-    '<div class="cheatsheet-body">'+
-      buildCheatsheetSection("Navigation",[
-        ["Open search",        ["⌘","K"]],
-        ["Toggle sidebar",     ["⌘","B"]],
-        ["Open settings",      ["⌘","."]],
-        ["New chat",           ["⌘","⇧","O"]],
-        ["Cycle project",      ["⌘","⇧","P"]]
-      ])+
-      buildCheatsheetSection("Sharing & search",[
-        ["Share current chat",["⌘","⇧","S"]],
-        ["Open project picker",["⌘","⇧","A"]]
-      ])+
-      buildCheatsheetSection("Toggles",[
-        ["Toggle theme",       ["⌘","⇧","T"]],
-        ["Toggle web search",  ["⌘","⇧","F"]],
-        ["Toggle thinking pill",["⌘","⇧","M"]]
-      ])+
-      buildCheatsheetSection("Composing",[
-        ["Send (alternative)", ["⌘","⏎"]],
-        ["Edit last prompt",   ["↑","(empty input)"]],
-        ["New line",           ["⇧","⏎"]]
-      ])+
-    '</div>';
-  overlay.classList.remove("hidden");
+  _publishCheatsheetState(true);
 }
 
 export function buildCheatsheetSection(title,rows){
@@ -82,7 +36,5 @@ export function buildCheatsheetSection(title,rows){
 }
 
 export function closeCheatsheet(){
-  if (_reactOwnsCheatsheet()) { _publishCheatsheetState(false); return; }
-  var overlay=document.getElementById("cheatsheetOverlay");
-  if(overlay)overlay.classList.add("hidden");
+  _publishCheatsheetState(false);
 }
