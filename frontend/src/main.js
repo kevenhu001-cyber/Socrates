@@ -4877,143 +4877,31 @@ function addMessage(role,text,type,actions,attachmentsArg){
   var entry={clientId:clientId,role:role,rawText:String(text||""),html:html,type:type||null,actions:actions||null,modelInfo:modelInfo,attachments:atts};
   state.messages.push(entry);
   publishReactChatRuntime({type:"message-added",messageId:clientId});
-  /* React owns the visible message list. The state push above is the
-     authoritative write — React re-renders from the snapshot. The
-     legacy DOM-mutation block below would clobber React's reconciled
-     children, so skip it when the React runtime is mounted. */
-  if(document.getElementById("msgList")&&document.getElementById("msgList").dataset.reactMigrationRuntime==="msg-list"){
-    try{
-      var scR=scrollContainer();
-      if(scR&&role==="user"){
-        requestAnimationFrame(function(){scR.scrollTop=scR.scrollHeight});
-      }
-      if(role==="user"||role==="assistant"){
-        try{appendLocalMemory(role,text)}catch(_){}
-      }
-      if(state.phase==="chat"||(state.topic&&state.kbNodes.length)){
-        try{saveCurrentSession()}catch(_){}
-      }
-      if(role==="assistant"){try{updateChatStats()}catch(_){}}
-    }catch(_){}
-    return;
-  }
 
-  var list=document.getElementById("msgList");
-  var div=document.createElement("div");
-  div.className="msg "+role;
-  div.dataset.clientId=clientId;
-
-  var body=document.createElement("div");
-  body.className="msg-body";
-
-  if(type==="suggest"){
-    body.innerHTML=html;
-    var optsDiv=document.createElement("div");
-    optsDiv.className="quick-opts";
-    actions.forEach(function(a){
-      var btn=document.createElement("button");
-      btn.className="quick-opt"+(a.primary?" primary":"");
-      btn.textContent=a.text;
-      btn.onclick=function(){handleQuickAction(a.action)};
-      optsDiv.appendChild(btn);
-    });
-    body.appendChild(optsDiv);
-  }else{
-    body.innerHTML=html;
-  }
-
-  /* P_attachments — render the chip strip inside the user bubble so
-   * the user sees what they attached. Image thumbnails use the
-   * inlined dataUrl; text/PDF chips show the filename and (for
-   * PDFs) the page count. Pure presentation; never replaces
-   * body.innerHTML. */
-  if(role==="user" && atts.length){
-    var strip=document.createElement("div");
-    strip.className="msg-attachments";
-    atts.forEach(function(a){
-      if(!a)return;
-      var chip=document.createElement("div");
-      chip.className="msg-attachment";
-      if(a.kind==="image" && a.dataUrl){
-        var img=document.createElement("img");
-        img.className="msg-attachment-thumb";
-        img.src=a.dataUrl;
-        img.alt=a.name||"";
-        chip.appendChild(img);
-      }else{
-        var icon=document.createElement("span");
-        icon.className="msg-attachment-thumb";
-        icon.style.display="inline-flex";
-        icon.style.alignItems="center";
-        icon.style.justifyContent="center";
-        icon.style.borderRadius="12px";
-        icon.style.background="hsl(var(--bg-300))";
-        icon.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
-        chip.appendChild(icon);
-      }
-      var nm=document.createElement("span");
-      nm.className="msg-attachment-name";
-      nm.textContent=a.name||"file";
-      chip.appendChild(nm);
-      if(a.error){
-        var err=document.createElement("span");
-        err.className="msg-attachment-error";
-        err.textContent="!";
-        err.title=a.error;
-        chip.appendChild(err);
-      }
-      strip.appendChild(chip);
-    });
-    body.appendChild(strip);
-  }
-
-  div.appendChild(body);
-  /* P1.1 — inject the per-message action toolbar (Copy/Edit/
-     Regenerate/Thumbs). Hover-revealed; the toolbar lives in a
-     dedicated <div> so we never replace body.innerHTML (which
-     would wipe the listeners). The action set is role-dependent:
-       user       → copy / edit / delete
-       assistant  → copy / regenerate / thumbs up / thumbs down
-     `feedback` is optimistic; the server call is fire-and-forget
-     and failures are logged. The OpenAPI spec at
-     docs/api/openapi.yaml documents the message-actions endpoints
-     that this UI will exercise. */
-  var toolbar=buildMessageToolbar({role:role,entry:entry});
-  if(toolbar)div.appendChild(toolbar);
-  /* Show model info on assistant messages */
-  if(role==="assistant"&&entry.modelInfo){
-    var modelEl=document.createElement("div");
-    modelEl.className="msg-model";
-    modelEl.textContent=entry.modelInfo.label;
-    div.appendChild(modelEl);
-  }
-  list.appendChild(div);
-  try{processPendingMermaid()}catch(_){}
-  try{processPendingViz()}catch(_){}
-  try{processPendingVizActions()}catch(_){}
-  try{wireCodeBlockHeaders(body)}catch(_){}
-  try{wireMsgBodyImages(body)}catch(_){}
-
-  var sc=scrollContainer();
-  requestAnimationFrame(function(){sc.scrollTop=sc.scrollHeight});
-
-  /* Update KB: if user is answering substantive questions, mark current node progress */
-  if(role==="user"&&state.kbNodes[state.currentNode]&&state.kbNodes[state.currentNode].status==="blank"){
-    state.kbNodes[state.currentNode].status="fuzzy";
-    state.kbNodes[state.currentNode].questions++;
-    updateKB();
-  }
-  /* Mirror this turn into the local memory cache so a hard refresh
-     (or this-tab crash) still leaves the model with the real raw text. */
-  if(role==="user"||role==="assistant"){
-    appendLocalMemory(role,text);
-  }
-  /* Persist session to Recents */
-  if(state.phase==="chat"||(state.topic&&state.kbNodes.length)){
-    saveCurrentSession();
-  }
-  /* Update API/mock indicator badge */
-  if(role==="assistant")updateChatStats();
+  /* React owns the visible message list — the state push above is the
+     authoritative write and React re-renders from the snapshot. The
+     side effects below mirror the legacy DOM path's bookkeeping. */
+  try{
+    var scR=scrollContainer();
+    if(scR&&role==="user"){
+      requestAnimationFrame(function(){scR.scrollTop=scR.scrollHeight});
+    }
+    if(role==="user"||role==="assistant"){
+      try{appendLocalMemory(role,text)}catch(_){}
+    }
+    if(state.phase==="chat"||(state.topic&&state.kbNodes.length)){
+      try{saveCurrentSession()}catch(_){}
+    }
+    if(role==="assistant"){
+      try{updateChatStats()}catch(_){}
+    }
+    /* Update KB: if user is answering substantive questions, mark current node progress */
+    if(role==="user"&&state.kbNodes[state.currentNode]&&state.kbNodes[state.currentNode].status==="blank"){
+      state.kbNodes[state.currentNode].status="fuzzy";
+      state.kbNodes[state.currentNode].questions++;
+      updateKB();
+    }
+  }catch(_){}
 }
 
 /* P1.1 — DOM → state sync. If a DOM mutation happened outside of
