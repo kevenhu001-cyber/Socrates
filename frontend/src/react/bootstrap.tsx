@@ -1,11 +1,36 @@
 import { StrictMode } from 'react';
-import { hydrateRoot, type Root } from 'react-dom/client';
+import { createRoot, hydrateRoot, type Root } from 'react-dom/client';
 
+import { hydrateAttachmentChipsRows } from './attachments';
+import { hydrateComposerToolsMenu } from './composer';
+import { hydrateCmdKOverlay } from './cmdk/CommandPalette';
+import { hydrateMorePopover } from './morePopover';
+import { hydrateProfileModal } from './profileModal';
+import { hydrateShareModal } from './shareModal';
+import { hydrateUsageModal } from './usageModal';
+import { mountScheduledPage } from './pages/scheduled';
+import { hydrateRecentsFilterChips, hydrateSidebarNav } from './sidebar';
 import { installChatRuntimeBridge } from './chatRuntimeStore';
 import { useChatStreamStatus, useIsChatStreaming } from './useChatRuntime';
+import { mountWorkspacePage } from './pages/workspace';
+import { mountStorageModal } from './storageModal';
+import { mountCheatsheet } from './cheatsheet';
+import { mountPromptTemplatesModal } from './promptTemplatesModal';
+import { installSidebarChromeBridge } from './sidebar-chrome';
+import { SidebarHeader } from './sidebar-chrome/SidebarHeader';
+import { SidebarFooter } from './sidebar-chrome/SidebarFooter';
+import { mountSessionList } from './session-list';
+import { mountMessageList } from './message-list';
 
 const NEW_REPLY_PILL_ID = 'newReplyPill';
 const SEND_BUTTON_CONTENT_ID = 'sendBtnContent';
+const START_BUTTON_CONTENT_ID = 'startBtnContent';
+const CMDK_OVERLAY_ID = 'cmdKOverlay';
+const SIDEBAR_NAV_ID = 'sidebarNav';
+const RECENTS_FILTER_CHIPS_ID = 'recentsFilterChips';
+const COMPOSER_TOOLS_MENU_ID = 'composerToolsMenu';
+const ATTACHMENT_CHIPS_ID = 'attachmentChips';
+const TOPIC_ATTACHMENT_CHIPS_ID = 'topicAttachmentChips';
 
 let sendButtonRoot: Root | null = null;
 
@@ -55,8 +80,8 @@ function SendButtonContent() {
  * Starts React by hydrating the first, deliberately small feature slice.
  *
  * The legacy element retains its id, classes, click delegation, and visibility
- * logic. React owns only its existing text node, so `?react=1` has the exact
- * same visible UI and event surface as the current application.
+ * logic. React owns only its existing text node, so the visible
+ * UI and event surface are unchanged.
  */
 export function bootstrapReactCompatibilityRuntime(): Root {
   const pill = document.getElementById(NEW_REPLY_PILL_ID);
@@ -78,6 +103,19 @@ export function bootstrapReactCompatibilityRuntime(): Root {
   sendButtonContent.setAttribute('data-react-migration-runtime', 'send-button');
   installChatRuntimeBridge();
 
+  const startBtnContent = document.getElementById(START_BUTTON_CONTENT_ID);
+  if (startBtnContent && !startBtnContent.dataset.reactMigrationRuntime) {
+    startBtnContent.setAttribute('data-react-migration-runtime', 'start-button');
+    const startRoot = createRoot(startBtnContent);
+    startRoot.render(
+      <StrictMode>
+        <svg className="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 19V5M5 12l7-7 7 7" />
+        </svg>
+      </StrictMode>,
+    );
+  }
+
   const pillRoot = hydrateRoot(
     pill,
     <StrictMode>
@@ -91,6 +129,142 @@ export function bootstrapReactCompatibilityRuntime(): Root {
       <SendButtonContent />
     </StrictMode>,
   );
+
+  const cmdKOverlay = document.getElementById(CMDK_OVERLAY_ID);
+  if (cmdKOverlay && !cmdKOverlay.dataset.cmdKReactHydrated) {
+    hydrateCmdKOverlay();
+  }
+
+  const sidebarNav = document.getElementById(SIDEBAR_NAV_ID);
+  if (sidebarNav && !sidebarNav.dataset.sidebarReactHydrated) {
+    hydrateSidebarNav();
+  }
+
+  const recentsChips = document.getElementById(RECENTS_FILTER_CHIPS_ID);
+  if (recentsChips && !recentsChips.dataset.recentChipsReactHydrated) {
+    hydrateRecentsFilterChips();
+  }
+
+  const composerMenu = document.getElementById(COMPOSER_TOOLS_MENU_ID);
+  if (composerMenu && !composerMenu.dataset.composerToolsReactHydrated) {
+    hydrateComposerToolsMenu();
+  }
+
+  const attachmentChips = document.getElementById(ATTACHMENT_CHIPS_ID);
+  const topicAttachmentChips = document.getElementById(TOPIC_ATTACHMENT_CHIPS_ID);
+  if ((attachmentChips || topicAttachmentChips) && !window.__socratesAttachmentsBridge) {
+    hydrateAttachmentChipsRows();
+  }
+
+  const morePopover = document.getElementById('moreNavPopover');
+  if (morePopover && !morePopover.dataset.morePopoverReactHydrated) {
+    hydrateMorePopover();
+  }
+
+  const shareOverlay = document.getElementById('shareOverlay');
+  if (shareOverlay && !shareOverlay.dataset.shareReactHydrated) {
+    hydrateShareModal();
+  }
+
+  const profileOverlay = document.getElementById('profileOverlay');
+  if (profileOverlay && !profileOverlay.dataset.profileReactHydrated) {
+    hydrateProfileModal();
+  }
+
+  const usageOverlay = document.getElementById('usageOverlay');
+  if (usageOverlay && !usageOverlay.dataset.usageReactHydrated) {
+    hydrateUsageModal();
+  }
+
+  // Hydrate sidebar header (logo, new chat, close sidebar)
+  const sidebarHeader = document.getElementById('sidebarHeader');
+  if (sidebarHeader && !sidebarHeader.dataset.sidebarChromeReactHydrated) {
+    sidebarHeader.dataset.sidebarChromeReactHydrated = '1';
+    sidebarHeader.setAttribute('data-react-migration-runtime', 'sidebar-header');
+    installSidebarChromeBridge();
+    const headerRoot = createRoot(sidebarHeader);
+    headerRoot.render(<SidebarHeader />);
+  }
+
+  // Hydrate sidebar user row (inside the footer, leaving the footer actions
+  // and display-prefs popover as legacy HTML).
+  const sidebarUserRow = document.getElementById('sidebarUserRow');
+  if (sidebarUserRow && !sidebarUserRow.dataset.sidebarChromeReactHydrated) {
+    sidebarUserRow.dataset.sidebarChromeReactHydrated = '1';
+    sidebarUserRow.setAttribute('data-react-migration-runtime', 'sidebar-user-row');
+    installSidebarChromeBridge();
+    const userRowRoot = createRoot(sidebarUserRow);
+    userRowRoot.render(<SidebarFooter />);
+  }
+
+  // Register scheduled page mount for React mode
+  const scheduledPanel = document.getElementById('scheduledPanel');
+  if (scheduledPanel && !scheduledPanel.dataset.scheduledReactHydrated) {
+    scheduledPanel.dataset.scheduledReactHydrated = '1';
+    scheduledPanel.setAttribute('data-react-migration-runtime', 'scheduled-page');
+    window.__socratesMountScheduled = () => {
+      mountScheduledPage();
+      // Trigger the legacy fetch; the bridge will rerender React
+      if (typeof window.__socratesNavRenderScheduled === 'function') {
+        window.__socratesNavRenderScheduled();
+      }
+    };
+  }
+
+  // Register workspace pages mount for React mode (library, projects, plugins)
+  const workspacePageIds = ['libraryPanel', 'spacesPanel', 'pluginsPanel'];
+  const pageMap: Record<string, string> = { libraryPanel: 'library', spacesPanel: 'projects', pluginsPanel: 'plugins' };
+  workspacePageIds.forEach((id) => {
+    const panel = document.getElementById(id);
+    if (panel && !panel.dataset.workspaceReactHydrated) {
+      panel.dataset.workspaceReactHydrated = '1';
+      panel.setAttribute('data-react-migration-runtime', 'workspace-page');
+    }
+  });
+  window.__socratesMountWorkspace = (page: string) => {
+    mountWorkspacePage(page);
+  };
+
+  // Register storage modal mount for React mode
+  let storageRoot = document.getElementById('storageModalReactRoot');
+  if (!storageRoot) {
+    storageRoot = document.createElement('div');
+    storageRoot.id = 'storageModalReactRoot';
+    storageRoot.setAttribute('data-react-migration-runtime', 'storage-modal');
+    document.body.appendChild(storageRoot);
+  }
+  mountStorageModal();
+
+  // Register cheatsheet mount for React mode
+  let cheatsheetRoot = document.getElementById('cheatsheetReactRoot');
+  if (!cheatsheetRoot) {
+    cheatsheetRoot = document.createElement('div');
+    cheatsheetRoot.id = 'cheatsheetReactRoot';
+    cheatsheetRoot.setAttribute('data-react-migration-runtime', 'cheatsheet');
+    document.body.appendChild(cheatsheetRoot);
+  }
+  mountCheatsheet();
+
+  // Register prompt templates modal mount for React mode
+  let promptTemplatesRoot = document.getElementById('promptTemplatesReactRoot');
+  if (!promptTemplatesRoot) {
+    promptTemplatesRoot = document.createElement('div');
+    promptTemplatesRoot.id = 'promptTemplatesReactRoot';
+    promptTemplatesRoot.setAttribute('data-react-migration-runtime', 'prompt-templates');
+    document.body.appendChild(promptTemplatesRoot);
+  }
+  mountPromptTemplatesModal();
+
+  // Mount session list (recents)
+  mountSessionList();
+
+  // Mount the chat message list. React owns #msgList; legacy
+  // addMessage / loadSession / branchContext detect the runtime via
+  // `data-react-migration-runtime="msg-list"` and skip DOM mutation.
+  const msgList = document.getElementById('msgList');
+  if (msgList && !msgList.dataset.msgListReactHydrated) {
+    mountMessageList();
+  }
 
   return pillRoot;
 }

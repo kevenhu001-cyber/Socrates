@@ -1590,7 +1590,17 @@ async function loadSession(id){
     previousMessageMarkup=msgList.innerHTML;
     historyRebuildStarted=true;
     if(typeof window.disposeVisualizations === "function") window.disposeVisualizations(msgList);
-    msgList.innerHTML="";
+    /* React-runtime guard: when the React message list owns #msgList,
+       leave its rendered subtree alone — clearing innerHTML here would
+       wipe React's reconciled children. The legacy DOM rebuild loop
+       below produces divs that React would later duplicate; in React
+       mode we only push entries to state.messages and let React paint
+       from the snapshot. The viz / mermaid post-process pass at the
+       end of the legacy block targets the rebuilt DOM, so skip it too. */
+    var reactOwnsMsgList = !!(msgList && msgList.dataset.reactMigrationRuntime === "msg-list");
+    if(!reactOwnsMsgList){
+      msgList.innerHTML="";
+    }
     // P-arch context-resume — reset the authoritative message list so
     // extractHistory() sees the loaded history when the user sends
     // the next turn. Without this, the user opens an old session,
@@ -1600,6 +1610,39 @@ async function loadSession(id){
     // session's list.
     state.messages.length = 0;
     s.messages.forEach(function(m){
+      /* In React mode, the bubble body is rendered declaratively from
+         state.messages. We only push the entry; formatMsg / DOM-mount
+         side effects are skipped so they don't race with React's own
+         reconciliation. The legacy code path below stays intact for
+         the non-React build path. */
+      if(reactOwnsMsgList){
+        var _rrClientId = m.id || ("loaded-"+(m.clientId || generateId()));
+        state.messages.push({
+          clientId: _rrClientId,
+          role: m.role,
+          rawText: m.rawText || "",
+          html: m.html || (m.rawText ? formatMsg(m.rawText) : ""),
+          type: m.type || null,
+          reasoningContent: m.reasoning_content || null,
+          attachments: Array.isArray(m.attachments) ? m.attachments : [],
+          toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls.map(function(tc){
+            return {
+              id: String(tc.id || ''),
+              name: String(tc.name || ''),
+              input: tc.input == null ? null : tc.input,
+              output: tc.output == null ? null : tc.output,
+              isError: tc.isError === true,
+              artifacts: Array.isArray(tc.artifacts) ? tc.artifacts.map(function(a){
+                return { id: String(a.id || ''), mimeType: a.mimeType || null, name: a.name || null };
+              }) : [],
+              results: Array.isArray(tc.results) ? tc.results.slice(0, 20) : [],
+            };
+          }) : [],
+          actions: null
+        });
+        publishReactChatRuntime({ type: "state-synced", reason: "session-loaded-react" });
+        return;
+      }
       var div=document.createElement("div");
       div.className="msg "+m.role;
       var body=document.createElement("div");
@@ -1802,6 +1845,7 @@ async function loadSession(id){
        addMessage, so viz cards in restored sessions never got their
        load listeners / data-action bindings. Run the post-process
        pass once after the loop to cover everything. */
+    if(!reactOwnsMsgList){
     try{processPendingMermaid()}catch(_){}
     try{processPendingViz()}catch(_){}
     try{processPendingVizActions()}catch(_){}
@@ -1812,6 +1856,7 @@ async function loadSession(id){
         wireMsgBodyImages(_bodies[_bi]);
       }
     }catch(_){}
+    } /* end !reactOwnsMsgList */
     /* P_recover-local-fallback — if the server response is missing
        the last assistant message (because the user refreshed before
        saveCurrentSession()'s async POST completed), try to recover it
@@ -1819,7 +1864,36 @@ async function loadSession(id){
        synchronously in finishAfterRender().
 
        Count server messages vs localStorage messages; if localStorage
-       has more, the extras are unpersisted and we add them. */
+       has more, the extras are unpersisted and we add them.
+       In React mode the legacy DOM appends would race with React's
+       reconciled children, so push into state.messages instead and
+       re-render via the bridge. */
+    if(reactOwnsMsgList){
+      try{
+        var _localRec=loadLocalMemory(s.id);
+        if(_localRec&&Array.isArray(_localRec.messages)&&_localRec.messages.length>(s.messages||[]).length){
+          var _serverCount=(s.messages||[]).length;
+          var _extras=_localRec.messages.slice(_serverCount);
+          for(var _ei=0;_ei<_extras.length;_ei++){
+            var _em=_extras[_ei];
+            if(!_em||!_em.content)continue;
+            if(_em.role!=="assistant")continue;
+            state.messages.push({
+              clientId:"local-recovered-"+generateId(),
+              role:"assistant",
+              rawText:_em.content,
+              html:renderAssistantHTML(_em.content),
+              type:"assistant",
+              reasoningContent:null,
+              attachments:[],
+              toolCalls:[],
+              actions:null
+            });
+          }
+          publishReactChatRuntime({ type: "state-synced", reason: "local-recovered-react" });
+        }
+      }catch(_){}
+    } else {
     try{
       var localRec=loadLocalMemory(s.id);
       if(localRec&&Array.isArray(localRec.messages)&&localRec.messages.length>(s.messages||[]).length){
@@ -1924,6 +1998,7 @@ async function loadSession(id){
         timeoutMs:5000,
       }).catch(function(){});
     }
+    } /* end legacy-only branch */
     /* P_context-race — currentSessionId and URL are set HERE, AFTER
        state.messages has been fully rebuilt. Setting them earlier
        (before the forEach rebuild loop) left a window where
@@ -2875,6 +2950,51 @@ function deleteSvg(){
    single animation frame. Without this, saveCurrentSession (called
    3-5x per chat turn) triggers 3-5 full list rebuilds, causing
    visible stutter with 20+ sessions. */
+/* React migration bridge — publishes the session list data so the React
+   session list component can render declaratively. Works under `?react=1`;
+   legacy mode never installs the bridge, so this is a cheap no-op. */
+function _publishSessionList(){
+  try{
+    var bridge=window.__socratesSessionListBridge;
+    if(!bridge||typeof bridge.publish!=="function")return;
+    var sessions=getRecents();
+    var filter=getRecentsFilter();
+    /* Apply the persistent tag filter, same as doRenderRecents. */
+    sessions=filterRecentsByChip(sessions,filter);
+    /* Apply search filter. */
+    var searchQ=(RECENTS_SEARCH_QUERY||"").trim().toLowerCase();
+    if(searchQ){
+      sessions=sessions.filter(function(s){
+        var hay=((s.title||"")+" "+(s.topic||"")).toLowerCase();
+        return hay.indexOf(searchQ)!==-1;
+      });
+    }
+    bridge.publish({
+      sessions: sessions.map(function(s){
+        return {
+          id: s.id,
+          title: s.title||"",
+          topic: s.topic||"",
+          updatedAt: s.updated_at||s.updatedAt||null,
+          createdAt: s.created_at||s.createdAt||null,
+          totalQ: s.total_q||s.totalQ||0,
+          mode: s.mode||"",
+          phase: s.phase||"",
+          kind: s.kind||"",
+          pinned: !!s.pinned,
+          tags: Array.isArray(s.tags)?s.tags:[],
+          label: (typeof window.getSessionLabel==="function")?window.getSessionLabel(s.id):"",
+          archivedAt: typeof s.archivedAt==="number"?s.archivedAt:null,
+        };
+      }),
+      currentSessionId: window.state?window.state.session.currentSessionId:null,
+      searchQuery: searchQ,
+      filter: filter,
+      fetchFailed: !!window.SERVER_SESSIONS_FETCH_FAILED,
+    });
+  }catch(_){/* swallow — bridge is best-effort */}
+}
+
 var _renderRecentsPending = false;
 function renderRecents(){
   if (_renderRecentsPending) return;
@@ -2887,6 +3007,14 @@ function renderRecents(){
 function doRenderRecents(){
   var cont=document.getElementById("recentsList");
   if(!cont)return;
+
+  /* React migration: if React owns the session list, publish via bridge
+     and skip the legacy HTML rendering. */
+  if (cont.dataset && cont.dataset.reactMigrationRuntime === "session-list") {
+    _publishSessionList();
+    return;
+  }
+
   var recents=getRecents();
   /* P2.2 — apply the persistent tag filter. */
   var recentsFilter=getRecentsFilter();
@@ -4930,6 +5058,7 @@ function addMessage(role,text,type,actions,attachmentsArg){
   /* P1.1 — push to the authoritative state.messages first; the DOM
      is just a downstream view. */
   var clientId="msg-"+generateId();
+
   /* Use renderAssistantHTML for assistant messages containing scaffold
      XML tags so <quiz>/<example>/<practice>/<definition>/<step>/<flashcard>
      are converted to interactive widgets instead of raw XML text. */
@@ -4951,6 +5080,26 @@ function addMessage(role,text,type,actions,attachmentsArg){
   var entry={clientId:clientId,role:role,rawText:String(text||""),html:html,type:type||null,actions:actions||null,modelInfo:modelInfo,attachments:atts};
   state.messages.push(entry);
   publishReactChatRuntime({type:"message-added",messageId:clientId});
+  /* React owns the visible message list. The state push above is the
+     authoritative write — React re-renders from the snapshot. The
+     legacy DOM-mutation block below would clobber React's reconciled
+     children, so skip it when the React runtime is mounted. */
+  if(document.getElementById("msgList")&&document.getElementById("msgList").dataset.reactMigrationRuntime==="msg-list"){
+    try{
+      var scR=scrollContainer();
+      if(scR&&role==="user"){
+        requestAnimationFrame(function(){scR.scrollTop=scR.scrollHeight});
+      }
+      if(role==="user"||role==="assistant"){
+        try{appendLocalMemory(role,text)}catch(_){}
+      }
+      if(state.phase==="chat"||(state.topic&&state.kbNodes.length)){
+        try{saveCurrentSession()}catch(_){}
+      }
+      if(role==="assistant"){try{updateChatStats()}catch(_){}}
+    }catch(_){}
+    return;
+  }
 
   var list=document.getElementById("msgList");
   var div=document.createElement("div");
@@ -6380,6 +6529,21 @@ function teardownThinkStructure(){
              keeps the closure (and DOM refs) eligible for GC. */
           window._activeChatCtl=null;
         }
+        /* P_streaming-finish-handoff — when the React runtime owns
+           #msgList, the legacy streaming bubble is now redundant:
+           the snapshot carries the finalized entry (type=assistant,
+           html=<finalized>) and React will paint a fresh bubble on
+           the next render. Detach the legacy bubble first so the
+           user never sees a duplicate during the bridge → React
+           re-render gap. */
+        if(msgList && msgList.dataset.reactMigrationRuntime==="msg-list"){
+          try{
+            var _finLegacy=msgList.querySelector('[data-client-id="'+clientId+'"]');
+            if(_finLegacy && _finLegacy.parentNode===msgList){
+              msgList.removeChild(_finLegacy);
+            }
+          }catch(_){}
+        }
         publishReactChatRuntime({
           type:"stream-finished",
           messageId:clientId,
@@ -6442,6 +6606,20 @@ function teardownThinkStructure(){
       }else{
         requestAnimationFrame(function(){div.remove()});
       }
+      /* P_streaming-abort-handoff — React owns #msgList. Drop the
+         legacy bubble so React's next snapshot-driven render
+         doesn't render a duplicate. When the entry survives
+         (partial text path), React renders the finalized version
+         from the snapshot; when the entry was spliced, React just
+         shrinks the list to match. */
+      try{
+        if(msgList && msgList.dataset.reactMigrationRuntime==="msg-list"){
+          var _abLegacy=list && list.querySelector('[data-client-id="'+clientId+'"]');
+          if(_abLegacy && _abLegacy.parentNode===msgList){
+            msgList.removeChild(_abLegacy);
+          }
+        }
+      }catch(_){}
       publishReactChatRuntime({
         type:"stream-aborted",
         messageId:clientId,
@@ -6464,29 +6642,51 @@ function teardownThinkStructure(){
           if(typeof _twErr[_te]._cancelTypewriter==='function'){try{_twErr[_te]._cancelTypewriter()}catch(_){}}
         }
        try{
-         body.innerHTML=
-           '<div class="msg-error">'+
+         var errHtml='<div class="msg-error">'+
              '<span class="msg-error-text">'+(errMsg||'Generation failed')+'</span>'+
               '<button type="button" class="msg-retry-btn" id="'+retryBtnId+'">Retry</button>'+
             '</div>';
-          var btn=body.querySelector("#"+retryBtnId);
+          var btn=null;
+          if(msgList && msgList.dataset.reactMigrationRuntime==="msg-list"){
+            /* React mode: skip mutating the legacy body and instead
+               serialize the error into state.messages[msgIdx] so the
+               React message list can render a finalized error bubble
+               from the snapshot. */
+            try{
+              if(msgIdx>=0 && state.messages[msgIdx]){
+                state.messages[msgIdx].html=errHtml;
+                state.messages[msgIdx].type="assistant";
+              }
+            }catch(_){}
+            btn={ id: retryBtnId };
+          }else{
+            body.innerHTML=errHtml;
+            btn=body.querySelector("#"+retryBtnId);
+          }
           if(btn&&typeof onRetry==="function"){
-            btn.addEventListener("click",function(){
+            var retryHandler=function(){
               /* P_no_retry_loading — fire onRetry() immediately so the
-                 new streaming bubble appears in one step. The previous
-                 implementation flashed a "Retrying…" pill for 120ms
-                 before invoking the handler, but the user found it
-                 noisy and confusing — the pill just sat there loading
-                 while a new conversation bubble appeared below. The
-                 new bubble's own thinking state is enough. */
+                 new streaming bubble appears in one step. */
               try{
-                var ret=onRetry();
-                if(ret&&typeof ret.then==="function"){
-                  ret.catch(function(e){/* retry async handler failed */});
+                var innerRet=onRetry();
+                if(innerRet&&typeof innerRet.then==="function"){
+                  innerRet.catch(function(e){/* retry async handler failed */});
                 }
               }catch(e){/* retry handler threw */}
-           });
-         }
+            };
+            if(typeof btn.addEventListener==="function"){
+              btn.addEventListener("click",retryHandler);
+            }else if(msgList && msgList.dataset.reactMigrationRuntime==="msg-list"){
+              /* Delegate retry clicks for React-rendered error bubbles. */
+              msgList.addEventListener("click",function _retryDelegated(ev){
+                var t=ev.target;
+                if(t && t.id===retryBtnId){
+                  msgList.removeEventListener("click",_retryDelegated);
+                  retryHandler();
+                }
+              });
+            }
+          }
        }catch(e){
          body.innerHTML='<p>'+esc(errMsg||'Generation failed')+'</p>';
        }
@@ -6498,6 +6698,17 @@ function teardownThinkStructure(){
          _chatStreaming=false;
          try{setChatStopState(false)}catch(_){}
        }
+       /* P_streaming-error-handoff — drop the legacy bubble under
+          React ownership so the next snapshot-driven re-render
+          doesn't duplicate the finalized error bubble. */
+       try{
+         if(msgList && msgList.dataset.reactMigrationRuntime==="msg-list"){
+           var _errLegacy=msgList.querySelector('[data-client-id="'+clientId+'"]');
+           if(_errLegacy && _errLegacy.parentNode===msgList){
+             msgList.removeChild(_errLegacy);
+           }
+         }
+       }catch(_){}
        publishReactChatRuntime({
          type:"stream-failed",
          messageId:clientId,
@@ -8603,6 +8814,15 @@ window.upsertCustomTemplate = upsertCustomTemplate;
 window.getArchivedSessions = getArchivedSessions;
 window.fetchGeoInfo = fetchGeoInfo;
 window.getCustomInstructionsString = getCustomInstructionsString;
+/* React message-list toolbar callbacks. The legacy code remains the
+   source of truth for the action side-effects (PATCH/DELETE/regenerate);
+   React just dispatches through these globals when its per-message
+   toolbar buttons fire. */
+window.editUserMessage = editUserMessage;
+window.deleteUserMessage = deleteUserMessage;
+window.regenerateAssistantMessage = regenerateAssistantMessage;
+window.branchFromMessage = branchFromMessage;
+window.sendFeedback = sendFeedback;
 /* Init UI sync — runs after window.apiConfig is set (above) so
    syncModelPills() can safely read the provider config. Moving
    this earlier would throw and halt the entire boot sequence. */
@@ -8624,13 +8844,12 @@ bindSettingsUI();
 bindSettingsUI();
 /* Bind settings UI event handlers (replaces inline onclick attributes) */
 bindSettingsUI();
-/* React migration gate. The legacy runtime remains the default and owns the
-   complete visible document. `?react=1` hydrates a verified React feature
-   slice only after all legacy initialization has completed. */
-if (new URLSearchParams(window.location.search).get("react")==="1") {
-  import("./react/bootstrap.tsx").then(function(mod){
-    mod.bootstrapReactCompatibilityRuntime();
-  }).catch(function(error){
-    console.error("[react-migration] compatibility runtime failed to initialize",error);
-  });
-}
+/* React migration. Bootstrap the React compatibility runtime on every
+   load — the legacy runtime still owns the visible document, but React
+   hydrates specific feature slices (sidebar, cmd-k, session list, etc.)
+   after all legacy initialization has completed. */
+import("./react/bootstrap.tsx").then(function(mod){
+  mod.bootstrapReactCompatibilityRuntime();
+}).catch(function(error){
+  console.error("[react-migration] compatibility runtime failed to initialize",error);
+});
