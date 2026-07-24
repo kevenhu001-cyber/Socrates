@@ -1590,273 +1590,40 @@ async function loadSession(id){
     previousMessageMarkup=msgList.innerHTML;
     historyRebuildStarted=true;
     if(typeof window.disposeVisualizations === "function") window.disposeVisualizations(msgList);
-    /* React-runtime guard: when the React message list owns #msgList,
-       leave its rendered subtree alone — clearing innerHTML here would
-       wipe React's reconciled children. The legacy DOM rebuild loop
-       below produces divs that React would later duplicate; in React
-       mode we only push entries to state.messages and let React paint
-       from the snapshot. The viz / mermaid post-process pass at the
-       end of the legacy block targets the rebuilt DOM, so skip it too. */
-    var reactOwnsMsgList = !!(msgList && msgList.dataset.reactMigrationRuntime === "msg-list");
-    if(!reactOwnsMsgList){
-      msgList.innerHTML="";
-    }
-    // P-arch context-resume — reset the authoritative message list so
-    // extractHistory() sees the loaded history when the user sends
-    // the next turn. Without this, the user opens an old session,
-    // types a new message, and the LLM only sees the new question
-    // — the prior conversation context is dropped because
-    // state.messages was still pointing at the previous (or empty)
-    // session's list.
+    /* React owns #msgList. State is authoritative — React re-renders
+       from state.messages. The legacy DOM rebuild (div creation,
+       formatMsg/renderAssistantHTML, attachment chip mount,
+       msgList.appendChild, and viz/mermaid/code-block post-process)
+       was reachable only when the message list was not migrated,
+       which is no longer possible after the always-on React runtime. */
     state.messages.length = 0;
     s.messages.forEach(function(m){
-      /* In React mode, the bubble body is rendered declaratively from
-         state.messages. We only push the entry; formatMsg / DOM-mount
-         side effects are skipped so they don't race with React's own
-         reconciliation. The legacy code path below stays intact for
-         the non-React build path. */
-      if(reactOwnsMsgList){
-        var _rrClientId = m.id || ("loaded-"+(m.clientId || generateId()));
-        state.messages.push({
-          clientId: _rrClientId,
-          role: m.role,
-          rawText: m.rawText || "",
-          html: m.html || (m.rawText ? formatMsg(m.rawText) : ""),
-          type: m.type || null,
-          reasoningContent: m.reasoning_content || null,
-          attachments: Array.isArray(m.attachments) ? m.attachments : [],
-          toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls.map(function(tc){
-            return {
-              id: String(tc.id || ''),
-              name: String(tc.name || ''),
-              input: tc.input == null ? null : tc.input,
-              output: tc.output == null ? null : tc.output,
-              isError: tc.isError === true,
-              artifacts: Array.isArray(tc.artifacts) ? tc.artifacts.map(function(a){
-                return { id: String(a.id || ''), mimeType: a.mimeType || null, name: a.name || null };
-              }) : [],
-              results: Array.isArray(tc.results) ? tc.results.slice(0, 20) : [],
-            };
-          }) : [],
-          actions: null
-        });
-        publishReactChatRuntime({ type: "state-synced", reason: "session-loaded-react" });
-        return;
-      }
-      var div=document.createElement("div");
-      div.className="msg "+m.role;
-      var body=document.createElement("div");
-      body.className="msg-body";
-      // P-arch — re-render from rawText so the latest renderer
-      // (auto-wrap bare [...] math, \[...\] support, stray-$ escape,
-      // etc.) applies to OLD messages whose stored `html` was
-      // rendered with an older renderer. User messages also go
-      // through formatMsg so markdown formatting (backticks, **bold**,
-      // lists, math) in user text renders properly, and so any
-      // legacy payloads where `rawText` was stored as the rendered
-      // HTML (e.g. "<p>讲解一下高斯定理</p>") are handled — formatMsg
-      // runs preprocessMarkdown which strips the stray <p>/<br> and
-      // re-renders cleanly. The previous code path of
-      //   body.innerHTML = "<p>"+esc(m.rawText)+"</p>"
-      // visibly displayed the literal tag text for such payloads.
-      var _userRaw = m.rawText;
-      if(m.role === "user" && _userRaw) {
-        // Strip a leading/trailing <p>...</p> wrapper that older
-        // code paths may have stored as rawText. This is a no-op
-        // for clean text like "讲解一下高斯定理".
-        _userRaw = String(_userRaw).replace(/^\s*<p>\s*/i, "").replace(/\s*<\/p>\s*$/i, "").trim();
-      }
-      var renderHtml = "";
-      if(_userRaw && m.role === "user") {
-        renderHtml = formatMsg(_userRaw);
-      } else if(m.role==="assistant" && m.rawText){
-        /* renderAssistantHTML parses <quiz>/<example>/<practice>
-           scaffold blocks, runs formatMsg, and queues async widget
-           mount in setTimeout(0). On reload this guarantees the
-           interactive widgets re-appear (not the raw <quiz> XML). */
-        try {
-          renderHtml = renderAssistantHTML(m.rawText);
-        } catch (_) {
-          renderHtml = formatMsg(m.rawText);
-        }
-      } else if(m.html){
-        renderHtml = m.html;
-      }
-      body.innerHTML = renderHtml;
-      // Reuse the server-side UUID as the clientId so edit/delete
-      // can address the real DB row; fall back to a synthetic id
-      // for messages that lack a server id (older payloads).
-      var clientId = m.id || ("loaded-"+(m.clientId || generateId()));
-      div.dataset.clientId = clientId;
-      // Mirror into the authoritative state.messages so the next
-      // chat turn sends the full history to the LLM via
-      // extractHistory(). `rawText` is the canonical source for
-      // history (the LLM context is plain text); `html` is what
-      // we just rendered. type/actions are unused on load.
-      /* P_tool-history — restore tool-call records so the cards
-         (including artifact images) re-appear on session reload. */
-      const restoredToolCalls = Array.isArray(m.toolCalls)
-        ? m.toolCalls.map(function(tc) {
-            return {
-              id: String(tc.id || ''),
-              name: String(tc.name || ''),
-              input: tc.input == null ? null : tc.input,
-              output: tc.output == null ? null : tc.output,
-              isError: tc.isError === true,
-              artifacts: Array.isArray(tc.artifacts)
-                ? tc.artifacts.map(function(a) {
-                    return { id: String(a.id || ''), mimeType: a.mimeType || null, name: a.name || null };
-                  })
-                : [],
-              results: Array.isArray(tc.results) ? tc.results.slice(0, 20) : [],
-            };
-          })
-        : [];
+      var _rrClientId = m.id || ("loaded-"+(m.clientId || generateId()));
       state.messages.push({
-        clientId: clientId,
+        clientId: _rrClientId,
         role: m.role,
         rawText: m.rawText || "",
-        html: renderHtml,
+        html: m.html || (m.rawText ? formatMsg(m.rawText) : ""),
         type: m.type || null,
-        /* P_reasoning-persist — restore chain-of-thought text so it
-           can be passed back to the LLM on the next turn. */
         reasoningContent: m.reasoning_content || null,
-        /* P_attachments — restore the persisted array so the bubble
-         * re-renders the chip strip AND so a future save round-trips
-         * them again. */
         attachments: Array.isArray(m.attachments) ? m.attachments : [],
-        toolCalls: restoredToolCalls,
+        toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls.map(function(tc){
+          return {
+            id: String(tc.id || ''),
+            name: String(tc.name || ''),
+            input: tc.input == null ? null : tc.input,
+            output: tc.output == null ? null : tc.output,
+            isError: tc.isError === true,
+            artifacts: Array.isArray(tc.artifacts) ? tc.artifacts.map(function(a){
+              return { id: String(a.id || ''), mimeType: a.mimeType || null, name: a.name || null };
+            }) : [],
+            results: Array.isArray(tc.results) ? tc.results.slice(0, 20) : [],
+          };
+        }) : [],
         actions: null
       });
-
-      /* P_attachments — render the chip strip below the text body
-       * so reloads show the same thumbnails the user saw originally.
-       * Same shape as addMessage()'s renderer; lives here so legacy
-       * history reloads don't go through addMessage (which would
-       * also append to state.messages and double-count). */
-      if(m.role === "user" && Array.isArray(m.attachments) && m.attachments.length){
-        var strip=document.createElement("div");
-        strip.className="msg-attachments";
-        m.attachments.forEach(function(a){
-          if(!a)return;
-          var chip=document.createElement("div");
-          chip.className="msg-attachment";
-          if(a.kind==="image" && a.dataUrl){
-            var img=document.createElement("img");
-            img.className="msg-attachment-thumb";
-            img.src=a.dataUrl;
-            img.alt=a.name||"";
-            chip.appendChild(img);
-          }else{
-            var icon=document.createElement("span");
-            icon.className="msg-attachment-thumb";
-            icon.style.display="inline-flex";
-            icon.style.alignItems="center";
-            icon.style.justifyContent="center";
-            icon.style.borderRadius="12px";
-            icon.style.background="hsl(var(--bg-300))";
-            icon.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
-            chip.appendChild(icon);
-          }
-          var nm=document.createElement("span");
-          nm.className="msg-attachment-name";
-          nm.textContent=a.name||"file";
-          chip.appendChild(nm);
-          if(a.error){
-            var err=document.createElement("span");
-            err.className="msg-attachment-error";
-            err.textContent="!";
-            err.title=a.error;
-            chip.appendChild(err);
-          }
-          strip.appendChild(chip);
-        });
-        body.appendChild(strip);
-      }
-      /* Saved reasoning is retained for provider continuity, but is never
-         rendered into historical chat messages. */
-      div.appendChild(body);
-      /* P_tool-history-restore — on page refresh, restore ONLY the
-         user-visible output of each past tool call. We deliberately
-         skip the `.agent-tool-card` chrome (the "Code · Done · 12s"
-         header and collapsible body) because that chrome is meant
-         for live streaming where the user wants to watch the
-         transcript in real time. After refresh, the conversation
-         is in a settled state and the LLM has already summarised
-         the result in its prose — the chrome would just be
-         duplicated visual noise on top of that summary.
-
-         What we KEEP:
-         - render_visualization → mountVisualization() mounts a
-           fresh .visualization-card directly in `body` (line below).
-           The user sees the chart exactly as it was.
-         - code_interpreter image artifacts → appendInlineArtifact()
-           with the message body mounts the <img> in `body` so
-           matplotlib PNGs / chart exports appear inline.
-         - web_search → sources are already cited inline in the
-           LLM's reply as [1], [2], so no separate card is needed.
-
-         What we DROP:
-         - The .agent-tool-card chrome itself (no header, no status
-           pill, no collapsible body).
-         - Non-image artifacts (CSV exports, JSON dumps, etc.) —
-           these previously lived inside the tool card body and have
-           no equivalent inline mount point. The LLM's prose
-           usually names the file and purpose, which is enough.
-         - renderToolTextOutput's stdout — same reasoning: the
-           LLM has already quoted the relevant numbers / errors in
-           its reply. Re-rendering the full transcript is noise.
-
-         The original toolCalls array on the message is untouched
-         (restoredToolCalls is still pushed onto state.messages),
-         so a future code path that wants the chrome back has
-         everything it needs. */
-      if(restoredToolCalls.length && m.role==="assistant"){
-        for(var tci=0;tci<restoredToolCalls.length;tci++){
-          var rtc=restoredToolCalls[tci];
-          /* render_visualization: mount directly into the body so
-             the chart reappears. The tool's own mountVisualization
-             writes into the supplied host (body), NOT into a tool
-             card, so the viz card is independent of the chrome. */
-          if(rtc.name === "render_visualization" && rtc.input && rtc.input.version === 1 && typeof window.mountVisualization === "function"){
-            try { window.mountVisualization(rtc.input,body,{toolCallId:rtc.id}); } catch(_) {}
-          }
-          /* code_interpreter (and any tool with image artifacts):
-             render images inline in the message body. Non-image
-             artifacts (CSV / JSON) are skipped — they previously
-             lived inside the .agent-tool-card body that we no
-             longer render. */
-          if(Array.isArray(rtc.artifacts) && rtc.artifacts.length){
-            for(var ai=0;ai<rtc.artifacts.length;ai++){
-              var art=rtc.artifacts[ai];
-              if(art && art.id && art.mimeType && art.mimeType.indexOf("image/")===0){
-                try { appendInlineArtifact(art.id, art.mimeType, body, art.name); } catch(_) {}
-              }
-            }
-          }
-        }
-      }
-      msgList.appendChild(div);
     });
-    /* P_viz-resume — after the loop rebuilds every assistant bubble,
-       wire up viz cards + action buttons. addMessage() does this per
-       message via its tail call, but the legacy session-reload path
-       mounts all bubbles synchronously and never went through
-       addMessage, so viz cards in restored sessions never got their
-       load listeners / data-action bindings. Run the post-process
-       pass once after the loop to cover everything. */
-    if(!reactOwnsMsgList){
-    try{processPendingMermaid()}catch(_){}
-    try{processPendingViz()}catch(_){}
-    try{processPendingVizActions()}catch(_){}
-    try{
-      var _bodies=msgList.querySelectorAll(".msg-body");
-      for(var _bi=0;_bi<_bodies.length;_bi++){
-        wireCodeBlockHeaders(_bodies[_bi]);
-        wireMsgBodyImages(_bodies[_bi]);
-      }
-    }catch(_){}
-    } /* end !reactOwnsMsgList */
+    publishReactChatRuntime({ type: "state-synced", reason: "session-loaded-react" });
     /* P_recover-local-fallback — if the server response is missing
        the last assistant message (because the user refreshed before
        saveCurrentSession()'s async POST completed), try to recover it
@@ -1864,133 +1631,85 @@ async function loadSession(id){
        synchronously in finishAfterRender().
 
        Count server messages vs localStorage messages; if localStorage
-       has more, the extras are unpersisted and we add them.
-       In React mode the legacy DOM appends would race with React's
-       reconciled children, so push into state.messages instead and
-       re-render via the bridge. */
-    if(reactOwnsMsgList){
-      try{
-        var _localRec=loadLocalMemory(s.id);
-        if(_localRec&&Array.isArray(_localRec.messages)&&_localRec.messages.length>(s.messages||[]).length){
-          var _serverCount=(s.messages||[]).length;
-          var _extras=_localRec.messages.slice(_serverCount);
-          for(var _ei=0;_ei<_extras.length;_ei++){
-            var _em=_extras[_ei];
-            if(!_em||!_em.content)continue;
-            if(_em.role!=="assistant")continue;
-            state.messages.push({
-              clientId:"local-recovered-"+generateId(),
-              role:"assistant",
-              rawText:_em.content,
-              html:renderAssistantHTML(_em.content),
-              type:"assistant",
-              reasoningContent:null,
-              attachments:[],
-              toolCalls:[],
-              actions:null
-            });
-          }
-          publishReactChatRuntime({ type: "state-synced", reason: "local-recovered-react" });
-        }
-      }catch(_){}
-    } else {
+       has more, the extras are unpersisted and we push them onto
+       state.messages and re-render via the bridge. */
     try{
-      var localRec=loadLocalMemory(s.id);
-      if(localRec&&Array.isArray(localRec.messages)&&localRec.messages.length>(s.messages||[]).length){
-        var serverCount=(s.messages||[]).length;
-        var extras=localRec.messages.slice(serverCount);
-        for(var ei=0;ei<extras.length;ei++){
-          var em=extras[ei];
-          if(!em||!em.content)continue;
-          /* Only recover assistant messages (user messages are always
-             persisted immediately via addMessage → saveCurrentSession). */
-          if(em.role!=="assistant")continue;
-          var extraDiv=document.createElement("div");
-          extraDiv.className="msg assistant";
-          var extraBody=document.createElement("div");
-          extraBody.className="msg-body";
-          var extraHtml;
-          try{extraHtml=renderAssistantHTML(em.content)}catch(_){extraHtml=formatMsg(em.content)}
-          extraBody.innerHTML=extraHtml;
-          extraDiv.appendChild(extraBody);
-          msgList.appendChild(extraDiv);
+      var _localRec=loadLocalMemory(s.id);
+      if(_localRec&&Array.isArray(_localRec.messages)&&_localRec.messages.length>(s.messages||[]).length){
+        var _serverCount=(s.messages||[]).length;
+        var _extras=_localRec.messages.slice(_serverCount);
+        for(var _ei=0;_ei<_extras.length;_ei++){
+          var _em=_extras[_ei];
+          if(!_em||!_em.content)continue;
+          if(_em.role!=="assistant")continue;
           state.messages.push({
             clientId:"local-recovered-"+generateId(),
             role:"assistant",
-            rawText:em.content,
-            html:extraHtml,
+            rawText:_em.content,
+            html:renderAssistantHTML(_em.content),
             type:"assistant",
             reasoningContent:null,
             attachments:[],
             toolCalls:[],
-            actions:null,
+            actions:null
           });
         }
+        publishReactChatRuntime({ type: "state-synced", reason: "local-recovered-react" });
       }
     }catch(_){}
     /* P_streaming-survival — if the server has saved streaming_text
-        (the previous stream was interrupted before completion), render
-        it as a partial assistant message with a Retry button so the
-        user can resume the interrupted response. */
+       (the previous stream was interrupted before completion), surface
+       it as a partial assistant message with a Retry button so the
+       user can resume the interrupted response. State push is
+       authoritative; React re-renders the bubble from snapshot. The
+       retry click is delegated on msgList (React-owned) because the
+       button DOM is owned by React after the next paint. */
     if(s.streamingText){
-      var partialMsg=document.createElement("div");
-      partialMsg.className="msg assistant";
-      var partialBody=document.createElement("div");
-      partialBody.className="msg-body content";
       var partialText=s.streamingText||"(partial content)";
-      var partialRendered=s.streamingText;
-      /* Try to render the partial text so it looks as good as possible. */
+      var partialRendered;
       try{partialRendered=formatMsg(partialText)}catch(_){partialRendered="<p>"+esc(partialText)+"</p>"}
-      partialBody.innerHTML='<div class="msg-content">'+partialRendered+'</div>'+
+      var partialHtml='<div class="msg-content">'+partialRendered+'</div>'+
         '<div class="msg-error" style="margin-top:8px">'+
           '<span class="msg-error-text">(response interrupted — tap Retry to continue)</span>'+
-          '<button type="button" class="msg-retry-btn stream-retry-btn">Retry</button>'+
+          '<button type="button" class="msg-retry-btn stream-retry-btn" data-stream-retry>Retry</button>'+
         '</div>';
-      partialMsg.appendChild(partialBody);
-      msgList.appendChild(partialMsg);
-      /* Also push into state.messages so it participates in
-         extractHistory(). The type is "assistant" so doSave()
-         persists it. The user can delete it manually. */
+      var partialClientId="stream-recovered-"+Date.now();
       var partialIdx2=state.messages.push({
         role:"assistant",
-        clientId:"stream-recovered-"+Date.now(),
+        clientId:partialClientId,
         rawText:partialText,
-        html:partialBody.innerHTML,
+        html:partialHtml,
         type:"assistant",
       })-1;
-      /* Wire the retry button */
-      var retryBtn=partialBody.querySelector('.stream-retry-btn');
-      if(retryBtn){
-        retryBtn.addEventListener("click",function(){
-          /* Remove this partial message from state so it doesn't
-             appear in the next history extract. */
-          if(partialIdx2>=0&&state.messages[partialIdx2]){
-            state.messages.splice(partialIdx2,1);
+      /* Delegate the retry click on the React-owned msgList so the
+         React-rendered button works without us touching the DOM. */
+      var retryDelegated=function(ev){
+        var t=ev.target;
+        if(!(t && t.matches && t.matches("[data-stream-retry]")))return;
+        msgList.removeEventListener("click",retryDelegated);
+        if(partialIdx2>=0&&state.messages[partialIdx2]){
+          state.messages.splice(partialIdx2,1);
+        }
+        apiFetch("/api/sessions/"+encodeURIComponent(s.id),{
+          method:"PATCH",
+          body:{streamingText:null,streamingReasoning:null},
+          timeoutMs:5000,
+        }).catch(function(){});
+        var lastUserMsg=null;
+        for(var ui=state.messages.length-1;ui>=0;ui--){
+          if(state.messages[ui]&&state.messages[ui].role==="user"){
+            lastUserMsg=state.messages[ui].rawText||state.messages[ui].content;
+            break;
           }
-          /* Also clear the server's streaming_text tombstone. */
-          apiFetch("/api/sessions/"+encodeURIComponent(s.id),{
-            method:"PATCH",
-            body:{streamingText:null,streamingReasoning:null},
-            timeoutMs:5000,
-          }).catch(function(){});
-          /* Scroll away this partial bubble visually. */
-          partialMsg.remove();
-          /* Call askChatTurn with the last user message. */
-          var lastUserMsg=null;
-          for(var ui=state.messages.length-1;ui>=0;ui--){
-            if(state.messages[ui]&&state.messages[ui].role==="user"){
-              lastUserMsg=state.messages[ui].rawText||state.messages[ui].content;
-              break;
-            }
-          }
-          if(lastUserMsg&&typeof window.askChatTurn==="function"){
-            window.askChatTurn(lastUserMsg);
-          }else{
-            showToast("No previous user message to retry.");
-          }
-        });
-      }
-      /* Also clear the server-side streaming_text so a second reload
+        }
+        if(lastUserMsg&&typeof window.askChatTurn==="function"){
+          window.askChatTurn(lastUserMsg);
+        }else{
+          showToast("No previous user message to retry.");
+        }
+      };
+      msgList.addEventListener("click",retryDelegated);
+      /* Clear the server-side streaming_text so a second reload
          doesn't show the same partial content again. */
       apiFetch("/api/sessions/"+encodeURIComponent(s.id),{
         method:"PATCH",
@@ -1998,11 +1717,10 @@ async function loadSession(id){
         timeoutMs:5000,
       }).catch(function(){});
     }
-    } /* end legacy-only branch */
     /* P_context-race — currentSessionId and URL are set HERE, AFTER
        state.messages has been fully rebuilt. Setting them earlier
        (before the forEach rebuild loop) left a window where
-       state.session.currentSessionId pointed to the new session but
+       currentSessionId pointed to the new session but
        state.messages still held old data — any saveCurrentSession()
        firing in that window would cross-contaminate contexts. */
     setCurrentSessionId(s.id);
@@ -3007,145 +2725,11 @@ function renderRecents(){
 function doRenderRecents(){
   var cont=document.getElementById("recentsList");
   if(!cont)return;
-
-  /* React migration: if React owns the session list, publish via bridge
-     and skip the legacy HTML rendering. */
-  if (cont.dataset && cont.dataset.reactMigrationRuntime === "session-list") {
-    _publishSessionList();
-    return;
-  }
-
-  var recents=getRecents();
-  /* P2.2 — apply the persistent tag filter. */
-  var recentsFilter=getRecentsFilter();
-  recents=filterRecentsByChip(recents,recentsFilter);
-  /* Unified sidebar search — client-side title/topic match layered on
-     top of the chip filters. Complements (does not replace)
-     the global Cmd-K fuse search. Empty query is a no-op. */
-  var searchQ=(RECENTS_SEARCH_QUERY||"").trim().toLowerCase();
-  if(searchQ){
-    recents=recents.filter(function(s){
-      var hay=((s.title||"")+" "+(s.topic||"")).toLowerCase();
-      return hay.indexOf(searchQ)!==-1;
-    });
-  }
-  if(recents.length===0){
-    /* Three distinct empty states so the user never sees a misleading
-       "No recent sessions yet." when the real cause is something else:
-         0) fetch failed — the user HAS sessions on the server, we just
-            couldn't load them (network blip, ad blocker, 5xx, proxy).
-            Show a "Couldn't load sessions" message with a Retry button.
-            This is the root cause of the "Recent list empty on some
-            devices" report: devices with network issues silently saw
-            an empty list with no indication that their data existed.
-         1) no fetch failure, but a tag filter is active
-            and matched zero rows — surface the filter name and a
-            one-click clear action so the user isn't left thinking
-            their data is gone.
-         2) no filter at all — the truly-empty state. */
-    var emptyMsg;
-    if(searchQ){
-      emptyMsg='<div class="recents-empty">No sessions match <strong>&ldquo;'+esc(searchQ)+'&rdquo;</strong>.<br>'+
-        '<a href="#" onclick="setRecentsSearch(\'\');return false">Clear search</a> to see all sessions.</div>';
-    }else if(SERVER_SESSIONS_FETCH_FAILED && !recentsFilter){
-      /* P_recents-fetch-fail — only show the failure state when no
-         filter is active. The Retry button re-runs
-         refreshServerSessions() and re-renders. */
-      emptyMsg='<div class="recents-empty">Couldn\'t load sessions. Check your connection and try again.<br>'+
-        '<a href="#" onclick="retryRecentsFetch();return false">Retry</a></div>';
-    }else if(recentsFilter){
-      var filterLabel = recentsFilter.indexOf("project:") === 0 ? "Project" : "#" + recentsFilter;
-      emptyMsg='<div class="recents-empty">No sessions match the <strong>'+esc(filterLabel)+'</strong> filter.<br>'+
-        '<a href="#" onclick="clearRecentsFilter();return false">Clear filter</a> to see all sessions.</div>';
-    }else{
-      emptyMsg='<div class="recents-empty">No recent sessions yet.<br>Start a topic to begin.</div>';
-    }
-    cont.innerHTML=emptyMsg;
-    /* Still render the chip row so the active filter is visible
-       and dismissible even when the list is empty. */
-    renderRecentsFilterChips();
-    return;
-  }
-  var html="";
-  recents.forEach(function(s){
-    var active=s.id===state.session.currentSessionId;
-    var meta=[];
-    meta.push(formatRelativeTime(s.updated_at||s.updatedAt||s.created_at||s.createdAt||Date.now()));
-    if(s.total_q||s.totalQ)meta.push((s.total_q||s.totalQ)+" Qs");
-    /* Resolve the displayed mode. Always reflect the SESSION's own
-       persisted mode, never the global appMode — otherwise clicking a
-       Chat session while the app is in Tutor mode would flip its dot to
-       amber, misrepresenting the session type. Sources, in order:
-         1) the session's persisted s.mode  (truthful for sessions saved
-            after we added the field)
-         2) the persisted s.phase === "chat" hint (older sessions that
-            had no mode field but did have phase) */
-    var resolvedMode=s.mode;
-    if(resolvedMode!=="chat"&&resolvedMode!=="tutor"){
-      if(s.phase==="chat"){resolvedMode="chat"}
-    }
-    /* P_exam-history — exam sessions get their own label and CSS
-     * class on the recent-row badge. We check s.kind first because
-     * a user-created exam session also has mode='chat' (the front-end
-     * used chat-mode for the underlying row) — kind is the truth. */
-    var isExam=s.kind==="exam";
-    var modeLabel=isExam?"Exam":(resolvedMode==="chat"?"Chat":"Tutor");
-    var modeCls=isExam?"mode-exam":(resolvedMode==="chat"?"mode-chat":"mode-tutor");
-    var safeId="r-"+Math.abs((s.id||"").split("").reduce(function(a,b){a=(a<<5)-a+b.charCodeAt(0);return a&a},0));
-    var sessionLabel=getSessionLabel(s.id);
-    html+='<div class="recent-item'+(active?" active":"")+(s.pinned?" pinned":"")+'" data-recent-id="'+safeId+'" data-recent-actual="'+esc(s.id)+'" draggable="true" ondragstart="onSessionDragStart(event,\''+esc(s.id)+'\')" ondragend="onSessionDragEnd(event)">';
-    /* P2.2 — mode-coloured dot. The visible text is hidden via CSS
-       (font-size:0; overflow:hidden) so the span is just a 6 px circle;
-       the title attribute provides a hover tooltip. */
-    html+='<span class="recent-mode-badge '+modeCls+'" title="'+modeLabel+'">'+modeLabel+'</span>';
-    html+='<div class="recent-item-main">';
-    html+='<div class="recent-item-title-row">';
-    /* Pin indicator for pinned sessions. */
-    if(s.pinned){
-      html+='<span class="recent-item-pin-icon" title="Pinned">'+
-        '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M12 2v10l4 4v2H8v-2l4-4V2"/></svg></span>';
-    }
-    html+='<div class="recent-item-text">'+esc(s.title||s.topic||"(untitled)")+'</div>';
-    /* Custom label badge. */
-    if(sessionLabel){
-      html+='<span class="recent-item-label">'+esc(sessionLabel)+'</span>';
-    }
-    html+='</div>';
-    html+='<div class="recent-item-meta">'+meta.map(function(m){return"<span>"+esc(m)+"</span>"}).join('<span class="dot"></span>')+'</div>';
-    /* P2.2 — tag pills row. Tapping the row's tag button
-       opens the tag editor popover; clicking an individual
-       tag pill filters the list to that tag. */
-    var tags=Array.isArray(s.tags)?s.tags:[];
-    if(tags.length){
-      html+='<div class="recent-item-tags">';
-      tags.forEach(function(t){
-        html+='<button class="recent-tag-pill" onclick="setRecentsFilter(\''+esc(t)+'\')" title="Filter by tag: '+esc(t)+'">#'+esc(t)+'</button>';
-      });
-      html+='</div>';
-    }
-    html+='</div>';
-    html+='<div class="recent-item-actions">';
-    /* Tag editor trigger. */
-    html+='<button class="recent-item-tag-btn" data-tag-open="1" title="Edit tags" onclick="openTagEditor(\''+esc(s.id)+'\',event)">';
-    html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
-    html+='</button>';
-    /* Delete — click deletes immediately (no confirm). */
-    html+='<button class="recent-item-del" title="Delete session" aria-label="Delete session"';
-    html+=' onclick="actuallyDeleteSession(\''+esc(s.id)+'\',event)">';
-    html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
-    html+='</button>';
-    html+='</div>';
-    html+='</div>';
-  });
-  cont.innerHTML=html;
-  /* Attach long-press listeners to each recent item. */
-  cont.querySelectorAll(".recent-item").forEach(function(el){attachLongPress(el)});
-  /* Ensure the delegated navigation click handler is set up (lazy, one-time). */
-  setupRecentsListDelegated();
-  /* P2.2 — render the secondary filter chip row. "All" is the
-     default; the user's most-used tags are surfaced as chips.
-     The active chip is highlighted; clicking a chip toggles
-     its filter state. */
+  /* React owns the session list. Publish the snapshot via the bridge
+     so React re-renders from state. The legacy innerHTML rendering
+     was reachable only when session-list was not migrated, which is
+     no longer possible after the always-on React runtime landed. */
+  _publishSessionList();
   renderRecentsFilterChips();
 }
 
@@ -4763,31 +4347,12 @@ function branchFromMessage(messageId){
       state.messages=ctx.messages;
       state.session.topic=ctx.topic;
       state.session.sessionTitle=ctx.title;
-      /* React-runtime guard: the legacy DOM rebuild below would
-         clobber the React-rendered children of #msgList. Push
-         a state-synced event so the React message list picks up
-         the branched messages from the snapshot. */
-      var list=document.getElementById("msgList");
-      var branchReactOwns=!!(list && list.dataset && list.dataset.reactMigrationRuntime==="msg-list");
-      if(branchReactOwns){
-        publishReactChatRuntime({type:"state-synced",reason:"branch-context-restored"});
-      }else if(list){
-        /* Re-render the branched messages in the DOM. */
-        list.innerHTML="";
-        state.messages.forEach(function(msg){
-          var div=document.createElement("div");
-          div.className="msg "+msg.role;
-          div.dataset.clientId=msg.clientId;
-          var body=document.createElement("div");
-          body.className="msg-body";
-          body.innerHTML=msg.html||formatMsg(msg.rawText||"");
-          div.appendChild(body);
-          /* Attach toolbar for each message. */
-          var toolbar=buildMessageToolbar({role:msg.role,entry:msg});
-          if(toolbar)div.appendChild(toolbar);
-          list.appendChild(div);
-        });
-      }
+      /* React owns #msgList. Push a state-synced event so the React
+         message list picks up the branched messages from the snapshot.
+         The legacy DOM rebuild (innerHTML + per-msg divs + toolbars)
+         was reachable only when msg-list was not migrated, which is no
+         longer possible after the always-on React runtime landed. */
+      publishReactChatRuntime({type:"state-synced",reason:"branch-context-restored"});
       /* Clear the greeting/topic setup so the user sees the
          branched conversation immediately. */
       var ts=document.getElementById("topicSetup");
@@ -5033,13 +4598,12 @@ function wireMsgBodyImages(body){
 
 
 /* Morph the send button into a red Stop button during streaming,
-   or restore it to the normal send arrow when idle. */
-var _stopIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
-var _sendIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+   or restore it to the normal send arrow when idle. React owns
+   #sendBtnContent and re-renders the icon from dataset.stop, so
+   this function only toggles the dataset + CSS class. */
 function setChatStopState(active){
   var btn=document.getElementById("sendBtn");
   if(!btn)return;
-  var content=document.getElementById("sendBtnContent")||btn;
   if(active){
     btn.classList.add("chat-stop");
     btn.dataset.stop="1";
@@ -5047,12 +4611,7 @@ function setChatStopState(active){
     btn.classList.remove("chat-stop");
     btn.dataset.stop="0";
   }
-  /* In React compatibility mode the subscribed SendButtonContent owns
-     this inner node. Default mode keeps the original synchronous legacy
-     mutation so both paths preserve the same icon and click contract. */
-  if(!content.dataset.reactMigrationRuntime){
-    content.innerHTML=active?_stopIcon:_sendIcon;
-  }
+  /* React owns #sendBtnContent and re-renders the icon from dataset.stop. */
 }
 window.setChatStopState=setChatStopState;
 /* Wrapper for the send/stop button click. When a stream is active,
@@ -6184,18 +5743,9 @@ function teardownThinkStructure(){
           var card=renderSourcesCard(sourcesToRender);
           if(card)div.appendChild(card);
         }
-        /* Streaming AI bubbles skip addMessage(), so attach the
-           toolbar here. Guarded against duplicate stacking. In React
-           mode the React MessageToolbar component renders the same
-           action buttons from the snapshot, so the legacy toolbar
-           would just be discarded with the bubble in the same
-           microtask. */
-        if(msgList && msgList.dataset.reactMigrationRuntime==="msg-list"){
-          // legacy toolbar skipped under React ownership
-        }else if(!div.querySelector(".msg-toolbar")&&msgIdx>=0&&state.messages[msgIdx]){
-          var toolbar=buildMessageToolbar({role:"assistant",entry:state.messages[msgIdx]});
-          if(toolbar)div.appendChild(toolbar);
-        }
+        /* Streaming AI bubbles skip addMessage(). React owns #msgList and the
+           React MessageToolbar component renders the same action buttons
+           from the snapshot, so the legacy toolbar path is unreachable. */
         try{appendLocalMemory("assistant",full)}catch(_){}
         requestAnimationFrame(function(){
           if(_finishWasPinned&&_finishScroller){
@@ -6337,23 +5887,15 @@ function teardownThinkStructure(){
              '<span class="msg-error-text">'+(errMsg||'Generation failed')+'</span>'+
               '<button type="button" class="msg-retry-btn" id="'+retryBtnId+'">Retry</button>'+
             '</div>';
-          var btn=null;
-          if(msgList && msgList.dataset.reactMigrationRuntime==="msg-list"){
-            /* React mode: skip mutating the legacy body and instead
-               serialize the error into state.messages[msgIdx] so the
-               React message list can render a finalized error bubble
-               from the snapshot. */
-            try{
-              if(msgIdx>=0 && state.messages[msgIdx]){
-                state.messages[msgIdx].html=errHtml;
-                state.messages[msgIdx].type="assistant";
-              }
-            }catch(_){}
-            btn={ id: retryBtnId };
-          }else{
-            body.innerHTML=errHtml;
-            btn=body.querySelector("#"+retryBtnId);
+          /* React owns #msgList — serialize the error into the snapshot
+             so React re-renders a finalized error bubble. The placeholder
+             `btn` (just an id, no addEventListener) triggers the
+             delegation branch below for click handling. */
+          if(msgIdx>=0 && state.messages[msgIdx]){
+            state.messages[msgIdx].html=errHtml;
+            state.messages[msgIdx].type="assistant";
           }
+          var btn={ id: retryBtnId };
           if(btn&&typeof onRetry==="function"){
             var retryHandler=function(){
               /* P_no_retry_loading — fire onRetry() immediately so the
