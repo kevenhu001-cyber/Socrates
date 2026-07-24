@@ -48,15 +48,6 @@ function _publishMorePopover(isOpen) {
   } catch (_) { /* swallow — bridge is best-effort */ }
 }
 
-/* React mode owns the popover's children. The legacy renderer writes
-   nothing (the children are static HTML in index.html), but the guard
-   is here for consistency and future-proofing. Legacy mode never sees
-   the attribute, so the guard never trips. */
-function _reactOwnsPopover() {
-  var el = _popover();
-  return !!(el && el.dataset && el.dataset.reactMigrationRuntime === "more-popover");
-}
-
 /* Compute the popover's position from the More button. The popover is
    right-aligned to the button and opens upward (matches the
    display-prefs popover behavior). Falls back to sensible defaults

@@ -24,13 +24,6 @@ function _publishUsageState(bodyHtml) {
   } catch (_) { /* swallow */ }
 }
 
-/* React mode owns the usage modal's children. The legacy renderer
-   suppresses its body writes so they don't clobber the React tree. */
-function _reactOwnsUsageModal() {
-  var el = document.getElementById("usageOverlay");
-  return !!(el && el.dataset && el.dataset.reactMigrationRuntime === "usage-modal");
-}
-
 export function openUsageModal(){
   document.getElementById("usageOverlay").classList.remove("hidden");
   _publishUsageState();

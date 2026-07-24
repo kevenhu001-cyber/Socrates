@@ -25,9 +25,7 @@ function menu() {
 
 /* Pre-create the menu on module load so the React compatibility root can
    hydrate it eagerly on boot. Stays hidden until the user clicks a
-   trigger. The legacy renderer is a no-op here (it's gated by
-   `_reactOwnsMenu()` in React mode and we render nothing in legacy mode
-   until `toggleComposerTools()` is invoked). */
+   trigger. */
 if (typeof document !== "undefined") menu();
 
 function item(action, icon, title, description) {
