@@ -48,12 +48,9 @@ function _publishProfileState() {
   } catch (_) { /* swallow — bridge is best-effort */ }
 }
 
-/* React mode owns the profile modal's children. Legacy DOM writes are
-   suppressed so they don't clobber the React tree. */
-function _reactOwnsProfileModal() {
-  var el = document.getElementById("profileOverlay");
-  return !!(el && el.dataset && el.dataset.reactMigrationRuntime === "profile-modal");
-}
+/* React owns the profile modal and sidebar user row unconditionally
+   under the always-on runtime. The publish path is the only thing
+   the React side reads; the legacy DOM mutations are dropped. */
 
 /* React migration bridge — publishes current user state so the sidebar
    footer React component can render the avatar, name, and tier badge.
@@ -84,71 +81,20 @@ function _publishSidebarChrome() {
   } catch (_) { /* swallow */ }
 }
 
-/* React mode owns the sidebar user row. The legacy renderer skips
-   its DOM writes so they don't clobber the React tree. */
-function _reactOwnsSidebarFooter() {
-  var el = document.getElementById("sidebarUserRow");
-  return !!(el && el.dataset && el.dataset.reactMigrationRuntime === "sidebar-user-row");
-}
+/* (legacy sidebar-footer renderer is dead code — see the always-on
+   React sidebar chrome above) */
 
 /* ─── User footer + profile modal shell ─── */
 
 function renderUserFooter() {
   var row = document.querySelector(".sidebar-footer .user-row");
   if (!row) return;
-  if (_reactOwnsSidebarFooter()) {
-    _publishSidebarChrome();
-    return;
-  }
-  if (!window.CURRENT_USER) {
-    row.innerHTML = '<div class="user-avatar">?</div><div><div class="user-name">Guest</div><div class="user-plan">Not signed in</div></div>';
-    return;
-  }
-  var name = window.CURRENT_USER.displayName || window.CURRENT_USER.email || "?";
-  var parts = name.trim().split(/\s+/);
-  var initials = parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
-  var tier = window.CURRENT_USER.tier || 'diophantus';
-  var safeTier = window.escapeHtml(tier);
-  var tierLabel = window.escapeHtml(tier.charAt(0).toUpperCase() + tier.slice(1));
-  var tierBadge = '<span class="tier-badge ' + safeTier + '">' + tierLabel + '</span>';
-  var safeName = window.escapeHtml(window.CURRENT_USER.displayName || window.CURRENT_USER.email || "");
-  row.innerHTML = '<div class="user-avatar">' + window.escapeHtml(initials) + '</div><div style="flex:1;min-width:0" onclick="event.stopPropagation();openProfile()"><div class="user-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">' + safeName + '</div><div class="user-plan">' + tierBadge + '</div></div>';
-  row.querySelector(".user-avatar").onclick = function (e) { e.stopPropagation(); openProfile(); };
   _publishSidebarChrome();
 }
 
 function openProfile() {
   if (!window.CURRENT_USER) return;
   loadCustomInstructionsIntoUI();
-  if (!_reactOwnsProfileModal()) {
-    var name = window.CURRENT_USER.displayName || window.CURRENT_USER.email || "?";
-    var parts = name.trim().split(/\s+/);
-    var initials = parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
-    document.getElementById("profileAvatar").textContent = initials;
-    var nameInput = document.getElementById("profileName");
-    nameInput.value = window.CURRENT_USER.displayName || "";
-    document.getElementById("profileEmail").textContent = window.CURRENT_USER.email || "";
-    var joinedEl = document.getElementById("profileJoined");
-    if (window.CURRENT_USER.createdAt) {
-      try { joinedEl.textContent = new Date(window.CURRENT_USER.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }); } catch (e) { joinedEl.textContent = window.CURRENT_USER.createdAt; }
-    } else { joinedEl.textContent = "—"; }
-    document.getElementById("profileVerified").textContent = window.CURRENT_USER.verifiedAt ? "Yes" : "No";
-    document.getElementById("profileVerified").className = "profile-row-value" + (window.CURRENT_USER.verifiedAt ? " profile-status-badge yes" : " profile-status-badge no");
-    document.getElementById("profileUserId").querySelector(".profile-id-text").textContent = window.CURRENT_USER.id || "—";
-    var tier = window.CURRENT_USER.tier || 'diophantus';
-    var tierEl = document.getElementById("profileTier");
-    tierEl.textContent = tier.charAt(0).toUpperCase() + tier.slice(1);
-    tierEl.className = 'profile-row-value tier-badge tier-' + tier;
-    var subEndEl = document.getElementById("profileSubEnd");
-    var subEndRow = document.getElementById("profileSubEndRow");
-    if (window.CURRENT_USER.subscriptionEnd) {
-      try { subEndEl.textContent = new Date(window.CURRENT_USER.subscriptionEnd).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }); } catch (e) { subEndEl.textContent = "—"; }
-      subEndRow.style.display = "flex";
-    } else {
-      subEndRow.style.display = (tier === 'diophantus' ? 'none' : 'flex');
-      subEndEl.textContent = "—";
-    }
-  }
   syncProfileWebSearchUI();
   syncProfileLangToggle();
   document.getElementById("profileOverlay").classList.remove("hidden");
@@ -203,12 +149,6 @@ function loadCustomInstructionsIntoUI() {
   if (!data.response && window.CURRENT_USER && window.CURRENT_USER.customInstructions) {
     data.response = window.CURRENT_USER.customInstructions;
   }
-  if (!_reactOwnsProfileModal()) {
-    var respEl = document.getElementById("profileInstResponse");
-    var aboutEl = document.getElementById("profileInstAbout");
-    if (respEl) respEl.value = data.response || "";
-    if (aboutEl) aboutEl.value = data.about || "";
-  }
   updateInstSaveState(data.savedAt);
 }
 
@@ -244,19 +184,12 @@ function buildCustomInstructionsString(value) {
 }
 
 function updateInstSaveState(savedAt) {
-  if (_reactOwnsProfileModal()) { _publishProfileState(); return; }
-  var el = document.getElementById("profileInstSaveState");
-  if (!el) return;
-  if (!savedAt) {
-    el.textContent = window.t("common.saving");
-    el.className = "profile-instructions-state pending";
-    return;
-  }
-  var dt = new Date(savedAt);
-  var hh = String(dt.getHours()).padStart(2, "0");
-  var mm = String(dt.getMinutes()).padStart(2, "0");
-  el.textContent = window.t("profile.savedAt").replace("{hh}", hh).replace("{mm}", mm);
-  el.className = "profile-instructions-state saved";
+  _publishProfileState();
+  /* savedAt is preserved in the bridge publish below via instSaveState;
+     the legacy text/class writes (window.t("common.saving") and the
+     "hh:mm" label) are no longer needed because React's ProfileModal
+     component reads savedAt from the snapshot. */
+  void savedAt;
 }
 
 function getCustomInstructionsString() {
@@ -272,27 +205,11 @@ function toggleProfileWebSearch() {
 }
 
 function syncProfileWebSearchUI() {
-  if (_reactOwnsProfileModal()) { _publishProfileState(); return; }
-  var track = document.getElementById("profileWebSearchTrack");
-  if (!track) return;
-  if (webSearchOn) { track.classList.add("on"); } else { track.classList.remove("on"); }
+  _publishProfileState();
 }
 
-/* Reflect window._currentLang onto the EN/中文 chips in the profile
- * modal. The same sync lives inside applyI18n() at module init, but
- * opening the profile is the moment the user actually sees the chip,
- * so we re-sync on every open to defend against any future flow that
- * mutates _currentLang without going through setLang/applyI18n. */
 function syncProfileLangToggle() {
-  if (_reactOwnsProfileModal()) { _publishProfileState(); return; }
-  var ids = ["profileLangEn", "profileLangZh"];
-  var current = (typeof window._currentLang === "string") ? window._currentLang : "en";
-  for (var i = 0; i < ids.length; i++) {
-    var el = document.getElementById(ids[i]);
-    if (!el) continue;
-    var optLang = ids[i].replace("profileLang", "").toLowerCase();
-    el.classList.toggle("active", optLang === current);
-  }
+  _publishProfileState();
 }
 
 /* ─── Cross-session memory loader ─── */
