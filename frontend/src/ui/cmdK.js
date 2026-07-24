@@ -42,14 +42,13 @@ function _publishCmdKState() {
   } catch (_) { /* swallow — bridge is best-effort */ }
 }
 
-/* React mode owns the overlay's children. The legacy renderer becomes a
-   no-op the moment React sets this attribute so its writes don't clobber
-   the React tree. Legacy mode never sees the attribute, so the guard
-   never trips. */
-function _reactOwnsOverlay() {
-  var el = document.getElementById("cmdKOverlay");
-  return !!(el && el.dataset && el.dataset.reactMigrationRuntime === "cmd-k");
-}
+/* React owns the CmdK overlay's children unconditionally under the
+   always-on runtime. `renderCmdKResultsHTML` is kept as a no-op so
+   legacy callers that build HTML strings can still call it; the
+   legacy HTML is discarded. */
+
+/* renderCmdKResultsHTML is intentionally a no-op: React owns the
+   results panel and reads its state from the CmdK bridge. */
 
 function rebuildCmdKIndex() {
   if (typeof Fuse === "undefined") return;
@@ -190,10 +189,8 @@ function renderCmdKResults(sections) {
   renderCmdKResultsHTML(html);
 }
 
-function renderCmdKResultsHTML(html) {
-  if (_reactOwnsOverlay()) return;
-  var el = document.getElementById("cmdKResults");
-  if (el) el.innerHTML = html;
+function renderCmdKResultsHTML(_html) {
+  // no-op: React owns #cmdKResults.
 }
 
 function updateCmdKSelected() {
