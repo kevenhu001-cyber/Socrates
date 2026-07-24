@@ -2,17 +2,10 @@ import type {
   ChatRuntimeEvent,
   ChatRuntimeSnapshot,
   ChatStreamSnapshot,
+  LegacyChatMessage,
 } from './types/domain';
 
 type Listener = () => void;
-
-interface LegacyChatMessage {
-  clientId?: unknown;
-  id?: unknown;
-  role?: unknown;
-  rawText?: unknown;
-  type?: unknown;
-}
 
 interface LegacyChatState {
   phase?: unknown;
@@ -51,6 +44,7 @@ let snapshot: ChatRuntimeSnapshot = Object.freeze({
   currentSessionId: null,
   phase: 'topic',
   messageCount: 0,
+  messages: Object.freeze([] as ReadonlyArray<LegacyChatMessage>),
   lastMessage: null,
   isStreaming: false,
   stream: IDLE_STREAM,
@@ -153,6 +147,9 @@ function commit(event: ChatRuntimeEvent): void {
     currentSessionId: legacy.currentSessionId,
     phase: legacy.phase,
     messageCount: legacy.messages.length,
+    messages: Object.freeze(
+      [...legacy.messages] as ReadonlyArray<LegacyChatMessage>,
+    ),
     lastMessage: last
       ? Object.freeze({
           id: asString(last.clientId ?? last.id),

@@ -58,6 +58,16 @@ export const attachments = [];
 /** Clear the pending attachments list. Called after submit + on cancel. */
 export function resetAttachments() {
   attachments.length = 0;
+  /* React migration bridge — publish the empty list so the React
+     compatibility root drops the chip row. Legacy callers that follow
+     up with renderAttachmentChips() also publish; this covers the
+     reset-only path. */
+  try {
+    var bridge = (typeof window !== "undefined") ? window.__socratesAttachmentsBridge : null;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({ attachments: attachments.slice() });
+    }
+  } catch (_) { /* swallow — bridge is best-effort */ }
 }
 
 /**

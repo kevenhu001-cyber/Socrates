@@ -1,0 +1,161 @@
+import { hydrateRoot, type Root } from 'react-dom/client';
+
+import { seedSidebarBridgesFromLegacy, useActiveNav, useSidebarNavCommands } from './legacyAdapter';
+import type { SidebarNavKey } from './types';
+
+const NAV_ID = 'sidebarNav';
+
+interface NavButtonSpec {
+  key: SidebarNavKey | 'new';
+  label: string;
+  i18nKey: string;
+  icon: string;
+  aria?: { haspopup?: 'menu'; expanded?: boolean };
+}
+
+const BUTTONS: NavButtonSpec[] = [
+  {
+    key: 'new',
+    label: 'New chat',
+    i18nKey: 'sidebar.nav.new',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  },
+  {
+    key: 'library',
+    label: 'Library',
+    i18nKey: 'sidebar.nav.library',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+  },
+  {
+    key: 'projects',
+    label: 'Projects',
+    i18nKey: 'sidebar.nav.projects',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18"/><path d="M3 12h18"/><path d="M3 17h12"/></svg>',
+  },
+  {
+    key: 'scheduled',
+    label: 'Scheduled',
+    i18nKey: 'sidebar.nav.scheduled',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>',
+  },
+  {
+    key: 'plugins',
+    label: 'Plugins',
+    i18nKey: 'sidebar.nav.plugins',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><rect x="5" y="10" width="6" height="4" rx="1"/><rect x="13" y="10" width="6" height="4" rx="1"/></svg>',
+  },
+  {
+    key: 'exam',
+    label: 'Exam',
+    i18nKey: 'sidebar.nav.exam',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>',
+  },
+  {
+    key: 'more',
+    label: 'More',
+    i18nKey: 'sidebar.nav.more',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5"  r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>',
+    aria: { haspopup: 'menu', expanded: false },
+  },
+];
+
+function i18n(key: string, fallback: string): string {
+  try {
+    if (typeof window.t === 'function') {
+      const v = window.t(key);
+      if (typeof v === 'string' && v !== key) return v;
+    }
+  } catch (_) { /* fall through */ }
+  return fallback;
+}
+
+function navButtonId(key: SidebarNavKey | 'new'): string {
+  if (key === 'new') return 'navNew';
+  return `nav${(key as string)[0].toUpperCase()}${(key as string).slice(1)}`;
+}
+
+declare global {
+  interface Window {
+    t?: (key: string) => string;
+    resetApp?: () => void;
+  }
+}
+
+function SidebarNav() {
+  const active = useActiveNav();
+  const { open } = useSidebarNavCommands();
+
+  return (
+    <>
+      {BUTTONS.map((button) => {
+        const isActive = button.key !== 'new' && active === button.key;
+        const label = i18n(button.i18nKey, button.label);
+        const isMore = button.key === 'more';
+        return (
+          <button
+            key={button.key}
+            type="button"
+            className={`sidebar-nav-btn${isActive ? ' active' : ''}`}
+            data-nav={button.key}
+            id={navButtonId(button.key)}
+            aria-haspopup={button.aria?.haspopup}
+            aria-expanded={isMore ? (isActive ? 'true' : 'false') : undefined}
+            onClick={() => {
+              if (button.key === 'new') {
+                if (typeof window.resetApp === 'function') window.resetApp();
+              } else if (button.key !== null) {
+                open(button.key);
+              }
+            }}
+          >
+            <span dangerouslySetInnerHTML={{ __html: button.icon }} />
+            <span data-i18n-key={button.i18nKey}>{label}</span>
+          </button>
+        );
+      })}
+    </>
+  );
+}
+
+export interface SidebarNavHandle {
+  nav: HTMLElement;
+  root: Root;
+  destroy: () => void;
+}
+
+/**
+ * Hydrate the legacy `#sidebarNav` element with React. Idempotent — a
+ * second call returns the existing handle. The nav element itself is
+ * preserved (same id, same `aria-label`, same nav DOM siblings); React
+ * owns only its direct children (the 7 buttons).
+ *
+ * Callers should set `data-react-migration-runtime="sidebar-nav"` on the
+ * element before invoking this so the legacy `setActiveNav()` querySelector
+ * still works on the React-owned buttons (or, in practice, the React
+ * buttons re-publish the active state via the bridge and the legacy
+ * querySelector becomes a harmless no-op when there are no `.sidebar-nav-btn`
+ * matches in the document — except React renders them inside the same
+ * element so the querySelector still hits them).
+ */
+export function hydrateSidebarNav(): SidebarNavHandle | null {
+  const nav = document.getElementById(NAV_ID);
+  if (!nav) return null;
+  if (nav.dataset.sidebarReactHydrated === '1') {
+    throw new Error('Sidebar nav React runtime was initialized more than once.');
+  }
+  nav.dataset.sidebarReactHydrated = '1';
+  nav.setAttribute('data-react-migration-runtime', 'sidebar-nav');
+
+  seedSidebarBridgesFromLegacy();
+
+  const root = hydrateRoot(nav, <SidebarNav />);
+  return {
+    nav,
+    root,
+    destroy: () => {
+      root.unmount();
+      delete nav.dataset.sidebarReactHydrated;
+      nav.removeAttribute('data-react-migration-runtime');
+    },
+  };
+}

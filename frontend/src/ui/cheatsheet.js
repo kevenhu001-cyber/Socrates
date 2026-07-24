@@ -7,10 +7,25 @@
 // windowExports.js) keeps the lookup working.
 import { esc } from '../render/helpers.js';
 
+/* React migration bridge — publishes cheatsheet open state. */
+function _publishCheatsheetState(open) {
+  try {
+    var bridge = window.__socratesCheatsheetBridge;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({ open: !!open });
+    }
+  } catch (_) { /* swallow */ }
+}
+
+function _reactOwnsCheatsheet() {
+  return !!(document.getElementById("cheatsheetReactRoot") && document.getElementById("cheatsheetReactRoot").dataset.reactMigrationRuntime === "cheatsheet");
+}
+
 /* P5.6 — open / close the shortcut cheatsheet modal. The
    content is a small static table so the user can learn the
    shortcuts without leaving the app. */
 export function openCheatsheet(){
+  if (_reactOwnsCheatsheet()) { _publishCheatsheetState(true); return; }
   var overlay=document.getElementById("cheatsheetOverlay");
   if(!overlay){
     overlay=document.createElement("div");
@@ -67,6 +82,7 @@ export function buildCheatsheetSection(title,rows){
 }
 
 export function closeCheatsheet(){
+  if (_reactOwnsCheatsheet()) { _publishCheatsheetState(false); return; }
   var overlay=document.getElementById("cheatsheetOverlay");
   if(overlay)overlay.classList.add("hidden");
 }

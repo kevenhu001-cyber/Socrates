@@ -10,7 +10,31 @@
  *   - closePromptTemplatesModal (self-call)
  */
 
+/* React migration bridge — publishes prompt templates modal body HTML. */
+function _publishPromptTemplatesState() {
+  try {
+    var bridge = window.__socratesPromptTemplatesBridge;
+    if (bridge && typeof bridge.publish === "function") {
+      var body = document.querySelector("#promptTemplatesOverlay .prompt-templates-modal");
+      bridge.publish({
+        open: document.getElementById("promptTemplatesOverlay") && !document.getElementById("promptTemplatesOverlay").classList.contains("hidden"),
+        bodyHTML: body ? body.innerHTML : "",
+      });
+    }
+  } catch (_) { /* swallow */ }
+}
+
+function _reactOwnsPromptTemplates() {
+  return !!(document.getElementById("promptTemplatesReactRoot") && document.getElementById("promptTemplatesReactRoot").dataset.reactMigrationRuntime === "prompt-templates");
+}
+
 function openPromptTemplatesModal() {
+  if (_reactOwnsPromptTemplates()) {
+    renderPromptTemplatesModal();
+    document.getElementById("promptTemplatesOverlay").classList.remove("hidden");
+    _publishPromptTemplatesState();
+    return;
+  }
   var overlay = document.getElementById("promptTemplatesOverlay");
   if (!overlay) {
     overlay = document.createElement("div");
@@ -25,6 +49,11 @@ function openPromptTemplatesModal() {
 }
 
 function closePromptTemplatesModal() {
+  if (_reactOwnsPromptTemplates()) {
+    document.getElementById("promptTemplatesOverlay").classList.add("hidden");
+    _publishPromptTemplatesState();
+    return;
+  }
   var overlay = document.getElementById("promptTemplatesOverlay");
   if (overlay) overlay.classList.add("hidden");
 }
@@ -50,6 +79,7 @@ function renderPromptTemplatesModal() {
       '<button class="prompt-templates-new" onclick="openPromptTemplateEditor()">+ Create skill</button>' +
     '</div>';
   body.innerHTML = html;
+  if (_reactOwnsPromptTemplates()) { _publishPromptTemplatesState(); }
 }
 
 function renderPromptRow(t, editable) {
@@ -109,6 +139,7 @@ function openPromptTemplateEditor(existing) {
       '<button class="modal-cancel" onclick="renderPromptTemplatesModal()">Cancel</button>' +
       '<button class="modal-save" onclick="onPromptTemplateEditorSave(\'' + window.esc(t.id) + '\',' + (existing ? '1' : '0') + ')">Save</button>' +
     '</div>';
+  if (_reactOwnsPromptTemplates()) { _publishPromptTemplatesState(); }
   var title = document.getElementById("ptTitle");
   if (title) { setTimeout(function () { title.focus(); title.select(); }, 0); }
 }

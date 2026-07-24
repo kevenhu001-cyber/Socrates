@@ -1,5 +1,55 @@
 import { toggleMorePopover } from "./morePopover.js";
 
+/* React migration bridge — publishes scheduled task state so the React
+   compatibility root can render the page. Installed by
+   frontend/src/react/pages/scheduled/scheduledStore.ts under `?react=1`. */
+function _publishScheduledState() {
+  try {
+    var bridge = window.__socratesScheduledBridge;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({
+        tasks: (workspaceCache.tasks || []).map(function (t) {
+          return { id: t.id, title: t.title, prompt: t.prompt || "", frequency: t.frequency || "once", nextRunAt: t.nextRunAt || null, status: t.status || "active" };
+        }),
+        loading: false,
+        error: null,
+      });
+    }
+  } catch (_) { /* swallow */ }
+}
+
+/* React mode owns the scheduled panel. The legacy renderer skips
+   its DOM writes so they don't clobber the React tree. */
+function _reactOwnsScheduled() {
+  return !!(document.getElementById("scheduledPanel") && document.getElementById("scheduledPanel").dataset.reactMigrationRuntime === "scheduled-page");
+}
+
+/* React migration bridge — publishes workspace page state (library,
+   projects, plugins) so the React compatibility root can render.
+   Installed by frontend/src/react/pages/workspace/workspaceStore.ts
+   under `?react=1`. */
+function _publishWorkspaceState() {
+  try {
+    var bridge = window.__socratesWorkspaceBridge;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({
+        activePage: null,
+        libraryData: { files: workspaceCache.library.files || [], artifacts: workspaceCache.library.artifacts || [], tab: (document.querySelector(".library-tab.active") && document.querySelector(".library-tab.active").dataset.libraryTab) || "files", query: workspaceCache.library.query || "", selection: workspaceCache.library.selection || {}, renameItem: workspaceCache.library.renameItem },
+        projectsData: workspaceCache.projects || [],
+        pluginsData: workspaceCache.connectors || [],
+        projectConnectorConfigured: !!workspaceCache.projectConnectorConfigured,
+        loading: false,
+        error: null,
+      });
+    }
+  } catch (_) { /* swallow */ }
+}
+
+function _reactOwnsWorkspacePage(pageId) {
+  var el = document.getElementById(pageId);
+  return !!(el && el.dataset.reactMigrationRuntime === "workspace-page");
+}
+
 /* Connector brand marks come from the maintained @lobehub/icons-static-svg
    set (Vite inlines each file as a raw string via the `?raw` suffix) so the
    icons stay in one source of truth. Lobehub ships github/notion/gitee/baidu
@@ -141,11 +191,26 @@ function fileMeta(item) {
   return sizeLabel + (item.uploadedAt || item.updatedAt ? " · " + formatTime(item.uploadedAt || item.updatedAt) : "");
 }
 
+/* React migration bridge — publishes the active nav name so the React
+   compatibility root can mirror the .active class via useSyncExternalStore.
+   Installed by frontend/src/react/sidebar/sidebarRuntimeStore.ts under
+   `?react=1`; legacy mode never sees a subscriber so the helper is a
+   cheap no-op. */
+function _publishSidebarNav(name) {
+  try {
+    var bridge = window.__socratesSidebarNavBridge;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({ activeNav: name == null ? null : String(name) });
+    }
+  } catch (_) { /* swallow — bridge is best-effort */ }
+}
+
 export function setActiveNav(name) {
   NAV_NAMES.forEach(function (nav) {
     var button = document.querySelector('.sidebar-nav-btn[data-nav="' + nav + '"]');
     if (button) button.classList.toggle("active", nav === name);
   });
+  _publishSidebarNav(name);
 }
 
 /* Hide sidebar-only panels (knowledge, mistakes). Does NOT touch
@@ -208,7 +273,18 @@ function hideChatAndTopic() {
   if (typeof window.toggleChatTopBarEls === "function") window.toggleChatTopBarEls(false);
 }
 
-export function openLibrary() { hideChatAndTopic(); showMainPage("libraryPanel"); renderLibrary(); }
+export function openLibrary() {
+  hideChatAndTopic();
+  showMainPage("libraryPanel");
+  if (_reactOwnsWorkspacePage("libraryPanel")) {
+    if (typeof window.__socratesMountWorkspace === "function") {
+      window.__socratesMountWorkspace("library");
+    }
+    renderLibrary();
+    return;
+  }
+  renderLibrary();
+}
 async function renderLibrary() {
   var list = byId("libraryList");
   if (!list) return;
@@ -218,15 +294,18 @@ async function renderLibrary() {
     workspaceCache.library.files = results[0].files || [];
     workspaceCache.library.artifacts = results[1].artifacts || [];
     paintLibrary();
+    _publishWorkspaceState();
   } catch (err) {
     if (err && err.status === 401) {
       list.innerHTML = '<div class="library-empty">Sign in to upload files and create artifacts.</div>';
     } else {
       list.innerHTML = '<div class="library-empty">Your library could not be loaded. Try again.</div>';
     }
+    _publishWorkspaceState();
   }
 }
 function paintLibrary() {
+  if (_reactOwnsWorkspacePage("libraryPanel")) return;
   var list = byId("libraryList");
   var tab = document.querySelector(".library-tab.active");
   var key = tab && tab.dataset.libraryTab === "artifacts" ? "artifacts" : "files";
@@ -289,6 +368,7 @@ window.toggleLibrarySelect = function (id, checked) {
   var sel = workspaceCache.library.selection;
   if (checked) sel[id] = true; else delete sel[id];
   paintLibrary();
+  _publishWorkspaceState();
 };
 
 window.toggleSelectAllLibrary = function (checked) {
@@ -299,6 +379,7 @@ window.toggleSelectAllLibrary = function (checked) {
     if (checked) sel[item.id] = true; else delete sel[item.id];
   });
   paintLibrary();
+  _publishWorkspaceState();
 };
 
 window.deleteSelectedLibrary = async function () {
@@ -321,11 +402,13 @@ window.deleteSelectedLibrary = async function () {
 window.startLibraryRename = function (id, key) {
   workspaceCache.library.renameItem = id;
   paintLibrary();
+  _publishWorkspaceState();
 };
 
 window.cancelLibraryRename = function () {
   workspaceCache.library.renameItem = null;
   paintLibrary();
+  _publishWorkspaceState();
 };
 
 window.saveLibraryRename = async function (input) {
@@ -333,10 +416,10 @@ window.saveLibraryRename = async function (input) {
   var key = input.dataset.renameKey;
   var newName = input.value.trim();
   workspaceCache.library.renameItem = null;
-  if (!newName) { paintLibrary(); return; }
+  if (!newName) { paintLibrary(); _publishWorkspaceState(); return; }
   var oldItem = workspaceCache.library[key].filter(function (i) { return i.id === id; })[0];
   var oldName = oldItem ? (oldItem.name || oldItem.title) : "";
-  if (newName === oldName) { paintLibrary(); return; }
+  if (newName === oldName) { paintLibrary(); _publishWorkspaceState(); return; }
   try {
     if (key === "files") {
       await api("/api/files/" + encodeURIComponent(id), { method: "PATCH", body: { name: newName } });
@@ -347,7 +430,8 @@ window.saveLibraryRename = async function (input) {
     }
     toast("Renamed");
     paintLibrary();
-  } catch (_) { toast("Could not rename"); paintLibrary(); }
+    _publishWorkspaceState();
+  } catch (_) { toast("Could not rename"); paintLibrary(); _publishWorkspaceState(); }
 };
 
 window.renameArtifact = async function (id) {
@@ -355,7 +439,18 @@ window.renameArtifact = async function (id) {
   window.startLibraryRename(id, "artifacts");
 };
 
-export function openProjects() { hideChatAndTopic(); showMainPage("spacesPanel"); renderProjects(); }
+export function openProjects() {
+  hideChatAndTopic();
+  showMainPage("spacesPanel");
+  if (_reactOwnsWorkspacePage("spacesPanel")) {
+    if (typeof window.__socratesMountWorkspace === "function") {
+      window.__socratesMountWorkspace("projects");
+    }
+    renderProjects();
+    return;
+  }
+  renderProjects();
+}
 async function renderProjects() {
   var list = byId("spacesList");
   if (!list) return;
@@ -364,15 +459,18 @@ async function renderProjects() {
     var res = await api("/api/projects");
     workspaceCache.projects = (res && res.projects) || [];
     paintProjects();
+    _publishWorkspaceState();
   } catch (err) {
     if (err && err.status === 401) {
       list.innerHTML = '<div class="workspace-empty"><strong>Sign in to create projects</strong><span>Projects keep related chats, files, and instructions together.</span></div>';
     } else {
       list.innerHTML = '<div class="spaces-empty">Projects could not be loaded. Try again.</div>';
     }
+    _publishWorkspaceState();
   }
 }
 function paintProjects() {
+  if (_reactOwnsWorkspacePage("spacesPanel")) return;
   var list = byId("spacesList");
   var sessions = Array.isArray(window.SERVER_SESSIONS) ? window.SERVER_SESSIONS : [];
   if (!workspaceCache.projects.length) {
@@ -386,7 +484,21 @@ function paintProjects() {
   }).join("");
 }
 
-export function openScheduled() { hideChatAndTopic(); showMainPage("scheduledPanel"); renderScheduled(); }
+export function openScheduled() {
+  hideChatAndTopic();
+  showMainPage("scheduledPanel");
+  if (_reactOwnsScheduled()) {
+    if (typeof window.__socratesMountScheduled === "function") {
+      window.__socratesMountScheduled();
+    }
+    return;
+  }
+  renderScheduled();
+}
+
+/* Expose renderScheduled on window so the React mount can trigger the
+   fetch/bridge flow. */
+window.__socratesNavRenderScheduled = function () { renderScheduled(); };
 
 /* P_exam-nav — Exam is a main-content panel (not a sidebar nav into
    a workspace). We delegate the heavy lifting to exam.openExamPanel(),
@@ -401,6 +513,7 @@ export function openExam() {
   window.openExamPanel();
 }
 async function renderScheduled() {
+  if (_reactOwnsScheduled()) { _publishScheduledState(); return; }
   var list = byId("scheduledList");
   if (!list) return;
   list.innerHTML = '<div class="workspace-loading">Loading tasks…</div>';
@@ -408,15 +521,18 @@ async function renderScheduled() {
     var res = await api("/api/scheduled-tasks");
     workspaceCache.tasks = (res && res.tasks) || [];
     paintScheduled();
+    _publishScheduledState();
   } catch (err) {
     if (err && err.status === 401) {
       list.innerHTML = '<div class="workspace-empty"><strong>Sign in to schedule tasks</strong><span>Reminders, briefings, and monitoring tasks appear once you sign in.</span></div>';
     } else {
       list.innerHTML = '<div class="scheduled-empty">Scheduled tasks could not be loaded. Try again.</div>';
     }
+    _publishScheduledState();
   }
 }
 function paintScheduled() {
+  if (_reactOwnsScheduled()) return;
   var list = byId("scheduledList");
   if (!workspaceCache.tasks.length) {
     list.innerHTML = '<div class="workspace-empty"><strong>Let Socrates follow up</strong><span>Create a reminder, recurring briefing, or monitoring task.</span><button class="workspace-primary" onclick="openCreateScheduledTask()">Create task</button></div>';
@@ -429,7 +545,18 @@ function paintScheduled() {
   }).join("");
 }
 
-export function openPlugins() { hideChatAndTopic(); showMainPage("pluginsPanel"); renderPlugins(); }
+export function openPlugins() {
+  hideChatAndTopic();
+  showMainPage("pluginsPanel");
+  if (_reactOwnsWorkspacePage("pluginsPanel")) {
+    if (typeof window.__socratesMountWorkspace === "function") {
+      window.__socratesMountWorkspace("plugins");
+    }
+    renderPlugins();
+    return;
+  }
+  renderPlugins();
+}
 async function renderPlugins() {
   var list = byId("pluginsList");
   if (!list) return;
@@ -439,13 +566,16 @@ async function renderPlugins() {
     workspaceCache.connectors = (res && res.connectors) || [];
     workspaceCache.projectConnectorConfigured = !!(res && res.configured);
     paintPlugins();
+    _publishWorkspaceState();
   } catch (err) {
     list.innerHTML = err && err.status === 401
       ? '<div class="workspace-empty"><strong>Sign in to connect apps</strong><span>Your app connections are isolated to your Socrates account.</span></div>'
       : '<div class="plugins-empty">Apps could not be loaded. Try again.</div>';
+    _publishWorkspaceState();
   }
 }
 function paintPlugins() {
+  if (_reactOwnsWorkspacePage("pluginsPanel")) return;
   var list = byId("pluginsList");
   if (!workspaceCache.connectors.length) { list.innerHTML = '<div class="workspace-empty"><strong>Apps are unavailable</strong><span>Refresh and try again.</span></div>'; return; }
   var setup = workspaceCache.projectConnectorConfigured
@@ -474,7 +604,7 @@ window.connectProjectConnector = async function (id) {
   } catch (error) { toast((error && error.message) || "Could not start authorization"); }
 };
 window.refreshProjectConnector = async function (id) {
-  try { await api("/api/project-connectors/" + encodeURIComponent(id) + "/status"); await renderPlugins(); }
+  try { await api("/api/project-connectors/" + encodeURIComponent(id) + "/status"); await renderPlugins(); _publishWorkspaceState(); }
   catch (error) { toast((error && error.message) || "Could not refresh authorization status"); }
 };
 window.openProjectConnectorForm = function (id) {
@@ -553,8 +683,8 @@ function openTaskForm(task) {
 window.toggleScheduledTask = async function (id, pause) { try { await api("/api/scheduled-tasks/" + id, { method: "PATCH", body: { status: pause ? "paused" : "active" } }); renderScheduled(); toast(pause ? "Task paused" : "Task resumed"); } catch (_) { toast("Could not update task"); } };
 window.deleteScheduledTask = async function (id) { if (!(await confirmAction("Delete this scheduled task?", "This cannot be undone."))) return; try { await api("/api/scheduled-tasks/" + id, { method: "DELETE" }); closeWorkspaceDialog(); renderScheduled(); toast("Task deleted"); } catch (_) { toast("Could not delete task"); } };
 
-window.switchLibraryTab = function (tab) { document.querySelectorAll(".library-tab").forEach(function (button) { button.classList.toggle("active", button.dataset.libraryTab === tab); }); paintLibrary(); };
-window.filterLibrary = function (query) { workspaceCache.library.query = query || ""; paintLibrary(); };
+window.switchLibraryTab = function (tab) { document.querySelectorAll(".library-tab").forEach(function (button) { button.classList.toggle("active", button.dataset.libraryTab === tab); }); paintLibrary(); _publishWorkspaceState(); };
+window.filterLibrary = function (query) { workspaceCache.library.query = query || ""; paintLibrary(); _publishWorkspaceState(); };
 window.openLibraryItem = function (id, kind) { if (kind === "files") window.open("/api/files/" + encodeURIComponent(id) + "/raw", "_blank", "noopener"); else toast("Artifacts can be opened from the chat where they were created."); };
 window.openLibraryUpload = function () { var input = byId("libraryUploadInput"); if (input) input.click(); };
 window.deleteLibraryFile = async function (id) { if (!(await confirmAction("Delete this file?", "It will be removed from your library."))) return; try { await api("/api/files/" + encodeURIComponent(id), { method: "DELETE" }); renderLibrary(); toast("File deleted"); } catch (_) { toast("Could not delete file"); } };

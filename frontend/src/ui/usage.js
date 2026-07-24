@@ -9,16 +9,41 @@ import { apiFetch } from '../util/api.js';
 // does not require a circular import with i18n.js.
 const t = (typeof window !== "undefined" ? window.t : null);
 
+/* React migration bridge — publishes state so the React compatibility
+   root renders the modal content. Installed by
+   frontend/src/react/usageModal/usageModalStore.ts under `?react=1`. */
+function _publishUsageState(bodyHtml) {
+  try {
+    var bridge = window.__socratesUsageBridge;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({
+        isOpen: !document.getElementById("usageOverlay").classList.contains("hidden"),
+        bodyHtml: bodyHtml || document.getElementById("usageBody").innerHTML || "",
+      });
+    }
+  } catch (_) { /* swallow */ }
+}
+
+/* React mode owns the usage modal's children. The legacy renderer
+   suppresses its body writes so they don't clobber the React tree. */
+function _reactOwnsUsageModal() {
+  var el = document.getElementById("usageOverlay");
+  return !!(el && el.dataset && el.dataset.reactMigrationRuntime === "usage-modal");
+}
+
 export function openUsageModal(){
   document.getElementById("usageOverlay").classList.remove("hidden");
+  _publishUsageState();
   loadUsageData();
 }
 export function closeUsageModal(){
   document.getElementById("usageOverlay").classList.add("hidden");
+  _publishUsageState();
 }
 export function loadUsageData(){
   var body=document.getElementById("usageBody");
   body.innerHTML='<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> '+t("usage.loading")+'</div>';
+  _publishUsageState();
   Promise.all([
     apiFetch("/api/usage/daily?days=365"),
     apiFetch("/api/usage/limits"),
@@ -26,6 +51,7 @@ export function loadUsageData(){
     renderUsageHeatmap(results[0],body,results[1],'year');
   }).catch(function(){
     body.innerHTML='<div class="usage-loading" style="color:hsl(0 60% 55%)">'+t("usage.failed")+'</div>';
+    _publishUsageState();
   });
 }
 export function renderUsageHeatmap(data,body,limits,period){
@@ -179,6 +205,7 @@ export function renderUsageHeatmap(data,body,limits,period){
   html+='</tbody></table></div>';
 
   body.innerHTML=html;
+  _publishUsageState();
 }
 export function showUsageTip(ev){
   var el=ev.currentTarget;
@@ -197,6 +224,7 @@ export function hideUsageTip(){var tip=document.getElementById("usageTooltip");i
 export function loadUsageMonth(){
   var body=document.getElementById("usageBody");
   body.innerHTML='<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> '+t("usage.loading")+'</div>';
+  _publishUsageState();
   Promise.all([
     apiFetch("/api/usage/daily?days=31"),
     apiFetch("/api/usage/limits"),
@@ -204,5 +232,6 @@ export function loadUsageMonth(){
     renderUsageHeatmap(results[0],body,results[1],'month');
   }).catch(function(){
     body.innerHTML='<div class="usage-loading" style="color:hsl(0 60% 55%)">'+t("usage.failedGeneric")+'</div>';
+    _publishUsageState();
   });
 }

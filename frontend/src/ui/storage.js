@@ -9,7 +9,32 @@
  *   - window.esc (from render/helpers.js)
  */
 
+/* React migration bridge — publishes storage state so the React
+   compatibility root can render the modal. Installed by
+   frontend/src/react/storageModal/storageModalStore.ts under `?react=1`. */
+function _publishStorageState(open) {
+  try {
+    var bridge = window.__socratesStorageBridge;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({
+        archived: (window.getArchivedSessions ? window.getArchivedSessions() : []).map(function (s) {
+          return { id: s.id, title: s.title, topic: s.topic, archivedAt: s.archivedAt };
+        }),
+        open: !!open,
+      });
+    }
+  } catch (_) { /* swallow */ }
+}
+
+function _reactOwnsStorage() {
+  return !!(document.getElementById("storageModalReactRoot") && document.getElementById("storageModalReactRoot").dataset.reactMigrationRuntime === "storage-modal");
+}
+
 function openStorageModal() {
+  if (_reactOwnsStorage()) {
+    _publishStorageState(true);
+    return;
+  }
   var overlay = document.getElementById("storageModalOverlay");
   if (!overlay) {
     overlay = document.createElement("div");
@@ -24,6 +49,10 @@ function openStorageModal() {
 }
 
 function closeStorageModal() {
+  if (_reactOwnsStorage()) {
+    _publishStorageState(false);
+    return;
+  }
   var overlay = document.getElementById("storageModalOverlay");
   if (overlay) overlay.classList.add("hidden");
 }

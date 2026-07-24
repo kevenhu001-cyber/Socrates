@@ -1,0 +1,1 @@
+export { hydrateComposerToolsMenu } from './ComposerToolsMenu';

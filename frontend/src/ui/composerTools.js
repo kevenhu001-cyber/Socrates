@@ -23,6 +23,13 @@ function menu() {
   return el;
 }
 
+/* Pre-create the menu on module load so the React compatibility root can
+   hydrate it eagerly on boot. Stays hidden until the user clicks a
+   trigger. The legacy renderer is a no-op here (it's gated by
+   `_reactOwnsMenu()` in React mode and we render nothing in legacy mode
+   until `toggleComposerTools()` is invoked). */
+if (typeof document !== "undefined") menu();
+
 function item(action, icon, title, description) {
   return '<button type="button" class="composer-tools-item" role="menuitem" data-action="' + action + '">' +
     '<span class="composer-tools-icon">' + icon + '</span><span class="composer-tools-copy"><span>' + title +
@@ -46,11 +53,40 @@ function render(el) {
     item("skills", skills, label("composer.menu.skills", "Skills & shortcuts"), label("composer.menu.skillsHint", "Create your own"));
 }
 
+/* React migration bridge — fires whenever the menu opens/closes or
+   switches active trigger so the React compatibility root can mirror
+   the menu via useSyncExternalStore. Installed by
+   frontend/src/react/composer/composerToolsStore.ts under `?react=1`;
+   legacy mode never sees a subscriber so the helper is a cheap no-op. */
+function _publishComposerTools() {
+  try {
+    var el = document.getElementById(MENU_ID);
+    var bridge = window.__socratesComposerToolsBridge;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({
+        isOpen: !!(el && !el.classList.contains("hidden")),
+        mode: activeTrigger && activeTrigger.dataset ? activeTrigger.dataset.composerMode : null,
+        triggerId: activeTrigger && activeTrigger.id ? activeTrigger.id : null,
+      });
+    }
+  } catch (_) { /* swallow — bridge is best-effort */ }
+}
+
+/* React mode owns the menu's children. The legacy renderer becomes a
+   no-op the moment React sets this attribute so its writes don't clobber
+   the React tree. Legacy mode never sees the attribute, so the guard
+   never trips. */
+function _reactOwnsMenu() {
+  var el = document.getElementById(MENU_ID);
+  return !!(el && el.dataset && el.dataset.reactMigrationRuntime === "composer-tools-menu");
+}
+
 function close() {
   var el = document.getElementById(MENU_ID);
   if (el) el.classList.add("hidden");
   if (activeTrigger) activeTrigger.setAttribute("aria-expanded", "false");
   activeTrigger = null;
+  _publishComposerTools();
 }
 
 function position(el, trigger) {
@@ -72,10 +108,11 @@ export function toggleComposerTools(trigger, mode) {
   close();
   activeTrigger = trigger;
   trigger.dataset.composerMode = mode;
-  render(el);
+  if (!_reactOwnsMenu()) render(el);
   el.classList.remove("hidden");
   trigger.setAttribute("aria-expanded", "true");
   position(el, trigger);
+  _publishComposerTools();
 }
 
 if (typeof document !== "undefined") {

@@ -6,6 +6,11 @@
  *
  * Touches via window.*:
  *   state, CURRENT_USER, apiFetch, esc, formatMsg, t, showToast
+ *
+ * React migration bridge — publishes state so the React compatibility root
+ * renders the modal content. Installed by
+ * frontend/src/react/shareModal/shareModalStore.ts under `?react=1`;
+ * legacy mode never sees a subscriber so the helpers are cheap no-ops.
  */
 
 import { esc } from '../render/helpers.js';
@@ -14,6 +19,33 @@ import { apiFetch } from '../util/api.js';
 var _shareVisibility = "public";
 var _shareToken = null;
 var _shareUrl = "";
+var _shareStatus = "";
+var _shareError = "";
+
+/* React migration bridge — publishes current state so the React
+   compatibility root can render the modal content via useSyncExternalStore. */
+function _publishShareState() {
+  try {
+    var bridge = window.__socratesShareBridge;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({
+        isOpen: !!document.getElementById("shareOverlay") && !document.getElementById("shareOverlay").classList.contains("hidden"),
+        visibility: _shareVisibility,
+        shareToken: _shareToken,
+        shareUrl: _shareUrl,
+        status: _shareStatus,
+        error: _shareError,
+      });
+    }
+  } catch (_) { /* swallow — bridge is best-effort */ }
+}
+
+/* React mode owns the share modal's children. The legacy renderer
+   suppresses its DOM writes so they don't clobber the React tree. */
+function _reactOwnsShareModal() {
+  var el = document.getElementById("shareOverlay");
+  return !!(el && el.dataset && el.dataset.reactMigrationRuntime === "share-modal");
+}
 
 function toggleShareBtn() {
   var btn = document.getElementById("shareBtn");
@@ -65,40 +97,47 @@ function openShareModal() {
   if (!overlay) return;
   _shareToken = null;
   _shareUrl = "";
+  _shareStatus = "";
+  _shareError = "";
   overlay.classList.remove("hidden");
   selectShareVis("public");
-  renderShareModal();
+  _publishShareState();
 }
 
 function closeShareModal() {
   document.getElementById("shareOverlay").classList.add("hidden");
+  _publishShareState();
 }
 
 function selectShareVis(vis) {
   if (vis !== "public" && vis !== "private") vis = "public";
   _shareVisibility = vis;
-  /* P_share-opt-class — the option markup is `.share-opt` (with
-     `.selected` for the active one) but the old selectShareVis was
-     rewriting the className to `.share-vis-opt` — a class that
-     didn't exist in the stylesheet — so the radio dot never
-     filled and the row border never lit up. Now we toggle a real
-     `selected` flag plus a `data-active` attribute (for any
-     attribute-selectors) without clobbering the base class. */
-  var pub = document.getElementById("shareOptPublic");
-  var pri = document.getElementById("shareOptPrivate");
-  if (pub) {
-    pub.classList.toggle("selected", vis === "public");
-    pub.setAttribute("aria-checked", vis === "public" ? "true" : "false");
+  if (!_reactOwnsShareModal()) {
+    /* P_share-opt-class — the option markup is `.share-opt` (with
+       `.selected` for the active one) but the old selectShareVis was
+       rewriting the className to `.share-vis-opt` — a class that
+       didn't exist in the stylesheet — so the radio dot never
+       filled and the row border never lit up. Now we toggle a real
+       `selected` flag plus a `data-active` attribute (for any
+       attribute-selectors) without clobbering the base class. */
+    var pub = document.getElementById("shareOptPublic");
+    var pri = document.getElementById("shareOptPrivate");
+    if (pub) {
+      pub.classList.toggle("selected", vis === "public");
+      pub.setAttribute("aria-checked", vis === "public" ? "true" : "false");
+    }
+    if (pri) {
+      pri.classList.toggle("selected", vis === "private");
+      pri.setAttribute("aria-checked", vis === "private" ? "true" : "false");
+    }
+    var btn = document.getElementById("shareCreateBtn");
+    if (btn) btn.textContent = "Create " + vis + " link";
   }
-  if (pri) {
-    pri.classList.toggle("selected", vis === "private");
-    pri.setAttribute("aria-checked", vis === "private" ? "true" : "false");
-  }
-  var btn = document.getElementById("shareCreateBtn");
-  if (btn) btn.textContent = "Create " + vis + " link";
+  _publishShareState();
 }
 
 function renderShareModal() {
+  if (_reactOwnsShareModal()) return;
   var linkArea = document.getElementById("shareLinkArea");
   var revokeArea = document.getElementById("shareRevokeArea");
   var createArea = document.getElementById("shareCreateArea");
@@ -120,6 +159,8 @@ function renderShareModal() {
 }
 
 function _setShareError(msg) {
+  _shareError = msg || "";
+  if (_reactOwnsShareModal()) { _publishShareState(); return; }
   var errorEl = document.getElementById("shareError");
   if (!errorEl) return;
   errorEl.textContent = msg || "";
@@ -127,6 +168,8 @@ function _setShareError(msg) {
 }
 
 function _setShareStatus(msg) {
+  _shareStatus = msg || "";
+  if (_reactOwnsShareModal()) { _publishShareState(); return; }
   var statusEl = document.getElementById("shareStatus");
   if (!statusEl) return;
   statusEl.textContent = msg || "";
