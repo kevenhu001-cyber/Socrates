@@ -40,12 +40,9 @@ function _publishShareState() {
   } catch (_) { /* swallow — bridge is best-effort */ }
 }
 
-/* React mode owns the share modal's children. The legacy renderer
-   suppresses its DOM writes so they don't clobber the React tree. */
-function _reactOwnsShareModal() {
-  var el = document.getElementById("shareOverlay");
-  return !!(el && el.dataset && el.dataset.reactMigrationRuntime === "share-modal");
-}
+/* React owns the share modal unconditionally under the always-on
+   runtime. `renderShareModal` is kept as a no-op for legacy callers;
+   state mutations still feed the React bridge via `_publishShareState`. */
 
 function toggleShareBtn() {
   var btn = document.getElementById("shareBtn");
@@ -112,68 +109,21 @@ function closeShareModal() {
 function selectShareVis(vis) {
   if (vis !== "public" && vis !== "private") vis = "public";
   _shareVisibility = vis;
-  if (!_reactOwnsShareModal()) {
-    /* P_share-opt-class — the option markup is `.share-opt` (with
-       `.selected` for the active one) but the old selectShareVis was
-       rewriting the className to `.share-vis-opt` — a class that
-       didn't exist in the stylesheet — so the radio dot never
-       filled and the row border never lit up. Now we toggle a real
-       `selected` flag plus a `data-active` attribute (for any
-       attribute-selectors) without clobbering the base class. */
-    var pub = document.getElementById("shareOptPublic");
-    var pri = document.getElementById("shareOptPrivate");
-    if (pub) {
-      pub.classList.toggle("selected", vis === "public");
-      pub.setAttribute("aria-checked", vis === "public" ? "true" : "false");
-    }
-    if (pri) {
-      pri.classList.toggle("selected", vis === "private");
-      pri.setAttribute("aria-checked", vis === "private" ? "true" : "false");
-    }
-    var btn = document.getElementById("shareCreateBtn");
-    if (btn) btn.textContent = "Create " + vis + " link";
-  }
   _publishShareState();
 }
 
 function renderShareModal() {
-  if (_reactOwnsShareModal()) return;
-  var linkArea = document.getElementById("shareLinkArea");
-  var revokeArea = document.getElementById("shareRevokeArea");
-  var createArea = document.getElementById("shareCreateArea");
-  var errorEl = document.getElementById("shareError");
-  var statusEl = document.getElementById("shareStatus");
-  var input = document.getElementById("shareLinkInput");
-  if (input) { input.value = _shareUrl || ""; }
-  if (errorEl) { errorEl.textContent = ""; _hide(errorEl); }
-  if (statusEl) { statusEl.textContent = ""; _hide(statusEl); }
-  if (_shareToken && _shareUrl) {
-    _show(linkArea);
-    _show(revokeArea);
-    if (createArea) _hide(createArea);
-  } else {
-    _hide(linkArea);
-    _hide(revokeArea);
-    if (createArea) _show(createArea);
-  }
+  // no-op: React owns #shareOverlay and reads state from the bridge.
 }
 
 function _setShareError(msg) {
   _shareError = msg || "";
-  if (_reactOwnsShareModal()) { _publishShareState(); return; }
-  var errorEl = document.getElementById("shareError");
-  if (!errorEl) return;
-  errorEl.textContent = msg || "";
-  if (msg) _show(errorEl); else _hide(errorEl);
+  _publishShareState();
 }
 
 function _setShareStatus(msg) {
   _shareStatus = msg || "";
-  if (_reactOwnsShareModal()) { _publishShareState(); return; }
-  var statusEl = document.getElementById("shareStatus");
-  if (!statusEl) return;
-  statusEl.textContent = msg || "";
-  if (msg) _show(statusEl); else _hide(statusEl);
+  _publishShareState();
 }
 
 async function createShareLink() {

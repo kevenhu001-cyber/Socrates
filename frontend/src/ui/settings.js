@@ -36,36 +36,18 @@ function _publishSettingsState() {
   } catch (_) { /* swallow */ }
 }
 
-function _reactOwnsSettings() {
-  return !!(document.getElementById("settingsModalReactRoot") && document.getElementById("settingsModalReactRoot").dataset.reactMigrationRuntime === "settings-modal");
-}
-
 /* ─── Open / Close ─── */
 function openSettings() {
-  if (_reactOwnsSettings()) {
-    document.getElementById("settingsOverlay").classList.remove("hidden");
-    syncToggleUI();
-    renderProviderList();
-    if (typeof window.renderTonePresets === "function") window.renderTonePresets();
-    _publishSettingsState();
-    return;
-  }
   document.getElementById("settingsOverlay").classList.remove("hidden");
   syncToggleUI();
   renderProviderList();
-  /* Render tone presets if the module is loaded. */
-  if (typeof window.renderTonePresets === "function") {
-    window.renderTonePresets();
-  }
+  if (typeof window.renderTonePresets === "function") window.renderTonePresets();
+  _publishSettingsState();
 }
 
 function closeSettings() {
-  if (_reactOwnsSettings()) {
-    document.getElementById("settingsOverlay").classList.add("hidden");
-    _publishSettingsState();
-    return;
-  }
   document.getElementById("settingsOverlay").classList.add("hidden");
+  _publishSettingsState();
 }
 
 /* ─── Bind settings UI events (called once from main.js boot) ─── */
