@@ -1,4 +1,4 @@
-import { hydrateRoot, type Root } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 
 import {
   installUsageBridge,
@@ -64,7 +64,8 @@ export function hydrateUsageModal(): UsageModalHandle | null {
 
   installUsageBridge();
 
-  const root = hydrateRoot(overlay, <UsageModal />);
+  const root = createRoot(overlay);
+  root.render(<UsageModal />);
   return {
     overlay,
     root,

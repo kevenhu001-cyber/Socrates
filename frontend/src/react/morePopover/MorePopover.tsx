@@ -1,4 +1,4 @@
-import { hydrateRoot, type Root } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 
 import {
   installMorePopoverBridge,
@@ -107,7 +107,8 @@ export function hydrateMorePopover(): MorePopoverHandle | null {
 
   installMorePopoverBridge();
 
-  const root = hydrateRoot(popover, <MorePopover />);
+  const root = createRoot(popover);
+  root.render(<MorePopover />);
   return {
     popover,
     root,

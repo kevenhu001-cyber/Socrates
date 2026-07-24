@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { hydrateRoot, type Root } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 
 import {
   installProfileBridge,
@@ -337,7 +337,8 @@ export function hydrateProfileModal(): ProfileModalHandle | null {
 
   installProfileBridge();
 
-  const root = hydrateRoot(overlay, <ProfileModal />);
+  const root = createRoot(overlay);
+  root.render(<ProfileModal />);
   return {
     overlay,
     root,

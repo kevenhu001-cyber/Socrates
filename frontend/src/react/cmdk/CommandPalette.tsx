@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { hydrateRoot, type Root } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 
 import {
   installCmdKBridge,
@@ -249,7 +249,8 @@ export function hydrateCmdKOverlay(): CmdKReactRootHandle | null {
 
   installCmdKBridge();
 
-  const root = hydrateRoot(overlay, <CommandPalette />);
+  const root = createRoot(overlay);
+  root.render(<CommandPalette />);
   return {
     overlay,
     root,

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { hydrateRoot, type Root } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 
 import { installAttachmentsBridge } from './attachmentsStore';
 import {
@@ -147,13 +147,17 @@ export function hydrateAttachmentChipsRows(): AttachmentChipsHandle | null {
   if (chatTarget && !chatTarget.dataset.attachmentChipsReactHydrated) {
     chatTarget.dataset.attachmentChipsReactHydrated = '1';
     chatTarget.setAttribute('data-react-migration-runtime', 'attachment-chips');
-    roots.push(hydrateRoot(chatTarget, <ChipsRow targetId={CHIPS_ID} />));
+    const chatRoot = createRoot(chatTarget);
+    chatRoot.render(<ChipsRow targetId={CHIPS_ID} />);
+    roots.push(chatRoot);
   }
 
   if (topicTarget && !topicTarget.dataset.attachmentChipsReactHydrated) {
     topicTarget.dataset.attachmentChipsReactHydrated = '1';
     topicTarget.setAttribute('data-react-migration-runtime', 'attachment-chips');
-    roots.push(hydrateRoot(topicTarget, <ChipsRow targetId={TOPIC_CHIPS_ID} />));
+    const topicRoot = createRoot(topicTarget);
+    topicRoot.render(<ChipsRow targetId={TOPIC_CHIPS_ID} />);
+    roots.push(topicRoot);
   }
 
   if (roots.length === 0) return null;
