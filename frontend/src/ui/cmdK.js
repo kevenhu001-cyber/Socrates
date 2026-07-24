@@ -22,6 +22,35 @@ try {
   _cmdKRecent = JSON.parse(localStorage.getItem("socrates-search-recent") || "[]") || [];
 } catch (_) { _cmdKRecent = []; }
 
+/* React migration bridge — fires whenever the legacy state changes so the
+   React compatibility root can mirror the palette via useSyncExternalStore.
+   The registry is installed by frontend/src/react/cmdk/cmdKRuntimeStore.ts
+   on `?react=1` boot; in legacy mode no listener is attached, so every
+   helper is a cheap no-op. */
+function _publishCmdKState() {
+  try {
+    var bridge = window.__socratesCmdK;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({
+        isOpen: !document.getElementById("cmdKOverlay").classList.contains("hidden"),
+        query: (document.getElementById("cmdKInput") || {}).value || "",
+        results: _cmdKResults,
+        selectedIndex: _cmdKSelected,
+        recent: _cmdKRecent,
+      });
+    }
+  } catch (_) { /* swallow — bridge is best-effort */ }
+}
+
+/* React mode owns the overlay's children. The legacy renderer becomes a
+   no-op the moment React sets this attribute so its writes don't clobber
+   the React tree. Legacy mode never sees the attribute, so the guard
+   never trips. */
+function _reactOwnsOverlay() {
+  var el = document.getElementById("cmdKOverlay");
+  return !!(el && el.dataset && el.dataset.reactMigrationRuntime === "cmd-k");
+}
+
 function rebuildCmdKIndex() {
   if (typeof Fuse === "undefined") return;
   var docs = [];
@@ -72,11 +101,13 @@ function openCmdK() {
   ] : []);
   _cmdKResults = [];
   _cmdKSelected = 0;
+  _publishCmdKState();
 }
 
 function closeCmdK() {
   var overlay = document.getElementById("cmdKOverlay");
   if (overlay) overlay.classList.add("hidden");
+  _publishCmdKState();
 }
 
 function onCmdKInput(q) {
@@ -117,6 +148,7 @@ function onCmdKInput(q) {
   _cmdKResults = hits;
   _cmdKSelected = 0;
   renderCmdKResultsHits(q, hits);
+  _publishCmdKState();
 }
 
 function renderCmdKResultsHits(q, hits) {
@@ -159,6 +191,7 @@ function renderCmdKResults(sections) {
 }
 
 function renderCmdKResultsHTML(html) {
+  if (_reactOwnsOverlay()) return;
   var el = document.getElementById("cmdKResults");
   if (el) el.innerHTML = html;
 }
@@ -192,6 +225,7 @@ function openCmdKResult(idx) {
     window.loadSession(item.sessionId);
   }
   closeCmdK();
+  _publishCmdKState();
 }
 
 function onCmdKKey(ev) {
@@ -237,6 +271,7 @@ function onCmdKKey(ev) {
       }
     }
   }
+  _publishCmdKState();
 }
 
 export {

@@ -39,8 +39,22 @@ export function getRecentsFilter(){
   try{return localStorage.getItem(window.RECENTS_FILTER_KEY)||null}catch(_){return null}
 }
 
+/* React migration bridge — publishes the current filter so the React
+   compatibility root can mirror chip .active state via useSyncExternalStore.
+   Installed by frontend/src/react/sidebar/sidebarRuntimeStore.ts under
+   `?react=1`; legacy mode never sees a subscriber. */
+function _publishRecentsFilter(value) {
+  try {
+    var bridge = window.__socratesRecentsFilterBridge;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({ filter: value == null ? null : String(value) });
+    }
+  } catch (_) { /* swallow — bridge is best-effort */ }
+}
+
 export function setRecentsFilter(v){
   try{if(v)localStorage.setItem(window.RECENTS_FILTER_KEY,v);else localStorage.removeItem(window.RECENTS_FILTER_KEY)}catch(_){}
+  _publishRecentsFilter(v);
   window.renderRecents&&window.renderRecents();
 }
 

@@ -21,8 +21,35 @@
 /* ─── Track keys that are masked (existing saved keys not shown in DOM) ─── */
 var _maskedKeys = {};
 
+/* React migration bridge — publishes settings modal state + body HTML
+   so the React compatibility root can render the overlay. */
+function _publishSettingsState() {
+  try {
+    var bridge = window.__socratesSettingsBridge;
+    if (bridge && typeof bridge.publish === "function") {
+      var body = document.getElementById("settingsBody");
+      bridge.publish({
+        open: !document.getElementById("settingsOverlay").classList.contains("hidden"),
+        bodyHTML: body ? body.innerHTML : "",
+      });
+    }
+  } catch (_) { /* swallow */ }
+}
+
+function _reactOwnsSettings() {
+  return !!(document.getElementById("settingsModalReactRoot") && document.getElementById("settingsModalReactRoot").dataset.reactMigrationRuntime === "settings-modal");
+}
+
 /* ─── Open / Close ─── */
 function openSettings() {
+  if (_reactOwnsSettings()) {
+    document.getElementById("settingsOverlay").classList.remove("hidden");
+    syncToggleUI();
+    renderProviderList();
+    if (typeof window.renderTonePresets === "function") window.renderTonePresets();
+    _publishSettingsState();
+    return;
+  }
   document.getElementById("settingsOverlay").classList.remove("hidden");
   syncToggleUI();
   renderProviderList();
@@ -33,6 +60,11 @@ function openSettings() {
 }
 
 function closeSettings() {
+  if (_reactOwnsSettings()) {
+    document.getElementById("settingsOverlay").classList.add("hidden");
+    _publishSettingsState();
+    return;
+  }
   document.getElementById("settingsOverlay").classList.add("hidden");
 }
 

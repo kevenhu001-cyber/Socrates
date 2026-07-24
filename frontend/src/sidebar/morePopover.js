@@ -1,6 +1,7 @@
 /* ── Sidebar "More" popover (PR-A) ──
    Anchored popover menu that opens above the #navMore button. Holds
-   4 menu items:
+   5 menu items:
+     - Skills & shortcuts   → openPromptTemplatesModal
      - API settings         → openSettings
      - Display & theme      → toggleDisplayPrefs (existing popover)
      - Keyboard shortcuts   → openCheatsheet
@@ -17,7 +18,13 @@
    The popover element is a static div in index.html (id="moreNavPopover",
    class="sidebar-more-popover hidden"). Its menu items have their own
    onclick attributes that resolve via window.* (bridged through
-   windowExports.js) — that's what inline-handlers.spec.mjs verifies. */
+   windowExports.js) — that's what inline-handlers.spec.mjs verifies.
+
+   React migration bridge — fires whenever the popover opens/closes so
+   the React compatibility root can subscribe via useSyncExternalStore.
+   Installed by frontend/src/react/morePopover/morePopoverStore.ts under
+   `?react=1`; legacy mode never sees a subscriber so the helper is a
+   cheap no-op. */
 
 var POPOVER_ID = "moreNavPopover";
 var BTN_ID = "navMore";
@@ -26,6 +33,29 @@ function _popover() { return document.getElementById(POPOVER_ID); }
 function _button() { return document.getElementById(BTN_ID); }
 
 function _isOpen(p) { return p && !p.classList.contains("hidden"); }
+
+/* React migration bridge — fires whenever the popover opens/closes so
+   the React compatibility root can mirror the menu via useSyncExternalStore.
+   Installed by frontend/src/react/morePopover/morePopoverStore.ts under
+   `?react=1`; legacy mode never sees a subscriber so the helper is a
+   cheap no-op. */
+function _publishMorePopover(isOpen) {
+  try {
+    var bridge = window.__socratesMorePopoverBridge;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({ isOpen: !!isOpen });
+    }
+  } catch (_) { /* swallow — bridge is best-effort */ }
+}
+
+/* React mode owns the popover's children. The legacy renderer writes
+   nothing (the children are static HTML in index.html), but the guard
+   is here for consistency and future-proofing. Legacy mode never sees
+   the attribute, so the guard never trips. */
+function _reactOwnsPopover() {
+  var el = _popover();
+  return !!(el && el.dataset && el.dataset.reactMigrationRuntime === "more-popover");
+}
 
 /* Compute the popover's position from the More button. The popover is
    right-aligned to the button and opens upward (matches the
@@ -67,6 +97,7 @@ function _close(p) {
   try {
     if (typeof window.setActiveNav === "function") window.setActiveNav(null);
   } catch (_) { /* ignore */ }
+  _publishMorePopover(false);
 }
 
 /* toggleMorePopover — open if closed, close if open. Bound to
@@ -78,6 +109,7 @@ export function toggleMorePopover() {
   var btn = _button();
   _position(p, btn);
   p.classList.remove("hidden");
+  _publishMorePopover(true);
   /* Defer outside-click + Esc listeners by one tick so the opening
      click doesn't immediately close the popover. */
   setTimeout(function () {

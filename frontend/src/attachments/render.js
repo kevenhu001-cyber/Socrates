@@ -15,6 +15,37 @@ import { attachments, addFiles, removeAttachment } from '../attachments.js';
 // the function directly because i18n.js is a side-effect module.
 const t = (typeof window !== "undefined" ? window.t : null);
 
+/* React migration bridge — fires whenever the pending attachments array
+   changes so the React compatibility root can mirror the chip row via
+   useSyncExternalStore. Installed by
+   frontend/src/react/attachments/attachmentsStore.ts under `?react=1`;
+   legacy mode never sees a subscriber so the helper is a cheap no-op.
+   The publish always runs (before the React-owns guard) so subscribers
+   observe mutations even when React renders the chips. */
+function _publishAttachments(){
+  try{
+    var bridge = window.__socratesAttachmentsBridge;
+    if(bridge && typeof bridge.publish === "function"){
+      bridge.publish({
+        attachments: attachments.slice(),
+      });
+    }
+  }catch(_){ /* swallow — bridge is best-effort */ }
+}
+
+/* React mode owns the chip row's children. The legacy renderer becomes a
+   no-op the moment React sets this attribute so its writes don't clobber
+   the React tree. Legacy mode never sees the attribute, so the guard
+   never trips. */
+function _reactOwnsChips(targetId){
+  var el = targetId ? document.getElementById(targetId) : document.getElementById("attachmentChips");
+  if(!el){
+    var any = document.querySelector("[data-react-migration-runtime='attachment-chips']");
+    return !!any;
+  }
+  return !!(el.dataset && el.dataset.reactMigrationRuntime === "attachment-chips");
+}
+
 /* showToast is still defined in main.js — we read it lazily so this
    module doesn't take a hard dependency on main.js's internal state. */
 function toast(msg, ms){
@@ -53,6 +84,7 @@ const WIRED_INPUTS = [];
    container. Called after addFiles / removeAttachment /
    resetAttachments. */
 export function renderAttachmentChips(){
+  _publishAttachments();
   const ids = WIRED_INPUTS.map(function(w){ return w.chipsId; }).filter(Boolean);
   if(!ids.length){
     // Backwards-compat: legacy single chat-mode chips container.
@@ -60,6 +92,7 @@ export function renderAttachmentChips(){
     if(fallback) ids.push("attachmentChips");
   }
   ids.forEach(function(id){
+    if(_reactOwnsChips(id)) return;
     const wrap = document.getElementById(id);
     if(!wrap) return;
     // Clear previous chips.

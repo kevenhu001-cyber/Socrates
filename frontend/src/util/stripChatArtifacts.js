@@ -4,15 +4,19 @@
  * models leak into the stream.
  *
  * Used by both the streaming doRender path and the final formatMsg
- * pass so the user never sees <|im_start|>...<|im_end|>, <|endoftext|>,
+ * pass so the user never sees ..., ,
  * [INST]...[/INST], <s>, etc. as raw text — both in the live bubble
  * and in the final rendered output.
  */
+/**
+ * @param {string} t
+ * @returns {string}
+ */
 export function stripChatArtifacts(t) {
   if (!t) return t;
-  /* Multi-line blocks first: <|im_start|>...<|im_end|> including any
+  /* Multi-line blocks first: ... including any
      system-prompt body the model also leaked. Non-greedy so the first
-     <|im_end|> closes the block. */
+      closes the block. */
   t = t.replace(/<\|im_start\|>[\s\S]*?<\|im_end\|>/g, '');
   /* Standalone chat-template tokens (angle-pipe-word-pipe-angle). */
   t = t.replace(/<\|[a-z_]+\|>/gi, '');

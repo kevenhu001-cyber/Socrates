@@ -256,7 +256,7 @@
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-inner">
-    <div class="sidebar-header">
+    <div class="sidebar-header" id="sidebarHeader">
       <div class="sidebar-logo">
         <img src="/logo.png" width="18" height="18" alt="" style="border-radius:3px;flex-shrink:0">
         <span><em>S</em>ocrates</span>
@@ -386,8 +386,8 @@
       <div id="mistakesList"></div>
     </div>
 
-    <div class="sidebar-footer">
-      <div class="user-row"><div class="user-avatar">JH</div><div><div class="user-name">Jiacheng Hu</div><div class="user-plan">Free plan</div></div></div>
+    <div class="sidebar-footer" id="sidebarFooter">
+      <div class="user-row" id="sidebarUserRow"><div class="user-avatar">JH</div><div><div class="user-name">Jiacheng Hu</div><div class="user-plan">Free plan</div></div></div>
       <div class="sidebar-footer-actions">
         <button class="icon-btn theme-toggle" id="themeToggle" onclick="toggleTheme(event)" title="Toggle theme">
           <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
@@ -589,7 +589,7 @@
               </div>
             </div>
             <button class="start-btn" id="startBtn" aria-label="Send" onclick="startSession()">
-              <svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              <span id="startBtnContent"><svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
             </button>
           </div>
         </div>
