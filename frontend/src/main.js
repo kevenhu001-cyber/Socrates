@@ -8823,6 +8823,17 @@ window.deleteUserMessage = deleteUserMessage;
 window.regenerateAssistantMessage = regenerateAssistantMessage;
 window.branchFromMessage = branchFromMessage;
 window.sendFeedback = sendFeedback;
+/* Post-render hooks called from the React MessageItem useEffect
+   after each dangerouslySetInnerHTML commit. processPendingViz and
+   processPendingVizActions are re-exported via windowExports.js; the
+   other three live as either local helpers (wireCodeBlockHeaders,
+   wireMsgBodyImages) or imported-by-name (processPendingMermaid)
+   here. Wiring them on window lets the React side re-trigger the
+   same idempotent bookkeeping the legacy DOM pipeline runs on every
+   bubble mount. */
+window.processPendingMermaid = processPendingMermaid;
+window.wireCodeBlockHeaders = wireCodeBlockHeaders;
+window.wireMsgBodyImages = wireMsgBodyImages;
 /* Init UI sync — runs after window.apiConfig is set (above) so
    syncModelPills() can safely read the provider config. Moving
    this earlier would throw and halt the entire boot sequence. */
