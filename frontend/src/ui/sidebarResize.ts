@@ -47,6 +47,9 @@ export function getSidebarMaxPx(): number { return SIDEBAR_MAX_PX; }
 export function initSidebarDrag(): void {
   const handle = document.getElementById("sidebarResizeHandle") as HTMLElement | null;
   if (!handle) return;
+  // Capture into a non-null local so TypeScript carries the narrowing
+  // across the closures defined below.
+  const resizeHandle: HTMLElement = handle;
   loadSidebarWidth();
 
   function onDown(e: { clientX: number; preventDefault: () => void }): void {
@@ -54,7 +57,7 @@ export function initSidebarDrag(): void {
     dragging = true;
     startX = e.clientX;
     startW = sidebarWidthPx;
-    handle.classList.add("dragging");
+    resizeHandle.classList.add("dragging");
     document.body.classList.add("sidebar-resizing");
     e.preventDefault();
   }
@@ -70,15 +73,15 @@ export function initSidebarDrag(): void {
   function onUp(): void {
     if (!dragging) return;
     dragging = false;
-    handle.classList.remove("dragging");
+    resizeHandle.classList.remove("dragging");
     document.body.classList.remove("sidebar-resizing");
     saveSidebarWidth();
   }
-  handle.addEventListener("mousedown", onDown as (e: MouseEvent) => void);
+  resizeHandle.addEventListener("mousedown", onDown as (e: MouseEvent) => void);
   window.addEventListener("mousemove", onMove as (e: MouseEvent) => void);
   window.addEventListener("mouseup", onUp);
   /* Touch support so tablets can drag too. */
-  handle.addEventListener("touchstart", function (e: TouchEvent) {
+  resizeHandle.addEventListener("touchstart", function (e: TouchEvent) {
     if (e.touches.length !== 1) return;
     onDown({ clientX: e.touches[0].clientX, preventDefault: function () { e.preventDefault(); } });
   }, { passive: false } as AddEventListenerOptions);
@@ -88,8 +91,8 @@ export function initSidebarDrag(): void {
   }, { passive: true } as AddEventListenerOptions);
   window.addEventListener("touchend", onUp);
   /* Keyboard: focused handle, arrow keys nudge. */
-  handle.tabIndex = 0;
-  handle.addEventListener("keydown", function (e: KeyboardEvent) {
+  resizeHandle.tabIndex = 0;
+  resizeHandle.addEventListener("keydown", function (e: KeyboardEvent) {
     const step = e.shiftKey ? 32 : 8;
     if (e.key === "ArrowLeft") {
       sidebarWidthPx = Math.max(SIDEBAR_MIN_PX, sidebarWidthPx - step);

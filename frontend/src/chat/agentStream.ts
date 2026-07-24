@@ -12,6 +12,13 @@ import { getStreamRenderInterval, splitStreamingMarkdown } from '../render/strea
 import { scrollContainer } from '../ui/scroll.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions } from '../render/viz.js';
 
+declare global {
+  interface Window {
+    hljs?: { highlightElement: (el: Element) => void };
+  }
+  var hljs: { highlightElement: (el: Element) => void } | undefined;
+}
+
 interface StreamController {
   append: (delta: string) => void;
   finalize: () => void;
@@ -120,9 +127,10 @@ export function beginAgentTextStream(): StreamController | null {
         sc.scrollHeight - sc.scrollTop - sc.clientHeight <= 96;
       try { body.innerHTML = formatMsg(full); } catch (_) { body.innerHTML = '<p>' + esc(full) + '</p>'; }
       body.classList.remove("stream-content");
-      if (typeof (hljs as any) !== "undefined") {
+      if (typeof hljs !== "undefined") {
+        const highlighter = hljs;
         body.querySelectorAll("pre code").forEach(function (c) {
-          try { (hljs as any).highlightElement(c); } catch (_) { }
+          try { highlighter.highlightElement(c); } catch (_) { }
         });
       }
       try { processPendingMermaid(); } catch (_) { }
