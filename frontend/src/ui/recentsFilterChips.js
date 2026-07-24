@@ -44,19 +44,11 @@ export function buildRecentsFilterChipsHTML(currentFilter, tags, projects) {
   return html.join("");
 }
 
-/* React mode owns the chip bar's children. The legacy renderer becomes a
-   no-op the moment React sets this attribute so its writes don't clobber
-   the React tree. Legacy mode never sees the attribute, so the guard
-   never trips. */
-function _reactOwnsChips() {
-  var el = document.getElementById("recentsFilterChips");
-  return !!(el && el.dataset && el.dataset.reactMigrationRuntime === "recents-filter-chips");
-}
+/* React owns the recents-filter chip bar unconditionally under the
+   always-on runtime. `renderRecentsFilterChips` is kept as a
+   no-op for legacy callers; the React sidebar publishes chip
+   state via its own bridge. */
 
-export function renderRecentsFilterChips(options) {
-  options = options || {};
-  if (_reactOwnsChips()) return;
-  var el = document.getElementById(options.targetId || "recentsFilterChips");
-  if (!el) return;
-  el.innerHTML = buildRecentsFilterChipsHTML(options.currentFilter, options.tags || [], options.projects || []);
+export function renderRecentsFilterChips(_options) {
+  // no-op: React owns #recentsFilterChips.
 }
