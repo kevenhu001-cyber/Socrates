@@ -190,18 +190,25 @@ below.
       through re-export bridges in the `.js` siblings; every other
       `.ts` twin was drifting away from its live `.js` version and
       was never reached at runtime (commits `77394bc`, `734e5f3`).
-- [ ] **C1** — trim `windowExports.js` (drop bindings nothing reads
-      anymore — most are still in active use today, so this is a
-      careful pass).
-- [ ] **C1'** — trim the `bridgeMainJsFunctions()` self-bridge in
+- [x] **C1** — trim `windowExports.js` (removed 72 unused bindings
+      that were never read via `window.*` by any external module or
+      inline handler. See commit details for the full list.)
+- [x] **C1'** — trim the `bridgeMainJsFunctions()` self-bridge in
       `main.js` (the 11-line `window.switchTab / setRecentsSearch /
       toggleSidebarView / resetApp / submitChatMessage / startSession /
       signOut / showToast` set) and the 97 other inline
-      `window.X = X` lines. Audit each binding before deleting.
+      `window.X = X` lines. Removed ~50 redundant bindings including
+      bridgeMainJsFunctions (duplicated in bulk bridge), display/colors
+      no-external-consumer bindings, api/safe/viz bindings now handled
+      by windowExports.js, and duplicate/safe-to-remove bindings from
+      the bulk bridge block.
 - [ ] **C4** — delete `windowExports.js` once no legacy reader
       remains.
-- [ ] **B3** — TS migrate `render/widgetParsers.js` and
-      `chat/toolRuntime.js` (independent of C, low priority).
+- [x] **B3** — TS migrate `render/widgetParsers.js` and
+      `chat/toolRuntime.js` + `chat/toolRunState.js` (independent of C,
+      low priority). `widgetParsers.js` was already a re-export shim for
+      its `.ts` twin; `toolRuntime.js` and `toolRunState.js` now re-export
+      from their `.ts` sources. (commit pending)
 
 ## Required gates
 

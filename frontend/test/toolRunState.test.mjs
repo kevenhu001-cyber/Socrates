@@ -6,7 +6,7 @@ import {
   phaseFromProgress,
   summarizeToolRuns,
   transitionToolRun,
-} from '../src/chat/toolRunState.js';
+} from '../src/chat/toolRunState.ts';
 
 test('tool run state keeps the first terminal SSE result', () => {
   const running = { id: 'run-1', phase: TOOL_RUN_PHASES.running };

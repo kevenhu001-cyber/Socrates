@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createToolRuntime } from '../src/chat/toolRuntime.js';
+import { createToolRuntime } from '../src/chat/toolRuntime.ts';
 
 function makeBody() {
   return {
