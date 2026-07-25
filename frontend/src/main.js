@@ -7914,6 +7914,14 @@ window.getChatIdFromURL = getChatIdFromURL;
 window.setChatIdInURL = setChatIdInURL;
 window.getExamIdFromURL = getExamIdFromURL;
 window.setExamIdInURL = setExamIdInURL;
+/* P_url-pushstate-bridge — pushChatIdToURL / pushExamIdToURL were
+   missing from the C1 window-bridge cleanup. exam.js and main.js#1371
+   call window.push*ToURL expecting a pushState (history entry) rather
+   than the set*InURL replaceState. Without these, the URL stays at
+   the landing page after starting a session — refresh loses the
+   session and the back button can't restore prior session. */
+window.pushChatIdToURL = pushChatIdToURL;
+window.pushExamIdToURL = pushExamIdToURL;
 /* P_bulk-restore-2026-07-14 — Phase C module bridges.
    These are main.js-local functions referenced by extracted modules
    (chat/quickActions.js, chat/api.js, chat/format.js, pickers.js,
