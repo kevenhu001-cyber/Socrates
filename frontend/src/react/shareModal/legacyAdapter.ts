@@ -5,6 +5,7 @@ import {
   subscribeToShare,
 } from './shareModalStore';
 import type { ShareSnapshot, ShareVisibility } from './types';
+import { getLegacyActions } from '../legacy/gateway';
 
 declare global {
   interface Window {
@@ -13,7 +14,6 @@ declare global {
     copyShareLink?: () => void;
     revokeShareLink?: () => void;
     closeShareModal?: () => void;
-    t?: (key: string) => string;
   }
 }
 
@@ -40,21 +40,12 @@ export function useShareDispatch(): {
   revokeLink: () => void;
   close: () => void;
 } {
+  const s = getLegacyActions().share;
   return {
-    selectVis: (vis: ShareVisibility) => {
-      if (typeof window.selectShareVis === 'function') window.selectShareVis(vis);
-    },
-    createLink: () => {
-      if (typeof window.createShareLink === 'function') window.createShareLink();
-    },
-    copyLink: () => {
-      if (typeof window.copyShareLink === 'function') window.copyShareLink();
-    },
-    revokeLink: () => {
-      if (typeof window.revokeShareLink === 'function') window.revokeShareLink();
-    },
-    close: () => {
-      if (typeof window.closeShareModal === 'function') window.closeShareModal();
-    },
+    selectVis: (vis: ShareVisibility) => s.selectShareVis(vis),
+    createLink: () => s.createShareLink(),
+    copyLink: () => s.copyShareLink(),
+    revokeLink: () => s.revokeShareLink(),
+    close: () => s.closeShareModal(),
   };
 }

@@ -45,7 +45,6 @@ declare global {
     ensureSlashApps?: () => void;
     esc?: (value: unknown) => string;
     escapeHtml?: (s: string) => string;
-    t?: (key: string) => string;
     apiFetch?: (path: string, options?: Record<string, unknown>) => Promise<unknown>;
     showToast?: (msg: string) => void;
     confirmAction?: (title: string, msg: string) => Promise<boolean>;

@@ -5,6 +5,7 @@ import {
   subscribeToProfile,
 } from './profileModalStore';
 import type { ProfileSnapshot } from './types';
+import { getLegacyActions } from '../legacy/gateway';
 
 declare global {
   interface Window {
@@ -21,7 +22,6 @@ declare global {
     signOut?: () => void;
     setLang?: (lang: string) => void;
     openProfile?: () => void;
-    t?: (key: string) => string;
     _currentLang?: string;
   }
 }
@@ -43,18 +43,20 @@ export function useIsProfileOpen(): boolean {
 }
 
 export function useProfileDispatch() {
+  const nav = getLegacyActions().navigation;
+  const profile = getLegacyActions().profile;
   return {
-    close: () => { if (typeof window.closeProfile === 'function') window.closeProfile(); },
-    saveName: (name: string) => { if (typeof window.saveProfileName === 'function') window.saveProfileName(name); },
-    onInstChange: () => { if (typeof window.onCustomInstructionsChange === 'function') window.onCustomInstructionsChange(); },
-    toggleWebSearch: () => { if (typeof window.toggleProfileWebSearch === 'function') window.toggleProfileWebSearch(); },
-    openUsage: () => { if (typeof window.openUsageModal === 'function') window.openUsageModal(); },
-    openStorage: () => { if (typeof window.openStorageModal === 'function') window.openStorageModal(); },
-    openPromptTemplates: () => { if (typeof window.openPromptTemplatesModal === 'function') window.openPromptTemplatesModal(); },
-    clearCache: () => { if (typeof window.confirmClearCache === 'function') window.confirmClearCache(); },
-    clearSettings: () => { if (typeof window.confirmClearSettings === 'function') window.confirmClearSettings(); },
-    deleteAccount: () => { if (typeof window.confirmDeleteAccount === 'function') window.confirmDeleteAccount(); },
-    signOut: () => { if (typeof window.signOut === 'function') window.signOut(); },
-    setLang: (lang: string) => { if (typeof window.setLang === 'function') window.setLang(lang); },
+    close: () => nav.closeProfile(),
+    saveName: (name: string) => profile.saveProfileName(name),
+    onInstChange: () => profile.onCustomInstructionsChange(),
+    toggleWebSearch: () => profile.toggleProfileWebSearch(),
+    openUsage: () => nav.openUsageModal(),
+    openStorage: () => nav.openStorageModal(),
+    openPromptTemplates: () => nav.openPromptTemplatesModal(),
+    clearCache: () => profile.confirmClearCache(),
+    clearSettings: () => profile.confirmClearSettings(),
+    deleteAccount: () => profile.confirmDeleteAccount(),
+    signOut: () => nav.signOut(),
+    setLang: (lang: string) => profile.setLang(lang),
   };
 }

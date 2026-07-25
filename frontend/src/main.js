@@ -7897,6 +7897,128 @@ window.sendFeedback = sendFeedback;
 window.processPendingMermaid = processPendingMermaid;
 window.wireCodeBlockHeaders = wireCodeBlockHeaders;
 window.wireMsgBodyImages = wireMsgBodyImages;
+/* Bridge missing window.* assignments that React reads but were never
+   explicitly exported (pre-existing gap). Adding them here so C4-B's
+   __socratesLegacy assembly below captures them. */
+window.showToast = showToast;
+window.resetApp = resetApp;
+window.signOut = signOut;
+window.processPendingViz = processPendingViz;
+window.startSession = startSession;
+window.submitChatMessage = submitChatMessage;
+/* C4 — typed legacy gateway for React.  Assembles the structured
+   window.__socratesLegacy object from the existing window.* bindings.
+   React code reads this via getLegacyActions() from react/legacy/gateway.ts.
+   The window.X = X assignments above remain as temporary backward-
+   compatibility aliases for legacy JS modules and e2e tests until C5. */
+window.__socratesLegacy = {
+  messages: {
+    editUserMessage: window.editUserMessage,
+    regenerateAssistantMessage: window.regenerateAssistantMessage,
+    deleteUserMessage: window.deleteUserMessage,
+    branchFromMessage: window.branchFromMessage,
+    sendFeedback: window.sendFeedback,
+    toggleReadAloud: window.toggleReadAloud,
+    openShareModal: window.openShareModal,
+    showToast: window.showToast,
+  },
+  navigation: {
+    resetApp: window.resetApp,
+    toggleSidebar: window.toggleSidebar,
+    openNav: window.openNav,
+    openSettings: window.openSettings,
+    closeSettings: window.closeSettings,
+    openProfile: window.openProfile,
+    closeProfile: window.closeProfile,
+    openUsageModal: window.openUsageModal,
+    closeUsageModal: window.closeUsageModal,
+    openStorageModal: window.openStorageModal,
+    closeStorageModal: window.closeStorageModal,
+    openPromptTemplatesModal: window.openPromptTemplatesModal,
+    closePromptTemplatesModal: window.closePromptTemplatesModal,
+    openCheatsheet: window.openCheatsheet,
+    closeCheatsheet: window.closeCheatsheet,
+    closeMorePopover: window.closeMorePopover,
+    toggleDisplayPrefs: window.toggleDisplayPrefs,
+    signOut: window.signOut,
+  },
+  sessions: {
+    loadSession: window.loadSession,
+    setRecentsFilter: window.setRecentsFilter,
+    getRecentsFilter: window.getRecentsFilter,
+    onRecentsFilterChipClick: window.onRecentsFilterChipClick,
+    openTagEditor: window.openTagEditor,
+    deleteSession: window.actuallyDeleteSession,
+    onSessionDragStart: window.onSessionDragStart,
+    onSessionDragEnd: window.onSessionDragEnd,
+    restoreSession: window.restoreSession,
+    confirmPurgeSession: window.confirmPurgeSession,
+  },
+  composer: {
+    openAttachmentPicker: window.openAttachmentPicker,
+    composeAction: window.composeAction,
+    researchAction: window.researchAction,
+    toggleExtensionByKey: window.toggleExtensionByKey,
+    removeAttachment: window.removeAttachment,
+    renderAttachmentChips: window.renderAttachmentChips,
+  },
+  cmdK: {
+    openCmdK: window.openCmdK,
+    closeCmdK: window.closeCmdK,
+    onCmdKInput: window.onCmdKInput,
+    onCmdKKey: window.onCmdKKey,
+    openCmdKResult: window.openCmdKResult,
+  },
+  share: {
+    selectShareVis: window.selectShareVis,
+    createShareLink: window.createShareLink,
+    copyShareLink: window.copyShareLink,
+    revokeShareLink: window.revokeShareLink,
+    closeShareModal: window.closeShareModal,
+  },
+  profile: {
+    saveProfileName: window.saveProfileName,
+    onCustomInstructionsChange: window.onCustomInstructionsChange,
+    toggleProfileWebSearch: window.toggleProfileWebSearch,
+    confirmClearCache: window.confirmClearCache,
+    confirmClearSettings: window.confirmClearSettings,
+    confirmDeleteAccount: window.confirmDeleteAccount,
+    setLang: window.setLang,
+  },
+  workspace: {
+    switchLibraryTab: window.switchLibraryTab,
+    filterLibrary: window.filterLibrary,
+    openLibraryItem: window.openLibraryItem,
+    toggleLibrarySelect: window.toggleLibrarySelect,
+    toggleSelectAllLibrary: window.toggleSelectAllLibrary,
+    deleteSelectedLibrary: window.deleteSelectedLibrary,
+    startLibraryRename: window.startLibraryRename,
+    cancelLibraryRename: window.cancelLibraryRename,
+    saveLibraryRename: window.saveLibraryRename,
+    deleteLibraryFile: window.deleteLibraryFile,
+    renameArtifact: window.renameArtifact,
+    openCreateProject: window.openCreateProject,
+    openEditProject: window.openEditProject,
+    openProjectWorkspace: window.openProjectWorkspace,
+    connectProjectConnector: window.connectProjectConnector,
+    refreshProjectConnector: window.refreshProjectConnector,
+    openProjectConnectorForm: window.openProjectConnectorForm,
+    openArxivSearch: window.openArxivSearch,
+    openZoteroLibrary: window.openZoteroLibrary,
+  },
+  scheduled: {
+    openCreateScheduledTask: window.openCreateScheduledTask,
+    openEditScheduledTask: window.openEditScheduledTask,
+    toggleScheduledTask: window.toggleScheduledTask,
+  },
+  postRender: {
+    processPendingMermaid: window.processPendingMermaid,
+    processPendingViz: window.processPendingViz,
+    processPendingVizActions: window.processPendingVizActions,
+    wireCodeBlockHeaders: window.wireCodeBlockHeaders,
+    wireMsgBodyImages: window.wireMsgBodyImages,
+  },
+};
 /* Init UI sync — runs after window.apiConfig is set (above) so
    syncModelPills() can safely read the provider config. Moving
    this earlier would throw and halt the entire boot sequence. */

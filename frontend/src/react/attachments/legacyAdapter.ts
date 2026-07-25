@@ -8,6 +8,7 @@ import type {
   AttachmentsSnapshot,
   AttachmentEntry,
 } from './types';
+import { getLegacyActions } from '../legacy/gateway';
 
 declare global {
   interface Window {
@@ -37,7 +38,7 @@ export function useAttachments(): ReadonlyArray<AttachmentEntry> {
 
 export function useAttachmentsRemove(): (id: string) => void {
   return (id: string) => {
-    if (typeof window.removeAttachment === 'function') window.removeAttachment(id);
-    if (typeof window.renderAttachmentChips === 'function') window.renderAttachmentChips();
+    getLegacyActions().composer.removeAttachment(id);
+    getLegacyActions().composer.renderAttachmentChips?.();
   };
 }

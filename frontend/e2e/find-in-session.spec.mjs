@@ -35,7 +35,7 @@ test('Ctrl-F find highlights matches, navigates, and clears on close', async ({ 
 
   // Open the bar via the bridge (mirrors the Ctrl-F path in main.js).
   await page.evaluate(() => window.openFindInSession());
-  const bar = page.locator('#findBar');
+  const bar = page.locator('#findBar').first();
   await expect(bar).toBeVisible();
 
   const input = page.locator('#findInput');

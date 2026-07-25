@@ -40,12 +40,12 @@ test('Sidebar React nav buttons call window.openNav and reflect active state', a
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  // Intercept window.openNav so we can confirm React clicks dispatch through
-  // the legacy entry point.
+  // Intercept window.__socratesLegacy.navigation.openNav so we can confirm
+  // React clicks dispatch through the typed bridge.
   await page.evaluate(() => {
     window.__openNavCalls = [];
-    const original = window.openNav;
-    window.openNav = (key) => {
+    const original = window.__socratesLegacy.navigation.openNav;
+    window.__socratesLegacy.navigation.openNav = (key) => {
       window.__openNavCalls.push(key);
       if (typeof original === 'function') original(key);
     };
@@ -76,11 +76,11 @@ test('Sidebar React recents filter chips call window.onRecentsFilterChipClick', 
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  // Stub the chip-click handler so we can capture the call.
+  // Stub the chip-click handler on the bridge so we can capture the call.
   await page.evaluate(() => {
     window.__chipCalls = [];
-    const original = window.onRecentsFilterChipClick;
-    window.onRecentsFilterChipClick = (value) => {
+    const original = window.__socratesLegacy.sessions.onRecentsFilterChipClick;
+    window.__socratesLegacy.sessions.onRecentsFilterChipClick = (value) => {
       window.__chipCalls.push(value);
       if (typeof original === 'function') original(value);
     };

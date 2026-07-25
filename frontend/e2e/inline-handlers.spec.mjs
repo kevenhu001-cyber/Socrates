@@ -1,11 +1,14 @@
-// e2e/inline-handlers.spec.mjs — Wave -1
-// Spec 2/6: every function name called inline from index.html must resolve
-// on `window.*` at runtime. This is the load-bearing invariant from the plan's
-// §5 — if any extraction deletes a bridge binding, this catches it.
+// e2e/inline-handlers.spec.mjs — Wave -1 / C4
+// Spec 2/6: every function name referenced from index.html's event-handler
+// contract (originally inline `on{event}="..."`, now `data-action="..."`)
+// must resolve on `window.*` at runtime. This is the load-bearing invariant
+// from the plan's §5 — if any extraction deletes a bridge binding, this
+// catches it.
 //
-// Strategy: parse `on{event}="..."` strings from index.html, extract literal
-// identifiers that look like function calls (followed by `(`), then verify
-// each resolves on `window.<name>`.
+// Strategy: parse `data-action(-{eventType})?="..."` strings from the
+// built dist/index.html, extract action tokens, then verify each
+// non-built-in token resolves as a function on `window.<name>`.
+// Also assert that zero legacy `on{event}="..."` attributes remain.
 
 import { test, expect } from '@playwright/test';
 import { mockAuthedApp } from './_mock-api.mjs';
@@ -16,72 +19,68 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const indexHtmlPath = resolve(__dirname, '..', 'dist', 'index.html');
 
-function extractInlineFnNames(html) {
-  const handlers = [...html.matchAll(/\b(?:onclick|oninput|onchange|onsubmit)="([^"]+)"/g)].map((m) => m[1]);
-  const names = new Set();
-  // JS keywords — never real function names.
-  const KEYWORDS = new Set([
-    'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue',
-    'return', 'function', 'var', 'let', 'const', 'new', 'typeof', 'instanceof',
-    'in', 'of', 'try', 'catch', 'finally', 'throw', 'class', 'extends', 'super',
-    'this', 'true', 'false', 'null', 'undefined', 'async', 'await', 'yield',
-    'import', 'export', 'default', 'delete', 'void',
-  ]);
-  // Built-in method names that the inline handlers use as `.method()` calls.
-  // We DO want to verify these exist — `event.preventDefault`, `event.stopPropagation`,
-  // `this.select` are all real callable names that must resolve on their object.
-  // We just shouldn't try to verify them as top-level window bindings.
-  const SKIP_TOP_LEVEL = new Set([
-    'preventDefault', 'stopPropagation', 'stopImmediatePropagation',
-    'select', 'click', 'focus', 'blur', 'value',
-    'target', 'currentTarget', 'key', 'shiftKey', 'ctrlKey', 'metaKey', 'altKey',
-    'submit', 'reset', 'remove', 'add', 'push',
-  ]);
+// Regex to capture event-handler attribute values from index.html.
+// Legacy `on{event}="..."` attributes (should be zero after C4).
+const LEGACY_RE = /\b(?:onclick|oninput|onchange|onsubmit|onkeydown|onfocus)="([^"]+)"/g;
+// data-action attributes that carry handler names (NOT data-action-submit,
+// data-action-self-only, data-action-guard, data-action-arg, data-action-keys).
+const DATA_ACTION_RE = /\bdata-action(?:-input|-keydown|-change|-focus)?="([^"]+)"/g;
 
-  for (const h of handlers) {
-    // Tokenize: skip strings, skip comments, capture identifiers followed by `(`.
-    let inStr = false, strCh = '', inLineComment = false, inBlockComment = false;
-    let i = 0;
-    while (i < h.length) {
-      const c = h[i], n = h[i + 1];
-      if (inLineComment) { if (c === '\n') inLineComment = false; i++; continue; }
-      if (inBlockComment) { if (c === '*' && n === '/') { inBlockComment = false; i += 2; continue; } i++; continue; }
-      if (inStr) {
-        if (c === '\\') { i += 2; continue; }
-        if (c === strCh) { inStr = false; strCh = ''; }
-        i++; continue;
-      }
-      if (c === '/' && n === '/') { inLineComment = true; i += 2; continue; }
-      if (c === '/' && n === '*') { inBlockComment = true; i += 2; continue; }
-      if (c === '"' || c === "'") { inStr = true; strCh = c; i++; continue; }
-      if (c === '`' )  { inStr = true; strCh = '`'; i++; continue; }
-      if (/[A-Za-z_$]/.test(c)) {
-        let j = i;
-        while (j < h.length && /[A-Za-z0-9_$]/.test(h[j])) j++;
-        const ident = h.slice(i, j);
-        i = j;
-        // Skip whitespace
-        let k = i;
-        while (k < h.length && /\s/.test(h[k])) k++;
-        if (h[k] === '(') {
-          if (KEYWORDS.has(ident)) continue;
-          // Dotted: `event.preventDefault()` → check the property name.
-          // We want to verify the leaf method is callable on its object.
-          // However, for our purpose (verify window.<name> resolves),
-          // these dotted calls DON'T need to be top-level. Skip them.
-          if (ident.includes('.')) continue;
-          if (SKIP_TOP_LEVEL.has(ident)) continue;
-          names.add(ident);
-        }
-      } else {
-        i++;
+// Delegate.js built-in actions that are implemented inside delegate.js
+// itself and never expected as window.* bindings. Also includes actions
+// handled directly by React components (not via delegate.js → window.*).
+const BUILTIN_ACTIONS = new Set([
+  '__stop', 'preventDefault', 'select', 'blur',
+  // close-settings-overlay is handled directly by React's SettingsModal
+  // (checks data-action in its onClick handler), not via delegate.js.
+  'close-settings-overlay',
+]);
+
+/**
+ * Parse a single action spec (e.g. "closeMorePopover", "onFindInput:value")
+ * and return the action name (part before `:`).
+ */
+function parseActionSpec(spec) {
+  const trimmed = spec.trim();
+  if (!trimmed) return null;
+  const colonIdx = trimmed.indexOf(':');
+  const name = colonIdx >= 0 ? trimmed.slice(0, colonIdx) : trimmed;
+  return name || null;
+}
+
+/**
+ * Extract data-action function names from built index.html.
+ * Returns:
+ *   - names: unique action names that should resolve on window.*
+ *   - legacyCount: number of legacy on{event}="..." attributes found
+ */
+function extractActionFnNames(html) {
+  const names = new Set();
+
+  // Collect from data-action family.
+  for (const match of html.matchAll(DATA_ACTION_RE)) {
+    const value = match[1];
+    for (const part of value.split(';')) {
+      const name = parseActionSpec(part);
+      if (name && !BUILTIN_ACTIONS.has(name)) {
+        names.add(name);
       }
     }
   }
-  return [...names].sort();
+
+  // Count legacy inline handlers (should be zero).
+  const legacyCount = [...html.matchAll(LEGACY_RE)].length;
+
+  return { names: [...names].sort(), legacyCount };
 }
 
-test('every inline-event function name resolves on window.fn at runtime', async ({ page }) => {
+test('no legacy inline event attributes remain in built index.html', async () => {
+  const html = fs.readFileSync(indexHtmlPath, 'utf8');
+  const { legacyCount } = extractActionFnNames(html);
+  expect(legacyCount, 'expected zero legacy on{event}="..." attributes (C4 invariant)').toBe(0);
+});
+
+test('every data-action function name resolves on window.fn at runtime', async ({ page }) => {
   await mockAuthedApp(page);
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
@@ -93,7 +92,7 @@ test('every inline-event function name resolves on window.fn at runtime', async 
   await page.waitForTimeout(500);
 
   const html = fs.readFileSync(indexHtmlPath, 'utf8');
-  const names = extractInlineFnNames(html);
+  const { names } = extractActionFnNames(html);
 
   const result = await page.evaluate((n) => {
     const out = {};
@@ -110,8 +109,8 @@ test('every inline-event function name resolves on window.fn at runtime', async 
 
   const missing = Object.entries(result).filter(([, t]) => t !== 'fn');
   if (missing.length) {
-    console.error('Missing inline-event window bindings (' + missing.length + '):');
+    console.error('Missing data-action window bindings (' + missing.length + '):');
     for (const [n, t] of missing) console.error(`  ${n} → ${t}`);
   }
-  expect(missing, `${missing.length}/${names.length} inline-event bindings missing on window`).toEqual([]);
+  expect(missing, `${missing.length}/${names.length} data-action bindings missing on window`).toEqual([]);
 });

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useSyncExternalStore } from 'react';
 
+import { getLegacyActions } from '../legacy/gateway';
 import {
   getRecentsFilterSnapshot,
   getSidebarNavSnapshot,
@@ -34,9 +35,7 @@ export function seedSidebarBridgesFromLegacy(): void {
 
   // Seed the filter from localStorage (the legacy single source of truth).
   try {
-    const current = typeof window.getRecentsFilter === 'function'
-      ? window.getRecentsFilter()
-      : null;
+    const current = getLegacyActions().sessions.getRecentsFilter?.() ?? null;
     publishRecentsFilter(current ?? null);
   } catch (_) { /* localStorage may be unavailable */ }
 
@@ -58,7 +57,7 @@ export function useSidebarNavCommands(): {
 } {
   return {
     open: useCallback((key: string) => {
-      if (typeof window.openNav === 'function') window.openNav(key);
+      getLegacyActions().navigation.openNav(key);
     }, []),
   };
 }
@@ -69,9 +68,9 @@ export function useRecentsFilterCommands(): {
   return useCallback(() => {
     const pick = (value: string | null) => {
       if (value === null || value === 'all') {
-        if (typeof window.onRecentsFilterChipClick === 'function') window.onRecentsFilterChipClick('all');
-      } else if (typeof window.onRecentsFilterChipClick === 'function') {
-        window.onRecentsFilterChipClick(value);
+        getLegacyActions().sessions.onRecentsFilterChipClick('all');
+      } else {
+        getLegacyActions().sessions.onRecentsFilterChipClick(value);
       }
     };
     return { pick };

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
+import { getLegacyActions } from '../legacy/gateway';
 import { installSettingsBridge } from './settingsStore';
 import { useSettingsSnapshot } from './legacyAdapter';
 
@@ -23,7 +24,7 @@ function SettingsModal() {
     if (
       (e.target as HTMLElement).getAttribute('data-action') === 'close-settings-overlay'
     ) {
-      if (typeof window.closeSettings === 'function') window.closeSettings();
+      getLegacyActions().navigation.closeSettings();
     }
   };
 
@@ -41,7 +42,7 @@ function SettingsModal() {
             className="settings-close"
             id="settingsCloseBtn"
             onClick={() => {
-              if (typeof window.closeSettings === 'function') window.closeSettings();
+              getLegacyActions().navigation.closeSettings();
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">

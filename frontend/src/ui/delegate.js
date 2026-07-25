@@ -73,6 +73,16 @@ function registerBuiltinActions() {
 
 // Build the action map from all window.* functions that inline handlers
 // currently reference. This is the single source of truth for the bridge.
+// Resolve a legacy function, preferring the typed __socratesLegacy bridge
+// over the raw window.X alias. This lets delegate.js follow the same
+// access path React uses while keeping backward compatibility for any
+// function not yet migrated into the bridge.
+function byLegacy(domain, name) {
+  var w = window;
+  var fn = w.__socratesLegacy && w.__socratesLegacy[domain] && w.__socratesLegacy[domain][name];
+  return typeof fn === 'function' ? fn : w[name];
+}
+
 function buildActionMap() {
   registerBuiltinActions();
   var w = window;
@@ -91,10 +101,9 @@ function buildActionMap() {
   registerAction('submitAuthForgotPassword', function () { w.submitAuthForgotPassword(); });
   registerAction('submitAuthResetPassword', function () { w.submitAuthResetPassword(); });
 
-  // Display / Theme
   registerAction('toggleGrid', function () { w.toggleGrid(); });
   registerAction('setAccentColor', function (el, e, hue) { w.setAccentColor(parseInt(hue, 10)); });
-  registerAction('toggleDisplayPrefs', function () { w.toggleDisplayPrefs(); });
+  registerAction('toggleDisplayPrefs', function () { byLegacy('navigation', 'toggleDisplayPrefs')(); });
   registerAction('toggleTheme', function () { w.toggleTheme(); });
   registerAction('resetAccentColor', function () { w.resetAccentColor(); });
   registerAction('setAccentCustom', function (el) { w.setAccentCustom(el.value); });
@@ -104,21 +113,21 @@ function buildActionMap() {
   registerAction('resetBackgroundLight', function () { w.resetBackgroundLight(); });
 
   // Sidebar / Navigation
-  registerAction('resetApp', function () { w.resetApp(); });
-  registerAction('toggleSidebar', function () { w.toggleSidebar(); });
-  registerAction('openNav', function (el, e, nav) { w.openNav(nav); });
-  registerAction('closeMorePopover', function () { w.closeMorePopover(); });
-  registerAction('openPromptTemplatesModal', function () { w.openPromptTemplatesModal(); });
-  registerAction('openSettings', function () { w.openSettings(); });
-  registerAction('openCheatsheet', function () { w.openCheatsheet(); });
-  registerAction('signOut', function () { w.signOut(); });
+  registerAction('resetApp', function () { byLegacy('navigation', 'resetApp')(); });
+  registerAction('toggleSidebar', function () { byLegacy('navigation', 'toggleSidebar')(); });
+  registerAction('openNav', function (el, e, nav) { byLegacy('navigation', 'openNav')(nav); });
+  registerAction('closeMorePopover', function () { byLegacy('navigation', 'closeMorePopover')(); });
+  registerAction('openPromptTemplatesModal', function () { byLegacy('navigation', 'openPromptTemplatesModal')(); });
+  registerAction('openSettings', function () { byLegacy('navigation', 'openSettings')(); });
+  registerAction('openCheatsheet', function () { byLegacy('navigation', 'openCheatsheet')(); });
+  registerAction('signOut', function () { byLegacy('navigation', 'signOut')(); });
   registerAction('toggleSidebarView', function (el, e, view) { w.toggleSidebarView(view); });
   registerAction('openLibraryUpload', function () { w.openLibraryUpload(); });
-  registerAction('switchLibraryTab', function (el, e, tab) { w.switchLibraryTab(tab); });
-  registerAction('openCreateProject', function () { w.openCreateProject(); });
-  registerAction('openCreateScheduledTask', function () { w.openCreateScheduledTask(); });
+  registerAction('switchLibraryTab', function (el, e, tab) { byLegacy('workspace', 'switchLibraryTab')(tab); });
+  registerAction('openCreateProject', function () { byLegacy('workspace', 'openCreateProject')(); });
+  registerAction('openCreateScheduledTask', function () { byLegacy('scheduled', 'openCreateScheduledTask')(); });
   registerAction('openPluginMarketplace', function () { w.openPluginMarketplace(); });
-  registerAction('filterLibrary', function (el) { w.filterLibrary(el.value); });
+  registerAction('filterLibrary', function (el) { byLegacy('workspace', 'filterLibrary')(el.value); });
   registerAction('switchTab', function (el, e, tab) { w.switchTab(tab || 'recents'); });
   registerAction('setRecentsSearch', function (el) { w.setRecentsSearch(el.value); });
 
@@ -139,7 +148,6 @@ function buildActionMap() {
     if (typeof w.toggleIncognito === 'function') w.toggleIncognito();
   });
 
-  // Topic / Chat input
   registerAction('startSession', function () { w.startSession(); });
   registerAction('handleSendClick', function () { w.handleSendClick(); });
   registerAction('handleChatKey', function (el, e) {
@@ -158,7 +166,6 @@ function buildActionMap() {
     if (typeof w.toggleComposerTools === 'function') w.toggleComposerTools(el, target);
   });
 
-  // Effort Picker
   registerAction('toggleEffortPicker', function (el) {
     if (typeof w.toggleEffortPicker === 'function') w.toggleEffortPicker(el);
   });
@@ -166,7 +173,6 @@ function buildActionMap() {
     if (typeof w.setReasoningEffort === 'function') w.setReasoningEffort(level);
   });
 
-  // Find in session
   registerAction('openFindInSession', function () { w.openFindInSession(); });
   registerAction('closeFindInSession', function () { w.closeFindInSession(); });
   registerAction('onFindInput', function (el) { w.onFindInput(el.value); });
@@ -175,35 +181,33 @@ function buildActionMap() {
   registerAction('findPrev', function () { w.findPrev(); });
 
   // Share
-  registerAction('openShareModal', function () { w.openShareModal(); });
-  registerAction('closeShareModal', function () { w.closeShareModal(); });
-  registerAction('selectShareVis', function (el, e, vis) { w.selectShareVis(vis); });
-  registerAction('copyShareLink', function () { w.copyShareLink(); });
-  registerAction('revokeShareLink', function () { w.revokeShareLink(); });
-  registerAction('createShareLink', function () { w.createShareLink(); });
+  registerAction('openShareModal', function () { byLegacy('messages', 'openShareModal')(); });
+  registerAction('closeShareModal', function () { byLegacy('share', 'closeShareModal')(); });
+  registerAction('selectShareVis', function (el, e, vis) { byLegacy('share', 'selectShareVis')(vis); });
+  registerAction('copyShareLink', function () { byLegacy('share', 'copyShareLink')(); });
+  registerAction('revokeShareLink', function () { byLegacy('share', 'revokeShareLink')(); });
+  registerAction('createShareLink', function () { byLegacy('share', 'createShareLink')(); });
 
   // Profile
-  registerAction('closeProfile', function () { w.closeProfile(); });
-  registerAction('setLang', function (el, e, lang) { w.setLang(lang); });
-  registerAction('toggleProfileWebSearch', function () { w.toggleProfileWebSearch(); });
-  registerAction('openUsageModal', function () { w.openUsageModal(); });
-  registerAction('openStorageModal', function () { w.openStorageModal(); });
-  registerAction('confirmClearCache', function () { w.confirmClearCache(); });
-  registerAction('confirmClearSettings', function () { w.confirmClearSettings(); });
-  registerAction('confirmDeleteAccount', function () { w.confirmDeleteAccount(); });
-  registerAction('saveProfileName', function (el) { w.saveProfileName(el.value); });
-  registerAction('onCustomInstructionsChange', function () { w.onCustomInstructionsChange(); });
+  registerAction('closeProfile', function () { byLegacy('navigation', 'closeProfile')(); });
+  registerAction('setLang', function (el, e, lang) { byLegacy('profile', 'setLang')(lang); });
+  registerAction('toggleProfileWebSearch', function () { byLegacy('profile', 'toggleProfileWebSearch')(); });
+  registerAction('openUsageModal', function () { byLegacy('navigation', 'openUsageModal')(); });
+  registerAction('openStorageModal', function () { byLegacy('navigation', 'openStorageModal')(); });
+  registerAction('confirmClearCache', function () { byLegacy('profile', 'confirmClearCache')(); });
+  registerAction('confirmClearSettings', function () { byLegacy('profile', 'confirmClearSettings')(); });
+  registerAction('confirmDeleteAccount', function () { byLegacy('profile', 'confirmDeleteAccount')(); });
+  registerAction('saveProfileName', function (el) { byLegacy('profile', 'saveProfileName')(el.value); });
+  registerAction('onCustomInstructionsChange', function () { byLegacy('profile', 'onCustomInstructionsChange')(); });
 
   // Cmd-K
-  registerAction('closeCmdK', function () { w.closeCmdK(); });
-  registerAction('onCmdKInput', function (el) { w.onCmdKInput(el.value); });
-  registerAction('onCmdKKey', function (el, e) { w.onCmdKKey(e); });
-  registerAction('openCmdK', function () { w.openCmdK(); });
+  registerAction('closeCmdK', function () { byLegacy('cmdK', 'closeCmdK')(); });
+  registerAction('onCmdKInput', function (el) { byLegacy('cmdK', 'onCmdKInput')(el.value); });
+  registerAction('onCmdKKey', function (el, e) { byLegacy('cmdK', 'onCmdKKey')(e); });
+  registerAction('openCmdK', function () { byLegacy('cmdK', 'openCmdK')(); });
 
-  // Confirm dialog
   registerAction('closeConfirm', function () { w.closeConfirm(); });
 
-  // Exam
   registerAction('openExamPanel', function () { w.openExamPanel(); });
   registerAction('toggleExamType', function (el, e, type) { w.toggleExamType(type); });
   registerAction('toggleExamModelMenu', function () { w.toggleExamModelMenu(); });
@@ -221,15 +225,14 @@ function buildActionMap() {
   registerAction('closeExamView', function () { w.closeExamView(); });
 
   // Quick actions
-  registerAction('composeAction', function () { w.composeAction(); });
-  registerAction('researchAction', function () { w.researchAction(); });
+  registerAction('composeAction', function () { byLegacy('composer', 'composeAction')(); });
+  registerAction('researchAction', function () { byLegacy('composer', 'researchAction')(); });
 
   // Others
   registerAction('openKnowledge', function () { w.openKnowledge(); });
-  registerAction('closeUsageModal', function () { w.closeUsageModal(); });
-  registerAction('openProfile', function () { w.openProfile(); });
+  registerAction('closeUsageModal', function () { byLegacy('navigation', 'closeUsageModal')(); });
+  registerAction('openProfile', function () { byLegacy('navigation', 'openProfile')(); });
 
-  // KB detail (dynamic innerHTML)
   registerAction('toggleKBDetail', function (el, e, idx) {
     if (typeof w.toggleKBDetail === 'function') w.toggleKBDetail(parseInt(idx, 10));
   });

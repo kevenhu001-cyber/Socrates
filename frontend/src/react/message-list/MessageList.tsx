@@ -54,12 +54,6 @@ function MessageList({ omitEntryIds }: MessageListProps) {
   );
 }
 
-declare global {
-  interface Window {
-    __socratesActiveStreamIds?: ReadonlyArray<string>;
-  }
-}
-
 /**
  * Mounts the React message list into the existing `#msgList` element.
  *

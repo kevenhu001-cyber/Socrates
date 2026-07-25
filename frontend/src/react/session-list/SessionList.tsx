@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
+import { getLegacyActions } from '../legacy/gateway';
 import { installSessionListBridge, publishSessionList } from './sessionListStore';
 import { useSessionListSnapshot, formatRelativeTime } from './legacyAdapter';
 import type { SessionItem } from './types';
@@ -99,7 +100,7 @@ function SessionRow({ session, isActive, onPick, onTag, onDelete, onDragStart, o
                 className="recent-tag-pill"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (typeof window.setRecentsFilter === 'function') window.setRecentsFilter(t);
+                  getLegacyActions().sessions.setRecentsFilter(t);
                 }}
                 title={`Filter by tag: ${t}`}
               >#{t}</button>
@@ -132,37 +133,27 @@ function SessionListInner() {
   const { sessions, currentSessionId, searchQuery, filter, fetchFailed } = snap;
 
   const handlePick = useCallback((id: string) => {
-    if (typeof window.loadSession === 'function') {
-      window.loadSession(id);
-    }
+    getLegacyActions().sessions.loadSession(id);
   }, []);
 
   const handleTag = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (typeof window.openTagEditor === 'function') {
-      window.openTagEditor(id, e.nativeEvent);
-    }
+    getLegacyActions().sessions.openTagEditor(id, e.nativeEvent);
   }, []);
 
   const handleDelete = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (typeof window.actuallyDeleteSession === 'function') {
-      window.actuallyDeleteSession(id, e.nativeEvent);
-    }
+    getLegacyActions().sessions.deleteSession(id, e.nativeEvent);
   }, []);
 
   const handleDragStart = useCallback((e: React.DragEvent, id: string) => {
-    if (typeof window.onSessionDragStart === 'function') {
-      window.onSessionDragStart(e.nativeEvent, id);
-    }
+    getLegacyActions().sessions.onSessionDragStart(e.nativeEvent, id);
   }, []);
 
   const handleDragEnd = useCallback((e: React.DragEvent) => {
-    if (typeof window.onSessionDragEnd === 'function') {
-      window.onSessionDragEnd(e.nativeEvent);
-    }
+    getLegacyActions().sessions.onSessionDragEnd(e.nativeEvent);
   }, []);
 
   if (sessions.length === 0) {

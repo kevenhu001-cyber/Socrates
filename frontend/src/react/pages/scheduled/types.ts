@@ -29,6 +29,5 @@ declare global {
     openEditScheduledTask?: (id: string) => void;
     toggleScheduledTask?: (id: string, pause: boolean) => void;
     deleteScheduledTask?: (id: string) => void;
-    t?: (key: string) => string;
   }
 }

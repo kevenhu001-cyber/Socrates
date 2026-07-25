@@ -1,5 +1,6 @@
 import { createRoot, type Root } from 'react-dom/client';
 
+import { t as _t } from '../legacy/gateway';
 import {
   installShareBridge,
 } from './shareModalStore';
@@ -12,13 +13,8 @@ import type { ShareVisibility } from './types';
 const OVERLAY_ID = 'shareOverlay';
 
 function i18n(key: string, fallback: string): string {
-  try {
-    if (typeof window.t === 'function') {
-      const v = window.t(key);
-      if (typeof v === 'string' && v !== key) return v;
-    }
-  } catch (_) { /* fall through */ }
-  return fallback;
+  const v = _t(key);
+  return v !== key ? v : fallback;
 }
 
 function VisibilityOption({

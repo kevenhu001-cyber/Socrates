@@ -1,3 +1,4 @@
+import { getLegacyActions } from '../legacy/gateway';
 import { useUserInfo } from './legacyAdapter';
 
 export function SidebarFooter() {
@@ -12,7 +13,7 @@ export function SidebarFooter() {
           style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}
           onClick={(e) => {
             e.stopPropagation();
-            if (typeof window.openProfile === 'function') window.openProfile();
+            getLegacyActions().navigation.openProfile();
           }}
         >
           {user.displayName}

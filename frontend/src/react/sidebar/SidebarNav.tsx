@@ -1,5 +1,6 @@
 import { createRoot, type Root } from 'react-dom/client';
 
+import { getLegacyActions, t as _t } from '../legacy/gateway';
 import { seedSidebarBridgesFromLegacy, useActiveNav, useSidebarNavCommands } from './legacyAdapter';
 import type { SidebarNavKey } from './types';
 
@@ -60,25 +61,13 @@ const BUTTONS: NavButtonSpec[] = [
 ];
 
 function i18n(key: string, fallback: string): string {
-  try {
-    if (typeof window.t === 'function') {
-      const v = window.t(key);
-      if (typeof v === 'string' && v !== key) return v;
-    }
-  } catch (_) { /* fall through */ }
-  return fallback;
+  const v = _t(key);
+  return v !== key ? v : fallback;
 }
 
 function navButtonId(key: SidebarNavKey | 'new'): string {
   if (key === 'new') return 'navNew';
   return `nav${(key as string)[0].toUpperCase()}${(key as string).slice(1)}`;
-}
-
-declare global {
-  interface Window {
-    t?: (key: string) => string;
-    resetApp?: () => void;
-  }
 }
 
 function SidebarNav() {
@@ -102,7 +91,7 @@ function SidebarNav() {
             aria-expanded={isMore ? (isActive ? 'true' : 'false') : undefined}
             onClick={() => {
               if (button.key === 'new') {
-                if (typeof window.resetApp === 'function') window.resetApp();
+                getLegacyActions().navigation.resetApp();
               } else if (button.key !== null) {
                 open(button.key);
               }

@@ -1,15 +1,18 @@
 import { useSyncExternalStore } from 'react';
 import { getStorageSnapshot, subscribeToStorage } from './storageModalStore';
 import type { StorageSnapshot } from './types';
+import { getLegacyActions } from '../legacy/gateway';
 
 export function useStorageSnapshot(): StorageSnapshot {
   return useSyncExternalStore(subscribeToStorage, getStorageSnapshot, getStorageSnapshot);
 }
 
 export function useStorageDispatch() {
+  const nav = getLegacyActions().navigation;
+  const sessions = getLegacyActions().sessions;
   return {
-    close: () => { if (typeof window.closeStorageModal === 'function') window.closeStorageModal(); },
-    restore: (id: string) => { if (typeof window.restoreSession === 'function') window.restoreSession(id); },
-    purge: (id: string) => { if (typeof window.confirmPurgeSession === 'function') window.confirmPurgeSession(id); },
+    close: () => nav.closeStorageModal(),
+    restore: (id: string) => sessions.restoreSession(id),
+    purge: (id: string) => sessions.confirmPurgeSession(id),
   };
 }

@@ -5,6 +5,7 @@ import {
   subscribeToMorePopover,
 } from './morePopoverStore';
 import type { MorePopoverAction, MorePopoverSnapshot } from './types';
+import { getLegacyActions } from '../legacy/gateway';
 
 declare global {
   interface Window {
@@ -14,28 +15,28 @@ declare global {
     toggleDisplayPrefs?: () => void;
     openCheatsheet?: () => void;
     signOut?: () => void;
-    t?: (key: string) => string;
   }
 }
 
 function dispatchAction(action: MorePopoverAction): void {
-  if (typeof window.closeMorePopover === 'function') window.closeMorePopover();
+  const nav = getLegacyActions().navigation;
+  nav.closeMorePopover();
 
   switch (action) {
     case 'skills':
-      if (typeof window.openPromptTemplatesModal === 'function') window.openPromptTemplatesModal();
+      nav.openPromptTemplatesModal();
       return;
     case 'settings':
-      if (typeof window.openSettings === 'function') window.openSettings();
+      nav.openSettings();
       return;
     case 'display':
-      if (typeof window.toggleDisplayPrefs === 'function') window.toggleDisplayPrefs();
+      nav.toggleDisplayPrefs();
       return;
     case 'shortcuts':
-      if (typeof window.openCheatsheet === 'function') window.openCheatsheet();
+      nav.openCheatsheet();
       return;
     case 'signout':
-      if (typeof window.signOut === 'function') window.signOut();
+      nav.signOut();
       return;
   }
 }

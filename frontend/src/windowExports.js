@@ -67,14 +67,9 @@ window.processPendingVizActions = processPendingVizActions;
    helper so the test can do `getLiveVizCardIds()` instead of
    poking the live map directly. */
 window.getLiveVizCardIds = getLiveVizCardIds;
-/* E2E test surface: viz-canvas.spec.mjs asserts the iframe registry
-   releases the entry after `viz-ready` fires. Expose a snapshot
-   helper so the test can do `getLiveVizCardIds()` instead of
-   poking the live map directly. */
-window.getLiveVizCardIds = getLiveVizCardIds;
 
-/* ─── ui/searchProgress.js — internal bridge used by smoke tests and
-   non-chat surfaces that need to mount the same search activity UI. ─── */
+/* ─── ui/searchProgress.js — E2E test surface: search-progress.spec.mjs
+   exercises the search-activity UI via window.__startSearchProgress. ─── */
 import { startSearchProgress } from './ui/searchProgress.js';
 window.__startSearchProgress = startSearchProgress;
 
@@ -119,20 +114,17 @@ window.onRecentsFilterChipClick = onRecentsFilterChipClick;
 /* ─── pickers.js ─── */
 import {
   getActiveProvider, pickActiveProviderById,
-  closeModelPicker, syncModelPills,
-  syncChatModel, closeChatModelMenu,
+  syncModelPills,
+  syncChatModel,
   toggleExtensionByKey, syncExtensionsUI,
-  toggleWebSearch, markProvidersFetched,
+  markProvidersFetched,
 } from './pickers.js';
 window.getActiveProvider = getActiveProvider;
 window.pickActiveProviderById = pickActiveProviderById;
-window.closeModelPicker = closeModelPicker;
 window.syncModelPills = syncModelPills;
 window.syncChatModel = syncChatModel;
-window.closeChatModelMenu = closeChatModelMenu;
 window.toggleExtensionByKey = toggleExtensionByKey;
 window.syncExtensionsUI = syncExtensionsUI;
-window.toggleWebSearch = toggleWebSearch;
 window.markProvidersFetched = markProvidersFetched;
 
 // Note: setActiveProvider / renderProviderList / isReasoningProvider are
@@ -196,12 +188,9 @@ window.openStorageModal = openStorageModal;
 window.closeStorageModal = closeStorageModal;
 
 /* ─── ui/promptTemplates.js ─── */
-import { openPromptTemplatesModal, closePromptTemplatesModal, onPromptRowDelete, openPromptTemplateEditor, onPromptTemplateEditorSave } from './ui/promptTemplates.js';
+import { openPromptTemplatesModal, closePromptTemplatesModal } from './ui/promptTemplates.js';
 window.openPromptTemplatesModal = openPromptTemplatesModal;
 window.closePromptTemplatesModal = closePromptTemplatesModal;
-window.onPromptRowDelete = onPromptRowDelete;
-window.openPromptTemplateEditor = openPromptTemplateEditor;
-window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
 
 /* ─── ui/composerTools.js ─── */
 import { toggleComposerTools } from './ui/composerTools.js';
@@ -313,13 +302,9 @@ window.sleepBackoff = sleepBackoff;
 window.makeAIWatchdog = makeAIWatchdog;
 
 /* ─── ui/usage.js ─── */
-import { openUsageModal, closeUsageModal, loadUsageData, loadUsageMonth, showUsageTip, hideUsageTip } from './ui/usage.js';
+import { openUsageModal, closeUsageModal } from './ui/usage.js';
 window.openUsageModal = openUsageModal;
 window.closeUsageModal = closeUsageModal;
-window.loadUsageData = loadUsageData;
-window.loadUsageMonth = loadUsageMonth;
-window.showUsageTip = showUsageTip;
-window.hideUsageTip = hideUsageTip;
 
 /* ─── render/helpers.js (esc alias) ─── */
 import { esc } from './render/helpers.js';
@@ -331,7 +316,7 @@ window.esc = esc;
    functions on window.* — all of them must be bridged here. */
 import {
   openExamPanel, prepareExamView, openExamModal, closeExamView,
-  renderExamForm, toggleExamType, toggleExamModelMenu, selectExamModel,
+  toggleExamType, toggleExamModelMenu, selectExamModel,
   selectExamDifficulty, adjustExamCount,
   startExamGeneration, cancelExamGeneration,
   selectExamOpt,
@@ -342,7 +327,6 @@ window.openExamPanel = openExamPanel;
 window.prepareExamView = prepareExamView;
 window.openExamModal = openExamModal;
 window.closeExamView = closeExamView;
-window.renderExamForm = renderExamForm;
 window.toggleExamType = toggleExamType;
 window.toggleExamModelMenu = toggleExamModelMenu;
 window.selectExamModel = selectExamModel;
