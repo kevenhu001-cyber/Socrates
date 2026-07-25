@@ -42,6 +42,9 @@ function buildMeta(session: SessionItem): string[] {
   meta.push(formatRelativeTime(session.updatedAt || session.createdAt || Date.now()));
   const qCount = session.totalQ;
   if (qCount) meta.push(String(qCount) + ' Qs');
+  if (session.branchedFrom) {
+    meta.push(session.branchedFrom.reExplain ? 'Re-explained' : 'Branched');
+  }
   return meta;
 }
 

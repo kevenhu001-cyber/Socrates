@@ -6,7 +6,7 @@ declare global {
     editUserMessage?: (messageId: string) => void;
     deleteUserMessage?: (messageId: string) => void;
     regenerateAssistantMessage?: (messageId: string) => void;
-    branchFromMessage?: (messageId: string) => void;
+    branchFromMessage?: (messageId: string, opts?: { reExplain?: boolean }) => void;
     sendFeedback?: (messageId: string, rating: 'up' | 'down') => void;
     openShareModal?: () => void;
     toggleReadAloud?: (target: HTMLElement, text: string) => void;
@@ -115,6 +115,9 @@ export function useMessageToolbarCallbacks(message: LegacyChatMessage): MessageT
       : undefined,
     onBranch: role === 'assistant' && id
       ? () => typeof window.branchFromMessage === 'function' && window.branchFromMessage(id)
+      : undefined,
+    onReExplain: role === 'assistant' && id
+      ? () => typeof window.branchFromMessage === 'function' && window.branchFromMessage(id, { reExplain: true })
       : undefined,
     onReadAloud: role === 'assistant' && id
       ? (ev: React.MouseEvent<HTMLButtonElement>) => doReadAloud(message, ev)

@@ -30,6 +30,7 @@ export interface MessageToolbarCallbacks {
   onThumbsUp?: () => void;
   onThumbsDown?: () => void;
   onBranch?: () => void;
+  onReExplain?: () => void;
   onReadAloud?: (ev: React.MouseEvent<HTMLButtonElement>) => void;
 }
 

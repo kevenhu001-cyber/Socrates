@@ -101,6 +101,12 @@ function MessageToolbar({ message, role }: MessageToolbarProps): React.ReactElem
             svgInner='<path d="M6 4v16"/><path d="M18 4v16"/><path d="M6 8h8a2 2 0 0 1 2 2v4"/><path d="M6 16h8a2 2 0 0 0 2-2v-4"/><path d="M16 10l3 3-3 3"/>'
           />
           <IconButton
+            action="re-explain"
+            label="Re-explain from a different angle"
+            onClick={() => c.onReExplain?.()}
+            svgInner='<path d="M12 2l3.1 6.3L22 9.5l-5 4.9 1.2 6.8L12 18l-6.2 3.2L7 14.4 2 9.5l6.9-1.2L12 2z"/>'
+          />
+          <IconButton
             action="read-aloud"
             label="Read aloud"
             onClick={(ev) => c.onReadAloud?.(ev)}
