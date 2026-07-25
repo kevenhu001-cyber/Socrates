@@ -275,5 +275,15 @@ export function bootstrapReactCompatibilityRuntime(): Root {
     mountMessageList();
   }
 
+  // Re-sync the workspace route now that __socratesMountWorkspace (and
+  // the per-page createRoot) are registered. nav.js's own
+  // syncWorkspaceRoute runs on DOMContentLoaded, but main.js
+  // dynamically imports this module AFTER that — so the first run
+  // saw __socratesMountWorkspace as undefined, openLibrary() skipped
+  // mountWorkspacePage(), and React never rendered into #libraryPanel.
+  // Calling it again here ensures deep-link URLs (/library, /projects,
+  // /plugins) actually mount React.
+  try { (window as any).syncWorkspaceRoute?.(); } catch (_) { /* swallow */ }
+
   return pillRoot;
 }
