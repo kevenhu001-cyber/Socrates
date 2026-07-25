@@ -100,6 +100,26 @@ function publishReactChatRuntime(event){
   }catch(_){}
 }
 
+/* React owns #msgList's message nodes (marked data-react-owned). Wiping the
+   container with innerHTML="" detaches React's nodes behind its back, and the
+   next commit crashes with "removeChild … not a child of this node". This
+   helper clears only legacy-inserted children (streaming bubbles, research
+   cards, thinking pills); React removes its own nodes when the next bridge
+   event re-renders from the emptied state. */
+function clearLegacyMsgListChildren(){
+  var list=document.getElementById("msgList");
+  if(!list)return;
+  if(typeof window.disposeVisualizations==="function"){
+    try{window.disposeVisualizations(list)}catch(_){}
+  }
+  var kids=Array.prototype.slice.call(list.children);
+  for(var ki=0;ki<kids.length;ki++){
+    var node=kids[ki];
+    if(node&&node.hasAttribute&&node.hasAttribute("data-react-owned"))continue;
+    try{list.removeChild(node)}catch(_){}
+  }
+}
+
 /* P_global-error-guard — install one-shot handlers for `error` and
    `unhandledrejection` so a stray throw inside an SSE callback, an
    image upload, or any of the ~140 module-level functions in this
@@ -1480,7 +1500,6 @@ async function loadSession(id){
      part-way through and leave the whole conversation blank until refresh.
      Keep a recoverable snapshot until the new history has committed. */
   var previousMessages=null;
-  var previousMessageMarkup="";
   var historyRebuildStarted=false;
   /* Drain the entire save pipeline — including the _saveDirty
      cascade. Loop because the cascade may fire a new doSave()
@@ -1599,9 +1618,10 @@ async function loadSession(id){
     syncChatModel();
     var msgList=document.getElementById("msgList");
     previousMessages=state.messages.slice();
-    previousMessageMarkup=msgList.innerHTML;
     historyRebuildStarted=true;
-    if(typeof window.disposeVisualizations === "function") window.disposeVisualizations(msgList);
+    /* Drop legacy leftovers (old streaming bubble, research cards) from
+       the previous session; React-owned nodes reconcile from state. */
+    clearLegacyMsgListChildren();
     /* React owns #msgList. State is authoritative — React re-renders
        from state.messages. The legacy DOM rebuild (div creation,
        formatMsg/renderAssistantHTML, attachment chip mount,
@@ -1797,8 +1817,7 @@ async function loadSession(id){
       try{
         state.messages.length=0;
         Array.prototype.push.apply(state.messages,previousMessages);
-        var rollbackList=document.getElementById("msgList");
-        if(rollbackList)rollbackList.innerHTML=previousMessageMarkup;
+        publishReactChatRuntime({type:"state-synced",reason:"session-load-failed"});
       }catch(_){}
     }
     
@@ -1872,12 +1891,13 @@ async function loadSession(id){
         }
       }catch(_){}
       try{
-        var list=document.getElementById("msgList");
-        if(list)list.innerHTML="";
+        clearLegacyMsgListChildren();
         state.currentSessionId=null;
         state.topic="";
         state.kbNodes=[];
         state.phase="topic";
+        state.messages.length=0;
+        publishReactChatRuntime({type:"state-synced",reason:"session-not-found"});
         document.getElementById("chatView").classList.add("hidden");
         toggleChatTopBarEls(false);
         document.getElementById("topicSetup").classList.remove("hidden");
@@ -2220,6 +2240,7 @@ function restoreSession(id){
     /* archive sync failed */
   });
   renderRecents();
+  renderArchivedList();
 }
 /* P2.3 — permanent erase. Two-step: only available from the
    Storage modal (not the long-press delete), and requires
@@ -2299,7 +2320,8 @@ function bounceOutOfArchivedSession(){
   document.getElementById("chatView").classList.add("hidden");
   if (typeof window.hideMainPages === "function") window.hideMainPages();
   toggleChatTopBarEls(false);
-  document.getElementById("msgList").innerHTML="";
+  clearLegacyMsgListChildren();
+  publishReactChatRuntime({type:"state-synced",reason:"archived-session-reset"});
   document.getElementById("topicInput").value="";
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">'+(typeof t==="function"?t("tutor.kbTopicFirst"):"Set a topic to build your knowledge map.")+'</div>';
   /* Task 3.3 — clear the teaching-plan view on full reset so a
@@ -2821,7 +2843,8 @@ async function startSession(){
     document.getElementById("chatView").classList.remove("hidden");
     if (typeof window.hideMainPages === "function") window.hideMainPages();
     toggleChatTopBarEls(true);
-    document.getElementById("msgList").innerHTML="";
+    clearLegacyMsgListChildren();
+    publishReactChatRuntime({type:"state-synced",reason:"new-chat-start"});
     /* P_attachments-start — assemble the first user message the same
        way submitChatMessage does, so an attachment dropped onto the
        topic-setup screen travels with the very first chat turn (not
@@ -4182,8 +4205,13 @@ function rollbackMessagesAfter(userMessageId){
   toDrop.forEach(function(m){
     if(!m||!m.clientId)return;
     var div=document.querySelector('[data-client-id="'+m.clientId+'"]');
+    /* React-owned bubbles are removed by React itself when the
+       state-synced event below re-renders from the spliced state.
+       Detaching them here would crash React's next commit. */
+    if(div&&div.hasAttribute("data-react-owned"))return;
     if(div&&div.parentNode)div.parentNode.removeChild(div);
   });
+  publishReactChatRuntime({type:"state-synced",reason:"rollback"});
   return toDrop.length;
 }
 function deleteUserMessage(messageId,bar){
@@ -4191,7 +4219,8 @@ function deleteUserMessage(messageId,bar){
   if(idx<0)return;
   state.messages.splice(idx,1);
   var div=document.querySelector('[data-client-id="'+messageId+'"]');
-  if(div)div.remove();
+  if(div&&!div.hasAttribute("data-react-owned"))div.remove();
+  publishReactChatRuntime({type:"state-synced",reason:"message-deleted"});
   apiFetch("/api/messages/"+encodeURIComponent(messageId),{
     method:"DELETE",
     timeoutMs:8000
@@ -5697,7 +5726,7 @@ function doRender(){
            finish — visible as a duplicate bubble.) */
         try{
           var _finLegacy=list.querySelector('[data-client-id="'+clientId+'"]');
-          if(_finLegacy && _finLegacy.parentNode===list){
+          if(_finLegacy && !_finLegacy.hasAttribute("data-react-owned") && _finLegacy.parentNode===list){
             list.removeChild(_finLegacy);
           }
         }catch(_){}
@@ -5771,7 +5800,7 @@ function doRender(){
          undeclared here too, so the cleanup never ran.) */
       try{
         var _abLegacy=list.querySelector('[data-client-id="'+clientId+'"]');
-        if(_abLegacy && _abLegacy.parentNode===list){
+        if(_abLegacy && !_abLegacy.hasAttribute("data-react-owned") && _abLegacy.parentNode===list){
           list.removeChild(_abLegacy);
         }
       }catch(_){}
@@ -5854,7 +5883,7 @@ function doRender(){
           finish/abort — `msgList` was undeclared here too.) */
        try{
          var _errLegacy=list.querySelector('[data-client-id="'+clientId+'"]');
-         if(_errLegacy && _errLegacy.parentNode===list){
+         if(_errLegacy && !_errLegacy.hasAttribute("data-react-owned") && _errLegacy.parentNode===list){
            list.removeChild(_errLegacy);
          }
        }catch(_){}
@@ -6926,7 +6955,8 @@ async function resetApp(){
   var _examBody = document.getElementById("examViewBody");
   if (_examBody) _examBody.innerHTML = "";
   toggleChatTopBarEls(false);
-  document.getElementById("msgList").innerHTML="";
+  clearLegacyMsgListChildren();
+  publishReactChatRuntime({type:"state-synced",reason:"app-reset"});
   document.getElementById("topicInput").value="";
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">'+(typeof t==="function"?t("tutor.kbTopicFirst"):"Set a topic to build your knowledge map.")+'</div>';
   document.getElementById("chatStats").textContent="";

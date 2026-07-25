@@ -2,49 +2,51 @@
  * Prompt-templates modal: lists built-in and user templates, with edit and
  * delete actions. Extracted from main.js (post-Wave-1b): L9890-L10010.
  *
+ * Under the always-on React runtime the overlay DOM
+ * (#promptTemplatesOverlay) exists only while the React modal is open, so
+ * this module never touches that DOM directly. It keeps the open flag and
+ * body HTML as module state and publishes them through
+ * window.__socratesPromptTemplatesBridge; React renders the result via
+ * dangerouslySetInnerHTML.
+ *
  * Touches the following globals (read from window.*):
  *   - loadPromptTemplates, deleteCustomTemplate, findTemplateByShortcut, upsertCustomTemplate
  *   - esc (from render/helpers.js)
  *   - showConfirm (from ui/confirm.js — Wave 1a)
- *   - t (from i18n.js)
- *   - closePromptTemplatesModal (self-call)
+ *   - showToast, t (from i18n.js)
+ * Inline onclick handlers inside the published HTML rely on window
+ * exports of: closePromptTemplatesModal, renderPromptTemplatesModal,
+ * openPromptTemplateEditor, onPromptRowDelete, onPromptTemplateEditorSave
+ * (see windowExports.js).
  */
 
-/* React migration bridge — publishes prompt templates modal body HTML. */
+var _ptOpen = false;
+var _ptBodyHTML = "";
+
 function _publishPromptTemplatesState() {
   try {
     var bridge = window.__socratesPromptTemplatesBridge;
     if (bridge && typeof bridge.publish === "function") {
-      var body = document.querySelector("#promptTemplatesOverlay .prompt-templates-modal");
-      bridge.publish({
-        open: document.getElementById("promptTemplatesOverlay") && !document.getElementById("promptTemplatesOverlay").classList.contains("hidden"),
-        bodyHTML: body ? body.innerHTML : "",
-      });
+      bridge.publish({ open: _ptOpen, bodyHTML: _ptBodyHTML });
     }
   } catch (_) { /* swallow */ }
 }
 
-/* React owns the prompt-templates modal always under the always-on
-   runtime. The publish path is the only thing React reads. */
-
 function openPromptTemplatesModal() {
+  _ptOpen = true;
   renderPromptTemplatesModal();
-  document.getElementById("promptTemplatesOverlay").classList.remove("hidden");
-  _publishPromptTemplatesState();
 }
 
 function closePromptTemplatesModal() {
-  document.getElementById("promptTemplatesOverlay").classList.add("hidden");
+  _ptOpen = false;
   _publishPromptTemplatesState();
 }
 
 function renderPromptTemplatesModal() {
-  var body = document.querySelector("#promptTemplatesOverlay .prompt-templates-modal");
-  if (!body) return;
   var all = window.loadPromptTemplates();
   var customs = all.filter(function (t) { return !t.isBuiltin; });
   var builtins = all.filter(function (t) { return t.isBuiltin; });
-  var html =
+  _ptBodyHTML =
     '<div class="modal-head">' +
       '<span class="modal-title">Skills &amp; shortcuts</span>' +
       '<button class="modal-close" onclick="closePromptTemplatesModal()">×</button>' +
@@ -58,7 +60,6 @@ function renderPromptTemplatesModal() {
         '<div class="prompt-templates-empty">No custom skills yet.</div>') +
       '<button class="prompt-templates-new" onclick="openPromptTemplateEditor()">+ Create skill</button>' +
     '</div>';
-  body.innerHTML = html;
   _publishPromptTemplatesState();
 }
 
@@ -72,7 +73,7 @@ function renderPromptRow(t, editable) {
     '</div>' +
     (editable ?
       '<div class="prompt-row-actions">' +
-      '<button class="prompt-row-edit" onclick="openPromptTemplateEditor(' + encodeURIComponent(JSON.stringify(t)) + ')">Edit</button>' +
+        '<button class="prompt-row-edit" onclick="openPromptTemplateEditor(\'' + window.esc(t.id) + '\')">Edit</button>' +
         '<button class="prompt-row-delete" onclick="onPromptRowDelete(\'' + window.esc(t.id) + '\')">Delete</button>' +
       '</div>' : '') +
   '</div>';
@@ -86,11 +87,13 @@ function onPromptRowDelete(id) {
   });
 }
 
-function openPromptTemplateEditor(existing) {
-  var body = document.querySelector("#promptTemplatesOverlay .prompt-templates-modal");
-  if (!body) return;
+function openPromptTemplateEditor(id) {
+  var existing = null;
+  if (id) {
+    existing = window.loadPromptTemplates().filter(function (t) { return t.id === id; })[0] || null;
+  }
   var t = existing || { id: "tpl-" + Date.now().toString(36), title: "", description: "", body: "", systemPrompt: "", icon: "pg", category: "writing", shortcut: "/my-template" };
-  body.innerHTML =
+  _ptBodyHTML =
     '<div class="modal-head">' +
       '<span class="modal-title">' + (existing ? "Edit skill" : "Create skill") + '</span>' +
       '<button class="modal-close" onclick="renderPromptTemplatesModal()">×</button>' +
@@ -120,8 +123,12 @@ function openPromptTemplateEditor(existing) {
       '<button class="modal-save" onclick="onPromptTemplateEditorSave(\'' + window.esc(t.id) + '\',' + (existing ? '1' : '0') + ')">Save</button>' +
     '</div>';
   _publishPromptTemplatesState();
-  var title = document.getElementById("ptTitle");
-  if (title) { setTimeout(function () { title.focus(); title.select(); }, 0); }
+  /* React renders the published HTML asynchronously; wait a tick
+     before focusing the title input. */
+  setTimeout(function () {
+    var title = document.getElementById("ptTitle");
+    if (title) { title.focus(); title.select(); }
+  }, 50);
 }
 
 function onPromptTemplateEditorSave(id, wasExisting) {

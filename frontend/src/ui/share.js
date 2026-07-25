@@ -185,6 +185,14 @@ async function revokeShareLink() {
 function _renderSharedMessageList(messages) {
   var msgList = document.getElementById("msgList");
   if (!msgList) return;
+  /* The share view owns #msgList exclusively. Flag the takeover so the
+     React bootstrap skips mounting the message list, and unmount the
+     React root if it already mounted — wiping React-owned children with
+     innerHTML="" would crash React's next commit (removeChild). */
+  window.__socratesShareMsgListTakeover = true;
+  if (typeof window.__socratesReleaseMsgListReact === "function") {
+    try { window.__socratesReleaseMsgListReact(); } catch (_) {}
+  }
   /* P_viz-dispose-shared — dispose any live visualization
      cards/ECharts instances before wiping the DOM. Mirrors the
      call in main.js#enterChat (line 1496) so the shared-session

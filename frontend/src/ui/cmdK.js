@@ -125,22 +125,25 @@ function onCmdKInput(q) {
       timeoutMs: 4000,
     }).then(function (r) {
       if (r && Array.isArray(r.hits) && r.hits.length) {
-        var serverHits = r.hits.map(function (h) {
+        /* Stale-response guard — the user may have kept typing while
+           the server round-trip was in flight. */
+        var cur = ((document.getElementById("cmdKInput") || {}).value || "").trim();
+        if (cur !== q) return;
+        var seen = {};
+        _cmdKResults.forEach(function (h) {
+          var it = h.item || h;
+          if (it && it.id) seen[it.id] = true;
+        });
+        var serverHits = r.hits.filter(function (h) {
+          return h && h.id && !seen[h.id];
+        }).map(function (h) {
           return { kind: "remote", id: h.id, sessionId: h.sessionId, title: h.title, snippet: h.snippet || "" };
         });
-        var existing = document.getElementById("cmdKResults");
-        if (existing) {
-          var remoteBlock = document.createElement("div");
-          remoteBlock.className = "cmd-k-section";
-          remoteBlock.innerHTML = '<div class="cmd-k-section-label">From your other devices</div>' +
-            serverHits.map(function (h, idx) {
-              return '<div class="cmd-k-row" data-idx="' + (hits.length + idx) + '" data-kind="' + h.kind + '" data-id="' + window.esc(h.id) + '">' +
-                '<div class="cmd-k-row-title">' + window.esc(h.title) + '</div>' +
-                '<div class="cmd-k-row-snippet">' + window.esc(h.snippet) + '</div>' +
-              '</div>';
-            }).join("");
-          existing.appendChild(remoteBlock);
-        }
+        if (!serverHits.length) return;
+        /* React owns #cmdKResults — publish through the bridge instead
+           of appending DOM behind React's back. */
+        _cmdKResults = _cmdKResults.concat(serverHits);
+        _publishCmdKState();
       }
     }).catch(function () { /* offline or 404 — ignore */ });
   } catch (_) { /* swallow */ }

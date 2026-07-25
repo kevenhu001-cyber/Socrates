@@ -196,9 +196,18 @@ window.openStorageModal = openStorageModal;
 window.closeStorageModal = closeStorageModal;
 
 /* ─── ui/promptTemplates.js ─── */
-import { openPromptTemplatesModal, closePromptTemplatesModal } from './ui/promptTemplates.js';
+import {
+  openPromptTemplatesModal, closePromptTemplatesModal, renderPromptTemplatesModal,
+  openPromptTemplateEditor, onPromptRowDelete, onPromptTemplateEditorSave,
+} from './ui/promptTemplates.js';
 window.openPromptTemplatesModal = openPromptTemplatesModal;
 window.closePromptTemplatesModal = closePromptTemplatesModal;
+/* Inline onclick handlers inside the bridge-published modal HTML
+   resolve these from window. */
+window.renderPromptTemplatesModal = renderPromptTemplatesModal;
+window.openPromptTemplateEditor = openPromptTemplateEditor;
+window.onPromptRowDelete = onPromptRowDelete;
+window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
 
 /* ─── ui/composerTools.js ─── */
 import { toggleComposerTools } from './ui/composerTools.js';
