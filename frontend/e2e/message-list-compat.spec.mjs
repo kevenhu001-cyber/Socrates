@@ -129,7 +129,9 @@ test('message list toolbar copy button reads rawText and triggers toast', async 
     document.getElementById('topicSetup')?.classList.add('hidden');
     document.getElementById('chatView')?.classList.remove('hidden');
     window.__messageListSpecToast = null;
-    window.showToast = (msg) => { window.__messageListSpecToast = msg; };
+    const showToastMock = (msg) => { window.__messageListSpecToast = msg; };
+    window.showToast = showToastMock;
+    if (window.__socratesLegacy?.messages) window.__socratesLegacy.messages.showToast = showToastMock;
     const bridge = window.__socratesReactChatBridge;
     window.state.phase = 'chat';
     window.state.currentSessionId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
@@ -158,11 +160,23 @@ test('message list toolbar action buttons dispatch to legacy window globals', as
     document.getElementById('chatView')?.classList.remove('hidden');
     window.__msgSpecEditCalls = [];
     window.__msgSpecFeedbackCalls = [];
-    window.editUserMessage = (id) => { window.__msgSpecEditCalls.push(id); };
-    window.deleteUserMessage = (id) => { window.__msgSpecEditCalls.push('del:'+id); };
-    window.regenerateAssistantMessage = (id) => { window.__msgSpecEditCalls.push('regen:'+id); };
-    window.branchFromMessage = (id) => { window.__msgSpecEditCalls.push('branch:'+id); };
-    window.sendFeedback = (id, rating) => { window.__msgSpecFeedbackCalls.push([id, rating]); };
+    const editMock = (id) => { window.__msgSpecEditCalls.push(id); };
+    const deleteMock = (id) => { window.__msgSpecEditCalls.push('del:'+id); };
+    const regenMock = (id) => { window.__msgSpecEditCalls.push('regen:'+id); };
+    const branchMock = (id) => { window.__msgSpecEditCalls.push('branch:'+id); };
+    const feedbackMock = (id, rating) => { window.__msgSpecFeedbackCalls.push([id, rating]); };
+    window.editUserMessage = editMock;
+    window.deleteUserMessage = deleteMock;
+    window.regenerateAssistantMessage = regenMock;
+    window.branchFromMessage = branchMock;
+    window.sendFeedback = feedbackMock;
+    if (window.__socratesLegacy?.messages) {
+      window.__socratesLegacy.messages.editUserMessage = editMock;
+      window.__socratesLegacy.messages.deleteUserMessage = deleteMock;
+      window.__socratesLegacy.messages.regenerateAssistantMessage = regenMock;
+      window.__socratesLegacy.messages.branchFromMessage = branchMock;
+      window.__socratesLegacy.messages.sendFeedback = feedbackMock;
+    }
     const bridge = window.__socratesReactChatBridge;
     window.state.phase = 'chat';
     window.state.currentSessionId = '11111111-1111-4111-8111-111111111111';

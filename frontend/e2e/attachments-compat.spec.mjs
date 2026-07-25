@@ -91,10 +91,10 @@ test('Attachment chips remove button dispatches through window.removeAttachment'
   await waitForAppShell(page);
 
   // Seed two attachments via the bridge and stub the legacy
-  // removeAttachment so we can capture the call.
+  // removeAttachment on the bridge so we can capture the call.
   await page.evaluate(() => {
     window.__removedIds = [];
-    window.removeAttachment = function (id) {
+    window.__socratesLegacy.composer.removeAttachment = function (id) {
       window.__removedIds.push(id);
       return true;
     };

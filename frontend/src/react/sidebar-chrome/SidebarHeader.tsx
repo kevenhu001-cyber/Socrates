@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
+import { getLegacyActions } from '../legacy/gateway';
 import { useUserInfo } from './legacyAdapter';
 
 const NEW_CHAT_ICON =
@@ -27,7 +28,7 @@ export function SidebarHeader() {
           title="Start a new chat"
           onClick={(e) => {
             e.preventDefault();
-            if (typeof window.resetApp === 'function') window.resetApp();
+            getLegacyActions().navigation.resetApp();
           }}
           dangerouslySetInnerHTML={{ __html: NEW_CHAT_ICON }}
         />
@@ -38,7 +39,7 @@ export function SidebarHeader() {
           aria-label="Close sidebar"
           aria-controls="sidebar"
           onClick={() => {
-            if (typeof window.toggleSidebar === 'function') window.toggleSidebar();
+            getLegacyActions().navigation.toggleSidebar();
           }}
           dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
         />

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { getCheatsheetSnapshot, subscribeToCheatsheet } from './cheatsheetStore';
 import type { CheatsheetSnapshot } from './types';
+import { getLegacyActions } from '../legacy/gateway';
 
 export function useCheatsheetSnapshot(): CheatsheetSnapshot {
   return useSyncExternalStore(subscribeToCheatsheet, getCheatsheetSnapshot, getCheatsheetSnapshot);
@@ -8,6 +9,6 @@ export function useCheatsheetSnapshot(): CheatsheetSnapshot {
 
 export function useCheatsheetDispatch() {
   return {
-    close: () => { if (typeof window.closeCheatsheet === 'function') window.closeCheatsheet(); },
+    close: () => getLegacyActions().navigation.closeCheatsheet(),
   };
 }

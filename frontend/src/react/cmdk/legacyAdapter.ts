@@ -5,6 +5,7 @@ import {
   subscribeToCmdK,
 } from './cmdKRuntimeStore';
 import type { CmdKSnapshot, CmdKHit } from './types';
+import { getLegacyActions } from '../legacy/gateway';
 
 declare global {
   interface Window {
@@ -26,30 +27,29 @@ declare global {
  * DOM, legacy owns the data.
  */
 function dispatchOpen(): void {
-  if (typeof window.openCmdK === 'function') window.openCmdK();
+  getLegacyActions().cmdK.openCmdK();
 }
 
 function dispatchClose(): void {
-  if (typeof window.closeCmdK === 'function') window.closeCmdK();
+  getLegacyActions().cmdK.closeCmdK();
 }
 
 function dispatchInput(value: string): void {
-  if (typeof window.onCmdKInput === 'function') window.onCmdKInput(value);
+  getLegacyActions().cmdK.onCmdKInput(value);
 }
 
 function dispatchKey(key: string): void {
-  if (typeof window.onCmdKKey !== 'function') return;
   const event = {
     key,
     preventDefault: () => {
       /* no-op stub for legacy handler compatibility */
     },
   };
-  window.onCmdKKey(event);
+  getLegacyActions().cmdK.onCmdKKey(event as unknown as KeyboardEvent);
 }
 
 function dispatchActivate(index: number): void {
-  if (typeof window.openCmdKResult === 'function') window.openCmdKResult(index);
+  getLegacyActions().cmdK.openCmdKResult(index);
 }
 
 export function useCmdKCommands(): {

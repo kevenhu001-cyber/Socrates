@@ -205,7 +205,6 @@ interface RenderMathInElementOpts {
 declare global {
   interface Window {
     renderMathInElement?: (el: Element, opts: RenderMathInElementOpts) => void;
-    t?: (key: string) => string;
   }
 }
 

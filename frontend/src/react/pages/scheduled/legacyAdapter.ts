@@ -5,6 +5,7 @@ import {
   subscribeToScheduled,
 } from './scheduledStore';
 import type { ScheduledSnapshot } from './types';
+import { getLegacyActions } from '../../legacy/gateway';
 
 declare global {
   interface Window {
@@ -12,7 +13,6 @@ declare global {
     openEditScheduledTask?: (id: string) => void;
     toggleScheduledTask?: (id: string, pause: boolean) => void;
     apiFetch?: (path: string, options?: Record<string, unknown>) => Promise<unknown>;
-    t?: (key: string) => string;
   }
 }
 
@@ -25,9 +25,10 @@ export function useScheduledSnapshot(): ScheduledSnapshot {
 }
 
 export function useScheduledDispatch() {
+  const s = getLegacyActions().scheduled;
   return {
-    create: () => { if (typeof window.openCreateScheduledTask === 'function') window.openCreateScheduledTask(); },
-    edit: (id: string) => { if (typeof window.openEditScheduledTask === 'function') window.openEditScheduledTask(id); },
-    toggle: (id: string, pause: boolean) => { if (typeof window.toggleScheduledTask === 'function') window.toggleScheduledTask(id, pause); },
+    create: () => s.openCreateScheduledTask(),
+    edit: (id: string) => s.openEditScheduledTask(id),
+    toggle: (id: string, pause: boolean) => s.toggleScheduledTask(id, pause),
   };
 }

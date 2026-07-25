@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { getPromptTemplatesSnapshot, subscribeToPromptTemplates } from './promptTemplatesStore';
 import type { PromptTemplatesSnapshot } from './types';
+import { getLegacyActions } from '../legacy/gateway';
 
 export function usePromptTemplatesSnapshot(): PromptTemplatesSnapshot {
   return useSyncExternalStore(subscribeToPromptTemplates, getPromptTemplatesSnapshot, getPromptTemplatesSnapshot);
@@ -8,6 +9,6 @@ export function usePromptTemplatesSnapshot(): PromptTemplatesSnapshot {
 
 export function usePromptTemplatesDispatch() {
   return {
-    close: () => { if (typeof window.closePromptTemplatesModal === 'function') window.closePromptTemplatesModal(); },
+    close: () => getLegacyActions().navigation.closePromptTemplatesModal(),
   };
 }

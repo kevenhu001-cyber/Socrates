@@ -12,6 +12,11 @@ const FIND_INPUT_ID = 'findInput';
 function FindInSession() {
   const [snapshot, setSnapshot] = useState<FindInSessionSnapshot>(getFindInSessionSnapshot);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const containerRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    containerRef.current = document.getElementById(FIND_BAR_ID);
+  }, []);
 
   useEffect(() => {
     const unsub = subscribeToFindInSession(() => {
@@ -19,6 +24,12 @@ function FindInSession() {
     });
     return unsub;
   }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.classList.toggle('hidden', !snapshot.isOpen);
+  }, [snapshot.isOpen]);
 
   useEffect(() => {
     if (snapshot.isOpen) {
@@ -67,12 +78,7 @@ function FindInSession() {
     : '';
 
   return (
-    <div
-      className={'find-bar' + (snapshot.isOpen ? '' : ' hidden')}
-      id={FIND_BAR_ID}
-      role="search"
-      data-react-migration-runtime="find-in-session"
-    >
+    <>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="find-bar-icon" aria-hidden="true">
         <circle cx="11" cy="11" r="7" />
         <path d="m21 21-4.3-4.3" />
@@ -110,7 +116,7 @@ function FindInSession() {
           <path d="M18 6 6 18M6 6l12 12" />
         </svg>
       </button>
-    </div>
+    </>
   );
 }
 

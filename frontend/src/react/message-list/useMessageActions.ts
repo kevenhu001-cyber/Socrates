@@ -1,18 +1,6 @@
 import type { LegacyChatMessage } from '../types/domain';
 import type { MessageToolbarCallbacks } from './types';
-
-declare global {
-  interface Window {
-    editUserMessage?: (messageId: string) => void;
-    deleteUserMessage?: (messageId: string) => void;
-    regenerateAssistantMessage?: (messageId: string) => void;
-    branchFromMessage?: (messageId: string, opts?: { reExplain?: boolean }) => void;
-    sendFeedback?: (messageId: string, rating: 'up' | 'down') => void;
-    openShareModal?: () => void;
-    toggleReadAloud?: (target: HTMLElement, text: string) => void;
-    showToast?: (msg: string) => void;
-  }
-}
+import { getLegacyActions } from '../legacy/gateway';
 
 function messageIdOf(message: LegacyChatMessage): string | null {
   if (message.id) return message.id;
@@ -55,21 +43,21 @@ function fallbackCopy(text: string): void {
     ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
-    window.showToast?.('Copied');
+    getLegacyActions().messages.showToast?.('Copied');
   } catch (_) {
-    window.showToast?.('Copy failed');
+    getLegacyActions().messages.showToast?.('Copy failed');
   }
 }
 
 function doCopy(message: LegacyChatMessage): void {
   const text = plainTextOf(message);
   if (!text) {
-    window.showToast?.('Nothing to copy');
+    getLegacyActions().messages.showToast?.('Nothing to copy');
     return;
   }
   if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
     navigator.clipboard.writeText(text).then(
-      () => window.showToast?.('Copied to clipboard'),
+      () => getLegacyActions().messages.showToast?.('Copied to clipboard'),
       () => fallbackCopy(text),
     );
   } else {
@@ -79,8 +67,9 @@ function doCopy(message: LegacyChatMessage): void {
 
 function doReadAloud(message: LegacyChatMessage, ev: React.MouseEvent<HTMLButtonElement>): void {
   const text = plainTextOf(message);
-  if (typeof window.toggleReadAloud !== 'function') return;
-  window.toggleReadAloud(ev.currentTarget, text);
+  const legacy = getLegacyActions();
+  if (typeof legacy.messages.toggleReadAloud !== 'function') return;
+  legacy.messages.toggleReadAloud(ev.currentTarget, text);
 }
 
 /**
@@ -92,32 +81,33 @@ function doReadAloud(message: LegacyChatMessage, ev: React.MouseEvent<HTMLButton
 export function useMessageToolbarCallbacks(message: LegacyChatMessage): MessageToolbarCallbacks {
   const id = messageIdOf(message);
   const role = typeof message.role === 'string' ? message.role : '';
+  const legacy = id ? getLegacyActions() : null;
 
   return {
     onCopy: () => doCopy(message),
-    onEdit: role === 'user' && id
-      ? () => typeof window.editUserMessage === 'function' && window.editUserMessage(id)
+    onEdit: role === 'user' && legacy
+      ? () => legacy.messages.editUserMessage(id!)
       : undefined,
-    onDelete: role === 'user' && id
-      ? () => typeof window.deleteUserMessage === 'function' && window.deleteUserMessage(id)
+    onDelete: role === 'user' && legacy
+      ? () => legacy.messages.deleteUserMessage(id!)
       : undefined,
-    onShare: role === 'assistant' && typeof window.openShareModal === 'function'
-      ? () => window.openShareModal?.()
+    onShare: role === 'assistant'
+      ? () => getLegacyActions().messages.openShareModal()
       : undefined,
-    onRegenerate: role === 'assistant' && id
-      ? () => typeof window.regenerateAssistantMessage === 'function' && window.regenerateAssistantMessage(id)
+    onRegenerate: role === 'assistant' && legacy
+      ? () => legacy.messages.regenerateAssistantMessage(id!)
       : undefined,
-    onThumbsUp: role === 'assistant' && id
-      ? () => typeof window.sendFeedback === 'function' && window.sendFeedback(id, 'up')
+    onThumbsUp: role === 'assistant' && legacy
+      ? () => legacy.messages.sendFeedback(id!, 'up')
       : undefined,
-    onThumbsDown: role === 'assistant' && id
-      ? () => typeof window.sendFeedback === 'function' && window.sendFeedback(id, 'down')
+    onThumbsDown: role === 'assistant' && legacy
+      ? () => legacy.messages.sendFeedback(id!, 'down')
       : undefined,
-    onBranch: role === 'assistant' && id
-      ? () => typeof window.branchFromMessage === 'function' && window.branchFromMessage(id)
+    onBranch: role === 'assistant' && legacy
+      ? () => legacy.messages.branchFromMessage(id!)
       : undefined,
-    onReExplain: role === 'assistant' && id
-      ? () => typeof window.branchFromMessage === 'function' && window.branchFromMessage(id, { reExplain: true })
+    onReExplain: role === 'assistant' && legacy
+      ? () => legacy.messages.branchFromMessage(id!, { reExplain: true })
       : undefined,
     onReadAloud: role === 'assistant' && id
       ? (ev: React.MouseEvent<HTMLButtonElement>) => doReadAloud(message, ev)

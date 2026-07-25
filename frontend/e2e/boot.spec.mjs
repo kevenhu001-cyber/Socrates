@@ -18,10 +18,11 @@ const distHtml = resolve(__dirname, '..', 'dist', 'index.html');
 
 function inlineHandlerHash() {
   const html = fs.readFileSync(distHtml, 'utf8');
-  // Match any on{event}="..." attribute. Captured and sorted so the hash is
-  // stable even if the file's bytes around them change.
+  // Match both legacy on{event}="..." and C4 data-action="..." attributes.
+  // Captured and sorted so the hash is stable even if bytes around them change.
   const matches = [
-    ...html.matchAll(/\b(?:onclick|oninput|onchange|onsubmit)="([^"]+)"/g),
+    ...html.matchAll(/\b(?:onclick|oninput|onchange|onsubmit|onkeydown|onfocus)="([^"]+)"/g),
+    ...html.matchAll(/\bdata-action(?:-[a-z]+)?="([^"]+)"/g),
   ].map((m) => m[1]).sort();
   return createHash('sha256').update(matches.join('\n')).digest('hex').slice(0, 16);
 }
@@ -96,11 +97,11 @@ test('page boots, dist HTML script ordering correct, inline-handler hash matches
     expect(currentHash, `inline-handler hash drifted: saved=${saved} current=${currentHash}`).toBe(saved);
   }
 
-  // After boot: at least one element with onclick present in DOM.
+  // After boot: at least one element with data-action present in DOM.
   const inlineCount = await page.evaluate(() =>
-    document.querySelectorAll('[onclick],[oninput],[onchange],[onsubmit]').length,
+    document.querySelectorAll('[data-action]').length,
   );
-  expect(inlineCount, 'in-page inline-event-element count').toBeGreaterThanOrEqual(50);
+  expect(inlineCount, 'in-page data-action-element count').toBeGreaterThanOrEqual(50);
 
   // No JS errors at boot.
   expect(consoleErrors, `unexpected JS errors: ${consoleErrors.join(' | ')}`).toEqual([]);

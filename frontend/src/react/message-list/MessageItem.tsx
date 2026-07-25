@@ -2,19 +2,10 @@ import { useEffect } from 'react';
 
 import type { LegacyChatMessage } from '../types/domain';
 import { MessageToolbar } from './MessageToolbar';
+import { getLegacyActions } from '../legacy/gateway';
 
 interface MessageItemProps {
   message: LegacyChatMessage;
-}
-
-declare global {
-  interface Window {
-    processPendingMermaid?: () => void;
-    processPendingViz?: () => void;
-    processPendingVizActions?: () => void;
-    wireCodeBlockHeaders?: (root: HTMLElement) => void;
-    wireMsgBodyImages?: (root: HTMLElement) => void;
-  }
 }
 
 function isRenderable(message: LegacyChatMessage): boolean {
@@ -41,11 +32,12 @@ function MessageItem({ message }: MessageItemProps) {
       `[data-client-id="${CSS.escape(clientId)}"] .msg-body`,
     ) as HTMLElement | null;
     if (!root) return;
-    try { window.processPendingMermaid?.(); } catch (_) { /* hook unavailable */ }
-    try { window.processPendingViz?.(); } catch (_) { }
-    try { window.processPendingVizActions?.(); } catch (_) { }
-    try { window.wireCodeBlockHeaders?.(root); } catch (_) { }
-    try { window.wireMsgBodyImages?.(root); } catch (_) { }
+    const pr = getLegacyActions().postRender;
+    try { pr.processPendingMermaid?.(); } catch (_) { /* hook unavailable */ }
+    try { pr.processPendingViz?.(); } catch (_) { }
+    try { pr.processPendingVizActions?.(); } catch (_) { }
+    try { pr.wireCodeBlockHeaders?.(root); } catch (_) { }
+    try { pr.wireMsgBodyImages?.(root); } catch (_) { }
   }, [html, clientId]);
 
   if (!isRenderable(message)) return null;

@@ -9,6 +9,7 @@ import type {
   ComposerToolsAction,
   ComposerToolsSnapshot,
 } from './types';
+import { getLegacyActions } from '../legacy/gateway';
 
 declare global {
   interface Window {
@@ -18,29 +19,28 @@ declare global {
     researchAction?: () => void;
     toggleExtensionByKey?: (key: string) => void;
     openPromptTemplatesModal?: () => void;
-    t?: (key: string) => string;
   }
 }
 
 function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null): void {
+  const nav = getLegacyActions().navigation;
+  const composer = getLegacyActions().composer;
   switch (action) {
     case 'upload':
-      if (typeof window.openAttachmentPicker === 'function') {
-        window.openAttachmentPicker(mode === 'topic' ? 'topicAttachInput' : 'attachInput');
-      }
+      composer.openAttachmentPicker(mode === 'topic' ? 'topicAttachInput' : 'attachInput');
       return;
     case 'write':
-      if (typeof window.composeAction === 'function') window.composeAction();
+      composer.composeAction();
       return;
     case 'research':
-      if (typeof window.researchAction === 'function') window.researchAction();
+      composer.researchAction();
       return;
     case 'deepResearch':
     case 'exam':
-      if (typeof window.toggleExtensionByKey === 'function') window.toggleExtensionByKey(action);
+      composer.toggleExtensionByKey(action);
       return;
     case 'skills':
-      if (typeof window.openPromptTemplatesModal === 'function') window.openPromptTemplatesModal();
+      nav.openPromptTemplatesModal();
       return;
   }
 }

@@ -1,6 +1,7 @@
 import { createRoot, type Root } from 'react-dom/client';
 
 import { getKnownTagsFromSessions } from '../../ui/recentsHelpers.js';
+import { getLegacyStateValue } from '../legacy/gateway';
 import {
   useRecentsFilter,
   useRecentsFilterCommands,
@@ -28,22 +29,14 @@ interface AllChip {
 
 type ChipDescriptor = (AllChip | ProjectChip | TagChip) & { active: boolean };
 
-interface LegacyDataWindow {
-  __projectsCache?: ReadonlyArray<{ id: string; name: string }>;
-  SERVER_SESSIONS?: ReadonlyArray<{ tags?: ReadonlyArray<string> }>;
-}
-
-declare global {
-  interface Window extends LegacyDataWindow {}
-}
-
 function readProjects(): ReadonlyArray<{ id: string; name: string }> {
-  return Array.isArray(window.__projectsCache) ? window.__projectsCache : [];
+  const cache = getLegacyStateValue('__projectsCache', []);
+  return Array.isArray(cache) ? cache as ReadonlyArray<{ id: string; name: string }> : [];
 }
 
 function readTags(): string[] {
-  const sessions = Array.isArray(window.SERVER_SESSIONS) ? window.SERVER_SESSIONS : [];
-  return getKnownTagsFromSessions(sessions as Array<{ tags?: string[] }>).slice(0, 8);
+  const sessions = getLegacyStateValue('SERVER_SESSIONS', []);
+  return getKnownTagsFromSessions(Array.isArray(sessions) ? sessions as Array<{ tags?: string[] }> : []).slice(0, 8);
 }
 
 function buildChips(currentFilter: string | null): ChipDescriptor[] {
