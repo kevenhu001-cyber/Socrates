@@ -208,7 +208,12 @@ below.
       `chat/toolRuntime.js` + `chat/toolRunState.js` (independent of C,
       low priority). `widgetParsers.js` was already a re-export shim for
       its `.ts` twin; `toolRuntime.js` and `toolRunState.js` now re-export
-      from their `.ts` sources. (commit pending)
+      from their `.ts` sources.
+- [x] **P0.2** — ported `ui/findInSession.js` to React/TS as
+      `react/find-in-session/FindInSession.tsx` with a typed bridge store
+      and extracted DOM highlighting.
+- [x] **B4** — TS migrate `chat/offline.js`, `chat/lang.js`, `chat/format.js`,
+      `chat/quickActions.js` to TypeScript with full type definitions.
 
 ## Required gates
 

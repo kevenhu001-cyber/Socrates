@@ -4,6 +4,7 @@ import { createRoot, hydrateRoot, type Root } from 'react-dom/client';
 import { hydrateAttachmentChipsRows } from './attachments';
 import { hydrateComposerToolsMenu } from './composer';
 import { hydrateCmdKOverlay } from './cmdk/CommandPalette';
+import { hydrateFindInSession } from './find-in-session/FindInSession';
 import { hydrateMorePopover } from './morePopover';
 import { hydrateProfileModal } from './profileModal';
 import { hydrateShareModal } from './shareModal';
@@ -133,6 +134,14 @@ export function bootstrapReactCompatibilityRuntime(): Root {
   const cmdKOverlay = document.getElementById(CMDK_OVERLAY_ID);
   if (cmdKOverlay && !cmdKOverlay.dataset.cmdKReactHydrated) {
     hydrateCmdKOverlay();
+  }
+
+  // Hydrate the in-session find bar (Ctrl-F). React owns the DOM inside
+  // #findBar; the bridge functions (openFindInSession, onFindInput, etc.)
+  // are still available via window exports for legacy inline handlers.
+  const findBar = document.getElementById('findBar');
+  if (findBar && !findBar.dataset.findInSessionReactHydrated) {
+    hydrateFindInSession();
   }
 
   const sidebarNav = document.getElementById(SIDEBAR_NAV_ID);
