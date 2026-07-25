@@ -7910,6 +7910,8 @@ if (typeof window.loadTonePreset === "function") window.loadTonePreset();
 if (typeof window.loadMemories === "function") window.loadMemories();
 /* Bind settings UI event handlers (replaces inline onclick attributes) */
 bindSettingsUI();
+import { installDelegate } from './ui/delegate.js';
+installDelegate();
 /* React migration. Bootstrap the React compatibility runtime on every
    load — the legacy runtime still owns the visible document, but React
    hydrates specific feature slices (sidebar, cmd-k, session list, etc.)
