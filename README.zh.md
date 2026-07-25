@@ -138,7 +138,7 @@
 ```mermaid
 flowchart LR
   subgraph Client["客户端"]
-    SPA["Web SPA<br/>(Vite + 原生 JS)"]
+    SPA["Web SPA<br/>(React/TS + 遗留 JS)"]
     APK["Android<br/>(Kotlin + Compose)"]
   end
 
@@ -211,7 +211,7 @@ sequenceDiagram
 
 | 层 | 技术 | 说明 |
 | --- | --- | --- |
-| Web SPA | 原生 JS + 可选 React 兼容层，Vite 构建 | [`frontend/`](frontend/) — 正在渐进迁移至 React/TypeScript |
+| Web SPA | React/TypeScript + 遗留 JS 兼容层，Vite 构建 | [`frontend/`](frontend/) — ~99% 迁移完成，所有 UI 层由 React 驱动 |
 | Markdown | `marked` 4.3 + 自定义渐进渲染器 | 见[自定义渲染管线](#-自定义渲染管线) |
 | 数学公式 | `katex` 0.16.9 (CDN, SRI 固定) | 显示模式 + 行内模式 |
 | 代码高亮 | `highlight.js`（完成时延迟加载） | |
@@ -237,15 +237,39 @@ sequenceDiagram
 
 ```
 Socrates/
-├── frontend/               # Vite SPA (原生 JS, 模块化)
+├── frontend/               # Vite SPA (React/TS + 遗留 JS)
 │   ├── index.html
 │   ├── src/
-│   │   ├── main.js         # 应用逻辑 (~9.8k 行)
-│   │   ├── styles.css      # 全部 CSS (~3600 行)
+│   │   ├── main.js         # 状态/事件主干 (~8k 行)
+│   │   ├── styles.css      # 全部 CSS (~3800 行)
 │   │   ├── state.js        # 响应式状态对象
-│   │   ├── attachments.js  # 文件附件处理
+│   │   ├── i18n.js         # I18N 字典
+│   │   ├── windowExports.js# 遗留 window.* 兼容垫片
+│   │   ├── types/          # TypeScript 类型定义
+│   │   ├── react/          # React/TS UI 层 (23 个模块)
+│   │   │   ├── bootstrap.tsx
+│   │   │   ├── chatRuntimeStore.ts
+│   │   │   ├── useChatRuntime.ts
+│   │   │   ├── message-list/
+│   │   │   ├── session-list/
+│   │   │   ├── sidebar/
+│   │   │   ├── composer/
+│   │   │   ├── cmdk/
+│   │   │   ├── settings/
+│   │   │   ├── legacy/     # 类型化桥接 (gateway.ts)
+│   │   │   └── ...
+│   │   ├── ui/             # 遗留 UI 模块
+│   │   │   ├── delegate.js # 全局事件委托
+│   │   │   └── ...
+│   │   ├── render/         # Markdown 渲染器
+│   │   ├── chat/           # 对话逻辑
+│   │   ├── session/
+│   │   ├── sidebar/
+│   │   ├── storage/
+│   │   ├── auth/
 │   │   └── ...
 │   ├── dist/               # 构建产物 (gitignored)
+│   ├── e2e/                # Playwright e2e 测试
 │   └── package.json
 ├── site/                   # 市场站点 (topodrive.top)
 │   ├── index.html
