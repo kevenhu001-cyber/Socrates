@@ -6,6 +6,9 @@ var state={
     currentSessionId:null,substantiveCount:0,explaining:false,
     sessionTitle:null,domain:null,
     totalQ:0,stuckCount:0,
+    /* P1.1 — branchedFrom metadata: records the source session and
+       message when this session was created via branching. */
+    branchedFrom:null,
     /* P1.1 — authoritative message list, single source of truth.
        Each entry: { clientId, role, rawText, html, type, actions? }.
        `rawText` is the unformatted text used for history extraction

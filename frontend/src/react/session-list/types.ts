@@ -21,6 +21,7 @@ export interface SessionItem {
   tags?: string[];
   label?: string;
   archivedAt?: number | null;
+  branchedFrom?: { sessionId: string | null; messageId: string; reExplain?: boolean } | null;
 }
 
 export interface SessionListSnapshot {

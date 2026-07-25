@@ -1131,6 +1131,9 @@ function doSave(){
        survives reloads. */
     boundariesHistory:state.kb.boundariesHistory||[],
     mistakeFilter:state.kb.mistakeFilter||"all",
+    /* P1.1 — persist branchedFrom metadata so a reloaded session
+       shows "Branched from ..." in the sidebar. */
+    branchedFrom:state.session.branchedFrom||null,
     updatedAt:now,
   };
   state.currentSessionId=sessionId;
@@ -1534,6 +1537,9 @@ async function loadSession(id){
     state.practiceAttempts=s.practiceAttempts||0;
     state.practicePhase=s.practicePhase||"foundation";
     state.teachingPlan=s.teachingPlan||null;
+    /* P1.1 — restore branchedFrom metadata so the sidebar shows
+       "Branched from ..." for branched sessions. */
+    state.session.branchedFrom=s.branchedFrom||null;
     /* Restore KB boundary history and mistake filter. */
     state.kb.boundariesHistory=Array.isArray(s.boundariesHistory)?s.boundariesHistory:[];
     state.kb.mistakeFilter=s.mistakeFilter||"all";
@@ -2620,6 +2626,7 @@ function _publishSessionList(){
           tags: Array.isArray(s.tags)?s.tags:[],
           label: (typeof window.getSessionLabel==="function")?window.getSessionLabel(s.id):"",
           archivedAt: typeof s.archivedAt==="number"?s.archivedAt:null,
+          branchedFrom: s.branchedFrom||null,
         };
       }),
       currentSessionId: window.state?window.state.session.currentSessionId:null,
@@ -4232,7 +4239,12 @@ function regenerateAssistantMessage(messageId,bar){
    whose history only includes messages up to and including the
    branched message. The user can then continue in a different
    direction without affecting the original thread. */
-function branchFromMessage(messageId){
+function branchFromMessage(messageId, opts){
+  opts = opts || {};
+  /* P1.1 — educational reExplain: when the branch is triggered by the
+     re-explain button, inject a pedagogical directive into the system
+     prompt so the model explains the topic from a different angle. */
+  var reExplain = !!opts.reExplain;
   var branchIdx=findMessageIndex(messageId);
   if(branchIdx<0){showToast("Message not found");return}
   /* Save the current session first so the original branch is
@@ -4245,10 +4257,18 @@ function branchFromMessage(messageId){
   });
   var branchTopic=state.session.topic||state.topic||"";
   var branchTitle=(state.session.sessionTitle||branchTopic)+" (branch)";
+  /* P1.1 — branchedFrom metadata: record the source session id and
+     the message id where the branch was taken, so the sidebar can
+     display "Branched from ..." and the user can navigate back. */
+  var branchedFrom = {
+    sessionId: state.session.currentSessionId || state.currentSessionId || null,
+    messageId: messageId,
+    reExplain: reExplain,
+  };
   /* Reset the app to a clean state, then inject the branched
      messages. We set a flag so the new session starts with the
      branch context instead of a blank topic. */
-  var _branchContext={messages:branchMessages,topic:branchTopic,title:branchTitle};
+  var _branchContext={messages:branchMessages,topic:branchTopic,title:branchTitle,branchedFrom:branchedFrom};
   window._pendingBranchContext=_branchContext;
   /* Navigate to a new session. resetApp clears state, then we
      re-hydrate from the branch context. */
@@ -4260,6 +4280,8 @@ function branchFromMessage(messageId){
       state.messages=ctx.messages;
       state.session.topic=ctx.topic;
       state.session.sessionTitle=ctx.title;
+      /* P1.1 — restore branchedFrom metadata on the new session. */
+      state.session.branchedFrom = ctx.branchedFrom || null;
       /* React owns #msgList. Push a state-synced event so the React
          message list picks up the branched messages from the snapshot.
          The legacy DOM rebuild (innerHTML + per-msg divs + toolbars)
@@ -4272,8 +4294,26 @@ function branchFromMessage(messageId){
       if(ts)ts.classList.add("hidden");
       var cv=document.getElementById("chatView");
       if(cv)cv.classList.remove("hidden");
+      /* P1.1 — when reExplain is set, append a follow-up message that
+         prompts the model to re-explain the last assistant message from
+         a different angle. We push a short user message into the
+         branched conversation so the model sees it on the next turn. */
+      if(reExplain){
+        var reExplainMsg = "Please re-explain that from a different angle. Use a different approach, analogy, or teaching method to help me understand better.";
+        state.messages.push({
+          clientId: "re-explain-" + Date.now(),
+          role: "user",
+          rawText: reExplainMsg,
+          type: "text",
+        });
+        publishReactChatRuntime({type:"state-synced",reason:"re-explain-prompt"});
+        /* Fire the re-explain question immediately. */
+        if(typeof window.askChatTurn === "function"){
+          setTimeout(function(){ window.askChatTurn(reExplainMsg); }, 100);
+        }
+      }
       saveCurrentSession();
-      showToast("Branched from previous conversation");
+      showToast(reExplain ? "Re-explaining from a different angle" : "Branched from previous conversation");
     }
   });
 }
