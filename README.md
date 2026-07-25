@@ -104,10 +104,16 @@ same repo.
 
 </div>
 
-The SPA is a Vite-bundled vanilla JS application with the Socratic
+The SPA is a Vite-bundled **React/TypeScript** application with the Socratic
 dialogue happening in the center, viz iframes inline as the model
 emits them, a knowledge map sidebar on the left, and a status /
-stats footer at the bottom. Production is reachable at
+stats footer at the bottom. All user-facing surfaces are React-driven;
+the legacy JS modules (`main.js` etc.) act as a state/event backbone
+that React reads from through typed bridge objects
+(`window.__socrates*Bridge`). A small `window.*` compatibility shim
+(`windowExports.js`) and a global event delegation layer
+(`src/ui/delegate.js`) support the remaining inline-handler pattern.
+Production is reachable at
 <https://app.topodrive.top/>; the project-local [`deploy.sh`](deploy.sh)
 builds and copies the bundle into the nginx web root.
 
@@ -204,7 +210,7 @@ is a thin native wrapper around the same API.
 ```mermaid
 flowchart LR
   subgraph Client["Client"]
-    SPA["Web SPA<br/>(Vite + vanilla JS)"]
+    SPA["Web SPA<br/>(React/TS + legacy JS)"]
     APK["Android<br/>(Kotlin + Compose)"]
   end
 
@@ -277,7 +283,7 @@ sequenceDiagram
 
 | Layer | Technology | Notes |
 | --- | --- | --- |
-| Web SPA | Vanilla JS + opt-in React compatibility slice, Vite build | [`frontend/`](frontend/) — incremental React/TypeScript migration |
+| Web SPA | React/TypeScript + legacy JS compatibility layer, Vite build | [`frontend/`](frontend/) — ~99% migrated, all surfaces React-driven |
 | Markdown | `marked` 4.3 + custom progressive renderer | see [Custom rendering pipeline](#-custom-rendering-pipeline) |
 | Math | `katex` 0.16.9 (CDN, SRI-pinned) | display + inline modes |
 | Code highlight | `highlight.js` (loaded lazily at finish time) | |
@@ -303,15 +309,39 @@ sequenceDiagram
 
 ```
 Socrates/
-├── frontend/               # Vite SPA (vanilla JS, modular)
+├── frontend/               # Vite SPA (React/TS + legacy JS)
 │   ├── index.html
 │   ├── src/
-│   │   ├── main.js         # App logic (~9.8k lines)
-│   │   ├── styles.css      # All CSS (~3600 lines)
+│   │   ├── main.js         # State/event backbone (~8k lines)
+│   │   ├── styles.css      # All CSS (~3800 lines)
 │   │   ├── state.js        # Reactive state object
-│   │   ├── attachments.js  # File attachment handling
+│   │   ├── i18n.js         # I18N dictionary
+│   │   ├── windowExports.js# Legacy window.* compat shim
+│   │   ├── types/          # TypeScript type definitions
+│   │   ├── react/          # React/TS UI layers (23 modules)
+│   │   │   ├── bootstrap.tsx
+│   │   │   ├── chatRuntimeStore.ts
+│   │   │   ├── useChatRuntime.ts
+│   │   │   ├── message-list/
+│   │   │   ├── session-list/
+│   │   │   ├── sidebar/
+│   │   │   ├── composer/
+│   │   │   ├── cmdk/
+│   │   │   ├── settings/
+│   │   │   ├── legacy/     # Typed bridge (gateway.ts)
+│   │   │   └── ...
+│   │   ├── ui/             # Legacy UI modules
+│   │   │   ├── delegate.js # Global event delegation
+│   │   │   └── ...
+│   │   ├── render/         # Markdown renderers
+│   │   ├── chat/           # Chat logic
+│   │   ├── session/
+│   │   ├── sidebar/
+│   │   ├── storage/
+│   │   ├── auth/
 │   │   └── ...
 │   ├── dist/               # Built bundle (gitignored)
+│   ├── e2e/                # Playwright e2e tests
 │   └── package.json
 ├── site/                   # Marketing site (topodrive.top)
 │   ├── index.html
