@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot, hydrateRoot, type Root } from 'react-dom/client';
 
+import { ErrorBoundary } from './ErrorBoundary';
+
 import { hydrateAttachmentChipsRows } from './attachments';
 import { hydrateComposerToolsMenu } from './composer';
 import { hydrateCmdKOverlay } from './cmdk/CommandPalette';

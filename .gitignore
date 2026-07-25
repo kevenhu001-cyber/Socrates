@@ -50,3 +50,19 @@ server.log.bak.*
 
 # ── Deploy state (written by deploy.sh on successful deploys) ──
 .deploy-state.json
+
+# ── Temp / debug / scratch files ──
+check_tmp.mjs
+commit_message.json
+Claude-Opus-4.7.txt
+server/_test_*.mjs
+server/_repro_*.mjs
+server/test_browser.mjs
+server/_test_date.mjs
+graphify-out/
+
+# ── UI mockup screenshots (not needed in version control) ──
+*.png
+
+# ── Large planning docs (not needed in version control) ──
+UI-UX-UPGRADE-ACTION-PLAN.md

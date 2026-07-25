@@ -3062,6 +3062,23 @@ async function startSession(){
     renderDiagQuestion();
     updateKB();
   };
+/* P_inline-onclick-bridge — these nine handlers are referenced by
+   `onclick="X()"` attributes in dynamically generated HTML
+   (diagnostic flow buttons, tag editor done, slash row click, active
+   template chip). The C1 cleanup dropped the window bindings; the
+   functions still exist locally and work fine, but clicking the
+   buttons throws ReferenceError because inline attribute handlers
+   resolve identifiers in the global scope (window.X). */
+window.closeTagEditor = closeTagEditor;
+window.clearActiveTemplate = clearActiveTemplate;
+window.onSlashRowClick = onSlashRowClick;
+window.selectDiag = selectDiag;
+window.prevDiagQuestion = prevDiagQuestion;
+window.nextDiagQuestion = nextDiagQuestion;
+window.skipDiagQuestion = skipDiagQuestion;
+window.finishDiagnostic = finishDiagnostic;
+window.proceedToTeaching = proceedToTeaching;
+window.moveSessionToProject = moveSessionToProject;
 
   await attemptDiagGeneration(false);
 }
@@ -7966,6 +7983,10 @@ window.signOut = signOut;
 window.processPendingViz = processPendingViz;
 window.startSession = startSession;
 window.submitChatMessage = submitChatMessage;
+/* updateSlashSelected is referenced by inline onmouseenter handler
+   in the slash command palette HTML (main.js:3666) but was never
+   assigned to window — would throw ReferenceError on hover. */
+window.updateSlashSelected = updateSlashSelected;
 /* C4 — typed legacy gateway for React.  Assembles the structured
    window.__socratesLegacy object from the existing window.* bindings.
    React code reads this via getLegacyActions() from react/legacy/gateway.ts.

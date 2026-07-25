@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { getLegacyActions } from '../legacy/gateway';
+import { ErrorBoundary } from '../ErrorBoundary';
 import { installSessionListBridge, publishSessionList } from './sessionListStore';
 import { useSessionListSnapshot, formatRelativeTime } from './legacyAdapter';
 import type { SessionItem } from './types';
@@ -210,5 +211,9 @@ export function mountSessionList(): void {
   installSessionListBridge();
 
   const root = createRoot(container);
-  root.render(<SessionListInner />);
+  root.render(
+    <ErrorBoundary>
+      <SessionListInner />
+    </ErrorBoundary>,
+  );
 }

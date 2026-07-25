@@ -14,11 +14,13 @@ import { generateSessionToken } from '../lib/crypto.js';
    introducing a separate env var. */
 const OAUTH_STATE_KEY = process.env.SESSION_SECRET || 'dev-secret';
 function signOAuthState(payload: unknown) {
-  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const nonce = randomBytes(16).toString('hex');
+  const full = { ...(typeof payload === 'object' && payload !== null ? payload as Record<string, unknown> : {}), nonce };
+  const encoded = Buffer.from(JSON.stringify(full)).toString('base64url');
   const sig = createHmac('sha256', OAUTH_STATE_KEY).update(encoded).digest('base64url');
   return `${encoded}.${sig}`;
 }
-function verifyOAuthState(state: unknown): { returnTo?: string } | null {
+function verifyOAuthState(state: unknown): { returnTo?: string; nonce?: string } | null {
   if (typeof state !== 'string') return null;
   const dot = state.lastIndexOf('.');
   if (dot < 0) return null;
