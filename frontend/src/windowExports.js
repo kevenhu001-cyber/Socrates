@@ -485,3 +485,20 @@ window.syncEffortUI = syncEffortUI;
    (P_chatgpt-landing). No backend; uses window.speechSynthesis. ─── */
 import { toggleReadAloud } from './ui/readAloud.js';
 window.toggleReadAloud = toggleReadAloud;
+
+/* ─── chat/promptTemplates.js — Skills & shortcuts data layer.
+   The Phase C1 bridge cleanup (commit 4ae9b5c) dropped these five
+   bindings, but ui/promptTemplates.js still calls them as window.X;
+   restoring them fixes a regression where openPromptTemplatesModal()
+   throws "window.loadPromptTemplates is not a function" and the modal
+   body (with its title/shortcut/description/body/systemPrompt inputs)
+   never renders. ─── */
+import {
+  loadPromptTemplates, savePromptTemplates, findTemplateByShortcut,
+  upsertCustomTemplate, deleteCustomTemplate,
+} from './chat/promptTemplates.js';
+window.loadPromptTemplates = loadPromptTemplates;
+window.savePromptTemplates = savePromptTemplates;
+window.findTemplateByShortcut = findTemplateByShortcut;
+window.upsertCustomTemplate = upsertCustomTemplate;
+window.deleteCustomTemplate = deleteCustomTemplate;
