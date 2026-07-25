@@ -300,6 +300,13 @@ app.use(cors({
   credentials: true,
 }));
 
+app.post('/api/client-error', express.json({ limit: '10kb' }), (req, res) => {
+  const { correl, msg, stack, href, ua } = req.body || {};
+  console.error('[client-error]', correl, msg, href, ua);
+  if (stack) console.error('[client-error-stack]', stack);
+  res.status(204).end();
+});
+
 // CSRF double-submit protection (on all non-GET routes except CSRF endpoint)
 app.use(csrfProtection);
 

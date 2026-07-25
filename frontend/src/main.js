@@ -191,6 +191,24 @@ function publishReactChatRuntime(event){
     } catch (_) { /* banner creation failed — swallow */ }
   }
 
+  function reportError(correl, label, payload) {
+    try {
+      var data = JSON.stringify({
+        correl: correl,
+        label: label,
+        msg: payload && payload.message ? payload.message : (typeof payload === 'string' ? payload : String(payload)),
+        stack: payload && payload.stack ? payload.stack : '',
+        href: typeof window !== 'undefined' && window.location ? window.location.href : '',
+        ua: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      });
+      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        navigator.sendBeacon('/api/client-error', new Blob([data], { type: 'application/json' }));
+      } else if (typeof fetch !== 'undefined') {
+        fetch('/api/client-error', { method: 'POST', body: data, keepalive: true }).catch(function(){});
+      }
+    } catch (_) { /* swallow */ }
+  }
+
   function handle(label, payload) {
     if (inHandler) return;
     inHandler = true;
@@ -200,6 +218,7 @@ function publishReactChatRuntime(event){
       // see the stack; banner shows only the correlation token.
       // eslint-disable-next-line no-console
       console.error('[global-error]', label, correl, payload);
+      reportError(correl, label, payload);
       if (typeof document !== 'undefined' && document.body) {
         const hint = label === 'unhandledrejection'
           ? 'Something went off-script. Try refreshing — if it repeats, share the code below.'
