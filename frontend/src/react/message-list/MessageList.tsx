@@ -2,6 +2,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { useMemo } from 'react';
 
 import { useChatRuntimeSnapshot } from '../useChatRuntime';
+import { ErrorBoundary } from '../ErrorBoundary';
 import { MessageItem } from './MessageItem';
 import type { LegacyChatMessage } from '../types/domain';
 
@@ -81,7 +82,7 @@ export function mountMessageList(): { root: Root | null } {
 
   const root = createRoot(container);
   const omit = buildOmitSet();
-  root.render(<MessageList omitEntryIds={omit} />);
+  root.render(<ErrorBoundary><MessageList omitEntryIds={omit} /></ErrorBoundary>);
 
   window.__socratesReleaseMsgListReact = () => {
     try { root.unmount(); } catch (_) { /* already unmounted */ }

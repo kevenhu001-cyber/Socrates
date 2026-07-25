@@ -1,3 +1,4 @@
+// @ts-check
 // src/windowExports.js — Phase B central bridge
 // Single source of truth for inline-handler-visible window.X bindings.
 // All `onclick="X()"` / `onkeydown="X()"` in index.html and in
@@ -114,9 +115,10 @@ window.resendAuthCode = resendAuthCode;
 window.afterAuthEnter = afterAuthEnter;
 
 /* ─── sidebar/index.js ─── */
-import { toggleSidebar, setRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
+import { toggleSidebar, setRecentsFilter, getRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
 window.toggleSidebar = toggleSidebar;
 window.setRecentsFilter = setRecentsFilter;
+window.getRecentsFilter = getRecentsFilter;
 window.onRecentsFilterChipClick = onRecentsFilterChipClick;
 
 /* ─── pickers.js ─── */
@@ -287,6 +289,13 @@ import { attachments, removeAttachment } from './attachments.js';
 window.attachments = attachments;
 window.removeAttachment = removeAttachment;
 
+/* ─── attachments/render.js — renderAttachmentChips is consumed by
+   React's legacyAdapter and by main.js for the attachment chip strip.
+   It was exported but never bridged to window, causing
+   window.__socratesLegacy.composer.renderAttachmentChips to be undefined. */
+import { renderAttachmentChips } from './attachments/render.js';
+window.renderAttachmentChips = renderAttachmentChips;
+
 /* ─── i18n.js (setLang) ─── */
 // i18n.js does not have ESM named exports — setLang is bound on
 // `window.setLang` directly inside i18n.js (line 931) after the
@@ -319,9 +328,12 @@ window.sleepBackoff = sleepBackoff;
 window.makeAIWatchdog = makeAIWatchdog;
 
 /* ─── ui/usage.js ─── */
-import { openUsageModal, closeUsageModal } from './ui/usage.js';
+import { openUsageModal, closeUsageModal, loadUsageData, loadUsageMonth } from './ui/usage.js';
 window.openUsageModal = openUsageModal;
 window.closeUsageModal = closeUsageModal;
+/* Period tab inline onclick handlers (usage.js:138-139). */
+window.loadUsageData = loadUsageData;
+window.loadUsageMonth = loadUsageMonth;
 
 /* ─── render/helpers.js (esc alias) ─── */
 import { esc } from './render/helpers.js';
