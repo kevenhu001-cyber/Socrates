@@ -343,10 +343,8 @@ function dispatchEvent(event, eventType) {
   if (!resolveGuard(guard, w)) return;
   var keysSpec = target.getAttribute('data-action-keys');
   if (!matchesKeys(event, keysSpec)) return;
-  // Per-event-type action string lets a single element declare different
-  // actions for input vs focus, click vs keydown, etc. Falls back to
-  // data-action for any event without a specific override.
-  var actionStr = target.getAttribute('data-action-' + eventType)
+  var perEventAction = target.getAttribute('data-action-' + eventType);
+  var actionStr = (perEventAction && perEventAction !== 'true' ? perEventAction : null)
     || target.dataset.action;
   if (actionStr) runActionChain(target, event, actionStr, eventType);
 }
