@@ -169,6 +169,11 @@ function syncAppModeUI() {
    toggle by reading back the stale module variable. */
 function setAppMode(v) {
   appMode = v;
+  /* P_appMode-sync — keep window.appMode in lock-step so toggleAppMode
+     and all legacy code that reads window.appMode see the correct value.
+     Previously every call site had to manually sync both, and several
+     bugs leaked from forgetting one side of the mirror. */
+  window.appMode = v;
 }
 
 function syncSidebarForMode() {

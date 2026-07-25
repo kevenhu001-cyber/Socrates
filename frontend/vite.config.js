@@ -57,7 +57,14 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
     proxy: {
-      '/api': 'http://127.0.0.1:3037',
+      // AUDIT-R2 — the API server defaults to PORT=8080
+      // (server/src/index.runtime.ts) while this proxy historically
+      // pointed at 3037 (the production nginx upstream port), so local
+      // dev silently 502'd unless you knew to set PORT=3037. Make the
+      // target configurable: `API_PORT=8080 npm run dev` matches a
+      // default server start; the 3037 fallback keeps existing local
+      // setups working. See frontend/README.md "Local development".
+      '/api': `http://127.0.0.1:${process.env.API_PORT || 3037}`,
     },
   },
   // No build-time HTML transform is needed anymore. The previous

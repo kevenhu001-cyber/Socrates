@@ -254,7 +254,11 @@ export async function retryApiFetch(path, opts, retryOpts) {
       if (userSignal && userSignal.aborted) throw e;
       attempt++;
       e.retried = attempt;
-      const wait = backoffMs * attempt + Math.floor(Math.random() * 80);
+      /* P_retry-jitter — the previous jitter of ±40ms was too small
+         to spread concurrent retries from parallel requests (Bug 13).
+         With jitter proportional to backoffMs, N requests that fail
+         simultaneously spread their retries over a wider window. */
+      const wait = backoffMs * attempt + Math.floor(Math.random() * backoffMs);
       await new Promise((res) => setTimeout(res, wait));
     }
   }

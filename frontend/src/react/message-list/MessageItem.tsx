@@ -34,8 +34,8 @@ function MessageItem({ message }: MessageItemProps) {
     if (!root) return;
     const pr = getLegacyActions().postRender;
     try { pr.processPendingMermaid?.(); } catch (_) { /* hook unavailable */ }
-    try { pr.processPendingViz?.(); } catch (_) { }
-    try { pr.processPendingVizActions?.(); } catch (_) { }
+    try { pr.processPendingViz?.(root); } catch (_) { }
+    try { pr.processPendingVizActions?.(root); } catch (_) { }
     try { pr.wireCodeBlockHeaders?.(root); } catch (_) { }
     try { pr.wireMsgBodyImages?.(root); } catch (_) { }
   }, [html, clientId]);

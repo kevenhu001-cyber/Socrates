@@ -133,6 +133,25 @@ npm run build          # Vite production build
 npx playwright test    # Full e2e suite (Playwright)
 ```
 
+## Local development
+
+The Vite dev server proxies `/api` to a local API server. The two
+defaults do **not** match out of the box:
+
+- `server/src/index.runtime.ts` starts on `PORT=8080` by default
+- the Vite proxy targets `127.0.0.1:3037` by default (the production
+  nginx upstream port)
+
+Pick one of:
+
+```sh
+# Option A — point the proxy at the server's default port
+API_PORT=8080 npm run dev          # in frontend/
+
+# Option B — start the server on the proxy's default port
+PORT=3037 npm start                # in server/
+```
+
 ## Key dependencies
 
 | Package | Purpose |

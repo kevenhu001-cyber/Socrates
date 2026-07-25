@@ -54,6 +54,13 @@
 
   function currentLang() {
     try {
+      /* AUDIT-fix — the real language source of truth is
+         window._currentLang (set by i18n.js setLang). getAppLang /
+         APP_LANG were never assigned anywhere, and index.html hard-
+         codes lang="en", so Chinese users always got English stage
+         labels. Check _currentLang first, keep the old chain as
+         fallbacks. */
+      if (window._currentLang === 'zh' || window._currentLang === 'en') return window._currentLang;
       return (typeof window.getAppLang === 'function') ? window.getAppLang()
            : (window.APP_LANG || (document.documentElement.lang === 'zh' ? 'zh' : 'en'));
     } catch (_) { return 'en'; }

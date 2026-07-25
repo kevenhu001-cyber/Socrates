@@ -99,6 +99,20 @@ export const sessions = pgTable('sessions', {
    * to resume/retry. finish() clears them back to null. */
   streamingText: text('streaming_text'),
   streamingReasoning: text('streaming_reasoning'),
+  /* AUDIT-R1 — tutor teaching-state machine (Task 2.4). The client has
+   * always sent these in the session payload and read them back in
+   * loadSession, but they were never persisted (the Zod passthrough
+   * silently dropped them), so teaching progress reset on every
+   * reload. All nullable — the client defaults legacy rows to
+   * motivate / 0 / 'foundation' / null. */
+  teachingStage: text('teaching_stage'),          // motivate|define|develop|illustrate|exercise|check
+  currentExampleIdx: integer('current_example_idx'),
+  practiceAttempts: integer('practice_attempts'),
+  practicePhase: text('practice_phase'),          // foundation|...
+  teachingPlan: jsonb('teaching_plan'),
+  boundariesHistory: jsonb('boundaries_history'),
+  mistakeFilter: text('mistake_filter'),
+  branchedFrom: jsonb('branched_from'),           // {sessionId, title, ...}
 }, (table) => [
   index('sessions_user_id_idx').on(table.userId),
   index('sessions_archived_at_idx').on(table.archivedAt),

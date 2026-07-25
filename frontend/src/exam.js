@@ -856,7 +856,13 @@ function doSaveExamSession(opts) {
     topic: window.state.examTopic,
     title: window.state.examTopic,
     domain: window.state.examTopic,
-    mode: "chat",
+    /* P_exam-mode — previously hardcoded to "chat" regardless of
+       the active user mode. A tutor-mode session that branched into
+       an exam would save as "chat", and on reload loadSession would
+       see mode="chat" and set chat-style UI. Use window.appMode
+       (which setAppMode() keeps in sync) so the session preserves
+       its originating mode. */
+    mode: window.appMode || "chat",
     phase: "chat",
     examData: {
       topic: window.state.examTopic,
