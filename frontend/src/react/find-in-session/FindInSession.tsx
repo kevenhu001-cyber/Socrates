@@ -1,0 +1,199 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ChangeEvent, KeyboardEvent } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+
+import { installFindInSessionBridge, subscribeToFindInSession, getFindInSessionSnapshot } from './findRuntimeStore';
+import { runHighlightQuery, navigateNext, navigatePrev, closeHighlights } from './findHighlight';
+import type { FindInSessionSnapshot } from './types';
+
+const FIND_BAR_ID = 'findBar';
+const FIND_INPUT_ID = 'findInput';
+
+function FindInSession() {
+  const [snapshot, setSnapshot] = useState<FindInSessionSnapshot>(getFindInSessionSnapshot);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeToFindInSession(() => {
+      setSnapshot(getFindInSessionSnapshot());
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (snapshot.isOpen) {
+      const id = window.setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 0);
+      return () => window.clearTimeout(id);
+    }
+    return undefined;
+  }, [snapshot.isOpen]);
+
+  const handleInput = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const q = e.target.value.trim();
+    const result = runHighlightQuery(q);
+    publishFind({ isOpen: true, query: q, ...result });
+  }, []);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeFind();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const result = e.shiftKey ? navigatePrev() : navigateNext();
+      publishFind({ isOpen: true, query: snapshot.query, ...result });
+    }
+  }, [snapshot.query]);
+
+  const handlePrev = useCallback(() => {
+    const result = navigatePrev();
+    publishFind({ isOpen: true, query: snapshot.query, ...result });
+  }, [snapshot.query]);
+
+  const handleNext = useCallback(() => {
+    const result = navigateNext();
+    publishFind({ isOpen: true, query: snapshot.query, ...result });
+  }, [snapshot.query]);
+
+  const handleClose = useCallback(() => {
+    closeFind();
+  }, []);
+
+  const countLabel = snapshot.query
+    ? `${snapshot.matchCount > 0 ? snapshot.activeIndex + 1 : 0}/${snapshot.matchCount}`
+    : '';
+
+  return (
+    <div
+      className={'find-bar' + (snapshot.isOpen ? '' : ' hidden')}
+      id={FIND_BAR_ID}
+      role="search"
+      data-react-migration-runtime="find-in-session"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="find-bar-icon" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m21 21-4.3-4.3" />
+      </svg>
+      <input
+        ref={inputRef}
+        type="text"
+        id={FIND_INPUT_ID}
+        name="findInput"
+        data-i18n-placeholder="find.placeholder"
+        data-i18n-aria="find.placeholder"
+        aria-label="Find in conversation"
+        placeholder="Find in conversation…"
+        autoComplete="off"
+        spellCheck={false}
+        value={snapshot.query}
+        onChange={handleInput}
+        onKeyDown={handleKeyDown}
+      />
+      <span className="find-count" id="findCount" aria-live="polite">
+        {countLabel}
+      </span>
+      <button className="find-nav-btn" type="button" onClick={handlePrev} title="Previous match" aria-label="Previous match">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M18 15l-6-6-6 6" />
+        </svg>
+      </button>
+      <button className="find-nav-btn" type="button" onClick={handleNext} title="Next match" aria-label="Next match">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      <button className="find-close-btn" type="button" onClick={handleClose} title="Close find" aria-label="Close find">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+// --- bridge / window-level helpers (used by legacy code) ---
+
+function publishFind(state: { isOpen: boolean; query: string; matchCount: number; activeIndex: number }): void {
+  const bridge = installFindInSessionBridge();
+  bridge.publish(state);
+}
+
+export function openFindInSession(): void {
+  publishFind({ isOpen: true, query: '', matchCount: 0, activeIndex: -1 });
+}
+
+export function closeFindInSession(): void {
+  closeHighlights();
+  publishFind({ isOpen: false, query: '', matchCount: 0, activeIndex: -1 });
+}
+
+export function isFindOpen(): boolean {
+  return getFindInSessionSnapshot().isOpen;
+}
+
+export function onFindInput(value: string): void {
+  const q = (value || '').trim();
+  const result = runHighlightQuery(q);
+  publishFind({ isOpen: true, query: q, ...result });
+}
+
+export function onFindKey(ev: KeyboardEvent): void {
+  if (ev.key === 'Escape') {
+    ev.preventDefault();
+    closeFindInSession();
+  } else if (ev.key === 'Enter') {
+    ev.preventDefault();
+    const result = ev.shiftKey ? navigatePrev() : navigateNext();
+    publishFind({ isOpen: true, query: getFindInSessionSnapshot().query, ...result });
+  }
+}
+
+export function findNext(): void {
+  const result = navigateNext();
+  publishFind({ isOpen: true, query: getFindInSessionSnapshot().query, ...result });
+}
+
+export function findPrev(): void {
+  const result = navigatePrev();
+  publishFind({ isOpen: true, query: getFindInSessionSnapshot().query, ...result });
+}
+
+function closeFind(): void {
+  closeFindInSession();
+}
+
+export interface FindInSessionReactRootHandle {
+  root: Root;
+  destroy: () => void;
+}
+
+/**
+ * Mounts the React find-in-session bar into the existing `#findBar` element.
+ * Idempotent — a second call returns the existing handle.
+ */
+export function hydrateFindInSession(): FindInSessionReactRootHandle | null {
+  const bar = document.getElementById(FIND_BAR_ID);
+  if (!bar) return null;
+  if (bar.dataset.findInSessionReactHydrated === '1') {
+    throw new Error('FindInSession React runtime was initialized more than once.');
+  }
+  bar.dataset.findInSessionReactHydrated = '1';
+  bar.setAttribute('data-react-migration-runtime', 'find-in-session');
+
+  installFindInSessionBridge();
+
+  const root = createRoot(bar);
+  root.render(<FindInSession />);
+
+  return {
+    root,
+    destroy: () => {
+      root.unmount();
+      delete bar.dataset.findInSessionReactHydrated;
+      bar.removeAttribute('data-react-migration-runtime');
+    },
+  };
+}
