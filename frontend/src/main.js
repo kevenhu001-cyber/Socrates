@@ -277,30 +277,14 @@ wireScrollPill();
 
 /* Colors.js utilities consumed by displayPrefs.js */
 import { parseHexColor, applyCustomBg, removeCustomBg } from './util/colors.js';
-window.parseHexColor=parseHexColor;window.applyCustomBg=applyCustomBg;window.removeCustomBg=removeCustomBg;
 
-/* Expose display-pref functions to window for onclick handlers */
-window.setDisplayFont=setDisplayFont;window.setDisplayWidth=setDisplayWidth;
-window.setBackgroundColor=setBackgroundColor;window.setBackgroundDark=setBackgroundDark;window.setBackgroundLight=setBackgroundLight;
-window.resetBackgroundColor=resetBackgroundColor;window.resetBackgroundDark=resetBackgroundDark;window.resetBackgroundLight=resetBackgroundLight;
-window.toggleGrid=toggleGrid;window.setAccentColor=setAccentColor;window.setAccentCustom=setAccentCustom;window.resetAccentColor=resetAccentColor;
-window.toggleDisplayPrefs=toggleDisplayPrefs;window.toggleTheme=toggleTheme;
-
-/* Expose main.js functions to window for inline onclick handlers.
-   These are still in main.js (not yet extracted to modules), but
-   in ESM they're module-scoped, so inline onclick="X()" can't find
-   them without an explicit window bridge. */
-function bridgeMainJsFunctions(){
-  window.switchTab=switchTab;
-  window.setRecentsSearch=setRecentsSearch;
-  window.toggleSidebarView=toggleSidebarView;
-  window.resetApp=resetApp;
-  window.submitChatMessage=submitChatMessage;
-  window.startSession=startSession;
-  window.signOut=signOut;
-  window.showToast=showToast;
-}
-bridgeMainJsFunctions();
+/* Expose display-pref functions to window for onclick handlers — the
+   functions themselves are imported from displayPrefs.js; the window
+   bindings for toggleGrid / setAccentColor / toggleDisplayPrefs /
+   toggleTheme are handled by windowExports.js. The remaining display
+   helpers (setDisplayFont, setBackgroundColor, etc.) are only used
+   locally via direct function references and do not need window
+   exposure. */
 
 function syncSidebarBtns(){
   var ob=document.getElementById("sidebarOpenBtn");
@@ -6982,9 +6966,10 @@ window.setCurrentUser = setCurrentUser;
 
 /* P0.4 — apiFetch / apiFetchRaw / retryApiFetch / makeApiError are
    imported from ./util/api.js. The handleAuthExpired hook is
-   installed once at boot via installAuthHooks() — see below. */
+   installed once at boot via installAuthHooks() — see below.
+   apiFetch / getCsrfToken are bridged via windowExports.js;
+   apiFetchRaw / retryApiFetch are only used locally. */
 import { apiFetch, apiFetchRaw, retryApiFetch, makeApiError, installAuthHooks, getCsrfToken } from './util/api.js';
-window.apiFetch=apiFetch;window.apiFetchRaw=apiFetchRaw;window.retryApiFetch=retryApiFetch;window.getCsrfToken=getCsrfToken;
 
 /* Post-auth grace window. Right after a successful register or
  * login the browser hasn't always written the new `sid` cookie to
@@ -7127,12 +7112,9 @@ import { showConfirm, closeConfirm } from './ui/confirm.js';
 import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from './ui/dangerConfirms.js';
 
 /* escapeHtml / sanitizeUrl / sanitizeUrls are imported from
- * ./util/safe.js. The window aliases are kept so any on-page
- * debug console (or older hot-reload tab) that still references
- * window.sanitizeUrl / window.escapeHtml keeps working. */
+ * ./util/safe.js and used locally. The window bridge for these
+ * is not needed — no external module reads them via window.X. */
 import { escapeHtml, sanitizeUrl, sanitizeUrls } from './util/safe.js';
-window.escapeHtml=escapeHtml;window.sanitizeUrl=sanitizeUrl;window.sanitizeUrls=sanitizeUrls;
-window.__vizOpenModal=openVizModal;
 
 /* P_bleed-v2 — comprehensive per-user client-state cleanup.
    Wipes every module-level cache and localStorage entry that holds
@@ -7752,14 +7734,7 @@ async function generateFollowUpStream(answer,node,domain,onDelta,onThinking){
    `frontend/src/windowExports.js` (cmdK, share, profile, usage, settings,
    storage, etc.) live there and are imported by main.js as a side effect.
    This block keeps only what main.js owns locally. */
-window.resetApp = resetApp;
-window.signOut = signOut;
-window.startSession = startSession;
-window.submitChatMessage = submitChatMessage;
-window.askChatTurn = askChatTurn;
-window.switchTab = switchTab;
-window.syncSidebarBtns = syncSidebarBtns;
-window.toggleAppLang = toggleAppLang;
+
 /* P_apiconfig-bridge — apiConfig / appMode / webSearchOn / thinkingOn
    are declared with `var` further up in main.js (line 10401 etc.)
    but legacy callers + several module scripts (chat/api.js line 83,
@@ -7792,8 +7767,6 @@ window.toggleAppLang = toggleAppLang;
    ReferenceError. main.js-local `var`s/functions, so we re-bind
    at the tail of the bridge block above rather than
    windowExports.js. */
-window.skipDiagQuestion = skipDiagQuestion;
-window.clearActiveTemplate = clearActiveTemplate;
 /* Exposed so windowExports.js composeAction (撰写或编辑) can activate a
    Writing/Editing template on demand, injecting its system prompt. */
 window.setActiveTemplate = setActiveTemplate;
@@ -7828,39 +7801,18 @@ window.setActiveTemplate = setActiveTemplate;
 // window.exitAgentMode = exitAgentMode;   // unimplemented
 // window.openAgentView  = openAgentView;  // unimplemented
 // window.deleteAgentRun = deleteAgentRun; // unimplemented
-window.resetApp = resetApp;
-window.signOut = signOut;
-window.startSession = startSession;
-window.submitChatMessage = submitChatMessage;
-window.switchTab = switchTab;
+window.askChatTurn = askChatTurn;
 window.syncSidebarBtns = syncSidebarBtns;
-window.toggleAppLang = toggleAppLang;
-window.closeTagEditor = closeTagEditor;
 window.actuallyDeleteSession = actuallyDeleteSession;
 window.confirmPurgeSession = confirmPurgeSession;
 /* Agent mode placeholder (paired with the comment above on lines
    13112-13114). */
 // window.deleteAgentRun = deleteAgentRun; // unimplemented
-window.finishDiagnostic = finishDiagnostic;
-window.proceedToTeaching = proceedToTeaching;
 window.loadSession = loadSession;
-window.nextDiagQuestion = nextDiagQuestion;
-window.onSlashRowClick = onSlashRowClick;
-window.updateSlashSelected = updateSlashSelected;
-window.updateCmdKSelected = updateCmdKSelected;
 window.openCmdKResult = openCmdKResult;
 window.openTagEditor = openTagEditor;
-window.prevDiagQuestion = prevDiagQuestion;
 window.restoreSession = restoreSession;
-window.selectDiag = selectDiag;
 window.toggleKBDetail = toggleKBDetail;
-/* P_input-fields-not-persisted — renderProviderList builds the
- /* P_input-fields-not-persisted — (legacy) settings provider-row inputs
- * previously used inline oninput="updateProviderField(...)". That was
- * replaced by event delegation in settings.js. The window bridge is
- * kept for any external callers still referencing it. */
-window.handleChatKey = handleChatKey;
-window.markAuthSuccess = markAuthSuccess;
 window.refreshServerSessions = refreshServerSessions;
 window.refreshApiConfig = refreshApiConfig;
 window.renderRecents = renderRecents;
@@ -7868,11 +7820,8 @@ window.renderMistakes = renderMistakes;
 window.updateMistakesBadge = updateMistakesBadge;
 window.getChatIdFromURL = getChatIdFromURL;
 window.setChatIdInURL = setChatIdInURL;
-window.pushChatIdToURL = pushChatIdToURL;
 window.getExamIdFromURL = getExamIdFromURL;
 window.setExamIdInURL = setExamIdInURL;
-window.pushExamIdToURL = pushExamIdToURL;
-window.pushChatIdToURL = pushChatIdToURL;
 /* P_bulk-restore-2026-07-14 — Phase C module bridges.
    These are main.js-local functions referenced by extracted modules
    (chat/quickActions.js, chat/api.js, chat/format.js, pickers.js,
@@ -7885,13 +7834,8 @@ window.getExplanation = getExplanation;
 window.saveCurrentSession = saveCurrentSession;
 window.fetchWebContext = fetchWebContext;
 window.setSearchPill = setSearchPill;
-window.loadPromptTemplates = loadPromptTemplates;
 window.openAttachmentPicker = openAttachmentPicker;
-window.deleteCustomTemplate = deleteCustomTemplate;
-window.findTemplateByShortcut = findTemplateByShortcut;
-window.upsertCustomTemplate = upsertCustomTemplate;
 window.getArchivedSessions = getArchivedSessions;
-window.fetchGeoInfo = fetchGeoInfo;
 window.getCustomInstructionsString = getCustomInstructionsString;
 /* React message-list toolbar callbacks. The legacy code remains the
    source of truth for the action side-effects (PATCH/DELETE/regenerate);

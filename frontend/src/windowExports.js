@@ -25,73 +25,48 @@ import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
 window.SERVER_HAS_BEAGLE_KEY = SERVER_HAS_BEAGLE_KEY;
 
 /* ─── config/providers.js — MUST come first (apiConfig consumed by every other module) ─── */
-import { apiConfig, appMode, webSearchOn, setWebSearchOn, extensiveThinkingOn, BEAGLE_BUILT_IN, isReasoningProvider, isMiniMaxProvider, pickStreamBudgets, hasUsableActive, ensureSessionShape, syncAppModeUI, syncSidebarForMode, LAST_ACTIVE_ID_KEY, saveLastActiveId, loadLastActiveId, thinkingOn } from './config/providers.js';
+import { apiConfig, appMode, webSearchOn, extensiveThinkingOn, BEAGLE_BUILT_IN, isReasoningProvider, isMiniMaxProvider, pickStreamBudgets, syncAppModeUI, syncSidebarForMode, LAST_ACTIVE_ID_KEY, saveLastActiveId, thinkingOn } from './config/providers.js';
 window.apiConfig = apiConfig;
 window.appMode = appMode;
 window.webSearchOn = webSearchOn;
-window.setWebSearchOn = setWebSearchOn;
 window.extensiveThinkingOn = extensiveThinkingOn;
 window.BEAGLE_BUILT_IN = BEAGLE_BUILT_IN;
 window.isReasoningProvider = isReasoningProvider;
 window.isMiniMaxProvider = isMiniMaxProvider;
 window.pickStreamBudgets = pickStreamBudgets;
-window.hasUsableActive = hasUsableActive;
-window.ensureSessionShape = ensureSessionShape;
 window.syncAppModeUI = syncAppModeUI;
 window.syncSidebarForMode = syncSidebarForMode;
 window.LAST_ACTIVE_ID_KEY = LAST_ACTIVE_ID_KEY;
 window.saveLastActiveId = saveLastActiveId;
-window.loadLastActiveId = loadLastActiveId;
 window.thinkingOn = thinkingOn;
-
-/* ─── util/colors.js ─── */
-import { parseHexColor, applyCustomBg, removeCustomBg } from './util/colors.js';
-window.parseHexColor = parseHexColor;
-window.applyCustomBg = applyCustomBg;
-window.removeCustomBg = removeCustomBg;
 
 /* ─── displayPrefs.js ─── */
 import {
-  setDisplayFont, setDisplayWidth,
-  setBackgroundColor, setBackgroundDark, setBackgroundLight,
-  resetBackgroundColor, resetBackgroundDark, resetBackgroundLight,
   toggleGrid, setAccentColor, toggleDisplayPrefs, toggleTheme,
 } from './displayPrefs.js';
-window.setDisplayFont = setDisplayFont;
-window.setDisplayWidth = setDisplayWidth;
-window.setBackgroundColor = setBackgroundColor;
-window.setBackgroundDark = setBackgroundDark;
-window.setBackgroundLight = setBackgroundLight;
-window.resetBackgroundColor = resetBackgroundColor;
-window.resetBackgroundDark = resetBackgroundDark;
-window.resetBackgroundLight = resetBackgroundLight;
 window.toggleGrid = toggleGrid;
 window.setAccentColor = setAccentColor;
 window.toggleDisplayPrefs = toggleDisplayPrefs;
 window.toggleTheme = toggleTheme;
 
 /* ─── util/api.js ─── */
-import { apiFetch, apiFetchRaw, retryApiFetch, getCsrfToken } from './util/api.js';
+import { apiFetch, getCsrfToken } from './util/api.js';
 window.apiFetch = apiFetch;
-window.apiFetchRaw = apiFetchRaw;
-window.retryApiFetch = retryApiFetch;
 window.getCsrfToken = getCsrfToken;
 
-/* ─── util/safe.js ─── */
-import { escapeHtml, sanitizeUrl, sanitizeUrls } from './util/safe.js';
-window.escapeHtml = escapeHtml;
-window.sanitizeUrl = sanitizeUrl;
-window.sanitizeUrls = sanitizeUrls;
-
 /* ─── render/viz.js ─── */
-import { openVizModal, openVizModalRaw, processPendingViz, processPendingVizActions, getLiveVizCardIds } from './render/viz.js';
+import { openVizModal, openVizModalRaw, processPendingVizActions, getLiveVizCardIds } from './render/viz.js';
 import { mountVisualization, disposeVisualizations } from './render/visualization.js';
 window.__vizOpenModal = openVizModal;
 window.__vizOpenModalRaw = openVizModalRaw;
-window.processPendingViz = processPendingViz;
 window.mountVisualization = mountVisualization;
 window.disposeVisualizations = disposeVisualizations;
 window.processPendingVizActions = processPendingVizActions;
+/* E2E test surface: viz-canvas.spec.mjs asserts the iframe registry
+   releases the entry after `viz-ready` fires. Expose a snapshot
+   helper so the test can do `getLiveVizCardIds()` instead of
+   poking the live map directly. */
+window.getLiveVizCardIds = getLiveVizCardIds;
 /* E2E test surface: viz-canvas.spec.mjs asserts the iframe registry
    releases the entry after `viz-ready` fires. Expose a snapshot
    helper so the test can do `getLiveVizCardIds()` instead of
@@ -104,15 +79,13 @@ import { startSearchProgress } from './ui/searchProgress.js';
 window.__startSearchProgress = startSearchProgress;
 
 /* ─── render/markdown.js ─── */
-import { stripMarkdown, findLastUserMessage, formatMsg } from './render/markdown.js';
-window.stripMarkdown = stripMarkdown;
-window.findLastUserMessage = findLastUserMessage;
+import { formatMsg } from './render/markdown.js';
 window.formatMsg = formatMsg;
 
 /* ─── auth/index.js ─── */
 import {
-  hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister,
-  switchAuthTab, setAuthError,
+  hideGate, showGate, showAuthView, showAuthSignin,
+  switchAuthTab,
   showAuthForgotPassword, showAuthCodeLogin,
   submitAuthSignin, submitAuthRegister, submitAuthVerify,
   submitAuthForgotPassword, submitAuthResetPassword,
@@ -123,9 +96,7 @@ window.hideGate = hideGate;
 window.showGate = showGate;
 window.showAuthView = showAuthView;
 window.showAuthSignin = showAuthSignin;
-window.showAuthRegister = showAuthRegister;
 window.switchAuthTab = switchAuthTab;
-window.setAuthError = setAuthError;
 window.showAuthForgotPassword = showAuthForgotPassword;
 window.showAuthCodeLogin = showAuthCodeLogin;
 window.submitAuthSignin = submitAuthSignin;
@@ -140,40 +111,28 @@ window.resendAuthCode = resendAuthCode;
 window.afterAuthEnter = afterAuthEnter;
 
 /* ─── sidebar/index.js ─── */
-import { toggleSidebar, setRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
+import { toggleSidebar, setRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
 window.toggleSidebar = toggleSidebar;
 window.setRecentsFilter = setRecentsFilter;
-window.clearRecentsFilter = clearRecentsFilter;
 window.onRecentsFilterChipClick = onRecentsFilterChipClick;
 
 /* ─── pickers.js ─── */
 import {
   getActiveProvider, pickActiveProviderById,
-  toggleModelPicker, openModelPicker, closeModelPicker, syncModelPills,
-  syncChatModel, toggleChatModelMenu, closeChatModelMenu, pickChatModel,
-  renderExtensionsMenu, toggleExtensionByKey, countActiveExtensions, syncExtensionsUI,
-  toggleExtensionsPicker, openExtensionsPicker, closeExtensionsPicker,
-  toggleWebSearch, syncWebSearchUI, markProvidersFetched,
+  closeModelPicker, syncModelPills,
+  syncChatModel, closeChatModelMenu,
+  toggleExtensionByKey, syncExtensionsUI,
+  toggleWebSearch, markProvidersFetched,
 } from './pickers.js';
 window.getActiveProvider = getActiveProvider;
 window.pickActiveProviderById = pickActiveProviderById;
-window.toggleModelPicker = toggleModelPicker;
-window.openModelPicker = openModelPicker;
 window.closeModelPicker = closeModelPicker;
 window.syncModelPills = syncModelPills;
 window.syncChatModel = syncChatModel;
-window.toggleChatModelMenu = toggleChatModelMenu;
 window.closeChatModelMenu = closeChatModelMenu;
-window.pickChatModel = pickChatModel;
-window.renderExtensionsMenu = renderExtensionsMenu;
 window.toggleExtensionByKey = toggleExtensionByKey;
-window.countActiveExtensions = countActiveExtensions;
 window.syncExtensionsUI = syncExtensionsUI;
-window.toggleExtensionsPicker = toggleExtensionsPicker;
-window.openExtensionsPicker = openExtensionsPicker;
-window.closeExtensionsPicker = closeExtensionsPicker;
 window.toggleWebSearch = toggleWebSearch;
-window.syncWebSearchUI = syncWebSearchUI;
 window.markProvidersFetched = markProvidersFetched;
 
 // Note: setActiveProvider / renderProviderList / isReasoningProvider are
@@ -191,15 +150,14 @@ window.closeCheatsheet = closeCheatsheet;
 window.openCheatsheet = openCheatsheet;
 
 /* ─── sidebar/nav.js (PR-A of the sidebar overhaul) ─── */
-import { openNav, setActiveNav, closeAllPanels, syncWorkspaceRoute } from './sidebar/nav.js';
+import { openNav, setActiveNav, syncWorkspaceRoute } from './sidebar/nav.js';
 /* `openNav` is the dispatcher wired to the .sidebar-nav-btn onclick
    in index.html. `setActiveNav` is exposed for the morePopover
    module to clear the More button's active state on close (avoids
-   a nav.js ↔ morePopover.js import cycle). `closeAllPanels` is
+   a nav.js ↔ morePopover.js import cycle). `syncWorkspaceRoute` is
    public for tests and any future cross-panel navigators. */
 window.openNav = openNav;
 window.setActiveNav = setActiveNav;
-window.closeAllPanels = closeAllPanels;
 window.syncWorkspaceRoute = syncWorkspaceRoute;
 /* PR-B/C/D/E — panel inline handlers. nav.js defines these on
    window.* directly, but we re-affirm the bridge here so the
@@ -207,14 +165,8 @@ window.syncWorkspaceRoute = syncWorkspaceRoute;
 import './sidebar/nav.js';
 
 /* ─── sidebar/morePopover.js (PR-A) ─── */
-import { closeMorePopover, toggleMorePopover } from './sidebar/morePopover.js';
-/* `closeMorePopover` is called inline by each More-menu item's
-   onclick so the popover dismisses before the underlying action
-   (openSettings / signOut / etc.) runs. `toggleMorePopover` is
-   also exposed for completeness (tests may want to open/close
-   the popover programmatically). */
+import { closeMorePopover } from './sidebar/morePopover.js';
 window.closeMorePopover = closeMorePopover;
-window.toggleMorePopover = toggleMorePopover;
 
 /* ─── ui/confirm.js ─── */
 import { closeConfirm, showConfirm } from './ui/confirm.js';
@@ -222,12 +174,11 @@ window.closeConfirm = closeConfirm;
 window.showConfirm = showConfirm;
 
 /* ─── ui/cmdK.js ─── */
-import { closeCmdK, onCmdKInput, onCmdKKey, openCmdK, rebuildCmdKIndex } from './ui/cmdK.js';
+import { closeCmdK, onCmdKInput, onCmdKKey, openCmdK } from './ui/cmdK.js';
 window.closeCmdK = closeCmdK;
 window.onCmdKInput = onCmdKInput;
 window.onCmdKKey = onCmdKKey;
 window.openCmdK = openCmdK;
-window.rebuildCmdKIndex = rebuildCmdKIndex;
 
 /* ─── ui/findInSession.js — P0.2 in-session find (Ctrl-F) ─── */
 import { openFindInSession, closeFindInSession, onFindInput, onFindKey, findNext, findPrev, isFindOpen } from './ui/findInSession.js';
@@ -240,16 +191,14 @@ window.findPrev = findPrev;
 window.isFindOpen = isFindOpen;
 
 /* ─── ui/storage.js ─── */
-import { openStorageModal, closeStorageModal, renderArchivedList } from './ui/storage.js';
+import { openStorageModal, closeStorageModal } from './ui/storage.js';
 window.openStorageModal = openStorageModal;
 window.closeStorageModal = closeStorageModal;
 
 /* ─── ui/promptTemplates.js ─── */
-import { openPromptTemplatesModal, closePromptTemplatesModal, renderPromptTemplatesModal, renderPromptRow, onPromptRowDelete, openPromptTemplateEditor, onPromptTemplateEditorSave } from './ui/promptTemplates.js';
+import { openPromptTemplatesModal, closePromptTemplatesModal, onPromptRowDelete, openPromptTemplateEditor, onPromptTemplateEditorSave } from './ui/promptTemplates.js';
 window.openPromptTemplatesModal = openPromptTemplatesModal;
 window.closePromptTemplatesModal = closePromptTemplatesModal;
-window.renderPromptTemplatesModal = renderPromptTemplatesModal;
-window.renderPromptRow = renderPromptRow;
 window.onPromptRowDelete = onPromptRowDelete;
 window.openPromptTemplateEditor = openPromptTemplateEditor;
 window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
@@ -259,18 +208,15 @@ import { toggleComposerTools } from './ui/composerTools.js';
 window.toggleComposerTools = toggleComposerTools;
 
 /* ─── ui/settings.js ─── */
-import { openSettings, closeSettings, syncSettingsUI, renderProviderList, addProvider, removeProvider, setActiveProvider, saveSettings } from './ui/settings.js';
+import { openSettings, closeSettings, syncSettingsUI, renderProviderList, setActiveProvider } from './ui/settings.js';
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 window.syncSettingsUI = syncSettingsUI;
 window.renderProviderList = renderProviderList;
-window.addProvider = addProvider;
-window.removeProvider = removeProvider;
 window.setActiveProvider = setActiveProvider;
-window.saveSettings = saveSettings;
 
 /* ─── ui/share.js ─── */
-import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal, selectShareVis, createShareLink, copyShareLink, revokeShareLink, loadSharedSession, loadSharedExamSession, renderSharedQuestionCard, _shareToken, _shareUrl, _shareVisibility } from './ui/share.js';
+import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal, selectShareVis, createShareLink, copyShareLink, revokeShareLink, loadSharedSession, _shareToken } from './ui/share.js';
 window.toggleShareBtn = toggleShareBtn;
 window.toggleChatTopBarEls = toggleChatTopBarEls;
 window.openShareModal = openShareModal;
@@ -280,11 +226,7 @@ window.copyShareLink = copyShareLink;
 window.revokeShareLink = revokeShareLink;
 window.createShareLink = createShareLink;
 window.loadSharedSession = loadSharedSession;
-window.loadSharedExamSession = loadSharedExamSession;
-window.renderSharedQuestionCard = renderSharedQuestionCard;
 window._shareToken = _shareToken;
-window._shareUrl = _shareUrl;
-window._shareVisibility = _shareVisibility;
 
 /* ─── ui/dangerConfirms.js ─── */
 import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from './ui/dangerConfirms.js';
@@ -303,8 +245,6 @@ window.openProfile = openProfile;
 window.saveProfileName = saveProfileName;
 
 /* ─── ui/scroll.js ─── */
-import { scrollContainer } from './ui/scroll.js';
-window.scrollContainer = scrollContainer;
 
 /* ─── ui/topicSetup.js ─── */
 import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
@@ -313,48 +253,33 @@ window.updateStartBtn = updateStartBtn;
 window.updateSendBtn = updateSendBtn;
 
 /* ─── storage/localMemory.js ─── */
-import { loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from './storage/localMemory.js';
-window.loadLocalMemory = loadLocalMemory;
-window.appendLocalMemory = appendLocalMemory;
-window.clearLocalMemory = clearLocalMemory;
 
 /* ─── storage/memoryStore.js — cross-session memory ─── */
-import { memoryStore, setMemory, removeMemory, getAllMemories, clearAllMemories, injectMemoryContext, loadFromServer, loadMemories } from './storage/memoryStore.js';
-window.memoryStore = memoryStore;
-window.setMemory = setMemory;
-window.removeMemory = removeMemory;
-window.getAllMemories = getAllMemories;
-window.clearAllMemories = clearAllMemories;
+import { injectMemoryContext, loadMemories } from './storage/memoryStore.js';
 window.injectMemoryContext = injectMemoryContext;
 window.loadMemories = loadMemories;
-window.loadFromServer = loadFromServer;
 
 /* ─── config/tonePresets.js — AI tone/voice presets ─── */
-import { loadTonePreset, setTonePreset, getTonePreset, getToneVoice, getAvailablePresets, renderTonePresets, syncTonePresetUI } from './config/tonePresets.js';
+import { loadTonePreset, setTonePreset, getTonePreset, getToneVoice, renderTonePresets } from './config/tonePresets.js';
 window.loadTonePreset = loadTonePreset;
 window.setTonePreset = setTonePreset;
 window.getTonePreset = getTonePreset;
 window.getToneVoice = getToneVoice;
-window.getAvailablePresets = getAvailablePresets;
 window.renderTonePresets = renderTonePresets;
-window.syncTonePresetUI = syncTonePresetUI;
 
 /* ─── agent/researchAgent.js — Deep Research / Agent Mode ─── */
 import { startDeepResearch, launchDeepResearch } from './agent/researchAgent.js';
 window.startDeepResearch = startDeepResearch;
 window.launchDeepResearch = launchDeepResearch;
 
-window._memKey = _memKey;
-
 /* ─── attachments.js ─── */
 // attachments is a mutable array reference shared across modules
 // (chat/stream.js / render helpers / submitChatMessage all read it
 // via window.attachments). The bridge must preserve identity — never
 // replace it with a copy.
-import { attachments, removeAttachment, buildMessageContent } from './attachments.js';
+import { attachments, removeAttachment } from './attachments.js';
 window.attachments = attachments;
 window.removeAttachment = removeAttachment;
-window.buildMessageContent = buildMessageContent;
 
 /* ─── i18n.js (setLang) ─── */
 // i18n.js does not have ESM named exports — setLang is bound on
@@ -405,24 +330,17 @@ window.esc = esc;
    callAPI). It renders inline onclick="..." handlers that reference
    functions on window.* — all of them must be bridged here. */
 import {
-  openExamModal, openExamPanel, prepareExamView, closeExamModal, closeExamView,
+  openExamPanel, prepareExamView, openExamModal, closeExamView,
   renderExamForm, toggleExamType, toggleExamModelMenu, selectExamModel,
   selectExamDifficulty, adjustExamCount,
   startExamGeneration, cancelExamGeneration,
-  parseExamArrayJSON,
-  paintQuestionCard, replaceStreamingCardWithQuestion, appendExamErrorCard,
   selectExamOpt,
-  examNavJump, examNavStep, refreshExamNavTally,
-  scheduleExamAnswerSave,
-  submitExam, renderExamResults,
+  examNavJump, examNavStep,
+  submitExam,
 } from './exam.js';
-/* P_exam-nav — openExamPanel / prepareExamView replace openExamModal as
-   the canonical entry. openExamModal is kept as a thin alias for the
-   Extensions picker's backwards compatibility (see pickers.js). */
 window.openExamPanel = openExamPanel;
 window.prepareExamView = prepareExamView;
 window.openExamModal = openExamModal;
-window.closeExamModal = closeExamModal;
 window.closeExamView = closeExamView;
 window.renderExamForm = renderExamForm;
 window.toggleExamType = toggleExamType;
@@ -432,17 +350,10 @@ window.selectExamDifficulty = selectExamDifficulty;
 window.adjustExamCount = adjustExamCount;
 window.startExamGeneration = startExamGeneration;
 window.cancelExamGeneration = cancelExamGeneration;
-window.parseExamArrayJSON = parseExamArrayJSON;
-window.paintQuestionCard = paintQuestionCard;
-window.replaceStreamingCardWithQuestion = replaceStreamingCardWithQuestion;
-window.appendExamErrorCard = appendExamErrorCard;
 window.selectExamOpt = selectExamOpt;
 window.examNavJump = examNavJump;
 window.examNavStep = examNavStep;
-window.refreshExamNavTally = refreshExamNavTally;
-window.scheduleExamAnswerSave = scheduleExamAnswerSave;
 window.submitExam = submitExam;
-window.renderExamResults = renderExamResults;
 
 /* ─── ui/toolCards.js — needed by share.js to restore tool cards ─── */
 import { appendToolModule, appendInlineArtifact } from './ui/toolCards.js';
@@ -571,6 +482,5 @@ window.syncEffortUI = syncEffortUI;
 
 /* ─── ui/readAloud.js — browser TTS read-aloud for assistant messages
    (P_chatgpt-landing). No backend; uses window.speechSynthesis. ─── */
-import { toggleReadAloud, stopSpeaking } from './ui/readAloud.js';
+import { toggleReadAloud } from './ui/readAloud.js';
 window.toggleReadAloud = toggleReadAloud;
-window.stopSpeaking = stopSpeaking;
