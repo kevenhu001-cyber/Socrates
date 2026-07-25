@@ -98,6 +98,22 @@ const SessionPayloadSchema = z.object({
   pinned: z.boolean().optional(),
   totalQ: z.number().int().nonnegative().max(1000000).optional(),
   currentNode: z.number().int().nonnegative().max(1000000).optional(),
+  /* AUDIT-R1 — tutor teaching-state machine (Task 2.4). Previously
+     these rode in on .passthrough() with zero validation AND were
+     never persisted (the route ignored them entirely), so teaching
+     progress silently reset on every reload. `.catch(...)` coerces a
+     malformed value back to a safe default instead of failing the
+     whole save with a 400 — a corrupted stage field shouldn't cost
+     the user their conversation. */
+  teachingStage: z.enum(['motivate', 'define', 'develop', 'illustrate', 'exercise', 'check'])
+    .optional().catch(undefined),
+  currentExampleIdx: z.number().int().nonnegative().max(100000).optional().catch(undefined),
+  practiceAttempts: z.number().int().nonnegative().max(1000000).optional().catch(undefined),
+  practicePhase: z.string().max(50).optional().catch(undefined),
+  teachingPlan: z.any().optional().nullable(),
+  boundariesHistory: z.array(z.any()).max(100).optional().catch(undefined),
+  mistakeFilter: z.string().max(50).optional().catch(undefined),
+  branchedFrom: z.object({}).passthrough().optional().nullable().catch(null),
 }).passthrough();
 
 const router = Router();
@@ -166,7 +182,9 @@ router.post('/', writeLimiter, async (req, res, next) => {
     // zod throws ZodError on malformed input → errorHandler returns 400.
     const { id, topic, title, domain, mode, phase, kind, examData,
             projectId,
-            messages: msgs, kbNodes, mistakes, pinned, totalQ, currentNode } = SessionPayloadSchema.parse(req.body);
+            messages: msgs, kbNodes, mistakes, pinned, totalQ, currentNode,
+            teachingStage, currentExampleIdx, practiceAttempts, practicePhase,
+            teachingPlan, boundariesHistory, mistakeFilter, branchedFrom } = SessionPayloadSchema.parse(req.body);
 
     /* ─── Atomic transaction ───
      * Wraps the existence check + upsert in a transaction to prevent a
@@ -254,6 +272,17 @@ router.post('/', writeLimiter, async (req, res, next) => {
         mistakes: mistakes || [],
         totalQ: totalQ || 0,
         currentNode: currentNode || 0,
+        /* AUDIT-R1 — persist the teaching-state machine so a reloaded
+         * tutor session resumes at the right stage instead of
+         * restarting at motivate/0. */
+        teachingStage: teachingStage || null,
+        currentExampleIdx: currentExampleIdx ?? null,
+        practiceAttempts: practiceAttempts ?? null,
+        practicePhase: practicePhase || null,
+        teachingPlan: teachingPlan || null,
+        boundariesHistory: boundariesHistory || null,
+        mistakeFilter: mistakeFilter || null,
+        branchedFrom: branchedFrom || null,
       }).onConflictDoUpdate({
         target: sessions.id,
         set: {
@@ -270,6 +299,14 @@ router.post('/', writeLimiter, async (req, res, next) => {
           mistakes: sql`EXCLUDED.mistakes`,
           totalQ: sql`EXCLUDED.total_q`,
           currentNode: sql`EXCLUDED.current_node`,
+          teachingStage: sql`EXCLUDED.teaching_stage`,
+          currentExampleIdx: sql`EXCLUDED.current_example_idx`,
+          practiceAttempts: sql`EXCLUDED.practice_attempts`,
+          practicePhase: sql`EXCLUDED.practice_phase`,
+          teachingPlan: sql`EXCLUDED.teaching_plan`,
+          boundariesHistory: sql`EXCLUDED.boundaries_history`,
+          mistakeFilter: sql`EXCLUDED.mistake_filter`,
+          branchedFrom: sql`EXCLUDED.branched_from`,
           updatedAt: sql`NOW()`,
         },
       });

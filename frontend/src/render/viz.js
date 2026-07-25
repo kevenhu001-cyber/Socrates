@@ -477,7 +477,20 @@ var _pendingReady = Object.create(null);
 var _vizCards = Object.create(null);
 var VIZ_MAX_WAIT_MS = 5000;
 
-export function processPendingViz() {
+export function processPendingViz(root) {
+  /* A React-owned message may be recreated from already-rendered HTML.
+     Such cards have no fresh renderViz() call to enqueue them, so register
+     only loading cards inside the supplied message body for a new iframe
+     handshake. This deliberately avoids a document-wide scan. */
+  if (root && typeof root.querySelectorAll === 'function') {
+    var queued = root.querySelectorAll('.viz[id][data-viz-state="loading"]');
+    for (var qi = 0; qi < queued.length; qi++) {
+      var queuedId = queued[qi].id;
+      if (queuedId && !_pendingViz.some(function (item) { return item.id === queuedId; })) {
+        _pendingViz.push({ id: queuedId });
+      }
+    }
+  }
   var pending = _pendingViz;
   _pendingViz = [];
   pending.forEach(function (item) {
@@ -485,7 +498,17 @@ export function processPendingViz() {
     if (!el) return;
     var iframe = el.querySelector('iframe');
     if (!iframe) return;
-    if (_pendingReady[item.id]) return; // already wired up
+    var existing = _pendingReady[item.id];
+    if (existing) {
+      /* React can replace a finalized message's HTML after the legacy
+         stream renderer already registered this id. Reuse only the exact
+         live card; otherwise the ready event would update the detached
+         iframe/card pair and leave the visible replacement loading. */
+      if (existing.card === el && existing.iframe === iframe && el.isConnected) return;
+      clearTimeout(existing.maxTimer);
+      delete _pendingReady[item.id];
+      delete _vizCards[item.id];
+    }
 
     // Stash the iframe + a ready resolver on the card so the global
     // postMessage listener (installed once on first use) can find
@@ -870,7 +893,14 @@ export function getLiveVizCardIds() {
 
 var _pendingActions = [];
 
-export function processPendingVizActions() {
+export function processPendingVizActions(root) {
+  /* React can recreate a completed card without going through renderViz(),
+     so bind only actions within the supplied message body. Calls without a
+     root keep the pending-queue-only behavior and never scan the document. */
+  if (root && typeof root.querySelectorAll === 'function') {
+    var rootActions = root.querySelectorAll('.viz [data-action]');
+    for (var ri = 0; ri < rootActions.length; ri++) _bindAction(rootActions[ri]);
+  }
   var pending = _pendingActions;
   _pendingActions = [];
   pending.forEach(_bindActionsInCard);

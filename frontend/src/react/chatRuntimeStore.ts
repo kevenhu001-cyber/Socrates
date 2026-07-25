@@ -11,6 +11,7 @@ interface LegacyChatState {
   phase?: unknown;
   currentSessionId?: unknown;
   messages?: unknown;
+  _userScrolledAway?: boolean;
   session?: {
     phase?: unknown;
     currentSessionId?: unknown;

@@ -291,6 +291,17 @@ function resetState(){
   state.session.stuckCheckRejected=0;
   state.session.fourOptionDialog=null;
   state.session.diagCancel=false;
+  /* AUDIT-fix — branchedFrom was the only session field skipped by
+     this reset, so a new session started right after viewing a
+     branched one would persist the stale "Branched from …" metadata
+     to the server on its first save. */
+  state.session.branchedFrom=null;
+  /* AUDIT-fix — tutor-mode attachment working state also leaked into
+     the next session: startSession only writes these in tutor mode,
+     so a tutor→chat→tutor sequence could feed the earlier session's
+     attachments into the new diagnostic/teaching LLM calls. */
+  state.tutorAttachments=null;
+  state.tutorPartsTemplate=null;
   state.kb.kbNodes=[];
   state.kb.currentNode=0;
   state.kb.mistakes=[];
@@ -306,6 +317,7 @@ function resetState(){
   state.call.source=null;
   state.call.error=null;
   state.ui._userScrolledAway=false;
+  state.ui._examInView=false;
   /* Clear exam-mode fields so a fresh session doesn't inherit stale
      topic / language / difficulty / instructions / types from a prior
      exam. */
@@ -320,6 +332,12 @@ function resetState(){
   try{state.exam.difficulty="intermediate"}catch(_){}
   try{state.exam.instructions=""}catch(_){}
   try{state.exam.types=[]}catch(_){}
+  /* P_exam-prev-active — _examPrevActiveId records the provider that
+     was active before entering the exam view, so restoreExamActiveProvider
+     can switch back when the exam is closed. Not clearing it in resetState
+     means a subsequent exam session (or non-exam session) could inherit
+     the old provider binding and incorrectly restore it. */
+  try{state.exam._examPrevActiveId=null}catch(_){}
   /* P_dup-session — also clear the top-level mirror so a follow-up
      call to saveCurrentSession doesn't read a stale id and try to
      re-open a session that was just deleted / reset. Without this,

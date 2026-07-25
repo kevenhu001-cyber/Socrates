@@ -1,5 +1,5 @@
 import { createRoot, type Root } from 'react-dom/client';
-import { useMemo } from 'react';
+import { useLayoutEffect, useMemo } from 'react';
 
 import { useChatRuntimeSnapshot } from '../useChatRuntime';
 import { ErrorBoundary } from '../ErrorBoundary';
@@ -40,6 +40,16 @@ function MessageList({ omitEntryIds }: MessageListProps) {
     });
     return out;
   }, [snapshot.messages, omitEntryIds]);
+
+  // Legacy addMessage schedules its scroll before React has committed the
+  // new bubble. On a keyboard-constrained viewport that leaves the transcript
+  // one bubble above the true bottom. Scroll after this list's DOM commit,
+  // while still respecting a reader who deliberately scrolled away.
+  useLayoutEffect(() => {
+    if (window.state?._userScrolledAway) return;
+    const list = document.getElementById(MSG_LIST_ID);
+    if (list) list.scrollTop = list.scrollHeight;
+  }, [items.length, snapshot.lastMessage?.id]);
 
   if (items.length === 0) {
     return <div data-react-message-list-empty="1" data-react-owned="1" />;

@@ -8,14 +8,12 @@ const testDir = resolve(serverDir, 'test');
 const testFiles = readdirSync(testDir)
   .filter((name) => name.endsWith('.test.js') || name.endsWith('.test.mjs'))
   .sort();
-const strictMode = process.argv.includes('--strict');
-
 for (const testFile of testFiles) {
   console.log(`\n[test] ${testFile}`);
-  const nodeArgs = ['--import', 'tsx'];
-  if (!strictMode) {
-    nodeArgs.push('--test-force-exit');
-  }
+  // Use Node's test runner instead of executing a `node:test` file as a
+  // regular script.  The latter leaves the test runtime alive on Windows;
+  // forcing it to exit can then trip a libuv assertion during teardown.
+  const nodeArgs = ['--import', 'tsx', '--test'];
   nodeArgs.push(resolve(testDir, testFile));
 
   const result = spawnSync(

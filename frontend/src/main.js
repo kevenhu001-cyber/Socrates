@@ -1054,26 +1054,34 @@ function rememberDeletedSession(id){
   _deletedSessionGuard.remember(id);
 }
 function forgetDeletedSession(id){_deletedSessionGuard.forget(id)}
+/* Returns the _saveInFlight promise when a save was
+   initiated/queued, or null if guards bailed. Callers that need to
+   wait for the save to complete (e.g. toggleAppMode) can await the
+   returned promise. */
 function saveCurrentSession(){
   /* P_mobile-topbar — incognito ("无痕对话") sessions are never
      persisted. Entering incognito first saves any prior real session
      (toggleIncognito calls resetApp before flipping this flag), so
      bailing here only blocks the temporary conversation itself. */
-  if(window.incognitoOn)return;
-  if(!state.topic)return;
-  if(!CURRENT_USER)return; /* not signed in; do nothing */
+  if(window.incognitoOn)return null;
+  if(!state.topic)return null;
+  if(!CURRENT_USER)return null; /* not signed in; do nothing */
   /* P_context-race — discard saves during session loading. The
      loadSession function is in the middle of rebuilding state and
      any intercepted save would capture mismatched sessionId vs
      messages, causing "会话串台" (context cross-contamination). */
-  if(_loadingSession) return;
+  if(_loadingSession) return null;
   /* If a save is already running, mark dirty and let it coalesce. */
   if(_saveInFlight){
     _saveDirty=true;
-    return;
+    return _saveInFlight;  /* return the existing in-flight promise */
   }
   _saveDirty=false;
   doSave();
+  /* doSave() sets _saveInFlight to the fetch+then promise, or leaves
+     it as-is if early-exit guards (deleted session guard, empty topic)
+     fired. Return it for callers that want to await completion. */
+  return _saveInFlight;
 }
 
 function doSave(){
@@ -1304,7 +1312,13 @@ function doSave(){
         clientId:m.clientId||null,
         role:m.role,
         rawText:m.rawText||null,
-        reasoningContent:m.reasoningContent||null,
+      /* P_reasoning-asymmetry — loadSession (L1649) reads
+         m.reasoningContent || m.reasoning_content to handle both
+         Drizzle camelCase and legacy snake_case payloads. doSave
+         must do the same so a round-trip (load → no-op edit → save)
+         doesn't silently drop the field for messages that arrived
+         with the snake_case key. */
+      reasoningContent:m.reasoningContent||m.reasoning_content||null,
         attachments:Array.isArray(m.attachments)?m.attachments.slice(0,20):[],
         toolCalls:Array.isArray(m.toolCalls)?m.toolCalls.slice(0,20):[],
       }});
@@ -1588,9 +1602,15 @@ async function loadSession(id){
        session has an explicit mode field — sessions without one (older
        rows where the DB defaulted to 'tutor') keep the current appMode
        so a chat user doesn't get silently switched to tutor mode. */
-    if(s.mode==="chat"||s.mode==="tutor"){window.appMode=s.mode;}
-    /* P_tutor-sync — keep window.appMode in lock-step. */
-    try{window.appMode=appMode}catch(_){}
+    /* AUDIT-fix — the old code wrote s.mode to window.appMode only,
+       then immediately overwrote it with the stale module-level
+       binding (`window.appMode=appMode`), so loading a tutor session
+       from chat mode (or vice-versa) never actually switched modes.
+       setAppMode() mutates the module binding in providers.js (the
+       import is read-only here); the window mirror is synced after. */
+    if(s.mode==="chat"||s.mode==="tutor"){setAppMode(s.mode);}
+    /* P_tutor-sync — setAppMode() now syncs window.appMode internally,
+       so no manual mirror is needed here. */
     syncAppModeUI();
     syncSidebarForMode();
     /* P_exam-history — exam sessions are persisted to the same
@@ -1637,7 +1657,13 @@ async function loadSession(id){
         rawText: m.rawText || "",
         html: m.html || (m.rawText ? formatMsg(m.rawText) : ""),
         type: m.type || null,
-        reasoningContent: m.reasoning_content || null,
+        /* AUDIT-fix — the server returns Drizzle rows whose property
+           name is the camelCase schema key `reasoningContent` (the
+           snake_case `reasoning_content` is only the SQL column name),
+           so reading m.reasoning_content always yielded null and the
+           thinking pill was silently dropped on every session reload.
+           Keep the snake_case fallback for any legacy payloads. */
+        reasoningContent: m.reasoningContent || m.reasoning_content || null,
         attachments: Array.isArray(m.attachments) ? m.attachments : [],
         toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls.map(function(tc){
           return {
@@ -2312,6 +2338,16 @@ function sweepExpiredArchives(){
    screen. */
 function bounceOutOfArchivedSession(){
   window._shareToken=null;
+  /* Abort any active chat stream so callbacks don't write to
+     state after resetState() has cleared it. */
+  if(window._activeChatAbort){try{window._activeChatAbort("archived-session")}catch(_){}}
+  if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+  window._activeChatCtl=null;
+  window._activeChatAbort=null;
+  _chatStreaming=false;
+  _chatStopMode=false;
+  try{window._pendingChatContent=null}catch(_){}
+  try{window._pendingAttachments=null}catch(_){}
   resetState();
   toggleShareBtn();
   setChatIdInURL(null);
@@ -2804,6 +2840,12 @@ async function startSession(){
   state.session.stuckCheckOffered=false;
   state.session.stuckCheckRejected=0;
   state.session.fourOptionDialog=null;
+  /* AUDIT-R5 — stamp the phase for the Begin-time auto-save below.
+     Previously the tutor branch never set phase before the first
+     save, so a tutor session created right after a chat session
+     inherited phase="chat" on the server. proceedToTeaching flips
+     tutor sessions to "chat" once teaching actually starts. */
+  state.phase=(appMode==="chat")?"chat":"diagnostic";
   /* P_recents-auto — save the session to the server immediately so it
      appears in the Recent sessions list as soon as the user clicks
      Begin, without waiting for the first AI response to finish. The
@@ -2920,6 +2962,32 @@ async function startSession(){
      generateDiagnosticQuestions) and return to the topic-setup screen. */
   window.cancelDiagnostic=function(){
     state.diagCancel=true;
+    /* AUDIT-R3 — the Begin click already auto-saved an empty session
+       row (P_recents-auto) and set state.topic. Cancelling used to
+       leave both behind: a ghost row in Recents and a stale topic
+       that made resetApp show a bogus "active session" confirm.
+       Clear the local session identity first (blocks further saves
+       via the state.topic guard), then delete the server row after
+       the in-flight Begin-save drains so the DELETE can't lose the
+       race with its own POST. */
+    var cancelledSid=state.session.currentSessionId||state.currentSessionId;
+    state.topic="";
+    state.phase="topic";
+    setCurrentSessionId(null);
+    setChatIdInURL(null);
+    if(cancelledSid){
+      rememberDeletedSession(cancelledSid);
+      Promise.resolve(_saveInFlight).catch(function(){}).then(function(){
+        return apiFetch("/api/sessions/"+encodeURIComponent(cancelledSid),{
+          method:"DELETE",
+          timeoutMs:8000,
+        });
+      }).then(function(){
+        return refreshServerSessions();
+      }).then(function(){
+        renderRecents();
+      }).catch(function(){});
+    }
     var dv=document.getElementById("diagnosticView");
     if(dv){dv.classList.add("hidden");dv.innerHTML="";}
     var ts=document.getElementById("topicSetup");
@@ -3139,6 +3207,10 @@ function proceedToTeaching(){
   state.teachingStage="motivate";
   state.currentExampleIdx=0;
   state.practiceAttempts=0;
+  /* AUDIT-R5 — diagnostic is over; the session now lives in the chat
+     view, so persist phase="chat" (loadSession also uses this as the
+     signal that the conversation is resumable). */
+  state.phase="chat";
 
   saveCurrentSession();
 
@@ -3213,10 +3285,12 @@ async function askChatTurn(userText){
   /* Offline precheck — surface a clear "you're offline" message instead
      of waiting 120s for the stream to fail. */
   if(offlineGuard()){
-    var ctlOff=addStreamingMessage({onRetry:function(){askChatTurn(userText)}});
-    ctlOff.replaceWithError("You appear to be offline — check your connection and retry.",function(){
+    var retryThisTurn=function(){
+      try{window._pendingChatContent=pendingContent;}catch(_){}
       askChatTurn(userText);
-    });
+    };
+    var ctlOff=addStreamingMessage({onRetry:retryThisTurn});
+    ctlOff.replaceWithError("You appear to be offline — check your connection and retry.",retryThisTurn);
     return;
   }
   var history=extractHistory();
@@ -3234,6 +3308,14 @@ async function askChatTurn(userText){
    * window._pendingChatContent. Prefer it when present so images
    * flow through to vision-capable upstreams. */
   var pendingContent = window._pendingChatContent;
+  /* AUDIT-R4 — consume-once. Leaving the pending content on window
+     after this read meant a later askChatTurn call that didn't set
+     it (retry of an OLDER turn, re-explain, recovered-stream retry)
+     would silently replay whichever multimodal payload happened to
+     be there last. Retry closures below capture the local snapshot
+     and restore it before re-entering, so retrying THIS turn still
+     carries its own attachments. */
+  try{window._pendingChatContent=null;}catch(_){}
   /* The fallback `userMsg` (synthesized opener) is plain text — if
    * there's no pending content we keep using it. */
   var userContent = (pendingContent !== undefined && pendingContent !== null)
@@ -3344,7 +3426,12 @@ async function askChatTurn(userText){
      Spread the preview as individual console.warn lines so they show
      in the text output without needing to expand Array(2). */
   
-  var ctl=addStreamingMessage({onRetry:function(){askChatTurn(userText)}});
+  var ctl=addStreamingMessage({onRetry:function(){
+    /* AUDIT-R4 — restore this turn's own content snapshot so the
+       retry doesn't pick up a newer turn's pending payload. */
+    try{window._pendingChatContent=pendingContent;}catch(_){}
+    askChatTurn(userText);
+  }});
   var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)},{
     onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];ctl.recordToolUse(c)}},
     onToolResult:function(r){ctl.recordToolResult(r)},
@@ -5752,6 +5839,22 @@ function doRender(){
           messageId:clientId,
           textLength:full.length
         });
+        /* React replaces the legacy streaming bubble with its finalized
+           snapshot. Tool cards and native visualizations are live DOM
+           modules, not part of the serialized message HTML, so hand their
+           retained nodes to React's newly committed body on the next frame. */
+        if(list&&list.dataset&&list.dataset.msgListReactHydrated==="1"){
+          requestAnimationFrame(function(){
+            var reactBody=list.querySelector('[data-client-id="'+clientId+'"][data-react-owned] .msg-body');
+            if(!reactBody)return;
+            if(savedPill)reactBody.insertBefore(savedPill,reactBody.firstChild);
+            else if(savedToolGroup)reactBody.appendChild(savedToolGroup);
+            var retainedToolCards=Array.isArray(savedToolCardArr)?savedToolCardArr:[];
+            var retainedArtifacts=Array.isArray(savedArtifacts)?savedArtifacts:[];
+            for(var rtc=0;rtc<retainedToolCards.length;rtc++)reactBody.appendChild(retainedToolCards[rtc]);
+            for(var rta=0;rta<retainedArtifacts.length;rta++)reactBody.appendChild(retainedArtifacts[rta]);
+          });
+        }
       }
     },
     abort:function(){
@@ -6943,6 +7046,14 @@ async function resetApp(){
   _chatStreaming=false;
   _chatStopMode=false;
   window._shareToken=null;
+  /* AUDIT-fix — drop any assembled-but-unsent multimodal payload from
+     the previous session. askChatTurn() prefers _pendingChatContent
+     over its own text argument, so a stale value here (e.g. an image
+     parts array from the last send) would be replayed as the first
+     turn of the new session — the re-explain branch path
+     (branchFromMessage → resetApp → askChatTurn) hit exactly this. */
+  try{window._pendingChatContent=null}catch(_){}
+  try{window._pendingAttachments=null}catch(_){}
   resetState();
   /* Preserve a project selected immediately before a fresh chat. */
   if(window._nextProjectId){
@@ -6973,7 +7084,13 @@ async function resetApp(){
   if (_examBody) _examBody.innerHTML = "";
   toggleChatTopBarEls(false);
   clearLegacyMsgListChildren();
-  publishReactChatRuntime({type:"state-synced",reason:"app-reset"});
+  /* P_app-reset-sync — the sole publishReactChatRuntime call for
+     resetApp() is at the end (reason:"session-reset") after all
+     DOM state and bridge metadata have been refreshed. Previously
+     there was a premature "app-reset" call here (Bug 11) that
+     triggered a React re-read before renderRecents / scroll reset /
+     sidebar sync had run — the duplicate was wasteful and the
+     interim state was incomplete. */
   document.getElementById("topicInput").value="";
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">'+(typeof t==="function"?t("tutor.kbTopicFirst"):"Set a topic to build your knowledge map.")+'</div>';
   document.getElementById("chatStats").textContent="";
@@ -7126,9 +7243,19 @@ function handleAuthExpired(cause){
        resolves. */
     clearPerUserClientState();
     CURRENT_USER=null;
+    /* P_bleed-auth-expired-v2 — reset state so React components
+       reading from state don't see the previous user's data after
+       the gate shows. Without this, state.session, state.messages,
+       state.topic etc. remain dirty until the next session load,
+       and any React subscription that fires between the gate and
+       the next user's first fetch could briefly render stale data. */
+    resetState();
+    _chatStreaming=false;
+    _chatStopMode=false;
+    publishReactChatRuntime({type:"state-synced",reason:"auth-expired"});
     /* Abort any active SSE chat stream so in-flight requests don't
-       complete after the user has been sent to the auth gate and
-       trigger further state mutations. */
+        complete after the user has been sent to the auth gate and
+        trigger further state mutations. */
     try{
       if(window._activeChatCtl){_activeChatCtl.abort();window._activeChatCtl=null}
       if(window._activeChatAbort){_activeChatAbort("session-expired");window._activeChatAbort=null}
@@ -7278,8 +7405,9 @@ function clearPerUserClientState(){
      touching the toggle. Clear it (and the runtime mirror) so the
      new session starts in the documented default of "chat". */
   try{localStorage.removeItem("socrates-appmode")}catch(_){}
-  try{window.appMode="chat"}catch(_){}
-  try{window.appMode=appMode}catch(_){}
+  /* AUDIT-fix — reset the module binding so the next user starts in
+      chat mode. setAppMode() syncs window.appMode internally. */
+  try{setAppMode("chat")}catch(_){}
   try{if(typeof LAST_ACTIVE_ID_KEY!=="undefined"){try{localStorage.removeItem(LAST_ACTIVE_ID_KEY)}catch(_){}}}catch(_){}
   /* Re-render so the cleared state is visible immediately, not on
      the next user-driven re-render. */
@@ -7312,25 +7440,43 @@ async function signOut(){
   });
   /* Re-fetch the CSRF token cookie so subsequent auth POSTs succeed. */
   try{await fetch("/api/v2/auth/csrf-token",{credentials:"include"})}catch(_){}
-  /* P_bleed-signout — wait for any in-flight save before clearing
-     CURRENT_USER. Without this, doSave()'s POST could complete AFTER
-     CURRENT_USER is null and write the just-loaded messages into the
-     previous session's row. resetApp() also awaits _saveInFlight but
-     runs AFTER CURRENT_USER is cleared; awaiting here closes the
-     window deterministically. */
+  /* P_bleed-signout — drain any in-flight save first, so the
+     subsequent saveCurrentSession doesn't cascade into a stale
+     _saveDirty chain. */
+  if(_saveInFlight){
+    try{await _saveInFlight}catch(_){}
+  }
+  /* P_bleed-signout-v2 — save the current session BEFORE clearing
+     any caches or state. Previously (Bug 1&2), clearPerUserClientState
+     + CURRENT_USER=null + resetState ran before resetApp's internal
+     saveCurrentSession(), causing doSave() to bail because CURRENT_USER
+     was null and state.topic was empty — the active session was
+     silently lost on every sign-out. */
+  saveCurrentSession();
   if(_saveInFlight){
     try{await _saveInFlight}catch(_){}
   }
   /* P_bleed-signout — wipe every per-user cache so the next user on
-     this browser starts from a clean slate. Clears _userMemories /
-     geo info / _pendingChatContent (in-memory) AND the full module-
-     level set (SERVER_SESSIONS, apiConfig, _cmdKIndex, …)
-     plus localStorage entries that survive sign-out. */
+      this browser starts from a clean slate. Clears _userMemories /
+      geo info / _pendingChatContent (in-memory) AND the full module-
+      level set (SERVER_SESSIONS, apiConfig, _cmdKIndex, …)
+      plus localStorage entries that survive sign-out. */
   clearPerUserClientState();
   CURRENT_USER=null;
   /* Reset state. */
   resetState();
-  resetApp();
+  /* Abort any active chat stream — resetApp() isn't called from
+     signOut (to avoid its "Start a new session?" confirm dialog), so
+     we inline the essential stream teardown here. */
+  if(window._activeChatAbort){try{window._activeChatAbort("signout")}catch(_){}}
+  if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+  window._activeChatCtl=null;
+  window._activeChatAbort=null;
+  _chatStreaming=false;
+  _chatStopMode=false;
+  window._shareToken=null;
+  try{window._pendingChatContent=null}catch(_){}
+  try{window._pendingAttachments=null}catch(_){}
   showGate();
   renderUserFooter();
 }
@@ -7358,16 +7504,20 @@ async function toggleAppMode(){
       "Switching will end this session and save it to Recents. You can pick it back up there any time.",
       false);
     if(!ok)return;
-    saveCurrentSession();
+    /* P_save-before-mode-switch — await save completion before
+       resetting, so the session is fully persisted when the user
+       comes back to it in the other mode. Previously (Bug 8) this
+       was fire-and-forget, and resetApp could clear state while
+       doSave() was still in flight, causing the saved payload to
+       capture empty/partial state. */
+    var _sp = saveCurrentSession();
+    if(_sp){try{await _sp}catch(_){}}
     resetApp();
   }
-  window.appMode=window.appMode==="tutor"?"chat":"tutor";
-  /* P_tutor-sync — update the module-level appMode first, then
-     sync window.appMode from it so pickers.js and i18n.js's
-     applyI18n() see the correct value. The imported binding is
-     read-only, so we use setAppMode() to mutate the module var. */
-  setAppMode(window.appMode);
-  window.appMode = appMode;
+  /* P_tutor-sync — toggle from the module-level appMode (not
+     window.appMode, which could be stale). setAppMode() now syncs
+     window.appMode internally. */
+  setAppMode(appMode === "tutor" ? "chat" : "tutor");
   try{localStorage.setItem("socrates-appmode",appMode)}catch(e){}
   syncAppModeUI();
   syncSidebarForMode();
@@ -7983,6 +8133,7 @@ window.signOut = signOut;
 window.processPendingViz = processPendingViz;
 window.startSession = startSession;
 window.submitChatMessage = submitChatMessage;
+window.handleChatKey = handleChatKey;
 /* updateSlashSelected is referenced by inline onmouseenter handler
    in the slash command palette HTML (main.js:3666) but was never
    assigned to window — would throw ReferenceError on hover. */
