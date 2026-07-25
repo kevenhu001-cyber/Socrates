@@ -756,6 +756,9 @@ function toggleSidebarView(view){
   var isActive=el&&el.classList.contains("active");
   switchTab(isActive?"recents":view);
 }
+window.switchTab=switchTab;
+window.setRecentsSearch=setRecentsSearch;
+window.toggleSidebarView=toggleSidebarView;
 
 /* ============================================================
    TOPIC SETUP

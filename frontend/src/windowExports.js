@@ -43,11 +43,19 @@ window.thinkingOn = thinkingOn;
 /* ─── displayPrefs.js ─── */
 import {
   toggleGrid, setAccentColor, toggleDisplayPrefs, toggleTheme,
+  setAccentCustom, resetAccentColor,
+  setBackgroundDark, setBackgroundLight, resetBackgroundDark, resetBackgroundLight,
 } from './displayPrefs.js';
 window.toggleGrid = toggleGrid;
 window.setAccentColor = setAccentColor;
 window.toggleDisplayPrefs = toggleDisplayPrefs;
 window.toggleTheme = toggleTheme;
+window.setAccentCustom = setAccentCustom;
+window.resetAccentColor = resetAccentColor;
+window.setBackgroundDark = setBackgroundDark;
+window.setBackgroundLight = setBackgroundLight;
+window.resetBackgroundDark = resetBackgroundDark;
+window.resetBackgroundLight = resetBackgroundLight;
 
 /* ─── util/api.js ─── */
 import { apiFetch, getCsrfToken } from './util/api.js';
