@@ -43,6 +43,11 @@ declare global {
     __socratesMountScheduled?: () => void;
     __socratesMountWorkspace?: (page: string) => void;
 
+    /** Set by the read-only share view before it renders #msgList itself. */
+    __socratesShareMsgListTakeover?: boolean;
+    /** Unmounts the React message list so legacy code may own #msgList. */
+    __socratesReleaseMsgListReact?: () => void;
+
     // ── Bridge stores (typed, per-domain) ────────────────────────────
     // Each __socratesXxxBridge is defined together with its store module and
     // should not grow beyond the store's scope. New stores must declare their

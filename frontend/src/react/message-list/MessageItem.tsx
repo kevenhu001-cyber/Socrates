@@ -44,7 +44,7 @@ function MessageItem({ message }: MessageItemProps) {
   if (!clientId) return null;
 
   return (
-    <div className={`msg ${role}`} data-client-id={clientId}>
+    <div className={`msg ${role}`} data-client-id={clientId} data-react-owned="1">
       <div
         className="msg-body"
         dangerouslySetInnerHTML={{ __html: html }}

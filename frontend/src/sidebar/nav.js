@@ -271,9 +271,8 @@ export function openLibrary() {
   renderLibrary();
 }
 async function renderLibrary() {
-  var list = byId("libraryList");
-  if (!list) return;
-  list.innerHTML = '<div class="workspace-loading">Loading library…</div>';
+  /* #libraryList is React-owned (WorkspacePage) — never write its DOM
+     here; fetch, update the cache, and publish through the bridge. */
   try {
     var results = await Promise.all([api("/api/files?limit=100"), api("/api/artifacts?limit=100")]);
     workspaceCache.library.files = results[0].files || [];
@@ -281,12 +280,12 @@ async function renderLibrary() {
     paintLibrary();
     _publishWorkspaceState();
   } catch (err) {
-    if (err && err.status === 401) {
-      list.innerHTML = '<div class="library-empty">Sign in to upload files and create artifacts.</div>';
-    } else {
-      list.innerHTML = '<div class="library-empty">Your library could not be loaded. Try again.</div>';
-    }
+    workspaceCache.library.files = [];
+    workspaceCache.library.artifacts = [];
     _publishWorkspaceState();
+    toast(err && err.status === 401
+      ? "Sign in to upload files and create artifacts."
+      : "Your library could not be loaded. Try again.");
   }
 }
 function paintLibrary() {
@@ -382,21 +381,19 @@ export function openProjects() {
   renderProjects();
 }
 async function renderProjects() {
-  var list = byId("spacesList");
-  if (!list) return;
-  list.innerHTML = '<div class="workspace-loading">Loading projects…</div>';
+  /* #spacesList is React-owned (WorkspacePage) — never write its DOM
+     here; fetch, update the cache, and publish through the bridge. */
   try {
     var res = await api("/api/projects");
     workspaceCache.projects = (res && res.projects) || [];
     paintProjects();
     _publishWorkspaceState();
   } catch (err) {
-    if (err && err.status === 401) {
-      list.innerHTML = '<div class="workspace-empty"><strong>Sign in to create projects</strong><span>Projects keep related chats, files, and instructions together.</span></div>';
-    } else {
-      list.innerHTML = '<div class="spaces-empty">Projects could not be loaded. Try again.</div>';
-    }
+    workspaceCache.projects = [];
     _publishWorkspaceState();
+    toast(err && err.status === 401
+      ? "Sign in to create projects."
+      : "Projects could not be loaded. Try again.");
   }
 }
 function paintProjects() {
@@ -443,9 +440,8 @@ export function openPlugins() {
   renderPlugins();
 }
 async function renderPlugins() {
-  var list = byId("pluginsList");
-  if (!list) return;
-  list.innerHTML = '<div class="workspace-loading">Loading connector catalog...</div>';
+  /* #pluginsList is React-owned (WorkspacePage) — never write its DOM
+     here; fetch, update the cache, and publish through the bridge. */
   try {
     var res = await api("/api/project-connectors");
     workspaceCache.connectors = (res && res.connectors) || [];
@@ -453,10 +449,11 @@ async function renderPlugins() {
     paintPlugins();
     _publishWorkspaceState();
   } catch (err) {
-    list.innerHTML = err && err.status === 401
-      ? '<div class="workspace-empty"><strong>Sign in to connect apps</strong><span>Your app connections are isolated to your Socrates account.</span></div>'
-      : '<div class="plugins-empty">Apps could not be loaded. Try again.</div>';
+    workspaceCache.connectors = [];
     _publishWorkspaceState();
+    toast(err && err.status === 401
+      ? "Sign in to connect apps."
+      : "Apps could not be loaded. Try again.");
   }
 }
 function paintPlugins() {
