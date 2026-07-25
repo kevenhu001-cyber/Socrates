@@ -98,29 +98,29 @@
     </div>
 
     <div class="auth-tabs" id="authTabs">
-      <div class="auth-tab active" data-tab="signin" onclick="switchAuthTab('signin')">Sign in</div>
-      <div class="auth-tab" data-tab="register" onclick="switchAuthTab('register')">Create account</div>
+      <div class="auth-tab active" data-tab="signin" data-action="switchAuthTab" data-action-arg="signin">Sign in</div>
+      <div class="auth-tab" data-tab="register" data-action="switchAuthTab" data-action-arg="register">Create account</div>
     </div>
 
     <div class="auth-views">
       <!-- Sign in -->
-      <form class="auth-view" id="authSigninView" onsubmit="event.preventDefault();submitAuthSignin()">
+      <form class="auth-view" id="authSigninView" data-action="submitAuthSignin" data-action-submit="true">
         <label class="auth-label" for="authSigninEmail">Email</label>
         <input class="auth-input" id="authSigninEmail" name="authSigninEmail" type="email" autocomplete="email" required placeholder="you@example.com">
         <label class="auth-label" for="authSigninPassword">Password</label>
         <input class="auth-input" id="authSigninPassword" name="authSigninPassword" type="password" autocomplete="current-password" required placeholder="••••••••">
-        <a class="auth-inline-link" href="#" onclick="event.preventDefault();showAuthForgotPassword()" style="text-align:right;display:block">Forgot password?</a>
+        <a class="auth-inline-link" href="#" data-action="showAuthForgotPassword" style="text-align:right;display:block">Forgot password?</a>
         <div class="auth-error" id="authSigninError"></div>
         <label class="auth-guest-label" for="authGuestCheckbox"><input type="checkbox" id="authGuestCheckbox" name="authGuestCheckbox"> Guest mode</label>
         <button class="auth-btn primary" id="authSigninBtn" type="submit">Sign in</button>
         <div class="auth-view-separator">or</div>
         <a class="auth-btn secondary" id="authGithubBtn" href="/api/auth/oauth/github/start?return_to=/" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>Continue with GitHub</a>
-        <a class="auth-inline-link" href="#" onclick="event.preventDefault();showAuthCodeLogin()" style="text-align:center;display:block;margin-top:10px;margin-bottom:4px">Login with verification code</a>
-        <div class="auth-foot">No account? <a href="#" onclick="event.preventDefault();switchAuthTab('register')">Create one</a></div>
+        <a class="auth-inline-link" href="#" data-action="showAuthCodeLogin" style="text-align:center;display:block;margin-top:10px;margin-bottom:4px">Login with verification code</a>
+        <div class="auth-foot">No account? <a href="#" data-action="switchAuthTab" data-action-arg="register">Create one</a></div>
       </form>
 
       <!-- Register -->
-      <form class="auth-view hidden" id="authRegisterView" onsubmit="event.preventDefault();submitAuthRegister()">
+      <form class="auth-view hidden" id="authRegisterView" data-action="submitAuthRegister" data-action-submit="true">
         <p class="auth-lede">Sign up with your email. We'll send a verification link — no codes to memorize.</p>
         <label class="auth-label" for="authRegisterEmail">Email</label>
         <input class="auth-input" id="authRegisterEmail" name="authRegisterEmail" type="email" autocomplete="email" required placeholder="you@example.com">
@@ -128,7 +128,7 @@
         <input class="auth-input" id="authRegisterPassword" name="authRegisterPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
         <div class="auth-error" id="authRegisterError"></div>
         <button class="auth-btn primary" id="authRegisterBtn" type="submit">Send verification link</button>
-        <div class="auth-foot">Already verified? <a href="#" onclick="event.preventDefault();switchAuthTab('signin')">Sign in</a></div>
+        <div class="auth-foot">Already verified? <a href="#" data-action="switchAuthTab" data-action-arg="signin">Sign in</a></div>
       </form>
 
       <!-- Verify-sent -->
@@ -138,8 +138,8 @@
         </div>
         <h2 class="auth-title">Check your inbox</h2>
         <p class="auth-lede">We sent a verification link to <strong id="authVerifyEmail"></strong>. Click the button in the email to start learning with Socrates. The link expires in 24 hours.</p>
-        <button class="auth-btn secondary" onclick="resendVerification()">Resend the link</button>
-        <div class="auth-foot"><a href="#" onclick="event.preventDefault();showAuthSignin()">Use a different email</a></div>
+        <button class="auth-btn secondary" data-action="resendVerification">Resend the link</button>
+        <div class="auth-foot"><a href="#" data-action="showAuthSignin">Use a different email</a></div>
       </div>
 
       <!-- Verify-failed -->
@@ -149,13 +149,13 @@
         </div>
         <h2 class="auth-title" id="authVerifyFailedTitle">This link is invalid or expired</h2>
         <p class="auth-lede" id="authVerifyFailedMsg">Verification links expire after 24 hours. Enter your email and we'll send a fresh one.</p>
-        <form onsubmit="event.preventDefault();resendVerification()">
+        <form data-action="resendVerification" data-action-submit="true">
           <label class="auth-label" for="authResendEmail">Email</label>
           <input class="auth-input" id="authResendEmail" name="authResendEmail" type="email" required placeholder="you@example.com">
           <div class="auth-error" id="authVerifyFailedError"></div>
           <button class="auth-btn primary" type="submit">Send a new link</button>
         </form>
-        <div class="auth-foot"><a href="#" onclick="event.preventDefault();showAuthSignin()">Back to sign in</a></div>
+        <div class="auth-foot"><a href="#" data-action="showAuthSignin">Back to sign in</a></div>
       </div>
 
       <!-- Verified-success transition (shown briefly after clicking the
@@ -169,8 +169,8 @@
       </div>
 
       <!-- Forgot-password (enter email to receive reset link) -->
-      <form class="auth-view hidden" id="authForgotPasswordView" onsubmit="event.preventDefault();submitAuthForgotPassword()">
-        <a class="auth-back-link" href="#" onclick="event.preventDefault();showAuthSignin()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to sign in</a>
+      <form class="auth-view hidden" id="authForgotPasswordView" data-action="submitAuthForgotPassword" data-action-submit="true">
+        <a class="auth-back-link" href="#" data-action="showAuthSignin"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to sign in</a>
         <div class="auth-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </div>
@@ -189,11 +189,11 @@
         </div>
         <h2 class="auth-title">Check your inbox</h2>
         <p class="auth-lede">If an account exists for <strong id="authForgotSentEmail"></strong>, we sent a password reset link. The link expires in 1 hour.</p>
-        <div class="auth-foot"><a href="#" onclick="event.preventDefault();showAuthSignin()">Back to sign in</a></div>
+        <div class="auth-foot"><a href="#" data-action="showAuthSignin">Back to sign in</a></div>
       </div>
 
       <!-- Reset-password (accessed via ?reset_token= URL param) -->
-      <form class="auth-view hidden" id="authResetPasswordView" onsubmit="event.preventDefault();submitAuthResetPassword()">
+      <form class="auth-view hidden" id="authResetPasswordView" data-action="submitAuthResetPassword" data-action-submit="true">
         <div class="auth-icon auth-icon-ok">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </div>
@@ -221,12 +221,12 @@
         </div>
         <h2 class="auth-title">Password updated</h2>
         <p class="auth-lede">Your password has been reset successfully. Sign in with your new password.</p>
-        <button class="auth-btn primary" onclick="showAuthSignin()">Sign in</button>
+        <button class="auth-btn primary" data-action="showAuthSignin">Sign in</button>
       </div>
 
       <!-- Code-login (email + verification code) -->
       <div class="auth-view hidden" id="authCodeLoginView">
-        <a class="auth-back-link" href="#" onclick="event.preventDefault();showAuthSignin()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to sign in</a>
+        <a class="auth-back-link" href="#" data-action="showAuthSignin"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to sign in</a>
         <div class="auth-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 11v4"/><circle cx="12" cy="8" r=".5" fill="currentColor"/></svg>
         </div>
@@ -241,10 +241,10 @@
         </div>
         <div class="auth-error" id="authCodeError"></div>
         <label class="auth-guest-label" for="authCodeGuestCheckbox"><input type="checkbox" id="authCodeGuestCheckbox" name="authCodeGuestCheckbox"> Guest mode</label>
-        <button class="auth-btn primary" id="authCodeSendBtn" onclick="submitAuthSendCode()">Send code</button>
-        <button class="auth-btn primary hidden" id="authCodeLoginBtn" onclick="submitAuthLoginWithCode()">Log in</button>
-        <div class="auth-foot hidden" id="authCodeResendWrap"><a href="#" onclick="event.preventDefault();resendAuthCode()">Resend code</a></div>
-        <div class="auth-foot"><a href="#" onclick="event.preventDefault();showAuthSignin()">Back to sign in</a></div>
+        <button class="auth-btn primary" id="authCodeSendBtn" data-action="submitAuthSendCode">Send code</button>
+        <button class="auth-btn primary hidden" id="authCodeLoginBtn" data-action="submitAuthLoginWithCode">Log in</button>
+        <div class="auth-foot hidden" id="authCodeResendWrap"><a href="#" data-action="resendAuthCode">Resend code</a></div>
+        <div class="auth-foot"><a href="#" data-action="showAuthSignin">Back to sign in</a></div>
       </div>
     </div>
   </div>
@@ -262,10 +262,10 @@
         <span><em>S</em>ocrates</span>
       </div>
       <div style="display:flex;align-items:center;gap:2px">
-        <button class="icon-btn compose-btn" id="newChatBtn" title="Start a new chat" onclick="event.preventDefault();resetApp()">
+        <button class="icon-btn compose-btn" id="newChatBtn" title="Start a new chat" data-action="resetApp">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
         </button>
-        <button class="icon-btn" id="sidebarCloseBtn" title="Close sidebar" onclick="toggleSidebar()" aria-label="Close sidebar" aria-controls="sidebar">
+        <button class="icon-btn" id="sidebarCloseBtn" title="Close sidebar" data-action="toggleSidebar" aria-label="Close sidebar" aria-controls="sidebar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
         </button>
       </div>
@@ -286,15 +286,15 @@
          The "new" button keeps its direct resetApp() handler because
          it isn't a "view" — it's a composer reset. -->
     <nav class="sidebar-nav" id="sidebarNav" aria-label="Primary navigation">
-      <button type="button" class="sidebar-nav-btn" data-nav="new" id="navNew" onclick="resetApp()">
+      <button type="button" class="sidebar-nav-btn" data-nav="new" id="navNew" data-action="resetApp">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
         <span data-i18n-key="sidebar.nav.new">New chat</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="library" id="navLibrary" onclick="openNav('library')">
+      <button type="button" class="sidebar-nav-btn" data-nav="library" id="navLibrary" data-action="openNav" data-action-arg="library">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         <span data-i18n-key="sidebar.nav.library">Library</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="projects" id="navProjects" onclick="openNav('projects')">
+      <button type="button" class="sidebar-nav-btn" data-nav="projects" id="navProjects" data-action="openNav" data-action-arg="projects">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18"/><path d="M3 12h18"/><path d="M3 17h12"/></svg>
         <span data-i18n-key="sidebar.nav.projects">Projects</span>
       </button>
@@ -302,19 +302,19 @@
            would block the click). The .is-soon class + Soon pill keep the
            "coming soon" affordance visible while letting the click fire
            a toast. PR-D removes the pill + .is-soon when the feature lands. -->
-      <button type="button" class="sidebar-nav-btn" data-nav="scheduled" id="navScheduled" onclick="openNav('scheduled')">
+      <button type="button" class="sidebar-nav-btn" data-nav="scheduled" id="navScheduled" data-action="openNav" data-action-arg="scheduled">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
         <span data-i18n-key="sidebar.nav.scheduled">Scheduled</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="plugins" id="navPlugins" onclick="openNav('plugins')">
+      <button type="button" class="sidebar-nav-btn" data-nav="plugins" id="navPlugins" data-action="openNav" data-action-arg="plugins">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><rect x="5" y="10" width="6" height="4" rx="1"/><rect x="13" y="10" width="6" height="4" rx="1"/></svg>
         <span data-i18n-key="sidebar.nav.plugins">Plugins</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="exam" id="navExam" onclick="openNav('exam')">
+      <button type="button" class="sidebar-nav-btn" data-nav="exam" id="navExam" data-action="openNav" data-action-arg="exam">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
         <span data-i18n-key="sidebar.nav.exam">Exam</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="more" id="navMore" onclick="openNav('more')" aria-haspopup="menu" aria-expanded="false">
+      <button type="button" class="sidebar-nav-btn" data-nav="more" id="navMore" data-action="openNav" data-action-arg="more" aria-haspopup="menu" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5"  r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
         <span data-i18n-key="sidebar.nav.more">More</span>
       </button>
@@ -325,24 +325,24 @@
          uses position:fixed so it can overflow the sidebar. Its own onclick
          handlers call closeMorePopover() to dismiss the popover before the
          underlying action runs. -->
-    <div class="sidebar-more-popover hidden" id="moreNavPopover" role="menu" aria-label="More actions" onclick="event.stopPropagation()">
-      <button type="button" class="sidebar-more-item" role="menuitem" onclick="closeMorePopover();openPromptTemplatesModal()">
+    <div class="sidebar-more-popover hidden" id="moreNavPopover" role="menu" aria-label="More actions" data-action="__stop">
+      <button type="button" class="sidebar-more-item" role="menuitem" data-action="closeMorePopover;openPromptTemplatesModal">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg>
         <span data-i18n-key="sidebar.more.skills">Skills &amp; shortcuts</span>
       </button>
-      <button type="button" class="sidebar-more-item" role="menuitem" onclick="closeMorePopover();openSettings()">
+      <button type="button" class="sidebar-more-item" role="menuitem" data-action="closeMorePopover;openSettings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span data-i18n-key="sidebar.more.settings">API settings</span>
       </button>
-      <button type="button" class="sidebar-more-item" role="menuitem" onclick="closeMorePopover();toggleDisplayPrefs()">
+      <button type="button" class="sidebar-more-item" role="menuitem" data-action="closeMorePopover;toggleDisplayPrefs">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="21" y1="6" x2="14" y2="6"/><line x1="10" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="16" y2="18"/><line x1="12" y1="18" x2="3" y2="18"/></svg>
         <span data-i18n-key="sidebar.more.display">Display &amp; theme</span>
       </button>
-      <button type="button" class="sidebar-more-item" role="menuitem" onclick="closeMorePopover();openCheatsheet()">
+      <button type="button" class="sidebar-more-item" role="menuitem" data-action="closeMorePopover;openCheatsheet">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M6 16h12"/></svg>
         <span data-i18n-key="sidebar.more.shortcuts">Keyboard shortcuts</span>
       </button>
-      <button type="button" class="sidebar-more-item sidebar-more-item-danger" role="menuitem" onclick="closeMorePopover();signOut()">
+      <button type="button" class="sidebar-more-item sidebar-more-item-danger" role="menuitem" data-action="closeMorePopover;signOut">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         <span data-i18n-key="sidebar.more.signOut">Sign out</span>
       </button>
@@ -358,12 +358,12 @@
     <div class="sidebar-search-row">
       <div class="sidebar-search">
         <svg class="sidebar-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" id="sidebarSearch" name="sidebarSearch" autocomplete="off" spellcheck="false" placeholder="Search chats" data-i18n-placeholder="sidebar.searchPlaceholder" aria-label="Search chats" oninput="setRecentsSearch(this.value)" onfocus="switchTab('recents')">
+        <input type="text" id="sidebarSearch" name="sidebarSearch" autocomplete="off" spellcheck="false" placeholder="Search chats" data-i18n-placeholder="sidebar.searchPlaceholder" aria-label="Search chats" data-action-input="setRecentsSearch" data-action-arg="value" data-action-focus="switchTab" data-action-focus-arg="recents">
       </div>
-      <button class="sidebar-view-btn tutor-only" id="tabKnowledge" onclick="toggleSidebarView('knowledge')" title="Knowledge" data-i18n-title="sidebar.knowledge" aria-label="Knowledge">
+      <button class="sidebar-view-btn tutor-only" id="tabKnowledge" data-action="toggleSidebarView" data-action-arg="knowledge" title="Knowledge" data-i18n-title="sidebar.knowledge" aria-label="Knowledge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="6" r="2.1"/><circle cx="18" cy="7.5" r="2.1"/><circle cx="12" cy="18" r="2.1"/><path d="M7.5 6.5h8.4M6.7 7.9l4.6 8.2M16.7 9.4l-3.9 6.9"/></svg>
       </button>
-      <button class="sidebar-view-btn tutor-only" id="tabMistakes" onclick="toggleSidebarView('mistakes')" title="Mistakes" data-i18n-title="sidebar.mistakes" aria-label="Mistakes">
+      <button class="sidebar-view-btn tutor-only" id="tabMistakes" data-action="toggleSidebarView" data-action-arg="mistakes" title="Mistakes" data-i18n-title="sidebar.mistakes" aria-label="Mistakes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
         <span class="tab-badge" id="mistakesTabBadge"></span>
       </button>
@@ -389,17 +389,17 @@
     <div class="sidebar-footer" id="sidebarFooter">
       <div class="user-row" id="sidebarUserRow"><div class="user-avatar">JH</div><div><div class="user-name">Jiacheng Hu</div><div class="user-plan">Free plan</div></div></div>
       <div class="sidebar-footer-actions">
-        <button class="icon-btn theme-toggle" id="themeToggle" onclick="toggleTheme(event)" title="Toggle theme">
+        <button class="icon-btn theme-toggle" id="themeToggle" data-action="toggleTheme" data-action-arg="event" title="Toggle theme">
           <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
           <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
-        <button class="icon-btn" onclick="toggleDisplayPrefs()" title="Display settings" aria-label="Display settings">
+        <button class="icon-btn" data-action="toggleDisplayPrefs" title="Display settings" aria-label="Display settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="6" x2="14" y2="6"/><line x1="10" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="16" y2="18"/><line x1="12" y1="18" x2="3" y2="18"/></svg>
         </button>
-        <button class="icon-btn" onclick="openSettings()" title="API Settings">
+        <button class="icon-btn" data-action="openSettings" title="API Settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
-        <div class="display-prefs-popover hidden" id="displayPrefsPopover" onclick="event.stopPropagation()">
+        <div class="display-prefs-popover hidden" id="displayPrefsPopover" data-action="__stop">
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span>Text size</span><span class="value" id="displayPrefsFontLabel">M</span></div>
             <div class="display-prefs-segs" id="displayPrefsFontSegs">
@@ -424,21 +424,21 @@
           <div class="display-prefs-row">
             <div class="display-prefs-label">
               <span>Accent color</span>
-              <button type="button" class="accent-reset-btn" id="accentResetBtn" title="Reset accent to default" onclick="resetAccentColor()">Reset</button>
+              <button type="button" class="accent-reset-btn" id="accentResetBtn" title="Reset accent to default" data-action="resetAccentColor">Reset</button>
             </div>
             <div class="display-prefs-colors" id="displayAccentColors">
-              <button class="color-swatch" data-hue="35" style="--swatch:hsl(35 80% 50%)" title="Gold" onclick="setAccentColor(35)"></button>
-              <button class="color-swatch" data-hue="160" style="--swatch:hsl(160 70% 45%)" title="Teal" onclick="setAccentColor(160)"></button>
-              <button class="color-swatch" data-hue="210" style="--swatch:hsl(210 80% 50%)" title="Blue" onclick="setAccentColor(210)"></button>
-              <button class="color-swatch" data-hue="270" style="--swatch:hsl(270 70% 55%)" title="Purple" onclick="setAccentColor(270)"></button>
-              <button class="color-swatch" data-hue="330" style="--swatch:hsl(330 75% 50%)" title="Rose" onclick="setAccentColor(330)"></button>
-              <button class="color-swatch" data-hue="40" style="--swatch:hsl(40 75% 50%)" title="Amber (default)" onclick="setAccentColor(40)"></button>
+              <button class="color-swatch" data-hue="35" style="--swatch:hsl(35 80% 50%)" title="Gold" data-action="setAccentColor" data-action-arg="35"></button>
+              <button class="color-swatch" data-hue="160" style="--swatch:hsl(160 70% 45%)" title="Teal" data-action="setAccentColor" data-action-arg="160"></button>
+              <button class="color-swatch" data-hue="210" style="--swatch:hsl(210 80% 50%)" title="Blue" data-action="setAccentColor" data-action-arg="210"></button>
+              <button class="color-swatch" data-hue="270" style="--swatch:hsl(270 70% 55%)" title="Purple" data-action="setAccentColor" data-action-arg="270"></button>
+              <button class="color-swatch" data-hue="330" style="--swatch:hsl(330 75% 50%)" title="Rose" data-action="setAccentColor" data-action-arg="330"></button>
+              <button class="color-swatch" data-hue="40" style="--swatch:hsl(40 75% 50%)" title="Amber (default)" data-action="setAccentColor" data-action-arg="40"></button>
               <!-- Custom accent: a native color input styled as a swatch.
                    oninput fires every time the user drags in the picker,
                    so the UI updates live. The default value matches the
                    Amber preset so it doesn't start blank. -->
               <label class="color-swatch color-swatch-custom" id="accentCustomSwatch" title="Custom color">
-                <input type="color" id="accentCustomInput" value="#d99a2b" oninput="setAccentCustom(this.value)">
+                <input type="color" id="accentCustomInput" value="#d99a2b" data-action-input="setAccentCustom" data-action-arg="value">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               </label>
             </div>
@@ -446,7 +446,7 @@
           <!-- Grid background toggle -->
           <div class="display-prefs-row display-prefs-toggle-row">
             <div class="display-prefs-label"><span>Background grid</span></div>
-            <button class="grid-toggle" id="gridToggle" type="button" onclick="toggleGrid()" title="Toggle background grid" aria-label="Toggle background grid">
+            <button class="grid-toggle" id="gridToggle" type="button" data-action="toggleGrid" title="Toggle background grid" aria-label="Toggle background grid">
               <div class="toggle-knob"></div>
             </button>
           </div>
@@ -454,15 +454,15 @@
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span>Dark mode BG</span></div>
             <div class="display-prefs-bg-picker">
-              <input type="color" id="displayPrefsBgDark" value="#252220" title="Dark mode page background" oninput="setBackgroundDark(this.value)">
-              <button class="display-prefs-bg-reset" onclick="resetBackgroundDark()" title="Reset dark mode to theme default">↺</button>
+              <input type="color" id="displayPrefsBgDark" value="#252220" title="Dark mode page background" data-action-input="setBackgroundDark" data-action-arg="value">
+              <button class="display-prefs-bg-reset" data-action="resetBackgroundDark" title="Reset dark mode to theme default">↺</button>
             </div>
           </div>
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span>Light mode BG</span></div>
             <div class="display-prefs-bg-picker">
-              <input type="color" id="displayPrefsBgLight" value="#ded6c8" title="Light mode page background" oninput="setBackgroundLight(this.value)">
-              <button class="display-prefs-bg-reset" onclick="resetBackgroundLight()" title="Reset light mode to theme default">↺</button>
+              <input type="color" id="displayPrefsBgLight" value="#ded6c8" title="Light mode page background" data-action-input="setBackgroundLight" data-action-arg="value">
+              <button class="display-prefs-bg-reset" data-action="resetBackgroundLight" title="Reset light mode to theme default">↺</button>
             </div>
           </div>
         </div>
@@ -483,8 +483,8 @@
          landing #modeSegmented control automatically. Absolute-centered
          so it stays visually centered regardless of side-content width. -->
     <div class="top-mode-tabs" id="modeSegmentedTop" role="tablist" aria-label="Session mode">
-      <button type="button" class="app-mode-toggle" data-mode="chat" role="tab" data-i18n-key="tutor.modeChat" onclick="if(window.appMode!=='chat'&&typeof window.toggleAppMode==='function')window.toggleAppMode()">Chat</button>
-      <button type="button" class="app-mode-toggle" data-mode="tutor" role="tab" data-i18n-key="tutor.modeTutor" onclick="if(window.appMode!=='tutor'&&typeof window.toggleAppMode==='function')window.toggleAppMode()">Tutor</button>
+      <button type="button" class="app-mode-toggle" data-mode="chat" role="tab" data-i18n-key="tutor.modeChat" data-action="toggleAppMode" data-action-guard="appMode:chat:neq">Chat</button>
+      <button type="button" class="app-mode-toggle" data-mode="tutor" role="tab" data-i18n-key="tutor.modeTutor" data-action="toggleAppMode" data-action-guard="appMode:tutor:neq">Tutor</button>
     </div>
     <!-- P_mobile-topbar — mobile-only centered mode switcher. The desktop
          segmented pill (#modeSegmentedTop) is hidden under 640px, so this
@@ -492,23 +492,23 @@
          that the pill provided on desktop. Toggle + label sync live in
          src/ui/mobileModeSwitch.js. -->
     <div class="mobile-mode" id="mobileMode">
-      <button type="button" class="mobile-mode-trigger" id="mobileModeTrigger" aria-haspopup="menu" aria-expanded="false" onclick="if(window.toggleMobileModeMenu)window.toggleMobileModeMenu()">
+      <button type="button" class="mobile-mode-trigger" id="mobileModeTrigger" aria-haspopup="menu" aria-expanded="false" data-action="toggleMobileModeMenu">
         <span class="mobile-mode-label" id="mobileModeLabel" data-i18n-key="tutor.modeChat">Chat</span>
         <svg class="mobile-mode-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="mobile-mode-menu" id="mobileModeMenu" role="menu" aria-label="Session mode">
-        <button type="button" class="mobile-mode-item" data-mode="chat" role="menuitem" onclick="if(window.selectAppMode)window.selectAppMode('chat')">
+        <button type="button" class="mobile-mode-item" data-mode="chat" role="menuitem" data-action="selectAppMode" data-action-arg="chat">
           <span class="mobile-mode-item-title" data-i18n-key="tutor.modeChat">Chat</span>
           <span class="mobile-mode-item-desc" data-i18n-key="tutor.modeChatDesc">Plain conversation, no scaffolding</span>
         </button>
-        <button type="button" class="mobile-mode-item" data-mode="tutor" role="menuitem" onclick="if(window.selectAppMode)window.selectAppMode('tutor')">
+        <button type="button" class="mobile-mode-item" data-mode="tutor" role="menuitem" data-action="selectAppMode" data-action-arg="tutor">
           <span class="mobile-mode-item-title" data-i18n-key="tutor.modeTutor">Tutor</span>
           <span class="mobile-mode-item-desc" data-i18n-key="tutor.modeTutorDesc">AI asks, follows up, and tracks what you know</span>
         </button>
       </div>
     </div>
     <div class="top-bar-left">
-      <button class="toggle-sidebar" id="sidebarOpenBtn" onclick="toggleSidebar()" title="Toggle sidebar (⌘B)" aria-controls="sidebar" aria-expanded="true">
+      <button class="toggle-sidebar" id="sidebarOpenBtn" data-action="toggleSidebar" title="Toggle sidebar (⌘B)" aria-controls="sidebar" aria-expanded="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
       </button>
       <span class="chat-stats hidden" id="chatStats"></span>
@@ -519,7 +519,7 @@
            top-right. Starts a temporary chat that is not saved to
            Recents. Styled like the left sidebar toggle (not a filled
            circle). Hidden on desktop. -->
-      <button type="button" class="mobile-incognito-btn" id="mobileIncognitoBtn" onclick="event.preventDefault();if(window.toggleIncognito)window.toggleIncognito()" aria-pressed="false" aria-label="Incognito chat" title="Incognito chat">
+      <button type="button" class="mobile-incognito-btn" id="mobileIncognitoBtn" data-action="toggleIncognito" aria-pressed="false" aria-label="Incognito chat" title="Incognito chat">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 13h20"/><path d="M5 13l1.4-5.1A2 2 0 0 1 8.3 6.4h7.4a2 2 0 0 1 1.9 1.5L19 13"/><circle cx="7" cy="17" r="2.6"/><circle cx="17" cy="17" r="2.6"/><path d="M9.6 16.4h4.8"/></svg>
       </button>
       <span class="chat-api-badge hidden" id="chatApiBadge"></span>
@@ -535,10 +535,10 @@
       <!-- P0.2 — In-session find (Ctrl-F). Shown alongside Share once a
            conversation is active (toggled by toggleShareBtn in
            ui/share.js). Opens the floating find bar over #chatView. -->
-      <button class="find-btn hidden" id="findBtn" onclick="openFindInSession()" data-i18n-title="find.title" data-i18n-aria="find.title" title="Find in conversation" aria-label="Find in conversation">
+      <button class="find-btn hidden" id="findBtn" data-action="openFindInSession" data-i18n-title="find.title" data-i18n-aria="find.title" title="Find in conversation" aria-label="Find in conversation">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       </button>
-      <button class="share-btn hidden" id="shareBtn" onclick="openShareModal()" title="Share this conversation" aria-label="Share this conversation">
+      <button class="share-btn hidden" id="shareBtn" data-action="openShareModal" title="Share this conversation" aria-label="Share this conversation">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         <span class="share-btn-label" data-i18n-key="sidebar.share">Share</span>
       </button>
@@ -564,10 +564,10 @@
                out to every wired composer. -->
           <div class="attachment-chips hidden" id="topicAttachmentChips"></div>
           <div class="template-mode-chip hidden" id="topicTemplateModeChip" aria-live="polite"></div>
-          <textarea id="topicInput" name="topicInput" aria-label="What would you like to explore?" placeholder="e.g. I want to understand how machine learning works..." data-i18n-placeholder="topic.inputPlaceholder" rows="2" oninput="autoResize(this);updateStartBtn()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startSession()}"></textarea>
+          <textarea id="topicInput" name="topicInput" aria-label="What would you like to explore?" placeholder="e.g. I want to understand how machine learning works..." data-i18n-placeholder="topic.inputPlaceholder" rows="2" data-action-input="autoResize;updateStartBtn" data-action-keydown="startSession" data-action-keydown-keys="Enter:!shift"></textarea>
           <div class="topic-footer">
             <div class="footer-left-group">
-              <button class="attach-btn composer-tools-trigger" id="topicComposerToolsBtn" type="button" onclick="toggleComposerTools(this, 'topic')" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
+              <button class="attach-btn composer-tools-trigger" id="topicComposerToolsBtn" type="button" data-action="toggleComposerTools" data-action-arg="topic" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               </button>
               <input type="file" id="topicAttachInput" multiple
@@ -577,18 +577,18 @@
                    The label is filled by syncEffortUI() (ui/effortPicker.js)
                    and the chosen value feeds chat/stream.js's reasoning_effort. -->
               <div class="effort-picker" data-open="false">
-                <button type="button" class="effort-trigger" onclick="toggleEffortPicker(this)" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
+                <button type="button" class="effort-trigger" data-action="toggleEffortPicker" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
                   <span class="effort-label">Medium</span>
                   <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
                 <div class="effort-menu" role="listbox" aria-label="Reasoning effort">
-                  <button type="button" class="effort-item" data-effort="high" role="option" onclick="setReasoningEffort('high')"><span data-i18n-key="effort.high">High</span></button>
-                  <button type="button" class="effort-item" data-effort="medium" role="option" onclick="setReasoningEffort('medium')"><span data-i18n-key="effort.medium">Medium</span></button>
-                  <button type="button" class="effort-item" data-effort="low" role="option" onclick="setReasoningEffort('low')"><span data-i18n-key="effort.low">Low</span></button>
+                  <button type="button" class="effort-item" data-effort="high" role="option" data-action="setReasoningEffort" data-action-arg="high"><span data-i18n-key="effort.high">High</span></button>
+                  <button type="button" class="effort-item" data-effort="medium" role="option" data-action="setReasoningEffort" data-action-arg="medium"><span data-i18n-key="effort.medium">Medium</span></button>
+                  <button type="button" class="effort-item" data-effort="low" role="option" data-action="setReasoningEffort" data-action-arg="low"><span data-i18n-key="effort.low">Low</span></button>
                 </div>
               </div>
             </div>
-            <button class="start-btn" id="startBtn" aria-label="Send" onclick="startSession()">
+            <button class="start-btn" id="startBtn" aria-label="Send" data-action="startSession">
               <span id="startBtnContent"><svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
             </button>
           </div>
@@ -609,15 +609,15 @@
              logic lives in src/ui/findInSession.js. -->
         <div class="find-bar hidden" id="findBar" role="search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="find-bar-icon" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" id="findInput" name="findInput" data-i18n-placeholder="find.placeholder" data-i18n-aria="find.placeholder" aria-label="Find in conversation" placeholder="Find in conversation…" autocomplete="off" spellcheck="false" oninput="onFindInput(this.value)" onkeydown="onFindKey(event)">
+          <input type="text" id="findInput" name="findInput" data-i18n-placeholder="find.placeholder" data-i18n-aria="find.placeholder" aria-label="Find in conversation" placeholder="Find in conversation…" autocomplete="off" spellcheck="false" data-action-input="onFindInput:value" data-action-keydown="onFindKey:event">
           <span class="find-count" id="findCount" aria-live="polite"></span>
-          <button class="find-nav-btn" type="button" onclick="findPrev()" title="Previous match" aria-label="Previous match">
+          <button class="find-nav-btn" type="button" data-action="findPrev" title="Previous match" aria-label="Previous match">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
           </button>
-          <button class="find-nav-btn" type="button" onclick="findNext()" title="Next match" aria-label="Next match">
+          <button class="find-nav-btn" type="button" data-action="findNext" title="Next match" aria-label="Next match">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
           </button>
-          <button class="find-close-btn" type="button" onclick="closeFindInSession()" title="Close find" aria-label="Close find">
+          <button class="find-close-btn" type="button" data-action="closeFindInSession" title="Close find" aria-label="Close find">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
           </button>
         </div>
@@ -634,10 +634,10 @@
                  user knows the system is in a specialized mode.
                  Click × (rendered inline) to exit. -->
             <div class="template-mode-chip hidden" id="templateModeChip" aria-live="polite"></div>
-            <textarea id="chatInputArea" name="chatInputArea" aria-label="Type your thinking" placeholder="Type your thinking..." rows="1" oninput="autoResize(this);updateSendBtn()" onkeydown="handleChatKey(event)"></textarea>
+            <textarea id="chatInputArea" name="chatInputArea" aria-label="Type your thinking" placeholder="Type your thinking..." rows="1" data-action-input="autoResize;updateSendBtn" data-action-keydown="handleChatKey:event"></textarea>
             <div class="chat-input-footer">
               <div class="footer-left-group">
-                <button class="attach-btn composer-tools-trigger" id="chatComposerToolsBtn" type="button" onclick="toggleComposerTools(this, 'chat')" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
+                <button class="attach-btn composer-tools-trigger" id="chatComposerToolsBtn" type="button" data-action="toggleComposerTools" data-action-arg="chat" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                 </button>
                 <input type="file" id="attachInput" multiple
@@ -647,19 +647,19 @@
                      for the in-session composer; shares the persisted value
                      with the landing one. -->
                 <div class="effort-picker" data-open="false">
-                  <button type="button" class="effort-trigger" onclick="toggleEffortPicker(this)" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
+                <button type="button" class="effort-trigger" data-action="toggleEffortPicker" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
                     <span class="effort-label">Medium</span>
                     <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                   </button>
                   <div class="effort-menu" role="listbox" aria-label="Reasoning effort">
-                    <button type="button" class="effort-item" data-effort="high" role="option" onclick="setReasoningEffort('high')"><span data-i18n-key="effort.high">High</span></button>
-                    <button type="button" class="effort-item" data-effort="medium" role="option" onclick="setReasoningEffort('medium')"><span data-i18n-key="effort.medium">Medium</span></button>
-                    <button type="button" class="effort-item" data-effort="low" role="option" onclick="setReasoningEffort('low')"><span data-i18n-key="effort.low">Low</span></button>
+                    <button type="button" class="effort-item" data-effort="high" role="option" data-action="setReasoningEffort" data-action-arg="high"><span data-i18n-key="effort.high">High</span></button>
+                    <button type="button" class="effort-item" data-effort="medium" role="option" data-action="setReasoningEffort" data-action-arg="medium"><span data-i18n-key="effort.medium">Medium</span></button>
+                    <button type="button" class="effort-item" data-effort="low" role="option" data-action="setReasoningEffort" data-action-arg="low"><span data-i18n-key="effort.low">Low</span></button>
                   </div>
                 </div>
               </div>
               <span class="chat-input-hint" id="chatInputHint">Shift+Enter for new line</span>
-              <button class="send-btn" id="sendBtn" aria-label="Send" onclick="handleSendClick()">
+              <button class="send-btn" id="sendBtn" aria-label="Send" data-action="handleSendClick">
                 <span id="sendBtnContent"><svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
               </button>
             </div>
@@ -673,14 +673,14 @@
         <span class="library-title" data-i18n-key="sidebar.library.title">Library</span>
         <div class="workspace-header-actions">
           <span class="library-count" id="libraryCount"></span>
-          <button type="button" class="workspace-add-btn" onclick="openLibraryUpload()" title="Upload to Library" aria-label="Upload to Library">Upload</button>
+          <button type="button" class="workspace-add-btn" data-action="openLibraryUpload" title="Upload to Library" aria-label="Upload to Library">Upload</button>
         </div>
       </div>
       <div class="library-tabs">
-        <button type="button" class="library-tab active" data-library-tab="files" onclick="switchLibraryTab('files')" data-i18n-key="sidebar.library.files">Uploaded</button>
-        <button type="button" class="library-tab" data-library-tab="artifacts" onclick="switchLibraryTab('artifacts')" data-i18n-key="sidebar.library.artifacts">Created</button>
+        <button type="button" class="library-tab active" data-library-tab="files" data-action="switchLibraryTab" data-action-arg="files" data-i18n-key="sidebar.library.files">Uploaded</button>
+        <button type="button" class="library-tab" data-library-tab="artifacts" data-action="switchLibraryTab" data-action-arg="artifacts" data-i18n-key="sidebar.library.artifacts">Created</button>
       </div>
-      <div class="workspace-search"><input id="librarySearch" type="search" placeholder="Search your library" aria-label="Search your library" oninput="filterLibrary(this.value)"></div>
+      <div class="workspace-search"><input id="librarySearch" type="search" placeholder="Search your library" aria-label="Search your library" data-action-input="filterLibrary:value"></div>
       <div class="library-list" id="libraryList">
         <div class="library-empty" data-i18n-key="sidebar.library.empty">No files yet. Upload files in a chat to see them here.</div>
       </div>
@@ -689,7 +689,7 @@
     <div class="spaces-panel main-page hidden" id="spacesPanel">
       <div class="spaces-header">
         <span class="spaces-title" data-i18n-key="sidebar.spaces.title">Projects</span>
-        <button type="button" class="workspace-add-btn" onclick="openCreateProject()" title="Create project" aria-label="Create project">New</button>
+        <button type="button" class="workspace-add-btn" data-action="openCreateProject" title="Create project" aria-label="Create project">New</button>
       </div>
       <p class="workspace-intro">Keep chats, files, and instructions together.</p>
       <div class="spaces-list" id="spacesList">
@@ -699,7 +699,7 @@
     <div class="scheduled-panel main-page hidden" id="scheduledPanel">
       <div class="scheduled-header">
         <span class="scheduled-title" data-i18n-key="sidebar.scheduled.title">Scheduled</span>
-        <button type="button" class="workspace-add-btn" onclick="openCreateScheduledTask()" title="Schedule a task" aria-label="Schedule a task">New</button>
+        <button type="button" class="workspace-add-btn" data-action="openCreateScheduledTask" title="Schedule a task" aria-label="Schedule a task">New</button>
       </div>
       <p class="workspace-intro">Run a prompt once or on a recurring schedule.</p>
       <div class="scheduled-list" id="scheduledList">
@@ -709,7 +709,7 @@
     <div class="plugins-panel main-page hidden" id="pluginsPanel">
       <div class="plugins-header">
         <span class="plugins-title">Plugin Center</span>
-        <button type="button" class="workspace-add-btn" onclick="openPluginMarketplace()">Refresh</button>
+        <button type="button" class="workspace-add-btn" data-action="openPluginMarketplace">Refresh</button>
       </div>
       <p class="workspace-intro">Connect tools and data sources for use in chat.</p>
       <div class="plugins-list" id="pluginsList">
@@ -779,11 +779,11 @@
        - cached titles of older sessions loaded from localStorage
      Indexed on first open and rebuilt whenever a session is
      saved. Recent queries persist under socrates-search-recent. -->
-<div class="cmd-k-overlay hidden" id="cmdKOverlay" onclick="if(event.target===this)closeCmdK()">
-  <div class="cmd-k-modal" onclick="event.stopPropagation()">
+<div class="cmd-k-overlay hidden" id="cmdKOverlay" data-action="closeCmdK" data-action-self-only="true">
+  <div class="cmd-k-modal" data-action="__stop">
     <div class="cmd-k-input-row">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="cmd-k-icon"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input type="text" id="cmdKInput" name="cmdKInput" aria-label="Search sessions and messages" placeholder="Search sessions and messages…" autocomplete="off" spellcheck="false" oninput="onCmdKInput(this.value)" onkeydown="onCmdKKey(event)">
+      <input type="text" id="cmdKInput" name="cmdKInput" aria-label="Search sessions and messages" placeholder="Search sessions and messages…" autocomplete="off" spellcheck="false" data-action-input="onCmdKInput:value" data-action-keydown="onCmdKKey:event">
       <kbd class="cmd-k-kbd">Esc</kbd>
     </div>
     <div class="cmd-k-results" id="cmdKResults"></div>
@@ -795,22 +795,22 @@
   </div>
 </div>
 
-<div class="share-overlay hidden" id="shareOverlay" onclick="if(event.target===this)closeShareModal()">
-  <div class="share-modal" onclick="event.stopPropagation()">
+<div class="share-overlay hidden" id="shareOverlay" data-action="closeShareModal" data-action-self-only="true">
+  <div class="share-modal" data-action="__stop">
     <div class="share-header">
       <span class="share-title" data-i18n-key="share.title">Share conversation</span>
-      <button class="share-close" onclick="closeShareModal()">
+      <button class="share-close" data-action="closeShareModal">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>
-    <div class="share-opt" id="shareOptPublic" data-share-vis="public" role="radio" tabindex="0" onclick="selectShareVis('public')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectShareVis('public')}">
+    <div class="share-opt" id="shareOptPublic" data-share-vis="public" role="radio" tabindex="0" data-action="selectShareVis:public" data-action-keydown="selectShareVis:public" data-action-keydown-keys="Enter|Space">
       <div class="share-opt-radio"><span class="share-opt-radio-dot"></span></div>
       <div class="share-opt-body">
         <div class="share-opt-title" data-i18n-key="share.publicTitle">Anyone with the link</div>
         <div class="share-opt-desc" data-i18n-key="share.publicDesc">No sign-in required. Anyone who has the link can view this conversation.</div>
       </div>
     </div>
-    <div class="share-opt" id="shareOptPrivate" data-share-vis="private" role="radio" tabindex="0" onclick="selectShareVis('private')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectShareVis('private')}">
+    <div class="share-opt" id="shareOptPrivate" data-share-vis="private" role="radio" tabindex="0" data-action="selectShareVis:private" data-action-keydown="selectShareVis:private" data-action-keydown-keys="Enter|Space">
       <div class="share-opt-radio"><span class="share-opt-radio-dot"></span></div>
       <div class="share-opt-body">
         <div class="share-opt-title" data-i18n-key="share.privateTitle">Only you</div>
@@ -818,16 +818,16 @@
       </div>
     </div>
     <div id="shareLinkArea" class="share-link-area hidden">
-      <input class="share-link-input" id="shareLinkInput" name="shareLinkInput" type="text" readonly onclick="this.select()" aria-label="Share link">
-      <button class="share-copy-btn" id="shareCopyBtn" onclick="copyShareLink()" data-i18n-key="share.copy">Copy</button>
+      <input class="share-link-input" id="shareLinkInput" name="shareLinkInput" type="text" readonly data-action="select" aria-label="Share link">
+      <button class="share-copy-btn" id="shareCopyBtn" data-action="copyShareLink" data-i18n-key="share.copy">Copy</button>
     </div>
     <div id="shareRevokeArea" class="hidden" style="text-align:center">
-      <button class="share-revoke" onclick="revokeShareLink()" data-i18n-key="share.revoke">× Revoke share link</button>
+      <button class="share-revoke" data-action="revokeShareLink" data-i18n-key="share.revoke">× Revoke share link</button>
     </div>
     <div class="share-error hidden" id="shareError"></div>
     <div class="share-status hidden" id="shareStatus"></div>
     <div id="shareCreateArea" style="text-align:center;margin-top:4px">
-      <button class="settings-btn primary" id="shareCreateBtn" onclick="createShareLink()" style="margin-top:8px" data-i18n-key="share.create">Create share link</button>
+      <button class="settings-btn primary" id="shareCreateBtn" data-action="createShareLink" style="margin-top:8px" data-i18n-key="share.create">Create share link</button>
     </div>
   </div>
 </div>
@@ -874,11 +874,11 @@
 </div>
 
 <!-- profile modal -->
-<div class="profile-overlay hidden" id="profileOverlay" onclick="if(event.target===this)closeProfile()">
-  <div class="profile-modal" onclick="event.stopPropagation()">
+<div class="profile-overlay hidden" id="profileOverlay" data-action="closeProfile" data-action-self-only="true">
+  <div class="profile-modal" data-action="__stop">
     <div class="profile-header">
       <div class="profile-avatar" id="profileAvatar">JH</div>
-      <input class="profile-name-input" id="profileName" type="text" maxlength="50" onchange="saveProfileName(this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+      <input class="profile-name-input" id="profileName" type="text" maxlength="50" data-action-change="saveProfileName:value" data-action-keydown="blur" data-action-keydown-keys="Enter">
       <div class="profile-email" id="profileEmail">jiacheng@example.com</div>
     </div>
     <div class="profile-body" id="profileBody">
@@ -924,12 +924,12 @@
         <div class="profile-row">
           <span class="profile-row-label" data-i18n-key="profile.language">Language</span>
           <div class="profile-lang-toggle" id="profileLangToggle">
-            <span class="profile-lang-option active" id="profileLangEn" onclick="setLang('en')">English</span>
-            <span class="profile-lang-option" id="profileLangZh" onclick="setLang('zh')">中文</span>
+            <span class="profile-lang-option active" id="profileLangEn" data-action="setLang" data-action-arg="en">English</span>
+            <span class="profile-lang-option" id="profileLangZh" data-action="setLang" data-action-arg="zh">中文</span>
           </div>
         </div>
         <div class="profile-toggle-desc" data-i18n-key="profile.webSearchDesc">Enable web search to include real-time results in questions.</div>
-        <div class="profile-toggle" id="profileWebSearchToggle" onclick="toggleProfileWebSearch()">
+        <div class="profile-toggle" id="profileWebSearchToggle" data-action="toggleProfileWebSearch">
           <span class="profile-toggle-label" data-i18n-key="profile.webSearch">Web search</span>
           <div class="stg-toggle-track" id="profileWebSearchTrack"><div class="stg-toggle-knob"></div></div>
         </div>
@@ -943,9 +943,9 @@
              P1.3) is live, we sync to the server. -->
         <div class="profile-instructions">
           <label class="profile-instructions-label" for="profileInstResponse" data-i18n-key="profile.howShouldIRespond">How should I respond?</label>
-          <textarea id="profileInstResponse" name="profileInstResponse" class="profile-instructions-area" maxlength="4000" placeholder="e.g. Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language." oninput="onCustomInstructionsChange()"></textarea>
+          <textarea id="profileInstResponse" name="profileInstResponse" class="profile-instructions-area" maxlength="4000" placeholder="e.g. Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language." data-action-input="onCustomInstructionsChange"></textarea>
           <label class="profile-instructions-label" for="profileInstAbout" style="margin-top:10px" data-i18n-key="profile.whatDoYouKnow">What do you know about me?</label>
-          <textarea id="profileInstAbout" name="profileInstAbout" class="profile-instructions-area" maxlength="4000" placeholder="e.g. I'm a backend engineer working on a payments product. I'm allergic to puns." oninput="onCustomInstructionsChange()"></textarea>
+          <textarea id="profileInstAbout" name="profileInstAbout" class="profile-instructions-area" maxlength="4000" placeholder="e.g. I'm a backend engineer working on a payments product. I'm allergic to puns." data-action-input="onCustomInstructionsChange"></textarea>
           <div class="profile-instructions-foot">
             <span id="profileInstSaveState" class="profile-instructions-state" data-i18n-key="profile.notYetSaved">Not yet saved</span>
           </div>
@@ -960,7 +960,7 @@
             <div class="profile-action-label" data-i18n-key="profile.usage">Token usage</div>
             <div class="profile-action-desc" data-i18n-key="profile.usage.desc">View daily token usage heatmap and monthly breakdown.</div>
           </div>
-          <button class="profile-btn" onclick="openUsageModal()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.view">View</button>
+          <button class="profile-btn" data-action="openUsageModal" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.view">View</button>
         </div>
         <!-- P2.3 — Storage entry. Opens a modal listing archived
              sessions with restore / delete controls. The button
@@ -971,7 +971,7 @@
             <div class="profile-action-label" data-i18n-key="profile.archivedSessions">Archived sessions</div>
             <div class="profile-action-desc" data-i18n-key="profile.archivedSessionsDesc">Sessions you deleted are kept here for 30 days before being permanently erased.</div>
           </div>
-          <button class="profile-btn" onclick="openStorageModal()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.manage">Manage</button>
+          <button class="profile-btn" data-action="openStorageModal" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.manage">Manage</button>
         </div>
         <!-- P5.8 — Prompt templates. Opens a manager modal
              where the user can add / edit / delete custom
@@ -981,21 +981,21 @@
             <div class="profile-action-label" data-i18n-key="profile.promptTemplates">Prompt templates</div>
             <div class="profile-action-desc" data-i18n-key="profile.promptTemplatesDesc">Reusable prompts you can fire from the chat with <code>/shortcut</code>.</div>
           </div>
-          <button class="profile-btn" onclick="openPromptTemplatesModal()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.manage">Manage</button>
+          <button class="profile-btn" data-action="openPromptTemplatesModal" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.manage">Manage</button>
         </div>
         <div class="profile-action-row">
           <div>
             <div class="profile-action-label" data-i18n-key="profile.clearConversations">Clear conversations</div>
             <div class="profile-action-desc" data-i18n-key="profile.clearConversationsDesc">Remove all local chat history.</div>
           </div>
-          <button class="profile-btn warning" onclick="confirmClearCache()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.clear">Clear</button>
+          <button class="profile-btn warning" data-action="confirmClearCache" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.clear">Clear</button>
         </div>
         <div class="profile-action-row">
           <div>
             <div class="profile-action-label" data-i18n-key="profile.clearApiSettings">Clear API settings</div>
             <div class="profile-action-desc" data-i18n-key="profile.clearApiSettingsDesc">Remove all configured API providers and keys.</div>
           </div>
-          <button class="profile-btn warning" onclick="confirmClearSettings()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.clear">Clear</button>
+          <button class="profile-btn warning" data-action="confirmClearSettings" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.clear">Clear</button>
         </div>
       </div>
       <!-- Danger zone section -->
@@ -1006,40 +1006,40 @@
             <div class="profile-action-label" data-i18n-key="profile.signOut">Sign out</div>
             <div class="profile-action-desc" data-i18n-key="profile.signOutDesc">End your session on this device.</div>
           </div>
-          <button class="profile-btn signout" onclick="signOut();closeProfile()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.signOut">Sign out</button>
+          <button class="profile-btn signout" data-action="signOut;closeProfile" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.signOut">Sign out</button>
         </div>
         <div class="profile-action-row">
           <div>
             <div class="profile-action-label" style="color:hsl(0 60% 55%)" data-i18n-key="profile.deleteAccount">Delete account</div>
             <div class="profile-action-desc" data-i18n-key="profile.deleteAccountDesc">Permanently delete your account and all data.</div>
           </div>
-          <button class="profile-btn danger" onclick="confirmDeleteAccount()" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.deleteAccount">Delete</button>
+          <button class="profile-btn danger" data-action="confirmDeleteAccount" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.deleteAccount">Delete</button>
         </div>
       </div>
     </div>
     <div class="profile-actions" style="border-top:0.5px solid hsl(var(--border-300)/0.08);padding-top:12px">
-      <button class="profile-btn close-btn" onclick="closeProfile()" data-i18n-key="common.close">Close</button>
+      <button class="profile-btn close-btn" data-action="closeProfile" data-i18n-key="common.close">Close</button>
     </div>
   </div>
 </div>
 <!-- confirm dialog -->
-<div class="confirm-dialog hidden" id="confirmDialog" onclick="if(event.target===this)closeConfirm()">
-  <div class="confirm-box" onclick="event.stopPropagation()">
+<div class="confirm-dialog hidden" id="confirmDialog" data-action="closeConfirm" data-action-self-only="true">
+  <div class="confirm-box" data-action="__stop">
     <div class="confirm-title" id="confirmTitle">Are you sure?</div>
     <div class="confirm-msg" id="confirmMsg">This action cannot be undone.</div>
     <div class="confirm-actions" id="confirmActions">
-      <button class="confirm-btn cancel" onclick="closeConfirm()">Cancel</button>
-      <button class="confirm-btn primary" id="confirmOkBtn" onclick="closeConfirm()">OK</button>
+      <button class="confirm-btn cancel" data-action="closeConfirm">Cancel</button>
+      <button class="confirm-btn primary" id="confirmOkBtn" data-action="closeConfirm">OK</button>
     </div>
   </div>
 </div>
 
 <!-- usage modal -->
-<div class="usage-overlay hidden" id="usageOverlay" onclick="if(event.target===this)closeUsageModal()">
-  <div class="usage-modal" onclick="event.stopPropagation()">
+<div class="usage-overlay hidden" id="usageOverlay" data-action="closeUsageModal" data-action-self-only="true">
+  <div class="usage-modal" data-action="__stop">
     <div class="usage-header">
       <span class="usage-title">Token Usage</span>
-      <span class="usage-close" onclick="closeUsageModal()">
+      <span class="usage-close" data-action="closeUsageModal">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </span>
     </div>

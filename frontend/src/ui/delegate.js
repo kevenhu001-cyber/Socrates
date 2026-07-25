@@ -47,6 +47,12 @@ function registerBuiltinActions() {
   registerAction('preventDefault', function (el, e) {
     e.preventDefault();
   });
+  // stopPropagation-only; replaces `onclick="event.stopPropagation()"` on
+  // overlay containers so clicks inside the overlay don't bubble to the
+  // backdrop's "self-only" close handler.
+  registerAction('__stop', function (el, e) {
+    e.stopPropagation();
+  });
   // this.select() / this.blur() — convenience for inputs.
   registerAction('select', function (el) { el.select(); });
   registerAction('blur', function (el) { el.blur(); });
@@ -334,7 +340,12 @@ function dispatchEvent(event, eventType) {
   if (!resolveGuard(guard, w)) return;
   var keysSpec = target.getAttribute('data-action-keys');
   if (!matchesKeys(event, keysSpec)) return;
-  runActionChain(target, event, target.dataset.action, eventType);
+  // Per-event-type action string lets a single element declare different
+  // actions for input vs focus, click vs keydown, etc. Falls back to
+  // data-action for any event without a specific override.
+  var actionStr = target.getAttribute('data-action-' + eventType)
+    || target.dataset.action;
+  if (actionStr) runActionChain(target, event, actionStr, eventType);
 }
 
 // Set up the single delegation listener
@@ -362,7 +373,7 @@ function installDelegate() {
 
   document.body.addEventListener('focus', function (e) {
     dispatchEvent(e, 'focus');
-  });
+  }, true); // capture — focus doesn't bubble
 
   // <form onsubmit=...> bubbles to document.body as a `submit` event.
   document.body.addEventListener('submit', function (e) {
