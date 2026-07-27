@@ -104,7 +104,7 @@ function wireKeyboardBridge() {
   const Keyboard = getPlugin('Keyboard');
   if (!Keyboard) return () => {};
 
-  const findInput = () => document.getElementById('chatInputArea');
+  const findInput = () => document.querySelector('#chatComposerRoot .rich-composer-editor');
 
   const showHandle = Keyboard.addListener('keyboardWillShow', () => {
     const input = findInput();

@@ -273,18 +273,14 @@ var EXTENSIONS=[
        /* Prefer the VISIBLE composer (chat when a session is live,
           else the landing topic input) — the hidden one is empty and
           would swallow the launch. */
-       var input = document.getElementById("chatInputArea");
-       if(!input || input.offsetParent === null){
-         var ti = document.getElementById("topicInput");
-         if(ti) input = ti;
-       }
-       if(input && input.value.trim() && typeof window.launchDeepResearch === "function"){
+       var surface = getVisibleComposerSurface();
+       if(getComposerMarkdown(surface).trim() && typeof window.launchDeepResearch === "function"){
          /* There's already a query — kick off research immediately. */
          window.launchDeepResearch();
        }else{
          /* No query yet — focus the composer and tell the user what to
             do next so the click has visible, understandable effect. */
-         if(input && input.focus) input.focus();
+         focusComposer(surface);
          if(typeof window.showToast === "function"){
            window.showToast((typeof window.t === "function" && window.t("composer.deepResearch.hint")) || "Enter a research topic, then press send.");
          }
@@ -449,3 +445,8 @@ export {
   markProvidersFetched,
 };
 export { EXTENSIONS };
+import {
+  focusComposer,
+  getComposerMarkdown,
+  getVisibleComposerSurface,
+} from './react/composer-input/controller.ts';
