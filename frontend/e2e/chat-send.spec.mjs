@@ -13,7 +13,7 @@ test('clicking send mounts a streaming bubble or surfaces a notice without throw
   await waitForAppShell(page);
   await page.waitForTimeout(400);
 
-  const chatInput = page.locator('#chatInputArea, [name="chatInputArea"]').first();
+  const chatInput = page.locator('#chatComposerRoot .rich-composer-editor').first();
   const sendBtn = page.locator('#sendBtn, .send-btn').first();
 
   if (!(await chatInput.isVisible().catch(() => false))) {
@@ -61,7 +61,7 @@ test('mobile send stays pinned to the newest message after focused input submit'
     window.state._userScrolledAway = false;
   });
 
-  const chatInput = page.locator('#chatInputArea').first();
+  const chatInput = page.locator('#chatComposerRoot .rich-composer-editor').first();
   const sendBtn = page.locator('#sendBtn').first();
 
   await chatInput.focus();

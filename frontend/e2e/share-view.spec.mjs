@@ -61,7 +61,7 @@ test('public ?share=TOKEN loads the read-only chat view without auth', async ({ 
   await expect(msgList.nth(1)).toContainText('Gravity is a force');
 
   // The composer is hidden; user cannot post into a shared view.
-  const composer = page.locator('#chatInputArea');
+  const composer = page.locator('#chatComposerRoot');
   await expect(composer).toBeHidden();
 
   // The state Proxy namespaces are preserved (the previous

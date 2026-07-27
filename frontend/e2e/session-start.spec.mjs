@@ -13,7 +13,7 @@ test('typing into topic input enables the Start button; clicking does not throw'
   await waitForAppShell(page);
   await page.waitForTimeout(400);
 
-  const topicInput = page.locator('#topicInput, [name="topicInput"]').first();
+  const topicInput = page.locator('#topicComposerRoot .rich-composer-editor').first();
   await expect(topicInput).toBeAttached({ timeout: 5_000 });
   await expect(topicInput).toBeVisible({ timeout: 5_000 });
 
@@ -45,7 +45,7 @@ test('pressing Enter in the topic input starts the session', async ({ page }) =>
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  const topicInput = page.locator('#topicInput');
+  const topicInput = page.locator('#topicComposerRoot .rich-composer-editor');
   await topicInput.fill('Enter should send this topic');
   await topicInput.press('Enter');
 

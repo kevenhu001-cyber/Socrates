@@ -47,7 +47,7 @@ test('tool activity is grouped by answer and reveals search, code, and artifacts
 
   const group = page.locator('.tool-run-group').last();
   await expect(group).toHaveAttribute('data-state', 'complete');
-  await expect(group.locator('.tool-run-summary')).toContainText('Used tools');
+  await expect(group.locator('.tool-run-summary')).toContainText('Explored');
   await expect(group.locator('.tool-run-list')).toBeHidden();
   await group.locator('.tool-run-summary').click();
   await expect(group.locator('.tool-run-list')).toBeVisible();

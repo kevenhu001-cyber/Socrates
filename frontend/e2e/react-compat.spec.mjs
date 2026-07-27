@@ -10,7 +10,7 @@ test('React compatibility mode preserves the legacy application shell', async ({
   await waitForAppShell(page);
 
   await expect(page.locator('#sidebar')).toBeVisible();
-  await expect(page.locator('#topicInput, [name="topicInput"]').first()).toBeVisible();
+  await expect(page.locator('#topicComposerRoot .rich-composer-editor').first()).toBeVisible();
 
   const compatibilityRoot = page.locator('#newReplyPill');
   await expect(compatibilityRoot).toHaveAttribute('data-react-migration-runtime', 'new-reply-pill');
