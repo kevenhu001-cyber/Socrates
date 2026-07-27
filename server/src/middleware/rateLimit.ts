@@ -275,3 +275,16 @@ export const visionLimiter = rateLimit({
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Vision description rate limit exceeded.'),
 });
+
+/* /api/client-error is unauthenticated (errors can fire before login)
+   and writes to the server log — without a cap a single client can
+   flood the log at line rate. 30/min per IP is far above what a
+   legitimately broken page emits. */
+export const clientErrorLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  keyGenerator: (req) => `ip:${req.ip}`,
+  standardHeaders: false,
+  legacyHeaders: false,
+  message: jsonLimit('TOO_MANY_REQUESTS', 'Too many error reports.'),
+});

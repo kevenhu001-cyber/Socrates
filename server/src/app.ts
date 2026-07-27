@@ -5,9 +5,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 
 import { csrfProtection } from './middleware/csrf.js';
-import { requireAuth } from './middleware/auth.js';
+import { requireAuth, optionalAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler, timeoutMiddleware } from './middleware/error.js';
-import { searchLimiter, fetchLimiter } from './middleware/rateLimit.js';
+import { searchLimiter, fetchLimiter, clientErrorLimiter } from './middleware/rateLimit.js';
 import crypto from 'node:crypto';
 import authRouter from './routes/auth.js';
 import sessionRouter from './routes/sessions.js';
@@ -46,8 +46,8 @@ import { webSearch, imageSearch } from './services/webSearch.js';
 import { fetchBatch } from './services/fetchBatch.js';
 import { getActiveApiKey } from './services/apiKey.js';
 import { getDb } from './db/index.js';
-import { apiKeys, files as filesTable } from './db/schema.js';
-import { sql, and, eq, isNotNull } from 'drizzle-orm';
+import { apiKeys, files as filesTable, executions as executionsTable, shares as sharesTable, sessions as sessionsTable } from './db/schema.js';
+import { sql, and, eq, isNotNull, isNull, inArray } from 'drizzle-orm';
 import { getStatus as getPubsubStatus } from './lib/pubsub.js';
 
 const app = express();
@@ -309,10 +309,10 @@ app.use(cors({
   credentials: true,
 }));
 
-app.post('/api/client-error', express.json({ limit: '10kb' }), (req, res) => {
+app.post('/api/client-error', clientErrorLimiter, express.json({ limit: '10kb' }), (req, res) => {
   const { correl, msg, stack, href, ua } = req.body || {};
-  console.error('[client-error]', correl, msg, href, ua);
-  if (stack) console.error('[client-error-stack]', stack);
+  console.error('[client-error]', String(correl ?? '').slice(0, 64), String(msg ?? '').slice(0, 500), String(href ?? '').slice(0, 300), String(ua ?? '').slice(0, 200));
+  if (stack) console.error('[client-error-stack]', String(stack).slice(0, 4000));
   res.status(204).end();
 });
 
@@ -494,13 +494,44 @@ app.use('/api/project-connectors', projectConnectorRouter);
 // `/extract` path doesn't get swallowed by fileRouter's `/:id` lookup.
 // The /raw endpoint is mounted BEFORE the tagRouter (which mounts at
 // /api with requireAuth) so unauthenticated share viewers can load
-// artifact images without hitting the requireAuth middleware. File
-// IDs are UUIDs, unguessable — same security model as share tokens.
-app.get('/api/files/:id/raw', async (req, res, next) => {
+// artifact images without hitting the requireAuth middleware.
+//
+// Access control (audit follow-up — UUID unguessability alone is not
+// authorization): the owner may always read; anyone else may read only
+// when the file's session (direct, or via its code-interpreter
+// execution) carries an active public/unlisted share on a non-archived
+// session. Everything else gets 404 so the endpoint is not an
+// existence oracle.
+app.get('/api/files/:id/raw', optionalAuth, async (req, res, next) => {
   try {
     const db = getDb();
-    const [file] = await db.select().from(filesTable).where(eq(filesTable.id, req.params.id)).limit(1);
+    const fileId = String(req.params.id);
+    const [file] = await db.select().from(filesTable).where(eq(filesTable.id, fileId)).limit(1);
     if (!file) return next();
+    let allowed = !!req.userId && file.userId === req.userId;
+    if (!allowed) {
+      let sessionId = file.sessionId;
+      if (!sessionId && file.executionId) {
+        const [exec] = await db.select({ sessionId: executionsTable.sessionId })
+          .from(executionsTable)
+          .where(eq(executionsTable.id, file.executionId))
+          .limit(1);
+        sessionId = exec?.sessionId ?? null;
+      }
+      if (sessionId) {
+        const [share] = await db.select({ token: sharesTable.token })
+          .from(sharesTable)
+          .innerJoin(sessionsTable, eq(sessionsTable.id, sharesTable.sessionId))
+          .where(and(
+            eq(sharesTable.sessionId, sessionId),
+            inArray(sharesTable.visibility, ['public', 'unlisted']),
+            isNull(sessionsTable.archivedAt),
+          ))
+          .limit(1);
+        allowed = !!share;
+      }
+    }
+    if (!allowed) return res.status(404).json({ code: 'NOT_FOUND', message: 'File not found' });
     res.set('X-Content-Type-Options', 'nosniff');
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     if (!file.mimeType.startsWith('image/') && file.mimeType !== 'application/pdf') {
