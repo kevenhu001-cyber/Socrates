@@ -5736,18 +5736,31 @@ function doRender(){
             savedToolCards[sci].parentNode.removeChild(savedToolCards[sci]);
           }
         }
-        body.innerHTML=finalHtml;
-        if(savedPill)body.insertBefore(savedPill,body.firstChild);
-        else if(savedToolGroup)body.appendChild(savedToolGroup);
-        for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
-          body.appendChild(savedToolCardArr[sci2]);
-        }
-        /* Re-mount saved artifacts AFTER the final HTML + tool cards so
-           they sit at the bottom of the bubble (matching the streaming
-           layout). */
-        for(var ai2=0;ai2<savedArtifacts.length;ai2++){
-          body.appendChild(savedArtifacts[ai2]);
-        }
+        /* P_finish-fade — the streaming→final transition rewrites
+           body.innerHTML, which makes the bubble visibly flash as the
+           browser tears down the live DOM and rebuilds it with the
+           marked+KaTeX render. Fade the body to 0, swap, then fade
+           back so the swap reads as a single pulse instead of a
+           full reload. The fade is short (~80ms each way) so it
+           doesn't add perceived latency. */
+        body.classList.add('msg-body-finish-fade');
+        requestAnimationFrame(function(){
+          body.innerHTML=finalHtml;
+          if(savedPill)body.insertBefore(savedPill,body.firstChild);
+          else if(savedToolGroup)body.appendChild(savedToolGroup);
+          for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
+            body.appendChild(savedToolCardArr[sci2]);
+          }
+          /* Re-mount saved artifacts AFTER the final HTML + tool cards so
+             they sit at the bottom of the bubble (matching the streaming
+             layout). */
+          for(var ai2=0;ai2<savedArtifacts.length;ai2++){
+            body.appendChild(savedArtifacts[ai2]);
+          }
+          requestAnimationFrame(function(){
+            body.classList.remove('msg-body-finish-fade');
+          });
+        });
         if(cursor){cursor.remove();cursor=null}
         if(msgIdx>=0&&state.messages[msgIdx]){
           state.messages[msgIdx].html=finalHtml;

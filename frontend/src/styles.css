@@ -1617,6 +1617,12 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .msg-body pre{background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-radius:10px;padding:12px 14px;overflow-x:auto;font-family:var(--font-mono);font-size:calc(12px * var(--app-font-scale, 1));line-height:1.5;margin:8px 0;color:hsl(var(--text-200))}
 .msg-body code{font-family:var(--font-mono);font-size:.9em;background:hsl(var(--always-white)/0.06);padding:2px 5px;border-radius:3px}
 .msg-body pre code{background:none;padding:0}
+/* Streaming→final transition: finish() rewrites the body's innerHTML
+   to swap in the marked+KaTeX render. Without this fade the user sees
+   a hard flash as the browser tears down and rebuilds the DOM, which
+   reads as "the page reloaded". The fade masks the swap with a short
+   ~80ms opacity dip so it feels like a single pulse, not a refresh. */
+.msg-body-finish-fade{opacity:0;transition:opacity .08s linear}
 .quick-opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .quick-opt{padding:6px 14px;border-radius:16px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));transition:background-color .1s,color .1s,border-color .1s;cursor:pointer}
 .quick-opt:hover{border-color:hsl(var(--border-200)/0.4);background:hsl(var(--bg-300));color:hsl(var(--text-100))}
