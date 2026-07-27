@@ -262,7 +262,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       }
       label.textContent = summary.active === 1
         ? activeToolLabel(activeEntry)
-        : translate('tool.groupWorking', 'Working');
+        : translate('tool.groupExploring', 'Exploring');
       meta.textContent = summary.total > 1 ? summary.active + ' of ' + summary.total + ' tools' : 'Running';
     } else if (summary.failed || summary.timed_out) {
       (group as HTMLElement).dataset.state = 'error';
@@ -274,7 +274,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       meta.textContent = summary.total + ' tool' + (summary.total === 1 ? '' : 's');
     } else {
       (group as HTMLElement).dataset.state = 'complete';
-      label.textContent = translate('tool.groupComplete', 'Used tools');
+      label.textContent = translate('tool.groupExplored', 'Explored');
       meta.textContent = summary.total + ' tool' + (summary.total === 1 ? '' : 's');
     }
   }
