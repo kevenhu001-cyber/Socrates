@@ -81,7 +81,12 @@ function _isConversationActive() {
   if (state.kbNodes && state.kbNodes.length > 0) return true;
   if (state.phase === "chat") return true;
   var msgList = (typeof document !== "undefined") ? document.getElementById("msgList") : null;
-  if (msgList && msgList.children.length > 0) return true;
+  /* React's MessageList always renders an empty placeholder
+     (<div data-react-message-list-empty>) in #msgList even when there
+     are no messages, so msgList.children.length > 0 is always true
+     after React mounts. Skip the placeholder when checking for real
+     conversation messages. */
+  if (msgList && Array.from(msgList.children).some(function (c) { return !c.hasAttribute('data-react-message-list-empty'); })) return true;
   return false;
 }
 
