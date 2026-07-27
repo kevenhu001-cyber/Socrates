@@ -9,7 +9,7 @@ import {
   useScheduledSnapshot,
 } from './legacyAdapter';
 
-const PANEL_ID = 'scheduledPanel';
+const LIST_ID = 'scheduledList';
 
 function i18n(key: string, fallback: string): string {
   const v = _t(key);
@@ -36,32 +36,16 @@ function ScheduledPage() {
   const tasks = snap.tasks;
 
   if (snap.loading) {
-    return (
-      <div className="scheduled-header">
-        <span className="scheduled-title">{i18n('sidebar.scheduled.title', 'Scheduled')}</span>
-        <div className="scheduled-list" id="scheduledList">
-          <div className="workspace-loading">{i18n('scheduled.loading', 'Loading tasks…')}</div>
-        </div>
-      </div>
-    );
+    return <div className="workspace-loading">{i18n('scheduled.loading', 'Loading tasks…')}</div>;
   }
 
   if (snap.error) {
-    return (
-      <div className="scheduled-header">
-        <span className="scheduled-title">{i18n('sidebar.scheduled.title', 'Scheduled')}</span>
-        <div className="scheduled-list" id="scheduledList">
-          <div className="scheduled-empty">{snap.error}</div>
-        </div>
-      </div>
-    );
+    return <div className="scheduled-empty">{snap.error}</div>;
   }
 
   return (
-    <div className="scheduled-header">
-      <span className="scheduled-title">{i18n('sidebar.scheduled.title', 'Scheduled')}</span>
-      <div className="scheduled-list" id="scheduledList">
-        {tasks.length === 0 ? (
+    <>
+      {tasks.length === 0 ? (
           <div className="workspace-empty">
             <strong>{i18n('scheduled.empty', 'Let Socrates follow up')}</strong>
             <span>{i18n('scheduled.emptyDesc', 'Create a reminder, recurring briefing, or monitoring task.')}</span>
@@ -126,21 +110,20 @@ function ScheduledPage() {
             })}
           </>
         )}
-      </div>
-    </div>
+    </>
   );
 }
 
 let root: Root | null = null;
 
 export function mountScheduledPage(): void {
-  const panel = document.getElementById(PANEL_ID);
-  if (!panel) return;
+  const container = document.getElementById(LIST_ID);
+  if (!container) return;
 
   installScheduledBridge();
 
   if (!root) {
-    root = createRoot(panel);
+    root = createRoot(container);
   }
   root.render(<ScheduledPage />);
 }

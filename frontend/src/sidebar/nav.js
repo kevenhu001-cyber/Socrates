@@ -213,6 +213,10 @@ export function closeAllPanels() {
 function hideMainPages() {
   ["libraryPanel", "spacesPanel", "scheduledPanel", "pluginsPanel", "examView"].forEach(function (id) { var p = byId(id); if (p) p.classList.add("hidden"); });
   document.body.classList.remove("workspace-active");
+  /* Leaving exam via sidebar nav must also drop the exam-active body
+     class, otherwise CSS keeps hiding the mode switcher and other
+     chat top-bar elements (exam.js only removes it in closeExamView). */
+  document.body.classList.remove("exam-active");
 }
 window.hideMainPages = hideMainPages;
 
