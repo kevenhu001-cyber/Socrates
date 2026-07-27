@@ -7534,8 +7534,9 @@ import {
 
 async function toggleAppMode(){
   /* Mid-session switch: confirm before discarding the live session. */
-  var inSession=state.topic||state.kbNodes&&state.kbNodes.length>0||(state.phase==="chat")||
-                (document.getElementById("msgList")&&document.getElementById("msgList").children.length>0);
+  var msgList=document.getElementById("msgList");
+  var hasRealMsgs=msgList&&Array.from(msgList.children).some(function(c){return !c.hasAttribute('data-react-message-list-empty');});
+  var inSession=state.topic||state.kbNodes&&state.kbNodes.length>0||(state.phase==="chat")||hasRealMsgs;
   if(inSession){
     var next=appMode==="tutor"?t("tutor.modeChat"):t("tutor.modeTutor");
     var ok=await showConfirm(t("confirm.switchMode.title").replace("{mode}",next),
