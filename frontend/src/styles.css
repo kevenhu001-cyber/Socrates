@@ -3236,6 +3236,63 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .artifact-error-detail code,.agent-tool-error-detail code{display:block;margin-top:5px;white-space:pre-wrap;word-break:break-word;color:hsl(var(--text-400))}
 .agent-tool-retry{display:block;margin-top:8px;padding:0;border:0;background:transparent;color:hsl(var(--accent-000));font:inherit;font-size:inherit;text-decoration:underline;cursor:pointer}
 .agent-tool-card.websearch .agent-tool-out{padding:0;max-height:520px}
+
+/* Open WebUI-style tool disclosure: a quiet status row until the reader
+   explicitly opens Input/Output evidence. */
+.tool-run-list{padding:2px 8px 7px}
+.tool-run-list .agent-tool-card,.agent-tool-card{
+  margin-top:1px;background:transparent;border:0;border-radius:0;overflow:visible;
+}
+.agent-tool-card:hover,.agent-tool-card.open{border:0;box-shadow:none}
+.agent-tool-head,.tool-run-list .agent-tool-head{
+  min-height:30px;padding:4px 2px;gap:7px;border-radius:7px;
+  color:hsl(var(--text-400));
+}
+.agent-tool-head:hover{background:hsl(var(--bg-200)/.42);color:hsl(var(--text-200))}
+.agent-tool-icon{display:none!important}
+.agent-tool-state-icon{position:relative;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:0 0 16px;color:hsl(var(--text-500))}
+.agent-tool-card[data-tool-state="running"] .agent-tool-state-icon::before{
+  content:"";width:12px;height:12px;border:1.5px solid hsl(var(--border-300));
+  border-top-color:hsl(var(--accent-000));border-radius:50%;animation:exec-artifact-spin .85s linear infinite;
+}
+.agent-tool-card[data-tool-state="complete"] .agent-tool-state-icon::before{
+  content:"✓";display:flex;align-items:center;justify-content:center;width:15px;height:15px;
+  border-radius:50%;background:hsl(145 50% 44%);color:white;font-size:10px;font-weight:700;
+}
+.agent-tool-card[data-tool-state="error"] .agent-tool-state-icon::before{
+  content:"!";display:flex;align-items:center;justify-content:center;width:15px;height:15px;
+  border-radius:50%;background:hsl(0 58% 52%);color:white;font-size:10px;font-weight:700;
+}
+.agent-tool-card[data-tool-state="cancelled"] .agent-tool-state-icon::before{
+  content:"■";font-size:10px;color:hsl(35 58% 48%);
+}
+.agent-tool-name,.tool-run-list .agent-tool-name{
+  flex:0 0 auto;font-size:calc(13px * var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-200));
+}
+.agent-tool-input{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:calc(12px * var(--app-font-scale,1));color:hsl(var(--text-500));opacity:1}
+.agent-tool-status{font-size:calc(11px * var(--app-font-scale,1));font-weight:400;color:hsl(var(--text-500))!important}
+.agent-tool-chev{font-size:10px;color:hsl(var(--text-500));transition:transform .2s}
+.agent-tool-body{
+  margin:4px 0 8px 23px;padding:10px;border:1px solid hsl(var(--border-300)/.32);
+  border-radius:14px;background:hsl(var(--bg-000)/.34);
+}
+.agent-tool-section + .agent-tool-section{margin-top:10px}
+.agent-tool-section-head{
+  min-height:20px;margin-bottom:5px;padding:0 1px;display:flex;align-items:center;gap:8px;
+  color:hsl(var(--text-500));font:500 calc(10px * var(--app-font-scale,1))/1 var(--font-sans);
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.agent-tool-section-head .agent-tool-action{margin-left:auto;text-transform:none;letter-spacing:0}
+.agent-tool-code,.agent-tool-out,.agent-tool-progress{
+  border:0;border-radius:8px;background:hsl(var(--bg-200)/.6);
+}
+.agent-tool-code{margin:0;padding:9px 10px;max-height:300px}
+.agent-tool-out{padding:9px 10px;max-height:320px}
+.agent-tool-output-section:has(.agent-tool-out:empty){display:none}
+.agent-tool-input-section:has(.agent-tool-code[hidden]){display:none}
+.agent-tool-card.websearch .agent-tool-out{border-radius:8px;overflow:hidden}
+.agent-tool-card.websearch .web-search-results{border-top:0}
+.agent-tool-card.open .agent-tool-chev{transform:rotate(180deg)}
 .web-search-results{border-top:1px solid hsl(var(--border-300)/.24)}
 .wsr-header{
   display:flex;
@@ -3702,12 +3759,12 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .tool-run-summary-chev{margin-left:auto;color:hsl(var(--text-500));transition:transform .26s cubic-bezier(.4,0,.2,1),color .2s ease}
 .tool-run-group.open .tool-run-summary-chev{transform:rotate(180deg);color:hsl(var(--accent-000))}
 .tool-run-list{padding:0 8px 8px;border-top:0}
-.tool-run-list .agent-tool-card{margin-top:4px;background:hsl(var(--bg-200)/.38);border-color:transparent}
+.tool-run-list .agent-tool-card{margin-top:1px;background:transparent;border-color:transparent}
 .tool-run-list .agent-tool-card.open{box-shadow:none}
-.tool-run-list .agent-tool-head{min-height:32px;padding:6px 8px}
+.tool-run-list .agent-tool-head{min-height:30px;padding:4px 2px}
 .tool-run-list .agent-tool-icon{display:none}
-.tool-run-list .agent-tool-name{font-size:calc(11px * var(--app-font-scale,1))}
-.tool-run-list .agent-tool-input{font-family:var(--font-sans);font-size:calc(11px * var(--app-font-scale,1));opacity:.72}
+.tool-run-list .agent-tool-name{font-size:calc(13px * var(--app-font-scale,1))}
+.tool-run-list .agent-tool-input{font-family:var(--font-sans);font-size:calc(12px * var(--app-font-scale,1));opacity:1}
 .agent-tool-card[data-tool-state="cancelled"]{border-color:hsl(35 58% 48%/.34)}
 
 /* Composer: a stable, tactile control surface that stays secondary to the
@@ -3726,13 +3783,134 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .chat-input-footer .attach-btn svg{width:20px;height:20px}
 .chat-input-footer .mic-btn{width:34px;height:34px}
 .chat-input-footer .effort-trigger{padding:6px 8px;border-radius:12px;color:hsl(var(--text-300))}
+
+/* Open WebUI-inspired rich composer. Tiptap is the only text state source;
+   the surrounding attachment/tool controls keep the Socrates theme. */
+.composer-editor-root{width:100%;min-width:0}
+.chat-input-wrap .composer-editor-root{order:2;flex:1 1 100%;min-width:0}
+.rich-composer{width:100%;min-width:0;display:flex;flex-direction:column;color:hsl(var(--text-100))}
+.rich-composer-toolbar{
+  display:flex;align-items:center;gap:2px;width:100%;min-height:35px;padding:4px 6px;
+  overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:none;
+  border-bottom:1px solid hsl(var(--border-300)/.22);color:hsl(var(--text-400));
+}
+.rich-composer-toolbar::-webkit-scrollbar{display:none}
+.rich-composer-tool{
+  flex:0 0 auto;min-width:27px;height:27px;padding:0 6px;border:0;border-radius:7px;
+  display:inline-flex;align-items:center;justify-content:center;background:transparent;
+  color:inherit;font:500 calc(11px * var(--app-font-scale,1)) var(--font-sans);
+  cursor:pointer;transition:background .15s,color .15s,transform .12s;
+}
+.rich-composer-tool:hover{background:hsl(var(--bg-200)/.7);color:hsl(var(--text-100))}
+.rich-composer-tool:active{transform:scale(.94)}
+.rich-composer-tool.active{background:hsl(var(--accent-000)/.11);color:hsl(var(--accent-000))}
+.rich-composer-tool:disabled{opacity:.3;cursor:default}
+.rich-composer-tool:focus-visible{outline:2px solid hsl(var(--accent-000)/.55);outline-offset:1px}
+.rich-composer-divider{flex:0 0 1px;width:1px;height:17px;margin:0 3px;background:hsl(var(--border-300)/.38)}
+.rich-composer .tiptap{
+  width:100%;min-height:48px;max-height:180px;overflow-y:auto;outline:none;
+  padding:10px 12px 11px;font:400 calc(14px * var(--app-font-scale,1))/1.5 var(--font-sans);
+  color:hsl(var(--text-100));scrollbar-width:thin;
+}
+.topic-input-wrap .rich-composer .tiptap{
+  min-height:86px;max-height:320px;padding:14px 18px;
+  font-size:calc(16px * var(--app-font-scale,1));line-height:1.55;
+}
+.rich-composer .tiptap p{margin:0}
+.rich-composer .tiptap p + p{margin-top:.45em}
+.rich-composer .tiptap h1,.rich-composer .tiptap h2,.rich-composer .tiptap h3{margin:.2em 0;font-weight:650;line-height:1.3}
+.rich-composer .tiptap h1{font-size:1.35em}.rich-composer .tiptap h2{font-size:1.2em}.rich-composer .tiptap h3{font-size:1.08em}
+.rich-composer .tiptap ul,.rich-composer .tiptap ol{margin:.35em 0;padding-left:1.45em}
+.rich-composer .tiptap ul[data-type="taskList"]{list-style:none;padding-left:.25em}
+.rich-composer .tiptap ul[data-type="taskList"] li{display:flex;gap:7px}
+.rich-composer .tiptap blockquote{margin:.35em 0;padding-left:10px;border-left:2px solid hsl(var(--border-300));color:hsl(var(--text-300))}
+.rich-composer .tiptap pre{margin:.4em 0;padding:8px 10px;border-radius:8px;background:hsl(var(--bg-200));font:400 .86em/1.5 var(--font-mono);white-space:pre-wrap}
+.rich-composer .tiptap a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
+.rich-composer .tiptap p.is-editor-empty:first-child::before{
+  content:attr(data-placeholder);float:left;height:0;pointer-events:none;color:hsl(var(--text-500));
+}
+.rich-composer-editor[contenteditable="false"]{opacity:.65;cursor:not-allowed}
+/* Desktop chat composer: mirror the compact, single-row conversation
+   composer in the visual reference. The topic composer and phone layout
+   retain the full formatting rail; Markdown shortcuts still work here. */
+@media(min-width:769px){
+  .chat-input-bar{padding-top:14px;padding-inline:16px}
+  .chat-input-wrap{
+    min-height:56px;width:min(100%,800px);padding:5px 7px;gap:4px;
+    flex-wrap:wrap;border-radius:32px;
+  }
+  .chat-input-wrap .composer-editor-root{
+    order:2;flex:1 1 260px;width:auto;align-self:center;
+  }
+  .chat-input-wrap .chat-input-footer{display:contents}
+  .chat-input-wrap .footer-left-group{display:contents}
+  .chat-input-wrap .footer-left-group .attach-btn{order:1}
+  .chat-input-wrap .footer-left-group .effort-picker{order:3;flex:0 0 auto}
+  .chat-input-wrap .chat-input-hint{order:3}
+  .chat-input-wrap .send-btn{order:4}
+  .rich-composer[data-surface="chat"]{
+    min-height:44px;display:flex;flex-direction:row;align-items:center;
+  }
+  .rich-composer[data-surface="chat"] > div:last-child{flex:1;min-width:0}
+  .rich-composer[data-surface="chat"] .rich-composer-toolbar{display:none}
+  .rich-composer[data-surface="chat"] .tiptap{
+    min-height:44px;max-height:132px;padding:10px 8px;
+    font-size:calc(16px * var(--app-font-scale,1));line-height:1.5;
+  }
+  .chat-input-footer .attach-btn{width:40px;height:40px}
+  .chat-input-footer .attach-btn svg{width:22px;height:22px}
+  .chat-input-footer .effort-trigger{
+    min-height:38px;padding:7px 9px;border-radius:18px;
+    font-size:calc(14px * var(--app-font-scale,1));
+  }
+  .chat-input-footer .send-btn{width:44px;height:44px;margin-left:0}
+  .chat-input-footer .send-btn svg{width:18px;height:18px}
+}
 @media(max-width:768px){
   .chat-input-bar{padding-inline:8px}
-  .chat-input-wrap{min-height:54px;padding:6px;gap:2px}
-  .chat-input-footer .send-btn{width:38px;height:38px}
-  .chat-input-footer .attach-btn{width:34px;height:34px}
+  .chat-input-wrap{
+    width:100%;min-height:54px;padding:6px;gap:2px;flex-wrap:wrap;border-radius:28px;
+    transition:min-height .28s cubic-bezier(.2,.8,.2,1),padding .28s cubic-bezier(.2,.8,.2,1),border-radius .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s ease;
+  }
+  .chat-input-wrap .chat-input-footer,
+  .chat-input-wrap .footer-left-group{display:contents}
+  .chat-input-wrap .footer-left-group .attach-btn{order:1}
+  .chat-input-wrap .composer-editor-root{
+    order:2;flex:1 1 160px;width:auto;min-width:0;
+    transition:flex-basis .28s cubic-bezier(.2,.8,.2,1),width .28s cubic-bezier(.2,.8,.2,1);
+  }
+  .chat-input-wrap .footer-left-group .effort-picker{display:none;order:3}
+  .chat-input-wrap .send-btn{order:4}
+  .rich-composer[data-surface="chat"]{min-height:42px;display:flex;align-items:center}
+  .rich-composer[data-surface="chat"] > div:last-child{width:100%;min-width:0}
+  .rich-composer[data-surface="chat"] .rich-composer-toolbar{display:none}
+  .chat-input-footer .send-btn{width:40px;height:40px}
+  .chat-input-footer .attach-btn{width:38px;height:38px}
   .chat-input-footer .mic-btn{display:none}
   .chat-input-footer .effort-trigger{padding:5px 6px;font-size:calc(12px * var(--app-font-scale, 1))}
+  .rich-composer[data-surface="chat"] .tiptap{
+    min-height:42px;max-height:150px;padding:9px 7px;font-size:16px;
+    transition:min-height .28s cubic-bezier(.2,.8,.2,1),padding .28s cubic-bezier(.2,.8,.2,1);
+  }
+  .chat-input-wrap:focus-within{
+    min-height:116px;padding:8px;border-radius:26px;gap:4px 3px;
+    align-content:flex-start;box-shadow:0 10px 28px hsl(var(--always-black)/.14);
+  }
+  .chat-input-wrap:focus-within .composer-editor-root{
+    order:1;flex:0 0 100%;width:100%;min-width:100%;max-width:100%;
+  }
+  .chat-input-wrap:focus-within .footer-left-group .attach-btn{order:2}
+  .chat-input-wrap:focus-within .footer-left-group .effort-picker{
+    order:3;display:block;margin-left:auto;align-self:center;
+  }
+  .chat-input-wrap:focus-within .send-btn{order:4}
+  .chat-input-wrap:focus-within .rich-composer[data-surface="chat"] .tiptap{
+    min-height:62px;max-height:180px;padding:12px 8px 8px;
+  }
+  .chat-input-wrap:focus-within .chat-input-footer .effort-trigger{
+    min-height:38px;padding:7px 8px;border-radius:18px;
+  }
+  .topic-input-wrap .rich-composer .tiptap{font-size:16px;min-height:74px}
 }
 .attach-btn:focus-visible,.send-btn:focus-visible{outline:2px solid hsl(var(--accent-000)/.65);outline-offset:2px}
 @media(max-width:768px){
@@ -3797,6 +3975,9 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   .sources-row:hover{transform:none !important}
   /* Disable focus-within lift on the chat input. */
   .chat-input-wrap:focus-within{transform:none}
+  .chat-input-wrap,
+  .chat-input-wrap .composer-editor-root,
+  .rich-composer[data-surface="chat"] .tiptap{transition:none !important}
 }
 
 /* ─── ChatGPT-style main page (added 2026-07-20) ─── */
