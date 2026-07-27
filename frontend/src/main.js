@@ -61,8 +61,14 @@ import { aiGenerate } from './chat/mockDiagnostic.js';
 import { extractHistory, buildUserContentParts } from './chat/history.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './chat/systemPrompts.js';
 import { appendInlineArtifact } from './ui/toolCards.js';
-import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
-import { SEARCH_PROGRESS_LABELS, trSearchLabel, _formatEngineBreakdown, startSearchProgress } from './ui/searchProgress.js';
+import { looksLikeMetaInstruction, appendThinking, labelForTool } from './ui/thinkingPill.js';
+/* searchProgress UI removed in favour of the inline status label.
+   The import was retired when agent-tool-cards were dropped from the
+   live chat surface; the background web_search path now only updates
+   state.searchContext and lets the chat bubble's thinking pill
+   reflect the activity. The function is still re-exported for the
+   legacy e2e suite and `window.__startSearchProgress` test hook. */
+import { startSearchProgress } from './ui/searchProgress.js';
 import { createToolRuntime } from './chat/toolRuntime.js';
 import { beginAgentTextStream, appendRunFooter } from './chat/agentStream.js';
 import { BUILTIN_TEMPLATES, SYSTEM_PROMPT_SUMMARIZE, SYSTEM_PROMPT_TRANSLATE, SYSTEM_PROMPT_EXPLAIN_CODE, SYSTEM_PROMPT_DEBUG, SYSTEM_PROMPT_QUIZ, SYSTEM_PROMPT_SOCRATIC, PROMPT_TEMPLATES_KEY, loadPromptTemplates, savePromptTemplates, findTemplateByShortcut, upsertCustomTemplate, deleteCustomTemplate } from './chat/promptTemplates.js';
@@ -3005,32 +3011,19 @@ async function startSession(){
   };
   document.getElementById("diagnosticView").innerHTML=diagLoadingHTML();
 
-  /* Phase 3 — create the search-progress log up front so the user sees
-   * the activity feed while the search runs in the background.
-   * The fire-and-forget pattern avoids blocking diagnostic questions
-   * on the 12s search timeout — results arrive before teaching starts. */
-  var diagSearchLog=null;
+/* Phase 3 — background web search populates state.searchContext
+   * for the diagnostic question without rendering a separate
+   * activity log. The chat bubble's inline status label (see
+   * thinkingPill.labelForTool) takes care of "Searching…" for live
+   * tool calls; diagnostic-mode web search used to show a richer
+   * step-by-step card via startSearchProgress, but that surface
+   * was retired when the agent-tool-card UI was removed. */
   if(webSearchOn){
     try{
-      var diagLoading=document.querySelector("#diagnosticView .diag-loading");
-      diagSearchLog=startSearchProgress(topic,{mount:diagLoading});
-      /* Background search — don't await. Diagnostic questions start
-         immediately; search context is ready by the teaching phase. */
-      fetchWebContext(topic,{onStep:function(ev){if(diagSearchLog)diagSearchLog.onStep(ev)}}).then(function(sc){
+      fetchWebContext(topic,{}).then(function(sc){
         state.searchContext=sc.context||"";
-        if(diagSearchLog){
-          try{
-            var finalEngines=sc&&sc.sources?sc.sources.reduce(function(acc,s){var k=s.source||"web";acc[k]=(acc[k]||0)+1;return acc;},{}):{};
-            var fetchedN=sc&&sc.sources?sc.sources.filter(function(x){return!!x.fullContent}).length:0;
-            if(sc&&sc.ok&&sc.results){
-              diagSearchLog.finalize({state:"ok",finalCount:sc.results,fetchedCount:fetchedN,engines:finalEngines});
-            }else{
-              diagSearchLog.finalize({state:"err",message:(sc&&sc.reason)||"no results"});
-            }
-          }catch(_){}
-        }
       }).catch(function(){});
-    }catch(_){diagSearchLog=null}
+    }catch(_){}
   }
 
   /* Progress bar helper — updates fill width and step text. */
@@ -3439,7 +3432,7 @@ async function askChatTurn(userText){
     askChatTurn(userText);
   }});
   var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)},{
-    onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];ctl.recordToolUse(c)}},
+    onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];if(c&&c.name){try{ensureThinkCtl().setLabel(labelForTool(c.name));}catch(_){}}ctl.recordToolUse(c)}},
     onToolResult:function(r){ctl.recordToolResult(r)},
     onToolProgress:function(p){if(ctl.recordToolProgress)ctl.recordToolProgress(p)},
     onExecutionStart:function(ev){if(ctl.recordExecutionStart)ctl.recordExecutionStart(ev)},
@@ -5505,6 +5498,11 @@ function doRender(){
         /* First delta arrived — stop the watchdog and elapsed counter. */
         clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
+        /* First real text delta — the tool/status phase is over,
+           remove the placeholder pill. */
+        if(thinkCtl&&typeof thinkCtl.finalize==="function"){
+          try{thinkCtl.finalize()}catch(_){}
+        }
       }
       full+=delta;
       publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:full.length});

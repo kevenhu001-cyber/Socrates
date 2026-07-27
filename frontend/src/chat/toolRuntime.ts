@@ -99,6 +99,14 @@ interface ToolRuntimeOptions {
   requestAnimationFrame?: (callback: () => void) => number;
   cancelAnimationFrame?: (id: number) => void;
   EventSource?: typeof EventSource | null;
+  /**
+   * 'compact' (default) — live chat path. Tool calls show only as a
+   * status label swap (Searching/Coding/Data Processing); no
+   * .agent-tool-card / .tool-run-group DOM is rendered.
+   * 'detailed' — share / history replay path. Tool calls render as
+   * the legacy collapsible cards so saved sessions remain inspectable.
+   */
+  mode?: 'compact' | 'detailed';
 }
 
 interface ExecutionConnection {
@@ -234,6 +242,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     cancelAnimationFrame(id);
   };
   const EventSourceImpl = options.EventSource || (typeof EventSource !== 'undefined' ? EventSource : null);
+  const mode = options.mode || 'compact';
 
   let disposed = false;
   const pendingDeltas: ToolCallDelta[] = [];
@@ -509,10 +518,13 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
 
     if (!Array.isArray(message.toolCalls)) message.toolCalls = [];
     message.toolCalls.push(entry);
-    const output = appendToolModule(entry.name, entry.input || {}, ensureToolContainer());
-    if (!output) return null;
-    const card = output.closest('.agent-tool-card');
-    if (card) card.setAttribute('data-tcid', entry.id);
+    let output: Element | null = null;
+    if (mode === 'detailed') {
+      output = appendToolModule(entry.name, entry.input || {}, ensureToolContainer());
+      if (!output) return null;
+      const card = output.closest('.agent-tool-card');
+      if (card) card.setAttribute('data-tcid', entry.id);
+    }
 
     const orphanDeltas = message._orphanDeltas?.[entry.id];
     if (orphanDeltas) {
@@ -547,6 +559,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
 
   function recordToolCallDelta(delta: ToolCallDelta): void {
     if (!activeMessage() || !delta) return;
+    if (mode === 'compact') return;
     pendingDeltas.push(delta);
     if (deltaFrame == null) deltaFrame = requestFrame(flushDeltas);
   }
@@ -671,7 +684,27 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       entry.output = entry.output ? entry.output + '\n\n' + artifactLines.join('\n') : artifactLines.join('\n');
     }
     updateRunSummary(message);
-    if (!output || entry._toolResultApplied) return;
+    if (entry._toolResultApplied) return;
+    if (!output) {
+      // Compact mode: no card was created, but image artifacts still
+      // need to surface inline in the message body so the learner
+      // can see what the run produced. Non-image artifacts (CSVs,
+      // JSON) are persisted on the entry and discoverable via the
+      // session history, so we drop them silently here.
+      if (mode === 'compact') {
+        for (let artifactIndex = 0; artifactIndex < entry.artifacts.length; artifactIndex++) {
+          const artifact = entry.artifacts[artifactIndex];
+          if (artifact.id && artifact.mimeType && artifact.mimeType.indexOf('image/') === 0) {
+            appendInlineArtifact(artifact.id, artifact.mimeType, body, artifact.name);
+          }
+        }
+        if (result.visualization && result.visualization.version === 1) {
+          mountVisualization(result.visualization, body, { toolCallId: entry.id });
+        }
+        entry._toolResultApplied = true;
+      }
+      return;
+    }
     entry._toolResultApplied = true;
     const liveProgress = output.querySelector('.agent-tool-progress');
     if (liveProgress) liveProgress.remove();
