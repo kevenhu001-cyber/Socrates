@@ -7057,7 +7057,9 @@ import { updateChatStats } from './chat/stats.js';
 
 
 async function resetApp(){
-  if(state.topic||state.kbNodes.length>0||document.getElementById("msgList").children.length>0){
+  /* React owns #msgList and always leaves a wrapper element inside it,
+     so DOM child count no longer signals an active session — use state. */
+  if(state.topic||state.kbNodes.length>0||(Array.isArray(state.messages)&&state.messages.length>0)){
     var ok=await showConfirm(t("confirm.newSession.title"),t("confirm.newSession.msg"),false);
     if(!ok){ window._nextProjectId=null; return; }
   }

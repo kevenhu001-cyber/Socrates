@@ -354,8 +354,14 @@ function dispatchEvent(event, eventType) {
     || target.getAttribute('data-action-keys');
   if (!matchesKeys(event, keysSpec)) return;
   var perEventAction = target.getAttribute('data-action-' + eventType);
-  var actionStr = (perEventAction && perEventAction !== 'true' ? perEventAction : null)
-    || target.dataset.action;
+  var actionStr = perEventAction && perEventAction !== 'true' ? perEventAction : null;
+  // The generic data-action attribute only fires for click/submit. Firing it
+  // on focus/input/keydown/change double-dispatched handlers: a mousedown
+  // focuses the button, the focus event ran the action early, and the DOM
+  // mutated before the real click landed (e.g. confirm OK resolving false).
+  if (!actionStr && (eventType === 'click' || eventType === 'submit' || perEventAction === 'true')) {
+    actionStr = target.dataset.action;
+  }
   if (actionStr) runActionChain(target, event, actionStr, eventType);
 }
 
