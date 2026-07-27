@@ -13,6 +13,14 @@ import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
 import { showNewReplyPill, hideNewReplyPill, wireScrollPill } from './ui/scrollPill.js';
 import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
+import {
+  clearComposer,
+  focusComposer,
+  getComposerMarkdown,
+  getVisibleComposerSurface,
+  setComposerMarkdown,
+  subscribeComposer,
+} from './react/composer-input/controller.ts';
 import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal } from './ui/share.js';
 import './ui/mobileModeSwitch.js';
 import { renderAttachmentChips, setupAttachmentInput, openAttachmentPicker } from './attachments/render.js';
@@ -561,15 +569,12 @@ document.addEventListener("keydown",function(e){
     }
     return;
   }
-  /* Cmd+Enter — send (alternative). The textarea's keydown
-     handler already calls submitChatMessage on Enter, so we
-     only need this for non-textarea contexts (e.g. the
-     topic input). */
+  /* Cmd+Enter — send from either rich composer. */
   if(cmd&&!e.altKey&&!e.shiftKey&&(key==="enter"||k==="Enter")){
-    var t=e.target;
-    if(t&&t.tagName!=="TEXTAREA"){
+    var composerEl=e.target&&e.target.closest?e.target.closest(".rich-composer"):null;
+    if(composerEl){
       e.preventDefault();
-      if(t&&t.id==="topicInput"&&typeof startTopic==="function")startTopic();
+      if(composerEl.getAttribute("data-surface")==="topic")startSession();
       else if(typeof submitChatMessage==="function")submitChatMessage();
     }
     return;
@@ -590,18 +595,15 @@ document.addEventListener("keydown",function(e){
     cycleActiveProject();
     return;
   }
-  /* Up arrow in an empty textarea — load the last user
-     message into the input for editing. Skipped when the
-     textarea has text (so the user can still navigate within
-     a multi-line draft). */
+  /* Up arrow in an empty rich composer — recall the latest prompt. */
   if(k==="ArrowUp"&&!cmd&&!e.altKey&&!e.shiftKey){
-    var ta=e.target;
-    if(ta&&ta.id==="chatInputArea"&&!ta.value){
+    var rich=e.target&&e.target.closest?e.target.closest('.rich-composer[data-surface="chat"]'):null;
+    if(rich&&!getComposerMarkdown("chat")){
       var lastUser=findLastUserMessage();
       if(lastUser){
         e.preventDefault();
-        ta.value=lastUser;
-        ta.dispatchEvent(new Event("input"));
+        setComposerMarkdown("chat",lastUser);
+        focusComposer("chat");
       }
     }
   }
@@ -687,7 +689,7 @@ if(sbBackdrop)sbBackdrop.addEventListener("click",function(e){e.stopPropagation(
    races (iOS fires blur before the close-resize; Android fires it after). */
 if(false && window.visualViewport){
   (function(){
-    var input=document.getElementById("chatInputArea");
+    var input=document.getElementById("chatComposerRoot");
     if(!input)return;
     var _kbSavedTop=0;
     var _kbOpen=false;
@@ -744,8 +746,8 @@ if(false && window.visualViewport){
    critical for the topic-setup view's keyboard-aware layout. */
 initKeyboardViewport({
   inputs: [
-    document.getElementById('chatInputArea'),
-    document.getElementById('topicInput'),
+    document.getElementById('chatComposerRoot'),
+    document.getElementById('topicComposerRoot'),
   ].filter(Boolean),
   container: document.getElementById('appShell'),
 });
@@ -1473,7 +1475,7 @@ function resetSessionTransients(s){
   s.call.source=null;
   s.call.error=null;
   s.session.sessionTitle=null;
-  try{var ci=document.getElementById("chatInputArea");if(ci){ci.value="";autoResize(ci);}}catch(_){}
+  try{clearComposer("chat")}catch(_){}
   try{updateSendBtn();}catch(_){}
   try{if(window._pendingChatContent!==undefined)window._pendingChatContent=null;}catch(_){}
   try{if(window._pendingAttachments!==undefined)window._pendingAttachments=null;}catch(_){}
@@ -2356,7 +2358,7 @@ function bounceOutOfArchivedSession(){
   toggleChatTopBarEls(false);
   clearLegacyMsgListChildren();
   publishReactChatRuntime({type:"state-synced",reason:"archived-session-reset"});
-  document.getElementById("topicInput").value="";
+  clearComposer("topic");
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">'+(typeof t==="function"?t("tutor.kbTopicFirst"):"Set a topic to build your knowledge map.")+'</div>';
   /* Task 3.3 — clear the teaching-plan view on full reset so a
      previous session's plan doesn't linger in the sidebar. */
@@ -2768,8 +2770,7 @@ async function startSession(){
      start a session; the Enter key will be handled by the palette's
      keydown listener to insert the selected template. */
   if(isSlashCommandPaletteOpen()) return;
-  var input=document.getElementById("topicInput");
-  var topic=input.value.trim();
+  var topic=getComposerMarkdown("topic").trim();
   if(!topic)return;
 
   /* Deep Research mode — if the extension is active, route the landing
@@ -3000,8 +3001,7 @@ async function startSession(){
     if(dv){dv.classList.add("hidden");dv.innerHTML="";}
     var ts=document.getElementById("topicSetup");
     if(ts)ts.classList.remove("hidden");
-    var inp=document.getElementById("topicInput");
-    if(inp){try{inp.focus();}catch(_){}}
+    focusComposer("topic");
   };
   document.getElementById("diagnosticView").innerHTML=diagLoadingHTML();
 
@@ -3607,21 +3607,22 @@ function injectTemplateSystemPrompt(messages){
        end:  4 }       — character index where tail begins
    Used both for filtering and for the insert step (so the
    user's ` foo` argument survives the click). */
-/* P_slash-topic — also support slash commands in the topic-setup
-   textarea (#topicInput), not just the chat composer. */
-function _getSlashInput(){
-  var input = document.getElementById("chatInputArea");
-  if(input && input.value && input.value.charAt(0)==="/") return input;
-  input = document.getElementById("topicInput");
-  if(input && input.value && input.value.charAt(0)==="/") return input;
+/* Slash commands are shared by the topic and chat rich composers. */
+function _getSlashSurface(){
+  var visible=getVisibleComposerSurface();
+  var value=getComposerMarkdown(visible);
+  if(value && value.charAt(0)==="/") return visible;
+  var other=visible==="chat"?"topic":"chat";
+  value=getComposerMarkdown(other);
+  if(value && value.charAt(0)==="/") return other;
   return null;
 }
-var _slashActiveInput = null;
+var _slashActiveSurface = null;
 function _currentSlashQuery(){
-  var input=_getSlashInput();
-  if(!input) return null;
-  _slashActiveInput = input;
-  var v=input.value;
+  var surface=_getSlashSurface();
+  if(!surface) return null;
+  _slashActiveSurface = surface;
+  var v=getComposerMarkdown(surface);
   if(!v || v.charAt(0)!=="/") return null;
   var i=1;
   while(i<v.length && !/\s/.test(v.charAt(i))) i++;
@@ -3694,10 +3695,10 @@ function positionSlashCommandPalette(){
   if(!p) return;
   /* P_slash-topic — anchor to the active input's wrapper. */
   var anchor=null;
-  if(_slashActiveInput && _slashActiveInput.id==="topicInput"){
+  if(_slashActiveSurface==="topic"){
     anchor=document.getElementById("topicInputWrap");
   }
-  if(!anchor) anchor=document.getElementById("chatInputWrap")||document.getElementById("chatInputArea");
+  if(!anchor) anchor=document.getElementById("chatInputWrap")||document.getElementById("chatComposerRoot");
   if(!anchor){
     p.style.left="50%";
     p.style.right="";
@@ -3781,10 +3782,9 @@ function insertSelectedSlashTemplate(){
   if(!_slashList.length)return;
   var t=_slashList[_slashSelected];
   if(!t)return;
-  /* P_slash-topic — use whichever input triggered the palette
-     (chatInputArea or topicInput) instead of always chatInputArea. */
-  var input=_slashActiveInput;
-  if(!input) return;
+  /* Use whichever composer surface triggered the palette. */
+  var surface=_slashActiveSurface;
+  if(!surface) return;
   var q=_currentSlashQuery();
   var tail=q?q.tail:"";
   if(t._kind==="app"){
@@ -3794,10 +3794,8 @@ function insertSelectedSlashTemplate(){
        the matching connector tool via tool_choice:'auto' — no template
        mode is activated, so follow-up turns stay unconstrained. */
     var directive=t.insert||"";
-    input.value=directive+tail;
-    input.focus();
-    var pos=directive.length;
-    try{input.setSelectionRange(pos,pos)}catch(_){}
+    setComposerMarkdown(surface,directive+tail);
+    focusComposer(surface);
   }else{
     /* Replace ONLY the leading `/query` chunk with the
        template body, preserving any text the user typed
@@ -3805,14 +3803,8 @@ function insertSelectedSlashTemplate(){
        users often type `/explain this code` and expect
        ` this code` to survive the click. */
     var body=t.body||"";
-    input.value=body+tail;
-    input.focus();
-    /* Place cursor at end of body, so the user lands on
-       the placeholder line (e.g. just before the code
-       fence of /explain) instead of at the end of the
-       pasted tail. */
-    var end=body.length;
-    try{input.setSelectionRange(end,end)}catch(_){}
+    setComposerMarkdown(surface,body+tail);
+    focusComposer(surface);
     /* Activate the template so the next LLM call gets the
        specialized system prompt. The chip surfaces the
        mode so the user can see (and dismiss) what's
@@ -3821,11 +3813,9 @@ function insertSelectedSlashTemplate(){
        idea why the response shape changed. */
     setActiveTemplate(t);
   }
-  /* Trigger autoResize so the textarea grows. */
-  if(typeof autoResize==="function")autoResize(input);
   if(typeof updateSendBtn==="function")updateSendBtn();
   /* P_slash-topic — also sync the Begin button when on topic input. */
-  if(input.id==="topicInput" && typeof updateStartBtn==="function") updateStartBtn();
+  if(surface==="topic" && typeof updateStartBtn==="function") updateStartBtn();
   closeSlashCommandPalette();
 }
 /* Wire arrow / Enter / Esc handling for the palette itself. */
@@ -3853,12 +3843,11 @@ document.addEventListener("keydown",function(e){
    list to narrow live. Also closes the palette when the
    leading `/` is gone (e.g. user backspaces past it or
    pastes over it). */
-document.addEventListener("input",function(e){
-  /* P_slash-topic — also listen for slash commands on the topic input. */
-  var t=e.target;
-  if(!t || (t.id!=="chatInputArea" && t.id!=="topicInput")) return;
-  var v=t.value;
+subscribeComposer(function(surface,v){
+  if(surface==="chat")updateSendBtn();
+  else updateStartBtn();
   if(v.charAt(0)==="/"){
+    _slashActiveSurface=surface;
     if(!isSlashCommandPaletteOpen()) openSlashCommandPalette();
     else updateSlashCommandPaletteFilter();
   }else if(isSlashCommandPaletteOpen()){
@@ -3873,8 +3862,7 @@ window.addEventListener("resize",function(){
 
 async function submitChatMessage(textOverride,opts){
   opts=opts||{};
-  var input=document.getElementById("chatInputArea");
-  var rawText=(textOverride!=null?textOverride:input.value);
+  var rawText=(textOverride!=null?textOverride:getComposerMarkdown("chat"));
   var text=rawText.trim();
   /* P5.8 — if a template is active, strip its body prefix
      from the user text. The body is a placeholder the user
@@ -3914,9 +3902,9 @@ async function submitChatMessage(textOverride,opts){
   window._pendingAttachments = attList;
   if(textOverride==null){
     addMessage("user",persistText,null,null,attList);
-    input.value="";autoResize(input);updateSendBtn();
+    clearComposer("chat");updateSendBtn();
     scheduleScrollMainToBottom({force:true});
-    input.focus();
+    focusComposer("chat");
   }else{
     /* Origin: quiz — synthetic message from a quiz pick. */
     addMessage("user",persistText,null,null,attList);
@@ -4728,6 +4716,12 @@ window.handleSendClick=function(){
   }
 };
 
+function stopChatResponse(){
+  if(window._activeChatCtl && typeof window._activeChatCtl.abort === "function"){
+    window._activeChatCtl.abort();
+  }
+}
+
 /* Add a streaming assistant message. Returns a controller object:
    { append(delta), finish(), abort() }.
    - append(delta): renders content on the next microtask with try/catch
@@ -4857,7 +4851,7 @@ function addStreamingMessage(opts){
       group.className='tool-run-group';
       group.innerHTML='<button type="button" class="tool-run-summary" aria-expanded="false">'+
         '<span class="tool-run-summary-dot" aria-hidden="true"></span>'+
-        '<span class="tool-run-summary-label">Working</span>'+
+        '<span class="tool-run-summary-label">Exploring</span>'+
         '<span class="tool-run-summary-meta"></span>'+
         '<span class="tool-run-summary-chev" aria-hidden="true">⌄</span>'+
         '</button><div class="tool-run-list" hidden></div>';
@@ -7129,7 +7123,7 @@ async function resetApp(){
      triggered a React re-read before renderRecents / scroll reset /
      sidebar sync had run — the duplicate was wasteful and the
      interim state was incomplete. */
-  document.getElementById("topicInput").value="";
+  clearComposer("topic");
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">'+(typeof t==="function"?t("tutor.kbTopicFirst"):"Set a topic to build your knowledge map.")+'</div>';
   document.getElementById("chatStats").textContent="";
   /* Task 3.3 — clear the teaching-plan view on full reset so a
@@ -7168,8 +7162,7 @@ async function resetApp(){
   publishReactChatRuntime({type:"state-synced",reason:"session-reset"});
   /* Focus the topic input so the user can start typing right away. */
   setTimeout(function(){
-    var ti=document.getElementById("topicInput");
-    if(ti&&!ti.closest(".hidden")){ti.focus()}
+    focusComposer("topic");
   },50);
 }
 
@@ -8232,6 +8225,9 @@ window.__socratesLegacy = {
     toggleExtensionByKey: window.toggleExtensionByKey,
     removeAttachment: window.removeAttachment,
     renderAttachmentChips: window.renderAttachmentChips,
+    startSession: startSession,
+    submitChatMessage: submitChatMessage,
+    stopChatResponse: stopChatResponse,
   },
   cmdK: {
     openCmdK: window.openCmdK,

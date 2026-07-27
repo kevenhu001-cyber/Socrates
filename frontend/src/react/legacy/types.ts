@@ -60,6 +60,9 @@ export interface LegacyComposer {
   toggleExtensionByKey(key: string): void;
   removeAttachment(id: string): void;
   renderAttachmentChips?(): void;
+  startSession(): Promise<void> | void;
+  submitChatMessage(): Promise<void> | void;
+  stopChatResponse(): void;
 }
 
 export interface LegacyCmdK {
