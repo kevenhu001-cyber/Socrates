@@ -1,8 +1,8 @@
 // src/ui/topicSetup.js — Phase C-2.3 extraction
+import { getComposerMarkdown } from '../react/composer-input/controller.ts';
 // Small helpers for the topic-setup and chat composer areas:
 //
-//   autoResize(el)        — grow a textarea up to its max-height as
-//                            the user types, then stop.
+//   autoResize(el)        — retained for older secondary textareas.
 //   updateStartBtn()      — toggle the topic-setup "Start" button's
 //                            active state based on the input value.
 //   updateSendBtn()       — toggle the chat "Send" button's active
@@ -17,7 +17,7 @@
    the topic setup textarea at 160px (≈8 lines). Reset height to
    "auto" first so shrinking text reflows correctly. */
 export function autoResize(el){
-  var maxH = el.id === "chatInputArea" ? 120 : 160;
+  var maxH = 160;
   el.style.height = "auto";
   el.style.height = Math.min(el.scrollHeight, maxH) + "px";
 }
@@ -29,8 +29,7 @@ export function autoResize(el){
    P_chatgpt-landing — also toggle .has-text on the input wrap so the
    CSS can swap the mic icon for the up-arrow on the send button. */
 export function updateStartBtn(){
-  var ti = document.getElementById("topicInput");
-  var v = ti ? ti.value.trim() : "";
+  var v = getComposerMarkdown("topic").trim();
   var b = document.getElementById("startBtn");
   var hasAtt = typeof window.attachments !== "undefined"
     && Array.isArray(window.attachments)
@@ -45,8 +44,7 @@ export function updateStartBtn(){
    empty, and the send button must still look active).
    P_chatgpt-landing — also toggle .has-text on the chat-input wrap. */
 export function updateSendBtn(){
-  var ci = document.getElementById("chatInputArea");
-  var v = ci ? ci.value.trim() : "";
+  var v = getComposerMarkdown("chat").trim();
   var b = document.getElementById("sendBtn");
   var hasAtt = typeof window.attachments !== "undefined"
     && Array.isArray(window.attachments)

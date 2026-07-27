@@ -205,23 +205,14 @@ function _esc(s) {
 /* Launch research from the chat input. The user types a query and
    clicks a "Deep Research" button, which triggers this. */
 function launchDeepResearch() {
-  /* Prefer the VISIBLE composer. The chat textarea exists in the DOM
-     even on the landing page (just hidden), so an unconditional
-     getElementById("chatInputArea") would read an empty hidden field
-     and abort. offsetParent === null means the element isn't laid out
-     (hidden), so fall back to the topic input in that case. */
-  var input = document.getElementById("chatInputArea");
-  if (!input || input.offsetParent === null) {
-    var ti = document.getElementById("topicInput");
-    if (ti) input = ti;
-  }
-  if (!input) return;
-  var query = input.value.trim();
+  /* Prefer the visible rich-composer surface. */
+  var surface = getVisibleComposerSurface();
+  var query = getComposerMarkdown(surface).trim();
   if (!query) {
     if (typeof window.showToast === "function") window.showToast("Enter a research topic first.");
     return;
   }
-  input.value = "";
+  clearComposer(surface);
   /* Add the user's query as a message. */
   if (typeof window.addMessage === "function") {
     window.addMessage("user", query);
@@ -237,3 +228,8 @@ if (typeof window !== "undefined") {
 }
 
 export { startDeepResearch, launchDeepResearch };
+import {
+  clearComposer,
+  getComposerMarkdown,
+  getVisibleComposerSurface,
+} from '../react/composer-input/controller.ts';

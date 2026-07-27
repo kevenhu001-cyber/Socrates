@@ -87,6 +87,18 @@ function renderAndRefresh(){
   });
 }
 
+export async function addComposerFiles(files, source){
+  const list = Array.from(files || []);
+  if(!list.length) return { added:0, rejected:[] };
+  const res = await addFiles(list, renderAndRefresh, updateProgressOnly);
+  refreshAllSendBtns();
+  if(source === "paste" && res.added > 0){
+    toast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
+  }
+  surfaceRejectionToast(res);
+  return res;
+}
+
 /* Lightweight progress-only update — directly finds existing pending
    chips in the DOM and updates the progress-fill width, WITHOUT
    destroying and recreating chip elements. Called on every progress
@@ -344,7 +356,7 @@ function autoWire(){
   setupAttachmentInput({
     inputId: "attachInput",
     wrapId: "chatInputWrap",
-    textareaId: "chatInputArea",
+    textareaId: null,
     barId: "chatInputBar",
     chipsId: "attachmentChips",
     updateBtnName: "updateSendBtn",
@@ -353,7 +365,7 @@ function autoWire(){
   setupAttachmentInput({
     inputId: "topicAttachInput",
     wrapId: "topicInputWrap",
-    textareaId: "topicInput",
+    textareaId: null,
     barId: "topicSetup",
     chipsId: "topicAttachmentChips",
     updateBtnName: "updateStartBtn",
