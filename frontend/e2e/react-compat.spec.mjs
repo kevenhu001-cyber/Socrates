@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('React compatibility mode preserves the legacy application shell', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -48,7 +49,7 @@ test('React compatibility mode preserves the legacy application shell', async ({
 
 test('React compatibility mode always loads (no ?react=1 flag needed)', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -59,7 +60,7 @@ test('React compatibility mode always loads (no ?react=1 flag needed)', async ({
 
 test('React chat store observes legacy message and stream lifecycle', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 

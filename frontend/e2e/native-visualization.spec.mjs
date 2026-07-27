@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const lnSpec = {
@@ -21,7 +22,7 @@ async function renderLn(page) {
     ].join('');
     await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
   });
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(async () => {
     window.state.phase = 'chat';

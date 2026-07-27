@@ -14,13 +14,22 @@ function showConfirm(title, msg, isDanger) {
     var okBtn = document.getElementById("confirmOkBtn");
     okBtn.className = "confirm-btn " + (isDanger ? "danger" : "primary");
     okBtn.textContent = isDanger ? window.t("common.delete") : window.t("common.ok");
+    /* OK button fires in the target phase (before the delegated handler),
+       so the explicit `onclick` drives the resolve(true). The cancel button
+       is handled by the delegated data-action="closeConfirm" handler in
+       delegate.js, which calls closeConfirm() (no args = false). No need
+       to wire a second listener here. */
     okBtn.onclick = function () { closeConfirm(true); };
-    document.getElementById("confirmDialog").classList.remove("hidden");
+    var dlg = document.getElementById("confirmDialog");
+    dlg.classList.remove("hidden");
+    if (typeof dlg.__handleOpen === "function") dlg.__handleOpen();
   });
 }
 
 function closeConfirm(resolveWith) {
-  document.getElementById("confirmDialog").classList.add("hidden");
+  var dlg = document.getElementById("confirmDialog");
+  dlg.classList.add("hidden");
+  if (typeof dlg.__handleClose === "function") dlg.__handleClose();
   if (_confirmResolve) {
     _confirmResolve(resolveWith === undefined ? false : resolveWith);
     _confirmResolve = null;

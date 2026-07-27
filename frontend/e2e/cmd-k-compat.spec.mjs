@@ -5,11 +5,12 @@
 // owns the state machine.
 
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('Cmd-K React mode hydrates the overlay with React', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -44,7 +45,7 @@ test('Cmd-K React mode hydrates the overlay with React', async ({ page }) => {
 
 test('Cmd-K React mode opens via the legacy entry point and React renders the modal', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -80,7 +81,7 @@ test('Cmd-K React mode opens via the legacy entry point and React renders the mo
 
 test('Cmd-K React mode always loads (no ?react=1 flag needed)', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 

@@ -8,6 +8,7 @@
 //   3. Private visibility is rejected with 403.
 
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const SHARE_TOKEN = 'shared-public-token';
@@ -113,7 +114,7 @@ test('create + revoke share uses /api/sessions/:id/share', async ({ page }) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ token: null, visibility: 'private' }) });
     }
   });
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => {
     window.state.session.currentSessionId = '11111111-1111-4111-8111-111111111111';

@@ -8,6 +8,7 @@
 //   - All 98 inline handlers still typed-correctly in dist/index.html
 
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -60,7 +61,7 @@ test('page boots, dist HTML script ordering correct, inline-handler hash matches
     await route.fulfill({ status: 200, contentType: 'text/html', body: offlineHtml });
   });
 
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
 
   // dist/index.html layout invariants (ES-module build): the 6 CDN deps are
   // referenced, and the app bundle is emitted as a type="module" script.

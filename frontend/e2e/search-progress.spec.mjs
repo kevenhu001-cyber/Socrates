@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('web search progress exposes elapsed time and keyboard-accessible details', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
   await page.evaluate(async () => {

@@ -1,7 +1,7 @@
 import { createRoot, type Root } from 'react-dom/client';
 
 import { getKnownTagsFromSessions } from '../../ui/recentsHelpers.js';
-import { getLegacyStateValue } from '../legacy/gateway';
+import { getLegacyStateValue, t } from '../legacy/gateway';
 import {
   useRecentsFilter,
   useRecentsFilterCommands,
@@ -85,9 +85,10 @@ function ChipButton({
         type="button"
         className={`recents-filter-chip-btn${chip.active ? ' active' : ''}`}
         data-filter="all"
+        aria-pressed={chip.active}
         onClick={() => onPick('all')}
       >
-        All
+        <span data-i18n-key="sidebar.all">{t('sidebar.all')}</span>
       </button>
     );
   }
@@ -97,6 +98,8 @@ function ChipButton({
         type="button"
         className={`recents-filter-chip-btn${chip.active ? ' active' : ''}`}
         data-filter={chip.value}
+        aria-pressed={chip.active}
+        aria-label={t('session.filterByTag').replace('{tag}', chip.name)}
         onClick={() => onPick(chip.value)}
       >
         <span className="recents-filter-chip-icon">●</span>
@@ -109,6 +112,7 @@ function ChipButton({
       type="button"
       className={`recents-filter-chip-btn${chip.active ? ' active' : ''}`}
       data-filter={chip.value}
+      aria-pressed={chip.active}
       onClick={() => onPick(chip.value)}
     >
       {chip.label}

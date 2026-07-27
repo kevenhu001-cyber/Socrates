@@ -237,6 +237,15 @@ app.use(function requestId(req, res, next){
   next();
 });
 
+// P_cdn-bypass parity — the SPA prefixes every API call with /api/v2/
+// (frontend/src/util/api.js) to skip stale CDN cache entries; production
+// nginx rewrites /api/v2/* → /api/* before proxying. Local dev (Vite
+// proxy or direct Express) has no nginx, so mirror that rewrite here.
+app.use(function apiV2Rewrite(req, _res, next) {
+  if (req.url.startsWith('/api/v2/')) req.url = '/api' + req.url.slice('/api/v2'.length);
+  next();
+});
+
 // Response compression (gzip/brotli) — before body parsing
 // SSE (text/event-stream) must NOT be compressed — compression
 // buffers small frames and prevents incremental delivery through

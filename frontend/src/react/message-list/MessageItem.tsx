@@ -27,7 +27,7 @@ function MessageItem({ message }: MessageItemProps) {
   // idempotent (the legacy implementations guard with their own
   // dataset flags) so re-running them on every React render is safe.
   useEffect(() => {
-    if (!html) return;
+    if (!html || !clientId) return;
     const root = document.querySelector(
       `[data-client-id="${CSS.escape(clientId)}"] .msg-body`,
     ) as HTMLElement | null;

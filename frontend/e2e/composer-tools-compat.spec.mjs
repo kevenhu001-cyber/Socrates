@@ -5,11 +5,12 @@
 // typed bridge. Item clicks dispatch through the legacy window.* actions.
 
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -35,7 +36,7 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
 
 test('Composer tools menu opens via legacy entry point and React mirrors state', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -72,7 +73,7 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
 
 test('Composer tools menu items dispatch through legacy window.* actions', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -118,7 +119,7 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
 
 test('Composer tools menu React mode always loads (no ?react=1 flag needed)', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 

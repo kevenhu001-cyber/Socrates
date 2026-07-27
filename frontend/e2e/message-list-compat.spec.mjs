@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('message list renders user messages through React', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -47,7 +48,7 @@ test('message list renders user messages through React', async ({ page }) => {
 
 test('message list renders assistant messages with toolbar and model label', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -88,7 +89,7 @@ test('message list renders assistant messages with toolbar and model label', asy
 
 test('message list snapshots react to message-added events', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -121,7 +122,7 @@ test('message list snapshots react to message-added events', async ({ page }) =>
 
 test('message list toolbar copy button reads rawText and triggers toast', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -151,7 +152,7 @@ test('message list toolbar copy button reads rawText and triggers toast', async 
 
 test('message list toolbar action buttons dispatch to legacy window globals', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -221,7 +222,7 @@ test('message list toolbar action buttons dispatch to legacy window globals', as
 
 test('streaming bubble is removed at finish and React renders the finalized entry', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 

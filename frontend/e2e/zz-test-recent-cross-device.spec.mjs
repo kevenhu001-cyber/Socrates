@@ -2,6 +2,7 @@
 // Sessions assigned to a custom project (created on Device A) must still
 // render on Device B where the project doesn't exist in local PROJECTS.
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 
 const CUSTOM_PROJECT_ID = '11111111-2222-3333-4444-555555555555';
 
@@ -52,7 +53,7 @@ test('Recent list renders sessions whose projectId is unknown to the local PROJE
     try { localStorage.removeItem('socrates-recents-filter'); } catch (_) {}
   });
 
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(2000);
 

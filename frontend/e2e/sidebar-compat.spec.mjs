@@ -5,11 +5,12 @@
 // renders the visible UI via the typed bridge.
 
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('Sidebar React mode hydrates #sidebarNav and #recentsFilterChips', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -36,7 +37,7 @@ test('Sidebar React mode hydrates #sidebarNav and #recentsFilterChips', async ({
 
 test('Sidebar React nav buttons call window.openNav and reflect active state', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -72,7 +73,7 @@ test('Sidebar React nav buttons call window.openNav and reflect active state', a
 
 test('Sidebar React recents filter chips call window.onRecentsFilterChipClick', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -108,7 +109,7 @@ test('Sidebar React recents filter chips call window.onRecentsFilterChipClick', 
 
 test('Sidebar React mode always loads (no ?react=1 flag needed)', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 

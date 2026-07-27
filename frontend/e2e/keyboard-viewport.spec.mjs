@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { getKeyboardInset } from '../src/ui/keyboardViewport.js';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -15,7 +16,7 @@ test('normalizes virtual-keyboard measurements without double-counting layout re
 test('composer and message reserve follow the normalized keyboard inset on mobile', async ({ page }) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 

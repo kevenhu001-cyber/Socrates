@@ -115,9 +115,10 @@ window.resendAuthCode = resendAuthCode;
 window.afterAuthEnter = afterAuthEnter;
 
 /* ─── sidebar/index.js ─── */
-import { toggleSidebar, setRecentsFilter, getRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
+import { toggleSidebar, setRecentsFilter, getRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
 window.toggleSidebar = toggleSidebar;
 window.setRecentsFilter = setRecentsFilter;
+window.clearRecentsFilter = clearRecentsFilter;
 window.getRecentsFilter = getRecentsFilter;
 window.onRecentsFilterChipClick = onRecentsFilterChipClick;
 
@@ -126,15 +127,21 @@ import {
   getActiveProvider, pickActiveProviderById,
   syncModelPills,
   syncChatModel,
+  closeModelPicker, closeChatModelMenu,
   toggleExtensionByKey, syncExtensionsUI,
+  toggleWebSearch, syncWebSearchUI,
   markProvidersFetched,
 } from './pickers.js';
 window.getActiveProvider = getActiveProvider;
 window.pickActiveProviderById = pickActiveProviderById;
 window.syncModelPills = syncModelPills;
 window.syncChatModel = syncChatModel;
+window.closeModelPicker = closeModelPicker;
+window.closeChatModelMenu = closeChatModelMenu;
 window.toggleExtensionByKey = toggleExtensionByKey;
 window.syncExtensionsUI = syncExtensionsUI;
+window.toggleWebSearch = toggleWebSearch;
+window.syncWebSearchUI = syncWebSearchUI;
 window.markProvidersFetched = markProvidersFetched;
 
 // Note: setActiveProvider / renderProviderList / isReasoningProvider are
@@ -328,12 +335,15 @@ window.sleepBackoff = sleepBackoff;
 window.makeAIWatchdog = makeAIWatchdog;
 
 /* ─── ui/usage.js ─── */
-import { openUsageModal, closeUsageModal, loadUsageData, loadUsageMonth } from './ui/usage.js';
+import { openUsageModal, closeUsageModal, loadUsageData, loadUsageMonth, showUsageTip, hideUsageTip } from './ui/usage.js';
 window.openUsageModal = openUsageModal;
 window.closeUsageModal = closeUsageModal;
 /* Period tab inline onclick handlers (usage.js:138-139). */
 window.loadUsageData = loadUsageData;
 window.loadUsageMonth = loadUsageMonth;
+/* Heatmap cell inline onmouseenter/onmouseleave handlers (usage.js:168). */
+window.showUsageTip = showUsageTip;
+window.hideUsageTip = hideUsageTip;
 
 /* ─── render/helpers.js (esc alias) ─── */
 import { esc } from './render/helpers.js';
@@ -351,7 +361,9 @@ import {
   selectExamOpt,
   examNavJump, examNavStep,
   submitExam,
+  renderExamForm,
 } from './exam.js';
+window.renderExamForm = renderExamForm;
 window.openExamPanel = openExamPanel;
 window.prepareExamView = prepareExamView;
 window.openExamModal = openExamModal;

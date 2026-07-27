@@ -13,7 +13,7 @@
  */
 
 function confirmClearCache() {
-  window.showConfirm("Clear conversations?", "This removes all local chat history from this browser. Your account data stays on the server.", false).then(function (yes) {
+  window.showConfirm(window.t("confirm.clearConversations.title"), window.t("confirm.clearConversations.msg"), false).then(function (yes) {
     if (yes !== true) { return; }
     try { localStorage.removeItem("socrates-sessions-v2"); } catch (e) { /* ignore */ }
     window.state.currentSessionId = null;
@@ -24,7 +24,7 @@ function confirmClearCache() {
 }
 
 function confirmClearSettings() {
-  window.showConfirm("Clear API settings?", "This removes all configured API providers and keys. You'll need to reconfigure them.", false).then(function (yes) {
+  window.showConfirm(window.t("confirm.clearApiSettings.title"), window.t("confirm.clearApiSettings.msg"), false).then(function (yes) {
     if (yes !== true) { return; }
     if (!window.CURRENT_USER) { return; }
     var apiConfig = window.apiConfig;
@@ -52,7 +52,7 @@ function confirmClearSettings() {
 }
 
 function confirmDeleteAccount() {
-  window.showConfirm("Delete your account?", "This permanently deletes your account, all chat sessions, and all saved settings. This cannot be undone.", true).then(function (yes) {
+  window.showConfirm(window.t("confirm.deleteAccount.title"), window.t("confirm.deleteAccount.msg"), true).then(function (yes) {
     if (!yes) return;
     (async function () {
       try {

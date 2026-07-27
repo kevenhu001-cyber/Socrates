@@ -12,8 +12,27 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 body{font-family:var(--font-sans);font-size:calc(14px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));background:hsl(var(--bg-100));-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.01em}
 button,input,textarea{font-family:inherit;font-size:inherit;color:inherit;letter-spacing:inherit}
 button{border:none;background:none;cursor:pointer;outline:none;font-weight:inherit}
+/* Global keyboard focus ring. The default `button{outline:none}` removes
+   the focus indicator for mouse users but ALSO for keyboard users — a
+   WCAG 2.4.7 violation. We restore a visible ring only for keyboard
+   navigation via `:focus-visible`, so mouse clicks stay clean. This rule
+   intentionally sits below per-element `:focus-visible` overrides so
+   they win for components that already have a custom ring. */
+button:focus-visible,a:focus-visible{outline:2px solid hsl(var(--accent-000)/.85);outline-offset:2px;border-radius:4px}
 a{color:inherit;text-decoration:none}
 ::selection{background:hsl(var(--accent-000)/0.3);color:hsl(var(--text-000))}
+/* ─── A11y utilities ── */
+/* P_a11y-visually-hidden — screen-reader-only text. The 1px size and
+   clip-path trick keep the element in the accessibility tree without
+   taking layout space. Used for icon-only buttons that need a label. */
+.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* P_reduced-motion — honour the OS-level "reduce motion" preference.
+   Scope: animations, transitions, view transitions. Layout-affecting
+   transforms (sidebar drag) are kept so resize still feels responsive. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}
+  ::view-transition-old(root),::view-transition-new(root){animation-duration:0.01ms!important}
+}
 /* ─── Scrollbar — cross-browser ── */
 /* WebKit (Chrome, Edge, Safari) */
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
@@ -35,7 +54,11 @@ body.sidebar-resizing .sidebar{will-change:width;transition:none!important}
    no central pill, no floating grip widget. */
 .sidebar-resize-handle{position:absolute;top:0;right:0;bottom:0;width:10px;cursor:col-resize;z-index:25;background:transparent}
 .sidebar-resize-handle::after{content:"";position:absolute;right:0;top:0;bottom:0;width:1px;background:transparent;pointer-events:none}
-.sidebar-resize-handle:focus-visible{outline:none}
+/* P_a11y-focus-resize — keyboard users need to see the resize handle when
+   it has focus. The default global focus ring (added for WCAG 2.4.7) is
+   too thick for a 10px-wide column-edge handle, so use a 1px inset ring
+   along the right edge where the cursor sits. */
+.sidebar-resize-handle:focus-visible{outline:1px solid hsl(var(--accent-000));outline-offset:-2px}
 body.sidebar-resizing{cursor:col-resize;user-select:none}
 .sidebar.collapsed .sidebar-resize-handle{opacity:0;pointer-events:none}
 .sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}
@@ -85,6 +108,10 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .kb-graph-node circle{stroke:hsl(var(--bg-100));stroke-width:1.5;transition:stroke .15s ease}
 .kb-graph-node text{font-size:9px;fill:hsl(var(--text-400));pointer-events:none}
 .kb-graph-node:hover circle,.kb-graph-node:focus-visible circle{stroke:hsl(var(--accent-000));stroke-width:2}
+/* P_a11y-focus-graph — the default button focus ring is a 2px solid offset
+   box, which clips a 9px-radius SVG node and looks like a separate UI
+   element. The circle already gets a colored ring on :focus-visible
+   above, so only suppress the rectangular outline. */
 .kb-graph-node:focus{outline:none}
 .kb-graph-node-internalized circle{fill:hsl(145 50% 50%)}
 .kb-graph-node-fuzzy circle{fill:hsl(var(--accent-000))}
@@ -424,6 +451,7 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .library-name{cursor:text;border-bottom:1px dashed transparent;transition:border-color .12s}
 .library-name:hover{border-bottom-color:hsl(var(--text-400))}
 .library-rename-input{width:100%;padding:2px 4px;border:0.5px solid hsl(var(--border-300)/.75);border-radius:4px;outline:none;background:hsl(var(--bg-000));color:hsl(var(--text-100));font-size:calc(12px * var(--sidebar-font-scale));font-family:var(--font-sans);font-weight:550}
+.library-rename-input:focus{border-color:hsl(var(--accent-000)/.65);box-shadow:0 0 0 2px hsl(var(--accent-000)/.18)}
 
 /* Workspace surfaces shared by Library, Projects, Scheduled, and Apps. */
 .workspace-header-actions{display:flex;align-items:center;gap:7px}.workspace-add-btn{min-height:24px;padding:3px 8px;border-radius:6px;background:hsl(var(--accent-000)/.13);color:hsl(var(--accent-000));font-size:calc(11px * var(--sidebar-font-scale));font-weight:600;line-height:1;transition:background .15s,color .15s}.workspace-add-btn:hover{background:hsl(var(--accent-000)/.23);color:hsl(var(--text-100))}.workspace-intro{padding:0 12px 8px;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));line-height:1.45}.workspace-search{padding:0 12px 7px}.workspace-search input{width:100%;height:28px;padding:0 9px;border:0.5px solid hsl(var(--border-300)/.22);border-radius:7px;outline:none;background:hsl(var(--bg-200));color:hsl(var(--text-200));font-size:calc(12px * var(--sidebar-font-scale))}.workspace-search input:focus{border-color:hsl(var(--accent-000)/.55);background:hsl(var(--bg-000))}.workspace-loading{padding:28px 12px;text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale))}.workspace-empty{display:flex;flex-direction:column;align-items:center;gap:7px;padding:30px 16px;text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale));line-height:1.5}.workspace-empty strong{color:hsl(var(--text-200));font-size:calc(13px * var(--sidebar-font-scale));font-weight:550}.workspace-primary,.workspace-secondary,.workspace-danger{min-height:30px;padding:6px 10px;border-radius:7px;font-size:12px;font-weight:550;transition:background .15s,color .15s}.workspace-primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))}.workspace-primary:hover{background:hsl(var(--accent-100))}.workspace-secondary{border:0.5px solid hsl(var(--border-300)/.45);background:hsl(var(--bg-200));color:hsl(var(--text-200))}.workspace-secondary:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}.workspace-danger{background:transparent;color:hsl(0 65% 62%)}.workspace-danger:hover{background:hsl(0 60% 35%/.35)}.workspace-row{display:flex;align-items:center;gap:9px;min-height:48px;padding:7px 10px;border-radius:8px;transition:background .14s}.workspace-row:hover{background:hsl(var(--bg-300))}.workspace-row-icon{display:flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:7px;background:hsl(var(--bg-200));color:hsl(var(--text-400));flex:0 0 auto}.workspace-row-icon svg{width:14px;height:14px}.workspace-row-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:1px;text-align:left}.workspace-row-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-200));font-size:calc(13px * var(--sidebar-font-scale));font-weight:520}.workspace-row-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale))}.workspace-row-action{padding:4px 6px;border-radius:5px;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));opacity:0;transition:opacity .14s,background .14s,color .14s}.workspace-row:hover .workspace-row-action,.workspace-row-action:focus-visible{opacity:1}.workspace-row-action:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}.project-main,.task-main{display:flex;align-items:center;gap:9px;min-width:0;flex:1;text-align:left}.project-swatch{width:10px;height:10px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 3px hsl(var(--bg-200))}.task-status{display:inline-block;width:6px;height:6px;margin-right:5px;border-radius:50%;background:hsl(40 80% 52%)}.task-status.on{background:hsl(145 50% 50%)}.app-state{display:flex;align-items:center;gap:4px;padding:3px 5px;border-radius:6px;color:hsl(var(--text-500));font-size:11px}.app-state i{width:7px;height:7px;border-radius:99px;background:hsl(var(--text-500))}.app-state.on{color:hsl(145 50% 58%)}.app-state.on i{background:hsl(145 50% 50%)}
@@ -1511,6 +1539,18 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 [data-mode=dark] .alert-error .alert-icon{color:hsl(0 70% 60%)}
 
 @keyframes alertSlideIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* P_msg-toast — minimal transient toast used by showToast() and the
+   save-failed error variant in main.js. Lives in the bottom-right at
+   z-index 1500 — above all modals (max 1300) so the user always sees
+   the notification, but below the alert container (2000) so queued
+   alert() notifications can still stack on top. Without this block
+   the toasts inherit no styles and the div renders as an unstyled
+   transparent box — users get "no feedback" for action confirmations. */
+.msg-toast{position:fixed;bottom:24px;right:24px;z-index:1500;max-width:400px;padding:11px 14px;border-radius:10px;background:hsl(var(--bg-000));color:hsl(var(--text-100));border:1px solid hsl(var(--border-300)/.35);box-shadow:0 6px 22px hsl(var(--always-black)/0.25);font-size:calc(13px * var(--app-font-scale, 1));line-height:1.45;opacity:0;transform:translateY(8px);transition:opacity .18s var(--ease-out),transform .18s var(--ease-out);pointer-events:none;word-break:break-word}
+.msg-toast.visible{opacity:1;transform:translateY(0)}
+.msg-toast-error{background:hsl(0 75% 50%/.12);border-color:hsl(0 75% 50%/.45);color:hsl(0 70% 40%)}
+[data-mode=dark] .msg-toast-error{background:hsl(0 60% 28%/.55);border-color:hsl(0 60% 50%/.45);color:hsl(0 70% 75%)}
 
 /* P1.2 — global search modal. Mac-style centered overlay with
    a single input + scrollable results column. */

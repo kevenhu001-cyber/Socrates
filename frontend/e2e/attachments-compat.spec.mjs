@@ -6,11 +6,12 @@
 // legacy renderer (a no-op in React mode).
 
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('Attachment chip rows React mode hydrates both containers', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -33,7 +34,7 @@ test('Attachment chip rows React mode hydrates both containers', async ({ page }
 
 test('Attachment chips React mode mirrors the legacy attachments array', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -86,7 +87,7 @@ test('Attachment chips React mode mirrors the legacy attachments array', async (
 
 test('Attachment chips remove button dispatches through window.removeAttachment', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -119,7 +120,7 @@ test('Attachment chips remove button dispatches through window.removeAttachment'
 
 test('Attachment chips React mode always loads (no ?react=1 flag needed)', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 

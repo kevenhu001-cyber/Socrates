@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { getLegacyActions } from '../legacy/gateway';
+import { getLegacyActions, t } from '../legacy/gateway';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { installSessionListBridge, publishSessionList } from './sessionListStore';
 import { useSessionListSnapshot, formatRelativeTime } from './legacyAdapter';
@@ -30,13 +30,13 @@ function safeId(sessionId: string): string {
   return 'r-' + Math.abs(hash);
 }
 
-function modeLabel(session: SessionItem): { label: string; cls: string } {
-  if (session.kind === 'exam') return { label: 'Exam', cls: 'mode-exam' };
+function modeLabel(session: SessionItem): { key: string; cls: string } {
+  if (session.kind === 'exam') return { key: 'session.badgeExam', cls: 'mode-exam' };
   const mode = session.mode;
-  if (mode === 'chat') return { label: 'Chat', cls: 'mode-chat' };
-  if (mode === 'tutor') return { label: 'Tutor', cls: 'mode-tutor' };
-  if (session.phase === 'chat') return { label: 'Chat', cls: 'mode-chat' };
-  return { label: 'Tutor', cls: 'mode-tutor' };
+  if (mode === 'chat') return { key: 'tutor.modeChat', cls: 'mode-chat' };
+  if (mode === 'tutor') return { key: 'tutor.modeTutor', cls: 'mode-tutor' };
+  if (session.phase === 'chat') return { key: 'tutor.modeChat', cls: 'mode-chat' };
+  return { key: 'tutor.modeTutor', cls: 'mode-tutor' };
 }
 
 function buildMeta(session: SessionItem): string[] {
@@ -76,14 +76,24 @@ function SessionRow({ session, isActive, onPick, onTag, onDelete, onDragStart, o
       onDragEnd={onDragEnd}
       onClick={() => onPick(session.id)}
     >
-      <span className={`recent-mode-badge ${ml.cls}`} title={ml.label}>{ml.label}</span>
+      <span
+        className={`recent-mode-badge ${ml.cls}`}
+        title={t(ml.key)}
+        data-i18n-key={ml.key}
+        data-i18n-title={ml.key}
+      >{t(ml.key)}</span>
       <div className="recent-item-main">
         <div className="recent-item-title-row">
           {session.pinned && (
-            <span className="recent-item-pin-icon" title="Pinned" dangerouslySetInnerHTML={{ __html: PIN_ICON }} />
+            <span
+              className="recent-item-pin-icon"
+              title={t('session.pinned')}
+              data-i18n-title="session.pinned"
+              dangerouslySetInnerHTML={{ __html: PIN_ICON }}
+            />
           )}
-          <div className="recent-item-text">{esc(session.title || session.topic || '(untitled)')}</div>
-          {label && <span className="recent-item-label">{esc(label)}</span>}
+          <div className="recent-item-text">{session.title || session.topic || '(untitled)'}</div>
+          {label && <span className="recent-item-label">{label}</span>}
         </div>
         <div className="recent-item-meta">
           {meta.map((m, i) => (
@@ -95,16 +105,16 @@ function SessionRow({ session, isActive, onPick, onTag, onDelete, onDragStart, o
         </div>
         {session.tags && session.tags.length > 0 && (
           <div className="recent-item-tags">
-            {session.tags.map((t) => (
+            {session.tags.map((tag) => (
               <button
-                key={t}
+                key={tag}
                 className="recent-tag-pill"
                 onClick={(e) => {
                   e.stopPropagation();
-                  getLegacyActions().sessions.setRecentsFilter(t);
+                  getLegacyActions().sessions.setRecentsFilter(tag);
                 }}
-                title={`Filter by tag: ${t}`}
-              >#{t}</button>
+                title={t('session.filterByTag').replace('{tag}', tag)}
+              >#{tag}</button>
             ))}
           </div>
         )}
@@ -113,14 +123,17 @@ function SessionRow({ session, isActive, onPick, onTag, onDelete, onDragStart, o
         <button
           className="recent-item-tag-btn"
           data-tag-open="1"
-          title="Edit tags"
+          title={t('session.editTags')}
+          data-i18n-title="session.editTags"
           onClick={(e) => onTag(session.id, e)}
           dangerouslySetInnerHTML={{ __html: TAG_ICON }}
         />
         <button
           className="recent-item-del"
-          title="Delete session"
-          aria-label="Delete session"
+          title={t('session.ctxDelete')}
+          aria-label={t('session.ctxDelete')}
+          data-i18n-title="session.ctxDelete"
+          data-i18n-aria="session.ctxDelete"
           onClick={(e) => onDelete(session.id, e)}
           dangerouslySetInnerHTML={{ __html: DELETE_ICON }}
         />

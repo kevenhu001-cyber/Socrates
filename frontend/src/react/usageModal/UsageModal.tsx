@@ -27,6 +27,11 @@ function UsageModal() {
         <span
           className="usage-close"
           onClick={() => dispatch.close()}
+          role="button"
+          tabIndex={0}
+          aria-label={i18n('common.close', 'Close')}
+          data-initial-focus="true"
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dispatch.close(); } }}
           style={{ cursor: 'pointer' }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">

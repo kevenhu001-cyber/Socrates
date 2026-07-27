@@ -80,7 +80,7 @@ function renderPromptRow(t, editable) {
 }
 
 function onPromptRowDelete(id) {
-  window.showConfirm("Delete template?", "This removes your custom template. Built-ins stay.", true).then(function (yes) {
+  window.showConfirm(window.t("confirm.deleteTemplate.title"), window.t("confirm.deleteTemplate.msg"), true).then(function (yes) {
     if (!yes) return;
     window.deleteCustomTemplate(id);
     renderPromptTemplatesModal();

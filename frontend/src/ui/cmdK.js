@@ -262,6 +262,7 @@ function onCmdKKey(ev) {
             });
             _cmdKSelected = 0;
             renderCmdKResultsHits(q, _cmdKResults);
+            _publishCmdKState();
           } else {
             window.showToast("No matches");
           }
