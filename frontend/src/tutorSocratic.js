@@ -535,6 +535,14 @@
         if (isCurrent) {
           html += '<span class="teaching-plan-stage">'
                + esc(stageLabel(stage)) + '</span>';
+          /* U-M1 — surface the substantive-answer progress that gates
+             sub-topic advancement (ADVANCE_THRESHOLD = 3 in main.js).
+             Without this the "3 substantive answers" rule was invisible
+             and progress felt arbitrary. */
+          var subCount = Math.min((window.state && window.state.substantiveCount) || 0, 3);
+          html += '<span class="teaching-plan-depth" title="'
+               + ti('tutor.depthHint', currentLang() === 'zh' ? '达到 3 次深入回答后进入下一个子主题' : 'Reach 3 in-depth answers to advance to the next sub-topic')
+               + '">' + subCount + '/3</span>';
         }
         html += '</div>';
       });

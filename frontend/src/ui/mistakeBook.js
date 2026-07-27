@@ -11,6 +11,7 @@ export function createMistakeBook({
   apiFetch,
   saveCurrentSession,
   mountQuizWidget,
+  mountPracticeWidget,
   scrollContainer,
   getTutorSocratic = () => window.tutorSocratic,
 }) {
@@ -140,6 +141,26 @@ export function createMistakeBook({
     if (!mistake) return;
     mistake.redoCount = (mistake.redoCount || 0) + 1;
     saveCurrentSession();
+    /* U-L4 — practice mistakes have no options, so mounting a quiz
+       widget produced an empty shell. Mount the free-form practice
+       widget instead (problem + textarea + self-grading against the
+       stored correct answer). */
+    var isPractice = mistake.type === 'practice' || !(mistake.options || []).length;
+    if (isPractice && typeof mountPracticeWidget === 'function') {
+      var pDiv = document.createElement('div');
+      pDiv.className = 'msg assistant';
+      var pBody = document.createElement('div');
+      pBody.className = 'msg-body';
+      pBody.innerHTML = '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-bottom:6px">— Redoing a question you got wrong —</div><div class="practice-slot"></div>';
+      pDiv.appendChild(pBody);
+      var pList = document.getElementById('msgList');
+      if (pList) pList.appendChild(pDiv);
+      var pSc = scrollContainer();
+      requestAnimationFrame(function () { pSc.scrollTop = pSc.scrollHeight; });
+      var pSlot = pDiv.querySelector('.practice-slot');
+      if (pSlot) mountPracticeWidget(pSlot, { problem: mistake.q || '', correct: mistake.correct || null });
+      return;
+    }
     if (mistake.quizSlotId) {
       var slot = document.querySelector('[data-quiz-id="' + mistake.quizSlotId + '"]');
       if (slot) {

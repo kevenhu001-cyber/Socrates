@@ -56,6 +56,7 @@ function LibraryItemRow({ item, itemKey, tab, selection, renameItem, dispatch }:
   if (isRenaming) {
     nameEl = (
       <input className="library-rename-input" type="text" defaultValue={name} maxLength={255} autoFocus
+        data-rename-id={item.id} data-rename-key={itemKey}
         onKeyDown={(e) => { if (e.key === 'Enter') dispatch.saveRename(e.currentTarget); if (e.key === 'Escape') dispatch.cancelRename(); }} />
     );
   } else {
@@ -102,7 +103,7 @@ function LibraryView({ data, dispatch }: {
   const allSelected = items.length > 0 && items.every((item: any) => !!data.selection[item.id]);
 
   return (
-    <div className="library-list" id="libraryList">
+    <>
       {anySelected && (
         <div className="library-selection-bar visible">
           <label className="library-select-all">
@@ -127,7 +128,7 @@ function LibraryView({ data, dispatch }: {
           <LibraryItemRow key={item.id} item={item} itemKey={key} tab={key} selection={data.selection} renameItem={data.renameItem} dispatch={dispatch} />
         ))
       )}
-    </div>
+    </>
   );
 }
 
@@ -173,6 +174,47 @@ function ProjectsView({ projects, dispatch }: {
 /*  Plugins sub-component                                              */
 /* ------------------------------------------------------------------ */
 
+function ConnectorMark({ id, name }: { id: string; name: string }) {
+  const normalized = id.toLowerCase().replace(/[_-]/g, '');
+  if (normalized === 'gmail') {
+    return (
+      <svg viewBox="0 0 24 18" aria-hidden="true">
+        <path fill="#fff" d="M2 0h20a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z" />
+        <path fill="#EA4335" d="M2 3v13h3V6l7 5 7-5v10h3V3l-10 7z" />
+        <path fill="#FBBC04" d="M0 3l5 4V3L0 0z" />
+        <path fill="#34A853" d="m19 7 5-4V0l-5 3z" />
+      </svg>
+    );
+  }
+  if (normalized === 'googledrive') {
+    return (
+      <svg viewBox="0 0 24 21" aria-hidden="true">
+        <path fill="#1A73E8" d="M14.4 0 24 16.6 21.6 21 12 4.2z" />
+        <path fill="#34A853" d="M9.6 0 0 16.6 2.4 21 12 4.2z" />
+        <path fill="#FBBC04" d="m2.4 21 2.4-4.4H24L21.6 21z" />
+      </svg>
+    );
+  }
+  if (normalized === 'googlecalendar') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect width="22" height="22" x="1" y="1" rx="4" fill="#fff" />
+        <path fill="#4285F4" d="M1 5a4 4 0 0 1 4-4h14a4 4 0 0 1 4 4v4H1z" />
+        <text x="12" y="18" textAnchor="middle" fontSize="9" fontWeight="700" fill="#1A73E8">31</text>
+      </svg>
+    );
+  }
+  if (normalized === 'notion') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2" y="2" width="20" height="20" rx="2" fill="#fff" stroke="#111" strokeWidth="1.5" />
+        <path fill="#111" d="M7 18V7.2l2.8-.2 6.4 8V8.4l-2-.3V7h5v1.1l-1.5.3V18h-1.8L8.5 8.8v7.7l2.2.4V18z" />
+      </svg>
+    );
+  }
+  return <span aria-hidden="true">{normalized === 'github' ? 'GH' : name.slice(0, 2).toUpperCase()}</span>;
+}
+
 function PluginsView({ plugins, configured, dispatch }: {
   plugins: ReadonlyArray<{ id: string; name: string; description?: string; capabilities?: string[]; authType?: string; connection?: { status?: string; displayName?: string } | null }>;
   configured: boolean;
@@ -204,7 +246,7 @@ function PluginsView({ plugins, configured, dispatch }: {
         return (
           <div className={'workspace-row connector-row' + (connected ? ' is-connected' : '')} key={connector.id}>
             <span className={'workspace-row-icon connector-icon connector-' + connector.id}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><use href={'#icon-' + connector.id} /></svg>
+              <ConnectorMark id={connector.id} name={connector.name} />
             </span>
             <div className="workspace-row-copy">
               <strong>{connector.name}</strong>
@@ -234,35 +276,11 @@ function WorkspacePage({ page }: { page: string }) {
 
   switch (page) {
     case 'library':
-      return (
-        <div className="library-panel main-page" id="libraryPanel">
-          <div className="library-header">
-            <span className="library-title" data-i18n-key="sidebar.library.title">{i18n('sidebar.library.title', 'Library')}</span>
-          </div>
-          <LibraryTabBar tab={snap.libraryData.tab} onSwitch={(t) => dispatch.switchTab(t)} />
-          <LibrarySearch query={snap.libraryData.query} onSearch={(q) => dispatch.filter(q)} />
-          <LibraryView data={snap.libraryData} dispatch={dispatch} />
-        </div>
-      );
+      return <LibraryView data={snap.libraryData} dispatch={dispatch} />;
     case 'projects':
-      return (
-        <div className="spaces-panel main-page" id="spacesPanel">
-          <div className="spaces-list" id="spacesList">
-            <ProjectsView projects={snap.projectsData} dispatch={dispatch} />
-          </div>
-        </div>
-      );
+      return <ProjectsView projects={snap.projectsData} dispatch={dispatch} />;
     case 'plugins':
-      return (
-        <div className="plugins-panel main-page" id="pluginsPanel">
-          <div className="plugins-header">
-            <span className="plugins-title" data-i18n-key="plugins.title">{i18n('plugins.title', 'Connectors')}</span>
-          </div>
-          <div className="plugins-list" id="pluginsList">
-            <PluginsView plugins={snap.pluginsData} configured={snap.projectConnectorConfigured} dispatch={dispatch} />
-          </div>
-        </div>
-      );
+      return <PluginsView plugins={snap.pluginsData} configured={snap.projectConnectorConfigured} dispatch={dispatch} />;
     default:
       return null;
   }
@@ -275,7 +293,7 @@ function WorkspacePage({ page }: { page: string }) {
 const roots = new Map<string, Root>();
 
 export function mountWorkspacePage(page: string): void {
-  const containerId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsPanel';
+  const containerId = page === 'library' ? 'libraryList' : page === 'projects' ? 'spacesList' : 'pluginsList';
   const container = document.getElementById(containerId);
   if (!container) return;
 
@@ -287,7 +305,8 @@ export function mountWorkspacePage(page: string): void {
     roots.set(page, root);
   }
   root.render(<WorkspacePage page={page} />);
-  container.classList.remove('hidden');
+  const panelId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsPanel';
+  document.getElementById(panelId)?.classList.remove('hidden');
 }
 
 export function unmountWorkspacePage(page: string): void {

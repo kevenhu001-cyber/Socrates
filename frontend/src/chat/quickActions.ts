@@ -21,14 +21,21 @@ async function handleQuickAction(action: string): Promise<void> {
       state.explaining = false;
     }, 300);
   } else if (action === 'skip') {
-    state.currentNode = Math.min(state.currentNode + 1, state.kbNodes.length - 1);
+    /* U-M3 — the button label is "Ask me a different question" (换一道题),
+     * but this used to advance currentNode, silently skipping the whole
+     * sub-topic. Stay on the same node and generate a fresh question;
+     * sub-topic advancement remains the job of the mastery flow. */
     state.stuckCount = 0;
-    state.substantiveCount = 0;
     await (window as any).askNextQuestion();
     (window as any).saveCurrentSession();
   } else if (action === 'retry') {
-    (window as any).addMessage('assistant', 'No problem. Let\'s try from a different angle.');
-    await (window as any).askNextQuestion();
+    /* U-M3 — label reads "I need to think more" (我再想想), yet the old
+     * handler immediately fired a brand-new question — the opposite of
+     * letting the student think. Just acknowledge and leave the current
+     * question on screen. */
+    const t = (window as any).t;
+    (window as any).addMessage('assistant',
+      typeof t === 'function' ? t('tutor.takeTime') : 'Take your time. There is no rush.');
   }
 }
 

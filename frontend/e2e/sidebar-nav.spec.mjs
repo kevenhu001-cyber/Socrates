@@ -36,6 +36,24 @@ test('clicking Library lights up the active state', async ({ page }) => {
   }
 });
 
+test('Library, Projects, and Plugins keep one page shell with restored headers', async ({ page }) => {
+  await page.locator('#navLibrary').click();
+  await expect(page.locator('#libraryPanel')).toHaveCount(1);
+  await expect(page.locator('#libraryPanel > .library-header')).toBeVisible();
+  await expect(page.locator('#libraryPanel > .workspace-search')).toBeVisible();
+  await expect(page.locator('#libraryPanel #libraryList')).toHaveCount(1);
+
+  await page.locator('#navProjects').click();
+  await expect(page.locator('#spacesPanel')).toHaveCount(1);
+  await expect(page.locator('#spacesPanel > .spaces-header')).toBeVisible();
+  await expect(page.locator('#spacesPanel #spacesList')).toHaveCount(1);
+
+  await page.locator('#navPlugins').click();
+  await expect(page.locator('#pluginsPanel')).toHaveCount(1);
+  await expect(page.locator('#pluginsPanel > .plugins-header')).toBeVisible();
+  await expect(page.locator('#pluginsPanel #pluginsList')).toHaveCount(1);
+});
+
 test('clicking a different nav button switches the active state', async ({ page }) => {
   await page.locator('#navLibrary').click();
   await expect(page.locator('#navLibrary')).toHaveClass(/active/);

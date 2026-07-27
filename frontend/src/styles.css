@@ -1129,6 +1129,8 @@ true) but the dropdown never shows — see commit history. */
 .teaching-plan-subtopic.done .teaching-plan-marker{color:hsl(145 50% 50%)}
 .teaching-plan-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .teaching-plan-stage{font-size:calc(9px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12);padding:2px 7px;border-radius:6px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+/* U-M1 — substantive-answer depth counter (n/3) next to the stage pill. */
+.teaching-plan-depth{font-size:calc(9px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-400));background:hsl(var(--bg-300)/0.8);padding:2px 6px;border-radius:6px;letter-spacing:.03em;flex-shrink:0;font-variant-numeric:tabular-nums;cursor:default}
 .teaching-plan-status{font-size:calc(9px * var(--sidebar-font-scale));color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
 /* Task 6.4 — cross-session knowledge-boundary section. */
 .kb-cross-session{display:flex;flex-direction:column;gap:6px;padding:8px 8px 10px;margin-top:2px}
