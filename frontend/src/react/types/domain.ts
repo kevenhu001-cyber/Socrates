@@ -18,8 +18,18 @@ export interface ChatAttachment {
 export interface ToolCall {
   id: string;
   name: string;
-  arguments?: string;
-  status?: 'pending' | 'running' | 'completed' | 'failed';
+  input?: unknown;
+  output?: string | null;
+  phase?: 'queued' | 'preparing' | 'running' | 'succeeded' | 'failed' | 'cancelled' | 'timed_out';
+  durationMs?: number;
+  error?: string | null;
+  isError?: boolean;
+  results?: ReadonlyArray<Record<string, unknown>>;
+  artifacts?: ReadonlyArray<{
+    id: string;
+    name?: string;
+    mimeType?: string;
+  }>;
 }
 
 export interface ChatMessage {
@@ -105,6 +115,7 @@ export interface LegacyChatMessage {
     size?: number;
   }>;
   modelInfo?: { label?: string; model?: string } | null;
+  toolCalls?: ReadonlyArray<ToolCall>;
 }
 
 export interface ChatRuntimeSnapshot {
