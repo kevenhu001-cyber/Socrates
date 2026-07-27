@@ -29,11 +29,18 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     await window.askChatTurn('Explore Socratic learning');
   });
 
-  const group = page.locator('.tool-run-group');
-  await expect(group).toHaveAttribute('data-state', 'complete');
-  await group.locator('.tool-run-summary').click();
-  const card = group.locator('.agent-tool-card');
-  await card.locator('.agent-tool-head').click();
+  // The live chat path replaced the agent-tool-card with an inline
+  // status label (Searching/Coding/Data Processing) so the learner
+  // sees what the model is doing without tool-card chrome. Verify
+  // the label appears during the tool_use event and disappears once
+  // the assistant reply starts streaming.
+  const thinkingStatus = page.locator('.msg.assistant .thinking-status');
+  await expect(thinkingStatus).toBeVisible();
+  await expect(thinkingStatus.locator('.thinking-status-label')).toContainText(/Searching|Coding|Working/i);
+  // tool-run-group and agent-tool-card are now share/history-only —
+  // they must NOT be created in the live chat path.
+  await expect(page.locator('.tool-run-group')).toHaveCount(0);
+  await expect(page.locator('.agent-tool-card')).toHaveCount(0);
   const chatComposer = page.locator('#chatInputWrap');
   await expect(chatComposer.locator('.rich-composer-toolbar')).toBeHidden();
   const desktopComposerBox = await chatComposer.boundingBox();

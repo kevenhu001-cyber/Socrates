@@ -20,6 +20,7 @@ test('ToolRuntime coalesces orphan deltas before a tool card exists', () => {
     requestAnimationFrame(callback) { scheduled = callback; return 11; },
     cancelAnimationFrame() {},
     EventSource: null,
+    mode: 'detailed',
   });
 
   runtime.recordToolCallDelta({ id: 'early', index: 0, arguments: '{"code":"a"}' });
@@ -56,6 +57,7 @@ test('ToolRuntime dispose cancels queued work and closes execution streams', () 
     requestAnimationFrame(callback) { scheduled = callback; return 17; },
     cancelAnimationFrame(id) { cancelledFrame = id; },
     EventSource: FakeEventSource,
+    mode: 'detailed',
   });
 
   runtime.recordExecutionStart({ id: 'code-1', executionId: 'exec-1' });
@@ -71,4 +73,38 @@ test('ToolRuntime dispose cancels queued work and closes execution streams', () 
   scheduled = null;
   runtime.recordToolCallDelta({ id: 'late', index: 0, arguments: '{}' });
   assert.equal(scheduled, null);
+});
+
+test('ToolRuntime compact mode skips tool_card_delta scheduling and card creation', () => {
+  const message = { toolCalls: [] };
+  let scheduled = null;
+  let appended = 0;
+  const runtime = createToolRuntime({
+    body: {
+      querySelector() { return null; },
+      querySelectorAll() { appended++; return []; },
+    },
+    stillOwnsSlot: () => true,
+    getMessage: () => message,
+    requestAnimationFrame(callback) { scheduled = callback; return 19; },
+    cancelAnimationFrame() {},
+    EventSource: null,
+    mode: 'compact',
+  });
+
+  // recordToolCallDelta must NOT schedule a flush in compact mode —
+  // no .agent-tool-card exists to update.
+  runtime.recordToolCallDelta({ id: 'no-card', index: 0, arguments: '{"code":"x"}' });
+  assert.equal(scheduled, null);
+
+  // recordToolUse pushes the entry onto the message but creates no
+  // DOM card. The returned element is null.
+  const out = runtime.recordToolUse({ id: 'no-card', name: 'web_search', input: { query: 'q' } });
+  assert.equal(out, null);
+  assert.equal(message.toolCalls.length, 1);
+  assert.equal(message.toolCalls[0].name, 'web_search');
+  // No .agent-tool-card was queried for — the body.querySelectorAll
+  // hook would have been called if anything tried to enumerate cards.
+  assert.equal(appended, 0);
+  runtime.dispose();
 });
