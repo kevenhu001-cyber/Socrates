@@ -148,7 +148,10 @@ function buildActionMap() {
     if (typeof w.toggleIncognito === 'function') w.toggleIncognito();
   });
 
-  registerAction('startSession', function () { w.startSession(); });
+  registerAction('startSession', function (el, e) {
+    if (e && e.type === 'keydown') e.preventDefault();
+    w.startSession();
+  });
   registerAction('handleSendClick', function () { w.handleSendClick(); });
   registerAction('handleChatKey', function (el, e) {
     if (typeof w.handleChatKey === 'function') w.handleChatKey(e);
@@ -303,10 +306,16 @@ function runActionChain(el, event, actionStr, eventType) {
   return handled;
 }
 
-// Walk up from the event target looking for a data-action attribute.
-function findActionTarget(target) {
+// Walk up from the event target looking for either the shared data-action
+// attribute or the action dedicated to this event type. Most form controls
+// use data-action-input / data-action-keydown without a shared data-action.
+function findActionTarget(target, eventType) {
+  var perEventAttr = eventType ? 'data-action-' + eventType : null;
   while (target && target !== document.body) {
-    if (target.dataset && target.dataset.action) return target;
+    if (target.dataset && (
+      target.dataset.action ||
+      (perEventAttr && target.hasAttribute(perEventAttr))
+    )) return target;
     target = target.parentElement;
   }
   return null;
@@ -334,14 +343,15 @@ function matchesKeys(event, keysSpec) {
 // element. selfOnly means "only fire when the event target is the
 // data-action element itself" (used for backdrop-click-to-close).
 function dispatchEvent(event, eventType) {
-  var target = findActionTarget(event.target);
+  var target = findActionTarget(event.target, eventType);
   if (!target) return;
   var selfOnly = target.getAttribute('data-action-self-only') === 'true';
   if (selfOnly && event.target !== target) return;
   var w = window;
   var guard = target.getAttribute('data-action-guard');
   if (!resolveGuard(guard, w)) return;
-  var keysSpec = target.getAttribute('data-action-keys');
+  var keysSpec = target.getAttribute('data-action-' + eventType + '-keys')
+    || target.getAttribute('data-action-keys');
   if (!matchesKeys(event, keysSpec)) return;
   var perEventAction = target.getAttribute('data-action-' + eventType);
   var actionStr = (perEventAction && perEventAction !== 'true' ? perEventAction : null)

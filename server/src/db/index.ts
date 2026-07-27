@@ -32,6 +32,14 @@ export function initDb(databaseUrl: string): Database {
     connectionTimeoutMillis: 5000,
   });
 
+  // Idle clients emit 'error' when the backend closes the connection
+  // (server restart, network blip). Without a pool-level listener that
+  // event is an uncaught exception and crashes the whole process —
+  // systemd's Restart=always then masks it as a random restart. Log
+  // and let the pool replace the broken client on next checkout.
+  pool.on('error', (err) => {
+    console.error('[db] idle client error:', err.message);
+  });
 
   db = drizzle(pool, { schema });
   return db;

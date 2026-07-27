@@ -4002,6 +4002,13 @@ async function submitChatMessage(textOverride,opts){
        &&typeof tutorSocratic.renderPracticeProgress==="function"){
       try{tutorSocratic.renderPracticeProgress()}catch(_){}
     }
+    /* U-M1 — the teaching-plan sidebar now shows the substantive-answer
+       depth counter (n/3), so re-render it whenever the counter or the
+       stage may have moved. */
+    if(typeof tutorSocratic==="object"&&tutorSocratic
+       &&typeof tutorSocratic.renderTeachingPlan==="function"){
+      try{tutorSocratic.renderTeachingPlan()}catch(_){}
+    }
 
     /* P_stage-gate — a node is only internalized when the user has
        progressed far enough in the teaching stage machine AND shown
@@ -4114,7 +4121,13 @@ async function submitChatMessage(textOverride,opts){
       }else{
         addMessage("assistant",_origGenerateFollowUp(text,node,state.domain));
       }
-      state.stuckCount=0;
+      /* U-M2 — only a substantive (or quiz-driven) answer proves the
+         student isn't stuck. The old unconditional reset here meant
+         stuckCount could never reach 3 — the explain-offer escape
+         valve below was dead code and genuinely stuck students just
+         kept getting harder follow-ups. Short answers now accumulate;
+         three in a row trigger the stuck flow. */
+      if(isSubstantive||opts.origin==="quiz"){state.stuckCount=0}
       state.totalQ++;
     }else{
       /* v3.0 design — §8.2 first offer the "讲解一下 / 再想想"
@@ -4741,6 +4754,12 @@ function addStreamingMessage(opts){
   body.className="msg-body";
   div.appendChild(body);
   list.appendChild(div);
+  /* The streaming placeholder is appended outside React so the legacy
+     stream controller can update it in place. Keep the transcript pinned
+     after that extra row is inserted; otherwise a focused mobile composer
+     can sit exactly one placeholder-height (about 79 px) above the newest
+     reply until the first token arrives. */
+  scheduleScrollMainToBottom({force:true});
   /* P1.1/P1.2 — push a placeholder into the authoritative
      state.messages list. While streaming, `rawText` is updated on
      every delta and `html` is set to null. At finish() time we
@@ -6212,14 +6231,24 @@ function renderAssistantHTML(rawText){
     var mistakeType=typeM?typeM[1]:"practice";
     var correctVal=correctM?correctM[1]:"";
     if(mistakeType==="practice"&&correctVal){
-      recordMistake({
-        type:"practice",
-        q:"Practice problem (auto-captured)",
-        options:[],
-        correct:correctVal,
-        userAnswer:null,
-        judgedAnswer:correctVal
-      });
+      /* U-L4 — capture the actual problem text instead of a placeholder.
+         Prefer the tag's inner content; fall back to the first <practice>
+         problem parsed from this same message (Pass 3 runs before us).
+         Skip recording entirely when neither exists — a card with no
+         question is useless in the mistake book and Redo would mount
+         an empty widget. */
+      var mistakeQ=stripTags(decodeEntities(mm[2]||"")).trim();
+      if(!mistakeQ&&practicePH.length){mistakeQ=practicePH[0].parsed.problem||""}
+      if(mistakeQ){
+        recordMistake({
+          type:"practice",
+          q:mistakeQ,
+          options:[],
+          correct:correctVal,
+          userAnswer:null,
+          judgedAnswer:correctVal
+        });
+      }
     }
     text=text.slice(0,mm.index)+text.slice(mistakeRe.lastIndex);
     mistakeRe.lastIndex=mm.index;
@@ -6932,6 +6961,7 @@ const mistakeBook = createMistakeBook({
   apiFetch: apiFetch,
   saveCurrentSession: saveCurrentSession,
   mountQuizWidget: mountQuizWidget,
+  mountPracticeWidget: mountPracticeWidget,
   scrollContainer: scrollContainer,
   getTutorSocratic: function(){ return window.tutorSocratic; },
 });

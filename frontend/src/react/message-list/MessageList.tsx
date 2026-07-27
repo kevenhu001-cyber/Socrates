@@ -1,7 +1,10 @@
 import { createRoot, type Root } from 'react-dom/client';
-import { useLayoutEffect, useMemo } from 'react';
+import { useLayoutEffect, useSyncExternalStore } from 'react';
 
-import { useChatRuntimeSnapshot } from '../useChatRuntime';
+import {
+  getChatRuntimeSnapshot,
+  subscribeToChatRuntime,
+} from '../chatRuntimeStore';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { MessageItem } from './MessageItem';
 import type { LegacyChatMessage } from '../types/domain';
@@ -25,21 +28,39 @@ function entryId(entry: LegacyChatMessage, fallback: string): string {
   return fallback;
 }
 
+let visibleMessagesCache: ReadonlyArray<LegacyChatMessage> = Object.freeze([]);
+
+function getVisibleMessagesSnapshot(): ReadonlyArray<LegacyChatMessage> {
+  const seen = new Set<string>();
+  const next: LegacyChatMessage[] = [];
+
+  getChatRuntimeSnapshot().messages.forEach((entry, idx) => {
+    const id = entryId(entry, `idx-${idx}`);
+    if (!isFinalized(entry) || seen.has(id)) return;
+    seen.add(id);
+    next.push(entry);
+  });
+
+  if (
+    next.length === visibleMessagesCache.length
+    && next.every((entry, index) => entry === visibleMessagesCache[index])
+  ) {
+    return visibleMessagesCache;
+  }
+
+  visibleMessagesCache = Object.freeze(next);
+  return visibleMessagesCache;
+}
+
 function MessageList({ omitEntryIds }: MessageListProps) {
-  const snapshot = useChatRuntimeSnapshot();
-  const items = useMemo(() => {
-    const seen = new Set<string>();
-    const out: LegacyChatMessage[] = [];
-    snapshot.messages.forEach((entry, idx) => {
-      const id = entryId(entry, `idx-${idx}`);
-      if (omitEntryIds?.has(id)) return;
-      if (!isFinalized(entry)) return;
-      if (seen.has(id)) return;
-      seen.add(id);
-      out.push(entry);
-    });
-    return out;
-  }, [snapshot.messages, omitEntryIds]);
+  const visibleMessages = useSyncExternalStore(
+    subscribeToChatRuntime,
+    getVisibleMessagesSnapshot,
+    getVisibleMessagesSnapshot,
+  );
+  const items = omitEntryIds?.size
+    ? visibleMessages.filter((entry, idx) => !omitEntryIds.has(entryId(entry, `idx-${idx}`)))
+    : visibleMessages;
 
   // Legacy addMessage schedules its scroll before React has committed the
   // new bubble. On a keyboard-constrained viewport that leaves the transcript
@@ -49,7 +70,7 @@ function MessageList({ omitEntryIds }: MessageListProps) {
     if (window.state?._userScrolledAway) return;
     const list = document.getElementById(MSG_LIST_ID);
     if (list) list.scrollTop = list.scrollHeight;
-  }, [items.length, snapshot.lastMessage?.id]);
+  }, [items.length, items.length ? entryId(items[items.length - 1], `idx-${items.length - 1}`) : null]);
 
   if (items.length === 0) {
     return <div data-react-message-list-empty="1" data-react-owned="1" />;

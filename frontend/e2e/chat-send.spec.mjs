@@ -76,3 +76,54 @@ test('mobile send stays pinned to the newest message after focused input submit'
 
   expect(distanceFromBottom).toBeLessThanOrEqual(4);
 });
+
+test('React message-list updates do not remove the active legacy stream bubble', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window.state.phase = 'chat';
+    window.state.topic = 'Streaming ownership regression';
+    window.state.currentSessionId = '33333333-3333-4333-8333-333333333333';
+    window.state.session.currentSessionId = window.state.currentSessionId;
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+
+    window.addMessage('user', 'Keep the next streamed answer visible.');
+
+    const id = 'msg-stream-ownership-regression';
+    const list = document.getElementById('msgList');
+    const bubble = document.createElement('div');
+    bubble.className = 'msg assistant';
+    bubble.dataset.clientId = id;
+    bubble.innerHTML = '<div class="msg-body">Partial reply</div>';
+    list.appendChild(bubble);
+    window.state.messages.push({
+      clientId: id,
+      role: 'assistant',
+      rawText: 'Partial reply',
+      html: null,
+      type: 'streaming',
+    });
+    window.__socratesReactChatBridge.publish({
+      type: 'stream-started',
+      messageId: id,
+    });
+  });
+
+  await page.waitForTimeout(100);
+  await expect(page.locator('[data-client-id="msg-stream-ownership-regression"]')).toBeVisible();
+
+  await page.evaluate(() => {
+    window.__socratesReactChatBridge.publish({
+      type: 'stream-delta',
+      messageId: 'msg-stream-ownership-regression',
+      textLength: 24,
+    });
+  });
+
+  await page.waitForTimeout(100);
+  await expect(page.locator('[data-client-id="msg-stream-ownership-regression"]')).toContainText('Partial reply');
+});

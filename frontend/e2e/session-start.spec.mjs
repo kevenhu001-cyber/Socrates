@@ -38,3 +38,18 @@ test('typing into topic input enables the Start button; clicking does not throw'
   );
   expect(realErrors, `startSession() threw:\n${realErrors.join('\n')}`).toEqual([]);
 });
+
+test('pressing Enter in the topic input starts the session', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  const topicInput = page.locator('#topicInput');
+  await topicInput.fill('Enter should send this topic');
+  await topicInput.press('Enter');
+
+  await expect(page.locator('#topicSetup')).toBeHidden();
+  await expect(page.locator('#chatView')).toBeVisible();
+  await expect(page.locator('#msgList .msg.user')).toContainText('Enter should send this topic');
+});

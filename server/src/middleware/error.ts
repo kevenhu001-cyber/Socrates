@@ -17,6 +17,16 @@ export function timeoutMiddleware(req: Request, res: Response, next: NextFunctio
   const TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS || '120000', 10);
   const timer = setTimeout(() => {
     if (res.headersSent) {
+      /* P_sse_timeout_exempt — SSE responses (chat stream, execution
+       * progress, status subscribe, …) are legitimately long-lived and
+       * manage their own lifecycle (per-stream AbortController budgets
+       * in llm.ts, heartbeats in lib/sse.ts). Destroying the socket at
+       * 120s cut every reply longer than the global budget mid-stream;
+       * the frontend's stall-retry then masked it as a flaky reconnect.
+       * Detect by Content-Type instead of a path allow-list so every
+       * present and future SSE route is covered automatically. */
+      const ct = String(res.getHeader('Content-Type') || '');
+      if (ct.includes('text/event-stream')) return;
       /* Headers already sent — we can't change the status code, but
        * destroying the socket still stops the downstream handler from
        * consuming resources indefinitely. */

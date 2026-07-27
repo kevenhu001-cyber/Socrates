@@ -11,6 +11,13 @@ import { renderMermaid, renderViz, renderVizLoading, renderPlot } from './viz.js
 import { preprocessMarkdown, preprocessMarkdownForStreaming } from './preprocess.js';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
 import { sanitizeUrls } from '../util/safe.js';
+/* M4 — bundled DOMPurify fallback. The CDN <script> in index.html is
+   still preferred (shared global, SRI-pinned), but if it fails to load
+   (offline, blocked CDN, flaky network) sanitisation used to silently
+   degrade to sanitizeUrls — which only rewrites URLs and lets
+   <img onerror=…>-style XSS through. The npm copy (same 3.2.4 version)
+   guarantees a real sanitiser is always present. */
+import bundledDomPurify from 'dompurify';
 
 /* ── DOMPurify configuration ──────────────────────────────────────
    Used by both formatMsg and formatMsgProgressive to sanitise the
@@ -47,10 +54,12 @@ interface DomPurifyLike {
   sanitize: (html: string, config?: unknown) => string;
 }
 
-/* Apply DOMPurify if available; fall back to sanitizeUrls only. */
+/* Apply DOMPurify (CDN global first, bundled copy as fallback); only
+   if both are unusable fall back to sanitizeUrls. */
 function sanitizeHtml(html: string): string {
-  const dp = (globalThis as { DOMPurify?: DomPurifyLike }).DOMPurify;
-  if (typeof dp !== 'undefined') {
+  const dp = (globalThis as { DOMPurify?: DomPurifyLike }).DOMPurify
+    ?? (bundledDomPurify as unknown as DomPurifyLike);
+  if (typeof dp !== 'undefined' && typeof dp.sanitize === 'function') {
     try {
       return dp.sanitize(html, PURIFY_CONFIG);
     } catch (e) {
