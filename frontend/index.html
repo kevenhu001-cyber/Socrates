@@ -564,7 +564,7 @@
                out to every wired composer. -->
           <div class="attachment-chips hidden" id="topicAttachmentChips"></div>
           <div class="template-mode-chip hidden" id="topicTemplateModeChip" aria-live="polite"></div>
-          <textarea id="topicInput" name="topicInput" aria-label="What would you like to explore?" placeholder="e.g. I want to understand how machine learning works..." data-i18n-placeholder="topic.inputPlaceholder" rows="2" data-action-input="autoResize;updateStartBtn" data-action-keydown="startSession" data-action-keydown-keys="Enter:!shift"></textarea>
+          <div id="topicComposerRoot" class="composer-editor-root" aria-label="What would you like to explore?"></div>
           <div class="topic-footer">
             <div class="footer-left-group">
               <button class="attach-btn composer-tools-trigger" id="topicComposerToolsBtn" type="button" data-action="toggleComposerTools" data-action-arg="topic" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
@@ -634,7 +634,7 @@
                  user knows the system is in a specialized mode.
                  Click × (rendered inline) to exit. -->
             <div class="template-mode-chip hidden" id="templateModeChip" aria-live="polite"></div>
-            <textarea id="chatInputArea" name="chatInputArea" aria-label="Type your thinking" placeholder="Type your thinking..." rows="1" data-action-input="autoResize;updateSendBtn" data-action-keydown="handleChatKey:event"></textarea>
+            <div id="chatComposerRoot" class="composer-editor-root" aria-label="Type your thinking"></div>
             <div class="chat-input-footer">
               <div class="footer-left-group">
                 <button class="attach-btn composer-tools-trigger" id="chatComposerToolsBtn" type="button" data-action="toggleComposerTools" data-action-arg="chat" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">

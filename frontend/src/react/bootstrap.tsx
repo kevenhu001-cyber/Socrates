@@ -24,6 +24,8 @@ import { SidebarHeader } from './sidebar-chrome/SidebarHeader';
 import { SidebarFooter } from './sidebar-chrome/SidebarFooter';
 import { mountSessionList } from './session-list';
 import { mountMessageList } from './message-list';
+import { RichComposer } from './composer-input';
+import { getLegacyActions, i18n } from './legacy/gateway';
 
 const NEW_REPLY_PILL_ID = 'newReplyPill';
 const SEND_BUTTON_CONTENT_ID = 'sendBtnContent';
@@ -36,6 +38,8 @@ const ATTACHMENT_CHIPS_ID = 'attachmentChips';
 const TOPIC_ATTACHMENT_CHIPS_ID = 'topicAttachmentChips';
 
 let sendButtonRoot: Root | null = null;
+let topicComposerRoot: Root | null = null;
+let chatComposerRoot: Root | null = null;
 
 function NewReplyPillContent(): string {
   // Establish the first React subscription without changing the legacy
@@ -165,6 +169,38 @@ export function bootstrapReactCompatibilityRuntime(): Root {
   const topicAttachmentChips = document.getElementById(TOPIC_ATTACHMENT_CHIPS_ID);
   if ((attachmentChips || topicAttachmentChips) && !window.__socratesAttachmentsBridge) {
     hydrateAttachmentChipsRows();
+  }
+
+  const legacyComposer = getLegacyActions().composer;
+  const topicComposerHost = document.getElementById('topicComposerRoot');
+  if (topicComposerHost && !topicComposerHost.dataset.richComposerMounted) {
+    topicComposerHost.dataset.richComposerMounted = '1';
+    topicComposerRoot = createRoot(topicComposerHost);
+    topicComposerRoot.render(
+      <ErrorBoundary>
+        <RichComposer
+          surface="topic"
+          placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
+          onSubmit={() => legacyComposer.startSession()}
+        />
+      </ErrorBoundary>,
+    );
+  }
+
+  const chatComposerHost = document.getElementById('chatComposerRoot');
+  if (chatComposerHost && !chatComposerHost.dataset.richComposerMounted) {
+    chatComposerHost.dataset.richComposerMounted = '1';
+    chatComposerRoot = createRoot(chatComposerHost);
+    chatComposerRoot.render(
+      <ErrorBoundary>
+        <RichComposer
+          surface="chat"
+          placeholder={i18n('chat.inputPlaceholder', 'Send a message')}
+          onSubmit={() => legacyComposer.submitChatMessage()}
+          onEscape={() => legacyComposer.stopChatResponse()}
+        />
+      </ErrorBoundary>,
+    );
   }
 
   const morePopover = document.getElementById('moreNavPopover');

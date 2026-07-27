@@ -1409,8 +1409,8 @@ function applyI18n(){
     if(av&&av!==ak)arias[ai].setAttribute("aria-label",av);
   }
   /* Placeholder / value updates — done selectively for now. */
-  var ci=document.getElementById("chatInputArea");
-  if(ci)ci.placeholder=t("chat.placeholder");
+  var ci=document.getElementById("chatComposerRoot");
+  if(ci)ci.setAttribute("aria-label",t("chat.placeholder"));
   var ch=document.getElementById("chatInputHint");
   if(ch)ch.textContent=t("chat.hint");
   /* Topic-setup title/sub/disclaimer. syncAppModeUI() rewrote these
@@ -1439,8 +1439,8 @@ function applyI18n(){
   if(ts)ts.textContent=t(appMode==="chat"?"topic.subChat":"topic.subtitle");
   var tdisc=document.getElementById("topicDisclaimer");
   if(tdisc)tdisc.textContent=t(appMode==="chat"?"topic.disclaimerChat":"profile.disclaimerTutor");
-  var tp=document.getElementById("topicInput");
-  if(tp)tp.placeholder=t("topic.inputPlaceholder");
+  var tp=document.getElementById("topicComposerRoot");
+  if(tp)tp.setAttribute("aria-label",t("topic.inputPlaceholder"));
   var sb=document.getElementById("startBtn");
   if(sb)sb.textContent=t("topic.start");
   var el=document.getElementById("extensionsLabel");
