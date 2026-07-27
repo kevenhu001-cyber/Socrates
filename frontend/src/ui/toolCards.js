@@ -319,6 +319,7 @@ export function appendToolModule(toolName, toolInput, body, opts) {
   card.dataset.toolState = opts.restored ? (opts.isError ? "error" : "complete") : "running";
   card.innerHTML = `
     <div class="agent-tool-head" role="button" tabindex="0" aria-expanded="false">
+      <span class="agent-tool-state-icon" aria-hidden="true"></span>
       <span class="agent-tool-icon" aria-hidden="true">${TOOL_ICONS[toolName] || meta.letter}</span>
       <span class="agent-tool-name"></span>
       <span class="agent-tool-input"></span>
@@ -326,13 +327,20 @@ export function appendToolModule(toolName, toolInput, body, opts) {
       <span class="agent-tool-chev" aria-hidden="true">▾</span>
     </div>
     <div class="agent-tool-body" hidden>
-      <div class="agent-tool-toolbar" hidden>
-        <span class="agent-tool-toolbar-label"></span>
-        <button type="button" class="agent-tool-action" data-tool-copy="code" hidden></button>
-        <button type="button" class="agent-tool-action" data-tool-copy="output" hidden></button>
-      </div>
-      <pre class="agent-tool-code"><code></code></pre>
-      <div class="agent-tool-out"></div>
+      <section class="agent-tool-section agent-tool-input-section">
+        <div class="agent-tool-section-head">
+          <span>Input</span>
+          <button type="button" class="agent-tool-action" data-tool-copy="code" hidden></button>
+        </div>
+        <pre class="agent-tool-code"><code></code></pre>
+      </section>
+      <section class="agent-tool-section agent-tool-output-section">
+        <div class="agent-tool-section-head">
+          <span>Output</span>
+          <button type="button" class="agent-tool-action" data-tool-copy="output" hidden></button>
+        </div>
+        <div class="agent-tool-out"></div>
+      </section>
     </div>`;
 
   card.querySelector(".agent-tool-name").textContent = meta.short;
@@ -340,7 +348,6 @@ export function appendToolModule(toolName, toolInput, body, opts) {
   card.querySelector(".agent-tool-status").textContent = opts.restored
     ? trTool(opts.isError ? "tool.statusFailed" : "tool.statusDone", opts.isError ? "Failed" : "Done")
     : trTool("tool.statusRunning", "Running");
-  card.querySelector(".agent-tool-toolbar-label").textContent = trTool("tool.details", "Details");
   var copyCodeButton = card.querySelector('[data-tool-copy="code"]');
   var copyOutputButton = card.querySelector('[data-tool-copy="output"]');
   copyCodeButton.textContent = trTool("tool.copyCode", "Copy code");
@@ -392,6 +399,7 @@ export function appendToolModule(toolName, toolInput, body, opts) {
     const open = card.classList.toggle("open");
     head.setAttribute("aria-expanded", open ? "true" : "false");
     bodyEl.hidden = !open;
+    if(open)card.dispatchEvent(new CustomEvent("tool-details-opened"));
   }
   head.addEventListener("click", toggleCard);
   head.addEventListener("keydown", function (event) {

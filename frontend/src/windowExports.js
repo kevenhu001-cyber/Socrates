@@ -209,6 +209,11 @@ import {
   openPromptTemplatesModal, closePromptTemplatesModal, renderPromptTemplatesModal,
   openPromptTemplateEditor, onPromptRowDelete, onPromptTemplateEditorSave,
 } from './ui/promptTemplates.js';
+import {
+  focusComposer,
+  getComposerMarkdown,
+  getVisibleComposerSurface,
+} from './react/composer-input/controller.ts';
 window.openPromptTemplatesModal = openPromptTemplatesModal;
 window.closePromptTemplatesModal = closePromptTemplatesModal;
 /* Inline onclick handlers inside the bridge-published modal HTML
@@ -429,10 +434,7 @@ var WRITE_EDIT_SYSTEM_PROMPT =
   "- Use Markdown for structure (headings, lists, short paragraphs) when the piece is long.\n" +
   "- Return the requested writing with minimal framing \u2014 no 'Here is your text:' preambles.";
 window.composeAction = function () {
-  var chat = document.getElementById("chatInputArea");
-  var topic = document.getElementById("topicInput");
-  var chatVisible = chat && chat.offsetParent !== null;
-  var input = chatVisible ? chat : (topic || chat);
+  var surface = getVisibleComposerSurface();
   var title = (typeof window.t === "function" && window.t("composer.write")) || "Write or edit";
   if (title === "composer.write") title = "Write or edit";
   if (typeof window.setActiveTemplate === "function") {
@@ -445,36 +447,27 @@ window.composeAction = function () {
       body: ""
     });
   }
-  if (input) {
-    input.focus();
-    try {
-      var end = input.value.length;
-      input.setSelectionRange(end, end);
-    } catch (_) {}
-    try {
-      if (typeof window.autoResize === "function") window.autoResize(input);
-      if (typeof window.updateStartBtn === "function") window.updateStartBtn();
-      if (typeof window.updateSendBtn === "function") window.updateSendBtn();
-    } catch (_) {}
-  }
+  focusComposer(surface);
+  try {
+    if (typeof window.updateStartBtn === "function") window.updateStartBtn();
+    if (typeof window.updateSendBtn === "function") window.updateSendBtn();
+  } catch (_) {}
 };
 
 /* 查找资料 — toggle web search on/off. When turning on with existing text,
    launch Deep Research directly (same entry the old Extensions toggle used).
    The chip's .active state mirrors window.webSearchOn via syncQuickChips(). */
 window.researchAction = function () {
-  var chat = document.getElementById("chatInputArea");
-  var topic = document.getElementById("topicInput");
-  var input = (chat && chat.offsetParent !== null) ? chat : (topic || chat);
-  var hasText = input && input.value && input.value.trim().length > 0;
+  var surface = getVisibleComposerSurface();
+  var hasText = getComposerMarkdown(surface).trim().length > 0;
   var wasOn = (typeof window.webSearchOn !== "undefined") && !!window.webSearchOn;
   if (typeof window.toggleWebSearch === "function") window.toggleWebSearch();
   /* If we just turned search ON and there's already a prompt, kick off
      Deep Research on it immediately. */
   if (!wasOn && hasText && typeof window.launchDeepResearch === "function") {
     window.launchDeepResearch();
-  } else if (input) {
-    input.focus();
+  } else {
+    focusComposer(surface);
   }
   window.syncQuickChips();
 };

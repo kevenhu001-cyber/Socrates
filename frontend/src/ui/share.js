@@ -272,8 +272,8 @@ function _switchToSharedChatView() {
   if (topBar) topBar.style.display = "none";
   var shareBtn = document.getElementById("shareBtn");
   if (shareBtn) shareBtn.style.display = "none";
-  var composer = document.getElementById("chatInputArea");
-  if (composer) composer.setAttribute("readonly", "readonly");
+  var composer = document.getElementById("chatComposerRoot");
+  if (composer) composer.setAttribute("aria-disabled", "true");
   var gate = document.getElementById("authGate");
   if (gate) gate.classList.add("hidden");
   var recentsPane = document.getElementById("recentsPane");
