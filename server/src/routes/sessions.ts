@@ -132,7 +132,30 @@ router.get('/', async (req, res, next) => {
     if (!showArchived) conditions.push(isNull(sessions.archivedAt));
     if (cursor) conditions.push(sql`sessions.updated_at < ${cursor}::timestamptz`);
 
-    const rows = await db.select()
+    /* Audit P-H2 — the list previously did SELECT * and shipped every
+     * heavy JSONB column (kbNodes, mistakes, examData, teachingPlan,
+     * boundariesHistory) plus streaming snapshots for up to 200 rows.
+     * No list consumer reads those — loadSession() fetches the detail
+     * endpoint (GET /:id) before using them — so return only the
+     * lightweight columns the Recents list / Cmd-K / chips render. */
+    const rows = await db.select({
+      id: sessions.id,
+      title: sessions.title,
+      topic: sessions.topic,
+      mode: sessions.mode,
+      phase: sessions.phase,
+      kind: sessions.kind,
+      domain: sessions.domain,
+      projectId: sessions.projectId,
+      pinned: sessions.pinned,
+      archivedAt: sessions.archivedAt,
+      preview: sessions.preview,
+      totalQ: sessions.totalQ,
+      currentNode: sessions.currentNode,
+      branchedFrom: sessions.branchedFrom,
+      updatedAt: sessions.updatedAt,
+      createdAt: sessions.createdAt,
+    })
       .from(sessions)
       .where(and(...conditions))
       .orderBy(desc(sessions.updatedAt))
