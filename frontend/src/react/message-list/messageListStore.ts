@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import type { MessageListBridge } from './types';
 
 type Listener = () => void;
@@ -31,10 +32,5 @@ export function subscribeToMessageList(listener: Listener): () => void {
 }
 
 export function useMessageListRevision(): number {
-  // Simple hook to trigger re-render when the legacy code signals
-  let rev = 0;
-  // This is intentionally not using useSyncExternalStore since the
-  // bridge is a simple trigger; the actual data comes from the chat
-  // runtime store which already has useSyncExternalStore.
-  return rev;
+  return useSyncExternalStore(subscribeToMessageList, () => revision);
 }

@@ -26,6 +26,7 @@ export function SidebarHeader() {
           className="icon-btn compose-btn"
           id="newChatBtn"
           title="Start a new chat"
+          aria-label="Start a new chat"
           onClick={(e) => {
             e.preventDefault();
             getLegacyActions().navigation.resetApp();

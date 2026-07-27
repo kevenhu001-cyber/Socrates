@@ -30,15 +30,6 @@ function formatTime(value: string | null): string {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
-function esc(s: string): string {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 function ScheduledPage() {
   const snap = useScheduledSnapshot();
   const dispatch = useScheduledDispatch();
@@ -115,10 +106,10 @@ function ScheduledPage() {
                     onClick={() => dispatch.edit(task.id)}
                   >
                     <span className="workspace-row-copy">
-                      <strong>{esc(task.title)}</strong>
+                      <strong>{task.title}</strong>
                       <span>
                         <i className={'task-status' + (active ? ' on' : '')} />
-                        {esc(stateLabel + ' · ' + (task.frequency || 'once') + ' · ' + formatTime(task.nextRunAt))}
+                        {stateLabel + ' · ' + i18n('scheduled.freq.' + (task.frequency || 'once'), task.frequency || 'once') + ' · ' + formatTime(task.nextRunAt)}
                       </span>
                     </span>
                   </button>

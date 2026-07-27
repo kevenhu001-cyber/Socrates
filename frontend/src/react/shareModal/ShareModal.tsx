@@ -85,25 +85,26 @@ function ShareModal() {
           </svg>
         </button>
       </div>
-
-      <VisibilityOption
-        vis="public"
-        currentVis={snap.visibility}
-        labelKey="share.publicTitle"
-        labelFallback="Anyone with the link"
-        descKey="share.publicDesc"
-        descFallback="No sign-in required. Anyone who has the link can view this conversation."
-        onSelect={dispatch.selectVis}
-      />
-      <VisibilityOption
-        vis="private"
-        currentVis={snap.visibility}
-        labelKey="share.privateTitle"
-        labelFallback="Only you"
-        descKey="share.privateDesc"
-        descFallback="Must be logged into your account to view. Still shared via link."
-        onSelect={dispatch.selectVis}
-      />
+      <div className="share-visibility" role="radiogroup" aria-label={i18n('share.visibilityLabel', 'Link visibility')}>
+        <VisibilityOption
+          vis="public"
+          currentVis={snap.visibility}
+          labelKey="share.publicTitle"
+          labelFallback="Anyone with the link"
+          descKey="share.publicDesc"
+          descFallback="No sign-in required. Anyone who has the link can view this conversation."
+          onSelect={dispatch.selectVis}
+        />
+        <VisibilityOption
+          vis="private"
+          currentVis={snap.visibility}
+          labelKey="share.privateTitle"
+          labelFallback="Only you"
+          descKey="share.privateDesc"
+          descFallback="Must be logged into your account to view. Still shared via link."
+          onSelect={dispatch.selectVis}
+        />
+      </div>
 
       <div
         className={`share-link-area${hasLink ? '' : ' hidden'}`}

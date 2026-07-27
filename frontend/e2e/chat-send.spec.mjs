@@ -3,11 +3,12 @@
 // bubble (or surfaces an offline notice) without throwing.
 
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('clicking send mounts a streaming bubble or surfaces a notice without throwing', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
   await page.waitForTimeout(400);
@@ -40,7 +41,7 @@ test('clicking send mounts a streaming bubble or surfaces a notice without throw
 test('mobile send stays pinned to the newest message after focused input submit', async ({ page }) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 

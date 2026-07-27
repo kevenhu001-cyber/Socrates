@@ -5,7 +5,7 @@ import { hasUsableActive, webSearchOn } from '../config/providers.js';
 import { loadLocalMemory } from '../storage/localMemory.js';
 
 function getState() { return window.state; }
-function tr(key) { return typeof window.t === 'function' ? window.tr(key) : key; }
+function tr(key) { return typeof window.t === 'function' ? window.t(key) : key; }
 
 /* Fetch web context for `topic`. Returns a structured result so the UI
    can show a "N sources" pill (or an error pill). The `state` fields

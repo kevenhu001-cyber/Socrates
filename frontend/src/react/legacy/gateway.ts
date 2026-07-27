@@ -66,6 +66,22 @@ export function t(key: string, ...args: unknown[]): string {
   return key;
 }
 
+/**
+ * Translate a key with a fallback for the React tree.
+ * - Returns the translated string when the key resolves in the active
+ *   language or the English fallback.
+ * - Returns `fallback` when the key is missing (legacy `t()` returns the
+ *   key string on miss, which is ugly in the UI).
+ *
+ * This consolidates the per-component `i18n(key, fallback)` helpers that
+ * were duplicated across 8 React files and keeps the fallback visible
+ * at the call site so the English copy stays co-located with the JSX.
+ */
+export function i18n(key: string, fallback: string): string {
+  const v = t(key);
+  return v !== key ? v : fallback;
+}
+
 // ─── Legacy state snapshot access ────────────────────────────────────────────
 
 /**

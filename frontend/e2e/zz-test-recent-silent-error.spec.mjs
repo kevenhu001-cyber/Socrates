@@ -11,6 +11,7 @@
 // After the fix, the empty state should distinguish "fetch failed" from
 // "truly no sessions", surface the error to the user, and offer a retry.
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 
 test('Recent list surfaces fetch failure instead of misleading "no sessions" message', async ({ page }) => {
   await page.context().addCookies([
@@ -54,7 +55,7 @@ test('Recent list surfaces fetch failure instead of misleading "no sessions" mes
     try { localStorage.removeItem('socrates-recents-filter'); } catch (_) {}
   });
 
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(2500);
 
@@ -157,7 +158,7 @@ test('auto-retry recovers sessions when the server comes back after a transient 
     try { localStorage.removeItem('socrates-recents-filter'); } catch (_) {}
   });
 
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(2500);
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { getLegacyActions } from '../legacy/gateway';
+import { getLegacyActions, t } from '../legacy/gateway';
 import { installSettingsBridge } from './settingsStore';
 import { useSettingsSnapshot } from './legacyAdapter';
 
@@ -37,7 +37,7 @@ function SettingsModal() {
     >
       <div className="settings-modal">
         <div className="settings-header">
-          <span className="settings-title">API Configuration</span>
+          <span className="settings-title" data-i18n-key="settings.title">{t('settings.title')}</span>
           <button
             className="settings-close"
             id="settingsCloseBtn"

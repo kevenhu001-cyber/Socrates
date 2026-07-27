@@ -454,7 +454,6 @@ function saveSettings() {
       window.saveLastActiveId(null);
     }
     window.syncModelPills();
-    try { window.syncModels(); } catch (e) {}
     window.syncChatModel();
     if (results.failed > 0 && results.saved > 0) {
       window.showToast("Saved " + results.saved + " provider(s), but " + results.failed + " failed: " + ((results.lastError && results.lastError.message) || "unknown error") + ". Try saving again.");

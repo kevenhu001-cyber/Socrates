@@ -142,6 +142,7 @@ function CommandPalette() {
           autoComplete="off"
           spellCheck={false}
           defaultValue=""
+          key={String(open)}
           onChange={(event) => commands.input(event.target.value)}
           onKeyDown={(event) => {
             if (

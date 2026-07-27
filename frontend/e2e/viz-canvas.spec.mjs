@@ -10,6 +10,7 @@
 //      image data through postMessage from the test).
 
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('viz card renders a user canvas and flips to ready via postMessage', async ({ page }) => {
@@ -42,7 +43,7 @@ test('viz card renders a user canvas and flips to ready via postMessage', async 
     await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
   });
 
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -154,7 +155,7 @@ test('viz fullscreen preserves the complete iframe srcdoc', async ({ page }) => 
     await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
   });
 
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -205,7 +206,7 @@ test('viz card surfaces a synchronous script failure instead of claiming readine
       body: 'data: ' + JSON.stringify({ choices: [{ delta: { content: broken } }] }) + '\n\ndata: [DONE]\n\n',
     });
   });
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(async () => {
     window.state.phase = 'chat';
@@ -231,7 +232,7 @@ test('plot card draws the function and posts viz-ready', async ({ page }) => {
     await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
   });
 
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -276,7 +277,7 @@ test('ready viz cards release the iframe registry; late viz-error still surfaces
     ].join('');
     await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
   });
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(async () => {
     window.state.phase = 'chat';
@@ -313,7 +314,7 @@ test('ready viz cards release the iframe registry; late viz-error still surfaces
 
 test('processPendingVizActions does not trigger a document-wide [data-action] scan', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   const before = await page.evaluate(() => {
     window.__vizActionScanCount = 0;

@@ -3,6 +3,7 @@
 // generated image artifact.
 
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const ONE_PIXEL_PNG = Buffer.from(
@@ -31,7 +32,7 @@ test('tool activity is grouped by answer and reveals search, code, and artifacts
     await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
   });
 
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
@@ -135,7 +136,7 @@ test('tool cards replay tool_call_delta frames that arrive before tool_use', asy
     await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
   });
 
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 

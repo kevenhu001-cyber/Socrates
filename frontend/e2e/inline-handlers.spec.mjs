@@ -11,6 +11,7 @@
 // Also assert that zero legacy `on{event}="..."` attributes remain.
 
 import { test, expect } from '@playwright/test';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp } from './_mock-api.mjs';
 import fs from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -82,7 +83,7 @@ test('no legacy inline event attributes remain in built index.html', async () =>
 
 test('every data-action function name resolves on window.fn at runtime', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.goto('/');
+  await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForFunction(
     () => document.documentElement.dataset.bootState === 'app',

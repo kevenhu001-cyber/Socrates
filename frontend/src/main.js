@@ -536,7 +536,7 @@ document.addEventListener("keydown",function(e){
     if(typeof openShareModal==="function"&&state.session.currentSessionId){
       openShareModal();
     }else{
-      showToast("Start a chat first to share it");
+      showToast(t("toast.shareStartFirst"));
     }
     return;
   }
@@ -985,7 +985,7 @@ async function refreshServerSessions(){
    "Couldn't load sessions — Retry" empty state. Re-runs the fetch,
    then re-renders so the user sees the result immediately. */
 async function retryRecentsFetch(){
-  try{showToast("Loading sessions…")}catch(_){}
+  try{showToast(t("toast.loadingSessions"))}catch(_){}
   try{await refreshServerSessions()}catch(_){}
   try{renderRecents()}catch(_){}
 }
@@ -1763,7 +1763,7 @@ async function loadSession(id){
         if(lastUserMsg&&typeof window.askChatTurn==="function"){
           window.askChatTurn(lastUserMsg);
         }else{
-          showToast("No previous user message to retry.");
+          showToast(t("toast.noRetryTarget"));
         }
       };
       msgList.addEventListener("click",retryDelegated);
@@ -1859,11 +1859,11 @@ async function loadSession(id){
       /* Transient error — don't destroy the current session UI.
          Silently log and return so the user stays where they are. */
       console.warn('[loadSession] transient error loading session', id, 'status=' + errStatus, e && e.message);
-      showToast('Failed to load session: ' + (e && e.message || 'temporary error') + '. Please try again.');
+      showToast(t("session.loadFailed").replace("{msg}", e && e.message || "temporary error"));
       return;
     }
     
-    showToast("Session not found or could not be loaded.");
+    showToast(t("session.notFound"));
     /* The URL had ?chat=<id> pointing to a session that doesn't exist
        on the server (404). This happens when the user bookmarks a
        chat link on one device, then opens it on another device where
@@ -2112,7 +2112,7 @@ function addTagToSession(id,tag){
   s.tags=Array.isArray(s.tags)?s.tags.slice():[];
   if(s.tags.indexOf(tag)>=0)return;
   if(s.tags.length>=12){
-    showToast("Maximum 12 tags per session");
+    showToast(t("tags.maxTags"));
     return;
   }
   s.tags.push(tag);
@@ -2212,7 +2212,7 @@ async function actuallyDeleteSession(id,ev){
     method:"DELETE",
     timeoutMs:8000
   }).then(function(){
-    showToast("Session deleted");
+    showToast(t("session.deleted"));
     /* P_delete-stale — if no sessions remain, make sure the
        chat view is hidden and the topic-setup is showing so the
        user lands on a clean "start a new conversation" surface
@@ -2235,7 +2235,7 @@ async function actuallyDeleteSession(id,ev){
     });
   }).catch(function(err){
     /* delete sync failed */
-    try{showToast("Delete failed: "+(err&&err.message||"server error")+" - refreshing.",4000)}catch(_){}
+    try{showToast(t("session.deleteFailedRefresh").replace("{msg}", err&&err.message||"server error"),4000)}catch(_){}
     /* P_delete-resurrect — keep the tombstone on failure. The
        local mirror no longer has the row (we filtered it at
        t≈0) and the server claim is "404 / error", so any
@@ -2278,14 +2278,12 @@ function confirmPurgeSession(id){
   if(idx<0)return;
   var s=SERVER_SESSIONS[idx];
   if(!s.archivedAt){
-    showToast("Archive the session first (long-press → Delete).");
+    showToast(t("session.archiveFirst"));
     return;
   }
   showConfirm(
-    "Delete this session forever?",
-    "This permanently erases \""+(s.title||s.topic||"this session")+"\". "+
-    "Messages, knowledge graph, and mistake book entries are gone. "+
-    "This cannot be undone.",
+    t("confirm.deleteForever.title"),
+    t("confirm.deleteForever.msg").replace("{title}",s.title||s.topic||"this session"),
     true
   ).then(function(yes){
     if(!yes)return;
@@ -2308,9 +2306,9 @@ function confirmPurgeSession(id){
       clearLocalMemory(id);
       renderArchivedList();
       renderRecents();
-      showToast("Session deleted");
+      showToast(t("session.deleted"));
     }).catch(function(err){
-      showToast("Delete failed: "+(err&&err.message||"server error"));
+      showToast(t("session.deleteFailedMsg").replace("{msg}", err&&err.message||"server error"));
     });
   });
 }
@@ -2421,29 +2419,29 @@ function openSessionContextMenu(id,rowEl){
       /* Pin / Unpin */
       '<button class="session-context-btn" data-action="pin">'+
         '<span class="session-context-icon">'+(isPinned?unpinSvg():pinSvg())+'</span>'+
-        '<span>'+(isPinned?"Unpin":"Pin to top")+'</span>'+
+        '<span>'+(isPinned?t("session.ctxUnpin"):t("session.ctxPin"))+'</span>'+
       '</button>'+
       /* Custom label */
       '<div class="session-context-label-row">'+
         '<button class="session-context-label-trigger" id="sessionCtxLabelTrigger" type="button">'+
           '<span class="session-context-icon">'+labelSvg()+'</span>'+
-          '<span>Custom label'+(label?' <mark>'+esc(label)+'</mark>':'')+'</span>'+
+          '<span>'+t("session.ctxCustomLabel")+(label?' <mark>'+esc(label)+'</mark>':'')+'</span>'+
         '</button>'+
         '<div class="session-context-label-input-wrap hidden" id="sessionCtxLabelWrap">'+
           '<span class="session-context-icon">'+labelSvg()+'</span>'+
-          '<input class="session-context-label-input" id="sessionCtxLabelInput" type="text" placeholder="Custom label\u2026" maxlength="30" value="'+esc(label)+'">'+
+          '<input class="session-context-label-input" id="sessionCtxLabelInput" type="text" placeholder="'+esc(t("session.ctxCustomLabel"))+'\u2026" maxlength="30" value="'+esc(label)+'">'+
         '</div>'+
-        '<button class="session-context-label-set hidden" id="sessionCtxLabelSet">Set</button>'+
+        '<button class="session-context-label-set hidden" id="sessionCtxLabelSet">'+t("session.ctxLabelSet")+'</button>'+
       '</div>'+
       /* Move to project */
       '<div class="session-context-move-to-project">'+
-        '<div class="session-context-move-header">Move to project</div>'+
+        '<div class="session-context-move-header">'+t("session.ctxMoveToProject")+'</div>'+
         '<div class="session-context-project-list" id="sessionCtxProjectList"></div>'+
       '</div>'+
       /* Delete */
       '<button class="session-context-btn session-context-btn-danger" data-action="delete">'+
         '<span class="session-context-icon">'+deleteSvg()+'</span>'+
-        '<span>Delete session</span>'+
+        '<span>'+t("session.ctxDelete")+'</span>'+
       '</button>'+
     '</div>';
 
@@ -2595,10 +2593,10 @@ function moveSessionToProject(sessionId, projectId){
         closeSessionContextMenu();
         if(typeof refreshServerSessions === "function") refreshServerSessions();
         if(typeof renderRecents === "function") renderRecents();
-        if(typeof showToast === "function") showToast("Moved to " + project.name);
+        if(typeof showToast === "function") showToast(t("toast.movedToProject").replace("{name}", project.name));
       })
       .catch(function(){
-        if(typeof showToast === "function") showToast("Could not move session");
+        if(typeof showToast === "function") showToast(t("toast.moveSessionFailed"));
       });
   }
 }
@@ -2832,6 +2830,16 @@ async function startSession(){
      array regardless of which path called us. The DOM msgList is
      cleared per-branch below (chat / tutor). */
   state.session.messages=[];
+  /* P_currentProjectId-leak — reset project binding so a new session
+     started via Begin (without going through resetApp()) doesn't
+     inherit the previous session's projectId. Preserve any project
+     explicitly selected via _nextProjectId (same pattern as
+     resetApp()). */
+  state.currentProjectId=null;
+  if(window._nextProjectId){
+    state.currentProjectId=window._nextProjectId;
+    window._nextProjectId=null;
+  }
   state.diagQuestions=[];
   state.diagAnswers=[];
   state.diagIndex=0;
@@ -3130,13 +3138,14 @@ async function startSession(){
     renderDiagQuestion();
     updateKB();
   };
-/* P_inline-onclick-bridge — these nine handlers are referenced by
+  await attemptDiagGeneration(false);
+}
+
+/* P_inline-onclick-bridge — these handlers are referenced by
    `onclick="X()"` attributes in dynamically generated HTML
    (diagnostic flow buttons, tag editor done, slash row click, active
-   template chip). The C1 cleanup dropped the window bindings; the
-   functions still exist locally and work fine, but clicking the
-   buttons throws ReferenceError because inline attribute handlers
-   resolve identifiers in the global scope (window.X). */
+   template chip). Inline attribute handlers resolve identifiers in the
+   global scope, so they must be bound on window at module load. */
 window.closeTagEditor = closeTagEditor;
 window.clearActiveTemplate = clearActiveTemplate;
 window.onSlashRowClick = onSlashRowClick;
@@ -3147,9 +3156,6 @@ window.skipDiagQuestion = skipDiagQuestion;
 window.finishDiagnostic = finishDiagnostic;
 window.proceedToTeaching = proceedToTeaching;
 window.moveSessionToProject = moveSessionToProject;
-
-  await attemptDiagGeneration(false);
-}
 
 function renderDiagQuestion(){
   renderDiagQuestionUI(state,t,formatMsg);
@@ -3883,7 +3889,7 @@ async function submitChatMessage(textOverride,opts){
       /* User sent the placeholder without typing anything
          real. Bail with a hint instead of firing an empty
          request at the model. */
-      try{showToast("Type or paste the text to process, then send.");}catch(_){}
+      try{showToast(t("toast.typeTextFirst"));}catch(_){}
       return;
     }
   }
@@ -4195,7 +4201,7 @@ function sendFeedback(messageId,rating,bar){
 }
 function editUserMessage(messageId,bar){
   var idx=findMessageIndex(messageId);
-  if(idx<0){showToast("Message not found");return}
+  if(idx<0){showToast(t("toast.messageNotFound"));return}
   var entry=state.messages[idx];
   var div=document.querySelector('[data-client-id="'+messageId+'"]');
   if(!div){return}
@@ -4242,7 +4248,7 @@ function editUserMessage(messageId,bar){
       timeoutMs:15000
     }).catch(function(e){
       console.log("[msg-edit] PATCH failed");
-      showToast("Saved locally — will sync when back online");
+      showToast(t("toast.savedOffline"));
     });
     /* P0.1 BUG-P01-03 — if the edited message carried image / PDF /
        text attachments, rebuild the multimodal content parts and stash
@@ -4401,7 +4407,7 @@ function branchFromMessage(messageId, opts){
      prompt so the model explains the topic from a different angle. */
   var reExplain = !!opts.reExplain;
   var branchIdx=findMessageIndex(messageId);
-  if(branchIdx<0){showToast("Message not found");return}
+  if(branchIdx<0){showToast(t("toast.messageNotFound"));return}
   /* Save the current session first so the original branch is
      persisted. */
   saveCurrentSession();
@@ -7022,7 +7028,7 @@ import { updateChatStats } from './chat/stats.js';
 
 async function resetApp(){
   if(state.topic||state.kbNodes.length>0||document.getElementById("msgList").children.length>0){
-    var ok=await showConfirm("Start a new session?","You have an active session. Starting a new one will save your progress to Recents.",false);
+    var ok=await showConfirm(t("confirm.newSession.title"),t("confirm.newSession.msg"),false);
     if(!ok){ window._nextProjectId=null; return; }
   }
   /* Drain any previous in-flight save first so the dirty cascade
@@ -7159,7 +7165,7 @@ async function toggleIncognito(){
     await resetApp();
     window.incognitoOn=false;
     syncIncognitoBtn();
-    if(typeof showToast==="function")showToast("Incognito off");
+    if(typeof showToast==="function")showToast(t("incognito.off"));
     return;
   }
   /* Entering incognito — resetApp() saves any prior real session and
@@ -7168,7 +7174,7 @@ async function toggleIncognito(){
   await resetApp();
   window.incognitoOn=true;
   syncIncognitoBtn();
-  if(typeof showToast==="function")showToast("Incognito on · this chat won't be saved");
+  if(typeof showToast==="function")showToast(t("incognito.on"));
 }
 window.toggleIncognito=toggleIncognito;
 window.syncIncognitoBtn=syncIncognitoBtn;
@@ -7499,9 +7505,9 @@ async function toggleAppMode(){
   var inSession=state.topic||state.kbNodes&&state.kbNodes.length>0||(state.phase==="chat")||
                 (document.getElementById("msgList")&&document.getElementById("msgList").children.length>0);
   if(inSession){
-    var next=appMode==="tutor"?"Chat":"Tutor";
-    var ok=await showConfirm("Switch to "+next+" mode?",
-      "Switching will end this session and save it to Recents. You can pick it back up there any time.",
+    var next=appMode==="tutor"?t("tutor.modeChat"):t("tutor.modeTutor");
+    var ok=await showConfirm(t("confirm.switchMode.title").replace("{mode}",next),
+      t("confirm.switchMode.msg"),
       false);
     if(!ok)return;
     /* P_save-before-mode-switch — await save completion before
@@ -7677,7 +7683,7 @@ function cycleActiveProject(){
   }
   if(typeof refreshServerSessions === "function") refreshServerSessions();
   if(typeof renderRecents === "function") renderRecents();
-  if(typeof showToast === "function") showToast("Project: " + next.name);
+  if(typeof showToast === "function") showToast(t("toast.projectSwitched").replace("{name}", next.name));
 }
 
 function projectContextSuffix(){
@@ -8266,6 +8272,13 @@ if (typeof window.loadMemories === "function") window.loadMemories();
 bindSettingsUI();
 import { installDelegate } from './ui/delegate.js';
 installDelegate();
+import { installModalA11y } from './ui/modalA11y.js';
+installModalA11y({ overlayId: 'cmdKOverlay', closeFn: function () { if (typeof window.closeCmdK === 'function') window.closeCmdK(); } });
+installModalA11y({ overlayId: 'settingsOverlay', closeFn: function () { if (typeof window.closeSettings === 'function') window.closeSettings(); } });
+installModalA11y({ overlayId: 'shareOverlay', closeFn: function () { if (typeof window.closeShareModal === 'function') window.closeShareModal(); } });
+installModalA11y({ overlayId: 'usageOverlay', closeFn: function () { if (typeof window.closeUsageModal === 'function') window.closeUsageModal(); } });
+installModalA11y({ overlayId: 'profileOverlay', closeFn: function () { if (typeof window.closeProfile === 'function') window.closeProfile(); } });
+installModalA11y({ overlayId: 'confirmDialog', closeFn: function () { if (typeof window.closeConfirm === 'function') window.closeConfirm(false); }, skipObserve: true });
 /* React migration. Bootstrap the React compatibility runtime on every
    load — the legacy runtime still owns the visible document, but React
    hydrates specific feature slices (sidebar, cmd-k, session list, etc.)

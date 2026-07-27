@@ -13,6 +13,8 @@ function FindInSession() {
   const [snapshot, setSnapshot] = useState<FindInSessionSnapshot>(getFindInSessionSnapshot);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLElement | null>(null);
+  const queryRef = useRef(snapshot.query);
+  queryRef.current = snapshot.query;
 
   useEffect(() => {
     containerRef.current = document.getElementById(FIND_BAR_ID);
@@ -55,19 +57,19 @@ function FindInSession() {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const result = e.shiftKey ? navigatePrev() : navigateNext();
-      publishFind({ isOpen: true, query: snapshot.query, ...result });
+      publishFind({ isOpen: true, query: queryRef.current, ...result });
     }
-  }, [snapshot.query]);
+  }, []);
 
   const handlePrev = useCallback(() => {
     const result = navigatePrev();
-    publishFind({ isOpen: true, query: snapshot.query, ...result });
-  }, [snapshot.query]);
+    publishFind({ isOpen: true, query: queryRef.current, ...result });
+  }, []);
 
   const handleNext = useCallback(() => {
     const result = navigateNext();
-    publishFind({ isOpen: true, query: snapshot.query, ...result });
-  }, [snapshot.query]);
+    publishFind({ isOpen: true, query: queryRef.current, ...result });
+  }, []);
 
   const handleClose = useCallback(() => {
     closeFind();

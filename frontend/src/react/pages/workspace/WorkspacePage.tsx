@@ -1,6 +1,7 @@
 import { createRoot, type Root } from 'react-dom/client';
 import React from 'react';
 
+import { t as _t } from '../../legacy/gateway';
 import { installWorkspaceBridge } from './workspaceStore';
 import { useWorkspaceSnapshot, useWorkspaceDispatch } from './legacyAdapter';
 
@@ -8,13 +9,9 @@ import { useWorkspaceSnapshot, useWorkspaceDispatch } from './legacyAdapter';
 /*  Shared helpers                                                     */
 /* ------------------------------------------------------------------ */
 
-function esc(s: string): string {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+function i18n(key: string, fallback: string): string {
+  const v = _t(key);
+  return v !== key ? v : fallback;
 }
 
 function fileMeta(item: { size?: number; uploadedAt?: string; updatedAt?: string }): string {
@@ -23,7 +20,7 @@ function fileMeta(item: { size?: number; uploadedAt?: string; updatedAt?: string
     ? size < 1024 * 1024
       ? Math.max(1, Math.round(size / 1024)) + ' KB'
       : (size / (1024 * 1024)).toFixed(1) + ' MB'
-    : 'Created';
+    : i18n('library.metaCreated', 'Created');
   return sizeLabel + (item.uploadedAt || item.updatedAt ? ' · ' + (item.uploadedAt || item.updatedAt) : '');
 }
 
@@ -34,15 +31,15 @@ function fileMeta(item: { size?: number; uploadedAt?: string; updatedAt?: string
 function LibraryTabBar({ tab, onSwitch }: { tab: string; onSwitch: (t: string) => void }) {
   return (
     <div className="library-tabs">
-      <button type="button" className={'library-tab' + (tab === 'files' ? ' active' : '')} onClick={() => onSwitch('files')}>Uploaded</button>
-      <button type="button" className={'library-tab' + (tab === 'artifacts' ? ' active' : '')} onClick={() => onSwitch('artifacts')}>Created</button>
+      <button type="button" className={'library-tab' + (tab === 'files' ? ' active' : '')} onClick={() => onSwitch('files')}>{i18n('library.tabUploaded', 'Uploaded')}</button>
+      <button type="button" className={'library-tab' + (tab === 'artifacts' ? ' active' : '')} onClick={() => onSwitch('artifacts')}>{i18n('library.tabCreated', 'Created')}</button>
     </div>
   );
 }
 
 function LibrarySearch({ query, onSearch }: { query: string; onSearch: (q: string) => void }) {
   return (
-    <input type="text" className="library-search" placeholder="Filter items..." value={query} onChange={(e) => onSearch(e.target.value)} aria-label="Filter library items" />
+    <input type="text" className="library-search" placeholder={i18n('library.filterPlaceholder', 'Filter items...')} value={query} onChange={(e) => onSearch(e.target.value)} aria-label={i18n('library.filterPlaceholder', 'Filter items...')} />
   );
 }
 
@@ -51,7 +48,7 @@ function LibraryItemRow({ item, itemKey, tab, selection, renameItem, dispatch }:
   itemKey: string; tab: string; selection: Record<string, boolean>; renameItem: string | null;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }) {
-  const name = item.name || item.title || 'Untitled';
+  const name = item.name || item.title || i18n('library.untitled', 'Untitled');
   const isSelected = !!selection[item.id];
   const isRenaming = renameItem === item.id;
 
@@ -63,14 +60,14 @@ function LibraryItemRow({ item, itemKey, tab, selection, renameItem, dispatch }:
     );
   } else {
     nameEl = (
-      <strong className="library-name" onClick={(e) => { e.stopPropagation(); dispatch.startRename(item.id, itemKey); }} title="Click to rename">{name}</strong>
+      <strong className="library-name" onClick={(e) => { e.stopPropagation(); dispatch.startRename(item.id, itemKey); }} title={i18n('library.clickToRename', 'Click to rename')}>{name}</strong>
     );
   }
 
   const actions = tab === 'files' ? (
-    <button className="workspace-row-action" onClick={(e) => { e.stopPropagation(); dispatch.deleteFile(item.id); }}>Delete</button>
+    <button className="workspace-row-action" onClick={(e) => { e.stopPropagation(); dispatch.deleteFile(item.id); }}>{i18n('common.delete', 'Delete')}</button>
   ) : (
-    <button className="workspace-row-action" onClick={(e) => { e.stopPropagation(); dispatch.renameArtifact(item.id); }}>Rename</button>
+    <button className="workspace-row-action" onClick={(e) => { e.stopPropagation(); dispatch.renameArtifact(item.id); }}>{i18n('library.rename', 'Rename')}</button>
   );
 
   return (
@@ -109,20 +106,20 @@ function LibraryView({ data, dispatch }: {
       {anySelected && (
         <div className="library-selection-bar visible">
           <label className="library-select-all">
-            <input type="checkbox" className="library-checkbox" checked={allSelected} onChange={(e) => dispatch.toggleSelectAll(e.target.checked)} aria-label="Select all" />
-            <span>{Object.keys(data.selection).length} selected</span>
+            <input type="checkbox" className="library-checkbox" checked={allSelected} onChange={(e) => dispatch.toggleSelectAll(e.target.checked)} aria-label={i18n('library.selectAll', 'Select all')} />
+            <span>{i18n('library.selectedCount', '{n} selected').replace('{n}', String(Object.keys(data.selection).length))}</span>
           </label>
-          <button className="workspace-row-action library-bulk-delete" onClick={() => dispatch.deleteSelected()} disabled={!anySelected}>Delete selected</button>
+          <button className="workspace-row-action library-bulk-delete" onClick={() => dispatch.deleteSelected()} disabled={!anySelected}>{i18n('library.deleteSelected', 'Delete selected')}</button>
         </div>
       )}
       {items.length === 0 ? (
         <div className="workspace-empty">
           {data.query ? (
-            <><strong>No matching items</strong><span>Try a different search.</span></>
+            <><strong>{i18n('library.noMatch', 'No matching items')}</strong><span>{i18n('library.noMatchDesc', 'Try a different search.')}</span></>
           ) : key === 'files' ? (
-            <><strong>Your library is ready</strong><span>Upload a file or attach one in a chat.</span></>
+            <><strong>{i18n('library.emptyFiles', 'Your library is ready')}</strong><span>{i18n('library.emptyFilesDesc', 'Upload a file or attach one in a chat.')}</span></>
           ) : (
-            <><strong>No created items yet</strong><span>Generated documents and artifacts will appear here.</span></>
+            <><strong>{i18n('library.emptyArtifacts', 'No created items yet')}</strong><span>{i18n('library.emptyArtifactsDesc', 'Generated documents and artifacts will appear here.')}</span></>
           )}
         </div>
       ) : (
@@ -145,9 +142,9 @@ function ProjectsView({ projects, dispatch }: {
   if (projects.length === 0) {
     return (
       <div className="workspace-empty">
-        <strong>Make space for ongoing work</strong>
-        <span>Projects keep related chats, files, and instructions together.</span>
-        <button className="workspace-primary" onClick={() => dispatch.createProject()}>Create project</button>
+        <strong>{i18n('projects.empty', 'Make space for ongoing work')}</strong>
+        <span>{i18n('projects.emptyDesc', 'Projects keep related chats, files, and instructions together.')}</span>
+        <button className="workspace-primary" onClick={() => dispatch.createProject()}>{i18n('projects.create', 'Create project')}</button>
       </div>
     );
   }
@@ -160,11 +157,11 @@ function ProjectsView({ projects, dispatch }: {
             <button className="project-main" onClick={() => dispatch.openProject(project.id)}>
               <span className="project-swatch" style={{ background: color }} />
               <span className="workspace-row-copy">
-                <strong>{esc(project.name)}</strong>
+                <strong>{project.name}</strong>
                 <span>{project.description || ''}</span>
               </span>
             </button>
-            <button className="workspace-row-action" onClick={(e) => { e.stopPropagation(); dispatch.editProject(project.id); }}>Edit</button>
+            <button className="workspace-row-action" onClick={(e) => { e.stopPropagation(); dispatch.editProject(project.id); }}>{i18n('projects.edit', 'Edit')}</button>
           </div>
         );
       })}
@@ -184,8 +181,8 @@ function PluginsView({ plugins, configured, dispatch }: {
   if (plugins.length === 0) {
     return (
       <div className="workspace-empty">
-        <strong>Apps are unavailable</strong>
-        <span>Refresh and try again.</span>
+        <strong>{i18n('plugins.unavailable', 'Apps are unavailable')}</strong>
+        <span>{i18n('plugins.unavailableDesc', 'Refresh and try again.')}</span>
       </div>
     );
   }
@@ -196,32 +193,32 @@ function PluginsView({ plugins, configured, dispatch }: {
         const connected = connection && connection.status === 'connected';
         const pending = connection && connection.status === 'initiated';
         const meta = connected
-          ? 'Connected' + (connection.displayName ? ' · ' + connection.displayName : '')
-          : pending ? 'Waiting for authorization to finish' : connector.description || '';
+          ? i18n('plugins.connected', 'Connected') + (connection.displayName ? ' · ' + connection.displayName : '')
+          : pending ? i18n('plugins.waitingAuth', 'Waiting for authorization to finish') : connector.description || '';
         let actionEl: React.ReactNode;
-        if (connected) actionEl = <span className="connector-coming-soon">Connected</span>;
-        else if (pending) actionEl = <button className="workspace-secondary connector-connect" onClick={() => dispatch.refreshPlugin(connector.id)}>Refresh status</button>;
-        else if (!configured) actionEl = <span className="connector-coming-soon">Server setup needed</span>;
-        else if (connector.authType === 'api_key' || connector.authType === 'custom_credential') actionEl = <button className="workspace-secondary connector-connect" onClick={() => dispatch.openPluginForm(connector.id)}>Connect</button>;
-        else actionEl = <button className="workspace-secondary connector-connect" onClick={() => dispatch.connectPlugin(connector.id)}>Connect</button>;
+        if (connected) actionEl = <span className="connector-coming-soon">{i18n('plugins.connected', 'Connected')}</span>;
+        else if (pending) actionEl = <button className="workspace-secondary connector-connect" onClick={() => dispatch.refreshPlugin(connector.id)}>{i18n('plugins.refreshStatus', 'Refresh status')}</button>;
+        else if (!configured) actionEl = <span className="connector-coming-soon">{i18n('plugins.serverSetupNeeded', 'Server setup needed')}</span>;
+        else if (connector.authType === 'api_key' || connector.authType === 'custom_credential') actionEl = <button className="workspace-secondary connector-connect" onClick={() => dispatch.openPluginForm(connector.id)}>{i18n('plugins.connect', 'Connect')}</button>;
+        else actionEl = <button className="workspace-secondary connector-connect" onClick={() => dispatch.connectPlugin(connector.id)}>{i18n('plugins.connect', 'Connect')}</button>;
         return (
           <div className={'workspace-row connector-row' + (connected ? ' is-connected' : '')} key={connector.id}>
             <span className={'workspace-row-icon connector-icon connector-' + connector.id}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><use href={'#icon-' + connector.id} /></svg>
             </span>
             <div className="workspace-row-copy">
-              <strong>{esc(connector.name)}</strong>
-              <span>{esc(meta)}</span>
-              <small className="workspace-note">{esc((connector.capabilities || []).join(' · '))}</small>
+              <strong>{connector.name}</strong>
+              <span>{meta}</span>
+              <small className="workspace-note">{(connector.capabilities || []).join(' · ')}</small>
             </div>
             {actionEl}
           </div>
         );
       })}
       {configured ? (
-        <div className="workspace-note">OAuth tokens stay in the OOMOL gateway. Neither the browser nor the model receives a provider token.</div>
+        <div className="workspace-note">{i18n('plugins.oauthNote', 'OAuth tokens stay in the OOMOL gateway. Neither the browser nor the model receives a provider token.')}</div>
       ) : (
-        <div className="workspace-empty"><strong>Connector service needs setup</strong><span>Add OOMOL_PROJECT_API_KEY to the server environment. Authorization remains disabled until then.</span></div>
+        <div className="workspace-empty"><strong>{i18n('plugins.setupTitle', 'Connector service needs setup')}</strong><span>{i18n('plugins.setupDesc', 'Add OOMOL_PROJECT_API_KEY to the server environment. Authorization remains disabled until then.')}</span></div>
       )}
     </>
   );
@@ -240,7 +237,7 @@ function WorkspacePage({ page }: { page: string }) {
       return (
         <div className="library-panel main-page" id="libraryPanel">
           <div className="library-header">
-            <span className="library-title">Library</span>
+            <span className="library-title" data-i18n-key="sidebar.library.title">{i18n('sidebar.library.title', 'Library')}</span>
           </div>
           <LibraryTabBar tab={snap.libraryData.tab} onSwitch={(t) => dispatch.switchTab(t)} />
           <LibrarySearch query={snap.libraryData.query} onSearch={(q) => dispatch.filter(q)} />
@@ -259,7 +256,7 @@ function WorkspacePage({ page }: { page: string }) {
       return (
         <div className="plugins-panel main-page" id="pluginsPanel">
           <div className="plugins-header">
-            <span className="plugins-title">Connectors</span>
+            <span className="plugins-title" data-i18n-key="plugins.title">{i18n('plugins.title', 'Connectors')}</span>
           </div>
           <div className="plugins-list" id="pluginsList">
             <PluginsView plugins={snap.pluginsData} configured={snap.projectConnectorConfigured} dispatch={dispatch} />
