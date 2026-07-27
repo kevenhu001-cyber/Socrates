@@ -20,6 +20,7 @@ interface RichComposerProps {
   surface: ComposerSurface;
   placeholder: string;
   onSubmit: () => void;
+  showToolbar?: boolean;
   onEscape?: () => void;
 }
 
@@ -106,7 +107,7 @@ function FormattingToolbar({ editor }: { editor: Editor }) {
   );
 }
 
-export function RichComposer({ surface, placeholder, onSubmit, onEscape }: RichComposerProps) {
+export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToolbar = false }: RichComposerProps) {
   const extensions = useMemo(() => [
     StarterKit.configure({ link: false, underline: false }),
     Placeholder.configure({ placeholder, showOnlyWhenEditable: false }),
@@ -193,7 +194,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape }: RichC
   if (!editor) return null;
   return (
     <div className="rich-composer" data-surface={surface}>
-      <FormattingToolbar editor={editor} />
+      {showToolbar ? <FormattingToolbar editor={editor} /> : null}
       <EditorContent editor={editor} />
     </div>
   );
