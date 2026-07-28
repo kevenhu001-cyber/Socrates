@@ -61,7 +61,7 @@ import { aiGenerate } from './chat/mockDiagnostic.js';
 import { extractHistory, buildUserContentParts } from './chat/history.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './chat/systemPrompts.js';
 import { appendInlineArtifact } from './ui/toolCards.js';
-import { looksLikeMetaInstruction, appendThinking, labelForTool, labelForToolResult, showLabel } from './ui/thinkingPill.js';
+import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
 /* searchProgress UI removed in favour of the inline status label.
    The import was retired when agent-tool-cards were dropped from the
    live chat surface; the background web_search path now only updates
@@ -70,6 +70,7 @@ import { looksLikeMetaInstruction, appendThinking, labelForTool, labelForToolRes
    legacy e2e suite and `window.__startSearchProgress` test hook. */
 import { startSearchProgress } from './ui/searchProgress.js';
 import { createToolRuntime } from './chat/toolRuntime.js';
+import { settleInlineToolRow } from './ui/toolInline.js';
 import { beginAgentTextStream, appendRunFooter } from './chat/agentStream.js';
 import { BUILTIN_TEMPLATES, SYSTEM_PROMPT_SUMMARIZE, SYSTEM_PROMPT_TRANSLATE, SYSTEM_PROMPT_EXPLAIN_CODE, SYSTEM_PROMPT_DEBUG, SYSTEM_PROMPT_QUIZ, SYSTEM_PROMPT_SOCRATIC, PROMPT_TEMPLATES_KEY, loadPromptTemplates, savePromptTemplates, findTemplateByShortcut, upsertCustomTemplate, deleteCustomTemplate } from './chat/promptTemplates.js';
 import { renderNoUrlHint, renderLinkPreviews } from './ui/linkPreviews.js';
@@ -3431,25 +3432,13 @@ async function askChatTurn(userText){
     try{window._pendingChatContent=pendingContent;}catch(_){}
     askChatTurn(userText);
   }});
-  /* P_search-status — remember each tool call's name so the
-     tool_result frame (which may omit `name`) can still resolve to
-     the right completion label ("已找到 N 条搜索结果" / "搜索失败"). */
-  var _turnToolNames={};
+  /* P_inline-tools — tool status is now carried by the inline
+     .tool-inline rows inside the bubble (created via the streaming
+     controller's onInlineTool), so the transient thinking-pill label
+     swap ("Searching…" / "已找到 N 条…") is gone. */
   var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)},{
-    onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];if(c&&c.name){if(c.id)_turnToolNames[c.id]=c.name;try{showLabel(labelForTool(c.name));}catch(_){}}ctl.recordToolUse(c)}},
-    onToolResult:function(r){
-      ctl.recordToolResult(r);
-      /* Swap "Searching the web…" for the completion status as soon
-         as the result lands. The pill is transient — the first
-         answer delta removes it, mirroring ChatGPT's behaviour. */
-      if(r){
-        var tn=r.name||(r.id&&_turnToolNames[r.id])||"";
-        try{
-          var doneLbl=labelForToolResult(tn,r);
-          if(doneLbl)showLabel(doneLbl,r.ok===false?"error":"done");
-        }catch(_){}
-      }
-    },
+    onToolUse:function(calls){for(var i=0;i<calls.length;i++){ctl.recordToolUse(calls[i])}},
+    onToolResult:function(r){ctl.recordToolResult(r)},
     onToolProgress:function(p){if(ctl.recordToolProgress)ctl.recordToolProgress(p)},
     onExecutionStart:function(ev){if(ctl.recordExecutionStart)ctl.recordExecutionStart(ev)},
     /* P_tool_stream — forward the live tool_call_delta frames to
@@ -4853,6 +4842,43 @@ function addStreamingMessage(opts){
   /* P_tool_in_think — cached container for tool cards inside
      the think-block. Lazily created by _ensureToolContainer(). */
   var _toolCardContainer=null;
+  /* P_inline-tools — ChatGPT-style inline tool rows. The assistant
+     bubble body is a sequence of "segments": a text segment renders
+     the slice full[segBase..] progressively; when a tool_use lands,
+     the current segment is frozen in place, a .tool-inline status row
+     is appended after it, and the next text delta opens a fresh
+     segment below the row. inlineToolRows keeps {id,name,offset,row}
+     in chronological order so finish() can rebuild the same layout
+     as a serialized HTML string (offset = full.length at tool time). */
+  var segBase=0;
+  var needNewSegment=false;
+  var inlineToolRows=[];
+  var segHost=null;
+  function ensureSegHost(){
+    if(segHost&&segHost.isConnected)return segHost;
+    segHost=document.createElement("div");
+    segHost.className="stream-segment";
+    body.appendChild(segHost);
+    return segHost;
+  }
+  function freezeCurrentSegment(){
+    cancelScheduledRender();
+    /* Flush the latest text of the current segment into the DOM so
+       the frozen block shows everything streamed before the tool. */
+    if(streamContent||thinkState.beforeNode){
+      try{doRender()}catch(_){}
+    }
+    try{if(cursor&&cursor.parentNode)cursor.parentNode.removeChild(cursor)}catch(_){}
+    try{if(thinkState.cursorNode&&thinkState.cursorNode.parentNode)thinkState.cursorNode.parentNode.removeChild(thinkState.cursorNode)}catch(_){}
+    streamContent=null;settledContent=null;liveContent=null;cursor=null;
+    thinkState.startIdx=-1;thinkState.endIdx=-1;
+    thinkState.beforeNode=null;thinkState.details=null;thinkState.summary=null;
+    thinkState.thinkDiv=null;thinkState.afterNode=null;thinkState.cursorNode=null;
+    thinkState.lastRenderedThink=null;thinkState.lastRenderedBefore=null;thinkState.lastRenderedAfter=null;
+    _stablePrefixText=null;_stablePrefixHtml="";_lastParsedLen=-1;
+    _toolCardContainer=null;
+    segHost=null;
+  }
   function _toolRunList(host){
     var group=host.querySelector('.tool-run-group');
     if(!group){
@@ -4961,10 +4987,9 @@ function addStreamingMessage(opts){
   var placeholderRow=document.createElement("span");
   placeholderRow.className="thinking-dot";
   placeholderRow.setAttribute("data-mode",appMode);
-  var placeholderRing=document.createElement("span");
-  placeholderRing.className="thinking-ring thinking-ring-sm";
-  var placeholderText=document.createTextNode(appMode==="chat"?t("think.thinking"):t("common.generating"));
-  placeholderRow.appendChild(placeholderRing);
+  var placeholderText=document.createElement("span");
+  placeholderText.className="shimmer-text";
+  placeholderText.textContent=appMode==="chat"?t("think.thinking"):t("common.generating");
   placeholderRow.appendChild(placeholderText);
   placeholder.appendChild(placeholderRow);
   body.appendChild(placeholder);
@@ -4972,7 +4997,7 @@ function addStreamingMessage(opts){
     /* Fast text-node rewrite — no DOM rebuild, no parse, no
        layout reflow beyond the badge's own intrinsic box. Safe to
        call many times per second. */
-    placeholderText.data=label;
+    placeholderText.textContent=label;
   }
   /* Morph the send button into a red Stop so the user can abort
      the stream. setChatStopState(false) on finish/abort. */
@@ -5088,12 +5113,17 @@ function addStreamingMessage(opts){
 
   function ensureThinkStructure(){
     if(thinkState.beforeNode)return;
-    /* P_tool_preserve — save tool cards before body.innerHTML=""
+    /* P_inline-tools — the three-section think layout now lives inside
+       the current segment host instead of owning the whole body, so
+       earlier frozen segments and inline tool rows survive intact.
+       P_tool_preserve — save tool cards before host.innerHTML=""
        wipes them, so tools called before the <think> marker are
        preserved inside the new think-block structure. */
-    var _savedTools=body.querySelector('.think-tools');
+    try{placeholder.remove()}catch(_){}
+    var host=ensureSegHost();
+    var _savedTools=host.querySelector('.think-tools');
     if(_savedTools)_savedTools.parentNode.removeChild(_savedTools);
-    body.innerHTML="";
+    host.innerHTML="";
     /* P1.4 — pre-think text is a block-level container that holds
        rendered markdown HTML, NOT a text node. The previous design
        used document.createTextNode and wrote the raw slice via
@@ -5103,7 +5133,7 @@ function addStreamingMessage(opts){
        user saw one run-on blob of unparsed markdown. */
     thinkState.beforeNode=document.createElement("div");
     thinkState.beforeNode.className="think-prefix";
-    body.appendChild(thinkState.beforeNode);
+    host.appendChild(thinkState.beforeNode);
 
     var det=document.createElement("details");
     det.className="think-block think-block-streaming";
@@ -5117,27 +5147,26 @@ function addStreamingMessage(opts){
     var sum=document.createElement("summary");
     sum.className="think-summary think-summary-streaming";
     var _streamingLabel=(typeof window!=="undefined"&&window.t)?window.t("think.thinking"):"Thinking…";
-    sum.innerHTML='<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>'+
-      '<span class="think-summary-label">'+esc(_streamingLabel)+'</span>'+
+    sum.innerHTML='<span class="think-summary-label shimmer-text">'+esc(_streamingLabel)+'</span>'+
       '<span class="think-summary-chevron" aria-hidden="true"></span>';
     det.appendChild(sum);
 
     var td=document.createElement("div");
     td.className="think-content";
     det.appendChild(td);
-    body.appendChild(det);
+    host.appendChild(det);
 
     /* P1.4 — post-think text gets the same block-level container
        treatment; empty until </think> arrives, then populated by
        doRender via formatMsgProgressive. */
     thinkState.afterNode=document.createElement("div");
     thinkState.afterNode.className="think-suffix";
-    body.appendChild(thinkState.afterNode);
+    host.appendChild(thinkState.afterNode);
 
     var cur=document.createElement("span");
     cur.className="stream-cursor";
     cur.textContent="▍";
-    body.appendChild(cur);
+    host.appendChild(cur);
     thinkState.cursorNode=cur;
 
     thinkState.details=det;
@@ -5184,7 +5213,7 @@ function doRender(){
      * text node) operates on the cleaned version. The raw `full`
      * is still kept in state.messages[msgIdx].rawText for save /
      * history so a later formatMsg can re-process it. */
-    var rawDisplayFull=stripChatArtifacts(full);
+    var rawDisplayFull=stripChatArtifacts(full.slice(segBase));
     var inlineThinkStart=rawDisplayFull.indexOf("<think>");
     var inlineThinkEnd=inlineThinkStart===-1?-1:rawDisplayFull.indexOf("</think>",inlineThinkStart);
     if(inlineThinkStart!==-1){
@@ -5241,55 +5270,18 @@ function doRender(){
              (text appears char-by-char as deltas arrive) while making
              sure markdown and math render correctly in real time. */
       if(!streamContent){
-        /* Save the thinking pill AND any tool cards before clearing —
-           body.innerHTML="" destroys all children. We re-insert them
-           after setting up the streaming DOM so the pill and tool
-           cards survive when the first text delta arrives (including
-           the case where the LLM called a tool before producing any
-           text — the tool cards were added during SSE parsing and
-           must not be wiped). */
-        var savedPill=body.querySelector('.think-block');
-        var savedThinkingStatus=body.querySelector('.thinking-status');
-        var savedToolContainer=body.querySelector('.think-tools');
-        var savedToolCardArr=[];
-        /* P_inline-artifact-survival — inline artifacts (matplotlib PNGs,
-           native visualization cards, CSV links, etc.) mounted on the
-           message body are critical rich-media UX. Without saving them,
-           body.innerHTML="" reset would silently drop them when the
-           first text delta arrives after a tool result, producing
-           the "image appeared once then vanished" pattern. */
-        var savedArtifacts=[];
-        var artifactNodes=body.querySelectorAll('.exec-artifact,.visualization-card');
-        for(var ai=0;ai<artifactNodes.length;ai++){
-          savedArtifacts.push(artifactNodes[ai]);
-          artifactNodes[ai].parentNode.removeChild(artifactNodes[ai]);
-        }
-        /* If cards live inside the think-block (the normal case now),
-           saving the pill already captures them. Only extract when
-           there's no pill to host them. */
-        if(!savedPill){
-          /* Prefer saving the whole .think-tools container so the
-             wrapper and its children survive intact. */
-          if(savedToolContainer){
-            savedToolContainer.parentNode.removeChild(savedToolContainer);
-            savedToolCardArr.push(savedToolContainer);
-          }else{
-            /* No wrapper — save individual cards. */
-            var savedToolCards=body.querySelectorAll('.agent-tool-card');
-            for(var sci=0;sci<savedToolCards.length;sci++){
-              savedToolCardArr.push(savedToolCards[sci]);
-              savedToolCards[sci].parentNode.removeChild(savedToolCards[sci]);
-            }
-          }
-        }
-        if(savedThinkingStatus&&savedThinkingStatus.parentNode){
-          savedThinkingStatus.parentNode.removeChild(savedThinkingStatus);
-        }
+        /* P_inline-tools — the streaming text surface now lives inside
+           a per-segment host appended at the END of the bubble body.
+           Earlier children (reasoning pill, inline tool rows, frozen
+           segments, artifacts) are left untouched, so the old
+           save-and-reinsert dance for pills/tool cards/artifacts is
+           no longer needed: chronological DOM order IS the layout. */
         try{placeholder.remove()}catch(_){}
-        body.innerHTML="";
+        var _segHost=ensureSegHost();
+        _segHost.innerHTML="";
         streamContent=document.createElement("div");
         streamContent.className="stream-content";
-        body.appendChild(streamContent);
+        _segHost.appendChild(streamContent);
         settledContent=document.createElement("div");
         settledContent.className="stream-settled-content";
         liveContent=document.createElement("div");
@@ -5301,19 +5293,6 @@ function doRender(){
         cursor.textContent="▍";
         /* Keep the cursor outside the frequently replaced live tail. */
         streamContent.appendChild(cursor);
-        if(savedPill)body.insertBefore(savedPill,body.firstChild);
-        if(savedThinkingStatus)body.insertBefore(savedThinkingStatus,body.firstChild);
-        for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
-          body.appendChild(savedToolCardArr[sci2]);
-        }
-        /* Re-append saved artifacts AFTER streamContent + tool cards so
-           they appear in the order: pill → text → tool cards → images.
-           Visually this matches "tool produced this artifact" — the
-           image lands at the bottom of the message, which is where
-           users expect generated plots to appear. */
-        for(var ai2=0;ai2<savedArtifacts.length;ai2++){
-          body.appendChild(savedArtifacts[ai2]);
-        }
       }
       /* P-H4 — stable-prefix incremental render. Split displayFull at the
          last blank line: the part before it is settled markdown blocks
@@ -5383,7 +5362,7 @@ function doRender(){
       /* When </think> has been seen, swap the summary to a
          static label and drop the pulse — the model is done
          thinking. */
-      if(thinkClosed&&thinkState.summary.innerHTML.indexOf("thinking-ring")!==-1){
+      if(thinkClosed&&thinkState.summary.innerHTML.indexOf("shimmer-text")!==-1){
         var _doneLabel=(typeof window!=="undefined"&&window.t)?window.t("think.title"):"Thought";
         thinkState.summary.innerHTML='<span class="think-summary-label">'+esc(_doneLabel)+'</span><span class="think-summary-chevron" aria-hidden="true"></span>';
       }
@@ -5476,6 +5455,23 @@ function doRender(){
       return msgIdx>=0?(state.messages[msgIdx]||null):null;
     },
     ensureToolContainer:_ensureToolContainer,
+    /* P_inline-tools — a tool_use lands: freeze the current text
+       segment in place, append the ChatGPT-style status row after
+       it, and start the next text segment below the row. offset
+       records where in `full` the split happened so finish() can
+       rebuild the identical layout as serialized HTML. */
+    onInlineTool:function(entry,row){
+      try{placeholder.remove()}catch(_){}
+      freezeCurrentSegment();
+      body.appendChild(row);
+      inlineToolRows.push({id:entry.id,name:entry.name,offset:full.length,row:row});
+      segBase=full.length;
+      var sc=list||scrollContainer();
+      if(sc&&!state._userScrolledAway&&
+         sc.scrollHeight-sc.scrollTop-sc.clientHeight<=96){
+        sc.scrollTop=sc.scrollHeight;
+      }
+    },
     onToolActivity:function(){
       /* A tool call counts as first visible activity, so retire the
          waiting placeholder before execution progress begins. */
@@ -5722,10 +5718,59 @@ function doRender(){
            Without this, no scaffold widgets ever rendered in live mode. */
         var finalHtml;
         try{
-          var visibleFinal=stripChatArtifacts(full)
-            .replace(/<think>[\s\S]*?<\/think>/gi,"")
-            .replace(/<think>[\s\S]*$/gi,"");
-          finalHtml=renderAssistantHTML(visibleFinal);
+          /* P_inline-tools — assemble the final HTML by splicing the
+             settled inline tool rows between the text segments they
+             actually split. The serialized result goes into
+             state.messages[i].html so history replay / React handoff /
+             session save all reproduce the inline layout for free. */
+          var _renderSeg=function(txt){
+            var vis=stripChatArtifacts(txt)
+              .replace(/<think>[\s\S]*?<\/think>/gi,"")
+              .replace(/<think>[\s\S]*$/gi,"");
+            if(!vis.trim())return "";
+            return renderAssistantHTML(vis);
+          };
+          if(inlineToolRows.length){
+            var _parts2=[];
+            var _prev=0;
+            for(var _ri=0;_ri<inlineToolRows.length;_ri++){
+              var _r=inlineToolRows[_ri];
+              _parts2.push(_renderSeg(full.slice(_prev,_r.offset)));
+              if(_r.row){
+                /* A row still spinning at finish time means its result
+                   never arrived — settle it as stopped so the saved
+                   HTML doesn't carry a perpetual spinner. */
+                if(_r.row.getAttribute("data-state")==="running"){
+                  try{settleInlineToolRow(_r.row,null,{cancelled:true})}catch(_){}
+                }
+                _parts2.push(_r.row.outerHTML);
+              }
+              _prev=_r.offset;
+            }
+            _parts2.push(_renderSeg(full.slice(_prev)));
+            finalHtml=_parts2.join("");
+            /* Persist the split points on the toolCalls entries so the
+               raw data survives even if a future renderer wants to
+               rebuild the layout from rawText. */
+            try{
+              var _m=msgIdx>=0?state.messages[msgIdx]:null;
+              if(_m&&Array.isArray(_m.toolCalls)){
+                for(var _ti=0;_ti<inlineToolRows.length;_ti++){
+                  for(var _tj=0;_tj<_m.toolCalls.length;_tj++){
+                    if(_m.toolCalls[_tj].id===inlineToolRows[_ti].id){
+                      _m.toolCalls[_tj].textOffset=inlineToolRows[_ti].offset;
+                      break;
+                    }
+                  }
+                }
+              }
+            }catch(_){}
+          }else{
+            var visibleFinal=stripChatArtifacts(full)
+              .replace(/<think>[\s\S]*?<\/think>/gi,"")
+              .replace(/<think>[\s\S]*$/gi,"");
+            finalHtml=renderAssistantHTML(visibleFinal);
+          }
         }catch(e){
           console.log("[finish] render error");
           finalHtml="<p>"+esc(stripChatArtifacts(full).replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,""))+"</p>";
@@ -5764,31 +5809,23 @@ function doRender(){
             savedToolCards[sci].parentNode.removeChild(savedToolCards[sci]);
           }
         }
-        /* P_finish-fade — the streaming→final transition rewrites
-           body.innerHTML, which makes the bubble visibly flash as the
-           browser tears down the live DOM and rebuilds it with the
-           marked+KaTeX render. Fade the body to 0, swap, then fade
-           back so the swap reads as a single pulse instead of a
-           full reload. The fade is short (~80ms each way) so it
-           doesn't add perceived latency. */
-        body.classList.add('msg-body-finish-fade');
-        requestAnimationFrame(function(){
-          body.innerHTML=finalHtml;
-          if(savedPill)body.insertBefore(savedPill,body.firstChild);
-          else if(savedToolGroup)body.appendChild(savedToolGroup);
-          for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
-            body.appendChild(savedToolCardArr[sci2]);
-          }
-          /* Re-mount saved artifacts AFTER the final HTML + tool cards so
-             they sit at the bottom of the bubble (matching the streaming
-             layout). */
-          for(var ai2=0;ai2<savedArtifacts.length;ai2++){
-            body.appendChild(savedArtifacts[ai2]);
-          }
-          requestAnimationFrame(function(){
-            body.classList.remove('msg-body-finish-fade');
-          });
-        });
+        /* P_finish-no-flash — swap the streamed DOM for the final render
+           synchronously, with no fade. The progressive render is already
+           near-identical to the final pass, so an in-place swap in a
+           single frame is imperceptible; the old opacity fade read as a
+           spontaneous "refresh" after the answer completed. */
+        body.innerHTML=finalHtml;
+        if(savedPill)body.insertBefore(savedPill,body.firstChild);
+        else if(savedToolGroup)body.appendChild(savedToolGroup);
+        for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
+          body.appendChild(savedToolCardArr[sci2]);
+        }
+        /* Re-mount saved artifacts AFTER the final HTML + tool cards so
+           they sit at the bottom of the bubble (matching the streaming
+           layout). */
+        for(var ai2=0;ai2<savedArtifacts.length;ai2++){
+          body.appendChild(savedArtifacts[ai2]);
+        }
         if(cursor){cursor.remove();cursor=null}
         if(msgIdx>=0&&state.messages[msgIdx]){
           state.messages[msgIdx].html=finalHtml;
@@ -5878,40 +5915,64 @@ function doRender(){
            #msgList, the legacy streaming bubble is now redundant:
            the snapshot carries the finalized entry (type=assistant,
            html=<finalized>) and React will paint a fresh bubble on
-           the next render. Detach the legacy bubble first so the
-           user never sees a duplicate during the bridge → React
-           re-render gap. */
-        /* Drop the legacy bubble so React's next snapshot-driven render
-           doesn't render a duplicate. (The previous version referenced
-           an undeclared `msgList` here, so this guard never fired and
-           the legacy bubble persisted in the DOM after every stream
-           finish — visible as a duplicate bubble.) */
-        try{
-          var _finLegacy=list.querySelector('[data-client-id="'+clientId+'"]');
-          if(_finLegacy && !_finLegacy.hasAttribute("data-react-owned") && _finLegacy.parentNode===list){
-            list.removeChild(_finLegacy);
-          }
-        }catch(_){}
+           the next render. The legacy bubble is detached below only
+           AFTER React commits its copy, so the swap is seamless. */
         publishReactChatRuntime({
           type:"stream-finished",
           messageId:clientId,
           textLength:full.length
         });
-        /* React replaces the legacy streaming bubble with its finalized
-           snapshot. Tool cards and native visualizations are live DOM
-           modules, not part of the serialized message HTML, so hand their
-           retained nodes to React's newly committed body on the next frame. */
+        /* P_handoff-no-flash — publish first, THEN remove the legacy
+           bubble only after React has committed its finalized copy.
+           rAF callbacks run before paint, so when React commits
+           synchronously during the publish above, the very first tick
+           below removes the legacy bubble in the same pre-paint frame:
+           the user never sees a gap or a duplicate. The old order
+           (remove first, publish after) left the message missing for
+           at least one frame — perceived as a spontaneous "refresh"
+           right after the answer finished. Retained live-DOM modules
+           (think pill, tool cards, artifacts) are handed to React's
+           body in the same tick. */
         if(list&&list.dataset&&list.dataset.msgListReactHydrated==="1"){
-          requestAnimationFrame(function(){
-            var reactBody=list.querySelector('[data-client-id="'+clientId+'"][data-react-owned] .msg-body');
-            if(!reactBody)return;
-            if(savedPill)reactBody.insertBefore(savedPill,reactBody.firstChild);
-            else if(savedToolGroup)reactBody.appendChild(savedToolGroup);
-            var retainedToolCards=Array.isArray(savedToolCardArr)?savedToolCardArr:[];
-            var retainedArtifacts=Array.isArray(savedArtifacts)?savedArtifacts:[];
-            for(var rtc=0;rtc<retainedToolCards.length;rtc++)reactBody.appendChild(retainedToolCards[rtc]);
-            for(var rta=0;rta<retainedArtifacts.length;rta++)reactBody.appendChild(retainedArtifacts[rta]);
-          });
+          var _hfFrames=0;
+          var _hfFindLegacy=function(){
+            var cands=list.querySelectorAll('[data-client-id="'+clientId+'"]');
+            for(var ci=0;ci<cands.length;ci++){
+              if(!cands[ci].hasAttribute("data-react-owned"))return cands[ci];
+            }
+            return null;
+          };
+          var _hfTick=function(){
+            try{
+              var reactNode=list.querySelector('[data-client-id="'+clientId+'"][data-react-owned]');
+              var legacyNode=_hfFindLegacy();
+              if(reactNode){
+                if(legacyNode&&legacyNode.parentNode)legacyNode.parentNode.removeChild(legacyNode);
+                var reactBody=reactNode.querySelector('.msg-body');
+                if(reactBody){
+                  if(savedPill)reactBody.insertBefore(savedPill,reactBody.firstChild);
+                  else if(savedToolGroup)reactBody.appendChild(savedToolGroup);
+                  var retainedToolCards=Array.isArray(savedToolCardArr)?savedToolCardArr:[];
+                  var retainedArtifacts=Array.isArray(savedArtifacts)?savedArtifacts:[];
+                  for(var rtc=0;rtc<retainedToolCards.length;rtc++)reactBody.appendChild(retainedToolCards[rtc]);
+                  for(var rta=0;rta<retainedArtifacts.length;rta++)reactBody.appendChild(retainedArtifacts[rta]);
+                }
+                return;
+              }
+              if(++_hfFrames<120){requestAnimationFrame(_hfTick);return;}
+              /* React never painted this entry — drop the legacy bubble
+                 anyway so a later snapshot render can't duplicate it. */
+              if(legacyNode&&legacyNode.parentNode)legacyNode.parentNode.removeChild(legacyNode);
+            }catch(_){}
+          };
+          requestAnimationFrame(_hfTick);
+        }else{
+          try{
+            var _finLegacy=list.querySelector('[data-client-id="'+clientId+'"]');
+            if(_finLegacy && !_finLegacy.hasAttribute("data-react-owned") && _finLegacy.parentNode===list){
+              list.removeChild(_finLegacy);
+            }
+          }catch(_){}
         }
       }
     },
@@ -7817,7 +7878,7 @@ function buildSocraticPrompt(topic,level,context){
      user's situation from the live web evidence. */
   if(state.searchContext){
     full+="\n\n"+state.searchContext;
-    full+="\n\nNote: a [Web research] block is present above. Treat its results as fresh, authoritative information. You MAY cite them inline as [1], [2], etc. If no [Web research] block is present, you do not have live web access for this turn.";
+    full+="\n\nNote: a [Web research] block is present above. Treat its results as fresh, authoritative information. Weave the facts into your reply as natural prose; do NOT add [1]/[2] citation markers, do NOT append a \"Sources:\"/\"References:\" list, and do NOT paste result URLs into your reply. If no [Web research] block is present, you do not have live web access for this turn.";
   }else{
     full+="\n\nNote: no [Web research] block is present. You do not have live web access for this turn — say so honestly rather than guessing about current events, prices, dates, or anything that may have changed since your training cutoff.";
   }

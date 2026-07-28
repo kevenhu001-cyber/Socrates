@@ -1664,7 +1664,6 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
    a hard flash as the browser tears down and rebuilds the DOM, which
    reads as "the page reloaded". The fade masks the swap with a short
    ~80ms opacity dip so it feels like a single pulse, not a refresh. */
-.msg-body-finish-fade{opacity:0;transition:opacity .08s linear}
 .quick-opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .quick-opt{padding:6px 14px;border-radius:16px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));transition:background-color .1s,color .1s,border-color .1s;cursor:pointer}
 .quick-opt:hover{border-color:hsl(var(--border-200)/0.4);background:hsl(var(--bg-300));color:hsl(var(--text-100))}
@@ -3807,6 +3806,78 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 
 /* Chat-first tool runs. One answer owns one quiet, collapsible activity
    group; individual cards are evidence, not a competing dashboard. */
+/* ── Inline tool status rows (ChatGPT-style, P_inline-tools) ──
+   A <details class="tool-inline"> sits between text segments at the
+   exact point the tool fired. Minimal: 13px grey text, small icon,
+   no border, no background. Expandable only when sources exist. */
+.tool-inline{
+  margin:6px 0;
+  font-size:13px;
+  color:hsl(var(--text-400));
+}
+.tool-inline-head{
+  display:flex; align-items:center; gap:7px;
+  padding:2px 0;
+  list-style:none;
+  cursor:default;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.tool-inline-head::-webkit-details-marker{display:none}
+.tool-inline[data-expandable="1"] .tool-inline-head{cursor:pointer}
+.tool-inline[data-expandable="1"] .tool-inline-head:hover .tool-inline-label{color:hsl(var(--text-200))}
+.tool-inline-icon{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:16px; height:16px; flex:0 0 auto;
+  color:hsl(var(--text-500));
+}
+.tool-inline[data-state="done"] .tool-inline-icon{color:hsl(var(--accent-000))}
+.tool-inline[data-state="error"] .tool-inline-icon{color:hsl(0 58% 52%)}
+.tool-inline[data-state="stopped"] .tool-inline-icon{color:hsl(35 58% 48%)}
+.tool-inline-label{color:inherit}
+.tool-inline[data-state="running"] .tool-inline-icon{display:none}
+.tool-inline[data-state="running"] .tool-inline-label,
+.shimmer-text{
+  background:linear-gradient(90deg,hsl(var(--text-500)) 0%,hsl(var(--text-100)) 50%,hsl(var(--text-500)) 100%);
+  background-size:200% 100%;
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:tool-inline-shimmer 1.6s linear infinite;
+}
+@keyframes tool-inline-shimmer{
+  0%{background-position:180% 0}
+  100%{background-position:-20% 0}
+}
+.tool-inline-meta{color:hsl(var(--text-500));font-size:12px}
+.tool-inline-chev{
+  display:none;
+  flex:0 0 auto;
+  border-right:1.5px solid currentColor;
+  border-bottom:1.5px solid currentColor;
+  width:7px;height:7px;
+  transform:rotate(45deg);
+  margin-left:2px;
+  margin-top:-3px;
+  color:hsl(var(--text-500));
+  transition:transform .15s ease;
+}
+.tool-inline[data-expandable="1"] .tool-inline-chev{display:inline-block}
+.tool-inline[open] .tool-inline-chev{transform:rotate(225deg);margin-top:3px}
+.tool-inline-detail{padding:2px 0 4px 23px}
+.tool-inline-sources{display:flex;flex-direction:column;gap:2px}
+.tool-inline-src{
+  display:flex;align-items:baseline;gap:8px;
+  padding:3px 6px;margin-left:-6px;border-radius:6px;
+  font-size:13px;color:hsl(var(--text-300));
+  text-decoration:none;min-width:0;
+}
+a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-100))}
+.tool-inline-src-title{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
+}
+.tool-inline-src-host{flex:0 0 auto;font-size:12px;color:hsl(var(--text-500))}
+
 .tool-run-group{
   margin:8px 0 4px;
   border:0;

@@ -75,36 +75,54 @@ test('ToolRuntime dispose cancels queued work and closes execution streams', () 
   assert.equal(scheduled, null);
 });
 
-test('ToolRuntime compact mode skips tool_card_delta scheduling and card creation', () => {
+test('ToolRuntime compact mode mounts inline rows instead of cards', () => {
   const message = { toolCalls: [] };
   let scheduled = null;
   let appended = 0;
-  const runtime = createToolRuntime({
-    body: {
-      querySelector() { return null; },
-      querySelectorAll() { appended++; return []; },
+  const mounted = [];
+  // Minimal DOM stub — createInlineToolRow only needs an element with
+  // dataset / className / innerHTML.
+  globalThis.document = {
+    createElement(tag) {
+      return { tagName: tag, dataset: {}, className: '', innerHTML: '' };
     },
-    stillOwnsSlot: () => true,
-    getMessage: () => message,
-    requestAnimationFrame(callback) { scheduled = callback; return 19; },
-    cancelAnimationFrame() {},
-    EventSource: null,
-    mode: 'compact',
-  });
+  };
+  try {
+    const runtime = createToolRuntime({
+      body: {
+        querySelector() { return null; },
+        querySelectorAll() { appended++; return []; },
+      },
+      stillOwnsSlot: () => true,
+      getMessage: () => message,
+      onInlineTool(entry, row) { mounted.push({ entry, row }); },
+      requestAnimationFrame(callback) { scheduled = callback; return 19; },
+      cancelAnimationFrame() {},
+      EventSource: null,
+      mode: 'compact',
+    });
 
-  // recordToolCallDelta must NOT schedule a flush in compact mode —
-  // no .agent-tool-card exists to update.
-  runtime.recordToolCallDelta({ id: 'no-card', index: 0, arguments: '{"code":"x"}' });
-  assert.equal(scheduled, null);
+    // recordToolCallDelta must NOT schedule a flush in compact mode —
+    // no .agent-tool-card exists to update.
+    runtime.recordToolCallDelta({ id: 'no-card', index: 0, arguments: '{"code":"x"}' });
+    assert.equal(scheduled, null);
 
-  // recordToolUse pushes the entry onto the message but creates no
-  // DOM card. The returned element is null.
-  const out = runtime.recordToolUse({ id: 'no-card', name: 'web_search', input: { query: 'q' } });
-  assert.equal(out, null);
-  assert.equal(message.toolCalls.length, 1);
-  assert.equal(message.toolCalls[0].name, 'web_search');
-  // No .agent-tool-card was queried for — the body.querySelectorAll
-  // hook would have been called if anything tried to enumerate cards.
-  assert.equal(appended, 0);
-  runtime.dispose();
+    // recordToolUse pushes the entry onto the message and hands a
+    // running .tool-inline row to onInlineTool. No legacy card DOM.
+    const out = runtime.recordToolUse({ id: 'no-card', name: 'web_search', input: { query: 'q' } });
+    assert.equal(out, null);
+    assert.equal(message.toolCalls.length, 1);
+    assert.equal(message.toolCalls[0].name, 'web_search');
+    assert.equal(mounted.length, 1);
+    assert.equal(mounted[0].entry.id, 'no-card');
+    assert.equal(mounted[0].row.className, 'tool-inline');
+    assert.equal(mounted[0].row.dataset.tool, 'web_search');
+    assert.equal(mounted[0].row.dataset.state, 'running');
+    // No .agent-tool-card was enumerated — the body.querySelectorAll
+    // hook would have been called if anything tried to.
+    assert.equal(appended, 0);
+    runtime.dispose();
+  } finally {
+    delete globalThis.document;
+  }
 });
