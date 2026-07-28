@@ -122,6 +122,16 @@ if [[ ! -f "$BACKEND_CANDIDATE/index.runtime.js" ]]; then
   exit 1
 fi
 
+# ─── 0.5. Memory pressure mitigation ─────────────────────────────────
+# Stop the running backend before the heavy frontend build so both
+# don't contend for the same ~3.7 GB of RAM.  Vite + Rollup needs up
+# to 1 GB just to tree-shake the large visualization libs (plotly,
+# mermaid, echarts, three.js).  Stopping the backend first frees its
+# ~130 MB resident set; the existing stop/start below becomes a no-op
+# until the dist-swap phase.
+echo "Stopping backend before frontend build (freeing ~130 MB RSS)…"
+$SUDO systemctl stop socrates-api 2>/dev/null || true
+
 # ─── 1. Build the frontend (Vite) ─────────────────────────────────────
 if [[ "${1:-}" != "" && -f "${1}" ]]; then
   # Legacy mode: deploy a single index.html file directly.
@@ -137,7 +147,7 @@ else
   echo "Installing frontend dependencies from package-lock.json…"
   (cd "$FRONTEND_DIR" && npm ci --include=dev)
   echo "Building frontend (Vite)…"
-  (cd "$FRONTEND_DIR" && npm run build 2>&1 | tail -5)
+  (cd "$FRONTEND_DIR" && NODE_OPTIONS="--max-old-space-size=2048" npm run build 2>&1 | tail -5)
   DIST_DIR="$FRONTEND_DIR/dist"
 
   if [[ ! -f "$DIST_DIR/index.html" ]]; then

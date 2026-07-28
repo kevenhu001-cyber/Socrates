@@ -407,7 +407,6 @@ function toggleWebSearch(){
     window.state.searchContextError=null;
     window.state.searchContextQuery=null;
     window.setSearchPill("ok",0,"");
-    var p=document.getElementById("searchPill");if(p)p.classList.add("hidden");
   }else if(window.state.topic){
     window.fetchWebContext(window.state.topic).then(function(r){});
   }
@@ -416,8 +415,6 @@ function syncWebSearchUI(){
   syncExtensionsUI();
   if(webSearchOn&&window.state.topic&&!window.state.searchContext){
     window.fetchWebContext(window.state.topic);
-  }else if(!webSearchOn){
-    var p=document.getElementById("searchPill");if(p)p.classList.add("hidden");
   }
 }
 

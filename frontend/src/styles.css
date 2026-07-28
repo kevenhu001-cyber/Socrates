@@ -1417,17 +1417,6 @@ body[data-conversation-active="true"] #mobileMode{display:none!important}
   .mobile-incognito-btn[aria-pressed="true"]{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12)}
 }
 
-/* API status indicator — small colored dot in the top-bar; full
-   status text appears in the tooltip (title attr). */
-.chat-api-badge{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:hsl(var(--text-500));cursor:help;margin:0 4px;overflow:hidden;text-indent:-9999px;vertical-align:middle}
-.chat-api-badge.on{background:hsl(145 50% 45%);box-shadow:0 0 0 2px hsl(145 50% 45%/0.18)}
-.chat-api-badge.mocked{background:hsl(35 80% 55%);box-shadow:0 0 0 2px hsl(35 80% 55%/0.18)}
-.search-pill{display:inline-block;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));padding:2px 8px;border-radius:4px;white-space:nowrap;vertical-align:middle;transition:color .12s}
-.search-pill.ok{color:hsl(145 50% 45%)}
-.search-pill.err{color:hsl(0 60% 55%)}
-.search-pill.loading{color:hsl(var(--text-400));animation:searchPillPulse 1.2s ease-in-out infinite}
-@keyframes searchPillPulse{0%,100%{opacity:1}50%{opacity:0.4}}
-
 /* Sources card — appended under each AI bubble when web search was
    on. First source is always visible; remaining sources are hidden
    behind a "▾" toggle on the header. */
@@ -3737,8 +3726,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    mistakesPanel, diagnosticView) and tutorSocratic.js (mode banner,
    practice chip, diagnostic banner, mistake filter bar). */
 body[data-app-mode="chat"] .tutor-only{display:none !important}
-body[data-app-mode="tutor"] #searchPill,
-body[data-app-mode="tutor"] #chatApiBadge{display:none !important}
+
 
 /* Optional tutor boundary exploration. The compact editorial card keeps
    the choice calm and reversible instead of making a diagnostic feel

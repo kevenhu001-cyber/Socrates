@@ -49,7 +49,7 @@ import { processPendingMermaid, processPendingViz, processPendingVizActions, ren
 import { callAPI, callAPIChat } from './chat/api.js';
 import { callAPIStream } from './chat/stream.js';
 import { looksLikeUserMentionedSite, extractHttpUrls, fetchPagesForContext } from './chat/webLinks.js';
-import { fetchWebContext, shouldRefreshSearch, setSearchPill } from './chat/webSearch.js';
+import { fetchWebContext, shouldRefreshSearch } from './chat/webSearch.js';
 import { generateSessionTitle } from './chat/sessionTitle.js';
 import { parseOneDiagResponse } from './chat/diagnosticParser.js';
 import { generateDiagnosticQuestions } from './chat/diagnosticGenerator.js';
@@ -1943,14 +1943,6 @@ async function loadSession(id){
         toggleChatTopBarEls(false);
         document.getElementById("topicSetup").classList.remove("hidden");
         if (typeof window.hideMainPages === "function") window.hideMainPages();
-        /* Friendly notice so the user knows what just happened. */
-        try{
-          var pill=document.getElementById("searchPill");
-          if(pill){
-            pill.textContent=t("share.linkExpired");
-            pill.classList.remove("hidden");
-          }
-        }catch(_){}
       }catch(_){}
     }
   } finally {
@@ -2377,8 +2369,6 @@ function bounceOutOfArchivedSession(){
      previous session's plan doesn't linger in the sidebar. */
   var _tpc=document.getElementById("teachingPlanContent");if(_tpc)_tpc.innerHTML="";
   document.getElementById("chatStats").textContent="";
-  var badge=document.getElementById("chatApiBadge");
-  if(badge){badge.textContent="";badge.classList.remove("on");badge.title="";}
   updateStartBtn();
 }
 
@@ -3359,13 +3349,11 @@ async function askChatTurn(userText){
   var pageBlocks=[];
   var pageResults=[];
   if(urls.length){
-    try{setSearchPill("loading",0,"Reading "+urls.length+" link"+(urls.length>1?"s":""))}catch(_){}
     try{
       var fetched=await fetchPagesForContext(urls);
       pageBlocks=fetched.blocks||[];
       pageResults=fetched.results||[];
     }catch(_){pageBlocks=[];pageResults=[]}
-    try{setSearchPill("ok",urls.length,urls.length+" link"+(urls.length>1?"s":""))}catch(_){}
     /* Surface the URL previews inside the user's bubble so the user
        sees exactly what the model is reading. The most recently
        appended <div class="msg user"> is the bubble for this turn. */
@@ -7180,8 +7168,20 @@ import { updateChatStats } from './chat/stats.js';
 
 async function resetApp(){
   /* React owns #msgList and always leaves a wrapper element inside it,
-     so DOM child count no longer signals an active session — use state. */
-  if(state.topic||state.kbNodes.length>0||(Array.isArray(state.messages)&&state.messages.length>0)){
+     so DOM child count no longer signals an active session — use state.
+     P_exam-confirm — also fire the "Start a new session?" confirm when
+     the user is sitting in the exam panel (or has generated/submitted
+     an exam). The exam lives on its own state fields (`_examInView`,
+     `examTopic`, `examQuestions`, `examSubmitted`) that the original
+     chat-only guard did not check, so clicking 新聊天/新会话 from the
+     exam page used to skip straight to topicSetup with no warning.
+     The dialog text ("会保存到「最近」") is still accurate — exam
+     sessions are persisted to Recents via saveExamSession. */
+  var _examDirty = !!state._examInView
+    || (typeof state.examTopic === "string" && state.examTopic.length > 0
+        && Array.isArray(state.examQuestions) && state.examQuestions.length > 0)
+    || !!state.examSubmitted;
+  if(state.topic||state.kbNodes.length>0||(Array.isArray(state.messages)&&state.messages.length>0)||_examDirty){
     var ok=await showConfirm(t("confirm.newSession.title"),t("confirm.newSession.msg"),false);
     if(!ok){ window._nextProjectId=null; return; }
   }
@@ -7257,9 +7257,6 @@ async function resetApp(){
   /* Task 3.3 — clear the teaching-plan view on full reset so a
      previous session's plan doesn't linger in the sidebar. */
   var _tpc2=document.getElementById("teachingPlanContent");if(_tpc2)_tpc2.innerHTML="";
-  /* Refresh the API badge so it doesn't show the previous session's source. */
-  var badge=document.getElementById("chatApiBadge");
-  if(badge){badge.textContent="";badge.classList.remove("on");badge.title="";}
   updateStartBtn();
   renderRecents();
   renderMistakes();
@@ -8260,7 +8257,7 @@ window.askNextQuestion = askNextQuestion;
 window.getExplanation = getExplanation;
 window.saveCurrentSession = saveCurrentSession;
 window.fetchWebContext = fetchWebContext;
-window.setSearchPill = setSearchPill;
+
 window.openAttachmentPicker = openAttachmentPicker;
 window.getArchivedSessions = getArchivedSessions;
 window.getCustomInstructionsString = getCustomInstructionsString;
