@@ -124,3 +124,75 @@ test('streaming respects an intentional scroll-away', async ({ page }) => {
   await page.evaluate(() => window.__smoothStreamPromise);
   expect(await page.evaluate(() => document.getElementById('msgList').scrollTop)).toBeLessThan(8);
 });
+
+/* P_anchor-finish — when the reader scrolls UP into the streaming
+   bubble mid-stream (not pinned, not at the very top), the
+   finish() handoff must keep them on the same row instead of
+   snapping to distance-from-bottom zero — which is the
+   "jumped back to the start of the answer" symptom. The legacy
+   bubble is taller than the React bubble in this fixture (it
+   carries the streaming placeholder chrome that React doesn't
+   duplicate), so the previous scrollTop = scrollHeight -
+   clientHeight - distanceFromBottom math produced scrollTop=0
+   every time. */
+test('finish preserves mid-message scroll position (row anchor)', async ({ page }) => {
+  await prepareDelayedStream(page, { delay: 80 });
+
+  // Wait for streaming to begin — the streaming bubble carries
+  // .stream-live-content. The 24 pre-existing assistant messages
+  // don't, so the locator uniquely selects the new bubble.
+  const bubble = page.locator('.msg.assistant').filter({ has: page.locator('.stream-live-content') });
+  await expect(bubble).toHaveCount(1);
+  await expect(bubble.locator('.stream-live-content')).toContainText('keeps growing');
+
+  // Scroll the streaming bubble's TOP into the scroller's viewport
+  // (user is reading the START of the AI's answer). Measure the
+  // bubble's offset relative to the scroller (not the page viewport
+  // — the scroller is offset from the page top by header/sidebar
+  // chrome). This is the case the pre-existing "scrollTop=0" test
+  // does NOT cover — and where the legacy distance-from-bottom math
+  // falls apart: legacy bubble is taller than React bubble, so the
+  // math result for "preserve distance-from-bottom" lands the user
+  // at the very top of the scroller. The row-anchor restore avoids
+  // this by tracking which row was at the scroller's viewport top.
+  const before = await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    const b = document.querySelector('.msg.assistant .stream-live-content')?.closest('.msg.assistant');
+    if (!b) throw new Error('streaming bubble missing');
+    list.scrollTop = b.offsetTop;
+    list.dispatchEvent(new Event('scroll', { bubbles: true }));
+    const lr = list.getBoundingClientRect();
+    const br = b.getBoundingClientRect();
+    return {
+      listTop: Math.round(list.scrollTop),
+      bubbleOffsetFromScroller: Math.round(br.top - lr.top),
+    };
+  });
+
+  await page.evaluate(() => window.__smoothStreamPromise);
+  // Wait for the React commit + handoff + async mounts to settle.
+  await page.waitForTimeout(500);
+
+  const after = await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    const b = document.querySelector('.msg.assistant[data-react-owned]')
+      || document.querySelector('.msg.assistant:last-child');
+    if (!b) return { bubbleOffsetFromScroller: null, listTop: null };
+    const lr = list.getBoundingClientRect();
+    const br = b.getBoundingClientRect();
+    return {
+      listTop: Math.round(list.scrollTop),
+      bubbleOffsetFromScroller: Math.round(br.top - lr.top),
+    };
+  });
+
+  // The bug: listTop goes to ~0 (the user is dumped at the top of
+  // the scroller — "jumped back to the start of the answer"). The
+  // fix keeps the bubble anchored near the scroller's viewport top.
+  // We assert bubbleOffsetFromScroller stays close to its captured
+  // value (was 0 before scroll, should stay close to 0 after finish).
+  // 60px slack for height delta between legacy/React bubbles and
+  // async mermaid/viz mounts.
+  expect(after.bubbleOffsetFromScroller).not.toBeNull();
+  expect(Math.abs(after.bubbleOffsetFromScroller - before.bubbleOffsetFromScroller)).toBeLessThan(60);
+});
