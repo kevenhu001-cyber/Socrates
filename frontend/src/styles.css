@@ -1025,6 +1025,12 @@ true) but the dropdown never shows — see commit history. */
 .provider-row.active{border-color:hsl(var(--accent-000)/0.4);background:hsl(var(--accent-000)/0.05)}
 .provider-active-btn{background:transparent;border:none;cursor:pointer;font-size:calc(18px * var(--app-font-scale, 1));line-height:1;color:hsl(var(--text-300));padding:2px 4px;flex-shrink:0;transition:color .1s}
 .provider-row.active .provider-active-btn{color:hsl(var(--accent-000))}
+.provider-row.built-in-row{cursor:default}
+.provider-row.built-in-row .provider-active-btn{cursor:pointer}
+.provider-builtin-label{font-weight:600;color:hsl(var(--text-100));display:flex;align-items:center;gap:8px}
+.provider-builtin-tag{font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;background:hsl(var(--accent-000)/0.14);color:hsl(var(--accent-000))}
+.provider-builtin-model{font-size:12px;color:hsl(var(--text-400));font-family:var(--mono-font,ui-monospace,monospace)}
+.provider-builtin-hint{font-size:12px;color:hsl(var(--text-500));line-height:1.45;margin-top:2px}
 /* Tone preset selector -- radio-button-style card grid in the settings modal. */
 .tone-preset-options{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px 0}
 .tone-preset-btn{display:flex;flex-direction:column;gap:3px;padding:8px 10px;border-radius:8px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.2);color:hsl(var(--text-200));cursor:pointer;transition:background-color .12s,border-color .12s;text-align:left;font-family:inherit}
@@ -3834,6 +3840,16 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .tool-inline[data-state="done"] .tool-inline-icon{color:hsl(var(--accent-000))}
 .tool-inline[data-state="error"] .tool-inline-icon{color:hsl(0 58% 52%)}
 .tool-inline[data-state="stopped"] .tool-inline-icon{color:hsl(35 58% 48%)}
+.tool-inline-tool-icon{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:16px; height:16px; flex:0 0 auto;
+  color:hsl(var(--text-400));
+  margin-right:2px;
+}
+.tool-inline-tool-icon svg{width:14px;height:14px;display:block}
+.tool-inline[data-state="done"] .tool-inline-tool-icon{color:hsl(var(--accent-000))}
+.tool-inline[data-state="error"] .tool-inline-tool-icon{color:hsl(0 58% 52%)}
+.tool-inline[data-state="stopped"] .tool-inline-tool-icon{color:hsl(35 58% 48%)}
 .tool-inline-label{color:inherit}
 .tool-inline[data-state="running"] .tool-inline-icon{display:none}
 .tool-inline[data-state="running"] .tool-inline-label,

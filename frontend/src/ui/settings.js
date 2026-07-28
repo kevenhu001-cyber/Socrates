@@ -133,9 +133,30 @@ function renderProviderList() {
   var cont = document.getElementById("providerList");
   if (!cont) return;
   var apiConfig = window.apiConfig;
-  var userProviders = (apiConfig.providers || []).filter(function (p) { return !p.isBuiltIn && p.id !== "beagle-built-in"; });
+  var allProviders = apiConfig.providers || [];
+  var userProviders = allProviders.filter(function (p) { return !p.isBuiltIn && p.id !== "beagle-built-in"; });
+  var builtIn = allProviders.find(function (p) { return p.isBuiltIn || p.id === "beagle-built-in"; });
   if (!userProviders.length) {
-    cont.innerHTML = '<div class="provider-empty">No models yet. Click "+ Add" to configure your first one.</div>';
+    if (builtIn) {
+      var t2 = window.t;
+      var esc2 = window.esc;
+      var biLabel = esc2(builtIn.label || builtIn.model || "Built-in AI");
+      var biModel = esc2(builtIn.model || "");
+      var builtInActive = apiConfig.activeId === builtIn.id || !apiConfig.activeId;
+      var hint = esc2(t2 && t2("settings.builtInHint") || "Your built-in AI is ready to use. Add a custom provider below if you want to use your own API key.");
+      cont.innerHTML =
+        '<div class="provider-row built-in-row' + (builtInActive ? ' active' : '') + '" data-id="' + esc2(builtIn.id) + '">'
+        + '<button class="provider-active-btn" data-action="set-active" title="' + (builtInActive ? "Active model" : "Set as active") + '">' + (builtInActive ? "●" : "○") + '</button>'
+        + '<div class="provider-fields">'
+        + '<div class="provider-builtin-label">' + biLabel + (builtInActive ? ' <span class="provider-builtin-tag">' + esc2(t2 && t2("settings.builtInTag") || "Built-in · Active") + '</span>' : '') + '</div>'
+        + '<div class="provider-builtin-model">' + biModel + '</div>'
+        + '<div class="provider-builtin-hint">' + hint + '</div>'
+        + '</div>'
+        + '</div>'
+        + '<div class="provider-empty">' + esc2(t2 && t2("settings.noCustomProviders") || 'No custom providers. Click "+ Add" to use your own API key.') + '</div>';
+    } else {
+      cont.innerHTML = '<div class="provider-empty">No models yet. Click "+ Add" to configure your first one.</div>';
+    }
     return;
   }
   var t = window.t;
@@ -397,7 +418,9 @@ function saveSettings() {
   var apiConfig = window.apiConfig;
   var providers = apiConfig.providers || [];
   var newRows = providers.filter(function (p) { return !p.isBuiltIn && p.id !== "beagle-built-in"; });
-  if (!newRows.length) { window.showToast("Add at least one provider"); return; }
+  var hasBuiltIn = providers.some(function (p) { return p.isBuiltIn || p.id === "beagle-built-in"; });
+  if (!newRows.length && !hasBuiltIn) { window.showToast("Add at least one provider"); return; }
+  if (!newRows.length && hasBuiltIn) { window.showToast("Built-in AI is already active."); return; }
 
   /* Validate all providers first */
   var allErrors = [];
