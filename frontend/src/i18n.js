@@ -193,6 +193,15 @@ var I18N={
     "session.pinned":"Pinned",
     "session.editTags":"Edit tags",
     "session.filterByTag":"Filter by tag: {tag}",
+    "session.empty":"No recent sessions yet.",
+    "session.emptyHint":"Start a topic to begin.",
+    "session.noSearchMatch":"No sessions match {query}.",
+    "session.clearSearch":"Clear search",
+    "session.loadListFailed":"Couldn't load sessions. Check your connection and try again.",
+    "session.retry":"Retry",
+    "session.noFilterMatch":"No sessions match the {filter} filter.",
+    "session.clearFilter":"Clear filter",
+    "session.showAllHint":"to see all sessions.",
     "scheduled.noNextRun":"No next run",
     "scheduled.today":"Today",
     "scheduled.tomorrow":"Tomorrow",
@@ -866,6 +875,15 @@ var I18N={
     "session.pinned":"已置顶",
     "session.editTags":"编辑标签",
     "session.filterByTag":"按标签筛选：{tag}",
+    "session.empty":"暂无最近会话。",
+    "session.emptyHint":"输入主题即可开始。",
+    "session.noSearchMatch":"没有与 {query} 匹配的会话。",
+    "session.clearSearch":"清除搜索",
+    "session.loadListFailed":"无法加载会话，请检查网络后重试。",
+    "session.retry":"重试",
+    "session.noFilterMatch":"没有与 {filter} 筛选条件匹配的会话。",
+    "session.clearFilter":"清除筛选",
+    "session.showAllHint":"以查看全部会话。",
     "scheduled.noNextRun":"暂无下次运行",
     "scheduled.today":"今天",
     "scheduled.tomorrow":"明天",
@@ -1466,8 +1484,12 @@ function applyI18n(){
   if(sb)sb.textContent=t("topic.start");
   var el=document.getElementById("extensionsLabel");
   if(el)el.textContent=t("topic.extensions");
-  var ev=document.getElementById("examViewTitle");
-  if(ev&&window.state&&window.state._examInView)ev.textContent=ev.textContent; /* already localized by render */
+  /* Exam content is generated dynamically, so static data-i18n scanning
+     cannot update it. Repaint its UI chrome while preserving form values,
+     generated questions and answers. */
+  if(window.state&&window.state._examInView&&typeof window.refreshExamI18n==="function"){
+    try{window.refreshExamI18n()}catch(_){}
+  }
   /* P_chatgpt-landing — the reasoning-effort trigger label (高/中/低) is
      driven by JS, not a data-i18n-key element, so refresh it here too. */
   if(typeof window.syncEffortUI==="function"){try{window.syncEffortUI();}catch(_){}}

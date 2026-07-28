@@ -125,6 +125,11 @@ export interface LegacyPostRender {
   processPendingVizActions(root?: HTMLElement): void;
   wireCodeBlockHeaders(root: HTMLElement): void;
   wireMsgBodyImages(root: HTMLElement): void;
+  restorePersistedMessageExtras?(
+    root: HTMLElement,
+    message: Record<string, unknown>,
+    idPrefix?: string,
+  ): void;
 }
 
 export interface LegacyActions {

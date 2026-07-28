@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 
 import type { LegacyChatMessage } from '../types/domain';
 import { MessageToolbar } from './MessageToolbar';
@@ -21,12 +21,13 @@ function MessageItem({ message }: MessageItemProps) {
     : '';
   const html = typeof message.html === 'string' ? message.html : '';
   const modelLabel = message.modelInfo?.label ?? '';
+  const attachments = Array.isArray(message.attachments) ? message.attachments : [];
 
   // Post-render hooks the legacy pipeline uses to wire up code-block
   // expand buttons, image lightbox, mermaid render, viz cards. Each is
   // idempotent (the legacy implementations guard with their own
   // dataset flags) so re-running them on every React render is safe.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!html || !clientId) return;
     const root = document.querySelector(
       `[data-client-id="${CSS.escape(clientId)}"] .msg-body`,
@@ -38,7 +39,16 @@ function MessageItem({ message }: MessageItemProps) {
     try { pr.processPendingVizActions?.(root); } catch (_) { }
     try { pr.wireCodeBlockHeaders?.(root); } catch (_) { }
     try { pr.wireMsgBodyImages?.(root); } catch (_) { }
-  }, [html, clientId]);
+    if (message.restoredFromHistory) {
+      try {
+        pr.restorePersistedMessageExtras?.(
+          root,
+          message as unknown as Record<string, unknown>,
+          `history-${clientId}`,
+        );
+      } catch (_) { /* optional legacy renderer unavailable */ }
+    }
+  }, [html, clientId, message, message.restoredFromHistory]);
 
   if (!isRenderable(message)) return null;
   if (!clientId) return null;
@@ -51,6 +61,29 @@ function MessageItem({ message }: MessageItemProps) {
         <div className="msg-model">
           <span className="msg-model-badge" aria-hidden="true">{modelLabel.charAt(0).toUpperCase()}</span>
           {modelLabel}
+        </div>
+      ) : null}
+      {role === 'user' && attachments.length > 0 ? (
+        <div className="msg-attachment-chips" aria-label="Attachments">
+          {attachments.map((attachment, index) => {
+            const key = `${attachment.name ?? 'attachment'}-${index}`;
+            const isImage = attachment.kind === 'image'
+              || attachment.dataUrl?.startsWith('data:image/');
+            return (
+              <span className="attachment-chip" key={key}>
+                {isImage && attachment.dataUrl ? (
+                  <img
+                    className="attachment-chip-thumb"
+                    src={attachment.dataUrl}
+                    alt=""
+                  />
+                ) : (
+                  <span className="attachment-chip-icon" aria-hidden="true">↗</span>
+                )}
+                <span className="attachment-chip-name">{attachment.name ?? 'file'}</span>
+              </span>
+            );
+          })}
         </div>
       ) : null}
       <div

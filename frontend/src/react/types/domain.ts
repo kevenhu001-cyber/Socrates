@@ -116,6 +116,7 @@ export interface LegacyChatMessage {
   }>;
   modelInfo?: { label?: string; model?: string } | null;
   toolCalls?: ReadonlyArray<ToolCall>;
+  restoredFromHistory?: boolean;
 }
 
 export interface ChatRuntimeSnapshot {
