@@ -607,7 +607,7 @@ data: ${JSON.stringify({
                   const source = r.source ? `    Source: ${r.source}\n` : '';
                   return `[${idx}] ${title}\n    URL: ${url}\n${date}${source}    Snippet: ${snippet}`;
                 });
-                const footer = '\n\nCite these as [1], [2] in your reply and end with:\n  Sources:\n  [1] Title (URL)\n  [2] Title (URL)';
+                const footer = '\n\nWeave these facts into your reply as natural prose. Do NOT add [1]/[2] citation markers, do NOT append a "Sources:"/"References:" list, and do NOT paste the URLs into your reply. The UI already shows every source to the user.';
                 const output = blocks.join('\n\n') + footer;
                 result = { status: 'completed', output, results: searchResults, retryable: false };
                 writeSse(`event: tool_result\ndata: ${JSON.stringify({

@@ -147,12 +147,9 @@ function _thinkSummary(opts: ThinkOpts): string {
   const meta = (!opts.streaming && opts.count > 0)
     ? '<span class="think-summary-meta">' + esc(_formatThinkMeta(opts.count)) + '</span>'
     : '';
-  const icon = opts.streaming
-    ? '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>'
-    : '';
+  const labelCls = opts.streaming ? 'think-summary-label shimmer-text' : 'think-summary-label';
   return '<summary class="think-summary">' +
-    icon +
-    '<span class="think-summary-label">' + esc(label) + '</span>' +
+    '<span class="' + labelCls + '">' + esc(label) + '</span>' +
     meta +
     '<span class="think-summary-chevron" aria-hidden="true"></span>' +
   '</summary>';
@@ -253,7 +250,7 @@ export function formatMsgProgressive(t: string | null | undefined): string {
     let inner = '';
     try {
       const c = content.trim().replace(/<\/?think>/g, '');
-      inner = c ? formatMsgProgressive(c) : '<span class="thinking-ring thinking-ring-sm"></span> Thinking…';
+      inner = c ? formatMsgProgressive(c) : '<span class="shimmer-text">Thinking…</span>';
     } catch (_e) {
       inner = escHTML(content.trim());
     }
@@ -304,7 +301,7 @@ export function formatMsgProgressive(t: string | null | undefined): string {
   });
   s = s.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b[^>]*>([\s\S]*?)$/gi, function (_, tag: string) {
     const label = STREAM_SCAFFOLD_FALLBACK[tag] || '[' + tag + ']';
-    return save('<span class="scaffold-stream scaffold-stream-unclosed"><span class="scaffold-stream-label">' + label + '</span> <span class="thinking-ring thinking-ring-sm"></span></span>');
+    return save('<span class="scaffold-stream scaffold-stream-unclosed"><span class="scaffold-stream-label shimmer-text">' + label + '</span></span>');
   });
 
   s = s.replace(/```mermaid\s*\n?([\s\S]*?)```/g, function (_, code: string) {
@@ -493,7 +490,7 @@ export function formatMsg(t: string | null | undefined): string {
     let inner = '';
     try {
       const c = content.trim().replace(/<\/?think>/g, '');
-      inner = c ? formatMsg(c) : '<span class="thinking-ring thinking-ring-sm"></span> Thinking…';
+      inner = c ? formatMsg(c) : '<span class="shimmer-text">Thinking…</span>';
     } catch (_) {
       inner = esc(content.trim());
     }

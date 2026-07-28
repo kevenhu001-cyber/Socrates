@@ -101,10 +101,7 @@ export const WEB_SEARCH_TOOL = {
       '- Bad:  "what is the latest version of python and when was it released"\n' +
       '- Good: "Python latest version release date"\n\n' +
       '## Output format\n' +
-      'Results are returned numbered [1], [2], … in order of relevance. Cite inline as [1], [2] matching the order you reference them, and end your reply with:\n' +
-      '  Sources:\n' +
-      '  [1] Title (URL)\n' +
-      '  [2] Title (URL)\n\n' +
+      'Results are returned numbered [1], [2], … in order of relevance (the numbering is for your reading only). Weave the facts into your reply as natural prose. Do NOT add [1]/[2] citation markers to your prose, do NOT append a "Sources:" / "References:" list, and do NOT paste result URLs into your reply. The UI already shows every source under the search status row.\n\n' +
       '## Caching\n' +
       'Identical queries within the same session are cached for 5 minutes. Re-running the same query does NOT re-hit the engines and will not surface fresher results — wait 5 minutes or change the query wording if you need a refresh.',
     parameters: {

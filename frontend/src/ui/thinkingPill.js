@@ -42,13 +42,9 @@ export function appendThinking(){
     status.className="thinking-status";
     status.setAttribute("role","status");
     status.setAttribute("aria-live","polite");
-    var ring=document.createElement("span");
-    ring.className="thinking-ring thinking-ring-sm";
-    ring.setAttribute("aria-hidden","true");
     var label=document.createElement("span");
-    label.className="thinking-status-label";
+    label.className="thinking-status-label shimmer-text";
     label.textContent=(typeof window.t==="function")?window.t("think.thinking"):"Thinking…";
-    status.appendChild(ring);
     status.appendChild(label);
     body.appendChild(status);
   }
@@ -60,10 +56,11 @@ export function appendThinking(){
     if(!lbl)return;
     lbl.textContent=String(text||"");
     status.dataset.mode="tool";
-    /* state: "" (running, ring spins) | "done" | "error". Settled
-       states freeze the ring so the pill reads as a result line
+    /* state: "" (running, text shimmers) | "done" | "error". Settled
+       states drop the shimmer so the pill reads as a result line
        ("Found 8 web results") rather than an ongoing activity. */
-    if(state)status.dataset.state=state;else delete status.dataset.state;
+    if(state){status.dataset.state=state;lbl.classList.remove("shimmer-text");}
+    else{delete status.dataset.state;lbl.classList.add("shimmer-text");}
     if(typeof window.scrollMainToBottom==="function")window.scrollMainToBottom();
   }
   return {append:function(){},finalize:remove,remove:remove,setLabel:setLabel};

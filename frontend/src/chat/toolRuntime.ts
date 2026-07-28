@@ -15,6 +15,11 @@ import {
   renderWebSearchResults,
   updateToolCardCode,
 } from '../ui/toolCards.js';
+import {
+  createInlineToolRow,
+  settleInlineToolRow,
+  updateInlineToolMeta,
+} from '../ui/toolInline.js';
 import { mountVisualization } from '../render/visualization.js';
 import {
   TOOL_RUN_PHASES,
@@ -100,13 +105,21 @@ interface ToolRuntimeOptions {
   cancelAnimationFrame?: (id: number) => void;
   EventSource?: typeof EventSource | null;
   /**
-   * 'compact' (default) — live chat path. Tool calls show only as a
-   * status label swap (Searching/Coding/Data Processing); no
-   * .agent-tool-card / .tool-run-group DOM is rendered.
+   * 'compact' (default) — live chat path. Each tool call renders as a
+   * minimal inline status row (.tool-inline) mounted in the message
+   * flow at the point the tool fired; onInlineTool (supplied by the
+   * stream controller) inserts the row and handles text segmentation.
    * 'detailed' — share / history replay path. Tool calls render as
    * the legacy collapsible cards so saved sessions remain inspectable.
    */
   mode?: 'compact' | 'detailed';
+  /**
+   * Compact mode only: mount an inline tool row into the message flow.
+   * The controller freezes the current text segment, appends the row,
+   * and starts a new segment for post-tool text. Falls back to
+   * appending directly to `body` when absent.
+   */
+  onInlineTool?: (entry: { id: string; name: string }, row: HTMLElement) => void;
 }
 
 interface ExecutionConnection {
@@ -243,6 +256,20 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   };
   const EventSourceImpl = options.EventSource || (typeof EventSource !== 'undefined' ? EventSource : null);
   const mode = options.mode || 'compact';
+  const onInlineTool = options.onInlineTool || function (_entry: { id: string; name: string }, row: HTMLElement) {
+    body.appendChild(row);
+  };
+
+  function mountInlineRow(entry: ToolCallEntry): void {
+    if (findCard(entry.id)) return;
+    const row = createInlineToolRow({ id: entry.id, name: entry.name });
+    try { onInlineTool({ id: entry.id, name: entry.name }, row); } catch (_) { body.appendChild(row); }
+  }
+
+  function findInlineRow(id: string): HTMLElement | null {
+    const el = findCard(id);
+    return el && (el as HTMLElement).classList.contains('tool-inline') ? el as HTMLElement : null;
+  }
 
   let disposed = false;
   const pendingDeltas: ToolCallDelta[] = [];
@@ -315,6 +342,12 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     if (!skipQueuedDrain && entry._pendingProgress && entry._pendingProgress.length) {
       const queued = entry._pendingProgress.splice(0);
       for (let i = 0; i < queued.length; i++) renderProgress(queued[i], true);
+    }
+
+    if ((card as HTMLElement).classList.contains('tool-inline')) {
+      const elapsed = ((progress.elapsedMs || 0) / 1000).toFixed(1);
+      updateInlineToolMeta(card as HTMLElement, progress.elapsedMs ? elapsed + 's' : '');
+      return;
     }
 
     const out = card.querySelector('.agent-tool-out');
@@ -524,6 +557,8 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       if (!output) return null;
       const card = output.closest('.agent-tool-card');
       if (card) card.setAttribute('data-tcid', entry.id);
+    } else {
+      mountInlineRow(entry);
     }
 
     const orphanDeltas = message._orphanDeltas?.[entry.id];
@@ -593,9 +628,13 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       if (!Array.isArray(message.toolCalls)) message.toolCalls = [];
       message.toolCalls.push(entry);
       setRun(entry, TOOL_RUN_PHASES.preparing);
-      output = appendToolModule(entry.name, {}, ensureToolContainer()) as HTMLElement | null;
-      const syntheticCard = output && output.closest('.agent-tool-card');
-      if (syntheticCard) syntheticCard.setAttribute('data-tcid', entry.id);
+      if (mode === 'compact') {
+        mountInlineRow(entry);
+      } else {
+        output = appendToolModule(entry.name, {}, ensureToolContainer()) as HTMLElement | null;
+        const syntheticCard = output && output.closest('.agent-tool-card');
+        if (syntheticCard) syntheticCard.setAttribute('data-tcid', entry.id);
+      }
     } else {
       const card = findCard(entry.id);
       if (card) output = card.querySelector('.agent-tool-out');
@@ -686,12 +725,14 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     updateRunSummary(message);
     if (entry._toolResultApplied) return;
     if (!output) {
-      // Compact mode: no card was created, but image artifacts still
-      // need to surface inline in the message body so the learner
-      // can see what the run produced. Non-image artifacts (CSVs,
-      // JSON) are persisted on the entry and discoverable via the
-      // session history, so we drop them silently here.
+      // Compact mode: settle the inline status row in place, then
+      // surface image artifacts inline in the message body so the
+      // learner can see what the run produced. Non-image artifacts
+      // (CSVs, JSON) are persisted on the entry and discoverable via
+      // the session history, so we drop them silently here.
       if (mode === 'compact') {
+        const row = findInlineRow(entry.id);
+        if (row) settleInlineToolRow(row, result);
         for (let artifactIndex = 0; artifactIndex < entry.artifacts.length; artifactIndex++) {
           const artifact = entry.artifacts[artifactIndex];
           if (artifact.id && artifact.mimeType && artifact.mimeType.indexOf('image/') === 0) {
@@ -769,7 +810,9 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
         if (!entry || (getRun(entry) && isTerminalToolPhase(getRun(entry)!.phase))) continue;
         setRun(entry, TOOL_RUN_PHASES.cancelled, { endedAt: Date.now() });
         const card = findCard(entry.id);
-        if (card) {
+        if (card && (card as HTMLElement).classList.contains('tool-inline')) {
+          settleInlineToolRow(card as HTMLElement, null, { cancelled: true });
+        } else if (card) {
           (card as HTMLElement).dataset.toolState = 'cancelled';
           const badge = card.querySelector('.agent-tool-status') as HTMLElement | null;
           if (badge) { badge.className = 'agent-tool-status mute'; badge.textContent = translate('tool.statusStopped', 'Stopped'); }

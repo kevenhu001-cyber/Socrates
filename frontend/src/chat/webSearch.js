@@ -277,7 +277,7 @@ export async function fetchWebContext(topic,opts){
       "Each result below was retrieved live from the web, scored for relevance, and sorted by estimated accuracy. "+
       "[high relevance] results closely match what the user is asking about. [medium relevance] are related but may be tangential. "+
       "[low relevance] results are included only as supplementary context — use them cautiously.\n\n"+
-      "If you use a fact from these results, you MUST cite it inline as [1], [2], etc. "+
+      "Weave the facts into your reply as natural prose. Do NOT add [1]/[2] citation markers, do NOT append a \"Sources:\"/\"References:\" list, and do NOT paste result URLs into your reply (the UI already shows every source to the user). "+
       "Do NOT invent facts not supported by the results. "+
       "If multiple results contradict each other, prefer [high relevance] sources.\n"+
       lines.join("\n");
