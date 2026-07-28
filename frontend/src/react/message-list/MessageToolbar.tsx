@@ -15,7 +15,6 @@ function IconButton({ action, label, onClick, svgInner, active }: IconButtonProp
     <button
       type="button"
       className={`msg-toolbar-btn${active ? ' active' : ''}`}
-      title={label}
       aria-label={label}
       data-action={action}
       onClick={onClick}
