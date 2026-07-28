@@ -41,7 +41,9 @@ a{color:inherit;text-decoration:none}
 /* Firefox */
 *{scrollbar-width:thin;scrollbar-color:hsl(var(--always-white)/0.12) transparent}
 .app{display:flex;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none;position:relative}
-.sidebar{width:var(--app-sidebar-width,18rem);min-width:var(--app-sidebar-width,18rem);display:flex;flex-direction:column;background:hsl(var(--bg-000));border-right:0.5px solid hsl(var(--border-300)/0.12);overflow:hidden;z-index:30;position:absolute;left:0;top:0;bottom:0;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),border-color .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}
+/* UI-align: translucent sidebar surface (open-webui desktop look).
+   Mobile keeps a solid background — see the 768px override below. */
+.sidebar{width:var(--app-sidebar-width,18rem);min-width:var(--app-sidebar-width,18rem);display:flex;flex-direction:column;background:hsl(var(--bg-000)/0.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-right:0.5px solid hsl(var(--border-300)/0.12);overflow:hidden;z-index:30;position:absolute;left:0;top:0;bottom:0;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),border-color .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}
 body.sidebar-resizing .sidebar{will-change:width;transition:none!important}
 .sidebar.collapsed{width:var(--app-sidebar-width,18rem);min-width:var(--app-sidebar-width,18rem);transform:translateX(-100%);border-right-color:transparent}
 .sidebar-inner{min-width:0;width:100%;opacity:1;display:flex;flex-direction:column;flex:1;min-height:0;transition:opacity .25s var(--ease-out)}
@@ -120,6 +122,10 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
 .recents-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
 .recents-panel.hidden{display:none}.panel-enter{animation:panelFadeIn .15s ease}
 .recents-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+/* UI-align: time-bucket headers inside the session list (Today /
+   Yesterday / Previous 7 days…), mirroring open-webui's grouping. */
+.recents-time-label{font-size:calc(10px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-500));padding:12px 8px 4px;letter-spacing:.03em;user-select:none}
+.recents-time-label:first-child{padding-top:4px}
 
 /* P2.2 — secondary filter chip row. A horizontal scroll of
    short tag/preset chips below the project filter. Mirrors the
@@ -697,8 +703,11 @@ html[data-show-grid="false"] .main-bg{background-image:none}
   bottom:calc(120px + var(--keyboard-inset));
   padding:6px 12px;
   border-radius:999px;
-  background:hsl(var(--accent-500));
-  color:hsl(var(--accent-100,#fff));
+  /* UI-align: neutral floating surface (open-webui scroll-down chip)
+     instead of a loud accent pill. */
+  background:hsl(var(--bg-000));
+  border:0.5px solid hsl(var(--border-300)/0.35);
+  color:hsl(var(--text-200));
   font-size:12px;
   font-weight:500;
   letter-spacing:0.01em;
@@ -738,7 +747,9 @@ html[data-show-grid="false"] .main-bg{background-image:none}
    * bar. The topic-setup view carries its own padding-top (10vh)
    * so this only affects the chat / exam views. */
   padding:0 16px;
-  max-width:calc(720px * var(--app-width-scale, 1));
+  /* UI-align: widened from 720px to 58rem (928px) to match the
+   * open-webui reading column. --app-width-scale still applies. */
+  max-width:calc(58rem * var(--app-width-scale, 1));
   margin:0 auto;
   width:100%;
   flex:1;
@@ -773,9 +784,12 @@ html[data-show-grid="false"] .main-bg{background-image:none}
  * the flex flow; when the keyboard opens it adds ~20px of gap between
  * the input-bottom and the keyboard-top. Hide it. */
 :root[data-keyboard-open="true"] #topicDisclaimer{display:none}
-.topic-title{font-family:var(--font-display);font-size:calc(clamp(1.8rem,1.32rem + 1.9vw,2.5rem) * var(--app-font-scale, 1));font-weight:560;color:hsl(var(--text-200));text-align:center;line-height:1.28}
-.topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:640px;white-space:nowrap}
-.topic-input-wrap{width:100%;max-width:720px;margin-top:clamp(16px,3vh,50px);background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:26px;overflow:hidden;box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);transition:box-shadow .2s,border-color .2s}
+.topic-title{font-family:var(--font-display);font-size:calc(clamp(1.8rem,1.32rem + 1.9vw,2.5rem) * var(--app-font-scale, 1));font-weight:560;color:hsl(var(--text-200));text-align:center;line-height:1.28;animation:emptyStateIn .4s var(--ease-out) both}
+.topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:640px;white-space:nowrap;animation:emptyStateIn .4s var(--ease-out) 70ms both}
+/* UI-align: staged empty-state entrance (open-webui Placeholder —
+   greeting, subtitle, then input fade in one after another). */
+@keyframes emptyStateIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.topic-input-wrap{width:100%;max-width:720px;margin-top:clamp(16px,3vh,50px);background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:26px;overflow:hidden;box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);transition:box-shadow .2s,border-color .2s;animation:emptyStateIn .4s var(--ease-out) 140ms both}
 .topic-input-wrap:focus-within{box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/8%);border-color:hsl(var(--accent-000)/0.35)}
 #topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(16px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-100));min-height:76px;max-height:320px;overflow-y:auto;font-family:var(--font-sans);padding:16px 20px 12px}
 #topicInput::placeholder{color:hsl(var(--text-400))}
@@ -926,7 +940,18 @@ true) but the dropdown never shows — see commit history. */
    查找资料), shown under the landing composer like ChatGPT. Pill
    buttons with an icon + label; hover raises the surface subtly. */
 .composer-quick-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:720px;width:100%;margin:14px 0 4px;padding:0 6px}
-.composer-quick-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;border:1px solid hsl(var(--border-300)/0.35);background:transparent;color:hsl(var(--text-300));font-size:calc(14px * var(--app-font-scale, 1));font-family:var(--font-sans);cursor:pointer;line-height:1.2;transition:background-color .18s ease,color .18s ease,border-color .18s ease,transform .12s ease}
+.composer-quick-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;border:1px solid hsl(var(--border-300)/0.35);background:transparent;color:hsl(var(--text-300));font-size:calc(14px * var(--app-font-scale, 1));font-family:var(--font-sans);cursor:pointer;line-height:1.2;transition:background-color .18s ease,color .18s ease,border-color .18s ease,transform .12s ease;animation:chipWaterfall .2s var(--ease-out) both}
+/* UI-align: staggered waterfall entrance for suggestion chips
+   (open-webui Suggestions.svelte — fadeInUp 200ms, 45ms/item). */
+@keyframes chipWaterfall{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.composer-quick-chip:nth-child(1){animation-delay:45ms}
+.composer-quick-chip:nth-child(2){animation-delay:90ms}
+.composer-quick-chip:nth-child(3){animation-delay:135ms}
+.composer-quick-chip:nth-child(4){animation-delay:180ms}
+.composer-quick-chip:nth-child(5){animation-delay:225ms}
+.composer-quick-chip:nth-child(6){animation-delay:270ms}
+.composer-quick-chip:nth-child(7){animation-delay:315ms}
+.composer-quick-chip:nth-child(n+8){animation-delay:360ms}
 .composer-quick-chip svg{width:18px;height:18px;flex-shrink:0;color:hsl(var(--text-400))}
 .composer-quick-chip:hover{background:hsl(var(--bg-300)/0.6);color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.5)}
 .composer-quick-chip:hover svg{color:hsl(var(--accent-000))}
@@ -1457,8 +1482,12 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 .sources-open:hover,.sources-copy:hover{background:hsl(var(--accent-100)/0.12);color:hsl(var(--accent-100));border-color:hsl(var(--accent-100)/0.5)}
 .sources-copy.copied{background:hsl(140 60% 92%);color:hsl(140 60% 30%);border-color:hsl(140 60% 70%)}
 [data-theme=socrates][data-mode=dark] .sources-copy.copied{background:hsla(140 40% 18%);color:hsl(140 50% 80%);border-color:hsla(140 50% 40%)}
-.msg-list{display:flex;flex-direction:column;gap:14px;flex:1}
+.msg-list{display:flex;flex-direction:column;gap:12px;flex:1}
 .msg{animation:msgIn .3s var(--ease-out);padding:6px 0}
+/* UI-align: native virtualization à la open-webui — off-screen
+   messages skip layout/paint; the 150px estimate keeps the scrollbar
+   stable enough while real heights replace it as items scroll in. */
+.msg-list>.msg{content-visibility:auto;contain-intrinsic-size:auto 150px}
 @keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 /* User bubbles right-align. The toolbar lives BELOW the bubble
  * (flex-direction:column + align-items:flex-end), not next to it on
@@ -1469,7 +1498,10 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
  * Previously capped at max-width:75%, which created visible asymmetry with
  * assistant bubbles (max-width:100% at line 855). The column itself is
  * bounded by .main-inner, which the user can adjust via --app-width-scale. */
-.msg.user .msg-body{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:16px 16px 4px 16px;padding:12px 16px}
+/* UI-align: open-webui-style pill bubble — full 24px radius, no
+ * border/tail, capped at 90% of the column so long prompts don't
+ * span edge-to-edge. Surface color stays on the brand token. */
+.msg.user .msg-body{background:hsl(var(--bg-000));border:none;border-radius:24px;padding:9px 18px;max-width:90%}
 /* P_attachments — attachment chip strip inside a user bubble. Sits
    below the text body, same horizontal padding so it lines up. */
 .msg.user .msg-attachments{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
@@ -1484,28 +1516,38 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
    bubble (no offset needed since the parent column already
    right-aligns). For assistant messages it sits indented under
    the bubble. */
-.msg-toolbar{display:flex;gap:2px;align-items:center;margin-top:4px;opacity:0;transition:opacity .15s;height:24px}
-.msg.assistant .msg-toolbar{justify-content:flex-start;margin-left:8px}
+.msg-toolbar{display:flex;gap:2px;align-items:center;margin-top:2px;opacity:0;transition:opacity .15s;height:28px}
+.msg.assistant .msg-toolbar{justify-content:flex-start;margin-left:2px}
 .msg.user .msg-toolbar{justify-content:flex-end;margin-right:0}
 @media (hover:hover){.msg:hover .msg-toolbar{opacity:1}}
 @media (hover:none){.msg-toolbar{opacity:.7}}
-.msg-toolbar-btn{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:transparent;color:hsl(var(--text-500));cursor:pointer;transition:background .12s,color .12s;border:0;padding:0}
-.msg-toolbar-btn:hover{background:hsl(var(--bg-200));color:hsl(var(--text-200))}
-/* Filled-pill active state: brand-colored background with high-contrast
-   foreground. Mirrors the .start-btn.active pattern so light and dark
-   modes both get a clear "this is on" affordance — not just a faint
-   accent tint that vanishes against the surrounding bubble. */
-.msg-toolbar-btn.active{color:hsl(var(--oncolor-100));background:hsl(var(--accent-000))}
-.msg-toolbar-btn.active:hover{background:hsl(var(--accent-100))}
-.msg-toolbar-btn.active[data-action="thumbs-down"]{background:hsl(var(--brand-000))}
-.msg-toolbar-btn.active[data-action="thumbs-down"]:hover{background:hsl(var(--brand-100))}
+/* UI-align: the newest assistant reply keeps its action row visible
+   (open-webui shows the last response's toolbar by default). */
+.msg-list>.msg.assistant:last-child .msg-toolbar{opacity:1}
+.msg-toolbar-btn{position:relative;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:background .12s,color .12s;border:0;padding:0}
+.msg-toolbar-btn:hover{background:hsl(var(--text-000)/0.06);color:hsl(var(--text-100))}
+/* UI-align: dark floating tooltip (open-webui/tippy look) driven by
+   aria-label — appears after a short hover delay, no JS needed. */
+.msg-toolbar-btn::after{content:attr(aria-label);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:hsl(0 0% 9%);color:hsl(0 0% 98%);font-size:11px;font-weight:500;line-height:1;padding:6px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .1s ease .35s;z-index:40}
+.msg-toolbar-btn:hover::after{opacity:1}
+/* UI-align: quiet gray active state (open-webui pattern) — gold stays
+   reserved for live states like read-aloud below. */
+.msg-toolbar-btn.active{color:hsl(var(--text-000));background:hsl(var(--bg-300))}
+.msg-toolbar-btn.active:hover{background:hsl(var(--bg-400))}
 /* Read-aloud active state: pulse the accent so it's clear TTS is playing. */
 .msg-toolbar-btn.is-speaking{color:hsl(var(--oncolor-100));background:hsl(var(--accent-000));animation:readAloudPulse 1.4s ease-in-out infinite}
 .msg-toolbar-btn.is-speaking:hover{background:hsl(var(--accent-100))}
 @keyframes readAloudPulse{0%,100%{opacity:1}50%{opacity:.55}}
-.msg-toolbar-btn svg{width:14px;height:14px}
-/* Edit-in-place textarea */
-.msg-edit-area{width:100%;min-height:60px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);border-radius:6px;padding:6px 8px;font:inherit;color:inherit;resize:vertical}
+.msg-toolbar-btn svg{width:15px;height:15px}
+/* UI-align: model identity header above assistant replies — initial
+   badge + name row, mirroring open-webui's avatar+name pattern. */
+.msg-model{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:calc(13px * var(--app-font-scale,1));font-weight:600;color:hsl(var(--text-100));line-height:1}
+.msg-model-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:hsl(var(--accent-000)/0.14);color:hsl(var(--accent-000));font-size:11px;font-weight:700;flex-shrink:0;user-select:none}
+/* Edit-in-place textarea — the user bubble itself is the rounded gray
+   container (open-webui edit surface), so the textarea stays chromeless
+   and the bubble stretches to full column width while editing. */
+.msg-edit-area{width:100%;min-height:60px;background:transparent;border:none;outline:none;padding:2px 0;font:inherit;color:inherit;resize:vertical}
+.msg.user .msg-body:has(.msg-edit-area){max-width:100%;width:100%;border-radius:20px}
 /* Alert notifications — Ant Design-inspired toast system.
    Types: success / info / warning / error. Each uses the app's
    design tokens for colors so dark/light mode is automatic.
@@ -1611,10 +1653,10 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .cmd-k-empty kbd{font-family:var(--font-mono);font-size:11px;padding:1px 5px;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:3px;margin:0 2px}
 .cmd-k-foot{display:flex;gap:18px;padding:8px 16px;border-top:0.5px solid hsl(var(--border-300)/0.18);font-size:11px;color:hsl(var(--text-500))}
 .cmd-k-foot kbd{font-family:var(--font-mono);font-size:10px;padding:1px 5px;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:3px;background:transparent;margin-right:4px}
-.msg-body{font-size:calc(14px * var(--app-font-scale, 1));line-height:1.65;color:hsl(var(--text-100));overflow-wrap:break-word;word-break:break-word}
+.msg-body{font-size:calc(15px * var(--app-font-scale, 1));line-height:1.625;color:hsl(var(--text-100));overflow-wrap:break-word;word-break:break-word}
 .msg-body p{margin-bottom:8px}.msg-body p:last-child{margin-bottom:0}
 .msg-body strong{font-weight:600;color:hsl(var(--text-000))}.msg-body em{font-style:italic}
-.msg-body pre{background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-radius:10px;padding:12px 14px;overflow-x:auto;font-family:var(--font-mono);font-size:calc(12px * var(--app-font-scale, 1));line-height:1.5;margin:8px 0;color:hsl(var(--text-200))}
+.msg-body pre{background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-radius:16px;padding:12px 14px;overflow-x:auto;font-family:var(--font-mono);font-size:calc(12px * var(--app-font-scale, 1));line-height:1.5;margin:8px 0;color:hsl(var(--text-200))}
 .msg-body code{font-family:var(--font-mono);font-size:.9em;background:hsl(var(--always-white)/0.06);padding:2px 5px;border-radius:3px}
 .msg-body pre code{background:none;padding:0}
 /* Streaming→final transition: finish() rewrites the body's innerHTML
@@ -1695,19 +1737,14 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .send-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));box-shadow:0 2px 8px hsl(var(--accent-000)/0.18)}.send-btn.active:hover{background:hsl(var(--accent-100));box-shadow:0 4px 14px hsl(var(--accent-000)/0.30);transform:translateY(-1px)}
 .send-btn.active:active{transform:translateY(0) scale(.92)}
 .send-btn svg{width:16px;height:16px}
-/* Agent-run state: send button morphs into a red Stop. Same DOM
-   element, no layout shift. */
-.send-btn.agent-stop{background:hsl(0 70% 50%);color:hsl(0 0% 100%);animation:agent-stop-pulse 1.4s ease-in-out infinite}
-.send-btn.agent-stop:hover{background:hsl(0 75% 42%);color:hsl(0 0% 100%)}
-[data-theme=socrates][data-mode=dark] .send-btn.agent-stop{background:hsl(0 60% 45%);color:hsl(0 0% 100%)}
-[data-theme=socrates][data-mode=dark] .send-btn.agent-stop:hover{background:hsl(0 65% 38%)}
-/* Chat-mode Stop button — same look as agent Stop, no pulse (chat
-   streams are short and pulsing is distracting on a 2-second answer). */
-.send-btn.chat-stop{background:hsl(0 70% 50%);color:hsl(0 0% 100%)}
-.send-btn.chat-stop:hover{background:hsl(0 75% 42%);color:hsl(0 0% 100%)}
-[data-theme=socrates][data-mode=dark] .send-btn.chat-stop{background:hsl(0 60% 45%);color:hsl(0 0% 100%)}
-[data-theme=socrates][data-mode=dark] .send-btn.chat-stop:hover{background:hsl(0 65% 38%)}
-@keyframes agent-stop-pulse{0%,100%{box-shadow:0 0 0 0 hsl(0 70% 50%/0.4)}50%{box-shadow:0 0 0 6px hsl(0 70% 50%/0)}}
+/* Agent-run state: send button morphs into a quiet Stop. UI-align:
+   open-webui uses a neutral surface with a square glyph instead of a
+   red pulsing alarm — stopping a stream is routine, not destructive. */
+.send-btn.agent-stop{background:hsl(var(--bg-300));color:hsl(var(--text-000))}
+.send-btn.agent-stop:hover{background:hsl(var(--bg-400));color:hsl(var(--text-000))}
+/* Chat-mode Stop button — same quiet look. */
+.send-btn.chat-stop{background:hsl(var(--bg-300));color:hsl(var(--text-000))}
+.send-btn.chat-stop:hover{background:hsl(var(--bg-400));color:hsl(var(--text-000))}
 /* Loading animations — rotating ring spinner.
    Uses a simple border-based ring (no mask) for reliable rendering
    across all browsers. The inner spans (from the old 3-dot pattern)
@@ -2406,10 +2443,10 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 
 
 /* Markdown rendered content */
-.msg-body h1{font-size:1.4em;font-weight:600;color:hsl(var(--text-000));margin:16px 0 8px;line-height:1.3}
-.msg-body h2{font-size:1.2em;font-weight:600;color:hsl(var(--text-000));margin:14px 0 6px;line-height:1.3}
-.msg-body h3{font-size:1.05em;font-weight:600;color:hsl(var(--text-100));margin:12px 0 4px;line-height:1.3}
-.msg-body h4,.msg-body h5,.msg-body h6{font-size:1em;font-weight:600;color:hsl(var(--text-100));margin:10px 0 4px}
+.msg-body h1{font-size:1.4em;font-weight:500;color:hsl(var(--text-000));margin:16px 0 8px;line-height:1.3}
+.msg-body h2{font-size:1.2em;font-weight:500;color:hsl(var(--text-000));margin:14px 0 6px;line-height:1.3}
+.msg-body h3{font-size:1.05em;font-weight:500;color:hsl(var(--text-100));margin:12px 0 4px;line-height:1.3}
+.msg-body h4,.msg-body h5,.msg-body h6{font-size:1em;font-weight:500;color:hsl(var(--text-100));margin:10px 0 4px}
 .msg-body ul,.msg-body ol{padding-left:20px;margin:6px 0 10px}
 .msg-body li{margin-bottom:3px}
 .msg-body li::marker{color:hsl(var(--text-500))}
@@ -2426,15 +2463,21 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 /* P_code-block-header — a minimal header bar atop <pre> blocks with
    the language label + an expand button. Always visible at low opacity,
    brightens on hover. Reuses the viz-btn visual language. */
-.msg-body .code-block-header{display:flex;align-items:center;gap:6px;height:26px;padding:0 4px 0 8px;margin-bottom:-2px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-bottom:none;border-radius:10px 10px 0 0;font-size:calc(10.5px * var(--app-font-scale,1));color:hsl(var(--text-500));opacity:.5;transition:opacity .18s ease}
+.msg-body .code-block-header{display:flex;align-items:center;gap:6px;height:28px;padding:0 6px 0 12px;margin-bottom:-2px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-bottom:none;border-radius:16px 16px 0 0;font-size:calc(10.5px * var(--app-font-scale,1));color:hsl(var(--text-500));opacity:.85;transition:opacity .18s ease}
 .msg-body .code-block-header:hover{opacity:1}
-.msg-body .code-block-header + pre{border-radius:0 0 10px 10px;margin-top:0;border-top:none}
+.msg-body .code-block-header + pre{border-radius:0 0 16px 16px;margin-top:0;border-top:none}
 .code-block-header-lang{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-mono);text-transform:lowercase}
 .code-block-expand{width:22px;height:22px;border:0;border-radius:5px;background:transparent;color:hsl(var(--text-400));cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .12s,background .12s}
 .code-block-expand:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .code-block-expand svg{width:12px;height:12px;display:block}
-.stream-cursor{display:inline-block;animation:blink 1s step-end infinite;color:hsl(var(--text-400));font-size:calc(14px * var(--app-font-scale, 1));margin-left:1px;vertical-align:baseline}
-@keyframes blink{50%{opacity:0}}
+/* UI-align: streaming caret rendered as a soft breathing dot
+   (open-webui skeleton language) instead of a hard blinking ▍.
+   The glyph itself is hidden; the dot is drawn as a pseudo-element
+   so no JS change is needed. Pure opacity/scale — never touches
+   text layout, so KaTeX renders stay crisp. */
+.stream-cursor{display:inline-block;position:relative;width:12px;height:12px;margin-left:3px;vertical-align:-1px;color:transparent;font-size:0;line-height:0}
+.stream-cursor::before{content:"";position:absolute;inset:0;border-radius:50%;background:hsl(var(--text-200));animation:streamDotBreathe 1.5s ease-in-out infinite}
+@keyframes streamDotBreathe{0%,100%{transform:scale(.8);opacity:.45}50%{transform:scale(1.15);opacity:1}}
 
 /* Think block — cream/gold redesign.
    - Collapsed by default (the markup no longer carries `open` once
@@ -2484,13 +2527,20 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 
 /* KaTeX dark theme overrides */
 .katex{font-size:1.05em}
-.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0;margin:8px 0}
+/* UI-align: KaTeX display scroll — the horizontal scrollbar stays
+   invisible until the formula is hovered (open-webui pattern), so
+   wide equations don't carry a permanent gray bar underneath. */
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0;margin:8px 0;scrollbar-width:thin;scrollbar-color:transparent transparent}
+.katex-display:hover{scrollbar-color:hsl(var(--text-000)/0.25) transparent}
+.katex-display::-webkit-scrollbar{height:5px}
+.katex-display::-webkit-scrollbar-thumb{background:transparent;border-radius:3px}
+.katex-display:hover::-webkit-scrollbar-thumb{background:hsl(var(--text-000)/0.25)}
 .katex-display>.katex{font-size:1.1em}
 .katex .mathnormal{color:hsl(var(--text-100))}
 .katex .mord{color:hsl(var(--text-100))}
 .katex .mbin{color:hsl(var(--accent-000))}
 .katex .mrel{color:hsl(var(--accent-000))}
-@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),box-shadow .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4vh 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{bottom:var(--keyboard-inset);padding-top:20px}}
+@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;background:hsl(var(--bg-000));backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),box-shadow .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4vh 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{bottom:var(--keyboard-inset);padding-top:20px}}
 .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:25;animation:fadeIn .15s}
 .sidebar-backdrop.show{display:block}
 
@@ -3449,6 +3499,11 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 }
 .search-progress-head:focus-visible{outline:2px solid hsl(var(--accent-000)/.5);outline-offset:-2px;border-radius:7px}
 .search-progress-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0}
+/* UI-align: open-webui shimmer sweep across the status text while a
+   search is in flight — gradient-clipped text, opacity only. */
+.search-progress.running .search-progress-title,
+.search-progress.running .search-progress-label{background:linear-gradient(90deg,hsl(var(--text-400)) 35%,hsl(var(--text-000)) 50%,hsl(var(--text-400)) 65%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:textShimmer 2.4s linear infinite}
+@keyframes textShimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 .search-progress-elapsed{
   flex:0 0 auto;
   color:hsl(var(--text-500));
@@ -3789,8 +3844,8 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 /* Composer: a stable, tactile control surface that stays secondary to the
    conversation while giving attachments, offline states, and Stop room. */
 .chat-input-bar{background:linear-gradient(to bottom,transparent 0%,hsl(var(--surface-page))/26px);padding-top:18px;padding-inline:12px}
-.chat-input-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:4px;min-height:58px;margin:0 auto;width:min(100%,880px);padding:7px 8px;border-radius:30px;border-color:hsl(var(--border-300)/.42);background:hsl(var(--bg-000));box-shadow:0 8px 24px hsl(var(--always-black)/.07)}
-.chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/.55);box-shadow:0 8px 24px hsl(var(--always-black)/.07)}
+.chat-input-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:4px;min-height:58px;margin:0 auto;width:min(100%,880px);padding:7px 8px;border-radius:30px;border-color:hsl(var(--border-300)/.42);background:hsl(var(--bg-000));box-shadow:0 10px 30px -6px hsl(var(--always-black)/.14),0 2px 8px hsl(var(--always-black)/.06)}
+.chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/.45);box-shadow:0 10px 30px -6px hsl(var(--always-black)/.14),0 2px 8px hsl(var(--always-black)/.06)}
 .chat-input-wrap .attachment-chips,.chat-input-wrap .template-mode-chip{order:0;flex-basis:100%}
 #chatInputArea{order:2;flex:1;min-width:120px;min-height:28px;padding:4px 4px 6px;line-height:1.45}
 .chat-input-footer{display:contents}

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { getLegacyActions, t } from '../legacy/gateway';
@@ -28,6 +28,26 @@ function safeId(sessionId: string): string {
     hash = ((hash << 5) - hash + sessionId.charCodeAt(i)) | 0;
   }
   return 'r-' + Math.abs(hash);
+}
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+
+/* UI-align: open-webui-style time buckets for the session list.
+   Pinned rows get their own group at the top; the rest fall into
+   Today / Yesterday / Previous 7 days / Previous 30 days / month / year. */
+function timeGroupLabel(session: SessionItem, now: Date): string {
+  if (session.pinned) return 'Pinned';
+  const raw = session.updatedAt || session.createdAt || Date.now();
+  const d = new Date(raw);
+  const ts = d.getTime();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if (ts >= startOfDay) return 'Today';
+  if (ts >= startOfDay - 86400000) return 'Yesterday';
+  if (ts >= startOfDay - 7 * 86400000) return 'Previous 7 days';
+  if (ts >= startOfDay - 30 * 86400000) return 'Previous 30 days';
+  if (d.getFullYear() === now.getFullYear()) return MONTH_NAMES[d.getMonth()];
+  return String(d.getFullYear());
 }
 
 function modeLabel(session: SessionItem): { key: string; cls: string } {
@@ -188,20 +208,32 @@ function SessionListInner() {
     return <div className="recents-list-content" dangerouslySetInnerHTML={{ __html: emptyHtml }} />;
   }
 
+  const now = new Date();
+  let prevGroup: string | null = null;
+
   return (
     <div className="recents-list-content">
-      {sessions.map((session) => (
-        <SessionRow
-          key={session.id}
-          session={session}
-          isActive={session.id === currentSessionId}
-          onPick={handlePick}
-          onTag={handleTag}
-          onDelete={handleDelete}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        />
-      ))}
+      {sessions.map((session) => {
+        const group = timeGroupLabel(session, now);
+        const header = group !== prevGroup
+          ? <div className="recents-time-label" key={`g-${group}-${session.id}`}>{group}</div>
+          : null;
+        prevGroup = group;
+        return (
+          <React.Fragment key={session.id}>
+            {header}
+            <SessionRow
+              session={session}
+              isActive={session.id === currentSessionId}
+              onPick={handlePick}
+              onTag={handleTag}
+              onDelete={handleDelete}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            />
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 }

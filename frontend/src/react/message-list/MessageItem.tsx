@@ -45,13 +45,18 @@ function MessageItem({ message }: MessageItemProps) {
 
   return (
     <div className={`msg ${role}`} data-client-id={clientId} data-react-owned="1">
+      {/* UI-align: model name sits above the body (open-webui pattern:
+          avatar+name header row) instead of trailing below it. */}
+      {role === 'assistant' && modelLabel ? (
+        <div className="msg-model">
+          <span className="msg-model-badge" aria-hidden="true">{modelLabel.charAt(0).toUpperCase()}</span>
+          {modelLabel}
+        </div>
+      ) : null}
       <div
         className="msg-body"
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      {role === 'assistant' && modelLabel ? (
-        <div className="msg-model">{modelLabel}</div>
-      ) : null}
       <MessageToolbar message={message} role={role === 'user' ? 'user' : 'assistant'} />
     </div>
   );
