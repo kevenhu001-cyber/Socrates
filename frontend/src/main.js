@@ -53,6 +53,12 @@ import { fetchWebContext, shouldRefreshSearch, setSearchPill } from './chat/webS
 import { generateSessionTitle } from './chat/sessionTitle.js';
 import { parseOneDiagResponse } from './chat/diagnosticParser.js';
 import { generateDiagnosticQuestions } from './chat/diagnosticGenerator.js';
+import {
+  buildFallbackDiagnosticQuestions,
+  requestTutorExploration,
+  shouldAutoSearchTutor,
+  TUTOR_SEARCH_POLICY_PROMPT,
+} from './tutor/policy.js';
 import { applyDiagnosticResults } from './chat/diagnosticResults.js';
 import { generateTopicKBNodes } from './chat/topicKbNodes.js';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from './chat/teachingPlan.js';
@@ -2792,11 +2798,18 @@ async function startSession(){
     return;
   }
 
+  var lang=detectLanguage(topic);
+  var tutorExploration={enabled:false,count:0};
+  if(appMode==="tutor"){
+    tutorExploration=await requestTutorExploration({
+      isZh:(_currentLang==="zh"||lang==="zh"),
+    });
+    if(!tutorExploration)return;
+  }
+
   state.topic=topic;
   state.diagIndex=0;
   state.diagAnswers=[];
-
-  var lang=detectLanguage(topic);
 
   /* Always generate nodes and fallback questions */
   var gen=aiGenerate(topic);
@@ -2968,6 +2981,17 @@ async function startSession(){
   if(typeof renderAttachmentChips === "function") renderAttachmentChips();
   if(typeof updateStartBtn === "function") updateStartBtn();
   if(typeof updateSendBtn === "function") updateSendBtn();
+
+  /* The boundary exploration is optional. Skipping it starts the
+     teaching plan with unprobed nodes instead of manufacturing answers
+     or forcing the historical five-question detour. */
+  if(!tutorExploration.enabled){
+    state.phase="chat";
+    document.getElementById("diagnosticView").classList.add("hidden");
+    document.getElementById("chatView").classList.remove("hidden");
+    proceedToTeaching();
+    return;
+  }
   /* U-H3 — reusable loading markup (initial render + retry re-render).
      Includes a cancel button so the user can bail out of a slow
      generation instead of watching the spinner indefinitely. */
@@ -3019,7 +3043,7 @@ async function startSession(){
    * tool calls; diagnostic-mode web search used to show a richer
    * step-by-step card via startSearchProgress, but that surface
    * was retired when the agent-tool-card UI was removed. */
-  if(webSearchOn){
+  if(webSearchOn&&shouldAutoSearchTutor(topic)){
     try{
       fetchWebContext(topic,{}).then(function(sc){
         state.searchContext=sc.context||"";
@@ -3091,7 +3115,7 @@ async function startSession(){
         } else {
           diagProgress(pct, t("chat.generatingQ").replace("{n}", step).replace("{total}", total));
         }
-      }, function(){ return !!state.diagCancel; });
+      }, function(){ return !!state.diagCancel; }, tutorExploration.count);
     } catch (e) {
       diagErr = (e && e.message) || String(e);
     }
@@ -3123,7 +3147,11 @@ async function startSession(){
      the mock questions the caller already prepared (gen.diagQuestions). */
   window.retryDiagnostic = function(){ attemptDiagGeneration(true); };
   window.useBuiltinDiagnostic = function(){
-    state.diagQuestions = gen.diagQuestions;
+    state.diagQuestions = buildFallbackDiagnosticQuestions(
+      topic,
+      tutorExploration.count,
+      (_currentLang==="zh"||lang==="zh")
+    );
     state.lastCallSource = 'mock';
     if (!state.lastCallError) state.lastCallError = "Using built-in questions";
     updateChatStats();
@@ -3917,8 +3945,8 @@ async function submitChatMessage(textOverride,opts){
   /* Background web-search refresh for tutor follow-ups. Same 5-turn
      rule as chat mode. We do not block the turn on this — the previous
      context stays in state.searchContext until the new one arrives. */
-  if(webSearchOn&&state.topic&&shouldRefreshSearch()){
-    fetchWebContext(state.topic,{background:true});
+  if(webSearchOn&&state.topic&&shouldRefreshSearch()&&shouldAutoSearchTutor(state.topic+" "+text)){
+    fetchWebContext(state.topic+" "+text,{background:true});
   }
   setTimeout(async function(){
     /* Deep Research mode — if the extension is active, run research
@@ -7882,7 +7910,7 @@ function buildSocraticPrompt(topic,level,context){
   }else{
     full+="\n\nNote: no [Web research] block is present. You do not have live web access for this turn — say so honestly rather than guessing about current events, prices, dates, or anything that may have changed since your training cutoff.";
   }
-  return sysCtx+"\n\n"+SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+VISUALIZATION_ROUTING_PROMPT+toneVoiceSuffix()+beagleSuffix()+thinkingSuffix()+memoriesSuffix()+projectContextSuffix();
+  return sysCtx+"\n\n"+SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+TUTOR_SEARCH_POLICY_PROMPT+VISUALIZATION_ROUTING_PROMPT+toneVoiceSuffix()+beagleSuffix()+thinkingSuffix()+memoriesSuffix()+projectContextSuffix();
 }
 
 /* ============================================================

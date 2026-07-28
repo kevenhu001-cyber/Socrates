@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
 jobs:
   frontend:
     name: Frontend
@@ -25,6 +29,9 @@ jobs:
 
       - run: npm ci --include=dev
 
+      - name: Lint
+        run: npm run lint
+
       - name: TypeScript check
         run: npx tsc --noEmit
 
@@ -33,6 +40,21 @@ jobs:
 
       - name: Unit tests
         run: node --experimental-strip-types --test test/*.test.mjs
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end smoke tests
+        run: npm run test:smoke
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          if-no-files-found: ignore
+          retention-days: 14
 
   server:
     name: Server

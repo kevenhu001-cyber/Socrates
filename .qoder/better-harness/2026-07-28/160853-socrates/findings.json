@@ -1,0 +1,159 @@
+{
+  "summary": {
+    "projectName": "Socrates",
+    "locale": "zh-CN",
+    "modelId": "agent-work-loop-v4",
+    "reportContractVersion": 25,
+    "overview": "Socrates 是 AI 驱动的苏格拉底式学习前端（React/Vite）+ Express 5/Drizzle/PostgreSQL 后端 + Kotlin/Compose Android 客户端。当前 Harness 在 30 天窗口内观察到 21 个会话、仅 1 个可比较 Episode、无任何 edit 事件、无验证事件、无摩擦信号；Agent 资产几乎为空（0 Skill/MCP/Command/Hook/Rule/Agent/Plugin、4 GitHub Workflow、2 Memory titles），改动验证与可靠交付两个维度证据最弱，根级 AGENTS.md 缺失。",
+    "strengths": [
+      "deploy.sh 提供了结构化回滚：候选构建 + dist.previous 快照 + systemd 自动还原 + 部署目录内 deploy-state.json 状态文件，使 last known-good 在单次失败下可保留。",
+      "后端关键路径具备完整脚本（build / db:migrate / db:seed / dev / lint / start / test / typecheck），Android 客户端可通过 -PBASE_URL 参数化发布。",
+      "frontend/e2e 已有 27 个 Playwright 规格覆盖 chat-send、cmd-k、share、streaming-render、viz-canvas、tool-cards 等真实路径，只是当前 CI 关键路径未调用。",
+      "敏感配置扫描 132/133 候选文件已读（仅 1 个跳过），`partial-secret-scan-coverage` 提示接近完整。"
+    ],
+    "aiAgentPractice": {
+      "inspectedSurfaces": [
+        "Rules",
+        "Workflows"
+      ],
+      "coverageRows": [
+        {
+          "surface": "Rules",
+          "scopes": [
+            "Project"
+          ],
+          "count": 0,
+          "paths": []
+        },
+        {
+          "surface": "Workflows",
+          "scopes": [
+            "Project"
+          ],
+          "count": 4,
+          "paths": [
+            ".github/workflows/build-apk.yml",
+            ".github/workflows/build-capacitor-apk.yml",
+            ".github/workflows/ci.yml",
+            ".github/workflows/server-ci.yml"
+          ]
+        },
+        {
+          "surface": "Memories",
+          "scopes": [
+            "Project"
+          ],
+          "count": 2,
+          "paths": []
+        },
+        {
+          "surface": "Custom Agents",
+          "scopes": [
+            "Project"
+          ],
+          "count": 0
+        }
+      ]
+    },
+    "assignmentSummaries": [],
+    "dimensions": [
+      {
+        "id": "task-understanding",
+        "label": "任务理解",
+        "score": 50,
+        "summary": "README 提供架构、依赖、安全、部署与 API 全套说明，但仓库根级 AGENTS.md 缺失；evidence-pack 报告 agentInstructions.status=thin、rootCount=0、suggestedMinimum=19，4580 个源文件仅有 1 条 open-connector/AGENTS.md 指令，frontend/server/android 三个核心 owner 在根域无 entrypoint 与范围声明。",
+        "findingRefs": [
+          "missing-root-agents-md"
+        ]
+      },
+      {
+        "id": "controlled-execution",
+        "label": "可控执行",
+        "score": 55,
+        "summary": "工作区入口清单（package.json scripts、deploy.sh、Gradle 命令）齐全；4 个 GitHub Workflow 是唯一可观察的 agent-facing 资产，但 deploy.sh 把 FRONTEND_DIR/SERVER_DIR/APP_WEB_ROOT/SITE_WEB_ROOT/STATUS_DIR 与 nginx 站点路径全部硬编码为部署主机的绝对目录（具体值参考仓库 deploy.sh）、缺少 flock 互斥锁，ci.yml 缺少 concurrency: cancel-in-progress，partial-secret-scan-coverage 表明权限与机密边界尚未完全机械化。",
+        "findingRefs": [
+          "missing-root-agents-md",
+          "deploy-concurrency-missing"
+        ]
+      },
+      {
+        "id": "change-validation",
+        "label": "改动验证",
+        "score": 38,
+        "summary": "30 天窗口内所有 Task Episodes 均无 edit 事件、无验证事件、无 reviewed-relevant check；frontend/package.json 无 lint 脚本，.github/workflows/ci.yml 仅跑 tsc --noEmit + node --test test/*.test.mjs，Playwright 27 个 e2e 规格（含 streaming-render、chat-send、share-view、viz-canvas、tool-cards）未被 CI 调用，下一次命中 frontend/src/main.js（180 天 177 commits、churn 55470）的合入将只靠 PR review。",
+        "findingRefs": [
+          "frontend-e2e-missing-in-ci"
+        ]
+      },
+      {
+        "id": "reliable-delivery",
+        "label": "可靠交付",
+        "score": 50,
+        "summary": "deploy.sh 的 dist.previous + BACKEND_SWAPPED 状态机使单次失败下 known-good 可保留，但脚本无锁且与 README 宣称的自动回滚在连失下退化为「丢失最近一次 known-good」；ci.yml 缺少 cancel-in-progress 会让 push main 上的多 commit 重复建置；30 天内无任何 acceptance-evidence 记录，CI 关键路径与生产部署之间无强制 gate。",
+        "findingRefs": [
+          "frontend-e2e-missing-in-ci",
+          "deploy-concurrency-missing"
+        ]
+      },
+      {
+        "id": "learning-capture",
+        "label": "经验沉淀",
+        "score": 35,
+        "summary": "已建立的 Qoder Memory 标题在 inventory 与 integrity 两层 envelope 之间口径不一致（summary=2、detail=0），无法判定覆盖、冲突或清理需求；当前 30 天窗口内仅有 2 个可比 push + security-scan Episode，无可观察的 retrieval → relevance → application → outcome 链路；agent 资产基线为 0 时本应触发 procedure demand 复盘，但证据不足以创建或重用一个持久的最小 owner。",
+        "findingRefs": []
+      }
+    ]
+  },
+  "findings": [
+    {
+      "id": "frontend-e2e-missing-in-ci",
+      "title": "前端 e2e 套件未进入 CI 关键路径, 改动验证依赖薄弱",
+      "severity": "Medium",
+      "reason": "frontend/package.json 仅声明 build / dev / preview / test:smoke / test:unit / typecheck 六个脚本，无 lint；.github/workflows/ci.yml 在 frontend 任务只跑 tsc --noEmit + node --test test/*.test.mjs，frontend/e2e/ 下 27 个 Playwright 规格（覆盖 chat-send、cmd-k、streaming-render、viz-canvas、tool-cards、share-view、composer-tool、native-visualization、search-progress、sidebar-nav、keyboard-viewport 等真实路径）未被 CI 调用。30 天内 19 个 Task Episode 也无 validation 事件。下一次命中 frontend/src/main.js（180 天 177 commits、55k churn）的合入将只靠 PR review 而无任何 e2e 兜底。",
+      "expectedOutput": [
+        "在 .github/workflows/ci.yml 中新增一个 frontend-e2e 任务，使用仓库根 playwright.config.mjs 与 frontend/e2e/ 现有规格串行执行；在 PR 与 main 触发路径上保留 tsc + node --test，e2e 任务与 build 任务串行。",
+        "在 frontend/package.json 暴露 lint 脚本（即便后续先接 npm run lint -- --quiet 作为 stub），让 ci.yml 可以挂载而无需手工改文件名。",
+        "为新加 e2e 任务在 README.md 列出本地与 CI 入口，并保持对 e2e 失败产物的保留（playwright-report artifact）。"
+      ],
+      "expectedArtifact": "Workflow",
+      "aiFixPrompt": "/better-harness fix frontend-e2e-missing-in-ci\n\n把 frontend/e2e 下的 Playwright 套件挂入 .github/workflows/ci.yml 的 frontend 任务，使 e2e 与现有 tsc --noEmit、node --test test/*.test.mjs 串行执行；保留 tsc 与 unit 门，e2e 任务失败时阻止 PR 合并。\n\n## 验证\n\n- 在 PR 上故意修改 frontend/src/main.js 让 chat-send 规格失败，确认 e2e 任务退出非零并阻止合并。\n- 保留现有 tsc 与 node --test 任务顺序，不删除任何已有门。\n- 在 main push 上确认 e2e 任务运行并产出 playwright-report 制品。\n\n不要修改 frontend/src 与 server/src 源码；只动 .github/workflows/ci.yml、frontend/package.json（如需新增 lint stub）、README.md 描述，不引入新依赖。",
+      "dimensionRefs": [
+        "change-validation",
+        "reliable-delivery"
+      ]
+    },
+    {
+      "id": "missing-root-agents-md",
+      "title": "仓库根级缺少 AGENTS.md, Agent 抵达根域无 owner 指引",
+      "severity": "Low",
+      "reason": "evidence-pack 的 projectProfile.agentInstructions 报告 status=thin、rootCount=0、nestedCount=1（仅 open-connector/AGENTS.md）、suggestedMinimum=19、sourceFilesPerInstruction=4580、nestedSourceFileCoveragePercent=92。4580 个源文件中 92% 落在 open-connector 子项目的一条指令下，frontend/src、server/src、android/app 三大 owner 在仓库根域无 entrypoint、范围边界、回滚触发与下一步检查。README 虽提供详尽背景，但与 agent 期望的 Task Entrypoint / Context & Boundary Map / Risk & Next-Step Route 不等价。",
+      "expectedOutput": [
+        "在仓库根新增 AGENTS.md，给出 frontend/、server/、android/、open-connector/ 四个 owner 的 task entrypoint、范围边界与下一步检查点。",
+        "在 AGENTS.md 中显式声明 deploy.sh 与 ci.yml 的回滚/并发约束（指向本报告中的 deploy-concurrency-missing 与 frontend-e2e-missing-in-ci 两个 finding），并标注受影响路径。"
+      ],
+      "expectedArtifact": "Rule",
+      "aiFixPrompt": "/better-harness fix missing-root-agents-md\n\n在仓库根新增 AGENTS.md，给出 frontend/、server/、android/、open-connector/ 四个 owner 的 task entrypoint、范围边界、回滚触发与下一步检查点；明确引用 deploy.sh 与 ci.yml 的回滚/并发约束（参见本报告中 deploy-concurrency-missing 与 frontend-e2e-missing-in-ci 两个 finding）。\n\n## 验证\n\n- 在根目录 cat AGENTS.md，确认四个 owner 的范围与下一步检查点齐全。\n- 确认未覆盖或删除 open-connector/AGENTS.md 等已存在的子项目指令。\n- 不修改任何源码；只新增 AGENTS.md。",
+      "dimensionRefs": [
+        "task-understanding",
+        "controlled-execution"
+      ]
+    },
+    {
+      "id": "deploy-concurrency-missing",
+      "title": "deploy.sh 与 ci.yml 缺少并发互斥, README 宣称的回滚路径在连失下会丢失 known-good",
+      "severity": "Medium",
+      "reason": "deploy.sh 把 FRONTEND_DIR/SERVER_DIR/APP_WEB_ROOT/SITE_WEB_ROOT/STATUS_DIR 与 nginx 站点路径全部写死（具体绝对路径参考仓库 deploy.sh 顶部常量定义），脚本全程无 flock / 无幂等锁，连续两次启动会竞争 dist.previous 这单点备份，使 README 宣称的「operators never have to chase a half-deployed binary」在连续失败下退化为「自上一次 known-good 之后全部丢失」。同时 .github/workflows/ci.yml 缺少 concurrency: cancel-in-progress（而 .github/workflows/server-ci.yml 14–16 行已经声明同一模式），push main 上的多 commit 会让 runner 重复建置。",
+      "expectedOutput": [
+        "在 deploy.sh 顶部引入 flock 互斥锁（锁文件路径推荐 $XDG_RUNTIME_DIR 下的部署锁或 /var/lock/ 下命名锁文件），并把 BACKEND_CANDIDATE 改为 mktemp -d；将硬编码的部署绝对路径抽为可由环境变量覆盖的 FRONTEND_DIR、SERVER_DIR、APP_WEB_ROOT、SITE_WEB_ROOT、STATUS_DIR、NGINX_SITE_CONF 等变量，缺省保留仓库 deploy.sh 当前实际值以兼容现有部署。",
+        "为 .github/workflows/ci.yml 新增 concurrency: group: ${{ github.workflow }}-${{ github.ref }}，cancel-in-progress: ${{ github.event_name == 'push' }}，对齐 server-ci.yml 的现有模式。",
+        "在 README.md 的 Deployment 章节注明并发语义与回滚边界，并保留 deploy-state.json 行为。"
+      ],
+      "expectedArtifact": "Script",
+      "aiFixPrompt": "/better-harness fix deploy-concurrency-missing\n\n在 deploy.sh 顶部引入基于 flock 的互斥锁（建议锁文件路径在部署主机的运行时锁目录下，命名 socrates-deploy.lock），并把所有硬编码的部署绝对路径（具体值参考仓库 deploy.sh 顶部 FRONTEND_DIR / SERVER_DIR / APP_WEB_ROOT / SITE_WEB_ROOT / STATUS_DIR / NGINX_SITE_CONF 常量）抽为可由环境变量覆盖的同名变量，缺省时仍保留当前实际值以兼容现有部署。\n\n为 .github/workflows/ci.yml 新增与 .github/workflows/server-ci.yml 14–16 行一致的 concurrency: group: ${{ github.workflow }}-${{ github.ref }}，cancel-in-progress: ${{ github.event_name == 'push' }}。\n\n## 验证\n\n- 本地 dry-run 两次 deploy.sh 模拟脚本，第二份在第一份持锁期间必须立即失败并打印清晰的「another deploy in progress」消息；锁释放后第二份可正常执行。\n- 在 .github/workflows/ci.yml 推送两次连续 commit，确认第二次构建被 cancel-in-progress 跳过而非并发运行。\n- 不修改任何源码、数据库或 service 配置；只动 deploy.sh、.github/workflows/ci.yml 与 README.md 描述。",
+      "dimensionRefs": [
+        "reliable-delivery",
+        "controlled-execution"
+      ]
+    }
+  ]
+}

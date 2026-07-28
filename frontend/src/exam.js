@@ -174,7 +174,16 @@ export function renderExamForm() {
 
   function togglePill(type, label, isActive) {
     var activeClass = isActive ? ' active' : '';
-    return '<button class="exam-form-toggle-card' + activeClass + '" data-type="' + type + '" onclick="toggleExamType(\'' + type + '\')"><span class="tog-dot"></span>' + esc(label) + '</button>';
+    var descriptions = {
+      mc: L("Choose one answer", "从选项中选择答案"),
+      fb: L("Recall key terms", "回忆关键概念或结果"),
+      sa: L("Explain your reasoning", "用自己的语言说明推理")
+    };
+    return '<button type="button" class="exam-form-toggle-card' + activeClass + '" data-type="' + type + '" aria-pressed="' + isActive + '" onclick="toggleExamType(\'' + type + '\')"><span class="tog-dot"></span><span class="exam-type-copy"><strong>' + esc(label) + '</strong><small>' + esc(descriptions[type]) + '</small></span></button>';
+  }
+
+  function sectionHeader(index, title, description) {
+    return '<div class="exam-form-section-header"><span class="exam-section-index">' + index + '</span><span><span class="exam-form-section-title">' + esc(title) + '</span><small>' + esc(description) + '</small></span></div>';
   }
 
   /* Difficulty segmented control. Canonical values stay English (models
@@ -201,18 +210,20 @@ export function renderExamForm() {
 
   var html = '<div class="exam-form-container">';
 
-  /* Intro */
-  html += '<p class="exam-form-intro">' + L("Set up a practice exam. Adjust the options below, then generate.", "配置一份练习考卷，调整下列选项后开始出题。") + '</p>';
+  /* Editorial hero */
+  html += '<header class="exam-form-hero"><span class="exam-form-eyebrow">' + L("Assessment studio", "测评工作室") + '</span>'
+    + '<h3>' + L("Build a focused practice exam", "创建一份专注的练习考卷") + '</h3>'
+    + '<p>' + L("Choose the scope and challenge. Socrates will compose a balanced paper you can complete at your own pace.", "确定范围与难度，Socrates 会生成一份结构均衡、可按自己节奏完成的考卷。") + '</p></header>';
 
   /* Topic */
   html += '<div class="exam-form-section">'
-    + '<div class="exam-form-section-header"><span class="exam-form-section-title">' + window.t("exam.topic") + '</span></div>'
+    + sectionHeader("01", window.t("exam.topic"), L("Name the subject or learning objective", "填写学科、章节或学习目标"))
     + '<input class="exam-form-input" id="examTopic" name="examTopic" autocomplete="off" placeholder="' + L("e.g. Linear Algebra, World War II...", "如：线性代数、量子力学、二战…") + '">'
     + '</div>';
 
   /* Settings: model + difficulty + count */
   html += '<div class="exam-form-section">'
-    + '<div class="exam-form-section-header"><span class="exam-form-section-title">' + L("Settings", "出题设置") + '</span></div>'
+    + sectionHeader("02", L("Paper settings", "考卷设置"), L("Select the model, difficulty, and length", "选择生成模型、难度与题量"))
     /* Model */
     + '<div class="exam-form-field"><label class="exam-form-label" for="examModelTrigger">' + L("Model", "生成模型") + '</label>'
     + '<div class="exam-model-wrap">'
@@ -241,7 +252,7 @@ export function renderExamForm() {
 
   /* Question types */
   html += '<div class="exam-form-section">'
-    + '<div class="exam-form-section-header"><span class="exam-form-section-title">' + window.t("exam.types") + '</span></div>'
+    + sectionHeader("03", window.t("exam.types"), L("Keep at least one response format", "至少保留一种作答形式"))
     + '<div class="exam-form-card-toggles" id="examTypePicker">'
     + togglePill("mc", L("Multiple choice", "选择题"), true)
     + togglePill("fb", L("Fill blank", "填空题"), true)
@@ -250,7 +261,7 @@ export function renderExamForm() {
 
   /* Instructions */
   html += '<div class="exam-form-section">'
-    + '<div class="exam-form-section-header"><span class="exam-form-section-title">' + window.t("exam.instructions") + '</span></div>'
+    + sectionHeader("04", window.t("exam.instructions"), L("Optional constraints for the examiner", "可选，补充覆盖范围或出题偏好"))
     + '<textarea class="exam-form-textarea" id="examInstructions" name="examInstructions" placeholder="' + L("Specific topics to cover, or leave blank...", "具体说明要覆盖的知识点，留空则由 AI 决定…") + '" rows="3"></textarea>'
     + '</div>';
 
@@ -307,6 +318,7 @@ export function toggleExamType(type) {
   var countActive = document.querySelectorAll('.exam-form-toggle-card.active').length;
   if (btn.classList.contains("active") && countActive <= 1) return;
   btn.classList.toggle("active");
+  btn.setAttribute("aria-pressed", String(btn.classList.contains("active")));
   _examSelectedTypes[type] = btn.classList.contains("active");
 }
 
