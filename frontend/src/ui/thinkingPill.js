@@ -66,42 +66,49 @@ export function appendThinking(){
 }
 
 /* Standalone helper that mounts (or reuses) the status pill in the
-   current assistant bubble and rewrites its label. Use this from the
-   chat stream when a tool_use event lands AFTER the pill was already
-   hidden by append()'s first-delta finalize — the pill might be
-   gone from the DOM at this point, so the controller's local
-   setLabel() would silently no-op. showLabel() always makes sure
-   the user sees the new label. */
-export function showLabel(text){
+   current assistant bubble and rewrites its label. The argument may
+   be a raw string or an i18n key (labelForTool returns a key). When
+   a key is given, we resolve it through window.t() so the pill reads
+   in the user's current language. Use this from the chat stream when
+   a tool_use event lands AFTER the pill was already hidden by
+   append()'s first-delta finalize — the pill might be gone from the
+   DOM at this point, so the controller's local setLabel() would
+   silently no-op. showLabel() always makes sure the user sees the
+   new label. */
+export function showLabel(textOrKey){
+  var label = String(textOrKey || "");
+  if(label && typeof window !== "undefined" && typeof window.t === "function"){
+    var resolved = window.t(label);
+    if(resolved && resolved !== label) label = resolved;
+  }
   var ctl = appendThinking("");
   if(!ctl||typeof ctl.setLabel!=="function")return;
-  ctl.setLabel(text);
+  ctl.setLabel(label);
 }
 
-/* Map a tool name to a short user-facing status string. Kept here so
-   the live chat path and any other consumer share one source of
-   truth. The label is intentionally generic ("Searching" / "Coding"
-   / "Data Processing") — it tells the user what the model is doing,
-   without leaking tool internals the user used to see in the old
-   tool-card UI. */
+/* Map a tool name to a short user-facing status key (i18n). Kept here
+   so the live chat path and any other consumer share one source of
+   truth. showLabel() resolves the key through window.t() so the
+   label reads in the user's current language; consumers that just
+   want the English fallback can use the key directly. */
 export function labelForTool(name){
   switch(name){
-    case "web_search":        return "Searching";
-    case "arxiv_search":      return "Searching";
-    case "zotero_search":     return "Searching";
-    case "notion_search_pages":return "Searching";
-    case "github_list_repos": return "Searching";
-    case "gitee_list_repos":  return "Searching";
-    case "code_interpreter":  return "Coding";
-    case "Code":              return "Coding";
-    case "render_visualization":return "Building a visual";
+    case "web_search":        return "tool.actionSearch";
+    case "arxiv_search":      return "tool.actionSearch";
+    case "zotero_search":     return "tool.actionSearch";
+    case "notion_search_pages":return "tool.actionSearch";
+    case "github_list_repos": return "tool.actionSearch";
+    case "gitee_list_repos":  return "tool.actionSearch";
+    case "code_interpreter":  return "tool.actionAnalyze";
+    case "Code":              return "tool.actionAnalyze";
+    case "render_visualization":return "tool.actionVisual";
     case "Read":
     case "Glob":
     case "Grep":
-    case "WebFetch":          return "Reading files";
+    case "WebFetch":          return "tool.actionRead";
     case "Write":
     case "Edit":
-    case "Bash":              return "Updating files";
-    default:                  return "Working";
+    case "Bash":              return "tool.actionWrite";
+    default:                  return "tool.actionDefault";
   }
 }
