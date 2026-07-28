@@ -61,7 +61,7 @@ import { aiGenerate } from './chat/mockDiagnostic.js';
 import { extractHistory, buildUserContentParts } from './chat/history.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './chat/systemPrompts.js';
 import { appendInlineArtifact } from './ui/toolCards.js';
-import { looksLikeMetaInstruction, appendThinking, labelForTool, showLabel } from './ui/thinkingPill.js';
+import { looksLikeMetaInstruction, appendThinking, labelForTool, labelForToolResult, showLabel } from './ui/thinkingPill.js';
 /* searchProgress UI removed in favour of the inline status label.
    The import was retired when agent-tool-cards were dropped from the
    live chat surface; the background web_search path now only updates
@@ -3431,9 +3431,25 @@ async function askChatTurn(userText){
     try{window._pendingChatContent=pendingContent;}catch(_){}
     askChatTurn(userText);
   }});
+  /* P_search-status — remember each tool call's name so the
+     tool_result frame (which may omit `name`) can still resolve to
+     the right completion label ("已找到 N 条搜索结果" / "搜索失败"). */
+  var _turnToolNames={};
   var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)},{
-    onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];if(c&&c.name){try{showLabel(labelForTool(c.name));}catch(_){}}ctl.recordToolUse(c)}},
-    onToolResult:function(r){ctl.recordToolResult(r)},
+    onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];if(c&&c.name){if(c.id)_turnToolNames[c.id]=c.name;try{showLabel(labelForTool(c.name));}catch(_){}}ctl.recordToolUse(c)}},
+    onToolResult:function(r){
+      ctl.recordToolResult(r);
+      /* Swap "Searching the web…" for the completion status as soon
+         as the result lands. The pill is transient — the first
+         answer delta removes it, mirroring ChatGPT's behaviour. */
+      if(r){
+        var tn=r.name||(r.id&&_turnToolNames[r.id])||"";
+        try{
+          var doneLbl=labelForToolResult(tn,r);
+          if(doneLbl)showLabel(doneLbl,r.ok===false?"error":"done");
+        }catch(_){}
+      }
+    },
     onToolProgress:function(p){if(ctl.recordToolProgress)ctl.recordToolProgress(p)},
     onExecutionStart:function(ev){if(ctl.recordExecutionStart)ctl.recordExecutionStart(ev)},
     /* P_tool_stream — forward the live tool_call_delta frames to

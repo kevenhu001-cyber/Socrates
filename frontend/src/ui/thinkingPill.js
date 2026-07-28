@@ -54,12 +54,16 @@ export function appendThinking(){
   }
   if(typeof window.scrollMainToBottom==="function")window.scrollMainToBottom();
   function remove(){if(status&&status.parentNode)status.parentNode.removeChild(status)}
-  function setLabel(text){
+  function setLabel(text,state){
     if(!status||!status.parentNode)return;
     var lbl=status.querySelector(".thinking-status-label");
     if(!lbl)return;
     lbl.textContent=String(text||"");
     status.dataset.mode="tool";
+    /* state: "" (running, ring spins) | "done" | "error". Settled
+       states freeze the ring so the pill reads as a result line
+       ("Found 8 web results") rather than an ongoing activity. */
+    if(state)status.dataset.state=state;else delete status.dataset.state;
     if(typeof window.scrollMainToBottom==="function")window.scrollMainToBottom();
   }
   return {append:function(){},finalize:remove,remove:remove,setLabel:setLabel};
@@ -75,7 +79,7 @@ export function appendThinking(){
    DOM at this point, so the controller's local setLabel() would
    silently no-op. showLabel() always makes sure the user sees the
    new label. */
-export function showLabel(textOrKey){
+export function showLabel(textOrKey,state){
   var label = String(textOrKey || "");
   if(label && typeof window !== "undefined" && typeof window.t === "function"){
     var resolved = window.t(label);
@@ -83,7 +87,7 @@ export function showLabel(textOrKey){
   }
   var ctl = appendThinking("");
   if(!ctl||typeof ctl.setLabel!=="function")return;
-  ctl.setLabel(label);
+  ctl.setLabel(label,state||"");
 }
 
 /* Map a tool name to a short user-facing status key (i18n). Kept here
@@ -111,4 +115,44 @@ export function labelForTool(name){
     case "Bash":              return "tool.actionWrite";
     default:                  return "tool.actionDefault";
   }
+}
+
+/* True for tools whose UX is "a web/library search" — they share the
+   same searching / found-N / failed status copy. Mirrors the
+   tool.actionSearch cases in labelForTool above. */
+export function isSearchTool(name){
+  switch(name){
+    case "web_search":
+    case "arxiv_search":
+    case "zotero_search":
+    case "notion_search_pages":
+    case "github_list_repos":
+    case "gitee_list_repos":
+      return true;
+    default:
+      return false;
+  }
+}
+
+/* Map a tool_result to a short completion label (resolved text, not a
+   key — the count substitution has to happen here). Returns "" when
+   the tool has no meaningful completion status (e.g. code runs show
+   their own output), so callers can skip the pill update. The label
+   is transient by design: the next answer delta removes the pill,
+   exactly like ChatGPT's "Searched the web · N results" line. */
+export function labelForToolResult(name,result){
+  if(!isSearchTool(name))return "";
+  var t=(typeof window!=="undefined"&&typeof window.t==="function")?window.t:function(k){return k};
+  function resolve(key,fallback){
+    var s=t(key);
+    return (s&&s!==key)?s:fallback;
+  }
+  if(result&&result.ok===false){
+    return resolve("tool.searchFailed","Web search failed");
+  }
+  var n=result&&Array.isArray(result.results)?result.results.length:0;
+  if(n>0){
+    return resolve("tool.searchDone","Found {n} web results").replace("{n}",String(n));
+  }
+  return resolve("tool.searchEmpty","No web results found");
 }

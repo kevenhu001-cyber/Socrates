@@ -2822,6 +2822,19 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .thinking-dot[data-mode="chat"]{color:hsl(var(--accent-000))}
 .thinking-dot .loading{width:14px;height:14px}
 .thinking-status{display:inline-flex;align-items:center;gap:7px;margin:4px 0;padding:5px 0;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale,1));line-height:1.3}
+/* P_search-status — settled tool states. "done" freezes the ring and
+   tints it green so "Found N web results" reads as a completed step;
+   "error" stops the spin and flips the copy to the error hue. */
+.thinking-status[data-state="done"] .thinking-ring::before,
+.thinking-status[data-state="done"] .thinking-ring::after,
+.thinking-status[data-state="error"] .thinking-ring::before,
+.thinking-status[data-state="error"] .thinking-ring::after{animation:none}
+.thinking-status[data-state="done"] .thinking-ring::before{border-color:hsl(145 55% 42%)}
+.thinking-status[data-state="done"] .thinking-ring::after{border-color:hsl(145 55% 42%/.5)}
+.thinking-status[data-state="done"]{color:hsl(var(--text-300))}
+.thinking-status[data-state="error"] .thinking-ring::before{border-color:hsl(0 58% 52%)}
+.thinking-status[data-state="error"] .thinking-ring::after{border-color:hsl(0 58% 52%/.5)}
+.thinking-status[data-state="error"]{color:hsl(0 58% 52%)}
 /* Container that stacks the "Thinking…" badge above the skeleton
    shimmer lines. Used by addStreamingMessage in main.js. The skeleton
    is the visual cue while waiting for the first delta — the streaming
