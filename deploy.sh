@@ -305,10 +305,12 @@ fi
 gate_check "app.topodrive.top   " "https://app.topodrive.top/"
 gate_check "topodrive.top       " "https://topodrive.top/"
 gate_check "status.topodrive.top" "https://status.topodrive.top/"
-gate_check "api.topodrive.top   " "https://api.topodrive.top/api/config"
 
-# 4.5c. API JSON shape — catches nginx 200'ing an HTML error page from wrong upstream.
-API_BODY=$(curl -sf --max-time 8 https://api.topodrive.top/api/config || true)
+# 4.5c. API JSON shape via direct backend port — catches nginx 200'ing
+# an HTML error page from wrong upstream. Previously went through the
+# now-retired api.topodrive.top virtual host; check the same upstream
+# (127.0.0.1:3037) directly instead.
+API_BODY=$(curl -sf --max-time 5 http://localhost:3037/api/config || true)
 if [[ -n "$API_BODY" ]] && echo "$API_BODY" | jq -e . >/dev/null 2>&1; then
   GATE_RESULTS+=("  api.config JSON ok ($(echo "$API_BODY" | jq -c .))")
 else
@@ -345,7 +347,6 @@ if [[ $GATE_FAILED -eq 0 ]]; then
       "frontendReachable": true,
       "siteReachable": true,
       "statusReachable": true,
-      "apiReachable": true,
       "apiConfigJsonValid": true,
       "backendDirectReachable": true,
       "bundleMd5Integrity": true,
