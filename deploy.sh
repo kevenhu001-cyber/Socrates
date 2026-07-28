@@ -79,9 +79,10 @@ rollback_backend() {
   mv "$BACKEND_PREVIOUS" "$BACKEND_DIST"
   BACKEND_SWAPPED=0
 
-  echo "Restored previous backend build; restarting socrates-api…" >&2
-  if ! $SUDO systemctl restart socrates-api; then
-    echo "ERROR: previous backend build was restored but failed to restart" >&2
+  echo "Restored previous backend build; stopping+starting socrates-api…" >&2
+  $SUDO systemctl stop socrates-api 2>/dev/null || true
+  if ! $SUDO systemctl start socrates-api; then
+    echo "ERROR: previous backend build was restored but failed to start" >&2
   fi
 }
 
@@ -199,7 +200,14 @@ if [ -f "$STATUS_SRC" ]; then
   echo "  status:  ${STATUS_FILE}"
 fi
 
-# ─── 3. Restart backend server ────────────────────────────────────────
+# ─── 3. Build swap: stop first to avoid race with systemd restart ─────
+#
+# Swapping dist/ while the service is running can cause the new process
+# to observe a missing or partially-replaced dist/ directory.  Stop
+# the unit first, swap the build tree, then start.
+echo "Stopping backend service…"
+$SUDO systemctl stop socrates-api 2>/dev/null || true
+
 if [[ -d "$BACKEND_PREVIOUS" ]]; then
   rm -rf -- "$BACKEND_PREVIOUS"
 fi
@@ -210,12 +218,9 @@ mv "$BACKEND_CANDIDATE" "$BACKEND_DIST"
 BACKEND_CANDIDATE=""
 BACKEND_SWAPPED=1
 
-echo "Restarting backend via systemd…"
-# The server runs as a systemd unit (Restart=always). Use systemctl to
-# restart cleanly instead of pkill+nohup which races with systemd and
-# can leave zombie processes occupying no port (causing 502 errors).
-if ! $SUDO systemctl restart socrates-api; then
-  echo "ERROR: backend restart failed; rolling back its compiled build" >&2
+echo "Starting backend via systemd…"
+if ! $SUDO systemctl start socrates-api; then
+  echo "ERROR: backend start failed; rolling back its compiled build" >&2
   rollback_backend
   exit 1
 fi
