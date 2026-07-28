@@ -216,7 +216,9 @@ function _renderSharedMessageList(messages) {
     }
     var renderHtml = "";
     try {
-      renderHtml = typeof window.formatMsg === "function" ? window.formatMsg(source) : ("<p>" + esc(source) + "</p>");
+      renderHtml = m.role === "assistant" && typeof window.renderAssistantHTML === "function"
+        ? window.renderAssistantHTML(source)
+        : (typeof window.formatMsg === "function" ? window.formatMsg(source) : ("<p>" + esc(source) + "</p>"));
     } catch (_) {
       renderHtml = "<p>" + esc(source) + "</p>";
     }
@@ -226,7 +228,9 @@ function _renderSharedMessageList(messages) {
        artifact images) when viewing a shared session that has
        saved tool entries. Reuses appendToolModule and
        appendInlineArtifact from the live chat path. */
-    if (m.role === "assistant" && Array.isArray(m.toolCalls) && m.toolCalls.length > 0) {
+    if (m.role === "assistant" && typeof window.restorePersistedMessageExtras === "function") {
+      window.restorePersistedMessageExtras(body, m, "share-" + (m.id || "message"));
+    } else if (m.role === "assistant" && Array.isArray(m.toolCalls) && m.toolCalls.length > 0) {
       for (var tci = 0; tci < m.toolCalls.length; tci++) {
         var tc = m.toolCalls[tci];
         if (!tc || !tc.name) continue;
@@ -315,6 +319,8 @@ async function loadSharedSession(token) {
           html: "",
           type: m.role || "user",
           reasoningContent: m.reasoningContent || null,
+          toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls : [],
+          restoredFromHistory: true,
         };
       });
     }

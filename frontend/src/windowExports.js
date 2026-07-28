@@ -367,6 +367,7 @@ import {
   examNavJump, examNavStep,
   submitExam,
   renderExamForm,
+  refreshExamI18n,
 } from './exam.js';
 window.renderExamForm = renderExamForm;
 window.openExamPanel = openExamPanel;
@@ -384,6 +385,7 @@ window.selectExamOpt = selectExamOpt;
 window.examNavJump = examNavJump;
 window.examNavStep = examNavStep;
 window.submitExam = submitExam;
+window.refreshExamI18n = refreshExamI18n;
 
 /* ─── ui/toolCards.js — needed by share.js to restore tool cards ─── */
 import { appendToolModule, appendInlineArtifact } from './ui/toolCards.js';

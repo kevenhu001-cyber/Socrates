@@ -1666,12 +1666,23 @@ async function loadSession(id){
     state.messages.length = 0;
     s.messages.forEach(function(m){
       var _rrClientId = m.id || ("loaded-"+(m.clientId || generateId()));
+      var restoredHtml = "";
+      if (m.role === "assistant" && m.rawText) {
+        try { restoredHtml = renderAssistantHTML(m.rawText); }
+        catch (_) { restoredHtml = m.html || formatMsg(m.rawText); }
+      } else {
+        restoredHtml = m.html || (m.rawText ? formatMsg(m.rawText) : "");
+      }
       state.messages.push({
         clientId: _rrClientId,
         role: m.role,
         rawText: m.rawText || "",
-        html: m.html || (m.rawText ? formatMsg(m.rawText) : ""),
+        /* Rebuild assistant markup from its canonical source instead of
+           replaying a frozen HTML snapshot. This lets current scaffold,
+           visualization and widget renderers restore old conversations. */
+        html: restoredHtml,
         type: m.type || null,
+        restoredFromHistory: true,
         /* AUDIT-fix — the server returns Drizzle rows whose property
            name is the camelCase schema key `reasoningContent` (the
            snake_case `reasoning_content` is only the SQL column name),
@@ -4514,6 +4525,48 @@ function restoreMessageBody(entry,body){
   try{wireCodeBlockHeaders(body)}catch(_){}
   try{wireMsgBodyImages(body)}catch(_){}
 }
+/* Restore non-HTML message content that is persisted separately from the
+   assistant's markdown. React calls this after a history bubble commits;
+   the public-share renderer uses the same helper so both paths stay in
+   parity. The data marker makes repeated React renders idempotent. */
+function restorePersistedMessageExtras(body,entry,idPrefix){
+  if(!body||!entry)return;
+  var messageKey=String(entry.clientId||entry.id||idPrefix||"message");
+  if(body.dataset&&body.dataset.persistedExtrasFor===messageKey)return;
+  var calls=Array.isArray(entry.toolCalls)?entry.toolCalls:[];
+  for(var tci=0;tci<calls.length;tci++){
+    var tc=calls[tci];
+    if(!tc||!tc.name)continue;
+    var cardOut=null;
+    if(typeof window.appendToolModule==="function"){
+      try{
+        cardOut=window.appendToolModule(tc.name,tc.input||{},body,{
+          restored:true,
+          isError:tc.isError===true
+        });
+      }catch(_){}
+    }
+    if(tc.name==="render_visualization"&&tc.input&&tc.input.version===1
+       &&typeof window.mountVisualization==="function"){
+      try{
+        window.mountVisualization(tc.input,body,{
+          toolCallId:tc.id||((idPrefix||"history")+"-viz-"+tci)
+        });
+      }catch(_){}
+    }
+    if(cardOut&&Array.isArray(tc.artifacts)&&typeof window.appendInlineArtifact==="function"){
+      for(var ai=0;ai<tc.artifacts.length;ai++){
+        var art=tc.artifacts[ai];
+        if(!art||!art.id)continue;
+        try{window.appendInlineArtifact(art.id,art.mimeType||"image/png",cardOut,art.name)}catch(_){}
+        if(art.mimeType&&art.mimeType.indexOf("image/")===0){
+          try{window.appendInlineArtifact(art.id,art.mimeType,body,art.name)}catch(_){}
+        }
+      }
+    }
+  }
+  if(body.dataset)body.dataset.persistedExtrasFor=messageKey;
+}
 function findMessageIndex(messageId){
   return state.messages.findIndex(function(m){
     return m.clientId===messageId||m.id===messageId;
@@ -5632,6 +5685,9 @@ function doRender(){
       var _finishScroller=list||scrollContainer();
       var _finishWasPinned=!state._userScrolledAway&&!!_finishScroller&&
         (_finishScroller.scrollHeight-_finishScroller.scrollTop-_finishScroller.clientHeight<=96);
+      var _finishDistanceFromBottom=_finishScroller
+        ? Math.max(0,_finishScroller.scrollHeight-_finishScroller.scrollTop-_finishScroller.clientHeight)
+        : 0;
       /* Skip the char-by-char animation when the response contains
        * a <think> marker. The animation writes formatted HTML into
        * a text node, so mid-stream the user would see literal
@@ -5972,6 +6028,20 @@ function doRender(){
                   var retainedArtifacts=Array.isArray(savedArtifacts)?savedArtifacts:[];
                   for(var rtc=0;rtc<retainedToolCards.length;rtc++)reactBody.appendChild(retainedToolCards[rtc]);
                   for(var rta=0;rta<retainedArtifacts.length;rta++)reactBody.appendChild(retainedArtifacts[rta]);
+                }
+                /* Removing the legacy streaming bubble changes the scroll
+                   height by roughly one whole answer. Preserve the reader's
+                   anchor after that removal so completion does not look like
+                   a page refresh or jump back to the user's prompt. */
+                if(_finishScroller){
+                  if(_finishWasPinned){
+                    _finishScroller.scrollTop=_finishScroller.scrollHeight;
+                  }else{
+                    _finishScroller.scrollTop=Math.max(
+                      0,
+                      _finishScroller.scrollHeight-_finishScroller.clientHeight-_finishDistanceFromBottom
+                    );
+                  }
                 }
                 return;
               }
@@ -7248,6 +7318,12 @@ async function resetApp(){
      the topic-setup page that was just revealed. */
   var _examEl = document.getElementById("examView");
   if (_examEl) _examEl.classList.add("hidden");
+  /* prepareExamView hides the main content container. Re-enable it when
+     starting a new chat from an exam or the topic composer remains hidden
+     behind an already-closed exam shell. */
+  var _mainInnerAfterExam = document.getElementById("mainInner");
+  if (_mainInnerAfterExam) _mainInnerAfterExam.classList.remove("hidden");
+  document.body.classList.remove("exam-active");
   toggleChatTopBarEls(false);
   clearLegacyMsgListChildren();
   /* P_app-reset-sync — the sole publishReactChatRuntime call for
@@ -8287,6 +8363,8 @@ window.sendFeedback = sendFeedback;
 window.processPendingMermaid = processPendingMermaid;
 window.wireCodeBlockHeaders = wireCodeBlockHeaders;
 window.wireMsgBodyImages = wireMsgBodyImages;
+window.restorePersistedMessageExtras = restorePersistedMessageExtras;
+window.renderAssistantHTML = renderAssistantHTML;
 /* Bridge missing window.* assignments that React reads but were never
    explicitly exported (pre-existing gap). Adding them here so C4-B's
    __socratesLegacy assembly below captures them. */
@@ -8415,6 +8493,7 @@ window.__socratesLegacy = {
     processPendingVizActions: window.processPendingVizActions,
     wireCodeBlockHeaders: window.wireCodeBlockHeaders,
     wireMsgBodyImages: window.wireMsgBodyImages,
+    restorePersistedMessageExtras: window.restorePersistedMessageExtras,
   },
 };
 /* Init UI sync — runs after window.apiConfig is set (above) so

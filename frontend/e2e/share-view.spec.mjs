@@ -13,6 +13,18 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const SHARE_TOKEN = 'shared-public-token';
 const SESSION_ID = '11111111-1111-4111-8111-111111111111';
+const SHARED_VIZ = {
+  version: 1,
+  template: 'function',
+  title: 'Shared gravity curve',
+  caption: 'Persisted in a shared conversation',
+  accessibilitySummary: 'A simple inverse-square reference curve.',
+  payload: {
+    functions: [{ expression: '1/(x^2)', label: '1/x²' }],
+    xLabel: 'distance',
+    yLabel: 'relative force',
+  },
+};
 const SHARED_PAYLOAD = {
   id: SESSION_ID,
   title: 'Shared conversation',
@@ -28,6 +40,13 @@ const SHARED_PAYLOAD = {
     },
     {
       id: 'm-2', role: 'assistant', content: 'Gravity is a force that attracts two bodies with mass.', createdAt: '2026-01-01T00:00:02Z',
+      toolCalls: [{
+        id: 'shared-viz',
+        name: 'render_visualization',
+        input: SHARED_VIZ,
+        output: 'Visualization ready',
+        artifacts: [],
+      }],
     },
   ],
 };
@@ -59,6 +78,8 @@ test('public ?share=TOKEN loads the read-only chat view without auth', async ({ 
   await expect(msgList).toHaveCount(2);
   await expect(msgList.nth(0)).toContainText('What is gravity?');
   await expect(msgList.nth(1)).toContainText('Gravity is a force');
+  await expect(page.locator('.visualization-card')).toContainText('Shared gravity curve');
+  await expect(page.locator('.visualization-card svg path')).not.toHaveCount(0);
 
   // The composer is hidden; user cannot post into a shared view.
   const composer = page.locator('#chatComposerRoot');

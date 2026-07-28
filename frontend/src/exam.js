@@ -18,6 +18,8 @@ var _examSaveDirty = false;
 function _examBody() { return document.getElementById("examViewBody"); }
 function _examFooter() { return document.getElementById("examViewFooter"); }
 function _examTitle() { return document.getElementById("examViewTitle"); }
+function _examUiIsZh() { return window._currentLang === "zh"; }
+function _examUiL(en, zh) { return _examUiIsZh() ? zh : en; }
 function _setExamTitle(title) {
   var viewTitle = _examTitle();
   var barTitle = document.getElementById("examTitleBar");
@@ -642,21 +644,28 @@ export function renderAllQuestions() {
 }
 
 export function paintQuestionCard(idx, q, container) {
-  var html = '<div class="exam-q-num">Question ' + (idx + 1) + ' of ' + window.state.examQuestions.length + ' <span class="exam-q-type">' + q.type + '</span></div>';
+  var savedAnswer = (window.state.examAnswers || {})[idx];
+  var typeLabels = {
+    "multiple-choice": _examUiL("Multiple choice", "选择题"),
+    "fill-blank": _examUiL("Fill blank", "填空题"),
+    "short-answer": _examUiL("Short answer", "简答题"),
+    "error": _examUiL("Failed", "生成失败")
+  };
+  var html = '<div class="exam-q-num">' + _examUiL("Question", "题目") + ' ' + (idx + 1) + ' / ' + window.state.examQuestions.length + ' <span class="exam-q-type">' + esc(typeLabels[q.type] || q.type) + '</span></div>';
   html += '<div class="exam-q-text">' + formatMsg(q.q) + '</div>';
   if (q.type === "multiple-choice" && q.opts) {
     html += '<div class="exam-q-opts">';
     q.opts.forEach(function (o, oi) {
-      html += '<button class="exam-q-opt" data-eidx="' + idx + '" data-oidx="' + oi + '" onclick="selectExamOpt(' + idx + ',' + oi + ')">';
+      html += '<button class="exam-q-opt' + (savedAnswer === oi ? ' selected' : '') + '" data-eidx="' + idx + '" data-oidx="' + oi + '" onclick="selectExamOpt(' + idx + ',' + oi + ')">';
       html += '<span class="exam-q-opt-letter">' + o.letter + '</span>';
       html += '<span class="exam-q-opt-text">' + formatMsg(o.text) + '</span>';
       html += '</button>';
     });
     html += '</div>';
   } else if (q.type === "fill-blank") {
-    html += '<input class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="Answer for question ' + (idx + 1) + '" placeholder="' + (window.state.examLang === "Chinese" ? "输入你的答案…" : "Type your answer…") + '" oninput="window.state.examAnswers[' + idx + ']=this.value;refreshExamNavTally();scheduleExamAnswerSave()">';
+    html += '<input class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" value="' + esc(savedAnswer == null ? "" : savedAnswer) + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '" oninput="window.state.examAnswers[' + idx + ']=this.value;refreshExamNavTally();scheduleExamAnswerSave()">';
   } else if (q.type === "short-answer") {
-    html += '<textarea class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="Answer for question ' + (idx + 1) + '" placeholder="' + (window.state.examLang === "Chinese" ? "输入你的答案…" : "Type your answer…") + '" rows="3" oninput="window.state.examAnswers[' + idx + ']=this.value;refreshExamNavTally();scheduleExamAnswerSave()" style="min-height:80px;resize:vertical"></textarea>';
+    html += '<textarea class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '" rows="3" oninput="window.state.examAnswers[' + idx + ']=this.value;refreshExamNavTally();scheduleExamAnswerSave()" style="min-height:80px;resize:vertical">' + esc(savedAnswer == null ? "" : savedAnswer) + '</textarea>';
   }
   container.innerHTML = html;
 }
@@ -672,7 +681,7 @@ export function appendExamErrorCard(i, msg) {
   var ph = document.createElement("div");
   ph.className = "exam-q-card";
   ph.id = "examQ" + i;
-  ph.innerHTML = '<div class="exam-q-num">Question ' + (i + 1) + ' — <span class="exam-result-wrong">Failed</span></div><div class="exam-q-text" style="color:hsl(0 60% 55%)">' + esc(msg) + '</div>';
+  ph.innerHTML = '<div class="exam-q-num">' + _examUiL("Question", "题目") + ' ' + (i + 1) + ' — <span class="exam-result-wrong">' + _examUiL("Failed", "生成失败") + '</span></div><div class="exam-q-text" style="color:hsl(0 60% 55%)">' + esc(msg) + '</div>';
   window.state.examQuestions.push({ q: "[failed]", type: "error", explanation: "", _idx: i });
   var cont = document.getElementById("examQuestionsContainer");
   if (cont) cont.appendChild(ph);
@@ -693,8 +702,7 @@ export function finishExamGeneration() {
   if (st) st.style.display = "none";
   var valid = window.state.examQuestions.filter(function (q) { return q.type !== "error"; });
   var footer = _examFooter();
-  var _lang = window.state.examLang || "English";
-  var _L = function (en, zh) { if (_lang === "Chinese") return zh; return en; };
+  var _L = _examUiL;
   if (window.state.examCancel) {
     footer.innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + _L("Start New Exam", "新考试") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _L("Close", "关闭") + '</button>';
     renderExamNav();
@@ -725,10 +733,9 @@ function renderExamNav() {
     return true;
   });
   var answered = answeredKeys.length;
-  var lang = window.state.examLang || "English";
-  var L = function (en, zh) { if (lang === "Chinese") return zh; return en; };
+  var L = _examUiL;
   var html = '<div class="exam-nav-bar" id="examNavBar" style="display:flex;">';
-  html += '<button class="exam-nav-btn" id="examNavPrev" onclick="examNavStep(-1)" aria-label="Previous question">‹</button>';
+  html += '<button class="exam-nav-btn" id="examNavPrev" onclick="examNavStep(-1)" aria-label="' + L("Previous question", "上一题") + '">‹</button>';
   html += '<div class="exam-nav-counter" id="examNavCounter">';
   html += '<span class="exam-nav-current" id="examNavCurrent">1</span>';
   html += '<span class="exam-nav-sep">/</span>';
@@ -737,7 +744,7 @@ function renderExamNav() {
     html += '<span class="exam-nav-progress" id="examNavProgress">· ' + answered + ' ' + L("answered", "已答") + '</span>';
   }
   html += '</div>';
-  html += '<button class="exam-nav-btn" id="examNavNext" onclick="examNavStep(1)" aria-label="Next question">›</button>';
+  html += '<button class="exam-nav-btn" id="examNavNext" onclick="examNavStep(1)" aria-label="' + L("Next question", "下一题") + '">›</button>';
   html += '</div>';
   html += '<div class="exam-nav-pills" id="examNavPills">';
   for (var j = 0; j < total; j++) {
@@ -810,8 +817,7 @@ export function refreshExamNavTally() {
   });
   var prog = document.getElementById("examNavProgress");
   if (prog) {
-    var lang = window.state.examLang || "English";
-    prog.textContent = "· " + answered.length + " " + (lang === "Chinese" ? "已答" : "answered");
+    prog.textContent = "· " + answered.length + " " + _examUiL("answered", "已答");
   }
   var pills = document.querySelectorAll("#examNavPills .exam-nav-pill");
   pills.forEach(function (p) {
@@ -927,8 +933,7 @@ export function renderExamResults() {
   var ans = window.state.examAnswers;
   var body = _examBody();
   var footer = _examFooter();
-  var _lang = window.state.examLang || "English";
-  var _L = function (en, zh) { if (_lang === "Chinese") return zh; return en; };
+  var _L = _examUiL;
   _setExamTitle(_L("Exam Results", "考试结果") + ": " + window.state.examTopic);
   var correct = 0, total = 0;
   var resultDetails = [];
@@ -958,7 +963,12 @@ export function renderExamResults() {
     var isCorrect = rd.isCorrect;
     var cls = isCorrect ? "correct" : "wrong";
     html += '<div class="exam-q-card">';
-    html += '<div class="exam-q-num">' + _L("Question", "题目") + ' ' + (i + 1) + ' — <span class="exam-result-' + (isCorrect ? "correct" : "wrong") + '">' + (isCorrect ? _L("Correct", "正确") : _L("Incorrect", "错误")) + '</span><span class="exam-q-type">' + q.type + '</span></div>';
+    var resultTypeLabels = {
+      "multiple-choice": _L("Multiple choice", "选择题"),
+      "fill-blank": _L("Fill blank", "填空题"),
+      "short-answer": _L("Short answer", "简答题")
+    };
+    html += '<div class="exam-q-num">' + _L("Question", "题目") + ' ' + (i + 1) + ' — <span class="exam-result-' + (isCorrect ? "correct" : "wrong") + '">' + (isCorrect ? _L("Correct", "正确") : _L("Incorrect", "错误")) + '</span><span class="exam-q-type">' + esc(resultTypeLabels[q.type] || q.type) + '</span></div>';
     html += '<div class="exam-q-text">' + formatMsg(q.q) + '</div>';
     if (q.type === "multiple-choice" && q.opts) {
       html += '<div class="exam-q-opts">';
@@ -988,6 +998,70 @@ export function renderExamResults() {
   });
   body.innerHTML = html;
   footer.innerHTML = '<button class="exam-btn success" onclick="renderExamForm()">' + _L("New Exam", "新考试") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _L("Close", "关闭") + '</button>';
+}
+
+/* Repaint dynamic exam chrome when the application language changes.
+   Generated question text remains in the language requested from the model,
+   while labels, controls, placeholders and results follow the UI language.
+   Form values and in-progress answers are preserved across the repaint. */
+export function refreshExamI18n() {
+  if (!window.state || !window.state._examInView) return;
+  var form = document.querySelector(".exam-form-container");
+  if (form) {
+    var snapshot = {
+      topic: (document.getElementById("examTopic") || {}).value || "",
+      instructions: (document.getElementById("examInstructions") || {}).value || "",
+      count: (document.getElementById("examCount") || {}).value || "5",
+      model: (document.getElementById("examModel") || {}).value || "",
+      difficulty: _examDifficulty,
+      types: Object.assign({}, _examSelectedTypes)
+    };
+    renderExamForm();
+    var topic = document.getElementById("examTopic");
+    var instructions = document.getElementById("examInstructions");
+    var count = document.getElementById("examCount");
+    var countDisplay = document.getElementById("examCountDisplay");
+    if (topic) topic.value = snapshot.topic;
+    if (instructions) instructions.value = snapshot.instructions;
+    if (count) count.value = snapshot.count;
+    if (countDisplay) countDisplay.textContent = snapshot.count;
+    _examDifficulty = snapshot.difficulty;
+    document.querySelectorAll("#examDifficultySeg .exam-seg-btn").forEach(function (btn) {
+      btn.classList.toggle("active", btn.getAttribute("data-diff") === snapshot.difficulty);
+    });
+    _examSelectedTypes = snapshot.types;
+    document.querySelectorAll("#examTypePicker .exam-form-toggle-card").forEach(function (btn) {
+      var active = !!snapshot.types[btn.getAttribute("data-type")];
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-pressed", String(active));
+    });
+    if (snapshot.model) selectExamModel(snapshot.model);
+    return;
+  }
+  if (window.state.examSubmitted) {
+    renderExamResults();
+    return;
+  }
+  if (Array.isArray(window.state.examQuestions) && window.state.examQuestions.length) {
+    renderAllQuestions();
+    renderExamNav();
+    var footer = _examFooter();
+    var valid = window.state.examQuestions.some(function (q) { return q.type !== "error"; });
+    footer.innerHTML = valid
+      ? '<button class="exam-btn primary" onclick="submitExam()">' + _examUiL("Submit for Grading", "提交批改") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _examUiL("Close", "关闭") + '</button>'
+      : '<button class="exam-btn primary" onclick="renderExamForm()">' + _examUiL("Try Again", "重新出题") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _examUiL("Close", "关闭") + '</button>';
+    return;
+  }
+  var genMsg = document.getElementById("examGenMsg");
+  var genStep = document.getElementById("examGenProgressStep");
+  var genSub = document.getElementById("examGenSubMsg");
+  if (genMsg) genMsg.textContent = _examUiL("Generating your exam…", "正在生成考卷…");
+  if (genStep) genStep.innerHTML = '<span class="exam-progress-spin"></span>' + _examUiL("Preparing…", "准备出题…");
+  if (genSub) genSub.textContent = _examUiL("The AI is preparing your questions. This usually takes a few seconds.", "AI 正在为您出题，请稍候片刻");
+  var footer2 = _examFooter();
+  if (footer2 && document.getElementById("examGenStatus")) {
+    footer2.innerHTML = '<button class="exam-btn secondary" onclick="cancelExamGeneration()">' + _examUiL("Cancel", "取消") + '</button>';
+  }
 }
 
 

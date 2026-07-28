@@ -193,17 +193,18 @@ function SessionListInner() {
   if (sessions.length === 0) {
     let emptyHtml: string;
     if (searchQuery) {
-      emptyHtml = `<div class="recents-empty">No sessions match <strong>&ldquo;${esc(searchQuery)}&rdquo;</strong>.<br>` +
-        '<a href="#" onclick="setRecentsSearch(\'\');return false">Clear search</a> to see all sessions.</div>';
+      const queryLabel = `<strong>&ldquo;${esc(searchQuery)}&rdquo;</strong>`;
+      emptyHtml = `<div class="recents-empty">${t('session.noSearchMatch').replace('{query}', queryLabel)}<br>` +
+        `<a href="#" onclick="setRecentsSearch('');return false">${t('session.clearSearch')}</a> ${t('session.showAllHint')}</div>`;
     } else if (fetchFailed && !filter) {
-      emptyHtml = '<div class="recents-empty">Couldn\'t load sessions. Check your connection and try again.<br>' +
-        '<a href="#" onclick="retryRecentsFetch();return false">Retry</a></div>';
+      emptyHtml = `<div class="recents-empty">${t('session.loadListFailed')}<br>` +
+        `<a href="#" onclick="retryRecentsFetch();return false">${t('session.retry')}</a></div>`;
     } else if (filter) {
       const filterLabel = filter.indexOf('project:') === 0 ? 'Project' : '#' + filter;
-      emptyHtml = `<div class="recents-empty">No sessions match the <strong>${esc(filterLabel)}</strong> filter.<br>` +
-        '<a href="#" onclick="clearRecentsFilter();return false">Clear filter</a> to see all sessions.</div>';
+      emptyHtml = `<div class="recents-empty">${t('session.noFilterMatch').replace('{filter}', `<strong>${esc(filterLabel)}</strong>`)}<br>` +
+        `<a href="#" onclick="clearRecentsFilter();return false">${t('session.clearFilter')}</a> ${t('session.showAllHint')}</div>`;
     } else {
-      emptyHtml = '<div class="recents-empty">No recent sessions yet.<br>Start a topic to begin.</div>';
+      emptyHtml = `<div class="recents-empty">${t('session.empty')}<br>${t('session.emptyHint')}</div>`;
     }
     return <div className="recents-list-content" dangerouslySetInnerHTML={{ __html: emptyHtml }} />;
   }
