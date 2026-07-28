@@ -49,7 +49,7 @@ function MessageToolbar({ message, role }: MessageToolbarProps): React.ReactElem
         action="copy"
         label="Copy"
         onClick={() => c.onCopy?.()}
-        svgInner='<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>'
+        svgInner='<rect width="14" height="14" x="8" y="8" rx="2.5"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>'
       />
       {role === 'user' && (
         <>
@@ -57,13 +57,13 @@ function MessageToolbar({ message, role }: MessageToolbarProps): React.ReactElem
             action="edit"
             label="Edit message"
             onClick={() => c.onEdit?.()}
-            svgInner='<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>'
+            svgInner='<path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/>'
           />
           <IconButton
             action="delete"
             label="Delete message"
             onClick={() => c.onDelete?.()}
-            svgInner='<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'
+            svgInner='<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>'
           />
         </>
       )}
@@ -73,43 +73,43 @@ function MessageToolbar({ message, role }: MessageToolbarProps): React.ReactElem
             action="share"
             label="Share conversation"
             onClick={() => c.onShare?.()}
-            svgInner='<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y1="15"/>'
+            svgInner='<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/>'
           />
           <IconButton
             action="regenerate"
             label="Regenerate response"
             onClick={() => c.onRegenerate?.()}
-            svgInner='<path d="M21 12a9 9 0 1 1-3.5-7.1"/><path d="M21 4v6h-6"/>'
+            svgInner='<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>'
           />
           <IconButton
             action="thumbs-up"
             label="Helpful"
             onClick={() => c.onThumbsUp?.()}
-            svgInner='<path d="M7 10v11"/><path d="M15 5l-1 5h5a2 2 0 0 1 2 2l-2 7a2 2 0 0 1-2 2H7V10l4-7a2 2 0 0 1 3 2v3z"/>'
+            svgInner='<path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>'
           />
           <IconButton
             action="thumbs-down"
             label="Not helpful"
             onClick={() => c.onThumbsDown?.()}
-            svgInner='<path d="M17 14V3"/><path d="M9 19l1-5H5a2 2 0 0 1-2-2l2-7a2 2 0 0 1 2-2h10v11l-4 7a2 2 0 0 1-3-2v-3z"/>'
+            svgInner='<path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/>'
           />
           <IconButton
             action="branch"
             label="Branch from here"
             onClick={() => c.onBranch?.()}
-            svgInner='<path d="M6 4v16"/><path d="M18 4v16"/><path d="M6 8h8a2 2 0 0 1 2 2v4"/><path d="M6 16h8a2 2 0 0 0 2-2v-4"/><path d="M16 10l3 3-3 3"/>'
+            svgInner='<line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>'
           />
           <IconButton
             action="re-explain"
             label="Re-explain from a different angle"
             onClick={() => c.onReExplain?.()}
-            svgInner='<path d="M12 2l3.1 6.3L22 9.5l-5 4.9 1.2 6.8L12 18l-6.2 3.2L7 14.4 2 9.5l6.9-1.2L12 2z"/>'
+            svgInner='<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M19 3v4"/><path d="M21 5h-4"/>'
           />
           <IconButton
             action="read-aloud"
             label="Read aloud"
             onClick={(ev) => c.onReadAloud?.(ev)}
-            svgInner='<path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>'
+            svgInner='<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/>'
           />
         </>
       )}

@@ -364,12 +364,11 @@ export function startExamGeneration() {
   /* P_exam-noprovider — 생성 전에 활성 모델이 있는지 확인. 없으면 로딩만 보여주고 실패하는 것보다 여기서 바로 알림. */
   var _activeProvider = typeof window.getActiveProvider === "function" ? window.getActiveProvider() : null;
   if (!_activeProvider) {
-    var _lang = detectExamLang(topic);
-    var _msg = _lang === "Chinese" ? "请先在设置中添加并选择一个模型" : "Add and select a model in Settings first";
+    var _msg = _examUiL("Add and select a model in Settings first", "请先在设置中添加并选择一个模型");
     var body = _examBody();
     if (body) body.innerHTML = '<div class="exam-empty" style="padding:40px;text-align:center;color:hsl(var(--text-500))">' + window.esc(_msg) + '</div>';
     var footer = _examFooter();
-    if (footer) footer.innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + (_lang === "Chinese" ? "返回" : "Back") + '</button>';
+    if (footer) footer.innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + _examUiL("Back", "返回") + '</button>';
     return;
   }
   var count = Math.max(1, Math.min(50, parseInt(document.getElementById("examCount").value, 10) || 5));
@@ -412,16 +411,16 @@ export function startExamGeneration() {
   _setExamTitle(topic);
   var meta = document.getElementById("examViewMeta");
   var provLabel = (Array.isArray(window.apiConfig.providers) ? window.apiConfig.providers.find(function (p) { return p && p.id === window.apiConfig.activeId }) : null) || {};
-  if (meta) meta.textContent = count + " " + (lang === "Chinese" ? "题 · " : "questions · ") + (provLabel.label || provLabel.model || "") + " · " + difficulty;
+  if (meta) meta.textContent = count + " " + _examUiL("questions · ", "题 · ") + (provLabel.label || provLabel.model || "") + " · " + difficulty;
   var body = _examBody();
   body.innerHTML = '<div class="exam-loading" id="examGenStatus">' +
     '<span class="loading"><span></span><span></span><span></span></span>' +
-    '<div class="exam-loading-msg" id="examGenMsg">' + (lang === "Chinese" ? "正在生成考卷…" : "Generating your exam…") + '</div>' +
+    '<div class="exam-loading-msg" id="examGenMsg">' + _examUiL("Generating your exam…", "正在生成考卷…") + '</div>' +
     '<div class="exam-progress"><div class="exam-progress-bar"><div class="exam-progress-fill" id="examGenProgressFill"></div></div>' +
-    '<div class="exam-progress-step" id="examGenProgressStep"><span class="exam-progress-spin"></span>' + (lang === "Chinese" ? "准备出题…" : "Preparing…") + '</div></div>' +
-    '<div class="exam-loading-sub" id="examGenSubMsg">' + (lang === "Chinese" ? "AI 正在为您出题，请稍候片刻" : "The AI is preparing your questions — this usually takes a few seconds.") + '</div>' +
+    '<div class="exam-progress-step" id="examGenProgressStep"><span class="exam-progress-spin"></span>' + _examUiL("Preparing…", "准备出题…") + '</div></div>' +
+    '<div class="exam-loading-sub" id="examGenSubMsg">' + _examUiL("The AI is preparing your questions — this usually takes a few seconds.", "AI 正在为您出题，请稍候片刻") + '</div>' +
     '</div>';
-  _examFooter().innerHTML = '<button class="exam-btn secondary" onclick="cancelExamGeneration()">' + (lang === "Chinese" ? "取消" : "Cancel") + '</button>';
+  _examFooter().innerHTML = '<button class="exam-btn secondary" onclick="cancelExamGeneration()">' + _examUiL("Cancel", "取消") + '</button>';
   generateAllQuestions(topic, count, difficulty, typeStr, instructions, lang);
 }
 
@@ -445,11 +444,9 @@ export function cancelExamGeneration() {
   window.state.examCancel = true;
   restoreExamActiveProvider();
   var body = _examBody();
-  var lang = window.state.examLang || "English";
-  var L = function (en, zh) { return lang === "Chinese" ? zh : en };
-  body.innerHTML = '<div class="exam-empty">' + (L("Generation cancelled", "已取消出题") + '.</div>');
-  _examFooter().innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + L("Try again", "重新出题") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + L("Close", "关闭") + '</button>';
-  _setExamTitle(L("Cancelled", "已取消"));
+  body.innerHTML = '<div class="exam-empty">' + (_examUiL("Generation cancelled", "已取消出题") + '.</div>');
+  _examFooter().innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + _examUiL("Try again", "重新出题") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _examUiL("Close", "关闭") + '</button>';
+  _setExamTitle(_examUiL("Cancelled", "已取消"));
 }
 
 async function generateAllQuestions(topic, count, difficulty, typeStr, instructions, lang) {
@@ -465,7 +462,7 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
     if (fill) fill.style.width = pct + "%";
     if (stepEl) stepEl.innerHTML = '<span class="exam-progress-spin"></span>' + msg;
     if (subEl && i < count) {
-      subEl.textContent = lang === "Chinese"
+      subEl.textContent = _examUiIsZh()
         ? "正在生成第 " + (i + 1) + " / " + count + " 题…"
         : "Generating question " + (i + 1) + " of " + count + "…";
     }
@@ -475,13 +472,13 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
     restoreExamActiveProvider();
     var bodyE = _examBody();
     bodyE.innerHTML = '<div class="exam-empty"><strong>' + esc(errMsg) + '</strong>' + (detail ? '<div style="margin-top:10px;font-size:13px;color:hsl(var(--text-500));line-height:1.5">' + esc(detail) + '</div>' : '') + '</div>';
-    _examFooter().innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + (lang === "Chinese" ? "重新出题" : "Try again") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + (lang === "Chinese" ? "关闭" : "Close") + '</button>';
+    _examFooter().innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + _examUiL("Try again", "重新出题") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _examUiL("Close", "关闭") + '</button>';
   }
 
   for (var i = 0; i < count; i++) {
     if (window.state.examCancel) { restoreExamActiveProvider(); return; }
     var qType = allowedTypes[i % allowedTypes.length] || "multiple-choice";
-    updateProgress(i, lang === "Chinese"
+    updateProgress(i, _examUiIsZh()
       ? "正在生成第 " + (i + 1) + " 题…"
       : "Generating question " + (i + 1) + "…");
 
@@ -521,22 +518,22 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
     if (window.state.examCancel) return;
     var text = typeof result === "string" ? result : (result && (result.text || result.content)) || "";
     if (!text || !text.trim()) {
-      var errReason = window.state.lastCallError || (lang === "Chinese" ? "模型无响应" : "no response");
+      var errReason = window.state.lastCallError || _examUiL("no response", "模型无响应");
       if (i === 0) {
-        failExam(lang === "Chinese" ? "生成失败：模型无响应" : "Generation failed — no response", errReason);
+        failExam(_examUiL("Generation failed — no response", "生成失败：模型无响应"), errReason);
         return;
       }
-      updateProgress(i, lang === "Chinese" ? "生成失败" : "Failed");
+      updateProgress(i, _examUiL("Failed", "生成失败"));
       await new Promise(function (r) { setTimeout(r, 300) });
       continue;
     }
     var q = parseSingleExamQuestion(text);
     if (!q) {
       if (i === 0) {
-        failExam(lang === "Chinese" ? "解析失败：模型返回格式异常" : "Parse failed — unexpected format", lang === "Chinese" ? "请重试或更换模型" : "Try again or switch model");
+        failExam(_examUiL("Parse failed — unexpected format", "解析失败：模型返回格式异常"), _examUiL("Try again or switch model", "请重试或更换模型"));
         return;
       }
-      updateProgress(i, lang === "Chinese" ? "解析失败" : "Parse failed");
+      updateProgress(i, _examUiL("Parse failed", "解析失败"));
       await new Promise(function (r) { setTimeout(r, 300) });
       continue;
     }
@@ -550,7 +547,7 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
     window.state.examQuestions.push(q);
   });
   if (window.state.examQuestions.length === 0) {
-    failExam(lang === "Chinese" ? "生成失败：没有成功生成任何题目" : "Generation failed — no questions");
+    failExam(_examUiL("Generation failed — no questions", "生成失败：没有成功生成任何题目"));
     return;
   }
   renderAllQuestions();

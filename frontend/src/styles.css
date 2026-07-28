@@ -382,10 +382,10 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
    generated content reads as part of Socrates, not as an embedded dashboard.
    The card always uses `Inter` (loaded from Google Fonts) so labels stay
    consistent regardless of the user's installed system fonts. */
-.visualization-card{margin:14px 0 4px;border:1px solid hsl(var(--border-200));border-radius:14px;background:hsl(var(--bg-100));overflow:hidden;color:hsl(var(--text-100));box-shadow:0 1px 2px rgba(15,23,42,.04);font-family:'Inter','Helvetica Neue',Arial,system-ui,sans-serif}
+.visualization-card{margin:14px 0 4px;border:1px solid hsl(var(--border-200));border-radius:14px;background:hsl(var(--bg-100));overflow:hidden;color:hsl(var(--text-100));box-shadow:0 1px 2px rgba(15,23,42,.04);font-family:'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}
 .visualization-header{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid hsl(var(--border-100))}
-.visualization-header h3{margin:0;font:600 14px/1.35 'Inter','Helvetica Neue',Arial,system-ui,sans-serif;letter-spacing:-.01em}.visualization-header p,.visualization-caption{margin:4px 0 0;color:hsl(var(--text-300));font-size:12px;line-height:1.45}
-.visualization-actions{display:flex;align-items:center;gap:3px;flex:none}.visualization-actions button{appearance:none;border:0;border-radius:7px;padding:5px 7px;background:transparent;color:hsl(var(--text-300));font:500 11px/1 'Inter','Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer}.visualization-actions button:hover,.visualization-actions button:focus-visible{color:hsl(var(--text-100));background:hsl(var(--bg-200));outline:none}
+.visualization-header h3{margin:0;font:600 14px/1.35 'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;letter-spacing:-.01em}.visualization-header p,.visualization-caption{margin:4px 0 0;color:hsl(var(--text-300));font-size:12px;line-height:1.45}
+.visualization-actions{display:flex;align-items:center;gap:3px;flex:none}.visualization-actions button{appearance:none;border:0;border-radius:7px;padding:5px 7px;background:transparent;color:hsl(var(--text-300));font:500 11px/1 'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer}.visualization-actions button:hover,.visualization-actions button:focus-visible{color:hsl(var(--text-100));background:hsl(var(--bg-200));outline:none}
 .visualization-stage{height:350px;min-width:0;padding:4px 4px 0;position:relative}
 .visualization-card[data-visualization-renderer="tldraw"] .visualization-stage{height:520px;padding:0}
 .visualization-card[data-visualization-renderer="geogebra"] .visualization-stage{height:480px;padding:0}
@@ -401,9 +401,9 @@ body.sidebar-resizing{cursor:col-resize;user-select:none}
    at its natural content size. */
 .visualization-stage>div:first-child{width:100%;height:100%}
 /* Force ECharts chart background transparent — the default theme sets white. */
-.visualization-stage canvas,.visualization-stage svg{background:transparent!important}.visualization-data{padding:0 16px 14px}.visualization-table-wrap{overflow:auto;border:1px solid hsl(var(--border-100));border-radius:9px;max-height:260px}.visualization-table{width:100%;border-collapse:collapse;font-size:12px;font-family:'Inter','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-table th,.visualization-table td{padding:8px 10px;text-align:left;border-bottom:1px solid hsl(var(--border-100));white-space:nowrap;color:hsl(var(--text-100))}.visualization-table th{position:sticky;top:0;background:hsl(var(--bg-100));color:hsl(var(--text-300));font-weight:600}.visualization-table tr:last-child td{border-bottom:0}
-.visualization-diagram{display:block;width:100%;height:100%;color:hsl(var(--text-300));font-family:'Inter','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-edge{fill:none;stroke:currentColor;stroke-width:1.4}.visualization-edge-label{fill:currentColor;font:500 12px 'Inter','Helvetica Neue',Arial,system-ui,sans-serif;text-anchor:middle}.visualization-node rect{fill:hsl(var(--bg-100));stroke:hsl(var(--border-200));stroke-width:1.4}.visualization-node text{fill:hsl(var(--text-100));font:600 13px 'Inter','Helvetica Neue',Arial,system-ui,sans-serif;text-anchor:middle}.visualization-node .visualization-node-detail{fill:hsl(var(--text-300));font:11px 'Inter','Helvetica Neue',Arial,system-ui,sans-serif}
-.visualization-extension{display:block;width:100%;height:100%;border:0;background:transparent}.visualization-fallback{display:grid;place-content:center;gap:8px;height:100%;padding:20px;color:hsl(var(--text-300));text-align:center;font-family:'Inter','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-fallback strong{color:hsl(var(--text-100))}.visualization-fallback p{margin:0;font-size:13px;line-height:1.5}.visualization-fallback button{justify-self:center;border:1px solid hsl(var(--border-200));border-radius:7px;padding:6px 9px;background:hsl(var(--bg-100));color:hsl(var(--text-100));cursor:pointer;font:inherit}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.visualization-stage canvas,.visualization-stage svg{background:transparent!important}.visualization-data{padding:0 16px 14px}.visualization-table-wrap{overflow:auto;border:1px solid hsl(var(--border-100));border-radius:9px;max-height:260px}.visualization-table{width:100%;border-collapse:collapse;font-size:12px;font-family:'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-table th,.visualization-table td{padding:8px 10px;text-align:left;border-bottom:1px solid hsl(var(--border-100));white-space:nowrap;color:hsl(var(--text-100))}.visualization-table th{position:sticky;top:0;background:hsl(var(--bg-100));color:hsl(var(--text-300));font-weight:600}.visualization-table tr:last-child td{border-bottom:0}
+.visualization-diagram{display:block;width:100%;height:100%;color:hsl(var(--text-300));font-family:'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-edge{fill:none;stroke:currentColor;stroke-width:1.4}.visualization-edge-label{fill:currentColor;font:500 12px 'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;text-anchor:middle}.visualization-node rect{fill:hsl(var(--bg-100));stroke:hsl(var(--border-200));stroke-width:1.4}.visualization-node text{fill:hsl(var(--text-100));font:600 13px 'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;text-anchor:middle}.visualization-node .visualization-node-detail{fill:hsl(var(--text-300));font:11px 'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}
+.visualization-extension{display:block;width:100%;height:100%;border:0;background:transparent}.visualization-fallback{display:grid;place-content:center;gap:8px;height:100%;padding:20px;color:hsl(var(--text-300));text-align:center;font-family:'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-fallback strong{color:hsl(var(--text-100))}.visualization-fallback p{margin:0;font-size:13px;line-height:1.5}.visualization-fallback button{justify-self:center;border:1px solid hsl(var(--border-200));border-radius:7px;padding:6px 9px;background:hsl(var(--bg-100));color:hsl(var(--text-100));cursor:pointer;font:inherit}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media (max-width:520px){.visualization-card{margin-left:-2px;margin-right:-2px;border-radius:12px}.visualization-header{padding:12px;gap:8px}.visualization-actions button{padding:5px;font-size:10px}.visualization-stage{height:292px;padding:2px}.visualization-data{padding:0 10px 10px}}
 @media (prefers-reduced-motion:reduce){.visualization-card *, .visualization-card *:before, .visualization-card *:after{transition:none!important;animation:none!important}}
 .recent-item:hover .recent-mode-badge{transform:scale(1.35)}
@@ -1539,7 +1539,7 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 .msg-toolbar-btn.is-speaking{color:hsl(var(--oncolor-100));background:hsl(var(--accent-000));animation:readAloudPulse 1.4s ease-in-out infinite}
 .msg-toolbar-btn.is-speaking:hover{background:hsl(var(--accent-100))}
 @keyframes readAloudPulse{0%,100%{opacity:1}50%{opacity:.55}}
-.msg-toolbar-btn svg{width:15px;height:15px}
+.msg-toolbar-btn svg{width:16px;height:16px;stroke-width:1.7}
 /* UI-align: model identity header above assistant replies — initial
    badge + name row, mirroring open-webui's avatar+name pattern. */
 .msg-model{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:calc(13px * var(--app-font-scale,1));font-weight:600;color:hsl(var(--text-100));line-height:1}
@@ -3918,6 +3918,12 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
 }
 .tool-inline-src-host{flex:0 0 auto;font-size:12px;color:hsl(var(--text-500))}
+/* Anchored host for a tool run's visual output (charts, image
+   artifacts). Sits immediately after the .tool-inline row so the
+   output stays embedded at the point in the answer where the tool
+   fired instead of piling up at the bubble bottom. */
+.tool-inline-attachments{margin:8px 0}
+.tool-inline-attachments:empty{display:none}
 
 .tool-run-group{
   margin:8px 0 4px;

@@ -196,7 +196,11 @@ function normalizeFunction(spec) {
  * (see _watchTheme). Keep `Inter` (loaded from Google Fonts) as the
  * authoritative font family — system-ui is a fallback only if Inter is
  * unavailable, never the default. */
-var VIZ_FONT_FAMILY = "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif";
+/* P_viz-google-fonts — Chinese glyphs must resolve to the Google-served
+   Noto Sans SC (loaded in index.html) instead of falling through the
+   generic sans-serif chain to the OS default (Microsoft YaHei on
+   Windows). Keep Inter first for Latin/numerals. */
+var VIZ_FONT_FAMILY = "'Inter', 'Noto Sans SC', 'Helvetica Neue', Arial, system-ui, sans-serif";
 function optionForChart(spec, colors) {
   var payload = spec.payload, chartType = spec.template === 'area' ? 'line' : spec.template;
   var fontFamily = VIZ_FONT_FAMILY;

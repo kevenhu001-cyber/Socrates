@@ -216,9 +216,25 @@ function _renderSharedMessageList(messages) {
     }
     var renderHtml = "";
     try {
-      renderHtml = m.role === "assistant" && typeof window.renderAssistantHTML === "function"
-        ? window.renderAssistantHTML(source)
-        : (typeof window.formatMsg === "function" ? window.formatMsg(source) : ("<p>" + esc(source) + "</p>"));
+      /* P_inline-restore — assistant turns that recorded inline tool
+         split points rebuild the exact text→row→text layout, matching
+         the live chat and history views. The offsets index into the
+         RAW markdown, so only rebuild when rawText is available; the
+         public-share projection omits rawText but its `content` is the
+         finalized HTML snapshot which already carries the serialized
+         rows — reuse it directly in that case. */
+      if (m.role === "assistant" && typeof m.rawText === "string" && m.rawText
+          && typeof window.rebuildAssistantHtmlWithInlineTools === "function") {
+        renderHtml = window.rebuildAssistantHtmlWithInlineTools(m.rawText, m.toolCalls) || "";
+      } else if (m.role === "assistant" && typeof m.content === "string"
+          && m.content.indexOf("tool-inline") !== -1) {
+        renderHtml = m.content;
+      }
+      if (!renderHtml) {
+        renderHtml = m.role === "assistant" && typeof window.renderAssistantHTML === "function"
+          ? window.renderAssistantHTML(source)
+          : (typeof window.formatMsg === "function" ? window.formatMsg(source) : ("<p>" + esc(source) + "</p>"));
+      }
     } catch (_) {
       renderHtml = "<p>" + esc(source) + "</p>";
     }
@@ -386,7 +402,8 @@ async function loadSharedExamSession(session, token) {
   }
   var footer = document.getElementById("examViewFooter");
   if (footer) {
-    footer.innerHTML = '<button class="exam-btn secondary" onclick="closeExamView()">Close</button>';
+    var closeLabel = (window._currentLang === "zh") ? "关闭" : "Close";
+    footer.innerHTML = '<button class="exam-btn secondary" onclick="closeExamView()">' + closeLabel + '</button>';
   }
   var gate = document.getElementById("authGate");
   if (gate) gate.classList.add("hidden");
@@ -400,7 +417,8 @@ function renderSharedQuestionCard(idx, q) {
   var ph = document.getElementById("examQ" + idx);
   if (!ph) return;
   var saved = (window.state && window.state.examAnswers && window.state.examAnswers[idx]);
-  var html = '<div class="exam-q-num">Question ' + (idx + 1) + ' of ' + ((window.state && window.state.examCount) || 0) + ' <span class="exam-q-type">' + esc(q.type || "") + '</span></div>';
+  var zh = window._currentLang === "zh";
+  var html = '<div class="exam-q-num">' + (zh ? "题目" : "Question") + ' ' + (idx + 1) + ' / ' + ((window.state && window.state.examCount) || 0) + ' <span class="exam-q-type">' + esc(q.type || "") + '</span></div>';
   html += '<div class="exam-q-text">' + (typeof window.formatMsg === "function" ? window.formatMsg(q.q || "") : esc(q.q || "")) + '</div>';
   if (q.type === "multiple-choice" && Array.isArray(q.opts)) {
     html += '<div class="exam-q-opts">';

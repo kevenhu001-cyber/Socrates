@@ -207,6 +207,12 @@ function getRun(entry: ToolCallEntry | null): ToolRun | null {
   return entry && entry._run ? entry._run : null;
 }
 
+function toolCountText(total: number): string {
+  return total === 1
+    ? translate('tool.metaToolCountOne', '1 tool')
+    : translate('tool.metaToolCount', '{n} tools').replace('{n}', String(total));
+}
+
 function setRun(
   entry: ToolCallEntry | null,
   phase: string,
@@ -271,6 +277,21 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     return el && (el as HTMLElement).classList.contains('tool-inline') ? el as HTMLElement : null;
   }
 
+  /* Anchored attachment host: a container that sits immediately after an
+     inline tool row and receives the run's visual output (charts, image
+     artifacts). `data-tool-anchor` lets the finish() re-assembly in
+     main.js re-seat the live nodes next to the serialized row instead of
+     dumping them at the bottom of the bubble. */
+  function ensureRowAttachmentHost(row: HTMLElement, toolCallId: string): HTMLElement {
+    const next = row.nextElementSibling as HTMLElement | null;
+    if (next && next.classList.contains('tool-inline-attachments')) return next;
+    const host = document.createElement('div');
+    host.className = 'tool-inline-attachments';
+    host.dataset.toolAnchor = toolCallId;
+    row.insertAdjacentElement('afterend', host);
+    return host;
+  }
+
   let disposed = false;
   const pendingDeltas: ToolCallDelta[] = [];
   let deltaFrame: number | null = null;
@@ -299,19 +320,23 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       label.textContent = summary.active === 1
         ? activeToolLabel(activeEntry)
         : translate('tool.groupExploring', 'Exploring');
-      meta.textContent = summary.total > 1 ? summary.active + ' of ' + summary.total + ' tools' : 'Running';
+      meta.textContent = summary.total > 1
+        ? translate('tool.metaActiveOfTotal', '{active} of {total} tools')
+          .replace('{active}', String(summary.active)).replace('{total}', String(summary.total))
+        : translate('tool.statusRunning', 'Running');
     } else if (summary.failed || summary.timed_out) {
       (group as HTMLElement).dataset.state = 'error';
       label.textContent = translate('tool.groupNeedsAttention', 'Tool needs attention');
-      meta.textContent = (summary.failed + summary.timed_out) + ' of ' + summary.total + ' failed';
+      meta.textContent = translate('tool.metaFailedOfTotal', '{failed} of {total} failed')
+        .replace('{failed}', String(summary.failed + summary.timed_out)).replace('{total}', String(summary.total));
     } else if (summary.cancelled) {
       (group as HTMLElement).dataset.state = 'cancelled';
       label.textContent = translate('tool.groupStopped', 'Tool run stopped');
-      meta.textContent = summary.total + ' tool' + (summary.total === 1 ? '' : 's');
+      meta.textContent = toolCountText(summary.total);
     } else {
       (group as HTMLElement).dataset.state = 'complete';
       label.textContent = translate('tool.groupExplored', 'Explored');
-      meta.textContent = summary.total + ' tool' + (summary.total === 1 ? '' : 's');
+      meta.textContent = toolCountText(summary.total);
     }
   }
 
@@ -726,21 +751,23 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     if (entry._toolResultApplied) return;
     if (!output) {
       // Compact mode: settle the inline status row in place, then
-      // surface image artifacts inline in the message body so the
-      // learner can see what the run produced. Non-image artifacts
-      // (CSVs, JSON) are persisted on the entry and discoverable via
-      // the session history, so we drop them silently here.
+      // surface image artifacts and visualizations directly AFTER the
+      // inline row so the tool's output sits at the point in the answer
+      // where the call actually fired (not at the bubble's very end).
+      // Non-image artifacts (CSVs, JSON) are persisted on the entry and
+      // discoverable via the session history, so we drop them silently.
       if (mode === 'compact') {
         const row = findInlineRow(entry.id);
         if (row) settleInlineToolRow(row, result);
+        const attachmentHost = row ? ensureRowAttachmentHost(row, entry.id) : body;
         for (let artifactIndex = 0; artifactIndex < entry.artifacts.length; artifactIndex++) {
           const artifact = entry.artifacts[artifactIndex];
           if (artifact.id && artifact.mimeType && artifact.mimeType.indexOf('image/') === 0) {
-            appendInlineArtifact(artifact.id, artifact.mimeType, body, artifact.name);
+            appendInlineArtifact(artifact.id, artifact.mimeType, attachmentHost, artifact.name);
           }
         }
         if (result.visualization && result.visualization.version === 1) {
-          mountVisualization(result.visualization, body, { toolCallId: entry.id });
+          mountVisualization(result.visualization, attachmentHost, { toolCallId: entry.id });
         }
         entry._toolResultApplied = true;
       }
