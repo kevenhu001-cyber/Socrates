@@ -445,9 +445,9 @@ export function cancelExamGeneration() {
   var body = _examBody();
   var lang = window.state.examLang || "English";
   var L = function (en, zh) { return lang === "Chinese" ? zh : en };
-  body.innerHTML = '<div class="exam-empty">' + (L("已取消出题", "Generation cancelled") + '.</div>');
-  _examFooter().innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + L("重新出题", "Try again") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + L("关闭", "Close") + '</button>';
-  _setExamTitle(L("已取消", "Cancelled"));
+  body.innerHTML = '<div class="exam-empty">' + (L("Generation cancelled", "已取消出题") + '.</div>');
+  _examFooter().innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + L("Try again", "重新出题") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + L("Close", "关闭") + '</button>';
+  _setExamTitle(L("Cancelled", "已取消"));
 }
 
 async function generateAllQuestions(topic, count, difficulty, typeStr, instructions, lang) {
@@ -693,15 +693,17 @@ export function finishExamGeneration() {
   if (st) st.style.display = "none";
   var valid = window.state.examQuestions.filter(function (q) { return q.type !== "error"; });
   var footer = _examFooter();
+  var _lang = window.state.examLang || "English";
+  var _L = function (en, zh) { if (_lang === "Chinese") return zh; return en; };
   if (window.state.examCancel) {
-    footer.innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">Start New Exam</button><button class="exam-btn secondary" onclick="closeExamView()">Close</button>';
+    footer.innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + _L("Start New Exam", "新考试") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _L("Close", "关闭") + '</button>';
     renderExamNav();
     return;
   }
   if (valid.length > 0) {
-    footer.innerHTML = '<button class="exam-btn primary" onclick="submitExam()">Submit for Grading</button><button class="exam-btn secondary" onclick="closeExamView()">Close</button>';
+    footer.innerHTML = '<button class="exam-btn primary" onclick="submitExam()">' + _L("Submit for Grading", "提交批改") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _L("Close", "关闭") + '</button>';
   } else {
-    footer.innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">Try Again</button><button class="exam-btn secondary" onclick="closeExamView()">Close</button>';
+    footer.innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + _L("Try Again", "重新出题") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _L("Close", "关闭") + '</button>';
   }
   renderExamNav();
   saveExamSession({ submitted: false });
@@ -925,7 +927,9 @@ export function renderExamResults() {
   var ans = window.state.examAnswers;
   var body = _examBody();
   var footer = _examFooter();
-  _setExamTitle("Exam Results: " + window.state.examTopic);
+  var _lang = window.state.examLang || "English";
+  var _L = function (en, zh) { if (_lang === "Chinese") return zh; return en; };
+  _setExamTitle(_L("Exam Results", "考试结果") + ": " + window.state.examTopic);
   var correct = 0, total = 0;
   var resultDetails = [];
   qs.forEach(function (q, i) {
@@ -948,13 +952,13 @@ export function renderExamResults() {
     resultDetails.push({ q: q, ans: ans[i], isCorrect: isCorrect });
   });
   var pct = total > 0 ? Math.round(correct / total * 100) : 0;
-  var html = '<div class="exam-score"><div class="exam-score-val"><span class="score-correct">' + correct + '</span><span class="score-total">/ ' + total + '</span></div><div class="exam-score-lbl">' + pct + '% correct</div></div>';
+  var html = '<div class="exam-score"><div class="exam-score-val"><span class="score-correct">' + correct + '</span><span class="score-total">/ ' + total + '</span></div><div class="exam-score-lbl">' + pct + ' ' + _L("correct", "正确") + '</div></div>';
   resultDetails.forEach(function (rd, i) {
     var q = rd.q;
     var isCorrect = rd.isCorrect;
     var cls = isCorrect ? "correct" : "wrong";
     html += '<div class="exam-q-card">';
-    html += '<div class="exam-q-num">Question ' + (i + 1) + ' — <span class="exam-result-' + (isCorrect ? "correct" : "wrong") + '">' + (isCorrect ? "Correct" : "Incorrect") + '</span><span class="exam-q-type">' + q.type + '</span></div>';
+    html += '<div class="exam-q-num">' + _L("Question", "题目") + ' ' + (i + 1) + ' — <span class="exam-result-' + (isCorrect ? "correct" : "wrong") + '">' + (isCorrect ? _L("Correct", "正确") : _L("Incorrect", "错误")) + '</span><span class="exam-q-type">' + q.type + '</span></div>';
     html += '<div class="exam-q-text">' + formatMsg(q.q) + '</div>';
     if (q.type === "multiple-choice" && q.opts) {
       html += '<div class="exam-q-opts">';
@@ -971,19 +975,19 @@ export function renderExamResults() {
     } else if (q.type === "fill-blank") {
       var ic = "exam-q-fill-input" + (isCorrect ? " correct" : " wrong");
       html += '<input class="' + ic + '" value="' + esc(rd.ans || "") + '" readonly>';
-      if (!isCorrect) html += '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(145 40% 45%);margin-top:4px">Correct answer: <strong>' + (q.answers || []).join(", ") + '</strong></div>';
+      if (!isCorrect) html += '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(145 40% 45%);margin-top:4px">' + _L("Correct answer", "正确答案") + ': <strong>' + (q.answers || []).join(", ") + '</strong></div>';
     } else if (q.type === "short-answer") {
       var ic = "exam-q-fill-input" + (isCorrect ? " correct" : " wrong");
       html += '<textarea class="' + ic + '" readonly rows="2">' + esc(rd.ans || "") + '</textarea>';
-      if (!isCorrect) html += '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(145 40% 45%);margin-top:4px">Expected: <strong>' + esc(q.answer || "") + '</strong></div>';
+      if (!isCorrect) html += '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(145 40% 45%);margin-top:4px">' + _L("Expected", "期望答案") + ': <strong>' + esc(q.answer || "") + '</strong></div>';
     }
     if (q.explanation) {
-      html += '<div class="exam-q-result ' + cls + '"><span class="label">Explanation:</span><div class="explain">' + formatMsg(q.explanation) + '</div></div>';
+      html += '<div class="exam-q-result ' + cls + '"><span class="label">' + _L("Explanation", "解释") + ':</span><div class="explain">' + formatMsg(q.explanation) + '</div></div>';
     }
     html += '</div>';
   });
   body.innerHTML = html;
-  footer.innerHTML = '<button class="exam-btn success" onclick="renderExamForm()">New Exam</button><button class="exam-btn secondary" onclick="closeExamView()">Close</button>';
+  footer.innerHTML = '<button class="exam-btn success" onclick="renderExamForm()">' + _L("New Exam", "新考试") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _L("Close", "关闭") + '</button>';
 }
 
 

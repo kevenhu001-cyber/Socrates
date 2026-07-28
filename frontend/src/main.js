@@ -7242,6 +7242,12 @@ async function resetApp(){
      doesn't bleed into the next view via a delayed render. */
   var _examBody = document.getElementById("examViewBody");
   if (_examBody) _examBody.innerHTML = "";
+  /* P_exam-reset — hide the exam view itself so topicSetup is
+     visible underneath. _examBody.innerHTML="" alone leaves the
+     .exam-view shell visible with its solid background, covering
+     the topic-setup page that was just revealed. */
+  var _examEl = document.getElementById("examView");
+  if (_examEl) _examEl.classList.add("hidden");
   toggleChatTopBarEls(false);
   clearLegacyMsgListChildren();
   /* P_app-reset-sync — the sole publishReactChatRuntime call for
