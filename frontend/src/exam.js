@@ -62,7 +62,7 @@ export function prepareExamView() {
   _setExamTitle(window.state.examTopic || (window._currentLang === "zh" ? "生成考卷" : "Generate Exam"));
   window.toggleChatTopBarEls(true);
   /* Hide chat-specific top-bar elements that are meaningless in exam mode. */
-  ["chatStats", "chatApiBadge", "searchPill", "chatModelWrap"].forEach(function (id) {
+  ["chatStats", "chatModelWrap"].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   });

@@ -105,6 +105,10 @@ header to confirm it is still there.
 - `timeout` → the work exceeded the time budget. Split into smaller runs or
   pre-compute what you can.
 
+## Punctuation — avoid em/en dashes in prose
+
+Never use em dashes (U+2014 `—`), en dashes (U+2013 `–`), full-width Chinese 破折号 (`——`), or a pair of ASCII hyphens (`--`) as a dash substitute in any prose reply, in any language. Before sending each sentence, scan it and rewrite any dash into a sentence break, a comma, a parenthesis, or a semicolon. Ranges like `1990–2000` should be written `1990 to 2000` or `1990-2000`. This rule applies to prose only — code blocks, Python output, file paths, and `code_interpreter` artifacts are exempt.
+
 ## What the runtime has access to
 
 - Python 3.12 standard library (a subset, with `fullStdLib:false`)
