@@ -30,21 +30,42 @@ async function startDeepResearch(query) {
     /* Step 2: Execute searches for each sub-question. */
     var allResults = [];
     for (var i = 0; i < plan.length; i++) {
-      _updateResearchProgress(progressId, "Searching: " + _truncate(plan[i], 60));
+      _updateResearchProgress(progressId, _tr("Searching the web: ", "正在搜索网页：") + _truncate(plan[i], 60));
       var results = await _searchTopic(plan[i]);
       if (results && results.length) {
         allResults = allResults.concat(results);
+        _updateResearchProgress(progressId, _tr("Found " + allResults.length + " results so far...", "已找到 " + allResults.length + " 条结果…"));
       }
     }
 
-    /* Step 3: Read and extract from the top results. */
+    /* No sources at all — surface a clear failure state instead of
+       synthesizing an empty report. */
     var sources = _deduplicateResults(allResults).slice(0, 8);
-    _updateResearchProgress(progressId, "Reading " + sources.length + " sources...");
+    if (!sources.length) {
+      _updateResearchProgress(progressId, _tr("Web search failed — no sources found", "网络搜索失败 — 未找到任何来源"));
+      _setResearchProgressState(progressId, "err");
+      setTimeout(function () { _hideResearchProgress(progressId); }, 8000);
+      if (typeof window.addMessage === "function") {
+        window.addMessage("assistant", _tr(
+          "I couldn't find any web sources for this topic. Please check your connection or try a different query.",
+          "未能为该主题找到任何网络来源，请检查网络连接或换一个查询再试。"));
+      }
+      return;
+    }
+
+    /* Step 3: Read and extract from the top results. */
+    _updateResearchProgress(progressId, _tr("Reading " + sources.length + " sources...", "正在阅读 " + sources.length + " 个来源…"));
     var extracts = [];
     for (var j = 0; j < sources.length; j++) {
-      _updateResearchProgress(progressId, "Reading source " + (j + 1) + " of " + sources.length + "...");
+      _updateResearchProgress(progressId, _tr(
+        "Reading source " + (j + 1) + " of " + sources.length + "...",
+        "正在阅读来源 " + (j + 1) + " / " + sources.length + "…"));
       try {
         var content = await _fetchSource(sources[j].url);
+        /* fetchWebContext already fetched full text for the top hits —
+           reuse it when the per-URL fetch fails so a flaky page never
+           drops a source entirely. */
+        if (!content && sources[j].content) content = String(sources[j].content).slice(0, 4000);
         if (content) {
           extracts.push({ url: sources[j].url, title: sources[j].title || sources[j].url, content: content });
         }
@@ -52,22 +73,37 @@ async function startDeepResearch(query) {
     }
 
     /* Step 4: Synthesize the report. */
-    _updateResearchProgress(progressId, "Synthesizing report...");
+    _updateResearchProgress(progressId, _tr("Synthesizing report from " + extracts.length + " sources...", "正在根据 " + extracts.length + " 个来源生成报告…"));
     var report = await _synthesizeReport(query, plan, extracts);
 
-    /* Step 5: Post the report as an assistant message. */
-    _hideResearchProgress(progressId);
+    /* Step 5: Post the report. Flip the progress card to its "done"
+       state (with the source count) before retiring it, so the user
+       gets explicit completion feedback — ChatGPT style. */
+    _updateResearchProgress(progressId, _tr("Research complete · " + extracts.length + " sources", "研究完成 · 共 " + extracts.length + " 个来源"));
+    _setResearchProgressState(progressId, "ok");
+    setTimeout(function () { _hideResearchProgress(progressId); }, 4000);
     if (typeof window.addMessage === "function") {
       window.addMessage("assistant", report);
     }
 
     return report;
   } catch (e) {
-    _hideResearchProgress(progressId);
+    _updateResearchProgress(progressId, _tr("Research failed: ", "研究失败：") + (e.message || _tr("unknown error", "未知错误")));
+    _setResearchProgressState(progressId, "err");
+    setTimeout(function () { _hideResearchProgress(progressId); }, 8000);
     if (typeof window.addMessage === "function") {
-      window.addMessage("assistant", "The research encountered an error: " + (e.message || "unknown error") + ". Please try a simpler query.");
+      window.addMessage("assistant", _tr(
+        "The research encountered an error: " + (e.message || "unknown error") + ". Please try a simpler query.",
+        "研究过程出错：" + (e.message || "未知错误") + "。请尝试更简单的查询。"));
     }
   }
+}
+
+/* Tiny bilingual helper — the deep-research surface predates the
+   i18n table, so status copy is resolved inline from the current
+   language flag. */
+function _tr(en, zh) {
+  return (typeof window !== "undefined" && window._currentLang === "zh") ? zh : en;
 }
 
 /* Generate a research plan: a list of sub-questions to search for. */
@@ -95,14 +131,18 @@ function _heuristicPlan(query) {
   return plans.slice(0, 4);
 }
 
-/* Search for a topic using the existing web search infrastructure. */
+/* Search for a topic using the existing web search infrastructure.
+   fetchWebContext resolves to { ok, results, context, sources } —
+   `sources` is the enriched result list ({title,url,snippet,
+   fullContent}). The old code read a non-existent `.pages` field,
+   so deep research always came back empty. */
 async function _searchTopic(query) {
   if (typeof window.fetchWebContext === "function") {
     try {
-      var results = await window.fetchWebContext(query, { background: false, maxResults: 5 });
-      if (results && results.pages && Array.isArray(results.pages)) {
-        return results.pages.map(function (p) {
-          return { url: p.url, title: p.title, snippet: p.snippet || p.content };
+      var res = await window.fetchWebContext(query, { background: false });
+      if (res && res.ok && Array.isArray(res.sources)) {
+        return res.sources.slice(0, 5).map(function (p) {
+          return { url: p.url, title: p.title, snippet: p.snippet, content: p.fullContent || p.snippet };
         });
       }
     } catch (e) { /* search failed */ }
@@ -183,6 +223,14 @@ function _updateResearchProgress(id, text) {
   if (!el) return;
   var label = el.querySelector(".search-progress-label");
   if (label) label.textContent = text;
+}
+
+/* Flip the progress card between running / ok / err visual states
+   (reuses the .search-progress state classes from styles.css). */
+function _setResearchProgressState(id, state) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.className = "search-progress " + (state || "running");
 }
 
 /* Hide and remove the research progress indicator. */
