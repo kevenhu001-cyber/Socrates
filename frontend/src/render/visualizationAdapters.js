@@ -70,7 +70,7 @@ async function mountPlotly(spec, stage, helpers) {
     margin: { l: 58, r: 22, t: 18, b: 50 },
     paper_bgcolor: 'transparent',
     plot_bgcolor: 'transparent',
-    font: { family: 'Source Sans 3, sans-serif', color: colors.text, size: 12 },
+    font: { family: "Inter, 'Noto Sans SC', sans-serif", color: colors.text, size: 12 },
     xaxis: { title: { text: spec.payload.xLabel || 'x' }, gridcolor: colors.grid, zerolinecolor: colors.muted },
     yaxis: { title: { text: spec.payload.yLabel || 'y' }, gridcolor: colors.grid, zerolinecolor: colors.muted },
     legend: { orientation: 'h', y: 1.08 },

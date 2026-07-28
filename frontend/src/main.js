@@ -76,7 +76,7 @@ import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
    legacy e2e suite and `window.__startSearchProgress` test hook. */
 import { startSearchProgress } from './ui/searchProgress.js';
 import { createToolRuntime } from './chat/toolRuntime.js';
-import { settleInlineToolRow } from './ui/toolInline.js';
+import { settleInlineToolRow, createInlineToolRow } from './ui/toolInline.js';
 import { beginAgentTextStream, appendRunFooter } from './chat/agentStream.js';
 import { BUILTIN_TEMPLATES, SYSTEM_PROMPT_SUMMARIZE, SYSTEM_PROMPT_TRANSLATE, SYSTEM_PROMPT_EXPLAIN_CODE, SYSTEM_PROMPT_DEBUG, SYSTEM_PROMPT_QUIZ, SYSTEM_PROMPT_SOCRATIC, PROMPT_TEMPLATES_KEY, loadPromptTemplates, savePromptTemplates, findTemplateByShortcut, upsertCustomTemplate, deleteCustomTemplate } from './chat/promptTemplates.js';
 import { renderNoUrlHint, renderLinkPreviews } from './ui/linkPreviews.js';
@@ -1668,7 +1668,11 @@ async function loadSession(id){
       var _rrClientId = m.id || ("loaded-"+(m.clientId || generateId()));
       var restoredHtml = "";
       if (m.role === "assistant" && m.rawText) {
-        try { restoredHtml = renderAssistantHTML(m.rawText); }
+        /* P_inline-restore — messages that recorded inline tool split
+           points rebuild the exact text→row→text layout; everything
+           else re-renders the raw markdown so current scaffold /
+           widget renderers apply to old conversations too. */
+        try { restoredHtml = rebuildAssistantHtmlWithInlineTools(m.rawText, m.toolCalls) || renderAssistantHTML(m.rawText); }
         catch (_) { restoredHtml = m.html || formatMsg(m.rawText); }
       } else {
         restoredHtml = m.html || (m.rawText ? formatMsg(m.rawText) : "");
@@ -1702,6 +1706,10 @@ async function loadSession(id){
               return { id: String(a.id || ''), mimeType: a.mimeType || null, name: a.name || null };
             }) : [],
             results: Array.isArray(tc.results) ? tc.results.slice(0, 20) : [],
+            /* P_inline-restore — keep the split offset + viz spec so the
+               inline layout and charts survive a reload round-trip. */
+            textOffset: typeof tc.textOffset === "number" ? tc.textOffset : undefined,
+            visualization: (tc.visualization && tc.visualization.version === 1) ? tc.visualization : undefined,
           };
         }) : [],
         actions: null
@@ -4537,6 +4545,44 @@ function restorePersistedMessageExtras(body,entry,idPrefix){
   for(var tci=0;tci<calls.length;tci++){
     var tc=calls[tci];
     if(!tc||!tc.name)continue;
+    var vizSpec=(tc.visualization&&tc.visualization.version===1)?tc.visualization
+      :((tc.name==="render_visualization"&&tc.input&&tc.input.version===1)?tc.input:null);
+    /* P_inline-restore — when the rebuilt HTML already carries the
+       settled inline tool row (data-tcid), don't append a duplicate
+       card at the bubble bottom; instead re-seat the tool's visual
+       output (chart / image artifacts) right after its row so the
+       restored layout matches the live streaming layout. */
+    var inlineRow=null;
+    try{
+      var _sel=(typeof CSS!=="undefined"&&CSS.escape)?CSS.escape(String(tc.id||"")):String(tc.id||"").replace(/[^a-zA-Z0-9_-]/g,"");
+      if(_sel)inlineRow=body.querySelector('.tool-inline[data-tcid="'+_sel+'"]');
+    }catch(_){}
+    if(inlineRow){
+      var host=inlineRow.nextElementSibling;
+      if(!host||!host.classList||!host.classList.contains("tool-inline-attachments")){
+        host=document.createElement("div");
+        host.className="tool-inline-attachments";
+        host.setAttribute("data-tool-anchor",String(tc.id||""));
+        inlineRow.insertAdjacentElement("afterend",host);
+      }
+      if(vizSpec&&typeof window.mountVisualization==="function"){
+        try{
+          window.mountVisualization(vizSpec,host,{
+            toolCallId:tc.id||((idPrefix||"history")+"-viz-"+tci)
+          });
+        }catch(_){}
+      }
+      if(Array.isArray(tc.artifacts)&&typeof window.appendInlineArtifact==="function"){
+        for(var aj=0;aj<tc.artifacts.length;aj++){
+          var artJ=tc.artifacts[aj];
+          if(!artJ||!artJ.id)continue;
+          if(artJ.mimeType&&artJ.mimeType.indexOf("image/")===0){
+            try{window.appendInlineArtifact(artJ.id,artJ.mimeType,host,artJ.name)}catch(_){}
+          }
+        }
+      }
+      continue;
+    }
     var cardOut=null;
     if(typeof window.appendToolModule==="function"){
       try{
@@ -4546,10 +4592,9 @@ function restorePersistedMessageExtras(body,entry,idPrefix){
         });
       }catch(_){}
     }
-    if(tc.name==="render_visualization"&&tc.input&&tc.input.version===1
-       &&typeof window.mountVisualization==="function"){
+    if(vizSpec&&typeof window.mountVisualization==="function"){
       try{
-        window.mountVisualization(tc.input,body,{
+        window.mountVisualization(vizSpec,body,{
           toolCallId:tc.id||((idPrefix||"history")+"-viz-"+tci)
         });
       }catch(_){}
@@ -4566,6 +4611,59 @@ function restorePersistedMessageExtras(body,entry,idPrefix){
     }
   }
   if(body.dataset)body.dataset.persistedExtrasFor=messageKey;
+}
+/* Rebuild an assistant message's HTML from rawText while re-splicing the
+   persisted inline tool rows at their recorded textOffset split points —
+   the exact inverse of the serialization finish() performs. Returns null
+   when the message has no usable offsets (legacy sessions), in which case
+   callers fall back to a plain renderAssistantHTML pass and
+   restorePersistedMessageExtras appends classic cards at the end. */
+function rebuildAssistantHtmlWithInlineTools(rawText,toolCalls){
+  var raw=String(rawText||"");
+  var rows=(Array.isArray(toolCalls)?toolCalls:[]).filter(function(tc){
+    return tc&&tc.id&&tc.name&&typeof tc.textOffset==="number"&&tc.textOffset>=0&&tc.textOffset<=raw.length;
+  }).sort(function(a,b){return a.textOffset-b.textOffset});
+  if(!rows.length)return null;
+  var renderSeg=function(txt){
+    var vis=stripChatArtifacts(txt)
+      .replace(/<think>[\s\S]*?<\/think>/gi,"")
+      .replace(/<think>[\s\S]*$/gi,"");
+    if(!vis.trim())return "";
+    return renderAssistantHTML(vis);
+  };
+  var parts=[];
+  var prev=0;
+  for(var ri=0;ri<rows.length;ri++){
+    var tc=rows[ri];
+    parts.push(renderSeg(raw.slice(prev,tc.textOffset)));
+    try{
+      var row=createInlineToolRow({id:String(tc.id),name:String(tc.name)});
+      settleInlineToolRow(row,{
+        ok:tc.isError!==true,
+        results:Array.isArray(tc.results)?tc.results:[]
+      });
+      parts.push(row.outerHTML);
+    }catch(_){}
+    prev=tc.textOffset;
+  }
+  parts.push(renderSeg(raw.slice(prev)));
+  return parts.join("");
+}
+/* Re-seat a live artifact / chart node after the final-render innerHTML
+   pass. Anchored attachment hosts carry the data-tool-anchor of the
+   inline row they belong to; the serialized row (same data-tcid) is in
+   the fresh DOM, so the live node goes right back after it. Nodes with
+   no anchor keep the old bottom-of-bubble placement. */
+function reseatSavedArtifact(container,node){
+  try{
+    var anchor=node.getAttribute&&node.getAttribute("data-tool-anchor");
+    if(anchor){
+      var _sel=(typeof CSS!=="undefined"&&CSS.escape)?CSS.escape(anchor):anchor.replace(/[^a-zA-Z0-9_-]/g,"");
+      var row=container.querySelector('[data-tcid="'+_sel+'"]');
+      if(row){row.insertAdjacentElement("afterend",node);return}
+    }
+  }catch(_){}
+  container.appendChild(node);
 }
 function findMessageIndex(messageId){
   return state.messages.findIndex(function(m){
@@ -5867,9 +5965,16 @@ function doRender(){
            finish() rewrites body's innerHTML. Tool cards are saved
            and re-mounted above, but inline artifacts (plots and native
            visualization cards) need the same treatment or they silently
-           vanish at the streaming→final boundary. Save them here
-           too so the image is visible in the finalized bubble. */
+           vanish at the streaming→final boundary. Anchored attachment
+           hosts (`.tool-inline-attachments`, created by toolRuntime
+           right after an inline tool row) are saved whole so the chart
+           can be re-seated next to its serialized row below. */
         var savedArtifacts=[];
+        var anchoredHosts=body.querySelectorAll('.tool-inline-attachments');
+        for(var ahi=0;ahi<anchoredHosts.length;ahi++){
+          savedArtifacts.push(anchoredHosts[ahi]);
+          anchoredHosts[ahi].parentNode.removeChild(anchoredHosts[ahi]);
+        }
         var artifactNodes=body.querySelectorAll('.exec-artifact,.visualization-card');
         for(var ai=0;ai<artifactNodes.length;ai++){
           savedArtifacts.push(artifactNodes[ai]);
@@ -5892,11 +5997,12 @@ function doRender(){
         for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
           body.appendChild(savedToolCardArr[sci2]);
         }
-        /* Re-mount saved artifacts AFTER the final HTML + tool cards so
-           they sit at the bottom of the bubble (matching the streaming
-           layout). */
+        /* Re-mount saved artifacts AFTER the final HTML + tool cards.
+           Anchored hosts go back beside their serialized inline row
+           (data-tool-anchor → [data-tcid]) so charts stay embedded in
+           the response flow; everything else falls to the bottom. */
         for(var ai2=0;ai2<savedArtifacts.length;ai2++){
-          body.appendChild(savedArtifacts[ai2]);
+          reseatSavedArtifact(body,savedArtifacts[ai2]);
         }
         if(cursor){cursor.remove();cursor=null}
         if(msgIdx>=0&&state.messages[msgIdx]){
@@ -6027,7 +6133,7 @@ function doRender(){
                   var retainedToolCards=Array.isArray(savedToolCardArr)?savedToolCardArr:[];
                   var retainedArtifacts=Array.isArray(savedArtifacts)?savedArtifacts:[];
                   for(var rtc=0;rtc<retainedToolCards.length;rtc++)reactBody.appendChild(retainedToolCards[rtc]);
-                  for(var rta=0;rta<retainedArtifacts.length;rta++)reactBody.appendChild(retainedArtifacts[rta]);
+                  for(var rta=0;rta<retainedArtifacts.length;rta++)reseatSavedArtifact(reactBody,retainedArtifacts[rta]);
                 }
                 /* Removing the legacy streaming bubble changes the scroll
                    height by roughly one whole answer. Preserve the reader's
@@ -8364,6 +8470,7 @@ window.processPendingMermaid = processPendingMermaid;
 window.wireCodeBlockHeaders = wireCodeBlockHeaders;
 window.wireMsgBodyImages = wireMsgBodyImages;
 window.restorePersistedMessageExtras = restorePersistedMessageExtras;
+window.rebuildAssistantHtmlWithInlineTools = rebuildAssistantHtmlWithInlineTools;
 window.renderAssistantHTML = renderAssistantHTML;
 /* Bridge missing window.* assignments that React reads but were never
    explicitly exported (pre-existing gap). Adding them here so C4-B's

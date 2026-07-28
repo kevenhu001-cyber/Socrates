@@ -32,9 +32,14 @@ async function renderLn(page) {
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('draw y = ln(x)');
   });
-  const summary = page.locator('.tool-run-summary').last();
-  await expect(summary).toBeVisible();
-  await summary.click();
+  /* P_inline-tools — live chat renders each tool call as a compact
+     .tool-inline status row embedded in the message flow (the old
+     .tool-run-summary card group only appears in detailed/history
+     replay). The chart mounts in the anchored host right after the
+     row, so waiting for the settled row is enough. */
+  const row = page.locator('.tool-inline[data-tcid="visual-ln"]');
+  await expect(row).toBeVisible();
+  await expect(row).toHaveAttribute('data-state', 'done');
 }
 
 test('native function card renders an actual SVG curve for ln(x)', async ({ page }) => {

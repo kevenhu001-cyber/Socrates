@@ -91,6 +91,12 @@ const SessionPayloadSchema = z.object({
         source: z.string().max(100).optional().nullable(),
         matchedQuery: z.string().max(1000).optional().nullable(),
       }).passthrough()).max(20).optional(),
+      /* P_inline-restore — character offset in the assistant's rawText
+       * where this tool call split the reply, plus the native
+       * visualization spec the run produced. Both are needed to
+       * rebuild the inline text→row→chart layout on reload/share. */
+      textOffset: z.number().int().nonnegative().max(10_000_000).optional().nullable(),
+      visualization: z.any().optional().nullable(),
     })).max(20).optional(),
   })).max(1000).optional(),
   kbNodes: z.array(z.any()).max(5000).optional(),
@@ -363,9 +369,16 @@ router.post('/', writeLimiter, async (req, res, next) => {
                     isError: tc.isError === true,
                     artifacts: Array.isArray(tc.artifacts)
                       ? tc.artifacts.slice(0, 20).map(function(a) {
-                          return { id: String(a.id || ''), mimeType: a.mimeType || null };
+                          return { id: String(a.id || ''), mimeType: a.mimeType || null, name: a.name || null };
                         })
                       : [],
+                    /* P_inline-restore — round-trip the pieces the client
+                     * needs to rebuild the inline tool layout: search
+                     * results (row source lists), the rawText split
+                     * offset, and the native visualization spec. */
+                    results: Array.isArray(tc.results) ? tc.results.slice(0, 20) : [],
+                    textOffset: typeof tc.textOffset === 'number' ? tc.textOffset : null,
+                    visualization: tc.visualization == null ? null : tc.visualization,
                   };
                 })
               : [],

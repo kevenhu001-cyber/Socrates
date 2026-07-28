@@ -43,10 +43,16 @@ export var VIZ_ICON_SOURCE = '<svg viewBox="0 0 24 24" fill="none" stroke="curre
    font). We use postMessage from the iframe to ask the parent for
    the live token values once on load, then keep them in CSS vars. */
 export var VIZ_THEME_RESET =
+  /* P_viz-google-fonts — the iframe is a separate document, so it must
+     load the Google fonts itself or CJK text falls back to the OS
+     default (Microsoft YaHei on Windows). */
+  '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+  '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
+  '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">' +
   '<style>' +
     '*,*::before,*::after{box-sizing:border-box}' +
     'html,body{margin:0;padding:0}' +
-    'body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.55}' +
+    'body{font-family:Inter,"Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.55}' +
     'body{color:var(--text-100,#3a3a3a);background:transparent}' +
     '[data-mode=dark] body{color:var(--text-100,#e8e8ec)}' +
     'a{color:var(--accent-000,#5b6fdb)}' +
