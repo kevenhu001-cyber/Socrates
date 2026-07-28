@@ -65,6 +65,19 @@ export function appendThinking(){
   return {append:function(){},finalize:remove,remove:remove,setLabel:setLabel};
 }
 
+/* Standalone helper that mounts (or reuses) the status pill in the
+   current assistant bubble and rewrites its label. Use this from the
+   chat stream when a tool_use event lands AFTER the pill was already
+   hidden by append()'s first-delta finalize — the pill might be
+   gone from the DOM at this point, so the controller's local
+   setLabel() would silently no-op. showLabel() always makes sure
+   the user sees the new label. */
+export function showLabel(text){
+  var ctl = appendThinking("");
+  if(!ctl||typeof ctl.setLabel!=="function")return;
+  ctl.setLabel(text);
+}
+
 /* Map a tool name to a short user-facing status string. Kept here so
    the live chat path and any other consumer share one source of
    truth. The label is intentionally generic ("Searching" / "Coding"

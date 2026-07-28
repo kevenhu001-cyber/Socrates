@@ -61,7 +61,7 @@ import { aiGenerate } from './chat/mockDiagnostic.js';
 import { extractHistory, buildUserContentParts } from './chat/history.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './chat/systemPrompts.js';
 import { appendInlineArtifact } from './ui/toolCards.js';
-import { looksLikeMetaInstruction, appendThinking, labelForTool } from './ui/thinkingPill.js';
+import { looksLikeMetaInstruction, appendThinking, labelForTool, showLabel } from './ui/thinkingPill.js';
 /* searchProgress UI removed in favour of the inline status label.
    The import was retired when agent-tool-cards were dropped from the
    live chat surface; the background web_search path now only updates
@@ -3432,7 +3432,7 @@ async function askChatTurn(userText){
     askChatTurn(userText);
   }});
   var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)},{
-    onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];if(c&&c.name){try{ensureThinkCtl().setLabel(labelForTool(c.name));}catch(_){}}ctl.recordToolUse(c)}},
+    onToolUse:function(calls){for(var i=0;i<calls.length;i++){var c=calls[i];if(c&&c.name){try{showLabel(labelForTool(c.name));}catch(_){}}ctl.recordToolUse(c)}},
     onToolResult:function(r){ctl.recordToolResult(r)},
     onToolProgress:function(p){if(ctl.recordToolProgress)ctl.recordToolProgress(p)},
     onExecutionStart:function(ev){if(ctl.recordExecutionStart)ctl.recordExecutionStart(ev)},
@@ -5498,14 +5498,26 @@ function doRender(){
         /* First delta arrived — stop the watchdog and elapsed counter. */
         clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
-        /* First real text delta — the tool/status phase is over,
-           remove the placeholder pill. */
-        if(thinkCtl&&typeof thinkCtl.finalize==="function"){
-          try{thinkCtl.finalize()}catch(_){}
-        }
+        /* Don't finalize the pill on the FIRST delta — many models emit
+           a short preamble ("好的,让我搜一下…") before the tool_use
+           event, and removing the pill here would leave the user
+           staring at a blank bubble while the search actually runs.
+           Defer the pill removal until the streaming text reaches
+           PILL_HIDE_MIN_CHARS, so short preambles keep the "Thinking…"
+           (or whatever label the upcoming tool_use sets) visible. */
       }
       full+=delta;
       publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:full.length});
+      /* Hide the status pill once the streamed text passes a small
+         threshold — anything shorter is almost certainly a
+         "好的,让我搜一下…" preamble that the model emits before its
+         tool_use, and we want the pill to stay so the upcoming
+         "Searching" label has a host. 60 chars is well below any
+         substantive answer but well above a typical Chinese/English
+         transition phrase. */
+      if(thinkCtl&&typeof thinkCtl.finalize==="function"&&full.length>=60){
+        try{thinkCtl.finalize()}catch(_){}
+      }
       if(wasFirst){
         /* Schedule on rAF so the msg element is definitely in the DOM */
         cancelScheduledRender();
