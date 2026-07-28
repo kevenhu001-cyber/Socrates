@@ -36,16 +36,17 @@ var DIAG_ASPECTS=[
    question, passing the previous questions so the model avoids
    repetition. Falls back to mock (caller side) if fewer than 3
    questions come back successfully. */
-export async function generateDiagnosticQuestions(topic,language,onProgress,shouldCancel){
+export async function generateDiagnosticQuestions(topic,language,onProgress,shouldCancel,requestedCount){
   var langNames={zh:'Chinese',ja:'Japanese',ko:'Korean',ru:'Russian',ar:'Arabic',en:'English'};
   var langName=langNames[language]||'English';
+  var questionCount=Math.max(1,Math.min(10,Number.parseInt(requestedCount,10)||5));
   var all=[];
   var previousTexts=[];
-  for(var i=0;i<5;i++){
+  for(var i=0;i<questionCount;i++){
     /* U-H3 — bail out early if the user cancelled generation so we
        don't finish a run whose result will be discarded. */
     if(typeof shouldCancel==='function'&&shouldCancel())return null;
-    var aspect=DIAG_ASPECTS[i]||DIAG_ASPECTS[DIAG_ASPECTS.length-1];
+    var aspect=DIAG_ASPECTS[i%DIAG_ASPECTS.length];
     var prevBlock=previousTexts.length
       ?"Already asked in this diagnostic. Do NOT repeat the same angle or wording:\n"+
         previousTexts.map(function(t,idx){return(idx+1)+". "+t}).join("\n")
@@ -56,6 +57,7 @@ export async function generateDiagnosticQuestions(topic,language,onProgress,shou
       .replace('{questionNumber}',String(i+1))
       .replace('{aspect}',aspect)
       .replace('{previousQuestions}',prevBlock);
+    prompt=prompt.replace(' of 5,',' of '+questionCount+',');
     /* Web context only needs to be mentioned once (on the first
        call) — the same context applies to all 5 questions and
        repeating it 5x burns tokens without changing behavior. */
@@ -67,7 +69,7 @@ export async function generateDiagnosticQuestions(topic,language,onProgress,shou
         prompt+="\n\nNote: no [Web research] block is present. You do not have live web access for this turn — say so honestly rather than guessing about current events.";
       }
     }
-    if(onProgress)onProgress(i+1,5,null);
+    if(onProgress)onProgress(i+1,questionCount,null);
     var msgs=[{role:'system',content:prompt},{role:'user',content:'Topic: '+topic}];
     var resp=await callAPI(msgs,MAX_TOKENS_DIAG,i===0?DIAG_FIRST_TIMEOUT_MS:undefined);
     if(!resp){
@@ -80,12 +82,12 @@ export async function generateDiagnosticQuestions(topic,language,onProgress,shou
     }
     all.push(q);
     previousTexts.push(q.q);
-    if(onProgress)onProgress(i+1,5,q);
+    if(onProgress)onProgress(i+1,questionCount,q);
   }
   /* If we got fewer than 3 of 5 questions, treat the whole call as
      failed and let the caller fall back to mock. The user gets a
      consistent 5-question diagnostic either way. */
-  if(all.length<3)return null;
+  if(all.length!==questionCount)return null;
   return all;
 }
 

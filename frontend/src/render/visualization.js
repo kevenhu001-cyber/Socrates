@@ -1,5 +1,9 @@
 /* Native visual cards. The model provides semantic data only; this module
  * owns Socrates styling, responsive layout, interaction, and export. */
+import {
+  mountSpecializedVisualization,
+  usesSpecializedRenderer,
+} from './visualizationAdapters.js';
 
 var echartsPromise = null;
 var visualCounter = 0;
@@ -386,7 +390,11 @@ function bindCard(card, spec, chart) {
   if (reset) reset.addEventListener('click', function () { if (chart) chart.dispatchAction({ type: 'restore' }); });
   var download = card.querySelector('[data-viz-action="download"]');
   download.addEventListener('click', function () {
-    if (chart) downloadDataUrl((spec.title || 'visualization').replace(/[^\w-]+/g, '-') + '.png', chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: token('--bg-100', '#fff') }));
+    if (!chart) return;
+    var dataUrl = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: token('--bg-100', '#fff') });
+    Promise.resolve(dataUrl).then(function (resolved) {
+      if (resolved) downloadDataUrl((spec.title || 'visualization').replace(/[^\w-]+/g, '-') + '.png', resolved);
+    });
   });
 }
 
@@ -424,7 +432,7 @@ export async function mountVisualization(spec, host, options) {
   // Register in the in-memory set BEFORE any async yield so concurrent
   // calls with the same cardId see it.
   _mountingCards.set(cardId, card);
-  var chartTemplates = ['function', 'line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap', 'radar', 'boxplot'];
+  var chartTemplates = ['line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap', 'radar', 'boxplot'];
   var extension = ['svg_illustration', 'interactive_simulation'].includes(spec.template);
   /* P_viz-actions-i18n — the four action buttons used to be
      hardcoded Chinese with `title=` only. Now they go through
@@ -440,7 +448,22 @@ export async function mountVisualization(spec, host, options) {
   try { if (typeof renderMathInElement === 'function') renderMathInElement(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] }); } catch (_) {}
   var stage = card.querySelector('.visualization-stage'), chart = null, liveEntry = null;
   try {
-    if (chartTemplates.includes(spec.template)) {
+    if (usesSpecializedRenderer(spec.template)) {
+      var specialized = await mountSpecializedVisualization(spec, stage, {
+        sampleFunction: sampleFunction,
+      });
+      chart = specialized.chart || null;
+      card.dataset.visualizationRenderer = spec.template === 'function' || spec.template === 'paper_chart'
+        ? 'plotly'
+        : spec.template === 'geometry_3d'
+          ? 'three'
+          : spec.template === 'math_construction'
+            ? 'geogebra'
+            : spec.template === 'whiteboard'
+              ? 'tldraw'
+              : 'mermaid';
+      card._visualizationCleanup = specialized.cleanup || function () {};
+    } else if (chartTemplates.includes(spec.template)) {
       var echarts = await loadEcharts();
       var useCanvas = spec.template === 'heatmap' || (spec.payload.series || []).some(function (series) { return series.data && series.data.length > 1200; });
       chart = echarts.init(stage, null, { renderer: useCanvas ? 'canvas' : 'svg' });

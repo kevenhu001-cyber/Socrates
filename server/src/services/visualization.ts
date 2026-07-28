@@ -10,6 +10,7 @@ export const VISUALIZATION_TEMPLATES = [
   'radar', 'boxplot', 'flowchart', 'sequence', 'state', 'tree', 'mindmap',
   'network', 'timeline', 'comparison', 'process', 'number_line', 'geometry',
   'concept_map', 'svg_illustration', 'interactive_simulation',
+  'paper_chart', 'math_construction', 'geometry_3d', 'whiteboard',
 ] as const;
 
 const finiteNumber = z.number().finite();
@@ -77,6 +78,22 @@ const extensionPayload = z.object({
   description: z.string().max(800).optional(),
 }).passthrough();
 
+const mathConstructionPayload = z.object({
+  appName: z.enum(['geometry', 'graphing', '3d']).optional(),
+  commands: z.array(z.string().min(1).max(500)).min(1).max(80),
+  description: z.string().max(800).optional(),
+}).passthrough();
+
+const geometry3dPayload = z.object({
+  objects: z.array(z.object({
+    type: z.enum(['box', 'sphere', 'cylinder', 'cone']),
+    position: z.tuple([finiteNumber, finiteNumber, finiteNumber]).optional(),
+    size: z.tuple([finiteNumber, finiteNumber, finiteNumber]).optional(),
+    label: z.string().max(120).optional(),
+  }).passthrough()).min(1).max(80),
+  description: z.string().max(800).optional(),
+}).passthrough();
+
 const envelope = z.object({
   version: z.literal(1),
   template: z.enum(VISUALIZATION_TEMPLATES),
@@ -88,8 +105,11 @@ const envelope = z.object({
 
 function schemaFor(template: string): z.ZodTypeAny {
   if (template === 'function') return functionPayload;
-  if (['line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap', 'radar', 'boxplot'].includes(template)) return chartPayload;
+  if (['line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap', 'radar', 'boxplot', 'paper_chart'].includes(template)) return chartPayload;
   if (['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map'].includes(template)) return graphPayload;
+  if (template === 'math_construction') return mathConstructionPayload;
+  if (template === 'geometry_3d') return geometry3dPayload;
+  if (template === 'whiteboard') return teachingPayload;
   if (['svg_illustration', 'interactive_simulation'].includes(template)) return extensionPayload;
   return teachingPayload;
 }
@@ -179,7 +199,7 @@ export const VISUALIZATION_TOOL = {
   type: 'function',
   function: {
     name: 'render_visualization',
-    description: 'Create a native Socrates visual card. Use for requested function graphs, ordinary data charts, teaching diagrams, timelines, comparisons, flow/state/tree/network diagrams, illustrations, and interactive simulations. Submit semantic content only. Never submit CSS, fonts, colors, dimensions, ECharts options, Mermaid, raw SVG/HTML unless using the restricted extension templates. Use code_interpreter only when data must first be calculated, analysed from files, or exported.',
+    description: 'Create a native Socrates visual card backed by mature renderers: ECharts for ordinary statistics, Plotly for function/paper charts, Mermaid for flows, GeoGebra for math constructions, Three.js for 3D geometry, and tldraw for editable whiteboards. Submit semantic content only. Never submit CSS, fonts, colors, dimensions, raw renderer options, or Mermaid source. Use code_interpreter only when data must first be calculated, analysed from files, or exported.',
     parameters: {
       type: 'object',
       required: ['version', 'template', 'title', 'accessibilitySummary', 'payload'],
@@ -189,7 +209,7 @@ export const VISUALIZATION_TOOL = {
         title: { type: 'string', maxLength: 120 },
         caption: { type: 'string', maxLength: 500 },
         accessibilitySummary: { type: 'string', maxLength: 800 },
-        payload: { type: 'object', description: 'Template-specific semantic content. function: {functions:[{expression,label?,domain?,role?}],xLabel?,yLabel?}. line/area/bar/scatter/pie/histogram/heatmap/radar/boxplot: {categories?,series:[{name?,role?,data:[numbers]}],xLabel?,yLabel?} (scatter data items are [x,y] pairs). flowchart/sequence/state/tree/mindmap/network/concept_map: {nodes:[{id,label,detail?}],edges:[{from,to,label?}],direction?}. timeline/comparison/process/number_line/geometry: {items:[{label,detail?,value?,role?}]}. svg_illustration/interactive_simulation: {source}. Exact field names: use data not points, expression not expr, name not title in a series, from/to not source/target in an edge.' },
+        payload: { type: 'object', description: 'Template-specific semantic content. function: {functions:[{expression,label?,domain?,role?}],xLabel?,yLabel?}. line/area/bar/scatter/pie/histogram/heatmap/radar/boxplot/paper_chart: {categories?,series:[{name?,role?,data:[numbers]}],xLabel?,yLabel?}. flowchart/sequence/state/tree/mindmap/network/concept_map: {nodes:[{id,label,detail?}],edges:[{from,to,label?}],direction?}. math_construction: {appName?,commands:[GeoGebra commands]}. geometry_3d: {objects:[{type:box|sphere|cylinder|cone,position?,size?,label?}]}. whiteboard: {items? or nodes?}. timeline/comparison/process/number_line/geometry: {items:[{label,detail?,value?,role?}]}. svg_illustration/interactive_simulation: {source}.' },
       },
       additionalProperties: false,
     },

@@ -23,6 +23,9 @@
 var STORAGE_KEY = "socrates-reasoning-effort";
 var VALID = ["high", "medium", "low"];
 var _effort = null;
+var _openPicker = null;
+var _openMenu = null;
+var _menuPlaceholder = null;
 
 function _load() {
   if (_effort) return _effort;
@@ -140,15 +143,30 @@ export function toggleEffortPicker(el) {
     picker.setAttribute("data-open", "true");
     var t = picker.querySelector(".effort-trigger");
     if (t) t.setAttribute("aria-expanded", "true");
+    _portalMenu(picker);
     _positionMenu(picker);
   }
+}
+
+/* Move the menu to <body> while open. A fixed descendant can still be
+   clipped or re-based by a transformed/contained composer ancestor;
+   portalling removes that entire class of dropdown failures. */
+function _portalMenu(picker) {
+  var menu = picker.querySelector(".effort-menu");
+  if (!menu) return;
+  _openPicker = picker;
+  _openMenu = menu;
+  _menuPlaceholder = document.createComment("effort-menu-placeholder");
+  menu.parentNode.insertBefore(_menuPlaceholder, menu);
+  document.body.appendChild(menu);
+  menu.classList.add("portal-open");
 }
 
 /* Fixed-position the menu above the trigger, clamped to the viewport so
    the composer's overflow:hidden can't clip it. */
 function _positionMenu(picker) {
   var trigger = picker.querySelector(".effort-trigger");
-  var menu = picker.querySelector(".effort-menu");
+  var menu = picker === _openPicker ? _openMenu : picker.querySelector(".effort-menu");
   if (!trigger || !menu) return;
   var r = trigger.getBoundingClientRect();
   menu.style.position = "fixed";
@@ -173,15 +191,23 @@ function _closeAll() {
     p.setAttribute("data-open", "false");
     var t = p.querySelector(".effort-trigger");
     if (t) t.setAttribute("aria-expanded", "false");
-    var m = p.querySelector(".effort-menu");
-    if (m) {
-      m.style.position = "";
-      m.style.top = "";
-      m.style.left = "";
-      m.style.right = "";
-      m.style.bottom = "";
-    }
   });
+  var m = _openMenu;
+  if (m) {
+    m.classList.remove("portal-open");
+    m.style.position = "";
+    m.style.top = "";
+    m.style.left = "";
+    m.style.right = "";
+    m.style.bottom = "";
+    if (_menuPlaceholder && _menuPlaceholder.parentNode) {
+      _menuPlaceholder.parentNode.insertBefore(m, _menuPlaceholder);
+      _menuPlaceholder.remove();
+    }
+  }
+  _openPicker = null;
+  _openMenu = null;
+  _menuPlaceholder = null;
 }
 
 /* Refresh every picker: trigger label + full menu content (model + effort). */
@@ -214,9 +240,8 @@ if (typeof document !== "undefined") {
         if (id && typeof window.pickActiveProviderById === "function") {
           window.pickActiveProviderById(id);
         }
+        _closeAll();
         syncEffortUI();
-        var p = menu.closest(".effort-picker");
-        if (p) _positionMenu(p);
         return;
       }
       return; /* click inside menu but not on an item — keep open */

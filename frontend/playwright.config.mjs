@@ -13,7 +13,9 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: false, // specs share global module state via the bundled main.js
   workers: 1,
-  reporter: [['list']],
+  reporter: process.env.CI
+    ? [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]]
+    : [['list']],
   timeout: 60_000,
   expect: { timeout: 10_000 },
   use: {

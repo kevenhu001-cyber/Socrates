@@ -130,6 +130,7 @@ const CSP_IMG_SOURCES = [
 ];
 const CSP_CONNECT_SOURCES = [
   "'self'",
+  'https://www.geogebra.org',
   // SSE EventSource goes through connect-src. We allow only our own
   // origin; outbound LLM calls are server-side.
 ];
@@ -164,6 +165,7 @@ app.use(helmet({
       // policy regardless of NODE_ENV.
       scriptSrc: [
         ...CSP_SCRIPT_SOURCES,
+        'https://www.geogebra.org',
         ...CSP_SCRIPT_HASHES,
         ...(process.env.ALLOW_DEV_EVAL === '1' ? ["'unsafe-eval'"] : []),
       ],
@@ -175,6 +177,7 @@ app.use(helmet({
       connectSrc: CSP_CONNECT_SOURCES,
       // SSE needs the worker/blob sources for streaming.
       workerSrc: ["'self'", "blob:"],
+      frameSrc: ["'self'", 'https://www.geogebra.org'],
       objectSrc: ["'none'"],
       frameAncestors: ["'none'"],
       baseUri: ["'self'"],

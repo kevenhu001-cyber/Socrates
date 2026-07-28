@@ -545,6 +545,29 @@ script for the production environment. It:
 ./deploy.sh                              # build + deploy
 ```
 
+Deployments are serialized with `flock`; a second invocation exits
+immediately while another deploy owns the lock. Deployment paths and
+the nginx status-site configuration can be overridden with
+`FRONTEND_DIR`, `SERVER_DIR`, `APP_WEB_ROOT`, `SITE_WEB_ROOT`,
+`SITE_DIR`, `STATUS_DIR`, and `NGINX_SITE_CONF`. The default values
+remain production-compatible. The frontend keeps one `.previous`
+snapshot and the backend keeps one `dist.previous` tree, so operators
+should archive a known-good release separately when a longer rollback
+window is required.
+
+For the local frontend merge gate:
+
+```bash
+cd frontend
+npm run lint
+npm run test:unit
+npm run build
+npm run test:smoke
+```
+
+CI runs these checks serially, cancels superseded push runs, and uploads
+the Playwright HTML report as the `playwright-report` artifact.
+
 The backend runs as a systemd unit (`Restart=always`). The
 server is stateless beyond PostgreSQL, so horizontal scaling is
 just a matter of running more processes behind the same nginx.

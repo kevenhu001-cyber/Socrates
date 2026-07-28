@@ -9,10 +9,25 @@
 
 set -Eeuo pipefail
 
-FRONTEND_DIR="/home/ubuntu/User/Socrates/frontend"
-SERVER_DIR="/home/ubuntu/User/Socrates/server"
-APP_WEB_ROOT="/var/www/app.topodrive.top"
-SITE_WEB_ROOT="/var/www/topodrive.top"
+FRONTEND_DIR="${FRONTEND_DIR:-/home/ubuntu/User/Socrates/frontend}"
+SERVER_DIR="${SERVER_DIR:-/home/ubuntu/User/Socrates/server}"
+APP_WEB_ROOT="${APP_WEB_ROOT:-/var/www/app.topodrive.top}"
+SITE_WEB_ROOT="${SITE_WEB_ROOT:-/var/www/topodrive.top}"
+SITE_DIR="${SITE_DIR:-/home/ubuntu/User/Socrates/site}"
+STATUS_DIR="${STATUS_DIR:-/var/www/status.topodrive.top}"
+NGINX_SITE_CONF="${NGINX_SITE_CONF:-/etc/nginx/sites-available/status.topodrive.top}"
+DEPLOY_LOCK_FILE="${DEPLOY_LOCK_FILE:-${XDG_RUNTIME_DIR:-/tmp}/socrates-deploy.lock}"
+
+if ! command -v flock >/dev/null 2>&1; then
+  echo "ERROR: flock is required to serialize deployments" >&2
+  exit 1
+fi
+mkdir -p "$(dirname "$DEPLOY_LOCK_FILE")"
+exec 9>"$DEPLOY_LOCK_FILE"
+if ! flock -n 9; then
+  echo "ERROR: another Socrates deploy is already in progress ($DEPLOY_LOCK_FILE)" >&2
+  exit 1
+fi
 
 # ─── 0. Preflight: detect sudo + dry-run ──────────────────────────────
 SUDO=""
@@ -156,7 +171,6 @@ else
 fi
 
 # ─── 2. Marketing site (topodrive.top) ───────────────────────────────
-SITE_DIR="/home/ubuntu/User/Socrates/site"
 if [ -d "$SITE_DIR" ]; then
   backup_previous "$SITE_WEB_ROOT"
   $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/base.css" "$SITE_WEB_ROOT/base.css"
@@ -189,14 +203,13 @@ fi
 # Uses a versioned filename (status.<TS>.html) so EdgeOne CDN sees a
 # new URL on every deploy. nginx's try_files points directly to the
 # versioned file — no symlink or status.html needed.
-STATUS_DIR="/var/www/status.topodrive.top"
-STATUS_SRC="/home/ubuntu/User/Socrates/server/src/status.html"
+STATUS_SRC="$SERVER_DIR/src/status.html"
 if [ -f "$STATUS_SRC" ]; then
   STATUS_TS=$(date +%s)
   STATUS_FILE="status.${STATUS_TS}.html"
   $SUDO install -m 644 -o www-data -g www-data "$STATUS_SRC" "$STATUS_DIR/$STATUS_FILE"
   # Update nginx try_files to point to the new versioned file
-  $SUDO sed -ri "s|try_files /status\.[0-9]+\.html =404;|try_files /$STATUS_FILE =404;|" /etc/nginx/sites-available/status.topodrive.top
+  $SUDO sed -ri "s|try_files /status\.[0-9]+\.html =404;|try_files /$STATUS_FILE =404;|" "$NGINX_SITE_CONF"
   echo "  status:  ${STATUS_FILE}"
 fi
 

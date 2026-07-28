@@ -36,3 +36,13 @@ test('tool declaration exposes the versioned visual contract', () => {
   assert.equal(VISUALIZATION_TOOL.function.name, 'render_visualization');
   assert.deepEqual(VISUALIZATION_TOOL.function.parameters.properties.version.enum, [1]);
 });
+
+test('specialized mature-renderer templates validate semantic payloads', () => {
+  const specs = [
+    { version: 1, template: 'paper_chart', title: 'Paper', accessibilitySummary: 'A publication chart.', payload: { categories: ['A'], series: [{ name: 'Result', data: [1] }] } },
+    { version: 1, template: 'math_construction', title: 'Circle', accessibilitySummary: 'An editable circle construction.', payload: { commands: ['A=(0,0)', 'Circle(A,4)'] } },
+    { version: 1, template: 'geometry_3d', title: 'Solid', accessibilitySummary: 'A rotatable sphere.', payload: { objects: [{ type: 'sphere', position: [0, 1, 0], size: [1, 1, 1] }] } },
+    { version: 1, template: 'whiteboard', title: 'Ideas', accessibilitySummary: 'An editable idea board.', payload: { items: [{ label: 'Start here' }] } },
+  ];
+  specs.forEach((spec) => assert.equal(validateVisualizationSpec(spec).ok, true, spec.template));
+});
