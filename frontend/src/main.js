@@ -7,7 +7,7 @@ import './windowExports.js';
 import './state.js';
 import './i18n.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
-import { scrollContainer, scrollToBottomIfPinned } from './ui/scroll.js';
+import { scrollContainer, scrollToBottomIfPinned, captureScrollAnchor, restoreScrollAnchor, watchAnchor } from './ui/scroll.js';
 import { initKeyboardViewport } from './ui/keyboardViewport.js';
 import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
@@ -5786,6 +5786,23 @@ function doRender(){
       var _finishDistanceFromBottom=_finishScroller
         ? Math.max(0,_finishScroller.scrollHeight-_finishScroller.scrollTop-_finishScroller.clientHeight)
         : 0;
+      /* P_anchor_finish — snapshot which message row the reader is
+         currently looking at, BEFORE we rewrite body's innerHTML
+         below. The previous approach restored scrollTop from
+         scrollHeight ratios, which broke every time the finalized
+         bubble had a different height than the streamed one (KaTeX
+         render, code-block copy buttons, mermaid/viz mounts, etc.)
+         and the user got yanked to the top of the freshly-committed
+         bubble — perceived as a page refresh. We anchor on a row
+         instead so the user's visible content stays put regardless
+         of how much surrounding chrome grew or shrank. Skip the
+         capture when the reader was pinned at the bottom: their
+         intent is to stay at the bottom, and the existing
+         _finishWasPinned branch in finishAfterRender handles that
+         cleanly without competing with an anchor restore. */
+      var _finishAnchor=(_finishWasPinned||!_finishScroller)
+        ? null
+        : captureScrollAnchor(_finishScroller);
       /* Skip the char-by-char animation when the response contains
        * a <think> marker. The animation writes formatted HTML into
        * a text node, so mid-stream the user would see literal
@@ -6095,6 +6112,15 @@ function doRender(){
            html=<finalized>) and React will paint a fresh bubble on
            the next render. The legacy bubble is detached below only
            AFTER React commits its copy, so the swap is seamless. */
+        /* P_react-finish-scroll-suppress — set a flag that the React
+           MessageList useLayoutEffect reads on its next items.length
+           change. The effect would otherwise unconditionally snap the
+           reader to the top of the freshly-committed bubble a frame
+           before _hfTick restores their relative anchor, which the
+           user perceives as a page refresh the moment the answer
+           finishes. The flag is cleared by _hfTick below once the
+           post-commit scroll restore has actually run. */
+        window.__socratesStreamFinishing=true;
         publishReactChatRuntime({
           type:"stream-finished",
           messageId:clientId,
@@ -6138,10 +6164,30 @@ function doRender(){
                 /* Removing the legacy streaming bubble changes the scroll
                    height by roughly one whole answer. Preserve the reader's
                    anchor after that removal so completion does not look like
-                   a page refresh or jump back to the user's prompt. */
+                   a page refresh or jump back to the user's prompt.
+                   P_anchor-restore — when _finishAnchor was captured
+                   (i.e. the reader was NOT pinned at the bottom during
+                   streaming), restore by row anchor instead of by
+                   distance-from-bottom. The legacy bubble's height rarely
+                   matches the React bubble's height (KaTeX render, copy
+                   buttons, mermaid/viz mounts, etc.), so the
+                   distance-from-bottom math below produces scrollTop=0
+                   whenever the legacy was taller than the React —
+                   which is exactly the "jumped back to the start of the
+                   answer" symptom. Anchoring on a row keeps the user's
+                   visible content in place regardless of which bubble
+                   has how many pixels of chrome. */
                 if(_finishScroller){
                   if(_finishWasPinned){
                     _finishScroller.scrollTop=_finishScroller.scrollHeight;
+                  }else if(_finishAnchor){
+                    /* Restore once now, then keep restoring across the
+                       next 3 frames + ResizeObserver ticks so the
+                       async mermaid/viz/widget mounts that finish()
+                       just kicked off don't push the reader down
+                       through the message they were reading. */
+                    restoreScrollAnchor(_finishScroller,_finishAnchor);
+                    try{watchAnchor(_finishScroller,_finishAnchor,{timeoutMs:2500})}catch(_){}
                   }else{
                     _finishScroller.scrollTop=Math.max(
                       0,
@@ -6149,12 +6195,21 @@ function doRender(){
                     );
                   }
                 }
+                /* Release the suppression flag now that the post-commit
+                   scroll restore has actually run. Subsequent items.length
+                   changes (e.g. the next user message) must fall through
+                   to the unconditional scroll-to-bottom branch. */
+                window.__socratesStreamFinishing=false;
                 return;
               }
               if(++_hfFrames<120){requestAnimationFrame(_hfTick);return;}
               /* React never painted this entry — drop the legacy bubble
                  anyway so a later snapshot render can't duplicate it. */
               if(legacyNode&&legacyNode.parentNode)legacyNode.parentNode.removeChild(legacyNode);
+              /* P_flag-leak-guard — release the suppression flag even on
+                 the abandon path; otherwise it stays true forever and
+                 silently breaks auto-scroll for every subsequent turn. */
+              window.__socratesStreamFinishing=false;
             }catch(_){}
           };
           requestAnimationFrame(_hfTick);

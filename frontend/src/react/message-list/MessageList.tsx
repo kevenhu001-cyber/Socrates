@@ -66,8 +66,29 @@ function MessageList({ omitEntryIds }: MessageListProps) {
   // new bubble. On a keyboard-constrained viewport that leaves the transcript
   // one bubble above the true bottom. Scroll after this list's DOM commit,
   // while still respecting a reader who deliberately scrolled away.
+  //
+  // Special case: when the items.length jump is the legacy main.js finish()
+  // path transitioning a streaming bubble to its finalized copy, the legacy
+  // _hfTick in main.js (around line 6142) is the single source of truth for
+  // "snap to bottom if pinned, else preserve distance-from-bottom". If this
+  // effect also ran unconditionally, it would yank the reader to the top of
+  // the freshly-committed bubble *before* _hfTick restores their anchor —
+  // perceived as a spontaneous page refresh the moment the answer finishes.
+  // The flag is set by main.js before publishing the stream-finished event
+  // and cleared once _hfTick has run.
   useLayoutEffect(() => {
-    if (window.state?._userScrolledAway) return;
+    const w = window as unknown as {
+      __socratesStreamFinishing?: boolean;
+      state?: { _userScrolledAway?: boolean };
+    };
+    if (w.__socratesStreamFinishing) {
+      // Don't touch scrollTop — legacy _hfTick owns the post-commit anchor.
+      // Do NOT clear the flag here: clearing belongs to legacy after _hfTick
+      // has actually run, otherwise a second items.length change inside the
+      // same frame would fall through to the unconditional branch.
+      return;
+    }
+    if (w.state?._userScrolledAway) return;
     const list = document.getElementById(MSG_LIST_ID);
     if (list) list.scrollTop = list.scrollHeight;
   }, [items.length, items.length ? entryId(items[items.length - 1], `idx-${items.length - 1}`) : null]);
