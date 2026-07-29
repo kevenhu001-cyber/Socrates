@@ -487,15 +487,27 @@ export async function mountVisualization(spec, host, options) {
            theme refresh mutates the SVG, which changes the stage size
            and fires the observer in the same frame). That crashes
            inside chart views with "Cannot read properties of
-           undefined (reading 'childAt')". Defer to rAF, coalesce
-           bursts, and skip disposed/zero-size stages. */
+           undefined (reading 'childAt')".
+           Solution: track a pendingResize flag; try resize() inline
+           (succeeds when the chart is idle), and if it fails (chart
+           is animating), the 'finished' event retries after all
+           entrance/transition animations settle. */
         var resizeRaf = 0;
+        var pendingResize = false;
+        chart.on('finished', function () {
+          if (pendingResize) {
+            pendingResize = false;
+            if (!chart || chart.isDisposed() || !stage.clientWidth || !stage.clientHeight) return;
+            try { chart.resize(); } catch (_) { /* chart was disposed mid-animation */ }
+          }
+        });
         var resize = new ResizeObserver(function () {
           if (resizeRaf) return;
           resizeRaf = requestAnimationFrame(function () {
             resizeRaf = 0;
             if (!chart || chart.isDisposed() || !stage.clientWidth || !stage.clientHeight) return;
-            try { chart.resize(); } catch (err) { console.warn('[visualization] resize failed', err); }
+            pendingResize = true;
+            try { chart.resize(); pendingResize = false; } catch (_) { /* deferred to 'finished' */ }
           });
         });
         resize.observe(stage);
@@ -548,8 +560,27 @@ function _refreshCharts() {
       continue;
     }
     try {
-      entry.chart.setOption(optionForChart(entry.spec, colors), { notMerge: true });
-      entry.chart.resize();
+      /* P_viz-theme-animation — setOption with {notMerge: true} triggers
+       * ECharts' internal transition (entrance) animation pipeline that
+       * calls _executeOneToOne → _update → childAt on old views that have
+       * already been disposed by notMerge. The crash surfaces in a later
+       * requestAnimationFrame frame, so the try-catch around setOption
+       * itself does NOT catch it. Suppress animation entirely here: theme
+       * colour changes don't need entrance/transition animations. */
+      var chartOpts = optionForChart(entry.spec, colors);
+      if (chartOpts) {
+        chartOpts.animation = false;
+        entry.chart.setOption(chartOpts, { notMerge: true });
+      }
+      /* Do NOT call resize() here. The ResizeObserver attached during
+       * mount (P_viz-resize-guard) already handles container-size changes
+       * via rAF. Calling resize() synchronously after setOption triggers
+       * the ResizeObserver from setOption's SVG DOM mutations, which
+       * queues a rAF callback that runs resize() while ECharts' view
+       * hierarchy is still mid-construction from setOption's animation
+       * pipeline — crashing with "Cannot read properties of undefined
+       * (reading 'childAt')". setOption alone is sufficient for theme
+       * colour changes; the ResizeObserver covers layout changes. */
     } catch (_) { /* ignore */ }
   }
   /* Re-run KaTeX on every live card so LaTeX renders pick up any token
