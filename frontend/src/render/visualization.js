@@ -481,9 +481,27 @@ export async function mountVisualization(spec, host, options) {
         chart.setOption(chartOpts, { notMerge: true });
         liveEntry = { chart: chart, spec: spec };
         _liveCharts.push(liveEntry);
-        var resize = new ResizeObserver(function () { chart.resize(); }); resize.observe(stage);
+        /* P_viz-resize-guard — resizing synchronously from the
+           ResizeObserver can re-enter ECharts while its progressive
+           render pipeline is mid-flight (setOption(notMerge) or the
+           theme refresh mutates the SVG, which changes the stage size
+           and fires the observer in the same frame). That crashes
+           inside chart views with "Cannot read properties of
+           undefined (reading 'childAt')". Defer to rAF, coalesce
+           bursts, and skip disposed/zero-size stages. */
+        var resizeRaf = 0;
+        var resize = new ResizeObserver(function () {
+          if (resizeRaf) return;
+          resizeRaf = requestAnimationFrame(function () {
+            resizeRaf = 0;
+            if (!chart || chart.isDisposed() || !stage.clientWidth || !stage.clientHeight) return;
+            try { chart.resize(); } catch (err) { console.warn('[visualization] resize failed', err); }
+          });
+        });
+        resize.observe(stage);
         card._visualizationCleanup = function () {
           resize.disconnect();
+          if (resizeRaf) { cancelAnimationFrame(resizeRaf); resizeRaf = 0; }
           chart.dispose();
           if (liveEntry) {
             var idx = _liveCharts.indexOf(liveEntry);
