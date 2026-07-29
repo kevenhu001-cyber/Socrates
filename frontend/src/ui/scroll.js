@@ -143,42 +143,84 @@ export function restoreScrollAnchor(scroller, anchor){
 
 /* Returns a stop() function. Used after finish() to keep the reader
    glued to the same message while mermaid/viz/widget iframes mount
-   asynchronously and grow scrollHeight underneath them. Late mounts
-   finish in well under a second; the timeout caps the observer so
-   it doesn't leak across turns. */
+   asynchronously and grow scrollHeight underneath them.
+
+   P_no-finish-jump — the previous implementation restored for only
+   3 frames and then relied on a ResizeObserver attached to the
+   scroller element. ResizeObserver only fires when the observed
+   element's OWN box changes — children mounting inside it and
+   growing scrollHeight never trigger it — so every async mount that
+   landed after frame 3 (mermaid render, viz iframe height report,
+   image decode, scaffold-widget setTimeout(0) mounts) shifted the
+   reader with no correction: perceived as "the page refreshed and
+   jumped back to the start of the answer". Restore on every frame
+   for the whole window instead; restoreScrollAnchor is a no-op
+   (<0.5px delta) when nothing moved, so the loop costs two rect
+   reads per idle frame. Any direct user input cancels immediately
+   so the anchor never fights an intentional scroll. */
 export function watchAnchor(scroller, anchor, opts){
   opts=opts||{};
   var timeoutMs=opts.timeoutMs!=null?opts.timeoutMs:2500;
-  var stopOnFirst=opts.stopOnFirst!==false;
   if(!scroller||!anchor)return function(){};
-  var ro=null;
   var timer=null;
   var stopped=false;
   function stop(){
     if(stopped)return;
     stopped=true;
-    if(ro){try{ro.disconnect()}catch(_){}ro=null}
     if(timer){clearTimeout(timer);timer=null}
+    scroller.removeEventListener("wheel",stop);
+    scroller.removeEventListener("touchstart",stop);
+    scroller.removeEventListener("pointerdown",stop);
+    scroller.removeEventListener("keydown",stop);
   }
-  /* Restore on the next 3 frames so layout has settled from each
-     async mount (KaTeX math, code-block copy button, mermaid, etc.)
-     — and so any iframe that just received content can report its
-     real height before we read getBoundingClientRect. */
-  var framesLeft=3;
+  scroller.addEventListener("wheel",stop,{passive:true});
+  scroller.addEventListener("touchstart",stop,{passive:true});
+  scroller.addEventListener("pointerdown",stop,{passive:true});
+  scroller.addEventListener("keydown",stop);
   var tick=function(){
     if(stopped)return;
     restoreScrollAnchor(scroller,anchor);
-    if(--framesLeft>0)requestAnimationFrame(tick);
+    requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
-  try{
-    ro=new ResizeObserver(function(){
-      if(stopped)return;
-      restoreScrollAnchor(scroller,anchor);
-      if(stopOnFirst)stop();
-    });
-    ro.observe(scroller);
-  }catch(_){}
+  timer=setTimeout(stop,timeoutMs);
+  return stop;
+}
+
+/* P_no-finish-jump — bottom-pinned counterpart of watchAnchor. Used
+   after the streaming→finalized handoff for readers who were pinned
+   at the bottom: the React copy commits before its async content
+   (mermaid/viz iframes, images, scaffold widgets) has real heights,
+   so a single scrollTop=scrollHeight snap measures a shorter list
+   and the reader surfaces mid-answer (or at its very start) once
+   the mounts land. Re-snap every frame until layout settles; cancel
+   the moment the user scrolls so the pin never fights them. */
+export function watchBottomPin(scroller, opts){
+  opts=opts||{};
+  var timeoutMs=opts.timeoutMs!=null?opts.timeoutMs:2500;
+  if(!scroller)return function(){};
+  var timer=null;
+  var stopped=false;
+  function stop(){
+    if(stopped)return;
+    stopped=true;
+    if(timer){clearTimeout(timer);timer=null}
+    scroller.removeEventListener("wheel",stop);
+    scroller.removeEventListener("touchstart",stop);
+    scroller.removeEventListener("pointerdown",stop);
+    scroller.removeEventListener("keydown",stop);
+  }
+  scroller.addEventListener("wheel",stop,{passive:true});
+  scroller.addEventListener("touchstart",stop,{passive:true});
+  scroller.addEventListener("pointerdown",stop,{passive:true});
+  scroller.addEventListener("keydown",stop);
+  var tick=function(){
+    if(stopped)return;
+    var gap=scroller.scrollHeight-scroller.scrollTop-scroller.clientHeight;
+    if(gap>1)scroller.scrollTop=scroller.scrollHeight;
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
   timer=setTimeout(stop,timeoutMs);
   return stop;
 }

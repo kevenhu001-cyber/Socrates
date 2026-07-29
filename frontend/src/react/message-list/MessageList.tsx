@@ -90,7 +90,18 @@ function MessageList({ omitEntryIds }: MessageListProps) {
     }
     if (w.state?._userScrolledAway) return;
     const list = document.getElementById(MSG_LIST_ID);
-    if (list) list.scrollTop = list.scrollHeight;
+    if (!list) return;
+    // P_no-finish-jump — force-scroll only when the reader just sent a
+    // message. For assistant entries (stream finalization replay,
+    // history restore, a flag leak from a failed handoff) only snap
+    // when the reader is already near the bottom — the previous
+    // unconditional snap is what yanked a reader who was partway
+    // through a long answer to a new position the instant the entry
+    // committed, perceived as a spontaneous page refresh.
+    const last = items.length ? items[items.length - 1] : null;
+    const lastRole = last && typeof last.role === 'string' ? last.role : '';
+    const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight <= 96;
+    if (lastRole === 'user' || nearBottom) list.scrollTop = list.scrollHeight;
   }, [items.length, items.length ? entryId(items[items.length - 1], `idx-${items.length - 1}`) : null]);
 
   if (items.length === 0) {

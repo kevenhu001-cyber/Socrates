@@ -7,7 +7,7 @@ import './windowExports.js';
 import './state.js';
 import './i18n.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
-import { scrollContainer, scrollToBottomIfPinned, captureScrollAnchor, restoreScrollAnchor, watchAnchor } from './ui/scroll.js';
+import { scrollContainer, scrollToBottomIfPinned, captureScrollAnchor, restoreScrollAnchor, watchAnchor, watchBottomPin } from './ui/scroll.js';
 import { initKeyboardViewport } from './ui/keyboardViewport.js';
 import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
@@ -5783,9 +5783,6 @@ function doRender(){
       var _finishScroller=list||scrollContainer();
       var _finishWasPinned=!state._userScrolledAway&&!!_finishScroller&&
         (_finishScroller.scrollHeight-_finishScroller.scrollTop-_finishScroller.clientHeight<=96);
-      var _finishDistanceFromBottom=_finishScroller
-        ? Math.max(0,_finishScroller.scrollHeight-_finishScroller.scrollTop-_finishScroller.clientHeight)
-        : 0;
       /* P_anchor_finish — snapshot which message row the reader is
          currently looking at, BEFORE we rewrite body's innerHTML
          below. The previous approach restored scrollTop from
@@ -6179,21 +6176,36 @@ function doRender(){
                    has how many pixels of chrome. */
                 if(_finishScroller){
                   if(_finishWasPinned){
+                    /* P_no-finish-jump — snap once, then keep the pin
+                       through the settle window. The React copy commits
+                       before its async content (mermaid/viz iframes,
+                       images, scaffold widgets) has real heights, so a
+                       single snap measures a shorter list and the reader
+                       surfaces at the top of the finalized answer once
+                       the mounts land — the "jumped back to where the
+                       answer started" report. watchBottomPin re-snaps
+                       each frame until layout settles and cancels the
+                       moment the user scrolls. */
                     _finishScroller.scrollTop=_finishScroller.scrollHeight;
+                    try{watchBottomPin(_finishScroller,{timeoutMs:2500})}catch(_){}
                   }else if(_finishAnchor){
-                    /* Restore once now, then keep restoring across the
-                       next 3 frames + ResizeObserver ticks so the
-                       async mermaid/viz/widget mounts that finish()
-                       just kicked off don't push the reader down
-                       through the message they were reading. */
+                    /* Restore once now, then keep restoring for the
+                       settle window so the async mermaid/viz/widget
+                       mounts that finish() just kicked off don't push
+                       the reader down through the message they were
+                       reading. */
                     restoreScrollAnchor(_finishScroller,_finishAnchor);
                     try{watchAnchor(_finishScroller,_finishAnchor,{timeoutMs:2500})}catch(_){}
-                  }else{
-                    _finishScroller.scrollTop=Math.max(
-                      0,
-                      _finishScroller.scrollHeight-_finishScroller.clientHeight-_finishDistanceFromBottom
-                    );
                   }
+                  /* P_no-finish-jump — no distance-from-bottom fallback
+                     anymore. The legacy streaming bubble is the LAST row,
+                     so removing it can never shift content above the
+                     reader's viewport; rewriting scrollTop from stale
+                     height math is exactly what produced scrollTop≈0
+                     (top of the answer) whenever the legacy and React
+                     copies disagreed on height. With no anchor and no
+                     pin, leaving scrollTop untouched IS the no-jump
+                     behavior. */
                 }
                 /* Release the suppression flag now that the post-commit
                    scroll restore has actually run. Subsequent items.length
@@ -6210,7 +6222,12 @@ function doRender(){
                  the abandon path; otherwise it stays true forever and
                  silently breaks auto-scroll for every subsequent turn. */
               window.__socratesStreamFinishing=false;
-            }catch(_){}
+            }catch(_){
+              /* P_flag-leak-guard — same on the exception path: a leaked
+                 flag would suppress the React scroll effect for every
+                 later turn. */
+              window.__socratesStreamFinishing=false;
+            }
           };
           requestAnimationFrame(_hfTick);
         }else{
