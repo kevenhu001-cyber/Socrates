@@ -6192,9 +6192,22 @@ function doRender(){
             var _fvRect=list.getBoundingClientRect();
             var _fvRows=list.querySelectorAll('.msg[data-client-id]');
             var _fvAnchor=null;
+            /* Prefer an assistant (non-user) message as the anchor so the
+               viewport stays on the answer the reader is looking at. A
+               user message partially visible at the top of the viewport
+               would otherwise drag the scroll position back to the
+               question after the React handoff changes layout. */
             for(var _fvi=0;_fvi<_fvRows.length;_fvi++){
               var _fvr=_fvRows[_fvi].getBoundingClientRect();
-              if(_fvr.bottom>_fvRect.top+1){_fvAnchor=_fvRows[_fvi];break;}
+              if(_fvr.bottom>_fvRect.top+1){
+                if(!_fvRows[_fvi].classList.contains('user')){_fvAnchor=_fvRows[_fvi];break;}
+              }
+            }
+            if(!_fvAnchor){
+              for(var _fvi=0;_fvi<_fvRows.length;_fvi++){
+                var _fvr=_fvRows[_fvi].getBoundingClientRect();
+                if(_fvr.bottom>_fvRect.top+1){_fvAnchor=_fvRows[_fvi];break;}
+              }
             }
             /* Prefer an exact visible node inside the message body. The old
                row-level anchor could preserve the bubble's top while still
@@ -6217,6 +6230,10 @@ function doRender(){
               scroller:list,
               pinned:!state._userScrolledAway&&
                 list.scrollHeight-list.scrollTop-list.clientHeight<=96,
+              /* Freeze the reader-intent flag NOW: layout churn during the
+                 handoff fires scroll events that can flip the live flag
+                 without any user input. */
+              scrolledAway:!!state._userScrolledAway,
               scrollTop:list.scrollTop,
               anchorNode:_fvMeasuredAnchor,
               anchorId:_fvAnchor?_fvAnchor.getAttribute('data-client-id'):null,
@@ -6308,8 +6325,11 @@ function doRender(){
                    the handoff a single layout transition instead of briefly
                    rendering two copies of the same answer. */
                 try{
-                  reactNode.removeAttribute('data-live-handoff-pending');
+                  /* Apply animation:none before removing display:none so
+                     the msgIn entrance animation is suppressed before the
+                     browser can paint the element's first visible frame. */
                   reactNode.setAttribute('data-live-handoff-complete','1');
+                  reactNode.removeAttribute('data-live-handoff-pending');
                   var _liveMsg=msgIdx>=0?state.messages[msgIdx]:null;
                   if(_liveMsg){
                     Object.defineProperty(_liveMsg,'_liveBodyHandedOff',{
@@ -6318,33 +6338,70 @@ function doRender(){
                   }
                 }catch(_){}
                 if(_finishViewport&&_finishViewport.scroller){
+                  /* P_finish-settle — a single scrollTop restore is not
+                     enough: the reveal + transplant keeps mutating layout
+                     for several frames (async KaTeX/fonts/animations), so
+                     a one-shot restore taken mid-flux strands the reader
+                     above the answer ("jumped back to my own message").
+                     The layout churn also fires scroll events that the
+                     scrollPill listener misreads as the USER scrolling
+                     away, corrupting state._userScrolledAway. Re-assert
+                     the captured position every frame for ~30 frames and
+                     bail the moment the user actually interacts. */
                   var _fvScroller=_finishViewport.scroller;
-                  if(_finishViewport.pinned){
-                    _fvScroller.scrollTop=_fvScroller.scrollHeight;
-                  }else if(state._userScrolledAway){
-                    _fvScroller.scrollTop=_finishViewport.scrollTop;
-                  }else if(_finishViewport.anchorNode&&_finishViewport.anchorNode.isConnected){
-                    var _fvExactNow=_finishViewport.anchorNode.getBoundingClientRect().top-
-                      _fvScroller.getBoundingClientRect().top;
-                    _fvScroller.scrollTop+=_fvExactNow-_finishViewport.anchorOffset;
-                  }else if(_finishViewport.anchorId){
-                    var _fvCurrent=null;
-                    var _fvCurrentRows=list.querySelectorAll('.msg[data-client-id]');
-                    for(var _fvci=0;_fvci<_fvCurrentRows.length;_fvci++){
-                      if(_fvCurrentRows[_fvci].getAttribute('data-client-id')===_finishViewport.anchorId){
-                        _fvCurrent=_fvCurrentRows[_fvci];break;
-                      }
+                  var _fvUserIntent=false;
+                  var _fvMarkIntent=function(){_fvUserIntent=true;};
+                  var _fvIntentEvents=["wheel","touchstart","pointerdown","keydown"];
+                  for(var _fvei=0;_fvei<_fvIntentEvents.length;_fvei++){
+                    window.addEventListener(_fvIntentEvents[_fvei],_fvMarkIntent,
+                      {passive:true,capture:true});
+                  }
+                  var _fvDetachIntent=function(){
+                    for(var _fvej=0;_fvej<_fvIntentEvents.length;_fvej++){
+                      window.removeEventListener(_fvIntentEvents[_fvej],_fvMarkIntent,
+                        {capture:true});
                     }
-                    if(_fvCurrent){
-                      var _fvNow=_fvCurrent.getBoundingClientRect().top-
+                  };
+                  var _fvApply=function(){
+                    if(_finishViewport.pinned){
+                      _fvScroller.scrollTop=_fvScroller.scrollHeight;
+                      /* Layout-shift scroll events during the handoff may
+                         have flipped this flag; the reader never left the
+                         bottom, so undo the corruption. */
+                      state._userScrolledAway=false;
+                    }else if(_finishViewport.scrolledAway){
+                      _fvScroller.scrollTop=_finishViewport.scrollTop;
+                    }else if(_finishViewport.anchorNode&&_finishViewport.anchorNode.isConnected){
+                      var _fvExactNow=_finishViewport.anchorNode.getBoundingClientRect().top-
                         _fvScroller.getBoundingClientRect().top;
-                      _fvScroller.scrollTop+=_fvNow-_finishViewport.anchorOffset;
+                      _fvScroller.scrollTop+=_fvExactNow-_finishViewport.anchorOffset;
+                    }else if(_finishViewport.anchorId){
+                      var _fvCurrent=null;
+                      var _fvCurrentRows=list.querySelectorAll('.msg[data-client-id]');
+                      for(var _fvci=0;_fvci<_fvCurrentRows.length;_fvci++){
+                        if(_fvCurrentRows[_fvci].getAttribute('data-client-id')===_finishViewport.anchorId){
+                          _fvCurrent=_fvCurrentRows[_fvci];break;
+                        }
+                      }
+                      if(_fvCurrent){
+                        var _fvNow=_fvCurrent.getBoundingClientRect().top-
+                          _fvScroller.getBoundingClientRect().top;
+                        _fvScroller.scrollTop+=_fvNow-_finishViewport.anchorOffset;
+                      }else{
+                        _fvScroller.scrollTop=_finishViewport.scrollTop;
+                      }
                     }else{
                       _fvScroller.scrollTop=_finishViewport.scrollTop;
                     }
-                  }else{
-                    _fvScroller.scrollTop=_finishViewport.scrollTop;
-                  }
+                  };
+                  var _fvFrames=0;
+                  var _fvSettle=function(){
+                    if(_fvUserIntent){_fvDetachIntent();return;}
+                    try{_fvApply()}catch(_){}
+                    if(++_fvFrames<30){requestAnimationFrame(_fvSettle);}
+                    else{_fvDetachIntent();}
+                  };
+                  _fvSettle();
                 }
                 return;
               }
