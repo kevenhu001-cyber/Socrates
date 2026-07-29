@@ -6125,6 +6125,30 @@ function doRender(){
              keeps the closure (and DOM refs) eligible for GC. */
           window._activeChatCtl=null;
         }
+        /* Capture a visual row anchor before React replaces the legacy
+           streaming node. The two renderers produce different heights,
+           so preserving scrollTop or distance-from-bottom cannot preserve
+           what the reader is looking at. Identity + viewport offset can. */
+        var _finishViewport=null;
+        if(_reactHandoff&&list){
+          try{
+            var _fvRect=list.getBoundingClientRect();
+            var _fvRows=list.querySelectorAll('.msg[data-client-id]');
+            var _fvAnchor=null;
+            for(var _fvi=0;_fvi<_fvRows.length;_fvi++){
+              var _fvr=_fvRows[_fvi].getBoundingClientRect();
+              if(_fvr.bottom>_fvRect.top+1){_fvAnchor=_fvRows[_fvi];break;}
+            }
+            _finishViewport={
+              scroller:list,
+              pinned:!state._userScrolledAway&&
+                list.scrollHeight-list.scrollTop-list.clientHeight<=96,
+              scrollTop:list.scrollTop,
+              anchorId:_fvAnchor?_fvAnchor.getAttribute('data-client-id'):null,
+              anchorOffset:_fvAnchor?_fvAnchor.getBoundingClientRect().top-_fvRect.top:0
+            };
+          }catch(_){}
+        }
         /* P_streaming-finish-handoff — when the React runtime owns
            #msgList, the legacy streaming bubble is now redundant:
            the snapshot carries the finalized entry (type=assistant,
@@ -6197,6 +6221,29 @@ function doRender(){
                   if(_lvSources)reactBody.appendChild(_lvSources);
                 }
                 if(legacyNode&&legacyNode.parentNode)legacyNode.parentNode.removeChild(legacyNode);
+                if(_finishViewport&&_finishViewport.scroller){
+                  var _fvScroller=_finishViewport.scroller;
+                  if(_finishViewport.pinned){
+                    _fvScroller.scrollTop=_fvScroller.scrollHeight;
+                  }else if(_finishViewport.anchorId){
+                    var _fvCurrent=null;
+                    var _fvCurrentRows=list.querySelectorAll('.msg[data-client-id]');
+                    for(var _fvci=0;_fvci<_fvCurrentRows.length;_fvci++){
+                      if(_fvCurrentRows[_fvci].getAttribute('data-client-id')===_finishViewport.anchorId){
+                        _fvCurrent=_fvCurrentRows[_fvci];break;
+                      }
+                    }
+                    if(_fvCurrent){
+                      var _fvNow=_fvCurrent.getBoundingClientRect().top-
+                        _fvScroller.getBoundingClientRect().top;
+                      _fvScroller.scrollTop+=_fvNow-_finishViewport.anchorOffset;
+                    }else{
+                      _fvScroller.scrollTop=_finishViewport.scrollTop;
+                    }
+                  }else{
+                    _fvScroller.scrollTop=_finishViewport.scrollTop;
+                  }
+                }
                 return;
               }
               if(++_hfFrames<120){requestAnimationFrame(_hfTick);return;}

@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT
+
+make_fixture() {
+  local name="$1"
+  local base="$WORK/$name"
+  mkdir -p "$base"/{bin,frontend,server/node_modules/.bin,server/src,app-root/assets,site-root,status-root,etc}
+  printf 'old backend\n' > "$base/server/dist-marker"
+  mkdir -p "$base/server/dist"
+  mv "$base/server/dist-marker" "$base/server/dist/index.runtime.js"
+  printf 'old frontend\n' > "$base/app-root/index.html"
+  printf 'old asset\n' > "$base/app-root/assets/old.js"
+  printf '<html>status</html>\n' > "$base/server/src/status.html"
+  printf 'try_files /status.1.html =404;\n' > "$base/etc/status.conf"
+
+  tr -d '\r' < "$ROOT/deploy.sh" > "$base/deploy.sh"
+  chmod +x "$base/deploy.sh"
+
+  cat > "$base/server/node_modules/.bin/tsc" <<'SH'
+#!/usr/bin/env bash
+set -e
+while [[ $# -gt 0 ]]; do
+  if [[ "$1" == "--outDir" ]]; then out="$2"; shift 2; else shift; fi
+done
+mkdir -p "$out"
+printf 'new backend\n' > "$out/index.runtime.js"
+SH
+
+  cat > "$base/bin/npm" <<'SH'
+#!/usr/bin/env bash
+set -e
+if [[ "${1:-}" == "run" && "${2:-}" == "build" ]]; then
+  mkdir -p dist/assets
+  printf '<html>new frontend</html>\n' > dist/index.html
+  printf 'new asset\n' > dist/assets/app.js
+fi
+SH
+
+  cat > "$base/bin/systemctl" <<'SH'
+#!/usr/bin/env bash
+case "${1:-}" in
+  is-active) exit 0 ;;
+  show) printf '4242\n' ;;
+  *) exit 0 ;;
+esac
+SH
+
+  cat > "$base/bin/nginx" <<'SH'
+#!/usr/bin/env bash
+exit 0
+SH
+
+  cat > "$base/bin/curl" <<'SH'
+#!/usr/bin/env bash
+if [[ "${MOCK_GATE_FAIL:-0}" == "1" && "$*" == *"https://app.topodrive.top/"* ]]; then
+  printf '503'
+  exit 0
+fi
+if [[ "$*" == *"-w"* ]]; then
+  printf '200'
+else
+  printf '{"ok":true}'
+fi
+SH
+
+  cat > "$base/bin/jq" <<'SH'
+#!/usr/bin/env bash
+cat >/dev/null
+printf '{"ok":true}\n'
+SH
+
+  cat > "$base/bin/chown" <<'SH'
+#!/usr/bin/env bash
+exit 0
+SH
+
+  cat > "$base/bin/install" <<'SH'
+#!/usr/bin/env bash
+set -e
+args=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -m|-o|-g) shift 2 ;;
+    *) args+=("$1"); shift ;;
+  esac
+done
+dest="${args[${#args[@]}-1]}"
+unset 'args[${#args[@]}-1]'
+mkdir -p "$(dirname "$dest")"
+if [[ ${#args[@]} -gt 1 || -d "$dest" ]]; then
+  mkdir -p "$dest"
+  cp "${args[@]}" "$dest/"
+else
+  cp "${args[0]}" "$dest"
+fi
+SH
+
+  cat > "$base/bin/sudo" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "-n" ]]; then shift; fi
+"$@"
+SH
+
+  chmod +x "$base/bin/"* "$base/server/node_modules/.bin/tsc"
+  printf '%s\n' "$base"
+}
+
+run_deploy() {
+  local base="$1"
+  shift
+  env \
+    PATH="$base/bin:/usr/bin:/bin" \
+    FRONTEND_DIR="$base/frontend" \
+    SERVER_DIR="$base/server" \
+    APP_WEB_ROOT="$base/app-root" \
+    SITE_WEB_ROOT="$base/site-root" \
+    SITE_DIR="$base/no-site" \
+    STATUS_DIR="$base/status-root" \
+    NGINX_SITE_CONF="$base/etc/status.conf" \
+    DEPLOY_LOCK_FILE="$base/deploy.lock" \
+    STATE_FILE="$base/deploy-state.json" \
+    "$@" \
+    "$base/deploy.sh"
+}
+
+success_base=$(make_fixture success)
+run_deploy "$success_base" >"$success_base/output.log"
+grep -q 'new backend' "$success_base/server/dist/index.runtime.js"
+grep -q 'old backend' "$success_base/server/dist.previous/index.runtime.js"
+grep -q 'new frontend' "$success_base/app-root/index.html"
+grep -q '"lastSuccessfulDeploy"' "$success_base/deploy-state.json"
+if compgen -G "$success_base/server/.dist-next.*" >/dev/null; then
+  echo "candidate cleanup failed on success" >&2
+  exit 1
+fi
+
+rollback_base=$(make_fixture rollback)
+if run_deploy "$rollback_base" MOCK_GATE_FAIL=1 >"$rollback_base/output.log" 2>&1; then
+  echo "health-gate failure unexpectedly succeeded" >&2
+  exit 1
+fi
+grep -q 'old backend' "$rollback_base/server/dist/index.runtime.js"
+test ! -e "$rollback_base/deploy-state.json"
+if compgen -G "$rollback_base/server/.dist-next.*" >/dev/null; then
+  echo "candidate cleanup failed on rollback" >&2
+  exit 1
+fi
+
+lock_base=$(make_fixture lock)
+(
+  exec 8>"$lock_base/deploy.lock"
+  flock 8
+  if run_deploy "$lock_base" >"$lock_base/output.log" 2>&1; then
+    echo "lock contention unexpectedly succeeded" >&2
+    exit 1
+  fi
+  grep -q 'another Socrates deploy is already in progress' "$lock_base/output.log"
+)
+
+echo "deploy flow: success, lock contention, health gate, cleanup, and rollback passed"

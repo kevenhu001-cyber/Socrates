@@ -1,9 +1,16 @@
 # Socrates Capacitor Android app
 
-This project packages the existing Vite frontend inside a native Android
-Capacitor shell. The rendered UI and static assets are bundled in the APK;
-API, authentication, uploads, and streaming chat continue to use
-`https://app.topodrive.top` over HTTPS.
+This project wraps the Socrates web app in a native Android Capacitor
+shell. The WebView loads the frontend **remotely** from the origin
+configured in `capacitor.config.js` (`server.url`, default
+`https://app.topodrive.top`). Because the page origin equals the API
+origin, every relative `/api/*` call, the SSE/streaming chat, uploads,
+and the cookie-based auth (SameSite=Lax) work exactly as in the
+browser — no backend changes and no in-app URL rewriting needed.
+
+The Vite build output is still synced into the APK assets (Capacitor
+requires a `webDir`), but it is not served at runtime while
+`server.url` is set.
 
 ## Build
 
@@ -29,37 +36,40 @@ Android project before running `npm run apk:release`.
 
 ## Updating the frontend
 
-Use `npm run sync` in this directory. It runs the Vite production build then
-copies the result into the Android app assets. The Capacitor bridge is
-configured for a secure `https://localhost` origin; the bootstrap in
-`frontend/index.html` routes existing `/api/*` and EventSource calls to the
-production backend.
+Use `npm run sync` in this directory. It runs the Vite production build
+then copies the result into the Android app assets and regenerates the
+native `assets/capacitor.config.json` from `capacitor.config.js`.
+Always re-run it after changing `capacitor.config.js` — the APK reads
+the *synced* copy, not the root config.
 
 ## Backend wiring
 
 By default the APK targets `https://app.topodrive.top/` (the same origin the
-web client uses). The frontend talks to relative `/api/v2/*` paths; under
-`androidScheme: "https"` the WebView is served from `https://localhost`, and
-nginx on the server side rewrites `/api/v2/*` back to the Express API on
-`127.0.0.1:3037`. The APK is therefore a drop-in replacement for the
-browser tab with no backend changes needed.
+web client uses). The frontend talks to relative `/api/v2/*` paths; since
+the WebView is served from that same origin, nginx on the server side
+rewrites `/api/v2/*` back to the Express API on `127.0.0.1:3037`. The APK
+is therefore a drop-in replacement for the browser tab with no backend
+changes needed.
 
-To target a different backend at build time, pass `BASE_URL`:
+To target a different backend at build time, set `SOCRATES_SERVER_URL`
+(read by `capacitor.config.js`) before syncing, or use the wrapper
+script which does it for you:
 
-```bash
+```powershell
 # Staging
-cd capacitor/android && ./gradlew assembleRelease -PBASE_URL=https://staging.topodrive.top/
+npm run apk:debug:staging      # SOCRATES_SERVER_URL=https://staging.topodrive.top
 
 # Local dev — point the WebView at your laptop's backend
-adb reverse tcp:3037 tcp:3037
-cd capacitor/android && ./gradlew assembleDebug -PBASE_URL=http://10.0.2.2:3037/
-# (Use 10.0.2.2 from the Android emulator; on a real device, use the
-#  laptop's LAN IP and `adb reverse` both ports.)
+npm run apk:debug:local        # SOCRATES_SERVER_URL=http://10.0.2.2:3037
+# (10.0.2.2 reaches the host from the Android emulator; on a real
+#  device run `adb reverse tcp:3037 tcp:3037` and build with
+#  $env:SOCRATES_SERVER_URL='http://localhost:3037'; npm run apk:debug)
 ```
 
-Convenience scripts: `npm run apk:debug:local`, `npm run apk:debug:staging`,
-`npm run apk:release:local`, `npm run apk:release:staging`. They wrap the
-sync + gradle invocation so a single command produces a working APK.
+Convenience scripts: `npm run apk:debug`, `npm run apk:debug:staging`,
+`npm run apk:debug:local`, `npm run apk:release`, `npm run apk:release:staging`.
+Each wraps frontend build + `cap sync` + the platform-correct gradle
+wrapper (`scripts/apk.mjs`), so a single command produces a working APK.
 
 ## Status bar & keyboard avoidance
 
@@ -116,7 +126,7 @@ xcodebuild -workspace ios/App/App.xcworkspace -scheme App \
   -configuration Release -archivePath build/App.xcarchive archive
 ```
 
-The same `capacitor.config.json` plugins block applies. The web layer's
+The same `capacitor.config.js` plugins block applies. The web layer's
 `capacitorBridge.js` already keys off `getPlatform() === 'android'`,
 so the back-button listener is a no-op on iOS (no hardware back).
 
@@ -124,9 +134,13 @@ so the back-button listener is a no-op on iOS (no hardware back).
 
 - `allowMixedContent: false` is enforced; the app refuses to load
   HTTP-only resources. If you point the APK at a staging backend that
-  serves HTTP, either enable TLS on that backend or temporarily flip
-  this to `true` in `capacitor.config.json`.
-- `usesCleartextTraffic` is not enabled in `AndroidManifest.xml`. Local
-  dev against `http://10.0.2.2:3037/` will be blocked unless the
-  manifest gains a `network_security_config.xml` allow-listing that
-  host.
+  serves HTTP, either enable TLS on that backend or use a debug build.
+- Cleartext http is allowed **only in debug builds** via the manifest
+  overlay `android/app/src/debug/AndroidManifest.xml`
+  (`usesCleartextTraffic=true`), which is what makes
+  `npm run apk:debug:local` work against `http://10.0.2.2:3037/`.
+  Release builds keep the platform default (cleartext blocked), so a
+  release APK must always target an https backend.
+- The app requires network connectivity for first load (the frontend
+  is served from `server.url`, not from the bundled assets). Assets
+  are cached by the WebView afterwards.

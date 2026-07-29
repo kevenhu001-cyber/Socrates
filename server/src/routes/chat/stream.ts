@@ -33,6 +33,11 @@ import { codeInterpreter } from '../../services/codeInterpreter.js';
 import { webSearch } from '../../services/webSearch.js';
 import { executeVisualization } from '../../services/visualization.js';
 import { createToolRegistry } from '../../services/toolRegistry.js';
+import {
+  normalizeToolCalls,
+  parseToolArguments,
+  wrapUntrustedToolResult,
+} from '../../services/toolCallSafety.js';
 import { executeConnectorTool, CONNECTOR_TOOL_NAMES } from '../../services/connectorTools.js';
 import { executeProjectConnectorTool, PROJECT_CONNECTOR_TOOL_NAMES } from '../../services/projectConnectorTools.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../../services/usageTracker.js';
@@ -256,11 +261,8 @@ export function registerStreamRoute(router: Router) {
         if (abortController.signal.aborted) return;
         try { res.write(payload); try { (res as { flush?: () => void }).flush?.(); } catch {} } catch { /* socket closed — abortController handles cleanup */ }
       };
-      const safeParseJson = (s: string) => {
-        try { return JSON.parse(s); } catch { return null; }
-      };
-
-      for (let iter = 0; iter < MAX_TOOL_ITERATIONS; iter++) {
+      for (let iter = 0; iter <= MAX_TOOL_ITERATIONS; iter++) {
+        const toolsAllowed = iter < MAX_TOOL_ITERATIONS;
         let iterFinishReason: string | null = null;
         const toolCallsThisTurn: ToolCall[] = [];
 
@@ -276,7 +278,7 @@ export function registerStreamRoute(router: Router) {
             signal: abortController.signal,
             reasoning_effort,
             extra_body: safeExtraBody,
-            ...(toolDefs.length > 0 ? { tools: toolDefs, tool_choice: 'auto' } : {}),
+            ...(toolsAllowed && toolDefs.length > 0 ? { tools: toolDefs, tool_choice: 'auto' } : {}),
           } as Parameters<typeof streamChatCompletion>[0],
           // onChunk
           (chunk: string) => {
@@ -353,16 +355,32 @@ export function registerStreamRoute(router: Router) {
           return;
         }
 
-        // No tool call → done. Wrap up the response.
-        if (iterFinishReason !== 'tool_calls' || toolCallsThisTurn.length === 0) break;
+        const boundedToolCalls = normalizeToolCalls(toolCallsThisTurn, {
+          iteration: iter,
+          maxCalls: 4,
+        }) as ToolCall[];
+
+        // No tool call → done. The extra tools-disabled iteration lets the
+        // model summarize the fourth and final execution round in prose.
+        if (iterFinishReason !== 'tool_calls' || boundedToolCalls.length === 0) break;
+        if (!toolsAllowed) {
+          writeSse(`event: error\ndata: ${JSON.stringify({
+            error: 'tool_iteration_limit_reached',
+            message: 'Tool iteration limit reached; finishing without another execution.',
+          })}\n\n`);
+          break;
+        }
 
         // Emit tool_use event for the client to render cards.
         writeSse(`event: tool_use\ndata: ${JSON.stringify(
-          toolCallsThisTurn.map((t) => ({
-            id: t.id,
-            name: t.function && t.function.name,
-            input: safeParseJson(t.function && t.function.arguments) || {},
-          })),
+          boundedToolCalls.map((t) => {
+            const parsed = parseToolArguments(t.function && t.function.arguments);
+            return {
+              id: t.id,
+              name: t.function && t.function.name,
+              input: parsed.ok ? parsed.value : {},
+            };
+          }),
         )}\n\n`);
 
         // Echo the assistant's tool_calls back as a role:'assistant'
@@ -371,7 +389,7 @@ export function registerStreamRoute(router: Router) {
         workingMessages = workingMessages.concat([{
           role: 'assistant',
           content: null,
-          tool_calls: toolCallsThisTurn.map((t) => ({
+          tool_calls: boundedToolCalls.map((t) => ({
             id: t.id,
             type: 'function',
             function: t.function,
@@ -385,14 +403,34 @@ export function registerStreamRoute(router: Router) {
         // Run each tool call. Most models emit one per turn; we keep
         // the loop sequential so backpressure on the SSE channel is
         // predictable.
-        for (const tc of toolCallsThisTurn) {
+        for (const tc of boundedToolCalls) {
           let result: ToolResult;
           let toolName: string | undefined = undefined;
           try {
-            const args = safeParseJson(tc.function && tc.function.arguments) || {};
             toolName = tc.function && tc.function.name;
+            const parsedArgs = parseToolArguments(tc.function && tc.function.arguments);
+            const registryEntry = toolRegistry.get(toolName || '');
+            const args = (parsedArgs.ok ? parsedArgs.value : {}) as Record<string, any>;
 
-            if (toolName === 'code_interpreter') {
+            if (!parsedArgs.ok) {
+              writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                id: tc.id, ok: false, status: 'failed',
+                output: '', stderr: '', artifacts: [],
+                error: 'invalid_tool_arguments',
+                errorCode: 'invalid_tool_arguments', retryable: false,
+                userMessage: '工具参数格式无效。', detail: 'Expected a JSON object.',
+              })}\n\n`);
+              result = { status: 'failed', error: 'invalid_tool_arguments', errorCode: 'invalid_tool_arguments', retryable: false };
+            } else if (!registryEntry || !registryEntry.enabled) {
+              writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                id: tc.id, ok: false, status: 'failed',
+                output: '', stderr: '', artifacts: [],
+                error: 'tool_not_available',
+                errorCode: 'tool_not_available', retryable: false,
+                userMessage: '该工具未启用或不可用。', detail: 'tool_not_available',
+              })}\n\n`);
+              result = { status: 'failed', error: 'tool_not_available', errorCode: 'tool_not_available', retryable: false };
+            } else if (toolName === 'code_interpreter') {
               /* P_illustration-guard — detect when the model is using
                  code_interpreter for SVG illustration / drawing tasks
                  instead of data analysis. The model sometimes routes
@@ -766,7 +804,7 @@ data: ${JSON.stringify({
           workingMessages = workingMessages.concat([{
             role: 'tool',
             tool_call_id: tc.id,
-            content: toolContent.slice(0, 60_000),  /* hard cap so a runaway tool result can't blow context */
+            content: wrapUntrustedToolResult(toolName, toolContent),
           }]);
         }
       }

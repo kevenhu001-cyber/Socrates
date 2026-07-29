@@ -6,8 +6,11 @@
   "scripts": {
     "web:build": "npm --prefix ../frontend run build",
     "sync": "npm run web:build && npx cap sync android",
-    "apk:debug": "npm run sync && cd android && ./gradlew assembleDebug",
-    "apk:release": "npm run sync && cd android && ./gradlew assembleRelease"
+    "apk:debug": "node scripts/apk.mjs debug prod",
+    "apk:debug:staging": "node scripts/apk.mjs debug staging",
+    "apk:debug:local": "node scripts/apk.mjs debug local",
+    "apk:release": "node scripts/apk.mjs release prod",
+    "apk:release:staging": "node scripts/apk.mjs release staging"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
