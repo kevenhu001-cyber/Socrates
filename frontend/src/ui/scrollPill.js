@@ -35,11 +35,58 @@ export function wireScrollPill(){
 
   let debounceTmo = null;
 
+  /* P_stream-scroll-intent — the scroll-position listener below cannot
+     tell an upward wheel flick from the layout growing underneath the
+     reader: while an answer streams, doRender() snaps scrollTop to the
+     bottom every ~50-120ms, so a wheel/touch scroll that begins inside
+     the pin slack is undone before it can escape — the transcript feels
+     locked during streaming. Listen for the INPUT (wheel up / touch
+     drag / keyboard) instead of the resulting position: any upward
+     intent releases the pin immediately, and a short guard stops the
+     programmatic snap's own scroll event from re-pinning the reader
+     against their will. Scrolling back down (or clicking the pill)
+     clears the guard so the bottom re-pins naturally. */
+  let upIntentAt = 0;
+  const UP_INTENT_GUARD_MS = 600;
+
+  function releasePin(){
+    upIntentAt = Date.now();
+    if(!state._userScrolledAway) state._userScrolledAway = true;
+  }
+
+  document.addEventListener("wheel", function(ev){
+    if(ev.deltaY < 0) releasePin();
+    else if(ev.deltaY > 0) upIntentAt = 0;
+  }, {passive:true, capture:true});
+
+  let touchY = null;
+  document.addEventListener("touchstart", function(ev){
+    touchY = ev.touches && ev.touches.length ? ev.touches[0].clientY : null;
+  }, {passive:true, capture:true});
+  document.addEventListener("touchmove", function(ev){
+    if(touchY == null || !ev.touches || !ev.touches.length) return;
+    const y = ev.touches[0].clientY;
+    if(y - touchY > 4) releasePin();      /* finger down = scrolling up */
+    else if(touchY - y > 4) upIntentAt = 0;
+    touchY = y;
+  }, {passive:true, capture:true});
+
+  document.addEventListener("keydown", function(ev){
+    const el = ev.target;
+    const tag = el && el.tagName;
+    if(tag === "INPUT" || tag === "TEXTAREA" || (el && el.isContentEditable)) return;
+    if(ev.key === "ArrowUp" || ev.key === "PageUp" || ev.key === "Home") releasePin();
+    else if(ev.key === "End") upIntentAt = 0;
+  }, true);
+
   document.addEventListener("scroll", function(){
     const sc = scrollContainer();
     if(!sc) return;
     const atBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight <= SCROLL_SLACK;
     if(atBottom){
+      /* Ignore "back at bottom" while an upward intent is fresh — it is
+         the streaming snap fighting the user, not the user returning. */
+      if(Date.now() - upIntentAt < UP_INTENT_GUARD_MS) return;
       state._userScrolledAway = false;
       hideNewReplyPill();
     } else if(!state._userScrolledAway){
@@ -59,6 +106,7 @@ export function wireScrollPill(){
       if(t.id === "newReplyPill"){
         const sc = scrollContainer();
         if(sc) sc.scrollTop = sc.scrollHeight;
+        upIntentAt = 0;
         state._userScrolledAway = false;
         hideNewReplyPill();
         return;

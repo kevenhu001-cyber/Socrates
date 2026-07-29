@@ -3,16 +3,16 @@ import { toggleMorePopover } from "./morePopover.js";
 /* React migration bridge — publishes scheduled task state so the React
    compatibility root can render the page. Installed by
    frontend/src/react/pages/scheduled/scheduledStore.ts under `?react=1`. */
-function _publishScheduledState() {
+function _publishScheduledState(overrides) {
   try {
     var bridge = window.__socratesScheduledBridge;
     if (bridge && typeof bridge.publish === "function") {
       bridge.publish({
         tasks: (workspaceCache.tasks || []).map(function (t) {
-          return { id: t.id, title: t.title, prompt: t.prompt || "", frequency: t.frequency || "once", nextRunAt: t.nextRunAt || null, status: t.status || "active" };
+          return { id: t.id, title: t.title, prompt: t.prompt || "", frequency: t.frequency || "once", nextRunAt: t.nextRunAt || null, status: t.status || "active", lastRunAt: t.lastRunAt || null, runCount: t.runCount || 0 };
         }),
-        loading: false,
-        error: null,
+        loading: !!(overrides && overrides.loading),
+        error: (overrides && overrides.error) || null,
       });
     }
   } catch (_) { /* swallow */ }
@@ -67,7 +67,14 @@ var workspaceCache = { library: { files: [], artifacts: [], query: "", selection
 var WORKSPACE_ROUTES = { library: "/library", projects: "/projects", scheduled: "/scheduled", plugins: "/plugins", exam: "/exam" };
 
 function byId(id) { return document.getElementById(id); }
-function t(key, fallback) { return typeof window.t === "function" ? window.t(key) : fallback; }
+/* window.t returns the KEY itself when a translation is missing — pass
+   that miss through to the English fallback instead of leaking raw keys
+   like "dialog.task.newTitle" into dialog markup. */
+function t(key, fallback) {
+  if (typeof window.t !== "function") return fallback;
+  var v = window.t(key);
+  return v !== key ? v : (fallback !== undefined ? fallback : key);
+}
 function esc(value) { return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 function api(path, options) { return window.apiFetch(path, options); }
 function toast(message) { if (typeof window.showToast === "function") window.showToast(message); }
@@ -431,7 +438,21 @@ export function openExam() {
   window.openExamPanel();
 }
 async function renderScheduled() {
-  _publishScheduledState();
+  /* #scheduledList is React-owned (ScheduledPage) — fetch, update the
+     cache, and publish through the bridge. */
+  if (!workspaceCache.tasks.length) _publishScheduledState({ loading: true });
+  try {
+    var res = await api("/api/scheduled-tasks");
+    workspaceCache.tasks = (res && res.tasks) || [];
+    _publishScheduledState();
+  } catch (err) {
+    workspaceCache.tasks = [];
+    _publishScheduledState({
+      error: err && err.status === 401
+        ? t("scheduled.signIn", "Sign in to schedule tasks.")
+        : t("scheduled.loadFailed", "Tasks could not be loaded. Try again.")
+    });
+  }
 }
 function paintScheduled() {
   return;
@@ -542,14 +563,23 @@ window.moveCurrentChatToProject = async function (id) { var state = window.state
 
 window.openCreateScheduledTask = function () { openTaskForm(null); };
 window.openEditScheduledTask = function (id) { openTaskForm(workspaceCache.tasks.filter(function (task) { return task.id === id; })[0] || null); };
+/* datetime-local inputs expect wall-clock LOCAL time; toISOString()
+   would render the stored timestamp shifted by the UTC offset. */
+function toLocalDateTimeValue(value) {
+  var d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  var p = function (n) { return String(n).length < 2 ? "0" + n : String(n); };
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes());
+}
 function openTaskForm(task) {
   var editing = !!task;
-  var next = task && task.nextRunAt ? new Date(task.nextRunAt).toISOString().slice(0, 16) : "";
-  showDialog('<div class="workspace-dialog-title"><div><h2>' + (editing ? t("dialog.task.editTitle", "Edit task") : t("dialog.task.newTitle", "Schedule a task")) + '</h2><p>' + t("dialog.task.subtitle", "Choose what should run and when to check back.") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><form id="taskForm" class="workspace-form"><label class="workspace-field"><span>' + t("dialog.task.field", "Task") + '</span><input name="title" maxlength="120" required value="' + esc(task && task.title) + '" placeholder="' + t("dialog.task.titlePh", "Send me a weekly study plan") + '"></label><label class="workspace-field"><span>' + t("dialog.task.prompt", "Prompt") + '</span><textarea name="prompt" rows="3" placeholder="' + t("dialog.task.promptPh", "What should Socrates do when this task runs?") + '">' + esc(task && task.prompt) + '</textarea></label><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.repeat", "Repeat") + '</span><select name="frequency"><option value="once">' + t("scheduled.freq.once", "Once") + '</option><option value="daily">' + t("scheduled.freq.daily", "Daily") + '</option><option value="weekly">' + t("scheduled.freq.weekly", "Weekly") + '</option><option value="monthly">' + t("scheduled.freq.monthly", "Monthly") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.firstRun", "First run") + '</span><input name="nextRunAt" type="datetime-local" value="' + esc(next) + '"></label></div><p class="workspace-note">' + t("dialog.task.note", "Tasks run without opening a chat. Voice and connected apps are not used for scheduled runs.") + '</p><div class="workspace-dialog-actions">' + (editing ? '<button type="button" class="workspace-danger" onclick="deleteScheduledTask(\'' + esc(task.id) + '\')">' + t("common.delete", "Delete") + '</button>' : "") + '<span></span><button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">' + t("common.cancel", "Cancel") + '</button><button class="workspace-primary" type="submit">' + (editing ? t("dialog.task.save", "Save task") : t("scheduled.createTask", "Create task")) + "</button></div></form>");
+  var next = task && task.nextRunAt ? toLocalDateTimeValue(task.nextRunAt) : "";
+  showDialog('<div class="workspace-dialog-title"><div><h2>' + (editing ? t("dialog.task.editTitle", "Edit task") : t("dialog.task.newTitle", "Schedule a task")) + '</h2><p>' + t("dialog.task.subtitle", "Choose what should run and when to check back.") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><form id="taskForm" class="workspace-form"><label class="workspace-field"><span>' + t("dialog.task.field", "Task") + '</span><input name="title" maxlength="120" required value="' + esc(task && task.title) + '" placeholder="' + t("dialog.task.titlePh", "Send me a weekly study plan") + '"></label><label class="workspace-field"><span>' + t("dialog.task.prompt", "Prompt") + '</span><textarea name="prompt" rows="3" placeholder="' + t("dialog.task.promptPh", "What should Socrates do when this task runs?") + '">' + esc(task && task.prompt) + '</textarea></label><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.repeat", "Repeat") + '</span><select name="frequency"><option value="once">' + t("scheduled.freq.once", "Once") + '</option><option value="daily">' + t("scheduled.freq.daily", "Daily") + '</option><option value="weekly">' + t("scheduled.freq.weekly", "Weekly") + '</option><option value="monthly">' + t("scheduled.freq.monthly", "Monthly") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.firstRun", "First run") + '</span><input name="nextRunAt" type="datetime-local" value="' + esc(next) + '"></label></div><p class="workspace-note">' + t("dialog.task.note", "Tasks run in the background. Each result is saved as a chat in Recents.") + '</p><div class="workspace-dialog-actions">' + (editing ? '<button type="button" class="workspace-danger" onclick="deleteScheduledTask(\'' + esc(task.id) + '\')">' + t("common.delete", "Delete") + '</button>' : "") + '<span></span><button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">' + t("common.cancel", "Cancel") + '</button><button class="workspace-primary" type="submit">' + (editing ? t("dialog.task.save", "Save task") : t("scheduled.createTask", "Create task")) + "</button></div></form>");
   var select = byId("taskForm").elements.frequency; select.value = (task && task.frequency) || "once";
-  byId("taskForm").addEventListener("submit", async function (event) { event.preventDefault(); var data = Object.fromEntries(new FormData(event.currentTarget)); try { if (editing) await api("/api/scheduled-tasks/" + task.id, { method: "PATCH", body: data }); else await api("/api/scheduled-tasks", { method: "POST", body: data }); closeWorkspaceDialog(); renderScheduled(); toast(editing ? t("toast.taskUpdated", "Task updated") : t("toast.taskScheduled", "Task scheduled")); } catch (_) { toast(t("toast.taskSaveFailed", "Could not save task")); } });
+  byId("taskForm").addEventListener("submit", async function (event) { event.preventDefault(); var data = Object.fromEntries(new FormData(event.currentTarget)); /* datetime-local strings carry no timezone — convert to ISO so the server never re-interprets them in its own zone. An empty field means "start now" on create and "clear" on edit. */ if (data.nextRunAt) { var when = new Date(data.nextRunAt); data.nextRunAt = isNaN(when.getTime()) ? null : when.toISOString(); } else if (editing) { data.nextRunAt = null; } else { delete data.nextRunAt; } try { if (editing) await api("/api/scheduled-tasks/" + task.id, { method: "PATCH", body: data }); else await api("/api/scheduled-tasks", { method: "POST", body: data }); closeWorkspaceDialog(); renderScheduled(); toast(editing ? t("toast.taskUpdated", "Task updated") : t("toast.taskScheduled", "Task scheduled")); } catch (_) { toast(t("toast.taskSaveFailed", "Could not save task")); } });
 }
 window.toggleScheduledTask = async function (id, pause) { try { await api("/api/scheduled-tasks/" + id, { method: "PATCH", body: { status: pause ? "paused" : "active" } }); renderScheduled(); toast(pause ? t("toast.taskPaused", "Task paused") : t("toast.taskResumed", "Task resumed")); } catch (_) { toast(t("toast.taskUpdateFailed", "Could not update task")); } };
+window.runScheduledTask = async function (id) { toast(t("toast.taskRunStarted", "Running task…")); try { await api("/api/scheduled-tasks/" + id + "/run", { method: "POST" }); renderScheduled(); if (typeof window.refreshServerSessions === "function") try { window.refreshServerSessions(); } catch (_) {} toast(t("toast.taskRunDone", "Task ran — see Recents for the result")); } catch (_) { renderScheduled(); toast(t("toast.taskRunFailed", "Could not run task")); } };
 window.deleteScheduledTask = async function (id) { if (!(await confirmAction(t("confirm.deleteScheduled.title", "Delete this scheduled task?"), t("confirm.cannotUndo", "This cannot be undone.")))) return; try { await api("/api/scheduled-tasks/" + id, { method: "DELETE" }); closeWorkspaceDialog(); renderScheduled(); toast(t("toast.taskDeleted", "Task deleted")); } catch (_) { toast(t("toast.taskDeleteFailed", "Could not delete task")); } };
 
 window.switchLibraryTab = function (tab) { document.querySelectorAll(".library-tab").forEach(function (button) { button.classList.toggle("active", button.dataset.libraryTab === tab); }); paintLibrary(); _publishWorkspaceState(); };

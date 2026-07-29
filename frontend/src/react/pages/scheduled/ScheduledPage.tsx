@@ -30,6 +30,13 @@ function formatTime(value: string | null): string {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
+function statusLabel(status: string, active: boolean): string {
+  if (status === 'failed') return i18n('scheduled.failed', 'Failed');
+  if (status === 'completed') return i18n('scheduled.completed', 'Complete');
+  if (status === 'paused') return i18n('scheduled.paused', 'Paused');
+  return active ? i18n('scheduled.active', 'Active') : status;
+}
+
 function ScheduledPage() {
   const snap = useScheduledSnapshot();
   const dispatch = useScheduledDispatch();
@@ -70,12 +77,14 @@ function ScheduledPage() {
               </button>
             </div>
             {tasks.map((task) => {
-              const active = task.status !== 'paused' && task.status !== 'completed';
-              const stateLabel = active
-                ? i18n('scheduled.active', 'Active')
-                : task.status === 'paused'
-                  ? i18n('scheduled.paused', 'Paused')
-                  : i18n('scheduled.completed', 'Complete');
+              const active = task.status !== 'paused' && task.status !== 'completed' && task.status !== 'failed';
+              const detailParts = [
+                statusLabel(task.status, active) + ' · ' + i18n('scheduled.freq.' + (task.frequency || 'once'), task.frequency || 'once'),
+                active ? formatTime(task.nextRunAt) : null,
+                task.lastRunAt
+                  ? i18n('scheduled.lastRun', 'Last run') + ' ' + formatTime(task.lastRunAt)
+                  : null,
+              ].filter(Boolean);
               return (
                 <div className="workspace-row task-row" key={task.id}>
                   <span className="workspace-row-icon">
@@ -92,10 +101,18 @@ function ScheduledPage() {
                     <span className="workspace-row-copy">
                       <strong>{task.title}</strong>
                       <span>
-                        <i className={'task-status' + (active ? ' on' : '')} />
-                        {stateLabel + ' · ' + i18n('scheduled.freq.' + (task.frequency || 'once'), task.frequency || 'once') + ' · ' + formatTime(task.nextRunAt)}
+                        <i className={'task-status' + (active ? ' on' : '') + (task.status === 'failed' ? ' failed' : '')} />
+                        {detailParts.join(' · ')}
                       </span>
                     </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="workspace-row-action"
+                    onClick={() => dispatch.run(task.id)}
+                    aria-label={i18n('scheduled.runNowAria', 'Run task now')}
+                  >
+                    {i18n('scheduled.runNow', 'Run now')}
                   </button>
                   <button
                     type="button"
@@ -104,6 +121,14 @@ function ScheduledPage() {
                     aria-label={active ? i18n('scheduled.pause', 'Pause task') : i18n('scheduled.resume', 'Resume task')}
                   >
                     {active ? i18n('scheduled.pause', 'Pause') : i18n('scheduled.resume', 'Resume')}
+                  </button>
+                  <button
+                    type="button"
+                    className="workspace-row-action"
+                    onClick={() => dispatch.remove(task.id)}
+                    aria-label={i18n('scheduled.deleteAria', 'Delete task')}
+                  >
+                    {i18n('scheduled.delete', 'Delete')}
                   </button>
                 </div>
               );

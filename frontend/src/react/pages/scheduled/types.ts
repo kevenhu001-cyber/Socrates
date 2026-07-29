@@ -5,6 +5,8 @@ export interface ScheduledTask {
   frequency: string;
   nextRunAt: string | null;
   status: string;
+  lastRunAt: string | null;
+  runCount: number;
 }
 
 export interface ScheduledSnapshot {
@@ -28,6 +30,7 @@ declare global {
     openCreateScheduledTask?: () => void;
     openEditScheduledTask?: (id: string) => void;
     toggleScheduledTask?: (id: string, pause: boolean) => void;
+    runScheduledTask?: (id: string) => void;
     deleteScheduledTask?: (id: string) => void;
   }
 }
