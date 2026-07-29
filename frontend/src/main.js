@@ -5785,7 +5785,35 @@ function doRender(){
          pipeline owns the finalized DOM. When React owns #msgList the
          legacy bubble is a throwaway: it gets dropped one pre-paint
          frame after React commits the finalized copy. */
-      var _reactHandoff=!!(list&&list.dataset&&list.dataset.msgListReactHydrated==="1");
+      var _reactHandoff=!!(list&&(
+        (list.dataset&&list.dataset.msgListReactHydrated==="1")||
+        list.getAttribute("data-react-migration-runtime")==="msg-list"
+      ));
+      /* Flush only the still-live tail to its complete text before the
+         body is transferred. The stable prefix stays mounted, so a
+         reader higher in a long answer keeps the exact same DOM nodes.
+         This also closes the small cadence window where [DONE] can
+         arrive after the network text but before the final scheduled
+         progressive render. */
+      if(_reactHandoff&&settledContent&&liveContent&&thinkState.startIdx===-1){
+        try{
+          var _liveVisibleFinal=stripChatArtifacts(full.slice(segBase))
+            .replace(/<think>[\s\S]*?<\/think>/gi,"")
+            .replace(/<think>[\s\S]*$/gi,"");
+          var _liveFinalParts=splitStreamingMarkdown(_liveVisibleFinal);
+          if(_liveFinalParts.prefix===_stablePrefixText){
+            var _liveFinalHtml=_liveFinalParts.tail
+              ?formatMsgProgressive(_liveFinalParts.tail):"";
+            if(liveContent.dataset.lastRendered!==_liveFinalHtml){
+              liveContent.innerHTML=_liveFinalHtml;
+              liveContent.dataset.lastRendered=_liveFinalHtml;
+            }
+          }
+        }catch(_){}
+      }
+      var _preserveLiveBody=!!(_reactHandoff&&body.querySelector(
+        '.stream-content,.think-prefix,.think-suffix'
+      ));
       /* Skip the char-by-char animation when the response contains
        * a <think> marker. The animation writes formatted HTML into
        * a text node, so mid-stream the user would see literal
@@ -6130,6 +6158,9 @@ function doRender(){
            so preserving scrollTop or distance-from-bottom cannot preserve
            what the reader is looking at. Identity + viewport offset can. */
         var _finishViewport=null;
+        if(_preserveLiveBody&&msgIdx>=0&&state.messages[msgIdx]){
+          state.messages[msgIdx]._preserveLiveBody=true;
+        }
         if(_reactHandoff&&list){
           try{
             var _fvRect=list.getBoundingClientRect();
@@ -6185,46 +6216,55 @@ function doRender(){
               var reactNode=list.querySelector('[data-client-id="'+clientId+'"][data-react-owned]');
               var legacyNode=_hfFindLegacy();
               if(reactNode){
-                /* P_smooth-handoff — transplant the live modules
-                   (think pill, tool cards, anchored charts, artifacts,
-                   sources card) straight from the streamed DOM into the
-                   React copy BEFORE the legacy bubble is dropped, all
-                   inside this one pre-paint frame. finish() no longer
-                   re-renders the legacy body in the React path, so the
-                   streamed DOM is the single live source: each iframe
-                   reparents exactly once instead of twice, and the
-                   pill/cards never flash through an intermediate
-                   re-render. */
+                /* Keep the live message body itself. React has already
+                   created the durable outer message shell and toolbar,
+                   but replacing the entire Markdown body here destroys
+                   the exact nodes the reader is looking at. Async KaTeX,
+                   Mermaid, images and visualization layout then move the
+                   new copy again, which looks like a page refresh even if
+                   scrollTop is restored. Move every existing body child
+                   into the React shell instead. The persisted finalHtml
+                   remains authoritative for history reloads, while this
+                   live turn never re-renders at completion. */
                 var reactBody=reactNode.querySelector('.msg-body');
                 if(reactBody&&legacyNode){
-                  var _lvPill=legacyNode.querySelector('.think-block');
-                  var _lvGroup=legacyNode.querySelector('.tool-run-group');
-                  if(_lvPill)reactBody.insertBefore(_lvPill,reactBody.firstChild);
-                  else if(_lvGroup)reactBody.appendChild(_lvGroup);
-                  if(!_lvPill&&!_lvGroup){
-                    var _lvCards=legacyNode.querySelectorAll('.agent-tool-card');
-                    for(var lci=0;lci<_lvCards.length;lci++)reactBody.appendChild(_lvCards[lci]);
+                  var _lvBody=legacyNode.querySelector('.msg-body');
+                  if(_preserveLiveBody&&_lvBody){
+                    while(reactBody.firstChild)reactBody.removeChild(reactBody.firstChild);
+                    while(_lvBody.firstChild)reactBody.appendChild(_lvBody.firstChild);
+                  }else{
+                    var _lvPill=legacyNode.querySelector('.think-block');
+                    var _lvGroup=legacyNode.querySelector('.tool-run-group');
+                    if(_lvPill)reactBody.insertBefore(_lvPill,reactBody.firstChild);
+                    else if(_lvGroup)reactBody.appendChild(_lvGroup);
+                    if(!_lvPill&&!_lvGroup){
+                      var _lvCards=legacyNode.querySelectorAll('.agent-tool-card');
+                      for(var lci=0;lci<_lvCards.length;lci++)reactBody.appendChild(_lvCards[lci]);
+                    }
+                    var _lvHosts=legacyNode.querySelectorAll('.tool-inline-attachments');
+                    for(var lhi=0;lhi<_lvHosts.length;lhi++)reseatSavedArtifact(reactBody,_lvHosts[lhi]);
+                    var _lvArts=legacyNode.querySelectorAll('.exec-artifact,.visualization-card');
+                    for(var lai=0;lai<_lvArts.length;lai++)reseatSavedArtifact(reactBody,_lvArts[lai]);
                   }
-                  /* Anchored hosts first, THEN the free-standing
-                     artifact query — mirrors the old extraction order so
-                     a chart living inside a host is never pulled out of
-                     it by the second pass. */
-                  var _lvHosts=legacyNode.querySelectorAll('.tool-inline-attachments');
-                  for(var lhi=0;lhi<_lvHosts.length;lhi++)reseatSavedArtifact(reactBody,_lvHosts[lhi]);
-                  var _lvArts=legacyNode.querySelectorAll('.exec-artifact,.visualization-card');
-                  for(var lai=0;lai<_lvArts.length;lai++)reseatSavedArtifact(reactBody,_lvArts[lai]);
                   /* The sources card is appended to the legacy .msg
                      element (not the body) by finishAfterRender; it was
                      never transplanted before, so it silently vanished
                      the moment the legacy bubble was dropped. */
                   var _lvSources=legacyNode.querySelector('.sources-card');
                   if(_lvSources)reactBody.appendChild(_lvSources);
+                  try{processPendingMermaid()}catch(_){}
+                  try{processPendingViz(reactBody)}catch(_){}
+                  try{processPendingVizActions(reactBody)}catch(_){}
+                  try{wireCodeBlockHeaders(reactBody)}catch(_){}
+                  try{wireMsgBodyImages(reactBody)}catch(_){}
                 }
                 if(legacyNode&&legacyNode.parentNode)legacyNode.parentNode.removeChild(legacyNode);
                 if(_finishViewport&&_finishViewport.scroller){
                   var _fvScroller=_finishViewport.scroller;
                   if(_finishViewport.pinned){
                     _fvScroller.scrollTop=_fvScroller.scrollHeight;
+                  }else if(state._userScrolledAway){
+                    _fvScroller.scrollTop=_finishViewport.scrollTop;
                   }else if(_finishViewport.anchorId){
                     var _fvCurrent=null;
                     var _fvCurrentRows=list.querySelectorAll('.msg[data-client-id]');

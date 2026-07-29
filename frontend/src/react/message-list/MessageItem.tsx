@@ -20,6 +20,9 @@ function MessageItem({ message }: MessageItemProps) {
     : typeof message.id === 'string' ? message.id
     : '';
   const html = typeof message.html === 'string' ? message.html : '';
+  const preserveLiveBody = Boolean(
+    (message as LegacyChatMessage & { _preserveLiveBody?: boolean })._preserveLiveBody,
+  );
   const modelLabel = message.modelInfo?.label ?? '';
   const attachments = Array.isArray(message.attachments) ? message.attachments : [];
 
@@ -88,7 +91,7 @@ function MessageItem({ message }: MessageItemProps) {
       ) : null}
       <div
         className="msg-body"
-        dangerouslySetInnerHTML={{ __html: html }}
+        {...(!preserveLiveBody ? { dangerouslySetInnerHTML: { __html: html } } : {})}
       />
       <MessageToolbar message={message} role={role === 'user' ? 'user' : 'assistant'} />
     </div>

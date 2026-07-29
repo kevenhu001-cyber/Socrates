@@ -46,6 +46,27 @@ else
   SUDO=""
 fi
 
+# npm itself runs without sudo, but older deployments may have left tens of
+# thousands of root-owned files under node_modules. npm ci removes and
+# recreates entries, so even one such file can fail the release with EACCES.
+# Repair only when residue is actually present, and return ownership to the
+# account running this deployment rather than hard-coding a host user.
+DEPLOY_USER="${DEPLOY_USER:-${SUDO_USER:-$(id -un)}}"
+DEPLOY_GROUP="${DEPLOY_GROUP:-$(id -gn "$DEPLOY_USER")}"
+repair_node_modules_ownership() {
+  local project_dir="$1"
+  local modules_dir="$project_dir/node_modules"
+  [[ -d "$modules_dir" ]] || return 0
+  [[ "$DEPLOY_USER" != "root" ]] || return 0
+  if find "$modules_dir" -xdev -user root -print -quit 2>/dev/null | grep -q .; then
+    echo "Repairing root-owned dependency files in $modules_dir…"
+    $SUDO chown -R "$DEPLOY_USER:$DEPLOY_GROUP" "$modules_dir"
+  fi
+}
+
+repair_node_modules_ownership "$SERVER_DIR"
+repair_node_modules_ownership "$FRONTEND_DIR"
+
 # Backup previous deployment so a bad build can be reverted with a
 # single `cp -a .previous/* .` . The .previous/ folder is created on
 # the first deploy and rotated on each subsequent one (so we keep
