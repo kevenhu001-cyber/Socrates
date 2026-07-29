@@ -18,6 +18,11 @@ STATUS_DIR="${STATUS_DIR:-/var/www/status.topodrive.top}"
 NGINX_SITE_CONF="${NGINX_SITE_CONF:-/etc/nginx/sites-available/status.topodrive.top}"
 DEPLOY_LOCK_FILE="${DEPLOY_LOCK_FILE:-${XDG_RUNTIME_DIR:-/tmp}/socrates-deploy.lock}"
 STATE_FILE="${STATE_FILE:-/home/ubuntu/User/Socrates/.deploy-state.json}"
+# The visualization bundle currently transforms ~3,700 modules. Rollup can
+# exceed Node's default ~2 GB old-space limit during chunk rendering even when
+# the host still has free RAM. Keep this override configurable for smaller or
+# larger deployment hosts, but use the value verified by the release build.
+FRONTEND_NODE_OPTIONS="${FRONTEND_NODE_OPTIONS:---max-old-space-size=4096}"
 
 if ! command -v flock >/dev/null 2>&1; then
   echo "ERROR: flock is required to serialize deployments" >&2
@@ -150,7 +155,8 @@ fi
 # to 1 GB just to tree-shake the large visualization libs (plotly,
 # mermaid, echarts, three.js).  Stopping the backend first frees its
 # ~130 MB resident set; the existing stop/start below becomes a no-op
-# until the dist-swap phase.
+# until the dist-swap phase. The frontend build also receives an explicit
+# 4 GB V8 old-space ceiling; it is a limit, not an up-front allocation.
 echo "Stopping backend before frontend build (freeing ~130 MB RSS)…"
 $SUDO systemctl stop socrates-api 2>/dev/null || true
 
@@ -169,7 +175,7 @@ else
   echo "Installing frontend dependencies from package-lock.json…"
   (cd "$FRONTEND_DIR" && npm ci --include=dev)
   echo "Building frontend (Vite)…"
-  (cd "$FRONTEND_DIR" && NODE_OPTIONS="--max-old-space-size=2048" npm run build 2>&1 | tail -5)
+  (cd "$FRONTEND_DIR" && NODE_OPTIONS="$FRONTEND_NODE_OPTIONS" npm run build 2>&1 | tail -20)
   DIST_DIR="$FRONTEND_DIR/dist"
 
   if [[ ! -f "$DIST_DIR/index.html" ]]; then

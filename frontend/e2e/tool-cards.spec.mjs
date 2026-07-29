@@ -70,13 +70,15 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   await expect(bubble.locator('img.exec-artifact-image')).toBeVisible();
 });
 
-test('live chat shows a Searching label while the model is searching', async ({ page }) => {
+test('inline tool rows never split an unfinished sentence', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
-      'event: tool_use\ndata: [{"id":"late-search","name":"web_search","input":{"query":"weather today"}}]\n\n',
-      // Don't emit tool_result yet — keep the bubble mid-tool so the
-      // status label is still mounted when we assert on it.
+      'data: {"choices":[{"delta":{"content":"先说明结论。 然后继续检查这个模块"}}]}\n\n',
+      'event: tool_use\ndata: [{"id":"boundary-search","name":"web_search","input":{"query":"module"}}]\n\n',
+      'event: tool_result\ndata: {"id":"boundary-search","ok":true,"status":"completed","output":"found"}\n\n',
+      'data: {"choices":[{"delta":{"content":"的实现细节，再给出修复方案。"}}]}\n\n',
+      'data: [DONE]\n\n',
     ].join('');
     await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
   });
@@ -87,14 +89,85 @@ test('live chat shows a Searching label while the model is searching', async ({ 
 
   await page.evaluate(async () => {
     window.state.phase = 'chat';
-    window.state.currentSessionId = '22222222-2222-4222-8222-222222222222';
+    const sessionId = '11111111-1111-4111-8111-111111111111';
+    window.state.currentSessionId = sessionId;
+    window.state.session.currentSessionId = sessionId;
+    window.state.messages = [{ clientId: 'user-boundary', role: 'user', rawText: 'Check it', html: null }];
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    await window.askChatTurn('Check it');
+  });
+
+  const bubble = page.locator('.msg.assistant').last();
+  const row = bubble.locator('.tool-inline[data-tcid="boundary-search"]');
+  await expect(row).toHaveCount(1);
+  const order = await row.evaluate((toolRow) => {
+    let before = '';
+    let after = '';
+    for (let node = toolRow.previousSibling; node; node = node.previousSibling) before = (node.textContent || '') + before;
+    for (let node = toolRow.nextSibling; node; node = node.nextSibling) after += node.textContent || '';
+    return { before: before.replace(/\s+/g, ' ').trim(), after: after.replace(/\s+/g, ' ').trim() };
+  });
+  expect(order.before).toContain('先说明结论。');
+  expect(order.before).not.toContain('然后继续检查这个模块');
+  expect(order.after).toContain('然后继续检查这个模块的实现细节，再给出修复方案。');
+});
+
+test('live chat shows a Searching label while the model is searching', async ({ page }) => {
+  await page.addInitScript(() => {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = (input, init) => {
+      const url = typeof input === 'string' ? input : input && input.url ? input.url : '';
+      if (!url.includes('/chat/stream')) return nativeFetch(input, init);
+      const encoder = new TextEncoder();
+      let controllerRef;
+      const body = new ReadableStream({
+        start(controller) {
+          controllerRef = controller;
+          controller.enqueue(encoder.encode(
+            'event: tool_use\ndata: [{"id":"late-search","name":"web_search","input":{"query":"weather today"}}]\n\n',
+          ));
+        },
+      });
+      window.__finishSearchStream = () => {
+        controllerRef.enqueue(encoder.encode(
+          'event: tool_result\ndata: {"id":"late-search","ok":true,"status":"completed","output":"one source","results":[{"title":"Weather source","url":"https://example.test/weather"}]}\n\n',
+        ));
+        controllerRef.enqueue(encoder.encode(
+          'data: {"choices":[{"delta":{"content":"The search is complete."}}]}\n\n',
+        ));
+        controllerRef.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controllerRef.close();
+      };
+      return Promise.resolve(new Response(body, {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+      }));
+    };
+  });
+  await mockAuthedApp(page);
+
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    const sessionId = '22222222-2222-4222-8222-222222222222';
+    window.state.phase = 'chat';
+    window.state.currentSessionId = sessionId;
+    window.state.session.currentSessionId = sessionId;
     window.state.messages = [{ clientId: 'user-2', role: 'user', rawText: 'Look something up', html: null }];
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
-    await window.askChatTurn('Look something up');
+    window.__searchTurnPromise = window.askChatTurn('Look something up');
   });
 
-  const status = page.locator('.msg.assistant .thinking-status').last();
-  await expect(status).toBeVisible();
-  await expect(status.locator('.thinking-status-label')).toHaveText('Searching');
+  const row = page.locator('.msg.assistant .tool-inline[data-tcid="late-search"]').last();
+  await expect(row).toBeVisible();
+  await expect(row.locator('.tool-inline-label')).toContainText('Searching');
+  await expect(row).toHaveAttribute('data-state', 'running');
+
+  await page.evaluate(() => window.__finishSearchStream());
+  await expect(row).toHaveAttribute('data-state', 'done');
+  await expect(row.locator('.tool-inline-label')).toContainText('Found 1');
 });

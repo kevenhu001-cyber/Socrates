@@ -20,9 +20,12 @@ function MessageItem({ message }: MessageItemProps) {
     : typeof message.id === 'string' ? message.id
     : '';
   const html = typeof message.html === 'string' ? message.html : '';
-  const preserveLiveBody = Boolean(
-    (message as LegacyChatMessage & { _preserveLiveBody?: boolean })._preserveLiveBody,
-  );
+  const liveMessage = message as LegacyChatMessage & {
+    _preserveLiveBody?: boolean;
+    _liveBodyHandedOff?: boolean;
+  };
+  const preserveLiveBody = Boolean(liveMessage._preserveLiveBody);
+  const handoffPending = preserveLiveBody && !liveMessage._liveBodyHandedOff;
   const modelLabel = message.modelInfo?.label ?? '';
   const attachments = Array.isArray(message.attachments) ? message.attachments : [];
 
@@ -57,7 +60,13 @@ function MessageItem({ message }: MessageItemProps) {
   if (!clientId) return null;
 
   return (
-    <div className={`msg ${role}`} data-client-id={clientId} data-react-owned="1">
+    <div
+      className={`msg ${role}`}
+      data-client-id={clientId}
+      data-react-owned="1"
+      data-live-handoff-pending={handoffPending ? '1' : undefined}
+      data-live-handoff-complete={preserveLiveBody && !handoffPending ? '1' : undefined}
+    >
       {/* UI-align: model name sits above the body (open-webui pattern:
           avatar+name header row) instead of trailing below it. */}
       {role === 'assistant' && modelLabel ? (

@@ -18,6 +18,9 @@ import assert from 'node:assert/strict';
 import {
   streamChatCompletion,
   callChatCompletion,
+  isToolFinishReason,
+  mergeToolArgumentDelta,
+  mergeToolNameDelta,
 } from '../src/services/llm.js';
 
 const ORIG_FETCH = globalThis.fetch;
@@ -220,6 +223,31 @@ describe('streamChatCompletion: tool_calls', () => {
     assert.equal(last.final, true);
   });
 
+  test('dispatches object arguments and split names for compatible providers', async () => {
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([
+        { choices: [{ delta: { tool_calls: [{
+          index: 0, id: 'call_obj',
+          function: { name: 'web_', arguments: { query: 'latest' } },
+        }] } }] },
+        { choices: [{ delta: { tool_calls: [{
+          index: 0, function: { name: 'search', arguments: { query: 'latest' } },
+        }] } }] },
+        { choices: [{ delta: {}, finish_reason: 'function_call' }] },
+        sseDone(),
+      ]),
+    );
+    const tools = [];
+    await streamChatCompletion(
+      { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
+      () => {}, () => {}, () => {}, () => {},
+      (tc) => tools.push(tc),
+    );
+    assert.equal(tools.length, 1);
+    assert.equal(tools[0].function.name, 'web_search');
+    assert.equal(tools[0].function.arguments, '{"query":"latest"}');
+  });
+
   test('does NOT dispatch onToolUse when finish_reason is "stop" even if tool_calls were streamed', async () => {
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
@@ -238,6 +266,26 @@ describe('streamChatCompletion: tool_calls', () => {
       (tc) => tools.push(tc),
     );
     assert.equal(tools.length, 0, 'no onToolUse when finish_reason !== "tool_calls"');
+  });
+});
+
+describe('tool-call compatibility helpers', () => {
+  test('accepts common OpenAI-compatible tool finish reasons', () => {
+    assert.equal(isToolFinishReason('tool_calls'), true);
+    assert.equal(isToolFinishReason('tool_call'), true);
+    assert.equal(isToolFinishReason('function_call'), true);
+    assert.equal(isToolFinishReason('stop'), false);
+  });
+
+  test('merges fragmented, repeated, and object tool arguments safely', () => {
+    assert.equal(mergeToolArgumentDelta('{"loc', 'ation":"SF"}'), '{"location":"SF"}');
+    assert.equal(mergeToolArgumentDelta('{"q":"x"}', '{"q":"x"}'), '{"q":"x"}');
+    assert.equal(mergeToolArgumentDelta('', { q: 'x' }), '{"q":"x"}');
+  });
+
+  test('merges split function names without duplicating snapshots', () => {
+    assert.equal(mergeToolNameDelta('web_', 'search'), 'web_search');
+    assert.equal(mergeToolNameDelta('web_search', 'web_search'), 'web_search');
   });
 });
 

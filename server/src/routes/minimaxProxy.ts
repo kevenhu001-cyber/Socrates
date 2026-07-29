@@ -70,10 +70,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         (m) => m && m.role === 'system' && typeof m.content === 'string' && m.content.includes(BEAGLE_MARKER)
       );
       if (!alreadyHasBeagle) {
-        const taggedPrompt = beaglePrompt.replace(
-          'Beagle should never use {voice_note} blocks',
-          `${BEAGLE_MARKER}\nBeagle should never use {voice_note} blocks`
-        );
+        const taggedPrompt = `${BEAGLE_MARKER}\n${beaglePrompt}`;
         /* Prepend — never append — so the spec wins precedence over any
            later system message (e.g. teacher-mode that chat.js may have
            already added for the same turn). */

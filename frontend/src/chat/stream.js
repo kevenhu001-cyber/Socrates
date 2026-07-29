@@ -9,6 +9,7 @@
    STREAM_TIMEOUT_MS, etc.). */
 
 import { apiFetchRaw } from '../util/api.js';
+import { shouldRetryInterruptedStream } from './streamRetry.js';
 
 /* Format a Retry-After-seconds value as a short human phrase.
    Used by the 429 toast so the message reads "Try again in 2 min"
@@ -211,6 +212,10 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     var cancelled=false;
     var bytesReceived=0;
     var gotAnyData=false;
+    /* A retry is safe only before anything semantically visible reaches the
+       caller. Retrying after text/reasoning/tool events have already mutated
+       the bubble replays the whole turn and duplicates both prose and tools. */
+    var semanticActivity=false;
     var heartbeatFired=false;   /* used instead of e.message to detect heartbeat abort */
     try{
       while(true){
@@ -250,10 +255,12 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
              The backend emits `event: tool_use` and `event: tool_result`
              with a single JSON data: line per frame. */
           if(evName==="tool_use"&&opts&&typeof opts.onToolUse==="function"&&dataParts.length){
+            semanticActivity=true;
             try{opts.onToolUse(JSON.parse(dataParts.join("\n")))}catch(_){}
             continue;
           }
           if(evName==="tool_result"&&opts&&typeof opts.onToolResult==="function"&&dataParts.length){
+            semanticActivity=true;
             try{opts.onToolResult(JSON.parse(dataParts.join("\n")))}catch(_){}
             continue;
           }
@@ -276,6 +283,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
              the caller can update the matching .agent-tool-card
              with a spinner + live text. */
           if(evName==="tool_progress"&&opts&&typeof opts.onToolProgress==="function"&&dataParts.length){
+            semanticActivity=true;
             try{opts.onToolProgress(JSON.parse(dataParts.join("\n")))}catch(_){}
             continue;
           }
@@ -283,6 +291,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
              that the frontend uses to connect to the independent
              execution SSE endpoint for real-time progress. */
           if(evName==="execution_start"&&opts&&typeof opts.onExecutionStart==="function"&&dataParts.length){
+            semanticActivity=true;
             try{opts.onExecutionStart(JSON.parse(dataParts.join("\n")))}catch(_){}
             continue;
           }
@@ -294,6 +303,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
              uses them to render the code in the tool card
              progressively, not as a single reveal at finish_reason. */
           if(evName==="tool_call_delta"&&opts&&typeof opts.onToolCallDelta==="function"&&dataParts.length){
+            semanticActivity=true;
             try{opts.onToolCallDelta(JSON.parse(dataParts.join("\n")))}catch(_){}
             continue;
           }
@@ -335,6 +345,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
                thinking pill (if the caller subscribed). */
             var reasoning=obj.choices&&obj.choices[0]&&obj.choices[0].delta&&obj.choices[0].delta.reasoning_content;
             if(typeof reasoning==="string"&&reasoning.length>0&&typeof onThinking==="function"){
+              semanticActivity=true;
               try{onThinking(reasoning)}catch(_){}
             }
             /* P_inline_think — split delta on <think>/</think> boundaries.
@@ -346,6 +357,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
                the thinking pill lights up on every device, not just
                ones that happen to use DeepSeek-style reasoning_content. */
             if(typeof delta==="string"&&delta.length>0){
+              semanticActivity=true;
               if(!thinkOpen){
                 /* Not currently inside a think block. Look for the
                    opening tag. thinkTail holds any partial tag that
@@ -468,6 +480,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
                   thinkTail=probe2.slice(Math.max(0,probe2.length-7));
                   if(typeof onThinking==="function"&&thinkBuf.length>=200){
                     try{onThinking(thinkBuf)}catch(_){}
+                    thinkBuf="";
                   }
                 }
               }
@@ -518,12 +531,13 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
          by max_tokens), flush whatever thinking content we accumulated
          so the user at least sees the partial reasoning rather than
          silently dropping it. */
-      if(thinkOpen&&thinkBuf.length>0&&typeof onThinking==="function"){
-        try{onThinking(thinkBuf)}catch(_){}
+      if(thinkOpen&&typeof onThinking==="function"){
+        var remainingThink=thinkBuf+thinkTail;
+        if(remainingThink.length>0){
+          semanticActivity=true;
+          try{onThinking(remainingThink)}catch(_){}
+        }
         thinkBuf="";
-        thinkOpen=false;
-      }else if(thinkOpen&&thinkTail.length>0&&typeof onThinking==="function"){
-        try{onThinking(thinkTail)}catch(_){}
         thinkTail="";
         thinkOpen=false;
       }else if(!thinkOpen&&thinkTail.length>0){
@@ -547,11 +561,19 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         cancelled=true;
         /* Heartbeat-timeouts are retriable; total-timeout is not. */
         var isHeartbeat=heartbeatFired;
-        if(isHeartbeat&&attempt<STREAM_MAX_ATTEMPTS){
+        if(shouldRetryInterruptedStream({
+          isHeartbeat:isHeartbeat,
+          semanticActivity:semanticActivity,
+          attempt:attempt,
+          maxAttempts:STREAM_MAX_ATTEMPTS
+        })){
           lastErr="stream stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)";
-          console.warn("[API stream]",lastErr+", retrying");
+          console.warn("[API stream]",lastErr+", retrying before visible output");
           await sleepBackoff(attempt);
           continue;
+        }
+        if(isHeartbeat&&semanticActivity){
+          lastErr="stream stalled after partial output; automatic replay suppressed";
         }
         /* User Stop click — return a cancelled result with whatever
            text already streamed, so the bubble cleans up silently

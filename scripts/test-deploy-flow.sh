@@ -34,6 +34,10 @@ SH
 #!/usr/bin/env bash
 set -e
 if [[ "${1:-}" == "run" && "${2:-}" == "build" ]]; then
+  if [[ "${NODE_OPTIONS:-}" != *"--max-old-space-size=4096"* ]]; then
+    echo "frontend build heap limit missing: ${NODE_OPTIONS:-unset}" >&2
+    exit 1
+  fi
   mkdir -p dist/assets
   printf '<html>new frontend</html>\n' > dist/index.html
   printf 'new asset\n' > dist/assets/app.js
