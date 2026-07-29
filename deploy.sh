@@ -240,6 +240,11 @@ fi
 mv "$BACKEND_CANDIDATE" "$BACKEND_DIST"
 BACKEND_CANDIDATE=""
 BACKEND_SWAPPED=1
+# The candidate was produced by tsc under sudo, so it lands as root:root.
+# The systemd unit runs as User=ubuntu and would otherwise get
+# ERR_MODULE_NOT_FOUND on dist/index.runtime.js because the directory
+# is untraversable. Re-own to the service user before starting.
+$SUDO chown -R ubuntu:ubuntu "$BACKEND_DIST"
 
 echo "Starting backend via systemd…"
 if ! $SUDO systemctl start socrates-api; then
