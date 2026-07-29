@@ -117,6 +117,8 @@ export interface LegacyScheduled {
   openCreateScheduledTask(): void;
   openEditScheduledTask(id: string): void;
   toggleScheduledTask(id: string, pause: boolean): void;
+  runScheduledTask(id: string): void;
+  deleteScheduledTask(id: string): void;
 }
 
 export interface LegacyPostRender {

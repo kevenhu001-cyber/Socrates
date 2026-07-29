@@ -12,6 +12,8 @@ declare global {
     openCreateScheduledTask?: () => void;
     openEditScheduledTask?: (id: string) => void;
     toggleScheduledTask?: (id: string, pause: boolean) => void;
+    runScheduledTask?: (id: string) => void;
+    deleteScheduledTask?: (id: string) => void;
     apiFetch?: (path: string, options?: Record<string, unknown>) => Promise<unknown>;
   }
 }
@@ -30,5 +32,7 @@ export function useScheduledDispatch() {
     create: () => s.openCreateScheduledTask(),
     edit: (id: string) => s.openEditScheduledTask(id),
     toggle: (id: string, pause: boolean) => s.toggleScheduledTask(id, pause),
+    run: (id: string) => s.runScheduledTask(id),
+    remove: (id: string) => s.deleteScheduledTask(id),
   };
 }

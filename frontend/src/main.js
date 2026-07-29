@@ -8978,6 +8978,8 @@ window.__socratesLegacy = {
     openCreateScheduledTask: window.openCreateScheduledTask,
     openEditScheduledTask: window.openEditScheduledTask,
     toggleScheduledTask: window.toggleScheduledTask,
+    runScheduledTask: window.runScheduledTask,
+    deleteScheduledTask: window.deleteScheduledTask,
   },
   postRender: {
     processPendingMermaid: window.processPendingMermaid,

@@ -137,6 +137,18 @@ async function main() {
   // ── Start periodic DB cleanup ──
   startExpiredCleanup();
 
+  // ── Start scheduled-task daemon (polls scheduled_tasks for due rows,
+  //     runs their prompts through the user's LLM provider, and saves
+  //     the results as sessions so they appear in Recents) ──
+  (async () => {
+    try {
+      const { startScheduler } = await import('./services/scheduler.js');
+      startScheduler();
+    } catch (err) {
+      console.warn('[scheduler] not started:', (err as Error).message);
+    }
+  })();
+
   // ── Start self-hosted status monitor (records component state
   //     transitions to status_monitor_events for real uptime history) ──
   (async () => {
@@ -162,6 +174,7 @@ async function main() {
     server.close(async () => {
       console.log('[server] HTTP server closed — draining connections');
       stopExpiredCleanup();
+      try { const { stopScheduler } = await import('./services/scheduler.js'); stopScheduler(); } catch {}
       try { const { stopStatusMonitor } = await import('./services/statusMonitor.js'); stopStatusMonitor(); } catch {}
       await closeDb().catch(() => {});
       console.log('[db] Pool closed');
