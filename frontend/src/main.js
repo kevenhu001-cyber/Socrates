@@ -5781,6 +5781,12 @@ function doRender(){
       var total=full.length;
       var firstChunkDuration=Date.now()-(thinkStarted||Date.now());
       var _finishScroller=list||scrollContainer();
+      /* P_smooth-handoff — resolved once so finish(), the catch
+         fallback, finishAfterRender and _hfTick all agree on which
+         pipeline owns the finalized DOM. When React owns #msgList the
+         legacy bubble is a throwaway: it gets dropped one pre-paint
+         frame after React commits the finalized copy. */
+      var _reactHandoff=!!(list&&list.dataset&&list.dataset.msgListReactHydrated==="1");
       var _finishWasPinned=!state._userScrolledAway&&!!_finishScroller&&
         (_finishScroller.scrollHeight-_finishScroller.scrollTop-_finishScroller.clientHeight<=96);
       /* P_anchor_finish — snapshot which message row the reader is
@@ -5966,59 +5972,80 @@ function doRender(){
         if(thinkCtl&&typeof thinkCtl.finalize==="function"){
           try{thinkCtl.finalize()}catch(_){}
         }
-        /* P_tool_card_preserve — save BOTH the thinking pill and
-           any tool cards we appended via recordToolUse, then
-           re-insert them after the formatted HTML. Cards now live
-           inside the pill, so saving the pill is sufficient — only
-           extract individual cards when there's no pill to host them. */
-        var savedPill=body.querySelector('.think-block');
-        var savedToolGroup=body.querySelector('.tool-run-group');
-        var savedToolCards=body.querySelectorAll('.agent-tool-card');
-        var savedToolCardArr=[];
-        /* P_inline-artifact-survival-finish — the final render at
-           finish() rewrites body's innerHTML. Tool cards are saved
-           and re-mounted above, but inline artifacts (plots and native
-           visualization cards) need the same treatment or they silently
-           vanish at the streaming→final boundary. Anchored attachment
-           hosts (`.tool-inline-attachments`, created by toolRuntime
-           right after an inline tool row) are saved whole so the chart
-           can be re-seated next to its serialized row below. */
-        var savedArtifacts=[];
-        var anchoredHosts=body.querySelectorAll('.tool-inline-attachments');
-        for(var ahi=0;ahi<anchoredHosts.length;ahi++){
-          savedArtifacts.push(anchoredHosts[ahi]);
-          anchoredHosts[ahi].parentNode.removeChild(anchoredHosts[ahi]);
-        }
-        var artifactNodes=body.querySelectorAll('.exec-artifact,.visualization-card');
-        for(var ai=0;ai<artifactNodes.length;ai++){
-          savedArtifacts.push(artifactNodes[ai]);
-          artifactNodes[ai].parentNode.removeChild(artifactNodes[ai]);
-        }
-        if(!savedPill&&!savedToolGroup){
-          for(var sci=0;sci<savedToolCards.length;sci++){
-            savedToolCardArr.push(savedToolCards[sci]);
-            savedToolCards[sci].parentNode.removeChild(savedToolCards[sci]);
+        /* P_smooth-handoff — when React owns #msgList, the legacy
+           bubble is dropped by _hfTick one pre-paint frame after React
+           commits its finalized copy. Re-rendering finalHtml into the
+           legacy body here was a THIRD render of the same answer
+           (progressive stream → legacy final swap → React copy), and
+           the swap's detach/re-append of live artifacts forced every
+           embedded iframe to reload twice per answer (once here, once
+           again at the _hfTick transplant) — the visible "flash" right
+           after the answer completed. In the React path we skip the
+           swap entirely: the streamed progressive DOM stays on screen
+           untouched (only the blinking cursor is retired) and _hfTick
+           transplants the live modules straight out of it, so each
+           module reparents exactly once. */
+        if(_reactHandoff){
+          var _lateCursors=body.querySelectorAll('.stream-cursor');
+          for(var _lci=0;_lci<_lateCursors.length;_lci++){
+            try{_lateCursors[_lci].remove()}catch(_){}
           }
+          cursor=null;
+        }else{
+          /* P_tool_card_preserve — save BOTH the thinking pill and
+             any tool cards we appended via recordToolUse, then
+             re-insert them after the formatted HTML. Cards now live
+             inside the pill, so saving the pill is sufficient — only
+             extract individual cards when there's no pill to host them. */
+          var savedPill=body.querySelector('.think-block');
+          var savedToolGroup=body.querySelector('.tool-run-group');
+          var savedToolCards=body.querySelectorAll('.agent-tool-card');
+          var savedToolCardArr=[];
+          /* P_inline-artifact-survival-finish — the final render at
+             finish() rewrites body's innerHTML. Tool cards are saved
+             and re-mounted above, but inline artifacts (plots and native
+             visualization cards) need the same treatment or they silently
+             vanish at the streaming→final boundary. Anchored attachment
+             hosts (`.tool-inline-attachments`, created by toolRuntime
+             right after an inline tool row) are saved whole so the chart
+             can be re-seated next to its serialized row below. */
+          var savedArtifacts=[];
+          var anchoredHosts=body.querySelectorAll('.tool-inline-attachments');
+          for(var ahi=0;ahi<anchoredHosts.length;ahi++){
+            savedArtifacts.push(anchoredHosts[ahi]);
+            anchoredHosts[ahi].parentNode.removeChild(anchoredHosts[ahi]);
+          }
+          var artifactNodes=body.querySelectorAll('.exec-artifact,.visualization-card');
+          for(var ai=0;ai<artifactNodes.length;ai++){
+            savedArtifacts.push(artifactNodes[ai]);
+            artifactNodes[ai].parentNode.removeChild(artifactNodes[ai]);
+          }
+          if(!savedPill&&!savedToolGroup){
+            for(var sci=0;sci<savedToolCards.length;sci++){
+              savedToolCardArr.push(savedToolCards[sci]);
+              savedToolCards[sci].parentNode.removeChild(savedToolCards[sci]);
+            }
+          }
+          /* P_finish-no-flash — swap the streamed DOM for the final render
+             synchronously, with no fade. The progressive render is already
+             near-identical to the final pass, so an in-place swap in a
+             single frame is imperceptible; the old opacity fade read as a
+             spontaneous "refresh" after the answer completed. */
+          body.innerHTML=finalHtml;
+          if(savedPill)body.insertBefore(savedPill,body.firstChild);
+          else if(savedToolGroup)body.appendChild(savedToolGroup);
+          for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
+            body.appendChild(savedToolCardArr[sci2]);
+          }
+          /* Re-mount saved artifacts AFTER the final HTML + tool cards.
+             Anchored hosts go back beside their serialized inline row
+             (data-tool-anchor → [data-tcid]) so charts stay embedded in
+             the response flow; everything else falls to the bottom. */
+          for(var ai2=0;ai2<savedArtifacts.length;ai2++){
+            reseatSavedArtifact(body,savedArtifacts[ai2]);
+          }
+          if(cursor){cursor.remove();cursor=null}
         }
-        /* P_finish-no-flash — swap the streamed DOM for the final render
-           synchronously, with no fade. The progressive render is already
-           near-identical to the final pass, so an in-place swap in a
-           single frame is imperceptible; the old opacity fade read as a
-           spontaneous "refresh" after the answer completed. */
-        body.innerHTML=finalHtml;
-        if(savedPill)body.insertBefore(savedPill,body.firstChild);
-        else if(savedToolGroup)body.appendChild(savedToolGroup);
-        for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
-          body.appendChild(savedToolCardArr[sci2]);
-        }
-        /* Re-mount saved artifacts AFTER the final HTML + tool cards.
-           Anchored hosts go back beside their serialized inline row
-           (data-tool-anchor → [data-tcid]) so charts stay embedded in
-           the response flow; everything else falls to the bottom. */
-        for(var ai2=0;ai2<savedArtifacts.length;ai2++){
-          reseatSavedArtifact(body,savedArtifacts[ai2]);
-        }
-        if(cursor){cursor.remove();cursor=null}
         if(msgIdx>=0&&state.messages[msgIdx]){
           state.messages[msgIdx].html=finalHtml;
           state.messages[msgIdx].rawText=full;
@@ -6030,35 +6057,55 @@ function doRender(){
       }catch(e){
         console.log("[finish] formatMsg error");
         var fb="<p>"+esc(stripChatArtifacts(full).replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,""))+"</p>";
-        var savedPill2=body.querySelector('.think-block');
-        var savedToolGroup2=body.querySelector('.tool-run-group');
-        var savedTC2=body.querySelectorAll('.agent-tool-card');
-        var savedTCArr2=[];
-        if(!savedPill2&&!savedToolGroup2){
-          for(var sci3=0;sci3<savedTC2.length;sci3++){
-            savedTCArr2.push(savedTC2[sci3]);
-            savedTC2[sci3].parentNode.removeChild(savedTC2[sci3]);
+        /* P_smooth-handoff — same rule as the success path: only touch
+           the legacy body when it IS the final surface. */
+        if(!_reactHandoff){
+          var savedPill2=body.querySelector('.think-block');
+          var savedToolGroup2=body.querySelector('.tool-run-group');
+          var savedTC2=body.querySelectorAll('.agent-tool-card');
+          var savedTCArr2=[];
+          if(!savedPill2&&!savedToolGroup2){
+            for(var sci3=0;sci3<savedTC2.length;sci3++){
+              savedTCArr2.push(savedTC2[sci3]);
+              savedTC2[sci3].parentNode.removeChild(savedTC2[sci3]);
+            }
           }
-        }
-        body.innerHTML=fb;
-        if(savedPill2)body.insertBefore(savedPill2,body.firstChild);
-        else if(savedToolGroup2)body.appendChild(savedToolGroup2);
-        for(var sci4=0;sci4<savedTCArr2.length;sci4++){
-          body.appendChild(savedTCArr2[sci4]);
+          body.innerHTML=fb;
+          if(savedPill2)body.insertBefore(savedPill2,body.firstChild);
+          else if(savedToolGroup2)body.appendChild(savedToolGroup2);
+          for(var sci4=0;sci4<savedTCArr2.length;sci4++){
+            body.appendChild(savedTCArr2[sci4]);
+          }
         }
         if(msgIdx>=0&&state.messages[msgIdx]){
           state.messages[msgIdx].html=fb;
+          state.messages[msgIdx].rawText=full;
+          /* Without flipping type here the entry stays "streaming":
+             React filters it out as non-finalized and _hfTick's
+             abandon path would drop the legacy bubble with nothing to
+             replace it — the message would simply vanish. */
+          state.messages[msgIdx].type="assistant";
           state.messages[msgIdx].reasoningContent=fullReasoning||null;
         }
       }
       finishAfterRender();
 
       function finishAfterRender(){
-        try{processPendingMermaid()}catch(_){}
-        try{processPendingViz()}catch(_){}
-        try{processPendingVizActions()}catch(_){}
-        try{wireCodeBlockHeaders(body)}catch(_){}
-        try{wireMsgBodyImages(body)}catch(_){}
+        /* P_smooth-handoff — post-render wiring targets the DOM that
+           will actually stay on screen. In the React path the streamed
+           body is dropped a frame later and MessageItem's
+           useLayoutEffect runs the same idempotent hooks on the React
+           copy pre-paint; running them here as well re-rendered
+           mermaid and re-wired code blocks on a throwaway body —
+           wasted work plus a one-frame visual pop right before the
+           handoff. */
+        if(!_reactHandoff){
+          try{processPendingMermaid()}catch(_){}
+          try{processPendingViz()}catch(_){}
+          try{processPendingVizActions()}catch(_){}
+          try{wireCodeBlockHeaders(body)}catch(_){}
+          try{wireMsgBodyImages(body)}catch(_){}
+        }
         /* Source Card. The mid-stream snapshot is kept so a fresh
            background fetch that lands while the model is still streaming
            can't silently swap the cards underneath the user. But the
@@ -6134,7 +6181,7 @@ function doRender(){
            right after the answer finished. Retained live-DOM modules
            (think pill, tool cards, artifacts) are handed to React's
            body in the same tick. */
-        if(list&&list.dataset&&list.dataset.msgListReactHydrated==="1"){
+        if(_reactHandoff){
           var _hfFrames=0;
           var _hfFindLegacy=function(){
             var cands=list.querySelectorAll('[data-client-id="'+clientId+'"]');
@@ -6148,16 +6195,42 @@ function doRender(){
               var reactNode=list.querySelector('[data-client-id="'+clientId+'"][data-react-owned]');
               var legacyNode=_hfFindLegacy();
               if(reactNode){
-                if(legacyNode&&legacyNode.parentNode)legacyNode.parentNode.removeChild(legacyNode);
+                /* P_smooth-handoff — transplant the live modules
+                   (think pill, tool cards, anchored charts, artifacts,
+                   sources card) straight from the streamed DOM into the
+                   React copy BEFORE the legacy bubble is dropped, all
+                   inside this one pre-paint frame. finish() no longer
+                   re-renders the legacy body in the React path, so the
+                   streamed DOM is the single live source: each iframe
+                   reparents exactly once instead of twice, and the
+                   pill/cards never flash through an intermediate
+                   re-render. */
                 var reactBody=reactNode.querySelector('.msg-body');
-                if(reactBody){
-                  if(savedPill)reactBody.insertBefore(savedPill,reactBody.firstChild);
-                  else if(savedToolGroup)reactBody.appendChild(savedToolGroup);
-                  var retainedToolCards=Array.isArray(savedToolCardArr)?savedToolCardArr:[];
-                  var retainedArtifacts=Array.isArray(savedArtifacts)?savedArtifacts:[];
-                  for(var rtc=0;rtc<retainedToolCards.length;rtc++)reactBody.appendChild(retainedToolCards[rtc]);
-                  for(var rta=0;rta<retainedArtifacts.length;rta++)reseatSavedArtifact(reactBody,retainedArtifacts[rta]);
+                if(reactBody&&legacyNode){
+                  var _lvPill=legacyNode.querySelector('.think-block');
+                  var _lvGroup=legacyNode.querySelector('.tool-run-group');
+                  if(_lvPill)reactBody.insertBefore(_lvPill,reactBody.firstChild);
+                  else if(_lvGroup)reactBody.appendChild(_lvGroup);
+                  if(!_lvPill&&!_lvGroup){
+                    var _lvCards=legacyNode.querySelectorAll('.agent-tool-card');
+                    for(var lci=0;lci<_lvCards.length;lci++)reactBody.appendChild(_lvCards[lci]);
+                  }
+                  /* Anchored hosts first, THEN the free-standing
+                     artifact query — mirrors the old extraction order so
+                     a chart living inside a host is never pulled out of
+                     it by the second pass. */
+                  var _lvHosts=legacyNode.querySelectorAll('.tool-inline-attachments');
+                  for(var lhi=0;lhi<_lvHosts.length;lhi++)reseatSavedArtifact(reactBody,_lvHosts[lhi]);
+                  var _lvArts=legacyNode.querySelectorAll('.exec-artifact,.visualization-card');
+                  for(var lai=0;lai<_lvArts.length;lai++)reseatSavedArtifact(reactBody,_lvArts[lai]);
+                  /* The sources card is appended to the legacy .msg
+                     element (not the body) by finishAfterRender; it was
+                     never transplanted before, so it silently vanished
+                     the moment the legacy bubble was dropped. */
+                  var _lvSources=legacyNode.querySelector('.sources-card');
+                  if(_lvSources)reactBody.appendChild(_lvSources);
                 }
+                if(legacyNode&&legacyNode.parentNode)legacyNode.parentNode.removeChild(legacyNode);
                 /* Removing the legacy streaming bubble changes the scroll
                    height by roughly one whole answer. Preserve the reader's
                    anchor after that removal so completion does not look like
