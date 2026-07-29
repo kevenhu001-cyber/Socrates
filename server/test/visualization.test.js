@@ -16,6 +16,48 @@ test('visual spec normalizes a native ln(x) function request', () => {
   assert.equal(result.spec.payload.mode, 'cartesian');
 });
 
+test('visual spec repairs common model field aliases without mutating input', () => {
+  const input = {
+    version: '1',
+    type: 'bar',
+    title: 'Long labels',
+    summary: 'A bar chart.',
+    labels: ['First', 'Second'],
+    series: [{ title: 'Result', values: [1, 2] }],
+  };
+  const before = JSON.stringify(input);
+  const result = validateVisualizationSpec(input);
+  assert.equal(result.ok, true);
+  assert.equal(result.spec.version, 1);
+  assert.equal(result.spec.template, 'bar');
+  assert.deepEqual(result.spec.payload.categories, ['First', 'Second']);
+  assert.deepEqual(result.spec.payload.series, [{ name: 'Result', data: [1, 2] }]);
+  assert.equal(JSON.stringify(input), before);
+});
+
+test('visual spec repairs common function and graph aliases', () => {
+  const fn = validateVisualizationSpec({
+    version: 1, template: 'function', title: 'Curve',
+    accessibilitySummary: 'A curve.', payload: { formula: 'sin(x)' },
+  });
+  assert.equal(fn.ok, true);
+  assert.equal(fn.spec.payload.functions[0].expression, 'sin(x)');
+
+  const graph = validateVisualizationSpec({
+    spec: {
+      version: 1, template: 'flowchart', title: 'Flow',
+      accessibilitySummary: 'A flow.',
+      payload: {
+        nodes: [{ id: 'a', name: 'Start' }, { id: 'b', text: 'End' }],
+        edges: [{ source: 'a', target: 'b' }],
+      },
+    },
+  });
+  assert.equal(graph.ok, true);
+  assert.equal(graph.spec.payload.nodes[0].label, 'Start');
+  assert.equal(graph.spec.payload.edges[0].from, 'a');
+});
+
 test('visual tool returns structured field errors instead of a Python fallback', () => {
   const result = executeVisualization({ ...lnSpec, payload: { functions: [{ expression: '' }] } });
   assert.equal(result.status, 'failed');

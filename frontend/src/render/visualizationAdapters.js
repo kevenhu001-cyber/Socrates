@@ -65,14 +65,17 @@ async function mountPlotly(spec, stage, helpers) {
       line: { width: 2.2 },
     }));
   }
+  const categories = spec.payload.categories || [];
+  const longestCategory = categories.reduce((max, value) => Math.max(max, Array.from(String(value ?? '')).length), 0);
+  const tickAngle = categories.length > 10 ? -40 : (categories.length > 6 && longestCategory > 18 ? -28 : 0);
   await Plotly.newPlot(stage, traces, {
     autosize: true,
-    margin: { l: 58, r: 22, t: 18, b: 50 },
+    margin: { l: 58, r: 22, t: 24, b: tickAngle ? 96 : 58 },
     paper_bgcolor: 'transparent',
     plot_bgcolor: 'transparent',
     font: { family: "Inter, 'Noto Sans SC', sans-serif", color: colors.text, size: 12 },
-    xaxis: { title: { text: spec.payload.xLabel || 'x' }, gridcolor: colors.grid, zerolinecolor: colors.muted },
-    yaxis: { title: { text: spec.payload.yLabel || 'y' }, gridcolor: colors.grid, zerolinecolor: colors.muted },
+    xaxis: { title: { text: spec.payload.xLabel || 'x' }, gridcolor: colors.grid, zerolinecolor: colors.muted, automargin: true, tickangle: tickAngle },
+    yaxis: { title: { text: spec.payload.yLabel || 'y' }, gridcolor: colors.grid, zerolinecolor: colors.muted, automargin: true },
     legend: { orientation: 'h', y: 1.08 },
     hovermode: 'closest',
   }, {
@@ -91,12 +94,17 @@ async function mountPlotly(spec, stage, helpers) {
   };
 }
 
+function compactMermaidLabel(value, max = 48) {
+  const chars = Array.from(String(value || '').replace(/\s+/g, ' ').trim());
+  return chars.length > max ? `${chars.slice(0, max - 1).join('')}…` : chars.join('');
+}
+
 function mermaidText(spec) {
   const payload = spec.payload || {};
   const nodes = payload.nodes || [];
   const edges = payload.edges || [];
   const safeId = (value) => `n_${String(value).replace(/[^a-zA-Z0-9_]/g, '_')}`;
-  const safeLabel = (value) => String(value || '').replace(/"/g, '&quot;').replace(/\n/g, ' ');
+  const safeLabel = (value) => compactMermaidLabel(value).replace(/"/g, '&quot;');
   if (spec.template === 'sequence') {
     const participants = nodes.map((node) => `participant ${safeId(node.id)} as ${safeLabel(node.label)}`);
     const messages = edges.map((edge) => `${safeId(edge.from)}->>${safeId(edge.to)}: ${safeLabel(edge.label || '')}`);

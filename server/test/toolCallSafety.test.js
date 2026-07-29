@@ -17,6 +17,27 @@ test('parseToolArguments accepts only JSON objects', () => {
   assert.equal(parseToolArguments('"string"').ok, false);
 });
 
+test('parseToolArguments repairs conservative provider formatting variants', () => {
+  const expected = { query: 'safe' };
+  assert.deepEqual(parseToolArguments('```json\n{"query":"safe"}\n```'), {
+    ok: true,
+    value: expected,
+  });
+  assert.deepEqual(parseToolArguments('arguments: {"query":"safe",}'), {
+    ok: true,
+    value: expected,
+  });
+  assert.deepEqual(parseToolArguments('"{\\"query\\":\\"safe\\"}"'), {
+    ok: true,
+    value: expected,
+  });
+  assert.deepEqual(parseToolArguments(expected), {
+    ok: true,
+    value: expected,
+  });
+  assert.equal(parseToolArguments("{'query':'unsafe-javascript'}").ok, false);
+});
+
 test('normalizeToolCalls bounds the batch and makes IDs unique', () => {
   const calls = Array.from({ length: 7 }, (_, index) => ({
     id: index < 2 ? 'duplicate' : '',
@@ -27,6 +48,14 @@ test('normalizeToolCalls bounds the batch and makes IDs unique', () => {
   assert.equal(normalized.length, 4);
   assert.equal(new Set(normalized.map((call) => call.id)).size, 4);
   assert.ok(normalized.every((call) => call.function.arguments.length < 100_000));
+});
+
+test('normalizeToolCalls preserves object arguments from compatible providers', () => {
+  const [normalized] = normalizeToolCalls([{
+    id: 'object-args',
+    function: { name: 'web_search', arguments: { query: 'safe' } },
+  }], { iteration: 0, maxCalls: 1 });
+  assert.equal(normalized.function.arguments, '{"query":"safe"}');
 });
 
 test('wrapUntrustedToolResult prevents delimiter escape and labels injection as data', () => {

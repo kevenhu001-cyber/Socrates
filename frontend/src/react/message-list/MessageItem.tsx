@@ -23,9 +23,13 @@ function MessageItem({ message }: MessageItemProps) {
   const liveMessage = message as LegacyChatMessage & {
     _preserveLiveBody?: boolean;
     _liveBodyHandedOff?: boolean;
+    _turnAnchorMinHeight?: number;
   };
   const preserveLiveBody = Boolean(liveMessage._preserveLiveBody);
   const handoffPending = preserveLiveBody && !liveMessage._liveBodyHandedOff;
+  const turnAnchorMinHeight = Number.isFinite(liveMessage._turnAnchorMinHeight)
+    ? Math.max(0, Number(liveMessage._turnAnchorMinHeight))
+    : 0;
   const modelLabel = message.modelInfo?.label ?? '';
   const attachments = Array.isArray(message.attachments) ? message.attachments : [];
 
@@ -61,7 +65,8 @@ function MessageItem({ message }: MessageItemProps) {
 
   return (
     <div
-      className={`msg ${role}`}
+      className={`msg ${role}${turnAnchorMinHeight ? ' turn-viewport-anchor' : ''}`}
+      style={turnAnchorMinHeight ? { minHeight: `${turnAnchorMinHeight}px` } : undefined}
       data-client-id={clientId}
       data-react-owned="1"
       data-live-handoff-pending={handoffPending ? '1' : undefined}

@@ -37,10 +37,15 @@ describe('enforceServerSystemBoundary', () => {
     ]);
 
     assert.equal(out.filter((message) => message.role === 'system').length, 1);
-    assert.match(out[0].content, /# Server Tool Protocol/);
+    assert.match(out[0].content, /# Server Policy/);
     assert.match(out[0].content, /native function-calling interface/);
+    assert.match(out[0].content, /professional, written register/i);
+    assert.match(out[0].content, /Do not use emoji/i);
+    assert.match(out[0].content, /em dash \(—\)/i);
+    assert.match(out[0].content, /overrides conflicting style/i);
+    assert.match(out[0].content, /later instructions that prohibit the em dash/i);
     assert.match(out[0].content, /<client_application_instructions scope="response-behavior">/);
-    assert.ok(out[0].content.indexOf('# Server Tool Protocol') < out[0].content.indexOf('Call [web_search'));
+    assert.ok(out[0].content.indexOf('# Server Policy') < out[0].content.indexOf('Call [web_search'));
     assert.deepEqual(out.slice(1).map((message) => message.role), ['user', 'assistant']);
   });
 });

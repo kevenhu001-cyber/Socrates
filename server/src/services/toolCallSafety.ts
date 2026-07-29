@@ -13,18 +13,49 @@ export interface NormalizedToolCall {
 export function parseToolArguments(raw: unknown):
   | { ok: true; value: Record<string, unknown> }
   | { ok: false; error: string } {
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    return { ok: true, value: raw as Record<string, unknown> };
+  }
   if (typeof raw !== 'string' || raw.length > MAX_TOOL_ARGUMENT_CHARS) {
     return { ok: false, error: 'invalid_tool_arguments' };
   }
-  try {
-    const value = JSON.parse(raw) as unknown;
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      return { ok: false, error: 'invalid_tool_arguments' };
-    }
-    return { ok: true, value: value as Record<string, unknown> };
-  } catch {
-    return { ok: false, error: 'invalid_tool_arguments' };
+
+  /* Several OpenAI-compatible providers occasionally wrap otherwise-valid
+     function arguments in a Markdown JSON fence, prefix them with
+     "arguments:", double-encode the object, or leave a trailing comma.
+     Repair only those unambiguous transport mistakes—never attempt a broad
+     JavaScript/single-quote parser at this execution boundary. */
+  let candidate = raw.trim();
+  const fenced = candidate.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fenced) candidate = fenced[1].trim();
+  candidate = candidate.replace(/^(?:arguments?|input)\s*[:=]\s*/i, '').trim();
+
+  const firstObject = candidate.indexOf('{');
+  const lastObject = candidate.lastIndexOf('}');
+  if (firstObject > 0 && lastObject > firstObject) {
+    const prefix = candidate.slice(0, firstObject).trim();
+    const suffix = candidate.slice(lastObject + 1).trim();
+    if (!prefix && !suffix) candidate = candidate.slice(firstObject, lastObject + 1);
   }
+
+  const attempts = [
+    candidate,
+    candidate.replace(/,\s*([}\]])/g, '$1'),
+  ];
+  for (const attempt of attempts) {
+    try {
+      let value = JSON.parse(attempt) as unknown;
+      if (typeof value === 'string' && value.trim().startsWith('{') && value.trim().endsWith('}')) {
+        value = JSON.parse(value) as unknown;
+      }
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        return { ok: true, value: value as Record<string, unknown> };
+      }
+    } catch {
+      // Try the next conservative representation.
+    }
+  }
+  return { ok: false, error: 'invalid_tool_arguments' };
 }
 
 export function normalizeToolCalls(
@@ -48,7 +79,11 @@ export function normalizeToolCalls(
       type: 'function',
       function: {
         name: String(fn.name || '').slice(0, 128),
-        arguments: String(fn.arguments || '').slice(0, MAX_TOOL_ARGUMENT_CHARS),
+        arguments: (
+          fn.arguments && typeof fn.arguments === 'object'
+            ? (() => { try { return JSON.stringify(fn.arguments); } catch { return ''; } })()
+            : String(fn.arguments || '')
+        ).slice(0, MAX_TOOL_ARGUMENT_CHARS),
       },
     };
   });

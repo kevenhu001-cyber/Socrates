@@ -132,3 +132,31 @@ test('Composer tools menu React mode always loads (no ?react=1 flag needed)', as
   );
   expect(installed).toBe(true);
 });
+
+test('mobile plus menu opens without expanding the chat composer', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window.state.phase = 'chat';
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+  });
+
+  const wrap = page.locator('#chatInputWrap');
+  const plus = page.locator('#chatComposerToolsBtn');
+  const before = await wrap.boundingBox();
+  expect(before).not.toBeNull();
+
+  await plus.click();
+  await expect(page.locator('#composerToolsMenu')).not.toHaveClass(/hidden/);
+  const after = await wrap.boundingBox();
+  expect(after).not.toBeNull();
+
+  expect(Math.abs(after.height - before.height)).toBeLessThanOrEqual(2);
+  await expect(plus).toBeFocused();
+  await expect(wrap).not.toHaveCSS('min-height', '116px');
+});

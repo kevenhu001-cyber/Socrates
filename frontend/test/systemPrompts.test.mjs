@@ -20,6 +20,14 @@ test('chat prompts do not demand disclosure of private chain of thought', () => 
   }
 });
 
+test('chat prompts share the written no-emoji response style', () => {
+  for (const prompt of [CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT]) {
+    assert.match(prompt, /professional, written register/i);
+    assert.match(prompt, /em dash \(—\)/i);
+    assert.match(prompt, /Do not use emoji/i);
+  }
+});
+
 test('chat prompt policies stay compact enough to avoid crowding user context', () => {
   assert.ok(CHAT_SYSTEM_PROMPT.length < 9_000, `high-effort prompt is ${CHAT_SYSTEM_PROMPT.length} chars`);
   assert.ok(CHAT_CONCISE_PROMPT.length < 7_000, `concise prompt is ${CHAT_CONCISE_PROMPT.length} chars`);
