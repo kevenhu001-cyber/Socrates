@@ -106,6 +106,13 @@ interface ToolRuntimeOptions {
   cancelAnimationFrame?: (id: number) => void;
   EventSource?: typeof EventSource | null;
   /**
+   * Opt in to the separate /api/executions/:id/stream channel. Live chat
+   * already receives execution_start, tool_progress, and tool_result on the
+   * main SSE connection, so opening a second channel by default duplicates
+   * progress/results and introduces a race between two terminal events.
+   */
+  useExecutionEventSource?: boolean;
+  /**
    * 'compact' (default) — live chat path. Each tool call renders as a
    * minimal inline status row (.tool-inline) mounted in the message
    * flow at the point the tool fired; onInlineTool (supplied by the
@@ -263,6 +270,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     cancelAnimationFrame(id);
   };
   const EventSourceImpl = options.EventSource || (typeof EventSource !== 'undefined' ? EventSource : null);
+  const useExecutionEventSource = options.useExecutionEventSource === true;
   const mode = options.mode || 'compact';
   const onInlineTool = options.onInlineTool || function (_entry: { id: string; name: string }, row: HTMLElement) {
     body.appendChild(row);
@@ -481,7 +489,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   }
 
   function connectExecution(executionId: string, toolCallId: string): void {
-    if (!executionId || !toolCallId || disposed || !EventSourceImpl) return;
+    if (!useExecutionEventSource || !executionId || !toolCallId || disposed || !EventSourceImpl) return;
     const connectionKey = toolCallId + ':' + executionId;
     if (executionConnections.has(connectionKey)) return;
     try {
@@ -674,6 +682,12 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   function recordToolResult(result: ToolResult): void {
     const message = activeMessage();
     if (!message || !result || !result.id) return;
+    /* The main chat SSE is authoritative. If an explicitly enabled
+       execution EventSource is still open, close it before applying the
+       terminal result so it cannot replay the same result a moment later. */
+    Array.from(executionConnections.values()).forEach(function (connection) {
+      if (connection.key.indexOf(String(result.id) + ':') === 0) closeConnection(connection);
+    });
     let output: HTMLElement | null = null;
     let entry = findEntry(message, result.id);
     if (!entry) {

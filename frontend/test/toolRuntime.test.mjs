@@ -57,6 +57,7 @@ test('ToolRuntime dispose cancels queued work and closes execution streams', () 
     requestAnimationFrame(callback) { scheduled = callback; return 17; },
     cancelAnimationFrame(id) { cancelledFrame = id; },
     EventSource: FakeEventSource,
+    useExecutionEventSource: true,
     mode: 'detailed',
   });
 
@@ -135,6 +136,26 @@ test('ToolRuntime drains progress that arrives before tool_use', () => {
   }
 });
 
+test('ToolRuntime uses the main chat SSE as the default execution channel', () => {
+  const message = { toolCalls: [{ id: 'code-main', name: 'code_interpreter' }] };
+  const sources = [];
+  class FakeEventSource {
+    constructor(url) { this.url = url; sources.push(this); }
+    addEventListener() {}
+    close() {}
+  }
+  const runtime = createToolRuntime({
+    body: makeBody(),
+    getMessage: () => message,
+    EventSource: FakeEventSource,
+    mode: 'detailed',
+  });
+
+  runtime.recordExecutionStart({ id: 'code-main', executionId: 'exec-main' });
+  assert.equal(sources.length, 0, 'secondary execution SSE must be opt-in');
+  runtime.dispose();
+});
+
 test('ToolRuntime does not open a progress stream after a terminal result', () => {
   const message = { toolCalls: [] };
   const sources = [];
@@ -154,6 +175,7 @@ test('ToolRuntime does not open a progress stream after a terminal result', () =
       getMessage: () => message,
       onInlineTool() {},
       EventSource: FakeEventSource,
+      useExecutionEventSource: true,
       mode: 'compact',
     });
 

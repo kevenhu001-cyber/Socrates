@@ -26,6 +26,45 @@ export interface StreamingSplit {
   tail: string;
 }
 
+/**
+ * Pick a stable insertion offset for an inline tool row.
+ *
+ * Tool-use events can arrive while the model is still streaming a short
+ * preamble. Mounting the row at the raw byte/character offset can split a
+ * sentence in half (for example, "我先查一下这个" + tool row + "问题").
+ * Prefer the latest completed paragraph or sentence. When the current
+ * segment has no completed boundary, keep the whole unfinished sentence
+ * together after the tool row by returning segmentStart.
+ */
+export function findInlineToolBoundary(text: string, segmentStart = 0): number {
+  const full = String(text || '');
+  const start = Math.max(0, Math.min(full.length, Number(segmentStart) || 0));
+  if (start >= full.length) return full.length;
+
+  const segment = full.slice(start);
+  const paragraphMatch = /[\r\n]{2,}/g;
+  let match: RegExpExecArray | null;
+  let paragraphEnd = -1;
+  while ((match = paragraphMatch.exec(segment))) paragraphEnd = match.index + match[0].length;
+  if (paragraphEnd > 0) return start + paragraphEnd;
+
+  // A sentence terminator is safe only when followed by whitespace or the
+  // end of the currently available text. This avoids treating decimal dots
+  // or punctuation inside identifiers as sentence boundaries.
+  const sentenceMatch = /[。！？!?；;:：.](?=\s|$)/g;
+  let sentenceEnd = -1;
+  while ((match = sentenceMatch.exec(segment))) sentenceEnd = match.index + match[0].length;
+  if (sentenceEnd > 0) {
+    let end = sentenceEnd;
+    while (end < segment.length && /\s/.test(segment.charAt(end))) end += 1;
+    return start + end;
+  }
+
+  const newline = Math.max(segment.lastIndexOf('\n'), segment.lastIndexOf('\r'));
+  if (newline >= 0) return start + newline + 1;
+  return start;
+}
+
 /* Keep completed Markdown blocks in a stable DOM region and return only the
  * unfinished tail for frequent updates. The final renderer still reparses the
  * complete response once, so a conservative fallback here is always safe. */

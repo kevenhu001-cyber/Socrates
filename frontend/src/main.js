@@ -33,7 +33,7 @@ import { createMistakeBook } from './ui/mistakeBook.js';
 import { batchSetItem, batchRemoveItem } from './batchStorage.js';
 import { LOCAL_MEMORY_MAX, loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from './storage/localMemory.js';
 import { formatTickSlice, formatMsgProgressive, formatMsg, stripMarkdown, findLastUserMessage } from './render/markdown.js';
-import { getStreamRenderInterval, splitStreamingMarkdown } from './render/streaming.js';
+import { findInlineToolBoundary, getStreamRenderInterval, splitStreamingMarkdown } from './render/streaming.js';
 import { SOCRATIC_SYSTEM_PROMPT } from './prompts/socratic.js';
 import { VISUALIZATION_ROUTING_PROMPT } from './prompts/visualization.js';
 import { fetchGeoInfo, getSystemContext, resetGeoInfo } from './system/context.js';
@@ -5629,10 +5629,36 @@ function doRender(){
        rebuild the identical layout as serialized HTML. */
     onInlineTool:function(entry,row){
       try{placeholder.remove()}catch(_){}
+      /* Do not splice a tool row at an arbitrary character offset. A
+         tool_use event often follows a short, unfinished preamble; using
+         full.length here split one sentence across the tool row. Rewind to
+         the latest completed sentence/paragraph and let the unfinished tail
+         render as the next segment below the tool. */
+      var _oldSegBase=segBase;
+      var _oldSegHost=segHost;
+      var _toolOffset=findInlineToolBoundary(full,_oldSegBase);
+      /* The boundary helper is prose-oriented. Keep the current live layout
+         unchanged when an inline reasoning marker is active, because moving
+         a partial <think> structure would be more disruptive than retaining
+         the raw offset for that rare case. */
+      if(thinkState.startIdx!==-1)_toolOffset=full.length;
       freezeCurrentSegment();
+      if(_toolOffset<full.length&&_oldSegHost&&_oldSegHost.isConnected){
+        try{
+          var _frozenVisible=stripChatArtifacts(full.slice(_oldSegBase,_toolOffset))
+            .replace(/<think>[\s\S]*?<\/think>/gi,"")
+            .replace(/<think>[\s\S]*$/gi,"");
+          if(_frozenVisible.trim())_oldSegHost.innerHTML=renderAssistantHTML(_frozenVisible);
+          else _oldSegHost.remove();
+        }catch(_){}
+      }
       body.appendChild(row);
-      inlineToolRows.push({id:entry.id,name:entry.name,offset:full.length,row:row});
-      segBase=full.length;
+      inlineToolRows.push({id:entry.id,name:entry.name,offset:_toolOffset,row:row});
+      segBase=_toolOffset;
+      if(_toolOffset<full.length){
+        cancelScheduledRender();
+        pendingRender=requestAnimationFrame(function(){doRender()});
+      }
       var sc=list||scrollContainer();
       if(sc&&!state._userScrolledAway&&
          sc.scrollHeight-sc.scrollTop-sc.clientHeight<=96){
@@ -6170,13 +6196,31 @@ function doRender(){
               var _fvr=_fvRows[_fvi].getBoundingClientRect();
               if(_fvr.bottom>_fvRect.top+1){_fvAnchor=_fvRows[_fvi];break;}
             }
+            /* Prefer an exact visible node inside the message body. The old
+               row-level anchor could preserve the bubble's top while still
+               moving the paragraph the user was reading by hundreds of
+               pixels after async content and tool rows were transplanted. */
+            var _fvInnerAnchor=null;
+            if(_fvAnchor){
+              var _fvCandidates=_fvAnchor.querySelectorAll(
+                '.stream-settled-content > *,.stream-live-content > *,'+
+                '.think-prefix > *,.think-suffix > *,.tool-inline,'+
+                '.visualization-card,.exec-artifact,.msg-body > *'
+              );
+              for(var _fvni=0;_fvni<_fvCandidates.length;_fvni++){
+                var _fvnr=_fvCandidates[_fvni].getBoundingClientRect();
+                if(_fvnr.bottom>_fvRect.top+1){_fvInnerAnchor=_fvCandidates[_fvni];break;}
+              }
+            }
+            var _fvMeasuredAnchor=_fvInnerAnchor||_fvAnchor;
             _finishViewport={
               scroller:list,
               pinned:!state._userScrolledAway&&
                 list.scrollHeight-list.scrollTop-list.clientHeight<=96,
               scrollTop:list.scrollTop,
+              anchorNode:_fvMeasuredAnchor,
               anchorId:_fvAnchor?_fvAnchor.getAttribute('data-client-id'):null,
-              anchorOffset:_fvAnchor?_fvAnchor.getBoundingClientRect().top-_fvRect.top:0
+              anchorOffset:_fvMeasuredAnchor?_fvMeasuredAnchor.getBoundingClientRect().top-_fvRect.top:0
             };
           }catch(_){}
         }
@@ -6259,12 +6303,30 @@ function doRender(){
                   try{wireMsgBodyImages(reactBody)}catch(_){}
                 }
                 if(legacyNode&&legacyNode.parentNode)legacyNode.parentNode.removeChild(legacyNode);
+                /* Reveal the durable React shell only after the live DOM has
+                   moved and the duplicate legacy shell is gone. This makes
+                   the handoff a single layout transition instead of briefly
+                   rendering two copies of the same answer. */
+                try{
+                  reactNode.removeAttribute('data-live-handoff-pending');
+                  reactNode.setAttribute('data-live-handoff-complete','1');
+                  var _liveMsg=msgIdx>=0?state.messages[msgIdx]:null;
+                  if(_liveMsg){
+                    Object.defineProperty(_liveMsg,'_liveBodyHandedOff',{
+                      value:true,writable:true,configurable:true,enumerable:false
+                    });
+                  }
+                }catch(_){}
                 if(_finishViewport&&_finishViewport.scroller){
                   var _fvScroller=_finishViewport.scroller;
                   if(_finishViewport.pinned){
                     _fvScroller.scrollTop=_fvScroller.scrollHeight;
                   }else if(state._userScrolledAway){
                     _fvScroller.scrollTop=_finishViewport.scrollTop;
+                  }else if(_finishViewport.anchorNode&&_finishViewport.anchorNode.isConnected){
+                    var _fvExactNow=_finishViewport.anchorNode.getBoundingClientRect().top-
+                      _fvScroller.getBoundingClientRect().top;
+                    _fvScroller.scrollTop+=_fvExactNow-_finishViewport.anchorOffset;
                   }else if(_finishViewport.anchorId){
                     var _fvCurrent=null;
                     var _fvCurrentRows=list.querySelectorAll('.msg[data-client-id]');

@@ -33,6 +33,41 @@ interface ChatCompletionRequestOptions {
   tool_choice?: unknown;
 }
 
+export function isToolFinishReason(reason: unknown): boolean {
+  return reason === 'tool_calls' || reason === 'tool_call' || reason === 'function_call';
+}
+
+/** Normalize provider-specific tool argument streaming.
+ *
+ * OpenAI sends JSON fragments, while several compatible providers send an
+ * object or repeat the complete accumulated JSON on every delta. Blind string
+ * concatenation turns those valid variants into `[object Object]` or two JSON
+ * objects stuck together, which then fails strict argument parsing.
+ */
+export function mergeToolArgumentDelta(previous: unknown, incoming: unknown): string {
+  const prev = typeof previous === 'string' ? previous : String(previous ?? '');
+  let next = '';
+  if (typeof incoming === 'string') next = incoming;
+  else if (incoming && typeof incoming === 'object') {
+    try { next = JSON.stringify(incoming); } catch { next = ''; }
+  } else if (incoming != null) next = String(incoming);
+  if (!next) return prev;
+  if (!prev) return next;
+  if (next === prev || next.startsWith(prev)) return next;
+  if (prev.endsWith(next)) return prev;
+  return prev + next;
+}
+
+export function mergeToolNameDelta(previous: unknown, incoming: unknown): string {
+  const prev = typeof previous === 'string' ? previous : String(previous ?? '');
+  const next = typeof incoming === 'string' ? incoming : String(incoming ?? '');
+  if (!next) return prev;
+  if (!prev) return next;
+  if (next === prev || next.startsWith(prev)) return next;
+  if (prev.startsWith(next) || prev.endsWith(next)) return prev;
+  return (prev + next).slice(0, 128);
+}
+
 /**
  * Stream a chat completion from an external LLM provider.
  *
@@ -244,8 +279,8 @@ export async function streamChatCompletion(
                 id: tc.id || prev.id,
                 type: 'function',
                 function: {
-                  name: (tc.function && tc.function.name) || prev.function.name,
-                  arguments: prev.function.arguments + ((tc.function && tc.function.arguments) || ''),
+                  name: mergeToolNameDelta(prev.function.name, tc.function && tc.function.name),
+                  arguments: mergeToolArgumentDelta(prev.function.arguments, tc.function && tc.function.arguments),
                 },
                 __index: i,
               };
@@ -289,8 +324,8 @@ export async function streamChatCompletion(
                 id: tc.id || prev.id,
                 type: 'function',
                 function: {
-                  name: (tc.function && tc.function.name) || prev.function.name,
-                  arguments: prev.function.arguments + ((tc.function && tc.function.arguments) || ''),
+                  name: mergeToolNameDelta(prev.function.name, tc.function && tc.function.name),
+                  arguments: mergeToolArgumentDelta(prev.function.arguments, tc.function && tc.function.arguments),
                 },
                 __index: i,
               };
@@ -328,7 +363,7 @@ export async function streamChatCompletion(
     /* Dispatch accumulated tool calls when the model decided to call
        a tool. The chat route listens for these in its tool-execution
        loop (Phase 3). */
-    if (finishReason === 'tool_calls' && typeof onToolUse === 'function') {
+    if (isToolFinishReason(finishReason) && typeof onToolUse === 'function') {
       for (const tc of toolCallAcc.values()) {
         try { onToolUse(tc); } catch { /* ignore listener errors */ }
       }

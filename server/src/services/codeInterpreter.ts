@@ -124,7 +124,7 @@ export const CODE_INTERPRETER_TOOL = {
       // round trip. These rules are stated up-front so the model writes
       // valid Python on the first try.
       '## Source must be valid module-level Python (NOT a Jupyter cell)\n' +
-      '- **No top-level `await`.** This runner is synchronous. Wrap async code: `def main(): await some_async(); asyncio.run(main())`. The same applies to top-level `yield` (must be inside a generator function).\n' +
+      '- **No top-level `await`.** This runner is synchronous. For async work, write `async def main(): ...` and call `asyncio.run(main())`. The same applies to top-level `yield` (it must be inside a generator function).\n' +
       '- **No top-level `return value`.** `return` with a value is only valid inside a function. If you want a final result, print it.\n' +
       '- **No `break`/`continue` outside loops.** If you need early exit, use `return` inside a function or `sys.exit(N)` at the top level.\n' +
       '- **Indentation must form valid compound statements.** Every `def`, `for`, `if`, `try`, `with`, `while`, `class` needs a properly indented body. Empty bodies need `pass` or `...`.\n' +
@@ -157,7 +157,7 @@ export const CODE_INTERPRETER_TOOL = {
       '- Always call `plt.tight_layout()` before savefig or labels get clipped.\n' +
       '- Close figures (`plt.close("all")` or `plt.close(fig)`) after saving — otherwise memory grows across runs.\n\n' +
       '## Common errors and how to recover\n' +
-      '- `SyntaxError` (any kind) → indentation / module-level rules above. Re-read the source as if it were the body of a `def __main__():` and fix.\n' +
+      '- `SyntaxError` (any kind) → check indentation and module-level syntax. In particular, keep `await` inside an `async def` invoked with `asyncio.run(...)`.\n' +
       '- `NameError: name X is not defined` → X was a variable from a previous run. Recompute it in THIS run, do not just re-call.\n' +
       '- `ModuleNotFoundError` → install with `import micropip; micropip.install("pkg")` at the top of the run.\n' +
       '- `FileNotFoundError` → you guessed a path without reading the `[scratch]` header. Re-read the header; if the file is not listed, write it yourself in this run.\n' +

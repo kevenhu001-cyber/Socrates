@@ -28,7 +28,7 @@ import { getDb } from '../../db/index.js';
 import { sessions, executions, connectorConnections, projectConnectorConnections } from '../../db/schema.js';
 import { isUuid } from '../../lib/validate.js';
 import { getExecutionsPerDay } from '../../lib/tiers.js';
-import { streamChatCompletion } from '../../services/llm.js';
+import { isToolFinishReason, streamChatCompletion } from '../../services/llm.js';
 import { codeInterpreter } from '../../services/codeInterpreter.js';
 import { webSearch } from '../../services/webSearch.js';
 import { executeVisualization } from '../../services/visualization.js';
@@ -362,7 +362,7 @@ export function registerStreamRoute(router: Router) {
 
         // No tool call → done. The extra tools-disabled iteration lets the
         // model summarize the fourth and final execution round in prose.
-        if (iterFinishReason !== 'tool_calls' || boundedToolCalls.length === 0) break;
+        if (!isToolFinishReason(iterFinishReason) || boundedToolCalls.length === 0) break;
         if (!toolsAllowed) {
           writeSse(`event: error\ndata: ${JSON.stringify({
             error: 'tool_iteration_limit_reached',

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  findInlineToolBoundary,
   getStreamRenderInterval,
   isStableMarkdownPrefix,
   splitStreamingMarkdown,
@@ -33,4 +34,11 @@ test('stream splitting never cuts through fenced code, math, or reasoning', () =
     assert.equal(isStableMarkdownPrefix(source.slice(0, source.lastIndexOf('\n\n'))), false);
     assert.deepEqual(splitStreamingMarkdown(source), { prefix: '', tail: source });
   }
+});
+
+test('inline tools are inserted only after complete prose boundaries', () => {
+  assert.equal(findInlineToolBoundary('我先检查一下这个模块，看看'), 0);
+  assert.equal(findInlineToolBoundary('先说明结论。 然后继续分析'), '先说明结论。 '.length);
+  assert.equal(findInlineToolBoundary('First paragraph.\n\nSecond paragraph is unfinished'), 'First paragraph.\n\n'.length);
+  assert.equal(findInlineToolBoundary('prefix 已完成。 后续仍在输入', 'prefix '.length), 'prefix 已完成。 '.length);
 });
