@@ -1490,7 +1490,7 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
    shell out of layout so the transcript never briefly contains two copies of
    the same answer, which otherwise changes scrollHeight and looks like a page
    refresh at completion. */
-.msg[data-live-handoff-pending="1"]{display:none}
+.msg[data-live-handoff-pending="1"]{display:none;animation:none}
 .msg[data-live-handoff-complete="1"]{animation:none}
 /* UI-align: native virtualization à la open-webui — off-screen
    messages skip layout/paint; the 150px estimate keeps the scrollbar
