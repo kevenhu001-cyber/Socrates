@@ -7,7 +7,7 @@ import './windowExports.js';
 import './state.js';
 import './i18n.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
-import { scrollContainer, scrollToBottomIfPinned } from './ui/scroll.js';
+import { initChatComposerReserve, scrollContainer, scrollToBottomIfPinned } from './ui/scroll.js';
 import { initKeyboardViewport } from './ui/keyboardViewport.js';
 import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
@@ -852,6 +852,7 @@ import {
     timer=setTimeout(function(){ml.classList.remove("scrollbar-visible")},1500);
   });
 })();
+initChatComposerReserve();
 
 /* ============================================================
    STATE
@@ -4689,14 +4690,19 @@ function showToast(msg){
 function addMessage(role,text,type,actions,attachmentsArg){
   /* User sending a message = explicitly wants to follow the conversation. */
   if(role==="user"){
+    _pendingStreamRetryViewport=null;
     state._userScrolledAway=false;
     hideNewReplyPill();
     /* The previous answer reserves viewport space so a short reply can stay
        anchored below its prompt. Retire that reserve only when a new turn
        begins; collapsing it earlier makes the completed page jump. */
     for(var _ami=0;_ami<state.messages.length;_ami++){
-      if(state.messages[_ami]&&state.messages[_ami]._turnAnchorMinHeight){
+      if(state.messages[_ami]&&(
+        state.messages[_ami]._turnAnchorMinHeight||
+        state.messages[_ami]._turnAnchorMarginTop
+      )){
         delete state.messages[_ami]._turnAnchorMinHeight;
+        delete state.messages[_ami]._turnAnchorMarginTop;
       }
     }
     try{
@@ -4704,6 +4710,7 @@ function addMessage(role,text,type,actions,attachmentsArg){
       for(var _oai=0;_oai<_oldAnchors.length;_oai++){
         _oldAnchors[_oai].classList.remove("turn-viewport-anchor");
         _oldAnchors[_oai].style.minHeight="";
+        _oldAnchors[_oai].style.marginTop="";
       }
     }catch(_){}
   }
@@ -4764,6 +4771,7 @@ function addMessage(role,text,type,actions,attachmentsArg){
 
 var _chatStopMode=false;
 var _chatStreaming=false;
+var _pendingStreamRetryViewport=null;
 
 /* looksLikeMetaInstruction + appendThinking extracted to
    src/ui/thinkingPill.js (Phase 1B split). Imported at the top. */
@@ -4805,27 +4813,91 @@ function scheduleScrollMainToBottom(opts){
    device-specific constant. Because this position is also the scroll bottom,
    the existing streaming pin logic takes over naturally once a long answer
    grows beyond the reserved space. */
-function scheduleActiveTurnToTop(list,assistant,msgIdx){
+function consumeStreamRetryViewport(){
+  var pending=_pendingStreamRetryViewport;
+  _pendingStreamRetryViewport=null;
+  if(!pending||pending.expiresAt<Date.now())return null;
+  return pending;
+}
+
+function prepareStreamRetryViewport(list,msgIdx,clientId){
+  if(!list)return;
+  var row=list.querySelector('[data-client-id="'+clientId+'"]');
+  var anchor=row&&(row.querySelector(".msg-error")||row);
+  var listRect=list.getBoundingClientRect();
+  var anchorRect=anchor&&anchor.getBoundingClientRect();
+  var offset=anchorRect?Math.round(anchorRect.top-listRect.top):24;
+  _pendingStreamRetryViewport={
+    offset:offset,
+    expiresAt:Date.now()+15000
+  };
+
+  var currentIndex=state.messages.findIndex(function(message){
+    return message&&message.clientId===clientId;
+  });
+  if(currentIndex>=0)state.messages.splice(currentIndex,1);
+  if(row&&row.parentNode===list)row.remove();
+  publishReactChatRuntime({
+    type:"stream-retry-replaced",
+    messageId:clientId,
+    messageIndex:msgIdx
+  });
+}
+
+function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
   requestAnimationFrame(function(){
     requestAnimationFrame(function(){
       if(!list||!assistant||!assistant.isConnected)return;
-      var users=list.querySelectorAll(".msg.user");
-      var user=users.length?users[users.length-1]:null;
-      if(!user)return;
       var styles=getComputedStyle(list);
       var bottomPadding=parseFloat(styles.paddingBottom)||0;
-      var reserve=Math.max(120,Math.round(
-        list.clientHeight-user.getBoundingClientRect().height-bottomPadding-24
-      ));
+      var anchor=null;
+      var targetOffset=12;
+      var reserve=120;
+      if(retryViewport){
+        anchor=assistant;
+        var maxOffset=Math.max(8,list.clientHeight-bottomPadding-64);
+        targetOffset=Math.max(8,Math.min(maxOffset,retryViewport.offset));
+        reserve=Math.max(120,Math.round(
+          list.clientHeight-bottomPadding-targetOffset
+        ));
+      }else{
+        var users=list.querySelectorAll(".msg.user");
+        anchor=users.length?users[users.length-1]:null;
+        if(!anchor)return;
+        reserve=Math.max(120,Math.round(
+          list.clientHeight-anchor.getBoundingClientRect().height-bottomPadding-24
+        ));
+      }
       assistant.classList.add("turn-viewport-anchor");
+      assistant.dataset.viewportAnchor=retryViewport?"retry":"turn";
+      assistant.dataset.viewportTarget=String(targetOffset);
       assistant.style.minHeight=reserve+"px";
       if(msgIdx>=0&&state.messages[msgIdx]){
         state.messages[msgIdx]._turnAnchorMinHeight=reserve;
       }
       var listRect=list.getBoundingClientRect();
-      var userRect=user.getBoundingClientRect();
-      var target=list.scrollTop+(userRect.top-listRect.top)-8;
+      var anchorRect=anchor.getBoundingClientRect();
+      var target=list.scrollTop+(anchorRect.top-listRect.top)-targetOffset;
       list.scrollTop=Math.max(0,target);
+      /* A retried "Thinking…" row can be shorter than the failed answer it
+         replaces. In that state the transcript has no scroll range, so
+         scrollTop alone cannot keep the retry at the visible error position.
+         Add only the missing leading space and persist it in React state so
+         the legacy-to-React handoff cannot collapse the viewport. */
+      if(retryViewport){
+        requestAnimationFrame(function(){
+          if(!assistant.isConnected)return;
+          var retryListRect=list.getBoundingClientRect();
+          var actualOffset=assistant.getBoundingClientRect().top-retryListRect.top;
+          var missingSpace=Math.max(0,Math.round(targetOffset-actualOffset));
+          if(missingSpace>1){
+            assistant.style.marginTop=missingSpace+"px";
+            if(msgIdx>=0&&state.messages[msgIdx]){
+              state.messages[msgIdx]._turnAnchorMarginTop=missingSpace;
+            }
+          }
+        });
+      }
       state._userScrolledAway=false;
     });
   });
@@ -4952,6 +5024,7 @@ function addStreamingMessage(opts){
   opts=opts||{};
   var onRetry=opts.onRetry;
   var onThinking=opts.onThinking;
+  var retryViewport=consumeStreamRetryViewport();
   /* P1.4 — a new bubble starts with the user "at bottom" again.
      Suppress the pill for this stream and let the scroll listener
      re-enable it only if the user moves away during streaming. */
@@ -5205,7 +5278,7 @@ function addStreamingMessage(opts){
   placeholderRow.appendChild(placeholderText);
   placeholder.appendChild(placeholderRow);
   body.appendChild(placeholder);
-  scheduleActiveTurnToTop(list,div,msgIdx);
+  scheduleActiveTurnToTop(list,div,msgIdx,retryViewport);
   function setPlaceholderText(label){
     /* Fast text-node rewrite — no DOM rebuild, no parse, no
        layout reflow beyond the badge's own intrinsic box. Safe to
@@ -6557,8 +6630,12 @@ function doRender(){
           if(typeof _twErr[_te]._cancelTypewriter==='function'){try{_twErr[_te]._cancelTypewriter()}catch(_){}}
         }
        try{
-         var errHtml='<div class="msg-error">'+
-             '<span class="msg-error-text">'+(errMsg||'Generation failed')+'</span>'+
+         var partialHtml="";
+         if(full.trim()){
+           try{partialHtml=renderAssistantHTML(full)}catch(_){partialHtml="<p>"+esc(full)+"</p>"}
+         }
+         var errHtml=partialHtml+'<div class="msg-error">'+
+             '<span class="msg-error-text">'+esc(errMsg||'Generation failed')+'</span>'+
               '<button type="button" class="msg-retry-btn" id="'+retryBtnId+'">Retry</button>'+
             '</div>';
           /* React owns #msgList — serialize the error into the snapshot
@@ -6573,8 +6650,12 @@ function doRender(){
           if(btn&&typeof onRetry==="function"){
             var retryHandler=function(){
               /* P_no_retry_loading — fire onRetry() immediately so the
-                 new streaming bubble appears in one step. */
+                 new streaming bubble appears in one step. Replace the failed
+                 assistant entry first and preserve the error row's viewport
+                 offset so retry starts where the interruption was visible,
+                 rather than jumping back to the user's prompt. */
               try{
+                prepareStreamRetryViewport(list,msgIdx,clientId);
                 var innerRet=onRetry();
                 if(innerRet&&typeof innerRet.then==="function"){
                   innerRet.catch(function(e){/* retry async handler failed */});
@@ -6624,6 +6705,10 @@ function doRender(){
          textLength:full.length,
          error:String(errMsg||"Generation failed").slice(0,160)
        });
+       /* The error row is the new end of the answer. Keep it inside the same
+          dynamically measured safe area as normal text so the retry control
+          can never settle underneath the composer. */
+       scheduleScrollMainToBottom({force:!state._userScrolledAway});
      },
     /* Phase 3 — attach a search-progress controller to this bubble.
      * `progress` is the object returned by startSearchProgress(). The
