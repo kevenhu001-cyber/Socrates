@@ -21,6 +21,48 @@ export function scrollContainer(){
   return document.getElementById("mainContent");
 }
 
+/* Keep the transcript's bottom safe area equal to the composer that is
+   actually on screen. The composer changes height when the mobile editor
+   expands, attachments are added, or text wraps; a fixed CSS padding leaves
+   the last lines underneath the absolutely positioned input bar. */
+export function initChatComposerReserve(options){
+  options=options||{};
+  var bar=options.bar||document.getElementById("chatInputBar");
+  var host=options.host||document.getElementById("chatView");
+  if(!bar||!host)return function(){};
+
+  var frame=0;
+  var lastHeight=0;
+  function measure(){
+    frame=0;
+    var height=Math.ceil(bar.getBoundingClientRect().height);
+    if(height<=0||height===lastHeight)return;
+    lastHeight=height;
+    host.style.setProperty("--chat-input-bar-height",height+"px");
+  }
+  function schedule(){
+    if(frame)return;
+    frame=requestAnimationFrame(measure);
+  }
+
+  var observer=typeof ResizeObserver==="function"
+    ?new ResizeObserver(schedule)
+    :null;
+  if(observer)observer.observe(bar);
+  window.addEventListener("resize",schedule,{passive:true});
+  if(window.visualViewport){
+    window.visualViewport.addEventListener("resize",schedule,{passive:true});
+  }
+  schedule();
+
+  return function(){
+    if(frame)cancelAnimationFrame(frame);
+    if(observer)observer.disconnect();
+    window.removeEventListener("resize",schedule);
+    if(window.visualViewport)window.visualViewport.removeEventListener("resize",schedule);
+  };
+}
+
 /* If the chat scroller is currently pinned near the bottom, snap it
    back to the new bottom after the next layout pass. Used after the
    user changes font-size / content-width — otherwise the same

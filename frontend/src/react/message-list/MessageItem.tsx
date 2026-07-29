@@ -24,12 +24,21 @@ function MessageItem({ message }: MessageItemProps) {
     _preserveLiveBody?: boolean;
     _liveBodyHandedOff?: boolean;
     _turnAnchorMinHeight?: number;
+    _turnAnchorMarginTop?: number;
   };
   const preserveLiveBody = Boolean(liveMessage._preserveLiveBody);
   const handoffPending = preserveLiveBody && !liveMessage._liveBodyHandedOff;
   const turnAnchorMinHeight = Number.isFinite(liveMessage._turnAnchorMinHeight)
     ? Math.max(0, Number(liveMessage._turnAnchorMinHeight))
     : 0;
+  const turnAnchorMarginTop = Number.isFinite(liveMessage._turnAnchorMarginTop)
+    ? Math.max(0, Number(liveMessage._turnAnchorMarginTop))
+    : 0;
+  const hasTurnAnchor = turnAnchorMinHeight > 0 || turnAnchorMarginTop > 0;
+  const turnAnchorStyle = hasTurnAnchor ? {
+    minHeight: turnAnchorMinHeight ? `${turnAnchorMinHeight}px` : undefined,
+    marginTop: turnAnchorMarginTop ? `${turnAnchorMarginTop}px` : undefined,
+  } : undefined;
   const modelLabel = message.modelInfo?.label ?? '';
   const attachments = Array.isArray(message.attachments) ? message.attachments : [];
 
@@ -65,8 +74,8 @@ function MessageItem({ message }: MessageItemProps) {
 
   return (
     <div
-      className={`msg ${role}${turnAnchorMinHeight ? ' turn-viewport-anchor' : ''}`}
-      style={turnAnchorMinHeight ? { minHeight: `${turnAnchorMinHeight}px` } : undefined}
+      className={`msg ${role}${hasTurnAnchor ? ' turn-viewport-anchor' : ''}`}
+      style={turnAnchorStyle}
       data-client-id={clientId}
       data-react-owned="1"
       data-live-handoff-pending={handoffPending ? '1' : undefined}

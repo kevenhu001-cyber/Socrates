@@ -103,6 +103,91 @@ test('mobile send places the submitted prompt and thinking state at the viewport
   expect(placement.anchored).toBe(true);
 });
 
+test('retry replaces the failed answer and resumes at the visible error position', async ({ page }) => {
+  await mockAuthedApp(page);
+  let streamCalls = 0;
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
+    streamCalls += 1;
+    if (streamCalls === 1) {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Temporary generation failure' }),
+      });
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: [DONE]\n\n',
+    });
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    const sessionId = '44444444-4444-4444-8444-444444444444';
+    window.state.phase = 'chat';
+    window.state.topic = 'Retry viewport smoke';
+    window.state.currentSessionId = sessionId;
+    window.state.session.currentSessionId = sessionId;
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    for (let i = 0; i < 18; i += 1) {
+      window.addMessage(i % 2 ? 'assistant' : 'user', `Retry history ${i + 1}`);
+    }
+  });
+
+  await page.evaluate(() => window.submitChatMessage(
+    'Retry this answer without jumping back to my prompt.',
+  ));
+  const retryButton = page.locator('#msgList .msg-error .msg-retry-btn').last();
+  await expect(retryButton).toBeVisible();
+
+  const failedMessageId = await retryButton.evaluate((button) => button.closest('.msg')?.dataset.clientId);
+  const errorOffset = await retryButton.evaluate((button) => {
+    const list = document.getElementById('msgList');
+    const error = button.closest('.msg-error');
+    return Math.round(error.getBoundingClientRect().top - list.getBoundingClientRect().top);
+  });
+
+  await retryButton.click();
+  await page.waitForFunction((oldId) => {
+    const thinking = document.querySelector('#msgList .msg.assistant .thinking-placeholder');
+    const message = thinking?.closest('.msg');
+    return Boolean(message && message.dataset.clientId !== oldId);
+  }, failedMessageId);
+
+  const retried = await page.evaluate((oldId) => {
+    const list = document.getElementById('msgList');
+    const thinking = list.querySelector('.msg.assistant .thinking-placeholder');
+    const message = thinking?.closest('.msg');
+    return {
+      oldRemoved: !list.querySelector(`[data-client-id="${oldId}"]`),
+      offset: message
+        ? Math.round(message.getBoundingClientRect().top - list.getBoundingClientRect().top)
+        : null,
+      mode: message?.dataset.viewportAnchor || null,
+      target: message?.dataset.viewportTarget || null,
+      scrollTop: list.scrollTop,
+      scrollHeight: list.scrollHeight,
+      clientHeight: list.clientHeight,
+      paddingBottom: getComputedStyle(list).paddingBottom,
+    };
+  }, failedMessageId);
+
+  expect(retried.oldRemoved).toBe(true);
+  expect(retried.offset).not.toBeNull();
+  expect(
+    Math.abs(retried.offset - errorOffset),
+    JSON.stringify({ errorOffset, retried }),
+  ).toBeLessThanOrEqual(24);
+});
+
 test('React message-list updates do not remove the active legacy stream bubble', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');

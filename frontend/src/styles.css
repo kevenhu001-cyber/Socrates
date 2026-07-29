@@ -1197,6 +1197,8 @@ true) but the dropdown never shows — see commit history. */
   flex:1;
   min-height:0;
   position:relative;
+  --chat-input-bar-height:80px;
+  --chat-content-bottom-reserve:calc(var(--chat-input-bar-height) + var(--keyboard-inset) + 12px);
 }
 .chat-view>.msg-list{
   flex:1 1 auto;
@@ -1204,8 +1206,8 @@ true) but the dropdown never shows — see commit history. */
   overflow-y:auto;
   scrollbar-width:thin;
   scrollbar-color:transparent transparent;
-  padding-bottom:calc(120px + env(safe-area-inset-bottom, 0px) + var(--keyboard-inset));
-  transition:padding-bottom 0.3s var(--ease-out);
+  padding-bottom:var(--chat-content-bottom-reserve);
+  scroll-padding-bottom:var(--chat-content-bottom-reserve);
 }
 .chat-view>.msg-list.scrollbar-visible{
   scrollbar-color:hsl(var(--text-500)/0.25) transparent;
@@ -1483,7 +1485,7 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 .sources-open:hover,.sources-copy:hover{background:hsl(var(--accent-100)/0.12);color:hsl(var(--accent-100));border-color:hsl(var(--accent-100)/0.5)}
 .sources-copy.copied{background:hsl(140 60% 92%);color:hsl(140 60% 30%);border-color:hsl(140 60% 70%)}
 [data-theme=socrates][data-mode=dark] .sources-copy.copied{background:hsla(140 40% 18%);color:hsl(140 50% 80%);border-color:hsla(140 50% 40%)}
-.msg-list{display:flex;flex-direction:column;gap:12px;flex:1}
+.msg-list{display:flex;flex-direction:column;gap:12px;flex:1;overflow-anchor:none}
 .msg{animation:msgIn .3s var(--ease-out);padding:6px 0}
 /* During the streaming-to-React handoff, React creates the durable message
    shell before the legacy live DOM is transplanted into it. Keep that empty
