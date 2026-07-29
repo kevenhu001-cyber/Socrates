@@ -17,6 +17,7 @@ SITE_DIR="${SITE_DIR:-/home/ubuntu/User/Socrates/site}"
 STATUS_DIR="${STATUS_DIR:-/var/www/status.topodrive.top}"
 NGINX_SITE_CONF="${NGINX_SITE_CONF:-/etc/nginx/sites-available/status.topodrive.top}"
 DEPLOY_LOCK_FILE="${DEPLOY_LOCK_FILE:-${XDG_RUNTIME_DIR:-/tmp}/socrates-deploy.lock}"
+STATE_FILE="${STATE_FILE:-/home/ubuntu/User/Socrates/.deploy-state.json}"
 
 if ! command -v flock >/dev/null 2>&1; then
   echo "ERROR: flock is required to serialize deployments" >&2
@@ -335,7 +336,6 @@ else
 fi
 
 # 4.5e. State file: update only on full success so last-known-good is preserved.
-STATE_FILE="/home/ubuntu/User/Socrates/.deploy-state.json"
 if [[ $GATE_FAILED -eq 0 ]]; then
   DEPLOY_COMMIT=$(git -C "$(dirname "$(readlink -f "$0")")" rev-parse HEAD 2>/dev/null || echo unknown)
   DEPLOY_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)

@@ -54,6 +54,7 @@ interface ToolCallEntry {
 interface ToolMessage {
   toolCalls?: ToolCallEntry[];
   _orphanDeltas?: Record<string, ToolCallDelta[]>;
+  _orphanProgress?: Record<string, ToolProgress[]>;
 }
 
 interface ToolProgress {
@@ -123,6 +124,7 @@ interface ToolRuntimeOptions {
 }
 
 interface ExecutionConnection {
+  key: string;
   source: EventSource;
   timer: ReturnType<typeof setTimeout>;
 }
@@ -295,7 +297,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   let disposed = false;
   const pendingDeltas: ToolCallDelta[] = [];
   let deltaFrame: number | null = null;
-  const executionConnections = new Set<ExecutionConnection>();
+  const executionConnections = new Map<string, ExecutionConnection>();
 
   function updateRunSummary(message: ToolMessage): void {
     if (!body || !message) return;
@@ -354,7 +356,14 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     const message = activeMessage();
     if (!message || !progress || !progress.id) return;
     const entry = findEntry(message, progress.id);
-    if (!entry) return;
+    if (!entry) {
+      if (!message._orphanProgress || typeof message._orphanProgress !== 'object' || Array.isArray(message._orphanProgress)) {
+        message._orphanProgress = {};
+      }
+      if (!message._orphanProgress[progress.id]) message._orphanProgress[progress.id] = [];
+      message._orphanProgress[progress.id].push(progress);
+      return;
+    }
     setRun(entry, phaseFromProgress(progress), { elapsedMs: progress.elapsedMs || 0 });
     updateRunSummary(message);
     const card = findCard(progress.id);
@@ -468,15 +477,17 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     if (!connection) return;
     clearTimeout(connection.timer);
     try { connection.source.close(); } catch (_) { /* ignore */ }
-    executionConnections.delete(connection);
+    executionConnections.delete(connection.key);
   }
 
   function connectExecution(executionId: string, toolCallId: string): void {
     if (!executionId || !toolCallId || disposed || !EventSourceImpl) return;
+    const connectionKey = toolCallId + ':' + executionId;
+    if (executionConnections.has(connectionKey)) return;
     try {
       const source = new EventSourceImpl('/api/executions/' + encodeURIComponent(executionId) + '/stream');
-      const connection: ExecutionConnection = { source, timer: null as unknown as ReturnType<typeof setTimeout> };
-      executionConnections.add(connection);
+      const connection: ExecutionConnection = { key: connectionKey, source, timer: null as unknown as ReturnType<typeof setTimeout> };
+      executionConnections.set(connectionKey, connection);
       connection.timer = setTimeout(function () {
         if (!disposed) {
           recordToolResult({
@@ -542,8 +553,24 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     const message = activeMessage();
     if (!message || !call || !call.name) return null;
     onToolActivity();
+    const requestedId = String(call.id || ('tc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)));
+    const existing = findEntry(message, requestedId);
+    if (existing) {
+      existing.name = String(call.name || existing.name);
+      if (call.input != null) existing.input = call.input;
+      if (call.executionId) {
+        existing.executionId = call.executionId;
+        if (!getRun(existing) || !isTerminalToolPhase(getRun(existing)!.phase)) {
+          connectExecution(call.executionId, existing.id);
+        }
+      }
+      const existingCard = findCard(existing.id);
+      return existingCard
+        ? (existingCard.querySelector('.agent-tool-out') as HTMLElement | null)
+        : null;
+    }
     const entry: ToolCallEntry = {
-      id: String(call.id || ('tc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8))),
+      id: requestedId,
       name: String(call.name),
       input: call.input == null ? null : call.input,
       output: null,
@@ -604,6 +631,13 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       const queuedProgress = entry._pendingProgress.splice(0);
       for (let progressIndex = 0; progressIndex < queuedProgress.length; progressIndex++) renderProgress(queuedProgress[progressIndex], true);
     }
+    const orphanProgress = message._orphanProgress?.[entry.id];
+    if (orphanProgress) delete message._orphanProgress![entry.id];
+    if (Array.isArray(orphanProgress)) {
+      for (let progressIndex = 0; progressIndex < orphanProgress.length; progressIndex++) {
+        renderProgress(orphanProgress[progressIndex], true);
+      }
+    }
     if (call.name === 'code_interpreter' && call.executionId) {
       entry.executionId = call.executionId;
       connectExecution(call.executionId, entry.id);
@@ -630,6 +664,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     const entry = findEntry(message, event.id);
     if (entry) {
       entry.executionId = event.executionId;
+      if (getRun(entry) && isTerminalToolPhase(getRun(entry)!.phase)) return;
       setRun(entry, TOOL_RUN_PHASES.running);
       updateRunSummary(message);
     }
@@ -669,7 +704,6 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
 
     if (result.executionId && !entry.executionId) {
       entry.executionId = result.executionId;
-      connectExecution(result.executionId, result.id);
     }
     if (entry._pendingProgress && entry._pendingProgress.length) {
       const queuedProgress = entry._pendingProgress.splice(0);
@@ -825,7 +859,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       cancelFrame(deltaFrame);
       deltaFrame = null;
     }
-    executionConnections.forEach(closeConnection);
+    Array.from(executionConnections.values()).forEach(closeConnection);
     executionConnections.clear();
   }
 

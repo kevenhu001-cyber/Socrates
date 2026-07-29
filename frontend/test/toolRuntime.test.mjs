@@ -61,6 +61,8 @@ test('ToolRuntime dispose cancels queued work and closes execution streams', () 
   });
 
   runtime.recordExecutionStart({ id: 'code-1', executionId: 'exec-1' });
+  runtime.recordExecutionStart({ id: 'code-1', executionId: 'exec-1' });
+  assert.equal(sources.length, 1, 'duplicate execution_start must reuse the EventSource');
   runtime.recordToolCallDelta({ id: 'code-1', index: 0, arguments: '{}' });
   assert.equal(sources.length, 1);
   assert.equal(sources[0].url, '/api/executions/exec-1/stream');
@@ -73,6 +75,103 @@ test('ToolRuntime dispose cancels queued work and closes execution streams', () 
   scheduled = null;
   runtime.recordToolCallDelta({ id: 'late', index: 0, arguments: '{}' });
   assert.equal(scheduled, null);
+});
+
+test('ToolRuntime treats duplicate tool_use events as idempotent', () => {
+  const message = { toolCalls: [] };
+  const mounted = [];
+  globalThis.document = {
+    createElement(tag) {
+      return { tagName: tag, dataset: {}, className: '', innerHTML: '' };
+    },
+  };
+  try {
+    const runtime = createToolRuntime({
+      body: { querySelector() { return null; }, querySelectorAll() { return []; } },
+      getMessage: () => message,
+      onInlineTool(entry, row) { mounted.push({ entry, row }); },
+      EventSource: null,
+      mode: 'compact',
+    });
+
+    runtime.recordToolUse({ id: 'same-call', name: 'web_search', input: { query: 'first' } });
+    runtime.recordToolUse({ id: 'same-call', name: 'web_search', input: { query: 'second' } });
+
+    assert.equal(message.toolCalls.length, 1);
+    assert.equal(mounted.length, 1);
+    assert.deepEqual(message.toolCalls[0].input, { query: 'second' });
+    runtime.dispose();
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('ToolRuntime drains progress that arrives before tool_use', () => {
+  const message = { toolCalls: [] };
+  globalThis.document = {
+    createElement(tag) {
+      return { tagName: tag, dataset: {}, className: '', innerHTML: '' };
+    },
+  };
+  try {
+    const runtime = createToolRuntime({
+      body: { querySelector() { return null; }, querySelectorAll() { return []; } },
+      getMessage: () => message,
+      onInlineTool() {},
+      EventSource: null,
+      mode: 'compact',
+    });
+
+    runtime.recordToolProgress({ id: 'late-use', phase: 'running', elapsedMs: 125 });
+    assert.equal(message._orphanProgress['late-use'].length, 1);
+    runtime.recordToolUse({ id: 'late-use', name: 'web_search', input: { query: 'q' } });
+
+    assert.equal(message._orphanProgress['late-use'], undefined);
+    assert.equal(message.toolCalls[0]._run.phase, 'running');
+    assert.equal(message.toolCalls[0]._run.elapsedMs, 125);
+    runtime.dispose();
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('ToolRuntime does not open a progress stream after a terminal result', () => {
+  const message = { toolCalls: [] };
+  const sources = [];
+  class FakeEventSource {
+    constructor(url) { this.url = url; this.listeners = {}; sources.push(this); }
+    addEventListener(name, callback) { this.listeners[name] = callback; }
+    close() {}
+  }
+  globalThis.document = {
+    createElement(tag) {
+      return { tagName: tag, dataset: {}, className: '', innerHTML: '' };
+    },
+  };
+  try {
+    const runtime = createToolRuntime({
+      body: makeBody(),
+      getMessage: () => message,
+      onInlineTool() {},
+      EventSource: FakeEventSource,
+      mode: 'compact',
+    });
+
+    runtime.recordToolResult({
+      id: 'already-done',
+      name: 'code_interpreter',
+      executionId: 'exec-done',
+      ok: true,
+      status: 'completed',
+      output: 'done',
+    });
+    runtime.recordExecutionStart({ id: 'already-done', executionId: 'exec-done' });
+
+    assert.equal(sources.length, 0);
+    runtime.dispose();
+  } finally {
+    delete globalThis.document;
+  }
 });
 
 test('ToolRuntime compact mode mounts inline rows instead of cards', () => {

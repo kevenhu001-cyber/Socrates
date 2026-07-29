@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-only manifest overlay. Allows cleartext http so `npm run
+  apk:debug:local` (SOCRATES_SERVER_URL=http://10.0.2.2:3037) can reach
+  a local backend. Release builds do NOT include this overlay, so the
+  production APK still refuses http — see capacitor/README.md
+  "Backend wiring".
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:usesCleartextTraffic="true" />
+</manifest>
