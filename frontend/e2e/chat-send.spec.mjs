@@ -38,8 +38,16 @@ test('clicking send mounts a streaming bubble or surfaces a notice without throw
   expect(realErrors, `submitChatMessage threw:\n${realErrors.join('\n')}`).toEqual([]);
 });
 
-test('mobile send stays pinned to the newest message after focused input submit', async ({ page }) => {
+test('mobile send places the submitted prompt and thinking state at the viewport top', async ({ page }) => {
   await mockAuthedApp(page);
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: [DONE]\n\n',
+    });
+  });
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -62,19 +70,37 @@ test('mobile send stays pinned to the newest message after focused input submit'
   });
 
   const chatInput = page.locator('#chatComposerRoot .rich-composer-editor').first();
-  const sendBtn = page.locator('#sendBtn').first();
-
   await chatInput.focus();
-  await chatInput.fill('A focused mobile send should remain at the newest message.');
-  await sendBtn.click();
-  await page.waitForTimeout(250);
+  await page.evaluate(() => window.submitChatMessage(
+    'A focused mobile send should remain at the newest message.',
+  ));
+  await page.waitForFunction(() => Boolean(
+    document.querySelector('#msgList .msg.assistant.turn-viewport-anchor .thinking-placeholder'),
+  ));
 
-  const distanceFromBottom = await page.evaluate(() => {
+  const placement = await page.evaluate(() => {
     const list = document.getElementById('msgList');
-    return Math.round(list.scrollHeight - list.scrollTop - list.clientHeight);
+    const users = list.querySelectorAll('.msg.user');
+    const latestUser = users[users.length - 1];
+    const thinking = list.querySelector('.msg.assistant:last-child .thinking-placeholder');
+    const listRect = list.getBoundingClientRect();
+    const userRect = latestUser?.getBoundingClientRect();
+    return {
+      userOffset: userRect ? Math.round(userRect.top - listRect.top) : null,
+      thinkingVisible: Boolean(thinking && thinking.getClientRects().length),
+      anchored: Boolean(list.querySelector('.msg.assistant:last-child.turn-viewport-anchor')),
+      scrollTop: list.scrollTop,
+      scrollHeight: list.scrollHeight,
+      clientHeight: list.clientHeight,
+      paddingBottom: getComputedStyle(list).paddingBottom,
+    };
   });
 
-  expect(distanceFromBottom).toBeLessThanOrEqual(4);
+  expect(placement.userOffset).not.toBeNull();
+  expect(placement.userOffset).toBeGreaterThanOrEqual(-2);
+  expect(placement.userOffset, JSON.stringify(placement)).toBeLessThanOrEqual(24);
+  expect(placement.thinkingVisible).toBe(true);
+  expect(placement.anchored).toBe(true);
 });
 
 test('React message-list updates do not remove the active legacy stream bubble', async ({ page }) => {

@@ -201,6 +201,63 @@ function normalizeFunction(spec) {
    generic sans-serif chain to the OS default (Microsoft YaHei on
    Windows). Keep Inter first for Latin/numerals. */
 var VIZ_FONT_FAMILY = "'Inter', 'Noto Sans SC', 'Helvetica Neue', Arial, system-ui, sans-serif";
+
+function labelLength(value) {
+  return Array.from(String(value == null ? '' : value)).length;
+}
+
+function truncateLabel(value, maxChars) {
+  var chars = Array.from(String(value == null ? '' : value));
+  if (chars.length <= maxChars) return chars.join('');
+  return chars.slice(0, Math.max(1, maxChars - 1)).join('') + '…';
+}
+
+/* Axis labels need a deterministic text fallback in addition to ECharts'
+ * hideOverlap flag—hideOverlap alone can erase most categories when a model
+ * submits verbose prose as labels. Short sets wrap to two lines; dense sets
+ * rotate and truncate so every remaining tick stays legible. */
+export function formatCategoryLabel(value, options) {
+  options = options || {};
+  var maxChars = options.maxChars || 20;
+  var lineChars = options.lineChars || 10;
+  var maxLines = options.maxLines || 2;
+  var compact = truncateLabel(value, maxChars);
+  if (options.rotate || labelLength(compact) <= lineChars) return compact;
+  var chars = Array.from(compact);
+  var lines = [];
+  for (var index = 0; index < chars.length && lines.length < maxLines; index += lineChars) {
+    lines.push(chars.slice(index, index + lineChars).join(''));
+  }
+  return lines.join('\n');
+}
+
+export function categoryAxisLayout(categories) {
+  categories = Array.isArray(categories) ? categories : [];
+  var longest = categories.reduce(function (max, item) { return Math.max(max, labelLength(item)); }, 0);
+  var dense = categories.length > 10;
+  var rotate = dense ? 35 : (categories.length > 6 && longest > 18 ? 25 : 0);
+  return {
+    rotate: rotate,
+    bottom: rotate ? 84 : (longest > 10 ? 68 : 46),
+    maxChars: dense ? 16 : 24,
+    lineChars: dense ? 16 : 12,
+  };
+}
+
+function legendOptions(series, colors, fontFamily, placement) {
+  if (!Array.isArray(series) || series.length <= 1) return undefined;
+  return {
+    type: series.length > 5 ? 'scroll' : 'plain',
+    top: placement === 'bottom' ? undefined : 4,
+    bottom: placement === 'bottom' ? 0 : undefined,
+    left: 'center',
+    width: '86%',
+    pageTextStyle: { color: colors.muted, fontFamily: fontFamily },
+    textStyle: { color: colors.text, fontFamily: fontFamily },
+    formatter: function (name) { return truncateLabel(name, 24); },
+  };
+}
+
 function optionForChart(spec, colors) {
   var payload = spec.payload, chartType = spec.template === 'area' ? 'line' : spec.template;
   var fontFamily = VIZ_FONT_FAMILY;
@@ -235,7 +292,7 @@ function optionForChart(spec, colors) {
       color: normalized.series.map(function (item, index) { return colorFor(item.role, index, colors); }),
       aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
       tooltip: Object.assign({ trigger: 'axis', valueFormatter: function (value) { return Number(value).toPrecision(5); } }, tooltipBase),
-      legend: normalized.series.length > 1 ? { top: 4, textStyle: { color: colors.text, fontFamily: fontFamily } } : undefined,
+      legend: legendOptions(normalized.series, colors, fontFamily),
       grid: { left: 56, right: 20, top: normalized.series.length > 1 ? 38 : 18, bottom: 50, containLabel: false },
       xAxis: { type: 'value', name: payload.xLabel || 'x', min: Math.min(0, normalized.xExtent[0]), max: normalized.xExtent[1], nameTextStyle: { color: colors.text, fontFamily: fontFamily }, axisLine: { lineStyle: { color: colors.line } }, axisLabel: { color: colors.text, fontFamily: fontFamily }, splitLine: { lineStyle: { color: colors.grid } } },
       yAxis: { type: 'value', name: payload.yLabel || 'y', min: normalized.yExtent[0], max: normalized.yExtent[1], nameTextStyle: { color: colors.text, fontFamily: fontFamily }, axisLine: { lineStyle: { color: colors.line } }, axisLabel: { color: colors.text, fontFamily: fontFamily }, splitLine: { lineStyle: { color: colors.grid } } },
@@ -251,12 +308,29 @@ function optionForChart(spec, colors) {
     };
   }
   var categories = payload.categories || [];
+  var axisLayout = categoryAxisLayout(categories);
   if (chartType === 'pie') return {
     backgroundColor: 'transparent', textStyle: textStyle, color: [colors.primary, colors.secondary, colors.comparison, colors.highlight, colors.baseline],
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
     tooltip: Object.assign({ trigger: 'item' }, tooltipBase),
-    legend: { bottom: 0, textStyle: { color: colors.text, fontFamily: fontFamily } },
-    series: payload.series.map(function (series) { return { type: 'pie', radius: spec.template === 'pie' ? '62%' : ['38%', '66%'], data: series.data.map(function (value, index) { return typeof value === 'object' ? value : { name: String(categories[index] || index + 1), value: value }; }), label: { color: colors.text, fontFamily: fontFamily } }; }),
+    legend: {
+      type: categories.length > 6 ? 'scroll' : 'plain', bottom: 0, width: '88%',
+      textStyle: { color: colors.text, fontFamily: fontFamily },
+      formatter: function (name) { return truncateLabel(name, 22); },
+    },
+    series: payload.series.map(function (series) { return {
+      type: 'pie',
+      radius: spec.template === 'pie' ? '58%' : ['38%', '62%'],
+      center: ['50%', '45%'],
+      avoidLabelOverlap: true,
+      data: series.data.map(function (value, index) { return typeof value === 'object' ? value : { name: String(categories[index] || index + 1), value: value }; }),
+      label: {
+        color: colors.text, fontFamily: fontFamily,
+        formatter: function (params) { return truncateLabel(params.name, 18); },
+      },
+      labelLayout: { hideOverlap: true, moveOverlap: 'shiftY' },
+      emphasis: { scaleSize: 4 },
+    }; }),
   };
   var typeMap = { line: 'line', area: 'line', bar: 'bar', scatter: 'scatter', histogram: 'bar', heatmap: 'heatmap', radar: 'radar', boxplot: 'boxplot' };
   var seriesType = typeMap[chartType] || 'line';
@@ -265,9 +339,32 @@ function optionForChart(spec, colors) {
     color: payload.series.map(function (item, index) { return colorFor(item.role, index, colors); }),
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
     tooltip: Object.assign({ trigger: chartType === 'scatter' ? 'item' : 'axis' }, tooltipBase),
-    legend: payload.series.length > 1 ? { top: 4, textStyle: { color: colors.text, fontFamily: fontFamily } } : undefined,
-    grid: { left: 56, right: 22, top: payload.series.length > 1 ? 38 : 18, bottom: 46 },
-    xAxis: { type: chartType === 'scatter' ? 'value' : 'category', data: categories, name: payload.xLabel || '', nameTextStyle: { color: colors.text, fontFamily: fontFamily }, axisLabel: { color: colors.text, fontFamily: fontFamily }, axisLine: { lineStyle: { color: colors.line } }, splitLine: { show: chartType === 'scatter', lineStyle: { color: colors.grid } } },
+    legend: legendOptions(payload.series, colors, fontFamily),
+    grid: { left: 56, right: 22, top: payload.series.length > 1 ? 44 : 18, bottom: chartType === 'scatter' ? 50 : axisLayout.bottom, containLabel: false },
+    xAxis: {
+      type: chartType === 'scatter' ? 'value' : 'category',
+      data: categories,
+      name: payload.xLabel || '',
+      nameGap: axisLayout.rotate ? 58 : 34,
+      nameTextStyle: { color: colors.text, fontFamily: fontFamily },
+      axisLabel: chartType === 'scatter' ? { color: colors.text, fontFamily: fontFamily } : {
+        color: colors.text,
+        fontFamily: fontFamily,
+        interval: 0,
+        rotate: axisLayout.rotate,
+        hideOverlap: categories.length > 20,
+        margin: 12,
+        formatter: function (value) {
+          return formatCategoryLabel(value, {
+            rotate: axisLayout.rotate,
+            maxChars: axisLayout.maxChars,
+            lineChars: axisLayout.lineChars,
+          });
+        },
+      },
+      axisLine: { lineStyle: { color: colors.line } },
+      splitLine: { show: chartType === 'scatter', lineStyle: { color: colors.grid } },
+    },
     yAxis: { type: 'value', name: payload.yLabel || '', nameTextStyle: { color: colors.text, fontFamily: fontFamily }, axisLabel: { color: colors.text, fontFamily: fontFamily }, axisLine: { lineStyle: { color: colors.line } }, splitLine: { lineStyle: { color: colors.grid } } },
     dataZoom: ['line', 'area', 'bar', 'scatter', 'histogram'].includes(chartType) ? [{ type: 'inside' }] : undefined,
     series: payload.series.map(function (series, index) { return { name: series.name || 'Series ' + (index + 1), type: seriesType, data: series.data, showSymbol: chartType === 'scatter', symbolSize: chartType === 'scatter' ? 8 : undefined, areaStyle: spec.template === 'area' ? { opacity: 0.16 } : undefined, smooth: chartType === 'line' || spec.template === 'area', emphasis: { focus: 'series' } }; }),
@@ -306,7 +403,7 @@ function renderStructure(spec) {
   var markerId = 'visual-arrow-' + (++visualCounter);
   var svg = '<svg class="visualization-diagram" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="' + esc(spec.accessibilitySummary) + '" style="font-family:' + VIZ_FONT_FAMILY + '"><defs><marker id="' + markerId + '" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="currentColor"/></marker></defs>';
   edges.forEach(function (edge) { var a = positions[edge.from], b = positions[edge.to]; if (!a || !b) return; svg += '<path class="visualization-edge" d="M' + (a.x + 75) + ' ' + a.y + ' C' + (a.x + 130) + ' ' + a.y + ', ' + (b.x - 130) + ' ' + b.y + ', ' + (b.x - 75) + ' ' + b.y + '" marker-end="url(#' + markerId + ')"/><text class="visualization-edge-label" x="' + ((a.x + b.x) / 2) + '" y="' + ((a.y + b.y) / 2 - 8) + '">' + esc(edge.label || '') + '</text>'; });
-  nodes.forEach(function (node, index) { var point = positions[node.id || String(index)]; svg += '<g class="visualization-node"><rect x="' + (point.x - 78) + '" y="' + (point.y - 28) + '" width="156" height="56" rx="10"/><text x="' + point.x + '" y="' + (point.y - 3) + '">' + esc(node.label) + '</text>' + (node.detail ? '<text class="visualization-node-detail" x="' + point.x + '" y="' + (point.y + 15) + '">' + esc(node.detail) + '</text>' : '') + '</g>'; });
+  nodes.forEach(function (node, index) { var point = positions[node.id || String(index)]; svg += '<g class="visualization-node"><title>' + esc([node.label, node.detail].filter(Boolean).join(' — ')) + '</title><rect x="' + (point.x - 78) + '" y="' + (point.y - 28) + '" width="156" height="56" rx="10"/><text x="' + point.x + '" y="' + (point.y - 3) + '">' + esc(truncateLabel(node.label, 22)) + '</text>' + (node.detail ? '<text class="visualization-node-detail" x="' + point.x + '" y="' + (point.y + 15) + '">' + esc(truncateLabel(node.detail, 28)) + '</text>' : '') + '</g>'; });
   return svg + '</svg>';
 }
 

@@ -16,6 +16,8 @@ describe('production prompt contracts', () => {
     assert.ok(prompt.length < 8_000, `Beagle prompt grew to ${prompt.length} characters`);
     assert.match(prompt, /native function-calling interface/i);
     assert.match(prompt, /`tools` array supplied by the server/i);
+    assert.match(prompt, /written register/i);
+    assert.match(prompt, /Do not use emoji/i);
     for (const staleProtocol of [
       '[web_search:',
       'conversation_search',

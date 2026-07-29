@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseFunctionExpression, sampleFunction } from '../src/render/visualization.js';
+import {
+  categoryAxisLayout,
+  formatCategoryLabel,
+  parseFunctionExpression,
+  sampleFunction,
+} from '../src/render/visualization.js';
 
 test('safe expression parser handles elementary functions and rejects code', () => {
   assert.equal(parseFunctionExpression('ln(x)')(Math.E), 1);
@@ -21,4 +26,17 @@ test('discontinuous functions are sampled as separated paths', () => {
   assert.ok(reciprocal.points.some((point) => point[1] === null));
   assert.ok(Number.isFinite(parseFunctionExpression('sqrt(x)')(4)));
   assert.ok(Number.isFinite(parseFunctionExpression('tan(x)')(0.2)));
+});
+
+test('long chart categories wrap or rotate without unbounded labels', () => {
+  const wrapped = formatCategoryLabel('这是一个非常长的栏目名称需要避免重叠', {
+    lineChars: 6,
+    maxChars: 12,
+  });
+  assert.equal(wrapped.split('\n').length, 2);
+  assert.match(wrapped, /…$/);
+
+  const dense = categoryAxisLayout(Array.from({ length: 12 }, (_, index) => `Category ${index + 1} with long text`));
+  assert.equal(dense.rotate, 35);
+  assert.ok(dense.bottom >= 80);
 });

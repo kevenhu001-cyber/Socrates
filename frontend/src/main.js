@@ -4688,7 +4688,25 @@ function showToast(msg){
 
 function addMessage(role,text,type,actions,attachmentsArg){
   /* User sending a message = explicitly wants to follow the conversation. */
-  if(role==="user"){state._userScrolledAway=false;hideNewReplyPill()}
+  if(role==="user"){
+    state._userScrolledAway=false;
+    hideNewReplyPill();
+    /* The previous answer reserves viewport space so a short reply can stay
+       anchored below its prompt. Retire that reserve only when a new turn
+       begins; collapsing it earlier makes the completed page jump. */
+    for(var _ami=0;_ami<state.messages.length;_ami++){
+      if(state.messages[_ami]&&state.messages[_ami]._turnAnchorMinHeight){
+        delete state.messages[_ami]._turnAnchorMinHeight;
+      }
+    }
+    try{
+      var _oldAnchors=document.querySelectorAll("#msgList .turn-viewport-anchor");
+      for(var _oai=0;_oai<_oldAnchors.length;_oai++){
+        _oldAnchors[_oai].classList.remove("turn-viewport-anchor");
+        _oldAnchors[_oai].style.minHeight="";
+      }
+    }catch(_){}
+  }
   /* P1.1 — push to the authoritative state.messages first; the DOM
      is just a downstream view. */
   var clientId="msg-"+generateId();
@@ -4776,6 +4794,39 @@ function scheduleScrollMainToBottom(opts){
     scrollMainToBottom(opts);
     requestAnimationFrame(function(){
       scrollMainToBottom(opts);
+    });
+  });
+}
+
+/* Position a newly submitted turn like a document page: the user's prompt
+   and the assistant's "Thinking…" row start at the top of the transcript
+   viewport, leaving the answer room to grow below. The reserve is computed
+   from the real viewport, prompt height, and composer padding instead of a
+   device-specific constant. Because this position is also the scroll bottom,
+   the existing streaming pin logic takes over naturally once a long answer
+   grows beyond the reserved space. */
+function scheduleActiveTurnToTop(list,assistant,msgIdx){
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      if(!list||!assistant||!assistant.isConnected)return;
+      var users=list.querySelectorAll(".msg.user");
+      var user=users.length?users[users.length-1]:null;
+      if(!user)return;
+      var styles=getComputedStyle(list);
+      var bottomPadding=parseFloat(styles.paddingBottom)||0;
+      var reserve=Math.max(120,Math.round(
+        list.clientHeight-user.getBoundingClientRect().height-bottomPadding-24
+      ));
+      assistant.classList.add("turn-viewport-anchor");
+      assistant.style.minHeight=reserve+"px";
+      if(msgIdx>=0&&state.messages[msgIdx]){
+        state.messages[msgIdx]._turnAnchorMinHeight=reserve;
+      }
+      var listRect=list.getBoundingClientRect();
+      var userRect=user.getBoundingClientRect();
+      var target=list.scrollTop+(userRect.top-listRect.top)-8;
+      list.scrollTop=Math.max(0,target);
+      state._userScrolledAway=false;
     });
   });
 }
@@ -4913,12 +4964,6 @@ function addStreamingMessage(opts){
   body.className="msg-body";
   div.appendChild(body);
   list.appendChild(div);
-  /* The streaming placeholder is appended outside React so the legacy
-     stream controller can update it in place. Keep the transcript pinned
-     after that extra row is inserted; otherwise a focused mobile composer
-     can sit exactly one placeholder-height (about 79 px) above the newest
-     reply until the first token arrives. */
-  scheduleScrollMainToBottom({force:true});
   /* P1.1/P1.2 — push a placeholder into the authoritative
      state.messages list. While streaming, `rawText` is updated on
      every delta and `html` is set to null. At finish() time we
@@ -5160,6 +5205,7 @@ function addStreamingMessage(opts){
   placeholderRow.appendChild(placeholderText);
   placeholder.appendChild(placeholderRow);
   body.appendChild(placeholder);
+  scheduleActiveTurnToTop(list,div,msgIdx);
   function setPlaceholderText(label){
     /* Fast text-node rewrite — no DOM rebuild, no parse, no
        layout reflow beyond the badge's own intrinsic box. Safe to

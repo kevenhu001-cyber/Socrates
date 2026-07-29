@@ -7,6 +7,7 @@ import { chatLimiter } from '../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../lib/sanitize.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
 import { getBeagleSystemPrompt } from '../lib/prompts.js';
+import { enforceServerSystemBoundary } from './chat/helpers.js';
 
 const router = Router();
 
@@ -63,18 +64,24 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
        that *is* the beagle spec (identified by a stable marker the
        frontend can include to avoid double-loading). */
     const beaglePrompt = await getBeagleSystemPrompt();
-    let messages = rawMessages;
+    /* Apply the same immutable response/tool policy used by /api/chat.
+       The built-in route used to rely on the browser-provided prompt, so
+       direct clients and older app builds could silently bypass the common
+       writing rules. Collapsing client system blocks first also leaves one
+       canonical system message for every upstream provider. */
+    let messages = enforceServerSystemBoundary(Array.isArray(rawMessages) ? rawMessages : []);
     if (beaglePrompt) {
       const BEAGLE_MARKER = '<!-- @beagle-system-prompt -->';
-      const alreadyHasBeagle = Array.isArray(rawMessages) && rawMessages.some(
+      const alreadyHasBeagle = messages.some(
         (m) => m && m.role === 'system' && typeof m.content === 'string' && m.content.includes(BEAGLE_MARKER)
       );
       if (!alreadyHasBeagle) {
         const taggedPrompt = `${BEAGLE_MARKER}\n${beaglePrompt}`;
-        /* Prepend — never append — so the spec wins precedence over any
-           later system message (e.g. teacher-mode that chat.js may have
-           already added for the same turn). */
-        messages = [{ role: 'system', content: taggedPrompt }, ...(Array.isArray(rawMessages) ? rawMessages : [])];
+        messages = messages.slice();
+        messages[0] = {
+          ...messages[0],
+          content: `${messages[0].content}\n\n${taggedPrompt}`,
+        };
       }
     }
     /* P_privacy-leak — the upstream model name is operator-configured

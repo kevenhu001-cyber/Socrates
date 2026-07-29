@@ -417,10 +417,16 @@ export function registerStreamRoute(router: Router) {
                 id: tc.id, ok: false, status: 'failed',
                 output: '', stderr: '', artifacts: [],
                 error: 'invalid_tool_arguments',
-                errorCode: 'invalid_tool_arguments', retryable: false,
-                userMessage: '工具参数格式无效。', detail: 'Expected a JSON object.',
+                errorCode: 'invalid_tool_arguments', retryable: true,
+                userMessage: '工具参数格式无效，正在请求模型修正。', detail: 'Expected one JSON object matching the supplied schema, with no Markdown fence or extra wrapper.',
               })}\n\n`);
-              result = { status: 'failed', error: 'invalid_tool_arguments', errorCode: 'invalid_tool_arguments', retryable: false };
+              result = {
+                status: 'failed',
+                error: 'invalid_tool_arguments',
+                errorCode: 'invalid_tool_arguments',
+                retryable: true,
+                detail: 'Send one JSON object matching the supplied schema. Do not use Markdown fences, comments, or an extra input/arguments wrapper.',
+              };
             } else if (!registryEntry || !registryEntry.enabled) {
               writeSse(`event: tool_result\ndata: ${JSON.stringify({
                 id: tc.id, ok: false, status: 'failed',
@@ -796,6 +802,8 @@ data: ${JSON.stringify({
             } else {
               toolContent = `[status: failed]\n[error_code: ${result.errorCode || 'visual_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]\n${result.retryable ? 'Correct the visual specification and call render_visualization once more. Do not fall back to Python or legacy fenced visualization.' : 'Explain the issue concisely without using Python or a legacy fenced visualization.'}`;
             }
+          } else if (result.errorCode === 'invalid_tool_arguments') {
+            toolContent = `[status: failed]\n[error_code: invalid_tool_arguments]\n[retryable: yes]\n${result.detail}\nCorrect the argument object against the native schema and call the tool once more.`;
           } else {
             toolContent = result.status === 'completed'
               ? (result.output || result.stdout || '(no output)')

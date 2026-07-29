@@ -1492,6 +1492,7 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
    refresh at completion. */
 .msg[data-live-handoff-pending="1"]{display:none;animation:none}
 .msg[data-live-handoff-complete="1"]{animation:none}
+.msg.turn-viewport-anchor{box-sizing:border-box}
 /* UI-align: native virtualization à la open-webui — off-screen
    messages skip layout/paint; the 150px estimate keeps the scrollbar
    stable enough while real heights replace it as items scroll in. */
@@ -4091,22 +4092,22 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
     min-height:42px;max-height:150px;padding:9px 7px;font-size:16px;
     transition:min-height .28s cubic-bezier(.2,.8,.2,1),padding .28s cubic-bezier(.2,.8,.2,1);
   }
-  .chat-input-wrap:focus-within{
+  .chat-input-wrap:has(.rich-composer-editor:focus){
     min-height:116px;padding:8px;border-radius:26px;gap:4px 3px;
     align-content:flex-start;box-shadow:0 10px 28px hsl(var(--always-black)/.14);
   }
-  .chat-input-wrap:focus-within .composer-editor-root{
+  .chat-input-wrap:has(.rich-composer-editor:focus) .composer-editor-root{
     order:1;flex:0 0 100%;width:100%;min-width:100%;max-width:100%;
   }
-  .chat-input-wrap:focus-within .footer-left-group .attach-btn{order:2}
-  .chat-input-wrap:focus-within .footer-left-group .effort-picker{
+  .chat-input-wrap:has(.rich-composer-editor:focus) .footer-left-group .attach-btn{order:2}
+  .chat-input-wrap:has(.rich-composer-editor:focus) .footer-left-group .effort-picker{
     order:3;display:block;margin-left:auto;align-self:center;
   }
-  .chat-input-wrap:focus-within .send-btn{order:4}
-  .chat-input-wrap:focus-within .rich-composer[data-surface="chat"] .tiptap{
+  .chat-input-wrap:has(.rich-composer-editor:focus) .send-btn{order:4}
+  .chat-input-wrap:has(.rich-composer-editor:focus) .rich-composer[data-surface="chat"] .tiptap{
     min-height:62px;max-height:180px;padding:12px 8px 8px;
   }
-  .chat-input-wrap:focus-within .chat-input-footer .effort-trigger{
+  .chat-input-wrap:has(.rich-composer-editor:focus) .chat-input-footer .effort-trigger{
     min-height:38px;padding:7px 8px;border-radius:18px;
   }
   .topic-input-wrap .rich-composer .tiptap{font-size:16px;min-height:74px}
