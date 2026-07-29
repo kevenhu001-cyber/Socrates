@@ -4,7 +4,8 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 async function prepareDelayedStream(page, options = {}) {
   const delay = options.delay || 150;
-  await page.evaluate(async ({ delay }) => {
+  const finishDelay = options.finishDelay || 1000;
+  await page.evaluate(async ({ delay, finishDelay }) => {
     const originalFetch = window.fetch.bind(window);
     const deltas = [
       '# Stable heading\n\nThe live tail begins',
@@ -28,7 +29,7 @@ async function prepareDelayedStream(page, options = {}) {
             if (index < deltas.length) {
               const payload = { choices: [{ delta: { content: deltas[index++] } }] };
               controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
-              timer = setTimeout(push, delay);
+              timer = setTimeout(push, index === deltas.length ? finishDelay : delay);
               return;
             }
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -62,7 +63,17 @@ async function prepareDelayedStream(page, options = {}) {
     await new Promise((resolve) => requestAnimationFrame(resolve));
     window.state._userScrolledAway = false;
     window.__smoothStreamPromise = window.askChatTurn('Stream smoothly');
-  }, { delay });
+  }, { delay, finishDelay });
+}
+
+async function waitForStreamHandoff(page) {
+  await page.waitForFunction(() => {
+    const id = window.state.messages.at(-1)?.clientId;
+    if (!id) return false;
+    return document.querySelector(`[data-client-id="${id}"][data-react-owned]`)
+      && !Array.from(document.querySelectorAll(`[data-client-id="${id}"]`))
+        .some((node) => !node.hasAttribute('data-react-owned'));
+  });
 }
 
 test.beforeEach(async ({ page }) => {
@@ -81,14 +92,20 @@ test('streaming keeps settled Markdown mounted and follows a pinned reader', asy
      settled block itself stays mounted while the tail changes. */
   const heading = bubble.locator('.stream-settled-content > *');
   await expect(heading).toContainText('Stable heading');
-  await page.evaluate(() => {
-    window.__settledHeading = document.querySelector('.msg.assistant:last-child .stream-settled-content')?.firstElementChild;
-  });
+  expect(await page.evaluate(() => {
+    window.__settledHeading = document.querySelector('.stream-settled-content')?.firstElementChild;
+    return Boolean(window.__settledHeading);
+  })).toBe(true);
 
   await expect(bubble.locator('.stream-live-content')).toContainText('adaptive streaming cadence');
   expect(await page.evaluate(() => {
-    const current = document.querySelector('.msg.assistant:last-child .stream-settled-content')?.firstElementChild;
+    const current = document.querySelector('.stream-settled-content')?.firstElementChild;
     return current === window.__settledHeading;
+  })).toBe(true);
+  await expect(bubble.locator('.stream-live-content')).toContainText('The final Markdown remains c');
+  expect(await page.evaluate(() => {
+    window.__settledHeadingAtFinish = document.querySelector('.stream-settled-content')?.firstElementChild;
+    return Boolean(window.__settledHeadingAtFinish);
   })).toBe(true);
 
   await expect.poll(() => page.evaluate(() => {
@@ -97,9 +114,18 @@ test('streaming keeps settled Markdown mounted and follows a pinned reader', asy
   })).toBeLessThanOrEqual(2);
 
   await page.evaluate(() => window.__smoothStreamPromise);
+  await waitForStreamHandoff(page);
   await expect(bubble).toContainText('Stable heading');
   await expect(bubble).toContainText('The final Markdown remains correct.');
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
+  expect(await page.evaluate(() => {
+    const id = window.state.messages.at(-1)?.clientId;
+    const current = id
+      ? document.querySelector(`[data-client-id="${id}"][data-react-owned] .stream-settled-content`)?.firstElementChild
+      : null;
+    return current === window.__settledHeadingAtFinish
+      && Boolean(window.__settledHeadingAtFinish?.isConnected);
+  })).toBe(true);
   await expect.poll(() => page.evaluate(() => {
     const list = document.getElementById('msgList');
     return Math.round(list.scrollHeight - list.scrollTop - list.clientHeight);
@@ -120,9 +146,13 @@ test('streaming respects an intentional scroll-away', async ({ page }) => {
   await expect(bubble.locator('.stream-live-content')).toContainText('pinned scrolling behavior');
   expect(await page.evaluate(() => document.getElementById('msgList').scrollTop)).toBeLessThan(8);
   await expect(page.locator('#newReplyPill')).toHaveClass(/visible/);
+  await expect(bubble.locator('.stream-live-content')).toContainText('The final Markdown remains c');
+  const beforeFinishTop = await page.evaluate(() => document.getElementById('msgList').scrollTop);
 
   await page.evaluate(() => window.__smoothStreamPromise);
-  expect(await page.evaluate(() => document.getElementById('msgList').scrollTop)).toBeLessThan(8);
+  await waitForStreamHandoff(page);
+  const afterFinishTop = await page.evaluate(() => document.getElementById('msgList').scrollTop);
+  expect(Math.abs(afterFinishTop - beforeFinishTop)).toBeLessThanOrEqual(2);
 });
 
 /* P_anchor-finish — when the reader scrolls UP into the streaming
