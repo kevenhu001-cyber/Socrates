@@ -299,6 +299,13 @@ function runActionChain(el, event, actionStr, eventType) {
     var arg = resolveArg(argToken, el, event);
     if (argToken !== null) {
       handler(el, event, arg);
+    } else if (el.getAttribute('data-action-arg') != null) {
+      /* Fallback to data-action-arg attribute when the action name
+         (e.g. "setAccentColor") doesn't carry an inline :arg token.
+         Buttons using separate data-action-arg keep the HTML declarative
+         while still getting the right argument through. */
+      var dtArg = resolveArg(el.getAttribute('data-action-arg'), el, event);
+      handler(el, event, dtArg);
     } else {
       handler(el, event);
     }
