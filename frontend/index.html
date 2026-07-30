@@ -76,7 +76,7 @@
      flips to "auth" or "app", so the transition is smooth. -->
 <div class="boot-loading" id="bootLoading" aria-hidden="true">
   <div class="boot-loading-logo">
-    <img src="/logo.png" width="20" height="20" alt="" style="border-radius:4px;flex-shrink:0">
+    <img src="/logo.png" width="20" height="20" alt="" class="logo-img">
     <span>Socrates</span>
     <span class="boot-loading-dots" aria-hidden="true"><span></span><span></span><span></span></span>
   </div>
@@ -93,7 +93,7 @@
 <div class="auth-gate" id="authGate" role="dialog" aria-modal="true" aria-label="Sign in">
   <div class="auth-card">
     <div class="auth-brand">
-      <img src="/logo.png" width="22" height="22" alt="" style="border-radius:4px">
+      <img src="/logo.png" width="22" height="22" alt="" class="logo-img">
       <span>Socrates</span>
     </div>
 
@@ -109,13 +109,13 @@
         <input class="auth-input" id="authSigninEmail" name="authSigninEmail" type="email" autocomplete="email" required placeholder="you@example.com">
         <label class="auth-label" for="authSigninPassword">Password</label>
         <input class="auth-input" id="authSigninPassword" name="authSigninPassword" type="password" autocomplete="current-password" required placeholder="••••••••">
-        <a class="auth-inline-link" href="#" data-action="showAuthForgotPassword" style="text-align:right;display:block">Forgot password?</a>
+        <a class="auth-inline-link auth-inline-link-right" href="#" data-action="showAuthForgotPassword">Forgot password?</a>
         <div class="auth-error" id="authSigninError"></div>
         <label class="auth-guest-label" for="authGuestCheckbox"><input type="checkbox" id="authGuestCheckbox" name="authGuestCheckbox"> Guest mode</label>
         <button class="auth-btn primary" id="authSigninBtn" type="submit">Sign in</button>
         <div class="auth-view-separator">or</div>
-        <a class="auth-btn secondary" id="authGithubBtn" href="/api/auth/oauth/github/start?return_to=/" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>Continue with GitHub</a>
-        <a class="auth-inline-link" href="#" data-action="showAuthCodeLogin" style="text-align:center;display:block;margin-top:10px;margin-bottom:4px">Login with verification code</a>
+        <a class="auth-btn secondary auth-github-btn" id="authGithubBtn" href="/api/auth/oauth/github/start?return_to=/"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>Continue with GitHub</a>
+        <a class="auth-inline-link auth-code-login-link" href="#" data-action="showAuthCodeLogin">Login with verification code</a>
         <div class="auth-foot">No account? <a href="#" data-action="switchAuthTab" data-action-arg="register">Create one</a></div>
       </form>
 
@@ -204,8 +204,8 @@
              can be associated with an account. The reset link itself
              carries the token + email, so this field is hidden but
              still part of the form. -->
-        <label class="auth-label" for="authResetEmail" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">Email</label>
-        <input class="auth-input" id="authResetEmail" type="email" autocomplete="username" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+        <label class="auth-label sr-only-old" for="authResetEmail">Email</label>
+        <input class="auth-input sr-only-opacity" id="authResetEmail" type="email" autocomplete="username" tabindex="-1" aria-hidden="true">
         <label class="auth-label" for="authResetPassword">New password</label>
         <input class="auth-input" id="authResetPassword" name="authResetPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
         <label class="auth-label" for="authResetConfirm">Confirm password</label>
@@ -258,10 +258,10 @@
   <div class="sidebar-inner">
     <div class="sidebar-header" id="sidebarHeader">
       <div class="sidebar-logo">
-        <img src="/logo.png" width="18" height="18" alt="" style="border-radius:3px;flex-shrink:0">
+        <img src="/logo.png" width="18" height="18" alt="" class="sidebar-logo-img">
         <span><em>S</em>ocrates</span>
       </div>
-      <div style="display:flex;align-items:center;gap:2px">
+      <div class="sidebar-header-actions">
         <button class="icon-btn compose-btn" id="newChatBtn" title="Start a new chat" data-action="resetApp">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
         </button>
@@ -427,18 +427,18 @@
               <button type="button" class="accent-reset-btn" id="accentResetBtn" title="Reset accent to default" data-action="resetAccentColor">Reset</button>
             </div>
             <div class="display-prefs-colors" id="displayAccentColors">
-              <button class="color-swatch" data-hue="35" style="--swatch:hsl(35 80% 50%)" title="Gold" data-action="setAccentColor" data-action-arg="35"></button>
-              <button class="color-swatch" data-hue="160" style="--swatch:hsl(160 70% 45%)" title="Teal" data-action="setAccentColor" data-action-arg="160"></button>
-              <button class="color-swatch" data-hue="210" style="--swatch:hsl(210 80% 50%)" title="Blue" data-action="setAccentColor" data-action-arg="210"></button>
-              <button class="color-swatch" data-hue="270" style="--swatch:hsl(270 70% 55%)" title="Purple" data-action="setAccentColor" data-action-arg="270"></button>
-              <button class="color-swatch" data-hue="330" style="--swatch:hsl(330 75% 50%)" title="Rose" data-action="setAccentColor" data-action-arg="330"></button>
-              <button class="color-swatch" data-hue="40" style="--swatch:hsl(40 75% 50%)" title="Amber (default)" data-action="setAccentColor" data-action-arg="40"></button>
+              <button class="color-swatch" data-hue="35" title="Gold" data-action="setAccentColor" data-action-arg="35"></button>
+              <button class="color-swatch" data-hue="160" title="Teal" data-action="setAccentColor" data-action-arg="160"></button>
+              <button class="color-swatch" data-hue="210" title="Blue" data-action="setAccentColor" data-action-arg="210"></button>
+              <button class="color-swatch" data-hue="270" title="Purple" data-action="setAccentColor" data-action-arg="270"></button>
+              <button class="color-swatch" data-hue="330" title="Rose" data-action="setAccentColor" data-action-arg="330"></button>
+              <button class="color-swatch" data-hue="40" title="Amber (default)" data-action="setAccentColor" data-action-arg="40"></button>
               <!-- Custom accent: a native color input styled as a swatch.
                    oninput fires every time the user drags in the picker,
                    so the UI updates live. The default value matches the
                    Amber preset so it doesn't start blank. -->
               <label class="color-swatch color-swatch-custom" id="accentCustomSwatch" title="Custom color">
-                <input type="color" id="accentCustomInput" value="#d99a2b" data-action-input="setAccentCustom" data-action-arg="value">
+                <input type="color" id="accentCustomInput" value="#d99a2b" aria-label="Accent color" data-action-input="setAccentCustom" data-action-arg="value">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               </label>
             </div>
@@ -797,18 +797,18 @@
   <div class="share-modal" data-action="__stop">
     <div class="share-header">
       <span class="share-title" data-i18n-key="share.title">Share conversation</span>
-      <button class="share-close" data-action="closeShareModal" data-initial-focus="true">
+      <button class="share-close" aria-label="Close" data-action="closeShareModal" data-initial-focus="true">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>
-    <div class="share-opt" id="shareOptPublic" data-share-vis="public" role="radio" tabindex="0" data-action="selectShareVis:public" data-action-keydown="selectShareVis:public" data-action-keydown-keys="Enter|Space">
+    <div class="share-opt" id="shareOptPublic" data-share-vis="public" role="radio" tabindex="0" aria-checked="true" data-action="selectShareVis:public" data-action-keydown="selectShareVis:public" data-action-keydown-keys="Enter|Space">
       <div class="share-opt-radio"><span class="share-opt-radio-dot"></span></div>
       <div class="share-opt-body">
         <div class="share-opt-title" data-i18n-key="share.publicTitle">Anyone with the link</div>
         <div class="share-opt-desc" data-i18n-key="share.publicDesc">No sign-in required. Anyone who has the link can view this conversation.</div>
       </div>
     </div>
-    <div class="share-opt" id="shareOptPrivate" data-share-vis="private" role="radio" tabindex="0" data-action="selectShareVis:private" data-action-keydown="selectShareVis:private" data-action-keydown-keys="Enter|Space">
+    <div class="share-opt" id="shareOptPrivate" data-share-vis="private" role="radio" tabindex="0" aria-checked="false" data-action="selectShareVis:private" data-action-keydown="selectShareVis:private" data-action-keydown-keys="Enter|Space">
       <div class="share-opt-radio"><span class="share-opt-radio-dot"></span></div>
       <div class="share-opt-body">
         <div class="share-opt-title" data-i18n-key="share.privateTitle">Only you</div>
@@ -819,13 +819,13 @@
       <input class="share-link-input" id="shareLinkInput" name="shareLinkInput" type="text" readonly data-action="select" aria-label="Share link">
       <button class="share-copy-btn" id="shareCopyBtn" data-action="copyShareLink" data-i18n-key="share.copy">Copy</button>
     </div>
-    <div id="shareRevokeArea" class="hidden" style="text-align:center">
+    <div id="shareRevokeArea" class="hidden share-centered">
       <button class="share-revoke" data-action="revokeShareLink" data-i18n-key="share.revoke">× Revoke share link</button>
     </div>
     <div class="share-error hidden" id="shareError"></div>
     <div class="share-status hidden" id="shareStatus"></div>
-    <div id="shareCreateArea" style="text-align:center;margin-top:4px">
-      <button class="settings-btn primary" id="shareCreateBtn" data-action="createShareLink" style="margin-top:8px" data-i18n-key="share.create">Create share link</button>
+    <div id="shareCreateArea" class="share-create-area">
+      <button class="settings-btn primary share-create-btn" id="shareCreateBtn" data-action="createShareLink" data-i18n-key="share.create">Create share link</button>
     </div>
   </div>
 </div>
@@ -834,13 +834,13 @@
   <div class="settings-modal">
     <div class="settings-header">
       <span class="settings-title" id="settingsTitle" data-i18n-key="settings.title">API Configuration</span>
-      <button class="settings-close" id="settingsCloseBtn" data-initial-focus="true">
+      <button class="settings-close" id="settingsCloseBtn" aria-label="Close" data-initial-focus="true">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>
     <div class="settings-body">
       <div class="stg-toggle" id="stgToggle">
-        <span class="settings-label" style="margin-bottom:0">Use External API</span>
+        <span class="settings-label stg-toggle-label">Use External API</span>
         <div class="stg-toggle-track" id="stgToggleTrack"><div class="stg-toggle-knob"></div></div>
       </div>
       <div class="settings-field">
@@ -876,7 +876,7 @@
   <div class="profile-modal" data-action="__stop">
     <div class="profile-header">
       <div class="profile-avatar" id="profileAvatar">JH</div>
-      <input class="profile-name-input" id="profileName" type="text" maxlength="50" data-action-change="saveProfileName:value" data-action-keydown="blur" data-action-keydown-keys="Enter">
+      <input class="profile-name-input" id="profileName" type="text" maxlength="50" aria-label="Your name" data-action-change="saveProfileName:value" data-action-keydown="blur" data-action-keydown-keys="Enter">
       <div class="profile-email" id="profileEmail">jiacheng@example.com</div>
     </div>
     <div class="profile-body" id="profileBody">
@@ -901,14 +901,14 @@
         <div class="profile-section-title" data-i18n-key="profile.subscription">Subscription</div>
         <div class="profile-row">
           <span class="profile-row-label" data-i18n-key="profile.currentPlan">Current plan</span>
-          <span class="profile-row-value" id="profileTier" style="font-size:calc(13px * var(--app-font-scale, 1))"></span>
+          <span class="profile-row-value profile-tier" id="profileTier"></span>
         </div>
         <div class="profile-row" id="profileSubEndRow">
           <span class="profile-row-label" data-i18n-key="profile.renewal">Renewal</span>
           <span class="profile-row-value" id="profileSubEnd">—</span>
         </div>
-        <div style="margin-top:10px">
-          <a href="https://topodrive.top/pricing" class="profile-btn close-btn" style="text-align:center;display:block;font-size:calc(12px * var(--app-font-scale, 1));padding:8px 0" data-i18n-key="profile.comparePlans">Compare plans</a>
+        <div class="profile-compare-wrap">
+          <a href="https://topodrive.top/pricing" class="profile-btn close-btn profile-compare-link" data-i18n-key="profile.comparePlans">Compare plans</a>
         </div>
       </div>
       <!-- Preferences section -->
@@ -942,7 +942,7 @@
         <div class="profile-instructions">
           <label class="profile-instructions-label" for="profileInstResponse" data-i18n-key="profile.howShouldIRespond">How should I respond?</label>
           <textarea id="profileInstResponse" name="profileInstResponse" class="profile-instructions-area" maxlength="4000" placeholder="e.g. Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language." data-action-input="onCustomInstructionsChange"></textarea>
-          <label class="profile-instructions-label" for="profileInstAbout" style="margin-top:10px" data-i18n-key="profile.whatDoYouKnow">What do you know about me?</label>
+          <label class="profile-instructions-label profile-instructions-label-spaced" for="profileInstAbout" data-i18n-key="profile.whatDoYouKnow">What do you know about me?</label>
           <textarea id="profileInstAbout" name="profileInstAbout" class="profile-instructions-area" maxlength="4000" placeholder="e.g. I'm a backend engineer working on a payments product. I'm allergic to puns." data-action-input="onCustomInstructionsChange"></textarea>
           <div class="profile-instructions-foot">
             <span id="profileInstSaveState" class="profile-instructions-state" data-i18n-key="profile.notYetSaved">Not yet saved</span>
@@ -958,7 +958,7 @@
             <div class="profile-action-label" data-i18n-key="profile.usage">Token usage</div>
             <div class="profile-action-desc" data-i18n-key="profile.usage.desc">View daily token usage heatmap and monthly breakdown.</div>
           </div>
-          <button class="profile-btn" data-action="openUsageModal" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.view">View</button>
+          <button class="profile-btn profile-action-btn" data-action="openUsageModal" data-i18n-key="profile.view">View</button>
         </div>
         <!-- P2.3 — Storage entry. Opens a modal listing archived
              sessions with restore / delete controls. The button
@@ -969,7 +969,7 @@
             <div class="profile-action-label" data-i18n-key="profile.archivedSessions">Archived sessions</div>
             <div class="profile-action-desc" data-i18n-key="profile.archivedSessionsDesc">Sessions you deleted are kept here for 30 days before being permanently erased.</div>
           </div>
-          <button class="profile-btn" data-action="openStorageModal" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.manage">Manage</button>
+          <button class="profile-btn profile-action-btn" data-action="openStorageModal" data-i18n-key="profile.manage">Manage</button>
         </div>
         <!-- P5.8 — Prompt templates. Opens a manager modal
              where the user can add / edit / delete custom
@@ -979,43 +979,43 @@
             <div class="profile-action-label" data-i18n-key="profile.promptTemplates">Prompt templates</div>
             <div class="profile-action-desc" data-i18n-key="profile.promptTemplatesDesc">Reusable prompts you can fire from the chat with <code>/shortcut</code>.</div>
           </div>
-          <button class="profile-btn" data-action="openPromptTemplatesModal" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.manage">Manage</button>
+          <button class="profile-btn profile-action-btn" data-action="openPromptTemplatesModal" data-i18n-key="profile.manage">Manage</button>
         </div>
         <div class="profile-action-row">
           <div>
             <div class="profile-action-label" data-i18n-key="profile.clearConversations">Clear conversations</div>
             <div class="profile-action-desc" data-i18n-key="profile.clearConversationsDesc">Remove all local chat history.</div>
           </div>
-          <button class="profile-btn warning" data-action="confirmClearCache" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.clear">Clear</button>
+          <button class="profile-btn warning profile-action-btn" data-action="confirmClearCache" data-i18n-key="profile.clear">Clear</button>
         </div>
         <div class="profile-action-row">
           <div>
             <div class="profile-action-label" data-i18n-key="profile.clearApiSettings">Clear API settings</div>
             <div class="profile-action-desc" data-i18n-key="profile.clearApiSettingsDesc">Remove all configured API providers and keys.</div>
           </div>
-          <button class="profile-btn warning" data-action="confirmClearSettings" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.clear">Clear</button>
+          <button class="profile-btn warning profile-action-btn" data-action="confirmClearSettings" data-i18n-key="profile.clear">Clear</button>
         </div>
       </div>
       <!-- Danger zone section -->
-      <div class="profile-section" style="display:none">
-        <div class="profile-section-title" style="color:hsl(0 60% 55%)" data-i18n-key="profile.dangerZone">Danger zone</div>
+      <div class="profile-section profile-section-hidden">
+        <div class="profile-section-title profile-danger-color" data-i18n-key="profile.dangerZone">Danger zone</div>
         <div class="profile-action-row">
           <div>
             <div class="profile-action-label" data-i18n-key="profile.signOut">Sign out</div>
             <div class="profile-action-desc" data-i18n-key="profile.signOutDesc">End your session on this device.</div>
           </div>
-          <button class="profile-btn signout" data-action="signOut;closeProfile" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.signOut">Sign out</button>
+          <button class="profile-btn signout profile-action-btn" data-action="signOut;closeProfile" data-i18n-key="profile.signOut">Sign out</button>
         </div>
         <div class="profile-action-row">
           <div>
-            <div class="profile-action-label" style="color:hsl(0 60% 55%)" data-i18n-key="profile.deleteAccount">Delete account</div>
+            <div class="profile-action-label profile-danger-color" data-i18n-key="profile.deleteAccount">Delete account</div>
             <div class="profile-action-desc" data-i18n-key="profile.deleteAccountDesc">Permanently delete your account and all data.</div>
           </div>
-          <button class="profile-btn danger" data-action="confirmDeleteAccount" style="width:auto;padding:6px 14px;flex-shrink:0" data-i18n-key="profile.deleteAccount">Delete</button>
+          <button class="profile-btn danger profile-action-btn" data-action="confirmDeleteAccount" data-i18n-key="profile.deleteAccount">Delete</button>
         </div>
       </div>
     </div>
-    <div class="profile-actions" style="border-top:0.5px solid hsl(var(--border-300)/0.08);padding-top:12px">
+    <div class="profile-actions profile-actions-sep">
       <button class="profile-btn close-btn" data-action="closeProfile" data-i18n-key="common.close">Close</button>
     </div>
   </div>
