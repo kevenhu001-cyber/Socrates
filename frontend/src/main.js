@@ -3827,19 +3827,37 @@ window.addEventListener("resize",function(){
   if(isSlashCommandPaletteOpen()) positionSlashCommandPalette();
 });
 
-/* Blur whatever is focused inside the chat composer and collapse the
-   selection Tiptap leaves behind, so the focus-driven visuals (border
-   accent, expanded desktop layout) reset after a click-send. */
+/* Blur whatever is focused inside the chat composer (editor root OR
+   the wider input wrap, which includes the send/attach buttons) and
+   collapse the selection Tiptap leaves behind, so the focus-driven
+   visuals (border accent, expanded desktop layout) reset after a
+   click-send. The `:focus-within` on `.chat-input-wrap` covers all
+   descendants, so we must clear focus everywhere inside that wrap. */
 function blurChatComposer(){
   var rootEl=document.getElementById("chatComposerRoot");
+  var wrapEl=document.getElementById("chatInputWrap");
   var active=document.activeElement;
-  if(rootEl&&active&&rootEl.contains(active)&&typeof active.blur==="function"){
+  var withinComposer = (rootEl&&rootEl.contains(active))
+    || (wrapEl&&wrapEl.contains(active));
+  if(withinComposer && typeof active.blur==="function"){
     active.blur();
-    try{
-      var sel=window.getSelection();
-      if(sel&&sel.rangeCount)sel.removeAllRanges();
-    }catch(_){}
   }
+  /* Also blur any descendant contenteditable editor element directly,
+     in case Tiptap re-focused during the clearContent transaction. */
+  if(rootEl){
+    var editable=rootEl.querySelector('[contenteditable]');
+    if(editable && editable!==document.activeElement
+      && typeof editable.blur==="function"
+      && (wrapEl||rootEl).contains(editable)){
+      editable.blur();
+    }
+  }
+  /* Clear DOM selection so the cursor caret / text highlight disappears
+     and the selection-controlled CSS visuals reset. */
+  try{
+    var sel=window.getSelection();
+    if(sel&&sel.rangeCount)sel.removeAllRanges();
+  }catch(_){}
 }
 
 async function submitChatMessage(textOverride,opts){
