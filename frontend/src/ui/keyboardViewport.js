@@ -1,5 +1,5 @@
 /*
- * Keep fixed/absolute chat controls above mobile virtual keyboards.
+ * Keep chat controls above mobile virtual keyboards.
  *
  * Browsers do not agree on whether the layout viewport shrinks when a
  * keyboard opens. Reading only `innerHeight - visualViewport.height`
@@ -94,10 +94,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
     root.dataset.keyboardOpen = roundedInset > 80 ? 'true' : 'false';
 
-    /* Raising the composer also increases the transcript's bottom reserve.
+    /* Raising the in-flow composer shrinks the transcript's flex viewport.
      * Preserve the bottom anchor only for a reader who was already following
-     * the latest message; otherwise the new padding makes them appear to have
-     * scrolled away and subsequent stream updates stop auto-scrolling. */
+     * the latest message; otherwise the smaller viewport can make them appear
+     * to have scrolled away and subsequent stream updates stop following. */
     if (roundedInset !== appliedInset && wasPinned && list) {
       if (pinFrame) cancelAnimationFrame(pinFrame);
       pinFrame = requestAnimationFrame(() => {

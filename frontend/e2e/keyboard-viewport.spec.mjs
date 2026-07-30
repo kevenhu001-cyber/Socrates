@@ -23,7 +23,7 @@ test('recognizes focus inside the nested rich-composer editor', () => {
   expect(isTrackedInputFocused([composerRoot], {})).toBe(false);
 });
 
-test('composer and message reserve follow the normalized keyboard inset on mobile', async ({ page }) => {
+test('in-flow composer and transcript follow the normalized keyboard inset on mobile', async ({ page }) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
@@ -64,17 +64,26 @@ test('composer and message reserve follow the normalized keyboard inset on mobil
   const after = await composer.boundingBox();
   expect(after).not.toBeNull();
   expect(Math.round(before.y - after.y)).toBe(300);
-  const reserve = await page.evaluate(() => {
+  const geometry = await page.evaluate(() => {
     const list = document.getElementById('msgList');
     const bar = document.getElementById('chatInputBar');
+    const listRect = list.getBoundingClientRect();
+    const barRect = bar.getBoundingClientRect();
     return {
       paddingBottom: Number.parseFloat(getComputedStyle(list).paddingBottom),
-      barHeight: bar.getBoundingClientRect().height,
+      listBottom: Math.round(listRect.bottom),
+      barTop: Math.round(barRect.top),
+      barPosition: getComputedStyle(bar).position,
+      measuredBarHeight: getComputedStyle(document.getElementById('chatView'))
+        .getPropertyValue('--chat-input-bar-height'),
       distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
     };
   });
-  expect(reserve.paddingBottom).toBeGreaterThanOrEqual(reserve.barHeight + 300 + 8);
-  expect(reserve.distanceFromBottom).toBeLessThanOrEqual(2);
+  expect(geometry.paddingBottom).toBe(0);
+  expect(geometry.barPosition).toBe('relative');
+  expect(geometry.measuredBarHeight).toBe('');
+  expect(geometry.listBottom).toBeLessThanOrEqual(geometry.barTop);
+  expect(geometry.distanceFromBottom).toBeLessThanOrEqual(2);
   expect(after.y + after.height).toBeLessThanOrEqual(544);
 
   await page.evaluate(() => {
@@ -135,11 +144,14 @@ test('expanding the mobile composer keeps the latest message pinned and unobscur
       paddingBottom: Number.parseFloat(getComputedStyle(list).paddingBottom),
       distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
       clearance: Math.round(bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom),
+      listBottom: Math.round(list.getBoundingClientRect().bottom),
+      barTop: Math.round(bar.getBoundingClientRect().top),
     };
   });
 
   expect(after.barHeight).toBeGreaterThan(before.barHeight);
-  expect(after.paddingBottom).toBeGreaterThanOrEqual(after.barHeight + 8);
+  expect(after.paddingBottom).toBe(0);
+  expect(after.listBottom).toBeLessThanOrEqual(after.barTop);
   expect(after.distanceFromBottom).toBeLessThanOrEqual(2);
   expect(after.clearance).toBeGreaterThanOrEqual(8);
 });
@@ -178,10 +190,12 @@ test('desktop answer bottom remains above the composer', async ({ page }) => {
         bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom,
       ),
       paddingBottom: Number.parseFloat(getComputedStyle(list).paddingBottom),
-      barHeight: bar.getBoundingClientRect().height,
+      listBottom: Math.round(list.getBoundingClientRect().bottom),
+      barTop: Math.round(bar.getBoundingClientRect().top),
     };
   });
-  expect(geometry.paddingBottom).toBeGreaterThanOrEqual(geometry.barHeight + 8);
+  expect(geometry.paddingBottom).toBe(0);
+  expect(geometry.listBottom).toBeLessThanOrEqual(geometry.barTop);
   expect(geometry.clearance).toBeGreaterThanOrEqual(8);
 });
 
@@ -224,10 +238,13 @@ test('a growing composer keeps the latest message visible and the transcript pin
       clearance: Math.round(bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom),
       paddingBottom: Number.parseFloat(getComputedStyle(list).paddingBottom),
       barHeight: Math.round(bar.getBoundingClientRect().height),
+      listBottom: Math.round(list.getBoundingClientRect().bottom),
+      barTop: Math.round(bar.getBoundingClientRect().top),
     };
   });
 
-  expect(geometry.paddingBottom).toBeGreaterThanOrEqual(geometry.barHeight + 8);
+  expect(geometry.paddingBottom).toBe(0);
+  expect(geometry.listBottom).toBeLessThanOrEqual(geometry.barTop);
   expect(geometry.distanceFromBottom, JSON.stringify(geometry)).toBeLessThanOrEqual(2);
   expect(geometry.clearance, JSON.stringify(geometry)).toBeGreaterThanOrEqual(8);
 });
