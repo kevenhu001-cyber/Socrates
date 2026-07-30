@@ -32,8 +32,24 @@ test('composer and message reserve follow the normalized keyboard inset on mobil
   expect(before).not.toBeNull();
 
   await page.evaluate(() => {
+    for (let index = 0; index < 16; index += 1) {
+      window.addMessage(
+        index % 2 ? 'assistant' : 'user',
+        `Keyboard inset history ${index + 1}: enough content to keep the mobile transcript scrollable.`,
+      );
+    }
+  });
+  await expect(page.locator('#msgList .msg')).toHaveCount(16);
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.scrollTop = list.scrollHeight;
+    window.state._userScrolledAway = false;
+  });
+
+  await page.evaluate(() => {
     document.documentElement.style.setProperty('--keyboard-inset', '300px');
   });
+  await page.waitForTimeout(150);
 
   const after = await composer.boundingBox();
   expect(after).not.toBeNull();
@@ -44,9 +60,11 @@ test('composer and message reserve follow the normalized keyboard inset on mobil
     return {
       paddingBottom: Number.parseFloat(getComputedStyle(list).paddingBottom),
       barHeight: bar.getBoundingClientRect().height,
+      distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
     };
   });
   expect(reserve.paddingBottom).toBeGreaterThanOrEqual(reserve.barHeight + 300 + 8);
+  expect(reserve.distanceFromBottom).toBeLessThanOrEqual(2);
   expect(after.y + after.height).toBeLessThanOrEqual(544);
 
   await page.evaluate(() => {
@@ -107,4 +125,115 @@ test('desktop answer bottom remains above the composer', async ({ page }) => {
   });
   expect(geometry.paddingBottom).toBeGreaterThanOrEqual(geometry.barHeight + 8);
   expect(geometry.clearance).toBeGreaterThanOrEqual(8);
+});
+
+test('a growing composer keeps the latest message visible and the transcript pinned', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window.state.phase = 'chat';
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    for (let index = 0; index < 18; index += 1) {
+      window.addMessage(
+        index % 2 ? 'assistant' : 'user',
+        `Composer resize history ${index + 1}: enough content to keep the transcript scrollable.`,
+      );
+    }
+  });
+  await expect(page.locator('#msgList .msg')).toHaveCount(18);
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.scrollTop = list.scrollHeight;
+    window.state._userScrolledAway = false;
+  });
+
+  await page.evaluate(() => {
+    document.getElementById('chatInputWrap').style.minHeight = '240px';
+  });
+  await page.waitForTimeout(150);
+
+  const geometry = await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    const lastBody = list.querySelector('.msg:last-child .msg-body');
+    const bar = document.getElementById('chatInputBar');
+    return {
+      distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
+      clearance: Math.round(bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom),
+      paddingBottom: Number.parseFloat(getComputedStyle(list).paddingBottom),
+      barHeight: Math.round(bar.getBoundingClientRect().height),
+    };
+  });
+
+  expect(geometry.paddingBottom).toBeGreaterThanOrEqual(geometry.barHeight + 8);
+  expect(geometry.distanceFromBottom, JSON.stringify(geometry)).toBeLessThanOrEqual(2);
+  expect(geometry.clearance, JSON.stringify(geometry)).toBeGreaterThanOrEqual(8);
+});
+
+test('late growth in the latest answer follows pinned readers but preserves manual scroll', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window.state.phase = 'chat';
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    for (let index = 0; index < 20; index += 1) {
+      window.addMessage(
+        index % 2 ? 'assistant' : 'user',
+        `Late layout history ${index + 1}: async rich content may change this answer height.`,
+      );
+    }
+  });
+  await expect(page.locator('#msgList .msg')).toHaveCount(20);
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.scrollTop = list.scrollHeight;
+    window.state._userScrolledAway = false;
+    const body = list.querySelector('.msg:last-child .msg-body');
+    const lateContent = document.createElement('div');
+    lateContent.dataset.testLateContent = '1';
+    lateContent.style.height = '240px';
+    body.appendChild(lateContent);
+  });
+  await page.waitForTimeout(150);
+
+  const pinnedDistance = await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    return Math.round(list.scrollHeight - list.scrollTop - list.clientHeight);
+  });
+  expect(pinnedDistance).toBeLessThanOrEqual(2);
+
+  const awayTop = await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.scrollTop = Math.max(0, list.scrollTop - 240);
+    window.state._userScrolledAway = true;
+    const top = list.scrollTop;
+    const lateContent = list.querySelector('[data-test-late-content="1"]');
+    lateContent.style.height = '420px';
+    return top;
+  });
+  await page.waitForTimeout(150);
+
+  const preservedTop = await page.locator('#msgList').evaluate((list) => list.scrollTop);
+  expect(Math.round(preservedTop)).toBe(Math.round(awayTop));
+
+  const finalGeometry = await page.locator('#msgList').evaluate((list) => {
+    list.scrollTop = list.scrollHeight;
+    const lastBody = list.querySelector('.msg:last-child .msg-body');
+    const bar = document.getElementById('chatInputBar');
+    return {
+      distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
+      clearance: Math.round(bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom),
+    };
+  });
+  expect(finalGeometry.distanceFromBottom).toBeLessThanOrEqual(2);
+  expect(finalGeometry.clearance).toBeGreaterThanOrEqual(8);
 });

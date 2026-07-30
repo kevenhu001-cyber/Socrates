@@ -705,7 +705,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 .new-reply-pill{
   position:absolute;
   right:20px;
-  bottom:calc(120px + var(--keyboard-inset));
+  bottom:calc(var(--chat-input-bar-height,80px) + var(--keyboard-inset) + 12px);
   padding:6px 12px;
   border-radius:999px;
   /* UI-align: neutral floating surface (open-webui scroll-down chip)
@@ -1204,6 +1204,8 @@ true) but the dropdown never shows — see commit history. */
   flex:1 1 auto;
   min-height:0;
   overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior-y:contain;
   scrollbar-width:thin;
   scrollbar-color:transparent transparent;
   padding-bottom:var(--chat-content-bottom-reserve);
@@ -1495,10 +1497,11 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 .msg[data-live-handoff-pending="1"]{display:none;animation:none}
 .msg[data-live-handoff-complete="1"]{animation:none}
 .msg.turn-viewport-anchor{box-sizing:border-box}
-/* UI-align: native virtualization à la open-webui — off-screen
-   messages skip layout/paint; the 150px estimate keeps the scrollbar
-   stable enough while real heights replace it as items scroll in. */
-.msg-list>.msg{content-visibility:auto;contain-intrinsic-size:auto 150px}
+/* Keep transcript geometry exact. Height-estimated content-visibility made
+   long/off-screen answers replace their 150px estimate only when scrolled
+   into view, which changed scrollHeight mid-gesture and could strand the
+   reader above the real final line. */
+.msg-list>.msg{content-visibility:visible}
 @keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 /* User bubbles right-align. The toolbar lives BELOW the bubble
  * (flex-direction:column + align-items:flex-end), not next to it on
@@ -3829,7 +3832,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   .auth-card{padding:24px 16px}
   .profile-overlay{padding:20px 12px}
   .sidebar{width:var(--app-sidebar-width,16rem);min-width:var(--app-sidebar-width,16rem)}
-  .new-reply-pill{right:10px;bottom:calc(100px + var(--keyboard-inset));font-size:11px;padding:4px 10px}
+  .new-reply-pill{right:10px;bottom:calc(var(--chat-input-bar-height,80px) + var(--keyboard-inset) + 8px);font-size:11px;padding:4px 10px}
 }
 
 /* ────── Responsive: large screens ≥ 1200 px ────── */
