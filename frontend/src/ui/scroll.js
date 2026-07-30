@@ -15,7 +15,13 @@
    time we add a new auto-scroll point. */
 export function scrollContainer(){
   var ml=document.getElementById("msgList");
-  if(ml&&ml.offsetParent!==null&&ml.scrollHeight>ml.clientHeight+2){
+  /* During chat/tutor, #msgList is the designated scroll surface
+     (overflow-y:auto). The old scrollHeight>clientHeight+2 guard
+     caused issues during initial streaming when content hadn't yet
+     overflowed — it returned #mainContent (overflow:hidden) which
+     silently dropped all scroll operations. As long as msgList
+     exists and is connected to the document, it is the right target. */
+  if(ml&&ml.offsetParent!==null){
     return ml;
   }
   return document.getElementById("mainContent");
@@ -29,16 +35,38 @@ export function initChatComposerReserve(options){
   options=options||{};
   var bar=options.bar||document.getElementById("chatInputBar");
   var host=options.host||document.getElementById("chatView");
+  var list=options.list||document.getElementById("msgList");
   if(!bar||!host)return function(){};
 
   var frame=0;
+  var pinFrame=0;
   var lastHeight=0;
   function measure(){
     frame=0;
     var height=Math.ceil(bar.getBoundingClientRect().height);
     if(height<=0||height===lastHeight)return;
+
+    /* Measure pin state before changing the CSS reserve. Expanding the
+       mobile composer or adding attachment chips increases padding-bottom;
+       without restoring the bottom anchor, the latest reply is immediately
+       pushed underneath the composer and the scroll listener marks the user
+       as having moved away. */
+    var wasPinned=!!list&&
+      (!window.state||!window.state._userScrolledAway)&&
+      list.scrollHeight-list.scrollTop-list.clientHeight<=96;
+
     lastHeight=height;
     host.style.setProperty("--chat-input-bar-height",height+"px");
+
+    if(wasPinned&&list){
+      if(pinFrame)cancelAnimationFrame(pinFrame);
+      pinFrame=requestAnimationFrame(function(){
+        pinFrame=0;
+        if(!window.state||!window.state._userScrolledAway){
+          list.scrollTop=list.scrollHeight;
+        }
+      });
+    }
   }
   function schedule(){
     if(frame)return;
@@ -57,6 +85,7 @@ export function initChatComposerReserve(options){
 
   return function(){
     if(frame)cancelAnimationFrame(frame);
+    if(pinFrame)cancelAnimationFrame(pinFrame);
     if(observer)observer.disconnect();
     window.removeEventListener("resize",schedule);
     if(window.visualViewport)window.visualViewport.removeEventListener("resize",schedule);

@@ -195,6 +195,7 @@ test('finish preserves mid-message scroll position (row anchor)', async ({ page 
     const br = b.getBoundingClientRect();
     return {
       listTop: Math.round(list.scrollTop),
+      maxScrollTop: Math.round(list.scrollHeight - list.clientHeight),
       bubbleOffsetFromScroller: Math.round(br.top - lr.top),
     };
   });
@@ -212,6 +213,7 @@ test('finish preserves mid-message scroll position (row anchor)', async ({ page 
     const br = b.getBoundingClientRect();
     return {
       listTop: Math.round(list.scrollTop),
+      maxScrollTop: Math.round(list.scrollHeight - list.clientHeight),
       bubbleOffsetFromScroller: Math.round(br.top - lr.top),
     };
   });
@@ -224,5 +226,8 @@ test('finish preserves mid-message scroll position (row anchor)', async ({ page 
   // 60px slack for height delta between legacy/React bubbles and
   // async mermaid/viz mounts.
   expect(after.bubbleOffsetFromScroller).not.toBeNull();
-  expect(Math.abs(after.bubbleOffsetFromScroller - before.bubbleOffsetFromScroller)).toBeLessThan(60);
+  expect(
+    Math.abs(after.bubbleOffsetFromScroller - before.bubbleOffsetFromScroller),
+    JSON.stringify({ before, after }),
+  ).toBeLessThan(60);
 });
