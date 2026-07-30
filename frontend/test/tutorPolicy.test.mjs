@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildFallbackDiagnosticQuestions,
   clampTutorQuestionCount,
+  shouldRequestTutorAfterQuiz,
   shouldAutoSearchTutor,
 } from '../src/tutor/policy.js';
 
@@ -24,4 +25,10 @@ test('fallback diagnostic honors requested count and stays multiple choice', () 
   const questions = buildFallbackDiagnosticQuestions('复变函数', 10, true);
   assert.equal(questions.length, 10);
   assert.ok(questions.every((question) => question.opts.length === 4));
+});
+
+test('Tutor quiz requests AI only after a wrong self-graded choice', () => {
+  assert.equal(shouldRequestTutorAfterQuiz('B', true), false);
+  assert.equal(shouldRequestTutorAfterQuiz('B', false), true);
+  assert.equal(shouldRequestTutorAfterQuiz('', false), false);
 });

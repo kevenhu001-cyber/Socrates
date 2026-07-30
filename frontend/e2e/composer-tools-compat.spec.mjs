@@ -1,7 +1,7 @@
 // e2e/composer-tools-compat.spec.mjs — Batch 3 of the React + TypeScript migration
 // Spec: when the app boots with ?react=1, the Composer "+" tools menu is
 // owned by React. The legacy entry point (toggleComposerTools) still drives
-// open/close/positioning; React renders the 6 menu items + dividers via the
+// open/close/positioning; React renders the capability workflows via the
 // typed bridge. Item clicks dispatch through the legacy window.* actions.
 
 import { test, expect } from '@playwright/test';
@@ -27,11 +27,11 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   }));
   expect(installed).toEqual({ bridge: true, isOpen: false });
 
-  // All 6 items rendered with the expected data-action values.
-  const actions = await page.locator('#composerToolsMenu [data-action]').evaluateAll((els) =>
-    els.map((el) => el.getAttribute('data-action')),
+  // All workflow items rendered with the expected data-action values.
+  const actions = await page.locator('#composerToolsMenu [data-composer-action]').evaluateAll((els) =>
+    els.map((el) => el.getAttribute('data-composer-action')),
   );
-  expect(actions).toEqual(['upload', 'write', 'research', 'deepResearch', 'exam', 'skills']);
+  expect(actions).toEqual(['upload', 'write', 'research', 'deepResearch', 'analyze', 'exam', 'skills']);
 });
 
 test('Composer tools menu opens via legacy entry point and React mirrors state', async ({ page }) => {
@@ -58,6 +58,10 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
     return s ? { isOpen: s.isOpen, mode: s.mode, triggerId: s.triggerId } : null;
   });
   expect(snap).toEqual({ isOpen: true, mode: 'topic', triggerId: 'topicComposerToolsBtn' });
+  await page.screenshot({
+    path: 'test-results/visual-qa/composer-workflows-menu.png',
+    fullPage: true,
+  });
 
   // Clicking outside closes the menu — the legacy document-level listener
   // still fires and closes via the bridge.
@@ -80,11 +84,11 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
   // Capture calls to composeAction (write) and researchAction (research).
   await page.evaluate(() => {
     window.__composerCalls = [];
-    window.composeAction = () => window.__composerCalls.push('write');
-    window.researchAction = () => window.__composerCalls.push('research');
-    window.openAttachmentPicker = () => window.__composerCalls.push('upload');
-    window.toggleExtensionByKey = (key) => window.__composerCalls.push(key);
-    window.openPromptTemplatesModal = () => window.__composerCalls.push('skills');
+    window.__socratesLegacy.composer.composeAction = () => window.__composerCalls.push('write');
+    window.__socratesLegacy.composer.researchAction = () => window.__composerCalls.push('research');
+    window.__socratesLegacy.composer.openAttachmentPicker = () => window.__composerCalls.push('upload');
+    window.__socratesLegacy.composer.toggleExtensionByKey = (key) => window.__composerCalls.push(key);
+    window.__socratesLegacy.navigation.openPromptTemplatesModal = () => window.__composerCalls.push('skills');
   });
 
   // Open menu from the chat composer.
@@ -98,7 +102,7 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
   await expect(menu).not.toHaveClass(/hidden/);
 
   // Click the "write" item (closes the menu via the legacy handler).
-  await page.locator('#composerToolsMenu [data-action="write"]').click();
+  await page.locator('#composerToolsMenu [data-composer-action="write"]').click();
   await expect(menu).toHaveClass(/hidden/);
 
   // Re-open and click the "research" item.
@@ -109,7 +113,7 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
     }
   });
   await expect(menu).not.toHaveClass(/hidden/);
-  await page.locator('#composerToolsMenu [data-action="research"]').click();
+  await page.locator('#composerToolsMenu [data-composer-action="research"]').click();
   await expect(menu).toHaveClass(/hidden/);
 
   const calls = await page.evaluate(() => window.__composerCalls);

@@ -17,6 +17,7 @@ declare global {
     openAttachmentPicker?: (inputId: string) => void;
     composeAction?: () => void;
     researchAction?: () => void;
+    analyzeAction?: () => void;
     toggleExtensionByKey?: (key: string) => void;
     openPromptTemplatesModal?: () => void;
   }
@@ -36,6 +37,11 @@ function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null):
       composer.researchAction();
       return;
     case 'deepResearch':
+      composer.deepResearchAction();
+      return;
+    case 'analyze':
+      composer.analyzeAction();
+      return;
     case 'exam':
       composer.toggleExtensionByKey(action);
       return;
@@ -68,6 +74,10 @@ export function useComposerToolsDispatch(): {
     pick: (action: ComposerToolsAction) => {
       const snap = getComposerToolsSnapshot();
       dispatchAction(action, snap.mode);
+      const trigger = snap.triggerId ? document.getElementById(snap.triggerId) : null;
+      if (trigger && snap.mode && typeof window.toggleComposerTools === 'function') {
+        window.toggleComposerTools(trigger, snap.mode);
+      }
     },
   };
 }

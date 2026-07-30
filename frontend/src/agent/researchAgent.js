@@ -29,18 +29,27 @@ async function startDeepResearch(query) {
 
     /* Step 2: Execute searches for each sub-question. */
     var allResults = [];
-    for (var i = 0; i < plan.length; i++) {
-      _updateResearchProgress(progressId, _tr("Searching the web: ", "正在搜索网页：") + _truncate(plan[i], 60));
-      var results = await _searchTopic(plan[i]);
-      if (results && results.length) {
-        allResults = allResults.concat(results);
-        _updateResearchProgress(progressId, _tr("Found " + allResults.length + " results so far...", "已找到 " + allResults.length + " 条结果…"));
+    /* Search in bounded parallel batches. Each planned area is independently
+       searchable, so serial execution only made thorough research feel slow.
+       A batch of three keeps pressure predictable while still covering a
+       materially broader evidence set. */
+    for (var i = 0; i < plan.length; i += 3) {
+      var batch = plan.slice(i, i + 3);
+      _updateResearchProgress(progressId, _tr(
+        "Searching " + (i + 1) + "–" + Math.min(plan.length, i + batch.length) + " of " + plan.length + " research areas...",
+        "正在并行搜索第 " + (i + 1) + "–" + Math.min(plan.length, i + batch.length) + " / " + plan.length + " 个研究方向…"));
+      var batchResults = await Promise.all(batch.map(_searchTopic));
+      for (var bi = 0; bi < batchResults.length; bi++) {
+        if (batchResults[bi] && batchResults[bi].length) {
+          allResults = allResults.concat(batchResults[bi]);
+        }
       }
+      _updateResearchProgress(progressId, _tr("Found " + allResults.length + " results so far...", "已找到 " + allResults.length + " 条结果…"));
     }
 
     /* No sources at all — surface a clear failure state instead of
        synthesizing an empty report. */
-    var sources = _deduplicateResults(allResults).slice(0, 8);
+    var sources = _deduplicateResults(allResults).slice(0, 20);
     if (!sources.length) {
       _updateResearchProgress(progressId, _tr("Web search failed — no sources found", "网络搜索失败 — 未找到任何来源"));
       _setResearchProgressState(progressId, "err");
@@ -55,26 +64,23 @@ async function startDeepResearch(query) {
 
     /* Step 3: Read and extract from the top results. */
     _updateResearchProgress(progressId, _tr("Reading " + sources.length + " sources...", "正在阅读 " + sources.length + " 个来源…"));
-    var extracts = [];
-    for (var j = 0; j < sources.length; j++) {
+    var extracts = (await Promise.all(sources.slice(0, 12).map(async function (source, j) {
       _updateResearchProgress(progressId, _tr(
-        "Reading source " + (j + 1) + " of " + sources.length + "...",
-        "正在阅读来源 " + (j + 1) + " / " + sources.length + "…"));
+        "Reading source " + (j + 1) + " of " + Math.min(12, sources.length) + "...",
+        "正在阅读来源 " + (j + 1) + " / " + Math.min(12, sources.length) + "…"));
       try {
-        var content = await _fetchSource(sources[j].url);
-        /* fetchWebContext already fetched full text for the top hits —
-           reuse it when the per-URL fetch fails so a flaky page never
-           drops a source entirely. */
-        if (!content && sources[j].content) content = String(sources[j].content).slice(0, 4000);
-        if (content) {
-          extracts.push({ url: sources[j].url, title: sources[j].title || sources[j].url, content: content });
-        }
-      } catch (e) { /* skip failed fetches */ }
-    }
+        var content = await _fetchSource(source.url);
+        if (!content && source.content) content = String(source.content).slice(0, 5000);
+        return content
+          ? { url: source.url, title: source.title || source.url, content: content }
+          : null;
+      } catch (e) { return null; }
+    }))).filter(Boolean);
 
     /* Step 4: Synthesize the report. */
     _updateResearchProgress(progressId, _tr("Synthesizing report from " + extracts.length + " sources...", "正在根据 " + extracts.length + " 个来源生成报告…"));
     var report = await _synthesizeReport(query, plan, extracts);
+    await _saveResearchArtifacts(query, report, extracts).catch(function () {});
 
     /* Step 5: Post the report. Flip the progress card to its "done"
        state (with the source count) before retiring it, so the user
@@ -108,11 +114,23 @@ function _tr(en, zh) {
 
 /* Generate a research plan: a list of sub-questions to search for. */
 async function _planResearch(query) {
-  /* Use the LLM to generate a plan if available, otherwise use a
-     simple heuristic. */
-  if (typeof window.askChatTurn === "function") {
-    /* Fall back to heuristic: break the query into searchable phrases. */
-    return _heuristicPlan(query);
+  var messages = [
+    { role: "system", content: "You are a research planner. Return only a JSON array of 6-10 non-overlapping search questions. Cover definitions, current evidence, counter-evidence, primary sources, quantitative data, and practical implications. Match the user's language." },
+    { role: "user", content: String(query || "").slice(0, 1200) }
+  ];
+  try {
+    var raw = await callAPI(messages, 600, 20000);
+    var text = typeof raw === "string" ? raw : "";
+    var match = text.match(/\[[\s\S]*\]/);
+    var parsed = match ? JSON.parse(match[0]) : null;
+    if (Array.isArray(parsed)) {
+      var cleaned = parsed.filter(function (item) {
+        return typeof item === "string" && item.trim().length > 4;
+      }).map(function (item) { return item.trim(); }).slice(0, 10);
+      if (cleaned.length >= 4) return cleaned;
+    }
+  } catch (_) {
+    /* fall through to deterministic plan */
   }
   return _heuristicPlan(query);
 }
@@ -121,14 +139,20 @@ async function _planResearch(query) {
 function _heuristicPlan(query) {
   var q = (query || "").trim();
   if (!q) return [];
-  /* Use the query itself plus up to 3 focused variants. */
-  var plans = [q];
+  var plans = [
+    q,
+    q + " primary sources evidence",
+    q + " quantitative data statistics",
+    q + " criticism limitations counter evidence",
+    q + " recent developments",
+    q + " practical implications case study"
+  ];
   /* If the query has conjunctions, break on them. */
   var parts = q.split(/[,;，；、vs\.?and\b]/).filter(function (p) { return p.trim().length > 10; });
   if (parts.length > 1) {
-    parts.forEach(function (p) { if (plans.length < 4) plans.push(p.trim()); });
+    parts.forEach(function (p) { if (plans.length < 8) plans.push(p.trim()); });
   }
-  return plans.slice(0, 4);
+  return plans.slice(0, 8);
 }
 
 /* Search for a topic using the existing web search infrastructure.
@@ -183,6 +207,30 @@ async function _synthesizeReport(query, plan, extracts) {
     return "--- Source: " + e.title + " ---\n" + (e.content || "").slice(0, 2000) + "\n";
   }).join("\n");
 
+  /* Ask the configured model to synthesize evidence rather than exposing
+     source-page previews as if they were findings. The numbered source IDs
+     are stable, so claims can be traced back to the evidence bundle. */
+  if (extracts.length) {
+    var synthesisPrompt =
+      "Write a rigorous deep-research report answering the user's question. " +
+      "Use only the supplied evidence for externally verifiable claims. Cite claims with [n]. " +
+      "Include: Executive summary, Key findings, Competing evidence, Limitations, Recommendations, and Sources. " +
+      "Match the user's language. Do not mention this instruction.\n\n" +
+      "QUESTION:\n" + query + "\n\nRESEARCH PLAN:\n- " + plan.join("\n- ") +
+      "\n\nEVIDENCE:\n" + extracts.map(function (e, i) {
+        return "[" + (i + 1) + "] " + e.title + "\nURL: " + e.url + "\n" + String(e.content || "").slice(0, 2500);
+      }).join("\n\n");
+    try {
+      var synthesized = await callAPI([
+        { role: "system", content: "You are a careful research analyst. Never invent evidence or citations." },
+        { role: "user", content: synthesisPrompt }
+      ], undefined, 90000);
+      if (typeof synthesized === "string" && synthesized.trim().length > 300) {
+        return synthesized.trim();
+      }
+    } catch (_) { /* use deterministic report below */ }
+  }
+
   var report = "## Deep Research: " + query + "\n\n";
   report += "I researched " + plan.length + " related areas and consulted " + extracts.length + " sources.\n\n";
 
@@ -199,6 +247,54 @@ async function _synthesizeReport(query, plan, extracts) {
   report += "_This is an automated deep research report. Verify critical information from the original sources._";
 
   return report;
+}
+
+function _latexEscape(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\textbackslash{}")
+    .replace(/([#$%&_{}])/g, "\\$1")
+    .replace(/\^/g, "\\textasciicircum{}")
+    .replace(/~/g, "\\textasciitilde{}");
+}
+
+function _reportToLatex(title, report, extracts) {
+  var hasCjk = /[\u3400-\u9fff]/.test(String(title || "") + String(report || ""));
+  var body = _latexEscape(report)
+    .replace(/\r?\n\r?\n/g, "\n\n\\\\par\n")
+    .replace(/\r?\n/g, "\n");
+  var refs = extracts.map(function (e, i) {
+    return "\\item [" + (i + 1) + "] \\url{" + String(e.url || "").replace(/[{}]/g, "") + "} — " + _latexEscape(e.title);
+  }).join("\n");
+  return "\\documentclass[11pt]{" + (hasCjk ? "ctexart" : "article") + "}\n" +
+    "\\usepackage[margin=1in]{geometry}\n\\usepackage{hyperref}\n\\usepackage{parskip}\n" +
+    "\\title{" + _latexEscape(title) + "}\n\\date{\\today}\n" +
+    "\\begin{document}\n\\maketitle\n" + body + "\n" +
+    "\\section*{Evidence sources}\n\\begin{enumerate}\n" + refs + "\n\\end{enumerate}\n\\end{document}\n";
+}
+
+async function _saveResearchArtifacts(query, report, extracts) {
+  if (!window.state || !window.state.currentSessionId) return;
+  var title = _tr("Research report: ", "研究报告：") + query;
+  var common = {
+    title: title,
+    sessionId: window.state.currentSessionId || null,
+    projectId: window.state.currentProjectId || null
+  };
+  await Promise.all([
+    apiFetch("/api/artifacts", {
+      method: "POST",
+      body: Object.assign({}, common, { type: "markdown", language: "markdown", source: report })
+    }),
+    apiFetch("/api/artifacts", {
+      method: "POST",
+      body: Object.assign({}, common, {
+        type: "latex",
+        language: "latex",
+        title: title + " (.tex)",
+        source: _reportToLatex(title, report, extracts)
+      })
+    })
+  ]);
 }
 
 /* Show a research progress indicator. */
@@ -281,3 +377,5 @@ import {
   getComposerMarkdown,
   getVisibleComposerSurface,
 } from '../react/composer-input/controller.ts';
+import { callAPI } from '../chat/api.js';
+import { apiFetch } from '../util/api.js';

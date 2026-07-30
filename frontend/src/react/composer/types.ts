@@ -14,6 +14,7 @@ export type ComposerToolsAction =
   | 'write'
   | 'research'
   | 'deepResearch'
+  | 'analyze'
   | 'exam'
   | 'skills';
 

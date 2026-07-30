@@ -31,7 +31,12 @@ function formatMinutesApi(seconds) {
    about how much thinking the model should do. Centralising the body
    shape here keeps both paths in lock-step. */
 function _chatRequestBodyWithEffort(messages, maxTokens, temperature) {
-  var body = { messages: messages, temperature: temperature, max_tokens: maxTokens };
+  var body = {
+    messages: messages,
+    temperature: temperature,
+    max_tokens: maxTokens,
+    mode: window.appMode === "tutor" ? "tutor" : "chat"
+  };
   var isReasoning = (typeof window.isReasoningProvider === "function" && window.isReasoningProvider());
   if (isReasoning) {
     var effort = (typeof window.getReasoningEffort === "function" && window.getReasoningEffort()) || "medium";

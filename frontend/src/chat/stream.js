@@ -102,7 +102,12 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        * to retry (transient 5xx/429) or fail terminally.
        * Pass body as an object so apiFetchRaw stringifies it and sets
        * Content-Type: application/json — pre-stringified bodies are skipped. */
-      var apiBody={messages:messages,temperature:0.7,max_tokens:maxTokens};
+      var apiBody={
+        messages:messages,
+        temperature:0.7,
+        max_tokens:maxTokens,
+        mode:window.appMode==="tutor"?"tutor":"chat"
+      };
       /* P_chat-bridge-defence — call isReasoningProvider via the
          window getter inside a typeof guard so a missing bridge
          binding surfaces as "no reasoning flag" (safe) rather than

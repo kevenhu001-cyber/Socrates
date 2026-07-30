@@ -57,6 +57,8 @@ export interface LegacyComposer {
   openAttachmentPicker(mode: string): void;
   composeAction(): void;
   researchAction(): void;
+  deepResearchAction(): void;
+  analyzeAction(): void;
   toggleExtensionByKey(key: string): void;
   removeAttachment(id: string): void;
   renderAttachmentChips?(): void;

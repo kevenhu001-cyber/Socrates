@@ -39,6 +39,7 @@ function render(el) {
   var pen = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
   var search = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>';
   var spark = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z"/></svg>';
+  var analyze = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/><path d="m4 7 6-4 6 7 5-4"/></svg>';
   var skills = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg>';
   el.innerHTML =
     item("upload", upload, label("composer.menu.upload", "Upload files"), "") +
@@ -46,6 +47,7 @@ function render(el) {
     item("write", pen, label("composer.write", "Write or edit"), "") +
     item("research", search, label("composer.research", "Find resources"), "") +
     item("deepResearch", spark, label("composer.deepResearch", "Deep Research"), "") +
+    item("analyze", analyze, label("composer.analyze", "Analyze data"), "") +
     item("exam", spark, label("composer.exam", "Generate exam"), "") +
     '<div class="composer-tools-divider"></div>' +
     item("skills", skills, label("composer.menu.skills", "Skills & shortcuts"), label("composer.menu.skillsHint", "Create your own"));
@@ -113,15 +115,17 @@ if (typeof document !== "undefined") {
   document.addEventListener("click", function (event) {
     var el = document.getElementById(MENU_ID);
     if (!el || el.classList.contains("hidden")) return;
-    var action = event.target.closest && event.target.closest("[data-action]");
+    var action = event.target.closest && event.target.closest("[data-action],[data-composer-action]");
     if (action && el.contains(action)) {
       var mode = activeTrigger && activeTrigger.dataset.composerMode;
-      var kind = action.dataset.action;
+      var kind = action.dataset.composerAction || action.dataset.action;
       close();
       if (kind === "upload" && typeof window.openAttachmentPicker === "function") window.openAttachmentPicker(mode === "topic" ? "topicAttachInput" : "attachInput");
       if (kind === "write" && typeof window.composeAction === "function") window.composeAction();
       if (kind === "research" && typeof window.researchAction === "function") window.researchAction();
-      if ((kind === "deepResearch" || kind === "exam") && typeof window.toggleExtensionByKey === "function") window.toggleExtensionByKey(kind);
+      if (kind === "analyze" && typeof window.analyzeAction === "function") window.analyzeAction();
+      if (kind === "deepResearch" && typeof window.deepResearchAction === "function") window.deepResearchAction();
+      if (kind === "exam" && typeof window.toggleExtensionByKey === "function") window.toggleExtensionByKey(kind);
       if (kind === "skills" && typeof window.openPromptTemplatesModal === "function") window.openPromptTemplatesModal();
       return;
     }

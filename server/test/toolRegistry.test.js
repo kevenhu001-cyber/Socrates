@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createToolRegistry } from '../src/services/toolRegistry.js';
 
-test('tool registry exposes native visuals by default and disables tutor search', () => {
+test('tool registry exposes the same native search and visual tools in tutor mode', () => {
   const chat = createToolRegistry({ codeInterpreterToolDef: { function: { name: 'code_interpreter' } }, mode: 'chat' });
   assert.deepEqual(chat.definitions.map((tool) => tool.function.name), ['code_interpreter', 'render_visualization', 'web_search', 'arxiv_search']);
   const tutor = createToolRegistry({ codeInterpreterToolDef: null, mode: 'tutor' });
-  assert.deepEqual(tutor.definitions.map((tool) => tool.function.name), ['render_visualization', 'arxiv_search']);
+  assert.deepEqual(tutor.definitions.map((tool) => tool.function.name), ['render_visualization', 'web_search', 'arxiv_search']);
   assert.equal(chat.get('code_interpreter').sessionSerial, true);
   assert.equal(chat.get('render_visualization').pure, true);
 });
