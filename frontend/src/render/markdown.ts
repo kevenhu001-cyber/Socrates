@@ -179,8 +179,17 @@ function renderStreamMarkdown(value: string, empty = '…'): string {
 function streamCard(tag: string, content: string): string {
   const cls = STREAM_SCAFFOLD_CLASSES[tag] || 'scaffold-stream';
   const label = STREAM_SCAFFOLD_FALLBACK[tag] || '[' + tag + ']';
+  /* The interactive scaffolds (quiz / example / practice) render WITHOUT a
+   * badge in the final mounted widget. Skipping the badge here keeps the
+   * streaming preview pixel-compatible with the final render, so the
+   * finish() swap is imperceptible instead of "a labelled card losing its
+   * label". Static scaffolds (key-point, theorem, …) keep the badge —
+   * their final widgets carry an equivalent label element. */
+  const badge = (tag === 'quiz' || tag === 'example' || tag === 'practice')
+    ? ''
+    : '<span class="scaffold-stream-label">' + escHTML(label) + '</span>';
   return '<div class="' + cls + ' scaffold-stream-live" data-scaffold-live="' + escAttr(tag) + '">' +
-    '<span class="scaffold-stream-label">' + escHTML(label) + '</span>' + content + '</div>';
+    badge + content + '</div>';
 }
 
 function renderStreamScaffoldPreview(tag: string, inner: string, attrs = ''): string | null {
@@ -281,7 +290,9 @@ function renderStreamScaffoldPreview(tag: string, inner: string, attrs = ''): st
     return streamCard(tag,
       '<div class="inline-quiz-q">' + renderStreamMarkdown(q, 'Question') + '</div>' +
       (options.length ? '<div class="inline-quiz-opts">' + options.join('') + '</div>' : '') +
-      '<div class="inline-quiz-feedback scaffold-stream-live-status"><span class="shimmer-text">…</span></div>');
+      /* Final mounted quiz has an empty feedback div — mirror it exactly so
+       * the live preview and the final widget are structurally identical. */
+      '<div class="inline-quiz-feedback"></div>');
   }
 
   return streamCard(tag, escHTML(streamPlainPreview(inner)));

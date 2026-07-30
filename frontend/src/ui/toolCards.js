@@ -406,6 +406,10 @@ export function appendToolModule(toolName, toolInput, body, opts) {
   head.addEventListener("keydown", function (event) {
     if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleCard(); }
   });
+  // Mark the card as live-wired so the delegated fallback toggle below
+  // (for cards revived from serialized session HTML, which lose their
+  // listeners) does not double-toggle this one.
+  card.dataset.wired = "1";
 
   // Auto-open the body once there's content. Cards that begin as
   // "code is empty" stay closed until the live stream starts
@@ -419,6 +423,31 @@ export function appendToolModule(toolName, toolInput, body, opts) {
   syncToolCopyActions(card);
   if (typeof window.scrollMainToBottom === "function") window.scrollMainToBottom();
   return card.querySelector(".agent-tool-out");
+}
+
+/* Delegated fallback expand/collapse. Tool cards that are re-created from
+   persisted message HTML (history replay, share view, React handoff of a
+   serialized bubble) arrive WITHOUT the per-card listeners attached by
+   appendToolModule — innerHTML round-trips drop them — which made those
+   cards impossible to expand. One document-level listener restores the
+   affordance for any un-wired card; live cards (data-wired="1") keep
+   their own handler and are skipped here to avoid double-toggling. */
+if (typeof document !== "undefined" && !document.__socratesToolCardDelegate) {
+  document.__socratesToolCardDelegate = true;
+  document.addEventListener("click", function (ev) {
+    var target = ev.target;
+    var head = target && target.closest && target.closest(".agent-tool-head");
+    if (!head) return;
+    var card = head.closest(".agent-tool-card");
+    if (!card || card.dataset.wired === "1") return;
+    if (target.closest && target.closest(".agent-tool-action")) return;
+    var bodyEl = card.querySelector(".agent-tool-body");
+    if (!bodyEl) return;
+    var open = card.classList.toggle("open");
+    head.setAttribute("aria-expanded", open ? "true" : "false");
+    bodyEl.hidden = !open;
+    if (open) card.dispatchEvent(new CustomEvent("tool-details-opened"));
+  });
 }
 
 /* Update the code block of an existing tool card. Called by the
