@@ -53,3 +53,35 @@ test('pressing Enter in the topic input starts the session', async ({ page }) =>
   await expect(page.locator('#chatView')).toBeVisible();
   await expect(page.locator('#msgList .msg.user')).toContainText('Enter should send this topic');
 });
+
+// Regression (P_deep-research-view): with the Deep Research extension enabled,
+// clicking Start on the landing screen used to early-return into
+// launchDeepResearch(), which posted agent output into the still-hidden
+// #msgList while topicSetup stayed up — the button looked dead. Starting a
+// deep-research session must switch to #chatView, commit the user bubble, and
+// hand the topic to startDeepResearch exactly once.
+test('Deep Research extension: Start on landing enters chat and runs research', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  // Stub the research agent so the test asserts routing, not the full
+  // plan/search/synthesize pipeline.
+  await page.evaluate(() => {
+    window.__researchCalls = [];
+    window.startDeepResearch = (q) => { window.__researchCalls.push(q); return Promise.resolve('report'); };
+    window.deepResearchOn = true;
+  });
+
+  const topicInput = page.locator('#topicComposerRoot .rich-composer-editor').first();
+  await topicInput.fill('history of the printing press');
+  await page.waitForTimeout(150);
+  await page.locator('button.start-btn, .start-btn').first().click();
+
+  await expect(page.locator('#topicSetup')).toBeHidden();
+  await expect(page.locator('#chatView')).toBeVisible();
+  await expect(page.locator('#msgList .msg.user')).toContainText('history of the printing press');
+
+  await expect.poll(() => page.evaluate(() => window.__researchCalls || [])).toEqual(['history of the printing press']);
+});
