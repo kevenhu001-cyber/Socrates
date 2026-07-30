@@ -39,6 +39,8 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
       'event: tool_use\ndata: [{"id":"code-1","name":"code_interpreter","input":{"language":"python","code":"import matplotlib.pyplot as plt\\nplt.plot([0, 1])\\nplt.savefig(\u0027artifacts/plot.png\u0027)"}}]\n\n',
       'event: tool_progress\ndata: {"id":"code-1","phase":"ready","chunk":"","elapsedMs":5}\n\n',
       'event: tool_result\ndata: {"id":"code-1","ok":true,"status":"completed","output":"answer: 42","stderr":"","durationMs":15,"artifacts":[{"id":"plot-1","mimeType":"image/png"}]}\n\n',
+      'event: tool_use\ndata: [{"id":"notion-error","name":"notion_search_pages","input":{"query":"missing page"}}]\n\n',
+      'event: tool_result\ndata: {"id":"notion-error","ok":false,"status":"failed","output":"","error":"not_connected","userMessage":"Notion is not connected.","detail":"Connect Notion in the Plugins panel."}\n\n',
       'data: {"choices":[{"delta":{"content":"Completed the requested work."}}]}\n\n',
       'data: [DONE]\n\n',
     ].join('');
@@ -68,6 +70,28 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   // artifact image should be visible inline in the message body.
   await expect(bubble.locator('.thinking-status')).toHaveCount(0);
   await expect(bubble.locator('img.exec-artifact-image')).toBeVisible();
+
+  const searchRow = bubble.locator('.tool-inline[data-tcid="search-1"]');
+  const codeRow = bubble.locator('.tool-inline[data-tcid="code-1"]');
+  const errorRow = bubble.locator('.tool-inline[data-tcid="notion-error"]');
+  await expect(searchRow).toHaveAttribute('data-expandable', '1');
+  await expect(codeRow).toHaveAttribute('data-expandable', '1');
+  await expect(errorRow).toHaveAttribute('data-expandable', '1');
+
+  await searchRow.locator('summary').click();
+  await expect(searchRow).toHaveAttribute('open', '');
+  await expect(searchRow.locator('.tool-inline-sources')).toContainText('Trusted source');
+  await expect(searchRow.locator('.tool-inline-src[href]')).toHaveCount(1);
+
+  await codeRow.locator('summary').click();
+  await expect(codeRow).toHaveAttribute('open', '');
+  await expect(codeRow.locator('[data-kind="input"]')).toContainText('matplotlib');
+  await expect(codeRow.locator('[data-kind="output"]')).toContainText('answer: 42');
+
+  await errorRow.locator('summary').click();
+  await expect(errorRow).toHaveAttribute('open', '');
+  await expect(errorRow.locator('[data-kind="error"]')).toContainText('Notion is not connected');
+  await expect(errorRow.locator('[data-kind="technical"]')).toContainText('Connect Notion');
 });
 
 test('inline tool rows never split an unfinished sentence', async ({ page }) => {

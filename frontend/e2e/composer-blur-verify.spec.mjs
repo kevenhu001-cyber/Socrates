@@ -52,6 +52,49 @@ test('click-send blurs the composer; Enter-send keeps focus', async ({ page }) =
   expect(await focusInComposer(page), 'Enter-send must keep composer focus').toBe(true);
 });
 
+test('click-send blurs before asynchronous attachment preparation finishes', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route(/\/api\/vision\/describe(?:\?|$)/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ description: 'A delayed test image.' }),
+    });
+  });
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, (route) => route.fulfill({
+    status: 200, contentType: 'text/event-stream', body: 'data: [DONE]\n\n',
+  }));
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await enterChat(page);
+
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.fill('send with a slow image');
+  await page.evaluate(() => {
+    window.attachments.push({
+      id: 'blur-delay-image',
+      kind: 'image',
+      name: 'slow.png',
+      mime: 'image/png',
+      size: 16,
+      dataUrl: 'data:image/png;base64,iVBORw0KGgo=',
+    });
+  });
+  await editor.focus();
+  await page.locator('#sendBtn').click();
+
+  // The vision request is still pending here. Focus and selection must
+  // already be gone rather than waiting for buildMessageContent().
+  await page.waitForTimeout(80);
+  expect(await focusInComposer(page)).toBe(false);
+  const selectionCleared = await page.evaluate(() => {
+    const selection = window.getSelection();
+    return !selection || selection.rangeCount === 0;
+  });
+  expect(selectionCleared).toBe(true);
+});
+
 test('chat-input-wrap transitions cover focus geometry', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
@@ -66,4 +109,5 @@ test('chat-input-wrap transitions cover focus geometry', async ({ page }) => {
   for (const prop of ['border-color', 'box-shadow', 'min-height', 'padding', 'border-radius']) {
     expect(t.property, `transition must include ${prop}`).toContain(prop);
   }
+  expect(t.duration).toContain('0.38s');
 });

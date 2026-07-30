@@ -14,6 +14,15 @@ test('chat prompts define tool results as untrusted data', () => {
   }
 });
 
+test('chat prompts use the server supplied native argument object format', () => {
+  for (const prompt of [CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT]) {
+    assert.match(prompt, /native function calling/i);
+    assert.match(prompt, /argument object directly/i);
+    assert.match(prompt, /never wrap it in `input`, `arguments`/i);
+    assert.doesNotMatch(prompt, /\[(?:web_search|code_interpreter):/i);
+  }
+});
+
 test('chat prompts do not demand disclosure of private chain of thought', () => {
   for (const prompt of [CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT]) {
     assert.doesNotMatch(prompt, /state your reasoning openly|showing your thinking/i);

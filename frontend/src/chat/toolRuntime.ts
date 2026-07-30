@@ -278,7 +278,11 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
 
   function mountInlineRow(entry: ToolCallEntry): void {
     if (findCard(entry.id)) return;
-    const row = createInlineToolRow({ id: entry.id, name: entry.name });
+    const row = createInlineToolRow({
+      id: entry.id,
+      name: entry.name,
+      input: entry.input,
+    });
     try { onInlineTool({ id: entry.id, name: entry.name }, row); } catch (_) { body.appendChild(row); }
   }
 
@@ -806,7 +810,12 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       // discoverable via the session history, so we drop them silently.
       if (mode === 'compact') {
         const row = findInlineRow(entry.id);
-        if (row) settleInlineToolRow(row, result);
+        if (row) {
+          settleInlineToolRow(row, {
+            ...result,
+            output: entry.output || result.output || '',
+          });
+        }
         const attachmentHost = row ? ensureRowAttachmentHost(row, entry.id) : body;
         for (let artifactIndex = 0; artifactIndex < entry.artifacts.length; artifactIndex++) {
           const artifact = entry.artifacts[artifactIndex];

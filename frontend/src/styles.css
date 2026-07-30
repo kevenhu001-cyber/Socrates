@@ -1725,14 +1725,14 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
   padding-top:12px;
   padding-bottom:env(safe-area-inset-bottom, 0px);
 }
-.chat-input-wrap{background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.55);border-radius:24px;overflow:hidden;
+.chat-input-wrap{--composer-motion-duration:.38s;--composer-motion-ease:cubic-bezier(.22,1,.36,1);background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.55);border-radius:24px;overflow:hidden;
   /* Focus-driven geometry (min-height/padding/border-radius/gap jump in the
      desktop :has(:focus) rule below) must glide, not snap. Keep every
      animatable property on the same .35s --ease-out curve as the inner
      .tiptap editor so the wrap and its content expand/collapse in one
      smooth motion. The longer duration gives the blur-out revert a gentle
      deceleration instead of a hard snap. */
-  transition:border-color .35s var(--ease-out),box-shadow .35s var(--ease-out),min-height .35s var(--ease-out),padding .35s var(--ease-out),border-radius .35s var(--ease-out),gap .35s var(--ease-out);margin:0 12px;
+  transition:border-color .24s ease-out,box-shadow .32s var(--composer-motion-ease),min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease);margin:0 12px;
   box-shadow:0 2px 12px hsl(var(--always-black)/8%)}
 .chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.6)}
 #chatInputArea{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(14px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));min-height:24px;max-height:120px;overflow-y:auto;font-family:var(--font-sans);padding:5px 14px 7px}@supports (scrollbar-width:none){#chatInputArea{scrollbar-width:none}}
@@ -2859,6 +2859,12 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .scaffold-stream{margin:10px 0;padding:8px 10px 9px;border:0.5px dashed hsl(var(--border-300)/0.4);border-radius:6px;background:hsl(var(--bg-200)/0.25);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
 .scaffold-stream-label{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:4px;background:hsl(var(--bg-300)/0.6);color:hsl(var(--text-400));font-size:calc(10.5px * var(--app-font-scale, 1));font-weight:600;letter-spacing:0.04em;text-transform:uppercase;vertical-align:1px}
 .scaffold-stream-unclosed{font-style:italic;color:hsl(var(--text-400))}
+.scaffold-stream-live{border-style:solid;color:hsl(var(--text-200))}
+.scaffold-stream-live>.scaffold-stream-label{margin-bottom:6px}
+.inline-key-point.scaffold-stream-live>.scaffold-stream-label{background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000))}
+.scaffold-stream-live-status{min-height:1.1em}
+.scaffold-stream-step-number{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-right:6px;border-radius:50%;background:hsl(var(--bg-300)/0.7);color:hsl(var(--text-400));font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;vertical-align:middle}
+.scaffold-stream-placeholder{color:hsl(var(--text-400))}
 
 /* Knowledge boundary detail panel */
 .kb-node{cursor:pointer}
@@ -3889,21 +3895,34 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
    exact point the tool fired. Minimal: 13px grey text, small icon,
    no border, no background. Expandable only when sources exist. */
 .tool-inline{
-  margin:6px 0;
+  display:block;
+  clear:both;
+  width:100%;
+  box-sizing:border-box;
+  margin:8px 0;
+  border:1px solid transparent;
+  border-radius:12px;
   font-size:13px;
   color:hsl(var(--text-400));
+  transition:background-color .2s ease,border-color .2s ease;
 }
 .tool-inline-head{
   display:flex; align-items:center; gap:7px;
-  padding:2px 0;
+  min-height:32px;
+  padding:5px 8px;
   list-style:none;
-  cursor:default;
+  cursor:pointer;
   -webkit-user-select:none;
   user-select:none;
+  border-radius:11px;
 }
 .tool-inline-head::-webkit-details-marker{display:none}
-.tool-inline[data-expandable="1"] .tool-inline-head{cursor:pointer}
-.tool-inline[data-expandable="1"] .tool-inline-head:hover .tool-inline-label{color:hsl(var(--text-200))}
+.tool-inline-head::marker{display:none;content:""}
+.tool-inline-head:hover{background:hsl(var(--bg-200)/.5)}
+.tool-inline-head:hover .tool-inline-label{color:hsl(var(--text-200))}
+.tool-inline-head:focus-visible{outline:2px solid hsl(var(--accent-000)/.58);outline-offset:-2px}
+.tool-inline[open]{background:hsl(var(--bg-100)/.58);border-color:hsl(var(--border-300)/.34)}
+.tool-inline[open] .tool-inline-head{border-radius:11px 11px 0 0}
 .tool-inline-icon{
   display:inline-flex; align-items:center; justify-content:center;
   width:16px; height:16px; flex:0 0 auto;
@@ -3922,7 +3941,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .tool-inline[data-state="done"] .tool-inline-tool-icon{color:hsl(var(--accent-000))}
 .tool-inline[data-state="error"] .tool-inline-tool-icon{color:hsl(0 58% 52%)}
 .tool-inline[data-state="stopped"] .tool-inline-tool-icon{color:hsl(35 58% 48%)}
-.tool-inline-label{color:inherit}
+.tool-inline-label{min-width:0;color:inherit}
 .tool-inline[data-state="running"] .tool-inline-icon{display:none}
 .tool-inline[data-state="running"] .tool-inline-label,
 .shimmer-text{
@@ -3937,9 +3956,9 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   0%{background-position:180% 0}
   100%{background-position:-20% 0}
 }
-.tool-inline-meta{color:hsl(var(--text-500));font-size:12px}
+.tool-inline-meta{margin-left:auto;color:hsl(var(--text-500));font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .tool-inline-chev{
-  display:none;
+  display:inline-block;
   flex:0 0 auto;
   border-right:1.5px solid currentColor;
   border-bottom:1.5px solid currentColor;
@@ -3948,11 +3967,45 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   margin-left:2px;
   margin-top:-3px;
   color:hsl(var(--text-500));
-  transition:transform .15s ease;
+  transition:transform .24s cubic-bezier(.4,0,.2,1),color .2s ease;
 }
-.tool-inline[data-expandable="1"] .tool-inline-chev{display:inline-block}
 .tool-inline[open] .tool-inline-chev{transform:rotate(225deg);margin-top:3px}
-.tool-inline-detail{padding:2px 0 4px 23px}
+.tool-inline-detail{
+  padding:8px 10px 10px 31px;
+  border-top:1px solid hsl(var(--border-300)/.22);
+  animation:tool-inline-detail-enter .2s var(--composer-motion-ease,cubic-bezier(.22,1,.36,1));
+}
+@keyframes tool-inline-detail-enter{
+  from{opacity:0;transform:translateY(-3px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.tool-inline-detail-section + .tool-inline-detail-section{margin-top:10px}
+.tool-inline-detail-title{
+  margin-bottom:5px;
+  color:hsl(var(--text-500));
+  font:600 calc(10px * var(--app-font-scale,1))/1.2 var(--font-sans);
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+.tool-inline-detail-value{
+  max-height:280px;
+  margin:0;
+  padding:8px 10px;
+  overflow:auto;
+  border:1px solid hsl(var(--border-300)/.24);
+  border-radius:9px;
+  background:hsl(var(--bg-200)/.52);
+  color:hsl(var(--text-300));
+  font:400 calc(11.5px * var(--app-font-scale,1))/1.55 var(--font-mono);
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.tool-inline-detail-section[data-kind="error"] .tool-inline-detail-value,
+.tool-inline-detail-section[data-kind="technical"] .tool-inline-detail-value{
+  border-color:hsl(0 58% 52%/.22);
+  background:hsl(0 58% 52%/.055);
+}
+.tool-inline-detail-empty{margin:0;color:hsl(var(--text-500));font-size:12px}
 .tool-inline-sources{display:flex;flex-direction:column;gap:2px}
 .tool-inline-src{
   display:flex;align-items:baseline;gap:8px;
@@ -4095,7 +4148,7 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
   .rich-composer[data-surface="chat"] .tiptap{
     min-height:44px;max-height:132px;padding:10px 8px;
     font-size:calc(16px * var(--app-font-scale,1));line-height:1.5;
-    transition:min-height .35s var(--ease-out),padding .35s var(--ease-out);
+    transition:min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease);
   }
   .chat-input-footer .attach-btn{width:40px;height:40px}
   .chat-input-footer .attach-btn svg{width:22px;height:22px}
@@ -4113,14 +4166,14 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
     /* Slightly longer .35s with a gentle ease-out curve gives the focus-in
        expansion a smooth ramp and the blur-out collapse a soft deceleration
        instead of a hard snap. Include gap so reordered children glide. */
-    transition:min-height .35s var(--ease-out),padding .35s var(--ease-out),border-radius .35s var(--ease-out),box-shadow .35s var(--ease-out),gap .35s var(--ease-out);
+    transition:border-color .24s ease-out,min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),box-shadow .32s var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease);
   }
   .chat-input-wrap .chat-input-footer,
   .chat-input-wrap .footer-left-group{display:contents}
   .chat-input-wrap .footer-left-group .attach-btn{order:1}
   .chat-input-wrap .composer-editor-root{
     order:2;flex:1 1 160px;width:auto;min-width:0;
-    transition:flex-basis .35s var(--ease-out),width .35s var(--ease-out);
+    transition:flex-basis var(--composer-motion-duration) var(--composer-motion-ease),width var(--composer-motion-duration) var(--composer-motion-ease);
   }
   .chat-input-wrap .footer-left-group .effort-picker{display:none;order:3}
   .chat-input-wrap .send-btn{order:4}
@@ -4135,7 +4188,7 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
     min-height:42px;max-height:150px;padding:9px 7px;font-size:16px;
     /* Same duration/curve as .chat-input-wrap so the editor grows in
        lockstep with its shell instead of finishing early. */
-    transition:min-height .35s var(--ease-out),padding .35s var(--ease-out);
+    transition:min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease);
   }
   .chat-input-wrap:has(.rich-composer-editor:focus){
     min-height:116px;padding:8px;border-radius:26px;gap:4px 3px;
@@ -4156,6 +4209,7 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
     min-height:38px;padding:7px 8px;border-radius:18px;
   }
   .topic-input-wrap .rich-composer .tiptap{font-size:16px;min-height:74px}
+  .tool-inline-detail{padding-left:10px}
 }
 .attach-btn:focus-visible,.send-btn:focus-visible{outline:2px solid hsl(var(--accent-000)/.65);outline-offset:2px}
 @media(max-width:768px){

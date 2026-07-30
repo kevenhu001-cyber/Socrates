@@ -67,6 +67,13 @@ test('loading an old conversation rebuilds scaffold widgets and visualizations',
   await expect(page.locator('.visualization-card')).toContainText('Restored parabola');
   await expect(page.locator('.visualization-card svg path')).not.toHaveCount(0);
   await expect(page.locator('#msgList')).not.toContainText('stale snapshot without dynamic content');
+
+  const restoredTool = page.locator('#msgList .agent-tool-card[data-tool="render_visualization"]');
+  await expect(restoredTool).toHaveCount(1);
+  await restoredTool.locator('.agent-tool-head').click();
+  await expect(restoredTool.locator('.agent-tool-head')).toHaveAttribute('aria-expanded', 'true');
+  await expect(restoredTool.locator('.agent-tool-body')).toBeVisible();
+  await expect(restoredTool.locator('.agent-tool-out')).toContainText('Visualization ready');
 });
 
 const INLINE_SESSION_ID = '33333333-3333-4333-8333-333333333333';

@@ -6,7 +6,7 @@
    formatTickSlice — convenience wrapper for the type-tick slider.
    All three exported for use by main.js / doRender / streaming. */
 
-import { esc, escAttr, escHTML, KATEX_MACROS, safeHljsLang } from './helpers.js';
+import { decodeEntities, esc, escAttr, escHTML, KATEX_MACROS, safeHljsLang, stripTags } from './helpers.js';
 import { renderMermaid, renderViz, renderVizLoading, renderPlot } from './viz.js';
 import { preprocessMarkdown, preprocessMarkdownForStreaming } from './preprocess.js';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
@@ -111,6 +111,171 @@ function findStreamScaffold(name: string): StreamScaffoldPlugin | null {
     if (STREAM_SCAFFOLD_PLUGINS[i].name === name) return STREAM_SCAFFOLD_PLUGINS[i];
   }
   return null;
+}
+
+/* ------------------------------------------------------------------
+ * Built-in scaffold previews
+ *
+ * The stream renderer used to replace every scaffold with a small text
+ * badge until the final pass. That made a perfectly valid <key-point>
+ * look like plain prose while it was arriving, and the React handoff
+ * could preserve that temporary DOM forever. Keep the extension registry
+ * above for custom tools, but give the Tutor scaffolds a tolerant,
+ * incremental renderer here. It accepts both complete fields and fields
+ * whose closing tag has not arrived yet.
+ * ------------------------------------------------------------------ */
+
+const STREAM_SCAFFOLD_CLASSES: Record<string, string> = {
+  quiz: 'inline-quiz',
+  example: 'inline-example',
+  practice: 'inline-practice',
+  definition: 'inline-definition',
+  step: 'scaffold-stream',
+  flashcard: 'inline-flashcard',
+  proof: 'inline-proof',
+  theorem: 'inline-theorem',
+  'key-point': 'inline-key-point',
+  derivation: 'inline-derivation',
+};
+
+function streamField(inner: string, name: string): string {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = String(inner || '').match(
+    new RegExp('<' + escapedName + '\\b[^>]*>([\\s\\S]*?)(?:</' + escapedName + '>|$)', 'i'),
+  );
+  return match ? decodeEntities(match[1].trim()) : '';
+}
+
+function streamAttr(attrs: string, name: string): string {
+  const attrRe = /([a-z][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+  let match: RegExpExecArray | null;
+  while ((match = attrRe.exec(String(attrs || ''))) !== null) {
+    if (match[1].toLowerCase() === name.toLowerCase()) {
+      return decodeEntities(match[2] ?? match[3] ?? '');
+    }
+  }
+  return '';
+}
+
+function streamLeaf(inner: string): string {
+  return decodeEntities(String(inner || '').trim());
+}
+
+function streamPlainPreview(inner: string): string {
+  const text = stripTags(streamLeaf(inner));
+  return text.length > 300 ? text.slice(0, 300) + '…' : text;
+}
+
+function renderStreamMarkdown(value: string, empty = '…'): string {
+  const text = String(value || '').trim();
+  if (!text) return '<span class="scaffold-stream-placeholder shimmer-text">' + escHTML(empty) + '</span>';
+  try {
+    return formatMsgProgressive(text);
+  } catch (_) {
+    return escHTML(text);
+  }
+}
+
+function streamCard(tag: string, content: string): string {
+  const cls = STREAM_SCAFFOLD_CLASSES[tag] || 'scaffold-stream';
+  const label = STREAM_SCAFFOLD_FALLBACK[tag] || '[' + tag + ']';
+  return '<div class="' + cls + ' scaffold-stream-live" data-scaffold-live="' + escAttr(tag) + '">' +
+    '<span class="scaffold-stream-label">' + escHTML(label) + '</span>' + content + '</div>';
+}
+
+function renderStreamScaffoldPreview(tag: string, inner: string, attrs = ''): string | null {
+  if (!STREAM_SCAFFOLD_CLASSES[tag]) return null;
+
+  if (tag === 'key-point') {
+    return streamCard(tag,
+      '<div class="inline-key-point-body">' + renderStreamMarkdown(streamLeaf(inner)) + '</div>');
+  }
+
+  if (tag === 'definition') {
+    const term = streamField(inner, 'term');
+    const body = streamField(inner, 'body');
+    return streamCard(tag,
+      '<div class="inline-definition-term">' + renderStreamMarkdown(term, 'Term') + '</div>' +
+      '<div class="inline-definition-body">' + renderStreamMarkdown(body, 'Definition') + '</div>');
+  }
+
+  if (tag === 'example') {
+    const title = streamField(inner, 'title') || 'Example';
+    const problem = streamField(inner, 'problem');
+    const solution = streamField(inner, 'solution');
+    return streamCard(tag,
+      '<div class="inline-example-title">' + renderStreamMarkdown(title) + '</div>' +
+      '<div class="inline-example-problem">' + renderStreamMarkdown(problem, 'Problem') + '</div>' +
+      (solution ? '<div class="inline-example-solution"><span class="label">Solution</span>' + renderStreamMarkdown(solution) + '</div>' : ''));
+  }
+
+  if (tag === 'practice') {
+    const title = streamField(inner, 'title') || 'Practice';
+    const problem = streamField(inner, 'problem');
+    const hint = streamField(inner, 'hint');
+    return streamCard(tag,
+      '<div class="inline-practice-title">' + renderStreamMarkdown(title) + '</div>' +
+      '<div class="inline-practice-problem">' + renderStreamMarkdown(problem, 'Problem') + '</div>' +
+      (hint ? '<div class="inline-practice-hint"><span class="label">Hint</span>' + renderStreamMarkdown(hint) + '</div>' : ''));
+  }
+
+  if (tag === 'flashcard') {
+    const front = streamField(inner, 'front');
+    const back = streamField(inner, 'back');
+    return streamCard(tag,
+      '<div class="inline-flashcard-front">' + renderStreamMarkdown(front, 'Front') + '</div>' +
+      (back ? '<div class="inline-flashcard-back">' + renderStreamMarkdown(back) + '</div>' : ''));
+  }
+
+  if (tag === 'theorem') {
+    const title = streamField(inner, 'title');
+    const statement = streamField(inner, 'statement');
+    return streamCard(tag,
+      (title ? '<div class="inline-theorem-title">' + renderStreamMarkdown(title) + '</div>' : '') +
+      '<div class="inline-theorem-statement">' + renderStreamMarkdown(statement, 'Statement') + '</div>');
+  }
+
+  if (tag === 'proof') {
+    const title = streamField(inner, 'title');
+    const body = streamField(inner, 'body');
+    return streamCard(tag,
+      (title ? '<div class="inline-proof-title">' + renderStreamMarkdown(title) + '</div>' : '') +
+      '<div class="inline-proof-body">' + renderStreamMarkdown(body, 'Proof') + '</div>');
+  }
+
+  if (tag === 'derivation') {
+    const title = streamField(inner, 'title');
+    const body = streamField(inner, 'body');
+    return streamCard(tag,
+      (title ? '<div class="inline-derivation-title">' + renderStreamMarkdown(title) + '</div>' : '') +
+      '<div class="inline-derivation-body">' + renderStreamMarkdown(body, 'Derivation') + '</div>');
+  }
+
+  if (tag === 'step') {
+    const n = streamAttr(attrs, 'n');
+    const body = streamPlainPreview(inner);
+    return streamCard(tag,
+      '<span class="scaffold-stream-step-number">' + escHTML(n || '·') + '</span>' +
+      (body ? escHTML(body) : '<span class="scaffold-stream-placeholder shimmer-text">…</span>'));
+  }
+
+  if (tag === 'quiz') {
+    const q = streamField(inner, 'q');
+    const options: string[] = [];
+    const optionRe = /<o\s+letter=["']([A-Da-d])["'][^>]*>([\s\S]*?)(?:<\/o>|$)/gi;
+    let match: RegExpExecArray | null;
+    while ((match = optionRe.exec(inner)) !== null) {
+      options.push('<button type="button" class="inline-quiz-opt" disabled>' +
+        '<span class="inline-quiz-opt-letter">' + escHTML(match[1].toUpperCase()) + '.</span>' +
+        '<span class="inline-quiz-opt-text">' + renderStreamMarkdown(decodeEntities(match[2].trim())) + '</span></button>');
+    }
+    return streamCard(tag,
+      '<div class="inline-quiz-q">' + renderStreamMarkdown(q, 'Question') + '</div>' +
+      (options.length ? '<div class="inline-quiz-opts">' + options.join('') + '</div>' : '') +
+      '<div class="inline-quiz-feedback scaffold-stream-live-status"><span class="shimmer-text">…</span></div>');
+  }
+
+  return streamCard(tag, escHTML(streamPlainPreview(inner)));
 }
 
 /* Think-block builder — shared by the streaming and final renderers. */
@@ -278,7 +443,7 @@ export function formatMsgProgressive(t: string | null | undefined): string {
     return save('<div class="scaffold-stream"><span class="scaffold-stream-label">'
                 + label + '</span> ' + escHTML(txt) + '</div>');
   }
-  function _streamScaffold(tag: string, content: string): string {
+  function _streamScaffold(tag: string, content: string, attrs = ''): string {
     const plugin = findStreamScaffold(tag);
     if (plugin) {
       try {
@@ -291,17 +456,15 @@ export function formatMsgProgressive(t: string | null | undefined): string {
         /* Plugin threw — fall through to plain-text preview. */
       }
     }
+    const preview = renderStreamScaffoldPreview(tag, content, attrs);
+    if (preview) return save(preview);
     return _streamScaffoldFallback(tag, content);
   }
-  s = s.replace(/<(quiz|example|practice|definition|flashcard|proof|theorem|key-point|derivation)\b[^>]*>([\s\S]*?)<\/\1>/gi, function (_, tag: string, content: string) {
-    return _streamScaffold(tag, content);
+  s = s.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b([^>]*)>([\s\S]*?)<\/\1>/gi, function (_, tag: string, attrs: string, content: string) {
+    return _streamScaffold(tag, content, attrs);
   });
-  s = s.replace(/<step\b[^>]*>([\s\S]*?)<\/step>/gi, function (_, content: string) {
-    return _streamScaffold('step', content);
-  });
-  s = s.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b[^>]*>([\s\S]*?)$/gi, function (_, tag: string) {
-    const label = STREAM_SCAFFOLD_FALLBACK[tag] || '[' + tag + ']';
-    return save('<span class="scaffold-stream scaffold-stream-unclosed"><span class="scaffold-stream-label shimmer-text">' + label + '</span></span>');
+  s = s.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b([^>]*)>([\s\S]*?)$/gi, function (_, tag: string, attrs: string, content: string) {
+    return _streamScaffold(tag, content, attrs);
   });
 
   s = s.replace(/```mermaid\s*\n?([\s\S]*?)```/g, function (_, code: string) {
