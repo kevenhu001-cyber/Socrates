@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle, login } from './_lib.mjs';
-import { getKeyboardInset, isTrackedInputFocused } from '../src/ui/keyboardViewport.js';
+import { getKeyboardInset, isTrackedInputFocused, measureKeyboardInset } from '../src/ui/keyboardViewport.js';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('normalizes virtual-keyboard measurements without double-counting layout resize', () => {
@@ -11,6 +11,22 @@ test('normalizes virtual-keyboard measurements without double-counting layout re
   // Panned Visual Viewport: offsetTop must reduce the calculated inset.
   expect(getKeyboardInset(844, 560, 24)).toBe(260);
   expect(getKeyboardInset(844, undefined)).toBe(0);
+});
+
+test('measures against the app shell bottom so every keyboard mode gets the exact height', () => {
+  // Overlay mode (iOS Safari, Chrome/Edge Android 108+): the shell stays
+  // at full height while the visual viewport shrinks under the keyboard.
+  expect(measureKeyboardInset(844, { height: 510, offsetTop: 0 }, 844)).toBe(334);
+  // Resize mode (Firefox Android, Capacitor Keyboard.resize:"native"):
+  // 100dvh already shrank the shell — the inset must NOT be added again.
+  expect(measureKeyboardInset(510, { height: 510, offsetTop: 0 }, 510)).toBe(0);
+  // Panned visual viewport: offsetTop reduces the obscured region.
+  expect(measureKeyboardInset(844, { height: 560, offsetTop: 24 }, 844)).toBe(260);
+  // Legacy WebView without VisualViewport: a stuck-100vh shell paired with
+  // a shrunken innerHeight still yields the true keyboard height…
+  expect(measureKeyboardInset(844, null, 510)).toBe(334);
+  // …while an overlay keyboard is invisible there and degrades to 0.
+  expect(measureKeyboardInset(844, null, 844)).toBe(0);
 });
 
 test('recognizes focus inside the nested rich-composer editor', () => {
