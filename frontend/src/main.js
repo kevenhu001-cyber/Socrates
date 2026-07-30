@@ -2730,21 +2730,19 @@ async function startSession(){
   var topic=getComposerMarkdown("topic").trim();
   if(!topic)return;
 
-  /* Deep Research mode — if the extension is active, route the landing
-     topic straight into the research agent instead of starting a normal
-     tutor/chat session. The chip toggles window.deepResearchOn; without
-     this check the Begin button on the landing page would bypass
-     research entirely (P_deep-research-fix). */
+  /* Deep Research mode — if the extension is active, the landing topic
+     is routed to the research agent INSTEAD of a normal first chat turn,
+     but it must still go through the full chat-mode startup below
+     (session id, view swap, user bubble, Recents save). The old code
+     early-returned into launchDeepResearch() here, which posted every
+     agent message into the still-hidden #msgList — the topic screen
+     stayed up and Begin looked like it did nothing (P_deep-research-view). */
   var _deepResearchOn=false;
   try{ _deepResearchOn=!!window.deepResearchOn; }catch(_){}
-  if(_deepResearchOn && typeof window.launchDeepResearch==="function"){
-    window.launchDeepResearch();
-    return;
-  }
 
   var lang=detectLanguage(topic);
   var tutorExploration={enabled:false,count:0};
-  if(appMode==="tutor"){
+  if(appMode==="tutor" && !_deepResearchOn){
     tutorExploration=await requestTutorExploration({
       isZh:(_currentLang==="zh"||lang==="zh"),
     });
@@ -2845,8 +2843,10 @@ async function startSession(){
 
 /* Chat mode: skip diagnostic, KB, mistake book. Go straight to chat
       with a plain-conversation prompt. The first AI turn is a greeting
-      so the user sees something without having to type. */
-  if(appMode==="chat"){
+      so the user sees something without having to type. Deep Research
+      shares this startup (view swap + session bookkeeping) and only
+      swaps the first AI turn for the research agent. */
+  if(appMode==="chat" || _deepResearchOn){
     
     state.kbNodes=[];
     /* diagQuestions/diagAnswers/diagIndex/substantiveCount already
@@ -2896,7 +2896,16 @@ async function startSession(){
        so the same code path works for follow-up messages. Mirror that
        here so the first chat turn behaves identically — including the
        async wrapper that ensures proper microtask ordering. */
-    setTimeout(async function(){ await askChatTurn(state.topic); }, 0);
+    setTimeout(async function(){
+      /* Deep Research first turn — the user bubble is already committed
+         above, so call startDeepResearch (not launchDeepResearch, which
+         would re-read the now-empty composer and post a duplicate). */
+      if(_deepResearchOn && typeof window.startDeepResearch==="function"){
+        await window.startDeepResearch(state.topic);
+        return;
+      }
+      await askChatTurn(state.topic);
+    }, 0);
     return;
   }
 
