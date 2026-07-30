@@ -7,6 +7,11 @@
 // scrollToBottomIfPinned() snaps back to bottom (or preserves the
 // relative scroll position) after a font-size / width change so
 // the user's visible window doesn't end up mid-list.
+//
+// initChatComposerReserve() keeps its legacy public name, but no longer
+// measures the composer into a CSS padding variable. The composer now
+// participates in the chat flex layout, while this controller only
+// preserves bottom-follow intent as the composer or rich content grows.
 
 /* The page's scrollable area is .msg-list (when chat/tutor is
    active) or #mainContent (for the start screen, settings, etc.).
@@ -25,22 +30,24 @@ export function scrollContainer(){
   return document.getElementById("mainContent");
 }
 
-/* Keep the transcript's bottom safe area equal to the composer that is
-   actually on screen. The composer changes height when the mobile editor
-   expands, attachments are added, or text wraps; a fixed CSS padding leaves
-   the last lines underneath the absolutely positioned input bar. */
+/* Keep a reader who was pinned to the bottom of the transcript
+   pinned there as the latest answer renders, attachments expand, or
+   rich content (images, KaTeX, tool cards) settles in. The composer
+   itself no longer needs JS measurement — flex-shrink on `.msg-list`
+   makes room for whatever height the composer naturally takes (see
+   P_chat-reserve in styles.css). The previous function mirrored the bar's
+   height into a CSS variable; with the bar in the flex flow that geometry
+   bookkeeping is gone. Resize observation remains necessary so a reader
+   already at the bottom stays there when the list's flex height changes. */
 export function initChatComposerReserve(options){
   options=options||{};
-  var bar=options.bar||document.getElementById("chatInputBar");
-  var host=options.host||document.getElementById("chatView");
   var list=options.list||document.getElementById("msgList");
-  if(!bar||!host)return function(){};
+  if(!list)return function(){};
 
-  var frame=0;
   var contentFrame=0;
-  var lastHeight=0;
-  var lastReserve=0;
-  var visibleMeasurementReady=false;
+  var layoutFrame=0;
+  var layoutReady=false;
+  var layoutFollowUntil=0;
   var pinSlack=96;
   var lastMetrics=null;
 
@@ -61,49 +68,50 @@ export function initChatComposerReserve(options){
   }
   function rememberMetrics(){
     lastMetrics=readMetrics();
-    if(list){
-      lastReserve=parseFloat(getComputedStyle(list).paddingBottom)||0;
+  }
+  function rememberScrollPosition(){
+    var current=readMetrics();
+    if(!current)return;
+    /* A scroll event can be dispatched after content has already resized but
+       before ResizeObserver reports that resize. Keep the previous geometry
+       baseline and update only scrollTop, otherwise late image/tool growth
+       becomes indistinguishable from an ordinary user scroll. */
+    if(lastMetrics){
+      lastMetrics.scrollTop=current.scrollTop;
+    }else{
+      lastMetrics=current;
     }
   }
-  function followAfterLayout(shouldFollow){
-    if(!list){return}
-    requestAnimationFrame(function(){
-      if(shouldFollow&&!userScrolledAway()){
-        list.scrollTop=list.scrollHeight;
-      }
+
+  function followLayoutUntilSettled(){
+    layoutFrame=0;
+    if(userScrolledAway()||Date.now()>=layoutFollowUntil){
       rememberMetrics();
-    });
+      return;
+    }
+    list.scrollTop=list.scrollHeight;
+    rememberMetrics();
+    layoutFrame=requestAnimationFrame(followLayoutUntilSettled);
   }
-  function measure(){
-    frame=0;
-    var height=Math.ceil(bar.getBoundingClientRect().height);
-    var reserve=list?(parseFloat(getComputedStyle(list).paddingBottom)||0):height;
-    var heightChanged=height!==lastHeight;
-    var reserveChanged=Math.abs(reserve-lastReserve)>=1;
-    if(height<=0||(!heightChanged&&!reserveChanged))return;
-    /* ResizeObserver runs before the new reserve is written. Capture whether
-       the reader was at the old bottom, then restore that intent after the
-       padding changes. Otherwise a multiline composer or attachment strip
-       grows upward over the last answer while scrollTop stays unchanged. */
-    var beforeReserve=reserveChanged&&lastMetrics&&list?{
-      scrollHeight:lastMetrics.scrollHeight,
-      scrollTop:list.scrollTop,
-      clientHeight:lastMetrics.clientHeight
-    }:readMetrics();
-    /* The controller is initialized while #chatView is hidden. Its first
-       non-zero measurement establishes CSS geometry only; treating that as a
-       later composer resize can race with turn/retry positioning and move a
-       freshly rendered anchor after it became visible. */
-    var shouldFollow=visibleMeasurementReady&&wasPinned(beforeReserve);
-    visibleMeasurementReady=true;
-    lastHeight=height;
-    lastReserve=reserve;
-    host.style.setProperty("--chat-input-bar-height",height+"px");
-    followAfterLayout(shouldFollow);
-  }
-  function schedule(){
-    if(frame)return;
-    frame=requestAnimationFrame(measure);
+  function scheduleLayoutFollow(){
+    var previous=lastMetrics;
+    var current=readMetrics();
+    if(!current||current.clientHeight<=0)return;
+    if(!layoutReady){
+      layoutReady=true;
+      lastMetrics=current;
+      return;
+    }
+    var resized=!!previous&&current.clientHeight!==previous.clientHeight;
+    var shouldFollow=resized&&wasPinned(previous);
+    if(!shouldFollow)return;
+    /* Composer and keyboard changes animate for up to ~280ms. A single
+       ResizeObserver callback can land between two transition frames and
+       leave a small stale gap at the end, so follow through a short settle
+       window. Explicit upward input flips _userScrolledAway and stops the
+       loop immediately. Repeated viewport changes extend the deadline. */
+    layoutFollowUntil=Date.now()+450;
+    if(!layoutFrame)layoutFrame=requestAnimationFrame(followLayoutUntilSettled);
   }
 
   /* Rich content can keep changing size after the stream has finished:
@@ -165,41 +173,24 @@ export function initChatComposerReserve(options){
     })
     :null;
 
-  var observer=typeof ResizeObserver==="function"
-    ?new ResizeObserver(schedule)
+  var layoutResizeObserver=typeof ResizeObserver==="function"
+    ?new ResizeObserver(scheduleLayoutFollow)
     :null;
-  if(observer){
-    /* Border-box catches padding/safe-area changes as well as composer
-       content growth. Older ResizeObserver implementations accept only the
-       one-argument form, so retain a fallback. */
-    try{observer.observe(bar,{box:"border-box"})}catch(_){observer.observe(bar)}
-    /* The keyboard inset changes the transcript padding without necessarily
-       changing the composer's own height. Observing the list's content box
-       makes those reserve changes participate in the same pinned-reader
-       correction. */
-    if(list)observer.observe(list);
-  }
-  if(list){
-    lastMetrics=readMetrics();
-    list.addEventListener("scroll",rememberMetrics,{passive:true});
-    observeLastMessage();
-    if(messageMutationObserver)messageMutationObserver.observe(list,{childList:true});
-  }
-  window.addEventListener("resize",schedule,{passive:true});
-  if(window.visualViewport){
-    window.visualViewport.addEventListener("resize",schedule,{passive:true});
-  }
-  schedule();
+
+  lastMetrics=readMetrics();
+  layoutReady=!!(lastMetrics&&lastMetrics.clientHeight>0);
+  list.addEventListener("scroll",rememberScrollPosition,{passive:true});
+  observeLastMessage();
+  if(messageMutationObserver)messageMutationObserver.observe(list,{childList:true});
+  if(layoutResizeObserver)layoutResizeObserver.observe(list);
 
   return function(){
-    if(frame)cancelAnimationFrame(frame);
     if(contentFrame)cancelAnimationFrame(contentFrame);
-    if(observer)observer.disconnect();
+    if(layoutFrame)cancelAnimationFrame(layoutFrame);
+    if(layoutResizeObserver)layoutResizeObserver.disconnect();
     if(messageResizeObserver)messageResizeObserver.disconnect();
     if(messageMutationObserver)messageMutationObserver.disconnect();
-    if(list)list.removeEventListener("scroll",rememberMetrics);
-    window.removeEventListener("resize",schedule);
-    if(window.visualViewport)window.visualViewport.removeEventListener("resize",schedule);
+    list.removeEventListener("scroll",rememberScrollPosition);
   };
 }
 

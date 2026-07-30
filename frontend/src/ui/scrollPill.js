@@ -34,6 +34,9 @@ export function wireScrollPill(){
   wired = true;
 
   let debounceTmo = null;
+  let lastScrollTop = null;
+  let lastScroller = scrollContainer();
+  if(lastScroller) lastScrollTop = lastScroller.scrollTop;
 
   /* P_stream-scroll-intent — the scroll-position listener below cannot
      tell an upward wheel flick from the layout growing underneath the
@@ -88,6 +91,9 @@ export function wireScrollPill(){
        guard, scrolling inside a <pre> code block or a viz iframe
        could set _userScrolledAway=true and break auto-scroll. */
     if(ev.target !== sc) return;
+    const previousTop = sc===lastScroller ? lastScrollTop : null;
+    lastScroller = sc;
+    lastScrollTop = sc.scrollTop;
     const atBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight <= SCROLL_SLACK;
     if(atBottom){
       /* Ignore "back at bottom" while an upward intent is fresh — it is
@@ -96,8 +102,14 @@ export function wireScrollPill(){
       state._userScrolledAway = false;
       hideNewReplyPill();
     } else if(!state._userScrolledAway){
-      /* Debounce: only set _userScrolledAway once per scroll burst. */
-      if(!debounceTmo){
+      /* Only an upward position change means the reader left the latest
+         answer. Composer growth, keyboard avoidance, and late rich-content
+         layout all reduce the visible viewport without changing scrollTop;
+         treating those geometry-only events as user intent strands the
+         reader above the bottom. Downward programmatic snaps followed by
+         same-task content growth must not release the pin either. */
+      const movedUp = previousTop != null && sc.scrollTop < previousTop - 1;
+      if(movedUp&&!debounceTmo){
         state._userScrolledAway = true;
         debounceTmo = setTimeout(function(){ debounceTmo = null; }, 300);
       }
