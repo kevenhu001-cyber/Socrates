@@ -66,7 +66,7 @@ import { BASELINE_LEVEL, stageInstruction, fromBasicsDirective } from './chat/so
 import { aiGenerate } from './chat/mockDiagnostic.js';
 import { extractHistory, buildUserContentParts } from './chat/history.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './chat/systemPrompts.js';
-import { appendInlineArtifact } from './ui/toolCards.js';
+import { appendInlineArtifact, renderToolTextOutput } from './ui/toolCards.js';
 import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
 /* searchProgress UI removed in favour of the inline status label.
    The import was retired when agent-tool-cards were dropped from the
@@ -4565,6 +4565,12 @@ function restorePersistedMessageExtras(body,entry,idPrefix){
           restored:true,
           isError:tc.isError===true
         });
+        if(cardOut&&tc.output!=null){
+          renderToolTextOutput(cardOut,String(tc.output),{
+            isError:tc.isError===true,
+            kind:tc.isError===true?"error":"output"
+          });
+        }
       }catch(_){}
     }
     if(vizSpec&&typeof window.mountVisualization==="function"){
@@ -4612,10 +4618,17 @@ function rebuildAssistantHtmlWithInlineTools(rawText,toolCalls){
     var tc=rows[ri];
     parts.push(renderSeg(raw.slice(prev,tc.textOffset)));
     try{
-      var row=createInlineToolRow({id:String(tc.id),name:String(tc.name)});
+      var row=createInlineToolRow({
+        id:String(tc.id),
+        name:String(tc.name),
+        input:tc.input==null?null:tc.input
+      });
       settleInlineToolRow(row,{
         ok:tc.isError!==true,
-        results:Array.isArray(tc.results)?tc.results:[]
+        status:tc.isError===true?"failed":"completed",
+        results:Array.isArray(tc.results)?tc.results:[],
+        output:tc.output==null?"":String(tc.output),
+        error:tc.isError===true&&tc.output!=null?String(tc.output):""
       });
       parts.push(row.outerHTML);
     }catch(_){}
@@ -4693,10 +4706,10 @@ function addMessage(role,text,type,actions,attachmentsArg){
   var clientId="msg-"+generateId();
 
   /* Use renderAssistantHTML for assistant messages containing scaffold
-     XML tags so <quiz>/<example>/<practice>/<definition>/<step>/<flashcard>
-     are converted to interactive widgets instead of raw XML text. */
+     XML tags so every Tutor scaffold, including the math-book blocks,
+     is converted to its typed widget instead of raw XML text. */
   var html;
-  if(role==="assistant"&&/<(quiz|example|practice|definition|step|flashcard)\b/i.test(text)){
+  if(role==="assistant"&&/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b/i.test(text)){
     try{html=renderAssistantHTML(text)}catch(_){html=formatMsg(text)}
   }else{
     html=formatMsg(text);
@@ -5094,8 +5107,13 @@ window.handleSendClick=function(){
       window._activeChatCtl.abort();
     }
   }else{
-    /* Button-click send exits the focus state (①); Enter-send in
-       handleChatKey keeps focus for rapid follow-up typing. */
+    /* End the pointer-driven typing session synchronously, before
+       buildMessageContent() can await image description / attachment
+       work. Keeping this ahead of the async submit path prevents the
+       mobile keyboard and :focus-within visuals from lingering while
+       an attachment is being prepared. submitChatMessage performs the
+       same blur again after clearContent as a Tiptap refocus guard. */
+    blurChatComposer();
     submitChatMessage(null,{blurAfterSend:true});
   }
 };
@@ -6255,18 +6273,22 @@ function doRender(){
         }
         /* P_smooth-handoff — when React owns #msgList, the legacy
            bubble is dropped by _hfTick one pre-paint frame after React
-           commits its finalized copy. Re-rendering finalHtml into the
-           legacy body here was a THIRD render of the same answer
-           (progressive stream → legacy final swap → React copy), and
-           the swap's detach/re-append of live artifacts forced every
-           embedded iframe to reload twice per answer (once here, once
-           again at the _hfTick transplant) — the visible "flash" right
-           after the answer completed. In the React path we skip the
-           swap entirely: the streamed progressive DOM stays on screen
-           untouched (only the blinking cursor is retired) and _hfTick
-           transplants the live modules straight out of it, so each
-           module reparents exactly once. */
+           commits its finalized copy. Keep the live DOM for ordinary
+           text and tool/artifact streams, but upgrade a scaffold preview
+           to the finalized slot tree before handoff. This is important
+           for <quiz>/<practice> interactivity and also prevents a
+           temporary [Key Point] preview from surviving completion. The
+           guarded path has no live tool/artifact nodes, so it cannot
+           reload an iframe or discard a tool result. */
+        var _liveScaffoldNeedsUpgrade=!!(
+          _reactHandoff&&body.querySelector('[data-scaffold-live]')&&
+          !body.querySelector('.think-block,.tool-run-group,.tool-inline,'+
+            '.agent-tool-card,.tool-inline-attachments,.exec-artifact,.visualization-card')
+        );
         if(_reactHandoff){
+          if(_liveScaffoldNeedsUpgrade){
+            try{body.innerHTML=finalHtml}catch(_){/* keep the live preview */}
+          }
           var _lateCursors=body.querySelectorAll('.stream-cursor');
           for(var _lci=0;_lci<_lateCursors.length;_lci++){
             try{_lateCursors[_lci].remove()}catch(_){}

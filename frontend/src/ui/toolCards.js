@@ -314,11 +314,12 @@ export function appendToolModule(toolName, toolInput, body, opts) {
   const meta = TOOL_META[toolName] || { letter: "?", cls: "", short: toolName, tone: "neutral" };
 
   const card = document.createElement("div");
+  const detailId = "tool-detail-" + Math.random().toString(36).slice(2, 10);
   card.className = `agent-tool-card tool-${meta.tone} ${meta.cls}`;
   card.dataset.tool = toolName;
   card.dataset.toolState = opts.restored ? (opts.isError ? "error" : "complete") : "running";
   card.innerHTML = `
-    <div class="agent-tool-head" role="button" tabindex="0" aria-expanded="false">
+    <div class="agent-tool-head" role="button" tabindex="0" aria-expanded="false" aria-controls="${detailId}">
       <span class="agent-tool-state-icon" aria-hidden="true"></span>
       <span class="agent-tool-icon" aria-hidden="true">${TOOL_ICONS[toolName] || meta.letter}</span>
       <span class="agent-tool-name"></span>
@@ -326,7 +327,7 @@ export function appendToolModule(toolName, toolInput, body, opts) {
       <span class="agent-tool-status" role="status" aria-live="polite"></span>
       <span class="agent-tool-chev" aria-hidden="true">▾</span>
     </div>
-    <div class="agent-tool-body" hidden>
+    <div class="agent-tool-body" id="${detailId}" hidden>
       <section class="agent-tool-section agent-tool-input-section">
         <div class="agent-tool-section-head">
           <span>Input</span>

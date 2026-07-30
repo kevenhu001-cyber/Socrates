@@ -14,6 +14,7 @@ import { esc } from '../render/helpers.js';
 export interface InlineToolEntry {
   id: string;
   name: string;
+  input?: unknown;
 }
 
 export interface InlineToolResult {
@@ -21,8 +22,11 @@ export interface InlineToolResult {
   status?: string;
   durationMs?: number;
   results?: unknown[];
+  output?: string;
+  stderr?: string;
   error?: string;
   userMessage?: string;
+  detail?: unknown;
 }
 
 interface SourceItem {
@@ -107,6 +111,119 @@ function sourcesHtml(sources: SourceItem[]): string {
   return html + '</div>';
 }
 
+const INLINE_DETAIL_LIMIT = 12_000;
+
+function detailText(value: unknown): string {
+  if (value == null || value === '') return '';
+  let text = '';
+  if (typeof value === 'string') {
+    text = value;
+  } else {
+    try { text = JSON.stringify(value, null, 2); } catch (_) { text = String(value); }
+  }
+  if (text.length <= INLINE_DETAIL_LIMIT) return text;
+  return text.slice(0, INLINE_DETAIL_LIMIT)
+    + '\n\n'
+    + translate('common.truncated', '(truncated)');
+}
+
+function appendDetailSection(
+  host: HTMLElement,
+  title: string,
+  value: unknown,
+  kind: string,
+): boolean {
+  const text = detailText(value).trim();
+  if (!text) return false;
+  const section = document.createElement('section');
+  section.className = 'tool-inline-detail-section';
+  section.dataset.kind = kind;
+  const heading = document.createElement('div');
+  heading.className = 'tool-inline-detail-title';
+  heading.textContent = title;
+  const pre = document.createElement('pre');
+  pre.className = 'tool-inline-detail-value';
+  pre.textContent = text;
+  section.appendChild(heading);
+  section.appendChild(pre);
+  host.appendChild(section);
+  return true;
+}
+
+function renderInlineDetails(
+  row: HTMLElement,
+  input: unknown,
+  result: InlineToolResult | null,
+  state: string,
+): void {
+  // Unit/runtime harnesses may provide a deliberately tiny element stub.
+  // The browser path always has querySelector; skipping detail decoration
+  // keeps the lifecycle logic testable without requiring a DOM emulator.
+  if (typeof (row as HTMLElement & { querySelector?: unknown }).querySelector !== 'function') return;
+  const detail = row.querySelector('.tool-inline-detail') as HTMLElement | null;
+  if (!detail) return;
+  detail.replaceChildren();
+  let hasContent = false;
+  const name = row.dataset.tool || '';
+
+  if (state === 'done' && isInlineSearchTool(name) && result && Array.isArray(result.results)) {
+    const html = sourcesHtml(normalizeSources(result.results));
+    if (html) {
+      const section = document.createElement('section');
+      section.className = 'tool-inline-detail-section';
+      section.dataset.kind = 'sources';
+      const heading = document.createElement('div');
+      heading.className = 'tool-inline-detail-title';
+      heading.textContent = translate('tool.sources', 'Sources');
+      const list = document.createElement('div');
+      list.innerHTML = html;
+      section.appendChild(heading);
+      while (list.firstChild) section.appendChild(list.firstChild);
+      detail.appendChild(section);
+      hasContent = true;
+    }
+  }
+
+  hasContent = appendDetailSection(
+    detail,
+    translate('tool.arguments', 'Arguments'),
+    input,
+    'input',
+  ) || hasContent;
+
+  const failed = state === 'error';
+  if (result) {
+    const errorMessage = failed
+      ? [result.userMessage, result.error].filter(Boolean).join('\n')
+      : '';
+    hasContent = appendDetailSection(
+      detail,
+      failed ? translate('tool.errorDetails', 'Error details') : translate('tool.result', 'Result'),
+      failed ? (result.output || errorMessage) : result.output,
+      failed ? 'error' : 'output',
+    ) || hasContent;
+    if (failed && result.detail != null && detailText(result.detail) !== errorMessage) {
+      hasContent = appendDetailSection(
+        detail,
+        translate('tool.details', 'Details'),
+        result.detail,
+        'technical',
+      ) || hasContent;
+    }
+    if (result.stderr) {
+      hasContent = appendDetailSection(detail, 'stderr', result.stderr, 'error') || hasContent;
+    }
+  }
+
+  if (!hasContent) {
+    const empty = document.createElement('p');
+    empty.className = 'tool-inline-detail-empty';
+    empty.textContent = translate('tool.noDetails', 'No additional details.');
+    detail.appendChild(empty);
+  }
+  row.dataset.expandable = '1';
+}
+
 function iconHtml(state: string): string {
   if (state === 'running') return '';
   if (state === 'done') return '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -163,6 +280,8 @@ export function createInlineToolRow(entry: InlineToolEntry): HTMLElement {
     + '<span class="tool-inline-chev" aria-hidden="true"></span>'
     + '</summary>'
     + '<div class="tool-inline-detail"></div>';
+  (row as HTMLElement & { _toolInput?: unknown })._toolInput = entry.input;
+  renderInlineDetails(row, entry.input, null, 'running');
   return row;
 }
 
@@ -194,12 +313,6 @@ export function settleInlineToolRow(
   }
   const meta = row.querySelector('.tool-inline-meta');
   if (meta) meta.textContent = durationText(result);
-  const detail = row.querySelector('.tool-inline-detail');
-  if (detail && state === 'done' && isInlineSearchTool(name) && result && Array.isArray(result.results)) {
-    const html = sourcesHtml(normalizeSources(result.results));
-    if (html) {
-      detail.innerHTML = html;
-      row.dataset.expandable = '1';
-    }
-  }
+  const input = (row as HTMLElement & { _toolInput?: unknown })._toolInput;
+  renderInlineDetails(row, input, result, state);
 }

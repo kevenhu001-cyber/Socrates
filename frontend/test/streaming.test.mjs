@@ -6,6 +6,7 @@ import {
   isStableMarkdownPrefix,
   splitStreamingMarkdown,
 } from '../src/render/streaming.js';
+import { formatMsgProgressive as renderProgressive } from '../src/render/markdown.js';
 
 test('stream cadence adapts to response length', () => {
   assert.equal(getStreamRenderInterval(0), 50);
@@ -41,4 +42,16 @@ test('inline tools are inserted only after complete prose boundaries', () => {
   assert.equal(findInlineToolBoundary('先说明结论。 然后继续分析'), '先说明结论。 '.length);
   assert.equal(findInlineToolBoundary('First paragraph.\n\nSecond paragraph is unfinished'), 'First paragraph.\n\n'.length);
   assert.equal(findInlineToolBoundary('prefix 已完成。 后续仍在输入', 'prefix '.length), 'prefix 已完成。 '.length);
+});
+
+test('Tutor scaffolds render as typed live cards before the closing tag arrives', () => {
+  const partial = renderProgressive('<key-point>核心结论：$x=1');
+  assert.match(partial, /class="inline-key-point scaffold-stream-live"/);
+  assert.match(partial, /data-scaffold-live="key-point"/);
+  assert.match(partial, /核心结论/);
+
+  const complete = renderProgressive('<quiz><q>选择</q><o letter="A">是</o><o letter="B">否</o></quiz>');
+  assert.match(complete, /class="inline-quiz scaffold-stream-live"/);
+  assert.match(complete, /inline-quiz-opt-letter">A\.<\/span>/);
+  assert.match(complete, /inline-quiz-opt-letter">B\.<\/span>/);
 });
