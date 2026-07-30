@@ -25,15 +25,18 @@ const UPLOAD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 const PEN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
 const SEARCH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>';
 const SPARK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z"/></svg>';
+const ANALYZE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/><path d="m4 7 6-4 6 7 5-4"/></svg>';
+const EXAM_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M4 3h16v18H4z"/><path d="M8 8h8M8 12h5M8 16h3"/><path d="m15 15 1.5 1.5L20 13"/></svg>';
 const SKILLS_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg>';
 
 const ITEMS: MenuItemSpec[] = [
-  { action: 'upload', labelKey: 'composer.menu.upload', labelFallback: 'Upload files', icon: UPLOAD_ICON },
-  { action: 'write', labelKey: 'composer.write', labelFallback: 'Write or edit', icon: PEN_ICON },
-  { action: 'research', labelKey: 'composer.research', labelFallback: 'Find resources', icon: SEARCH_ICON },
-  { action: 'deepResearch', labelKey: 'composer.deepResearch', labelFallback: 'Deep Research', icon: SPARK_ICON },
-  { action: 'exam', labelKey: 'composer.exam', labelFallback: 'Generate exam', icon: SPARK_ICON },
-  { action: 'skills', labelKey: 'composer.menu.skills', labelFallback: 'Skills & shortcuts', descriptionKey: 'composer.menu.skillsHint', descriptionFallback: 'Create your own', icon: SKILLS_ICON },
+  { action: 'upload', labelKey: 'composer.menu.upload', labelFallback: 'Add files', descriptionKey: 'composer.menu.uploadHint', descriptionFallback: 'Images, PDFs, notes and data', icon: UPLOAD_ICON },
+  { action: 'write', labelKey: 'composer.write', labelFallback: 'Write & edit', descriptionKey: 'composer.writeHint', descriptionFallback: 'Draft, rewrite and polish', icon: PEN_ICON },
+  { action: 'research', labelKey: 'composer.research', labelFallback: 'Find sources', descriptionKey: 'composer.researchHint', descriptionFallback: 'Search and compare evidence', icon: SEARCH_ICON },
+  { action: 'deepResearch', labelKey: 'composer.deepResearch', labelFallback: 'Deep research', descriptionKey: 'composer.deepResearchHint', descriptionFallback: 'Plan → search → read → report', icon: SPARK_ICON },
+  { action: 'analyze', labelKey: 'composer.analyze', labelFallback: 'Analyze data', descriptionKey: 'composer.analyzeHint', descriptionFallback: 'Calculate, chart and export', icon: ANALYZE_ICON },
+  { action: 'exam', labelKey: 'composer.exam', labelFallback: 'Create an exam', descriptionKey: 'composer.examHint', descriptionFallback: 'Blueprint, questions and grading', icon: EXAM_ICON },
+  { action: 'skills', labelKey: 'composer.menu.skills', labelFallback: 'Your workflows', descriptionKey: 'composer.menu.skillsHint', descriptionFallback: 'Reusable custom instructions', icon: SKILLS_ICON },
 ];
 
 function i18n(key: string, fallback: string): string {
@@ -49,8 +52,11 @@ function MenuItem({ spec, onPick }: { spec: MenuItemSpec; onPick: (action: Compo
       type="button"
       className="composer-tools-item"
       role="menuitem"
-      data-action={spec.action}
-      onClick={() => onPick(spec.action)}
+      data-composer-action={spec.action}
+      onClick={(event) => {
+        event.stopPropagation();
+        onPick(spec.action);
+      }}
     >
       <span className="composer-tools-icon" dangerouslySetInnerHTML={{ __html: spec.icon }} />
       <span className="composer-tools-copy">
@@ -62,19 +68,24 @@ function MenuItem({ spec, onPick }: { spec: MenuItemSpec; onPick: (action: Compo
 }
 
 function MenuItems({ onPick }: { onPick: (action: ComposerToolsAction) => void }) {
-  /* Mirror the legacy render order so existing tests + CSS keep working:
-     upload | write | research | deepResearch | exam | skills — with two
-     dividers (after upload, before skills). */
   return (
     <>
+      <div className="composer-tools-heading">
+        <span>{i18n('composer.menu.heading', 'Add to this message')}</span>
+        <small>{i18n('composer.menu.headingHint', 'Choose a workflow')}</small>
+      </div>
       <MenuItem spec={ITEMS[0]} onPick={onPick} />
       <div className="composer-tools-divider" />
+      <div className="composer-tools-section-label">{i18n('composer.menu.create', 'Create')}</div>
       <MenuItem spec={ITEMS[1]} onPick={onPick} />
+      <div className="composer-tools-section-label">{i18n('composer.menu.investigate', 'Investigate')}</div>
       <MenuItem spec={ITEMS[2]} onPick={onPick} />
       <MenuItem spec={ITEMS[3]} onPick={onPick} />
       <MenuItem spec={ITEMS[4]} onPick={onPick} />
-      <div className="composer-tools-divider" />
+      <div className="composer-tools-section-label">{i18n('composer.menu.learn', 'Learn')}</div>
       <MenuItem spec={ITEMS[5]} onPick={onPick} />
+      <div className="composer-tools-divider" />
+      <MenuItem spec={ITEMS[6]} onPick={onPick} />
     </>
   );
 }

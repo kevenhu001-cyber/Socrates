@@ -26,7 +26,10 @@ export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConn
   const entries = [
     { name: 'code_interpreter', modelDefinition: codeInterpreterToolDef, enabled: Boolean(codeInterpreterToolDef), pure: false, sessionSerial: true, maxConcurrency: 1, retries: 0 },
     { name: 'render_visualization', modelDefinition: VISUALIZATION_TOOL, enabled: process.env.VISUALIZATION_TOOL_ENABLED !== 'false', pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
-    { name: 'web_search', modelDefinition: WEB_SEARCH_TOOL, enabled: mode !== 'tutor', pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
+    /* Tutor and Chat share the same native capability surface. Pedagogical
+       search restraint belongs in the Tutor system policy; hiding the schema
+       here made the client prompt promise a tool the model could not call. */
+    { name: 'web_search', modelDefinition: WEB_SEARCH_TOOL, enabled: true, pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
 
     // ── Connector tools (gated on per-user connection) ──────
     { name: CONNECTOR_TOOL_NAMES.ARXIV,  modelDefinition: ARXIV_TOOL,    enabled: true, pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },

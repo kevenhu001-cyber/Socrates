@@ -26,7 +26,7 @@ import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
 window.SERVER_HAS_BEAGLE_KEY = SERVER_HAS_BEAGLE_KEY;
 
 /* ─── config/providers.js — MUST come first (apiConfig consumed by every other module) ─── */
-import { apiConfig, appMode, webSearchOn, extensiveThinkingOn, BEAGLE_BUILT_IN, isReasoningProvider, isMiniMaxProvider, pickStreamBudgets, syncAppModeUI, syncSidebarForMode, LAST_ACTIVE_ID_KEY, saveLastActiveId, thinkingOn } from './config/providers.js';
+import { apiConfig, appMode, webSearchOn, extensiveThinkingOn, BEAGLE_BUILT_IN, isReasoningProvider, isMiniMaxProvider, pickStreamBudgets, syncAppModeUI, syncSidebarForMode, setAppMode, LAST_ACTIVE_ID_KEY, saveLastActiveId, thinkingOn } from './config/providers.js';
 window.apiConfig = apiConfig;
 window.appMode = appMode;
 window.webSearchOn = webSearchOn;
@@ -37,6 +37,7 @@ window.isMiniMaxProvider = isMiniMaxProvider;
 window.pickStreamBudgets = pickStreamBudgets;
 window.syncAppModeUI = syncAppModeUI;
 window.syncSidebarForMode = syncSidebarForMode;
+window.setAppMode = setAppMode;
 window.LAST_ACTIVE_ID_KEY = LAST_ACTIVE_ID_KEY;
 window.saveLastActiveId = saveLastActiveId;
 window.thinkingOn = thinkingOn;
@@ -456,22 +457,72 @@ window.composeAction = function () {
   } catch (_) {}
 };
 
-/* 查找资料 — toggle web search on/off. When turning on with existing text,
-   launch Deep Research directly (same entry the old Extensions toggle used).
-   The chip's .active state mirrors window.webSearchOn via syncQuickChips(). */
+var SOURCE_RESEARCH_SYSTEM_PROMPT =
+  "You are in source-research mode. Turn the user's question into a focused evidence task.\n\n" +
+  "Workflow:\n" +
+  "1. Identify the exact claim, date range, geography, and decision the user needs.\n" +
+  "2. Use the native web_search tool for current or externally verifiable facts. Prefer primary sources and independent corroboration.\n" +
+  "3. Compare sources, call out disagreements, and separate verified facts from inference.\n" +
+  "4. Return a concise synthesis with linked sources and a short 'What remains uncertain' note when material gaps remain.\n\n" +
+  "Never invent citations or imitate tool-call JSON. If the request actually needs a broad multi-stage review, recommend Deep research rather than pretending one search is exhaustive.";
+
+/* Find sources is a real evidence workflow, distinct from Deep research.
+   It enables the native search capability and installs a visible mode whose
+   system prompt controls source quality; it never auto-sends the draft. */
 window.researchAction = function () {
   var surface = getVisibleComposerSurface();
-  var hasText = getComposerMarkdown(surface).trim().length > 0;
-  var wasOn = (typeof window.webSearchOn !== "undefined") && !!window.webSearchOn;
-  if (typeof window.toggleWebSearch === "function") window.toggleWebSearch();
-  /* If we just turned search ON and there's already a prompt, kick off
-     Deep Research on it immediately. */
-  if (!wasOn && hasText && typeof window.launchDeepResearch === "function") {
-    window.launchDeepResearch();
-  } else {
-    focusComposer(surface);
+  if (!window.webSearchOn && typeof window.toggleWebSearch === "function") {
+    window.toggleWebSearch();
   }
+  if (typeof window.setActiveTemplate === "function") {
+    window.setActiveTemplate({
+      id: "tpl-source-research",
+      title: (typeof window.t === "function" ? window.t("composer.research") : "") || "Find sources",
+      shortcut: "/research",
+      icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
+      systemPrompt: SOURCE_RESEARCH_SYSTEM_PROMPT,
+      body: ""
+    });
+  }
+  focusComposer(surface);
   window.syncQuickChips();
+};
+
+window.deepResearchAction = function () {
+  var surface = getVisibleComposerSurface();
+  var hasQuery = getComposerMarkdown(surface).trim().length > 0;
+  if (hasQuery && typeof window.launchDeepResearch === "function") {
+    window.launchDeepResearch();
+    return;
+  }
+  if (!window.deepResearchOn && typeof window.toggleExtensionByKey === "function") {
+    window.toggleExtensionByKey("deepResearch");
+  }
+  focusComposer(surface);
+};
+
+var DATA_ANALYSIS_SYSTEM_PROMPT =
+  "You are in data-analysis mode. Treat attached files and pasted data as the working dataset.\n\n" +
+  "Workflow:\n" +
+  "1. Inspect schema, units, missing values, duplicates, and sampling limitations before drawing conclusions.\n" +
+  "2. State the analysis question and choose the smallest valid method.\n" +
+  "3. Use code_interpreter for non-trivial calculation, file analysis, or export; use render_visualization for a reader-facing chart after the numbers are validated.\n" +
+  "4. Report the result, assumptions, checks, and material caveats. Include reproducible calculations and expose generated files as artifacts.\n\n" +
+  "Never claim a computation ran unless a tool result confirms it. Do not infer columns or units that are not present.";
+
+window.analyzeAction = function () {
+  var surface = getVisibleComposerSurface();
+  if (typeof window.setActiveTemplate === "function") {
+    window.setActiveTemplate({
+      id: "tpl-data-analysis",
+      title: (typeof window.t === "function" ? window.t("composer.analyze") : "") || "Analyze data",
+      shortcut: "/analyze",
+      icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/><path d="m4 7 6-4 6 7 5-4"/></svg>',
+      systemPrompt: DATA_ANALYSIS_SYSTEM_PROMPT,
+      body: ""
+    });
+  }
+  focusComposer(surface);
 };
 
 /* Mirror toggle-style state onto the quick-action chips (查找资料 reflects

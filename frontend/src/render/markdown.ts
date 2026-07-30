@@ -206,17 +206,26 @@ function renderStreamScaffoldPreview(tag: string, inner: string, attrs = ''): st
     return streamCard(tag,
       '<div class="inline-example-title">' + renderStreamMarkdown(title) + '</div>' +
       '<div class="inline-example-problem">' + renderStreamMarkdown(problem, 'Problem') + '</div>' +
-      (solution ? '<div class="inline-example-solution"><span class="label">Solution</span>' + renderStreamMarkdown(solution) + '</div>' : ''));
+      (solution
+        ? '<button type="button" class="inline-example-reveal" aria-disabled="true" tabindex="-1">Show solution</button>' +
+          '<div class="inline-example-solution" hidden>' + renderStreamMarkdown(solution) + '</div>'
+        : ''));
   }
 
   if (tag === 'practice') {
-    const title = streamField(inner, 'title') || 'Practice';
     const problem = streamField(inner, 'problem');
     const hint = streamField(inner, 'hint');
     return streamCard(tag,
-      '<div class="inline-practice-title">' + renderStreamMarkdown(title) + '</div>' +
       '<div class="inline-practice-problem">' + renderStreamMarkdown(problem, 'Problem') + '</div>' +
-      (hint ? '<div class="inline-practice-hint"><span class="label">Hint</span>' + renderStreamMarkdown(hint) + '</div>' : ''));
+      (hint
+        ? '<button type="button" class="inline-practice-hint-toggle" aria-disabled="true" tabindex="-1">Show hint</button>' +
+          '<div class="inline-practice-hint" hidden>' + renderStreamMarkdown(hint) + '</div>'
+        : '') +
+      '<form class="inline-practice-form">' +
+        '<textarea class="inline-practice-textarea" rows="3" placeholder="Type your answer…" aria-disabled="true" tabindex="-1"></textarea>' +
+        '<div class="inline-practice-actions"><button type="button" class="inline-practice-submit" aria-disabled="true" tabindex="-1">Submit</button></div>' +
+        '<div class="inline-practice-feedback"></div>' +
+      '</form>');
   }
 
   if (tag === 'flashcard') {
@@ -265,7 +274,7 @@ function renderStreamScaffoldPreview(tag: string, inner: string, attrs = ''): st
     const optionRe = /<o\s+letter=["']([A-Da-d])["'][^>]*>([\s\S]*?)(?:<\/o>|$)/gi;
     let match: RegExpExecArray | null;
     while ((match = optionRe.exec(inner)) !== null) {
-      options.push('<button type="button" class="inline-quiz-opt" disabled>' +
+      options.push('<button type="button" class="inline-quiz-opt" aria-disabled="true" tabindex="-1">' +
         '<span class="inline-quiz-opt-letter">' + escHTML(match[1].toUpperCase()) + '.</span>' +
         '<span class="inline-quiz-opt-text">' + renderStreamMarkdown(decodeEntities(match[2].trim())) + '</span></button>');
     }

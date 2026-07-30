@@ -441,9 +441,16 @@ function fnv1a(s) {
   return h.toString(16);
 }
 
-export async function buildMessageContent(text) {
+export async function buildMessageContent(text, attachmentSnapshot) {
   const t = String(text || '');
-  if (!attachments.length) {
+  /* A send click may clear the live composer immediately so the input can
+     collapse in the same frame as the user bubble appears. Accept an
+     immutable per-turn snapshot to keep the asynchronous vision-description
+     work independent from the next draft's attachments. */
+  const turnAttachments = Array.isArray(attachmentSnapshot)
+    ? attachmentSnapshot.slice()
+    : attachments.slice();
+  if (!turnAttachments.length) {
     return { rawText: t, parts: t, attachmentList: [] };
   }
 
@@ -455,7 +462,7 @@ export async function buildMessageContent(text) {
      the upstream model is text-only. Failures are non-fatal: we log
      and continue without the description rather than blocking the
      user from sending their message. */
-  const imageAttachments = attachments.filter((a) => a.kind === 'image' && a.dataUrl);
+  const imageAttachments = turnAttachments.filter((a) => a.kind === 'image' && a.dataUrl);
 
   /* Resolve apiFetch from the global. This module is loaded as a
      side-effect import from windowExports.js, so we can't take a
@@ -523,7 +530,7 @@ export async function buildMessageContent(text) {
 
   const parts = [];
   if (effectiveText) parts.push({ type: 'text', text: effectiveText });
-  for (const a of attachments) {
+  for (const a of turnAttachments) {
     if (a.kind === 'image' && a.dataUrl) {
       parts.push({
         type: 'image_url',
@@ -546,7 +553,7 @@ export async function buildMessageContent(text) {
   }
 
   // Defensive: the server caps to 20; trim here too.
-  const attachmentList = attachments.slice(0, 20).map((a) => ({
+  const attachmentList = turnAttachments.slice(0, 20).map((a) => ({
     id: a.id,
     kind: a.kind,
     docKind: a.docKind,

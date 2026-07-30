@@ -480,7 +480,10 @@ export async function prepareChatRequest(
   let finalMessages = enforceServerSystemBoundary(messages);
   finalMessages = injectUserContext(finalMessages, req.user);
   if (mode === 'tutor') finalMessages = await prependTeacherModePrompt(finalMessages);
-  if (mode === 'chat' || (mode as string) === 'concise') finalMessages = await prependCodeInterpreterPrompt(finalMessages);
+  // Tool schemas are shared by Chat and Tutor, so both modes need the same
+  // server-owned routing/runtime contract. Tutor adds pedagogy on top of this
+  // policy instead of silently losing code execution and visual artifacts.
+  finalMessages = await prependCodeInterpreterPrompt(finalMessages);
 
   const safeExtraBody = sanitizeExtraBody(extra_body);
 

@@ -57,6 +57,7 @@ import {
   buildFallbackDiagnosticQuestions,
   requestTutorExploration,
   shouldAutoSearchTutor,
+  shouldRequestTutorAfterQuiz,
   TUTOR_SEARCH_POLICY_PROMPT,
 } from './tutor/policy.js';
 import { applyDiagnosticResults } from './chat/diagnosticResults.js';
@@ -2925,16 +2926,6 @@ async function startSession(){
   if(typeof updateStartBtn === "function") updateStartBtn();
   if(typeof updateSendBtn === "function") updateSendBtn();
 
-  /* The boundary exploration is optional. Skipping it starts the
-     teaching plan with unprobed nodes instead of manufacturing answers
-     or forcing the historical five-question detour. */
-  if(!tutorExploration.enabled){
-    state.phase="chat";
-    document.getElementById("diagnosticView").classList.add("hidden");
-    document.getElementById("chatView").classList.remove("hidden");
-    proceedToTeaching();
-    return;
-  }
   /* U-H3 — reusable loading markup (initial render + retry re-render).
      Includes a cancel button so the user can bail out of a slow
      generation instead of watching the spinner indefinitely. */
@@ -3021,6 +3012,17 @@ async function startSession(){
     }
   }catch(e){
     diagProgress(15, t("chat.knowledgeReady"));
+  }
+
+  /* Boundary questions are optional; topic analysis is not. Even when the
+     learner chooses "Start without questions", wait for the topic-specific
+     knowledge nodes above so the teaching plan is grounded in the actual
+     subject rather than the generic aiGenerate() skeleton. */
+  if(!tutorExploration.enabled){
+    diagProgress(100,t("diag.ready"));
+    state.phase="chat";
+    proceedToTeaching();
+    return;
   }
 
   /* KB nodes ready — advance to question generation.
@@ -3194,11 +3196,29 @@ function proceedToTeaching(){
 /* ============================================================
    SOCRATIC QUESTIONS
    ============================================================ */
+function toolCallbacksForStream(ctl){
+  return{
+    onToolUse:function(calls){
+      if(!Array.isArray(calls))return;
+      for(var i=0;i<calls.length;i++)ctl.recordToolUse(calls[i]);
+    },
+    onToolResult:function(result){ctl.recordToolResult(result)},
+    onToolProgress:function(progress){if(ctl.recordToolProgress)ctl.recordToolProgress(progress)},
+    onExecutionStart:function(event){if(ctl.recordExecutionStart)ctl.recordExecutionStart(event)},
+    onToolCallDelta:function(delta){if(delta&&ctl.recordToolCallDelta)ctl.recordToolCallDelta(delta)}
+  };
+}
 async function askNextQuestion(){
   var node=state.kbNodes[state.currentNode];
   if(hasUsableActive()){
     var ctl=addStreamingMessage({onRetry:function(){askNextQuestion()}});
-    var result=await generateSocraticQuestionStream(node,state.domain,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)});
+    var result=await generateSocraticQuestionStream(
+      node,
+      state.domain,
+      function(delta){ctl.append(delta)},
+      function(t){ctl.appendThinking(t)},
+      toolCallbacksForStream(ctl)
+    );
     /* User explicitly clicked Stop on the bubble — clean it up
        silently. Don't fall back to mock (the user wanted to STOP,
        not get a different question), don't show an error. */
@@ -3237,13 +3257,18 @@ async function askNextQuestion(){
    Reuses callAPIStream + addStreamingMessage (single-render path
    that runs formatMsg exactly once — no renderAssistantHTML).
    ============================================================ */
-async function askChatTurn(userText){
+async function askChatTurn(userText,pendingOverride){
   /* Abort the previous in-flight chat stream, if any. Without this the
      old streamCtl stays in "正在思考…" until its own 45 s timer fires,
      which makes the UI feel frozen when the user fires a follow-up
      while the previous reply is still in flight. */
   if(window._activeChatCtl){try{_activeChatCtl.abort()}catch(_){}}
   if(window._activeChatAbort){try{_activeChatAbort("superseded")}catch(_){}}
+  /* Capture this turn before any guard or await. New submit paths pass an
+     immutable override; legacy edit/regenerate paths can still use the
+     consume-once window bridge. */
+  var pendingContent = arguments.length>1 ? pendingOverride : window._pendingChatContent;
+  try{window._pendingChatContent=null;}catch(_){}
   /* No API configured: provide a minimal local echo so the chat panel
      is not dead. Tells the user how to enable a real model. */
   if(!hasUsableActive()){
@@ -3257,8 +3282,7 @@ async function askChatTurn(userText){
      of waiting 120s for the stream to fail. */
   if(offlineGuard()){
     var retryThisTurn=function(){
-      try{window._pendingChatContent=pendingContent;}catch(_){}
-      askChatTurn(userText);
+      askChatTurn(userText,pendingContent);
     };
     var ctlOff=addStreamingMessage({onRetry:retryThisTurn});
     ctlOff.replaceWithError("You appear to be offline — check your connection and retry.",retryThisTurn);
@@ -3278,7 +3302,6 @@ async function askChatTurn(userText){
    * content (text string OR multimodal parts array) on
    * window._pendingChatContent. Prefer it when present so images
    * flow through to vision-capable upstreams. */
-  var pendingContent = window._pendingChatContent;
   /* AUDIT-R4 — consume-once. Leaving the pending content on window
      after this read meant a later askChatTurn call that didn't set
      it (retry of an OLDER turn, re-explain, recovered-stream retry)
@@ -3286,7 +3309,6 @@ async function askChatTurn(userText){
      be there last. Retry closures below capture the local snapshot
      and restore it before re-entering, so retrying THIS turn still
      carries its own attachments. */
-  try{window._pendingChatContent=null;}catch(_){}
   /* The fallback `userMsg` (synthesized opener) is plain text — if
    * there's no pending content we keep using it. */
   var userContent = (pendingContent !== undefined && pendingContent !== null)
@@ -3396,10 +3418,9 @@ async function askChatTurn(userText){
      in the text output without needing to expand Array(2). */
   
   var ctl=addStreamingMessage({onRetry:function(){
-    /* AUDIT-R4 — restore this turn's own content snapshot so the
-       retry doesn't pick up a newer turn's pending payload. */
-    try{window._pendingChatContent=pendingContent;}catch(_){}
-    askChatTurn(userText);
+    /* Carry this turn's immutable content directly so retrying an older
+       multimodal turn can never pick up a newer draft's attachments. */
+    askChatTurn(userText,pendingContent);
   }});
   /* P_inline-tools — tool status is now carried by the inline
      .tool-inline rows inside the bubble (created via the streaming
@@ -3885,23 +3906,17 @@ async function submitChatMessage(textOverride,opts){
    * the text is empty (e.g. just a single image with no caption). */
   var hasAtt = Array.isArray(window.attachments) && window.attachments.length>0;
   if(!text && !hasAtt)return;
-  /* P_attachments — assemble the multimodal content (parts array)
-   * and the persistence list before we add the user bubble.
-   * buildMessageContent is async because it may call /api/vision/describe
-   * to get a text description for each attached image (so non-vision
-   * upstreams still get image context). */
-  var built = (typeof buildMessageContent==="function")
-    ? await buildMessageContent(text)
-    : { rawText: text, parts: text, attachmentList: [] };
-  var chatContent = built.parts;       // string OR parts array — what the LLM sees
-  var persistText = built.rawText;     // user-visible bubble text (with placeholders)
-  var attList = built.attachmentList;   // what we save to the DB
-  /* Stash the chat content for askChatTurn to pick up. askChatTurn is
-   * not parameterized; this is the lowest-friction wiring. */
-  window._pendingChatContent = chatContent;
-  window._pendingAttachments = attList;
-  if(textOverride==null){
-    addMessage("user",persistText,null,null,attList);
+  /* Snapshot this turn before any focus or attachment state changes. The
+     visible submit must commit synchronously: the user bubble, composer
+     collapse, and cleared draft now happen in one interaction frame while
+     image description / multimodal assembly continues in the background. */
+  var isComposerSubmit=textOverride==null;
+  var turnAttachments=isComposerSubmit&&Array.isArray(window.attachments)?window.attachments.slice():[];
+  var immediateAttList=turnAttachments.slice(0,20).map(function(a){
+    return Object.assign({},a);
+  });
+  if(isComposerSubmit){
+    addMessage("user",text,null,null,immediateAttList);
     clearComposer("chat");updateSendBtn();
     scheduleScrollMainToBottom({force:true});
     /* Click-send (opts.blurAfterSend) ends the typing session: drop the
@@ -3915,13 +3930,32 @@ async function submitChatMessage(textOverride,opts){
     }
   }else{
     /* Origin: quiz — synthetic message from a quiz pick. */
-    addMessage("user",persistText,null,null,attList);
+    addMessage("user",text,null,null,immediateAttList);
   }
   /* P_attachments — clear the pending chips after the message is
    * committed to the DOM. Render an empty strip so the UI updates. */
-  if(typeof resetAttachments==="function")resetAttachments();
-  if(typeof renderAttachmentChips==="function")renderAttachmentChips();
-  if(typeof updateSendBtn==="function")updateSendBtn();
+  if(isComposerSubmit){
+    if(typeof resetAttachments==="function")resetAttachments();
+    if(typeof renderAttachmentChips==="function")renderAttachmentChips();
+    if(typeof updateSendBtn==="function")updateSendBtn();
+  }
+
+  /* Assemble the model payload from the immutable snapshot after the UI has
+     committed. buildMessageContent may await vision description, but it can
+     no longer read or clear a newer draft's attachments. A description
+     failure degrades to the original text + attachment metadata. */
+  var built;
+  try{
+    built=(typeof buildMessageContent==="function")
+      ?await buildMessageContent(text,turnAttachments)
+      :{rawText:text,parts:text,attachmentList:immediateAttList};
+  }catch(_){
+    built={rawText:text,parts:text,attachmentList:immediateAttList};
+  }
+  var chatContent=built.parts;
+  var attList=built.attachmentList||immediateAttList;
+  window._pendingChatContent=chatContent;
+  window._pendingAttachments=attList;
 
   /* AI processes the answer */
   /* Background web-search refresh for tutor follow-ups. Same 5-turn
@@ -3947,7 +3981,7 @@ async function submitChatMessage(textOverride,opts){
     /* Chat mode: plain conversation, no Socratic / KB / mistake book.
        Just stream a reply and save. */
     if(appMode==="chat"){
-      await askChatTurn(text);
+      await askChatTurn(text,chatContent);
       return;
     }
 
@@ -4089,7 +4123,7 @@ async function submitChatMessage(textOverride,opts){
          avoids a downstream "Cannot read properties of undefined
          (reading 'status')" in buildFollowUpMessages. */
       if(!node){
-        await askChatTurn(text);
+        await askChatTurn(text,chatContent);
         state.totalQ++;
         updateChatStats();
         return;
@@ -4098,7 +4132,14 @@ async function submitChatMessage(textOverride,opts){
       var streamCtl=null;
       if(hasUsableActive()){
         streamCtl=addStreamingMessage({onRetry:function(){submitChatMessage(text,opts)}});
-        var fu=await generateFollowUpStream(text,node,state.domain,function(delta){streamCtl.append(delta)},function(t){streamCtl.appendThinking(t)});
+        var fu=await generateFollowUpStream(
+          text,
+          node,
+          state.domain,
+          function(delta){streamCtl.append(delta)},
+          function(t){streamCtl.appendThinking(t)},
+          toolCallbacksForStream(streamCtl)
+        );
         if(fu!=null){
           streamCtl.finish();
         }else{
@@ -5107,13 +5148,10 @@ window.handleSendClick=function(){
       window._activeChatCtl.abort();
     }
   }else{
-    /* End the pointer-driven typing session synchronously, before
-       buildMessageContent() can await image description / attachment
-       work. Keeping this ahead of the async submit path prevents the
-       mobile keyboard and :focus-within visuals from lingering while
-       an attachment is being prepared. submitChatMessage performs the
-       same blur again after clearContent as a Tiptap refocus guard. */
-    blurChatComposer();
+    /* submitChatMessage snapshots and commits the draft before its first
+       await, then blurs during that same synchronous phase. Reading first is
+       important: on mobile a focus-driven layout change can otherwise race
+       Tiptap's selection transaction and leave only the morph animation. */
     submitChatMessage(null,{blurAfterSend:true});
   }
 };
@@ -7910,8 +7948,17 @@ function handleQuizPick(cardEl,optsEl,feedback,btns,picked,parsed){
       state.practiceAttempts=0;
     }
   }
-  /* Synthesise a user message + chat turn so the AI gets a real follow-up
-     opportunity that references the choice. */
+  /* A correct choice is completely handled by the self-grading card. Do not
+     create a synthetic user bubble or spend an AI turn; persist the local
+     stage/mistake-book changes and let the learner continue naturally. */
+  if(!shouldRequestTutorAfterQuiz(correct,isRight)){
+    try{updateKB()}catch(_){}
+    try{updateChatStats()}catch(_){}
+    try{saveCurrentSession()}catch(_){}
+    return;
+  }
+  /* Wrong choices need a targeted model follow-up that can correct the
+     misconception and generate the next check. */
   var text="I chose "+picked.letter+". "+picked.text;
   if(correct)text+=" (Result: "+(isRight?"correct":"incorrect, correct is "+correct)+".)";
   submitChatMessage(text,{origin:"quiz"});
@@ -8878,13 +8925,13 @@ async function generateSocraticQuestion(node,domain){
   return _origGenerateSocraticQuestion(node,domain);
 };
 
-async function generateSocraticQuestionStream(node,domain,onDelta){
+async function generateSocraticQuestionStream(node,domain,onDelta,onThinking,streamOpts){
   if(hasUsableActive()){
     console.log("[Socratic] stream for: "+node.name);
     var history=extractHistory();
     var isFirst=history.length===0;
     var msgs=buildSocraticMessages(node,domain,history,isFirst);
-    var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,onDelta);
+    var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,onDelta,onThinking,streamOpts);
     if(result&&result.text&&result.text.trim()){
       state.lastCallSource="api";
       return result;  // {text, html, widgets}
@@ -8990,11 +9037,11 @@ async function generateFollowUp(answer,node,domain){
   return _origGenerateFollowUp(answer,node,domain);
 };
 
-async function generateFollowUpStream(answer,node,domain,onDelta,onThinking){
+async function generateFollowUpStream(answer,node,domain,onDelta,onThinking,streamOpts){
   if(hasUsableActive()){
     var history=extractHistory();
     var msgs=buildFollowUpMessages(answer,node,domain,history);
-    var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,onDelta,onThinking);
+    var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,onDelta,onThinking,streamOpts);
     if(result&&result.text&&result.text.trim()){
       state.lastCallSource="api";
       return result.text.trim();
@@ -9214,6 +9261,8 @@ window.__socratesLegacy = {
     openAttachmentPicker: window.openAttachmentPicker,
     composeAction: window.composeAction,
     researchAction: window.researchAction,
+    deepResearchAction: window.deepResearchAction,
+    analyzeAction: window.analyzeAction,
     toggleExtensionByKey: window.toggleExtensionByKey,
     removeAttachment: window.removeAttachment,
     renderAttachmentChips: window.renderAttachmentChips,

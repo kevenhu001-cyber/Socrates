@@ -88,6 +88,11 @@ test('click-send blurs before asynchronous attachment preparation finishes', asy
   // already be gone rather than waiting for buildMessageContent().
   await page.waitForTimeout(80);
   expect(await focusInComposer(page)).toBe(false);
+  await expect(
+    page.locator('#msgList .msg.user').filter({ hasText: 'send with a slow image' }).last(),
+    'the submitted bubble must commit before attachment preparation finishes',
+  ).toBeVisible();
+  await expect(editor, 'the draft clears in the same submit frame').toHaveText('');
   const selectionCleared = await page.evaluate(() => {
     const selection = window.getSelection();
     return !selection || selection.rangeCount === 0;
@@ -109,5 +114,5 @@ test('chat-input-wrap transitions cover focus geometry', async ({ page }) => {
   for (const prop of ['border-color', 'box-shadow', 'min-height', 'padding', 'border-radius']) {
     expect(t.property, `transition must include ${prop}`).toContain(prop);
   }
-  expect(t.duration).toContain('0.38s');
+  expect(t.duration).toContain('0.42s');
 });

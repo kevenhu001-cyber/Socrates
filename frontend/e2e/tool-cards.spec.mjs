@@ -195,3 +195,41 @@ test('live chat shows a Searching label while the model is searching', async ({ 
   await expect(row).toHaveAttribute('data-state', 'done');
   await expect(row.locator('.tool-inline-label')).toContainText('Found 1');
 });
+
+test('Tutor streams the same native tools and sends the tutor mode contract', async ({ page }) => {
+  await mockAuthedApp(page);
+  let requestMode = null;
+  await page.route('**/api/**/chat/stream', async (route) => {
+    requestMode = route.request().postDataJSON()?.mode ?? null;
+    const stream = [
+      'event: tool_use\ndata: [{"id":"tutor-search","name":"web_search","input":{"query":"primary source"}}]\n\n',
+      'event: tool_result\ndata: {"id":"tutor-search","ok":true,"status":"completed","output":"one source","results":[{"title":"Primary source","url":"https://example.test/primary"}]}\n\n',
+      'data: {"choices":[{"delta":{"content":"Let us connect that evidence to the concept."}}]}\n\n',
+      'data: [DONE]\n\n',
+    ].join('');
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
+  });
+
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(async () => {
+    const sessionId = '33333333-3333-4333-8333-333333333333';
+    window.setAppMode?.('tutor');
+    window.state.phase = 'chat';
+    window.state.topic = 'Tutor tools';
+    window.state.domain = 'Tutor tools';
+    window.state.currentSessionId = sessionId;
+    window.state.session.currentSessionId = sessionId;
+    window.state.currentNode = 0;
+    window.state.kbNodes = [{ name: 'Evidence', status: 'blank', questions: 0 }];
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    await window.askNextQuestion();
+  });
+
+  expect(requestMode).toBe('tutor');
+  const row = page.locator('.msg.assistant .tool-inline[data-tcid="tutor-search"]').last();
+  await expect(row).toHaveAttribute('data-state', 'done');
+  await row.locator('summary').click();
+  await expect(row.locator('.tool-inline-sources')).toContainText('Primary source');
+});
