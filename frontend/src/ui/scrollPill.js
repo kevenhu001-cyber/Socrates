@@ -79,9 +79,15 @@ export function wireScrollPill(){
     else if(ev.key === "End") upIntentAt = 0;
   }, true);
 
-  document.addEventListener("scroll", function(){
+  document.addEventListener("scroll", function(ev){
     const sc = scrollContainer();
     if(!sc) return;
+    /* Ignore scroll events from child elements (code blocks with
+       overflow-y, inline iframes, etc.) — only the main chat
+       scroller's position determines user intent. Without this
+       guard, scrolling inside a <pre> code block or a viz iframe
+       could set _userScrolledAway=true and break auto-scroll. */
+    if(ev.target !== sc) return;
     const atBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight <= SCROLL_SLACK;
     if(atBottom){
       /* Ignore "back at bottom" while an upward intent is fresh — it is
