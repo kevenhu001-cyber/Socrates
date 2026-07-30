@@ -1,19 +1,55 @@
 /*
  * Keep chat controls above mobile virtual keyboards.
  *
- * Browsers do not agree on whether the layout viewport shrinks when a
- * keyboard opens. Reading only `innerHeight - visualViewport.height`
- * therefore double-counts the inset in some Chromium builds (notably Edge)
- * and ignores viewport panning in others. This module writes one CSS custom
- * property, leaving layout and scrolling to CSS instead of mutating scrollTop.
+ * Browsers disagree on how the viewports react when a keyboard opens:
+ *   - "resizes-visual" (iOS Safari, Chrome/Edge Android 108+): the layout
+ *     viewport keeps its height; only window.visualViewport shrinks, and
+ *     the browser may pan it (reported via offsetTop).
+ *   - "resizes-content" (Firefox Android, Chrome Android <108, Capacitor
+ *     WebView with Keyboard.resize:"native"): the layout viewport itself
+ *     shrinks, so CSS `height:100dvh` on the app shell already avoids the
+ *     keyboard with no JS help at all.
  *
- * The inset is smoothed with an exponential moving average so the input bar
- * glides smoothly instead of jumping at each intermediate keyboard height.
+ * Reading `innerHeight - visualViewport.height` under-measures in the
+ * first mode on some builds, and any "max innerHeight ever seen" baseline
+ * over-measures (double avoidance) whenever the layout viewport
+ * legitimately shrinks — resize-mode keyboards, orientation changes,
+ * desktop window resizes, a collapsing URL bar.
+ *
+ * The robust reference is the app shell's own rendered bottom edge in
+ * client (layout-viewport) coordinates. The keyboard's top edge is the
+ * visual viewport's bottom edge (offsetTop + height) in those same
+ * coordinates, so
+ *
+ *     inset = appBottom − (visualViewport.offsetTop + visualViewport.height)
+ *
+ * is exactly how many CSS pixels of the app the keyboard covers:
+ *   - overlay mode:  appBottom stays put             → inset = keyboard height
+ *   - resize mode:   appBottom already moved up      → inset ≈ 0 (CSS did it)
+ *   - stuck 100vh:   appBottom stuck at full height  → inset = keyboard height
+ *
+ * This module writes one CSS custom property (--keyboard-inset) plus a
+ * data-keyboard-open flag. Layout AND animation are left to CSS
+ * (.chat-view transitions its padding-bottom); there is deliberately no
+ * JS interpolation loop, so there is a single source of motion and no
+ * double-smoothed lag or flicker.
  */
 
 export function getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop = 0) {
   if (!Number.isFinite(layoutHeight) || !Number.isFinite(visualHeight)) return 0;
   return Math.max(0, Math.round(layoutHeight - (visualHeight + Math.max(0, visualOffsetTop))));
+}
+
+/* Pure measurement step, split out for unit tests. `appBottom` is the app
+ * shell's getBoundingClientRect().bottom (client coordinates); `viewport`
+ * is window.visualViewport or null; `innerHeight` is the fallback for
+ * legacy WebViews without the VisualViewport API — resize-mode keyboards
+ * still shrink innerHeight there, so the "stuck 100vh" case keeps
+ * working, while overlay keyboards stay invisible (inset 0), matching
+ * the previous degraded behaviour. */
+export function measureKeyboardInset(appBottom, viewport, innerHeight) {
+  if (!viewport) return getKeyboardInset(appBottom, innerHeight ?? 0, 0);
+  return getKeyboardInset(appBottom, viewport.height, viewport.offsetTop);
 }
 
 /* The tracked node is usually the React composer mount point, while the
@@ -56,39 +92,16 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   })();
 
   const viewport = window.visualViewport;
-  let smoothFrame = 0;
-  let targetInset = 0;
-  let currentInset = 0;
-  /* Baseline viewport height: the tallest `window.innerHeight` ever
-     observed — i.e. the full viewport without keyboard. On iOS,
-     innerHeight never changes so this stays constant and we rely on
-     the visualViewport formula. On Android (which shrinks innerHeight
-     when the keyboard opens), baseline - innerHeight gives the true
-     keyboard height, even when 100dvh hides the loss from other CSS
-     values. */
-  let baselineInnerHeight = window.innerHeight || 0;
-  /* P_kb-stuck — the user reported the input bar sometimes stays
-      lifted after the keyboard closes. Cause: some Android keyboards
-      (Samsung, Gboard in certain WebView versions) dismiss without
-      firing a paired `visualViewport.resize` — viewport.height stays
-      at the shrunken value, so targetInset never returns to 0.
-
-      Defence-in-depth fix:
-        1. Force targetInset=0 when the input isn't focused. The
-           keyboard can only be open while the input has focus, so the
-           activeElement check is authoritative — visualViewport can
-           be stale but focus cannot.
-        2. On blur, schedule a delayed re-check (300ms) to catch a
-           late-firing resize that arrives after the blur event.
-        3. Listen for focusout on the document so the dismissal path
-           also fires when focus moves to a non-input element (e.g.
-           user taps a message in the chat). */
-  let blurRecheckTimer = 0;
+  let updateFrame = 0;
   let pinFrame = 0;
-  let appliedInset = 0;
+  let blurRecheckTimer = 0;
+  /* -1 forces the first applyInset() to write, so --keyboard-inset and
+     data-keyboard-open are initialised even when the inset starts at 0. */
+  let appliedInset = -1;
 
   const applyInset = (inset) => {
     const roundedInset = Math.round(inset);
+    if (roundedInset === appliedInset) return;
     const list = typeof document !== 'undefined'
       ? document.getElementById('msgList')
       : null;
@@ -106,7 +119,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      * Preserve the bottom anchor only for a reader who was already following
      * the latest message; otherwise the smaller viewport can make them appear
      * to have scrolled away and subsequent stream updates stop following. */
-    if (roundedInset !== appliedInset && wasPinned && list) {
+    if (wasPinned && list) {
       if (pinFrame) cancelAnimationFrame(pinFrame);
       pinFrame = requestAnimationFrame(() => {
         pinFrame = 0;
@@ -118,84 +131,43 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     appliedInset = roundedInset;
   };
 
-  // Smooth step toward target using exponential moving average.
-  // Increased from 0.18 to 0.40 for noticeably faster settling.
-  const SMOOTH_FACTOR = 0.40;
-
-  const smoothLoop = () => {
-    smoothFrame = 0;
-    const diff = targetInset - currentInset;
-    if (Math.abs(diff) < 0.5) {
-      currentInset = targetInset;
-      applyInset(currentInset);
-      return;
-    }
-    currentInset += diff * SMOOTH_FACTOR;
-    applyInset(currentInset);
-    smoothFrame = requestAnimationFrame(smoothLoop);
-  };
-
-  const scheduleSmooth = () => {
-    if (!smoothFrame) smoothFrame = requestAnimationFrame(smoothLoop);
+  /* Bottom edge of the app shell in client coordinates. Falls back to
+     innerHeight when the shell is missing, hidden, or not laid out yet
+     (rect.bottom = 0 — the composer cannot be focused then anyway). */
+  const appShellBottom = () => {
+    const appEl = container
+      || (typeof document !== 'undefined' ? document.getElementById('appShell') : null)
+      || root;
+    try {
+      if (appEl && typeof appEl.getBoundingClientRect === 'function') {
+        const bottom = appEl.getBoundingClientRect().bottom;
+        if (Number.isFinite(bottom) && bottom > 0) return bottom;
+      }
+    } catch (_) { /* detached node — use the fallback */ }
+    return window.innerHeight || 0;
   };
 
   const isInputFocused = () => isTrackedInputFocused(trackedInputs);
 
   const update = () => {
-    /* P_kb-inset — reliable cross-platform keyboard height measurement.
-     *
-     * On iOS: window.innerHeight stays constant; visualViewport.height
-     * shrinks by the keyboard height. We use innerHeight as the
-     * reference and the difference gives the true inset.
-     *
-     * On Android (Chrome, WebView): the layout viewport shrinks
-     * (innerHeight ↓) along with visualViewport.height, so the simple
-     * difference is ~0.  We track the maximum observed innerHeight as
-     * a baseline; when innerHeight drops, `baseline - innerHeight`
-     * yields the keyboard height.
-     *
-     * We take the MAX of both methods so the larger estimate wins on
-     * whichever platform the user is on.  The baseline itself updates
-     * whenever innerHeight exceeds the previous max (e.g. after
-     * keyboard closes or the browser chrome retracts). */
-    const rawHeight = window.innerHeight || 0;
-    const visualHeight = viewport?.height || 0;
-    const visualOffsetTop = viewport?.offsetTop || 0;
-
-    // Track the tallest innerHeight ever seen (keyboard-less baseline)
-    if (rawHeight > baselineInnerHeight) baselineInnerHeight = rawHeight;
-
-    // Reference: the taller of (baseline) and (visualHeight + |offsetTop|)
-    const referenceHeight = Math.max(
-      baselineInnerHeight,
-      visualHeight + Math.max(0, visualOffsetTop),
+    /* P_kb-stuck — the input bar must never stay lifted after the
+       keyboard closes. Some Android keyboards (Samsung, Gboard in
+       certain WebView builds) dismiss without firing a paired
+       `visualViewport.resize`, leaving viewport.height stale. The
+       keyboard can only be open while a tracked input has focus, so
+       the activeElement check is authoritative — visualViewport can
+       be stale but focus cannot. */
+    applyInset(
+      isInputFocused()
+        ? measureKeyboardInset(appShellBottom(), viewport, window.innerHeight)
+        : 0,
     );
-    const measuredInset = viewport
-      ? getKeyboardInset(referenceHeight, visualHeight, visualOffsetTop)
-      : 0;
-
-    /* Authoritative check: keyboard cannot be open while the input is
-       not focused. visualViewport.height may be stale (Android
-       dismissal without paired resize) — trust focus over viewport. */
-    targetInset = isInputFocused() ? measuredInset : 0;
-
-    // If the keyboard just opened or closed, snap current close to target
-    // so we don't animate from an unrelated old value. Otherwise schedule
-    // smooth interpolation.
-    const wasOpen = root.dataset.keyboardOpen === 'true';
-    const nowOpen = targetInset > 50;
-    if (wasOpen !== nowOpen) {
-      currentInset = targetInset;
-      applyInset(currentInset);
-    } else {
-      scheduleSmooth();
-    }
   };
 
   const schedule = () => {
-    if (smoothFrame) return;
-    smoothFrame = window.requestAnimationFrame(() => {
-      smoothFrame = 0;
+    if (updateFrame) return;
+    updateFrame = window.requestAnimationFrame(() => {
+      updateFrame = 0;
       update();
     });
   };
@@ -203,11 +175,11 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   const onBlur = () => {
     schedule();
     /* Late re-check: some platforms fire blur BEFORE the close-resize
-       (so measuredInset is still large) and then resize fires ~50-200ms
-       later. Others fire resize before blur. Either way, schedule one
-       more update 300ms later to catch the late settle — and if the
-       resize never arrives (the stuck-keyboard bug), the focus check
-       in update() forces targetInset=0 anyway. */
+       (so the measured inset is still large) and then resize fires
+       ~50-200ms later. Others fire resize before blur. Either way,
+       schedule one more update shortly after to catch the late settle —
+       and if the resize never arrives (the stuck-keyboard bug), the
+       focus check in update() forces the inset to 0 anyway. */
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
     blurRecheckTimer = setTimeout(() => { blurRecheckTimer = 0; schedule(); }, 150);
   };
@@ -227,10 +199,14 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      covers an editor that mounts after this initializer has run. */
   document.addEventListener('focusin', schedule);
   document.addEventListener('focusout', onBlur);
+  /* Returning from the background (tab switch, native app pause) can
+     swallow the close-resize entirely; re-measure on visibility flips.
+     The Capacitor bridge mirrors appStateChange into this same event. */
+  document.addEventListener('visibilitychange', schedule);
   update();
 
   return () => {
-    if (smoothFrame) window.cancelAnimationFrame(smoothFrame);
+    if (updateFrame) window.cancelAnimationFrame(updateFrame);
     if (pinFrame) window.cancelAnimationFrame(pinFrame);
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
     if (viewport) {
@@ -240,5 +216,6 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     window.removeEventListener('resize', schedule);
     document.removeEventListener('focusin', schedule);
     document.removeEventListener('focusout', onBlur);
+    document.removeEventListener('visibilitychange', schedule);
   };
 }

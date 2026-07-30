@@ -680,77 +680,10 @@ document.addEventListener("click",function(e){
 var sbBackdrop=document.getElementById("sidebarBackdrop");
 if(sbBackdrop)sbBackdrop.addEventListener("click",function(e){e.stopPropagation();var sbEl=document.getElementById("sidebar");if(isMobileViewport()&&sbEl&&!sbEl.classList.contains("collapsed"))toggleSidebar();});
 
-/* Mobile keyboard avoidance — robust approach.
-
-   On mobile the visualViewport shrinks when the soft keyboard opens, and
-   the browser shifts the visual viewport scroll offset to keep the focused
-   textarea visible. The input bar (#chatInputBar, position:absolute;
-   bottom:0) moves up, but the scrollable content above it stays put,
-   creating a visual gap.
-
-   Our compensation: when the keyboard opens, scroll #msgList (or whichever
-   scrollContainer() returns) downward by the same pixel amount the
-   viewport lost — i.e. the keyboard height. This keeps the relative visual
-   position between the content and the input bar stable.
-
-   When the keyboard closes, restore the exact scrollTop that was captured
-   at focus time.
-
-   We use only visualViewport.resize to detect open/close transitions (a
-   simple state machine), and we do NOT use blur — the focus event just
-   records the baseline scrollTop. This avoids platform-specific timing
-   races (iOS fires blur before the close-resize; Android fires it after). */
-if(false && window.visualViewport){
-  (function(){
-    var input=document.getElementById("chatComposerRoot");
-    if(!input)return;
-    var _kbSavedTop=0;
-    var _kbOpen=false;
-    /* Threshold: ignore address-bar toggles (typically ~60-80 px) and
-       visual-viewport initialization on page load. */
-    var KB_THRESHOLD=100;
-
-    input.addEventListener("focus",function(){
-      var sc=scrollContainer();
-      if(sc)_kbSavedTop=sc.scrollTop;
-      /* Reset the open flag so that the next resize event that crosses
-         the threshold reliably triggers the open transition. This covers
-         the case where the user re-focuses the input while the keyboard
-         is already showing — the flag is already true, so we need a way
-         to re-apply the compensation. We set it to false so the resize
-         handler sees shouldBeOpen=true and re-computes scrollTop. */
-      _kbOpen=false;
-    });
-
-    window.visualViewport.addEventListener("resize",function(){
-      var vh=window.visualViewport.height;
-      var kbHeight=Math.round(window.innerHeight-vh);
-      var shouldOpen=kbHeight>KB_THRESHOLD;
-
-      /* Only act on a transition: closed → open or open → closed.
-         All intermediate resize events during the keyboard animation
-         are ignored. */
-      if(shouldOpen===_kbOpen)return;
-      _kbOpen=shouldOpen;
-
-      var sc=scrollContainer();
-      if(!sc)return;
-
-      if(shouldOpen){
-        /* Keyboard opened: shift the content down by the keyboard
-           height so it visually stays in the same place relative to
-           the (now-raised) input bar. */
-        sc.scrollTop=Math.max(0,Math.min(
-          _kbSavedTop+kbHeight,
-          sc.scrollHeight
-        ));
-      }else{
-        /* Keyboard closed: restore the original reading position. */
-        sc.scrollTop=_kbSavedTop;
-      }
-    });
-  })();
-}
+/* Mobile keyboard avoidance lives in src/ui/keyboardViewport.js. An older
+   imperative scroll-compensation experiment (a visualViewport resize state
+   machine mutating scrollTop) used to sit here behind `if(false)`; it was
+   removed — the CSS-inset approach below superseded it. */
 
 /* Use a CSS inset instead of imperative scroll compensation. This keeps the
    composer stable when browsers report VisualViewport measurements differently.
