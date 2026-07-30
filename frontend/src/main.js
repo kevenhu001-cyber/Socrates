@@ -4820,13 +4820,14 @@ function consumeStreamRetryViewport(){
   return pending;
 }
 
-function prepareStreamRetryViewport(list,msgIdx,clientId){
+function prepareStreamRetryViewport(list,msgIdx,clientId,preferredOffset){
   if(!list)return;
   var row=list.querySelector('[data-client-id="'+clientId+'"]');
   var anchor=row&&(row.querySelector(".msg-error")||row);
   var listRect=list.getBoundingClientRect();
   var anchorRect=anchor&&anchor.getBoundingClientRect();
-  var offset=anchorRect?Math.round(anchorRect.top-listRect.top):24;
+  var liveOffset=anchorRect?Math.round(anchorRect.top-listRect.top):24;
+  var offset=Number.isFinite(preferredOffset)?preferredOffset:liveOffset;
   _pendingStreamRetryViewport={
     offset:offset,
     expiresAt:Date.now()+15000
@@ -4844,9 +4845,48 @@ function prepareStreamRetryViewport(list,msgIdx,clientId){
   });
 }
 
+/* The failed stream's legacy bubble and its durable React replacement do not
+   commit in the same frame. Keep a reader who was already pinned at the
+   bottom pinned through that short handoff, and remember the error row's last
+   stable offset for Retry. Any real interaction immediately releases this
+   correction so manual reading/scrolling always wins. */
+function settleRetryErrorViewport(list,clientId,onOffset){
+  if(!list||typeof onOffset!=="function")return;
+  var keepPinned=!state._userScrolledAway;
+  var userIntent=false;
+  var intentEvents=["wheel","touchstart","pointerdown","keydown"];
+  var markIntent=function(){userIntent=true;};
+  for(var ei=0;ei<intentEvents.length;ei++){
+    window.addEventListener(intentEvents[ei],markIntent,{passive:true,capture:true});
+  }
+  var detach=function(){
+    for(var di=0;di<intentEvents.length;di++){
+      window.removeEventListener(intentEvents[di],markIntent,{capture:true});
+    }
+  };
+  var frames=0;
+  var settle=function(){
+    if(userIntent){detach();return;}
+    if(keepPinned){
+      list.scrollTop=list.scrollHeight;
+      state._userScrolledAway=false;
+    }
+    var row=list.querySelector('[data-client-id="'+clientId+'"]');
+    var anchor=row&&(row.querySelector(".msg-error")||row);
+    if(anchor){
+      var offset=Math.round(
+        anchor.getBoundingClientRect().top-list.getBoundingClientRect().top
+      );
+      onOffset(offset);
+    }
+    if(++frames<45)requestAnimationFrame(settle);
+    else detach();
+  };
+  requestAnimationFrame(settle);
+}
+
 function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
-  requestAnimationFrame(function(){
-    requestAnimationFrame(function(){
+  function position(){
       if(!list||!assistant||!assistant.isConnected)return;
       var styles=getComputedStyle(list);
       var bottomPadding=parseFloat(styles.paddingBottom)||0;
@@ -4854,6 +4894,14 @@ function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
       var targetOffset=12;
       var reserve=120;
       if(retryViewport){
+        /* Re-running the positioning pass must be idempotent. Clear the
+           previous leading-space correction before measuring; otherwise the
+           next pass measures the already-correct offset and overwrites the
+           full margin with only the tiny residual delta. */
+        assistant.style.marginTop="";
+        if(msgIdx>=0&&state.messages[msgIdx]){
+          delete state.messages[msgIdx]._turnAnchorMarginTop;
+        }
         anchor=assistant;
         var maxOffset=Math.max(8,list.clientHeight-bottomPadding-64);
         targetOffset=Math.max(8,Math.min(maxOffset,retryViewport.offset));
@@ -4899,7 +4947,13 @@ function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
         });
       }
       state._userScrolledAway=false;
-    });
+  }
+  /* A retry bubble is already mounted in the legacy list and its target
+     offset is known. Position it synchronously so the first visible frame
+     cannot flash at the top while waiting for the deferred layout pass. */
+  if(retryViewport)position();
+  requestAnimationFrame(function(){
+    requestAnimationFrame(position);
   });
 }
 
@@ -6620,6 +6674,7 @@ function doRender(){
       replaceWithError:function(errMsg,onRetry){
         if(finished)return;
         finished=true;
+        var retryViewportOffset=null;
         toolRuntime.cancel();
         clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
@@ -6655,7 +6710,7 @@ function doRender(){
                  offset so retry starts where the interruption was visible,
                  rather than jumping back to the user's prompt. */
               try{
-                prepareStreamRetryViewport(list,msgIdx,clientId);
+                prepareStreamRetryViewport(list,msgIdx,clientId,retryViewportOffset);
                 var innerRet=onRetry();
                 if(innerRet&&typeof innerRet.then==="function"){
                   innerRet.catch(function(e){/* retry async handler failed */});
@@ -6705,11 +6760,13 @@ function doRender(){
          textLength:full.length,
          error:String(errMsg||"Generation failed").slice(0,160)
        });
-       /* The error row is the new end of the answer. Keep it inside the same
-          dynamically measured safe area as normal text so the retry control
-          can never settle underneath the composer. */
-       scheduleScrollMainToBottom({force:!state._userScrolledAway});
-     },
+        /* The error row is the new end of the answer. Keep it inside the same
+           dynamically measured safe area as normal text so the retry control
+           can never settle underneath the composer. */
+        settleRetryErrorViewport(list,clientId,function(offset){
+          retryViewportOffset=offset;
+        });
+      },
     /* Phase 3 — attach a search-progress controller to this bubble.
      * `progress` is the object returned by startSearchProgress(). The
      * log was already prepended to `body`; we just stash the ref so
