@@ -13,6 +13,7 @@ export type ComposerToolsAction =
   | 'upload'
   | 'write'
   | 'research'
+  | 'explore'
   | 'deepResearch'
   | 'analyze'
   | 'exam'

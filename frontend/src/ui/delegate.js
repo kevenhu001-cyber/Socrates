@@ -379,6 +379,19 @@ function installDelegate() {
 
   buildActionMap();
 
+  // P_send-race — pressing the send/start button must not steal focus from
+  // the composer editor on pointerdown: the blur-driven `:has(:focus)`
+  // collapse re-lays-out the footer mid-click and moves the button out from
+  // under the pointer, so mouseup lands elsewhere and the click (the actual
+  // send) never fires — the user saw only the collapse "morph".
+  // preventDefault() keeps the editor focused through the click;
+  // submitChatMessage then blurs explicitly (blurAfterSend), so the send
+  // and the collapse animation start in the same interaction frame.
+  document.body.addEventListener('pointerdown', function (e) {
+    var btn = e.target && e.target.closest && e.target.closest('.send-btn, .start-btn');
+    if (btn) e.preventDefault();
+  });
+
   document.body.addEventListener('click', function (e) {
     dispatchEvent(e, 'click');
   });

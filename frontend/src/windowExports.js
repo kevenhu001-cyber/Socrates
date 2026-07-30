@@ -525,6 +525,41 @@ window.analyzeAction = function () {
   focusComposer(surface);
 };
 
+/* Explore is a full staged workflow (scope → search → integrate → deliver),
+   not a one-shot prompt: it plans sub-questions, runs batched native
+   web_search calls, reconciles the evidence, and produces a structured
+   report as the product; when the user asks for a downloadable document,
+   code_interpreter renders the file (e.g. a PDF) and exposes it as an
+   artifact. Distinct from Deep research (autonomous agent) and Find
+   sources (single evidence pass): Explore stays in the conversation and
+   always ends in a reader-ready deliverable. */
+var EXPLORE_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>';
+var EXPLORE_SYSTEM_PROMPT =
+  "You are running the Explore workflow — a staged research system that turns an open question into a polished deliverable.\n\n" +
+  "Stage 1 — Scope. In one short paragraph, restate the question precisely, list the 3-6 sub-questions that must be answered to cover it, and name the deliverable you will produce.\n\n" +
+  "Stage 2 — Search. Answer each sub-question with native web_search calls: several targeted queries per sub-question (vary keywords; include the current year for anything time-sensitive), never one broad query for everything. Prefer primary sources and require two independent sources for every load-bearing claim.\n\n" +
+  "Stage 3 — Integrate. Reconcile the evidence: note where sources disagree, separate verified fact from inference, and discard anything that cannot be attributed to a source.\n\n" +
+  "Stage 4 — Deliver. Produce a structured report: title, short executive summary, one section per sub-question, a 'What remains uncertain' section, and a sources list. If the user asked for a downloadable document (PDF or similar), use code_interpreter to render the report into that file and expose it as an artifact; otherwise deliver the report directly in the chat.\n\n" +
+  "Rules: never invent citations. If the topic genuinely needs more than about 10 searches, say so and propose splitting it. Keep intermediate commentary minimal — the report is the product.";
+window.exploreAction = function () {
+  var surface = getVisibleComposerSurface();
+  if (!window.webSearchOn && typeof window.toggleWebSearch === "function") {
+    window.toggleWebSearch();
+  }
+  if (typeof window.setActiveTemplate === "function") {
+    window.setActiveTemplate({
+      id: "tpl-explore",
+      title: (typeof window.t === "function" ? window.t("composer.explore") : "") || "Explore",
+      shortcut: "/explore",
+      icon: EXPLORE_ICON,
+      systemPrompt: EXPLORE_SYSTEM_PROMPT,
+      body: ""
+    });
+  }
+  focusComposer(surface);
+  if (typeof window.syncQuickChips === "function") window.syncQuickChips();
+};
+
 /* Mirror toggle-style state onto the quick-action chips (查找资料 reflects
    webSearchOn; 深度研究 reflects window.deepResearchOn). The 深度思考 chip
    was removed — deep thinking is now tied to the reasoning-effort picker

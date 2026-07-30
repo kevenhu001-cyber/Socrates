@@ -20,6 +20,7 @@ declare global {
     analyzeAction?: () => void;
     toggleExtensionByKey?: (key: string) => void;
     openPromptTemplatesModal?: () => void;
+    exploreAction?: () => void;
   }
 }
 
@@ -35,6 +36,11 @@ function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null):
       return;
     case 'research':
       composer.researchAction();
+      return;
+    case 'explore':
+      /* Explore ships as a window-level action (windowExports.js) — the
+         typed legacy gateway predates it, so fall through to window. */
+      if (typeof window.exploreAction === 'function') window.exploreAction();
       return;
     case 'deepResearch':
       composer.deepResearchAction();

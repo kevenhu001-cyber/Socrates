@@ -38,7 +38,9 @@ function render(el) {
   var upload = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 16V4M7.5 8.5 12 4l4.5 4.5"/><path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>';
   var pen = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
   var search = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>';
-  var spark = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z"/></svg>';
+  var telescope = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m10.065 12.493-6.18 1.318a.934.934 0 0 1-1.108-.702l-.537-2.15a1.07 1.07 0 0 1 .691-1.265l13.504-4.44"/><path d="m13.56 11.747 4.332-.924"/><path d="m16 21-3.105-6.21"/><path d="M16.485 5.94a2 2 0 0 1 1.455-2.425l1.09-.272a1 1 0 0 1 1.212.727l1.515 6.06a1 1 0 0 1-.727 1.213l-1.09.272a2 2 0 0 1-2.425-1.455z"/><path d="m6.158 8.633 1.114 4.456"/><path d="m8 21 3.105-6.21"/><circle cx="12" cy="13" r="2"/></svg>';
+  var compass = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>';
+  var exam = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 3h16v18H4z"/><path d="M8 8h8M8 12h5M8 16h3"/><path d="m15 15 1.5 1.5L20 13"/></svg>';
   var analyze = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/><path d="m4 7 6-4 6 7 5-4"/></svg>';
   var skills = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg>';
   el.innerHTML =
@@ -46,9 +48,10 @@ function render(el) {
     '<div class="composer-tools-divider"></div>' +
     item("write", pen, label("composer.write", "Write or edit"), "") +
     item("research", search, label("composer.research", "Find resources"), "") +
-    item("deepResearch", spark, label("composer.deepResearch", "Deep Research"), "") +
+    item("explore", compass, label("composer.explore", "Explore"), label("composer.exploreHint", "Scope → batch search → report")) +
+    item("deepResearch", telescope, label("composer.deepResearch", "Deep Research"), "") +
     item("analyze", analyze, label("composer.analyze", "Analyze data"), "") +
-    item("exam", spark, label("composer.exam", "Generate exam"), "") +
+    item("exam", exam, label("composer.exam", "Generate exam"), "") +
     '<div class="composer-tools-divider"></div>' +
     item("skills", skills, label("composer.menu.skills", "Skills & shortcuts"), label("composer.menu.skillsHint", "Create your own"));
 }
@@ -123,6 +126,7 @@ if (typeof document !== "undefined") {
       if (kind === "upload" && typeof window.openAttachmentPicker === "function") window.openAttachmentPicker(mode === "topic" ? "topicAttachInput" : "attachInput");
       if (kind === "write" && typeof window.composeAction === "function") window.composeAction();
       if (kind === "research" && typeof window.researchAction === "function") window.researchAction();
+      if (kind === "explore" && typeof window.exploreAction === "function") window.exploreAction();
       if (kind === "analyze" && typeof window.analyzeAction === "function") window.analyzeAction();
       if (kind === "deepResearch" && typeof window.deepResearchAction === "function") window.deepResearchAction();
       if (kind === "exam" && typeof window.toggleExtensionByKey === "function") window.toggleExtensionByKey(kind);
