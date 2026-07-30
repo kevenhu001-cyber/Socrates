@@ -59,6 +59,14 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let smoothFrame = 0;
   let targetInset = 0;
   let currentInset = 0;
+  /* Baseline viewport height: the tallest `window.innerHeight` ever
+     observed — i.e. the full viewport without keyboard. On iOS,
+     innerHeight never changes so this stays constant and we rely on
+     the visualViewport formula. On Android (which shrinks innerHeight
+     when the keyboard opens), baseline - innerHeight gives the true
+     keyboard height, even when 100dvh hides the loss from other CSS
+     values. */
+  let baselineInnerHeight = window.innerHeight || 0;
   /* P_kb-stuck — the user reported the input bar sometimes stays
       lifted after the keyboard closes. Cause: some Android keyboards
       (Samsung, Gboard in certain WebView versions) dismiss without
@@ -92,7 +100,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     );
 
     root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
-    root.dataset.keyboardOpen = roundedInset > 80 ? 'true' : 'false';
+    root.dataset.keyboardOpen = roundedInset > 50 ? 'true' : 'false';
 
     /* Raising the in-flow composer shrinks the transcript's flex viewport.
      * Preserve the bottom anchor only for a reader who was already following
@@ -111,7 +119,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   };
 
   // Smooth step toward target using exponential moving average.
-  const SMOOTH_FACTOR = 0.18;
+  // Increased from 0.18 to 0.40 for noticeably faster settling.
+  const SMOOTH_FACTOR = 0.40;
 
   const smoothLoop = () => {
     smoothFrame = 0;
@@ -133,25 +142,36 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   const isInputFocused = () => isTrackedInputFocused(trackedInputs);
 
   const update = () => {
-    /* P_kb-inset-android — the previous formula (containerHeight ||
-     * window.innerHeight) gave inset=0 on Android Chrome because
-     * .app = 100dvh shrinks together with visualViewport.height —
-     * both end up at the same post-keyboard value. iOS Safari takes the
-     * opposite path: window.innerHeight stays unchanged and the page
-     * scrolls up (visualViewport.offsetTop turns negative). Use the
-     * larger of {innerHeight, visualHeight + |offsetTop|} so both
-     * platforms give a real keyboard height and the CSS bottom-padding
-     * / fixed-bottom pickers land flush against the keyboard top. */
-    const containerHeight = container?.getBoundingClientRect().height || 0;
+    /* P_kb-inset — reliable cross-platform keyboard height measurement.
+     *
+     * On iOS: window.innerHeight stays constant; visualViewport.height
+     * shrinks by the keyboard height. We use innerHeight as the
+     * reference and the difference gives the true inset.
+     *
+     * On Android (Chrome, WebView): the layout viewport shrinks
+     * (innerHeight ↓) along with visualViewport.height, so the simple
+     * difference is ~0.  We track the maximum observed innerHeight as
+     * a baseline; when innerHeight drops, `baseline - innerHeight`
+     * yields the keyboard height.
+     *
+     * We take the MAX of both methods so the larger estimate wins on
+     * whichever platform the user is on.  The baseline itself updates
+     * whenever innerHeight exceeds the previous max (e.g. after
+     * keyboard closes or the browser chrome retracts). */
+    const rawHeight = window.innerHeight || 0;
     const visualHeight = viewport?.height || 0;
     const visualOffsetTop = viewport?.offsetTop || 0;
-    const layoutHeight = Math.max(
-      window.innerHeight || 0,
+
+    // Track the tallest innerHeight ever seen (keyboard-less baseline)
+    if (rawHeight > baselineInnerHeight) baselineInnerHeight = rawHeight;
+
+    // Reference: the taller of (baseline) and (visualHeight + |offsetTop|)
+    const referenceHeight = Math.max(
+      baselineInnerHeight,
       visualHeight + Math.max(0, visualOffsetTop),
-      containerHeight,
-    ) || document.documentElement.clientHeight || 0;
+    );
     const measuredInset = viewport
-      ? getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop)
+      ? getKeyboardInset(referenceHeight, visualHeight, visualOffsetTop)
       : 0;
 
     /* Authoritative check: keyboard cannot be open while the input is
@@ -163,7 +183,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     // so we don't animate from an unrelated old value. Otherwise schedule
     // smooth interpolation.
     const wasOpen = root.dataset.keyboardOpen === 'true';
-    const nowOpen = targetInset > 80;
+    const nowOpen = targetInset > 50;
     if (wasOpen !== nowOpen) {
       currentInset = targetInset;
       applyInset(currentInset);
@@ -189,7 +209,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        resize never arrives (the stuck-keyboard bug), the focus check
        in update() forces targetInset=0 anyway. */
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
-    blurRecheckTimer = setTimeout(() => { blurRecheckTimer = 0; schedule(); }, 300);
+    blurRecheckTimer = setTimeout(() => { blurRecheckTimer = 0; schedule(); }, 150);
   };
 
   if (viewport) {
