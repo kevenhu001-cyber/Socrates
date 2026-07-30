@@ -705,7 +705,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 .new-reply-pill{
   position:absolute;
   right:20px;
-  bottom:calc(120px + var(--keyboard-inset));
+  bottom:calc(var(--chat-input-bar-height) + var(--keyboard-inset) + 16px);
   padding:6px 12px;
   border-radius:999px;
   /* UI-align: neutral floating surface (open-webui scroll-down chip)
@@ -1204,6 +1204,9 @@ true) but the dropdown never shows — see commit history. */
   flex:1 1 auto;
   min-height:0;
   overflow-y:auto;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
   scrollbar-width:thin;
   scrollbar-color:transparent transparent;
   padding-bottom:var(--chat-content-bottom-reserve);
@@ -3829,7 +3832,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   .auth-card{padding:24px 16px}
   .profile-overlay{padding:20px 12px}
   .sidebar{width:var(--app-sidebar-width,16rem);min-width:var(--app-sidebar-width,16rem)}
-  .new-reply-pill{right:10px;bottom:calc(100px + var(--keyboard-inset));font-size:11px;padding:4px 10px}
+  .new-reply-pill{right:10px;bottom:calc(var(--chat-input-bar-height) + var(--keyboard-inset) + 12px);font-size:11px;padding:4px 10px}
 }
 
 /* ────── Responsive: large screens ≥ 1200 px ────── */

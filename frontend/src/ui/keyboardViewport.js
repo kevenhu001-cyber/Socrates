@@ -16,6 +16,28 @@ export function getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop = 0
   return Math.max(0, Math.round(layoutHeight - (visualHeight + Math.max(0, visualOffsetTop))));
 }
 
+/* The tracked node is usually the React composer mount point, while the
+ * actual focus lives on a nested contenteditable element. Checking only
+ * `root.matches(':focus')` misses that relationship and makes the virtual
+ * keyboard look closed even while the editor is active. Keep this helper
+ * pure enough for unit tests and accept both direct and descendant focus. */
+export function isTrackedInputFocused(trackedInputs, activeElement) {
+  const active = activeElement ?? (
+    typeof document !== 'undefined' ? document.activeElement : null
+  );
+  const inputs = Array.isArray(trackedInputs) ? trackedInputs : [];
+  for (let i = 0; i < inputs.length; i += 1) {
+    const el = inputs[i];
+    if (!el) continue;
+    if (active === el) return true;
+    try {
+      if (active && typeof el.contains === 'function' && el.contains(active)) return true;
+      if (typeof el.matches === 'function' && el.matches(':focus-within')) return true;
+    } catch (_) { /* detached/custom elements can throw */ }
+  }
+  return false;
+}
+
 export function initKeyboardViewport({ inputs, input, container, root = document.documentElement } = {}) {
   if (!root) return () => {};
 
@@ -54,10 +76,38 @@ export function initKeyboardViewport({ inputs, input, container, root = document
            also fires when focus moves to a non-input element (e.g.
            user taps a message in the chat). */
   let blurRecheckTimer = 0;
+  let pinFrame = 0;
+  let appliedInset = 0;
 
   const applyInset = (inset) => {
-    root.style.setProperty('--keyboard-inset', `${Math.round(inset)}px`);
-    root.dataset.keyboardOpen = inset > 80 ? 'true' : 'false';
+    const roundedInset = Math.round(inset);
+    const list = typeof document !== 'undefined'
+      ? document.getElementById('msgList')
+      : null;
+    const readerMovedAway = Boolean(window.state && window.state._userScrolledAway);
+    const wasPinned = Boolean(
+      list
+      && !readerMovedAway
+      && list.scrollHeight - list.scrollTop - list.clientHeight <= 96
+    );
+
+    root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
+    root.dataset.keyboardOpen = roundedInset > 80 ? 'true' : 'false';
+
+    /* Raising the composer also increases the transcript's bottom reserve.
+     * Preserve the bottom anchor only for a reader who was already following
+     * the latest message; otherwise the new padding makes them appear to have
+     * scrolled away and subsequent stream updates stop auto-scrolling. */
+    if (roundedInset !== appliedInset && wasPinned && list) {
+      if (pinFrame) cancelAnimationFrame(pinFrame);
+      pinFrame = requestAnimationFrame(() => {
+        pinFrame = 0;
+        if (!window.state || !window.state._userScrolledAway) {
+          list.scrollTop = list.scrollHeight;
+        }
+      });
+    }
+    appliedInset = roundedInset;
   };
 
   // Smooth step toward target using exponential moving average.
@@ -80,20 +130,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (!smoothFrame) smoothFrame = requestAnimationFrame(smoothLoop);
   };
 
-  const isInputFocused = () => {
-    if (!trackedInputs.length) return false;
-    var active = document.activeElement;
-    for (var i = 0; i < trackedInputs.length; i++) {
-      var el = trackedInputs[i];
-      if (!el) continue;
-      if (active === el) return true;
-      /* The input may contain nested focusable children in some
-         composer variants — match on the element OR a descendant.
-         `:focus` walks the focus chain so this covers both. */
-      try { if (el.matches(':focus')) return true; } catch (_) { /* ignore */ }
-    }
-    return false;
-  };
+  const isInputFocused = () => isTrackedInputFocused(trackedInputs);
 
   const update = () => {
     /* P_kb-inset-android — the previous formula (containerHeight ||
@@ -136,7 +173,11 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   };
 
   const schedule = () => {
-    if (!smoothFrame) smoothFrame = window.requestAnimationFrame(update);
+    if (smoothFrame) return;
+    smoothFrame = window.requestAnimationFrame(() => {
+      smoothFrame = 0;
+      update();
+    });
   };
 
   const onBlur = () => {
@@ -161,27 +202,23 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      input.blur). This is the path that fires when the user dismisses
      the keyboard by tapping a message or the page background, where
      blur may or may not fire depending on the platform. */
+  /* focus/blur do not bubble from the nested Tiptap editor to the React
+     mount point. focusin/focusout do, and the document-level listener also
+     covers an editor that mounts after this initializer has run. */
+  document.addEventListener('focusin', schedule);
   document.addEventListener('focusout', onBlur);
-  trackedInputs.forEach((el) => {
-    if (!el) return;
-    el.addEventListener('focus', schedule);
-    el.addEventListener('blur', onBlur);
-  });
   update();
 
   return () => {
     if (smoothFrame) window.cancelAnimationFrame(smoothFrame);
+    if (pinFrame) window.cancelAnimationFrame(pinFrame);
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
     if (viewport) {
       viewport.removeEventListener('resize', schedule);
       viewport.removeEventListener('scroll', schedule);
     }
     window.removeEventListener('resize', schedule);
+    document.removeEventListener('focusin', schedule);
     document.removeEventListener('focusout', onBlur);
-    trackedInputs.forEach((el) => {
-      if (!el) return;
-      el.removeEventListener('focus', schedule);
-      el.removeEventListener('blur', onBlur);
-    });
   };
 }

@@ -4772,6 +4772,8 @@ function addMessage(role,text,type,actions,attachmentsArg){
 var _chatStopMode=false;
 var _chatStreaming=false;
 var _pendingStreamRetryViewport=null;
+var _pendingRetryPressViewport=null;
+var _stableStreamRetryViewport=null;
 
 /* looksLikeMetaInstruction + appendThinking extracted to
    src/ui/thinkingPill.js (Phase 1B split). Imported at the top. */
@@ -4820,13 +4822,75 @@ function consumeStreamRetryViewport(){
   return pending;
 }
 
-function prepareStreamRetryViewport(list,msgIdx,clientId){
-  if(!list)return;
+function measureStreamRetryViewport(list,clientId,ttlMs){
+  if(!list)return null;
   var row=list.querySelector('[data-client-id="'+clientId+'"]');
   var anchor=row&&(row.querySelector(".msg-error")||row);
   var listRect=list.getBoundingClientRect();
   var anchorRect=anchor&&anchor.getBoundingClientRect();
-  var offset=anchorRect?Math.round(anchorRect.top-listRect.top):24;
+  if(!anchorRect)return null;
+  return {
+    clientId:clientId,
+    offset:Math.round(anchorRect.top-listRect.top),
+    expiresAt:Date.now()+Math.max(1000,ttlMs||2000)
+  };
+}
+
+function scheduleStableStreamRetryViewport(list,clientId){
+  var frames=0;
+  var capture=function(){
+    var snapshot=measureStreamRetryViewport(list,clientId,60000);
+    if(snapshot)_stableStreamRetryViewport=snapshot;
+    if(++frames<4)requestAnimationFrame(capture);
+  };
+  requestAnimationFrame(capture);
+}
+
+function captureStreamRetryViewport(list,clientId){
+  if(!list)return null;
+  /* Playwright and some browsers may scroll a focused button into view before
+     pointerdown. Prefer the offset captured while the finalized error row was
+     stably visible; this is also the position a real user saw before tapping
+     Retry. The short-lived press snapshot still protects pointer/mouse event
+     duplication when no stable error snapshot exists. */
+  var stable=_stableStreamRetryViewport;
+  if(stable&&stable.clientId===clientId&&stable.expiresAt>=Date.now()){
+    var stablePress={
+      clientId:clientId,
+      offset:stable.offset,
+      expiresAt:Date.now()+2000
+    };
+    _pendingRetryPressViewport=stablePress;
+    return stablePress;
+  }
+  /* Pointer and compatibility mouse events can both fire for one tap.
+     Preserve the first (pre-focus) measurement; a later mousedown must not
+     overwrite it after the composer/layout has already started changing. */
+  var existing=_pendingRetryPressViewport;
+  if(existing&&existing.clientId===clientId&&existing.expiresAt>=Date.now()){
+    return existing;
+  }
+  var snapshot=measureStreamRetryViewport(list,clientId,2000);
+  if(!snapshot)return null;
+  _pendingRetryPressViewport=snapshot;
+  return snapshot;
+}
+
+function prepareStreamRetryViewport(list,msgIdx,clientId){
+  if(!list)return;
+  var pressed=_pendingRetryPressViewport;
+  _pendingRetryPressViewport=null;
+  _stableStreamRetryViewport=null;
+  var offset=null;
+  if(pressed&&pressed.clientId===clientId&&pressed.expiresAt>=Date.now()){
+    offset=pressed.offset;
+  }else{
+    var row=list.querySelector('[data-client-id="'+clientId+'"]');
+    var anchor=row&&(row.querySelector(".msg-error")||row);
+    var listRect=list.getBoundingClientRect();
+    var anchorRect=anchor&&anchor.getBoundingClientRect();
+    offset=anchorRect?Math.round(anchorRect.top-listRect.top):24;
+  }
   _pendingStreamRetryViewport={
     offset:offset,
     expiresAt:Date.now()+15000
@@ -4879,24 +4943,37 @@ function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
       var anchorRect=anchor.getBoundingClientRect();
       var target=list.scrollTop+(anchorRect.top-listRect.top)-targetOffset;
       list.scrollTop=Math.max(0,target);
-      /* A retried "Thinking…" row can be shorter than the failed answer it
-         replaces. In that state the transcript has no scroll range, so
-         scrollTop alone cannot keep the retry at the visible error position.
-         Add only the missing leading space and persist it in React state so
-         the legacy-to-React handoff cannot collapse the viewport. */
+      /* The retry placeholder's min-height and the React removal of the
+         failed row can settle over several frames. A single scrollTop write
+         therefore runs against stale scrollHeight and leaves the retry well
+         below its captured viewport position. Re-align after layout settles,
+         then use margin only when the scroller genuinely has no more range. */
       if(retryViewport){
-        requestAnimationFrame(function(){
+        requestAnimationFrame(function settleRetryAnchor(attempt){
           if(!assistant.isConnected)return;
           var retryListRect=list.getBoundingClientRect();
           var actualOffset=assistant.getBoundingClientRect().top-retryListRect.top;
-          var missingSpace=Math.max(0,Math.round(targetOffset-actualOffset));
-          if(missingSpace>1){
+          var delta=Math.round(actualOffset-targetOffset);
+          if(Math.abs(delta)>1){
+            var maxScroll=Math.max(0,list.scrollHeight-list.clientHeight);
+            var nextTop=Math.max(0,Math.min(maxScroll,list.scrollTop+delta));
+            if(Math.abs(nextTop-list.scrollTop)>0.5)list.scrollTop=nextTop;
+          }
+          if(attempt<2){
+            requestAnimationFrame(function(){settleRetryAnchor(attempt+1)});
+            return;
+          }
+          var finalListRect=list.getBoundingClientRect();
+          var finalOffset=assistant.getBoundingClientRect().top-finalListRect.top;
+          var missingSpace=Math.max(0,Math.round(targetOffset-finalOffset));
+          var finalMaxScroll=Math.max(0,list.scrollHeight-list.clientHeight);
+          if(missingSpace>1&&list.scrollTop>=finalMaxScroll-1){
             assistant.style.marginTop=missingSpace+"px";
             if(msgIdx>=0&&state.messages[msgIdx]){
               state.messages[msgIdx]._turnAnchorMarginTop=missingSpace;
             }
           }
-        });
+        },0);
       }
       state._userScrolledAway=false;
     });
@@ -5033,6 +5110,14 @@ function addStreamingMessage(opts){
   var list=document.getElementById("msgList");
   var div=document.createElement("div");
   div.className="msg assistant";
+  /* Override the CSS content-visibility:auto inherited from
+     .msg-list>.msg. During streaming the browser would otherwise
+     skip layout for this message when the user scrolls it
+     off-screen, making scrollHeight stale and breaking auto-scroll
+     (the snap would undershoot the real bottom by the un-laid-out
+     content height). 'visible' ensures the streaming message is
+     always laid out at its real size. */
+  div.style.contentVisibility="visible";
   var body=document.createElement("div");
   body.className="msg-body";
   div.appendChild(body);
@@ -5696,8 +5781,32 @@ function doRender(){
       state.messages[msgIdx].rawText=full;
     }
     if(_wasPinned&&_streamScroller){
-      _streamScroller.scrollTop=_streamScroller.scrollHeight;
-    }else if(state._userScrolledAway){
+      /* P_scroll-race — _wasPinned was measured before this render
+         cycle's DOM mutations. A concurrent passive wheel / touch event
+         (processed by the compositor thread without blocking JS) may
+         have scrolled the viewport since then — re-check the flag so
+         we don't fight the user's scroll intent by snapping them back
+         to the bottom. */
+      if(!state._userScrolledAway){
+        _streamScroller.scrollTop=_streamScroller.scrollHeight;
+        /* P_content-visibility-drift — content-visibility:auto on
+           off-screen messages can make scrollHeight lag the true
+           content height. After the initial snap, check if the user
+           is still more than 16px from the measured bottom; if so,
+           schedule a follow-up snap one frame later when the browser
+           has accounted for all layout. This is a no-op when the snap
+           already reached the true bottom (the common case). */
+        var _drift=_streamScroller.scrollHeight-_streamScroller.scrollTop-_streamScroller.clientHeight;
+        if(_drift>16){
+          requestAnimationFrame(function _repin(){
+            if(!state._userScrolledAway&&_streamScroller){
+              _streamScroller.scrollTop=_streamScroller.scrollHeight;
+            }
+          });
+        }
+      }
+    }
+    if(state._userScrolledAway){
       showNewReplyPill();
     }
   }
@@ -6311,12 +6420,29 @@ function doRender(){
             var _fvRect=list.getBoundingClientRect();
             var _fvRows=list.querySelectorAll('.msg[data-client-id]');
             var _fvAnchor=null;
-            /* Prefer an assistant (non-user) message as the anchor so the
-               viewport stays on the answer the reader is looking at. A
-               user message partially visible at the top of the viewport
-               would otherwise drag the scroll position back to the
-               question after the React handoff changes layout. */
-            for(var _fvi=0;_fvi<_fvRows.length;_fvi++){
+            var _fvStreamRowOffset=null;
+            var _fvStreamRowNearTop=false;
+            /* If the answer that is finishing is actually visible, it is the
+               unambiguous anchor. Scanning from the top can accidentally pick
+               the previous assistant row when its margin/border overlaps the
+               viewport by a pixel, which shifts the current answer during the
+               legacy-to-React swap. Keep an explicit row-level snapshot too:
+               inner nodes may be transplanted and stay connected, masking the
+               fact that the outer answer row itself moved. */
+            if(div&&div.isConnected){
+              var _fvLiveRect=div.getBoundingClientRect();
+              if(_fvLiveRect.bottom>_fvRect.top+1&&_fvLiveRect.top<_fvRect.bottom-1){
+                _fvAnchor=div;
+                _fvStreamRowOffset=_fvLiveRect.top-_fvRect.top;
+                _fvStreamRowNearTop=Math.abs(_fvStreamRowOffset)<=96;
+              }
+            }
+            /* Otherwise prefer an assistant (non-user) message as the anchor
+               so the viewport stays on the answer the reader is looking at. A
+               user message partially visible at the top of the viewport would
+               otherwise drag the scroll position back to the question after
+               the React handoff changes layout. */
+            for(var _fvi=0;!_fvAnchor&&_fvi<_fvRows.length;_fvi++){
               var _fvr=_fvRows[_fvi].getBoundingClientRect();
               if(_fvr.bottom>_fvRect.top+1){
                 if(!_fvRows[_fvi].classList.contains('user')){_fvAnchor=_fvRows[_fvi];break;}
@@ -6344,7 +6470,20 @@ function doRender(){
                 if(_fvnr.bottom>_fvRect.top+1){_fvInnerAnchor=_fvCandidates[_fvni];break;}
               }
             }
-            var _fvMeasuredAnchor=_fvInnerAnchor||_fvAnchor;
+            /* When the answer row itself begins at the viewport top, anchor
+               the row rather than its first paragraph. Streaming-only chrome
+               above that paragraph disappears during the React handoff; an
+               inner anchor would preserve the paragraph but visibly pull the
+               whole answer upward by exactly that chrome height. Once the row
+               starts well above the viewport, the reader is genuinely in the
+               middle of a long answer and the inner paragraph is the better
+               anchor. */
+            var _fvRowOffset=_fvAnchor
+              ?_fvAnchor.getBoundingClientRect().top-_fvRect.top
+              :0;
+            var _fvMeasuredAnchor=(_fvAnchor&&Math.abs(_fvRowOffset)<=96)
+              ?_fvAnchor
+              :(_fvInnerAnchor||_fvAnchor);
             _finishViewport={
               scroller:list,
               pinned:!state._userScrolledAway&&
@@ -6354,6 +6493,8 @@ function doRender(){
                  without any user input. */
               scrolledAway:!!state._userScrolledAway,
               scrollTop:list.scrollTop,
+              streamRowId:_fvStreamRowNearTop?clientId:null,
+              streamRowOffset:_fvStreamRowNearTop?_fvStreamRowOffset:null,
               anchorNode:_fvMeasuredAnchor,
               anchorId:_fvAnchor?_fvAnchor.getAttribute('data-client-id'):null,
               anchorOffset:_fvMeasuredAnchor?_fvMeasuredAnchor.getBoundingClientRect().top-_fvRect.top:0
@@ -6483,13 +6624,88 @@ function doRender(){
                   };
                   var _fvApply=function(){
                     if(_finishViewport.pinned){
+                      /* A short answer can be both at the physical bottom and
+                         aligned near the viewport top. If completion removes
+                         streaming-only chrome, blindly staying at bottom moves
+                         the whole answer downward. Restore the lost row height
+                         first, then snap to the new bottom so both invariants
+                         remain true. */
+                      if(_finishViewport.streamRowId&&
+                        Number.isFinite(_finishViewport.streamRowOffset)){
+                        var _fvPinnedRow=list.querySelector(
+                          '.msg[data-client-id="'+_finishViewport.streamRowId+'"][data-react-owned]'
+                        );
+                        if(_fvPinnedRow){
+                          var _fvPinnedRect=_fvPinnedRow.getBoundingClientRect();
+                          var _fvPinnedNow=_fvPinnedRect.top-
+                            _fvScroller.getBoundingClientRect().top;
+                          var _fvPinnedDelta=Math.ceil(
+                            _fvPinnedNow-_finishViewport.streamRowOffset
+                          );
+                          if(_fvPinnedDelta>1){
+                            var _fvPinnedMin=Math.ceil(
+                              _fvPinnedRect.height+_fvPinnedDelta
+                            );
+                            _fvPinnedRow.style.minHeight=_fvPinnedMin+"px";
+                            var _fvPinnedMsg=msgIdx>=0?state.messages[msgIdx]:null;
+                            if(_fvPinnedMsg){
+                              _fvPinnedMsg._turnAnchorMinHeight=Math.max(
+                                Number(_fvPinnedMsg._turnAnchorMinHeight)||0,
+                                _fvPinnedMin
+                              );
+                            }
+                          }
+                        }
+                      }
                       _fvScroller.scrollTop=_fvScroller.scrollHeight;
                       /* Layout-shift scroll events during the handoff may
                          have flipped this flag; the reader never left the
                          bottom, so undo the corruption. */
                       state._userScrolledAway=false;
-                    }else if(_finishViewport.scrolledAway){
+                    }else if(_finishViewport.scrolledAway&&_finishViewport.scrollTop<=2){
+                      /* At the absolute transcript top, preserving scrollTop
+                         is the user's explicit intent. Mid-answer reading is
+                         different: React/legacy height deltas move the visible
+                         paragraph even when scrollTop itself is unchanged, so
+                         let the row-anchor branches below preserve content. */
                       _fvScroller.scrollTop=_finishViewport.scrollTop;
+                    }else if(_finishViewport.streamRowId&&
+                      Number.isFinite(_finishViewport.streamRowOffset)){
+                      var _fvStreamRow=list.querySelector(
+                        '.msg[data-client-id="'+_finishViewport.streamRowId+'"][data-react-owned]'
+                      );
+                      if(_fvStreamRow){
+                        var _fvStreamRect=_fvStreamRow.getBoundingClientRect();
+                        var _fvStreamNow=_fvStreamRect.top-
+                          _fvScroller.getBoundingClientRect().top;
+                        var _fvStreamDelta=_fvStreamNow-_finishViewport.streamRowOffset;
+                        if(_fvStreamDelta>1){
+                          var _fvMaxTop=Math.max(0,
+                            _fvScroller.scrollHeight-_fvScroller.clientHeight);
+                          var _fvNeededTop=_fvScroller.scrollTop+_fvStreamDelta;
+                          var _fvShortfall=Math.ceil(_fvNeededTop-_fvMaxTop);
+                          if(_fvShortfall>0){
+                            /* The reader is already at the physical scroll
+                               limit, so create only the missing answer reserve
+                               before applying the row correction. This blank
+                               tail is the same turn viewport anchor used while
+                               streaming and is cleared when the next user turn
+                               begins. */
+                            var _fvRequiredMin=Math.ceil(
+                              _fvStreamRect.height+_fvShortfall
+                            );
+                            _fvStreamRow.style.minHeight=_fvRequiredMin+"px";
+                            var _fvStreamMsg=msgIdx>=0?state.messages[msgIdx]:null;
+                            if(_fvStreamMsg){
+                              _fvStreamMsg._turnAnchorMinHeight=Math.max(
+                                Number(_fvStreamMsg._turnAnchorMinHeight)||0,
+                                _fvRequiredMin
+                              );
+                            }
+                          }
+                        }
+                        _fvScroller.scrollTop+=_fvStreamDelta;
+                      }
                     }else if(_finishViewport.anchorNode&&_finishViewport.anchorNode.isConnected){
                       var _fvExactNow=_finishViewport.anchorNode.getBoundingClientRect().top-
                         _fvScroller.getBoundingClientRect().top;
@@ -6663,16 +6879,42 @@ function doRender(){
               }catch(e){/* retry handler threw */}
             };
             if(typeof btn.addEventListener==="function"){
+              var _captureDirectRetry=function(ev){
+                captureStreamRetryViewport(list,clientId);
+                /* Mouse focus would collapse the expanded composer before
+                   click. Keep editor focus until the retry stream replaces
+                   the failed row; keyboard activation is unaffected. */
+                if(ev.type==="mousedown")ev.preventDefault();
+              };
+              btn.addEventListener("pointerdown",_captureDirectRetry,true);
+              btn.addEventListener("mousedown",_captureDirectRetry,true);
               btn.addEventListener("click",retryHandler);
             }else{
+              function _findRetryTarget(node){
+                if(!node)return null;
+                if(node.id===retryBtnId)return node;
+                return node.closest?node.closest("#"+retryBtnId):null;
+              }
+              /* Capture the visible error offset before the retry button
+                 steals focus from the expanded mobile composer. Chromium can
+                 synthesize either pointer+mouse events or only mouse events
+                 depending on the input source, so cover both paths. */
+              var _captureRetryPress=function(ev){
+                if(!_findRetryTarget(ev.target))return;
+                captureStreamRetryViewport(list,clientId);
+                if(ev.type==="mousedown")ev.preventDefault();
+              };
+              list.addEventListener("pointerdown",_captureRetryPress,true);
+              list.addEventListener("mousedown",_captureRetryPress,true);
               /* Delegate retry clicks for React-rendered error bubbles.
                  (Previously this was an `else if(msgList && ...)`
                  guard, but `msgList` was undeclared in this closure
                  scope so the delegation never fired — retry clicks on
                  React-rendered error bubbles were silently dead.) */
               list.addEventListener("click",function _retryDelegated(ev){
-                var t=ev.target;
-                if(t && t.id===retryBtnId){
+                if(_findRetryTarget(ev.target)){
+                  list.removeEventListener("pointerdown",_captureRetryPress,true);
+                  list.removeEventListener("mousedown",_captureRetryPress,true);
                   list.removeEventListener("click",_retryDelegated);
                   retryHandler();
                 }
@@ -6707,8 +6949,11 @@ function doRender(){
        });
        /* The error row is the new end of the answer. Keep it inside the same
           dynamically measured safe area as normal text so the retry control
-          can never settle underneath the composer. */
+          can never settle underneath the composer. Capture its stable visible
+          offset after the bottom alignment settles; button focus/scrollIntoView
+          must not redefine where Retry resumes. */
        scheduleScrollMainToBottom({force:!state._userScrolledAway});
+       scheduleStableStreamRetryViewport(list,clientId);
      },
     /* Phase 3 — attach a search-progress controller to this bubble.
      * `progress` is the object returned by startSearchProgress(). The
