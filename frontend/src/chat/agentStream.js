@@ -22,6 +22,9 @@ export function beginAgentTextStream(){
   if(!list)return null;
   var div=document.createElement("div");
   div.className="msg assistant";
+  /* Override content-visibility:auto so scrollHeight stays accurate
+     even when the user scrolls away during streaming. */
+  div.style.contentVisibility="visible";
   var body=document.createElement("div");
   body.className="msg-body";
   div.appendChild(body);
@@ -84,7 +87,11 @@ export function beginAgentTextStream(){
     }catch(e){
       live.innerHTML='<p>'+esc(full)+'</p>';
     }
-    if(wasPinned&&sc)sc.scrollTop=sc.scrollHeight;
+    /* P_scroll-race — re-check user intent in case a passive wheel/touch
+       event moved the viewport between the wasPinned measurement and now. */
+    if(wasPinned&&sc&&(!window.state||!window.state._userScrolledAway)){
+      sc.scrollTop=sc.scrollHeight;
+    }
   }
   function schedule(){
     if(pending||pendingTimer||finished)return;
@@ -123,7 +130,13 @@ export function beginAgentTextStream(){
       try{processPendingMermaid()}catch(_){}
       try{processPendingViz()}catch(_){}
       try{processPendingVizActions()}catch(_){}
-      if(wasPinned&&sc)sc.scrollTop=sc.scrollHeight;
+      /* P_scroll-race — re-check user intent after the heavy DOM
+         updates (formatMsg, hljs, Mermaid, viz) above. A passive
+         wheel/touch event may have scrolled the viewport since the
+         wasPinned measurement. */
+      if(wasPinned&&sc&&(!window.state||!window.state._userScrolledAway)){
+        sc.scrollTop=sc.scrollHeight;
+      }
     }
   };
 }
