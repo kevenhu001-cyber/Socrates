@@ -3827,6 +3827,21 @@ window.addEventListener("resize",function(){
   if(isSlashCommandPaletteOpen()) positionSlashCommandPalette();
 });
 
+/* Blur whatever is focused inside the chat composer and collapse the
+   selection Tiptap leaves behind, so the focus-driven visuals (border
+   accent, expanded desktop layout) reset after a click-send. */
+function blurChatComposer(){
+  var rootEl=document.getElementById("chatComposerRoot");
+  var active=document.activeElement;
+  if(rootEl&&active&&rootEl.contains(active)&&typeof active.blur==="function"){
+    active.blur();
+    try{
+      var sel=window.getSelection();
+      if(sel&&sel.rangeCount)sel.removeAllRanges();
+    }catch(_){}
+  }
+}
+
 async function submitChatMessage(textOverride,opts){
   opts=opts||{};
   var rawText=(textOverride!=null?textOverride:getComposerMarkdown("chat"));
@@ -3871,7 +3886,15 @@ async function submitChatMessage(textOverride,opts){
     addMessage("user",persistText,null,null,attList);
     clearComposer("chat");updateSendBtn();
     scheduleScrollMainToBottom({force:true});
-    focusComposer("chat");
+    /* Click-send (opts.blurAfterSend) ends the typing session: drop the
+       editor focus so the composer collapses out of its focus-within
+       visuals. Enter-send keeps the classic keep-typing flow by
+       re-asserting focus, exactly as before. */
+    if(opts.blurAfterSend){
+      blurChatComposer();
+    }else{
+      focusComposer("chat");
+    }
   }else{
     /* Origin: quiz — synthetic message from a quiz pick. */
     addMessage("user",persistText,null,null,attList);
@@ -5053,7 +5076,9 @@ window.handleSendClick=function(){
       window._activeChatCtl.abort();
     }
   }else{
-    submitChatMessage();
+    /* Button-click send exits the focus state (①); Enter-send in
+       handleChatKey keeps focus for rapid follow-up typing. */
+    submitChatMessage(null,{blurAfterSend:true});
   }
 };
 
