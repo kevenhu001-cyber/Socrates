@@ -3513,6 +3513,30 @@ var _slashQuery="";
    on every turn while the template is active. The chip in the
    input bar shows the current mode; clicking × clears it. */
 var _activeTemplate=null;
+/* P_extension-chip — an "extension" template is just a template that
+   also flips a piece of global mode state (e.g. window.deepResearchOn,
+   window.webSearchOn) when it becomes active, and flips it back when
+   it is cleared. The keys here are the canonical extension ids used by
+   the + menu and the chip badge; they are also recognised by the
+   send-paths (submitChatMessage / startSession) which read the same
+   globals. Keeping the side-effects inside setActiveTemplate/clearActiveTemplate
+   means every "×" on the chip and every menu click stay in sync. */
+var EXTENSION_SIDE_EFFECTS={
+  webSearch:function(on){ if(on!==!!window.webSearchOn && typeof window.toggleWebSearch==="function") window.toggleWebSearch(); },
+  deepResearch:function(on){ window.deepResearchOn=!!on; if(typeof window.syncQuickChips==="function") window.syncQuickChips(); },
+  extensiveThinking:function(on){
+    window.extensiveThinkingOn=!!on;
+    try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch(e){}
+  }
+};
+function _applyExtensionSideEffects(prevExt,nextExt){
+  if(prevExt && EXTENSION_SIDE_EFFECTS[prevExt]){
+    try{ EXTENSION_SIDE_EFFECTS[prevExt](false); }catch(_){}
+  }
+  if(nextExt && EXTENSION_SIDE_EFFECTS[nextExt]){
+    try{ EXTENSION_SIDE_EFFECTS[nextExt](true); }catch(_){}
+  }
+}
 /* Strip the template body's leading prefix from the user-typed
    text, so the LLM sees only the user's actual content instead
    of "Paste the text you want summarized:\n\n<their text>".
@@ -3533,18 +3557,27 @@ function stripTemplateBodyPrefix(text){
   return text.slice(i).replace(/^\s+/,"");
 }
 function setActiveTemplate(t){
+  var prevExt=_activeTemplate&&_activeTemplate.extensionKey||null;
+  var nextExt=t&&t.extensionKey||null;
   _activeTemplate=t?{
     id:t.id,title:t.title,shortcut:t.shortcut,
     systemPrompt:t.systemPrompt||"",body:t.body||"",
-    icon:t.icon
+    icon:t.icon,
+    extensionKey:nextExt
   }:null;
+  if(prevExt!==nextExt) _applyExtensionSideEffects(prevExt,nextExt);
   renderTemplateModeChip();
 }
-function clearActiveTemplate(){setActiveTemplate(null);}
-/* Surface the active template in the conversation body instead of
-   attaching a badge to the input. The compact row keeps the selected
-   extension visible without competing with the composer controls.
-   Clicking × clears it; the click handler is wired inline. */
+function clearActiveTemplate(){
+  var prevExt=_activeTemplate&&_activeTemplate.extensionKey||null;
+  if(prevExt) _applyExtensionSideEffects(prevExt,null);
+  setActiveTemplate(null);
+}
+/* Surface the active template as an inline badge embedded directly
+   in the composer content area, styled with SVG icon + accent color.
+   Instead of a separate status bar above the input, the chip appears
+   as a natural part of the content area — like an inline tag/badge
+   at the beginning of the editor. */
 /* P_slash-topic — mirror the same body status in the topic setup area. */
 function renderTemplateModeChip(){
   var chip=document.getElementById("chatModeStatus");
