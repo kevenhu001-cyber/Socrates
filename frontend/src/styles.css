@@ -40,7 +40,14 @@ a{color:inherit;text-decoration:none}
 ::-webkit-scrollbar-thumb:hover{background:hsl(var(--always-white)/0.22)}
 /* Firefox — supported since FF 64. WebKit fallback above. */
 @supports (scrollbar-width:thin){*{scrollbar-width:thin;scrollbar-color:hsl(var(--always-white)/0.12) transparent}}
-.app{display:flex;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none;position:relative}
+.app{display:flex;height:100vh;height:100dvh;
+  /* P_topic-kb-stable — keyboardViewport.js writes --app-vh with the last
+     keyboard-CLOSED viewport height and freezes it while a composer is
+     focused. On resize-mode keyboards the shell therefore keeps its
+     pre-keyboard height (the keyboard covers its bottom edge) instead of
+     reflowing the whole layout; --keyboard-inset lifts the chat composer. */
+  height:var(--app-vh,100dvh);
+  overflow:hidden;overscroll-behavior:none;position:relative}
 /* UI-align: translucent sidebar surface (open-webui desktop look).
    Mobile keeps a solid background — see the 768px override below. */
 .sidebar{width:var(--app-sidebar-width,18rem);min-width:var(--app-sidebar-width,18rem);display:flex;flex-direction:column;background:hsl(var(--bg-000)/0.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-right:0.5px solid hsl(var(--border-300)/0.12);overflow:hidden;z-index:30;position:absolute;left:0;top:0;bottom:0;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),border-color .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}
@@ -566,20 +573,19 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .sidebar-more-item-danger:hover svg{color:hsl(0 70% 80%)}
 
 /* Compact action menu used by the + button in both rounded composers. */
-.composer-tools-menu{position:fixed;z-index:1300;width:min(352px,calc(100vw - 16px));padding:8px;background:hsl(var(--bg-100)/.98);border:1px solid hsl(var(--border-300)/.42);border-radius:18px;box-shadow:0 22px 64px hsl(var(--always-black)/.28),0 3px 12px hsl(var(--always-black)/.08);font-family:var(--font-sans);backdrop-filter:blur(18px);animation:composer-tools-enter .2s cubic-bezier(.2,.8,.2,1);transform-origin:left bottom}
+.composer-tools-menu{position:fixed;z-index:1300;width:min(280px,calc(100vw - 16px));padding:6px;background:hsl(var(--bg-100)/.98);border:1px solid hsl(var(--border-300)/.42);border-radius:20px;box-shadow:0 22px 64px hsl(var(--always-black)/.28),0 3px 12px hsl(var(--always-black)/.08);font-family:var(--font-sans);backdrop-filter:blur(18px);animation:composer-tools-enter .2s cubic-bezier(.2,.8,.2,1);transform-origin:left bottom}
 .composer-tools-menu.hidden{display:none}
-.composer-tools-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:7px 9px 9px;color:hsl(var(--text-100));font-size:calc(13px * var(--app-font-scale,1));font-weight:650}
-.composer-tools-heading small{color:hsl(var(--text-500));font-size:calc(10.5px * var(--app-font-scale,1));font-weight:500}
-.composer-tools-section-label{padding:8px 10px 3px;color:hsl(var(--text-500));font-size:calc(10px * var(--app-font-scale,1));font-weight:650;letter-spacing:.08em;text-transform:uppercase}
-.composer-tools-item{display:flex;align-items:center;gap:11px;width:100%;min-height:52px;padding:7px 9px;border:0;border-radius:12px;background:transparent;color:hsl(var(--text-200));font:inherit;font-size:calc(13px * var(--app-font-scale,1));text-align:left;cursor:pointer;transition:background .18s ease,color .18s ease,transform .14s ease}
+/* ChatGPT-style minimal rows: a bare line icon + one label per action.
+   The old heading / section labels / per-item descriptions are gone —
+   the menu reads as a simple, scannable list. */
+.composer-tools-item{display:flex;align-items:center;gap:14px;width:100%;min-height:46px;padding:9px 12px;border:0;border-radius:14px;background:transparent;color:hsl(var(--text-200));font:inherit;font-size:calc(14.5px * var(--app-font-scale,1));font-weight:500;text-align:left;cursor:pointer;transition:background .18s ease,color .18s ease,transform .14s ease}
 .composer-tools-item:hover,.composer-tools-item:focus-visible{background:hsl(var(--bg-300)/.8);color:hsl(var(--text-100));outline:0}
 .composer-tools-item:active{transform:scale(.985)}
-.composer-tools-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:hsl(var(--bg-300)/.7);color:hsl(var(--text-300));flex-shrink:0;transition:background .18s ease,color .18s ease,transform .18s ease}
-.composer-tools-item:hover .composer-tools-icon{background:hsl(var(--accent-000)/.12);color:hsl(var(--accent-000))}
-.composer-tools-item:hover .composer-tools-icon{transform:translateY(-1px)}
-.composer-tools-icon svg{width:17px;height:17px;stroke-linecap:round;stroke-linejoin:round}
-.composer-tools-copy{display:flex;flex:1;min-width:0;flex-direction:column;align-items:flex-start;gap:2px;line-height:1.25}
-.composer-tools-copy small{color:hsl(var(--text-500));font-size:calc(11px * var(--app-font-scale,1));white-space:normal}
+.composer-tools-icon{display:grid;place-items:center;width:24px;height:24px;color:hsl(var(--text-300));flex-shrink:0;transition:color .18s ease}
+.composer-tools-item:hover .composer-tools-icon{color:hsl(var(--text-100))}
+.composer-tools-icon svg{width:20px;height:20px;stroke-linecap:round;stroke-linejoin:round}
+.composer-tools-copy{display:flex;flex:1;min-width:0;align-items:center;line-height:1.3}
+.composer-tools-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .composer-tools-divider{height:1px;margin:5px 3px;background:hsl(var(--border-300)/.28)}
 .composer-tools-trigger{border-radius:12px!important}
 @keyframes composer-tools-enter{from{opacity:0;transform:translateY(7px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
@@ -788,27 +794,28 @@ html[data-show-grid="false"] .main-bg{background-image:none}
    (140px) so the input bar has its own breathing room without
    affecting other views. The .main-inner itself doesn't need
    extra bottom padding. */
-.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;padding-top:clamp(56px,12vh,136px);flex:1;min-height:0;overflow-y:auto}
-/* The topic-setup page keeps its natural scroll flow when the keyboard
-   opens — the browser scrolls the focused input into view automatically.
-   No keyboard-avoidance rules needed; the page layout stays stable. */
-/* P_topic-kb-stable — when the virtual keyboard opens on the topic
-   landing, the app's 100dvh shell shrinks; a bottom-anchored disclaimer
-   would ride up above the keyboard ("避让键盘") and the flex column would
-   redistribute its top padding, making the input box jump. Hide the
-   disclaimer outright and pin the topic-setup to the top with a smaller,
-   fixed top gap so the input surface stays put across focus/blur. */
-:root[data-keyboard-open="true"] #topicDisclaimer{display:none}
-:root[data-keyboard-open="true"] .topic-setup{
-  justify-content:flex-start;
-  padding-top:clamp(24px,6vh,64px);
-}
+.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;padding-top:clamp(56px,calc(var(--app-vh,100vh) * .12),136px);flex:1;min-height:0;overflow-y:auto}
+/* P_topic-kb-stable — the landing must not reflow when the virtual
+   keyboard opens or closes: the focused input keeps its exact position
+   and the disclaimer below stays put (the keyboard may cover it — that
+   is intended, it must never "avoid" the keyboard). Two mechanisms:
+     1. The shell height and every vh-derived gap on this screen use
+        --app-vh, which keyboardViewport.js freezes while a composer is
+        focused, so resize-mode keyboards can't shrink the layout.
+     2. No data-keyboard-open overrides fire here — earlier builds
+        re-pinned the column with a smaller padding-top and hid the
+        disclaimer, which itself caused the jump this rule set removes. */
 .topic-title{font-family:var(--font-display);font-size:calc(clamp(1.8rem,1.32rem + 1.9vw,2.5rem) * var(--app-font-scale, 1));font-weight:560;color:hsl(var(--text-200));text-align:center;line-height:1.28;animation:emptyStateIn .4s var(--ease-out) both}
 .topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:640px;white-space:nowrap;animation:emptyStateIn .4s var(--ease-out) 70ms both}
 /* UI-align: staged empty-state entrance (open-webui Placeholder —
    greeting, subtitle, then input fade in one after another). */
 @keyframes emptyStateIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.topic-input-wrap{width:100%;max-width:720px;margin-top:clamp(16px,3vh,50px);background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:26px;overflow:hidden;box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);transition:box-shadow .2s,border-color .2s;animation:emptyStateIn .4s var(--ease-out) 140ms both}
+.topic-input-wrap{--composer-motion-duration:.34s;--composer-motion-ease:cubic-bezier(.22,1,.36,1);width:100%;max-width:720px;margin-top:clamp(16px,calc(var(--app-vh,100vh) * .03),50px);background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:26px;overflow:hidden;box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);
+  /* Focus feedback glides on the same duration/curve as the chat composer
+     (see .chat-input-wrap) — the old .2s default-ease border/shadow snap
+     read as an abrupt "blink" when the landing input gained focus. */
+  transition:box-shadow var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),background-color var(--composer-motion-duration) var(--composer-motion-ease);
+  animation:emptyStateIn .4s var(--ease-out) 140ms both}
 .topic-input-wrap:focus-within{box-shadow:0 .25rem 1.5rem hsl(var(--always-black)/8%);border-color:hsl(var(--accent-000)/0.35)}
 #topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(16px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-100));min-height:76px;max-height:320px;overflow-y:auto;font-family:var(--font-sans);padding:16px 20px 12px}
 #topicInput::placeholder{color:hsl(var(--text-400))}
@@ -2614,7 +2621,7 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .katex .mord{color:hsl(var(--text-100))}
 .katex .mbin{color:hsl(var(--accent-000))}
 .katex .mrel{color:hsl(var(--accent-000))}
-@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;background:hsl(var(--bg-000));-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),box-shadow .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4vh 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{padding-top:20px}}
+@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;background:hsl(var(--bg-000));-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),box-shadow .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:calc(var(--app-vh,100vh) * .04) 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{padding-top:20px}}
 .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:25;animation:fadeIn .15s}
 .sidebar-backdrop.show{display:block}
 
@@ -3872,7 +3879,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 
 /* ────── Responsive: small screens ≤ 480 px ────── */
 @media(max-width:480px){
-  .main-inner{padding:2vh 8px 20px}
+  .main-inner{padding:calc(var(--app-vh,100vh) * .02) 8px 20px}
   .topic-title{font-size:calc(1.25rem * var(--app-font-scale, 1));padding:16px 4px 0}
   .topic-sub{font-size:calc(12.5px * var(--app-font-scale, 1));padding:0 4px;white-space:nowrap}
   .chat-messages{padding:8px 4px}
@@ -4202,7 +4209,11 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
   .chat-input-footer .send-btn{width:40px;height:40px}
   .chat-input-footer .attach-btn{width:38px;height:38px}
   .chat-input-footer .mic-btn{display:none}
-  .chat-input-footer .effort-trigger{padding:5px 6px;font-size:calc(12px * var(--app-font-scale, 1))}
+  .chat-input-footer .effort-trigger{padding:5px 6px;font-size:calc(12px * var(--app-font-scale, 1));
+    /* Focus swaps this trigger's geometry (min-height/padding/radius in the
+       :has(:focus) rule below); ride the shared composer motion so it
+       resizes in lockstep with the wrap instead of snapping. */
+    transition:background-color .18s ease,color .18s ease,min-height var(--composer-motion-duration,.34s) var(--composer-motion-ease,ease),padding var(--composer-motion-duration,.34s) var(--composer-motion-ease,ease),border-radius var(--composer-motion-duration,.34s) var(--composer-motion-ease,ease)}
   .rich-composer[data-surface="chat"] .tiptap{
     min-height:42px;max-height:150px;padding:9px 7px;font-size:16px;
     /* Same duration/curve as .chat-input-wrap so the editor grows in

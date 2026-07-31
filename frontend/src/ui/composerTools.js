@@ -28,10 +28,10 @@ function menu() {
    trigger. */
 if (typeof document !== "undefined") menu();
 
-function item(action, icon, title, description) {
+function item(action, icon, title) {
   return '<button type="button" class="composer-tools-item" role="menuitem" data-action="' + action + '">' +
     '<span class="composer-tools-icon">' + icon + '</span><span class="composer-tools-copy"><span>' + title +
-    '</span>' + (description ? '<small>' + description + '</small>' : '') + '</span></button>';
+    '</span></span></button>';
 }
 
 function render(el) {
@@ -43,17 +43,18 @@ function render(el) {
   var exam = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 3h16v18H4z"/><path d="M8 8h8M8 12h5M8 16h3"/><path d="m15 15 1.5 1.5L20 13"/></svg>';
   var analyze = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/><path d="m4 7 6-4 6 7 5-4"/></svg>';
   var skills = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg>';
+  /* ChatGPT-style minimal list — keep in sync with the React renderer in
+     react/composer/ComposerToolsMenu.tsx (which owns this menu at runtime):
+     one icon + one label per row, no headings/descriptions/dividers. */
   el.innerHTML =
-    item("upload", upload, label("composer.menu.upload", "Upload files"), "") +
-    '<div class="composer-tools-divider"></div>' +
-    item("write", pen, label("composer.write", "Write or edit"), "") +
-    item("research", search, label("composer.research", "Find resources"), "") +
-    item("explore", compass, label("composer.explore", "Explore"), label("composer.exploreHint", "Scope → batch search → report")) +
-    item("deepResearch", telescope, label("composer.deepResearch", "Deep Research"), "") +
-    item("analyze", analyze, label("composer.analyze", "Analyze data"), "") +
-    item("exam", exam, label("composer.exam", "Generate exam"), "") +
-    '<div class="composer-tools-divider"></div>' +
-    item("skills", skills, label("composer.menu.skills", "Skills & shortcuts"), label("composer.menu.skillsHint", "Create your own"));
+    item("upload", upload, label("composer.menu.upload", "Upload files")) +
+    item("write", pen, label("composer.write", "Write or edit")) +
+    item("research", search, label("composer.research", "Find resources")) +
+    item("explore", compass, label("composer.explore", "Explore")) +
+    item("deepResearch", telescope, label("composer.deepResearch", "Deep Research")) +
+    item("analyze", analyze, label("composer.analyze", "Analyze data")) +
+    item("exam", exam, label("composer.exam", "Generate exam")) +
+    item("skills", skills, label("composer.menu.skills", "Skills & shortcuts"));
 }
 
 /* React migration bridge — fires whenever the menu opens/closes or

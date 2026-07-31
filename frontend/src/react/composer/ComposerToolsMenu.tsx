@@ -34,14 +34,14 @@ const EXAM_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const SKILLS_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg>';
 
 const ITEMS: MenuItemSpec[] = [
-  { action: 'upload', labelKey: 'composer.menu.upload', labelFallback: 'Add files', descriptionKey: 'composer.menu.uploadHint', descriptionFallback: 'Images, PDFs, notes and data', icon: UPLOAD_ICON },
-  { action: 'write', labelKey: 'composer.write', labelFallback: 'Write & edit', descriptionKey: 'composer.writeHint', descriptionFallback: 'Draft, rewrite and polish', icon: PEN_ICON },
-  { action: 'research', labelKey: 'composer.research', labelFallback: 'Find sources', descriptionKey: 'composer.researchHint', descriptionFallback: 'Search and compare evidence', icon: SEARCH_ICON },
-  { action: 'explore', labelKey: 'composer.explore', labelFallback: 'Explore', descriptionKey: 'composer.exploreHint', descriptionFallback: 'Scope → batch search → report', icon: EXPLORE_ICON },
-  { action: 'deepResearch', labelKey: 'composer.deepResearch', labelFallback: 'Deep research', descriptionKey: 'composer.deepResearchHint', descriptionFallback: 'Plan → search → read → report', icon: TELESCOPE_ICON },
-  { action: 'analyze', labelKey: 'composer.analyze', labelFallback: 'Analyze data', descriptionKey: 'composer.analyzeHint', descriptionFallback: 'Calculate, chart and export', icon: ANALYZE_ICON },
-  { action: 'exam', labelKey: 'composer.exam', labelFallback: 'Create an exam', descriptionKey: 'composer.examHint', descriptionFallback: 'Blueprint, questions and grading', icon: EXAM_ICON },
-  { action: 'skills', labelKey: 'composer.menu.skills', labelFallback: 'Your workflows', descriptionKey: 'composer.menu.skillsHint', descriptionFallback: 'Reusable custom instructions', icon: SKILLS_ICON },
+  { action: 'upload', labelKey: 'composer.menu.upload', labelFallback: 'Add files', icon: UPLOAD_ICON },
+  { action: 'write', labelKey: 'composer.write', labelFallback: 'Write & edit', icon: PEN_ICON },
+  { action: 'research', labelKey: 'composer.research', labelFallback: 'Find sources', icon: SEARCH_ICON },
+  { action: 'explore', labelKey: 'composer.explore', labelFallback: 'Explore', icon: EXPLORE_ICON },
+  { action: 'deepResearch', labelKey: 'composer.deepResearch', labelFallback: 'Deep research', icon: TELESCOPE_ICON },
+  { action: 'analyze', labelKey: 'composer.analyze', labelFallback: 'Analyze data', icon: ANALYZE_ICON },
+  { action: 'exam', labelKey: 'composer.exam', labelFallback: 'Create an exam', icon: EXAM_ICON },
+  { action: 'skills', labelKey: 'composer.menu.skills', labelFallback: 'Your workflows', icon: SKILLS_ICON },
 ];
 
 function i18n(key: string, fallback: string): string {
@@ -72,26 +72,15 @@ function MenuItem({ spec, onPick }: { spec: MenuItemSpec; onPick: (action: Compo
   );
 }
 
+/* ChatGPT-style minimal list: one icon + one label per row, no headings,
+   section labels or per-item descriptions — the labels carry the meaning
+   and the reduced chrome keeps the menu scannable at a glance. */
 function MenuItems({ onPick }: { onPick: (action: ComposerToolsAction) => void }) {
   return (
     <>
-      <div className="composer-tools-heading">
-        <span>{i18n('composer.menu.heading', 'Add to this message')}</span>
-        <small>{i18n('composer.menu.headingHint', 'Choose a workflow')}</small>
-      </div>
-      <MenuItem spec={ITEMS[0]} onPick={onPick} />
-      <div className="composer-tools-divider" />
-      <div className="composer-tools-section-label">{i18n('composer.menu.create', 'Create')}</div>
-      <MenuItem spec={ITEMS[1]} onPick={onPick} />
-      <div className="composer-tools-section-label">{i18n('composer.menu.investigate', 'Investigate')}</div>
-      <MenuItem spec={ITEMS[2]} onPick={onPick} />
-      <MenuItem spec={ITEMS[3]} onPick={onPick} />
-      <MenuItem spec={ITEMS[4]} onPick={onPick} />
-      <MenuItem spec={ITEMS[5]} onPick={onPick} />
-      <div className="composer-tools-section-label">{i18n('composer.menu.learn', 'Learn')}</div>
-      <MenuItem spec={ITEMS[6]} onPick={onPick} />
-      <div className="composer-tools-divider" />
-      <MenuItem spec={ITEMS[7]} onPick={onPick} />
+      {ITEMS.map((spec) => (
+        <MenuItem key={spec.action} spec={spec} onPick={onPick} />
+      ))}
     </>
   );
 }
