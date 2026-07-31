@@ -92,15 +92,24 @@ function close() {
 
 function position(el, trigger) {
   var r = trigger.getBoundingClientRect();
+  var viewport = window.visualViewport;
+  var viewportTop = viewport ? Math.max(0, viewport.offsetTop || 0) : 0;
+  var viewportBottom = viewport ? (viewportTop + viewport.height) : window.innerHeight;
+  var viewportWidth = viewport ? viewport.width : window.innerWidth;
   el.style.left = "0px";
   el.style.top = "0px";
   var width = el.offsetWidth || 260;
   var height = el.offsetHeight || 300;
-  var left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
+  var left = Math.max(8, Math.min(r.left, viewportWidth - width - 8));
   var top = r.top - height - 10;
-  if (top < 8) top = Math.min(window.innerHeight - height - 8, r.bottom + 10);
+  if (top < viewportTop + 8) top = Math.min(viewportBottom - height - 8, r.bottom + 10);
   el.style.left = left + "px";
-  el.style.top = Math.max(8, top) + "px";
+  el.style.top = Math.max(viewportTop + 8, top) + "px";
+}
+
+function reposition() {
+  var el = document.getElementById(MENU_ID);
+  if (activeTrigger && el && !el.classList.contains("hidden")) position(el, activeTrigger);
 }
 
 export function toggleComposerTools(trigger, mode) {
@@ -137,5 +146,9 @@ if (typeof document !== "undefined") {
     if (!event.target.closest || !event.target.closest(".composer-tools-trigger")) close();
   });
   document.addEventListener("keydown", function (event) { if (event.key === "Escape") close(); });
-  window.addEventListener("resize", close);
+  window.addEventListener("resize", reposition);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", reposition);
+    window.visualViewport.addEventListener("scroll", reposition);
+  }
 }

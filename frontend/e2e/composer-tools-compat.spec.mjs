@@ -156,11 +156,75 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
   expect(before).not.toBeNull();
 
   await plus.click();
-  await expect(page.locator('#composerToolsMenu')).not.toHaveClass(/hidden/);
+  const menu = page.locator('#composerToolsMenu');
+  await expect(menu).not.toHaveClass(/hidden/);
   const after = await wrap.boundingBox();
   expect(after).not.toBeNull();
 
   expect(Math.abs(after.height - before.height)).toBeLessThanOrEqual(2);
   await expect(plus).toBeFocused();
   await expect(wrap).not.toHaveCSS('min-height', '116px');
+
+  const mobileMenuStyle = await menu.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      background: style.backgroundColor,
+      border: style.borderTopWidth,
+      shadow: style.boxShadow,
+      radius: style.borderTopLeftRadius,
+    };
+  });
+  expect(mobileMenuStyle).toEqual({
+    background: 'rgba(0, 0, 0, 0)',
+    border: '0px',
+    shadow: 'none',
+    radius: '0px',
+  });
+  await page.screenshot({
+    path: 'test-results/visual-qa/composer-workflows-menu-mobile.png',
+    fullPage: true,
+  });
+});
+
+test('mobile workflow selection leaves a themed body status', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  const plus = page.locator('#topicComposerToolsBtn');
+  expect(await plus.count()).toBe(1);
+  await plus.click();
+
+  const menu = page.locator('#composerToolsMenu');
+  const write = menu.locator('[data-composer-action="write"]');
+  expect(await write.count()).toBe(1);
+  await write.click();
+
+  await expect(menu).toHaveClass(/hidden/);
+  const status = page.locator('#topicModeStatus');
+  const chip = status.locator('.composer-tool-chip');
+  await expect(status).toBeVisible();
+  await expect(chip).toBeVisible();
+  const chipBox = await chip.boundingBox();
+  expect(chipBox).not.toBeNull();
+  expect(chipBox.height).toBeGreaterThanOrEqual(28);
+  await expect(chip.locator('.composer-tool-chip-icon')).toHaveCSS('color', /rgb/);
+  await expect(chip.locator('.composer-tool-chip-label')).toHaveCSS('color', /rgb/);
+  expect(await chip.evaluate((element) => element.closest('#topicInputWrap'))).toBeNull();
+
+  await page.evaluate(() => {
+    window.state.phase = 'chat';
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+  });
+  const chatStatus = page.locator('#chatModeStatus');
+  const chatChip = chatStatus.locator('.composer-tool-chip');
+  await expect(chatStatus).toBeVisible();
+  await expect(chatChip).toBeVisible();
+  expect(await chatChip.evaluate((element) => element.closest('#chatInputWrap'))).toBeNull();
+  await page.screenshot({
+    path: 'test-results/visual-qa/composer-workflow-selected-mobile.png',
+    fullPage: true,
+  });
 });

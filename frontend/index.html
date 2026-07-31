@@ -561,6 +561,7 @@
              paint before JS runs. -->
         <h1 class="topic-title greeting" id="topicTitle" data-i18n-key="greeting.chat"></h1>
         <p class="topic-sub" id="topicSub"></p>
+        <div class="composer-mode-status hidden" id="topicModeStatus" aria-live="polite"></div>
         <div class="topic-input-wrap" id="topicInputWrap">
           <!-- P_attachments-tutor — chip strip above the topic-setup
                textarea. Shares the same .attachment-chips class and
@@ -568,7 +569,6 @@
                container; src/attachments/render.js fans the render
                out to every wired composer. -->
           <div class="attachment-chips hidden" id="topicAttachmentChips"></div>
-          <div class="template-mode-chip hidden" id="topicTemplateModeChip" aria-live="polite"></div>
           <div id="topicComposerRoot" class="composer-editor-root" aria-label="What would you like to explore?"></div>
           <div class="topic-footer">
             <div class="footer-left-group">
@@ -627,6 +627,7 @@
           </button>
         </div>
         <div class="msg-list" id="msgList"></div>
+        <div class="composer-mode-status hidden" id="chatModeStatus" aria-live="polite"></div>
         <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
         <div class="chat-input-bar" id="chatInputBar">
           <div class="chat-input-wrap" id="chatInputWrap">
@@ -634,39 +635,36 @@
                  chip is rendered by renderAttachmentChips() in main.js;
                  this is just the empty container. -->
             <div class="attachment-chips hidden" id="attachmentChips"></div>
-            <!-- P5.8 — template mode chip. Hidden by default;
-                 surfaces when a prompt template is active so the
-                 user knows the system is in a specialized mode.
-                 Click × (rendered inline) to exit. -->
-            <div class="template-mode-chip hidden" id="templateModeChip" aria-live="polite"></div>
-            <div id="chatComposerRoot" class="composer-editor-root" aria-label="Type your thinking"></div>
-            <div class="chat-input-footer">
-              <div class="footer-left-group">
-                <button class="attach-btn composer-tools-trigger" id="chatComposerToolsBtn" type="button" data-action="toggleComposerTools" data-action-arg="chat" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                </button>
-                <input type="file" id="attachInput" multiple
-                       accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
-                       hidden>
-                <!-- P_chatgpt-landing — reasoning-effort selector (高/中/低)
-                     for the in-session composer; shares the persisted value
-                     with the landing one. -->
-                <div class="effort-picker" data-open="false">
-                <button type="button" class="effort-trigger" data-action="toggleEffortPicker" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
-                    <span class="effort-label">Medium</span>
-                    <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            <div class="chat-composer-body">
+              <div id="chatComposerRoot" class="composer-editor-root" aria-label="Type your thinking"></div>
+              <div class="chat-input-footer">
+                <div class="footer-left-group">
+                  <button class="attach-btn composer-tools-trigger" id="chatComposerToolsBtn" type="button" data-action="toggleComposerTools" data-action-arg="chat" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                   </button>
-                  <div class="effort-menu" role="listbox" aria-label="Reasoning effort">
-                    <button type="button" class="effort-item" data-effort="high" role="option" data-action="setReasoningEffort" data-action-arg="high"><span data-i18n-key="effort.high">High</span></button>
-                    <button type="button" class="effort-item" data-effort="medium" role="option" data-action="setReasoningEffort" data-action-arg="medium"><span data-i18n-key="effort.medium">Medium</span></button>
-                    <button type="button" class="effort-item" data-effort="low" role="option" data-action="setReasoningEffort" data-action-arg="low"><span data-i18n-key="effort.low">Low</span></button>
+                  <input type="file" id="attachInput" multiple
+                         accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
+                         hidden>
+                  <!-- P_chatgpt-landing — reasoning-effort selector (高/中/低)
+                       for the in-session composer; shares the persisted value
+                       with the landing one. -->
+                  <div class="effort-picker" data-open="false">
+                  <button type="button" class="effort-trigger" data-action="toggleEffortPicker" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
+                      <span class="effort-label">Medium</span>
+                      <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="effort-menu" role="listbox" aria-label="Reasoning effort">
+                      <button type="button" class="effort-item" data-effort="high" role="option" data-action="setReasoningEffort" data-action-arg="high"><span data-i18n-key="effort.high">High</span></button>
+                      <button type="button" class="effort-item" data-effort="medium" role="option" data-action="setReasoningEffort" data-action-arg="medium"><span data-i18n-key="effort.medium">Medium</span></button>
+                      <button type="button" class="effort-item" data-effort="low" role="option" data-action="setReasoningEffort" data-action-arg="low"><span data-i18n-key="effort.low">Low</span></button>
+                    </div>
                   </div>
                 </div>
+                <span class="chat-input-hint" id="chatInputHint">Shift+Enter for new line</span>
+                <button class="send-btn" id="sendBtn" aria-label="Send" data-action="handleSendClick">
+                  <span id="sendBtnContent"><svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+                </button>
               </div>
-              <span class="chat-input-hint" id="chatInputHint">Shift+Enter for new line</span>
-              <button class="send-btn" id="sendBtn" aria-label="Send" data-action="handleSendClick">
-                <span id="sendBtnContent"><svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
-              </button>
             </div>
           </div>
         </div>

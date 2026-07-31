@@ -3541,13 +3541,14 @@ function setActiveTemplate(t){
   renderTemplateModeChip();
 }
 function clearActiveTemplate(){setActiveTemplate(null);}
-/* Surface the active template as a chip above the input so
-   the user always knows the system is in a specialized mode.
+/* Surface the active template in the conversation body instead of
+   attaching a badge to the input. The compact row keeps the selected
+   extension visible without competing with the composer controls.
    Clicking × clears it; the click handler is wired inline. */
-/* P_slash-topic — also render the chip in the topic setup area. */
+/* P_slash-topic — mirror the same body status in the topic setup area. */
 function renderTemplateModeChip(){
-  var chip=document.getElementById("templateModeChip");
-  var topicChip=document.getElementById("topicTemplateModeChip");
+  var chip=document.getElementById("chatModeStatus");
+  var topicChip=document.getElementById("topicModeStatus");
   if(!_activeTemplate){
     if(chip){chip.classList.add("hidden");chip.innerHTML="";}
     if(topicChip){topicChip.classList.add("hidden");topicChip.innerHTML="";}
