@@ -87,6 +87,8 @@ function close() {
   if (el) el.classList.add("hidden");
   if (activeTrigger) activeTrigger.setAttribute("aria-expanded", "false");
   activeTrigger = null;
+  /* Drops the mobile bottom-sheet scrim (body.composer-tools-open::after). */
+  document.body.classList.remove("composer-tools-open");
   _publishComposerTools();
 }
 
@@ -121,6 +123,9 @@ export function toggleComposerTools(trigger, mode) {
   el.classList.remove("hidden");
   trigger.setAttribute("aria-expanded", "true");
   position(el, trigger);
+  /* On phones the menu renders as a bottom sheet (CSS overrides the inline
+     left/top); this class shows the scrim behind it. */
+  document.body.classList.add("composer-tools-open");
   _publishComposerTools();
 }
 
