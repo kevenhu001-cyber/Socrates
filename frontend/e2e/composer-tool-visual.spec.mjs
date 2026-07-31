@@ -29,14 +29,14 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     await window.askChatTurn('Explore Socratic learning');
   });
 
-  // The live chat path replaced the agent-tool-card with an inline
-  // status label (Searching/Coding/Data Processing) so the learner
-  // sees what the model is doing without tool-card chrome. Verify
-  // the label appears during the tool_use event and disappears once
-  // the assistant reply starts streaming.
-  const thinkingStatus = page.locator('.msg.assistant .thinking-status');
-  await expect(thinkingStatus).toBeVisible();
-  await expect(thinkingStatus.locator('.thinking-status-label')).toContainText(/Searching|Coding|Working/i);
+  // The live chat path replaced the agent-tool-card with a compact
+  // inline status row (.tool-inline) mounted in the message flow so the
+  // learner sees what the model is doing without tool-card chrome. The
+  // stream here is fulfilled atomically, so by assertion time the row
+  // has settled into its done state showing the found-results label.
+  const toolRow = page.locator('.msg.assistant .tool-inline[data-tcid="search-visual"]');
+  await expect(toolRow).toBeVisible();
+  await expect(toolRow.locator('.tool-inline-label').first()).toContainText(/Found|Searching/i);
   // tool-run-group and agent-tool-card are now share/history-only —
   // they must NOT be created in the live chat path.
   await expect(page.locator('.tool-run-group')).toHaveCount(0);
@@ -86,9 +86,12 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
 
   await mobileEditor.click();
   await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
+  // The composer grows to its focused height via a CSS transition, so wait
+  // for the animation to settle before measuring rather than catching it
+  // mid-flight.
+  await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(110);
   const focusedBox = await mobileComposer.boundingBox();
   const focusedEditorBox = await page.locator('#chatComposerRoot').boundingBox();
-  expect(focusedBox?.height).toBeGreaterThanOrEqual(110);
   expect(focusedEditorBox?.width).toBeGreaterThanOrEqual((focusedBox?.width ?? 0) - 20);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-focused.png', fullPage: true });
 

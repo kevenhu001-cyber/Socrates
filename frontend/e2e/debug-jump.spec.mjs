@@ -102,7 +102,7 @@ async function prepareStream(page, options = {}) {
   }, { delay, finishDelay, deltas });
 }
 
-test('instrumented: pinned reader stays at bottom after finish (think + long answer)', async ({ page }) => {
+test('instrumented: new turn anchors the question near the top after finish (think + long answer)', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -142,7 +142,15 @@ test('instrumented: pinned reader stays at bottom after finish (think + long ans
       const r = row.getBoundingClientRect();
       if (r.bottom > lr.top + 1) { topEl = row.className + ' :: ' + (row.textContent || '').slice(0, 60); break; }
     }
+    // scheduleActiveTurnToTop pins the newest user question near the top
+    // of the scroller; measure its offset from the scroller viewport top.
+    const users = list.querySelectorAll('.msg.user');
+    const lastUser = users.length ? users[users.length - 1] : null;
+    const userTopOffset = lastUser
+      ? Math.round(lastUser.getBoundingClientRect().top - lr.top)
+      : null;
     return {
+      userTopOffset,
       finalDfb: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
       finalTop: Math.round(list.scrollTop),
       scrollHeight: list.scrollHeight,
@@ -156,5 +164,12 @@ test('instrumented: pinned reader stays at bottom after finish (think + long ans
   }, tFinish);
 
   console.log(JSON.stringify(report, null, 2));
-  expect(report.finalDfb).toBeLessThanOrEqual(4);
+  // The reader never scrolled away, so the turn-to-top anchor must hold:
+  // the newest question stays near the top of the scroller (targetOffset
+  // is ~12px; allow generous slack for reserve/handoff settle) and the
+  // scrolled-away flag stays clear.
+  expect(report.userScrolledAway).toBeFalsy();
+  expect(report.userTopOffset).not.toBeNull();
+  expect(report.userTopOffset).toBeLessThanOrEqual(48);
+  expect(report.userTopOffset).toBeGreaterThanOrEqual(-4);
 });

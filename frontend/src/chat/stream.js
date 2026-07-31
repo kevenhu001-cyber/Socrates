@@ -222,26 +222,13 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        the bubble replays the whole turn and duplicates both prose and tools. */
     var semanticActivity=false;
     var heartbeatFired=false;   /* used instead of e.message to detect heartbeat abort */
-    try{
-      while(true){
-        var step=await reader.read();
-        if(step.done)break;
-        /* Heartbeat: every chunk we receive resets the silence timer. */
-        if(hbTmo)clearTimeout(hbTmo);
-        hbTmo=setTimeout(function(){
-          /* No data for STREAM_HEARTBEAT_MS — treat as a hang. */
-          heartbeatFired=true;
-          try{ac.abort("heartbeat")}catch(_){}
-        },STREAM_HEARTBEAT_MS);
-        bytesReceived+=step.value.byteLength;
-        gotAnyData=gotAnyData||step.value.byteLength>0;
-        /* Decode with stream:true so multi-byte chars split across chunks
-           are buffered properly. The decoder remembers the trailing bytes. */
-        buf+=decoder.decode(step.value,{stream:true});
-        var idx;
-        while((idx=buf.indexOf("\n\n"))>=0){
-          var frame=buf.slice(0,idx);
-          buf=buf.slice(idx+2);
+    /* Parse ONE SSE frame (the text between two "\n\n" delimiters, or the
+       leftover buffer flushed at stream end). Extracted so the same logic
+       runs for both the delimited frames in the read loop AND the final
+       frame the upstream may close without a trailing "\n\n". Frame-level
+       early-exits use `return`; the inner <think> scanner keeps its own
+       continue/break. */
+    var processFrame=function(frame){
           var lines=frame.split("\n");
           var dataParts=[];
           var evName=null;
@@ -262,12 +249,12 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           if(evName==="tool_use"&&opts&&typeof opts.onToolUse==="function"&&dataParts.length){
             semanticActivity=true;
             try{opts.onToolUse(JSON.parse(dataParts.join("\n")))}catch(_){}
-            continue;
+            return;
           }
           if(evName==="tool_result"&&opts&&typeof opts.onToolResult==="function"&&dataParts.length){
             semanticActivity=true;
             try{opts.onToolResult(JSON.parse(dataParts.join("\n")))}catch(_){}
-            continue;
+            return;
           }
           /* P_error_event — the backend emits `event: error` with
              a JSON `data:` line containing the real error message.
@@ -280,7 +267,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             }catch(_){
               state.lastCallError=dataParts.join(" ").slice(0,200);
             }
-            continue;
+            return;
           }
           /* P_progress — incremental tool events. The backend emits
              these between tool_use and tool_result to stream
@@ -290,7 +277,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           if(evName==="tool_progress"&&opts&&typeof opts.onToolProgress==="function"&&dataParts.length){
             semanticActivity=true;
             try{opts.onToolProgress(JSON.parse(dataParts.join("\n")))}catch(_){}
-            continue;
+            return;
           }
           /* P_execution_sse — execution_start carries the executionId
              that the frontend uses to connect to the independent
@@ -298,7 +285,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           if(evName==="execution_start"&&opts&&typeof opts.onExecutionStart==="function"&&dataParts.length){
             semanticActivity=true;
             try{opts.onExecutionStart(JSON.parse(dataParts.join("\n")))}catch(_){}
-            continue;
+            return;
           }
           /* P_tool_stream — forward the live tool_call_delta frames
              from the backend to the caller's onToolCallDelta. The
@@ -310,15 +297,15 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           if(evName==="tool_call_delta"&&opts&&typeof opts.onToolCallDelta==="function"&&dataParts.length){
             semanticActivity=true;
             try{opts.onToolCallDelta(JSON.parse(dataParts.join("\n")))}catch(_){}
-            continue;
+            return;
           }
-          if(dataParts.length===0)continue;
+          if(dataParts.length===0)return;
           var payload=dataParts.join("\n");
-          if(!payload||payload==="[DONE]")continue;
+          if(!payload||payload==="[DONE]")return;
           /* Backend sends __FORMATTED__ as the final event with server-rendered HTML */
           if(payload==="__FORMATTED__"){
             /* The next frame's first data: line contains the JSON */
-            continue;
+            return;
           }
           /* Server-side pre-formatted HTML response detection. Only
              match when the parsed JSON object actually has a STRING
@@ -335,7 +322,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
               var probe=JSON.parse(payload);
               if(probe&&typeof probe.html==="string"){
                 formattedHtml=probe;
-                continue;
+                return;
               }
             }catch(_){}
           }
@@ -508,9 +495,32 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
               state.lastCallError=payload.slice(0,200);
               try{reader.cancel()}catch(_){}
               cancelled=true;
-              break;
+              return;
             }
           }
+    };
+    try{
+      while(true){
+        var step=await reader.read();
+        if(step.done)break;
+        /* Heartbeat: every chunk we receive resets the silence timer. */
+        if(hbTmo)clearTimeout(hbTmo);
+        hbTmo=setTimeout(function(){
+          /* No data for STREAM_HEARTBEAT_MS — treat as a hang. */
+          heartbeatFired=true;
+          try{ac.abort("heartbeat")}catch(_){}
+        },STREAM_HEARTBEAT_MS);
+        bytesReceived+=step.value.byteLength;
+        gotAnyData=gotAnyData||step.value.byteLength>0;
+        /* Decode with stream:true so multi-byte chars split across chunks
+           are buffered properly. The decoder remembers the trailing bytes. */
+        buf+=decoder.decode(step.value,{stream:true});
+        var idx;
+        while((idx=buf.indexOf("\n\n"))>=0){
+          var frame=buf.slice(0,idx);
+          buf=buf.slice(idx+2);
+          processFrame(frame);
+          if(cancelled)break;
         }
         if(cancelled)break;
       }
@@ -532,6 +542,17 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       try{reader.releaseLock()}catch(_){}
       /* Flush any trailing UTF-8 bytes that didn't have a closing chunk. */
       buf+=decoder.decode();
+      /* P_final_frame_flush — upstream may close the connection without a
+         trailing "\n\n" delimiter, leaving the last SSE frame unparsed in
+         buf. That dropped frame is exactly the "occasional last few chars
+         truncated" symptom. Parse the leftover buffer as one final frame so
+         its content delta reaches full + onDelta. Guard on "data:" so we
+         don't re-run parsing on empty/keepalive residue. */
+      if(!cancelled&&buf&&buf.indexOf("data:")>=0){
+        var _finalFrame=buf;
+        buf="";
+        processFrame(_finalFrame);
+      }
       /* P_inline_think — if the stream ended mid-think (e.g. truncated
          by max_tokens), flush whatever thinking content we accumulated
          so the user at least sees the partial reasoning rather than
