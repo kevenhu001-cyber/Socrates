@@ -172,21 +172,33 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
       border: style.borderTopWidth,
       shadow: style.boxShadow,
       radius: style.borderTopLeftRadius,
+      bottomRadius: style.borderBottomLeftRadius,
     };
   });
-  expect(mobileMenuStyle).toEqual({
-    background: 'rgba(0, 0, 0, 0)',
-    border: '0px',
-    shadow: 'none',
-    radius: '0px',
-  });
+  // Mobile presents the menu as a bottom sheet: solid surface, top border,
+  // shadow, rounded top corners only.
+  expect(mobileMenuStyle.background).not.toBe('rgba(0, 0, 0, 0)');
+  expect(mobileMenuStyle.border).toBe('1px');
+  expect(mobileMenuStyle.shadow).not.toBe('none');
+  expect(mobileMenuStyle.radius).toBe('20px');
+  expect(mobileMenuStyle.bottomRadius).toBe('0px');
+  // Pinned to the bottom edge, spanning the full viewport width. Wait for
+  // the slide-up entrance animation to settle before measuring geometry.
+  await menu.evaluate((element) => Promise.all(element.getAnimations().map((a) => a.finished)));
+  const sheetBox = await menu.boundingBox();
+  expect(sheetBox).not.toBeNull();
+  expect(sheetBox.x).toBe(0);
+  expect(sheetBox.width).toBe(390);
+  expect(Math.abs(sheetBox.y + sheetBox.height - 844)).toBeLessThanOrEqual(1);
+  // Scrim class is applied while the sheet is open.
+  await expect(page.locator('body')).toHaveClass(/composer-tools-open/);
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflows-menu-mobile.png',
     fullPage: true,
   });
 });
 
-test('mobile workflow selection leaves a themed body status', async ({ page }) => {
+test('mobile workflow selection embeds a themed chip in the composer', async ({ page }) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
@@ -211,7 +223,8 @@ test('mobile workflow selection leaves a themed body status', async ({ page }) =
   expect(chipBox.height).toBeGreaterThanOrEqual(28);
   await expect(chip.locator('.composer-tool-chip-icon')).toHaveCSS('color', /rgb/);
   await expect(chip.locator('.composer-tool-chip-label')).toHaveCSS('color', /rgb/);
-  expect(await chip.evaluate((element) => element.closest('#topicInputWrap'))).toBeNull();
+  // The chip now lives INSIDE the rounded composer frame (ChatGPT-style).
+  expect(await chip.evaluate((element) => !!element.closest('#topicInputWrap'))).toBe(true);
 
   await page.evaluate(() => {
     window.state.phase = 'chat';
@@ -222,7 +235,7 @@ test('mobile workflow selection leaves a themed body status', async ({ page }) =
   const chatChip = chatStatus.locator('.composer-tool-chip');
   await expect(chatStatus).toBeVisible();
   await expect(chatChip).toBeVisible();
-  expect(await chatChip.evaluate((element) => element.closest('#chatInputWrap'))).toBeNull();
+  expect(await chatChip.evaluate((element) => !!element.closest('#chatInputWrap'))).toBe(true);
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflow-selected-mobile.png',
     fullPage: true,
