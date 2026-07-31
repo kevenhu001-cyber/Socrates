@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=Noto+Serif+SC:wght@300;400;500&display=swap" rel="stylesheet">
 <link href="/base.css" rel="stylesheet">
+<link href="/home.css" rel="stylesheet">
 <script>
 !function(){
   try{
@@ -28,10 +29,28 @@
 <style>
   html[lang^="zh"] body{font-family:"Inter","PingFang SC","Hiragino Sans GB","Noto Sans SC",sans-serif}
   html[lang^="zh"] .section-title, html[lang^="zh"] .page-header h1, html[lang^="zh"] .hero h1, html[lang^="zh"] .narrative-heading, html[lang^="zh"] .pricing-block-name, html[lang^="zh"] .cta-section h2, html[lang^="zh"] .pull-quote blockquote, html[lang^="zh"] .footer-tag, html[lang^="zh"] .stat-number{font-family:"Noto Serif SC","Newsreader",serif}
+  /* Chinese home — flatten the static .hero card so the topology
+     ring + CRT marquee can sit on a clean black void like the
+     English homepage. */
+  html[lang^="zh"] section.hero{padding:0}
+  html[lang^="zh"] .hero-platform{
+    background:transparent;border:0;padding:0;border-radius:0;
+    max-width:none;
+  }
+  /* Chinese needs a serif CRT track for the 4-character slogan;
+     keep the same gold/moonlight palette. */
+  html[lang^="zh"] .crt-track span{
+    font-family:"Noto Serif SC","Cormorant Garamond",serif;
+    font-weight:500;
+    letter-spacing:.32em;
+  }
+  html[lang^="zh"] .hero-tagline{
+    font-family:"Noto Serif SC","Newsreader",serif;
+  }
 </style>
 </head>
 <body>
-<div class="bg-ambient"></div>
+<div class="bg-ambient"><canvas id="stars" aria-hidden="true"></canvas></div>
 <div class="page">
 
 <nav>
@@ -49,20 +68,33 @@
   </div>
 </nav>
 
-<section class="hero">
-  <div class="section-inner">
-    <div class="hero-platform">
-      <div class="hero-label sr">AI 智能导师</div>
-      <h1 class="sr sr-d1">循序渐进，<br><strong class="gradient">学无止境</strong></h1>
-      <p class="sr sr-d2">Socrates 是一位智能导师，以教科书的严谨和名师的耐心，带你系统掌握任何知识。没有冗余，没有跳步，只有从第一性原理出发的系统理解。</p>
-      <div class="hero-actions sr sr-d3">
-        <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
-        <a href="/guide" class="cta-btn ghost">了解原理</a>
+<!-- ═══════════ HERO — 苏格拉底：始终流动的拓扑 ═══════════ -->
+<header class="hero-cosmos">
+  <div class="hero-core">
+    <div class="eclipse-stage">
+      <div class="crt-marquee" aria-hidden="true">
+        <div class="crt-track">
+          <span>苏格拉底&nbsp;·&nbsp;学无止境&nbsp;·&nbsp;</span>
+          <span>苏格拉底&nbsp;·&nbsp;学无止境&nbsp;·&nbsp;</span>
+          <span>苏格拉底&nbsp;·&nbsp;学无止境&nbsp;·&nbsp;</span>
+          <span>苏格拉底&nbsp;·&nbsp;学无止境&nbsp;·&nbsp;</span>
+          <span>苏格拉底&nbsp;·&nbsp;学无止境&nbsp;·&nbsp;</span>
+          <span>苏格拉底&nbsp;·&nbsp;学无止境&nbsp;·&nbsp;</span>
+        </div>
       </div>
-      <p class="hero-note sr sr-d4">内置 Beagle AI 模型，开箱即用，也可使用自己的 LLM 密钥。无需信用卡。</p>
+      <div class="topo-wrap">
+        <canvas id="topo" aria-hidden="true"></canvas>
+      </div>
     </div>
+    <p class="hero-tagline">以提问<em>唤醒</em>你心中已有的答案</p>
+    <div class="hero-cta-row">
+      <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+      <a href="/guide" class="cta-btn ghost">了解原理</a>
+    </div>
+    <p class="hero-note">内置 Beagle AI 模型，开箱即用，也可使用自己的 LLM 密钥。无需信用卡。</p>
   </div>
-</section>
+  <div class="scroll-hint" aria-hidden="true"></div>
+</header>
 
 <div class="visual-divider"></div>
 
@@ -267,5 +299,6 @@ document.querySelectorAll('.sr').forEach(function(el){ srObserver.observe(el) })
 
 </script>
 <script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/^\/zh/,'').replace(/\.html$/,'');b.href=p==='/'||p===''?'/':p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","en")}catch(e){}});})();</script>
+<script src="/home.js" defer></script>
 </body>
 </html>

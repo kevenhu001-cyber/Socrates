@@ -9,15 +9,27 @@ import {
 } from '../src/lib/prompts.js';
 
 describe('production prompt contracts', () => {
-  test('Beagle prompt stays compact and references only native supplied tools', async () => {
+  test('Beagle prompt stays compact and defers protocol/style to the server policy', async () => {
     _clearPromptCacheForTests();
     const prompt = await getBeagleSystemPrompt();
     assert.ok(prompt);
-    assert.ok(prompt.length < 8_000, `Beagle prompt grew to ${prompt.length} characters`);
-    assert.match(prompt, /native function-calling interface/i);
+    assert.ok(prompt.length < 4_000, `Beagle prompt grew to ${prompt.length} characters`);
+    assert.match(prompt, /server system policy/i);
     assert.match(prompt, /`tools` array supplied by the server/i);
-    assert.match(prompt, /written register/i);
-    assert.match(prompt, /Do not use emoji/i);
+    assert.match(prompt, /render_visualization/);
+    assert.match(prompt, /code_interpreter/);
+    /* Tool-calling protocol and global writing rules live only in
+       SERVER_SYSTEM_POLICY (routes/chat/helpers.ts); minimaxProxy always
+       applies enforceServerSystemBoundary before injecting this file, so a
+       second copy here would just drift and contradict. */
+    for (const serverOwnedRule of [
+      'native function-calling interface',
+      'written register',
+      'Do not use emoji',
+      'dash punctuation',
+    ]) {
+      assert.equal(prompt.includes(serverOwnedRule), false, `server-owned rule duplicated: ${serverOwnedRule}`);
+    }
     for (const staleProtocol of [
       '[web_search:',
       'conversation_search',

@@ -28,9 +28,16 @@
 
 /* Limits — kept as named constants so the UI can show "max 6" hints
  * and the renderer can refuse oversized inputs without re-checking. */
-export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;   // 4 MB / image
+export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;   // 4 MB / image (pre-compression input cap)
 export const MAX_TEXT_BYTES = 200 * 1024;         // 200 KB / text or PDF body
 export const MAX_TOTAL_ATTACHMENTS = 6;
+/* P_image-payload-alignment — the server caps every image payload at
+   2,000,000 dataUrl chars (chat image_url Zod schema + persisted
+   attachment schema). Anything above that is rejected with a 400/413
+   the user perceives as "no response after uploading an image".
+   Images whose dataUrl exceeds this target are re-encoded through a
+   canvas (downscale + quality steps) until they fit. */
+export const MAX_IMAGE_DATAURL_CHARS = 1_900_000; // safety margin under 2,000,000
 
 const ACCEPTED_IMAGE_MIMES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp',
@@ -87,6 +94,65 @@ function readFileAsDataUrl(file, onProgress) {
     }
     reader.readAsDataURL(file);
   });
+}
+
+/**
+ * P_image-payload-alignment — re-encode an oversized image through a
+ * canvas until its dataUrl fits MAX_IMAGE_DATAURL_CHARS. Walks a
+ * downscale ladder (longest edge) and, per size, a quality ladder;
+ * tries WebP first and falls back to JPEG when the browser encodes
+ * WebP as PNG (Safari < 14 returns a PNG dataUrl from toDataURL).
+ * Transparency is flattened onto white because JPEG has no alpha.
+ * Non-DOM environments (unit tests under Node/jsdom without canvas)
+ * return the input unchanged; the caller then rejects on size with a
+ * clear message instead of silently sending an oversized payload.
+ * Animated GIFs are flattened to their first frame — a static image
+ * the model can see beats a 400 the user can't.
+ */
+async function compressImageDataUrl(dataUrl) {
+  if (!dataUrl || dataUrl.length <= MAX_IMAGE_DATAURL_CHARS) return dataUrl;
+  if (typeof document === 'undefined' || typeof Image === 'undefined'
+      || typeof document.createElement !== 'function') {
+    return dataUrl;
+  }
+  let img;
+  try {
+    img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error('image decode failed'));
+      el.src = dataUrl;
+    });
+  } catch (_) {
+    return dataUrl;
+  }
+  const srcW = img.naturalWidth || img.width || 0;
+  const srcH = img.naturalHeight || img.height || 0;
+  if (!srcW || !srcH) return dataUrl;
+  const EDGE_STEPS = [2048, 1600, 1280, 1024, 800];
+  const QUALITY_STEPS = [0.85, 0.75, 0.6, 0.45];
+  for (const edge of EDGE_STEPS) {
+    const scale = Math.min(1, edge / Math.max(srcW, srcH));
+    const w = Math.max(1, Math.round(srcW * scale));
+    const h = Math.max(1, Math.round(srcH * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext && canvas.getContext('2d');
+    if (!ctx) return dataUrl; // no 2d context (jsdom) — bail to caller
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    for (const q of QUALITY_STEPS) {
+      let out = '';
+      try { out = canvas.toDataURL('image/webp', q); } catch (_) { out = ''; }
+      if (!out.startsWith('data:image/webp')) {
+        try { out = canvas.toDataURL('image/jpeg', q); } catch (_) { out = ''; }
+      }
+      if (out && out.length <= MAX_IMAGE_DATAURL_CHARS) return out;
+    }
+  }
+  return dataUrl; // still too large — the caller rejects with a message
 }
 
 /** Read a File as plain UTF-8 text, calling onProgress(percent). */
@@ -280,11 +346,35 @@ export async function addFiles(fileList, onUpdate, onProgress) {
           if(e) e.progress = pct;
           notifyProgress();
         });
+        /* P_image-payload-alignment — the server rejects image payloads
+           above 2,000,000 dataUrl chars (Zod image_url + attachment
+           schema). Re-encode oversized images down to the client target
+           instead of letting the request die with an opaque 400/413. */
+        let finalDataUrl = dataUrl;
+        let finalMime = file.type;
+        let finalSize = size;
+        if (dataUrl.length > MAX_IMAGE_DATAURL_CHARS) {
+          finalDataUrl = await compressImageDataUrl(dataUrl);
+          if (!finalDataUrl || finalDataUrl.length > MAX_IMAGE_DATAURL_CHARS) {
+            removeAttachment(pendingId);
+            if (onUpdate) onUpdate();
+            result.rejected.push(`${file.name}: image too large even after compression — try a smaller image`);
+            continue;
+          }
+          if (finalDataUrl !== dataUrl) {
+            const m = /^data:([^;,]+)/.exec(finalDataUrl);
+            if (m) finalMime = m[1];
+            // Approximate decoded byte size from the base64 body length.
+            finalSize = Math.round((finalDataUrl.length - (finalDataUrl.indexOf(',') + 1)) * 3 / 4);
+          }
+        }
         const entry = attachments.find(a => a.id === pendingId);
         if (entry) {
           entry.pending = false;
           entry.progress = 100;
-          entry.dataUrl = dataUrl;
+          entry.dataUrl = finalDataUrl;
+          entry.mime = finalMime;
+          entry.size = finalSize;
         }
         if (onUpdate) onUpdate();
         result.added++;
@@ -552,8 +642,8 @@ export async function buildMessageContent(text, attachmentSnapshot) {
     // the user what they attached.
   }
 
-  // Defensive: the server caps to 20; trim here too.
-  const attachmentList = turnAttachments.slice(0, 20).map((a) => ({
+  // Defensive: mirror the client-side turn cap (the server caps at 20).
+  const attachmentList = turnAttachments.slice(0, MAX_TOTAL_ATTACHMENTS).map((a) => ({
     id: a.id,
     kind: a.kind,
     docKind: a.docKind,

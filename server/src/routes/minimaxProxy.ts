@@ -7,7 +7,7 @@ import { chatLimiter } from '../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../lib/sanitize.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
 import { getBeagleSystemPrompt } from '../lib/prompts.js';
-import { enforceServerSystemBoundary } from './chat/helpers.js';
+import { enforceServerSystemBoundary, appendFinalOutputConstraints } from './chat/helpers.js';
 
 const router = Router();
 
@@ -84,6 +84,11 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         };
       }
     }
+    /* P_no-dash-final — mirror the /api/chat assembly: the no-dash hard rule
+       must be the LAST text of the system prompt on the built-in Beagle path
+       too, so it cannot be buried under beagle.md. Keep this after every
+       other prompt-injection step. */
+    messages = appendFinalOutputConstraints(messages);
     /* P_privacy-leak — the upstream model name is operator-configured
      * and must never be settable from the client. Even though the SPA
      * currently doesn't know the real model (we strip it from

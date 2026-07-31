@@ -59,6 +59,7 @@ const SessionPayloadSchema = z.object({
     attachments: z.array(z.object({
       id: z.string().max(100),
       kind: z.string().max(50),
+      docKind: z.string().max(20).optional(),
       name: z.string().max(500),
       mime: z.string().max(200),
       dataUrl: z.string().max(2_000_000).optional(),

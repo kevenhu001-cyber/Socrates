@@ -4,10 +4,11 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/logo.png">
-<title>Socrates — Learn Anything, Step by Step</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<title>Socrates — The Examined Mind</title>
+<meta name="description" content="A Socratic AI companion that awakens human wisdom through questions, not answers. Explore the frontier of knowledge."><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
 <link href="/base.css" rel="stylesheet">
+<link href="/home.css" rel="stylesheet">
 <script>
 !function(){
   try{
@@ -27,7 +28,7 @@
 </script>
 </head>
 <body>
-<div class="bg-ambient"></div>
+<div class="bg-ambient"><canvas id="stars" aria-hidden="true"></canvas></div>
 <div class="page">
 
 <nav>
@@ -40,180 +41,129 @@
       <a href="/contact">Contact</a>
       <a href="/account">Account</a>
       <a class="lang-switch">中文</a>
-      <a href="https://app.topodrive.top" class="cta-btn">Start learning</a>
+      <a href="https://app.topodrive.top" class="cta-btn">Begin</a>
     </div>
   </div>
 </nav>
 
-<section class="hero">
-  <div class="section-inner">
-    <div class="hero-platform">
-      <div class="hero-label sr">AI-Powered tutor</div>
-      <h1 class="sr sr-d1">Learn anything,<br><strong class="gradient">step by step</strong></h1>
-      <p class="sr sr-d2">Socrates is an intelligent tutor that guides you through any topic with the rigor of a textbook and the patience of a great teacher. No fluff, no skipping ahead. Just systematic understanding, built from first principles.</p>
-      <div class="hero-actions sr sr-d3">
-        <a href="https://app.topodrive.top" class="cta-btn">Start learning</a>
-        <a href="/guide" class="cta-btn ghost">How it works</a>
+<!-- ═══════════ HERO — the topological flow ═══════════ -->
+<header class="hero-cosmos">
+  <div class="hero-core">
+    <div class="eclipse-stage">
+      <div class="crt-marquee" aria-hidden="true">
+        <div class="crt-track">
+          <span>Socrates&nbsp;·&nbsp;Socrates&nbsp;·&nbsp;</span>
+          <span>Socrates&nbsp;·&nbsp;Socrates&nbsp;·&nbsp;</span>
+          <span>Socrates&nbsp;·&nbsp;Socrates&nbsp;·&nbsp;</span>
+          <span>Socrates&nbsp;·&nbsp;Socrates&nbsp;·&nbsp;</span>
+          <span>Socrates&nbsp;·&nbsp;Socrates&nbsp;·&nbsp;</span>
+          <span>Socrates&nbsp;·&nbsp;Socrates&nbsp;·&nbsp;</span>
+        </div>
       </div>
-      <p class="hero-note sr sr-d4">Built-in Beagle AI model included. Or bring your own LLM key. No credit card required.</p>
+      <div class="topo-wrap">
+        <canvas id="topo" aria-hidden="true"></canvas>
+      </div>
+    </div>
+    <p class="hero-tagline">Seeking the question that <em>awakens</em> the answer within you</p>
+    <div class="hero-cta-row">
+      <a href="https://app.topodrive.top" class="cta-btn">Try Socrates</a>
+      <a href="/guide" class="cta-btn ghost">The method</a>
     </div>
   </div>
+  <div class="scroll-hint" aria-hidden="true"></div>
+</header>
+
+<!-- ═══════════ MARQUEE — drifting maxims ═══════════ -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span>The unexamined life is not worth living</span><i>✦</i>
+    <span>I know that I know nothing</span><i>✦</i>
+    <span>Wonder is the beginning of wisdom</span><i>✦</i>
+    <span>Understanding cannot be given, only awakened</span><i>✦</i>
+    <span>The unexamined life is not worth living</span><i>✦</i>
+    <span>I know that I know nothing</span><i>✦</i>
+    <span>Wonder is the beginning of wisdom</span><i>✦</i>
+    <span>Understanding cannot be given, only awakened</span><i>✦</i>
+  </div>
+</div>
+
+<!-- ═══════════ DIALOGUE — a conversation that writes itself ═══════════ -->
+<section class="dialogue-section">
+  <div class="section-mark sr">
+    <span class="k">The Dialogue</span>
+    <h2>Answers are given.<br><em>Understanding is earned.</em></h2>
+  </div>
+  <div class="dialogue-frame sr" id="dialogue" aria-label="An example Socratic dialogue, played automatically"></div>
 </section>
 
 <div class="visual-divider"></div>
 
-<!-- Stats -->
-<section class="sr" style="padding:48px 32px">
-  <div class="section-inner" style="text-align:center">
-    <div class="stats-row">
-      <div class="stat-pill">
-        <div class="stat-number">40+</div>
-        <div class="stat-label">Countries with learners</div>
-      </div>
-      <div class="stat-pill">
-        <div class="stat-number">4</div>
-        <div class="stat-label">Learning tiers</div>
-      </div>
-      <div class="stat-pill">
-        <div class="stat-number">Any</div>
-        <div class="stat-label">Subject to explore</div>
-      </div>
-    </div>
-    <div class="free-tag">Always free to start with the built-in Beagle model or your own API key</div>
+<!-- ═══════════ METHOD — three acts of a single question ═══════════ -->
+<section class="method-section">
+  <div class="section-mark sr">
+    <span class="k">The Method</span>
+    <h2>Three acts of a<br>single <em>question</em></h2>
   </div>
+  <div class="method-grid">
+    <article class="method-card sr sr-d1">
+      <div class="method-num">I</div>
+      <svg class="method-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8.5 9a3.5 3.5 0 1 1 5 3.15c-1 .5-1.5 1.1-1.5 2.35"/><circle cx="12" cy="18.2" r="0.6" fill="currentColor"/></svg>
+      <div class="method-greek">ἀπορία — aporia</div>
+      <h3>The Impasse</h3>
+      <p>Every dialogue begins in honest darkness. Socrates asks what you truly know — and shows you the edge of it, without judgment.</p>
+    </article>
+    <article class="method-card sr sr-d2">
+      <div class="method-num">II</div>
+      <svg class="method-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/></svg>
+      <div class="method-greek">ἔλεγχος — elenchus</div>
+      <h3>The Inquiry</h3>
+      <p>Question by question, the fog scatters. Each answer you give becomes the ground for the next step — reasoning built by your own hands.</p>
+    </article>
+    <article class="method-card sr sr-d3">
+      <div class="method-num">III</div>
+      <svg class="method-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none" opacity=".8"/></svg>
+      <div class="method-greek">μαιευτική — maieutics</div>
+      <h3>The Birth</h3>
+      <p>The idea arrives whole — and it is yours, because you delivered it. Knowledge born this way is never forgotten.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ═══════════ FRONTIER — interactive constellation ═══════════ -->
+<section class="frontier-section">
+  <div class="section-mark sr">
+    <span class="k">The Frontier</span>
+    <h2>Every discipline is a star.<br><em>Draw your own constellation.</em></h2>
+  </div>
+  <div class="frontier-stage sr">
+    <canvas id="frontier" aria-label="Interactive constellation of fields of knowledge"></canvas>
+  </div>
+  <p class="frontier-hint sr">Move your cursor through the field of knowledge</p>
+</section>
+
+<!-- ═══════════ EPIGRAPH ═══════════ -->
+<section class="epigraph">
+  <div class="ring" aria-hidden="true"></div>
+  <blockquote class="sr">&ldquo;I cannot teach anybody anything.<br>I can only make them <em>think</em>.&rdquo;</blockquote>
+  <cite class="sr sr-d2">Socrates · Athens · 5th century BC</cite>
 </section>
 
 <div class="visual-divider"></div>
 
-<section id="how-it-works">
-  <div class="section-inner">
-    <div style="text-align:center">
-      <div class="section-eyebrow sr">How it works</div>
-      <h2 class="section-title sr">A conversation that builds<br><strong>understanding from the ground up</strong></h2>
-    </div>
-
-    <div class="narrative-row">
-      <div class="neu-card sr sr-d1">
-        <div class="feature-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        </div>
-        <div class="narrative-caption">01 &mdash; Foundation</div>
-        <h3 class="narrative-heading">Start with what you need to know</h3>
-        <p class="narrative-text">You tell Socrates what you want to learn, and it builds a structured lesson from the ground up, defining each concept, grounding it with examples, and connecting it to what comes before. Every session is a bespoke curriculum tailored to your goal. No generic lesson plans.</p>
-      </div>
-      <div class="neu-card sr sr-d2">
-        <div class="feature-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        </div>
-        <div class="narrative-caption">02 &mdash; Teaching</div>
-        <h3 class="narrative-heading">Textbook-quality instruction, in real time</h3>
-        <p class="narrative-text">Every explanation follows a coherent narrative arc: introduce, explain, illustrate, and check. Socrates presents material layer by layer, never jumping ahead before the foundation is solid.</p>
-        <div class="narrative-divider"></div>
-        <p class="narrative-text">Mathematical notation renders beautifully with LaTeX. Code examples are syntax-highlighted with line numbers. The result reads like a well-written textbook, except it's written uniquely for you at this moment.</p>
-      </div>
-    </div>
-
-    <div class="narrative-row">
-      <div class="neu-card sr sr-d1">
-        <div class="feature-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        </div>
-        <div class="narrative-caption">03 &mdash; Verification</div>
-        <h3 class="narrative-heading">Diagnostic checks that catch gaps early</h3>
-        <p class="narrative-text">After each key concept, Socrates asks a targeted diagnostic question to confirm your understanding. A wrong answer isn't a failure. It's a signal to revisit the material from a different angle before misconceptions compound. Your knowledge graph tracks what you've truly mastered.</p>
-      </div>
-      <div class="neu-card sr sr-d2">
-        <div class="feature-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        </div>
-        <div class="narrative-caption">04 &mdash; Depth</div>
-        <h3 class="narrative-heading">Move forward when ready, not when the clock runs out</h3>
-        <p class="narrative-text">Mastered the concept? Socrates advances to the next layer. Struggling? It adapts with alternative explanations, additional examples, and more foundational review. The pace is set by your understanding, not a fixed curriculum, so you never get left behind or held back.</p>
-      </div>
-    </div>
+<!-- ═══════════ BEGIN ═══════════ -->
+<section class="begin-section">
+  <h2 class="sr">The next question<br>is <em>yours.</em></h2>
+  <div class="sr sr-d2">
+    <a href="https://app.topodrive.top" class="cta-btn gold" style="font-size:16px;padding:18px 46px">Begin the dialogue</a>
   </div>
-</section>
-
-<div class="visual-divider"></div>
-
-<section class="sr">
-  <div class="section-inner">
-    <div class="pull-quote">
-      <div class="pull-quote-inner">
-        <blockquote>&ldquo;Learning is not the accumulation of facts. It is the construction of a mental model. Every lesson is a conversation that builds understanding from first principles.&rdquo;</blockquote>
-        <cite>The Socratic method, reimagined for AI</cite>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Features -->
-<section class="sr">
-  <div class="section-inner" style="text-align:center">
-    <div class="section-eyebrow">Features</div>
-    <h2 class="section-title" style="margin-bottom:32px">Everything you need to <strong>learn deeply</strong></h2>
-    <div class="feat-list">
-      <div class="feat-item"><div class="feat-bullet">01</div><div><div class="feat-item-title">Structured lessons</div><div class="feat-item-desc">Concepts build on each other in a logical sequence. No jumping ahead, no missing prerequisites.</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">02</div><div><div class="feat-item-title">Diagnostic questions</div><div class="feat-item-desc">Every concept is verified before moving forward. Wrong answers trigger alternative explanations.</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">03</div><div><div class="feat-item-title">Knowledge graph</div><div class="feat-item-desc">Visual map of what you've learned. See connections between concepts and track your progress.</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">04</div><div><div class="feat-item-title">Mistake book</div><div class="feat-item-desc">Every wrong answer is saved and organized. Review your mistakes periodically to reinforce weak spots.</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">05</div><div><div class="feat-item-title">Built-in Beagle model</div><div class="feat-item-desc">Start learning immediately with the built-in Beagle AI tutor. No API key needed &mdash; works out of the box with monthly token quotas.</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">06</div><div><div class="feat-item-title">Exam &amp; assessment</div><div class="feat-item-desc">Generate structured exams on any topic. Answer questions, submit for grading, and track your performance over time.</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">07</div><div><div class="feat-item-title">Tutor mode</div><div class="feat-item-desc">Structured Socratic teaching with diagnostic checks, knowledge tracking, mistake review, and personalized study plans.</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">08</div><div><div class="feat-item-title">Web search</div><div class="feat-item-desc">Riemann and above unlock live web search. Socrates incorporates current information into your lessons.</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">09</div><div><div class="feat-item-title">LaTeX + code</div><div class="feat-item-desc">Mathematical notation renders with KaTeX. Code blocks are syntax-highlighted with proper formatting.</div></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- Provider logos text -->
-<section class="sr" style="padding-top:40px">
-  <div class="section-inner" style="text-align:center">
-    <div class="section-eyebrow" style="margin-bottom:18px">Works with your LLM</div>
-    <p style="font-size:14px;color:hsl(var(--text-300));margin-bottom:20px">Built-in Beagle model included &mdash; or bring your own API key from any supported provider</p>
-    <div class="provider-row">
-      <span class="provider-pill is-primary">Beagle (Built-in)</span>
-      <span class="provider-pill">OpenAI</span>
-      <span class="provider-pill">Anthropic</span>
-      <span class="provider-pill">DeepSeek</span>
-      <span class="provider-pill">Together</span>
-      <span class="provider-pill">Groq</span>
-    </div>
-  </div>
-</section>
-
-<div class="visual-divider"></div>
-
-<!-- Built for depth -->
-<section class="sr">
-  <div class="section-inner" style="text-align:center">
-    <div class="section-eyebrow">Built for depth</div>
-    <h2 class="section-title" style="margin-bottom:32px">Learning that <strong>sticks</strong></h2>
-    <div class="feat-list">
-      <div class="feat-item"><div class="feat-bullet">01</div><div><div class="feat-item-title">Depth over speed</div><div class="feat-item-desc">Understanding cannot be rushed. Every concept is taught from the ground up, layer by layer. No shortcuts.</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">02</div><div><div class="feat-item-title">Adaptive pace</div><div class="feat-item-desc">The lesson adjusts to your understanding &mdash; faster where you're strong, slower where you need more.</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">03</div><div><div class="feat-item-title">Built-in Beagle</div><div class="feat-item-desc">No API key? No problem. The built-in Beagle AI tutor works instantly with generous monthly token quotas on every tier.</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">04</div><div><div class="feat-item-title">Exam mode</div><div class="feat-item-desc">Test your knowledge with structured exams. Generate questions on any topic, submit for grading, and review results.</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">05</div><div><div class="feat-item-title">Your own AI keys</div><div class="feat-item-desc">All tiers support your own LLM provider. Use the models you already trust and control costs directly.</div></div></div>
-    </div>
-  </div>
-</section>
-
-<section class="cta-section sr">
-  <div class="section-inner">
-    <div class="neu-cta-card">
-      <h2>Ready to learn <strong>deeply?</strong></h2>
-      <p>Start with any topic. Bring your API key and begin your journey.</p>
-      <a href="https://app.topodrive.top" class="cta-btn">Start learning</a>
-    </div>
-  </div>
+  <p class="begin-note sr sr-d3">Built-in Beagle AI included · or bring your own LLM key · free to start</p>
 </section>
 
 <footer>
   <div class="footer-inner">
     <div class="footer-brand">
       <div class="footer-tag"><em>S</em>ocrates</div>
-      <p>An AI-powered Socratic tutor. Learn anything, step by step.</p>
+      <p>A Socratic AI companion. Wisdom is awakened, never installed.</p>
     </div>
     <div class="footer-col">
       <div class="footer-col-title">Product</div>
@@ -243,7 +193,7 @@
     </div>
     <div class="footer-bottom">
       <p>&copy; 2026 Topodrive. All rights reserved.</p>
-      <p>Built with care, for learners everywhere.</p>
+      <p>Built with questions, for the curious everywhere.</p>
       <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
     </div>
   </div>
@@ -259,9 +209,8 @@ const srObserver = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 document.querySelectorAll('.sr').forEach(function(el){ srObserver.observe(el) });
-
-
 </script>
+<script src="/home.js" defer></script>
 <script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/\.html$/,'');b.href=p==='/'||p===''?'/zh/':'/zh'+p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","zh")}catch(e){}});})();</script>
 </body>
 </html>

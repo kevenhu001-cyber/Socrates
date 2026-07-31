@@ -265,8 +265,14 @@ app.use(compression({
 // and CSRF, otherwise the body is mutated before signature verification.
 app.post('/api/connectors/github/webhook', express.raw({ type: 'application/json', limit: '2mb' }), githubWebhookHandler);
 
-// Body parsing
-app.use(express.json({ limit: '2mb' }));
+// Body parsing.
+// P_image-payload-alignment — the limit must fit a full chat payload with
+// multimodal content: up to 6 image attachments, each capped client-side to
+// a ~2,000,000-char base64 dataUrl (matching the Zod image_url/attachment
+// caps), plus conversation history. The previous 2mb limit rejected any
+// request with a normal-sized image with an opaque 413, which surfaced to
+// users as "no response after uploading an image".
+app.use(express.json({ limit: '16mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Cookie parsing (required for auth / CSRF)

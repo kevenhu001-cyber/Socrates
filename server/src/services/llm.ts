@@ -300,10 +300,15 @@ export async function streamChatCompletion(
       }
     }
 
-    // Flush remaining buffer
-    if (buffer.trim() && buffer.startsWith('data: ')) {
+    // Flush remaining buffer. Trim before the prefix check: upstreams
+    // that end the stream with "\ndata: {...}" (no trailing newline)
+    // leave leading whitespace in the buffer, and the old
+    // `buffer.startsWith('data: ')` guard silently dropped that final
+    // frame — truncating the tail of a streamed tool call.
+    const tail = buffer.trim();
+    if (tail.startsWith('data: ')) {
       try {
-        const json = JSON.parse(buffer.slice(6));
+        const json = JSON.parse(tail.slice(6));
         const delta = json.choices?.[0]?.delta;
         if (delta) {
           if (typeof onReasoning === 'function') {
