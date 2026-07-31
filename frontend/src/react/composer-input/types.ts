@@ -29,6 +29,14 @@ export interface ComposerInputBridge {
   subscribe: (listener: () => void) => () => void;
 }
 
+/** A selected workflow rendered inside the editable composer surface. */
+export interface ComposerExtensionToken {
+  key: string;
+  title: string;
+  icon: string;
+  hint?: string;
+}
+
 declare global {
   interface Window {
     __socratesComposerInputBridge?: ComposerInputBridge;

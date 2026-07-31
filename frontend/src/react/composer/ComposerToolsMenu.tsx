@@ -34,14 +34,14 @@ const EXAM_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const SKILLS_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg>';
 
 const ITEMS: MenuItemSpec[] = [
-  { action: 'upload', labelKey: 'composer.menu.upload', labelFallback: 'Add files', icon: UPLOAD_ICON },
-  { action: 'write', labelKey: 'composer.write', labelFallback: 'Write & edit', icon: PEN_ICON },
-  { action: 'research', labelKey: 'composer.research', labelFallback: 'Find sources', icon: SEARCH_ICON },
-  { action: 'explore', labelKey: 'composer.explore', labelFallback: 'Explore', icon: EXPLORE_ICON },
-  { action: 'deepResearch', labelKey: 'composer.deepResearch', labelFallback: 'Deep research', icon: TELESCOPE_ICON },
-  { action: 'analyze', labelKey: 'composer.analyze', labelFallback: 'Analyze data', icon: ANALYZE_ICON },
-  { action: 'exam', labelKey: 'composer.exam', labelFallback: 'Create an exam', icon: EXAM_ICON },
-  { action: 'skills', labelKey: 'composer.menu.skills', labelFallback: 'Your workflows', icon: SKILLS_ICON },
+  { action: 'upload', labelKey: 'composer.menu.upload', labelFallback: 'Add files', descriptionKey: 'composer.menu.uploadHint', descriptionFallback: 'Images, PDFs, notes and data', icon: UPLOAD_ICON },
+  { action: 'write', labelKey: 'composer.write', labelFallback: 'Write & edit', descriptionKey: 'composer.writeHint', descriptionFallback: 'Draft, rewrite and polish', icon: PEN_ICON },
+  { action: 'research', labelKey: 'composer.research', labelFallback: 'Find sources', descriptionKey: 'composer.researchHint', descriptionFallback: 'Search and compare evidence', icon: SEARCH_ICON },
+  { action: 'explore', labelKey: 'composer.explore', labelFallback: 'Explore', descriptionKey: 'composer.exploreHint', descriptionFallback: 'Scope, batch search, report', icon: EXPLORE_ICON },
+  { action: 'deepResearch', labelKey: 'composer.deepResearch', labelFallback: 'Deep research', descriptionKey: 'composer.deepResearchHint', descriptionFallback: 'Plan, search, read, report', icon: TELESCOPE_ICON },
+  { action: 'analyze', labelKey: 'composer.analyze', labelFallback: 'Analyze data', descriptionKey: 'composer.analyzeHint', descriptionFallback: 'Calculate, chart and export', icon: ANALYZE_ICON },
+  { action: 'exam', labelKey: 'composer.exam', labelFallback: 'Create an exam', descriptionKey: 'composer.examHint', descriptionFallback: 'Blueprint, questions and grading', icon: EXAM_ICON },
+  { action: 'skills', labelKey: 'composer.menu.skills', labelFallback: 'Your workflows', descriptionKey: 'composer.menu.skillsHint', descriptionFallback: 'Create your own', icon: SKILLS_ICON },
 ];
 
 function i18n(key: string, fallback: string): string {

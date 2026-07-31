@@ -198,7 +198,7 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
   });
 });
 
-test('mobile workflow selection embeds a themed chip in the composer', async ({ page }) => {
+test('mobile workflow selection embeds a themed token in the editable content', async ({ page }) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
@@ -214,28 +214,37 @@ test('mobile workflow selection embeds a themed chip in the composer', async ({ 
   await write.click();
 
   await expect(menu).toHaveClass(/hidden/);
-  const status = page.locator('#topicModeStatus');
-  const chip = status.locator('.composer-tool-chip');
-  await expect(status).toBeVisible();
-  await expect(chip).toBeVisible();
-  const chipBox = await chip.boundingBox();
-  expect(chipBox).not.toBeNull();
-  expect(chipBox.height).toBeGreaterThanOrEqual(28);
-  await expect(chip.locator('.composer-tool-chip-icon')).toHaveCSS('color', /rgb/);
-  await expect(chip.locator('.composer-tool-chip-label')).toHaveCSS('color', /rgb/);
-  // The chip now lives INSIDE the rounded composer frame (ChatGPT-style).
-  expect(await chip.evaluate((element) => !!element.closest('#topicInputWrap'))).toBe(true);
+  const editor = page.locator('#topicComposerRoot .rich-composer-editor');
+  const token = editor.locator('.composer-extension-token');
+  await expect(token).toBeVisible();
+  const tokenBox = await token.boundingBox();
+  expect(tokenBox).not.toBeNull();
+  expect(tokenBox.height).toBeGreaterThanOrEqual(26);
+  await expect(token.locator('.composer-extension-token-icon')).toHaveCSS('color', /rgb/);
+  await expect(token.locator('.composer-extension-token-label')).toHaveCSS('color', /rgb/);
+  // The workflow token is an inline node inside the editable content.
+  expect(await token.evaluate((element) => element.closest('.rich-composer-editor')?.getAttribute('contenteditable'))).toBe('true');
+  await expect(editor).toHaveAttribute('data-extension-empty', 'true');
+  await expect(editor).toHaveAttribute('data-extension-hint', /.+/);
+  await expect.poll(() => page.evaluate(() => window.__socratesComposerController?.getMarkdown('topic') ?? null)).toBe('');
+
+  // Dismissing the token clears the workflow itself, not just its styling.
+  await token.locator('.composer-extension-token-remove').click();
+  await expect(editor.locator('.composer-extension-token')).toHaveCount(0);
+  await plus.click();
+  await menu.locator('[data-composer-action="write"]').click();
 
   await page.evaluate(() => {
     window.state.phase = 'chat';
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
   });
-  const chatStatus = page.locator('#chatModeStatus');
-  const chatChip = chatStatus.locator('.composer-tool-chip');
-  await expect(chatStatus).toBeVisible();
-  await expect(chatChip).toBeVisible();
-  expect(await chatChip.evaluate((element) => !!element.closest('#chatInputWrap'))).toBe(true);
+  const chatEditor = page.locator('#chatComposerRoot .rich-composer-editor');
+  const chatToken = chatEditor.locator('.composer-extension-token');
+  await expect(chatToken).toBeVisible();
+  await expect(chatEditor).toHaveAttribute('data-extension-empty', 'true');
+  await expect(chatEditor).toHaveAttribute('data-extension-hint', /.+/);
+  expect(await chatToken.evaluate((element) => element.closest('.rich-composer-editor')?.getAttribute('contenteditable'))).toBe('true');
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflow-selected-mobile.png',
     fullPage: true,

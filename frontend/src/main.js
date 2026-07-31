@@ -18,6 +18,7 @@ import {
   focusComposer,
   getComposerMarkdown,
   getVisibleComposerSurface,
+  setComposerExtensionToken,
   setComposerMarkdown,
   subscribeComposer,
 } from './react/composer-input/controller.ts';
@@ -3563,6 +3564,7 @@ function setActiveTemplate(t){
     id:t.id,title:t.title,shortcut:t.shortcut,
     systemPrompt:t.systemPrompt||"",body:t.body||"",
     icon:t.icon,
+    hint:t.hint||t.description||"",
     extensionKey:nextExt
   }:null;
   if(prevExt!==nextExt) _applyExtensionSideEffects(prevExt,nextExt);
@@ -3573,31 +3575,18 @@ function clearActiveTemplate(){
   if(prevExt) _applyExtensionSideEffects(prevExt,null);
   setActiveTemplate(null);
 }
-/* Surface the active template as an inline badge embedded directly
-   in the composer content area, styled with SVG icon + accent color.
-   Instead of a separate status bar above the input, the chip appears
-   as a natural part of the content area — like an inline tag/badge
-   at the beginning of the editor. */
-/* P_slash-topic — mirror the same body status in the topic setup area. */
+/* Keep the selected workflow inside both rich editors. The token is an
+   editor node, so it stays in the text flow while getMarkdown() strips the
+   visual affordance before the request is sent. */
 function renderTemplateModeChip(){
-  var chip=document.getElementById("chatModeStatus");
-  var topicChip=document.getElementById("topicModeStatus");
-  if(!_activeTemplate){
-    if(chip){chip.classList.add("hidden");chip.innerHTML="";}
-    if(topicChip){topicChip.classList.add("hidden");topicChip.innerHTML="";}
-    return;
-  }
-  var iconHtml=_activeTemplate.icon&&_activeTemplate.icon.indexOf("<svg")===0
-    ? _activeTemplate.icon
-    : esc(_activeTemplate.icon||"");
-  var html=
-    '<span class="composer-tool-chip">'+
-      '<span class="composer-tool-chip-icon">'+iconHtml+'</span>'+
-      '<span class="composer-tool-chip-label">'+esc(_activeTemplate.title)+'</span>'+
-      '<button class="composer-tool-chip-close" type="button" onclick="clearActiveTemplate()" aria-label="Exit template mode" title="Exit template mode">×</button>'+
-    '</span>';
-  if(chip){chip.innerHTML=html;chip.classList.remove("hidden");}
-  if(topicChip){topicChip.innerHTML=html;topicChip.classList.remove("hidden");}
+  var token=_activeTemplate?{
+    key:_activeTemplate.extensionKey||_activeTemplate.id||"workflow",
+    title:_activeTemplate.title||"Workflow",
+    icon:_activeTemplate.icon||"",
+    hint:_activeTemplate.hint||""
+  }:null;
+  setComposerExtensionToken("topic",token);
+  setComposerExtensionToken("chat",token);
 }
 /* Inject the active template's system prompt as a fresh
    system message right after the base system message.
