@@ -109,86 +109,158 @@
        populate the second dimension.
        Outputs a 3D point on a roughly unit-radius shape.
        ─────────────────────────────────────────────────────── */
-    function formTorus(u, v, t, out) {
-      // (p,q) torus knot — (2,3) trefoil, traveling-wave breathing
-      var a = u * Math.PI * 2;
-      var s2 = Math.sin(2 * a), c2 = Math.cos(2 * a);
-      var s3 = Math.sin(3 * a), c3 = Math.cos(3 * a);
-      var wave = 0.34 * Math.sin(2 * a + t * 1.35)
-               + 0.18 * Math.sin(5 * a - t * 0.8);
-      var r = 2 + c3 + wave;
-      out[0] = r * c2;
-      out[1] = r * s2;
-      out[2] = s3 * (1 + 0.4 * Math.sin(a + t))
-             + 0.3 * Math.sin(4 * a - t * 1.6);
-    }
-
-    function formKnot(u, v, t, out) {
-      // (3,2) torus knot — visually distinct from the trefoil
-      var a = u * Math.PI * 2;
-      var s2 = Math.sin(2 * a), c2 = Math.cos(2 * a);
-      var s3 = Math.sin(3 * a), c3 = Math.cos(3 * a);
-      var pulse = 0.25 * Math.sin(a * 4 + t * 0.9);
-      var r = 2.1 + c2 + pulse;
-      out[0] = r * c3;
-      out[1] = r * s3;
-      out[2] = s2 * (1.15 + 0.25 * Math.sin(a * 2 - t))
-             + 0.35 * Math.cos(5 * a + t * 0.6);
-    }
-
-    function formSphere(u, v, t, out) {
-      // wireframe sphere — latitude ring at v, longitude sweep at u
-      var lon = u * Math.PI * 2;
-      var lat = (v - 0.5) * Math.PI;
-      var breathe = 1 + 0.08 * Math.sin(t * 0.7 + v * 3.0);
-      out[0] = 2.2 * Math.cos(lat) * Math.cos(lon) * breathe;
-      out[1] = 2.2 * Math.cos(lat) * Math.sin(lon) * breathe;
-      out[2] = 2.2 * Math.sin(lat) * breathe;
-    }
-
-    function formSpiral(u, v, t, out) {
-      // logarithmic spiral sheet — u = turn, v = vertical band
-      var turns = 3.5;
-      var a = u * turns * Math.PI * 2;
-      var r = Math.exp(0.34 * (u - 0.5) * turns) * (1.6 + 0.4 * Math.sin(t));
-      var band = (v - 0.5) * 1.4;
+    /* Shared helper — draws ONE of the two dialogue strands at
+       parametric position `u` on a circle of radius `R` lying
+       in the (x, z) plane, climbing along Y by `climb`, with a
+       per-u radial perturbation `ripple(u, t)` and a vertical
+       shimmer `bob(u, t)`. Strand 0 = "the Question"
+       (slightly ahead, brighter), strand 1 = "the Answer"
+       (slightly behind, calmer). v ∈ [0, 0.5) → strand 0,
+       v ∈ [0.5, 1] → strand 1; near v=0.5 we crossfade so the
+       strands visually meet. */
+    function strandPoint(u, v, t, opts, out) {
+      var a = u * Math.PI * 2 * opts.turns + opts.phase;
+      var r = opts.R + (opts.ripple ? opts.ripple(u, t) : 0);
+      var climb = opts.climbBase + (opts.climbAmp ? opts.climbAmp * (u - 0.5) : 0);
+      var bob   = opts.bobAmp   ? opts.bobAmp   * Math.sin(opts.bobFreq * a + t * opts.bobSpd) : 0;
       out[0] = r * Math.cos(a);
-      out[1] = band + 0.25 * Math.sin(a * 2 + t);
+      out[1] = climb + bob;
       out[2] = r * Math.sin(a);
     }
 
-    function formSurface(u, v, t, out) {
-      // rippled paraboloid / saddle surface — feels architectural
+    /* 1. APORIA — the impasse, the closed loop you cannot break.
+       A figure-eight / lemniscate: the path crosses itself and
+       returns to where it began, no exit. v spreads two ribbons
+       that twist around the crossing so the eye reads "trapped".
+       Reads as: "I cannot get out." */
+    function formAporia(u, v, t, out) {
+      // lemniscate of Bernoulli in (x, z), ribbon along v
       var a = u * Math.PI * 2;
-      var h = (v - 0.5) * 2.4;
-      var r = 2.1 * Math.sqrt(Math.max(0, 1.6 - h * h * 0.6));
-      var ripple = 0.35 * Math.sin(a * 3 + t * 1.2)
-                 + 0.18 * Math.cos(v * 6 - t * 0.9);
-      out[0] = r * Math.cos(a) * (1 + ripple * 0.18);
-      out[1] = h;
-      out[2] = r * Math.sin(a) * (1 + ripple * 0.18);
+      var denom = 1 + Math.sin(a) * Math.sin(a);
+      var r = 1.8 / denom;
+      var ribbon = (v - 0.5) * 1.1;
+      // perpendicular to the loop direction (radial), with a tilt
+      out[0] = r * Math.cos(a);
+      out[1] = ribbon + 0.20 * Math.sin(a * 2 + t * 0.5);
+      out[2] = r * Math.sin(a) * Math.cos(a) + ribbon * 0.45 * Math.sin(a);
     }
 
+    /* 2. ELE̓LENCHOS — the inquiry, a question curling upward.
+       The shape of a literal "?" laid in 3-D: a sweep that arcs
+       from the lower-left, curls over the top, and tapers down
+       toward the centre; plus a separate dot at the base that
+       pulses gently so it reads as "the question that has just
+       been asked." v picks between the curl (v>=0.18) and the
+       dot (v<0.18). */
+    function formElenchus(u, v, t, out) {
+      if (v < 0.18) {
+        // the dot at the base, a small disc that breathes
+        var rDot = 0.18 + 0.05 * Math.sin(t * 0.7);
+        var aDot = u * Math.PI * 2;
+        out[0] = rDot * Math.cos(aDot) * 0.4;
+        out[1] = -1.55 + rDot * Math.sin(aDot) * 0.6;
+        out[2] = rDot * Math.sin(aDot) * 0.2 + 0.4;
+      } else {
+        // the hook: shift v from [0.18, 1] → [0, 1] for the sweep
+        var vv = (v - 0.18) / 0.82;     // 0..1 along the hook
+        var a = vv * Math.PI * 2 - Math.PI * 0.3;
+        var hookR = 0.95;
+        var taper = 1 - 0.55 * Math.pow(vv, 2);
+        var r = hookR * taper;
+        var cy = 1.4 * Math.sin(vv * Math.PI) - 1.5 + 0.10 * Math.cos(t * 0.6);
+        var depth = 0.35 * Math.sin(vv * Math.PI * 2);
+        out[0] = r * Math.cos(a);
+        out[1] = cy + r * Math.sin(a);
+        out[2] = depth * r * 0.5 + r * 0.15 * Math.sin(a * 2);
+        // u gives the sweep a slight thickness across the ribbon
+        var ribbon = (u - 0.5) * 0.45;
+        out[0] += -Math.sin(a) * ribbon;
+        out[2] += Math.cos(a) * ribbon;
+      }
+    }
+
+    /* 3. MÍMESIS — the listening mirror, a bowl that catches sound.
+       An open paraboloid, mouth up — like a satellite dish or
+       cupped hands held to the ear. The breath modulates the
+       focal length so the dish "inhales" and "exhales".
+       Reads as: "I am listening." */
+    function formSphere(u, v, t, out) {
+      var a = u * Math.PI * 2;
+      // radius shrinks with height: wide at the rim, narrow at the bottom
+      var h = (v - 0.5) * 2.2;            // -1.1 .. 1.1
+      var rim = 1 - Math.abs(h) / 1.6;    // 0.31 .. 1
+      rim = Math.max(0.18, rim);
+      var breath = 1 + 0.10 * Math.sin(t * 0.7 + v * 2.4);
+      var r = rim * 2.0 * breath;
+      out[0] = r * Math.cos(a);
+      out[1] = h;
+      out[2] = r * Math.sin(a);
+    }
+
+    /* 4. ANÁMNESIS — the spiral of remembering, a corkscrew inward.
+       A clear three-turn Archimedean spiral lying flat, like
+       grooves on a vinyl record. The eye follows the inward
+       journey. Reads as: "you have always known." */
+    function formSpiral(u, v, t, out) {
+      var turns = 3;
+      var a = u * turns * Math.PI * 2;
+      // Archimedean: r = a * θ, with constant pitch
+      var r = (1 - u) * 1.9 + 0.25;       // outer → inner
+      // give the spiral a slight vertical lift per turn so it spirals in 3-D
+      var lift = (u - 0.5) * 0.9;
+      // ribbon perpendicular to the spiral arm
+      var ribbon = (v - 0.5) * 0.5;
+      var nx = -Math.sin(a), nz = Math.cos(a);
+      out[0] = r * Math.cos(a) + nx * ribbon;
+      out[1] = lift + 0.18 * Math.sin(t * 0.5);
+      out[2] = r * Math.sin(a) + nz * ribbon;
+    }
+
+    /* 5. SÝNTHESIS — two lines crossing at the centre, an X.
+       Two straight beams meeting at the origin, one with a
+       negative slope (going down as x grows), one with a
+       positive slope (going up as x grows). The eye reads
+       "two become one" at the crossing. v picks which beam.
+       Reads as: "two truths meet." */
+    function formSurface(u, v, t, out) {
+      // u runs from one end of a beam to the other
+      // v picks beam 0 (negative slope) or beam 1 (positive slope)
+      var beam = v < 0.5 ? 0 : 1;
+      var s = (u - 0.5) * 2.4;            // -1.2 .. 1.2 along x
+      // beam 0 goes down as x grows, beam 1 goes up as x grows
+      var slope = beam ? 1.4 : -1.4;
+      out[0] = s;
+      out[1] = s * slope;                 // y rises or falls along x
+      out[2] = beam * 0.35 - 0.175;       // beam 1 sits behind beam 0
+      // add a tiny ripple so it doesn't read as a hard ruler
+      var wobble = 0.05 * Math.sin(t * 0.7 + u * 4);
+      out[1] += wobble;
+      out[2] += wobble * 0.4;
+    }
+
+    /* 6. MAI̓EUTIKE̓ — the birth of the idea, the double helix.
+       The classic DNA: two strands, phase-shifted by π, climbing
+       together. v picks the strand; near v=0.5 the two strands
+       physically cross so the eye reads "intertwined".
+       Reads as: "the answer is born within the question." */
     function formHelix(u, v, t, out) {
-      // DNA double helix — two intertwined strands phase-offset by π,
-      // climbing along Y. v picks which strand (0 vs 1) and v<0.5
-      // animates the rungs slightly so the helix feels alive.
-      var a = u * Math.PI * 6;                 // 3 full turns
-      var strand = v < 0.5 ? 0 : 1;            // strand index
-      var phase = strand * Math.PI;            // 180° offset
-      var climb = (u - 0.5) * 4.4;             // vertical span
+      var a = u * Math.PI * 6;
+      var strand = v < 0.5 ? 0 : 1;
+      var phase = strand * Math.PI;
+      var climb = (u - 0.5) * 4.4;
       var r = 1.55 + 0.18 * Math.sin(a * 2 - t * 0.9);
       out[0] = r * Math.cos(a + phase);
       out[1] = climb + 0.12 * Math.sin(t * 0.6 + strand);
       out[2] = r * Math.sin(a + phase);
     }
 
+    /* 7. HÊ STROPHÊ̓ — the turn, the Möbius strip.
+       A single non-orientable band with a half-twist. The
+       inside becomes the outside. Reads as: "the question
+       answers itself." */
     function formMobius(u, v, t, out) {
-      // Möbius strip — single non-orientable surface.
-      // u sweeps around the loop, v slides across the band.
       var a = u * Math.PI * 2;
-      var b = (v - 0.5) * 1.4;                 // half-width of the band
-      // half-twist: the band rotates by u*π as it goes around
+      var b = (v - 0.5) * 1.4;
       var twist = a * 0.5;
       var R = 2.0 + 0.16 * Math.sin(t * 0.7);
       out[0] = (R + b * Math.cos(twist)) * Math.cos(a);
@@ -196,99 +268,221 @@
       out[2] = (R + b * Math.cos(twist)) * Math.sin(a);
     }
 
+    /* 8. CHORÓS — the dance, two voices spiralling in counterpoint.
+       Two helical arms that wind around each other like intertwined
+       dancers — the yin-yang of two bodies in motion. Each strand
+       has its own climb rate so they meet, separate, and meet again.
+       Reads as: "the dialogue dances." */
     function formRibbon(u, v, t, out) {
-      // twisted ribbon — like a Möbius cousin but with a free
-      // vertical climb and a softer, more dancer-like profile.
-      var a = u * Math.PI * 2;
-      var h = (v - 0.5) * 1.6;
-      var twist = a * 1.5 + t * 0.4;
-      var R = 1.9 + 0.22 * Math.sin(a * 2 + t * 0.8);
-      out[0] = (R + h * Math.cos(twist)) * Math.cos(a);
-      out[1] = (u - 0.5) * 3.6 + 0.25 * Math.sin(t * 0.5);
-      out[2] = (R + h * Math.cos(twist)) * Math.sin(a);
-    }
-
-    function formLattice(u, v, t, out) {
-      // braiding / lattice — two weft strands weaving through
-      // each other along Y, with periodic crossings. Feels
-      // structured and architectural (think graphene lattice).
-      var y = (v - 0.5) * 4.0;
-      var a = u * Math.PI * 4;               // 2 full turns per cycle
-      var r = 1.55 + 0.22 * Math.sin(t * 0.9);
-      // two strands: one along Y, one weaving in/out
       var strand = v < 0.5 ? 0 : 1;
-      var weave = Math.sin(y * 1.6 + t * 0.7 + strand * Math.PI);
-      out[0] = r * Math.cos(a) * (1 + 0.15 * weave);
-      out[1] = y + 0.18 * Math.sin(t * 0.5 + strand);
-      out[2] = r * Math.sin(a) * (1 + 0.15 * weave);
+      var a = u * Math.PI * 4;
+      var phase = strand * Math.PI;
+      var climbRate = strand ? 1.0 : -1.0;
+      // vertical climb modulated by a sway
+      var climb = (u - 0.5) * 3.6 + 0.35 * Math.sin(a + t * 0.6);
+      // radial sway: the dancer's body shifts in and out
+      var sway = 0.55 * Math.sin(a * 0.5 + t * 0.4 + phase);
+      var r = 1.7 + sway;
+      out[0] = r * Math.cos(a + phase);
+      out[1] = climb + strand * 0.45 * Math.sin(t * 0.5);
+      out[2] = r * Math.sin(a + phase) * 0.9 + climbRate * 0.25;
     }
 
+    /* 9. SYLLOGISMÓS — the woven lattice, a basket of crossing threads.
+       Two families of parallel curves (warp running along x,
+       weft running along z) cross at right angles, the way
+       cloth is woven. Each thread is a smooth curve with a
+       gentle sinusoidal lift, so the eye reads "two threads
+       over, two under" as the families intersect. Reads as:
+       "structure from many threads." */
+    function formLattice(u, v, t, out) {
+      // Woven lattice: 5 warp threads (running along x) and 5 weft
+      // threads (running along z). Each particle belongs to one of
+      // the 10 threads, and we use `along` (from u) to place it
+      // along that thread's length.
+      //
+      // The signature reading cue for a weave is OVER/UNDER crossings:
+      // at each warp/weft intersection, one thread passes over the
+      // other. We model this by giving every thread a continuous y
+      // curve that oscillates with a period of 2 * pitch along its
+      // length — so the warp "rides up over" one weft, "down under"
+      // the next, etc. The weft does the inverse: where the warp is
+      // up, the weft is down, and vice versa.
+      //
+      // Net effect from above: a clean checkerboard pattern that
+      // reads unmistakably as woven cloth.
+      var family = v < 0.5 ? 0 : 1;             // 0 = warp (along x), 1 = weft (along z)
+      var slot = u * 5;                         // 0..5
+      var which = Math.min(4, Math.floor(slot));// 0..4 (which thread in family)
+      var along = (slot - which - 0.5) * 2.0;   // -1..1 along this thread
+
+      var pitch = 0.95;
+      var halfRange = 5.0;                      // length parameter units (each unit ≈ 0.5 world unit)
+      var halfLen = halfRange * 0.5;
+      // position along the thread axis (in pitch units, not world units)
+      var s = along * halfRange;                // -2.5..2.5
+
+      // the OTHER axis position (which slot is this thread on?)
+      var threadIdx = which - 2;                // -2..2
+
+      // OVER/UNDER: y oscillates with period 2*pitch along the thread.
+      // Warp and weft use opposite phase so the crossings interlock.
+      // Plus, each thread has a tiny static offset so they don't
+      // collapse onto a single plane at the camera angle.
+      var oscBase = s / pitch;                  // ~ -2.6..2.6
+      var phase = family === 0 ? 0 : Math.PI;   // weft is inverse of warp
+      var weave = Math.cos(oscBase * Math.PI + phase) * 0.32;
+      // small per-thread vertical offset so 10 threads read as 10
+      // distinct threads from any angle (and so the weave doesn't
+      // collapse to a flat checkerboard when viewed head-on)
+      var threadOffset = (threadIdx * 0.07);
+      var y = weave + threadOffset;
+
+      if (family === 0) {
+        // warp runs along x; sits at threadIdx's z lane
+        out[0] = along * halfLen * 0.45;
+        out[1] = y;
+        out[2] = threadIdx * pitch;
+      } else {
+        // weft runs along z; sits at threadIdx's x lane
+        out[0] = threadIdx * pitch;
+        out[1] = y;
+        out[2] = along * halfLen * 0.45;
+      }
+    }
+
+    /* 10. THÁMBOS — awe, a flower unfolding.
+       A five-petal rose that opens and breathes — the inner
+       tip pulls inward as the outer petals flare, like the
+       instant before a flower blooms. v is the petal depth:
+       the base sits tight, the tip flares wide. Reads as:
+       "the moment of wonder." */
     function formRose(u, v, t, out) {
-      // rose-curve surface — a flower petal pattern in the
-      // (x, z) plane, with v spreading the surface vertically.
-      var k = 5;                              // 5 petals
+      var k = 5;
       var a = u * Math.PI * 2;
-      var r = Math.abs(Math.cos(k * a * 0.5)) * 2.1;
-      var h = (v - 0.5) * 1.8;
-      r *= 1 + 0.15 * Math.sin(t * 0.9);
+      // petal radius: zero at the centre, big at the rim
+      var rim = (v < 0.5) ? 0.4 + v * 1.6 : 1.6 + (v - 0.5) * 1.4;
+      var r = Math.abs(Math.cos(k * a * 0.5)) * rim;
+      // breathing: gentle open/close
+      r *= 1 + 0.20 * Math.sin(t * 0.9);
+      // the cup: lift edges upward like a chalice
+      var cup = Math.abs(v - 0.5) * 2;      // 0 at the middle, 1 at the rim
+      var lift = cup * cup * 0.45;
+      // base of the flower: a tighter ring near v = 0.5
       out[0] = r * Math.cos(a);
-      out[1] = h + 0.18 * Math.sin(a * 2 + t * 0.6);
+      out[1] = lift + 0.10 * Math.sin(a * 2 + t * 0.6);
       out[2] = r * Math.sin(a);
     }
 
+    /* 11. APOTHÉOSIS — arrival at the centre.
+       A vortex: many streams of particles converge to a
+       single bright point at the origin, then spiral out.
+       The eye is pulled to the centre and held there. Reads
+       as: "you have arrived." */
     function formHyperbolic(u, v, t, out) {
-      // hyperbolic paraboloid — a classical saddle with a
-      // gentle undulation along the diagonal. v spreads the
-      // surface from −1 to +1 along the wind axis.
       var a = u * Math.PI * 2;
-      var h = (v - 0.5) * 2.4;
-      var r = 1.9 + 0.4 * Math.sin(a * 2 - t * 0.8);
-      // the saddle: outer edges flare, middle dips
-      var lift = 0.45 * Math.cos(a) * h;
-      out[0] = r * Math.cos(a);
-      out[1] = h + lift;
-      out[2] = r * Math.sin(a);
+      // radial position: 0 (centre) to 1 (rim)
+      var r = v * 2.0;
+      // pull inward toward the centre with a logarithmic spiral
+      var pull = 0.45 * (1 - v);        // strongest near centre
+      var spiral = a + t * 0.4;
+      // the centre is a bright tight knot; the rim spreads and lifts
+      var lift = (1 - v) * 1.2 * Math.sin(spiral * 0.5) - v * 0.6;
+      out[0] = r * Math.cos(a + pull * Math.sin(a + t * 0.3));
+      out[1] = lift;
+      out[2] = r * Math.sin(a + pull * Math.sin(a + t * 0.3));
     }
 
+    /* 12. HÉCHO — the echo, ripples carrying the question outward.
+       Concentric rings expanding from a single source at the
+       centre; each ring is brighter near its crest and fades
+       toward the edge, the way a stone's ripple dies. Reads as:
+       "and so it continues." */
     function formWave(u, v, t, out) {
-      // wave surface — concentric ripples flowing outward
-      // from a centre, with a slight vertical tilt so the
-      // surface reads as a pond, not a flat target.
       var a = u * Math.PI * 2;
-      var rad = 0.35 + v * 1.85;             // 0.35..2.20
-      var ring = 6;
-      var amp = 0.32 * Math.sin(rad * ring - t * 1.6) * (1 - v * 0.6);
-      var slope = 0.18 * Math.sin(a * 2 + t * 0.5);
-      out[0] = (rad + amp * 0.6) * Math.cos(a);
-      out[1] = amp + slope;
-      out[2] = (rad + amp * 0.6) * Math.sin(a);
+      // radius walks outward as v increases (0..1)
+      var rad = 0.25 + v * 1.95;
+      // the ripple: a tall crest that sweeps outward
+      var ring = 5;
+      var amp = 0.55 * Math.sin(rad * ring - t * 1.6) * Math.exp(-v * 1.4);
+      // the crest height gives the wave vertical relief
+      out[0] = rad * Math.cos(a);
+      out[1] = amp + 0.05 * Math.sin(a * 3 + t * 0.4);
+      out[2] = rad * Math.sin(a);
     }
 
-    /* The form sequence — the morph clock walks through this
-       list in order, crossfading between neighbours. Each form
-       has a distinct silhouette so the rotation never reads as
-       the same pose: a knot, a sphere, a ribbon, a saddle, a
-       lattice, a rose, a helix, a wave… */
+    /* The form sequence — twelve acts of one Socratic dialogue.
+       The morph clock walks through this list in order, crossfading
+       between neighbours. Every form here was chosen to share its
+       silhouette with its predecessor and successor, so the rotation
+       never reads as a hard cut: an impasse becomes an inquiry
+       becomes a held silence becomes a spiral of remembering, and so
+       on around the wheel — until the wave that began as a question
+       returns as an echo. */
     var FORMS = [
-      formTorus,        // 1.  (2,3) trefoil torus knot
-      formKnot,         // 2.  (3,2) torus knot
-      formSphere,       // 3.  wireframe sphere
-      formSpiral,       // 4.  logarithmic spiral sheet
-      formSurface,      // 5.  rippled paraboloid / saddle
-      formHelix,        // 6.  DNA double helix
-      formMobius,       // 7.  Möbius strip
-      formRibbon,       // 8.  twisted dancer ribbon
-      formLattice,      // 9.  weft lattice / graphene-style weave
-      formRose,         // 10. 5-petal rose curve
-      formHyperbolic,   // 11. hyperbolic paraboloid (saddle)
-      formWave          // 12. concentric ripple wave
+      formAporia,       // 1.  ἀπορία   — the impasse
+      formElenchus,     // 2.  ἔλεγχος — the inquiry
+      formSphere,       // 3.  μίμησις  — the listening mirror
+      formSpiral,       // 4.  ἀνάμνησις — remembering
+      formSurface,      // 5.  σύνθεσις  — two thoughts meet
+      formHelix,        // 6.  μαιευτική — the birth
+      formMobius,       // 7.  ἡ στροφή  — the turn
+      formRibbon,       // 8.  χορός    — the dance
+      formLattice,      // 9.  συλλογισμός — the woven lattice
+      formRose,         // 10. θάμβος    — awe
+      formHyperbolic,   // 11. ἀποθέωσις  — arrival at the centre
+      formWave          // 12. ἠχώ       — the echo
     ];
+
+    /* Visible labels for each form. Shown in a tiny HUD that
+       fades between cells as the morph clock crosses each
+       integer boundary. The .form-label element lives in the
+       HTML — we just toggle the [data-active] attribute and
+       the CSS transitions handle the visual. */
+    var FORM_LABELS = [
+      { roman: "Ⅰ",  zh: "困境",  en: "the impasse",        greek: "ἀπορία" },
+      { roman: "Ⅱ",  zh: "探询",  en: "the inquiry",        greek: "ἔλεγχος" },
+      { roman: "Ⅲ",  zh: "倾听",  en: "the listening mirror", greek: "μίμησις" },
+      { roman: "Ⅳ",  zh: "回忆",  en: "remembering",        greek: "ἀνάμνησις" },
+      { roman: "Ⅴ",  zh: "交汇",  en: "two thoughts meet",  greek: "σύνθεσις" },
+      { roman: "Ⅵ",  zh: "诞生",  en: "the birth",          greek: "μαιευτική" },
+      { roman: "Ⅶ",  zh: "转折",  en: "the turn",           greek: "ἡ στροφή" },
+      { roman: "Ⅷ",  zh: "舞蹈",  en: "the dance",          greek: "χορός" },
+      { roman: "Ⅸ",  zh: "编织",  en: "the woven lattice",  greek: "συλλογισμός" },
+      { roman: "Ⅹ",  zh: "敬畏",  en: "awe",                greek: "θάμβος" },
+      { roman: "Ⅺ",  zh: "抵达",  en: "arrival at the centre", greek: "ἀποθέωσις" },
+      { roman: "Ⅻ", zh: "回响",  en: "the echo",           greek: "ἠχώ" }
+    ];
+
+    /* HUD wiring — single cached lookup, no work per frame
+       unless the dominant form index actually changes. */
+    var formLabelEl = document.querySelector(".form-label");
+    var formLabelCells = formLabelEl
+      ? Array.from(formLabelEl.querySelectorAll(".form-label-cell"))
+      : [];
+    var lastFormIdx = -1;
+    function setActiveForm(idx) {
+      if (idx === lastFormIdx) return;
+      lastFormIdx = idx;
+      if (!formLabelEl) return;
+      formLabelEl.setAttribute("data-active", String(idx));
+      for (var ci = 0; ci < formLabelCells.length; ci++) {
+        var on = ci === idx;
+        formLabelCells[ci].setAttribute("data-on", on ? "1" : "0");
+      }
+    }
 
     /* sample a form with smooth crossfade to its neighbour */
     function sampleForm(u, v, t, blend, out) {
-      var i = Math.floor(blend) % FORMS.length;
+      // `blend` comes from `((t / CYCLE) * FORMS.length) % FORMS.length`
+      // — but JavaScript's % can return a tiny negative on floats
+      // (e.g. -4e-16), which would index FORMS[-1]. Clamp first.
+      var bl = blend - Math.floor(blend / FORMS.length) * FORMS.length;
+      if (bl < 0) bl += FORMS.length;
+      if (bl >= FORMS.length) bl -= FORMS.length;
+      var i = Math.floor(bl) % FORMS.length;
       var j = (i + 1) % FORMS.length;
-      var k = blend - Math.floor(blend); // 0..1 within pair
+      var k = bl - Math.floor(bl); // 0..1 within pair
       // smoothstep for a silky transition
       var kk = k * k * (3 - 2 * k);
       var a = [0, 0, 0], b = [0, 0, 0];
@@ -377,6 +571,12 @@
 
       // morph blend — walks through FORMS, looping forever
       var blend = ((t / CYCLE) * FORMS.length) % FORMS.length;
+      // Safe-clamp for floats (cheap mirror of sampleForm's logic)
+      var blSafe = blend - Math.floor(blend / FORMS.length) * FORMS.length;
+      if (blSafe < 0) blSafe += FORMS.length;
+      if (blSafe >= FORMS.length) blSafe -= FORMS.length;
+      var dominantForm = Math.floor(blSafe) % FORMS.length;
+      setActiveForm(dominantForm);
 
       // THEME-ONLY color: drift purely within the warm band
       // (gold 45° → soft gold 42° → moonlight 44°), 30° total swing.
