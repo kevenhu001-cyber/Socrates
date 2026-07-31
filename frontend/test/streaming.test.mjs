@@ -37,6 +37,15 @@ test('stream splitting never cuts through fenced code, math, or reasoning', () =
   }
 });
 
+test('stream splitting keeps an open Tutor scaffold in the live tail', () => {
+  const source = '<example><title>Example</title><problem>First line\n\nSecond line';
+  assert.equal(isStableMarkdownPrefix(source.slice(0, source.lastIndexOf('\n\n'))), false);
+  assert.deepEqual(splitStreamingMarkdown(source), { prefix: '', tail: source });
+
+  const complete = '<example><problem>First line\n\nSecond line</problem></example>';
+  assert.equal(isStableMarkdownPrefix(complete), true);
+});
+
 test('inline tools are inserted only after complete prose boundaries', () => {
   assert.equal(findInlineToolBoundary('我先检查一下这个模块，看看'), 0);
   assert.equal(findInlineToolBoundary('先说明结论。 然后继续分析'), '先说明结论。 '.length);

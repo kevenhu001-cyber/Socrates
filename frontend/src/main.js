@@ -64,7 +64,7 @@ import {
 import { applyDiagnosticResults } from './chat/diagnosticResults.js';
 import { generateTopicKBNodes } from './chat/topicKbNodes.js';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from './chat/teachingPlan.js';
-import { BASELINE_LEVEL, stageInstruction, fromBasicsDirective } from './chat/socraticDirectives.js';
+import { BASELINE_LEVEL, stageInstruction, fromBasicsDirective, tutorTurnDirective } from './chat/socraticDirectives.js';
 import { aiGenerate } from './chat/mockDiagnostic.js';
 import { extractHistory, buildUserContentParts } from './chat/history.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './chat/systemPrompts.js';
@@ -5180,6 +5180,9 @@ window.handleSendClick=function(){
     if(window._activeChatCtl){
       window._activeChatCtl.abort();
     }
+    if(window._activeChatAbort){
+      try{window._activeChatAbort("user-stop")}catch(_){ }
+    }
   }else{
     /* submitChatMessage snapshots and commits the draft before its first
        await, then blurs during that same synchronous phase. Reading first is
@@ -5192,6 +5195,9 @@ window.handleSendClick=function(){
 function stopChatResponse(){
   if(window._activeChatCtl && typeof window._activeChatCtl.abort === "function"){
     window._activeChatCtl.abort();
+  }
+  if(window._activeChatAbort){
+    try{window._activeChatAbort("user-stop")}catch(_){ }
   }
 }
 
@@ -6918,19 +6924,29 @@ function doRender(){
       /* Stop the independent execution stream and any queued delta
          frame before this message can lose ownership of its slot. */
       toolRuntime.cancel();
-      /* Clean up incomplete placeholder message from state.messages
-       * to prevent saving empty/partial AI responses to the database.
-       * Only remove if still in streaming state with no content.
+      /* A user stop is an intentional end state. Keep any visible text as a
+       * normal assistant message so it remains on screen and can be saved.
        * P_session-cross-talk — verify the slot still holds OUR placeholder
        * (by clientId) before splicing. If the user switched sessions,
        * state.messages was replaced and msgIdx now points at the new
        * session's message — splicing here would delete the new session's
        * message. The abandoned placeholder is harmless (it's not in the
        * new session's array), so just skip the splice. */
-      if(msgIdx>=0&&state.messages[msgIdx]&&state.messages[msgIdx].clientId===clientId){
-        if(state.messages[msgIdx].type==="streaming"&&!state.messages[msgIdx].rawText){
-          state.messages.splice(msgIdx,1);
-        }
+      var abortedMessage=(msgIdx>=0&&state.messages[msgIdx]&&
+        state.messages[msgIdx].clientId===clientId)?state.messages[msgIdx]:null;
+      var stoppedRaw=abortedMessage?String(full||abortedMessage.rawText||""):String(full||"");
+      var visibleStoppedRaw=stoppedRaw
+        .replace(/<think>[\s\S]*?<\/think>/gi,"")
+        .replace(/<think>[\s\S]*$/gi,"")
+        .trim();
+      var hasPartial=!!(abortedMessage&&visibleStoppedRaw);
+      var _reactAbortHandoff=!!(list&&(
+        (list.dataset&&list.dataset.msgListReactHydrated==="1")||
+        list.getAttribute("data-react-migration-runtime")==="msg-list"
+      ));
+      if(abortedMessage&&!hasPartial&&abortedMessage.type==="streaming"){
+        state.messages.splice(msgIdx,1);
+        abortedMessage=null;
       }
       /* Cancel any active typewriter animation on tool cards */
       var _twCardsAb=div.querySelectorAll('.agent-tool-card');
@@ -6939,32 +6955,48 @@ function doRender(){
           try{_twCardsAb[_twAb]._cancelTypewriter()}catch(_){}
         }
       }
-      /* Keep partial content if the stream produced any text —
-         otherwise remove the placeholder bubble entirely. */
-      if(state.messages[msgIdx]&&state.messages[msgIdx].type==="streaming"&&state.messages[msgIdx].rawText){
-        state.messages[msgIdx].type="text";
-        state.messages[msgIdx].state="done";
-        try{formatChatMsg(msgIdx,div,!0)}catch(_){}
-      }else{
-        requestAnimationFrame(function(){div.remove()});
-      }
-      /* Drop the legacy bubble so React's next snapshot-driven render
-         doesn't render a duplicate. When the entry survives (partial
-         text path), React renders the finalized version from the
-         snapshot; when the entry was spliced, React just shrinks the
-         list to match. (Same bug as the finish path — `msgList` was
-         undeclared here too, so the cleanup never ran.) */
-      try{
-        var _abLegacy=list.querySelector('[data-client-id="'+clientId+'"]');
-        if(_abLegacy && !_abLegacy.hasAttribute("data-react-owned") && _abLegacy.parentNode===list){
-          list.removeChild(_abLegacy);
+      /* Finalize the partial text before publishing the aborted state. A
+         complete scaffold becomes interactive; an open scaffold stays on
+         the tolerant progressive renderer so already-streamed fields are
+         not replaced by an empty fallback. */
+      if(hasPartial&&abortedMessage){
+        var stoppedHtml="";
+        try{
+          stoppedHtml=renderAssistantHTML(stoppedRaw);
+          if(/scaffold-stream-unclosed/.test(stoppedHtml)){
+            stoppedHtml=formatMsgProgressive(stoppedRaw);
+          }
+        }catch(_){
+          try{stoppedHtml=formatMsgProgressive(stoppedRaw)}catch(__){stoppedHtml="<p>"+esc(visibleStoppedRaw)+"</p>"}
         }
-      }catch(_){}
+        abortedMessage.rawText=stoppedRaw;
+        abortedMessage.html=stoppedHtml;
+        abortedMessage.type="assistant";
+        abortedMessage.state="stopped";
+        if(!_reactAbortHandoff)body.innerHTML=stoppedHtml;
+        try{saveCurrentSession()}catch(_){ }
+        try{updateChatStats()}catch(_){ }
+      }
+      /* In legacy mode the existing bubble is the durable surface and must
+         stay. In React mode publish first, then remove only the throwaway
+         shell on the next frame. */
       publishReactChatRuntime({
         type:"stream-aborted",
         messageId:clientId,
         textLength:full.length
       });
+      if(_reactAbortHandoff){
+        requestAnimationFrame(function(){
+          try{
+            var _abLegacy=list.querySelector('[data-client-id="'+clientId+'"]');
+            if(_abLegacy&&!_abLegacy.hasAttribute("data-react-owned")&&_abLegacy.parentNode===list){
+              list.removeChild(_abLegacy);
+            }
+          }catch(_){ }
+        });
+      }else if(!hasPartial){
+        requestAnimationFrame(function(){try{div.remove()}catch(_){ }});
+      }
     },
     /* Show an inline error state with a retry button so the user can
        recover from a transient failure (network, 429, 5xx) without
@@ -8911,6 +8943,7 @@ function buildSocraticMessages(node,domain,history,isFirst){
      specific directive that is injected into the system prompt. */
   var stage=state.teachingStage||"motivate";
   var stageInstr=stageInstruction(stage);
+  var turnScope=tutorTurnDirective(stage,isFirst);
   /* P_teaching-plan — Inject the "from basics" directive into every
      teaching turn. The cold-start diagnostic only established a
      baseline; it did NOT verify mastery. Every sub-topic must be
@@ -8949,17 +8982,15 @@ function buildSocraticMessages(node,domain,history,isFirst){
         "Follow the textbook principles:\n"+
         "1) **Foundation-first**: Start with the core definition, build up layer by layer.\n"+
         "2) **Systematic connection**: Link this sub-topic to the broader topic. Make it part of a coherent narrative.\n"+
-        "3) **Thorough &amp; descriptive explanation**: Follow the Motivate → Define → Develop → Illustrate flow with the DESCRIPTIVE &amp; THOROUGH DEPTH rules from the system prompt active — verbose by default, ~1500+ words of running prose in the main body, 4-8 sentences per paragraph (3-5 in Chinese 书面语), every term defined in plain words, every formula wrapped in prose, no skipped algebraic steps, no one-sentence paragraphs. 8-20 paragraphs is the minimum floor, not a target.\n"+
-        "4) **2-3 <example> blocks** with clear difficulty progression (Example 1 = foundation, Example 2 = application).\n"+
-        "5) After examples, end with 1 <practice> block — harder than the examples, requiring transfer.\n"+
-        "6) Optional <quiz> block after explanation (before examples) if there's a key point worth checking.\n"+
-        "Write in formal, precise textbook language. Use bold for terms. Use LaTeX for math. Build a knowledge system, not isolated facts."
+         "3) **Focused explanation**: explain the current stage clearly, define terms when they first appear, and show only the reasoning needed for this turn.\n"+
+         "4) Use only the scaffold blocks required by the current teaching stage. Do not add examples, practice, or quiz blocks early just to make the response longer.\n"+
+         "Write in formal, precise textbook language. Use bold for terms. Use LaTeX for math. Build a knowledge system one stage at a time."
       : fromBasicsTxt+diagKps+
-        "Current teaching stage: "+stage+". Sub-topic: "+node.name+". Advance the lesson according to the stage: "+stageInstr+" "+
-        "Connect new material to what was already taught. Do NOT restart from the beginning. "+
-        "Always include 2-3 <example> blocks (with progression) before any new <practice> block. "+
-        "Use <quiz>, <example>, and <practice> blocks per the system prompt. "+
-        "Write in formal textbook register. Build systematically on prior knowledge.")
+         "Current teaching stage: "+stage+". Sub-topic: "+node.name+". Advance the lesson according to the stage: "+stageInstr+" "+
+         "Connect new material to what was already taught. Do NOT restart from the beginning. "+
+         "Use only the scaffold required by the current stage. "+
+         "Write in formal textbook register. Build systematically on prior knowledge.")+
+     "\n\n"+turnScope
   );
   var msgs=[{role:"system",content:prompt}].concat(history);
   msgs.push({role:"user",content:isFirst?"I'm ready to begin. Please teach me about "+node.name+".":"Continue the lesson from where we left off."});
@@ -9046,6 +9077,7 @@ function buildFollowUpMessages(answer,node,domain,history){
      buildSocraticMessages. */
   var stage=state.teachingStage||"motivate";
   var stageInstr=stageInstruction(stage);
+  var turnScope=tutorTurnDirective(stage,false);
   var attempts=state.practiceAttempts||0;
   /* Stage-specific guidance that also factors in whether the user
      just answered a quiz / practice correctly. For quiz-origin
@@ -9065,15 +9097,15 @@ function buildFollowUpMessages(answer,node,domain,history){
     stageGuidance="Advance the lesson one stage: "+stageInstr;
   }
   var prompt=buildSocraticPrompt(domain,BASELINE_LEVEL,
-    fromBasicsDirective(node)+
+      fromBasicsDirective(node,{continuation:true})+
     "Current teaching stage: "+stage+". Sub-topic: "+node.name+". "+
     "The student just said: \""+answer+"\". "+stageGuidance+"\n"+
     "Your job is to advance the lesson — stay anchored to the two principles above:\n"+
-    "- If the student just answered a <quiz>, acknowledge (right/wrong) and move to the next stage (a worked <example> or a <practice> problem). When introducing the next stage's content, re-ground it briefly in the core definition you established earlier — do NOT introduce new symbols, formulas, or terms without that anchor.\n"+
-    "- If the student just attempted a <practice> problem, evaluate their work: if correct, affirm and present the next sub-topic; if wrong or partial, point out the gap by re-walking from the core definition outward, then give a similar practice problem. Never patch a wrong answer by jumping ahead — re-anchor at the foundation first.\n"+
-    "- If the student just asked a free-form question, answer it briefly (1-2 paragraphs) and then return to the current stage of the loop, still rooted in the foundational definition.\n"+
-    "Always use the appropriate <quiz> / <example> / <practice> blocks per the system prompt. "+
-    "Do NOT restart the entire topic from scratch on every turn — instead, advance the lesson while keeping the foundation as the persistent anchor for any new material."
+      "- If the student just answered a <quiz>, acknowledge (right/wrong) and move to the next stage (a worked <example> or a <practice> problem). When introducing new material, refer to the earlier core definition in one sentence only.\n"+
+      "- If the student just attempted a <practice> problem, evaluate their work: if correct, affirm and present the next sub-topic; if wrong or partial, identify the specific gap and repair only that gap before giving a similar practice problem.\n"+
+      "- If the student just asked a free-form question, answer it briefly (1-2 paragraphs) and then return to the current stage of the loop, still rooted in the foundational definition.\n"+
+      turnScope+"\n"+
+      "Do NOT restart the entire topic from scratch on every turn — instead, advance the lesson while keeping the foundation as the persistent anchor for any new material."
   );
   return injectTemplateSystemPrompt(
     [{role:"system",content:prompt}].concat(history).concat([{role:"user",content:answer}])

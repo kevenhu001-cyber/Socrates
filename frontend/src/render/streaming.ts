@@ -18,6 +18,32 @@ export function isStableMarkdownPrefix(text: string): boolean {
   if ((s.split('$$').length - 1) % 2 !== 0) return false;
   if ((s.split('\\[').length - 1) !== (s.split('\\]').length - 1)) return false;
   if ((s.split('<think>').length - 1) !== (s.split('</think>').length - 1)) return false;
+  /* Tutor scaffold bodies commonly contain blank lines. Do not promote a
+     prefix containing an open <example>/<quiz>/... tag into the settled DOM,
+     otherwise the remaining fields render outside the card and the next
+     frame appears to duplicate or relocate the scaffold. A small stack is
+     enough here because these tags are XML-like and the live renderer can
+     safely keep the whole open block in its tail. */
+  const scaffoldTags = new Set([
+    'quiz', 'example', 'practice', 'definition', 'step', 'flashcard',
+    'proof', 'theorem', 'key-point', 'derivation', 'q', 'o', 'title',
+    'problem', 'solution', 'hint', 'front', 'back', 'statement', 'body',
+    'term', 'correct',
+  ]);
+  const stack: string[] = [];
+  const tagRe = /<\/?([a-z][\w-]*)(?:\s[^>]*)?\/?>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = tagRe.exec(s)) !== null) {
+    const tag = match[1].toLowerCase();
+    if (!scaffoldTags.has(tag)) continue;
+    const raw = match[0];
+    if (raw.charAt(1) === '/') {
+      if (stack.pop() !== tag) return false;
+    } else if (!/\/\s*>$/.test(raw)) {
+      stack.push(tag);
+    }
+  }
+  if (stack.length > 0) return false;
   return true;
 }
 

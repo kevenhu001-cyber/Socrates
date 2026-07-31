@@ -142,6 +142,15 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       var eStatus=e&&e.status;
       var isAbort=(e&&(e.name==="AbortError"||ac.signal.aborted));
       if(isAbort){
+        /* The Stop button uses a named abort reason so a request that has
+           not produced a response body yet follows the same silent
+           cancelled path as a mid-stream stop. */
+        if(ac.signal.reason==="user-stop"){
+          if(window._activeChatAbort&&window._activeChatAbort._fromThisCall){
+            window._activeChatAbort=null;
+          }
+          return {text:"",html:null,widgets:[],cancelled:true};
+        }
         lastErr="request timed out after "+(STREAM_TIMEOUT_MS/1000)+"s";
         /* Total budget exhausted — stop retrying. */
         break;
@@ -604,9 +613,13 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         /* User Stop click — return a cancelled result with whatever
            text already streamed, so the bubble cleans up silently
            instead of showing an error. */
-        if(!isHeartbeat&&!ac.signal.reason){
-          /* No reason means the abort wasn't from a watchdog timer;
-             it was from _activeChatAbort (user Stop). */
+        if(!isHeartbeat&&(ac.signal.reason==="user-stop"||!ac.signal.reason)){
+          /* A named user stop is preferred. The no-reason fallback keeps
+             compatibility with browsers that expose AbortError without the
+             custom reason attached. */
+          if(window._activeChatAbort&&window._activeChatAbort._fromThisCall){
+            window._activeChatAbort=null;
+          }
           return {text:full||"",html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:true};
         }
         state.lastCallError=isHeartbeat?lastErr:"cancelled (timeout or user)";

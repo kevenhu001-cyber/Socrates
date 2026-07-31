@@ -1,0 +1,17 @@
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m498[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m4173[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[2m14:14:27[22m [36m[1m[vite][22m[39m [32m✨ new dependencies optimized: [33m@tiptap/core[32m[39m
+[2m14:14:27[22m [36m[1m[vite][22m[39m [32m✨ optimized dependencies changed. reloading[39m
+[2m14:30:31[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/chat/socraticDirectives.js[22m
+[2m14:31:11[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.js[22m
+[2m14:31:25[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.js[22m
+[2m14:31:38[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.js[22m
+[2m14:35:06[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.js[22m
+[2m14:35:20[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/render/streaming.ts[22m
+[2m14:35:38[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/chat/stream.js[22m
+[2m14:35:45[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.js[22m
+[2m14:36:53[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.js[22m
+[2m14:37:12[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.js[22m
