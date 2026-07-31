@@ -251,35 +251,68 @@ document.addEventListener("click",function(e){
 /* The Extension panel provides toggles the user actively controls
  * each turn:
  *   - Extensive thinking (verbose scholar prompt ↔ concise prompt)
+ *   - Deep Research (autonomous multi-step research agent)
  *   - Generate exam (action button, no .on state)
  * Tutor/chat mode is now switched via the top-bar segmented control. */
+
+/* SVG icons for each extension — used in both the picker menu and
+   the inline chip display. */
+var EXTENSION_ICONS = {
+  extensiveThinking: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1H7a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h1v1a3 3 0 0 0 3 3"/><path d="M12 22a3 3 0 0 0 3-3v-1h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2h-1v-1a3 3 0 0 0-3-3"/><circle cx="12" cy="12" r="1.5" opacity="0.5"/></svg>',
+  deepResearch: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l6-3 6 3 6-3V3l-6 3-6-3-6 3z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>',
+  exam: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 3h16v18H4z"/><path d="M8 8h8M8 12h5M8 16h3"/><path d="m15 15 1.5 1.5L20 13"/></svg>',
+};
+
 var EXTENSIONS=[
   {key:"extensiveThinking", name:"Extensive thinking",
+   icon: EXTENSION_ICONS.extensiveThinking,
    on:!!window.extensiveThinkingOn, onChange:function(v){
      window.extensiveThinkingOn=v;
      try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch(e){}
+     /* Use setActiveTemplate to show the chip when active */
+     if(v && typeof window.setActiveTemplate === "function"){
+       window.setActiveTemplate({
+         id: "tpl-extensive-thinking",
+         title: "Extensive thinking",
+         icon: EXTENSION_ICONS.extensiveThinking,
+         systemPrompt: "",
+         body: "",
+         extensionKey: "extensiveThinking"
+       });
+     }else if(!v && typeof window.clearActiveTemplate === "function"){
+       /* Only clear if the active template is ours */
+       if(window._activeTemplate && window._activeTemplate.extensionKey === "extensiveThinking"){
+         window.clearActiveTemplate();
+       }
+     }
      syncExtensionsUI();
    }},
   {key:"deepResearch", name:"Deep Research",
+   icon: EXTENSION_ICONS.deepResearch,
    on:false, onChange:function(v){
      var ext = EXTENSIONS.find(function(e){return e.key==="deepResearch"});
      if(ext) ext.on = !!v;
-     /* P_deep-research-fix — mirror the mode onto a window-level flag.
-        main.js runs in a separate module scope and cannot see the
-        module-local EXTENSIONS array, so the send path must read
-        window.deepResearchOn to know whether to route to research. */
      try{ window.deepResearchOn = !!v; }catch(_){}
+     /* Use setActiveTemplate to show the chip when active */
+     if(v && typeof window.setActiveTemplate === "function"){
+       window.setActiveTemplate({
+         id: "tpl-deep-research",
+         title: "Deep Research",
+         icon: EXTENSION_ICONS.deepResearch,
+         systemPrompt: "",
+         body: "",
+         extensionKey: "deepResearch"
+       });
+     }else if(!v && typeof window.clearActiveTemplate === "function"){
+       if(window._activeTemplate && window._activeTemplate.extensionKey === "deepResearch"){
+         window.clearActiveTemplate();
+       }
+     }
      if(v){
-       /* Prefer the VISIBLE composer (chat when a session is live,
-          else the landing topic input) — the hidden one is empty and
-          would swallow the launch. */
        var surface = getVisibleComposerSurface();
        if(getComposerMarkdown(surface).trim() && typeof window.launchDeepResearch === "function"){
-         /* There's already a query — kick off research immediately. */
          window.launchDeepResearch();
        }else{
-         /* No query yet — focus the composer and tell the user what to
-            do next so the click has visible, understandable effect. */
          focusComposer(surface);
          if(typeof window.showToast === "function"){
            window.showToast((typeof window.t === "function" && window.t("composer.deepResearch.hint")) || "Enter a research topic, then press send.");
@@ -290,11 +323,8 @@ var EXTENSIONS=[
      syncExtensionsUI();
    }},
   {key:"exam",         name:"Generate exam",
+   icon: EXTENSION_ICONS.exam,
    on:false, onChange:function(){
-     /* P_exam-nav — Route the Extensions chip through the same sidebar
-        dispatcher the user would land on from the new Exam nav entry.
-        openNav('exam') drives the full panel lifecycle (visibility,
-        top-bar elements, URL), keeping both entry points in lock-step. */
      if(typeof window.openNav==="function"){window.openNav('exam');}
      else if(typeof window.openExamPanel==="function"){window.openExamPanel();}
      else if(typeof window.openExamModal==="function"){window.openExamModal();}
@@ -308,6 +338,7 @@ function renderExtensionsMenu(){
   EXTENSIONS.forEach(function(ext){
     html+='<button type="button" class="extensions-item'+(ext.on?" on":"")+'" data-ext="'+esc(ext.key)+'" role="option" aria-selected="'+!!ext.on+'">';
     html+='<span class="extensions-item-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/><circle cx="20" cy="5" r="1.2" opacity="0.4"/></svg></span>';
+    html+='<span class="extensions-item-icon" aria-hidden="true">'+(ext.icon||'')+'</span>';
     html+='<span class="extensions-item-main">';
     html+='<span class="extensions-item-name">'+esc(ext.name)+'</span>';
     html+='</span>';

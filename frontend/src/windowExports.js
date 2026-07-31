@@ -447,7 +447,8 @@ window.composeAction = function () {
       shortcut: "/write",
       icon: WRITE_EDIT_ICON,
       systemPrompt: WRITE_EDIT_SYSTEM_PROMPT,
-      body: ""
+      body: "",
+      extensionKey: "write"
     });
   }
   focusComposer(surface);
@@ -467,13 +468,11 @@ var SOURCE_RESEARCH_SYSTEM_PROMPT =
   "Never invent citations or imitate tool-call JSON. If the request actually needs a broad multi-stage review, recommend Deep research rather than pretending one search is exhaustive.";
 
 /* Find sources is a real evidence workflow, distinct from Deep research.
-   It enables the native search capability and installs a visible mode whose
-   system prompt controls source quality; it never auto-sends the draft. */
+   It enables the native search capability (via the extensionKey side-effect
+   on setActiveTemplate) and installs a visible mode whose system prompt
+   controls source quality; it never auto-sends the draft. */
 window.researchAction = function () {
   var surface = getVisibleComposerSurface();
-  if (!window.webSearchOn && typeof window.toggleWebSearch === "function") {
-    window.toggleWebSearch();
-  }
   if (typeof window.setActiveTemplate === "function") {
     window.setActiveTemplate({
       id: "tpl-source-research",
@@ -481,24 +480,37 @@ window.researchAction = function () {
       shortcut: "/research",
       icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
       systemPrompt: SOURCE_RESEARCH_SYSTEM_PROMPT,
-      body: ""
+      body: "",
+      extensionKey: "webSearch"
     });
   }
   focusComposer(surface);
-  window.syncQuickChips();
+  if (typeof window.syncQuickChips === "function") window.syncQuickChips();
 };
 
+/* P_extension-chip — deep research is now a chip in the composer body
+   (set via setActiveTemplate's extensionKey: "deepResearch"), not a
+   separate hidden picker state. Re-clicking the + menu item while the
+   chip is already active is a no-op (the extensionKey side-effect
+   handler in main.js only flips when the key changes). Clicking the
+   chip's × button clears both the chip and window.deepResearchOn so
+   the next send goes through the normal chat / tutor pipeline. */
 window.deepResearchAction = function () {
   var surface = getVisibleComposerSurface();
-  var hasQuery = getComposerMarkdown(surface).trim().length > 0;
-  if (hasQuery && typeof window.launchDeepResearch === "function") {
-    window.launchDeepResearch();
-    return;
-  }
-  if (!window.deepResearchOn && typeof window.toggleExtensionByKey === "function") {
-    window.toggleExtensionByKey("deepResearch");
+  var DEEP_RESEARCH_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l6-3 6 3 6-3V3l-6 3-6-3-6 3z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>';
+  if (typeof window.setActiveTemplate === "function") {
+    window.setActiveTemplate({
+      id: "tpl-deep-research",
+      title: (typeof window.t === "function" ? window.t("composer.deepResearch") : "") || "Deep research",
+      shortcut: "/research",
+      icon: DEEP_RESEARCH_ICON,
+      systemPrompt: "",
+      body: "",
+      extensionKey: "deepResearch"
+    });
   }
   focusComposer(surface);
+  if (typeof window.syncQuickChips === "function") window.syncQuickChips();
 };
 
 var DATA_ANALYSIS_SYSTEM_PROMPT =
@@ -519,7 +531,8 @@ window.analyzeAction = function () {
       shortcut: "/analyze",
       icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/><path d="m4 7 6-4 6 7 5-4"/></svg>',
       systemPrompt: DATA_ANALYSIS_SYSTEM_PROMPT,
-      body: ""
+      body: "",
+      extensionKey: "analyze"
     });
   }
   focusComposer(surface);
@@ -543,9 +556,6 @@ var EXPLORE_SYSTEM_PROMPT =
   "Rules: never invent citations. If the topic genuinely needs more than about 10 searches, say so and propose splitting it. Keep intermediate commentary minimal — the report is the product.";
 window.exploreAction = function () {
   var surface = getVisibleComposerSurface();
-  if (!window.webSearchOn && typeof window.toggleWebSearch === "function") {
-    window.toggleWebSearch();
-  }
   if (typeof window.setActiveTemplate === "function") {
     window.setActiveTemplate({
       id: "tpl-explore",
@@ -553,7 +563,8 @@ window.exploreAction = function () {
       shortcut: "/explore",
       icon: EXPLORE_ICON,
       systemPrompt: EXPLORE_SYSTEM_PROMPT,
-      body: ""
+      body: "",
+      extensionKey: "webSearch"
     });
   }
   focusComposer(surface);

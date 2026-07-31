@@ -1137,6 +1137,9 @@ true) but the dropdown never shows — see commit history. */
 .extensions-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .extensions-item-name{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .extensions-item-desc{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));line-height:1.35}
+.extensions-item-icon{flex-shrink:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-400));transition:color .1s}
+.extensions-item.on .extensions-item-icon{color:hsl(var(--accent-000))}
+.extensions-item-icon svg{width:16px;height:16px}
 .extensions-item-check{flex-shrink:0;width:14px;height:14px;border-radius:3px;border:1px solid hsl(var(--border-500));display:flex;align-items:center;justify-content:center;transition:background-color .1s,border-color .1s;background:transparent}
 .extensions-item.on .extensions-item-check{background:hsl(var(--accent-000));border-color:hsl(var(--accent-000))}
 .extensions-item-check svg{width:10px;height:10px;stroke:hsl(var(--oncolor-100));opacity:0}
