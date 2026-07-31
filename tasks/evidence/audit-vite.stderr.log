@@ -1,0 +1,32 @@
+npm notice run socrates-app@1.0.0 dev
+npm notice run vite --host 127.0.0.1 --port 4173
+[2m14:14:24[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/auth/csrf-token[39m
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[2m14:14:24[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/config[39m
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[2m14:14:24[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/auth/me?cb=1785478464240[39m
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[2m14:14:24[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/auth/me?cb=1785478464820[39m
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[2m14:14:25[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/auth/me?cb=1785478465369[39m
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[2m14:14:27[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/auth/csrf-token[39m
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[2m14:14:28[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/config[39m
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[2m14:14:28[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/auth/me?cb=1785478468015[39m
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[2m14:14:28[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/auth/me?cb=1785478468593[39m
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[2m14:14:29[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v2/auth/me?cb=1785478469107[39m
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
