@@ -562,10 +562,6 @@
         <h1 class="topic-title greeting" id="topicTitle" data-i18n-key="greeting.chat"></h1>
         <p class="topic-sub" id="topicSub"></p>
         <div class="topic-input-wrap" id="topicInputWrap">
-          <!-- Selected extension chip — embedded at the top of the rounded
-               composer frame (ChatGPT-style) instead of floating above it.
-               renderTemplateModeChip() in main.js owns the contents. -->
-          <div class="composer-mode-status hidden" id="topicModeStatus" aria-live="polite"></div>
           <!-- P_attachments-tutor — chip strip above the topic-setup
                textarea. Shares the same .attachment-chips class and
                renderAttachmentChips() path as the chat-mode chips
@@ -633,10 +629,6 @@
         <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
         <div class="chat-input-bar" id="chatInputBar">
           <div class="chat-input-wrap" id="chatInputWrap">
-            <!-- Selected extension chip — embedded at the top of the rounded
-                 composer frame (ChatGPT-style) instead of floating above it.
-                 renderTemplateModeChip() in main.js owns the contents. -->
-            <div class="composer-mode-status hidden" id="chatModeStatus" aria-live="polite"></div>
             <!-- P_attachments — chip strip above the textarea. Each
                  chip is rendered by renderAttachmentChips() in main.js;
                  this is just the empty container. -->

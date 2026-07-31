@@ -448,6 +448,7 @@ window.composeAction = function () {
       icon: WRITE_EDIT_ICON,
       systemPrompt: WRITE_EDIT_SYSTEM_PROMPT,
       body: "",
+      hint: (typeof window.t === "function" ? window.t("composer.writeHint") : "") || "Draft, rewrite and polish",
       extensionKey: "write"
     });
   }
@@ -481,6 +482,7 @@ window.researchAction = function () {
       icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
       systemPrompt: SOURCE_RESEARCH_SYSTEM_PROMPT,
       body: "",
+      hint: (typeof window.t === "function" ? window.t("composer.researchHint") : "") || "Search and compare evidence",
       extensionKey: "webSearch"
     });
   }
@@ -506,6 +508,7 @@ window.deepResearchAction = function () {
       icon: DEEP_RESEARCH_ICON,
       systemPrompt: "",
       body: "",
+      hint: (typeof window.t === "function" ? window.t("composer.deepResearchHint") : "") || "Plan, search, read, report",
       extensionKey: "deepResearch"
     });
   }
@@ -532,6 +535,7 @@ window.analyzeAction = function () {
       icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/><path d="m4 7 6-4 6 7 5-4"/></svg>',
       systemPrompt: DATA_ANALYSIS_SYSTEM_PROMPT,
       body: "",
+      hint: (typeof window.t === "function" ? window.t("composer.analyzeHint") : "") || "Calculate, chart and export",
       extensionKey: "analyze"
     });
   }
@@ -564,6 +568,7 @@ window.exploreAction = function () {
       icon: EXPLORE_ICON,
       systemPrompt: EXPLORE_SYSTEM_PROMPT,
       body: "",
+      hint: (typeof window.t === "function" ? window.t("composer.exploreHint") : "") || "Scope, batch search, report",
       extensionKey: "webSearch"
     });
   }

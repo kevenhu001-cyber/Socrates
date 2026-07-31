@@ -51,6 +51,21 @@ test('rich composer serializes supported formatting to markdown', () => {
   assert.match(markdown, /```js\nconsole\.log\("ok"\)\n```/);
 });
 
+test('selected workflow tokens stay visual and never enter the markdown payload', () => {
+  const markdown = tiptapJSONToMarkdown({
+    type: 'doc',
+    content: [{
+      type: 'paragraph',
+      content: [
+        { type: 'extensionToken', attrs: { key: 'research', title: 'Find sources', icon: '<svg />' } },
+        { type: 'text', text: 'Compare the evidence.' },
+      ],
+    }],
+  });
+
+  assert.equal(markdown, 'Compare the evidence\\.');
+});
+
 test('composer controller has one authoritative handle per surface', () => {
   let value = '';
   let focused = false;
@@ -59,6 +74,7 @@ test('composer controller has one authoritative handle per surface', () => {
     setMarkdown: (next) => { value = next; },
     insertText: (next) => { value += next; },
     clear: () => { value = ''; },
+    setExtensionToken: () => {},
     focus: () => { focused = true; },
     getSelection: () => ({ from: 2, to: 4 }),
     isVisible: () => true,

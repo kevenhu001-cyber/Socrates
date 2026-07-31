@@ -277,6 +277,7 @@ var EXTENSIONS=[
          icon: EXTENSION_ICONS.extensiveThinking,
          systemPrompt: "",
          body: "",
+         hint: (typeof window.t === "function" && window.t("effort.high.note")) || "More deliberate reasoning",
          extensionKey: "extensiveThinking"
        });
      }else if(!v && typeof window.clearActiveTemplate === "function"){
@@ -301,6 +302,7 @@ var EXTENSIONS=[
          icon: EXTENSION_ICONS.deepResearch,
          systemPrompt: "",
          body: "",
+         hint: (typeof window.t === "function" && window.t("composer.deepResearchHint")) || "Plan, search, read, report",
          extensionKey: "deepResearch"
        });
      }else if(!v && typeof window.clearActiveTemplate === "function"){

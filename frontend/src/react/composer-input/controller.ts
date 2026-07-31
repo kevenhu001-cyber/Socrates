@@ -1,3 +1,5 @@
+import type { ComposerExtensionToken } from './types';
+
 export type ComposerSurface = 'topic' | 'chat';
 
 export interface ComposerSelection {
@@ -10,6 +12,7 @@ export interface ComposerHandle {
   setMarkdown(value: string): void;
   insertText(value: string): void;
   clear(): void;
+  setExtensionToken(token: ComposerExtensionToken | null): void;
   focus(position?: 'start' | 'end'): void;
   getSelection(): ComposerSelection;
   isVisible(): boolean;
@@ -19,6 +22,7 @@ type Listener = (surface: ComposerSurface, value: string) => void;
 
 const handles = new Map<ComposerSurface, ComposerHandle>();
 const pending = new Map<ComposerSurface, string>();
+const pendingExtensionTokens = new Map<ComposerSurface, ComposerExtensionToken | null>();
 const listeners = new Set<Listener>();
 
 export function registerComposer(surface: ComposerSurface, handle: ComposerHandle): () => void {
@@ -26,6 +30,10 @@ export function registerComposer(surface: ComposerSurface, handle: ComposerHandl
   if (pending.has(surface)) {
     handle.setMarkdown(pending.get(surface) ?? '');
     pending.delete(surface);
+  }
+  if (pendingExtensionTokens.has(surface)) {
+    handle.setExtensionToken(pendingExtensionTokens.get(surface) ?? null);
+    pendingExtensionTokens.delete(surface);
   }
   return () => {
     if (handles.get(surface) === handle) handles.delete(surface);
@@ -60,6 +68,15 @@ export function insertComposerText(surface: ComposerSurface, value: string): voi
   const handle = handles.get(surface);
   if (handle) handle.insertText(value);
   else setComposerMarkdown(surface, `${pending.get(surface) ?? ''}${value}`);
+}
+
+export function setComposerExtensionToken(
+  surface: ComposerSurface,
+  token: ComposerExtensionToken | null,
+): void {
+  const handle = handles.get(surface);
+  if (handle) handle.setExtensionToken(token);
+  else pendingExtensionTokens.set(surface, token);
 }
 
 export function clearComposer(surface: ComposerSurface): void {
