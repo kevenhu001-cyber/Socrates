@@ -114,5 +114,5 @@ test('chat-input-wrap transitions cover focus geometry', async ({ page }) => {
   for (const prop of ['border-color', 'box-shadow', 'min-height', 'padding', 'border-radius']) {
     expect(t.property, `transition must include ${prop}`).toContain(prop);
   }
-  expect(t.duration).toContain('0.52s');
+  expect(t.duration).toContain('0.34s');
 });

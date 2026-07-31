@@ -3557,10 +3557,11 @@ function renderTemplateModeChip(){
     ? _activeTemplate.icon
     : esc(_activeTemplate.icon||"");
   var html=
-    '<span class="template-mode-chip-icon">'+iconHtml+'</span>'+
-    '<span class="template-mode-chip-label">Mode: <strong>'+esc(_activeTemplate.title)+'</strong></span>'+
-    '<span class="template-mode-chip-hint">System prompt is set for this turn</span>'+
-    '<button class="template-mode-chip-close" type="button" onclick="clearActiveTemplate()" aria-label="Exit template mode" title="Exit template mode">×</button>';
+    '<span class="composer-tool-chip">'+
+      '<span class="composer-tool-chip-icon">'+iconHtml+'</span>'+
+      '<span class="composer-tool-chip-label">'+esc(_activeTemplate.title)+'</span>'+
+      '<button class="composer-tool-chip-close" type="button" onclick="clearActiveTemplate()" aria-label="Exit template mode" title="Exit template mode">×</button>'+
+    '</span>';
   if(chip){chip.innerHTML=html;chip.classList.remove("hidden");}
   if(topicChip){topicChip.innerHTML=html;topicChip.classList.remove("hidden");}
 }

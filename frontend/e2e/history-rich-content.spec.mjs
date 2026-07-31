@@ -59,6 +59,9 @@ test('loading an old conversation rebuilds scaffold widgets and visualizations',
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
+  // loadSession is wired onto window near the end of main.js boot, so under
+  // full-suite load the call can race boot completion. Wait for it first.
+  await page.waitForFunction(() => typeof window.loadSession === 'function', null, { timeout: 15_000 });
   await page.evaluate((id) => window.loadSession(id), SESSION_ID);
 
   await expect(page.locator('#msgList .msg')).toHaveCount(2);
@@ -119,6 +122,9 @@ test('tool calls with textOffset restore as inline rows with the chart in place'
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
+  // loadSession is wired onto window near the end of main.js boot, so under
+  // full-suite load the call can race boot completion. Wait for it first.
+  await page.waitForFunction(() => typeof window.loadSession === 'function', null, { timeout: 15_000 });
   await page.evaluate((id) => window.loadSession(id), INLINE_SESSION_ID);
 
   const body = page.locator('#msgList .msg.assistant .msg-body');
