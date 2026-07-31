@@ -6140,13 +6140,37 @@ function doRender(){
             .replace(/<think>[\s\S]*?<\/think>/gi,"")
             .replace(/<think>[\s\S]*$/gi,"");
           var _liveFinalParts=splitStreamingMarkdown(_liveVisibleFinal);
+          var _liveFinalHtml;
           if(_liveFinalParts.prefix===_stablePrefixText){
-            var _liveFinalHtml=_liveFinalParts.tail
+            _liveFinalHtml=_liveFinalParts.tail
               ?formatMsgProgressive(_liveFinalParts.tail):"";
-            if(liveContent.dataset.lastRendered!==_liveFinalHtml){
-              liveContent.innerHTML=_liveFinalHtml;
-              liveContent.dataset.lastRendered=_liveFinalHtml;
-            }
+          }else if(_stablePrefixText
+            &&_liveVisibleFinal.slice(0,_stablePrefixText.length)===_stablePrefixText){
+            /* P_tail-truncation — the last network delta moved the
+               settled/live split (a new blank line arrived with [DONE]),
+               so the freshly split prefix no longer equals the one the
+               settled container was rendered from. Skipping the flush
+               here left the live tail one render behind — the final few
+               characters were missing until (and unless) something else
+               repainted the bubble. The settled DOM is still an exact
+               render of _stablePrefixText, so render EVERYTHING past it
+               into the tail instead of skipping. */
+            var _liveRemainder=_liveVisibleFinal.slice(_stablePrefixText.length);
+            _liveFinalHtml=_liveRemainder?formatMsgProgressive(_liveRemainder):"";
+          }else{
+            /* Prefix mismatch (retro-edited text or no prefix rendered
+               yet): resync both containers to the final split so the
+               preserved stream DOM carries the complete message. */
+            settledContent.innerHTML=_liveFinalParts.prefix
+              ?formatMsgProgressive(_liveFinalParts.prefix):"";
+            _stablePrefixText=_liveFinalParts.prefix||null;
+            _liveFinalHtml=_liveFinalParts.prefix
+              ?(_liveFinalParts.tail?formatMsgProgressive(_liveFinalParts.tail):"")
+              :(_liveVisibleFinal?formatMsgProgressive(_liveVisibleFinal):"");
+          }
+          if(liveContent.dataset.lastRendered!==_liveFinalHtml){
+            liveContent.innerHTML=_liveFinalHtml;
+            liveContent.dataset.lastRendered=_liveFinalHtml;
           }
         }catch(_){}
       }

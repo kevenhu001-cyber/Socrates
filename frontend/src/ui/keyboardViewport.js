@@ -98,6 +98,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   /* -1 forces the first applyInset() to write, so --keyboard-inset and
      data-keyboard-open are initialised even when the inset starts at 0. */
   let appliedInset = -1;
+  /* P_topic-kb-stable — last keyboard-closed shell height written to
+     --app-vh, plus the width it was measured at (rotation detector). */
+  let appliedStableVh = -1;
+  let stableVhWidth = -1;
 
   const applyInset = (inset) => {
     const roundedInset = Math.round(inset);
@@ -157,8 +161,28 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        keyboard can only be open while a tracked input has focus, so
        the activeElement check is authoritative — visualViewport can
        be stale but focus cannot. */
+    const focused = isInputFocused();
+    /* P_topic-kb-stable — freeze the shell's height reference while a
+       tracked input is focused. Resize-mode keyboards (Capacitor
+       Keyboard.resize:"native", Firefox Android, older Chrome) shrink
+       the layout viewport itself, so a 100dvh shell plus every vh-based
+       padding reflows and the topic landing's input and disclaimer
+       visibly jump. --app-vh holds the last keyboard-closed innerHeight;
+       while focus lasts the shell keeps that height, the keyboard simply
+       covers its bottom edge, and measureKeyboardInset() reports the
+       covered pixels (the documented "stuck 100vh" case) so the chat
+       composer still lifts via --keyboard-inset. A width change
+       (rotation / desktop resize) refreshes the value even mid-focus. */
+    if (!focused || window.innerWidth !== stableVhWidth) {
+      const stableH = Math.round(window.innerHeight || 0);
+      if (stableH > 0 && (stableH !== appliedStableVh || window.innerWidth !== stableVhWidth)) {
+        root.style.setProperty('--app-vh', `${stableH}px`);
+        appliedStableVh = stableH;
+        stableVhWidth = window.innerWidth;
+      }
+    }
     applyInset(
-      isInputFocused()
+      focused
         ? measureKeyboardInset(appShellBottom(), viewport, window.innerHeight)
         : 0,
     );
@@ -209,6 +233,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (updateFrame) window.cancelAnimationFrame(updateFrame);
     if (pinFrame) window.cancelAnimationFrame(pinFrame);
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
+    try { root.style.removeProperty('--app-vh'); } catch (_) { /* detached root */ }
     if (viewport) {
       viewport.removeEventListener('resize', schedule);
       viewport.removeEventListener('scroll', schedule);
