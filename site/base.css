@@ -7,41 +7,41 @@
    no mouse-following highlights.
    ═══════════════════════════════════════════════════════════════════ */
 [data-theme=socrates][data-mode=dark]{
-  /* Base surface — every panel uses this exact color */
-  --neu-bg:        34  7% 16%;
-  --neu-bg-deep:   34  6% 12%;
-  --neu-bg-darker: 34  7%  8%;
+  /* Base surface — near-black void, every panel uses this exact color */
+  --neu-bg:        40  6%  7%;
+  --neu-bg-deep:   40  6%  5%;
+  --neu-bg-darker: 40  8%  3%;
 
   /* Subtle dual light source — barely brighter highlight, only
      slightly darker shadow. No "3D extrusion" effect, just enough
      contrast to feel raised. */
-  --neu-light:     38 18% 28%;
-  --neu-shadow:    28 18%  8%;
+  --neu-light:     42 14% 20%;
+  --neu-shadow:    40 20%  2%;
 
   /* Text — bright off-white */
   --text-000: 42 30% 97%;
   --text-100: 42 30% 97%;
-  --text-200: 40 12% 82%;
-  --text-300: 40 12% 82%;
-  --text-400: 38  7% 68%;
-  --text-500: 38  7% 68%;
+  --text-200: 40 12% 84%;
+  --text-300: 40 12% 78%;
+  --text-400: 38  8% 62%;
+  --text-500: 38  7% 52%;
 
-  /* Accent — warm amber, used as the single pop of color */
-  --accent-000: 38 95% 62%;
-  --accent-100: 42 98% 70%;
-  --accent-200: 38 90% 50%;
-  --accent-900: 36 55% 24%;
+  /* Accent — pure gold, the single pop of color */
+  --accent-000: 45 90% 58%;
+  --accent-100: 46 95% 68%;
+  --accent-200: 43 85% 48%;
+  --accent-900: 44 55% 22%;
 
   /* Surface aliases for account page components (modals, cards, inputs) */
   --bg-000: var(--neu-bg);
   --bg-200: var(--neu-bg-deep);
   --bg-300: var(--neu-bg-darker);
-  --bg-400: 36 25% 8%;
+  --bg-400: 40 20% 3%;
 
-  --border-100: 40 14% 28%;
-  --border-300: 40 14% 28%;
-  --brand-000:  36 60% 55%;
-  --brand-100:  36 65% 60%;
+  --border-100: 42 12% 24%;
+  --border-300: 42 12% 24%;
+  --brand-000:  45 70% 55%;
+  --brand-100:  46 80% 62%;
   --oncolor-100: 0 0% 100%;
 
   --font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;

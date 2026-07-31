@@ -11,6 +11,18 @@
 import { apiFetchRaw } from '../util/api.js';
 import { shouldRetryInterruptedStream } from './streamRetry.js';
 
+/* P_log-gating — DEV-only diagnostics. Tool-event frames used to be
+   parsed inside bare `catch(_){}` blocks, so a malformed tool_use /
+   tool_call_delta frame vanished without a trace and the tool card
+   simply never updated. Surface those parse failures in development;
+   production stays quiet (the predicate is a build-time constant, so
+   the warn path tree-shakes out of the bundle). */
+var DEV=(typeof import.meta!=='undefined'&&import.meta.env&&import.meta.env.DEV)===true;
+function warnBadFrame(evName,err){
+  if(!DEV)return;
+  try{console.warn('[stream] failed to handle '+evName+' frame:',err&&err.message||err)}catch(_){}
+}
+
 /* Format a Retry-After-seconds value as a short human phrase.
    Used by the 429 toast so the message reads "Try again in 2 min"
    rather than the raw 178s. Anything below 60s collapses to seconds
@@ -257,12 +269,12 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
              with a single JSON data: line per frame. */
           if(evName==="tool_use"&&opts&&typeof opts.onToolUse==="function"&&dataParts.length){
             semanticActivity=true;
-            try{opts.onToolUse(JSON.parse(dataParts.join("\n")))}catch(_){}
+            try{opts.onToolUse(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_use",e)}
             return;
           }
           if(evName==="tool_result"&&opts&&typeof opts.onToolResult==="function"&&dataParts.length){
             semanticActivity=true;
-            try{opts.onToolResult(JSON.parse(dataParts.join("\n")))}catch(_){}
+            try{opts.onToolResult(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_result",e)}
             return;
           }
           /* P_error_event — the backend emits `event: error` with
@@ -285,7 +297,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
              with a spinner + live text. */
           if(evName==="tool_progress"&&opts&&typeof opts.onToolProgress==="function"&&dataParts.length){
             semanticActivity=true;
-            try{opts.onToolProgress(JSON.parse(dataParts.join("\n")))}catch(_){}
+            try{opts.onToolProgress(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_progress",e)}
             return;
           }
           /* P_execution_sse — execution_start carries the executionId
@@ -293,7 +305,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
              execution SSE endpoint for real-time progress. */
           if(evName==="execution_start"&&opts&&typeof opts.onExecutionStart==="function"&&dataParts.length){
             semanticActivity=true;
-            try{opts.onExecutionStart(JSON.parse(dataParts.join("\n")))}catch(_){}
+            try{opts.onExecutionStart(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("execution_start",e)}
             return;
           }
           /* P_tool_stream — forward the live tool_call_delta frames
@@ -305,7 +317,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
              progressively, not as a single reveal at finish_reason. */
           if(evName==="tool_call_delta"&&opts&&typeof opts.onToolCallDelta==="function"&&dataParts.length){
             semanticActivity=true;
-            try{opts.onToolCallDelta(JSON.parse(dataParts.join("\n")))}catch(_){}
+            try{opts.onToolCallDelta(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_call_delta",e)}
             return;
           }
           if(dataParts.length===0)return;

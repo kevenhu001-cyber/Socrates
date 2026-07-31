@@ -1,0 +1,539 @@
+/* ═══════════════════════════════════════════════════════════════════
+   HOME — "The Examined Mind"
+   Homepage-only layer on top of base.css.
+   Black void · off-white type · a single gold thread.
+   Core visual: a moon that never stops waxing and waning.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root{
+  --font-hero:"Cormorant Garamond","Newsreader",ui-serif,Georgia,serif;
+  --gold:45 90% 58%;
+  --gold-soft:45 80% 66%;
+  --moonlight:44 40% 94%;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   COSMOS — fixed starfield canvas + film grain
+   ─────────────────────────────────────────────────────────────────── */
+.bg-ambient{background:hsl(var(--neu-bg))}
+#stars{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+}
+.bg-ambient::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  opacity:.05;
+  pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+}
+
+/* Transparent nav over the void */
+nav{
+  background:hsl(var(--neu-bg) / 0.72);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   HERO — the trefoil knot: topology in perpetual motion.
+   Light flows along an unbreakable loop. Vast CRT letters drift behind.
+   ─────────────────────────────────────────────────────────────────── */
+.hero-cosmos{
+  position:relative;
+  min-height:calc(100vh - 76px);
+  min-height:calc(100svh - 76px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px 24px 90px;
+  overflow:hidden;
+}
+.hero-core{
+  position:relative;
+  z-index:2;
+  width:100%;
+  text-align:center;
+}
+
+/* The knot stage — giant CRT letters drift behind the knot.
+   A radial mask hides them where the topology ring sits (so
+   the center stays clean) and lets them read clearly toward
+   the edges of the stage. */
+.eclipse-stage{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto 8px;
+  width:100%;
+}
+.crt-marquee{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:100vw;
+  overflow:hidden;
+  z-index:1;
+  pointer-events:none;
+  /* Centre stays hidden (≈where the topology ring lives),
+     edges stay readable. Tuned so the visible "ring" of
+     text sits well outside the .topo-wrap footprint. */
+  -webkit-mask-image:radial-gradient(
+    circle at center,
+    transparent 0%,
+    transparent 28%,
+    rgba(0,0,0,.35) 46%,
+    rgba(0,0,0,.85) 70%,
+    #000 92%,
+    #000 100%
+  );
+  mask-image:radial-gradient(
+    circle at center,
+    transparent 0%,
+    transparent 28%,
+    rgba(0,0,0,.35) 46%,
+    rgba(0,0,0,.85) 70%,
+    #000 92%,
+    #000 100%
+  );
+}
+.crt-track{
+  display:flex;
+  width:max-content;
+  /* Six identical spans fill the track. The keyframe slides
+     by exactly -1/6 (=one copy's width) so the loop is
+     seamless regardless of viewport width — no gap, no
+     sudden reappearance. */
+  animation:crtDrift 60s linear infinite;
+  /* Light, phosphor-like softness — NOT a wall of blur.
+     Combined with the radial mask, edges read clearly while
+     the centre still feels hazy. */
+  filter:blur(1.4px);
+  opacity:.55;
+  will-change:transform;
+}
+.crt-track span{
+  font-family:var(--font-sans);
+  font-weight:700;
+  font-size:clamp(28px,4.2vw,68px);
+  line-height:1;
+  letter-spacing:.18em;
+  white-space:nowrap;
+  padding-right:.6em;
+  color:hsl(44 28% 90%);
+  /* subtle scanline mask — kept thin so text stays legible */
+  -webkit-mask-image:repeating-linear-gradient(to bottom,#000 0 2px,transparent 2px 6px);
+  mask-image:repeating-linear-gradient(to bottom,#000 0 2px,transparent 2px 6px);
+  /* shrink-wrap: each span is exactly as wide as its content
+     so six of them tile perfectly along the track. */
+  flex:0 0 auto;
+}
+/* The 6 copies are identical, so stepping by -1/6 of the
+   total track width puts copy #2 exactly where #1 was — the
+   text appears to slide forever without a gap. */
+@keyframes crtDrift{to{transform:translateX(-16.6667%)}}
+
+.topo-wrap{
+  position:relative;
+  z-index:2;
+  width:min(64vmin,520px);
+  height:min(64vmin,520px);
+  flex-shrink:0;
+}
+#topo{
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+/* One quiet line, like a creed */
+.hero-tagline{
+  font-size:clamp(16px,2vw,21px);
+  color:hsl(var(--text-200));
+  margin:26px auto 44px;
+  letter-spacing:.01em;
+  font-weight:400;
+}
+.hero-tagline em{
+  font-family:var(--font-hero);
+  font-style:italic;
+  color:hsl(var(--gold));
+  font-size:1.12em;
+}
+
+.hero-cta-row{
+  display:flex;
+  gap:14px;
+  justify-content:center;
+  flex-wrap:wrap;
+}.cta-btn.gold{
+  background:hsl(var(--gold));
+  color:hsl(0 0% 6%) !important;
+  border-color:transparent;
+  font-weight:700;
+  box-shadow:0 0 0 0 hsl(var(--gold) / 0);
+  transition:box-shadow .35s var(--ease-out),transform .35s var(--ease-out),background .2s;
+}
+.cta-btn.gold:hover{
+  background:hsl(var(--gold-soft));
+  box-shadow:0 0 44px -6px hsl(var(--gold) / 0.55);
+  transform:translateY(-2px);
+}
+
+/* Scroll hint — a slow-falling gold droplet */
+.scroll-hint{
+  position:absolute;
+  left:50%;
+  bottom:26px;
+  transform:translateX(-50%);
+  width:1px;
+  height:56px;
+  background:hsl(var(--border-300) / 0.3);
+  overflow:hidden;
+  z-index:2;
+}
+.scroll-hint::after{
+  content:"";
+  position:absolute;
+  left:0;
+  top:-40%;
+  width:1px;
+  height:40%;
+  background:hsl(var(--gold));
+  animation:hintFall 2.4s var(--ease-out) infinite;
+}
+@keyframes hintFall{
+  0%{top:-40%}
+  70%,100%{top:110%}
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   MARQUEE — maxims drifting past, outlined in gold
+   ─────────────────────────────────────────────────────────────────── */
+.marquee{
+  overflow:hidden;
+  padding:34px 0;
+  border-top:1px solid hsl(var(--border-300) / 0.18);
+  border-bottom:1px solid hsl(var(--border-300) / 0.18);
+  position:relative;
+}
+.marquee-track{
+  display:flex;
+  align-items:center;
+  gap:56px;
+  width:max-content;
+  animation:marq 46s linear infinite;
+}
+.marquee:hover .marquee-track{animation-play-state:paused}
+.marquee-track span{
+  font-family:var(--font-hero);
+  font-style:italic;
+  font-weight:400;
+  font-size:clamp(26px,3.6vw,46px);
+  white-space:nowrap;
+  color:transparent;
+  -webkit-text-stroke:1px hsl(var(--gold) / 0.55);
+  transition:color .4s;
+}
+.marquee-track span:hover{color:hsl(var(--gold))}
+.marquee-track i{
+  font-style:normal;
+  color:hsl(var(--gold) / 0.5);
+  font-size:14px;
+}
+@keyframes marq{
+  from{transform:translateX(0)}
+  to{transform:translateX(-50%)}
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   DIALOGUE — a conversation that types itself
+   ─────────────────────────────────────────────────────────────────── */
+.dialogue-section{padding:130px 24px}
+.dialogue-frame{
+  max-width:620px;
+  margin:0 auto;
+  min-height:340px;
+  position:relative;
+  padding-left:34px;
+  border-left:1px solid hsl(var(--border-300) / 0.25);
+}
+.dlg-line{
+  margin-bottom:30px;
+  opacity:0;
+  transform:translateY(10px);
+  transition:opacity .6s var(--ease-out),transform .6s var(--ease-out);
+}
+.dlg-line.on{opacity:1;transform:none}
+.dlg-line.off{opacity:0;transform:translateY(-8px)}
+.dlg-speaker{
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.3em;
+  text-transform:uppercase;
+  margin-bottom:8px;
+  color:hsl(var(--text-500));
+}
+.dlg-line[data-s="socrates"] .dlg-speaker{color:hsl(var(--gold))}
+.dlg-text{
+  font-family:var(--font-hero);
+  font-size:clamp(21px,2.6vw,28px);
+  font-weight:400;
+  line-height:1.4;
+  color:hsl(var(--text-100));
+  letter-spacing:-.01em;
+}
+.dlg-line[data-s="socrates"] .dlg-text{font-style:italic}
+.dlg-caret{
+  display:inline-block;
+  width:2px;
+  height:.95em;
+  background:hsl(var(--gold));
+  margin-left:3px;
+  vertical-align:-.12em;
+  animation:caretBlink 1s steps(1) infinite;
+}
+@keyframes caretBlink{50%{opacity:0}}
+
+.section-mark{
+  text-align:center;
+  margin-bottom:64px;
+}
+.section-mark .k{
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.34em;
+  text-transform:uppercase;
+  color:hsl(var(--gold));
+  display:block;
+  margin-bottom:16px;
+}
+.section-mark h2{
+  font-family:var(--font-hero);
+  font-weight:300;
+  font-size:clamp(34px,5vw,58px);
+  line-height:1.08;
+  letter-spacing:-.02em;
+  color:hsl(var(--text-000));
+}
+.section-mark h2 em{font-style:italic;color:hsl(var(--gold))}
+
+/* ───────────────────────────────────────────────────────────────────
+   METHOD — three phases of the moon, three phases of the mind
+   ─────────────────────────────────────────────────────────────────── */
+.method-section{padding:130px 24px}
+.method-grid{
+  max-width:1080px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1px;
+  background:hsl(var(--border-300) / 0.18);
+  border:1px solid hsl(var(--border-300) / 0.18);
+}
+.method-card{
+  background:hsl(var(--neu-bg));
+  padding:56px 40px 60px;
+  position:relative;
+  overflow:hidden;
+  transition:background .5s var(--ease-out);
+}
+.method-card::before{
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:0;
+  height:2px;
+  width:0;
+  background:hsl(var(--gold));
+  transition:width .6s var(--ease-out);
+}
+.method-card:hover::before{width:100%}
+.method-card:hover{background:hsl(var(--neu-bg-deep))}
+.method-num{
+  font-family:var(--font-hero);
+  font-size:88px;
+  font-weight:300;
+  line-height:1;
+  color:transparent;
+  -webkit-text-stroke:1px hsl(var(--border-300) / 0.6);
+  position:absolute;
+  top:26px;
+  right:26px;
+  transition:-webkit-text-stroke-color .5s,color .5s;
+}
+.method-card:hover .method-num{
+  -webkit-text-stroke-color:hsl(var(--gold) / 0.55);
+}
+.method-glyph{
+  width:30px;
+  height:30px;
+  color:hsl(var(--gold));
+  margin-bottom:110px;
+  transition:transform .6s var(--ease-out);
+}
+.method-card:hover .method-glyph{transform:rotate(-18deg) scale(1.12)}
+.method-greek{
+  font-family:var(--font-hero);
+  font-style:italic;
+  font-size:15px;
+  color:hsl(var(--gold) / 0.8);
+  margin-bottom:10px;
+  letter-spacing:.04em;
+}
+.method-card h3{
+  font-family:var(--font-hero);
+  font-weight:400;
+  font-size:30px;
+  color:hsl(var(--text-000));
+  letter-spacing:-.01em;
+  margin-bottom:14px;
+}
+.method-card p{
+  font-size:14px;
+  color:hsl(var(--text-400));
+  line-height:1.8;
+  max-width:280px;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   FRONTIER — an interactive constellation of disciplines
+   ─────────────────────────────────────────────────────────────────── */
+.frontier-section{padding:120px 0 100px}
+.frontier-stage{
+  position:relative;
+  max-width:1080px;
+  margin:0 auto;
+  border-top:1px solid hsl(var(--border-300) / 0.18);
+  border-bottom:1px solid hsl(var(--border-300) / 0.18);
+}
+#frontier{
+  display:block;
+  width:100%;
+  height:540px;
+  cursor:crosshair;
+}
+.frontier-hint{
+  text-align:center;
+  margin-top:22px;
+  font-size:10.5px;
+  font-weight:600;
+  letter-spacing:.26em;
+  text-transform:uppercase;
+  color:hsl(var(--text-500));
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   EPIGRAPH — the oldest words, largest
+   ─────────────────────────────────────────────────────────────────── */
+.epigraph{
+  padding:150px 24px;
+  text-align:center;
+  position:relative;
+}
+.epigraph blockquote{
+  font-family:var(--font-hero);
+  font-weight:300;
+  font-style:italic;
+  font-size:clamp(30px,5.4vw,64px);
+  line-height:1.22;
+  letter-spacing:-.02em;
+  color:hsl(var(--text-000));
+  max-width:900px;
+  margin:0 auto 30px;
+}
+.epigraph blockquote em{
+  font-style:italic;
+  color:hsl(var(--gold));
+}
+.epigraph cite{
+  font-family:var(--font-sans);
+  font-style:normal;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.3em;
+  text-transform:uppercase;
+  color:hsl(var(--text-500));
+}
+.epigraph .ring{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:min(70vmin,560px);
+  height:min(70vmin,560px);
+  border:1px solid hsl(var(--gold) / 0.10);
+  border-radius:50%;
+  pointer-events:none;
+  animation:ringSpin 60s linear infinite;
+}
+.epigraph .ring::after{
+  content:"";
+  position:absolute;
+  top:-4px;
+  left:50%;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:hsl(var(--gold));
+  box-shadow:0 0 14px hsl(var(--gold) / 0.8);
+}
+@keyframes ringSpin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+
+/* ───────────────────────────────────────────────────────────────────
+   FINAL CTA — begin
+   ─────────────────────────────────────────────────────────────────── */
+.begin-section{
+  padding:60px 24px 150px;
+  text-align:center;
+}
+.begin-section h2{
+  font-family:var(--font-hero);
+  font-weight:300;
+  font-size:clamp(44px,7.5vw,96px);
+  letter-spacing:-.025em;
+  line-height:1.02;
+  color:hsl(var(--text-000));
+  margin-bottom:40px;
+}
+.begin-section h2 em{font-style:italic;color:hsl(var(--gold))}
+.begin-note{
+  margin-top:26px;
+  font-size:12px;
+  color:hsl(var(--text-500));
+  letter-spacing:.06em;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   RESPONSIVE + MOTION PREFERENCES
+   ─────────────────────────────────────────────────────────────────── */
+@media(max-width:900px){
+  .method-grid{grid-template-columns:1fr}
+  .method-glyph{margin-bottom:64px}
+  #frontier{height:420px}
+}
+@media(max-width:720px){
+  .hero-cosmos{min-height:calc(100svh - 64px);padding-bottom:70px}
+  .topo-wrap{width:82vmin;height:82vmin}
+  .crt-track{filter:blur(1.6px);opacity:.5}
+  .hero-tagline{margin:20px auto 32px}
+  .dialogue-section,.method-section{padding:90px 20px}
+  .dialogue-frame{padding-left:22px;min-height:380px}
+  .epigraph{padding:110px 20px}
+  .frontier-section{padding:90px 0 70px}
+  #frontier{height:360px;cursor:default}
+  .begin-section{padding:40px 20px 110px}
+}
+@media(prefers-reduced-motion:reduce){
+  .marquee-track{animation:none}
+  .epigraph .ring{animation:none}
+  .scroll-hint::after{animation:none}
+  .dlg-caret{animation:none}
+  .crt-track{animation:none}
+}

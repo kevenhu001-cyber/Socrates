@@ -14,11 +14,23 @@ test('chat prompts define tool results as untrusted data', () => {
   }
 });
 
-test('chat prompts use the server supplied native argument object format', () => {
+test('chat prompts keep the KaTeX math delimiter contract', () => {
   for (const prompt of [CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT]) {
-    assert.match(prompt, /native function calling/i);
-    assert.match(prompt, /argument object directly/i);
-    assert.match(prompt, /never wrap it in `input`, `arguments`/i);
+    assert.match(prompt, /\$\.\.\.\$/);
+    assert.match(prompt, /\$\$\.\.\.\$\$/);
+    assert.match(prompt, /KaTeX/);
+  }
+});
+
+test('chat prompts do not duplicate server-owned policy', () => {
+  /* Global writing rules, the tool-calling protocol, and the no-dash hard
+     rule are owned by SERVER_SYSTEM_POLICY + FINAL_OUTPUT_CONSTRAINTS in
+     server/src/routes/chat/helpers.ts. A second copy here would drift. */
+  for (const prompt of [CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT]) {
+    assert.doesNotMatch(prompt, /dash punctuation/i);
+    assert.doesNotMatch(prompt, /emoji/i);
+    assert.doesNotMatch(prompt, /argument schema exactly/i);
+    assert.doesNotMatch(prompt, /native function calling/i);
     assert.doesNotMatch(prompt, /\[(?:web_search|code_interpreter):/i);
   }
 });
@@ -29,16 +41,8 @@ test('chat prompts do not demand disclosure of private chain of thought', () => 
   }
 });
 
-test('chat prompts share the written no-emoji response style', () => {
-  for (const prompt of [CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT]) {
-    assert.match(prompt, /professional, written register/i);
-    assert.match(prompt, /em dash \(—\)/i);
-    assert.match(prompt, /Do not use emoji/i);
-  }
-});
-
 test('chat prompt policies stay compact enough to avoid crowding user context', () => {
-  assert.ok(CHAT_SYSTEM_PROMPT.length < 9_000, `high-effort prompt is ${CHAT_SYSTEM_PROMPT.length} chars`);
-  assert.ok(CHAT_CONCISE_PROMPT.length < 7_000, `concise prompt is ${CHAT_CONCISE_PROMPT.length} chars`);
+  assert.ok(CHAT_SYSTEM_PROMPT.length < 2_500, `high-effort prompt is ${CHAT_SYSTEM_PROMPT.length} chars`);
+  assert.ok(CHAT_CONCISE_PROMPT.length < 2_000, `concise prompt is ${CHAT_CONCISE_PROMPT.length} chars`);
   assert.ok(PYTHON_RUNNABLE_RULES.length < 2_500, `python appendix is ${PYTHON_RUNNABLE_RULES.length} chars`);
 });

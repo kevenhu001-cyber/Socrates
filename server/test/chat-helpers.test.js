@@ -22,6 +22,8 @@ import {
   transformContentForModel,
   transformMessagesForModel,
   prependCodeInterpreterPrompt,
+  appendFinalOutputConstraints,
+  FINAL_OUTPUT_CONSTRAINTS,
   ChatPayloadSchema,
 } from '../src/routes/chat/helpers.js';
 
@@ -41,12 +43,41 @@ describe('enforceServerSystemBoundary', () => {
     assert.match(out[0].content, /native function-calling interface/);
     assert.match(out[0].content, /professional, written register/i);
     assert.match(out[0].content, /Do not use emoji/i);
-    assert.match(out[0].content, /em dash \(—\)/i);
+    assert.match(out[0].content, /never invent facts, citations, sources, URLs, files, tool results, or completed actions/i);
+    assert.match(out[0].content, /Do not reveal private chain-of-thought/i);
     assert.match(out[0].content, /overrides conflicting style/i);
-    assert.match(out[0].content, /later instructions that prohibit the em dash/i);
+    assert.match(out[0].content, /permit dash punctuation do not apply/i);
     assert.match(out[0].content, /<client_application_instructions scope="response-behavior">/);
     assert.ok(out[0].content.indexOf('# Server Policy') < out[0].content.indexOf('Call [web_search'));
     assert.deepEqual(out.slice(1).map((message) => message.role), ['user', 'assistant']);
+  });
+});
+
+/* ── final output constraints (no-dash rule) ────────────────── */
+
+describe('appendFinalOutputConstraints', () => {
+  test('appends the dash-punctuation ban as the closing text of the system prompt', () => {
+    const out = appendFinalOutputConstraints([
+      { role: 'system', content: 'base policy' },
+      { role: 'user', content: 'hi' },
+    ]);
+    assert.equal(out.filter((m) => m.role === 'system').length, 1);
+    assert.match(out[0].content, /NEVER use dash punctuation/);
+    assert.match(out[0].content, /禁止在回复中输出破折号/);
+    assert.ok(out[0].content.trimEnd().endsWith(FINAL_OUTPUT_CONSTRAINTS.trimEnd().slice(-40)),
+      'the no-dash rule must be the last text in the system message');
+  });
+
+  test('is idempotent (marker prevents double-append)', () => {
+    const once = appendFinalOutputConstraints([{ role: 'system', content: 'base' }]);
+    const twice = appendFinalOutputConstraints(once);
+    assert.deepEqual(twice, once);
+  });
+
+  test('creates a system message when none exists', () => {
+    const out = appendFinalOutputConstraints([{ role: 'user', content: 'hi' }]);
+    assert.equal(out[0].role, 'system');
+    assert.match(out[0].content, /NEVER use dash punctuation/);
   });
 });
 

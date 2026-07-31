@@ -26,17 +26,11 @@ import { sanitizeUrl } from '../util/safe.js';
 /* Map tool names to a small, consistent visual identity. Keep the
    entries minimal — heavy iconography makes the card list noisy when
    several tools run in sequence. The `short` label is what appears
-   in the collapsed header; `tone` controls the accent colour. */
+   in the collapsed header; `tone` controls the accent colour.
+   Only tools the backend toolRegistry actually emits are listed;
+   unknown names fall back to { letter: "?", short: toolName }. */
 export var TOOL_META = {
   render_visualization: { letter: "V", cls: "tool-visual", short: "Visual", tone: "purple" },
-  Read:    { letter: "R", cls: "read",     short: "Read",    tone: "blue"   },
-  Write:   { letter: "W", cls: "write",    short: "Write",   tone: "green"  },
-  Edit:    { letter: "E", cls: "edit",     short: "Edit",    tone: "amber"  },
-  Glob:    { letter: "G", cls: "glob",     short: "Find",    tone: "teal"   },
-  Grep:    { letter: "F", cls: "grep",     short: "Search",  tone: "teal"   },
-  Bash:    { letter: "$", cls: "bash",     short: "Shell",   tone: "purple" },
-  WebFetch:{ letter: ">", cls: "webfetch", short: "Fetch",   tone: "orange" },
-  Code:    { letter: "py", cls: "code",    short: "Python",  tone: "python" },
   web_search:        { letter: "Q", cls: "websearch", short: "Search", tone: "teal"   },
   code_interpreter:  { letter: "{}", cls: "codeint", short: "Code", tone: "python" },
   arxiv_search:      { letter: "X", cls: "arxiv",    short: "arXiv",  tone: "red"    },
@@ -55,7 +49,6 @@ export var TOOL_ICONS = {
   render_visualization: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7" rx="0.5"/><rect x="12" y="6" width="3" height="11" rx="0.5"/><rect x="17" y="13" width="3" height="4" rx="0.5"/></svg>',
   web_search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
   code_interpreter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
-  Code: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
   arxiv_search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
   zotero_search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v16H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v4H6.5A2.5 2.5 0 0 1 4 20.5z"/></svg>',
   notion_search_pages: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 12h8M8 16h8M8 8h2"/></svg>',
@@ -69,17 +62,6 @@ export var TOOL_ICONS = {
 export function toolFormatInput(name, inp) {
   if (!inp || typeof inp !== "object") return "";
   switch (name) {
-    case "Read":    return inp.path + (inp.limit ? `  -  lines ${inp.offset || 0}-${(inp.offset || 0) + inp.limit}` : "");
-    case "Write":   return `${inp.path}  -  ${((inp.content || "").length)} bytes`;
-    case "Edit":    return inp.path + (inp.allOccurrences ? "  -  all occurrences" : "");
-    case "Glob":    return inp.pattern || "";
-    case "Grep":    return `${inp.path || "workspace"}  /  ${inp.pattern || ""}`;
-    case "Bash":    return inp.command || "";
-    case "WebFetch":return inp.url || "";
-    case "Code":    {
-      const first = ((inp.code || "").split("\n")[0] || "").slice(0, 80);
-      return `${inp.language || "python"}  -  ${first}`;
-    }
     case "web_search":  return inp.query || "";
     case "render_visualization": return (inp.template || "visual") + "  -  " + (inp.title || "");
     case "code_interpreter": {
@@ -111,7 +93,7 @@ function stringifyPreview(value, maxLen) {
 function toolInputPreviewFromExtracted(toolName, extracted) {
   if (!extracted || !extracted.code) return "";
   if (toolName === "web_search") return stringifyPreview(extracted.code, 160);
-  if (toolName === "code_interpreter" || toolName === "Code") {
+  if (toolName === "code_interpreter") {
     const first = ((extracted.code || "").split("\n")[0] || "").slice(0, 80);
     return `${extracted.language || "python"}  -  ${first}`;
   }
@@ -226,7 +208,7 @@ export function extractCodeFromArgs(name, argsJson) {
   let parsed = null;
   try { parsed = JSON.parse(argsJson); } catch (_) { parsed = null; }
   const truncated = parsed === null && argsJson.length > 0;
-  if (name === "code_interpreter" || name === "Code") {
+  if (name === "code_interpreter") {
     if (parsed && typeof parsed === "object" && typeof parsed.code === "string") {
       return { code: parsed.code, language: parsed.language || "python", parsed: true, truncated: false };
     }
@@ -253,18 +235,6 @@ export function extractCodeFromArgs(name, argsJson) {
       return { code: decodeJsonStringFragment(m[1], truncated), language: "query", parsed: false, truncated };
     }
     return { code: "", language: "query", parsed: false, truncated };
-  }
-  if (name === "Bash") {
-    if (parsed && typeof parsed === "object" && typeof parsed.command === "string") {
-      return { code: parsed.command, language: "bash", parsed: true, truncated: false };
-    }
-    return { code: argsJson, language: "bash", parsed: false, truncated };
-  }
-  if (name === "WebFetch") {
-    if (parsed && typeof parsed === "object" && typeof parsed.url === "string") {
-      return { code: parsed.url, language: "url", parsed: true, truncated: false };
-    }
-    return { code: argsJson, language: "url", parsed: false, truncated };
   }
   return { code: argsJson, language: "", parsed: parsed !== null, truncated };
 }
