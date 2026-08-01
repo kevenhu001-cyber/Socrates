@@ -178,12 +178,15 @@ nav{
   gap:6px;
   opacity:0;
   transform:translateY(6px);
-  transition:opacity 1.2s ease, transform 1.2s ease;
+  /* outgoing cell fades out fast; the incoming one (below) waits
+     until it's gone, so the two never overlap into garbled text */
+  transition:opacity .45s ease, transform .45s ease;
   pointer-events:none;
 }
 .form-label-cell[data-on="1"]{
   opacity:1;
   transform:translateY(0);
+  transition:opacity .9s ease .5s, transform .9s ease .5s;
 }
 /* two-line header row: huge outline roman on the left,
    Chinese name on the right */
