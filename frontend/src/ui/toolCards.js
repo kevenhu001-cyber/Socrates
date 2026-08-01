@@ -15,6 +15,7 @@
 
 import { esc } from '../render/helpers.js';
 import { sanitizeUrl } from '../util/safe.js';
+import { formatToolOutput } from '../render/toolOutput.js';
 
 /* ============================================================
    TOOL-CALLING UI HELPERS
@@ -32,6 +33,9 @@ import { sanitizeUrl } from '../util/safe.js';
 export var TOOL_META = {
   render_visualization: { letter: "V", cls: "tool-visual", short: "Visual", tone: "purple" },
   web_search:        { letter: "Q", cls: "websearch", short: "Search", tone: "teal"   },
+  web_fetch:         { letter: "F", cls: "webfetch",  short: "Fetch",  tone: "teal"   },
+  create_plan:       { letter: "P", cls: "planner",   short: "Plan",   tone: "green"  },
+  create_spec:       { letter: "S", cls: "spec",      short: "Spec",   tone: "green"  },
   code_interpreter:  { letter: "{}", cls: "codeint", short: "Code", tone: "python" },
   arxiv_search:      { letter: "X", cls: "arxiv",    short: "arXiv",  tone: "red"    },
   zotero_search:     { letter: "Z", cls: "zotero",   short: "Zotero", tone: "blue"   },
@@ -48,6 +52,9 @@ export var TOOL_META = {
 export var TOOL_ICONS = {
   render_visualization: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7" rx="0.5"/><rect x="12" y="6" width="3" height="11" rx="0.5"/><rect x="17" y="13" width="3" height="4" rx="0.5"/></svg>',
   web_search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
+  web_fetch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+  create_plan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+  create_spec: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4M9 9h1"/></svg>',
   code_interpreter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
   arxiv_search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
   zotero_search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v16H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v4H6.5A2.5 2.5 0 0 1 4 20.5z"/></svg>',
@@ -63,6 +70,9 @@ export function toolFormatInput(name, inp) {
   if (!inp || typeof inp !== "object") return "";
   switch (name) {
     case "web_search":  return inp.query || "";
+    case "web_fetch":   return inp.url || "";
+    case "create_plan": return inp.title || "";
+    case "create_spec": return inp.title || "";
     case "render_visualization": return (inp.template || "visual") + "  -  " + (inp.title || "");
     case "code_interpreter": {
       if (!inp.code) return "";
@@ -517,7 +527,17 @@ export function renderToolTextOutput(out, text, opts) {
 
   const pre = document.createElement("pre");
   pre.className = "agent-tool-output-pre";
-  pre.textContent = value || trTool("tool.noOutput", "(no output)");
+  if (opts.kind === "output") {
+    const formatted = formatToolOutput(value);
+    if (formatted.rich) {
+      pre.innerHTML = formatted.html;
+      pre.classList.add("agent-tool-output-rich");
+    } else {
+      pre.textContent = value || trTool("tool.noOutput", "(no output)");
+    }
+  } else {
+    pre.textContent = value || trTool("tool.noOutput", "(no output)");
+  }
   wrap.appendChild(pre);
 
   if (longOutput) {
