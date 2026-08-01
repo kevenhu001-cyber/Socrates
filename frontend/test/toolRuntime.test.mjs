@@ -201,46 +201,71 @@ test('ToolRuntime compact mode mounts inline rows instead of cards', () => {
   let scheduled = null;
   let appended = 0;
   const mounted = [];
+  let mountedRow = null;
   // Minimal DOM stub — createInlineToolRow only needs an element with
-  // dataset / className / innerHTML.
+  // dataset / className / innerHTML; updateInlineToolCodePreview needs a
+  // .tool-inline-detail child and appendChild.
+  const makeDetail = () => ({
+    dataset: {}, textContent: '', querySelector: () => null,
+    appendChild() {}, replaceChildren() {},
+  });
   globalThis.document = {
     createElement(tag) {
-      return { tagName: tag, dataset: {}, className: '', innerHTML: '' };
+      return {
+        tagName: tag, dataset: {}, className: '', innerHTML: '', textContent: '',
+        querySelector(sel) { return sel === '.tool-inline-detail' ? makeDetail() : null; },
+        appendChild() {}, replaceChildren() {},
+      };
     },
   };
   try {
-    const runtime = createToolRuntime({
-      body: {
-        querySelector() { return null; },
-        querySelectorAll() { appended++; return []; },
+    const body = {
+      querySelector() { return null; },
+      querySelectorAll(sel) {
+        appended++;
+        return sel.indexOf('.tool-inline') === 0 && mountedRow ? [mountedRow] : [];
       },
+    };
+    const runtime = createToolRuntime({
+      body,
       stillOwnsSlot: () => true,
       getMessage: () => message,
-      onInlineTool(entry, row) { mounted.push({ entry, row }); },
+      onInlineTool(entry, row) { mounted.push({ entry, row }); return 42; },
       requestAnimationFrame(callback) { scheduled = callback; return 19; },
       cancelAnimationFrame() {},
       EventSource: null,
       mode: 'compact',
     });
 
-    // recordToolCallDelta must NOT schedule a flush in compact mode —
-    // no .agent-tool-card exists to update.
+    // P_tool-delta-stream — compact rows now render live code previews,
+    // so recordToolCallDelta schedules the rAF flush instead of dropping
+    // the delta (there was no card to update before this fix).
     runtime.recordToolCallDelta({ id: 'no-card', index: 0, arguments: '{"code":"x"}' });
-    assert.equal(scheduled, null);
+    assert.notEqual(scheduled, null);
 
-    // recordToolUse pushes the entry onto the message and hands a
-    // running .tool-inline row to onInlineTool. No legacy card DOM.
+    // recordToolUse pushes the entry onto the message, drains the
+    // buffered delta into the entry, and hands a running .tool-inline
+    // row to onInlineTool. No legacy card DOM.
     const out = runtime.recordToolUse({ id: 'no-card', name: 'web_search', input: { query: 'q' } });
     assert.equal(out, null);
     assert.equal(message.toolCalls.length, 1);
     assert.equal(message.toolCalls[0].name, 'web_search');
+    assert.equal(message.toolCalls[0].input.__raw, '{"code":"x"}');
     assert.equal(mounted.length, 1);
+    mountedRow = mounted[0].row;
     assert.equal(mounted[0].entry.id, 'no-card');
     assert.equal(mounted[0].row.className, 'tool-inline');
     assert.equal(mounted[0].row.dataset.tool, 'web_search');
     assert.equal(mounted[0].row.dataset.state, 'running');
-    // No .agent-tool-card was enumerated — the body.querySelectorAll
-    // hook would have been called if anything tried to.
+    // No .agent-tool-card was enumerated yet — the body.querySelectorAll
+    // hook only fires when the flush runs.
+    assert.equal(appended, 0);
+
+    // The flush had its delta drained by recordToolUse, so it early-
+    // returns without touching the DOM.
+    const flush = scheduled;
+    scheduled = null;
+    flush();
     assert.equal(appended, 0);
     runtime.dispose();
   } finally {
