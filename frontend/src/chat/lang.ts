@@ -37,7 +37,11 @@ function detectLanguage(text: string): string {
  * Chinese responses (and vice versa). The directive is in the target
  * language so the model reads it as instructions in the language it
  * is about to use.
- * Source of truth: window._currentLang wins, else detectLanguage(text).
+ * Source of truth: the language detected from the user's own input.
+ * The UI language (window._currentLang) is only a fallback when the
+ * input carries no detectable language signal — the reply must follow
+ * the language the user writes in, never the UI locale (an English
+ * question in a Chinese UI gets an English reply, and vice versa).
  * Returns "" when input looks like pure code/URL. */
 function languageDirectiveFor(text: string): string {
   const t = text ? String(text).trim() : '';
@@ -45,8 +49,9 @@ function languageDirectiveFor(text: string): string {
     if (/^(https?:\/\/|www\.|[\/\\][\w\-./\\]+\.\w{1,5}$)/i.test(t)) return '';
     if (/^(function\s|class\s|def\s|import\s|const\s|let\s|var\s|#include|<\?xml|<\!DOCTYPE)/i.test(t)) return '';
   }
+  const hasLangSignal = /[A-Za-z\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u0400-\u04ff\u0600-\u06ff]/.test(t);
   const uiLang = (typeof window !== 'undefined' && (window as any)._currentLang) || '';
-  const lang = uiLang || detectLanguage(t);
+  const lang = hasLangSignal ? detectLanguage(t) : (uiLang || detectLanguage(t));
   if (lang === 'zh') {
     return '\n\n## \u8bed\u8a00\u6307\u4ee4\uff08\u6700\u9ad8\u4f18\u5148\u7ea7\uff09\u2014 \u4e25\u683c\u4f7f\u7528\u4e2d\u6587\uff0c\u7981\u6b62\u4e2d\u82f1\u6df7\u7528\n\n' +
       '\u4f60\u5fc5\u987b\u4f7f\u7528\u4e2d\u6587\u56de\u7b54\u7528\u6237\u3002\u56de\u590d\u4e2d\u6bcf\u4e00\u4e2a\u5b57\u3001\u6bcf\u4e00\u53e5\u8bdd\u3001\u6bcf\u4e00\u4e2a\u6807\u9898\u3001\u6bcf\u4e00\u4e2a\u5217\u8868\u9879\u3001\u6bcf\u4e00\u4e2a\u6807\u7b7e\u90fd\u5fc5\u987b\u7528\u4e2d\u6587\u4e66\u5199\u3002\n\n' +

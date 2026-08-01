@@ -13,10 +13,12 @@ export function generateSessionTitle(){
   var topic=(getState().topic||"").replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,"").trim();
   if(!topic)return;
   _titleGenQueued=true;
-  /* Detect user language from UI preference and topic content. */
-  var isZh = typeof window._currentLang !== "undefined"
-    ? window._currentLang === "zh"
-    : /[\u4e00-\u9fff]/.test(topic);
+  /* Title language follows the language the user actually wrote the
+     topic in; the UI preference is only a fallback when the topic
+     carries no detectable language signal. */
+  var isZh = /[\u4e00-\u9fff]/.test(topic)
+    ? true
+    : (/[A-Za-z]/.test(topic) ? false : window._currentLang === "zh");
   var prompt, sysContent;
   if (isZh) {
     prompt = "基于用户的第一条消息，生成一个简短的中文陈述式标题（3-8个字），"+
