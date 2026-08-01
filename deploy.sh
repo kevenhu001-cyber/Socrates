@@ -224,16 +224,21 @@ if [ -d "$SITE_DIR" ]; then
       fi
     done
   fi
-  # Static assets — logo.png, favicon.png, og-*.png, etc.
+  # Static assets — images, fonts, and sibling .css/.js the marketing pages
+  # reference. Files explicitly copied above are excluded by name so the
+  # hard-coded install commands remain the source of truth for those.
   while IFS= read -r -d '' asset; do
     fname=$(basename "$asset")
     case "$fname" in
-      *.png|*.ico|*.svg|*.jpg|*.jpeg|*.webp|*.gif|*.woff|*.woff2) ;;
+      *.png|*.ico|*.svg|*.jpg|*.jpeg|*.webp|*.gif|*.woff|*.woff2|*.css|*.js) ;;
       *) continue ;;
     esac
     $SUDO install -m 644 -o www-data -g www-data "$asset" "$SITE_WEB_ROOT/$fname"
   done < <(find "$SITE_DIR" -maxdepth 1 -type f \
-      ! -name '*.html' ! -name '*.css' ! -name '.*' ! -name '*~' \
+      ! -name '*.html' \
+      ! -name 'base.css' \
+      ! -name '.*' \
+      ! -name '*~' \
       -print0)
 fi
 
