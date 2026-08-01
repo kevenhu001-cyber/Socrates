@@ -103,6 +103,9 @@ export function labelForTool(name){
     case "code_interpreter":  return "tool.actionAnalyze";
     case "Code":              return "tool.actionAnalyze";
     case "render_visualization":return "tool.actionVisual";
+    case "web_fetch":         return "tool.actionFetch";
+    case "create_plan":       return "tool.actionPlan";
+    case "create_spec":       return "tool.actionSpec";
     case "Read":
     case "Glob":
     case "Grep":

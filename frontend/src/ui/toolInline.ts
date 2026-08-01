@@ -10,6 +10,7 @@
  */
 
 import { esc } from '../render/helpers.js';
+import { formatToolOutput } from '../render/toolOutput.js';
 
 export interface InlineToolEntry {
   id: string;
@@ -59,6 +60,9 @@ function runningLabel(name: string): string {
   if (SEARCH_TOOLS.has(name)) return translate('tool.actionSearch', 'Searching the web…');
   if (name === 'code_interpreter' || name === 'Code') return translate('tool.actionAnalyze', 'Analyzing data');
   if (name === 'render_visualization') return translate('tool.actionVisual', 'Creating a visual');
+  if (name === 'web_fetch') return translate('tool.actionFetch', 'Reading the page…');
+  if (name === 'create_plan') return translate('tool.actionPlan', 'Drafting a plan…');
+  if (name === 'create_spec') return translate('tool.actionSpec', 'Drafting a spec…');
   if (name === 'Read' || name === 'Glob' || name === 'Grep' || name === 'WebFetch') return translate('tool.actionRead', 'Reading files');
   if (name === 'Write' || name === 'Edit' || name === 'Bash') return translate('tool.actionWrite', 'Updating files');
   return translate('tool.actionDefault', 'Using a tool');
@@ -72,6 +76,9 @@ function doneLabel(name: string, result: InlineToolResult | null): string {
   }
   if (name === 'code_interpreter' || name === 'Code') return translate('tool.doneAnalyze', 'Analyzed data');
   if (name === 'render_visualization') return translate('tool.doneVisual', 'Created a visual');
+  if (name === 'web_fetch') return translate('tool.doneFetch', 'Read the page');
+  if (name === 'create_plan') return translate('tool.donePlan', 'Drafted a plan');
+  if (name === 'create_spec') return translate('tool.doneSpec', 'Drafted a spec');
   if (name === 'Read' || name === 'Glob' || name === 'Grep' || name === 'WebFetch') return translate('tool.doneRead', 'Read files');
   if (name === 'Write' || name === 'Edit' || name === 'Bash') return translate('tool.doneWrite', 'Updated files');
   return translate('tool.doneDefault', 'Finished using tool');
@@ -143,7 +150,22 @@ function appendDetailSection(
   heading.textContent = title;
   const pre = document.createElement('pre');
   pre.className = 'tool-inline-detail-value';
-  pre.textContent = text;
+  /* P_tool-output-rich — tool results used to be written as raw plain
+     text. That's safe but makes code blocks / JSON / tracebacks hard to
+     read. Route the OUTPUT kind through the sanitized rich-text
+     formatter (escapes everything first); keep input/technical sections
+     as plain text so argument objects stay faithful to what was sent. */
+  if (kind === 'output') {
+    const formatted = formatToolOutput(text);
+    if (formatted.rich) {
+      pre.innerHTML = formatted.html;
+      pre.classList.add('tool-inline-detail-rich');
+    } else {
+      pre.textContent = text;
+    }
+  } else {
+    pre.textContent = text;
+  }
   section.appendChild(heading);
   section.appendChild(pre);
   host.appendChild(section);
@@ -237,6 +259,9 @@ function iconHtml(state: string): string {
 const TOOL_INLINE_ICONS: Record<string, string> = {
   render_visualization: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7" rx="0.5"/><rect x="12" y="6" width="3" height="11" rx="0.5"/><rect x="17" y="13" width="3" height="4" rx="0.5"/></svg>',
   web_search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
+  web_fetch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+  create_plan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+  create_spec: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4M9 9h1"/></svg>',
   arxiv_search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
   zotero_search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v16H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v4H6.5A2.5 2.5 0 0 1 4 20.5z"/></svg>',
   notion_search_pages: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 12h8M8 16h8M8 8h2"/></svg>',
@@ -290,6 +315,26 @@ export function updateInlineToolMeta(row: HTMLElement, text: string): void {
   if (row.dataset.state !== 'running') return;
   const meta = row.querySelector('.tool-inline-meta');
   if (meta) meta.textContent = text || '';
+}
+
+/* P_tool-delta-stream — compact rows dropped tool_call_delta frames, so a
+   code_interpreter call in live chat showed only "Analyzing data" with no
+   in-progress code. The server forwards cumulative arguments per delta;
+   stream them into a live <pre> preview inside the row's detail area.
+   renderInlineDetails() clears the detail on settle, so the preview is
+   removed automatically once the final result replaces it. */
+export function updateInlineToolCodePreview(row: HTMLElement, argsJson: string, _language: string): void {
+  if (row.dataset.state !== 'running') return;
+  const detail = row.querySelector('.tool-inline-detail') as HTMLElement | null;
+  if (!detail) return;
+  let preview = detail.querySelector('.tool-inline-code-preview') as HTMLElement | null;
+  if (!preview) {
+    preview = document.createElement('pre');
+    preview.className = 'tool-inline-code-preview';
+    detail.appendChild(preview);
+  }
+  const text = String(argsJson || '');
+  if (preview.textContent !== text) preview.textContent = text;
 }
 
 /** Settle the row in place: done / error / stopped. */
