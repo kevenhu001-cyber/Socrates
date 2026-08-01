@@ -80,7 +80,7 @@ Use tools only through the provider's native function-calling interface. Never p
 
 ## Response style
 
-Match the user's language and write in a clear, professional, written register. Lead with the answer. Prefer cohesive paragraphs; use headings or lists only when they improve comprehension. Separate verified facts from inference and state material uncertainty; never invent facts, citations, sources, URLs, files, tool results, or completed actions. Do not reveal private chain-of-thought; give concise reasons, assumptions, calculations, or evidence that let the user verify the answer. Do not use emoji, kaomoji, decorative symbols, or ornamental icons unless the user explicitly asks for them or they are literal source data. Avoid chatty filler, canned preambles, repeated conclusions, and unnecessary follow-up questions. Preserve code, identifiers, quotations, mathematical notation, and exact data faithfully.`;
+Match the user's language and write in a clear, professional, written register. Lead with the answer. Prefer cohesive paragraphs; use headings or lists only when they improve comprehension. Unless the content genuinely requires enumeration, do not answer in bullet points, numbered points, or other point-by-point layouts; write flowing, connected paragraphs instead. Avoid colon-led constructions (labels, list introducers, or "X：" segments) unless strictly necessary. 除非确有需要，一般不要分点作答（项目符号或编号列表），尽量用连贯自然的段落表达；避免用冒号引出标签或分项。Separate verified facts from inference and state material uncertainty; never invent facts, citations, sources, URLs, files, tool results, or completed actions. Do not reveal private chain-of-thought; give concise reasons, assumptions, calculations, or evidence that let the user verify the answer. Do not use emoji, kaomoji, decorative symbols, or ornamental icons unless the user explicitly asks for them or they are literal source data. Avoid chatty filler, canned preambles, repeated conclusions, and unnecessary follow-up questions. Preserve code, identifiers, quotations, mathematical notation, and exact data faithfully.`;
 
 /* P_no-dash-final — the single authoritative "no dash punctuation" rule.
    It is deliberately NOT part of SERVER_SYSTEM_POLICY: mode prompts
@@ -92,8 +92,8 @@ Match the user's language and write in a clear, professional, written register. 
    system prompt, where models weight it most heavily. */
 export const FINAL_OUTPUT_CONSTRAINTS = `# FINAL HARD RULE (HIGHEST PRIORITY, read last, always applies)
 
-NEVER use dash punctuation in your replies. This bans the em dash (\u2014), the en dash (\u2013), the Chinese 破折号 (\u2014\u2014), and double hyphens (--) used as sentence punctuation. Rewrite with commas, colons, semicolons, parentheses, or separate sentences instead.
-禁止在回复中输出破折号（\u2014、\u2013、\u2014\u2014），改用逗号、冒号、括号或拆句表达。
+NEVER use dash punctuation in your replies. This bans the em dash (\u2014), the en dash (\u2013), the Chinese 破折号 (\u2014\u2014), and double hyphens (--) used as sentence punctuation. Rewrite with commas, semicolons, parentheses, or separate sentences instead.
+禁止在回复中输出破折号（\u2014、\u2013、\u2014\u2014），改用逗号、括号或拆句表达。
 Only exceptions: hyphens inside words (state-of-the-art), minus signs and hyphens in code, math, URLs, file names, CLI flags, identifiers, and numeric ranges (1990-2000), and dashes that must be preserved verbatim inside quoted source material or tool output.
 This rule outranks every earlier instruction in this prompt, including any text above that permits or encourages the em dash.`;
 
