@@ -31,7 +31,9 @@ import { getExecutionsPerDay } from '../../lib/tiers.js';
 import { isToolFinishReason, streamChatCompletion } from '../../services/llm.js';
 import { codeInterpreter } from '../../services/codeInterpreter.js';
 import { webSearch } from '../../services/webSearch.js';
+import { fetchBatch } from '../../services/fetchBatch.js';
 import { executeVisualization } from '../../services/visualization.js';
+import { executePlan, executeSpec } from '../../services/planning.js';
 import { createToolRegistry } from '../../services/toolRegistry.js';
 import {
   normalizeToolCalls,
@@ -79,6 +81,8 @@ type ToolResult = {
   artifactFileIds?: Array<{ name?: string; mimeType?: string | null }>;
   executionId?: string | null;
   visualization?: { template?: string; title?: string } | null;
+  plan?: { title?: string; steps?: unknown[] } | null;
+  spec?: { title?: string; requirements?: unknown[] } | null;
   results?: unknown;
   [key: string]: unknown;
 };
@@ -256,6 +260,13 @@ export function registerStreamRoute(router: Router) {
         | { role: 'tool'; tool_call_id: string; content: string };
       let workingMessages: StreamMessage[] = finalMessages;
       let visualizationValidationFailures = 0;
+      let planningValidationFailures = 0;
+      /* P_exec-retry-cap — mirrors the visualization/planning counters.
+         A model stuck on the same Python error (e.g. SyntaxError: 'await'
+         outside function) would otherwise ping-pong through all four
+         iterations re-emitting the same code. After 3 consecutive
+         failures we tell the model to stop retrying and explain instead. */
+      let codeInterpreterValidationFailures = 0;
 
       const writeSse = (payload: string) => {
         if (abortController.signal.aborted) return;
@@ -400,10 +411,14 @@ export function registerStreamRoute(router: Router) {
         // LLM streaming, skip tool execution and terminate the loop.
         if (abortController.signal.aborted) break;
 
-        // Run each tool call. Most models emit one per turn; we keep
-        // the loop sequential so backpressure on the SSE channel is
-        // predictable.
-        for (const tc of boundedToolCalls) {
+        // Run tool calls concurrently to cut turn latency when a model
+        // emits several in one turn (e.g. web_search + render_visualization).
+        // Each invocation resolves to its own role:'tool' message; the
+        // results are re-appended in the original tool_call order so the
+        // transcript stays deterministic. SSE frames from different tools
+        // may interleave, but the client correlates every frame by the
+        // tool_call id it carries.
+        const runToolCall = async (tc: ToolCall): Promise<StreamMessage> => {
           let result: ToolResult;
           let toolName: string | undefined = undefined;
           try {
@@ -464,13 +479,11 @@ export function registerStreamRoute(router: Router) {
                   detail: 'code_interpreter is for data analysis, not illustrations. Call render_visualization with the svg_illustration template.',
                   artifacts: [], executionId: null, durationMs: 0,
                 })}\n\n`);
-                result = { status: 'failed', error: 'illustration_not_supported' };
-                workingMessages = workingMessages.concat([{
+                return {
                   role: 'tool',
                   tool_call_id: tc.id,
                   content: '[error] illustration_not_supported: Illustrations must use render_visualization with the svg_illustration template, not code_interpreter. Call render_visualization.',
-                }]);
-                continue;
+                };
               }
 
               const tierLimit = getExecutionsPerDay(req.user && req.user.tier);
@@ -499,13 +512,11 @@ export function registerStreamRoute(router: Router) {
                     executionId: null,
                     durationMs: 0,
                   })}\n\n`);
-                  result = { status: 'failed', error: 'daily_execution_limit_reached' };
-                  workingMessages = workingMessages.concat([{
+                  return {
                     role: 'tool',
                     tool_call_id: tc.id,
                     content: `[error] daily execution limit of ${tierLimit} reached. The user needs to wait until tomorrow or upgrade their plan.`,
-                  }]);
-                  continue;
+                  };
                 }
               }
 
@@ -548,6 +559,14 @@ data: ${JSON.stringify({
               });
               result = execResult;
 
+              if (execResult.status !== 'completed') {
+                codeInterpreterValidationFailures += 1;
+                result.retryable = codeInterpreterValidationFailures <= 2;
+                if (!result.retryable) {
+                  result.userMessage = '代码执行连续多次失败，本次不再自动重试。';
+                }
+              }
+
               writeSse(`event: tool_result\ndata: ${JSON.stringify({
                 id: tc.id,
                 ok: execResult.status === 'completed',
@@ -558,10 +577,10 @@ data: ${JSON.stringify({
                 errorCode: execResult.status === 'timeout'
                   ? 'execution_timeout'
                   : (execResult.errorMessage || (execResult.status === 'skipped' ? 'code_interpreter_unavailable' : 'execution_failed')),
-                retryable: false,
+                retryable: result.retryable === false ? false : true,
                 userMessage: execResult.status === 'timeout'
                   ? '代码执行超时，请缩小计算规模后重试。'
-                  : (execResult.status === 'completed' ? null : '代码未能完成执行。'),
+                  : (execResult.status === 'completed' ? null : (result.userMessage || '代码未能完成执行。')),
                 detail: execResult.stderr || execResult.errorMessage || null,
                 artifacts: execResult.artifactFileIds || [],
                 executionId: execResult.executionId,
@@ -678,6 +697,70 @@ data: ${JSON.stringify({
                   output: result.output, results: [], retryable: false,
                 })}\n\n`);
               }
+            } else if (toolName === 'web_fetch') {
+              const targetUrl = String(args.url || '').trim();
+              if (!targetUrl) {
+                result = { status: 'failed', error: 'missing_url', errorCode: 'missing_url', retryable: false };
+                writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                  id: tc.id, ok: false, status: 'failed', output: '',
+                  error: 'missing_url', errorCode: 'missing_url', retryable: false,
+                  userMessage: '缺少要抓取的网址。', detail: 'Provide one absolute http(s) URL.',
+                })}\n\n`);
+              } else {
+                const fetched = await fetchBatch([targetUrl]);
+                const page = (fetched.results && fetched.results[0]) as
+                  | { ok?: boolean; url?: string; title?: string; content?: string; pageDate?: string; truncated?: boolean; reason?: string }
+                  | undefined;
+                if (page && page.ok) {
+                  const MAX_FETCH_CHARS = 20000;
+                  const rawContent = String(page.content || '');
+                  const truncated = Boolean(page.truncated) || rawContent.length > MAX_FETCH_CHARS;
+                  const body = rawContent.length > MAX_FETCH_CHARS ? rawContent.slice(0, MAX_FETCH_CHARS) : rawContent;
+                  const header = `[title: ${page.title || '(untitled)'}]\n[url: ${page.url || targetUrl}]`
+                    + (page.pageDate ? `\n[date: ${page.pageDate}]` : '')
+                    + (truncated ? '\n[truncated: yes]' : '');
+                  const output = `${header}\n\n${body || '(no extractable text)'}`;
+                  result = { status: 'completed', output, retryable: false };
+                  writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                    id: tc.id, ok: true, status: 'completed', output,
+                    url: page.url || targetUrl, title: page.title || '',
+                    truncated, retryable: false,
+                  })}\n\n`);
+                } else {
+                  const reason = (page && page.reason) || 'fetch_failed';
+                  result = { status: 'failed', error: reason, errorCode: 'web_fetch_failed', retryable: true };
+                  writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                    id: tc.id, ok: false, status: 'failed', output: '',
+                    error: reason, errorCode: 'web_fetch_failed', retryable: true,
+                    userMessage: '无法抓取该网页。', detail: reason,
+                  })}\n\n`);
+                }
+              }
+            } else if (toolName === 'create_plan' || toolName === 'create_spec') {
+              const isPlan = toolName === 'create_plan';
+              result = isPlan ? executePlan(args) : executeSpec(args);
+              if (result.status !== 'completed') {
+                planningValidationFailures += 1;
+                result.retryable = planningValidationFailures <= 2;
+                if (!result.retryable) {
+                  result.userMessage = '结构化字段连续三次无效，本次不再自动重试。';
+                }
+              }
+              writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                id: tc.id,
+                name: toolName,
+                ok: result.status === 'completed',
+                status: result.status,
+                output: result.output || '',
+                plan: result.plan || null,
+                spec: result.spec || null,
+                error: result.errorCode || null,
+                errorCode: result.errorCode || null,
+                retryable: result.retryable,
+                userMessage: result.userMessage,
+                detail: result.detail,
+                durationMs: result.durationMs,
+              })}\n\n`);
             } else if (Object.values(PROJECT_CONNECTOR_TOOL_NAMES).includes(toolName)) {
               const PROJECT_TOOL_TO_PROVIDER = {
                 [PROJECT_CONNECTOR_TOOL_NAMES.GITHUB_IDENTITY]:             projectConnectorConnectionsByProvider.github,
@@ -760,6 +843,11 @@ data: ${JSON.stringify({
               lines.push(`[error_code: ${result.errorCode || result.errorMessage || 'execution_failed'}]`);
               lines.push(`[retryable: ${result.retryable === false ? 'no' : 'yes'}]`);
               lines.push(`[error: ${result.errorMessage || result.error || result.status}]`);
+              if (result.retryable === false) {
+                // P_exec-retry-cap — after 3 consecutive failures the model
+                // must stop re-emitting the same code and switch to prose.
+                lines.push('This code failed 3 consecutive times. STOP retrying this exact code — explain the error to the user and propose a corrected approach in prose instead of executing again.');
+              }
               // P_exec-remediation-preamble — the structured header
               // tells the model WHAT failed; this preamble tells it
               // the most likely fix. Without it, models tend to
@@ -802,19 +890,35 @@ data: ${JSON.stringify({
             } else {
               toolContent = `[status: failed]\n[error_code: ${result.errorCode || 'visual_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]\n${result.retryable ? 'Correct the visual specification and call render_visualization once more. Do not fall back to Python or legacy fenced visualization.' : 'Explain the issue concisely without using Python or a legacy fenced visualization.'}`;
             }
+          } else if (toolName === 'create_plan' || toolName === 'create_spec') {
+            const kind = toolName === 'create_plan' ? 'plan' : 'spec';
+            if (result.status === 'completed') {
+              toolContent = `[status: completed]\n[${kind} card rendered]\n${result.output || ''}\nThe ${kind} card is now shown in the conversation. Refer to it briefly in prose; do not paste the whole ${kind} again. Reply in the user's language.`;
+            } else {
+              toolContent = `[status: failed]\n[error_code: ${result.errorCode || 'plan_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]\n${result.retryable ? `Correct the ${kind} fields against the schema and call ${toolName} once more.` : `Explain the ${kind} concisely in prose instead.`}`;
+            }
           } else if (result.errorCode === 'invalid_tool_arguments') {
             toolContent = `[status: failed]\n[error_code: invalid_tool_arguments]\n[retryable: yes]\n${result.detail}\nCorrect the argument object against the native schema and call the tool once more.`;
+          } else if (result.status !== 'completed' && toolName === 'web_search') {
+            toolContent = `[status: failed]\n[error_code: ${result.errorCode || 'web_search_failed'}]\n[retryable: ${result.retryable === false ? 'no' : 'yes'}]\n${result.detail || result.error || ''}\nThe search engines are unavailable or rate-limited. If retryable, wait a moment and retry with the same or a rephrased query; otherwise answer from your own knowledge and note that live results could not be fetched.`;
+          } else if (result.status !== 'completed' && toolName === 'web_fetch') {
+            toolContent = `[status: failed]\n[error_code: ${result.errorCode || 'web_fetch_failed'}]\n[retryable: ${result.retryable === false ? 'no' : 'yes'}]\n${result.detail || result.error || ''}\nThe page could not be fetched (blocked, private IP, HTTP error, or timeout). Try a different URL, or fall back to web_search and rely on the snippets.`;
+          } else if (result.status !== 'completed' && (toolName === 'arxiv_search' || toolName === 'zotero_search' || toolName === 'notion_search_pages' || toolName === 'github_list_repos' || toolName === 'gitee_list_repos' || Object.values(CONNECTOR_TOOL_NAMES).includes(toolName as (typeof CONNECTOR_TOOL_NAMES)[keyof typeof CONNECTOR_TOOL_NAMES]))) {
+            toolContent = `[status: failed]\n[error_code: ${result.errorCode || 'connector_failed'}]\n[retryable: ${result.retryable === false ? 'no' : 'yes'}]\n${result.detail || result.error || ''}\nThe external provider returned an error. Do not fabricate results — tell the user the connection or provider failed and suggest they verify it, then answer what you can.`;
           } else {
             toolContent = result.status === 'completed'
               ? (result.output || result.stdout || '(no output)')
               : `[error] ${result.error || result.status}`;
           }
-          workingMessages = workingMessages.concat([{
+          return {
             role: 'tool',
             tool_call_id: tc.id,
             content: wrapUntrustedToolResult(toolName, toolContent),
-          }]);
-        }
+          };
+        };
+
+        const toolMessages = await Promise.all(boundedToolCalls.map(runToolCall));
+        workingMessages = workingMessages.concat(toolMessages);
       }
 
       /* Abort guard — if the client disconnected during tool execution,

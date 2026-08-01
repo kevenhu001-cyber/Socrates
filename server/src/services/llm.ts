@@ -140,45 +140,82 @@ export async function streamChatCompletion(
        * DB only. */
       console.log('[DEBUG-LLM] Sending tools to upstream:', JSON.stringify(tools.map(t => t.function?.name)), 'tools.length:', tools.length);
     }
-    const response = await fetch(`${apiBase}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        max_tokens: effectiveMaxTokens,
-        temperature,
-        stream: true,
-        /* P_deepseek-mode — forward the optional reasoning_effort
-           and extra_body flags. Non-DeepSeek upstreams silently
-           ignore unknown fields, so this is safe for every
-           provider. */
-        ...(reasoning_effort ? { reasoning_effort } : {}),
-        ...(extra_body ? { ...extra_body } : {}),
-        /* Tool calling — when tools is set, the upstream may stream
-           `delta.tool_calls` arrays indexed by `index`. The accumulator
-           below joins them into fully-formed tool_call objects. */
-        ...(Array.isArray(tools) && tools.length > 0 ? { tools } : {}),
-        ...(tool_choice ? { tool_choice } : {}),
-      }),
-      signal: mergedSignal,
+    let response: Response;
+    /* P_llm-retry — rate limits (429 rpm exhausted) and transient 5xx
+       errors kill the stream instantly. Retry the initial POST with
+       exponential backoff BEFORE any byte is streamed downstream, so a
+       rate-limited request gets a second chance instead of ending the
+       turn. We never retry mid-stream: once streaming has started the
+       caller has already forwarded content to the client. */
+    const bodyPayload = JSON.stringify({
+      model,
+      messages,
+      max_tokens: effectiveMaxTokens,
+      temperature,
+      stream: true,
+      /* P_deepseek-mode — forward the optional reasoning_effort
+         and extra_body flags. Non-DeepSeek upstreams silently
+         ignore unknown fields, so this is safe for every
+         provider. */
+      ...(reasoning_effort ? { reasoning_effort } : {}),
+      ...(extra_body ? { ...extra_body } : {}),
+      /* Tool calling — when tools is set, the upstream may stream
+         `delta.tool_calls` arrays indexed by `index`. The accumulator
+         below joins them into fully-formed tool_call objects. */
+      ...(Array.isArray(tools) && tools.length > 0 ? { tools } : {}),
+      ...(tool_choice ? { tool_choice } : {}),
     });
+    const RETRYABLE_STATUS = new Set([429, 502, 503]);
+    const MAX_LLM_ATTEMPTS = 3; // initial + 2 retries
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt < MAX_LLM_ATTEMPTS; attempt++) {
+      if (signal && signal.aborted) {
+        onError(new Error('LLM request aborted'));
+        return;
+      }
+      try {
+        response = await fetch(`${apiBase}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: bodyPayload,
+          signal: mergedSignal,
+        });
+        if (response.ok || !RETRYABLE_STATUS.has(response.status)) break;
+        // Rate-limited / transient upstream failure — wait and retry.
+        lastError = new Error(`LLM API error ${response.status}: ${(await response.text().catch(() => '')).slice(0, 200)}`);
+        const backoffMs = attempt === 0 ? 1000 : 2000;
+        await new Promise<void>((resolve) => setTimeout(resolve, backoffMs));
+        // Re-check abort after the backoff wait.
+        if (signal && signal.aborted) {
+          onError(new Error('LLM request aborted'));
+          return;
+        }
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') throw err; // let the outer catch classify it
+        lastError = err as Error;
+        if (attempt < MAX_LLM_ATTEMPTS - 1) {
+          await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+          continue;
+        }
+        throw err;
+      }
+    }
 
-    if (!response.ok) {
-      const errBody = await response.text().catch(() => '');
-      onError(new Error(`LLM API error ${response.status}: ${errBody.slice(0, 200)}`));
+    if (!response!.ok) {
+      const errBody = await response!.text().catch(() => '');
+      onError(lastError || new Error(`LLM API error ${response!.status}: ${errBody.slice(0, 200)}`));
       return;
     }
 
-    if (!response.body) {
+    if (!response!.body) {
       onError(new Error('LLM API returned empty body'));
       return;
     }
 
-    const reader = response.body.getReader();
+    const reader = response!.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
     let finishReason: string | null = null;
