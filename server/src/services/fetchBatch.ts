@@ -323,3 +323,46 @@ export async function fetchBatch(urls: string[]) {
     }),
   };
 }
+
+/* ─── Tool definition (sent to upstream on every chat turn) ───
+ *
+ * Reads a single page the model already has a URL for. Execution runs
+ * through fetchBatch above, so it inherits the SSRF guard rails (scheme
+ * allow-list, DNS pinning, private-IP rejection, per-hop redirect
+ * re-validation) and the Readability main-content extraction. The
+ * description steers the model to reach for web_search when it does not
+ * yet have a concrete URL, and to avoid re-fetching content already in
+ * its context.
+ */
+export const WEB_FETCH_TOOL = {
+  type: 'function',
+  function: {
+    name: 'web_fetch',
+    description:
+      '## What this tool does\n' +
+      'Fetches a single web page by URL and returns its main text content with boilerplate removed (Readability), plus the page title and, when available, its publication date. Only http(s) pages that return text, HTML, or JSON are supported.\n\n' +
+      '## When to call\n' +
+      '- The user gives a URL and asks what it says, or asks you to summarize or analyze it.\n' +
+      '- A web_search result looks relevant and you need the full article text, not just the snippet.\n' +
+      '- You need to quote or verify a detail the search snippet does not contain.\n\n' +
+      '## When NOT to call\n' +
+      '- You do not have a concrete URL yet — call web_search first to find one.\n' +
+      '- The page is already in your context (a [Referenced page] block or a prior web_fetch this turn).\n' +
+      '- The target needs a login, or is a binary file such as a PDF or image — this tool only returns text.\n\n' +
+      '## Output\n' +
+      'Returns the extracted main text (truncated if very long). Summarize it in natural prose; do not paste the raw page text back to the user.',
+    parameters: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'The absolute http(s) URL of the page to fetch, including the scheme (for example https://example.com/article).',
+          minLength: 8,
+          maxLength: 2000,
+        },
+      },
+      required: ['url'],
+      additionalProperties: false,
+    },
+  },
+};
