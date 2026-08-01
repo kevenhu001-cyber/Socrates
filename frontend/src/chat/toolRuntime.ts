@@ -18,6 +18,7 @@ import {
 import {
   createInlineToolRow,
   settleInlineToolRow,
+  updateInlineToolCodePreview,
   updateInlineToolMeta,
 } from '../ui/toolInline.js';
 import { mountVisualization } from '../render/visualization.js';
@@ -44,6 +45,10 @@ interface ToolCallEntry {
   executionId?: string;
   visualization?: unknown;
   results?: unknown[];
+  /** Character offset into the message's rawText where the inline row
+      was spliced. Persisted with the message so history replay can
+      rebuild the inline layout (mirrors main.js's textOffset). */
+  textOffset?: number;
   /** Client-only runtime metadata — not persisted. */
   _run?: ToolRun;
   _pendingDeltas?: ToolCallDelta[];
@@ -126,8 +131,11 @@ interface ToolRuntimeOptions {
    * The controller freezes the current text segment, appends the row,
    * and starts a new segment for post-tool text. Falls back to
    * appending directly to `body` when absent.
+   * Returns the textOffset split point (or null when unavailable) so
+   * synthetic rows created from a late tool_result can persist the
+   * offset directly instead of relying on finish()'s write-back loop.
    */
-  onInlineTool?: (entry: { id: string; name: string }, row: HTMLElement) => void;
+  onInlineTool?: (entry: { id: string; name: string }, row: HTMLElement) => number | null;
 }
 
 interface ExecutionConnection {
@@ -272,18 +280,21 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   const EventSourceImpl = options.EventSource || (typeof EventSource !== 'undefined' ? EventSource : null);
   const useExecutionEventSource = options.useExecutionEventSource === true;
   const mode = options.mode || 'compact';
-  const onInlineTool = options.onInlineTool || function (_entry: { id: string; name: string }, row: HTMLElement) {
+  const onInlineTool = options.onInlineTool || function (_entry: { id: string; name: string }, row: HTMLElement): number | null {
     body.appendChild(row);
+    return null;
   };
 
-  function mountInlineRow(entry: ToolCallEntry): void {
-    if (findCard(entry.id)) return;
+  function mountInlineRow(entry: ToolCallEntry): number | null {
+    if (findCard(entry.id)) return null;
     const row = createInlineToolRow({
       id: entry.id,
       name: entry.name,
       input: entry.input,
     });
-    try { onInlineTool({ id: entry.id, name: entry.name }, row); } catch (_) { body.appendChild(row); }
+    let offset: number | null = null;
+    try { offset = onInlineTool({ id: entry.id, name: entry.name }, row); } catch (_) { body.appendChild(row); }
+    return typeof offset === 'number' ? offset : null;
   }
 
   function findInlineRow(id: string): HTMLElement | null {
@@ -469,6 +480,24 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       }
     }
 
+    /* P_tool-delta-stream — compact rows render live code previews, so
+       deltas that arrive after the row is mounted must stream into the
+       inline row's <pre> as well, not just into classic cards. Rows that
+       are still settling skip updates; settle clears the preview. */
+    const inlineRows = body.querySelectorAll('.tool-inline[data-tcid]');
+    for (let rowIndex = 0; rowIndex < inlineRows.length; rowIndex++) {
+      const row = inlineRows[rowIndex] as HTMLElement;
+      if (row.dataset.state !== 'running') continue;
+      const toolCallId = row.getAttribute('data-tcid');
+      let found: ToolCallDelta | undefined;
+      latest.forEach(function (candidate: ToolCallDelta) {
+        if (!found && candidate && candidate.id === toolCallId) found = candidate;
+      });
+      if (!found) continue;
+      matchedIds.add(found.id);
+      try { updateInlineToolCodePreview(row, found.arguments || '', found.name || ''); } catch (_) { /* ignore */ }
+    }
+
     latest.forEach(function (delta) {
       if (!delta || !delta.id || matchedIds.has(delta.id)) return;
       const entry = findEntry(message, delta.id);
@@ -637,6 +666,15 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       const queuedDeltas = entry._pendingDeltas.splice(0);
       for (let deltaIndex = 0; deltaIndex < queuedDeltas.length; deltaIndex++) {
         try { updateToolCardCode(entry.id, queuedDeltas[deltaIndex].arguments || '', queuedDeltas[deltaIndex].name || ''); } catch (_) { /* ignore */ }
+        /* P_tool-delta-stream — deltas buffered before tool_use landed
+           replay into the compact row's live preview too; updateToolCardCode
+           above is a no-op in compact mode (no .agent-tool-card exists). */
+        if (mode === 'compact') {
+          const inlineRow = findInlineRow(entry.id);
+          if (inlineRow) {
+            try { updateInlineToolCodePreview(inlineRow, queuedDeltas[deltaIndex].arguments || '', queuedDeltas[deltaIndex].name || ''); } catch (_) { /* ignore */ }
+          }
+        }
       }
     }
     if (entry._pendingProgress && entry._pendingProgress.length) {
@@ -665,7 +703,6 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
 
   function recordToolCallDelta(delta: ToolCallDelta): void {
     if (!activeMessage() || !delta) return;
-    if (mode === 'compact') return;
     pendingDeltas.push(delta);
     if (deltaFrame == null) deltaFrame = requestFrame(flushDeltas);
   }
@@ -707,7 +744,12 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       message.toolCalls.push(entry);
       setRun(entry, TOOL_RUN_PHASES.preparing);
       if (mode === 'compact') {
-        mountInlineRow(entry);
+        /* A synthetic row mounts where the message text currently ends.
+           Persist the split point directly — a result can land after
+           finish()'s inlineToolRows write-back loop has already run, and
+           without textOffset the row would be lost on history replay. */
+        const mountedOffset = mountInlineRow(entry);
+        if (mountedOffset != null) entry.textOffset = mountedOffset;
       } else {
         output = appendToolModule(entry.name, {}, ensureToolContainer()) as HTMLElement | null;
         const syntheticCard = output && output.closest('.agent-tool-card');

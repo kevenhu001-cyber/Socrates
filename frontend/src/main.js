@@ -37,6 +37,7 @@ import { formatTickSlice, formatMsgProgressive, formatMsg, stripMarkdown, findLa
 import { findInlineToolBoundary, getStreamRenderInterval, splitStreamingMarkdown } from './render/streaming.js';
 import { SOCRATIC_SYSTEM_PROMPT } from './prompts/socratic.js';
 import { VISUALIZATION_ROUTING_PROMPT } from './prompts/visualization.js';
+import { PLANNING_ROUTING_PROMPT } from './prompts/planning.js';
 import { fetchGeoInfo, getSystemContext, resetGeoInfo } from './system/context.js';
 import {
   getChatIdFromURL, setChatIdInURL, pushChatIdToURL,
@@ -3384,7 +3385,7 @@ async function askChatTurn(userText,pendingOverride){
   var chatPrompt = _effortHigh ? CHAT_SYSTEM_PROMPT : CHAT_CONCISE_PROMPT;
   var thinkSuffix = _effortHigh ? thinkingSuffix() : "";
   var toneSuffix = toneVoiceSuffix();
-  var msgs=[{role:"system",content:langDir+sysCtx+"\n\n"+chatPrompt+toneSuffix+beagleSuffix()+thinkSuffix+memoriesSuffix()+projectContextSuffix()}];
+  var msgs=[{role:"system",content:langDir+sysCtx+"\n\n"+chatPrompt+PLANNING_ROUTING_PROMPT+toneSuffix+beagleSuffix()+thinkSuffix+memoriesSuffix()+projectContextSuffix()}];
   /* P5.8 — active prompt template: inject the template's
      specialized system prompt as a fresh system message so
      the model commits to that role for this turn. */
@@ -6006,6 +6007,10 @@ function doRender(){
          sc.scrollHeight-sc.scrollTop-sc.clientHeight<=96){
         sc.scrollTop=sc.scrollHeight;
       }
+      /* P_tool-textoffset — return the split point so the tool runtime
+         can persist it on synthetic rows created from a late tool_result
+         (those never pass through the finish() write-back loop below). */
+      return _toolOffset;
     },
     onToolActivity:function(){
       /* A tool call counts as first visible activity, so retire the
@@ -8907,7 +8912,7 @@ function buildSocraticPrompt(topic,level,context){
   }else{
     full+="\n\nNote: no [Web research] block is present. You do not have live web access for this turn — say so honestly rather than guessing about current events, prices, dates, or anything that may have changed since your training cutoff.";
   }
-  return sysCtx+"\n\n"+SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+TUTOR_SEARCH_POLICY_PROMPT+VISUALIZATION_ROUTING_PROMPT+toneVoiceSuffix()+beagleSuffix()+thinkingSuffix()+memoriesSuffix()+projectContextSuffix();
+  return sysCtx+"\n\n"+SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+TUTOR_SEARCH_POLICY_PROMPT+VISUALIZATION_ROUTING_PROMPT+PLANNING_ROUTING_PROMPT+toneVoiceSuffix()+beagleSuffix()+thinkingSuffix()+memoriesSuffix()+projectContextSuffix();
 }
 
 /* ============================================================
