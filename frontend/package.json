@@ -20,7 +20,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "typescript": "~5.8",
-    "vite": "^5.4.10"
+    "vite": "^6.4.3"
   },
   "dependencies": {
     "@lobehub/icons-static-svg": "^1.94.0",
@@ -32,7 +32,7 @@
     "@tiptap/markdown": "^3.29.1",
     "@tiptap/react": "^3.29.1",
     "@tiptap/starter-kit": "^3.29.1",
-    "dompurify": "3.2.4",
+    "dompurify": "^3.4.12",
     "echarts": "^6.1.0",
     "mermaid": "^11.16.0",
     "plotly.js-dist-min": "^3.7.0",
