@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 /**
  * Fail-fast on missing SESSION_SECRET in production.
