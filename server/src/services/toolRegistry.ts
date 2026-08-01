@@ -1,5 +1,7 @@
 import { WEB_SEARCH_TOOL } from './webSearch.js';
+import { WEB_FETCH_TOOL } from './fetchBatch.js';
 import { VISUALIZATION_TOOL } from './visualization.js';
+import { PLAN_TOOL, SPEC_TOOL } from './planning.js';
 import {
   ARXIV_TOOL, ZOTERO_TOOL, NOTION_TOOL, GITHUB_TOOL, GITEE_TOOL,
   CONNECTOR_TOOL_NAMES,
@@ -30,6 +32,14 @@ export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConn
        search restraint belongs in the Tutor system policy; hiding the schema
        here made the client prompt promise a tool the model could not call. */
     { name: 'web_search', modelDefinition: WEB_SEARCH_TOOL, enabled: true, pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
+    /* Reads a single page by URL through fetchBatch's SSRF-guarded path.
+       Always available: it complements web_search (find a URL) by letting
+       the model read the full page text a snippet cannot cover. */
+    { name: 'web_fetch', modelDefinition: WEB_FETCH_TOOL, enabled: true, pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
+    /* Planning artifacts — pure structuring tools (no side effects) that
+       validate a strict envelope and echo it back as a plan/spec card. */
+    { name: 'create_plan', modelDefinition: PLAN_TOOL, enabled: true, pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
+    { name: 'create_spec', modelDefinition: SPEC_TOOL, enabled: true, pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
 
     // ── Connector tools (gated on per-user connection) ──────
     { name: CONNECTOR_TOOL_NAMES.ARXIV,  modelDefinition: ARXIV_TOOL,    enabled: true, pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
