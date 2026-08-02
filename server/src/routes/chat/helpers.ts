@@ -410,6 +410,12 @@ export function transformContentForModel(content: string | ContentPart[], multim
   return out;
 }
 
+/** Return true when any message contains an image_url content part. */
+export function containsImageUrlParts(messages: ChatMessage[]): boolean {
+  return messages.some((message) => Array.isArray(message?.content)
+    && message.content.some((part) => part && part.type === 'image_url'));
+}
+
 /* Apply the multimodal transform to every user/assistant turn in
  * `messages` based on the active provider's `isMultimodal` flag.
  * System messages are not multimodal in OpenAI's spec, but we
@@ -468,7 +474,8 @@ export const SSE_PRIME = ': open\n' + Array.from({ length: 12 }, () => ':' + 'o'
  *   4. Sanitise extra_body (whitelist-only keys).
  *   5. Resolve the user's active LLM provider + decrypted key.
  *   6. Enforce the per-tier monthly Beagle quota for built-in keys.
- *   7. Apply multimodal transforms based on the provider's capabilities.
+ *   7. Reject image content when the active provider is not marked as
+ *      multimodal, then apply the legacy transform for any non-image parts.
  *
  * Returns either { ok: true, payload } or { ok: false, error } where
  * `error` is an Express response already written (the caller must
@@ -555,10 +562,22 @@ export async function prepareChatRequest(
     }
   }
 
-  /* P_attachments — degrade multimodal content to text-only when the
-     active model isn't vision-capable. Must run BEFORE
-     estimateMessageTokens so the prompt token estimate doesn't count
-     a 500 KB image_url payload. */
+  /* P_attachments-multimodal — frontend upload validation is the fast path,
+     but the server must close the trust gap for stale clients, direct API
+     callers, and a model switch while an image is being prepared. Reject
+     before token estimation or an upstream request so the response is an
+     explicit capability error instead of a silent text-only degradation. */
+  if (containsImageUrlParts(finalMessages) && !isMultimodalProvider(provider)) {
+    res.status(400).json({
+      code: 'MODEL_NOT_MULTIMODAL',
+      message: 'The selected model is not marked as multimodal and cannot process image attachments. Enable Multimodal for this model or select a vision-capable model.',
+    });
+    return { ok: false };
+  }
+
+  /* Preserve the legacy transform for callers that reach this point with
+     non-image content. Image-bearing requests have already been rejected
+     above, so they can no longer be silently downgraded to text-only. */
   finalMessages = transformMessagesForModel(finalMessages, provider);
 
   return {

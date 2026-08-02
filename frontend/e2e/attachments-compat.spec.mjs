@@ -65,7 +65,12 @@ test('Attachment chips React mode mirrors the legacy attachments array', async (
     });
   });
 
-  // Bridge snapshot reflects both attachments.
+  // The bridge batches publishes on requestAnimationFrame, so wait for the
+  // committed external-store snapshot before asserting its contents.
+  await page.waitForFunction(() => {
+    const s = window.__socratesAttachmentsBridge?.getSnapshot();
+    return s?.attachments?.length === 2;
+  });
   const snap = await page.evaluate(() => {
     const s = window.__socratesAttachmentsBridge?.getSnapshot();
     return s ? s.attachments.map((a) => ({ id: a.id, kind: a.kind, name: a.name })) : null;
@@ -142,3 +147,78 @@ async function chatChipsAttrVisible(page, selector) {
     return !!el && !el.classList.contains('hidden');
   }, selector);
 }
+
+test('Image upload is rejected immediately for a text-only active model', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route('**/api/**', async (route) => {
+    const req = route.request();
+    const apiUrl = req.url().replace('/api/v2/', '/api/');
+    if (req.method() === 'GET' && apiUrl.includes('/api/api-key')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          providers: [{
+            id: 'text-only', label: 'Text only', url: 'https://example.test/v1',
+            model: 'text-model', hasKey: true, isActive: true,
+            isBuiltIn: false, isMultimodal: false,
+          }],
+        }),
+      });
+      return;
+    }
+    await route.fallback();
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  const startedAt = await page.evaluate(() => performance.now());
+  await page.locator('#attachInput').setInputFiles({
+    name: 'not-supported.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('synthetic image bytes'),
+  });
+
+  const toast = page.locator('.msg-toast').last();
+  await expect(toast).toContainText("can't view images");
+  const elapsed = await page.evaluate((started) => performance.now() - started, startedAt);
+  expect(elapsed).toBeLessThan(1000);
+  await expect(page.locator('#attachmentChips .attachment-chip')).toHaveCount(0);
+  await expect(page.locator('#topicAttachmentChips .attachment-chip')).toHaveCount(0);
+});
+
+test('Image upload is admitted for a multimodal active model', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route('**/api/**', async (route) => {
+    const req = route.request();
+    const apiUrl = req.url().replace('/api/v2/', '/api/');
+    if (req.method() === 'GET' && apiUrl.includes('/api/api-key')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          providers: [{
+            id: 'vision', label: 'Vision', url: 'https://example.test/v1',
+            model: 'vision-model', hasKey: true, isActive: true,
+            isBuiltIn: false, isMultimodal: true,
+          }],
+        }),
+      });
+      return;
+    }
+    await route.fallback();
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  await page.locator('#attachInput').setInputFiles({
+    name: 'supported.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('synthetic image bytes'),
+  });
+  await page.waitForFunction(() => {
+    const snapshot = window.__socratesAttachmentsBridge?.getSnapshot();
+    return snapshot?.attachments?.[0]?.pending === false;
+  });
+  await expect(page.locator('#attachmentChips .attachment-chip')).toHaveCount(1);
+});

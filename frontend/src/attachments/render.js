@@ -11,9 +11,16 @@
 // window.setupAttachmentInput) are re-bound in src/windowExports.js.
 import { attachments, addFiles, removeAttachment } from '../attachments.js';
 
-// i18n translator is bound on `window.t` by i18n.js. We don't import
-// the function directly because i18n.js is a side-effect module.
-const t = (typeof window !== "undefined" ? window.t : null);
+// i18n translator is bound on `window.t` by i18n.js. Resolve it lazily so
+// module evaluation order cannot freeze an English fallback before the
+// language module has finished booting.
+function translate(key){
+  try{
+    return typeof window !== "undefined" && typeof window.t === "function"
+      ? window.t(key)
+      : null;
+  }catch(_){ return null; }
+}
 
 /* React migration bridge — fires whenever the pending attachments array
    changes so the React compatibility root can mirror the chip row via
@@ -47,9 +54,11 @@ function toast(msg, ms){
 function surfaceRejectionToast(res){
   if(!res || !res.rejected || !res.rejected.length) return;
   console.warn("[attachments] rejected:", res.rejected);
-  const hasNonMm = res.rejected.some(function(r){ return r.indexOf("not multimodal") === -1; });
-  if(!hasNonMm){
-    toast((typeof t === "function" ? t("attach.notMultimodal") : null)
+  const hasMmRejection = res.rejected.some(function(r){
+    return r.indexOf("active provider is not multimodal") !== -1;
+  });
+  if(hasMmRejection){
+    toast(translate("attach.notMultimodal")
       || "The active model can't view images. Add a multimodal provider or remove image attachments.");
   } else {
     toast(res.rejected[0]);

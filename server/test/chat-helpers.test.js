@@ -21,6 +21,7 @@ import {
   sanitizeExtraBody,
   transformContentForModel,
   transformMessagesForModel,
+  containsImageUrlParts,
   prependCodeInterpreterPrompt,
   appendFinalOutputConstraints,
   FINAL_OUTPUT_CONSTRAINTS,
@@ -405,6 +406,21 @@ describe('transformMessagesForModel', () => {
     assert.equal(out[0], null);
     assert.equal(out[1], undefined);
     assert.equal(out[2].content, 'hi');
+  });
+});
+
+describe('containsImageUrlParts', () => {
+  test('detects image content parts without inspecting base64 payloads', () => {
+    assert.equal(containsImageUrlParts([
+      { role: 'user', content: [{ type: 'text', text: 'look' }, { type: 'image_url', image_url: { url: 'data:image/png;base64,x' } }] },
+    ]), true);
+  });
+
+  test('returns false for text-only and string content', () => {
+    assert.equal(containsImageUrlParts([
+      { role: 'system', content: 'policy' },
+      { role: 'user', content: [{ type: 'text', text: 'hello' }] },
+    ]), false);
   });
 });
 
