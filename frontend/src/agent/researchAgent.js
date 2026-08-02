@@ -19,13 +19,16 @@ async function startDeepResearch(query) {
 
   /* Show progress indicator. */
   var progressId = "deep-research-" + Date.now().toString(36);
+  var runId = progressId;
   _showResearchProgress(progressId, "Planning research...");
 
   try {
     /* Step 1: Plan the research by generating sub-questions. */
     _updateResearchProgress(progressId, "Planning research approach...");
+    _publishRun(runId, 'planning', 'running', 'Planning research approach...');
     var plan = await _planResearch(query);
     _updateResearchProgress(progressId, "Research plan: " + plan.length + " areas to explore");
+    _publishRun(runId, 'planning', 'succeeded', 'Research plan: ' + plan.length + ' areas to explore');
 
     /* Step 2: Execute searches for each sub-question. */
     var allResults = [];
@@ -35,24 +38,36 @@ async function startDeepResearch(query) {
        materially broader evidence set. */
     for (var i = 0; i < plan.length; i += 3) {
       var batch = plan.slice(i, i + 3);
-      _updateResearchProgress(progressId, _tr(
+      var batchLabel = _tr(
         "Searching " + (i + 1) + "–" + Math.min(plan.length, i + batch.length) + " of " + plan.length + " research areas...",
-        "正在并行搜索第 " + (i + 1) + "–" + Math.min(plan.length, i + batch.length) + " / " + plan.length + " 个研究方向…"));
+        "正在并行搜索第 " + (i + 1) + "–" + Math.min(plan.length, i + batch.length) + " / " + plan.length + " 个研究方向…");
+      _updateResearchProgress(progressId, batchLabel);
+      _publishRun(runId, 'searching', 'running', batchLabel, {
+        current: Math.min(i + batch.length, plan.length),
+        total: plan.length
+      });
       var batchResults = await Promise.all(batch.map(_searchTopic));
       for (var bi = 0; bi < batchResults.length; bi++) {
         if (batchResults[bi] && batchResults[bi].length) {
           allResults = allResults.concat(batchResults[bi]);
         }
       }
-      _updateResearchProgress(progressId, _tr("Found " + allResults.length + " results so far...", "已找到 " + allResults.length + " 条结果…"));
+      var foundLabel = _tr("Found " + allResults.length + " results so far...", "已找到 " + allResults.length + " 条结果…");
+      _updateResearchProgress(progressId, foundLabel);
+      _publishRun(runId, 'searching', 'running', foundLabel, {
+        current: Math.min(i + batch.length, plan.length),
+        total: plan.length
+      });
     }
 
     /* No sources at all — surface a clear failure state instead of
        synthesizing an empty report. */
     var sources = _deduplicateResults(allResults).slice(0, 20);
     if (!sources.length) {
-      _updateResearchProgress(progressId, _tr("Web search failed — no sources found", "网络搜索失败 — 未找到任何来源"));
+      var noSources = _tr("Web search failed — no sources found", "网络搜索失败 — 未找到任何来源");
+      _updateResearchProgress(progressId, noSources);
       _setResearchProgressState(progressId, "err");
+      _publishRun(runId, 'failed', 'failed', noSources);
       setTimeout(function () { _hideResearchProgress(progressId); }, 8000);
       if (typeof window.addMessage === "function") {
         window.addMessage("assistant", _tr(
@@ -64,10 +79,19 @@ async function startDeepResearch(query) {
 
     /* Step 3: Read and extract from the top results. */
     _updateResearchProgress(progressId, _tr("Reading " + sources.length + " sources...", "正在阅读 " + sources.length + " 个来源…"));
+    _publishRun(runId, 'reading', 'running', _tr("Reading " + sources.length + " sources...", "正在阅读 " + sources.length + " 个来源…"), {
+      current: 0,
+      total: Math.min(12, sources.length)
+    });
     var extracts = (await Promise.all(sources.slice(0, 12).map(async function (source, j) {
-      _updateResearchProgress(progressId, _tr(
+      var readingLabel = _tr(
         "Reading source " + (j + 1) + " of " + Math.min(12, sources.length) + "...",
-        "正在阅读来源 " + (j + 1) + " / " + Math.min(12, sources.length) + "…"));
+        "正在阅读来源 " + (j + 1) + " / " + Math.min(12, sources.length) + "…");
+      _updateResearchProgress(progressId, readingLabel);
+      _publishRun(runId, 'reading', 'running', readingLabel, {
+        current: j + 1,
+        total: Math.min(12, sources.length)
+      });
       try {
         var content = await _fetchSource(source.url);
         if (!content && source.content) content = String(source.content).slice(0, 5000);
@@ -76,17 +100,21 @@ async function startDeepResearch(query) {
           : null;
       } catch (e) { return null; }
     }))).filter(Boolean);
+    _publishRun(runId, 'reading', 'succeeded', _tr("Read " + extracts.length + " sources", "已阅读 " + extracts.length + " 个来源"));
 
     /* Step 4: Synthesize the report. */
     _updateResearchProgress(progressId, _tr("Synthesizing report from " + extracts.length + " sources...", "正在根据 " + extracts.length + " 个来源生成报告…"));
+    _publishRun(runId, 'synthesizing', 'running', _tr("Synthesizing report...", "正在生成报告…"));
     var report = await _synthesizeReport(query, plan, extracts);
     await _saveResearchArtifacts(query, report, extracts).catch(function () {});
 
     /* Step 5: Post the report. Flip the progress card to its "done"
        state (with the source count) before retiring it, so the user
        gets explicit completion feedback — ChatGPT style. */
-    _updateResearchProgress(progressId, _tr("Research complete · " + extracts.length + " sources", "研究完成 · 共 " + extracts.length + " 个来源"));
+    var doneLabel = _tr("Research complete · " + extracts.length + " sources", "研究完成 · 共 " + extracts.length + " 个来源");
+    _updateResearchProgress(progressId, doneLabel);
     _setResearchProgressState(progressId, "ok");
+    _publishRun(runId, 'completed', 'succeeded', doneLabel);
     setTimeout(function () { _hideResearchProgress(progressId); }, 4000);
     if (typeof window.addMessage === "function") {
       window.addMessage("assistant", report);
@@ -94,8 +122,10 @@ async function startDeepResearch(query) {
 
     return report;
   } catch (e) {
-    _updateResearchProgress(progressId, _tr("Research failed: ", "研究失败：") + (e.message || _tr("unknown error", "未知错误")));
+    var failedLabel = _tr("Research failed: ", "研究失败：") + (e.message || _tr("unknown error", "未知错误"));
+    _updateResearchProgress(progressId, failedLabel);
     _setResearchProgressState(progressId, "err");
+    _publishRun(runId, 'failed', 'failed', failedLabel);
     setTimeout(function () { _hideResearchProgress(progressId); }, 8000);
     if (typeof window.addMessage === "function") {
       window.addMessage("assistant", _tr(
@@ -110,6 +140,21 @@ async function startDeepResearch(query) {
    language flag. */
 function _tr(en, zh) {
   return (typeof window !== "undefined" && window._currentLang === "zh") ? zh : en;
+}
+
+/* Publish a structured deep-research lifecycle event to the
+   agent-run store. New UIs (the explore stepper) subscribe to
+   agentRunStore instead of scraping the .search-progress DOM. */
+function _publishRun(runId, stage, status, message, extra) {
+  try {
+    publishAgentRun(Object.assign({
+      runId: runId,
+      workflow: 'deepResearch',
+      stage: stage,
+      status: status,
+      message: message
+    }, extra || {}));
+  } catch (_) { /* store is optional — never block research on it */ }
 }
 
 /* Generate a research plan: a list of sub-questions to search for. */
@@ -391,3 +436,4 @@ import {
 } from '../react/composer-input/controller.ts';
 import { callAPI } from '../chat/api.js';
 import { apiFetch } from '../util/api.js';
+import { publishAgentRun } from '../extensions/agentRunStore.ts';

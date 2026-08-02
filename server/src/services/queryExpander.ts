@@ -27,30 +27,36 @@ import { getActiveApiKey } from './apiKey.js';
 const _cache = new Map<string, string[]>();
 const CACHE_MAX = 256;
 
-const SYSTEM_PROMPT = [
-  'You generate precise web search queries.',
-  'Given a user question, produce EXACTLY 2 alternative search queries',
-  'that would each independently find the information the user wants.',
-  '',
-  'Rules:',
-  '- Keep named entities, dates, numbers, and proper nouns from the original.',
-  '- Each variant: 4-12 words.',
-  '- Use different angles: one precise / phrased like an encyclopedic query,',
-  '  one more colloquial or "how do I" style.',
-  '- Do NOT add explanations, headings, or surrounding prose.',
-  '- Output ONLY a JSON array of 2 strings, e.g. ["q1","q2"].',
-].join(' ');
+/**
+ * @param {number} [count=4]  how many variants to generate
+ */
+function buildSystemPrompt(count: number): string {
+  return [
+    'You generate precise web search queries.',
+    `Given a user question, produce EXACTLY ${count} alternative search queries`,
+    'that would each independently find the information the user wants.',
+    '',
+    'Rules:',
+    '- Keep named entities, dates, numbers, and proper nouns from the original.',
+    `- Each variant: 4-12 words.`,
+    `- Use different angles: one precise / phrased like an encyclopedic query,`,
+    `  one more colloquial or "how do I" style, one with synonyms, one from a different domain perspective.`,
+    '- Do NOT add explanations, headings, or surrounding prose.',
+    `- Output ONLY a JSON array of ${count} strings, e.g. ["q1","q2","q3","q4"].`,
+  ].join(' ');
+}
 
 /**
  * @param {string} query
  * @param {object} [opts]
  * @param {string} [opts.userId]   - for picking the user's active LLM key
  * @param {AbortSignal} [opts.signal]
- * @returns {Promise<string[]>} 1-3 deduped queries; the original is always first.
+ * @returns {Promise<string[]>} 1-(variantCount+1) deduped queries; the original is always first.
  */
-export async function expandQuery(query: string, opts: { userId?: string | null; signal?: AbortSignal } = {}): Promise<string[]> {
+export async function expandQuery(query: string, opts: { userId?: string | null; signal?: AbortSignal; variantCount?: number } = {}): Promise<string[]> {
   if (!query || !String(query).trim()) return [query];
   const q = String(query).trim();
+  const variantCount = Math.max(1, Math.min(8, opts.variantCount ?? 4));
 
   if (_cache.has(q)) return _cache.get(q)!;
 
@@ -73,10 +79,10 @@ export async function expandQuery(query: string, opts: { userId?: string | null;
       apiKey: cfg.keyPlaintext,
       model: cfg.model,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: buildSystemPrompt(variantCount) },
         { role: 'user', content: q.slice(0, 500) },
       ],
-      maxTokens: 200,
+      maxTokens: 300,
       temperature: 0.4,
       signal: merged,
     });
@@ -84,9 +90,9 @@ export async function expandQuery(query: string, opts: { userId?: string | null;
     const arr = parseVariants(content);
     if (!arr.length) return [q];
 
-    // Always include the original first; cap at 3 total.
+    // Always include the original first; cap at variantCount + 1 total.
     const all = [q, ...arr].map((s) => String(s).trim()).filter(Boolean);
-    const dedup = [...new Set(all)].slice(0, 3);
+    const dedup = [...new Set(all)].slice(0, variantCount + 1);
     if (_cache.size >= CACHE_MAX) _cache.clear();
     _cache.set(q, dedup);
     return dedup;

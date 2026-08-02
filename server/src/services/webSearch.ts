@@ -1,6 +1,7 @@
 import { BadRequest } from '../lib/errors.js';
 import { detectLanguageCluster } from './scoring.js';
 import * as searchResultCache from '../lib/searchResultCache.js';
+import { expandQuery } from './queryExpander.js';
 import { searchMinimax } from './searchEngines/minimax.js';
 import { searchMmx } from './searchEngines/mmx.js';
 import { searchFirecrawl } from './searchEngines/firecrawl.js';
@@ -184,19 +185,83 @@ export async function webSearch(query: string, count: string | number = 10, opts
   const hasMinimaxKey = !!(process.env.MINIMAX_SEARCH_KEY || process.env.BEAGLE_SYSTEM_KEY);
   const acSignal = ac.signal;
 
-  /* P_mmx-cli-search — per project policy (2026-07-10), web search is
-     backed by the local `mmx` CLI (which authenticates from
-     ~/.mmx/config.json, the same credential surface as `mmx quota`).
-     The mmx engine is the PRIORITY; the direct MiniMax HTTP engine
-     and Bing race as fallbacks if mmx is missing, not authed, or
-     returns no results. Both engines return the same normalized
-     shape so the merge step doesn't care which one won. */
-  const mmxP = withTimeout(searchMmx(query, limit, acSignal), TIMEOUT_MINIMAX_MS, 'mmx-cli');
-  const firecrawlP = withTimeout(searchFirecrawl(query, limit, acSignal), TIMEOUT_FIRECRAWL_MS, 'firecrawl');
+  /* P_query-expansion — expand the user's query into multiple variants
+     via the LLM to improve recall. Each variant captures a different
+     angle / phrasing of the same information need. The expanded queries
+     are cached (256-entry LRU) so repeated topic refreshes skip the LLM
+     roundtrip. Fallback to [query] on any failure (no key, timeout,
+     parse error, empty variants). */
+  let variants: string[];
+  try {
+    variants = await expandQuery(query, {
+      userId: opts.userId ?? null,
+      signal: acSignal,
+      variantCount: 4,
+    });
+  } catch {
+    variants = [query];
+  }
+  // Per-variant result limit: share the total limit across variants
+  // so we don't flood the merge step with 5× the desired count.
+  const perVariantLimit = Math.max(1, Math.ceil(limit / variants.length));
+
+  /* P_multi-variant-fan-out — for each engine, search ALL query variants
+     in parallel, then flatten and deduplicate per-engine. This lets the
+     model surface results from different query phrasings without
+     multiplying the engine count. Each variant call has its own internal
+     timeout; the `withTimeout` wrapper provides an additional engine-level
+     safeguard. `unavailable` results (timeout/error) are filtered out
+     per-variant so a single slow variant can't poison the whole engine. */
+  const searchVariants = (
+    searchFn: (q: string, limit: number, signal: AbortSignal | null) => Promise<SearchResult[]>,
+    label: string,
+    timeoutMs: number,
+  ): Promise<SearchResult[]> => {
+    return withTimeout(
+      Promise.all(
+        variants.map((v) =>
+          searchFn(v, perVariantLimit, acSignal).then((results) => {
+            // Each engine's searchXxx returns its own _engineStatus on the
+            // array. Keep the first non-'ok' status (if any) so diagnostic
+            // reporting works even when all variants fail.
+            return Array.isArray(results) ? results : [];
+          }),
+        ),
+      ).then((arrays) => {
+        // Flatten and deduplicate by URL, keeping first occurrence
+        // (variants[0] = original query, so its results naturally win).
+        const seen = new Set<string>();
+        let worstStatus = 'ok';
+        for (const arr of arrays) {
+          const s = (arr as SearchResult[] & { _engineStatus?: string })._engineStatus;
+          if (s && s !== 'ok') worstStatus = s;
+        }
+        const merged = arrays.flat().filter((r): r is SearchResult => {
+          if (!r || !r.url) return false;
+          if (seen.has(r.url)) return false;
+          seen.add(r.url);
+          return true;
+        });
+        // If all variants failed and no results came through, propagate
+        // the failure status so the pipeline's empty-result logic works.
+        if (!merged.length && worstStatus !== 'ok') {
+          const result: SearchResult[] = [];
+          Object.defineProperty(result, '_engineStatus', { value: worstStatus, enumerable: false });
+          return result;
+        }
+        return merged;
+      }),
+      timeoutMs,
+      label,
+    );
+  };
+
+  const mmxP = searchVariants(searchMmx, 'mmx-cli', TIMEOUT_MINIMAX_MS);
+  const firecrawlP = searchVariants(searchFirecrawl, 'firecrawl', TIMEOUT_FIRECRAWL_MS);
   const minimaxP: Promise<SearchResult[]> = hasMinimaxKey
-    ? withTimeout(searchMinimax(query, limit, acSignal), TIMEOUT_MINIMAX_MS, 'minimax')
+    ? searchVariants(searchMinimax, 'minimax', TIMEOUT_MINIMAX_MS)
     : Promise.resolve([]);
-  const bingP = withTimeout(searchBing(query, limit, acSignal), TIMEOUT_BING_MS, 'bing');
+  const bingP = searchVariants(searchBing, 'bing', TIMEOUT_BING_MS);
 
   /* P_engine-priority — wait for ALL engines in parallel.  Merge
      priority: mmx (MiniMax CLI) first, then firecrawl (free credits),
@@ -282,12 +347,12 @@ export async function webSearch(query: string, count: string | number = 10, opts
 
   for (const r of finalResults) {
     r.matchedQuery = query;
-    r.matchedQueries = [query];
+    r.matchedQueries = variants;
   }
 
   try {
     Object.defineProperty(finalResults, 'expandedQueries', {
-      value: [query],
+      value: variants,
       enumerable: false,
       configurable: true,
       writable: false,

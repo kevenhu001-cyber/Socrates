@@ -1,3 +1,5 @@
+import { whenFontsReady } from './helpers.js';
+
 let plotlyPromise;
 let mermaidPromise;
 let threePromise;
@@ -68,6 +70,7 @@ async function mountPlotly(spec, stage, helpers) {
   const categories = spec.payload.categories || [];
   const longestCategory = categories.reduce((max, value) => Math.max(max, Array.from(String(value ?? '')).length), 0);
   const tickAngle = categories.length > 10 ? -40 : (categories.length > 6 && longestCategory > 18 ? -28 : 0);
+  await whenFontsReady('Noto Sans SC');
   await Plotly.newPlot(stage, traces, {
     autosize: true,
     margin: { l: 58, r: 22, t: 24, b: tickAngle ? 96 : 58 },
@@ -128,6 +131,7 @@ async function mountMermaid(spec, stage) {
     flowchart: { htmlLabels: false, curve: 'basis', useMaxWidth: true },
   });
   const id = `socrates-mermaid-${Math.random().toString(36).slice(2)}`;
+  await whenFontsReady('Noto Sans SC');
   const { svg, bindFunctions } = await mermaid.render(id, mermaidText(spec));
   stage.innerHTML = svg;
   bindFunctions?.(stage);

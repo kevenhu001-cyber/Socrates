@@ -131,6 +131,9 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
   ], [onRemoveExtension, placeholder]);
 
   const tokenWasPresent = useRef(false);
+  /* Class toggling instead of CSS `:has()`: avoids per-focus style recalc so
+     the expand/collapse animation keeps full frame density. Inert on desktop. */
+  const composerWrapRef = useRef<HTMLElement | null>(null);
 
   const editor = useEditor({
     extensions,
@@ -165,9 +168,20 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
         }
         return false;
       },
+      handleDOMEvents: {
+        focus: (view) => {
+          composerWrapRef.current = view.dom.closest('.chat-input-wrap');
+          composerWrapRef.current?.classList.add('composer-focused');
+          return false;
+        },
+        blur: (view) => {
+          composerWrapRef.current?.classList.remove('composer-focused');
+          return false;
+        },
+      },
     },
     onUpdate: ({ editor: current }) => {
-      const activeToken = syncExtensionMetadata(current, placeholder);
+      const activeToken = syncExtensionMetadata(current);
       if (tokenWasPresent.current && !activeToken) {
         tokenWasPresent.current = false;
         onRemoveExtension('');
@@ -254,6 +268,13 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
     });
   }, [editor, getMarkdown, setExtensionToken, surface]);
 
+  useEffect(() => {
+    return () => {
+      composerWrapRef.current?.classList.remove('composer-focused');
+      composerWrapRef.current = null;
+    };
+  }, []);
+
   if (!editor) return null;
   return (
     <div className="rich-composer" data-surface={surface}>
@@ -263,8 +284,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
   );
 }
 
-function syncExtensionMetadata(editor: Editor, placeholder: string): boolean {
-  const dom = editor.view.dom as HTMLElement;
+function syncExtensionMetadata(editor: Editor): boolean {
   const tokens: ComposerExtensionToken[] = [];
   editor.state.doc.descendants((node) => {
     if (!tokens.length && node.type.name === 'extensionToken') {
@@ -273,15 +293,5 @@ function syncExtensionMetadata(editor: Editor, placeholder: string): boolean {
     }
     return true;
   });
-  const token = tokens[0] ?? null;
-
-  if (!token) {
-    delete dom.dataset.extensionEmpty;
-    delete dom.dataset.extensionHint;
-    return false;
-  }
-
-  dom.dataset.extensionEmpty = editor.state.doc.textContent.trim() ? 'false' : 'true';
-  dom.dataset.extensionHint = token.hint || placeholder;
-  return true;
+  return tokens.length > 0;
 }

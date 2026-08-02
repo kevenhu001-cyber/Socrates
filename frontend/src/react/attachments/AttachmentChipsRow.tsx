@@ -7,13 +7,13 @@ import {
   useAttachmentsRemove,
   useAttachmentsSnapshot,
 } from './legacyAdapter';
+import { getAttachmentIcon } from './fileIcons';
 import type { AttachmentEntry } from './types';
 
 const CHIPS_ID = 'attachmentChips';
 const TOPIC_CHIPS_ID = 'topicAttachmentChips';
 
 const SPINNER_HTML = '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>';
-const FILE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
 const REMOVE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
 
 function truncateName(name: string): string {
@@ -27,7 +27,12 @@ interface ChipProps {
 }
 
 function Chip({ entry, onRemove }: ChipProps) {
-  const isImage = entry.kind === 'image' && !!entry.dataUrl;
+  /* P_perf-blob-url — prefer thumbnailUrl (URL.createObjectURL) for
+     the chip <img> source. It's O(1) and the browser lazily decodes
+     only what the 28×28 chip needs. Falls back to dataUrl once the
+     blob URL is revoked after the full base64 read completes. */
+  const imgSrc = (entry.thumbnailUrl || entry.dataUrl) ?? undefined;
+  const isImage = entry.kind === 'image' && !!imgSrc;
   const showSpinner = !!entry.pending;
   const showProgressBar = !!entry.pending && typeof entry.progress === 'number' && entry.progress >= 0;
   const showTruncatedBadge = !!entry.truncated && !entry.pending;
@@ -48,13 +53,13 @@ function Chip({ entry, onRemove }: ChipProps) {
       ) : isImage ? (
         <img
           className="attachment-chip-thumb"
-          src={entry.dataUrl}
+          src={imgSrc}
           alt={entry.name ?? ''}
         />
       ) : (
         <span
           className="attachment-chip-icon"
-          dangerouslySetInnerHTML={{ __html: FILE_ICON }}
+          dangerouslySetInnerHTML={{ __html: getAttachmentIcon(entry) }}
         />
       )}
 

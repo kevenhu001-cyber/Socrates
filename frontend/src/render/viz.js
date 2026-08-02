@@ -91,10 +91,15 @@ function vizRuntime(vizId) {
       'function postError(msg){try{window.parent.postMessage({type:"viz-error",vizId:VIZ_ID,message:String(msg||"").slice(0,300)},"*")}catch(e){}}' +
       'window.addEventListener("error",function(e){postError((e&&e.message)||"runtime error")});' +
       'window.addEventListener("unhandledrejection",function(e){postError((e&&e.reason&&(e.reason.message||e.reason))||"unhandled rejection")});' +
+      'function ready(){' +
+        'var fonts=(document.fonts&&document.fonts.ready)||null;' +
+        'var fontsPromise=fonts?fonts.then(function(){return null},function(){return null}):Promise.resolve(null);' +
+        'Promise.resolve(fontsPromise).then(setTimeout.bind(null,postReady,0));' +
+      '}' +
       'if(document.readyState==="complete"||document.readyState==="interactive"){' +
-        'setTimeout(postReady,0)' +
+        'ready()' +
       '}else{' +
-        'document.addEventListener("DOMContentLoaded",function(){setTimeout(postReady,0)})' +
+        'document.addEventListener("DOMContentLoaded",ready)' +
       '}' +
     '})();' +
   '<\/script>';

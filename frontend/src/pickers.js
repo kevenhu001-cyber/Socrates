@@ -349,6 +349,16 @@ function renderExtensionsMenu(){
   menu.innerHTML=html;
 }
 function toggleExtensionByKey(key){
+  /* Route through the extension registry when a module owns the key —
+     it handles onActivate/onDeactivate (side effects, persistence,
+     auto-launch). Falls back to the inline EXTENSIONS entry for keys
+     not yet migrated so behavior is unchanged. */
+  if (typeof window.__socratesExtensionDispatch === "function") {
+    if (window.__socratesExtensionDispatch(key)) {
+      syncExtensionsUI();
+      return;
+    }
+  }
   var ext=EXTENSIONS.find(function(e){return e.key===key});
   if(!ext)return;
   ext.onChange(!ext.on);
@@ -382,10 +392,11 @@ function countActiveExtensions(){
   return EXTENSIONS.filter(function(e){return e.on}).length;
 }
 function syncExtensionsUI(){
-  /* Only extensiveThinking needs .on re-synced from window state.
-   * The exam entry is an action button; its .on stays false. */
+  /* Re-sync .on from window state so the checkmarks reflect the
+   * registry-driven toggles (extensiveThinking + deepResearch). */
   EXTENSIONS.forEach(function(ext){
     if(ext.key==="extensiveThinking") ext.on = !!window.extensiveThinkingOn;
+    if(ext.key==="deepResearch") ext.on = !!window.deepResearchOn;
   });
   renderExtensionsMenu();
   var trigger=document.getElementById("extensionsTrigger");

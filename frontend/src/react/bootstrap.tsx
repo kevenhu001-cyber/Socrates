@@ -25,6 +25,7 @@ import { SidebarFooter } from './sidebar-chrome/SidebarFooter';
 import { mountSessionList } from './session-list';
 import { mountMessageList } from './message-list';
 import { RichComposer } from './composer-input';
+import { WorkflowLayer } from './extensions/WorkflowLayer';
 import { getLegacyActions, i18n } from './legacy/gateway';
 
 const NEW_REPLY_PILL_ID = 'newReplyPill';
@@ -311,6 +312,28 @@ export function bootstrapReactCompatibilityRuntime(): Root {
   const msgList = document.getElementById('msgList');
   if (msgList && !msgList.dataset.msgListReactHydrated) {
     mountMessageList();
+  }
+
+  // Mount the workflow progress layer. The stepper (research/explore
+  // stage progress) and the analyze workbench (live tool-call activity)
+  // both subscribe to the agent-run store and render into this single
+  // always-present host. The host is appended to #appShell as a sibling
+  // of <main> so it stays visible across all panels (chat, library,
+  // projects, plugins, exam, etc.) — mounting it inside #chatView would
+  // hide it whenever the user navigates away from chat.
+  const workflowLayer = document.getElementById('workflowLayerReactRoot');
+  const appShell = document.getElementById('appShell');
+  if (appShell && !workflowLayer) {
+    const host = document.createElement('div');
+    host.id = 'workflowLayerReactRoot';
+    host.setAttribute('data-react-migration-runtime', 'workflow-layer');
+    appShell.appendChild(host);
+    const workflowRoot = createRoot(host);
+    workflowRoot.render(
+      <ErrorBoundary>
+        <WorkflowLayer />
+      </ErrorBoundary>,
+    );
   }
 
   // Re-sync the workspace route now that __socratesMountWorkspace (and

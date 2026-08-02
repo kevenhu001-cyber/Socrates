@@ -656,11 +656,13 @@ data: ${JSON.stringify({
                 /* P_search-numbered — results are formatted as a numbered
                    list with [1], [2], … markers that match the system
                    prompt's citation convention. Each block carries the
-                   date and source engine when available, and a trailing
-                   "Sources:" hint tells the model exactly how to format
-                   the citation list in its reply. Titles / snippets are
-                   length-capped so a single oversized result can't blow
-                   the SSE frame. */
+                   date and source engine when available. Titles /
+                   snippets are length-capped so a single oversized
+                   result can't blow the SSE frame. The model is
+                   encouraged to cite inline using the [N] markers; the
+                   frontend rewrites those markers into clickable
+                   citations that scroll to the matching Source Card
+                   row. */
                 const blocks = searchResults.map((r, i) => {
                   const idx = i + 1;
                   const title = String(r.title || '').slice(0, 240);
@@ -670,7 +672,7 @@ data: ${JSON.stringify({
                   const source = r.source ? `    Source: ${r.source}\n` : '';
                   return `[${idx}] ${title}\n    URL: ${url}\n${date}${source}    Snippet: ${snippet}`;
                 });
-                const footer = '\n\nWeave these facts into your reply as natural prose. Do NOT add [1]/[2] citation markers, do NOT append a "Sources:"/"References:" list, and do NOT paste the URLs into your reply. The UI already shows every source to the user.';
+                const footer = '\n\nCite inline using the [1]/[2] markers so the UI can link each claim back to its source. Do NOT append a "Sources:"/"References:" list or paste URLs into your reply — the UI renders the Source Card automatically.';
                 const output = blocks.join('\n\n') + footer;
                 result = { status: 'completed', output, results: searchResults, retryable: false };
                 writeSse(`event: tool_result\ndata: ${JSON.stringify({

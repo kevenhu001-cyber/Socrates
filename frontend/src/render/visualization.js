@@ -4,6 +4,7 @@ import {
   mountSpecializedVisualization,
   usesSpecializedRenderer,
 } from './visualizationAdapters.js';
+import { whenFontsReady } from './helpers.js';
 
 var echartsPromise = null;
 var visualCounter = 0;
@@ -461,8 +462,13 @@ function renderExtension(spec, cardId) {
   var source = spec.payload.source;
   if (!extensionIsSafe(source)) return '<div class="visualization-fallback">此扩展内容未通过本地安全检查。标题和数据摘要仍可用。</div>';
   var nonce = 'viz-' + cardId + '-' + Math.random().toString(36).slice(2);
-  var csp = "default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; font-src 'none'; form-action 'none'; base-uri 'none'";
-  var documentSource = '<!doctype html><meta http-equiv="Content-Security-Policy" content="' + csp + '"><script>window.parent.postMessage({type:"socrates-viz-ready",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + '},"*")<\\/script>' + source;
+  var csp = "default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; font-src https: data:; form-action 'none'; base-uri 'none'";
+  var fontPreload =
+    '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">' +
+    '<style>body{font-family:Inter,"Noto Sans SC",-apple-system,sans-serif;margin:0;padding:0}</style>';
+  var documentSource = '<!doctype html><meta http-equiv="Content-Security-Policy" content="' + csp + '">' + fontPreload + '<script>window.parent.postMessage({type:"socrates-viz-ready",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + '},"*")<\\/script>' + source;
   return '<iframe class="visualization-extension" sandbox="allow-scripts" title="' + esc(spec.title) + '" data-card-id="' + esc(cardId) + '" data-nonce="' + esc(nonce) + '" srcdoc="' + esc(documentSource) + '"></iframe>';
 }
 
@@ -550,6 +556,7 @@ export async function mountVisualization(spec, host, options) {
   var stage = card.querySelector('.visualization-stage'), chart = null, liveEntry = null;
   try {
     if (usesSpecializedRenderer(spec.template)) {
+      await whenFontsReady('Noto Sans SC');
       var specialized = await mountSpecializedVisualization(spec, stage, {
         sampleFunction: sampleFunction,
       });
@@ -565,6 +572,7 @@ export async function mountVisualization(spec, host, options) {
               : 'mermaid';
       card._visualizationCleanup = specialized.cleanup || function () {};
     } else if (chartTemplates.includes(spec.template)) {
+      await whenFontsReady('Noto Sans SC');
       var echarts = await loadEcharts();
       var useCanvas = spec.template === 'heatmap' || (spec.payload.series || []).some(function (series) { return series.data && series.data.length > 1200; });
       chart = echarts.init(stage, null, { renderer: useCanvas ? 'canvas' : 'svg' });

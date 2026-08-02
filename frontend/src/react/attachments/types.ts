@@ -21,6 +21,10 @@ export interface AttachmentEntry {
   truncated?: boolean;
   error?: string;
   dataUrl?: string;
+  /** URL.createObjectURL for instant chip display — O(1), no
+   *  base64 decode needed for the 28×28 thumbnail. Populated on
+   *  pending stub, revoked once the full dataUrl is ready. */
+  thumbnailUrl?: string;
   text?: string;
   docKind?: string;
 }

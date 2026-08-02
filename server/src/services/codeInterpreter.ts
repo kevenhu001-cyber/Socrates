@@ -93,7 +93,7 @@ const __dirname = path.dirname(__filename);
 const EXEC_RUNNER = process.env.EXEC_RUNNER || 'pyodide';
 const POOL_SIZE = parseInt(process.env.EXEC_WORKER_POOL_SIZE || '1', 10);
 const PYODIDE_VERSION = process.env.EXEC_PYODIDE_VERSION || '0.26.4';
-const DEFAULT_TIMEOUT_MS = parseInt(process.env.EXEC_TIMEOUT_MS_DEFAULT || '30000', 10);
+const DEFAULT_TIMEOUT_MS = parseInt(process.env.EXEC_TIMEOUT_MS_DEFAULT || '120000', 10);
 const MAX_OUTPUT_BYTES = parseInt(process.env.EXEC_MAX_OUTPUT_BYTES || '65536', 10);
 const MAX_ARTIFACT_BYTES = parseInt(process.env.EXEC_MAX_ARTIFACT_BYTES || '10485760', 10);
 /* P_code-size-cap — cap the source a single execution can carry so
@@ -153,6 +153,7 @@ export const CODE_INTERPRETER_TOOL = {
       '**Files persist. EVERYTHING ELSE DOES NOT.** Imports, function definitions, variables, module-level state — all reset between calls. Re-import or recompute anything you need; do not rely on a variable from a previous run.\n\n' +
       '## matplotlib guidance\n' +
       '- Backend is pinned to `Agg` (no display). Figures render headless.\n' +
+      '- A CJK-capable font (Noto Sans SC) is pre-installed and registered at boot; Chinese / Japanese / Korean characters in titles, labels, and legends render correctly without any extra setup. Do NOT call `matplotlib.rcParams["font.sans-serif"] = […]` or `matplotlib.font_manager.fontManager.addfont(…)` — leave the defaults alone so the pre-installed font stays active.\n' +
       '- Save with `plt.savefig("name.png", dpi=120, bbox_inches="tight")` — dpi=120 keeps PNGs under ~500 KB at typical sizes; bbox_inches="tight" crops margins.\n' +
       '- Always call `plt.tight_layout()` before savefig or labels get clipped.\n' +
       '- Close figures (`plt.close("all")` or `plt.close(fig)`) after saving — otherwise memory grows across runs.\n\n' +

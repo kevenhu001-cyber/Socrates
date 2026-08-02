@@ -20,6 +20,7 @@
  */
 import { parentPort } from 'node:worker_threads';
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
 import path from 'node:path';
 import { loadPyodide, type PyodideInterface, type TypedArray } from 'pyodide';
 
@@ -58,6 +59,115 @@ interface PyRunError extends Error {
    the worker. */
 const PRELOAD_PACKAGES = ['numpy', 'pandas', 'matplotlib'];
 
+/* P_matplotlib-cjk-font — Pyodide's matplotlib ships only DejaVu Sans,
+   which has no CJK glyphs, so chart text in Chinese renders as tofu
+   on the first try. Download a CJK font on first boot, cache it,
+   register it with font_manager, and put it first in
+   rcParams['font.sans-serif']. The model-facing tool description
+   tells the model not to override font.sans-serif so it can't undo
+   the fix. If the download fails we log a warning and fall through to
+   DejaVu — charts still work, just with tofu for CJK.
+
+   P_cjk-font-path — the notofonts/noto-cjk repo organizes Simplified
+   Chinese under `SC/`, not `CN/`. The previous `/CN/` URL 404'd
+   silently and burned the 8s download timeout on every worker boot,
+   which then ate into the first call's 30s user-code budget and
+   surfaced as a spurious "代码执行超时" error. */
+const CJK_FONT_HOST_DIR = process.env.EXEC_CJK_FONT_DIR
+  || path.join(process.env.NODE_ENV === 'production' ? '/var/lib/socrates' : require('node:os').tmpdir(), 'socrates-cjk-fonts');
+const CJK_FONT_FILENAME = 'NotoSansSC-Regular.otf';
+const CJK_FONT_URL = process.env.EXEC_CJK_FONT_URL
+  || 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf';
+const CJK_FONT_BOOT_TIMEOUT_MS = parseInt(process.env.EXEC_CJK_FONT_TIMEOUT_MS || '30000', 10);
+let _cjkFontPromise: Promise<string | null> | null = null;
+let _cjkFontRegistered = false;
+
+function _cjkFontPath(): string {
+  return path.join(CJK_FONT_HOST_DIR, CJK_FONT_FILENAME);
+}
+
+async function _downloadCjkFontOnce(): Promise<string | null> {
+  const target = _cjkFontPath();
+  try {
+    const st = await fs.stat(target);
+    if (st.isFile() && st.size > 100000) return target;
+  } catch (_) { /* not cached yet */ }
+  try {
+    await fs.mkdir(CJK_FONT_HOST_DIR, { recursive: true });
+  } catch (_) { /* race with another boot */ }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CJK_FONT_BOOT_TIMEOUT_MS);
+  try {
+    const resp = await fetch(CJK_FONT_URL, { signal: controller.signal });
+    if (!resp.ok) {
+      console.warn(`[pyodide] CJK font download returned HTTP ${resp.status} from ${CJK_FONT_URL}`);
+      return null;
+    }
+    const buf = Buffer.from(await resp.arrayBuffer());
+    if (buf.length < 100000) {
+      console.warn(`[pyodide] CJK font download too small (${buf.length} bytes); skipping`);
+      return null;
+    }
+    await fs.writeFile(target, buf);
+    console.log(`[pyodide] Cached CJK font (${(buf.length / 1024 / 1024).toFixed(1)} MB) at ${target}`);
+    return target;
+  } catch (err) {
+    console.warn(`[pyodide] CJK font download failed: ${err && (err as Error).message || err}`);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function _registerCjkFontInPyodide(fontPath: string): string | null {
+  if (!pyodide) return null;
+  try {
+    const bytes = fsSync.readFileSync(fontPath);
+    const memfsPath = '/usr/share/fonts/_socrates_cjk.otf';
+    try { pyodide.FS.mkdirTree('/usr/share/fonts'); } catch (_) { /* dir exists */ }
+    pyodide.FS.writeFile(memfsPath, new Uint8Array(bytes));
+    const family = pyodide.runPython(`
+import matplotlib
+import matplotlib.font_manager as fm
+import matplotlib.pyplot as plt
+try:
+    added = fm.fontManager.addfont(${JSON.stringify(memfsPath)})
+    name = added[0] if added else None
+    fallback = ['DejaVu Sans']
+    cjk = [name] if name else []
+    plt.rcParams['font.sans-serif'] = cjk + [f for f in fallback if f not in cjk]
+    plt.rcParams['font.family'] = 'sans-serif'
+    plt.rcParams['axes.unicode_minus'] = False
+    name
+except Exception as _e:
+    print("[pyodide] CJK font registration failed:", _e)
+    None
+`);
+    if (family && typeof family === 'string') {
+      console.log(`[pyodide] Registered CJK font: ${family}`);
+      return family;
+    }
+    return null;
+  } catch (err) {
+    console.warn(`[pyodide] CJK font registration threw: ${err && (err as Error).message || err}`);
+    return null;
+  }
+}
+
+function _ensureCjkFontRegistered(): Promise<string | null> {
+  if (!_cjkFontPromise) {
+    _cjkFontPromise = (async () => {
+      const fontPath = await _downloadCjkFontOnce();
+      if (!fontPath) return null;
+      return _registerCjkFontInPyodide(fontPath);
+    })().catch((err) => {
+      console.warn(`[pyodide] CJK font setup failed: ${err && (err as Error).message || err}`);
+      return null;
+    });
+  }
+  return _cjkFontPromise;
+}
+
 async function bootPyodide() {
   try {
     pyodide = await loadPyodide({
@@ -77,6 +187,8 @@ async function bootPyodide() {
         console.error(`[pyodide] preload ${pkg} failed: ${e && (e as PyRunError).message || e}`);
       }
     }
+
+    _ensureCjkFontRegistered().catch(() => { /* logged inside */ });
 
     // Install a self-contained stream class. sys.stdout and sys.stderr are
     // replaced with instances of this class on each run() call. The class
@@ -226,8 +338,14 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     };
   }
 
-  // Reset stream state for this run.
   pyodide.runPython(`_stdout_cap.set_limit(${maxOutputBytes}); _stderr_cap.set_limit(${maxOutputBytes}); sys.stdout = _stdout_cap; sys.stderr = _stderr_cap`);
+
+  /* P_cjk-font-skip — only await the singleton on the first call so
+     subsequent runCode calls don't pay a microtask per invocation. */
+  if (!_cjkFontRegistered) {
+    await _ensureCjkFontRegistered();
+    _cjkFontRegistered = true;
+  }
 
   /* P_progress — install the flush hooks so the parent receives
      incremental stdout/stderr. The hooks run on Python's flush(),

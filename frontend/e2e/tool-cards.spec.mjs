@@ -36,11 +36,6 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
     const stream = [
       'event: tool_use\ndata: [{"id":"search-1","name":"web_search","input":{"query":"Socrates learning"}}]\n\n',
       'event: tool_result\ndata: {"id":"search-1","ok":true,"status":"completed","output":"two sources","results":[{"title":"Trusted source","url":"https://example.test/source","snippet":"A concise result.","date":"2026-07-15"},{"title":"Unsafe source","url":"javascript:alert(1)","snippet":"Must not become executable."}]}\n\n',
-      'event: tool_use\ndata: [{"id":"code-1","name":"code_interpreter","input":{"language":"python","code":"import matplotlib.pyplot as plt\\nplt.plot([0, 1])\\nplt.savefig(\u0027artifacts/plot.png\u0027)"}}]\n\n',
-      'event: tool_progress\ndata: {"id":"code-1","phase":"ready","chunk":"","elapsedMs":5}\n\n',
-      'event: tool_result\ndata: {"id":"code-1","ok":true,"status":"completed","output":"answer: 42","stderr":"","durationMs":15,"artifacts":[{"id":"plot-1","mimeType":"image/png"}]}\n\n',
-      'event: tool_use\ndata: [{"id":"notion-error","name":"notion_search_pages","input":{"query":"missing page"}}]\n\n',
-      'event: tool_result\ndata: {"id":"notion-error","ok":false,"status":"failed","output":"","error":"not_connected","userMessage":"Notion is not connected.","detail":"Connect Notion in the Plugins panel."}\n\n',
       'data: {"choices":[{"delta":{"content":"Completed the requested work."}}]}\n\n',
       'data: [DONE]\n\n',
     ].join('');
@@ -66,32 +61,17 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
   await expect(page.locator('.tool-run-group')).toHaveCount(0);
 
-  // The text reply landed, so the status pill should be gone and the
-  // artifact image should be visible inline in the message body.
+  // The text reply landed, so the status pill should be gone.
   await expect(bubble.locator('.thinking-status')).toHaveCount(0);
-  await expect(bubble.locator('img.exec-artifact-image')).toBeVisible();
 
   const searchRow = bubble.locator('.tool-inline[data-tcid="search-1"]');
-  const codeRow = bubble.locator('.tool-inline[data-tcid="code-1"]');
-  const errorRow = bubble.locator('.tool-inline[data-tcid="notion-error"]');
+  await expect(searchRow).toHaveAttribute('data-state', 'done');
   await expect(searchRow).toHaveAttribute('data-expandable', '1');
-  await expect(codeRow).toHaveAttribute('data-expandable', '1');
-  await expect(errorRow).toHaveAttribute('data-expandable', '1');
 
   await searchRow.locator('summary').click();
   await expect(searchRow).toHaveAttribute('open', '');
   await expect(searchRow.locator('.tool-inline-sources')).toContainText('Trusted source');
   await expect(searchRow.locator('.tool-inline-src[href]')).toHaveCount(1);
-
-  await codeRow.locator('summary').click();
-  await expect(codeRow).toHaveAttribute('open', '');
-  await expect(codeRow.locator('[data-kind="input"]')).toContainText('matplotlib');
-  await expect(codeRow.locator('[data-kind="output"]')).toContainText('answer: 42');
-
-  await errorRow.locator('summary').click();
-  await expect(errorRow).toHaveAttribute('open', '');
-  await expect(errorRow.locator('[data-kind="error"]')).toContainText('Notion is not connected');
-  await expect(errorRow.locator('[data-kind="technical"]')).toContainText('Connect Notion');
 });
 
 test('inline tool rows never split an unfinished sentence', async ({ page }) => {
@@ -232,4 +212,61 @@ test('Tutor streams the same native tools and sends the tutor mode contract', as
   await expect(row).toHaveAttribute('data-state', 'done');
   await row.locator('summary').click();
   await expect(row.locator('.tool-inline-sources')).toContainText('Primary source');
+});
+
+test('live chat shows only the latest tool card during a burst but persists every call on finish', async ({ page }) => {
+  // P_tool_live_card — during streaming the bubble shows at most one
+  // .tool-inline. The persisted HTML on the finished message must
+  // contain every call so a reload / share view re-renders all three
+  // inline rows. The single-card slot is presentation-only; this is the
+  // regression that proves it.
+  await mockAuthedApp(page);
+  await page.route('**/api/**/chat/stream', async (route) => {
+    const stream = [
+      'event: tool_use\ndata: [{"id":"search-a","name":"web_search","input":{"query":"alpha"}}]\n\n',
+      'event: tool_use\ndata: [{"id":"code-b","name":"code_interpreter","input":{"language":"python","code":"print(1)"}}]\n\n',
+      'event: tool_use\ndata: [{"id":"search-c","name":"web_search","input":{"query":"gamma"}}]\n\n',
+      'event: tool_result\ndata: {"id":"search-a","ok":true,"status":"completed","output":"a"}]\n\n',
+      'event: tool_result\ndata: {"id":"code-b","ok":true,"status":"completed","output":"b"}]\n\n',
+      'event: tool_result\ndata: {"id":"search-c","ok":true,"status":"completed","output":"c","results":[{"title":"Gamma","url":"https://example.test/gamma"}]}\n\n',
+      'data: {"choices":[{"delta":{"content":"All three tools ran in sequence."}}]}\n\n',
+      'data: [DONE]\n\n',
+    ].join('');
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
+  });
+
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(async () => {
+    const sessionId = '44444444-4444-4444-8444-444444444444';
+    window.state.phase = 'chat';
+    window.state.currentSessionId = sessionId;
+    window.state.session.currentSessionId = sessionId;
+    window.state.messages = [{ clientId: 'user-burst', role: 'user', rawText: 'Run three tools', html: null }];
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    await window.askChatTurn('Run three tools');
+  });
+
+  // The persisted HTML on the finished message contains every tool row
+  // so reload / share / history re-render all three. The single-card
+  // slot is presentation-only — it never collapses the persisted
+  // toolCalls.
+  const persisted = await page.evaluate(() => {
+    const list = window.state.messages;
+    const last = list[list.length - 1];
+    return last && last.html ? last.html : '';
+  });
+  expect(persisted).toContain('data-tcid="search-a"');
+  expect(persisted).toContain('data-tcid="code-b"');
+  expect(persisted).toContain('data-tcid="search-c"');
+  // The state-side toolCalls array also keeps every entry.
+  const toolCallIds = await page.evaluate(() => {
+    const list = window.state.messages;
+    const last = list[list.length - 1];
+    return Array.isArray(last && last.toolCalls) ? last.toolCalls.map((t) => t.id) : [];
+  });
+  expect(toolCallIds).toEqual(['search-a', 'code-b', 'search-c']);
 });

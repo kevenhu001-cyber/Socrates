@@ -272,3 +272,164 @@ test('ToolRuntime compact mode mounts inline rows instead of cards', () => {
     delete globalThis.document;
   }
 });
+
+function makeLiveSlotDom() {
+  const childNodes = [];
+  const liveSlot = {
+    childNodes,
+    get firstElementChild() { return childNodes[0] || null; },
+    get children() { return childNodes; },
+    querySelector(sel) {
+      if (sel !== '.tool-inline[data-tcid]') return null;
+      for (let i = 0; i < childNodes.length; i++) {
+        const n = childNodes[i];
+        if (n && n.className === 'tool-inline' && n.dataset && n.dataset.tcid) return n;
+      }
+      return null;
+    },
+    appendChild(node) {
+      // P_test_live_slot — the live slot moves children between mounts.
+      // If a row is already in the slot (e.g. the runtime re-uses the
+      // host for a same-id update), drop the prior reference first so
+      // the post-conditions can detect duplicate mounts.
+      if (node && node.parentNode && node.parentNode !== liveSlot) {
+        const prev = node.parentNode;
+        const idx = prev.childNodes ? prev.childNodes.indexOf(node) : -1;
+        if (idx >= 0) prev.childNodes.splice(idx, 1);
+      }
+      const existing = childNodes.indexOf(node);
+      if (existing >= 0) childNodes.splice(existing, 1);
+      childNodes.push(node);
+      if (node && typeof node === 'object') node.parentNode = liveSlot;
+      return node;
+    },
+    removeChild(node) {
+      const idx = childNodes.indexOf(node);
+      if (idx >= 0) childNodes.splice(idx, 1);
+      if (node && typeof node === 'object') node.parentNode = null;
+      return node;
+    },
+  };
+  return liveSlot;
+}
+
+function installLiveSlotDocument() {
+  globalThis.document = {
+    createElement(tag) {
+      const el = {
+        tagName: tag, dataset: {}, className: '', innerHTML: '', textContent: '',
+        parentNode: null,
+        _isConnected: false,
+        get isConnected() { return this._isConnected || !!(this.parentNode); },
+        getAnimations() { return []; },
+        querySelector() { return null; },
+        addEventListener() {},
+        removeEventListener() {},
+        appendChild(child) {
+          if (child && typeof child === 'object') child.parentNode = el;
+          return child;
+        },
+        remove() {
+          if (this.parentNode && Array.isArray(this.parentNode.childNodes)) {
+            const idx = this.parentNode.childNodes.indexOf(this);
+            if (idx >= 0) this.parentNode.childNodes.splice(idx, 1);
+          }
+          this.parentNode = null;
+        },
+        replaceChildren() {},
+        classList: {
+          _set: new Set(),
+          add(c) { this._set.add(c); },
+          remove(c) { this._set.delete(c); },
+          contains(c) { return this._set.has(c); },
+        },
+      };
+      return el;
+    },
+  };
+}
+
+test('ToolRuntime live single-card slot shows only the latest tool, persists all toolCalls', () => {
+  const message = { toolCalls: [] };
+  const liveSlot = makeLiveSlotDom();
+  installLiveSlotDocument();
+  try {
+    const runtime = createToolRuntime({
+      body: { childNodes: [liveSlot], querySelector() { return null; }, querySelectorAll() { return []; } },
+      stillOwnsSlot: () => true,
+      getMessage: () => message,
+      liveSingleCardSlot: liveSlot,
+      onInlineTool() { return 10; },
+      EventSource: null,
+      mode: 'compact',
+    });
+
+    runtime.recordToolUse({ id: 'A', name: 'web_search', input: { q: 1 } });
+    runtime.recordToolUse({ id: 'B', name: 'code_interpreter', input: { q: 2 } });
+    runtime.recordToolUse({ id: 'C', name: 'web_search', input: { q: 3 } });
+
+    return new Promise((resolve) => setTimeout(() => {
+      const liveRows = liveSlot.childNodes.filter((n) => n && n.dataset && n.dataset.tcid);
+      assert.equal(liveRows.length, 1, 'live slot must hold at most one tool row');
+      assert.equal(liveRows[0].dataset.tcid, 'C');
+      assert.deepEqual(message.toolCalls.map((t) => t.id), ['A', 'B', 'C']);
+      runtime.dispose();
+      resolve();
+    }, 320));
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('ToolRuntime live single-card slot updates same id in place without re-flashing', () => {
+  const message = { toolCalls: [] };
+  const liveSlot = makeLiveSlotDom();
+  installLiveSlotDocument();
+  try {
+    const runtime = createToolRuntime({
+      body: { childNodes: [liveSlot], querySelector() { return null; }, querySelectorAll() { return []; } },
+      stillOwnsSlot: () => true,
+      getMessage: () => message,
+      liveSingleCardSlot: liveSlot,
+      onInlineTool() { return 5; },
+      EventSource: null,
+      mode: 'compact',
+    });
+    runtime.recordToolUse({ id: 'A', name: 'web_search', input: { q: 1 } });
+    const first = liveSlot.childNodes[0];
+    runtime.recordToolUse({ id: 'A', name: 'web_search', input: { q: 2 } });
+    const liveRows = liveSlot.childNodes.filter((n) => n && n.dataset && n.dataset.tcid);
+    assert.equal(liveRows.length, 1, 'same-id update must not mount a second row');
+    assert.strictEqual(liveRows[0], first, 'same-id update must keep the existing row');
+    assert.equal(message.toolCalls[0].input.q, 2);
+    assert.equal(message.toolCalls.length, 1, 'same-id events must not duplicate the entry');
+    runtime.dispose();
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('ToolRuntime dispose tears down the live single-card slot cleanly', () => {
+  const message = { toolCalls: [{ id: 'A', name: 'web_search', artifacts: [] }] };
+  const liveSlot = makeLiveSlotDom();
+  installLiveSlotDocument();
+  try {
+    const runtime = createToolRuntime({
+      body: { childNodes: [liveSlot], querySelector() { return null; }, querySelectorAll() { return []; } },
+      stillOwnsSlot: () => true,
+      getMessage: () => message,
+      liveSingleCardSlot: liveSlot,
+      onInlineTool() { return 0; },
+      EventSource: null,
+      mode: 'compact',
+    });
+    runtime.recordToolResult({ id: 'A', name: 'web_search', ok: true, status: 'completed', output: 'ok' });
+    runtime.dispose();
+    // After dispose, no new mount should occur even if a late event
+    // tries to drive the runtime.
+    runtime.recordToolUse({ id: 'B', name: 'web_search' });
+    assert.equal(message.toolCalls.length, 1, 'dispose must prevent late mounts');
+  } finally {
+    delete globalThis.document;
+  }
+});
