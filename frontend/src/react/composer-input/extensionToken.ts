@@ -92,12 +92,8 @@ export const ExtensionToken = Node.create<ExtensionTokenOptions>({
         this.options.onRemove(attrs.key);
       });
 
-      const hint = document.createElement('span');
-      hint.className = 'composer-extension-token-hint';
-      hint.textContent = attrs.hint || '';
-
       token.append(icon, label, remove);
-      dom.append(token, hint);
+      dom.append(token);
       return { dom };
     };
   },

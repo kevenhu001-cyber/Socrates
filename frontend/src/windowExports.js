@@ -210,11 +210,6 @@ import {
   openPromptTemplatesModal, closePromptTemplatesModal, renderPromptTemplatesModal,
   openPromptTemplateEditor, onPromptRowDelete, onPromptTemplateEditorSave,
 } from './ui/promptTemplates.js';
-import {
-  focusComposer,
-  getComposerMarkdown,
-  getVisibleComposerSurface,
-} from './react/composer-input/controller.ts';
 window.openPromptTemplatesModal = openPromptTemplatesModal;
 window.closePromptTemplatesModal = closePromptTemplatesModal;
 /* Inline onclick handlers inside the bridge-published modal HTML
@@ -413,168 +408,14 @@ window.openKnowledge = function () {
 
 /* ─── P_chatgpt-landing — composer quick-action chips (撰写或编辑 /
    查找资料). Both reuse existing capabilities so no new backend is
-   introduced. Defined inline here (the single window-bridge file) to
-   keep them next to the other lightweight UI globals. ─── */
-
-/* 撰写或编辑 — activate a dedicated Writing/Editing assistant by injecting
-   a specialized system prompt for the turn (via setActiveTemplate, the
-   same mechanism slash-command templates use). This replaces the old
-   "prepend a scaffold string" behaviour with a real mode: the model
-   commits to the writing-assistant role, the template-mode chip surfaces
-   so the user can see (and dismiss) it, and the prompt scaffolds the
-   available tools (web_search for fact-checking). */
-var WRITE_EDIT_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
-var WRITE_EDIT_SYSTEM_PROMPT =
-  "You are an expert writing and editing assistant. Help the user compose, rewrite, or polish any text \u2014 essays, emails, posts, reports, documentation, scripts, or creative writing.\n\n" +
-  "Workflow:\n" +
-  "- If the request is clear, produce the writing directly.\n" +
-  "- If a key detail is missing (audience, tone, length, format, or language), ask at most 2 focused questions first; otherwise proceed with sensible defaults.\n" +
-  "- When editing text the user supplied, preserve their voice and intent. Return the revised version, and add a short bullet summary of substantive changes only when the edits are non-obvious or the user asked.\n\n" +
-  "Tools:\n" +
-  "- You may call the web_search tool to verify facts, gather current information, or find references when the writing depends on real-world accuracy. Cite sources briefly when you searched.\n\n" +
-  "Output rules:\n" +
-  "- Always match the user's language.\n" +
-  "- Use Markdown for structure (headings, lists, short paragraphs) when the piece is long.\n" +
-  "- Return the requested writing with minimal framing \u2014 no 'Here is your text:' preambles.";
-window.composeAction = function () {
-  var surface = getVisibleComposerSurface();
-  var title = (typeof window.t === "function" && window.t("composer.write")) || "Write or edit";
-  if (title === "composer.write") title = "Write or edit";
-  if (typeof window.setActiveTemplate === "function") {
-    window.setActiveTemplate({
-      id: "tpl-write-edit",
-      title: title,
-      shortcut: "/write",
-      icon: WRITE_EDIT_ICON,
-      systemPrompt: WRITE_EDIT_SYSTEM_PROMPT,
-      body: "",
-      hint: (typeof window.t === "function" ? window.t("composer.writeHint") : "") || "Draft, rewrite and polish",
-      extensionKey: "write"
-    });
-  }
-  focusComposer(surface);
-  try {
-    if (typeof window.updateStartBtn === "function") window.updateStartBtn();
-    if (typeof window.updateSendBtn === "function") window.updateSendBtn();
-  } catch (_) {}
-};
-
-var SOURCE_RESEARCH_SYSTEM_PROMPT =
-  "You are in source-research mode. Turn the user's question into a focused evidence task.\n\n" +
-  "Workflow:\n" +
-  "1. Identify the exact claim, date range, geography, and decision the user needs.\n" +
-  "2. Use the native web_search tool for current or externally verifiable facts. Prefer primary sources and independent corroboration.\n" +
-  "3. Compare sources, call out disagreements, and separate verified facts from inference.\n" +
-  "4. Return a concise synthesis with linked sources and a short 'What remains uncertain' note when material gaps remain.\n\n" +
-  "Never invent citations or imitate tool-call JSON. If the request actually needs a broad multi-stage review, recommend Deep research rather than pretending one search is exhaustive.";
-
-/* Find sources is a real evidence workflow, distinct from Deep research.
-   It enables the native search capability (via the extensionKey side-effect
-   on setActiveTemplate) and installs a visible mode whose system prompt
-   controls source quality; it never auto-sends the draft. */
-window.researchAction = function () {
-  var surface = getVisibleComposerSurface();
-  if (typeof window.setActiveTemplate === "function") {
-    window.setActiveTemplate({
-      id: "tpl-source-research",
-      title: (typeof window.t === "function" ? window.t("composer.research") : "") || "Find sources",
-      shortcut: "/research",
-      icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
-      systemPrompt: SOURCE_RESEARCH_SYSTEM_PROMPT,
-      body: "",
-      hint: (typeof window.t === "function" ? window.t("composer.researchHint") : "") || "Search and compare evidence",
-      extensionKey: "webSearch"
-    });
-  }
-  focusComposer(surface);
-  if (typeof window.syncQuickChips === "function") window.syncQuickChips();
-};
-
-/* P_extension-chip — deep research is now a chip in the composer body
-   (set via setActiveTemplate's extensionKey: "deepResearch"), not a
-   separate hidden picker state. Re-clicking the + menu item while the
-   chip is already active is a no-op (the extensionKey side-effect
-   handler in main.js only flips when the key changes). Clicking the
-   chip's × button clears both the chip and window.deepResearchOn so
-   the next send goes through the normal chat / tutor pipeline. */
-window.deepResearchAction = function () {
-  var surface = getVisibleComposerSurface();
-  var DEEP_RESEARCH_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l6-3 6 3 6-3V3l-6 3-6-3-6 3z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>';
-  if (typeof window.setActiveTemplate === "function") {
-    window.setActiveTemplate({
-      id: "tpl-deep-research",
-      title: (typeof window.t === "function" ? window.t("composer.deepResearch") : "") || "Deep research",
-      shortcut: "/research",
-      icon: DEEP_RESEARCH_ICON,
-      systemPrompt: "",
-      body: "",
-      hint: (typeof window.t === "function" ? window.t("composer.deepResearchHint") : "") || "Plan, search, read, report",
-      extensionKey: "deepResearch"
-    });
-  }
-  focusComposer(surface);
-  if (typeof window.syncQuickChips === "function") window.syncQuickChips();
-};
-
-var DATA_ANALYSIS_SYSTEM_PROMPT =
-  "You are in data-analysis mode. Treat attached files and pasted data as the working dataset.\n\n" +
-  "Workflow:\n" +
-  "1. Inspect schema, units, missing values, duplicates, and sampling limitations before drawing conclusions.\n" +
-  "2. State the analysis question and choose the smallest valid method.\n" +
-  "3. Use code_interpreter for non-trivial calculation, file analysis, or export; use render_visualization for a reader-facing chart after the numbers are validated.\n" +
-  "4. Report the result, assumptions, checks, and material caveats. Include reproducible calculations and expose generated files as artifacts.\n\n" +
-  "Never claim a computation ran unless a tool result confirms it. Do not infer columns or units that are not present.";
-
-window.analyzeAction = function () {
-  var surface = getVisibleComposerSurface();
-  if (typeof window.setActiveTemplate === "function") {
-    window.setActiveTemplate({
-      id: "tpl-data-analysis",
-      title: (typeof window.t === "function" ? window.t("composer.analyze") : "") || "Analyze data",
-      shortcut: "/analyze",
-      icon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/><path d="m4 7 6-4 6 7 5-4"/></svg>',
-      systemPrompt: DATA_ANALYSIS_SYSTEM_PROMPT,
-      body: "",
-      hint: (typeof window.t === "function" ? window.t("composer.analyzeHint") : "") || "Calculate, chart and export",
-      extensionKey: "analyze"
-    });
-  }
-  focusComposer(surface);
-};
-
-/* Explore is a full staged workflow (scope → search → integrate → deliver),
-   not a one-shot prompt: it plans sub-questions, runs batched native
-   web_search calls, reconciles the evidence, and produces a structured
-   report as the product; when the user asks for a downloadable document,
-   code_interpreter renders the file (e.g. a PDF) and exposes it as an
-   artifact. Distinct from Deep research (autonomous agent) and Find
-   sources (single evidence pass): Explore stays in the conversation and
-   always ends in a reader-ready deliverable. */
-var EXPLORE_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>';
-var EXPLORE_SYSTEM_PROMPT =
-  "You are running the Explore workflow — a staged research system that turns an open question into a polished deliverable.\n\n" +
-  "Stage 1 — Scope. In one short paragraph, restate the question precisely, list the 3-6 sub-questions that must be answered to cover it, and name the deliverable you will produce.\n\n" +
-  "Stage 2 — Search. Answer each sub-question with native web_search calls: several targeted queries per sub-question (vary keywords; include the current year for anything time-sensitive), never one broad query for everything. Prefer primary sources and require two independent sources for every load-bearing claim.\n\n" +
-  "Stage 3 — Integrate. Reconcile the evidence: note where sources disagree, separate verified fact from inference, and discard anything that cannot be attributed to a source.\n\n" +
-  "Stage 4 — Deliver. Produce a structured report: title, short executive summary, one section per sub-question, a 'What remains uncertain' section, and a sources list. If the user asked for a downloadable document (PDF or similar), use code_interpreter to render the report into that file and expose it as an artifact; otherwise deliver the report directly in the chat.\n\n" +
-  "Rules: never invent citations. If the topic genuinely needs more than about 10 searches, say so and propose splitting it. Keep intermediate commentary minimal — the report is the product.";
-window.exploreAction = function () {
-  var surface = getVisibleComposerSurface();
-  if (typeof window.setActiveTemplate === "function") {
-    window.setActiveTemplate({
-      id: "tpl-explore",
-      title: (typeof window.t === "function" ? window.t("composer.explore") : "") || "Explore",
-      shortcut: "/explore",
-      icon: EXPLORE_ICON,
-      systemPrompt: EXPLORE_SYSTEM_PROMPT,
-      body: "",
-      hint: (typeof window.t === "function" ? window.t("composer.exploreHint") : "") || "Scope, batch search, report",
-      extensionKey: "webSearch"
-    });
-  }
-  focusComposer(surface);
-  if (typeof window.syncQuickChips === "function") window.syncQuickChips();
-};
+   introduced. The actions themselves (composeAction / researchAction /
+   exploreAction / deepResearchAction / analyzeAction) are now thin
+   delegators into the extension registry (src/extensions/), which owns
+   the prompts, icons, and side-effects. installWindowExtensionDelegates()
+   only defines a window.X binding if one does not already exist, so it is
+   safe to call here before/after any other binding. ─── */
+import { installWindowExtensionDelegates } from './extensions/index.ts';
+installWindowExtensionDelegates();
 
 /* Mirror toggle-style state onto the quick-action chips (查找资料 reflects
    webSearchOn; 深度研究 reflects window.deepResearchOn). The 深度思考 chip

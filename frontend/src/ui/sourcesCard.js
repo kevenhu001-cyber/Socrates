@@ -58,6 +58,20 @@ export function renderSourcesCard(results) {
     }
   });
 
+  function openForHash() {
+    if (!location.hash || location.hash.indexOf('#socrates-src-') !== 0) return;
+    var targetId = location.hash.slice(1);
+    var target = wrap.querySelector('#' + (window.CSS && CSS.escape ? CSS.escape(targetId) : targetId));
+    if (!target) return;
+    wrap.classList.add('open');
+    var rest = wrap.querySelector('.sources-rest');
+    if (rest) rest.style.display = 'block';
+    var rowLink = target.querySelector('a.sources-row');
+    if (rowLink) rowLink.setAttribute('aria-expanded', 'true');
+  }
+  openForHash();
+  window.addEventListener('hashchange', openForHash);
+
   return wrap;
 }
 
@@ -92,14 +106,14 @@ function renderSourceRow(s, idx, opts) {
   opts = opts || {};
   var url = String(s.url);
   if (url.indexOf("http://") !== 0 && url.indexOf("https://") !== 0) {
-    return '<div class="sources-row" data-bad-url="1"><span class="sources-num">[' + idx + ']</span><span class="sources-title">' + esc(s.title || "(no title)") + '</span><span class="sources-bad">non-http url</span></div>';
+    return '<div class="sources-row" data-bad-url="1" data-source-idx="' + idx + '" id="socrates-src-' + idx + '"><span class="sources-num">[' + idx + ']</span><span class="sources-title">' + esc(s.title || "(no title)") + '</span><span class="sources-bad">non-http url</span></div>';
   }
   var title = esc(s.title || url);
   var host = "";
   try { host = new URL(url).hostname.replace(/^www\./, ""); } catch (_) {}
 
   return '' +
-    '<div class="sources-row-wrap' + (opts.expanded ? ' open' : '') + '">' +
+    '<div class="sources-row-wrap' + (opts.expanded ? ' open' : '') + '" data-source-idx="' + idx + '" id="socrates-src-' + idx + '">' +
       '<a class="sources-row" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer" ' +
            'data-sources-toggle="1" aria-expanded="' + (opts.expanded ? 'true' : 'false') + '">' +
         '<span class="sources-num">[' + idx + ']</span>' +

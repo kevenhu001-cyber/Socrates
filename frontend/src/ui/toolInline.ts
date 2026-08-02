@@ -337,6 +337,95 @@ export function updateInlineToolCodePreview(row: HTMLElement, argsJson: string, 
   if (preview.textContent !== text) preview.textContent = text;
 }
 
+/* P_tool_live_card — when a newer tool replaces the live visible
+   card, the old one fades out of the live slot before being detached.
+   The caller still owns the row's final placement (the live slot is
+   presentation-only; finish() in main.js re-uses outerHTML for the
+   serialized layout). We mark the row as leaving, force any in-flight
+   CSS animation to cancel, and remove the element on the next frame so
+   a same-tick mount of the new row doesn't fight the layout. */
+export function fadeOutInlineToolRow(row: HTMLElement, durationMs: number = 160): void {
+  if (!row || !row.classList) return;
+  if (typeof row.getAnimations === 'function') {
+    try { row.getAnimations().forEach(function (a) { try { a.cancel(); } catch (_) { /* ignore */ } }); } catch (_) { /* ignore */ }
+  }
+  row.classList.add('tool-inline-leaving');
+  /* The leaving keyframe (defined in styles.css) drives opacity/transform.
+     When the user prefers reduced motion, the keyframe is suppressed to
+     a 0.01ms duration, so the cleanup below still removes the node
+     promptly. */
+  if (row.dataset && row.dataset.tcid) row.dataset.leavingAt = String(Date.now());
+  const remove = function () {
+    if (!row.parentNode && typeof row.remove !== 'function') return;
+    try {
+      if (typeof row.remove === 'function') { row.remove(); return; }
+      if (row.parentNode && typeof row.parentNode.removeChild === 'function') row.parentNode.removeChild(row);
+    } catch (_) { /* ignore */ }
+  };
+  try {
+    const handler = function () {
+      row.removeEventListener('transitionend', handler);
+      row.removeEventListener('animationend', handler);
+      remove();
+    };
+    row.addEventListener('transitionend', handler);
+    row.addEventListener('animationend', handler);
+  } catch (_) { /* ignore */ }
+  /* Hard fallback: if no animation/transition fires (reduced-motion cut
+     the duration to 0.01ms and the browser skipped the event), tear the
+     element down after the requested window. */
+  setTimeout(remove, Math.max(0, durationMs) + 60);
+}
+
+/* P_tool_live_card — flash the row's status background briefly so a
+   fresh tool is recognizable as new. The class is removed after the
+   transition window so the existing `transition: background-color .2s`
+   declaration on `.tool-inline` carries the fade. The function is
+   idempotent: a same-id update that re-invokes it clears any pending
+   timer before scheduling a new one. */
+const FLASH_MS = 1200;
+export function flashInlineToolRow(row: HTMLElement): void {
+  if (!row || !row.classList) return;
+  if (typeof row.dataset === 'undefined') return;
+  if (row.dataset._flashTimer) {
+    try { clearTimeout(Number(row.dataset._flashTimer)); } catch (_) { /* ignore */ }
+  }
+  row.classList.add('tool-inline-flash');
+  const handle = setTimeout(function () {
+    if (!row.classList) return;
+    row.classList.remove('tool-inline-flash');
+    if (row.dataset) delete row.dataset._flashTimer;
+  }, FLASH_MS);
+  row.dataset._flashTimer = String(handle);
+}
+
+/* P_tool_live_card — single live slot helper. Swaps the host's single
+   child to the new row, fading out the old one. If the host is empty
+   the new row is mounted directly with a flash. The host is treated as
+   presentation-only; persisted history/share still serialize every
+   row in inlineToolRows. */
+export function replaceLiveInlineToolRow(host: HTMLElement | null, next: HTMLElement | null, opts?: { skipFlash?: boolean }): HTMLElement | null {
+  if (!host || !next) return next;
+  if (next.parentNode === host) {
+    if (!opts || !opts.skipFlash) flashInlineToolRow(next);
+    return next;
+  }
+  /* P_tool_live_card — fade every previous live child out before the
+     new row lands. Multiple intermediate rows can pile up during rapid
+     bursts when reduced-motion cuts the fade duration to near zero;
+     sweeping the whole children list keeps the visible single-card
+     contract under any animation budget. */
+  const previous = Array.from(host.children || []) as HTMLElement[];
+  for (let i = 0; i < previous.length; i++) {
+    const child = previous[i];
+    if (!child || child === next) continue;
+    try { fadeOutInlineToolRow(child); } catch (_) { /* ignore */ }
+  }
+  if (next.parentNode !== host) host.appendChild(next);
+  if (!opts || !opts.skipFlash) flashInlineToolRow(next);
+  return next;
+}
+
 /** Settle the row in place: done / error / stopped. */
 export function settleInlineToolRow(
   row: HTMLElement,

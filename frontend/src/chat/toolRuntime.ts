@@ -17,6 +17,7 @@ import {
 } from '../ui/toolCards.js';
 import {
   createInlineToolRow,
+  replaceLiveInlineToolRow,
   settleInlineToolRow,
   updateInlineToolCodePreview,
   updateInlineToolMeta,
@@ -136,6 +137,14 @@ interface ToolRuntimeOptions {
    * offset directly instead of relying on finish()'s write-back loop.
    */
   onInlineTool?: (entry: { id: string; name: string }, row: HTMLElement) => number | null;
+  /**
+   * P_tool_live_card — when set, the live chat shows a single visible
+   * tool card. A new tool id fades the previous card out and replaces
+   * it in the same slot; same-id events update the existing row in
+   * place. Persisted history and share views still serialize every
+   * tool call — this is a presentation-only option.
+   */
+  liveSingleCardSlot?: HTMLElement | null;
 }
 
 interface ExecutionConnection {
@@ -284,6 +293,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     body.appendChild(row);
     return null;
   };
+  const liveSingleCardSlot = options.liveSingleCardSlot || null;
 
   function mountInlineRow(entry: ToolCallEntry): number | null {
     if (findCard(entry.id)) return null;
@@ -292,6 +302,28 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       name: entry.name,
       input: entry.input,
     });
+    let offset: number | null = null;
+    try { offset = onInlineTool({ id: entry.id, name: entry.name }, row); } catch (_) { body.appendChild(row); }
+    return typeof offset === 'number' ? offset : null;
+  }
+
+  /* P_tool_live_card — when a live single-card slot is configured, mount
+     only the latest row into it. Same-id events keep the existing row
+     in place (in-place update path). Different ids fade the previous row
+     out of the slot and swap in the new one. The row's textOffset /
+     inlineToolRows entries are still accumulated normally; the slot is
+     purely a presentation layer over the existing pipeline. */
+  function mountLiveSingleCardRow(entry: ToolCallEntry): number | null {
+    if (findCard(entry.id)) return null;
+    const existing = liveSingleCardSlot ? liveSingleCardSlot.querySelector('.tool-inline[data-tcid]') as HTMLElement | null : null;
+    const row = createInlineToolRow({
+      id: entry.id,
+      name: entry.name,
+      input: entry.input,
+    });
+    if (liveSingleCardSlot) {
+      try { replaceLiveInlineToolRow(liveSingleCardSlot, row, { skipFlash: !!existing }); } catch (_) { /* ignore */ }
+    }
     let offset: number | null = null;
     try { offset = onInlineTool({ id: entry.id, name: entry.name }, row); } catch (_) { body.appendChild(row); }
     return typeof offset === 'number' ? offset : null;
@@ -650,6 +682,8 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       if (!output) return null;
       const card = output.closest('.agent-tool-card');
       if (card) card.setAttribute('data-tcid', entry.id);
+    } else if (liveSingleCardSlot) {
+      mountLiveSingleCardRow(entry);
     } else {
       mountInlineRow(entry);
     }
@@ -748,7 +782,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
            Persist the split point directly — a result can land after
            finish()'s inlineToolRows write-back loop has already run, and
            without textOffset the row would be lost on history replay. */
-        const mountedOffset = mountInlineRow(entry);
+        const mountedOffset = liveSingleCardSlot ? mountLiveSingleCardRow(entry) : mountInlineRow(entry);
         if (mountedOffset != null) entry.textOffset = mountedOffset;
       } else {
         output = appendToolModule(entry.name, {}, ensureToolContainer()) as HTMLElement | null;

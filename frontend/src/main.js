@@ -3211,9 +3211,20 @@ function toolCallbacksForStream(ctl){
   return{
     onToolUse:function(calls){
       if(!Array.isArray(calls))return;
-      for(var i=0;i<calls.length;i++)ctl.recordToolUse(calls[i]);
+      for(var i=0;i<calls.length;i++){
+        ctl.recordToolUse(calls[i]);
+        if(calls[i]&&calls[i].name==="web_search"){
+          publishActiveWorkflowEvent("searching","running",
+            {message:"Searching sources…",toolCallIds:[calls[i].id]});
+        }
+      }
     },
-    onToolResult:function(result){ctl.recordToolResult(result)},
+    onToolResult:function(result){
+      ctl.recordToolResult(result);
+      if(result&&result.id&&_activeTemplate&&_activeTemplate.runId){
+        publishActiveWorkflowEvent("reading","running",{message:"Reading results…",toolCallIds:[result.id]});
+      }
+    },
     onToolProgress:function(progress){if(ctl.recordToolProgress)ctl.recordToolProgress(progress)},
     onExecutionStart:function(event){if(ctl.recordExecutionStart)ctl.recordExecutionStart(event)},
     onToolCallDelta:function(delta){if(delta&&ctl.recordToolCallDelta)ctl.recordToolCallDelta(delta)}
@@ -3438,8 +3449,21 @@ async function askChatTurn(userText,pendingOverride){
      controller's onInlineTool), so the transient thinking-pill label
      swap ("Searching…" / "已找到 N 条…") is gone. */
   var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)},{
-    onToolUse:function(calls){for(var i=0;i<calls.length;i++){ctl.recordToolUse(calls[i])}},
-    onToolResult:function(r){ctl.recordToolResult(r)},
+    onToolUse:function(calls){
+      for(var i=0;i<calls.length;i++){
+        ctl.recordToolUse(calls[i]);
+        if(calls[i]&&calls[i].name==="web_search"){
+          publishActiveWorkflowEvent("searching","running",
+            {message:"Searching sources…",toolCallIds:[calls[i].id]});
+        }
+      }
+    },
+    onToolResult:function(r){
+      ctl.recordToolResult(r);
+      if(r&&r.id&&_activeTemplate&&_activeTemplate.runId){
+        publishActiveWorkflowEvent("reading","running",{message:"Reading results…",toolCallIds:[r.id]});
+      }
+    },
     onToolProgress:function(p){if(ctl.recordToolProgress)ctl.recordToolProgress(p)},
     onExecutionStart:function(ev){if(ctl.recordExecutionStart)ctl.recordExecutionStart(ev)},
     /* P_tool_stream — forward the live tool_call_delta frames to
@@ -3452,6 +3476,7 @@ async function askChatTurn(userText,pendingOverride){
     }
   });
   handleChatApiResult(result,ctl,userText);
+  publishActiveWorkflowFinish(!!(result&&result.text&&String(result.text).trim()));
   updateChatStats();
   if(state.phase==="chat"||(state.topic&&state.kbNodes.length))saveCurrentSession();
 }
@@ -3539,6 +3564,23 @@ function _applyExtensionSideEffects(prevExt,nextExt){
     try{ EXTENSION_SIDE_EFFECTS[nextExt](true); }catch(_){}
   }
 }
+/* P_extension-runs — the chat pipeline publishes workflow-stage events
+   for template extensions that carry a runId (research/explore). The
+   module's planning event and the chat pipeline's searching/completed
+   events share that runId via _activeTemplate. web_search tool_use →
+   searching; tool_result → reading; stream finish → completed. */
+function publishActiveWorkflowEvent(stage,status,extra){
+  if(!_activeTemplate||!_activeTemplate.runId||!_activeTemplate.workflow)return;
+  var bridge=window.__socratesAgentRunBridge;
+  if(!bridge||typeof bridge.publish!=="function")return;
+  var ev={runId:_activeTemplate.runId,workflow:_activeTemplate.workflow,stage:stage,status:status};
+  if(extra)for(var k in extra)if(extra.hasOwnProperty(k))ev[k]=extra[k];
+  try{bridge.publish(ev)}catch(_){}
+}
+function publishActiveWorkflowFinish(ok){
+  publishActiveWorkflowEvent(ok?"completed":"failed",ok?"succeeded":"failed",
+    {message:ok?"Done":((window.state&&window.state.lastCallError)||"No response")});
+}
 /* Strip the template body's leading prefix from the user-typed
    text, so the LLM sees only the user's actual content instead
    of "Paste the text you want summarized:\n\n<their text>".
@@ -3566,7 +3608,9 @@ function setActiveTemplate(t){
     systemPrompt:t.systemPrompt||"",body:t.body||"",
     icon:t.icon,
     hint:t.hint||t.description||"",
-    extensionKey:nextExt
+    extensionKey:nextExt,
+    runId:t.runId||null,
+    workflow:t.workflow||null
   }:null;
   if(prevExt!==nextExt) _applyExtensionSideEffects(prevExt,nextExt);
   renderTemplateModeChip();
@@ -5339,6 +5383,21 @@ function addStreamingMessage(opts){
   var needNewSegment=false;
   var inlineToolRows=[];
   var segHost=null;
+  /* P_tool_live_card — single visible tool card during live streaming.
+     Lives at the END of the bubble body, after the current segment host.
+     Each new tool id fades the previous card out and replaces it here;
+     finished messages still serialize every inlineToolRows row into
+     state.messages[i].html via the finish() path, so history / share /
+     reload keep all of them. */
+  var _liveToolSlot=null;
+  function ensureLiveToolSlot(){
+    if(_liveToolSlot&&_liveToolSlot.isConnected)return _liveToolSlot;
+    _liveToolSlot=document.createElement("div");
+    _liveToolSlot.className="tool-inline-live-slot";
+    _liveToolSlot.setAttribute("data-live-single-card","1");
+    body.appendChild(_liveToolSlot);
+    return _liveToolSlot;
+  }
   function ensureSegHost(){
     if(segHost&&segHost.isConnected)return segHost;
     segHost=document.createElement("div");
@@ -5435,8 +5494,24 @@ function addStreamingMessage(opts){
   var retryBtnId="retry-"+Math.random().toString(36).slice(2,10);
   /* Snapshot the search results at message START so a background
      refresh that lands mid-stream doesn't change which sources the
-     user sees under this bubble. */
-  var sourcesSnapshot=Array.isArray(state.searchResults)?state.searchResults.slice():[];
+     user sees under this bubble. Pulled from THIS message's tool
+     calls, not the global state.searchResults (which can be polluted
+     by unrelated background fetches or stale data from earlier
+     messages in the same session). */
+  function _collectSourcesFromThisMessage() {
+    var collected = [];
+    var toolCalls = state.messages[msgIdx] && state.messages[msgIdx].toolCalls;
+    if (Array.isArray(toolCalls)) {
+      for (var i = 0; i < toolCalls.length; i++) {
+        var entry = toolCalls[i];
+        if (entry && Array.isArray(entry.results)) {
+          for (var j = 0; j < entry.results.length; j++) collected.push(entry.results[j]);
+        }
+      }
+    }
+    return collected;
+  }
+  var sourcesSnapshot=_collectSourcesFromThisMessage();
   var hasSources=sourcesSnapshot.length>0;
   /* Show a "thinking" placeholder until the first delta arrives.
      FIRST_DELTA_TIMEOUT_MS is set to the same value as the stream
@@ -5964,6 +6039,7 @@ function doRender(){
     getMessage:function(){
       return msgIdx>=0?(state.messages[msgIdx]||null):null;
     },
+    liveSingleCardSlot:ensureLiveToolSlot(),
     ensureToolContainer:_ensureToolContainer,
     /* P_inline-tools — a tool_use lands: freeze the current text
        segment in place, append the ChatGPT-style status row after
@@ -5995,7 +6071,13 @@ function doRender(){
           else _oldSegHost.remove();
         }catch(_){}
       }
-      body.appendChild(row);
+      /* P_tool_live_card — when the live single-card slot is in use, the
+         runtime has already mounted `row` into `_liveToolSlot` (or
+         `replaceLiveInlineToolRow` is about to). Skip the body.appendChild
+         step so the row isn't momentarily visible at the bubble bottom. */
+      if(!_liveToolSlot||row.parentNode!==_liveToolSlot){
+        body.appendChild(row);
+      }
       inlineToolRows.push({id:entry.id,name:entry.name,offset:_toolOffset,row:row});
       segBase=_toolOffset;
       if(_toolOffset<full.length){
@@ -6515,19 +6597,16 @@ function doRender(){
           try{wireCodeBlockHeaders(body)}catch(_){}
           try{wireMsgBodyImages(body)}catch(_){}
         }
-        /* Source Card. The mid-stream snapshot is kept so a fresh
-           background fetch that lands while the model is still streaming
-           can't silently swap the cards underneath the user. But the
-           snapshot is captured at addStreamingMessage() time — for the
-           FIRST message of a session (or after any state reset) the
-           background fetchWebContext hasn't completed yet, so
-           state.searchResults is still [] and the snapshot is empty
-           even though the fetch will populate it a beat later. Falling
-           back to the live state at finish-time is safe because we
-           only render once here: after this card is appended, no later
-           render path will mutate it. */
+/* Source Card. Prefer results accumulated on this message's own
+            toolCalls (the per-message source of truth) so that
+            background fetches from other sessions/conversations or
+            stale global state can't bleed into this bubble. Fall back
+            to the live global state only when the message-level
+            snapshot is empty — the background fetchWebContext may
+            still be in flight when the first message finishes. */
         var liveResults=Array.isArray(state.searchResults)?state.searchResults:[];
-        var sourcesToRender=hasSources?sourcesSnapshot:liveResults;
+        var messageSources=_collectSourcesFromThisMessage();
+        var sourcesToRender=messageSources.length?messageSources:(hasSources?sourcesSnapshot:liveResults);
         if(sourcesToRender.length){
           var card=renderSourcesCard(sourcesToRender);
           if(card)div.appendChild(card);
@@ -7186,31 +7265,15 @@ function renderAssistantHTML(rawText){
   var text=String(rawText||"")
     .replace(/<think>[\s\S]*?<\/think>/gi,"")
     .replace(/<think>[\s\S]*$/gi,"");
-  /* Chat mode: strip the citation apparatus so the Source Card (added
-     at finish()) is the SOLE source view. Two passes:
-
-       (a) a trailing "Sources: …" block — the model often generates
-           its own markdown list of cited URLs ([1] title (url) …) at
-           the end of its answer. Matched to end-of-text ([\s\S]*$),
-           so it never accidentally removes a mid-prose mention; it
-           runs unconditionally in chat mode so the block is gone
-           regardless of whether the Source Card actually fires
-           (e.g. when state.searchResults is still empty at render
-           time but a Source Card is appended afterwards — see the
-           finishAfterRender fallback).
-
-       (b) inline [N] markers like "[1]", "[1, 2]", "[1][2]" — only
-           when state.searchResults has results, so we don't chew
-           through legit numeric references in a chat turn that has
-           no sources to point at. */
+  /* Chat mode: strip a trailing "Sources: …" block the model
+     occasionally writes, but keep inline [N] markers so the
+     renderer can turn them into clickable citation links pointing
+     to the matching Source Card row. */
   if(appMode==="chat"){
     text=text.replace(
       /(?:^|\n)\s*(?:Sources?|参考来源|来源|参考资料|参考文献|引用|参考)\s*[:：][\s\S]*$/i,
       ""
     );
-  }
-  if(appMode==="chat" && Array.isArray(state.searchResults) && state.searchResults.length){
-    text=text.replace(/\[\s*\d+(?:\s*,\s*\d+)*\s*\]/g,"");
   }
   /* All placeholder lists — collected during the scan, mounted at the end. */
   var quizPH=[];
@@ -7516,6 +7579,14 @@ function renderAssistantHTML(rawText){
   /* formatMsg uses marked.parse, which passes raw <div> blocks through
      untouched. The slots will land in the final HTML intact. */
   var html=formatMsg(text);
+  var citeMasked = html.replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1>/gi, function (m) {
+    return m.replace(/\[(\d+)\]/g, '&#91;$1&#93;');
+  });
+  citeMasked = citeMasked.replace(
+    /\[(\d+)\]/g,
+    '<sup class="cite-link"><a href="#socrates-src-$1" data-cite-target="$1" aria-label="Citation $1">[$1]</a></sup>'
+  );
+  html = citeMasked.replace(/&#91;(\d+)&#93;/g, '[$1]');
 
   /* Defer DOM mount until the html is actually inserted. */
   if(quizPH.length||examplePH.length||practicePH.length||definitionPH.length||stepPH.length||flashcardPH.length||derivationPH.length||proofPH.length||theoremPH.length||keyPointPH.length){

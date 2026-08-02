@@ -25,8 +25,8 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || '/tmp/socrates-uploads';
 const SessionPayloadSchema = z.object({
   id: z.string().uuid().optional(),
   topic: z.string().max(10000).optional().default(''),
-  title: z.string().max(500).optional(),
-  domain: z.string().max(500).optional().nullable(),
+  title: z.string().max(10000).optional(),
+  domain: z.string().max(10000).optional().nullable(),
   mode: z.enum(['tutor', 'chat']).optional().default('chat'),
   phase: z.enum(['topic', 'diagnostic', 'chat']).optional().default('topic'),
   /* P_exam-history — top-level session "shape". 'exam' is set by the
@@ -342,7 +342,12 @@ router.post('/', writeLimiter, async (req, res, next) => {
       });
 
       // P_message-dedup — atomic upsert using the (sessionId, clientId)
-      // unique constraint.
+      // unique constraint. Dedupe by clientId before the multi-row INSERT
+      // because PostgreSQL's ON CONFLICT clause handles collisions with
+      // EXISTING rows but NOT with other rows in the same INSERT. Without
+      // this dedup, a session re-save that contains two messages with the
+      // same clientId (placeholder + finalised, or a duplicate tool card)
+      // throws 23505 and the POST returns 500.
       if (Array.isArray(msgs) && msgs.length) {
         const _insertBase = Date.now();
         const rows = msgs.map((m, i) => {
@@ -387,7 +392,30 @@ router.post('/', writeLimiter, async (req, res, next) => {
             createdAt: new Date(_insertBase + i),
           };
         });
-        await tx.insert(messages).values(rows).onConflictDoUpdate({
+        /* P_message-dedup-in-stmt — drop duplicate (sessionId, clientId)
+         * rows so the multi-row INSERT below does not trip the unique
+         * index on (session_id, client_id). Last write wins: the latest
+         * entry in the batch represents the freshest UI state. Rows
+         * without a clientId are keyed by their position so two
+         * legacy messages can still coexist. */
+        const dedupedRows: typeof rows = [];
+        const seenClientIds = new Map<string, number>();
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          const key = r.clientId;
+          if (key == null) {
+            dedupedRows.push(r);
+            continue;
+          }
+          const prev = seenClientIds.get(key);
+          if (prev === undefined) {
+            seenClientIds.set(key, dedupedRows.length);
+            dedupedRows.push(r);
+          } else {
+            dedupedRows[prev] = r;
+          }
+        }
+        await tx.insert(messages).values(dedupedRows).onConflictDoUpdate({
           target: [messages.sessionId, messages.clientId],
           set: {
             role: sql`EXCLUDED.role`,

@@ -64,6 +64,10 @@ export const attachments = [];
 
 /** Clear the pending attachments list. Called after submit + on cancel. */
 export function resetAttachments() {
+  /* Revoke blob URLs before clearing so the browser can GC the
+     underlying Blob data immediately instead of holding it until
+     the next garbage-collection cycle. */
+  _revokeBlobUrls(attachments);
   attachments.length = 0;
   /* React migration bridge — publish the empty list so the React
      compatibility root drops the chip row. Legacy callers that follow
@@ -108,9 +112,63 @@ function readFileAsDataUrl(file, onProgress) {
  * clear message instead of silently sending an oversized payload.
  * Animated GIFs are flattened to their first frame — a static image
  * the model can see beats a 400 the user can't.
+ *
+ * P_perf-offscreen — uses createImageBitmap + OffscreenCanvas when
+ * available so the decode and encode both run off the main thread.
+ * Falls back to the legacy Image() + canvas approach otherwise.
  */
 async function compressImageDataUrl(dataUrl) {
   if (!dataUrl || dataUrl.length <= MAX_IMAGE_DATAURL_CHARS) return dataUrl;
+  const hasOffscreen = typeof OffscreenCanvas !== 'undefined';
+  const hasCreateImageBitmap = typeof createImageBitmap === 'function';
+  if (hasOffscreen && hasCreateImageBitmap) {
+    return compressWithOffscreenCanvas(dataUrl);
+  }
+  return compressWithLegacyCanvas(dataUrl);
+}
+
+/** OffscreenCanvas path — decode + encode off the main thread. */
+async function compressWithOffscreenCanvas(dataUrl) {
+  let bitmap;
+  try {
+    const resp = await fetch(dataUrl);
+    const blob = await resp.blob();
+    bitmap = await createImageBitmap(blob);
+  } catch (_) {
+    return compressWithLegacyCanvas(dataUrl);
+  }
+  const srcW = bitmap.width;
+  const srcH = bitmap.height;
+  if (!srcW || !srcH) { bitmap.close(); return dataUrl; }
+  try {
+    const EDGE_STEPS = [2048, 1600, 1280, 1024, 800];
+    const QUALITY_STEPS = [0.85, 0.75, 0.6, 0.45];
+    for (const edge of EDGE_STEPS) {
+      const scale = Math.min(1, edge / Math.max(srcW, srcH));
+      const w = Math.max(1, Math.round(srcW * scale));
+      const h = Math.max(1, Math.round(srcH * scale));
+      const canvas = new OffscreenCanvas(w, h);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) continue;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      for (const q of QUALITY_STEPS) {
+        try {
+          const blob = await canvas.convertToBlob({ type: 'image/webp', quality: q });
+          const out = await blobToDataUrl(blob);
+          if (out && out.length <= MAX_IMAGE_DATAURL_CHARS) { bitmap.close(); return out; }
+        } catch (_) { /* try next quality */ }
+      }
+    }
+    return dataUrl;
+  } finally {
+    bitmap.close();
+  }
+}
+
+/** Legacy canvas fallback — synchronous on main thread. */
+async function compressWithLegacyCanvas(dataUrl) {
   if (typeof document === 'undefined' || typeof Image === 'undefined'
       || typeof document.createElement !== 'function') {
     return dataUrl;
@@ -139,7 +197,7 @@ async function compressImageDataUrl(dataUrl) {
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext && canvas.getContext('2d');
-    if (!ctx) return dataUrl; // no 2d context (jsdom) — bail to caller
+    if (!ctx) return dataUrl;
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, w, h);
     ctx.drawImage(img, 0, 0, w, h);
@@ -152,7 +210,17 @@ async function compressImageDataUrl(dataUrl) {
       if (out && out.length <= MAX_IMAGE_DATAURL_CHARS) return out;
     }
   }
-  return dataUrl; // still too large — the caller rejects with a message
+  return dataUrl;
+}
+
+/** Convert a Blob to a base64 dataUrl string. */
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error || new Error('blobToDataUrl failed'));
+    reader.readAsDataURL(blob);
+  });
 }
 
 /** Read a File as plain UTF-8 text, calling onProgress(percent). */
@@ -336,9 +404,16 @@ export async function addFiles(fileList, onUpdate, onProgress) {
           continue;
         }
         const pendingId = shortId();
+        /* P_perf-blob-url — use URL.createObjectURL for the chip
+           thumbnail so the image appears instantly in the UI without
+           waiting for the full base64 read. The blob URL is O(1) —
+           the browser lazily decodes only what the 28×28 chip needs.
+           Revoked after the base64 dataUrl is ready. */
+        const thumbUrl = URL.createObjectURL(file);
         attachments.push({
           id: pendingId, kind: 'image', pending: true, progress: 0,
           name: file.name || 'image', mime: file.type, size: file.size,
+          thumbnailUrl: thumbUrl,
         });
         if (onUpdate) onUpdate();
         const { dataUrl, size } = await readFileAsDataUrl(file, function(pct){
@@ -370,6 +445,12 @@ export async function addFiles(fileList, onUpdate, onProgress) {
         }
         const entry = attachments.find(a => a.id === pendingId);
         if (entry) {
+          /* Revoke the blob URL now that we have the final dataUrl;
+             the chip will use dataUrl as fallback. */
+          if (entry.thumbnailUrl) {
+            try { URL.revokeObjectURL(entry.thumbnailUrl); } catch (_) { /* noop */ }
+            entry.thumbnailUrl = undefined;
+          }
           entry.pending = false;
           entry.progress = 100;
           entry.dataUrl = finalDataUrl;
@@ -451,12 +532,23 @@ export async function addFiles(fileList, onUpdate, onProgress) {
   return result;
 }
 
+/** Revoke blob URLs for a list of attachment entries. */
+function _revokeBlobUrls(list) {
+  for (let i = 0; i < list.length; i++) {
+    const url = list[i].thumbnailUrl;
+    if (url) {
+      try { URL.revokeObjectURL(url); } catch (_) { /* noop */ }
+    }
+  }
+}
+
 /**
  * Remove one attachment by id. Returns true if found.
  */
 export function removeAttachment(id) {
   const idx = attachments.findIndex((a) => a.id === id);
   if (idx === -1) return false;
+  _revokeBlobUrls([attachments[idx]]);
   attachments.splice(idx, 1);
   return true;
 }

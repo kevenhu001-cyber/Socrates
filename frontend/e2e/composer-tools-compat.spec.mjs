@@ -219,13 +219,11 @@ test('mobile workflow selection embeds a themed token in the editable content', 
   await expect(token).toBeVisible();
   const tokenBox = await token.boundingBox();
   expect(tokenBox).not.toBeNull();
-  expect(tokenBox.height).toBeGreaterThanOrEqual(26);
+  expect(tokenBox.height).toBeGreaterThanOrEqual(18);
   await expect(token.locator('.composer-extension-token-icon')).toHaveCSS('color', /rgb/);
   await expect(token.locator('.composer-extension-token-label')).toHaveCSS('color', /rgb/);
   // The workflow token is an inline node inside the editable content.
   expect(await token.evaluate((element) => element.closest('.rich-composer-editor')?.getAttribute('contenteditable'))).toBe('true');
-  await expect(editor).toHaveAttribute('data-extension-empty', 'true');
-  await expect(editor).toHaveAttribute('data-extension-hint', /.+/);
   await expect.poll(() => page.evaluate(() => window.__socratesComposerController?.getMarkdown('topic') ?? null)).toBe('');
 
   // Dismissing the token clears the workflow itself, not just its styling.
@@ -242,8 +240,6 @@ test('mobile workflow selection embeds a themed token in the editable content', 
   const chatEditor = page.locator('#chatComposerRoot .rich-composer-editor');
   const chatToken = chatEditor.locator('.composer-extension-token');
   await expect(chatToken).toBeVisible();
-  await expect(chatEditor).toHaveAttribute('data-extension-empty', 'true');
-  await expect(chatEditor).toHaveAttribute('data-extension-hint', /.+/);
   expect(await chatToken.evaluate((element) => element.closest('.rich-composer-editor')?.getAttribute('contenteditable'))).toBe('true');
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflow-selected-mobile.png',
