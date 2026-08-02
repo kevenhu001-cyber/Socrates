@@ -32,6 +32,7 @@ Thumbs.db
 # ── OpenCode / IDE ──
 .omo/
 .opencode/
+.zcode/
 apply_patch_example.txt
 *.tmp.cjs
 
@@ -42,6 +43,7 @@ apply_patch_example.txt
 .codegraph/
 codegraph.db
 openai-codex-*.tgz
+codex/
 .vite/
 server.log.bak.*
 
