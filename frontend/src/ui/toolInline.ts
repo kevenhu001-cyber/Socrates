@@ -11,6 +11,7 @@
 
 import { esc } from '../render/helpers.js';
 import { formatToolOutput } from '../render/toolOutput.js';
+import { getSocratesWasm } from '../lib/socratesWasm.js';
 
 export interface InlineToolEntry {
   id: string;
@@ -54,6 +55,38 @@ const SEARCH_TOOLS = new Set([
 
 export function isInlineSearchTool(name: string): boolean {
   return SEARCH_TOOLS.has(name);
+}
+
+/**
+ * Display category for a tool name. The TS branch mirrors
+ * socrates-format::categorize_tool exactly; when the Rust mechanism
+ * library is loaded the WASM `categorize_tool_js` is authoritative
+ * (parity asserted in test/wasmParity.test.mjs).
+ */
+export function toolCategory(name: string): string {
+  if (SEARCH_TOOLS.has(name)) return 'search';
+  if (name === 'code_interpreter' || name === 'Code') return 'code';
+  if (name === 'web_fetch' || name === 'WebFetch') return 'fetch';
+  if (name === 'render_visualization') return 'visual';
+  if (name === 'create_plan') return 'plan';
+  if (name === 'create_spec') return 'spec';
+  if (name === 'Read' || name === 'Glob' || name === 'Grep') return 'read';
+  if (name === 'Write' || name === 'Edit' || name === 'Bash') return 'write';
+  return 'other';
+}
+
+/**
+ * Marks a live row as the collapsed head of a same-category group and
+ * updates its label to a count form ("Searching the web (2)…"). The count
+ * is recorded on `data-group-count` so the presentation stays
+ * serialization-safe.
+ */
+export function updateInlineToolGroupLabel(row: HTMLElement, count: number): void {
+  const name = row.dataset.tool || '';
+  const base = runningLabel(name).replace(/…+$/, '');
+  const label = row.querySelector('.tool-inline-label');
+  if (label) label.textContent = base + ' (' + count + ')…';
+  row.dataset.groupCount = String(count);
 }
 
 function runningLabel(name: string): string {
@@ -119,6 +152,34 @@ function sourcesHtml(sources: SourceItem[]): string {
 }
 
 const INLINE_DETAIL_LIMIT = 12_000;
+/* Codex TOOL_CALL_MAX_LINES: keep head+tail lines of oversized tool output,
+   ellipsize the middle ("… +N lines"). */
+const INLINE_DETAIL_HEAD_LINES = 5;
+const INLINE_DETAIL_TAIL_LINES = 5;
+
+/**
+ * Line-aware head/tail truncation backed by the Rust mechanism library
+ * (socrates-format::truncate_lines). The TS branch below mirrors the Rust
+ * semantics exactly (CRLF normalized, trailing newline dropped, interior
+ * empty lines kept) so WASM and fallback paths stay behavior-identical.
+ */
+export function truncateDetailLines(
+  text: string,
+  head: number = INLINE_DETAIL_HEAD_LINES,
+  tail: number = INLINE_DETAIL_TAIL_LINES,
+): { lines: string[]; omittedLines: number } {
+  const w = getSocratesWasm();
+  if (w) return w.truncate_tool_output(text, head, tail);
+  if (!text) return { lines: [], omittedLines: 0 };
+  const lines = text.split('\n').map((l) => (l.endsWith('\r') ? l.slice(0, -1) : l));
+  if (lines[lines.length - 1] === '') lines.pop();
+  const headEnd = Math.min(lines.length, head);
+  const tailLen = Math.min(lines.length - headEnd, tail);
+  const omittedLines = lines.length - headEnd - tailLen;
+  const kept = [...lines.slice(0, headEnd)];
+  if (tailLen > 0) kept.push(...lines.slice(lines.length - tailLen));
+  return { lines: kept, omittedLines };
+}
 
 function detailText(value: unknown): string {
   if (value == null || value === '') return '';
@@ -129,9 +190,9 @@ function detailText(value: unknown): string {
     try { text = JSON.stringify(value, null, 2); } catch (_) { text = String(value); }
   }
   if (text.length <= INLINE_DETAIL_LIMIT) return text;
-  return text.slice(0, INLINE_DETAIL_LIMIT)
-    + '\n\n'
-    + translate('common.truncated', '(truncated)');
+  const { lines, omittedLines } = truncateDetailLines(text);
+  if (omittedLines <= 0) return text;
+  return [...lines, `… +${omittedLines} lines`].join('\n');
 }
 
 function appendDetailSection(

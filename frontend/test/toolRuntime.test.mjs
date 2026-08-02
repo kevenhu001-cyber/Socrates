@@ -107,8 +107,7 @@ test('ToolRuntime treats duplicate tool_use events as idempotent', () => {
   }
 });
 
-test('ToolRuntime drains progress that arrives before tool_use', () => {
-  const message = { toolCalls: [] };
+test('ToolRuntime drains progress that arrives before tool_use', () => {  const message = { toolCalls: [] };
   globalThis.document = {
     createElement(tag) {
       return { tagName: tag, dataset: {}, className: '', innerHTML: '' };
@@ -313,6 +312,24 @@ function makeLiveSlotDom() {
   return liveSlot;
 }
 
+// Body stub whose querySelector resolves `[data-tcid="…"]` into the live
+// slot's rows, mirroring findCard() in toolRuntime.ts.
+function makeLiveSlotBody(liveSlot) {
+  return {
+    childNodes: [liveSlot],
+    querySelector(sel) {
+      const m = /^\[data-tcid="([^"]+)"\]$/.exec(sel || '');
+      if (!m) return null;
+      for (let i = 0; i < liveSlot.childNodes.length; i++) {
+        const n = liveSlot.childNodes[i];
+        if (n && n.dataset && n.dataset.tcid === m[1]) return n;
+      }
+      return null;
+    },
+    querySelectorAll() { return []; },
+  };
+}
+
 function installLiveSlotDocument() {
   globalThis.document = {
     createElement(tag) {
@@ -323,6 +340,11 @@ function installLiveSlotDocument() {
         get isConnected() { return this._isConnected || !!(this.parentNode); },
         getAnimations() { return []; },
         querySelector() { return null; },
+        getAttribute(name) {
+          return name === 'data-tcid' ? (this.dataset.tcid || null) : (this.dataset[name] || null);
+        },
+        setAttribute(name, value) { this.dataset[name] = String(value); },
+        insertAdjacentElement() { return null; },
         addEventListener() {},
         removeEventListener() {},
         appendChild(child) {
@@ -337,12 +359,13 @@ function installLiveSlotDocument() {
           this.parentNode = null;
         },
         replaceChildren() {},
-        classList: {
-          _set: new Set(),
-          add(c) { this._set.add(c); },
-          remove(c) { this._set.delete(c); },
-          contains(c) { return this._set.has(c); },
-        },
+      };
+      // classList mirrors className so classList.contains('tool-inline')
+      // behaves like a real DOM element (toolInline rows set className).
+      el.classList = {
+        add(c) { el.className = (el.className + ' ' + c).trim(); },
+        remove(c) { el.className = el.className.split(' ').filter((x) => x !== c).join(' '); },
+        contains(c) { return el.className.split(' ').indexOf(c) !== -1; },
       };
       return el;
     },
@@ -429,6 +452,96 @@ test('ToolRuntime dispose tears down the live single-card slot cleanly', () => {
     // tries to drive the runtime.
     runtime.recordToolUse({ id: 'B', name: 'web_search' });
     assert.equal(message.toolCalls.length, 1, 'dispose must prevent late mounts');
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('ToolRuntime collapses consecutive same-category live rows into a group', () => {
+  const message = { toolCalls: [] };
+  const liveSlot = makeLiveSlotDom();
+  installLiveSlotDocument();
+  try {
+    const runtime = createToolRuntime({
+      body: { childNodes: [liveSlot], querySelector() { return null; }, querySelectorAll() { return []; } },
+      stillOwnsSlot: () => true,
+      getMessage: () => message,
+      liveSingleCardSlot: liveSlot,
+      onInlineTool() { return 0; },
+      EventSource: null,
+      mode: 'compact',
+    });
+
+    runtime.recordToolUse({ id: 'g1', name: 'web_search', input: { query: 'a' } });
+    runtime.recordToolUse({ id: 'g2', name: 'web_search', input: { query: 'b' } });
+
+    assert.equal(message.toolCalls.length, 2);
+    const row1 = liveSlot.childNodes.find((r) => r && r.dataset.tcid === 'g1');
+    const row2 = liveSlot.childNodes.find((r) => r && r.dataset.tcid === 'g2');
+    assert.ok(row1 && row2, 'both rows must exist in the slot');
+    assert.equal(row2.dataset.merged, '1', 'second same-category row is merged/hidden');
+    assert.equal(row1.dataset.groupCount, '2', 'visible row shows the group count');
+    runtime.dispose();
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('ToolRuntime resets grouping on a category change', () => {
+  const message = { toolCalls: [] };
+  const liveSlot = makeLiveSlotDom();
+  installLiveSlotDocument();
+  try {
+    const runtime = createToolRuntime({
+      body: { childNodes: [liveSlot], querySelector() { return null; }, querySelectorAll() { return []; } },
+      stillOwnsSlot: () => true,
+      getMessage: () => message,
+      liveSingleCardSlot: liveSlot,
+      onInlineTool() { return 0; },
+      EventSource: null,
+      mode: 'compact',
+    });
+
+    runtime.recordToolUse({ id: 'h1', name: 'web_search' });
+    runtime.recordToolUse({ id: 'h2', name: 'web_search' }); // merged
+    runtime.recordToolUse({ id: 'h3', name: 'code_interpreter' }); // different category
+
+    const row3 = liveSlot.childNodes.find((r) => r && r.dataset.tcid === 'h3');
+    assert.ok(row3, 'third row mounted');
+    assert.equal(row3.dataset.merged, undefined, 'category change must not merge');
+    assert.equal(row3.dataset.groupCount, undefined);
+    runtime.dispose();
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('ToolRuntime expands a merged row when it settles', () => {
+  const message = { toolCalls: [] };
+  const liveSlot = makeLiveSlotDom();
+  installLiveSlotDocument();
+  try {
+    const runtime = createToolRuntime({
+      body: makeLiveSlotBody(liveSlot),
+      stillOwnsSlot: () => true,
+      getMessage: () => message,
+      liveSingleCardSlot: liveSlot,
+      onInlineTool() { return 0; },
+      EventSource: null,
+      mode: 'compact',
+    });
+
+    runtime.recordToolUse({ id: 's1', name: 'web_search', input: { query: 'a' } });
+    runtime.recordToolUse({ id: 's2', name: 'web_search', input: { query: 'b' } });
+    runtime.recordToolResult({ id: 's2', ok: true, status: 'completed', output: 'second result' });
+
+    const row2 = liveSlot.childNodes.find((r) => r && r.dataset.tcid === 's2');
+    assert.ok(row2, 'merged row must exist');
+    assert.equal(row2.dataset.merged, undefined, 'settled row is expanded (unhidden)');
+    assert.equal(row2.dataset.state, 'done');
+    // The settled member replaces the collapsed head as the visible row.
+    assert.equal(liveSlot.childNodes[liveSlot.childNodes.length - 1], row2);
+    runtime.dispose();
   } finally {
     delete globalThis.document;
   }

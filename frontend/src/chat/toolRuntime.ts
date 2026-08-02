@@ -19,7 +19,9 @@ import {
   createInlineToolRow,
   replaceLiveInlineToolRow,
   settleInlineToolRow,
+  toolCategory,
   updateInlineToolCodePreview,
+  updateInlineToolGroupLabel,
   updateInlineToolMeta,
 } from '../ui/toolInline.js';
 import { mountVisualization } from '../render/visualization.js';
@@ -31,6 +33,9 @@ import {
   transitionToolRun,
 } from './toolRunState.js';
 import type { ToolRun } from './toolRunState.js';
+import { createLiveOutputBuffer, renderLivePreview } from './liveOutput.js';
+import type { LiveOutputBufferHandle } from './liveOutput.js';
+import { getSocratesWasm } from '../lib/socratesWasm.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -55,6 +60,8 @@ interface ToolCallEntry {
   _pendingDeltas?: ToolCallDelta[];
   _pendingProgress?: ToolProgress[];
   _toolResultApplied?: boolean;
+  /** Bounded live-output buffer for the running stream (client-only). */
+  _liveBuffer?: LiveOutputBufferHandle;
 }
 
 interface ToolMessage {
@@ -312,21 +319,52 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
      in place (in-place update path). Different ids fade the previous row
      out of the slot and swap in the new one. The row's textOffset /
      inlineToolRows entries are still accumulated normally; the slot is
-     purely a presentation layer over the existing pipeline. */
+     purely a presentation layer over the existing pipeline.
+
+     P_tool-live-group — consecutive same-category tools while the slot
+     row is still running collapse into one visible row: the new row is
+     mounted hidden inside the slot (data-merged) and the visible row's
+     label becomes a count ("Searching the web (2)…"), mirroring Codex's
+     "Exploring (2)…" grouping. Each merged row still goes through
+     onInlineTool, so textOffset / inlineToolRows persistence is
+     unchanged; when a merged row settles it is unhidden and replaces the
+     collapsed head. */
   function mountLiveSingleCardRow(entry: ToolCallEntry): number | null {
     if (findCard(entry.id)) return null;
-    const existing = liveSingleCardSlot ? liveSingleCardSlot.querySelector('.tool-inline[data-tcid]') as HTMLElement | null : null;
+    const children = liveSingleCardSlot
+      ? Array.from(liveSingleCardSlot.children || []) as HTMLElement[]
+      : [];
+    const existing = children.length ? children[children.length - 1] : null;
+    const existingId = existing ? existing.getAttribute('data-tcid') : null;
+    const existingEntry = existingId ? findEntry(activeMessage(), existingId) : null;
+    const merged = !!(existing && existing.dataset.state === 'running'
+      && existingEntry && sameToolCategory(existingEntry.name, entry.name));
     const row = createInlineToolRow({
       id: entry.id,
       name: entry.name,
       input: entry.input,
     });
-    if (liveSingleCardSlot) {
+    if (merged && liveSingleCardSlot) {
+      /* Merge: hidden sibling inside the slot; the visible row keeps the
+         running label and gains the group count. */
+      row.dataset.merged = '1';
+      const count = (Number(existing.dataset.groupCount) || 1) + 1;
+      try { updateInlineToolGroupLabel(existing, count); } catch (_) { /* ignore */ }
+      try { liveSingleCardSlot.appendChild(row); } catch (_) { /* ignore */ }
+    } else if (liveSingleCardSlot) {
       try { replaceLiveInlineToolRow(liveSingleCardSlot, row, { skipFlash: !!existing }); } catch (_) { /* ignore */ }
     }
     let offset: number | null = null;
     try { offset = onInlineTool({ id: entry.id, name: entry.name }, row); } catch (_) { body.appendChild(row); }
     return typeof offset === 'number' ? offset : null;
+  }
+
+  /* Same display category (Rust categorize_tool via WASM when loaded,
+     TS fallback otherwise) — the grouping predicate for live rows. */
+  function sameToolCategory(a: string, b: string): boolean {
+    const w = getSocratesWasm();
+    if (w) return w.categorize_tool_js(String(a || '')) === w.categorize_tool_js(String(b || ''));
+    return toolCategory(String(a || '')) === toolCategory(String(b || ''));
   }
 
   function findInlineRow(id: string): HTMLElement | null {
@@ -466,18 +504,25 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       headerStatus.textContent = phaseLabel.replace(/^\[|\]$/g, '') + ' ' + elapsed + 's';
     }
     if (progress.phase === 'timeout_warning' && progress.chunk) {
+      /* The warning reads like a stream line too, so it goes through the
+         bounded buffer (kept visually bracketed as before) instead of
+         unbounded appends. */
       if (stream) {
-        stream.textContent += '\n[' + progress.chunk + ']\n';
+        const buffer = entry._liveBuffer || (entry._liveBuffer = createLiveOutputBuffer());
+        buffer.push('\n[' + progress.chunk + ']\n');
+        stream.textContent = renderLivePreview(buffer.preview());
         stream.scrollTop = stream.scrollHeight;
       }
       (card as HTMLElement).style.borderColor = 'hsl(35 80% 50%)';
       return;
     }
     if (stream && progress.chunk) {
-      stream.textContent! += progress.chunk;
-      if (stream.textContent!.length > 51200) {
-        stream.textContent = '[\u2026truncated\u2026]\n' + (stream.textContent!.slice(-51200) || '');
-      }
+      const buffer = entry._liveBuffer || (entry._liveBuffer = createLiveOutputBuffer());
+      buffer.push(progress.chunk);
+      /* Bounded rebuild: the buffer keeps head+tail windows and counts
+         dropped content, so the DOM node never grows past the caps
+         (previously a 51200-char slice that dropped the output head). */
+      stream.textContent = renderLivePreview(buffer.preview());
       stream.scrollTop = stream.scrollHeight;
     }
   }
@@ -887,6 +932,12 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       if (mode === 'compact') {
         const row = findInlineRow(entry.id);
         if (row) {
+          /* P_tool-live-group — a merged row settling expands it: unhide
+             and swap it into the live slot as the visible row. */
+          if (row.dataset.merged === '1' && liveSingleCardSlot) {
+            delete row.dataset.merged;
+            try { replaceLiveInlineToolRow(liveSingleCardSlot, row, { skipFlash: true }); } catch (_) { /* ignore */ }
+          }
           settleInlineToolRow(row, {
             ...result,
             output: entry.output || result.output || '',

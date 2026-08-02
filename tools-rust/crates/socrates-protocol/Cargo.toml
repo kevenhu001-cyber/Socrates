@@ -1,0 +1,10 @@
+[package]
+name = "socrates-protocol"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Socrates tool-call wire protocol: SSE event models and the tool-run phase state machine"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }

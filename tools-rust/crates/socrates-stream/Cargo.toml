@@ -1,0 +1,9 @@
+[package]
+name = "socrates-stream"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Newline-gated streaming controller with adaptive commit chunking"
+
+[dependencies]
+serde = { workspace = true }

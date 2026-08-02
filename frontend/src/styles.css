@@ -4136,6 +4136,12 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
    and share. The slot is presentation-only. */
 .tool-inline-live-slot{display:flex;flex-direction:column}
 .tool-inline-live-slot:empty{display:none}
+/* P_tool-live-group — merged sibling rows of a same-category group stay
+   hidden inside the slot while the collapsed head shows the running
+   count; the row becomes visible again when it settles and replaces the
+   head. The selector is scoped to the slot so serialized rows in history
+   are never affected. */
+.tool-inline-live-slot .tool-inline[data-merged="1"]{display:none}
 
 /* P_tool_live_card — fade-out applied to a tool row that is being
    replaced in the live slot. Only opacity/transform animate so the

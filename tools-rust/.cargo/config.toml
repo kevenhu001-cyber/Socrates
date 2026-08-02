@@ -1,0 +1,9 @@
+# This workspace builds through the rsproxy.cn crates.io mirror because the
+# default endpoints (index.crates.io / static.rust-lang.org) are unreachable
+# from the development network. Delete this file once unrestricted network
+# access is available.
+[source.crates-io]
+replace-with = "rsproxy-sparse"
+
+[source.rsproxy-sparse]
+registry = "sparse+https://rsproxy.cn/index/"
