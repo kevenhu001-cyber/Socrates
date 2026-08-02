@@ -770,7 +770,7 @@ window.toggleSidebarView=toggleSidebarView;
 
 import {
   attachments, addFiles, removeAttachment, resetAttachments,
-  buildMessageContent, MAX_TOTAL_ATTACHMENTS,
+  buildMessageContent, MAX_TOTAL_ATTACHMENTS, validateImageAttachments,
 } from './attachments.js';
 
 /* attachments bridge + renderAttachmentChips + setupAttachmentInput + DOMContentLoaded
@@ -2731,6 +2731,14 @@ async function startSession(){
   if(isSlashCommandPaletteOpen()) return;
   var topic=getComposerMarkdown("topic").trim();
   if(!topic)return;
+  /* P_attachments-multimodal — the model may have been switched after the
+     image was attached on the landing composer. Re-check before consuming
+     the pending store so the first turn cannot bypass the upload-time gate. */
+  var startAttachmentValidation=validateImageAttachments(attachments);
+  if(!startAttachmentValidation.ok){
+    showToast(startAttachmentValidation.message);
+    return;
+  }
 
   /* Deep Research mode — if the extension is active, the landing topic
      is routed to the research agent INSTEAD of a normal first chat turn,
@@ -3990,6 +3998,16 @@ async function submitChatMessage(textOverride,opts){
      image description / multimodal assembly continues in the background. */
   var isComposerSubmit=textOverride==null;
   var turnAttachments=isComposerSubmit&&Array.isArray(window.attachments)?window.attachments.slice():[];
+  /* P_attachments-multimodal — a model switch can happen while an image is
+     being read or compressed. Keep the same guard at the send boundary so a
+     stale pending image is rejected before the user bubble is committed. */
+  if(isComposerSubmit){
+    var attachmentValidation=validateImageAttachments(turnAttachments);
+    if(!attachmentValidation.ok){
+      showToast(attachmentValidation.message);
+      return;
+    }
+  }
   var immediateAttList=turnAttachments.slice(0,20).map(function(a){
     return Object.assign({},a);
   });

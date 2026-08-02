@@ -38,6 +38,13 @@ export const MAX_TOTAL_ATTACHMENTS = 6;
    Images whose dataUrl exceeds this target are re-encoded through a
    canvas (downscale + quality steps) until they fit. */
 export const MAX_IMAGE_DATAURL_CHARS = 1_900_000; // safety margin under 2,000,000
+/* A base64 data URL expands the source by roughly 4/3. Keep images below
+   this conservative source-size threshold on the cheap FileReader path;
+   larger images go straight from File/Blob to the image decoder so we do
+   not allocate a large source data URL only to decode it again. */
+export const MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL = Math.floor(
+  (MAX_IMAGE_DATAURL_CHARS - 64) * 3 / 4,
+);
 
 const ACCEPTED_IMAGE_MIMES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp',
@@ -61,6 +68,51 @@ const ACCEPTED_DOC_MIMES = new Set([
  * deliberately not React-ish / observable — main.js calls
  * `renderAttachmentChips()` after each mutation. */
 export const attachments = [];
+
+const DEFAULT_IMAGE_CAPABILITY_MESSAGE =
+  'The selected model is not multimodal and cannot view image attachments. Enable Multimodal for this model or select a vision-capable model before uploading an image.';
+
+function getActiveProvider() {
+  if (typeof window === 'undefined' || typeof window.getActiveProvider !== 'function') return null;
+  try { return window.getActiveProvider() || null; } catch (_) { return null; }
+}
+
+function providerSupportsImages(provider) {
+  return !!(provider && (provider.vision === true || provider.isMultimodal === true));
+}
+
+function imageCapabilityMessage() {
+  try {
+    const translated = typeof window !== 'undefined' && typeof window.t === 'function'
+      ? window.t('attach.notMultimodal')
+      : '';
+    return translated && translated !== 'attach.notMultimodal'
+      ? translated
+      : DEFAULT_IMAGE_CAPABILITY_MESSAGE;
+  } catch (_) {
+    return DEFAULT_IMAGE_CAPABILITY_MESSAGE;
+  }
+}
+
+/**
+ * Check the current model before an image is admitted to the pending store.
+ * This is also called immediately before sending so a model switch during an
+ * in-flight read cannot leave a stale image waiting for a request that will
+ * be rejected later.
+ */
+export function validateImageAttachments(attachmentList = attachments) {
+  const hasImage = Array.isArray(attachmentList)
+    && attachmentList.some((entry) => entry && entry.kind === 'image');
+  if (!hasImage) return { ok: true, provider: getActiveProvider() };
+  const provider = getActiveProvider();
+  if (providerSupportsImages(provider)) return { ok: true, provider };
+  return {
+    ok: false,
+    code: 'MODEL_NOT_MULTIMODAL',
+    message: imageCapabilityMessage(),
+    provider,
+  };
+}
 
 /** Clear the pending attachments list. Called after submit + on cancel. */
 export function resetAttachments() {
@@ -102,48 +154,48 @@ function readFileAsDataUrl(file, onProgress) {
 
 /**
  * P_image-payload-alignment — re-encode an oversized image through a
- * canvas until its dataUrl fits MAX_IMAGE_DATAURL_CHARS. Walks a
- * downscale ladder (longest edge) and, per size, a quality ladder;
- * tries WebP first and falls back to JPEG when the browser encodes
- * WebP as PNG (Safari < 14 returns a PNG dataUrl from toDataURL).
- * Transparency is flattened onto white because JPEG has no alpha.
- * Non-DOM environments (unit tests under Node/jsdom without canvas)
- * return the input unchanged; the caller then rejects on size with a
- * clear message instead of silently sending an oversized payload.
- * Animated GIFs are flattened to their first frame — a static image
- * the model can see beats a 400 the user can't.
+ * canvas until its dataUrl fits MAX_IMAGE_DATAURL_CHARS. The source is a
+ * File/Blob, not a pre-built data URL, so large images do not pay for a
+ * full base64 allocation followed by fetch(dataUrl) and a second decode.
+ * Walks a downscale ladder (longest edge) and, per size, a quality ladder;
+ * tries WebP first and falls back to JPEG when the browser encodes WebP as
+ * PNG (Safari < 14 returns a PNG dataUrl from toDataURL). Transparency is
+ * flattened onto white because JPEG has no alpha. Non-DOM environments
+ * reject the oversized source with a clear message instead of silently
+ * sending an oversized payload. Animated GIFs are flattened to their first
+ * frame — a static image the model can see beats a 400 the user can't.
  *
  * P_perf-offscreen — uses createImageBitmap + OffscreenCanvas when
  * available so the decode and encode both run off the main thread.
  * Falls back to the legacy Image() + canvas approach otherwise.
  */
-async function compressImageDataUrl(dataUrl) {
-  if (!dataUrl || dataUrl.length <= MAX_IMAGE_DATAURL_CHARS) return dataUrl;
+async function compressImageFile(file, onProgress) {
+  if (!file) return null;
   const hasOffscreen = typeof OffscreenCanvas !== 'undefined';
   const hasCreateImageBitmap = typeof createImageBitmap === 'function';
   if (hasOffscreen && hasCreateImageBitmap) {
-    return compressWithOffscreenCanvas(dataUrl);
+    const offscreen = await compressWithOffscreenCanvas(file, onProgress);
+    if (offscreen) return offscreen;
   }
-  return compressWithLegacyCanvas(dataUrl);
+  return compressWithLegacyCanvas(file, onProgress);
 }
 
-/** OffscreenCanvas path — decode + encode off the main thread. */
-async function compressWithOffscreenCanvas(dataUrl) {
+/** OffscreenCanvas path — decode + encode away from the main thread. */
+async function compressWithOffscreenCanvas(file, onProgress) {
   let bitmap;
   try {
-    const resp = await fetch(dataUrl);
-    const blob = await resp.blob();
-    bitmap = await createImageBitmap(blob);
+    bitmap = await createImageBitmap(file);
   } catch (_) {
-    return compressWithLegacyCanvas(dataUrl);
+    return null;
   }
   const srcW = bitmap.width;
   const srcH = bitmap.height;
-  if (!srcW || !srcH) { bitmap.close(); return dataUrl; }
+  if (!srcW || !srcH) { bitmap.close(); return null; }
   try {
     const EDGE_STEPS = [2048, 1600, 1280, 1024, 800];
     const QUALITY_STEPS = [0.85, 0.75, 0.6, 0.45];
-    for (const edge of EDGE_STEPS) {
+    for (let edgeIndex = 0; edgeIndex < EDGE_STEPS.length; edgeIndex++) {
+      const edge = EDGE_STEPS[edgeIndex];
       const scale = Math.min(1, edge / Math.max(srcW, srcH));
       const w = Math.max(1, Math.round(srcW * scale));
       const h = Math.max(1, Math.round(srcH * scale));
@@ -153,72 +205,105 @@ async function compressWithOffscreenCanvas(dataUrl) {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, w, h);
       ctx.drawImage(bitmap, 0, 0, w, h);
-      for (const q of QUALITY_STEPS) {
+      for (let qualityIndex = 0; qualityIndex < QUALITY_STEPS.length; qualityIndex++) {
+        const q = QUALITY_STEPS[qualityIndex];
         try {
           const blob = await canvas.convertToBlob({ type: 'image/webp', quality: q });
-          const out = await blobToDataUrl(blob);
-          if (out && out.length <= MAX_IMAGE_DATAURL_CHARS) { bitmap.close(); return out; }
+          const out = await blobToDataUrl(blob, onProgress);
+          if (out && out.length <= MAX_IMAGE_DATAURL_CHARS) return out;
         } catch (_) { /* try next quality */ }
+        if (typeof onProgress === 'function') {
+          const completed = edgeIndex * QUALITY_STEPS.length + qualityIndex + 1;
+          onProgress(Math.min(90, 20 + Math.round(completed * 70 / (EDGE_STEPS.length * QUALITY_STEPS.length))));
+        }
       }
     }
-    return dataUrl;
+    return null;
   } finally {
     bitmap.close();
   }
 }
 
-/** Legacy canvas fallback — synchronous on main thread. */
-async function compressWithLegacyCanvas(dataUrl) {
+/** Legacy canvas fallback — the encode itself is synchronous on the main thread. */
+async function compressWithLegacyCanvas(file, onProgress) {
   if (typeof document === 'undefined' || typeof Image === 'undefined'
       || typeof document.createElement !== 'function') {
-    return dataUrl;
+    return null;
   }
+  let sourceUrl = '';
   let img;
   try {
+    if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') return null;
+    sourceUrl = URL.createObjectURL(file);
     img = await new Promise((resolve, reject) => {
       const el = new Image();
       el.onload = () => resolve(el);
       el.onerror = () => reject(new Error('image decode failed'));
-      el.src = dataUrl;
+      el.src = sourceUrl;
     });
   } catch (_) {
-    return dataUrl;
+    if (sourceUrl) {
+      try { URL.revokeObjectURL(sourceUrl); } catch (_) { /* noop */ }
+    }
+    return null;
   }
   const srcW = img.naturalWidth || img.width || 0;
   const srcH = img.naturalHeight || img.height || 0;
-  if (!srcW || !srcH) return dataUrl;
-  const EDGE_STEPS = [2048, 1600, 1280, 1024, 800];
-  const QUALITY_STEPS = [0.85, 0.75, 0.6, 0.45];
-  for (const edge of EDGE_STEPS) {
-    const scale = Math.min(1, edge / Math.max(srcW, srcH));
-    const w = Math.max(1, Math.round(srcW * scale));
-    const h = Math.max(1, Math.round(srcH * scale));
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext && canvas.getContext('2d');
-    if (!ctx) return dataUrl;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, w, h);
-    ctx.drawImage(img, 0, 0, w, h);
-    for (const q of QUALITY_STEPS) {
-      let out = '';
-      try { out = canvas.toDataURL('image/webp', q); } catch (_) { out = ''; }
-      if (!out.startsWith('data:image/webp')) {
-        try { out = canvas.toDataURL('image/jpeg', q); } catch (_) { out = ''; }
+  if (!srcW || !srcH) {
+    if (sourceUrl) {
+      try { URL.revokeObjectURL(sourceUrl); } catch (_) { /* noop */ }
+    }
+    return null;
+  }
+  try {
+    const EDGE_STEPS = [2048, 1600, 1280, 1024, 800];
+    const QUALITY_STEPS = [0.85, 0.75, 0.6, 0.45];
+    for (let edgeIndex = 0; edgeIndex < EDGE_STEPS.length; edgeIndex++) {
+      const edge = EDGE_STEPS[edgeIndex];
+      const scale = Math.min(1, edge / Math.max(srcW, srcH));
+      const w = Math.max(1, Math.round(srcW * scale));
+      const h = Math.max(1, Math.round(srcH * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext && canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      for (let qualityIndex = 0; qualityIndex < QUALITY_STEPS.length; qualityIndex++) {
+        const q = QUALITY_STEPS[qualityIndex];
+        let out = '';
+        try { out = canvas.toDataURL('image/webp', q); } catch (_) { out = ''; }
+        if (!out.startsWith('data:image/webp')) {
+          try { out = canvas.toDataURL('image/jpeg', q); } catch (_) { out = ''; }
+        }
+        if (out && out.length <= MAX_IMAGE_DATAURL_CHARS) return out;
+        if (typeof onProgress === 'function') {
+          const completed = edgeIndex * QUALITY_STEPS.length + qualityIndex + 1;
+          onProgress(Math.min(90, 20 + Math.round(completed * 70 / (EDGE_STEPS.length * QUALITY_STEPS.length))));
+        }
       }
-      if (out && out.length <= MAX_IMAGE_DATAURL_CHARS) return out;
+    }
+    return null;
+  } finally {
+    if (sourceUrl) {
+      try { URL.revokeObjectURL(sourceUrl); } catch (_) { /* noop */ }
     }
   }
-  return dataUrl;
 }
 
 /** Convert a Blob to a base64 dataUrl string. */
-function blobToDataUrl(blob) {
+function blobToDataUrl(blob, onProgress) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result || ''));
     reader.onerror = () => reject(reader.error || new Error('blobToDataUrl failed'));
+    if (typeof onProgress === 'function') {
+      reader.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.min(99, 90 + Math.round((e.loaded / e.total) * 9)));
+      };
+    }
     reader.readAsDataURL(blob);
   });
 }
@@ -379,10 +464,6 @@ export async function addFiles(fileList, onUpdate, onProgress) {
       else if (onUpdate) onUpdate();
     });
   }
-  /* P_attachments-multimodal — proactive gate for image attachments. */
-  const activeProvider = (typeof window !== 'undefined' && typeof window.getActiveProvider === 'function')
-    ? window.getActiveProvider() : null;
-  const activeIsMultimodal = !!(activeProvider && activeProvider.vision === true);
   for (const file of files) {
     if (attachments.length >= MAX_TOTAL_ATTACHMENTS) {
       result.rejected.push(`${file.name || 'file'}: max ${MAX_TOTAL_ATTACHMENTS} attachments per turn`);
@@ -395,7 +476,12 @@ export async function addFiles(fileList, onUpdate, onProgress) {
     }
     try {
       if (kind === 'image') {
-        if (!activeIsMultimodal) {
+        /* P_attachments-multimodal — reject before creating a thumbnail,
+           reading the file, or doing any compression. This makes the error
+           an upload-time response instead of a send-time failure. Re-read
+           the provider for every image so a model switch during a multi-file
+           selection cannot admit an image under stale capability state. */
+        if (!providerSupportsImages(getActiveProvider())) {
           result.rejected.push(`${file.name}: active provider is not multimodal`);
           continue;
         }
@@ -409,39 +495,51 @@ export async function addFiles(fileList, onUpdate, onProgress) {
            waiting for the full base64 read. The blob URL is O(1) —
            the browser lazily decodes only what the 28×28 chip needs.
            Revoked after the base64 dataUrl is ready. */
-        const thumbUrl = URL.createObjectURL(file);
+        const thumbUrl = (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function')
+          ? URL.createObjectURL(file)
+          : undefined;
         attachments.push({
           id: pendingId, kind: 'image', pending: true, progress: 0,
           name: file.name || 'image', mime: file.type, size: file.size,
           thumbnailUrl: thumbUrl,
         });
         if (onUpdate) onUpdate();
-        const { dataUrl, size } = await readFileAsDataUrl(file, function(pct){
-          const e = attachments.find(a => a.id === pendingId);
-          if(e) e.progress = pct;
-          notifyProgress();
+        /* Let the pending chip paint before FileReader or image decoding
+           starts. FileReader is asynchronous, but browsers may still keep
+           the current task busy long enough to miss the next frame. */
+        await new Promise((resolve) => {
+          if (typeof requestAnimationFrame === 'function') requestAnimationFrame(resolve);
+          else setTimeout(resolve, 0);
         });
-        /* P_image-payload-alignment — the server rejects image payloads
-           above 2,000,000 dataUrl chars (Zod image_url + attachment
-           schema). Re-encode oversized images down to the client target
-           instead of letting the request die with an opaque 400/413. */
-        let finalDataUrl = dataUrl;
+
+        /* P_image-payload-alignment — small images can go directly through
+           FileReader. Large images are decoded from the original File and
+           only the compressed result is converted to base64, eliminating
+           the old dataUrl → fetch(dataUrl) → second decode round-trip. */
+        let finalDataUrl = '';
         let finalMime = file.type;
-        let finalSize = size;
-        if (dataUrl.length > MAX_IMAGE_DATAURL_CHARS) {
-          finalDataUrl = await compressImageDataUrl(dataUrl);
+        let finalSize = file.size;
+        const reportProgress = (pct) => {
+          const e = attachments.find(a => a.id === pendingId);
+          if (e) e.progress = pct;
+          notifyProgress();
+        };
+        if (file.size > MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL) {
+          finalDataUrl = await compressImageFile(file, reportProgress);
           if (!finalDataUrl || finalDataUrl.length > MAX_IMAGE_DATAURL_CHARS) {
             removeAttachment(pendingId);
             if (onUpdate) onUpdate();
             result.rejected.push(`${file.name}: image too large even after compression — try a smaller image`);
             continue;
           }
-          if (finalDataUrl !== dataUrl) {
-            const m = /^data:([^;,]+)/.exec(finalDataUrl);
-            if (m) finalMime = m[1];
-            // Approximate decoded byte size from the base64 body length.
-            finalSize = Math.round((finalDataUrl.length - (finalDataUrl.indexOf(',') + 1)) * 3 / 4);
-          }
+          const m = /^data:([^;,]+)/.exec(finalDataUrl);
+          if (m) finalMime = m[1];
+          // Approximate decoded byte size from the base64 body length.
+          finalSize = Math.round((finalDataUrl.length - (finalDataUrl.indexOf(',') + 1)) * 3 / 4);
+        } else {
+          const read = await readFileAsDataUrl(file, reportProgress);
+          finalDataUrl = read.dataUrl;
+          finalSize = read.size;
         }
         const entry = attachments.find(a => a.id === pendingId);
         if (entry) {
