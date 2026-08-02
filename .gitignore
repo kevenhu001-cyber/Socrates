@@ -44,6 +44,7 @@ apply_patch_example.txt
 codegraph.db
 openai-codex-*.tgz
 codex/
+tools-rust/target/
 .vite/
 server.log.bak.*
 
