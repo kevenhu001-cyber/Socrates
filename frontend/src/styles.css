@@ -3993,90 +3993,108 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 
 /* Chat-first tool runs. One answer owns one quiet, collapsible activity
    group; individual cards are evidence, not a competing dashboard. */
-/* ── Inline tool status rows (ChatGPT-style, P_inline-tools) ──
+/* ── Inline tool status rows (P_inline-tools) ──
    A <details class="tool-inline"> sits between text segments at the
-   exact point the tool fired. Minimal: 13px grey text, small icon,
-   no border, no background. Expandable only when sources exist. */
+   exact point the tool fired. The row reads as one quiet grey line
+   in the assistant's prose — small icon on the left, label to the
+   right, no border, no background, no chevron, no duration tag. The
+   row visually belongs to the answer rather than competing with it:
+   the assistant's tool calls read like inline footnotes, not a
+   competing dashboard.
+
+   Layout rule (don't break sentences): `findInlineToolBoundary` in
+   render/streaming.ts already places the row at the latest completed
+   sentence or paragraph. The label itself is single-line
+   `white-space: nowrap` with `text-overflow: ellipsis` so a long
+   command path or filename is truncated with a trailing … rather
+   than wrapping and breaking visual rhythm with the surrounding prose. */
 .tool-inline{
-  display:block;
+  display:flex;
+  align-items:center;
+  gap:8px;
   clear:both;
   width:100%;
   box-sizing:border-box;
-  margin:8px 0;
-  border:1px solid transparent;
-  border-radius:12px;
-  font-size:13px;
-  color:hsl(var(--text-400));
-  transition:background-color .2s ease,border-color .2s ease;
+  margin:4px 0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  font-size:14.5px;
+  line-height:1.55;
+  color:hsl(var(--text-300));
+  transition:color .2s ease;
 }
-.tool-inline:hover{border-color:hsl(var(--border-300)/.26)}
+.tool-inline:hover{color:hsl(var(--text-100))}
 .tool-inline-head{
-  display:flex; align-items:center; gap:7px;
-  min-height:32px;
-  padding:5px 8px;
+  display:flex; align-items:center; gap:8px;
+  min-height:26px;
+  padding:0;
   list-style:none;
   cursor:pointer;
   -webkit-user-select:none;
   user-select:none;
-  border-radius:11px;
+  border-radius:0;
+  flex:1 1 auto;
+  min-width:0;
 }
 .tool-inline-head::-webkit-details-marker{display:none}
 .tool-inline-head::marker{display:none;content:""}
-.tool-inline-head:hover{background:hsl(var(--bg-200)/.5)}
-.tool-inline-head:hover .tool-inline-label{color:hsl(var(--text-200))}
-.tool-inline-head:focus-visible{outline:2px solid hsl(var(--accent-000)/.58);outline-offset:-2px}
-.tool-inline[open]{background:hsl(var(--bg-100)/.58);border-color:hsl(var(--border-300)/.34)}
-.tool-inline[open] .tool-inline-head{border-radius:11px 11px 0 0}
-.tool-inline-icon{
-  display:inline-flex; align-items:center; justify-content:center;
-  width:16px; height:16px; flex:0 0 auto;
-  color:hsl(var(--text-500));
-}
-.tool-inline[data-state="done"] .tool-inline-icon{color:hsl(var(--accent-000))}
-.tool-inline[data-state="error"] .tool-inline-icon{color:hsl(0 58% 52%)}
-.tool-inline[data-state="stopped"] .tool-inline-icon{color:hsl(35 58% 48%)}
+.tool-inline-head:focus-visible{outline:2px solid hsl(var(--accent-000)/.5);outline-offset:3px;border-radius:4px}
+.tool-inline[open] .tool-inline-head{background:transparent}
+/* The tool-type icon is the only glyph in the row; the row label
+   already conveys the lifecycle ("Reading the page" / "Found 3 web
+   results" / "Stopped"). Two side-by-side icons would dominate the
+   quiet single-glyph look the design asks for. */
+.tool-inline-icon{display:none}
 .tool-inline-tool-icon{
   display:inline-flex; align-items:center; justify-content:center;
   width:16px; height:16px; flex:0 0 auto;
   color:hsl(var(--text-400));
-  margin-right:2px;
 }
 .tool-inline-tool-icon svg{width:14px;height:14px;display:block}
-.tool-inline[data-state="done"] .tool-inline-tool-icon{color:hsl(var(--accent-000))}
+.tool-inline[data-state="done"] .tool-inline-tool-icon{color:hsl(var(--text-300))}
 .tool-inline[data-state="error"] .tool-inline-tool-icon{color:hsl(0 58% 52%)}
 .tool-inline[data-state="stopped"] .tool-inline-tool-icon{color:hsl(35 58% 48%)}
-.tool-inline-label{min-width:0;color:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tool-inline-label{
+  min-width:0;
+  color:inherit;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  flex:1 1 auto;
+}
+.tool-inline[data-state="running"] .tool-inline-label{
+  color:hsl(var(--text-400));
+}
 .tool-inline[data-state="running"] .tool-inline-icon{display:none}
-.tool-inline[data-state="running"] .tool-inline-label,
-.shimmer-text{
-  background:linear-gradient(90deg,hsl(var(--text-500)) 0%,hsl(var(--text-100)) 50%,hsl(var(--text-500)) 100%);
-  background-size:200% 100%;
-  -webkit-background-clip:text;
-  background-clip:text;
-  -webkit-text-fill-color:transparent;
-  animation:tool-inline-shimmer 1.6s linear infinite;
+/* Running shimmer is intentionally NOT applied — the row reads as a
+   calm grey line in the answer prose. A slow opacity pulse on the
+   label keeps the in-flight signal visible without breaking the
+   reading rhythm with a flashing gradient. */
+.tool-inline[data-state="running"] .tool-inline-label{
+  animation:tool-inline-running-pulse 1.8s ease-in-out infinite;
 }
-@keyframes tool-inline-shimmer{
-  0%{background-position:180% 0}
-  100%{background-position:-20% 0}
+@keyframes tool-inline-running-pulse{
+  0%,100%{opacity:1}
+  50%{opacity:.55}
 }
-.tool-inline-meta{margin-left:auto;color:hsl(var(--text-500));font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.tool-inline-chev{
-  display:inline-block;
-  flex:0 0 auto;
-  border-right:1.5px solid currentColor;
-  border-bottom:1.5px solid currentColor;
-  width:7px;height:7px;
-  transform:rotate(45deg);
-  margin-left:2px;
-  margin-top:-3px;
-  color:hsl(var(--text-500));
-  transition:transform .24s cubic-bezier(.4,0,.2,1),color .2s ease;
+/* Spinner glyph that lives in the .tool-inline-tool-icon slot while the
+   tool is in flight. Same 16×16 footprint as the tool-type icon so the
+   label never reflows when the tool settles. */
+.tool-inline-spinner{
+  display:inline-block;width:14px;height:14px;border-radius:50%;
+  border:1.5px solid currentColor;border-right-color:transparent;
+  animation:tool-inline-spin 1s linear infinite;
 }
-.tool-inline[open] .tool-inline-chev{transform:rotate(225deg);margin-top:3px}
+@keyframes tool-inline-spin{
+  to{transform:rotate(360deg)}
+}
+.tool-inline-meta{display:none}
+.tool-inline-chev{display:none}
 .tool-inline-detail{
-  padding:8px 10px 10px 31px;
-  border-top:1px solid hsl(var(--border-300)/.22);
+  padding:4px 0 8px 24px;
+  border-top:0;
   animation:tool-inline-detail-enter .2s var(--composer-motion-ease,cubic-bezier(.22,1,.36,1));
 }
 @keyframes tool-inline-detail-enter{
@@ -4325,7 +4343,10 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
    .chat-input-wrap .chat-composer-body{
      order:2;flex:1 1 160px;width:auto;min-width:0;align-self:stretch;
      display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(42px,auto) 0px;
-     contain:layout paint;
+     /* Keep layout containment for the focus reflow, but do not use paint
+        containment here: the collapsed footer is translated over the editor
+        row, and paint containment clips the top of the neutral send circle. */
+     contain:layout;
      transition:flex-basis var(--composer-motion-duration) var(--composer-motion-ease),width var(--composer-motion-duration) var(--composer-motion-ease),grid-template-rows var(--composer-motion-duration) var(--composer-motion-ease);
    }
    .chat-input-wrap .composer-editor-root{
@@ -4333,7 +4354,10 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
    }
    .chat-input-wrap .chat-input-footer{
      display:flex;grid-column:1;grid-row:2;align-items:center;width:100%;min-height:44px;padding:0 2px 6px;
-     transform:translateY(-44px);pointer-events:none;transition:transform var(--composer-motion-duration) var(--composer-motion-ease);will-change:transform;
+     /* The collapsed footer is overlaid on the editor row. Its 6px bottom
+        padding lifts the 40px control by 4px, so compensate here; the
+        focused state below restores translateY(0) for the full footer row. */
+     transform:translateY(-40px);pointer-events:none;transition:transform var(--composer-motion-duration) var(--composer-motion-ease);will-change:transform;
    }
    .chat-input-wrap .chat-input-footer > *{pointer-events:auto}
    .chat-input-wrap .chat-input-footer .footer-left-group{display:flex;align-items:center;gap:2px;margin-right:auto;order:0}
