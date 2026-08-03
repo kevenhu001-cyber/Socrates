@@ -4094,90 +4094,110 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 
 /* Chat-first tool runs. One answer owns one quiet, collapsible activity
    group; individual cards are evidence, not a competing dashboard. */
-/* ── Inline tool status rows (ChatGPT-style, P_inline-tools) ──
+/* ── Inline tool status rows (P_inline-tools) ──
    A <details class="tool-inline"> sits between text segments at the
-   exact point the tool fired. Minimal: 13px grey text, small icon,
-   no border, no background. Expandable only when sources exist. */
+   exact point the tool fired. The row reads as one quiet grey line
+   in the assistant's prose — small icon on the left, label to the
+   right, no border, no background, no chevron, no duration tag. The
+   row visually belongs to the answer rather than competing with it:
+   the assistant's tool calls read like inline footnotes, not a
+   competing dashboard.
+
+   Layout rule (don't break sentences): `findInlineToolBoundary` in
+   render/streaming.ts already places the row at the latest completed
+   sentence or paragraph. The label itself is single-line
+   `white-space: nowrap` with `text-overflow: ellipsis` so a long
+   command path or filename is truncated with a trailing … rather
+   than wrapping and breaking visual rhythm with the surrounding prose. */
 .tool-inline{
-  display:block;
+  display:flex;
+  align-items:center;
+  gap:8px;
   clear:both;
   width:100%;
   box-sizing:border-box;
-  margin:8px 0;
-  border:1px solid transparent;
-  border-radius:12px;
-  font-size:13px;
-  color:hsl(var(--text-400));
-  transition:background-color .2s ease,border-color .2s ease;
+  margin:4px 0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  font-size:14.5px;
+  line-height:1.55;
+  color:hsl(var(--text-300));
+  transition:color .2s ease;
 }
-.tool-inline:hover{border-color:hsl(var(--border-300)/.26)}
+.tool-inline:hover{color:hsl(var(--text-100))}
 .tool-inline-head{
-  display:flex; align-items:center; gap:7px;
-  min-height:34px;
-  padding:6px 10px;
+  display:flex; align-items:center; gap:8px;
+  min-height:32px;
+  padding:6px 8px;
   list-style:none;
   cursor:pointer;
   -webkit-user-select:none;
   user-select:none;
-  border-radius:11px;
+  border-radius:0;
+  flex:1 1 auto;
+  min-width:0;
 }
 .tool-inline-head::-webkit-details-marker{display:none}
 .tool-inline-head::marker{display:none;content:""}
-.tool-inline-head:hover{background:hsl(var(--bg-200)/.5)}
-.tool-inline-head:hover .tool-inline-label{color:hsl(var(--text-200))}
-.tool-inline-head:focus-visible{outline:2px solid hsl(var(--text-400)/.55);outline-offset:-2px}
-.tool-inline[open]{background:hsl(var(--bg-100)/.58);border-color:hsl(var(--border-300)/.34)}
-.tool-inline[open] .tool-inline-head{border-radius:11px 11px 0 0}
-.tool-inline-icon{
-  display:inline-flex; align-items:center; justify-content:center;
-  width:16px; height:16px; flex:0 0 auto;
-  color:hsl(var(--text-500));
-}
-.tool-inline[data-state="done"] .tool-inline-icon{color:hsl(var(--text-300))}
-.tool-inline[data-state="error"] .tool-inline-icon{color:hsl(0 55% 50%)}
-.tool-inline[data-state="stopped"] .tool-inline-icon{color:hsl(var(--text-500))}
+.tool-inline-head:hover{background:var(--tool-card-bg-hover)}
+.tool-inline-head:hover .tool-inline-label{color:var(--tool-card-text)}
+.tool-inline-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px}
+.tool-inline[open] .tool-inline-head{background:var(--tool-card-bg-sunken)}
+/* The tool-type icon is the only glyph in the row; the label carries the
+   lifecycle and the spinner occupies the same slot while running. */
+.tool-inline-icon{display:none}
 .tool-inline-tool-icon{
   display:inline-flex; align-items:center; justify-content:center;
   width:16px; height:16px; flex:0 0 auto;
-  color:hsl(var(--text-400));
-  margin-right:2px;
+  color:var(--tool-card-icon);
 }
 .tool-inline-tool-icon svg{width:14px;height:14px;display:block}
-.tool-inline[data-state="done"] .tool-inline-tool-icon{color:hsl(var(--text-300))}
-.tool-inline[data-state="error"] .tool-inline-tool-icon{color:hsl(0 55% 50%)}
-.tool-inline[data-state="stopped"] .tool-inline-tool-icon{color:hsl(var(--text-500))}
-.tool-inline-label{min-width:0;color:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.tool-inline[data-state="done"] .tool-inline-tool-icon{color:var(--tool-card-icon)}
+.tool-inline[data-state="error"] .tool-inline-tool-icon{color:var(--tool-card-danger)}
+.tool-inline[data-state="stopped"] .tool-inline-tool-icon{color:var(--tool-card-text-subtle)}
+.tool-inline-label{
+   min-width:0;
+   color:var(--tool-card-text-muted);
+   overflow:hidden;
+   text-overflow:ellipsis;
+   white-space:nowrap;
+   flex:1 1 auto;
+   font-size:var(--tool-card-desc-size);
+   font-weight:var(--tool-card-desc-weight);
+ }
+.tool-inline[data-state="running"] .tool-inline-label{
+   color:var(--tool-card-text-muted);
+ }
 .tool-inline[data-state="running"] .tool-inline-icon{display:none}
-.tool-inline[data-state="running"] .tool-inline-label,
-.shimmer-text{
-  background:linear-gradient(90deg,hsl(var(--text-500)) 0%,hsl(var(--text-100)) 50%,hsl(var(--text-500)) 100%);
-  background-size:200% 100%;
-  -webkit-background-clip:text;
-  background-clip:text;
-  -webkit-text-fill-color:transparent;
-  animation:tool-inline-shimmer 1.6s linear infinite;
+/* Running shimmer is intentionally NOT applied — the row reads as a
+   calm grey line in the answer prose. A slow opacity pulse on the
+   label keeps the in-flight signal visible without breaking the
+   reading rhythm with a flashing gradient. */
+.tool-inline[data-state="running"] .tool-inline-label{
+  animation:tool-inline-running-pulse 1.8s ease-in-out infinite;
 }
-@keyframes tool-inline-shimmer{
-  0%{background-position:180% 0}
-  100%{background-position:-20% 0}
+@keyframes tool-inline-running-pulse{
+  0%,100%{opacity:1}
+  50%{opacity:.55}
 }
-.tool-inline-meta{margin-left:auto;color:hsl(var(--text-500));font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.tool-inline-chev{
-  display:inline-block;
-  flex:0 0 auto;
-  border-right:1.5px solid currentColor;
-  border-bottom:1.5px solid currentColor;
-  width:7px;height:7px;
-  transform:rotate(45deg);
-  margin-left:2px;
-  margin-top:-3px;
-  color:hsl(var(--text-500));
-  transition:transform .24s cubic-bezier(.4,0,.2,1),color .2s ease;
+/* Spinner glyph that lives in the .tool-inline-tool-icon slot while the
+   tool is in flight. Same 16×16 footprint as the tool-type icon so the
+   label never reflows when the tool settles. */
+.tool-inline-spinner{
+  display:inline-block;width:14px;height:14px;border-radius:50%;
+  border:1.5px solid currentColor;border-right-color:transparent;
+  animation:tool-inline-spin 1s linear infinite;
 }
-.tool-inline[open] .tool-inline-chev{transform:rotate(225deg);margin-top:3px}
+@keyframes tool-inline-spin{
+  to{transform:rotate(360deg)}
+}
+.tool-inline-meta{display:none}
+.tool-inline-chev{display:none}
 .tool-inline-detail{
-  padding:8px 10px 10px 31px;
-  border-top:1px solid hsl(var(--border-300)/.22);
+  padding:4px 0 8px 24px;
+  border-top:0;
   animation:tool-inline-detail-enter .2s var(--composer-motion-ease,cubic-bezier(.22,1,.36,1));
 }
 @keyframes tool-inline-detail-enter{
@@ -4426,7 +4446,10 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
    .chat-input-wrap .chat-composer-body{
      order:2;flex:1 1 160px;width:auto;min-width:0;align-self:stretch;
      display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(42px,auto) 0px;
-     contain:layout paint;
+     /* Keep layout containment for the focus reflow, but do not use paint
+        containment here: the collapsed footer is translated over the editor
+        row, and paint containment clips the top of the neutral send circle. */
+     contain:layout;
      transition:flex-basis var(--composer-motion-duration) var(--composer-motion-ease),width var(--composer-motion-duration) var(--composer-motion-ease),grid-template-rows var(--composer-motion-duration) var(--composer-motion-ease);
    }
    .chat-input-wrap .composer-editor-root{
@@ -4434,7 +4457,10 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
    }
    .chat-input-wrap .chat-input-footer{
      display:flex;grid-column:1;grid-row:2;align-items:center;width:100%;min-height:44px;padding:0 2px 6px;
-     transform:translateY(-44px);pointer-events:none;transition:transform var(--composer-motion-duration) var(--composer-motion-ease);will-change:transform;
+     /* The collapsed footer is overlaid on the editor row. Its 6px bottom
+        padding lifts the 40px control by 4px, so compensate here; the
+        focused state below restores translateY(0) for the full footer row. */
+     transform:translateY(-40px);pointer-events:none;transition:transform var(--composer-motion-duration) var(--composer-motion-ease);will-change:transform;
    }
    .chat-input-wrap .chat-input-footer > *{pointer-events:auto}
    .chat-input-wrap .chat-input-footer .footer-left-group{display:flex;align-items:center;gap:2px;margin-right:auto;order:0}
@@ -4855,4 +4881,785 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
 .analyze-workbench-empty{
   margin:6px 0 0;
   color:hsl(var(--text-500));
+}
+
+/* ── Tool-card visual system ────────────────────────────────────────
+   The tool surfaces share one neutral scale: a light 1px outline, one
+   quiet surface, generous padding, and no brand-colour state changes.
+   Runtime semantics (error/delete) are the only intentional colour cue. */
+:root{
+  --tool-card-bg:hsl(0 0% 100%/.58);
+  --tool-card-bg-hover:hsl(0 0% 100%/.84);
+  --tool-card-bg-sunken:hsl(0 0% 0%/.035);
+  --tool-card-surface:hsl(0 0% 100%/.9);
+  --tool-card-border:hsl(0 0% 0%/.12);
+  --tool-card-border-strong:hsl(0 0% 0%/.22);
+  --tool-card-text:hsl(0 0% 16%);
+  --tool-card-text-muted:hsl(0 0% 36%);
+  --tool-card-text-subtle:hsl(0 0% 50%);
+  --tool-card-icon:hsl(0 0% 42%);
+  --tool-card-icon-hover:hsl(0 0% 16%);
+  --tool-card-radius:12px;
+  --tool-card-radius-sm:10px;
+  --tool-card-pad-y:12px;
+  --tool-card-pad-x:14px;
+  --tool-card-title-size:14px;
+  --tool-card-title-weight:600;
+  --tool-card-desc-size:12.5px;
+  --tool-card-desc-weight:400;
+  --tool-card-meta-size:11px;
+  --tool-card-meta-weight:400;
+  --tool-card-focus:hsl(0 0% 0%/.36);
+  --tool-card-shadow:0 8px 24px hsl(0 0% 0%/.08);
+  --tool-card-danger:hsl(0 58% 46%);
+  --tool-card-danger-soft:hsl(0 58% 46%/.1);
+  --tool-card-danger-soft-strong:hsl(0 58% 46%/.18)
+}
+[data-theme=socrates][data-mode=dark]{
+  --tool-card-bg:hsl(0 0% 16%/.78);
+  --tool-card-bg-hover:hsl(0 0% 22%/.9);
+  --tool-card-bg-sunken:hsl(0 0% 7%/.46);
+  --tool-card-surface:hsl(0 0% 11%/.96);
+  --tool-card-border:hsl(0 0% 100%/.14);
+  --tool-card-border-strong:hsl(0 0% 100%/.26);
+  --tool-card-text:hsl(0 0% 92%);
+  --tool-card-text-muted:hsl(0 0% 72%);
+  --tool-card-text-subtle:hsl(0 0% 54%);
+  --tool-card-icon:hsl(0 0% 70%);
+  --tool-card-icon-hover:hsl(0 0% 94%);
+  --tool-card-focus:hsl(0 0% 100%/.44);
+  --tool-card-shadow:0 8px 24px hsl(0 0% 0%/.28);
+  --tool-card-danger:hsl(0 58% 70%);
+  --tool-card-danger-soft:hsl(0 58% 48%/.18);
+  --tool-card-danger-soft-strong:hsl(0 58% 48%/.28)
+}
+
+/* Menus and card surfaces */
+.composer-tools-menu,
+.slash-command-palette,
+.prompt-templates-modal,
+.model-picker-menu,
+.extensions-menu{
+  background:var(--tool-card-surface);
+  border:1px solid var(--tool-card-border);
+  border-radius:var(--tool-card-radius);
+  box-shadow:var(--tool-card-shadow);
+}
+.composer-tools-menu{padding:8px}
+.composer-tools-item{
+  min-height:46px;
+  padding:10px 12px;
+  gap:12px;
+  border-radius:var(--tool-card-radius-sm);
+  color:var(--tool-card-text-muted);
+  font-size:var(--tool-card-desc-size);
+  font-weight:var(--tool-card-desc-weight);
+  transition:background-color .16s ease,color .16s ease,border-color .16s ease
+}
+.composer-tools-item:hover,
+.composer-tools-item:focus-visible{background:var(--tool-card-bg-hover);color:var(--tool-card-text);outline:0}
+.composer-tools-item:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:2px;box-shadow:none}
+.composer-tools-item:active{background:var(--tool-card-bg-sunken);transform:none}
+.composer-tools-icon{color:var(--tool-card-icon)}
+.composer-tools-item:hover .composer-tools-icon,
+.composer-tools-item:focus-visible .composer-tools-icon{color:var(--tool-card-icon-hover)}
+.composer-tools-copy > span{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
+.composer-tools-copy small{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-subtle)}
+
+/* Plugin / connector cards */
+.plugins-list{gap:8px}
+.plugins-list .connector-row{
+  min-height:66px;
+  margin:0;
+  padding:12px 14px;
+  gap:12px;
+  border:1px solid var(--tool-card-border);
+  border-radius:var(--tool-card-radius);
+  background:var(--tool-card-bg);
+  transition:background-color .16s ease,border-color .16s ease
+}
+.plugins-list .connector-row:hover{background:var(--tool-card-bg-hover);border-color:var(--tool-card-border-strong)}
+.connector-row .connector-icon{
+  width:32px;
+  height:32px;
+  border-radius:var(--tool-card-radius-sm);
+  background:var(--tool-card-bg-sunken)!important;
+  border:1px solid var(--tool-card-border)!important;
+  box-shadow:none!important;
+  color:var(--tool-card-icon)!important;
+  filter:grayscale(1);
+}
+.connector-row .connector-icon svg{width:18px;height:18px;filter:grayscale(1) contrast(.85);opacity:.78}
+.connector-row .connector-icon span{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:11px;font-weight:600;color:inherit}
+.connector-row .workspace-row-copy{gap:4px}
+.connector-row .workspace-row-copy strong{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
+.connector-row .workspace-row-copy > span{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-muted)}
+.connector-row .workspace-note{display:none}
+.connector-row.is-connected .workspace-row-copy strong::after{content:none}
+.connector-coming-soon{padding:0;background:transparent;color:var(--tool-card-text-subtle);font-size:var(--tool-card-meta-size);font-weight:var(--tool-card-meta-weight)}
+.connector-connect.workspace-secondary{
+  min-height:32px;
+  padding:7px 12px;
+  border:1px solid var(--tool-card-border-strong);
+  border-radius:var(--tool-card-radius-sm);
+  background:transparent;
+  color:var(--tool-card-text-muted);
+  font-size:var(--tool-card-desc-size);
+  font-weight:var(--tool-card-title-weight)
+}
+.connector-connect.workspace-secondary:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text);border-color:var(--tool-card-border-strong)}
+
+/* Skills / shortcuts and slash-command entries */
+.prompt-templates-body{padding:18px 20px 20px;gap:10px}
+.prompt-row{gap:12px;padding:12px 14px;border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius);background:var(--tool-card-bg)}
+.prompt-row:hover{background:var(--tool-card-bg-hover);border-color:var(--tool-card-border-strong)}
+.prompt-row-icon{display:grid;place-items:center;width:26px;height:26px;font-size:16px;color:var(--tool-card-icon);filter:grayscale(1)}
+.prompt-row-icon svg{width:18px;height:18px;color:currentColor}
+.prompt-row-main{gap:3px}
+.prompt-row-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text);gap:8px}
+.prompt-row-shortcut,
+.slash-command-shortcut{padding:0;background:transparent;color:var(--tool-card-text-subtle);font-size:var(--tool-card-meta-size);font-weight:var(--tool-card-meta-weight);border-radius:0}
+.prompt-row-desc,.slash-command-desc{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-muted)}
+.prompt-row-actions{gap:6px}
+.prompt-row-edit,.prompt-row-delete{min-height:30px;padding:6px 10px;border:1px solid var(--tool-card-border-strong);border-radius:var(--tool-card-radius-sm);font-size:var(--tool-card-meta-size);font-weight:var(--tool-card-title-weight)}
+.prompt-row-edit{color:var(--tool-card-text-muted)}
+.prompt-row-edit:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text)}
+.prompt-row-delete{color:var(--tool-card-danger);border-color:var(--tool-card-danger-soft-strong)}
+.prompt-row-delete:hover{background:var(--tool-card-danger-soft);color:var(--tool-card-danger)}
+.prompt-templates-new{min-height:38px;padding:9px 12px;border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius-sm);color:var(--tool-card-text-muted);font-size:var(--tool-card-desc-size);margin-top:4px}
+.prompt-templates-new:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text);border-color:var(--tool-card-border-strong)}
+.slash-command-palette{overflow:hidden}
+.slash-command-head{padding:12px 14px;color:var(--tool-card-text-subtle);border-bottom:1px solid var(--tool-card-border);font-weight:var(--tool-card-title-weight)}
+.slash-command-row{min-height:46px;padding:10px 14px;border-radius:var(--tool-card-radius-sm);transition:background-color .16s ease,color .16s ease}
+.slash-command-row:hover,.slash-command-row.selected{background:var(--tool-card-bg-hover)}
+.slash-command-icon{color:var(--tool-card-icon);filter:grayscale(1)}
+.slash-command-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
+.slash-command-foot{border-top:1px solid var(--tool-card-border)}
+
+/* Expandable tool execution cards */
+.agent-tool-card{
+  margin-top:10px;
+  border:1px solid var(--tool-card-border);
+  border-radius:var(--tool-card-radius);
+  background:var(--tool-card-bg);
+  box-shadow:none;
+  transition:background-color .16s ease,border-color .16s ease
+}
+.agent-tool-card:hover{border-color:var(--tool-card-border-strong)}
+.agent-tool-card.open{box-shadow:none}
+.agent-tool-head{gap:10px;padding:12px var(--tool-card-pad-x);border-radius:var(--tool-card-radius-sm);transition:background-color .16s ease}
+.agent-tool-head:hover{background:var(--tool-card-bg-hover)}
+.agent-tool-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px}
+.agent-tool-icon{width:26px;height:26px;border-radius:var(--tool-card-radius-sm);background:var(--tool-card-bg-sunken)!important;color:var(--tool-card-icon)!important;box-shadow:none!important}
+.agent-tool-name{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
+.agent-tool-input{font-size:var(--tool-card-meta-size);color:var(--tool-card-text-subtle);opacity:1}
+.agent-tool-chev{color:var(--tool-card-text-subtle)}
+.agent-tool-card .agent-tool-body::before{display:none}
+.agent-tool-out,.agent-tool-code,.agent-tool-progress,.agent-tool-code-wrap{border-top:1px solid var(--tool-card-border);background:var(--tool-card-bg-sunken)}
+.agent-tool-out{padding:12px var(--tool-card-pad-x);color:var(--tool-card-text-muted)}
+.agent-tool-code{padding:12px var(--tool-card-pad-x);color:var(--tool-card-text);border-top-color:var(--tool-card-border)}
+.agent-tool-code-streaming::after{color:var(--tool-card-icon)}
+.agent-tool-out.error{color:var(--tool-card-danger);background:var(--tool-card-danger-soft)}
+.agent-tool-progress{padding:10px var(--tool-card-pad-x);color:var(--tool-card-text-muted)}
+.agent-tool-progress-badge{color:var(--tool-card-text-muted);background:var(--tool-card-bg-hover)}
+.agent-tool-progress .agent-tool-progress-spinner{border-color:var(--tool-card-border-strong);border-top-color:var(--tool-card-icon)}
+.agent-tool-status.ok,.agent-tool-status.warn,.agent-tool-status.mute{background:transparent;color:var(--tool-card-text-subtle)}
+.agent-tool-status.err{background:var(--tool-card-danger-soft);color:var(--tool-card-danger)}
+.agent-tool-card[data-tool-state="cancelled"]{border-color:var(--tool-card-border)}
+
+/* Inline tool activity and grouped tool output */
+.tool-inline-head{border-radius:var(--tool-card-radius-sm)}
+.tool-inline-head:hover{background:var(--tool-card-bg-hover)}
+.tool-inline[open] .tool-inline-head{background:var(--tool-card-bg-sunken)}
+.tool-inline-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px}
+.tool-inline-tool-icon{color:var(--tool-card-icon)}
+.tool-inline-label{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-muted)}
+.tool-inline[data-state="error"] .tool-inline-tool-icon{color:var(--tool-card-danger)}
+.tool-inline-detail{padding:8px 8px 10px 32px}
+.tool-inline-detail-value{border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius-sm);background:var(--tool-card-bg-sunken);color:var(--tool-card-text-muted)}
+.tool-inline-detail-section[data-kind="error"] .tool-inline-detail-value,.tool-inline-detail-section[data-kind="technical"] .tool-inline-detail-value{border-color:var(--tool-card-danger-soft-strong);background:var(--tool-card-danger-soft)}
+.tool-inline-src{color:var(--tool-card-text-muted)}
+a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text)}
+.tool-inline-flash{background-color:var(--tool-card-bg-hover)}
+.tool-run-summary:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text)}
+.tool-run-summary:active{transform:none}
+.tool-run-summary-dot,.tool-run-group[data-state="running"] .tool-run-summary-dot,.tool-run-group[data-state="complete"] .tool-run-summary-dot,.tool-run-group[data-state="cancelled"] .tool-run-summary-dot{background:var(--tool-card-text-subtle)}
+.tool-run-group[data-state="error"] .tool-run-summary-dot{background:var(--tool-card-danger)}
+.tool-run-summary-label{color:var(--tool-card-text)}
+.tool-run-summary-meta{color:var(--tool-card-text-subtle)}
+
+/* Sources, storage, quick suggestions, and analysis activity use the same
+   quiet card language so tool output does not become a second dashboard. */
+.sources-card,.storage-row,.analyze-workbench{
+  border:1px solid var(--tool-card-border);
+  border-radius:var(--tool-card-radius);
+  background:var(--tool-card-bg)
+}
+.sources-card{overflow:hidden}
+.sources-head,.sources-row{padding:10px 14px;color:var(--tool-card-text-muted)}
+.sources-head:hover,a.sources-row:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text)}
+.sources-head:active,a.sources-row:active{transform:none}
+.sources-chev,.sources-row-chev,.sources-host,.sources-num{color:var(--tool-card-text-subtle)}
+.sources-row-wrap{border-top:1px solid var(--tool-card-border)}
+.sources-detail{padding:12px 14px 14px 42px;border-top:1px solid var(--tool-card-border);background:var(--tool-card-bg-sunken)}
+.sources-engine-pill,.sources-relevance{padding:0;border:0;border-radius:0;background:transparent;color:var(--tool-card-text-subtle);font-size:var(--tool-card-meta-size);font-weight:var(--tool-card-meta-weight)}
+.sources-engine-dot{background:var(--tool-card-text-subtle)!important}
+.sources-snippet{color:var(--tool-card-text-muted)}
+.sources-fulltext > summary{color:var(--tool-card-text-muted)}
+.sources-fulltext > summary:hover{color:var(--tool-card-text)}
+.sources-open,.sources-copy{padding:7px 10px;border:1px solid var(--tool-card-border-strong);border-radius:var(--tool-card-radius-sm);background:transparent;color:var(--tool-card-text-muted)}
+.sources-open:hover,.sources-copy:hover,.sources-copy.copied{background:var(--tool-card-bg-hover);color:var(--tool-card-text);border-color:var(--tool-card-border-strong)}
+.storage-row{padding:12px 14px}
+.storage-row-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
+.storage-row-meta{font-size:var(--tool-card-meta-size);color:var(--tool-card-text-subtle)}
+.quick-opt{padding:8px 12px;border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius-sm);color:var(--tool-card-text-muted);background:var(--tool-card-bg)}
+.quick-opt:hover,.quick-opt.primary{background:var(--tool-card-bg-hover);border-color:var(--tool-card-border-strong);color:var(--tool-card-text)}
+.analyze-workbench{padding:12px 14px;color:var(--tool-card-text-muted)}
+.analyze-workbench-call{background:var(--tool-card-bg-sunken)}
+.analyze-workbench-call-running .analyze-workbench-call-name::before,.analyze-workbench-call-succeeded .analyze-workbench-call-name::before{background:var(--tool-card-text-subtle)}
+.analyze-workbench-call-failed .analyze-workbench-call-name::before{background:var(--tool-card-danger)}
+
+/* Extension/model menus: keep active state neutral and remove scale-heavy
+   entrance motion while preserving keyboard focus and selection semantics. */
+.extensions-menu,.model-picker-menu{padding:8px;transition:opacity .14s ease,transform .14s ease;will-change:auto}
+.extensions-item,.model-picker-item{min-height:40px;padding:9px 10px;border-radius:var(--tool-card-radius-sm);color:var(--tool-card-text-muted);font-size:var(--tool-card-desc-size)}
+.extensions-item:hover,.extensions-item.on,.model-picker-item:hover,.model-picker-item.active{background:var(--tool-card-bg-hover);color:var(--tool-card-text)}
+.extensions-item-icon,.model-picker-item-check{color:var(--tool-card-icon)}
+.extensions-item.on .extensions-item-icon,.model-picker-item-check{color:var(--tool-card-icon)}
+.extensions-item.on .extensions-item-check{background:var(--tool-card-text);border-color:var(--tool-card-text)}
+.extensions-item-check svg{stroke:var(--tool-card-surface)}
+.extensions-item-desc,.model-picker-item-sub{font-size:var(--tool-card-meta-size);color:var(--tool-card-text-subtle)}
+.extensions-menu .extensions-item,.extensions-menu .extensions-divider,.model-picker-menu .model-picker-item,.model-picker-menu .model-picker-divider,.model-picker-menu .model-picker-filter,.model-picker-menu .model-picker-add,.model-picker-menu .model-picker-empty{animation:none}
+.extensions-picker[data-open="true"] .extensions-menu{transform:translateY(0)}
+.model-picker[data-open="true"] .model-picker-menu{transform:translateX(-50%) translateY(0)}
+.model-picker-item:focus-visible,.extensions-item:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px}
+
+@media(max-width:768px){
+  .plugins-list .connector-row{padding:12px}
+  .tool-inline-detail{padding-left:10px}
+  .composer-tools-menu{border-radius:20px 20px 0 0}
+}
+
+/* ── Codex-style tool activity surface ──────────────────────────────
+   Tool calls are part of the assistant's reading flow, not a collection
+   of nested cards. When a message contains a tool row, the message body
+   becomes one quiet activity surface: prose stays prominent and the
+   tool rows become low-contrast, icon-led status lines between it.
+   `:has()` is intentionally presentation-only; the existing details,
+   focus, aria, and result DOM remain unchanged. */
+:root{
+  --tool-activity-bg:hsl(0 0% 96%);
+  --tool-activity-border:hsl(0 0% 0%/.08);
+  --tool-activity-text:hsl(0 0% 16%);
+  --tool-activity-row:hsl(0 0% 47%);
+  --tool-activity-row-hover:hsl(0 0% 30%);
+  --tool-activity-focus:hsl(0 0% 0%/.38);
+  --tool-activity-code-bg:hsl(0 0% 100%/.72);
+  --tool-activity-danger:hsl(0 55% 44%);
+  --tool-activity-danger-bg:hsl(0 55% 44%/.08);
+}
+[data-theme=socrates][data-mode=dark]{
+  --tool-activity-bg:hsl(0 0% 9%);
+  --tool-activity-border:hsl(0 0% 100%/.07);
+  --tool-activity-text:hsl(0 0% 94%);
+  --tool-activity-row:hsl(0 0% 61%);
+  --tool-activity-row-hover:hsl(0 0% 82%);
+  --tool-activity-focus:hsl(0 0% 100%/.48);
+  --tool-activity-code-bg:hsl(0 0% 100%/.055);
+  --tool-activity-danger:hsl(0 58% 72%);
+  --tool-activity-danger-bg:hsl(0 58% 50%/.16);
+}
+
+.msg.assistant .msg-body:has(.tool-inline),
+.msg.assistant .msg-body:has(.tool-run-group),
+.msg.assistant .msg-body:has(.agent-tool-card){
+  box-sizing:border-box;
+  margin:2px 0 4px;
+  padding:22px 24px 24px;
+  border:1px solid var(--tool-activity-border);
+  border-radius:16px;
+  background:var(--tool-activity-bg);
+  box-shadow:none;
+  color:var(--tool-activity-text);
+}
+.msg.assistant .msg-body:has(.tool-inline) p,
+.msg.assistant .msg-body:has(.tool-inline) li,
+.msg.assistant .msg-body:has(.tool-run-group) p,
+.msg.assistant .msg-body:has(.tool-run-group) li,
+.msg.assistant .msg-body:has(.agent-tool-card) p,
+.msg.assistant .msg-body:has(.agent-tool-card) li,
+.msg.assistant .msg-body:has(.tool-inline) strong,
+.msg.assistant .msg-body:has(.tool-run-group) strong,
+.msg.assistant .msg-body:has(.agent-tool-card) strong{
+  color:var(--tool-activity-text);
+}
+.msg.assistant .msg-body:has(.tool-inline) a,
+.msg.assistant .msg-body:has(.tool-run-group) a,
+.msg.assistant .msg-body:has(.agent-tool-card) a{
+  color:var(--tool-activity-text);
+  text-decoration-color:var(--tool-activity-row);
+}
+.msg.assistant .msg-body:has(.tool-inline) a:hover,
+.msg.assistant .msg-body:has(.tool-run-group) a:hover,
+.msg.assistant .msg-body:has(.agent-tool-card) a:hover{
+  color:var(--tool-activity-row-hover);
+}
+.msg.assistant .msg-body:has(.tool-inline) blockquote,
+.msg.assistant .msg-body:has(.tool-run-group) blockquote,
+.msg.assistant .msg-body:has(.agent-tool-card) blockquote{
+  border-left-color:var(--tool-activity-border);
+  color:var(--tool-activity-row);
+}
+.msg.assistant .msg-body:has(.tool-inline) code,
+.msg.assistant .msg-body:has(.tool-run-group) code,
+.msg.assistant .msg-body:has(.agent-tool-card) code{
+  background:var(--tool-activity-code-bg);
+}
+
+/* A row is deliberately not a card: no fill, no border, no chip, and no
+   state colour jump. The native <details>/<summary> interaction remains
+   the source of click and keyboard accessibility. */
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline{
+  display:block;
+  margin:15px 0;
+  color:var(--tool-activity-row);
+  transition:color .16s ease;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline:first-child{margin-top:4px}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline:last-child{margin-bottom:4px}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-live-slot{
+  display:flex;
+  flex-direction:column;
+  gap:13px;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-live-slot .tool-inline,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-attachments .tool-inline{
+  margin:0;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head{
+  display:flex;
+  align-items:center;
+  width:100%;
+  min-height:25px;
+  padding:0;
+  gap:12px;
+  border-radius:8px;
+  background:transparent;
+  color:var(--tool-activity-row);
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head:hover,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[open] .tool-inline-head{
+  background:transparent;
+  color:var(--tool-activity-row-hover);
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head:hover .tool-inline-label,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[open] .tool-inline-label{
+  color:inherit;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head:focus-visible{
+  outline:2px solid var(--tool-activity-focus);
+  outline-offset:4px;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon{
+  width:20px;
+  height:20px;
+  color:currentColor;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon svg{
+  width:18px;
+  height:18px;
+  stroke-width:1.8;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-label{
+  flex:0 1 auto;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--tool-activity-row);
+  font-size:14px;
+  font-weight:400;
+  line-height:1.45;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label{
+  color:var(--tool-activity-row);
+  animation:none;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="error"] .tool-inline-tool-icon,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="error"] .tool-inline-label{
+  color:var(--tool-activity-danger);
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-flash{
+  background:transparent;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail{
+  padding:11px 0 3px 32px;
+  border:0;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-value{
+  border-color:var(--tool-activity-border);
+  border-radius:10px;
+  background:var(--tool-activity-code-bg);
+  color:var(--tool-activity-text);
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-section[data-kind="technical"] .tool-inline-detail-value{
+  border-color:var(--tool-activity-border);
+  background:var(--tool-activity-code-bg);
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-section[data-kind="error"] .tool-inline-detail-value{
+  border-color:var(--tool-activity-danger-bg);
+  background:var(--tool-activity-danger-bg);
+  color:var(--tool-activity-danger);
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-src,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-src-host,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-title{
+  color:var(--tool-activity-row);
+}
+.msg.assistant .msg-body:has(.tool-inline) a.tool-inline-src:hover{
+  background:transparent;
+  color:var(--tool-activity-row-hover);
+}
+
+/* Search sources are still expandable, but visually belong to the same
+   activity stream instead of becoming a second card inside the panel. */
+.msg.assistant .msg-body:has(.tool-inline) .sources-card,
+.msg.assistant .msg-body:has(.tool-run-group) .sources-card,
+.msg.assistant .msg-body:has(.agent-tool-card) .sources-card{
+  margin:15px 0 4px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  overflow:visible;
+}
+.msg.assistant .msg-body:has(.tool-inline) .sources-head,
+.msg.assistant .msg-body:has(.tool-run-group) .sources-head,
+.msg.assistant .msg-body:has(.agent-tool-card) .sources-head{
+  min-height:25px;
+  padding:0;
+  gap:12px;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:var(--tool-activity-row);
+}
+.msg.assistant .msg-body:has(.tool-inline) .sources-head:hover,
+.msg.assistant .msg-body:has(.tool-run-group) .sources-head:hover,
+.msg.assistant .msg-body:has(.agent-tool-card) .sources-head:hover{
+  background:transparent;
+  color:var(--tool-activity-row-hover);
+}
+.msg.assistant .msg-body:has(.tool-inline) .sources-icon,
+.msg.assistant .msg-body:has(.tool-inline) .sources-label,
+.msg.assistant .msg-body:has(.tool-inline) .sources-count,
+.msg.assistant .msg-body:has(.tool-inline) .sources-chev,
+.msg.assistant .msg-body:has(.tool-run-group) .sources-icon,
+.msg.assistant .msg-body:has(.tool-run-group) .sources-label,
+.msg.assistant .msg-body:has(.tool-run-group) .sources-count,
+.msg.assistant .msg-body:has(.tool-run-group) .sources-chev,
+.msg.assistant .msg-body:has(.agent-tool-card) .sources-icon,
+.msg.assistant .msg-body:has(.agent-tool-card) .sources-label,
+.msg.assistant .msg-body:has(.agent-tool-card) .sources-count,
+.msg.assistant .msg-body:has(.agent-tool-card) .sources-chev{
+  color:inherit;
+}
+.msg.assistant .msg-body:has(.tool-inline) .sources-row-wrap,
+.msg.assistant .msg-body:has(.tool-run-group) .sources-row-wrap,
+.msg.assistant .msg-body:has(.agent-tool-card) .sources-row-wrap{
+  border-top:0;
+}
+.msg.assistant .msg-body:has(.tool-inline) .sources-row,
+.msg.assistant .msg-body:has(.tool-run-group) .sources-row,
+.msg.assistant .msg-body:has(.agent-tool-card) .sources-row{
+  padding:8px 0;
+  border-radius:8px;
+  color:var(--tool-activity-row);
+}
+.msg.assistant .msg-body:has(.tool-inline) .sources-row:hover,
+.msg.assistant .msg-body:has(.tool-run-group) .sources-row:hover,
+.msg.assistant .msg-body:has(.agent-tool-card) .sources-row:hover{
+  background:transparent;
+  color:var(--tool-activity-row-hover);
+}
+.msg.assistant .msg-body:has(.tool-inline) .sources-detail,
+.msg.assistant .msg-body:has(.tool-run-group) .sources-detail,
+.msg.assistant .msg-body:has(.agent-tool-card) .sources-detail{
+  padding:10px 0 10px 32px;
+  border:0;
+  background:transparent;
+  color:var(--tool-activity-text);
+}
+
+/* Legacy/history tool groups inherit the same single-surface treatment.
+   Their individual expandable rows lose the old stacked-card appearance,
+   while the existing head/body controls remain intact. */
+.msg.assistant .msg-body:has(.tool-run-group) .tool-run-group,
+.msg.assistant .msg-body:has(.agent-tool-card) .tool-run-group{
+  margin:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+.msg.assistant .msg-body:has(.tool-run-group) .tool-run-summary,
+.msg.assistant .msg-body:has(.agent-tool-card) .tool-run-summary{
+  min-height:25px;
+  padding:0;
+  gap:12px;
+  border-radius:8px;
+  background:transparent;
+  color:var(--tool-activity-row);
+  font-size:14px;
+  font-weight:400;
+}
+.msg.assistant .msg-body:has(.tool-run-group) .tool-run-summary:hover,
+.msg.assistant .msg-body:has(.agent-tool-card) .tool-run-summary:hover{
+  background:transparent;
+  color:var(--tool-activity-row-hover);
+}
+.msg.assistant .msg-body:has(.tool-run-group) .tool-run-summary:focus-visible,
+.msg.assistant .msg-body:has(.agent-tool-card) .tool-run-summary:focus-visible{
+  outline:2px solid var(--tool-activity-focus);
+  outline-offset:4px;
+}
+.msg.assistant .msg-body:has(.tool-run-group) .tool-run-summary-label,
+.msg.assistant .msg-body:has(.agent-tool-card) .tool-run-summary-label{
+  color:inherit;
+  font-weight:400;
+}
+.msg.assistant .msg-body:has(.tool-run-group) .tool-run-summary-dot,
+.msg.assistant .msg-body:has(.agent-tool-card) .tool-run-summary-dot{
+  width:18px;
+  height:18px;
+  border:1.5px solid currentColor;
+  background:transparent!important;
+  border-radius:5px;
+}
+.msg.assistant .msg-body:has(.tool-run-group) .tool-run-list,
+.msg.assistant .msg-body:has(.agent-tool-card) .tool-run-list{
+  display:flex;
+  flex-direction:column;
+  gap:13px;
+  padding:14px 0 2px;
+  border:0;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card,
+.msg.assistant .msg-body:has(.tool-run-group) .tool-run-list .agent-tool-card{
+  margin:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head{
+  min-height:25px;
+  padding:0;
+  gap:12px;
+  border-radius:8px;
+  background:transparent;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:hover,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head:hover{
+  background:transparent;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:focus-visible,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head:focus-visible{
+  outline:2px solid var(--tool-activity-focus);
+  outline-offset:4px;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-state-icon,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-state-icon{
+  display:none;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-icon{
+  width:20px;
+  height:20px;
+  border-radius:0;
+  background:transparent!important;
+  color:var(--tool-activity-row)!important;
+  box-shadow:none!important;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon svg,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-icon svg{
+  width:18px;
+  height:18px;
+  stroke-width:1.8;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-name,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-name{
+  color:var(--tool-activity-row);
+  font-size:14px;
+  font-weight:400;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-input,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-input,
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-status,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-status,
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-chev{
+  color:var(--tool-activity-row);
+  font-size:12px;
+  font-weight:400;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-body{
+  margin:10px 0 0 32px;
+  border:0;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-out,
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-code,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-out,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-code{
+  border-color:var(--tool-activity-border);
+  border-radius:10px;
+  background:var(--tool-activity-code-bg);
+  color:var(--tool-activity-text);
+}
+
+@media(max-width:768px){
+  .msg.assistant .msg-body:has(.tool-inline),
+  .msg.assistant .msg-body:has(.tool-run-group),
+  .msg.assistant .msg-body:has(.agent-tool-card){
+    padding:18px 16px 20px;
+    border-radius:14px;
+  }
+  .msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail,
+  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body,
+  .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-body{
+    margin-left:0;
+    padding-left:28px;
+  }
+}
+
+/* ── Unboxed assistant response ────────────────────────────────────
+   The Codex reference keeps the assistant's prose on the page surface.
+   Only an actual tool result gets a contained card. The previous activity
+   treatment wrapped the entire answer in a panel, which made normal prose
+   look like a user bubble and broke the visual hierarchy of the page. */
+.msg.assistant .msg-body:has(.tool-inline),
+.msg.assistant .msg-body:has(.tool-run-group),
+.msg.assistant .msg-body:has(.agent-tool-card){
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  color:hsl(var(--text-100));
+}
+.msg.assistant .msg-body:has(.tool-inline) p,
+.msg.assistant .msg-body:has(.tool-inline) li,
+.msg.assistant .msg-body:has(.tool-run-group) p,
+.msg.assistant .msg-body:has(.tool-run-group) li,
+.msg.assistant .msg-body:has(.agent-tool-card) p,
+.msg.assistant .msg-body:has(.agent-tool-card) li{
+  color:hsl(var(--text-100));
+}
+.msg.assistant .msg-body:has(.tool-inline) strong,
+.msg.assistant .msg-body:has(.tool-run-group) strong,
+.msg.assistant .msg-body:has(.agent-tool-card) strong{
+  color:hsl(var(--text-000));
+}
+.msg.assistant .msg-body:has(.tool-inline) a,
+.msg.assistant .msg-body:has(.tool-run-group) a,
+.msg.assistant .msg-body:has(.agent-tool-card) a{
+  color:hsl(var(--text-100));
+  text-decoration-color:hsl(var(--text-400));
+}
+.msg.assistant .msg-body:has(.tool-inline) a:hover,
+.msg.assistant .msg-body:has(.tool-run-group) a:hover,
+.msg.assistant .msg-body:has(.agent-tool-card) a:hover{
+  color:hsl(var(--text-000));
+}
+
+/* Tool results remain the only contained surface in the answer. This is
+   the file/action card language visible in the reference page; the card's
+   existing head/body controls and keyboard handlers are unchanged. */
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card,
+.msg.assistant .msg-body:has(.tool-run-group) .tool-run-list .agent-tool-card{
+  margin:16px 0 0;
+  border:1px solid var(--tool-card-border);
+  border-radius:12px;
+  background:var(--tool-card-bg);
+  box-shadow:none;
+  overflow:hidden;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card:hover,
+.msg.assistant .msg-body:has(.tool-run-group) .tool-run-list .agent-tool-card:hover{
+  border-color:var(--tool-card-border-strong);
+  box-shadow:none;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head{
+  min-height:54px;
+  padding:10px 14px;
+  gap:12px;
+  border-radius:10px;
+  background:transparent;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:hover,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head:hover{
+  background:var(--tool-card-bg-hover);
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-state-icon,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-state-icon{
+  display:none;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-icon{
+  display:flex!important;
+  width:32px;
+  height:32px;
+  border-radius:9px;
+  background:var(--tool-card-bg-sunken)!important;
+  color:var(--tool-card-icon)!important;
+  box-shadow:none!important;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon svg,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-icon svg{
+  width:18px;
+  height:18px;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-name,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-name{
+  color:var(--tool-card-text);
+  font-size:14px;
+  font-weight:600;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-input,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-input{
+  color:var(--tool-card-text-muted);
+  font-size:12px;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-body{
+  margin:0;
+  padding:0 14px 14px 58px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-out,
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-code,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-out,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-code{
+  border-color:var(--tool-card-border);
+  border-radius:10px;
+  background:var(--tool-card-bg-sunken);
+  color:var(--tool-card-text);
+}
+
+@media(max-width:768px){
+  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head,
+  .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head{
+    min-height:50px;
+    padding:9px 12px;
+  }
+  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body,
+  .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-body{
+    padding:0 12px 12px 12px;
+  }
 }

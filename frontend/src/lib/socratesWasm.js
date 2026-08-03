@@ -10,6 +10,12 @@
  * via `new URL(..., import.meta.url)` which Vite resolves natively.
  * Node tests: `initSocratesWasm({ bytes })` — pass a Uint8Array read from
  * the wasm file to sidestep file:// fetch restrictions.
+ *
+ * `getSocratesWasm()` is sync and returns the loaded module, or null. The
+ * first call kicks off `initSocratesWasm()` so the lazy import is wired
+ * even when no caller has explicitly awaited it. While the load is in
+ * flight, subsequent calls keep returning null and the TS fallback is
+ * used; once the wasm resolves, the next call returns the live module.
  */
 
 let wasmApi = null;
@@ -39,7 +45,17 @@ export function initSocratesWasm(opts = {}) {
   return wasmInitPromise;
 }
 
-/** The initialized wasm module, or null when not (yet) available. */
+/**
+ * The initialized wasm module, or null when not (yet) available.
+ *
+ * Idempotent. The first call after boot also triggers `initSocratesWasm()`
+ * so callers that don't explicitly await init still benefit from the
+ * Rust-backed code path once the load finishes.
+ */
 export function getSocratesWasm() {
+  if (!wasmApi && !wasmInitPromise) {
+    // Fire-and-forget: cache the promise so repeated calls don't re-import.
+    initSocratesWasm();
+  }
   return wasmApi;
 }

@@ -314,6 +314,14 @@ function iconHtml(state: string): string {
   return '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3.2v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="12.2" r="1.1" fill="currentColor"/></svg>';
 }
 
+/* P_tool-inline-spinner — while a tool is in flight the tool-type icon
+   is swapped for a quiet spinner inside the same slot. The slot itself
+   keeps its 16×16 footprint so the label never reflows when the tool
+   settles. */
+function runningIconHtml(): string {
+  return '<span class="tool-inline-spinner" aria-hidden="true"></span>';
+}
+
 /* Per-tool-type icons. Mirrors the convention in toolCards.js (24-viewBox,
    stroke, currentColor) so a tool looks the same in both the inline row and
    the expandable card. Falls back to a generic tool glyph for unknown names. */
@@ -357,10 +365,12 @@ export function createInlineToolRow(entry: InlineToolEntry): HTMLElement {
   row.dataset.tcid = entry.id;
   row.dataset.tool = entry.name;
   row.dataset.state = 'running';
+  /* P_tool-inline-spinner — while in flight the tool-type glyph is
+     swapped for a spinner inside the SAME .tool-inline-tool-icon slot,
+     so the row's width doesn't reflow when the tool settles. */
   row.innerHTML =
     '<summary class="tool-inline-head">'
-    + '<span class="tool-inline-tool-icon">' + toolTypeIconHtml(entry.name) + '</span>'
-    + '<span class="tool-inline-icon">' + iconHtml('running') + '</span>'
+    + '<span class="tool-inline-tool-icon">' + runningIconHtml() + '</span>'
     + '<span class="tool-inline-label">' + esc(runningLabel(entry.name)) + '</span>'
     + '<span class="tool-inline-meta"></span>'
     + '<span class="tool-inline-chev" aria-hidden="true"></span>'
@@ -498,16 +508,16 @@ export function settleInlineToolRow(
   const failed = !cancelled && !!result && result.ok === false;
   const state = cancelled ? 'stopped' : failed ? 'error' : 'done';
   row.dataset.state = state;
-  const icon = row.querySelector('.tool-inline-icon');
-  if (icon) icon.innerHTML = iconHtml(state);
+  /* Replace the running spinner with the tool-type icon when the tool
+     settles so the glyph stabilises alongside the new label. */
+  const toolIcon = row.querySelector('.tool-inline-tool-icon');
+  if (toolIcon) toolIcon.innerHTML = toolTypeIconHtml(name);
   const label = row.querySelector('.tool-inline-label');
   if (label) {
     label.textContent = cancelled
       ? translate('tool.statusStopped', 'Stopped')
       : failed ? errorLabel(name, result) : doneLabel(name, result);
   }
-  const meta = row.querySelector('.tool-inline-meta');
-  if (meta) meta.textContent = durationText(result);
   const input = (row as HTMLElement & { _toolInput?: unknown })._toolInput;
   renderInlineDetails(row, input, result, state);
 }
