@@ -261,7 +261,6 @@ function PluginsView({ plugins, configured, dispatch }: {
             <div className="workspace-row-copy">
               <strong>{connector.name}</strong>
               <span>{meta}</span>
-              <small className="workspace-note">{(connector.capabilities || []).join(' · ')}</small>
             </div>
             {actionEl}
           </div>
