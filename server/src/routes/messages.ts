@@ -56,16 +56,41 @@ async function checkBeagleLimit(userId: string | null, tier?: string | null) {
   return null;
 }
 
-/* UUID format guard — the messages.id column is a Postgres uuid type
- * which rejects any non-UUID string with `invalid input syntax for
- * type uuid`. The SPA generates client-side IDs like
- * "msg-b749937d-7ff1-4999-8752-cf043f5c3c3a" that are NOT UUIDs, so
- * when the user tries to edit / delete a message the query blew up
- * with a 500. Reject early with a clean 400 instead. Shared
- * helper from lib/validate.js. */
+/* UUID format guard — the messages.id column is a Postgres uuid type. The
+ * SPA also has stable client ids such as `msg-...`; those are resolved by
+ * findOwnedMessage below when scoped with the current session id. */
 
 const router = Router();
 router.use(requireAuth);
+
+/* Resolve both canonical database UUIDs and the SPA's stable clientId. The
+ * latter is needed during the first page lifetime, before a session reload
+ * has returned the database-generated message id. Client ids are only
+ * accepted together with the owning session id, then ownership is checked
+ * exactly as it is for UUIDs. */
+async function findOwnedMessage(
+  db: ReturnType<typeof getDb>,
+  rawId: string,
+  userId: string,
+  sessionId?: unknown,
+) {
+  let msg;
+  if (isUuid(rawId)) {
+    [msg] = await db.select().from(messages).where(eq(messages.id, rawId)).limit(1);
+  } else {
+    if (!isUuid(sessionId)) throw new BadRequest('Invalid message id');
+    [msg] = await db.select().from(messages)
+      .where(and(eq(messages.sessionId, sessionId), eq(messages.clientId, rawId)))
+      .limit(1);
+  }
+  if (!msg) throw new NotFound('Message not found');
+
+  const [sess] = await db.select().from(sessions)
+    .where(and(eq(sessions.id, msg.sessionId), eq(sessions.userId, userId)))
+    .limit(1);
+  if (!sess) throw new NotFound('Message not found');
+  return { msg, sess };
+}
 
 /* PATCH /api/messages/:id — edit user message (optionally regenerate)
  *
@@ -90,20 +115,7 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
     const { content, regenerate, discardFollowing, attachments } = req.body;
     if (!content) throw new BadRequest('content is required');
 
-    /* P10.x — reject client-generated non-UUID ids with a 400 instead
-       of letting Postgres throw `invalid input syntax for type uuid`
-       (which becomes a 500). The SPA occasionally passes ids like
-       `msg-<random>` from the front-end state. */
-    if (!isUuid(req.params.id)) throw new BadRequest('Invalid message id');
-
-    const [msg] = await db.select().from(messages).where(eq(messages.id, req.params.id)).limit(1);
-    if (!msg) throw new NotFound('Message not found');
-
-    // Verify session ownership
-    const [sess] = await db.select().from(sessions)
-      .where(and(eq(sessions.id, msg.sessionId), eq(sessions.userId, req.userId!)))
-      .limit(1);
-    if (!sess) throw new NotFound('Message not found');
+    const { msg } = await findOwnedMessage(db, req.params.id, req.userId!, req.query.sessionId);
 
     /* SECURITY: sanitise both the rendered content (HTML) and the
      * rawText (plain markdown source). The browser normally runs
@@ -132,7 +144,7 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
       }
       updateSet.attachments = parsed.data;
     }
-    await db.update(messages).set(updateSet).where(eq(messages.id, req.params.id));
+    await db.update(messages).set(updateSet).where(eq(messages.id, msg.id));
 
     /* P_edit — when the client passes `discardFollowing`, drop every
      * assistant message that was authored AFTER the edited user turn
@@ -263,17 +275,9 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
 router.delete('/:id', async (req, res, next) => {
   try {
     const db = getDb();
-    /* P10.x — see PATCH handler above for the rationale. */
-    if (!isUuid(req.params.id)) throw new BadRequest('Invalid message id');
-    const [msg] = await db.select().from(messages).where(eq(messages.id, req.params.id)).limit(1);
-    if (!msg) throw new NotFound('Message not found');
+    const { msg } = await findOwnedMessage(db, req.params.id, req.userId!, req.query.sessionId);
 
-    const [sess] = await db.select().from(sessions)
-      .where(and(eq(sessions.id, msg.sessionId), eq(sessions.userId, req.userId!)))
-      .limit(1);
-    if (!sess) throw new NotFound('Message not found');
-
-    await db.delete(messages).where(eq(messages.id, req.params.id));
+    await db.delete(messages).where(eq(messages.id, msg.id));
     return res.status(204).end();
   } catch (err) { next(err); }
 });
@@ -283,25 +287,13 @@ router.put('/:id/feedback', async (req, res, next) => {
   try {
     const { rating, reason, categories } = req.body;
     if (!['up', 'down', 'none'].includes(rating)) throw new BadRequest('rating must be up/down/none');
-    /* P10.x — see PATCH handler above for the rationale. */
-    if (!isUuid(req.params.id)) throw new BadRequest('Invalid message id');
-
     const db = getDb();
-    // Verify the message exists AND belongs to one of the caller's
-    // sessions. Without this, any logged-in user could rate-up/down
-    // any message in the database.
-    const [msg] = await db.select({ id: messages.id, sessionId: messages.sessionId })
-      .from(messages)
-      .where(eq(messages.id, req.params.id))
-      .limit(1);
-    if (!msg) throw new NotFound('Message not found');
-    const [sess] = await db.select({ id: sessions.id }).from(sessions)
-      .where(and(eq(sessions.id, msg.sessionId), eq(sessions.userId, req.userId!)))
-      .limit(1);
-    if (!sess) throw new NotFound('Message not found');
+    /* Verify the message exists AND belongs to the caller's session before
+       inserting feedback. This also resolves clientId-based SPA actions. */
+    const { msg } = await findOwnedMessage(db, req.params.id, req.userId!, req.query.sessionId);
 
     await db.insert(feedback).values({
-      messageId: req.params.id,
+      messageId: msg.id,
       rating,
       reason: reason || null,
       categories: categories || null,

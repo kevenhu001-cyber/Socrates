@@ -24,6 +24,7 @@ import {
   containsImageUrlParts,
   prependCodeInterpreterPrompt,
   appendFinalOutputConstraints,
+  appendNativeToolContract,
   FINAL_OUTPUT_CONSTRAINTS,
   ChatPayloadSchema,
 } from '../src/routes/chat/helpers.js';
@@ -406,6 +407,27 @@ describe('transformMessagesForModel', () => {
     assert.equal(out[0], null);
     assert.equal(out[1], undefined);
     assert.equal(out[2].content, 'hi');
+  });
+});
+
+describe('appendNativeToolContract', () => {
+  test('derives the available names and rejects legacy argument wrappers', () => {
+    const out = appendNativeToolContract(
+      appendFinalOutputConstraints([{ role: 'system', content: 'base' }]),
+      ['web_search', 'render_visualization', 'web_search'],
+    );
+    assert.match(out[0].content, /exactly: `web_search`, `render_visualization`/);
+    assert.match(out[0].content, /one JSON object matching that function's supplied/);
+    assert.match(out[0].content, /Never emit a legacy text marker/);
+    assert.match(out[0].content, /extra `input`\/`arguments` wrapper/);
+    assert.ok(out[0].content.trimEnd().endsWith(FINAL_OUTPUT_CONSTRAINTS.trimEnd().slice(-40)),
+      'the final hard rule must remain the closing prompt text');
+  });
+
+  test('is idempotent and handles an empty tool registry', () => {
+    const once = appendNativeToolContract([{ role: 'system', content: 'base' }], []);
+    assert.match(once[0].content, /available for this turn are exactly: none/);
+    assert.deepEqual(appendNativeToolContract(once, []), once);
   });
 });
 

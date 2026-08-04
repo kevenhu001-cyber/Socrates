@@ -279,12 +279,17 @@ export async function callAPI(messages,maxTokens,timeoutMs){
           try { showToast && showToast(state.lastCallError, 8000); } catch (_) {}
           return null;
         }
-        /* Regular rate limit — retry up to NONSTREAM_MAX times before
-           showing the error. Set lastNsErr and fall through so the
-           retry loop below treats it as retryable (STREAM_RETRYABLE_STATUS[429] is true). */
+        /* Regular rate limit — surface the server cooldown immediately.
+           Replaying the same request inside this loop only amplifies the
+           shared bucket. */
         var retryAfterN = e && e.body && typeof e.body.retryAfterSeconds === "number" ? e.body.retryAfterSeconds : null;
         lastNsErr = "Rate limited (429). Try again in " + formatMinutesApi(retryAfterN) + ".";
-        /* Fall through to the retry check below. */
+        /* P_chat-429-no-storm — a server rate limit is a shared bucket,
+           not a transient transport failure. Retrying four times here
+           only amplifies the limit and makes background callers such as
+           title/search rewriting compete with the user's turn. */
+        state.lastCallError=lastNsErr;
+        return null;
       }
       if(!userCancelledN&&(isHbN||isTotN||STREAM_RETRYABLE_STATUS[eStatus])&&nsAttempt<NONSTREAM_MAX){
         var raHdr=e&&e.body&&e.body.headers?e.body.headers.get("Retry-After"):null;

@@ -102,6 +102,33 @@ export function appendFinalOutputConstraints(messages: ChatMessage[]): ChatMessa
   return appendServerPolicy(messages, FINAL_OUTPUT_CONSTRAINTS_MARKER, FINAL_OUTPUT_CONSTRAINTS);
 }
 
+/* P_native-tool-contract — the provider's `tools` array is the executable
+ * contract.  This small server-owned appendix is generated from the exact
+ * definitions attached to the request, so prompt guidance cannot drift when
+ * a tool is enabled or removed.  It is inserted before the final hard rule,
+ * preserving the documented prompt assembly order. */
+const NATIVE_TOOL_CONTRACT_MARKER = '[Server policy: native-tool-contract]';
+export function appendNativeToolContract(messages: ChatMessage[], toolNames: string[]): ChatMessage[] {
+  const names = [...new Set(toolNames.filter((name): name is string => typeof name === 'string' && name.length > 0))];
+  const availability = names.length > 0 ? names.map((name) => `\`${name}\``).join(', ') : 'none';
+  const contract = `${NATIVE_TOOL_CONTRACT_MARKER}
+The native tools available for this turn are exactly: ${availability}.
+Invoke a tool only through the provider's native function-calling channel. Each call argument must be one JSON object matching that function's supplied \`parameters\` schema exactly. Never emit a legacy text marker, Markdown tool block, \`{"tool":...}\` object, or an extra \`input\`/\`arguments\` wrapper. If no native tool is supplied, do not invent or imitate one.`;
+  const first = messages[0];
+  if (!first || first.role !== 'system' || typeof first.content !== 'string') return messages;
+  if (first.content.includes(NATIVE_TOOL_CONTRACT_MARKER)) return messages;
+  const cloned = messages.slice();
+  const finalRuleIndex = first.content.indexOf(FINAL_OUTPUT_CONSTRAINTS_MARKER);
+  const insertion = `${contract}\n\n`;
+  cloned[0] = {
+    ...first,
+    content: finalRuleIndex >= 0
+      ? `${first.content.slice(0, finalRuleIndex)}${insertion}${first.content.slice(finalRuleIndex)}`
+      : `${first.content}\n\n${contract}`,
+  };
+  return cloned;
+}
+
 /**
  * Establish one server-owned system boundary for every chat request.
  *

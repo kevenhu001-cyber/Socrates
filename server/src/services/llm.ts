@@ -18,6 +18,12 @@
  * a healthy but slow stream (long thinking) never trips it. */
 const LLM_TOTAL_TIMEOUT_MS = 300_000;
 const LLM_SILENCE_TIMEOUT_MS = 120_000;
+/* P_provider-max-tokens — 32K was larger than the output budget accepted by
+ * a number of OpenAI-compatible gateways.  Keep the public request ceiling
+ * at 32K, but use a conservative default when the caller did not choose a
+ * budget explicitly.  Operators can raise this for a known-compatible
+ * provider without changing the API contract. */
+const DEFAULT_MAX_TOKENS = Math.max(256, Number.parseInt(process.env.LLM_DEFAULT_MAX_TOKENS || '8192', 10) || 8192);
 
 interface ChatCompletionRequestOptions {
   apiBase: string;
@@ -31,6 +37,76 @@ interface ChatCompletionRequestOptions {
   extra_body?: Record<string, unknown>;
   tools?: Array<{ type: 'function'; function: { name: string; [key: string]: unknown } }>;
   tool_choice?: unknown;
+}
+
+/** Preserve useful upstream context without exposing credentials. */
+export class LlmProviderError extends Error {
+  readonly status: number;
+  readonly providerBody: string;
+
+  constructor(status: number, body: string) {
+    const compactBody = body.slice(0, 200);
+    super(`LLM API error ${status}: ${compactBody}`);
+    this.name = 'LlmProviderError';
+    this.status = status;
+    this.providerBody = compactBody;
+  }
+}
+
+function normalizeProviderMessages(messages: ChatCompletionRequestOptions['messages']) {
+  /* OpenAI permits null assistant content alongside tool_calls. Several
+   * compatibility layers do not, and reject the entire second tool hop with
+   * a provider-side 400. Empty string is semantically equivalent here and is
+   * accepted by both strict and permissive gateways. */
+  return messages.map((message) => {
+    if ((message.role === 'assistant' && Array.isArray(message.tool_calls)) || message.role === 'tool') {
+      return { ...message, content: message.content == null ? '' : message.content };
+    }
+    return message;
+  });
+}
+
+function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean) {
+  const { model, messages, maxTokens, temperature = stream ? 0.7 : 0.3, reasoning_effort, extra_body, tools, tool_choice } = opts;
+  const base = {
+    model,
+    messages: normalizeProviderMessages(messages),
+    max_tokens: maxTokens || DEFAULT_MAX_TOKENS,
+    temperature,
+    stream,
+    ...(reasoning_effort ? { reasoning_effort } : {}),
+    ...(extra_body ? { ...extra_body } : {}),
+  } as Record<string, unknown>;
+  const hasTools = Array.isArray(tools) && tools.length > 0;
+  const withTools: Record<string, unknown> = {
+    ...base,
+    ...(hasTools ? { tools, ...(tool_choice ? { tool_choice } : {}) } : {}),
+  };
+
+  /* Some gateways advertise chat completions but reject the native tools
+   * field. A single no-tools retry recovers a normal answer and avoids
+   * presenting a raw provider 400 to the user. This is deliberately a
+   * request-local fallback, so a temporary incompatibility cannot disable
+   * tools for every later conversation. */
+  const variants: Array<{ body: Record<string, unknown>; reason: string }> = [
+    { body: withTools, reason: 'initial' },
+  ];
+  if (hasTools) {
+    const { tools: _tools, tool_choice: _toolChoice, ...withoutTools } = withTools;
+    variants.push({ body: withoutTools, reason: 'provider-400-with-tools' });
+  }
+  /* Optional reasoning fields are another common source of 400s on generic
+   * gateways. Only try this stricter form after the previous compatibility
+   * variant, never on a successful request. */
+  if (reasoning_effort || extra_body) {
+    const { reasoning_effort: _effort, ...withoutReasoning } = hasTools
+      ? (variants[variants.length - 1].body)
+      : withTools;
+    const withoutOptional = { ...withoutReasoning };
+    for (const key of Object.keys(extra_body || {})) delete withoutOptional[key];
+    variants.push({ body: withoutOptional, reason: 'provider-400-with-optional-fields' });
+  }
+  return variants;
 }
 
 export function isToolFinishReason(reason: unknown): boolean {
@@ -109,16 +185,6 @@ export async function streamChatCompletion(
 ) {
   const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.7, signal, reasoning_effort, extra_body, tools, tool_choice } = opts;
 
-  // P0.0 — when no maxTokens is set, default to a very high value so
-  // the model is not silently truncated by the upstream provider's
-  // small default (e.g. OpenAI's 4K-16K depending on model, Anthropic's
-  // 4K default). The 32 K ceiling matches our request schema and
-  // covers even the longest outputs from reasoning models (DeepSeek R1,
-  // QwQ) whose chain-of-thought is streamed separately as
-  // reasoning_content and does not consume the answer's max_tokens
-  // budget, but the final answer can still run long.
-  const effectiveMaxTokens = maxTokens || 32000;
-
   const totalSignal = AbortSignal.timeout(LLM_TOTAL_TIMEOUT_MS);
   const silenceController = new AbortController();
   let silenceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -140,73 +206,79 @@ export async function streamChatCompletion(
        * DB only. */
       console.log('[DEBUG-LLM] Sending tools to upstream:', JSON.stringify(tools.map(t => t.function?.name)), 'tools.length:', tools.length);
     }
-    let response: Response;
+    let response: Response | undefined;
     /* P_llm-retry — rate limits (429 rpm exhausted) and transient 5xx
        errors kill the stream instantly. Retry the initial POST with
        exponential backoff BEFORE any byte is streamed downstream, so a
        rate-limited request gets a second chance instead of ending the
        turn. We never retry mid-stream: once streaming has started the
        caller has already forwarded content to the client. */
-    const bodyPayload = JSON.stringify({
-      model,
-      messages,
-      max_tokens: effectiveMaxTokens,
-      temperature,
-      stream: true,
-      /* P_deepseek-mode — forward the optional reasoning_effort
-         and extra_body flags. Non-DeepSeek upstreams silently
-         ignore unknown fields, so this is safe for every
-         provider. */
-      ...(reasoning_effort ? { reasoning_effort } : {}),
-      ...(extra_body ? { ...extra_body } : {}),
-      /* Tool calling — when tools is set, the upstream may stream
-         `delta.tool_calls` arrays indexed by `index`. The accumulator
-         below joins them into fully-formed tool_call objects. */
-      ...(Array.isArray(tools) && tools.length > 0 ? { tools } : {}),
-      ...(tool_choice ? { tool_choice } : {}),
-    });
     const RETRYABLE_STATUS = new Set([429, 502, 503]);
     const MAX_LLM_ATTEMPTS = 3; // initial + 2 retries
     let lastError: Error | null = null;
-    for (let attempt = 0; attempt < MAX_LLM_ATTEMPTS; attempt++) {
-      if (signal && signal.aborted) {
-        onError(new Error('LLM request aborted'));
-        return;
-      }
-      try {
-        response = await fetch(`${apiBase}/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          body: bodyPayload,
-          signal: mergedSignal,
-        });
-        if (response.ok || !RETRYABLE_STATUS.has(response.status)) break;
-        // Rate-limited / transient upstream failure — wait and retry.
-        lastError = new Error(`LLM API error ${response.status}: ${(await response.text().catch(() => '')).slice(0, 200)}`);
-        const backoffMs = attempt === 0 ? 1000 : 2000;
-        await new Promise<void>((resolve) => setTimeout(resolve, backoffMs));
-        // Re-check abort after the backoff wait.
+    const variants = requestBodyVariants(opts, true);
+    for (let variantIndex = 0; variantIndex < variants.length; variantIndex++) {
+      const variant = variants[variantIndex];
+      let tryNextVariant = false;
+      for (let attempt = 0; attempt < MAX_LLM_ATTEMPTS; attempt++) {
         if (signal && signal.aborted) {
           onError(new Error('LLM request aborted'));
           return;
         }
-      } catch (err) {
-        if ((err as Error).name === 'AbortError') throw err; // let the outer catch classify it
-        lastError = err as Error;
-        if (attempt < MAX_LLM_ATTEMPTS - 1) {
-          await new Promise<void>((resolve) => setTimeout(resolve, 1000));
-          continue;
+        try {
+          response = await fetch(`${apiBase}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(variant.body),
+            signal: mergedSignal,
+          });
+          if (response.ok) break;
+
+          const errBody = await response.text().catch(() => '');
+          lastError = new LlmProviderError(response.status, errBody);
+          if (response.status === 400 && variantIndex < variants.length - 1) {
+            tryNextVariant = true;
+            if (variantIndex === 0 && Array.isArray(tools) && tools.length > 0) {
+              console.warn('[LLM] provider rejected native tool request; retrying with compatibility payload', JSON.stringify({
+                status: response.status,
+                toolCount: tools.length,
+                maxTokens: variant.body.max_tokens,
+              }));
+            } else {
+              console.warn('[LLM] provider rejected optional request fields; retrying with compatibility payload', JSON.stringify({
+                status: response.status,
+                maxTokens: variant.body.max_tokens,
+              }));
+            }
+            break;
+          }
+          if (!RETRYABLE_STATUS.has(response.status)) break;
+          // Rate-limited / transient failure — wait and retry.
+          const backoffMs = attempt === 0 ? 1000 : 2000;
+          await new Promise<void>((resolve) => setTimeout(resolve, backoffMs));
+          if (signal && signal.aborted) {
+            onError(new Error('LLM request aborted'));
+            return;
+          }
+        } catch (err) {
+          if ((err as Error).name === 'AbortError') throw err; // let the outer catch classify it
+          lastError = err as Error;
+          if (attempt < MAX_LLM_ATTEMPTS - 1) {
+            await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+            continue;
+          }
+          throw err;
         }
-        throw err;
       }
+      if (response?.ok) break;
+      if (!tryNextVariant) break;
     }
 
-    if (!response!.ok) {
-      const errBody = await response!.text().catch(() => '');
-      onError(lastError || new Error(`LLM API error ${response!.status}: ${errBody.slice(0, 200)}`));
+    if (!response?.ok) {
+      onError(lastError || new Error('LLM API request failed'));
       return;
     }
 
@@ -443,44 +515,42 @@ export async function streamChatCompletion(
  * and returns the raw upstream payload.
  */
 export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
-  const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.3, signal, reasoning_effort, extra_body, tools, tool_choice } = opts;
-  const effectiveMaxTokens = maxTokens || 32000;
+  const { apiBase, apiKey, signal, tools } = opts;
 
   const mergedSignal = signal
     ? AbortSignal.any([signal, AbortSignal.timeout(LLM_TOTAL_TIMEOUT_MS)])
     : AbortSignal.timeout(LLM_TOTAL_TIMEOUT_MS);
 
-  const response = await fetch(`${apiBase}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      max_tokens: effectiveMaxTokens,
-      temperature,
-      stream: false,
-      /* P_deepseek-mode — forward the optional reasoning_effort
-         and extra_body flags so DeepSeek-family upstreams emit
-         reasoning_content in the final message. */
-      ...(reasoning_effort ? { reasoning_effort } : {}),
-      ...(extra_body ? { ...extra_body } : {}),
-      ...(Array.isArray(tools) && tools.length > 0 ? { tools } : {}),
-      ...(tool_choice ? { tool_choice } : {}),
-    }),
-    signal: mergedSignal,
-  });
-
-  if (!response.ok) {
+  let response: Response | undefined;
+  const variants = requestBodyVariants(opts, false);
+  for (let variantIndex = 0; variantIndex < variants.length; variantIndex++) {
+    const variant = variants[variantIndex];
+    response = await fetch(`${apiBase}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(variant.body),
+      signal: mergedSignal,
+    });
+    if (response.ok) break;
     const errBody = await response.text().catch(() => '');
+    if (response.status === 400 && variantIndex < variants.length - 1) {
+      console.warn('[LLM] provider rejected optional request fields; retrying with compatibility payload', JSON.stringify({
+        status: response.status,
+        toolCount: Array.isArray(tools) ? tools.length : 0,
+        maxTokens: variant.body.max_tokens,
+      }));
+      continue;
+    }
     const { ApiError } = await import('../lib/errors.js');
     /* Forward the upstream status code so the client sees 429 (quota),
        401 (bad key), etc. instead of a generic 500. The error handler
        serialises ApiError with the correct HTTP status. */
     throw new ApiError(response.status, 'LLM_API_ERROR', `LLM API error ${response.status}: ${errBody.slice(0, 200)}`);
   }
+  if (!response?.ok) throw new Error('LLM API request failed');
 
   const json = await response.json() as {
     choices?: Array<{ message?: { content?: string; reasoning_content?: unknown; tool_calls?: unknown }; finish_reason?: string | null }>;

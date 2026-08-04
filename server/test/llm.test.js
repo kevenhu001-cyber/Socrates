@@ -119,13 +119,13 @@ describe('streamChatCompletion: happy path', () => {
     assert.equal(sentBody.model, BASE_OPTS.model);
   });
 
-  test('forwards max_tokens default of 32000 when not provided', async () => {
+  test('uses a provider-compatible max_tokens default when not provided', async () => {
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([{ choices: [{ delta: { content: 'x' }, finish_reason: 'stop' }] }, sseDone()]),
     );
     await streamChatCompletion({ ...BASE_OPTS }, () => {}, () => {}, () => {});
     const sentBody = JSON.parse(globalThis.fetch.mock.calls[0].arguments[1].body);
-    assert.equal(sentBody.max_tokens, 32000);
+    assert.equal(sentBody.max_tokens, 8192);
   });
 
   test('uses caller-provided maxTokens instead of default', async () => {
@@ -152,6 +152,44 @@ describe('streamChatCompletion: happy path', () => {
     const sentBody = JSON.parse(globalThis.fetch.mock.calls[0].arguments[1].body);
     assert.equal(sentBody.reasoning_effort, 'high');
     assert.deepEqual(sentBody.thinking, { type: 'enabled' });
+  });
+
+  test('falls back once without tools when a provider rejects native tools with 400', async () => {
+    globalThis.fetch = mock.fn(async (_url, init) => {
+      const body = JSON.parse(init.body);
+      if (body.tools) return makeJsonResponse({ error: 'tools unsupported' }, 400);
+      return makeSseResponse([
+        { choices: [{ delta: { content: 'fallback', }, finish_reason: 'stop' }] },
+        sseDone(),
+      ]);
+    });
+    const chunks = [];
+    let error = null;
+    await streamChatCompletion(
+      { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
+      (c) => chunks.push(c), () => {}, (e) => { error = e; },
+    );
+    assert.equal(error, null);
+    assert.deepEqual(chunks, ['fallback']);
+    assert.equal(globalThis.fetch.mock.calls.length, 2);
+    const fallbackBody = JSON.parse(globalThis.fetch.mock.calls[1].arguments[1].body);
+    assert.equal(fallbackBody.tools, undefined);
+    assert.equal(fallbackBody.tool_choice, undefined);
+  });
+
+  test('normalizes null assistant tool content for compatibility gateways', async () => {
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([{ choices: [{ delta: { content: 'ok' }, finish_reason: 'stop' }] }, sseDone()]),
+    );
+    await streamChatCompletion({
+      ...BASE_OPTS,
+      messages: [
+        { role: 'assistant', content: null, tool_calls: [{ id: 'c1', type: 'function', function: { name: 'x', arguments: '{}' } }] },
+        { role: 'tool', content: '{}', tool_call_id: 'c1' },
+      ],
+    }, () => {}, () => {}, () => {});
+    const sentBody = JSON.parse(globalThis.fetch.mock.calls[0].arguments[1].body);
+    assert.equal(sentBody.messages[0].content, '');
   });
 });
 
