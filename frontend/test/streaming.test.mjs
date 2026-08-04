@@ -6,7 +6,7 @@ import {
   isStableMarkdownPrefix,
   splitStreamingMarkdown,
 } from '../src/render/streaming.js';
-import { formatMsgProgressive as renderProgressive } from '../src/render/markdown.js';
+import { formatMsg, formatMsgProgressive as renderProgressive } from '../src/render/markdown.js';
 
 test('stream cadence adapts to response length', () => {
   assert.equal(getStreamRenderInterval(0), 50);
@@ -63,4 +63,30 @@ test('Tutor scaffolds render as typed live cards before the closing tag arrives'
   assert.match(complete, /class="inline-quiz scaffold-stream-live"/);
   assert.match(complete, /inline-quiz-opt-letter">A\.<\/span>/);
   assert.match(complete, /inline-quiz-opt-letter">B\.<\/span>/);
+});
+
+test('final Markdown rendering keeps horizontal rules when KaTeX is unavailable', () => {
+  const previousMarked = globalThis.marked;
+  const previousKatex = globalThis.katex;
+  let parsedSource = '';
+  try {
+    globalThis.marked = {
+      parse(source) {
+        parsedSource = source;
+        return '<p>前文</p><hr><p>后文</p>';
+      },
+    };
+    delete globalThis.katex;
+
+    const html = formatMsg('前文\n---\n后文');
+
+    assert.match(parsedSource, /前文\n\n---\n后文/);
+    assert.match(html, /<hr>/);
+    assert.doesNotMatch(html, /<p>---/);
+  } finally {
+    if (previousMarked === undefined) delete globalThis.marked;
+    else globalThis.marked = previousMarked;
+    if (previousKatex === undefined) delete globalThis.katex;
+    else globalThis.katex = previousKatex;
+  }
 });

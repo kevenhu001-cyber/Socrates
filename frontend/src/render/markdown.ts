@@ -585,7 +585,12 @@ export function formatMsgProgressive(t: string | null | undefined): string {
 export function formatMsg(t: string | null | undefined): string {
   const marked = getMarked();
   const katex = getKatex();
-  if (typeof marked === 'undefined' || typeof katex === 'undefined') {
+  /* Markdown and math are independent capabilities. If KaTeX is missing
+     because its optional CDN script failed, we must still run marked so
+     structural Markdown such as `---` remains a horizontal rule instead of
+     falling back to escaped plain text. Math delimiters can remain literal
+     until KaTeX becomes available. */
+  if (typeof marked === 'undefined') {
     const fallbackViz: string[] = [];
     function saveFallbackViz(html: string): string {
       const id = fallbackViz.length;
@@ -720,14 +725,14 @@ export function formatMsg(t: string | null | undefined): string {
     return save('<pre><code' + langAttr + '>' + escHTML(trimmed) + '</code></pre>');
   });
 
-  procT = procT.replace(/\$\$([\s\S]+?)\$\$/g, function (_, math: string) {
-    try {
-      return save(katex.renderToString(math.trim(), { displayMode: true, throwOnError: false, macros: KATEX_MACROS }));
-    } catch (e) {
-      return save('<pre>' + esc('$$' + math + '$$') + '</pre>');
-    }
-  });
   if (typeof katex !== 'undefined') {
+    procT = procT.replace(/\$\$([\s\S]+?)\$\$/g, function (_, math: string) {
+      try {
+        return save(katex.renderToString(math.trim(), { displayMode: true, throwOnError: false, macros: KATEX_MACROS }));
+      } catch (e) {
+        return save('<pre>' + esc('$$' + math + '$$') + '</pre>');
+      }
+    });
     procT = procT.replace(/\$\$([\s\S]+?)$/g, function (_, math: string) {
       const src = math.trim();
       const begins = src.match(/\\begin\{([^}]+)\}/g) || [];
@@ -750,15 +755,15 @@ export function formatMsg(t: string | null | undefined): string {
         return save('<span class="math-partial" style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
       }
     });
-  }
 
-  procT = procT.replace(/\$([\s\S]+?)\$/g, function (_, math: string) {
-    try {
-      return save(katex.renderToString(math.trim(), { displayMode: false, throwOnError: false, macros: KATEX_MACROS }));
-    } catch (e) {
-      return save('<code>' + esc('$' + math + '$') + '</code>');
-    }
-  });
+    procT = procT.replace(/\$([\s\S]+?)\$/g, function (_, math: string) {
+      try {
+        return save(katex.renderToString(math.trim(), { displayMode: false, throwOnError: false, macros: KATEX_MACROS }));
+      } catch (e) {
+        return save('<code>' + esc('$' + math + '$') + '</code>');
+      }
+    });
+  }
 
   let html = marked.parse(procT, { breaks: true, gfm: true });
   html = sanitizeUrls(html);
