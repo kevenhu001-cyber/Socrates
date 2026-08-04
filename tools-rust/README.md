@@ -78,8 +78,38 @@ cd tools-rust
 cargo test --workspace
 ```
 
-Counts today: 26 (format) + 19 (protocol) + 20 (stream) = **65 passing**, plus
+Counts today: 6 (fetch) + 26 (format) + 19 (protocol) + 20 (stream) = **71 passing**, plus
 binding-shape tests run in Node via `frontend/test/wasmParity.test.mjs`.
+
+### Native fetch worker (server canary)
+
+`socrates-fetch` adds a long-lived `socrates-fetchd` JSONL worker for the
+server-side `web_fetch` path. It owns DNS resolution, private/reserved IP
+rejection, pinned connections, manual redirect validation, response content
+type checks, bounded streaming reads, request deadlines, and an optional
+bounded text-density extraction pass. Node keeps authentication, rate
+limiting, URL-cache ownership, Readability fallback, and the existing
+`fetchBatch` response shape.
+
+```bash
+cd tools-rust
+cargo build --release -p socrates-fetch
+```
+
+Enable it explicitly for a canary process:
+
+```bash
+SOCRATES_RUST_FETCH=1
+SOCRATES_FETCHD_PATH=/absolute/path/to/socrates-fetchd
+# Optional, only after corpus comparison:
+SOCRATES_RUST_EXTRACT=1
+```
+
+If the flag is absent or the binary is unavailable, `server/src/services/fetchBatch.ts`
+uses the existing Node implementation. This makes rollout and rollback a
+configuration change rather than an API or persistence change.
+`SOCRATES_RUST_EXTRACT=1` is a separate canary: pages that do not yield a
+credible native article continue through the existing Readability fallback.
 
 ### WASM artifact (consumed by `frontend/`)
 
@@ -146,7 +176,13 @@ The regular `npm run lint`, `npm run typecheck`, `npm run test:unit`, and
   `ChunkingPolicy`. The top-level stream path is tightly coupled with the
   `textOffset` inline-insert mechanism across a 9546-line entry file;
   v1 only delivers the WASM API plus its tests. See [v2 roadmap](#v2-roadmap).
-- Server-side Rust-ification (`server/` keeps its existing TS stack).
+- General server-side Rust-ification remains deferred; `server/` keeps its
+  existing TypeScript stack outside the fetch and extraction canaries.
+- The native `socrates-fetchd` worker is now available behind the explicit
+  `SOCRATES_RUST_FETCH=1` canary flag, and its bounded HTML text-density
+  extractor can be enabled separately with `SOCRATES_RUST_EXTRACT=1`.
+- Search engine orchestration remains in TypeScript until profiling and corpus
+  parity justify the next migration.
 - CI changes — `.github/workflows/ci.yml` is untouched. Adding a Rust job is
   listed under [v2 roadmap](#v2-roadmap).
 - Any change to the SSE wire contract. `socrates_protocol::events` is the

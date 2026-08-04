@@ -1,0 +1,21 @@
+[package]
+name = "socrates-fetch"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Native SSRF-defended HTTP fetch worker for Socrates web_fetch"
+
+[lib]
+name = "socrates_fetch"
+path = "src/lib.rs"
+
+[[bin]]
+name = "socrates-fetchd"
+path = "src/main.rs"
+
+[dependencies]
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+url = { workspace = true }

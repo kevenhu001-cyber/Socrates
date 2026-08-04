@@ -2,6 +2,7 @@ import dns from 'node:dns/promises';
 import net from 'node:net';
 import { Agent } from 'undici';
 import { extractArticle } from './contentExtractor.js';
+import { fetchWithRust, rustExtractionEnabled, type RustFetchResponse } from './rustFetchWorker.js';
 import * as urlCache from '../lib/urlCache.js';
 
 interface ExtractedArticle {
@@ -30,10 +31,11 @@ interface ExtractedArticle {
  *     on the redirect-limit knob to bound the chain.)
  *
  * Content extraction:
- *   - After fetching, run each page through `extractArticle` (Mozilla
- *     Readability with a text-density fallback). The returned `content`
- *     field is boilerplate-cleaned text, not raw HTML. The LLM context
- *     builder can pass it straight into the prompt.
+ *   - The native canary may return a bounded Rust text-density extraction;
+ *     otherwise run each page through `extractArticle` (Mozilla Readability
+ *     with a text-density fallback). The returned `content` field is
+ *     boilerplate-cleaned text, not raw HTML. The LLM context builder can
+ *     pass it straight into the prompt.
  *
  * HTTP caching (Phase 2):
  *   - In-process URL cache (server/src/lib/urlCache.js) stores raw
@@ -119,6 +121,106 @@ function createPinnedAgent(addresses: { address: string; family: number }[]) {
   return new Agent({ connect: { lookup: lookup as never, rejectUnauthorized: true } });
 }
 
+/**
+ * Convert the native worker's bounded raw response into the legacy
+ * fetchBatch shape. Keeping extraction and URL-cache ownership in Node makes
+ * the Rust cutover reversible and preserves the existing Readability output.
+ */
+async function materializeRustResponse(url: string, cached: urlCache.CacheEntry | null, raw: RustFetchResponse) {
+  if (!raw.ok) {
+    return { ok: false, url, reason: raw.reason || (raw.status ? `HTTP ${raw.status}` : 'Fetch failed') };
+  }
+
+  if (raw.status === 304) {
+    if (!cached) return { ok: false, url, reason: 'HTTP 304 without a cached response' };
+    let extracted: ExtractedArticle | null = null;
+    try { extracted = (await extractArticle(cached.html, raw.finalUrl || url)) as unknown as ExtractedArticle; } catch { extracted = null; }
+    if (extracted) {
+      return {
+        ok: true,
+        url,
+        title: extracted.title || '',
+        content: extracted.content,
+        excerpt: extracted.excerpt,
+        wordCount: extracted.length,
+        pageDate: extracted.date,
+        method: extracted.method,
+        rawHtml: cached.html,
+        truncated: cached.truncated || false,
+        chars: cached.html.length,
+        fromCache: true,
+      };
+    }
+    return {
+      ok: true,
+      url,
+      title: '',
+      content: cached.html,
+      truncated: cached.truncated || false,
+      chars: cached.html.length,
+      fromCache: true,
+    };
+  }
+
+  const text = String(raw.body || '');
+  const truncated = Boolean(raw.truncated);
+  const contentType = raw.headers?.['content-type'] || '';
+  const etag = raw.headers?.etag || undefined;
+  const lastModified = raw.headers?.['last-modified'] || undefined;
+  if (etag || lastModified) {
+    urlCache.set(url, {
+      url,
+      status: raw.status,
+      etag,
+      lastModified,
+      contentType,
+      html: text,
+      bytes: text.length,
+      fetchedAt: Date.now(),
+      truncated,
+    });
+  }
+
+  let title = '';
+  const titleMatch = text.match(/<title[^>]*>([^<]+)<\/title>/i);
+  if (titleMatch) title = titleMatch[1].trim();
+
+  const extractionUrl = raw.finalUrl || url;
+  if (raw.article) {
+    return {
+      ok: true,
+      url,
+      title: raw.article.title || title,
+      content: raw.article.content || text,
+      excerpt: raw.article.excerpt,
+      wordCount: raw.article.length,
+      pageDate: raw.article.date || undefined,
+      method: raw.article.method,
+      rawHtml: text,
+      truncated,
+      chars: text.length,
+    };
+  }
+  let extracted: ExtractedArticle | null = null;
+  try { extracted = (await extractArticle(text, extractionUrl)) as unknown as ExtractedArticle; } catch { extracted = null; }
+  if (extracted) {
+    return {
+      ok: true,
+      url,
+      title: extracted.title || title,
+      content: extracted.content,
+      excerpt: extracted.excerpt,
+      wordCount: extracted.length,
+      pageDate: extracted.date,
+      method: extracted.method,
+      rawHtml: text,
+      truncated,
+      chars: text.length,
+    };
+  }
+  return { ok: true, url, title, content: text, truncated, chars: text.length };
+}
+
 export async function fetchBatch(urls: string[]) {
   if (!Array.isArray(urls)) throw new Error('urls must be an array');
   const maxUrls = 10;
@@ -145,6 +247,19 @@ export async function fetchBatch(urls: string[]) {
         if (cached.etag) headers['If-None-Match'] = cached.etag;
         if (cached.lastModified) headers['If-Modified-Since'] = cached.lastModified;
       }
+
+      // The native worker is opt-in in tests and automatically falls back
+      // when its binary is absent. It owns DNS/HTTP/redirect policy; Node
+      // continues to own extraction, cache semantics, and the public shape.
+      const rustResponse = await fetchWithRust({
+        url,
+        headers,
+        maxBytes: maxSize,
+        maxRedirects: 10,
+        timeoutMs: timeout,
+        extract: rustExtractionEnabled(),
+      });
+      if (rustResponse) return materializeRustResponse(url, cached, rustResponse);
 
       // Resolve DNS and pin the IP to prevent DNS rebinding.
       let pinnedRecords;
