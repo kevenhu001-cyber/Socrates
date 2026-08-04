@@ -6,6 +6,7 @@
 import 'dotenv/config';
 import { initDb, closeDb } from './db/index.js';
 import { startExpiredCleanup, stopExpiredCleanup } from './services/cleanupDb.js';
+import { stopRustFetchWorker } from './services/rustFetchWorker.js';
 import app from './app.js';
 
 const PORT = parseInt(process.env.PORT || '8080', 10);
@@ -176,6 +177,7 @@ async function main() {
       stopExpiredCleanup();
       try { const { stopScheduler } = await import('./services/scheduler.js'); stopScheduler(); } catch {}
       try { const { stopStatusMonitor } = await import('./services/statusMonitor.js'); stopStatusMonitor(); } catch {}
+      await stopRustFetchWorker().catch(() => {});
       await closeDb().catch(() => {});
       console.log('[db] Pool closed');
       process.exit(0);
