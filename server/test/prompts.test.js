@@ -18,6 +18,8 @@ describe('production prompt contracts', () => {
     assert.match(prompt, /`tools` array supplied by the server/i);
     assert.match(prompt, /render_visualization/);
     assert.match(prompt, /code_interpreter/);
+    assert.match(prompt, /web_search/);
+    assert.match(prompt, /web_fetch/);
     /* Tool-calling protocol and global writing rules live only in
        SERVER_SYSTEM_POLICY (routes/chat/helpers.ts); minimaxProxy always
        applies enforceServerSystemBoundary before injecting this file, so a
@@ -35,7 +37,6 @@ describe('production prompt contracts', () => {
       'conversation_search',
       'recent_chats',
       'tool_search',
-      'web_fetch',
     ]) {
       assert.equal(prompt.includes(staleProtocol), false, `stale tool protocol found: ${staleProtocol}`);
     }

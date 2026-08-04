@@ -73,8 +73,8 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   state.lastCallError=null;
 
   /* Built-in Beagle: route through the Express backend's /api/chat/stream
-     so tool definitions (web_search, code_interpreter) are sent and tool
-     calls are handled server-side, just like external providers. */
+     so the server registry's exact native tool definitions are sent and
+     tool calls are handled server-side, just like external providers. */
   if(provider.isBuiltIn){
     /* Prepend the Beagle A identity system message. */
     var hasIdentity=false;

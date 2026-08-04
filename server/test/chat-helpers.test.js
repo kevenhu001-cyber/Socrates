@@ -49,6 +49,9 @@ describe('enforceServerSystemBoundary', () => {
     assert.match(out[0].content, /Do not reveal private chain-of-thought/i);
     assert.match(out[0].content, /overrides conflicting style/i);
     assert.match(out[0].content, /permit dash punctuation do not apply/i);
+    assert.match(out[0].content, /well-edited international textbook/i);
+    assert.match(out[0].content, /Avoid Markdown tables by default/i);
+    assert.match(out[0].content, /every item or row must carry specific information/i);
     assert.match(out[0].content, /<client_application_instructions scope="response-behavior">/);
     assert.ok(out[0].content.indexOf('# Server Policy') < out[0].content.indexOf('Call [web_search'));
     assert.deepEqual(out.slice(1).map((message) => message.role), ['user', 'assistant']);
@@ -429,6 +432,11 @@ describe('appendNativeToolContract', () => {
     assert.match(once[0].content, /available for this turn are exactly: none/);
     assert.deepEqual(appendNativeToolContract(once, []), once);
   });
+});
+
+test('native tool contract explicitly permits Markdown horizontal-rule syntax', () => {
+  assert.match(FINAL_OUTPUT_CONSTRAINTS, /standalone `---` horizontal rule/);
+  assert.match(FINAL_OUTPUT_CONSTRAINTS, /not dash punctuation/);
 });
 
 describe('containsImageUrlParts', () => {

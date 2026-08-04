@@ -13,8 +13,9 @@
  *      monthly quota → multimodal transform).
  *   2. SSE headers + 12 KB prime flush + keepalive helper.
  *   3. streamChatCompletion() runs in a tool-calling loop
- *      (MAX_TOOL_ITERATIONS = 4) — code_interpreter, render_visualization,
- *      web_search.
+ *      (MAX_TOOL_ITERATIONS = 4) — the exact enabled native tools from the
+ *      registry, including search, fetch, planning, connectors, and tools
+ *      for code or visualization when available.
  *   4. Each chunk is forwarded as a data: {…} SSE frame. Reasoning
  *      content goes through the thinking pill. Tool calls emit
  *      tool_use / tool_result / tool_progress / execution_start frames.
@@ -256,20 +257,12 @@ export function registerStreamRoute(router: Router) {
        * definitions sent in the request. This keeps the injected system
        * guidance aligned with the current tool registry after additions or
        * connector changes. */
-      const contractMessages = appendNativeToolContract(
-        finalMessages,
-        toolDefs.map((tool) => (tool as { function?: { name?: string } }).function?.name || ''),
-      );
-      // P_tutor-no-search — Tutor mode (the guided Socratic teacher)
-      // does not need web search. Its answers are rooted in the
-      // built-in knowledge map, not live results. Disabling web search
-      // in tutor mode prevents unnecessary tool calls that slow down
-      // the conversation and confuse the teaching flow.
+      const toolNames = toolDefs.map((tool) => (tool as { function?: { name?: string } }).function?.name || '');
       type StreamMessage =
         | (typeof finalMessages)[number]
         | { role: 'assistant'; content: string; tool_calls: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }> }
         | { role: 'tool'; tool_call_id: string; content: string };
-      let workingMessages: StreamMessage[] = contractMessages;
+      let workingMessages: StreamMessage[] = finalMessages;
       let visualizationValidationFailures = 0;
       let planningValidationFailures = 0;
       /* A malformed argument gets one structured correction opportunity. If
@@ -290,6 +283,14 @@ export function registerStreamRoute(router: Router) {
       };
       for (let iter = 0; iter <= MAX_TOOL_ITERATIONS; iter++) {
         const toolsAllowed = iter < MAX_TOOL_ITERATIONS && invalidToolArgumentFailures < 2;
+        /* The model-facing contract must describe the same capability set as
+         * this request. In the final, tools-disabled hop the upstream gets no
+         * `tools` field, so do not leave the initial registry list in the
+         * system message and invite an unavailable call. */
+        const requestMessages = appendNativeToolContract(
+          workingMessages,
+          toolsAllowed ? toolNames : [],
+        );
         let iterFinishReason: string | null = null;
         const toolCallsThisTurn: ToolCall[] = [];
 
@@ -299,7 +300,7 @@ export function registerStreamRoute(router: Router) {
             apiBase: provider.url,
             apiKey: provider.keyPlaintext,
             model: provider.model,
-            messages: workingMessages,
+            messages: requestMessages,
             maxTokens,
             temperature,
             signal: abortController.signal,

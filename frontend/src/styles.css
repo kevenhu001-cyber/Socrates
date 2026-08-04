@@ -3146,30 +3146,52 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    slightly bolder than the default and add a subtle background so
    it reads as a "live indicator" rather than a stray inline label. */
 .thinking-dot{display:inline-flex;align-items:center;gap:6px;color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:4px 0;line-height:1.3}
-.thinking-dot[data-mode="chat"]{color:hsl(0 0% 52%)}
+.thinking-dot[data-mode="chat"]{color:hsl(var(--text-400))}
 .thinking-dot .loading{width:14px;height:14px}
 .thinking-status{display:inline-flex;align-items:center;gap:7px;margin:4px 0;padding:5px 0;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale,1));line-height:1.3}
-/* Neutral status wave — shared by reasoning and live tool labels. Keep
-   this independent from accent variables so it remains legible in both
-   themes and does not make loading look like an interactive control. */
+/* ChatGPT-like thinking status: a low-contrast sheen travels across the
+   label while a tiny dot breathes beside it. The gradient is deliberately
+   close to the regular text color; the old dark-to-white sweep looked like
+   a hard shadow and visibly jumped when its loop restarted. */
+.thinking-dot::before,.thinking-status::before{
+  content:"";
+  width:5px;
+  height:5px;
+  flex:0 0 5px;
+  border-radius:50%;
+  background:hsl(var(--text-400));
+  opacity:.48;
+  transform:scale(.78);
+  animation:thinkingDotBreath 1.8s ease-in-out infinite;
+}
+@keyframes thinkingDotBreath{
+  0%,100%{opacity:.38;transform:scale(.76)}
+  50%{opacity:.9;transform:scale(1)}
+}
+.thinking-status[data-state="done"]::before{background:hsl(145 55% 42%);opacity:.72;transform:none;animation:none}
+.thinking-status[data-state="error"]::before{background:hsl(0 58% 52%);opacity:.72;transform:none;animation:none}
 .shimmer-text{
-  color:transparent;
+  color:hsl(var(--text-400));
   -webkit-text-fill-color:transparent;
   background-image:linear-gradient(105deg,
-    hsl(0 0% 34%) 0%,
-    hsl(0 0% 12%) 28%,
-    hsl(0 0% 98%) 50%,
-    hsl(0 0% 58%) 67%,
-    hsl(0 0% 20%) 100%);
-  background-size:240% 100%;
-  background-position:200% 0;
+    hsl(var(--text-400)) 0%,
+    hsl(var(--text-400)) 38%,
+    hsl(var(--text-200)) 50%,
+    hsl(var(--text-400)) 62%,
+    hsl(var(--text-400)) 100%);
+  background-size:260% 100%;
+  background-position:150% 0;
   background-clip:text;
   -webkit-background-clip:text;
-  animation:neutralTextWave 1.8s ease-in-out infinite;
+  animation:neutralTextWave 3.2s linear infinite;
+  will-change:background-position;
 }
 @keyframes neutralTextWave{
-  0%{background-position:200% 0}
-  100%{background-position:-40% 0}
+  /* The highlight enters and leaves beyond the glyphs. The background
+     position technically wraps at the loop boundary, but both sides are
+     the same quiet base color, so there is no visible jump. */
+  0%{background-position:150% 0}
+  100%{background-position:-50% 0}
 }
 /* P_search-status — settled tool states. "done" freezes the ring and
    tints it green so "Found N web results" reads as a completed step;
@@ -4203,7 +4225,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 /* The label itself carries the neutral wave; the tool icon keeps the
    quieter circular progress cue in its fixed-width slot. */
 .tool-inline[data-state="running"] .tool-inline-label{
-  animation:neutralTextWave 1.8s ease-in-out infinite;
+  animation:neutralTextWave 3.2s linear infinite;
 }
 /* Spinner glyph that lives in the .tool-inline-tool-icon slot while the
    tool is in flight. Same 16×16 footprint as the tool-type icon so the
@@ -4555,8 +4577,13 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
     background-image:none;
     background-clip:border-box;
     -webkit-background-clip:border-box;
-    color:hsl(0 0% 52%) !important;
+    color:hsl(var(--text-400)) !important;
     -webkit-text-fill-color:currentColor;
+  }
+  .thinking-dot::before,.thinking-status::before{
+    animation:none !important;
+    opacity:.62;
+    transform:none;
   }
   .tool-inline-spinner{animation:none !important;opacity:.65}
   .tool-inline-leaving{animation-duration:0.01ms !important;animation-iteration-count:1 !important}
@@ -5411,7 +5438,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text{
   color:transparent;
   -webkit-text-fill-color:transparent;
-  animation:neutralTextWave 1.8s ease-in-out infinite;
+  animation:neutralTextWave 3.2s linear infinite;
 }
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="error"] .tool-inline-tool-icon,
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="error"] .tool-inline-label{
