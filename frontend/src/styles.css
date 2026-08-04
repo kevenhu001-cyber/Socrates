@@ -5172,6 +5172,87 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   .composer-tools-menu{border-radius:20px 20px 0 0}
 }
 
+/* Composer tools refresh: a calmer ChatGPT-style capability switcher.
+   The registry owns the content; this layer only gives the menu a compact
+   heading, clearer descriptions, shortcut hints, and a quiet active state. */
+.composer-tools-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:5px 10px 8px;
+  color:var(--tool-card-text);
+  font-size:calc(12px * var(--app-font-scale,1));
+  font-weight:600;
+  letter-spacing:-.01em;
+}
+.composer-tools-heading-hint{
+  color:var(--tool-card-text-subtle);
+  font-size:calc(10px * var(--app-font-scale,1));
+  font-weight:400;
+  white-space:nowrap;
+}
+.composer-tools-item{
+  position:relative;
+  min-height:48px;
+  padding:9px 10px;
+  border:1px solid transparent;
+}
+.composer-tools-item.is-active{
+  background:var(--tool-card-bg-hover);
+  border-color:var(--tool-card-border);
+}
+.composer-tools-item kbd{
+  flex:0 0 auto;
+  padding:2px 5px;
+  border:1px solid var(--tool-card-border);
+  border-radius:5px;
+  color:var(--tool-card-text-subtle);
+  font:400 10px/1.2 var(--font-mono);
+  background:var(--tool-card-bg);
+}
+.composer-tools-active-dot{
+  width:6px;height:6px;flex:0 0 auto;border-radius:50%;
+  background:hsl(var(--accent-000));
+  box-shadow:0 0 0 3px hsl(var(--accent-000)/.12);
+}
+@media(min-width:769px){
+  .composer-tools-menu{width:min(340px,calc(100vw - 24px));max-height:min(72vh,520px);overflow-y:auto}
+}
+@media(max-width:768px){
+  .composer-tools-heading{padding:3px 4px 8px;font-size:calc(14px * var(--app-font-scale,1))}
+  .composer-tools-heading-hint{font-size:calc(11px * var(--app-font-scale,1))}
+  .composer-tools-item kbd{display:none}
+}
+
+/* Workflow surfaces share the same quiet, rounded activity language as the
+   composer menu. They stay informative without competing with the answer. */
+.workflow-layer{margin:10px auto 6px;width:min(760px,calc(100% - 24px));gap:10px}
+.agent-stepper,.analyze-workbench{
+  border:1px solid var(--tool-card-border);
+  border-radius:14px;
+  background:var(--tool-card-surface);
+  box-shadow:var(--tool-card-shadow);
+  -webkit-backdrop-filter:blur(18px);
+  backdrop-filter:blur(18px);
+}
+.agent-stepper{padding:12px 14px 13px}
+.agent-stepper-head{gap:10px}
+.agent-stepper-title{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+.agent-stepper-kicker{
+  color:var(--tool-card-text-subtle);
+  font-size:10px;
+  font-weight:500;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.agent-stepper-progress{height:3px;margin:10px 0 1px;overflow:hidden;border-radius:999px;background:var(--tool-card-bg-sunken)}
+.agent-stepper-progress span{display:block;height:100%;border-radius:inherit;background:hsl(var(--accent-000));transition:width .3s var(--ease-out)}
+.agent-stepper-stages{margin-top:10px}
+.analyze-workbench{padding:12px 14px;max-height:220px}
+.analyze-workbench-head{gap:10px}
+.analyze-workbench-title{font-size:calc(13px * var(--app-font-scale,1));font-weight:600}
+.analyze-workbench-count{padding:2px 7px;border:1px solid var(--tool-card-border);border-radius:999px;background:var(--tool-card-bg);font-family:var(--font-sans);font-size:10px}
+.analyze-workbench-call{padding:7px 9px;border:1px solid transparent;border-radius:9px}
+.analyze-workbench-call:hover{border-color:var(--tool-card-border);background:var(--tool-card-bg-hover)}
+
 @media (prefers-reduced-motion: reduce){
   .msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text{
     animation:none !important;

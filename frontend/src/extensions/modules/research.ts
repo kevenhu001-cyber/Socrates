@@ -32,7 +32,7 @@ export const researchExtension: ExtensionDefinition = {
   onActivate(ctx) {
     const runId = `research-${Date.now().toString(36)}`;
     ctx.setTemplate({
-      key: 'webSearch',
+      key: 'research',
       title: ctx.t('composer.research', 'Find sources'),
       shortcut: '/research',
       icon: SEARCH_ICON,

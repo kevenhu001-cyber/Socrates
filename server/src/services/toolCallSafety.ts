@@ -10,6 +10,25 @@ export interface NormalizedToolCall {
   };
 }
 
+/**
+ * Return a protocol-safe copy of a tool call before it is echoed back to an
+ * OpenAI-compatible provider. Some providers emit malformed arguments. We
+ * still need to preserve the assistant tool-call envelope so the following
+ * role:'tool' message has a valid predecessor, but we must not send the
+ * malformed JSON back upstream and trigger a second provider-side 400.
+ */
+export function sanitizeToolCallForProtocol(call: NormalizedToolCall): NormalizedToolCall {
+  const parsed = parseToolArguments(call.function.arguments);
+  return {
+    ...call,
+    function: {
+      ...call.function,
+      name: call.function.name || 'unknown_tool',
+      arguments: parsed.ok ? JSON.stringify(parsed.value) : '{}',
+    },
+  };
+}
+
 export function parseToolArguments(raw: unknown):
   | { ok: true; value: Record<string, unknown> }
   | { ok: false; error: string } {
@@ -25,7 +44,7 @@ export function parseToolArguments(raw: unknown):
      "arguments:", double-encode the object, or leave a trailing comma.
      Repair only those unambiguous transport mistakes—never attempt a broad
      JavaScript/single-quote parser at this execution boundary. */
-  let candidate = raw.trim();
+  let candidate = raw.replace(/^\uFEFF/, '').trim();
   const fenced = candidate.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
   if (fenced) candidate = fenced[1].trim();
   candidate = candidate.replace(/^(?:arguments?|input)\s*[:=]\s*/i, '').trim();
@@ -78,7 +97,10 @@ export function normalizeToolCalls(
       id,
       type: 'function',
       function: {
-        name: String(fn.name || '').slice(0, 128),
+        // An empty function name is also invalid in the assistant tool-call
+        // envelope. Keep the original call unavailable, but give the next
+        // provider hop a syntactically valid name.
+        name: String(fn.name || 'unknown_tool').slice(0, 128),
         arguments: (
           fn.arguments && typeof fn.arguments === 'object'
             ? (() => { try { return JSON.stringify(fn.arguments); } catch { return ''; } })()

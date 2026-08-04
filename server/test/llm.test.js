@@ -286,6 +286,26 @@ describe('streamChatCompletion: tool_calls', () => {
     assert.equal(tools[0].function.arguments, '{"query":"latest"}');
   });
 
+  test('normalizes legacy delta.function_call streams into one tool call', async () => {
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([
+        { choices: [{ delta: { function_call: { name: 'web_', arguments: '{"q"' } } }] },
+        { choices: [{ delta: { function_call: { name: 'search', arguments: ':"docs"}' } } }] },
+        { choices: [{ delta: {}, finish_reason: 'function_call' }] },
+        sseDone(),
+      ]),
+    );
+    const tools = [];
+    await streamChatCompletion(
+      { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
+      () => {}, () => {}, () => {}, () => {},
+      (tc) => tools.push(tc),
+    );
+    assert.equal(tools.length, 1);
+    assert.equal(tools[0].function.name, 'web_search');
+    assert.equal(tools[0].function.arguments, '{"q":"docs"}');
+  });
+
   test('does NOT dispatch onToolUse when finish_reason is "stop" even if tool_calls were streamed', async () => {
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
@@ -318,6 +338,7 @@ describe('tool-call compatibility helpers', () => {
   test('merges fragmented, repeated, and object tool arguments safely', () => {
     assert.equal(mergeToolArgumentDelta('{"loc', 'ation":"SF"}'), '{"location":"SF"}');
     assert.equal(mergeToolArgumentDelta('{"q":"x"}', '{"q":"x"}'), '{"q":"x"}');
+    assert.equal(mergeToolArgumentDelta('{"q":"x"}', '{"q":"x","count":2}'), '{"q":"x","count":2}');
     assert.equal(mergeToolArgumentDelta('', { q: 'x' }), '{"q":"x"}');
   });
 

@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   normalizeToolCalls,
   parseToolArguments,
+  sanitizeToolCallForProtocol,
   wrapUntrustedToolResult,
 } from '../src/services/toolCallSafety.ts';
 
@@ -56,6 +57,31 @@ test('normalizeToolCalls preserves object arguments from compatible providers', 
     function: { name: 'web_search', arguments: { query: 'safe' } },
   }], { iteration: 0, maxCalls: 1 });
   assert.equal(normalized.function.arguments, '{"query":"safe"}');
+});
+
+test('sanitizeToolCallForProtocol canonicalizes valid arguments and quarantines malformed JSON', () => {
+  const valid = sanitizeToolCallForProtocol({
+    id: 'valid',
+    type: 'function',
+    function: { name: 'web_search', arguments: '```json\n{"query":"safe"}\n```' },
+  });
+  assert.equal(valid.function.arguments, '{"query":"safe"}');
+
+  const malformed = sanitizeToolCallForProtocol({
+    id: 'bad',
+    type: 'function',
+    function: { name: 'web_search', arguments: '{broken' },
+  });
+  assert.equal(malformed.function.arguments, '{}');
+  assert.equal(malformed.function.name, 'web_search');
+});
+
+test('normalizeToolCalls gives nameless calls a valid protocol function name', () => {
+  const [normalized] = normalizeToolCalls([{
+    id: 'nameless',
+    function: { arguments: '{}' },
+  }], { iteration: 0, maxCalls: 1 });
+  assert.equal(normalized.function.name, 'unknown_tool');
 });
 
 test('wrapUntrustedToolResult prevents delimiter escape and labels injection as data', () => {
