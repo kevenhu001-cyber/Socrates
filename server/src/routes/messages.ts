@@ -70,17 +70,21 @@ router.use(requireAuth);
  * exactly as it is for UUIDs. */
 async function findOwnedMessage(
   db: ReturnType<typeof getDb>,
-  rawId: string,
+  rawId: string | string[],
   userId: string,
   sessionId?: unknown,
 ) {
+  /* `:id` in Express route paths is a single segment so it cannot
+   * legitimately be an array; reject ambiguous values early so the
+   * downstream drizzle `eq()` calls see a plain string. */
+  const id = typeof rawId === 'string' ? rawId : '';
   let msg;
-  if (isUuid(rawId)) {
-    [msg] = await db.select().from(messages).where(eq(messages.id, rawId)).limit(1);
+  if (isUuid(id)) {
+    [msg] = await db.select().from(messages).where(eq(messages.id, id)).limit(1);
   } else {
     if (!isUuid(sessionId)) throw new BadRequest('Invalid message id');
     [msg] = await db.select().from(messages)
-      .where(and(eq(messages.sessionId, sessionId), eq(messages.clientId, rawId)))
+      .where(and(eq(messages.sessionId, sessionId), eq(messages.clientId, id)))
       .limit(1);
   }
   if (!msg) throw new NotFound('Message not found');
