@@ -532,15 +532,16 @@ interface Artifact {
   [k: string]: unknown;
 }
 interface WorkerResult {
-  status?: string;
-  stdout?: string;
-  stderr?: string;
-  exitCode?: number;
-  durationMs?: number;
-  errorMessage?: string;
-  artifacts?: Artifact[];
-  [k: string]: unknown;
-}
+   status?: string;
+   stdout?: string;
+   stderr?: string;
+   exitCode?: number;
+   durationMs?: number;
+   errorMessage?: string;
+   errorCode?: string;
+   artifacts?: Artifact[];
+   [k: string]: unknown;
+ }
 async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, maxOutputBytes, onProgress }: {
   executionId: string;
   code: string;
