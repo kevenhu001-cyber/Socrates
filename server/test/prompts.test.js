@@ -6,6 +6,7 @@ import {
   _clearPromptCacheForTests,
   getBeagleSystemPrompt,
   getCodeInterpreterPrompt,
+  getTeacherModePrompt,
 } from '../src/lib/prompts.js';
 
 describe('production prompt contracts', () => {
@@ -50,5 +51,14 @@ describe('production prompt contracts', () => {
     assert.match(prompt, /asyncio\.run\(main\(\)\)/);
     assert.equal(prompt.includes('def main(): await'), false);
     assert.equal(prompt.includes('[code_interpreter:'), false);
+  });
+
+  test('teacher prompt prefers developed prose over list or table output', async () => {
+    _clearPromptCacheForTests();
+    const prompt = await getTeacherModePrompt();
+    assert.ok(prompt);
+    assert.match(prompt, /连贯、完整/);
+    assert.match(prompt, /默认不要把正文写成项目符号、编号提纲或 Markdown 表格/);
+    assert.match(prompt, /只有当顺序、检查清单、精确对照或用户明确要求确实需要结构化表达/);
   });
 });

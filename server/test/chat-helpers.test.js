@@ -50,7 +50,10 @@ describe('enforceServerSystemBoundary', () => {
     assert.match(out[0].content, /overrides conflicting style/i);
     assert.match(out[0].content, /permit dash punctuation do not apply/i);
     assert.match(out[0].content, /well-edited international textbook/i);
+    assert.match(out[0].content, /Default to cohesive, connected prose/);
+    assert.match(out[0].content, /Unless the user explicitly asks for a list/);
     assert.match(out[0].content, /Avoid Markdown tables by default/i);
+    assert.match(out[0].content, /一般不要分点作答，也不要使用 Markdown 表格/);
     assert.match(out[0].content, /every item or row must carry specific information/i);
     assert.match(out[0].content, /<client_application_instructions scope="response-behavior">/);
     assert.ok(out[0].content.indexOf('# Server Policy') < out[0].content.indexOf('Call [web_search'));
