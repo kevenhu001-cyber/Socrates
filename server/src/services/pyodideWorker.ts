@@ -131,17 +131,45 @@ import matplotlib
 import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 try:
-    added = fm.fontManager.addfont(${JSON.stringify(memfsPath)})
-    name = added[0] if added else None
-    fallback = ['DejaVu Sans']
-    cjk = [name] if name else []
-    plt.rcParams['font.sans-serif'] = cjk + [f for f in fallback if f not in cjk]
-    plt.rcParams['font.family'] = 'sans-serif'
-    plt.rcParams['axes.unicode_minus'] = False
-    name
+    # Register the .otf with matplotlib's font manager. Pyodide's MEMFS
+    # supports the syscalls font_manager uses, so this works for files
+    # written under /usr/share/fonts/.
+    fm.fontManager.addfont(${JSON.stringify(memfsPath)})
+    # Read the canonical family name straight from the font file. The
+    # return value of fontManager.addfont() is version-dependent (a list
+    # of family-name strings in matplotlib 3.6, a list of FontEntry
+    # objects in matplotlib 3.7+, and even a bare empty list in some
+    # builds), so trying to recover the name from added[0] was
+    # unreliable and caused CJK to silently fall back to DejaVu Sans
+    # (= tofu in titles/labels/legends). FontProperties(fname=...) is
+    # stable across matplotlib versions.
+    from matplotlib.font_manager import FontProperties
+    family_name = FontProperties(fname=${JSON.stringify(memfsPath)}).get_name()
+    # Some matplotlib builds resolve Noto Sans SC as a different
+    # canonical name (e.g. "Noto Sans CJK SC"); fall back to scanning
+    # ttflist if the resolver returns an empty string.
+    if not family_name or not isinstance(family_name, str):
+        candidates = [f.name for f in fm.fontManager.ttflist
+                      if 'noto' in f.name.lower() and ('cjk' in f.name.lower() or 'sc' in f.name.lower())]
+        family_name = candidates[0] if candidates else ''
+    if not family_name:
+        print('[pyodide] CJK font registered but family name could not be resolved')
+    else:
+        # Insert at the FRONT, but preserve whatever else the runtime
+        # already had so we don't strip out fonts the user configured
+        # earlier in this session (the previous code hard-coded
+        # fallback=['DejaVu Sans'], which silently dropped anything else).
+        fallback = list(plt.rcParams.get('font.sans-serif', ['DejaVu Sans']))
+        if family_name in fallback:
+            fallback.remove(family_name)
+        plt.rcParams['font.sans-serif'] = [family_name] + fallback
+        plt.rcParams['font.family'] = 'sans-serif'
+        plt.rcParams['axes.unicode_minus'] = False
+        print(f'[pyodide] CJK font active: {family_name}')
+    family_name
 except Exception as _e:
-    print("[pyodide] CJK font registration failed:", _e)
-    None
+    print('[pyodide] CJK font registration failed:', repr(_e))
+    ''
 `);
     if (family && typeof family === 'string') {
       console.log(`[pyodide] Registered CJK font: ${family}`);
@@ -341,10 +369,15 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
   pyodide.runPython(`_stdout_cap.set_limit(${maxOutputBytes}); _stderr_cap.set_limit(${maxOutputBytes}); sys.stdout = _stdout_cap; sys.stderr = _stderr_cap`);
 
   /* P_cjk-font-skip — only await the singleton on the first call so
-     subsequent runCode calls don't pay a microtask per invocation. */
+     subsequent runCode calls don't pay a microtask per invocation.
+     We only flip the latch when registration actually produced a
+     family name — the previous code marked the flag unconditionally
+     even when addfont() silently returned, so a transient download
+     failure would have left every subsequent run with a missing CJK
+     font until the worker was restarted. */
   if (!_cjkFontRegistered) {
-    await _ensureCjkFontRegistered();
-    _cjkFontRegistered = true;
+    const family = await _ensureCjkFontRegistered();
+    if (family) _cjkFontRegistered = true;
   }
 
   /* P_progress — install the flush hooks so the parent receives
