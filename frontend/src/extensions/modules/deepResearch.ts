@@ -15,7 +15,7 @@ export const deepResearchExtension: ExtensionDefinition = {
   hintKey: 'composer.deepResearchHint',
   hintFallback: 'Plan, search, read, report',
   icon: DEEP_RESEARCH_ICON,
-  shortcut: '/research',
+  shortcut: '/deep-research',
   systemPrompt: '',
   body: '',
   autoFocus: true,
@@ -25,7 +25,7 @@ export const deepResearchExtension: ExtensionDefinition = {
     ctx.setTemplate({
       key: 'deepResearch',
       title: ctx.t('composer.deepResearch', 'Deep research'),
-      shortcut: '/research',
+      shortcut: '/deep-research',
       icon: DEEP_RESEARCH_ICON,
       hint: ctx.t('composer.deepResearchHint', 'Plan, search, read, report'),
       systemPrompt: '',

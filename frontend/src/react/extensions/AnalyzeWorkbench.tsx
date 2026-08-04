@@ -48,13 +48,16 @@ function outputSummary(output?: string | null, isError?: boolean): string {
 }
 
 export function AnalyzeWorkbench() {
-  useSyncExternalStore(
+  const snapshot = useSyncExternalStore(
     subscribeToAgentRuns,
     getAgentRunSnapshot,
     getAgentRunSnapshot,
   );
 
-  const calls = useMemo(readToolCalls, []);
+  /* Agent events are the invalidation signal for legacy session messages.
+     The previous empty dependency list froze the workbench at its initial
+     "No tool activity yet" state even while calls were arriving. */
+  const calls = useMemo(readToolCalls, [snapshot.revision]);
   const hasCalls = calls.length > 0;
 
   return (

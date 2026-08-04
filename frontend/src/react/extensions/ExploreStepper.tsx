@@ -42,6 +42,13 @@ function statusLabel(event: AgentRunEvent | null): string {
   return event.message || 'In progress';
 }
 
+function workflowLabel(workflow: AgentRunEvent['workflow'] | undefined): string {
+  if (workflow === 'deepResearch') return 'Deep research';
+  if (workflow === 'research') return 'Find sources';
+  if (workflow === 'explore') return 'Explore';
+  return 'Workflow';
+}
+
 export function ExploreStepper() {
   const snapshot = useSyncExternalStore(
     subscribeToAgentRuns,
@@ -61,11 +68,19 @@ export function ExploreStepper() {
     >
       <div className="agent-stepper-head">
         <span className="agent-stepper-status" aria-hidden="true" />
-        <span className="agent-stepper-title">{statusLabel(event)}</span>
+        <span className="agent-stepper-title">
+          <small className="agent-stepper-kicker">{workflowLabel(event?.workflow)}</small>
+          <span>{statusLabel(event)}</span>
+        </span>
         <span className="agent-stepper-workflow">
           {event ? event.workflow : ''}
         </span>
       </div>
+      {event?.current && event.total ? (
+        <div className="agent-stepper-progress" aria-label={`${event.current} of ${event.total} complete`}>
+          <span style={{ width: `${Math.min(100, Math.round((event.current / event.total) * 100))}%` }} />
+        </div>
+      ) : null}
       <ol className="agent-stepper-stages">
         {STAGES.map((stage, idx) => (
           <li

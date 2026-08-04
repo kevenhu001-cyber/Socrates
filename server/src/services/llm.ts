@@ -131,6 +131,20 @@ export function mergeToolArgumentDelta(previous: unknown, incoming: unknown): st
   if (!prev) return next;
   if (next === prev || next.startsWith(prev)) return next;
   if (prev.endsWith(next)) return prev;
+
+  /* A number of OpenAI-compatible gateways send the complete accumulated
+     JSON object on every delta instead of sending a fragment. If the new
+     value is already a complete object, it is the latest snapshot and must
+     replace the previous snapshot. Concatenating the two objects here was
+     the main source of `invalid_tool_arguments` on otherwise valid calls. */
+  try {
+    const parsedNext = JSON.parse(next) as unknown;
+    if (parsedNext && typeof parsedNext === 'object' && !Array.isArray(parsedNext)) {
+      return next;
+    }
+  } catch {
+    // The incoming value is a fragment; append it below.
+  }
   return prev + next;
 }
 
@@ -326,6 +340,31 @@ export async function streamChatCompletion(
         arguments: entry.function.arguments,
       }); } catch { /* ignore listener errors */ }
     };
+    const _accumulateToolCall = (tc: Record<string, unknown>, fallbackIndex = 0) => {
+      const rawIndex = tc.index;
+      const i = Number.isInteger(rawIndex) ? rawIndex as number : fallbackIndex;
+      const functionPart = tc.function && typeof tc.function === 'object'
+        ? tc.function as Record<string, unknown>
+        : undefined;
+      const incomingName = functionPart?.name ?? tc.name;
+      const incomingArguments = functionPart?.arguments ?? tc.arguments;
+      const prev = toolCallAcc.get(i) || {
+        id: undefined,
+        type: 'function',
+        function: { name: '', arguments: '' },
+      };
+      const next = {
+        id: typeof tc.id === 'string' && tc.id ? tc.id : prev.id,
+        type: 'function' as const,
+        function: {
+          name: mergeToolNameDelta(prev.function.name, incomingName),
+          arguments: mergeToolArgumentDelta(prev.function.arguments, incomingArguments),
+        },
+        __index: i,
+      };
+      toolCallAcc.set(i, next);
+      _emitToolDelta(next, next.function.arguments);
+    };
 
     while (true) {
       const { done, value } = await reader.read();
@@ -377,25 +416,14 @@ export async function streamChatCompletion(
              client can stream the in-progress JSON (e.g. Python
              source) live instead of waiting for completion. */
           if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
-            for (const tc of delta.tool_calls) {
-              const i = tc.index ?? 0;
-              const prev = toolCallAcc.get(i) || {
-                id: undefined,
-                type: 'function',
-                function: { name: '', arguments: '' },
-              };
-              const next = {
-                id: tc.id || prev.id,
-                type: 'function',
-                function: {
-                  name: mergeToolNameDelta(prev.function.name, tc.function && tc.function.name),
-                  arguments: mergeToolArgumentDelta(prev.function.arguments, tc.function && tc.function.arguments),
-                },
-                __index: i,
-              };
-              toolCallAcc.set(i, next);
-              _emitToolDelta(next, next.function.arguments);
-            }
+            for (const tc of delta.tool_calls) _accumulateToolCall(tc);
+          }
+          /* Older OpenAI-compatible gateways use the pre-tools
+             `delta.function_call` shape. Treat it as tool index 0 so a
+             `finish_reason: function_call` response still reaches the same
+             validation and execution path as native tool_calls. */
+          if (delta.function_call && typeof delta.function_call === 'object') {
+            _accumulateToolCall(delta.function_call as Record<string, unknown>);
           }
           /* finish_reason only appears on the last chunk of a stream.
              Capture it so onDone can dispatch the tool loop. */
@@ -427,25 +455,10 @@ export async function streamChatCompletion(
             }
           }
           if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
-            for (const tc of delta.tool_calls) {
-              const i = tc.index ?? 0;
-              const prev = toolCallAcc.get(i) || {
-                id: undefined,
-                type: 'function',
-                function: { name: '', arguments: '' },
-              };
-              const next = {
-                id: tc.id || prev.id,
-                type: 'function',
-                function: {
-                  name: mergeToolNameDelta(prev.function.name, tc.function && tc.function.name),
-                  arguments: mergeToolArgumentDelta(prev.function.arguments, tc.function && tc.function.arguments),
-                },
-                __index: i,
-              };
-              toolCallAcc.set(i, next);
-              _emitToolDelta(next, next.function.arguments);
-            }
+            for (const tc of delta.tool_calls) _accumulateToolCall(tc);
+          }
+          if (delta.function_call && typeof delta.function_call === 'object') {
+            _accumulateToolCall(delta.function_call as Record<string, unknown>);
           }
           const choice = json.choices?.[0];
           if (choice && choice.finish_reason) finishReason = choice.finish_reason;

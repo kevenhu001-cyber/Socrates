@@ -31,7 +31,7 @@ export const exploreExtension: ExtensionDefinition = {
   onActivate(ctx) {
     const runId = `explore-${Date.now().toString(36)}`;
     ctx.setTemplate({
-      key: 'webSearch',
+      key: 'explore',
       title: ctx.t('composer.explore', 'Explore'),
       shortcut: '/explore',
       icon: EXPLORE_ICON,

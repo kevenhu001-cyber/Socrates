@@ -38,6 +38,7 @@ import { createToolRegistry } from '../../services/toolRegistry.js';
 import {
   normalizeToolCalls,
   parseToolArguments,
+  sanitizeToolCallForProtocol,
   wrapUntrustedToolResult,
 } from '../../services/toolCallSafety.js';
 import { executeConnectorTool, CONNECTOR_TOOL_NAMES } from '../../services/connectorTools.js';
@@ -271,6 +272,11 @@ export function registerStreamRoute(router: Router) {
       let workingMessages: StreamMessage[] = contractMessages;
       let visualizationValidationFailures = 0;
       let planningValidationFailures = 0;
+      /* A malformed argument gets one structured correction opportunity. If
+         the model emits malformed arguments again, stop offering tools for
+         the next hop so the turn can finish in prose instead of displaying
+         the same error four times. */
+      let invalidToolArgumentFailures = 0;
       /* P_exec-retry-cap — mirrors the visualization/planning counters.
          A model stuck on the same Python error (e.g. SyntaxError: 'await'
          outside function) would otherwise ping-pong through all four
@@ -283,7 +289,7 @@ export function registerStreamRoute(router: Router) {
         try { res.write(payload); try { (res as { flush?: () => void }).flush?.(); } catch {} } catch { /* socket closed — abortController handles cleanup */ }
       };
       for (let iter = 0; iter <= MAX_TOOL_ITERATIONS; iter++) {
-        const toolsAllowed = iter < MAX_TOOL_ITERATIONS;
+        const toolsAllowed = iter < MAX_TOOL_ITERATIONS && invalidToolArgumentFailures < 2;
         let iterFinishReason: string | null = null;
         const toolCallsThisTurn: ToolCall[] = [];
 
@@ -381,6 +387,13 @@ export function registerStreamRoute(router: Router) {
           maxCalls: 4,
         }) as ToolCall[];
 
+        /* Keep the raw calls for execution and diagnostics, but only echo a
+         * canonical protocol-safe copy to the next provider hop. If a model
+         * emitted malformed JSON, sending that exact string back in the
+         * assistant message can make the gateway reject the entire retry
+         * before it has a chance to read the structured tool error. */
+        const protocolToolCalls = boundedToolCalls.map(sanitizeToolCallForProtocol);
+
         // No tool call → done. The extra tools-disabled iteration lets the
         // model summarize the fourth and final execution round in prose.
         if (!isToolFinishReason(iterFinishReason) || boundedToolCalls.length === 0) break;
@@ -412,7 +425,7 @@ export function registerStreamRoute(router: Router) {
           /* Empty string is valid OpenAI content and is accepted by
            * compatibility gateways that reject `content: null`. */
           content: '',
-          tool_calls: boundedToolCalls.map((t) => ({
+          tool_calls: protocolToolCalls.map((t) => ({
             id: t.id,
             type: 'function',
             function: t.function,
@@ -438,20 +451,32 @@ export function registerStreamRoute(router: Router) {
             const parsedArgs = parseToolArguments(tc.function && tc.function.arguments);
             const registryEntry = toolRegistry.get(toolName || '');
             const args = (parsedArgs.ok ? parsedArgs.value : {}) as Record<string, any>;
+            if (parsedArgs.ok && registryEntry?.enabled) invalidToolArgumentFailures = 0;
 
             if (!parsedArgs.ok) {
+              invalidToolArgumentFailures += 1;
+              console.warn('[chat/stream] invalid tool arguments', JSON.stringify({
+                id: tc.id,
+                name: toolName || 'unknown_tool',
+                length: typeof tc.function?.arguments === 'string' ? tc.function.arguments.length : 0,
+                attempt: invalidToolArgumentFailures,
+              }));
+              const retryable = invalidToolArgumentFailures < 2;
               writeSse(`event: tool_result\ndata: ${JSON.stringify({
                 id: tc.id, ok: false, status: 'failed',
                 output: '', stderr: '', artifacts: [],
                 error: 'invalid_tool_arguments',
-                errorCode: 'invalid_tool_arguments', retryable: true,
-                userMessage: '工具参数格式无效，正在请求模型修正。', detail: 'Expected one JSON object matching the supplied schema, with no Markdown fence or extra wrapper.',
+                errorCode: 'invalid_tool_arguments', retryable,
+                userMessage: retryable
+                  ? '工具参数格式无效，正在请求模型修正。'
+                  : '工具参数连续无效，本轮将停止自动重试。',
+                detail: 'Expected one JSON object matching the supplied schema, with no Markdown fence or extra wrapper.',
               })}\n\n`);
               result = {
                 status: 'failed',
                 error: 'invalid_tool_arguments',
                 errorCode: 'invalid_tool_arguments',
-                retryable: true,
+                retryable,
                 detail: 'Send one JSON object matching the supplied schema. Do not use Markdown fences, comments, or an extra input/arguments wrapper.',
               };
             } else if (!registryEntry || !registryEntry.enabled) {
@@ -915,7 +940,7 @@ data: ${JSON.stringify({
               toolContent = `[status: failed]\n[error_code: ${result.errorCode || 'plan_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]\n${result.retryable ? `Correct the ${kind} fields against the schema and call ${toolName} once more.` : `Explain the ${kind} concisely in prose instead.`}`;
             }
           } else if (result.errorCode === 'invalid_tool_arguments') {
-            toolContent = `[status: failed]\n[error_code: invalid_tool_arguments]\n[retryable: yes]\n${result.detail}\nCorrect the argument object against the native schema and call the tool once more.`;
+            toolContent = `[status: failed]\n[error_code: invalid_tool_arguments]\n[retryable: ${result.retryable === false ? 'no' : 'yes'}]\n${result.detail}\n${result.retryable === false ? 'Do not call this tool again in this turn. Explain the issue in prose instead.' : 'Correct the argument object against the native schema and call the tool once more.'}`;
           } else if (result.status !== 'completed' && toolName === 'web_search') {
             toolContent = `[status: failed]\n[error_code: ${result.errorCode || 'web_search_failed'}]\n[retryable: ${result.retryable === false ? 'no' : 'yes'}]\n${result.detail || result.error || ''}\nThe search engines are unavailable or rate-limited. If retryable, wait a moment and retry with the same or a rephrased query; otherwise answer from your own knowledge and note that live results could not be fetched.`;
           } else if (result.status !== 'completed' && toolName === 'web_fetch') {
