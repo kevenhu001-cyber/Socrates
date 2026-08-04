@@ -103,7 +103,8 @@ import {
   setDisplayFont, setDisplayWidth,
   setBackgroundColor, setBackgroundDark, setBackgroundLight,
   resetBackgroundColor, resetBackgroundDark, resetBackgroundLight,
-  toggleGrid, setAccentColor, setAccentCustom, resetAccentColor, toggleDisplayPrefs, toggleTheme
+  toggleGrid, setAccentColor, setAccentCustom, resetAccentColor, toggleDisplayPrefs, toggleTheme,
+  initTheme
 } from './displayPrefs.js';
 import {
   getActiveProvider,
@@ -392,10 +393,11 @@ function toggleAppLang(){
   if(lbl)lbl.textContent=next==="en"?"EN":"中";
   showToast(next==="en"?"Language: English":"语言: 中文",1800);
 }
-try{
-  var savedTheme=localStorage.getItem("socrates-theme");
-  if(savedTheme==="light"||savedTheme==="dark")document.documentElement.setAttribute("data-mode",savedTheme);
-}catch(e){}
+/* Restore the saved theme preference, including the system-following mode.
+   The inline boot script has already painted the correct mode; initTheme()
+   adds the live OS preference listener and wires the selector in Display
+   settings without causing a dark-mode flash on refresh. */
+initTheme();
 /* Restore saved accent: custom hex takes priority over preset hue,
    since once a user picks a custom color the preset index would
    just point at the nearest hue and overwrite their choice. */
@@ -5406,6 +5408,13 @@ function addStreamingMessage(opts){
      models that don't produce reasoning. Hidden when the user has
      toggled "Show AI thinking" off. */
   var thinkCtl=null;
+  var suppressedThinkCtl={append:function(){},finalize:function(){},remove:function(){}};
+  function hideThinkCtl(){
+    if(thinkCtl&&typeof thinkCtl.remove==="function"){
+      try{thinkCtl.remove()}catch(_){/* status may already be detached */}
+    }
+    thinkCtl=null;
+  }
   /* P_tool_in_think — cached container for tool cards inside
      the think-block. Lazily created by _ensureToolContainer(). */
   var _toolCardContainer=null;
@@ -5517,6 +5526,13 @@ function addStreamingMessage(opts){
     return _toolCardContainer;
   }
   function ensureThinkCtl(){
+    /* Tool activity owns the single live status line. Keep the reasoning
+       buffer in memory, but do not mount a second loading indicator while
+       a tool card is running. The next reasoning delta after all tools
+       settle can create the pill again. */
+    if(toolRuntime&&typeof toolRuntime.hasActiveTools==="function"&&toolRuntime.hasActiveTools()){
+      return suppressedThinkCtl;
+    }
     if(thinkCtl)return thinkCtl;
     /* P0.8 — The placeholder ("正在思考…") is no longer needed once
        real reasoning_content arrives. Remove it here so the user
@@ -6133,6 +6149,10 @@ function doRender(){
       return _toolOffset;
     },
     onToolActivity:function(){
+      /* The tool row is the only live status while execution is active;
+         remove a reasoning pill immediately so the two indicators never
+         appear together. */
+      hideThinkCtl();
       /* A tool call counts as first visible activity, so retire the
          waiting placeholder before execution progress begins. */
       if(firstDelta&&!finished){
@@ -6206,6 +6226,7 @@ function doRender(){
          P_session-cross-talk — stillOwnsSlot() closes the race window. */
       if(!stillOwnsSlot())return;
       if(typeof delta==="string")fullReasoning+=delta;
+      if(toolRuntime&&typeof toolRuntime.hasActiveTools==="function"&&toolRuntime.hasActiveTools())return;
       try{ensureThinkCtl().append(delta||"")}catch(_){}
     },
     finalizeThinking:function(){

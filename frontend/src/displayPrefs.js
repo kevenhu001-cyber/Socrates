@@ -10,9 +10,120 @@ export const DISPLAY_FONT_STEPS  = [1, 1.125, 1.25, 1.375];
 export const DISPLAY_WIDTH_STEPS = [0.85,  1, 1.3,   1.7];
 export const FONT_LABELS  = ["S","M","L","XL"];
 export const WIDTH_LABELS = ["S","M","L","XL"];
+export const THEME_PREFERENCES = ["system", "light", "dark"];
 
 /* ── state ── */
 export var displayPrefs = { font: 1.125, width: 1, darkBg: "", lightBg: "", showGrid: false };
+
+var _systemThemeQuery = null;
+
+function isThemePreference(value) {
+  return THEME_PREFERENCES.indexOf(value) !== -1;
+}
+
+function systemThemeMode() {
+  try {
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  } catch (_) {
+    return "dark";
+  }
+}
+
+export function getThemePreference() {
+  var attr = document.documentElement.getAttribute("data-theme-preference");
+  if (isThemePreference(attr)) return attr;
+  try {
+    var saved = localStorage.getItem("socrates-theme");
+    if (isThemePreference(saved)) return saved;
+  } catch (_) { /* ignore */ }
+  return "dark";
+}
+
+export function resolveThemeMode(preference) {
+  return preference === "system" ? systemThemeMode() : (preference === "light" ? "light" : "dark");
+}
+
+function syncMermaidTheme(mode) {
+  try {
+    if (typeof mermaid !== "undefined" && mermaid.initialize) {
+      mermaid.initialize({ startOnLoad: false, theme: mode === "dark" ? "dark" : "default" });
+    }
+  } catch (_) { /* ignore */ }
+}
+
+export function syncThemeUI() {
+  var html = document.documentElement;
+  var preference = html.getAttribute("data-theme-preference") || getThemePreference();
+  var options = document.querySelectorAll("[data-theme-option]");
+  options.forEach(function (option) {
+    var active = option.getAttribute("data-theme-option") === preference;
+    option.classList.toggle("on", active);
+    option.setAttribute("aria-checked", active ? "true" : "false");
+  });
+  var label = document.getElementById("displayThemeModeLabel");
+  if (label) {
+    var key = preference === "system" ? "display.themeSystem" : (preference === "light" ? "display.themeLight" : "display.themeDark");
+    label.textContent = typeof window.t === "function" ? window.t(key) : preference;
+  }
+  var toggle = document.getElementById("themeToggle");
+  if (toggle) {
+    toggle.setAttribute("data-theme-preference", preference);
+    var toggleLabel = typeof window.t === "function" ? window.t("display.themeToggle") : "Toggle theme";
+    toggle.setAttribute("title", toggleLabel);
+    toggle.setAttribute("aria-label", toggleLabel);
+  }
+}
+
+function setEffectiveThemeMode(mode) {
+  var html = document.documentElement;
+  html.setAttribute("data-mode", mode);
+  html.style.colorScheme = mode;
+  syncMermaidTheme(mode);
+  syncThemeUI();
+}
+
+function watchSystemTheme() {
+  if (_systemThemeQuery || !window.matchMedia) return;
+  try {
+    _systemThemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    var onChange = function () {
+      if (getThemePreference() !== "system") return;
+      setEffectiveThemeMode(resolveThemeMode("system"));
+      applyDisplayPrefs();
+    };
+    if (typeof _systemThemeQuery.addEventListener === "function") {
+      _systemThemeQuery.addEventListener("change", onChange);
+    } else if (typeof _systemThemeQuery.addListener === "function") {
+      _systemThemeQuery.addListener(onChange);
+    }
+  } catch (_) { /* ignore */ }
+}
+
+export function initTheme() {
+  var preference = getThemePreference();
+  document.documentElement.setAttribute("data-theme-preference", preference);
+  setEffectiveThemeMode(resolveThemeMode(preference));
+  watchSystemTheme();
+  var options = document.querySelectorAll("[data-theme-option]");
+  options.forEach(function (option) {
+    if (option.dataset.themeWired === "true") return;
+    option.dataset.themeWired = "true";
+    option.addEventListener("click", function () {
+      setThemePreference(option.getAttribute("data-theme-option"));
+    });
+  });
+  syncThemeUI();
+}
+
+export function setThemePreference(preference) {
+  if (!isThemePreference(preference)) return;
+  document.documentElement.setAttribute("data-theme-preference", preference);
+  try { localStorage.setItem("socrates-theme", preference); } catch (_) { /* ignore */ }
+  setEffectiveThemeMode(resolveThemeMode(preference));
+  applyDisplayPrefs();
+}
 
 /* ── helpers ── */
 export function loadDisplayPrefs() {
@@ -296,20 +407,10 @@ export function toggleDisplayPrefs() {
   }, 0);
 }
 
-/* ── theme (tied to display prefs because toggleTheme calls applyDisplayPrefs) ── */
+/* ── theme (tied to display prefs because theme changes update custom BG) ── */
 export function toggleTheme() {
   var html = document.documentElement;
   var mode = html.getAttribute("data-mode");
   var next = mode === "dark" ? "light" : "dark";
-  html.setAttribute("data-mode", next);
-  try { localStorage.setItem("socrates-theme", next); } catch (e) { /* ignore */ }
-  /* Re-init Mermaid with the appropriate theme so future diagrams
-     render correctly in the new mode. Existing SVGs keep their
-     original colours (re-rendering them would be disruptive). */
-  try {
-    if (typeof mermaid !== "undefined" && mermaid.initialize) {
-      mermaid.initialize({ startOnLoad: false, theme: next === "dark" ? "dark" : "default" });
-    }
-  } catch (_) { /* ignore */ }
-  applyDisplayPrefs();
+  setThemePreference(next);
 }

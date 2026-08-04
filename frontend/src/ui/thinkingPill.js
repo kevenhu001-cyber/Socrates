@@ -100,8 +100,8 @@ export function labelForTool(name){
     case "notion_search_pages":return "tool.actionSearch";
     case "github_list_repos": return "tool.actionSearch";
     case "gitee_list_repos":  return "tool.actionSearch";
-    case "code_interpreter":  return "tool.actionAnalyze";
-    case "Code":              return "tool.actionAnalyze";
+    case "code_interpreter":  return "tool.actionCode";
+    case "Code":              return "tool.actionCode";
     case "render_visualization":return "tool.actionVisual";
     case "web_fetch":         return "tool.actionFetch";
     case "create_plan":       return "tool.actionPlan";

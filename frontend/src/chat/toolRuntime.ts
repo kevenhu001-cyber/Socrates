@@ -22,6 +22,7 @@ import {
   toolCategory,
   updateInlineToolCodePreview,
   updateInlineToolGroupLabel,
+  updateInlineToolLabel,
   updateInlineToolMeta,
 } from '../ui/toolInline.js';
 import { mountVisualization } from '../render/visualization.js';
@@ -60,6 +61,7 @@ interface ToolCallEntry {
   _pendingDeltas?: ToolCallDelta[];
   _pendingProgress?: ToolProgress[];
   _toolResultApplied?: boolean;
+  _progressPhase?: string;
   /** Bounded live-output buffer for the running stream (client-only). */
   _liveBuffer?: LiveOutputBufferHandle;
 }
@@ -97,6 +99,7 @@ interface ToolResult {
   output?: string;
   stderr?: string;
   error?: string;
+  errorCode?: string | null;
   userMessage?: string;
   artifacts?: Array<unknown>;
   durationMs?: number;
@@ -161,6 +164,7 @@ interface ExecutionConnection {
 }
 
 export interface ToolRuntime {
+  hasActiveTools: () => boolean;
   recordToolUse: (call: {
     id?: string;
     name?: string;
@@ -206,7 +210,12 @@ function activeToolLabel(entry: ToolCallEntry | null): string {
   if (name === 'web_search' || name === 'arxiv_search' || name === 'zotero_search' || name === 'notion_search_pages') {
     return translate('tool.actionSearch', 'Searching the web');
   }
-  if (name === 'code_interpreter' || name === 'Code') return translate('tool.actionAnalyze', 'Analyzing data');
+  if (name === 'code_interpreter' || name === 'Code') {
+    const phase = entry && entry._progressPhase;
+    return phase === 'stdout' || phase === 'stderr'
+      ? translate('tool.actionAnalyze', 'Analyzing data…')
+      : translate('tool.actionCode', 'Executing code…');
+  }
   if (name === 'render_visualization') return translate('tool.actionVisual', 'Creating a visual');
   if (name === 'Read' || name === 'Glob' || name === 'Grep' || name === 'WebFetch') return translate('tool.actionRead', 'Reading files');
   if (name === 'Write' || name === 'Edit' || name === 'Bash') return translate('tool.actionWrite', 'Updating files');
@@ -440,6 +449,16 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     return getMessage() || null;
   }
 
+  function hasActiveTools(): boolean {
+    const message = activeMessage();
+    const calls = message && Array.isArray(message.toolCalls) ? message.toolCalls : [];
+    return calls.some(function (entry: ToolCallEntry) {
+      const run = getRun(entry);
+      if (run) return !isTerminalToolPhase(run.phase);
+      return !entry._toolResultApplied && entry.output == null && !entry.isError;
+    });
+  }
+
   function findCard(id: string): Element | null {
     if (!body || !id) return null;
     return body.querySelector('[data-tcid="' + cssEscape(id) + '"]');
@@ -457,6 +476,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       message._orphanProgress[progress.id].push(progress);
       return;
     }
+    entry._progressPhase = progress.phase;
     setRun(entry, phaseFromProgress(progress), { elapsedMs: progress.elapsedMs || 0 });
     updateRunSummary(message);
     const card = findCard(progress.id);
@@ -472,6 +492,13 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     }
 
     if ((card as HTMLElement).classList.contains('tool-inline')) {
+      if ((entry.name === 'code_interpreter' || entry.name === 'Code')
+        && (progress.phase === 'stdout' || progress.phase === 'stderr')) {
+        updateInlineToolLabel(
+          card as HTMLElement,
+          translate('tool.actionAnalyze', 'Analyzing data…'),
+        );
+      }
       const elapsed = ((progress.elapsedMs || 0) / 1000).toFixed(1);
       updateInlineToolMeta(card as HTMLElement, progress.elapsedMs ? elapsed + 's' : '');
       return;
@@ -501,7 +528,13 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     const headerStatus = card.querySelector('.agent-tool-status') as HTMLElement | null;
     if (headerStatus) {
       headerStatus.className = 'agent-tool-status' + (progress.phase === 'timeout_warning' ? ' warn' : ' mute');
-      headerStatus.textContent = phaseLabel.replace(/^\[|\]$/g, '') + ' ' + elapsed + 's';
+      const isCode = entry.name === 'code_interpreter' || entry.name === 'Code';
+      const stageLabel = isCode && (progress.phase === 'stdout' || progress.phase === 'stderr')
+        ? translate('tool.actionAnalyze', 'Analyzing data…')
+        : isCode && (progress.phase === 'queued' || progress.phase === 'ready')
+          ? translate('tool.actionCode', 'Executing code…')
+          : phaseLabel.replace(/^\[|\]$/g, '');
+      headerStatus.textContent = stageLabel + ' ' + elapsed + 's';
     }
     if (progress.phase === 'timeout_warning' && progress.chunk) {
       /* The warning reads like a stream line too, so it goes through the
@@ -640,6 +673,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
             output: data.output || '(no output)',
             stderr: data.stderr || '',
             error: data.status !== 'completed' ? (data.error || data.status) : undefined,
+            errorCode: (data as ToolResult).errorCode || null,
             artifacts: (data as unknown as { artifactFileIds?: unknown[] }).artifactFileIds || [],
             durationMs: data.durationMs || 0,
             executionId: executionId,
@@ -851,17 +885,22 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
 
     let statusText = '';
     let statusClass = '';
-    const duration = result.durationMs != null ? ' [' + (result.durationMs / 1000).toFixed(1) + 's]' : '';
+    const duration = result.durationMs != null && result.durationMs > 0
+      ? ' [' + (result.durationMs / 1000).toFixed(1) + 's]'
+      : '';
     let display = '';
     if (result.ok === false) {
       if (result.status === 'timeout') {
         statusText = translate('tool.statusTimeout', 'Timeout');
         statusClass = 'warn';
+      } else if (result.status === 'cancelled') {
+        statusText = translate('tool.statusStopped', 'Stopped');
+        statusClass = 'mute';
       } else {
         statusText = translate('tool.statusFailed', 'Failed');
         statusClass = 'err';
       }
-      const errorMessage = result.userMessage || result.error || result.output || 'failed';
+      const errorMessage = result.userMessage || result.error || result.errorCode || result.output || 'failed';
       display = errorMessage + duration;
       if ((result.name || entry.name) === 'code_interpreter') {
         const stderr = String(result.stderr || '') + String(result.error || '');
@@ -897,7 +936,9 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     }
 
     const terminalPhase = result.ok === false
-      ? (result.status === 'timeout' ? TOOL_RUN_PHASES.timed_out : TOOL_RUN_PHASES.failed)
+      ? (result.status === 'timeout'
+        ? TOOL_RUN_PHASES.timed_out
+        : result.status === 'cancelled' ? TOOL_RUN_PHASES.cancelled : TOOL_RUN_PHASES.failed)
       : TOOL_RUN_PHASES.succeeded;
     setRun(entry, terminalPhase, { endedAt: Date.now(), durationMs: result.durationMs || 0 });
     entry.output = display;
@@ -941,7 +982,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
           settleInlineToolRow(row, {
             ...result,
             output: entry.output || result.output || '',
-          });
+          }, { cancelled: result.status === 'cancelled' });
         }
         const attachmentHost = row ? ensureRowAttachmentHost(row, entry.id) : body;
         for (let artifactIndex = 0; artifactIndex < entry.artifacts.length; artifactIndex++) {
@@ -988,7 +1029,10 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       const badge = resultCard.querySelector('.agent-tool-status') as HTMLElement | null;
       if (badge) {
         badge.className = 'agent-tool-status ' + statusClass;
-        badge.textContent = statusText + (result.durationMs != null ? ' ' + (result.durationMs / 1000).toFixed(1) + 's' : '');
+        const badgeDuration = result.durationMs != null && result.durationMs > 0
+          ? ' ' + (result.durationMs / 1000).toFixed(1) + 's'
+          : '';
+        badge.textContent = statusText + badgeDuration;
       }
     }
     for (let artifactIndex = 0; artifactIndex < entry.artifacts.length; artifactIndex++) {
@@ -1035,6 +1079,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   }
 
   return {
+    hasActiveTools,
     recordToolUse,
     recordToolProgress,
     recordToolCallDelta,

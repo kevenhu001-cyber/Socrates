@@ -21,14 +21,29 @@
         the bundle's first paint). */
 (function () {
   try {
+    /* Resolve the theme preference before the stylesheet is parsed. This
+       keeps the system-following option from flashing the default dark
+       palette during a reload. `data-mode` remains the effective mode;
+       `data-theme-preference` records whether it is user-selected or
+       inherited from the OS. */
+    var initialPreference = "dark";
+    var storedPreference = localStorage.getItem("socrates-theme");
+    if (storedPreference === "light" || storedPreference === "dark" || storedPreference === "system") {
+      initialPreference = storedPreference;
+    }
+    var initialMode = initialPreference === "system"
+      ? (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+      : initialPreference;
+    document.documentElement.setAttribute('data-theme-preference', initialPreference);
+    document.documentElement.setAttribute('data-mode', initialMode);
     var cap = window.Capacitor;
     if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) {
       var platform = typeof cap.getPlatform === 'function' ? cap.getPlatform() : 'native';
       document.documentElement.setAttribute('data-capacitor-platform', platform);
       document.documentElement.classList.add('is-native-app');
-      /* Paint the root with the dark surface colour so the first frame
-         is not white. The bundled CSS overrides this once it loads. */
-      document.documentElement.style.backgroundColor = '#101318';
+      /* Paint the root with the effective surface colour so the first
+         frame is not white. The bundled CSS overrides this once it loads. */
+      document.documentElement.style.backgroundColor = initialMode === "light" ? '#e6dec8' : '#101318';
     }
   } catch (_) { /* not in Capacitor — fall through */ }
 })();
@@ -407,6 +422,17 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
         <div class="display-prefs-popover hidden" id="displayPrefsPopover" data-action="__stop">
+          <div class="display-prefs-row">
+            <div class="display-prefs-label">
+              <span data-i18n-key="display.theme">Theme</span>
+              <span class="value" id="displayThemeModeLabel">Dark</span>
+            </div>
+            <div class="display-prefs-segs display-theme-segs" id="displayThemeSegs" role="radiogroup" data-i18n-aria="display.theme" aria-label="Theme">
+              <button class="display-prefs-seg" type="button" data-theme-option="system" role="radio" data-i18n-key="display.themeSystem">System</button>
+              <button class="display-prefs-seg" type="button" data-theme-option="light" role="radio" data-i18n-key="display.themeLight">Light</button>
+              <button class="display-prefs-seg" type="button" data-theme-option="dark" role="radio" data-i18n-key="display.themeDark">Dark</button>
+            </div>
+          </div>
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span>Text size</span><span class="value" id="displayPrefsFontLabel">M</span></div>
             <div class="display-prefs-segs" id="displayPrefsFontSegs">

@@ -22,6 +22,7 @@
 import { Worker } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import os from 'node:os';
@@ -104,6 +105,28 @@ const MAX_ARTIFACT_BYTES = parseInt(process.env.EXEC_MAX_ARTIFACT_BYTES || '1048
 const MAX_CODE_CHARS = parseInt(process.env.EXEC_MAX_CODE_CHARS || '200000', 10);
 const SCRATCH_DIR = process.env.EXEC_SCRATCH_DIR
   || (process.env.NODE_ENV === 'production' ? '/var/lib/socrates/exec' : path.join(os.tmpdir(), 'socrates-exec'));
+
+interface PyodideWorkerEntry {
+  file: string;
+  execArgv?: string[];
+}
+
+/** Resolve the worker for both source-mode and compiled production runs. */
+export function resolvePyodideWorkerEntry(): PyodideWorkerEntry {
+  const compiled = path.join(__dirname, 'pyodideWorker.js');
+  if (existsSync(compiled)) return { file: compiled };
+
+  const source = path.join(__dirname, 'pyodideWorker.ts');
+  if (existsSync(source)) {
+    return {
+      file: source,
+      // Worker threads do not reliably inherit tsx's source resolver.
+      execArgv: [...process.execArgv, '--import', 'tsx'],
+    };
+  }
+
+  throw new Error(`pyodide_worker_entry_missing: neither ${compiled} nor ${source} exists`);
+}
 
 /* Make sure the scratch root exists before any worker is spawned. */
 await fs.mkdir(SCRATCH_DIR, { recursive: true }).catch(() => {});
@@ -202,6 +225,7 @@ class WorkerSlot {
   failedBoots: number;
   terminated: boolean;
   _readyResolved: boolean;
+  _readyReject: ((reason?: unknown) => void) | null;
   _inflightReject: ((reason?: any) => void) | null;
   _claimChain: Promise<void>;
   _releaseCurrent: (() => void) | null;
@@ -214,6 +238,7 @@ class WorkerSlot {
     this.failedBoots = 0;
     this.terminated = false;
     this._readyResolved = false;
+    this._readyReject = null;
     this._inflightReject = null; // per-slot reject handler (avoids pool-level race)
     // Promise chain that serializes all async claims on this slot. Each
     // claim atomically replaces _claimChain with a fresh pending link;
@@ -228,33 +253,56 @@ class WorkerSlot {
     this._releaseCurrent = null;
   }
   spawn() {
-    const workerFile = path.join(__dirname, 'pyodideWorker.js');
-    const w = new Worker(workerFile, {
+    const entry = resolvePyodideWorkerEntry();
+    const w = new Worker(entry.file, {
       resourceLimits: {
         maxOldGenerationSizeMb: 128,
         maxYoungGenerationSizeMb: 32,
       },
+      ...(entry.execArgv ? { execArgv: entry.execArgv } : {}),
     });
     this.worker = w;
     this._readyResolved = false;
+    const bootFailure = (value: unknown) => {
+      const source = value instanceof Error ? value : new Error(String(value || 'pyodide boot failed'));
+      const error = new Error(source.message || 'pyodide boot failed') as Error & { code?: string; status?: string };
+      error.code = 'pyodide_worker_boot_failed';
+      error.status = 'failed';
+      return error;
+    };
     this.ready = new Promise<void>((resolve, reject) => {
+      this._readyReject = (reason?: unknown) => reject(bootFailure(reason));
       const onMessage = (msg: any) => {
         if (msg && msg.id === 'boot') {
           w.off('message', onMessage);
           if (msg.type === 'ready') {
             this._readyResolved = true;
+            this._readyReject = null;
             resolve();
-          } else reject(new Error(msg.error || 'pyodide boot failed'));
+          } else {
+            const rejectReady = this._readyReject;
+            this._readyReject = null;
+            if (rejectReady) rejectReady(msg.error || 'pyodide boot failed');
+          }
         }
       };
       w.on('message', onMessage);
-      w.on('error', reject);
+      w.on('error', (err) => {
+        const rejectReady = this._readyReject;
+        this._readyReject = null;
+        if (rejectReady) rejectReady(err);
+      });
     });
     w.on('exit', (code: number) => {
       const wasBusy = this.busy;
       this.worker = null;
       this.ready = null;
       this._readyResolved = false;
+      if (this._readyReject) {
+        const rejectReady = this._readyReject;
+        this._readyReject = null;
+        rejectReady(new Error(`pyodide_worker_exited_before_ready: code=${code}`));
+      }
       this.busy = false;
       // Reject any in-flight promise if we were killed mid-run.
       // Use per-slot _inflightReject (not pool-level) to avoid
@@ -502,6 +550,7 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
   maxOutputBytes?: number;
   onProgress?: ProgressListener | null;
 }) {
+  const startedAt = Date.now();
   /* P_progress — safe noop default so existing callers (tests, direct
      execute()) work without changes. */
   const emit = (typeof onProgress === 'function')
@@ -519,6 +568,8 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
   const interruptBuffer = new SharedArrayBuffer(8);
 
   const timeout = Math.max(100, timeoutMs || DEFAULT_TIMEOUT_MS);
+  let timedOut = false;
+  let cancelledByCaller = false;
 
   // SIGINT path: works for I/O-bound code (time.sleep, file reads, etc).
   // Doesn't work for CPU-bound pure-Python loops — those need termination.
@@ -544,6 +595,7 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
   }
 
   const sigintTimer = setTimeout(() => {
+    timedOut = true;
     try { new Uint8Array(interruptBuffer)[0] = 0x02; } catch (_) {}
   }, timeout);
 
@@ -558,6 +610,7 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
     const result = await new Promise<any>((resolve, reject) => {
       slot._inflightReject = reject; // per-slot, not pool._inflightReject
       const onAbort = () => {
+        cancelledByCaller = true;
         try { new Uint8Array(interruptBuffer)[0] = 0x02; } catch (_) {}
       };
       if (signal) {
@@ -607,7 +660,40 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
         reject(err);
       }
     });
+    if (cancelledByCaller && result && result.status === 'timeout') {
+      result.status = 'cancelled';
+      result.errorMessage = 'cancelled_by_caller';
+      result.exitCode = 130;
+    } else if (!timedOut && result && result.status === 'timeout') {
+      // A user-raised KeyboardInterrupt is not a tool timeout.
+      result.status = 'failed';
+      result.errorMessage = 'worker_interrupt';
+      result.exitCode = 130;
+    }
     return result;
+  } catch (err) {
+    const incoming = err as Error & { code?: string; status?: string; durationMs?: number };
+    const message = String(incoming && incoming.message || err);
+    const incomingStatus = incoming.status;
+    const incomingCode = incoming.code;
+    const mappedStatus = incomingStatus || (cancelledByCaller ? 'cancelled' : timedOut ? 'timeout' : 'failed');
+    const mapped = new Error(
+      cancelledByCaller
+        ? 'cancelled_by_caller'
+        : timedOut
+          ? 'execution_timeout'
+          : message,
+    ) as Error & { code?: string; status?: string; durationMs?: number };
+    mapped.code = incomingCode || (cancelledByCaller
+      ? 'execution_cancelled'
+      : timedOut
+        ? 'execution_timeout'
+        : /pyodide_worker_exited|pyodide_worker_entry_missing|Worker/i.test(message)
+          ? 'pyodide_worker_failed'
+          : 'code_execution_failed');
+    mapped.status = mappedStatus;
+    mapped.durationMs = incoming.durationMs ?? Date.now() - startedAt;
+    throw mapped;
   } finally {
     clearTimeout(sigintTimer);
     clearTimeout(terminateTimer);
@@ -637,13 +723,21 @@ export const codeInterpreter = {
    *            errorMessage, artifactFileIds, artifactCount }
    */
   async execute(opts: ExecuteOpts) {
+    const requestStartedAt = Date.now();
     if (EXEC_RUNNER === 'disabled') {
       /* P_progress — still emit a terminal so the chat route can
          clear its "queued" spinner even on the disabled path. */
       if (typeof opts.onProgress === 'function') {
         try { opts.onProgress({ phase: 'skipped', reason: 'runner_disabled' }); } catch (_) {}
       }
-      return { status: 'skipped', errorMessage: 'code_interpreter_disabled', artifactFileIds: [], artifactCount: 0 };
+      return {
+        status: 'skipped',
+        errorCode: 'code_interpreter_disabled',
+        errorMessage: 'code_interpreter_disabled',
+        durationMs: Math.max(1, Date.now() - requestStartedAt),
+        artifactFileIds: [],
+        artifactCount: 0,
+      };
     }
     const userId = opts.userId || null;
     const sessionId = opts.sessionId || null;
@@ -670,8 +764,10 @@ export const codeInterpreter = {
       }
       return {
         status: 'failed',
+        errorCode: 'missing_user',
         errorMessage: 'missing_user: code_interpreter requires an authenticated user (req.userId was not set on the call)',
-        stdout: '', stderr: '', exitCode: 1, durationMs: 0,
+        stdout: '', stderr: '', exitCode: 1,
+        durationMs: Math.max(1, Date.now() - requestStartedAt),
         artifacts: [], artifactFileIds: [], artifactCount: 0,
       };
     }
@@ -684,20 +780,45 @@ export const codeInterpreter = {
       const maxKb = Math.round(MAX_CODE_CHARS / 1024);
       return {
         status: 'failed',
+        errorCode: 'code_too_large',
         errorMessage: `code_too_large: source exceeds ${maxKb} KB limit`,
         stdout: '',
         stderr: '',
         exitCode: 1,
-        durationMs: 0,
+        durationMs: Math.max(1, Date.now() - requestStartedAt),
         artifacts: [],
         artifactFileIds: [],
         artifactCount: 0,
       };
     }
 
-    const pool = await getPool();
+    const executionStartedAt = Date.now();
+    let pool: PyodidePool | null;
+    try {
+      pool = await getPool();
+    } catch (err) {
+      const errorMessage = String(err && (err as Error).message || err);
+      return {
+        status: 'failed',
+        errorCode: 'pyodide_worker_boot_failed',
+        errorMessage,
+        stdout: '',
+        stderr: '',
+        exitCode: 1,
+        durationMs: Math.max(1, Date.now() - executionStartedAt),
+        artifacts: [],
+        artifactFileIds: [],
+        artifactCount: 0,
+      };
+    }
     if (!pool) {
-      return { status: 'skipped', errorMessage: 'code_interpreter_disabled', artifactFileIds: [], artifactCount: 0 };
+      return {
+        status: 'skipped',
+        errorCode: 'code_interpreter_disabled',
+        errorMessage: 'code_interpreter_disabled',
+        artifactFileIds: [],
+        artifactCount: 0,
+      };
     }
 
     const db = getDb();
@@ -743,35 +864,37 @@ export const codeInterpreter = {
         maxOutputBytes: MAX_OUTPUT_BYTES,
         onProgress,
       });
-  } catch (err) {
-    // Two paths bubble out of runOnWorker:
-    //   1. SIGINT path: worker returned status='timeout' normally — handled above.
-    //   2. Hard termination path: worker process exited (code != 0) without
-    //      delivering a result, typically because the run was CPU-bound and
-    //      the SIGINT couldn't break the loop. Map this to 'timeout' so
-    //      callers see the same status as the cooperative case.
-    const msg = String(err && (err as Error).message || err);
-    const isWorkerCrash = /pyodide_worker_exited/.test(msg);
-    result = {
-      status: isWorkerCrash ? 'timeout' : 'failed',
-      errorMessage: isWorkerCrash ? 'timeout' : `pool_error: ${msg}`,
-      stdout: '',
-      stderr: '',
-      exitCode: isWorkerCrash ? 124 : 1,
-      durationMs: 0,
-      artifacts: [],
-    };
-    // Emit failure result to pubsub subscribers (SSE clients).
-    publish(`exec_result:${executionId}`, {
-      phase: 'failed',
-      executionId,
-      status: result.status,
-      errorMessage: result.errorMessage,
-      stdout: '',
-      stderr: '',
-      durationMs: 0,
-    }).catch(() => { /* logged in pubsub */ });
-  }
+    } catch (err) {
+      const typed = err as Error & { code?: string; status?: string; durationMs?: number };
+      const msg = String(typed && typed.message || err);
+      const status = typed.status || 'failed';
+      const errorCode = typed.code || (status === 'timeout' ? 'execution_timeout' : 'code_execution_failed');
+      result = {
+        status,
+        errorCode,
+        errorMessage: status === 'timeout'
+          ? 'execution_timeout'
+          : status === 'cancelled'
+            ? 'cancelled_by_caller'
+            : msg,
+        stdout: '',
+        stderr: '',
+        exitCode: status === 'timeout' ? 124 : status === 'cancelled' ? 130 : 1,
+        durationMs: Math.max(1, typed.durationMs ?? Date.now() - executionStartedAt),
+        artifacts: [],
+      };
+      // Emit failure result to pubsub subscribers (SSE clients).
+      publish(`exec_result:${executionId}`, {
+        phase: 'failed',
+        executionId,
+        status: result.status,
+        errorMessage: result.errorMessage,
+        stdout: '',
+        stderr: '',
+        durationMs: result.durationMs,
+        errorCode: result.errorCode,
+      }).catch(() => { /* logged in pubsub */ });
+    }
 
     // Persist artifacts. Each file in result.artifacts is something the
     // user's Python wrote into the artifacts/ subdir.
@@ -845,6 +968,7 @@ export const codeInterpreter = {
       durationMs: result.durationMs || 0,
       exitCode: result.exitCode,
       errorMessage: result.errorMessage || null,
+      errorCode: result.errorCode,
       artifactFileIds,                 // [{id, name, mimeType}] — was missing!
     }).catch(() => { /* logged in pubsub */ });
 
@@ -855,6 +979,7 @@ export const codeInterpreter = {
       stderr: result.stderr || '',
       exitCode: result.exitCode,
       durationMs: result.durationMs,
+      errorCode: result.errorCode,
       errorMessage: result.errorMessage || null,
       artifactFileIds,                 // [{id, name, mimeType}]
       artifactCount: finalArtifactCount,
