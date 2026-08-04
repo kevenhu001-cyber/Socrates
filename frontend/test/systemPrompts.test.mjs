@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   CHAT_CONCISE_PROMPT,
   CHAT_SYSTEM_PROMPT,
+  HIGH_EFFORT_OUTPUT_GUIDANCE,
   PYTHON_RUNNABLE_RULES,
 } from '../src/chat/systemPrompts.js';
 
@@ -39,6 +40,14 @@ test('chat prompts do not demand disclosure of private chain of thought', () => 
   for (const prompt of [CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT]) {
     assert.doesNotMatch(prompt, /state your reasoning openly|showing your thinking/i);
   }
+});
+
+test('high-effort prompt prioritizes detailed paragraph-based answers', () => {
+  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /very detailed, self-contained answer/i);
+  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /Avoid bullet points, numbered lists, checklists, and Markdown tables by default/i);
+  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /高思考强度下/);
+  assert.match(CHAT_SYSTEM_PROMPT, /high reasoning-effort mode/i);
+  assert.doesNotMatch(CHAT_CONCISE_PROMPT, /high reasoning-effort mode/i);
 });
 
 test('chat prompt policies stay compact enough to avoid crowding user context', () => {
