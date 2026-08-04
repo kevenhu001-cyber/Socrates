@@ -272,6 +272,24 @@ test('ToolRuntime compact mode mounts inline rows instead of cards', () => {
   }
 });
 
+test('ToolRuntime exposes whether any tool is still active', () => {
+  const message = {
+    toolCalls: [{ id: 'running', name: 'code_interpreter', output: null, isError: false }],
+  };
+  const runtime = createToolRuntime({
+    body: { querySelector() { return null; }, querySelectorAll() { return []; } },
+    stillOwnsSlot: () => true,
+    getMessage: () => message,
+    EventSource: null,
+  });
+
+  assert.equal(runtime.hasActiveTools(), true);
+  message.toolCalls[0].output = 'done';
+  message.toolCalls[0]._toolResultApplied = true;
+  assert.equal(runtime.hasActiveTools(), false);
+  runtime.dispose();
+});
+
 function makeLiveSlotDom() {
   const childNodes = [];
   const liveSlot = {

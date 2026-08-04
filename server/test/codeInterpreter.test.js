@@ -9,9 +9,19 @@
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { codeInterpreter, CODE_INTERPRETER_TOOL } from '../src/services/codeInterpreter.js';
+import { codeInterpreter, CODE_INTERPRETER_TOOL, resolvePyodideWorkerEntry } from '../src/services/codeInterpreter.js';
+import fs from 'node:fs';
 
 describe('codeInterpreter.execute — input guard rails', () => {
+  test('resolves the compiled worker or the TypeScript worker in source mode', () => {
+    const entry = resolvePyodideWorkerEntry();
+    assert.equal(fs.existsSync(entry.file), true);
+    assert.match(entry.file, /pyodideWorker\.(js|ts)$/);
+    if (entry.file.endsWith('.ts')) {
+      assert.ok(entry.execArgv?.includes('tsx'));
+    }
+  });
+
   test('rejects sources larger than MAX_CODE_CHARS without touching the pool', async () => {
     const huge = 'x'.repeat(400_000);
     const res = await codeInterpreter.execute({ userId: '00000000-0000-4000-8000-000000000001', sessionId: null, code: huge, language: 'python' });

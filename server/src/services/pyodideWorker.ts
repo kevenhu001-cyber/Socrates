@@ -78,7 +78,7 @@ const CJK_FONT_HOST_DIR = process.env.EXEC_CJK_FONT_DIR
 const CJK_FONT_FILENAME = 'NotoSansSC-Regular.otf';
 const CJK_FONT_URL = process.env.EXEC_CJK_FONT_URL
   || 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf';
-const CJK_FONT_BOOT_TIMEOUT_MS = parseInt(process.env.EXEC_CJK_FONT_TIMEOUT_MS || '30000', 10);
+const CJK_FONT_BOOT_TIMEOUT_MS = parseInt(process.env.EXEC_CJK_FONT_TIMEOUT_MS || '8000', 10);
 let _cjkFontPromise: Promise<string | null> | null = null;
 let _cjkFontRegistered = false;
 
@@ -216,8 +216,6 @@ async function bootPyodide() {
       }
     }
 
-    _ensureCjkFontRegistered().catch(() => { /* logged inside */ });
-
     // Install a self-contained stream class. sys.stdout and sys.stderr are
     // replaced with instances of this class on each run() call. The class
     // keeps its own buffer (no dependency on the original stream's API),
@@ -345,6 +343,12 @@ def _socrates_make_flush(orig_flush):
     return _wrapped
 `);
 
+    // Register the optional font before advertising readiness. This keeps
+    // font/network work outside the per-execution timeout budget. Failure is
+    // intentionally non-fatal: matplotlib can continue with its default font.
+    const family = await _ensureCjkFontRegistered();
+    if (family) _cjkFontRegistered = true;
+
     parentPort!.postMessage({ id: 'boot', type: 'ready', version: pyodide.version });
   } catch (err) {
     bootError = err as Error;
@@ -357,28 +361,17 @@ def _socrates_make_flush(orig_flush):
  * instance. Returns a structured result.
  */
 async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, interruptBuffer, signal }: RunCodeRequest) {
+  const startedAt = Date.now();
   if (!pyodide) {
     return {
       id, type: 'result',
       status: 'failed',
       errorMessage: bootError ? ('boot_error: ' + String(bootError.message)) : 'pyodide_not_ready',
-      stdout: '', stderr: '', exitCode: 1, durationMs: 0, artifacts: [],
+      stdout: '', stderr: '', exitCode: 1, durationMs: Math.max(1, Date.now() - startedAt), artifacts: [],
     };
   }
 
   pyodide.runPython(`_stdout_cap.set_limit(${maxOutputBytes}); _stderr_cap.set_limit(${maxOutputBytes}); sys.stdout = _stdout_cap; sys.stderr = _stderr_cap`);
-
-  /* P_cjk-font-skip — only await the singleton on the first call so
-     subsequent runCode calls don't pay a microtask per invocation.
-     We only flip the latch when registration actually produced a
-     family name — the previous code marked the flag unconditionally
-     even when addfont() silently returned, so a transient download
-     failure would have left every subsequent run with a missing CJK
-     font until the worker was restarted. */
-  if (!_cjkFontRegistered) {
-    const family = await _ensureCjkFontRegistered();
-    if (family) _cjkFontRegistered = true;
-  }
 
   /* P_progress — install the flush hooks so the parent receives
      incremental stdout/stderr. The hooks run on Python's flush(),
@@ -458,7 +451,6 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     }
   } catch (_) { /* non-fatal */ }
 
-  const startedAt = Date.now();
   let status = 'completed';
   let exitCode = 0;
   let errorMessage: string | null = null;
@@ -587,12 +579,12 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
       status = 'failed';
       errorMessage = 'output_limit_exceeded';
       exitCode = 1;
-    } else if (name === 'KeyboardInterrupt' || traceback.includes('KeyboardInterrupt')) {
-      status = 'timeout';
-      errorMessage = 'timeout';
     } else if (cancelled) {
       status = 'cancelled';
       errorMessage = 'cancelled_by_caller';
+    } else if (name === 'KeyboardInterrupt' || traceback.includes('KeyboardInterrupt')) {
+      status = 'timeout';
+      errorMessage = 'timeout';
     } else {
       // Defer to finalize step below — we need the stderr capture to extract
       // the human-readable "<Class>: <msg>" line.
@@ -684,7 +676,7 @@ parentPort!.on('message', async (msg) => {
         executionId: msg.executionId,
         status: 'failed',
         exitCode: 1,
-        durationMs: 0,
+        durationMs: 1,
         stdout: '',
         stderr: '',
         errorMessage: 'worker_error: ' + String(err && (err as PyRunError).message || err),

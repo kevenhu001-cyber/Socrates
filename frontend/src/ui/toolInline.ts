@@ -22,6 +22,7 @@ export interface InlineToolEntry {
 export interface InlineToolResult {
   ok?: boolean;
   status?: string;
+  errorCode?: string | null;
   durationMs?: number;
   results?: unknown[];
   output?: string;
@@ -89,9 +90,18 @@ export function updateInlineToolGroupLabel(row: HTMLElement, count: number): voi
   row.dataset.groupCount = String(count);
 }
 
+/** Update the live action copy without changing the row's running state. */
+export function updateInlineToolLabel(row: HTMLElement, text: string): void {
+  if (!row || row.dataset.state !== 'running') return;
+  const label = row.querySelector('.tool-inline-label') as HTMLElement | null;
+  if (!label) return;
+  label.textContent = text;
+  label.classList.add('shimmer-text');
+}
+
 function runningLabel(name: string): string {
   if (SEARCH_TOOLS.has(name)) return translate('tool.actionSearch', 'Searching the web…');
-  if (name === 'code_interpreter' || name === 'Code') return translate('tool.actionAnalyze', 'Analyzing data');
+  if (name === 'code_interpreter' || name === 'Code') return translate('tool.actionCode', 'Executing code…');
   if (name === 'render_visualization') return translate('tool.actionVisual', 'Creating a visual');
   if (name === 'web_fetch') return translate('tool.actionFetch', 'Reading the page…');
   if (name === 'create_plan') return translate('tool.actionPlan', 'Drafting a plan…');
@@ -371,7 +381,7 @@ export function createInlineToolRow(entry: InlineToolEntry): HTMLElement {
   row.innerHTML =
     '<summary class="tool-inline-head">'
     + '<span class="tool-inline-tool-icon">' + runningIconHtml() + '</span>'
-    + '<span class="tool-inline-label">' + esc(runningLabel(entry.name)) + '</span>'
+    + '<span class="tool-inline-label shimmer-text">' + esc(runningLabel(entry.name)) + '</span>'
     + '<span class="tool-inline-meta"></span>'
     + '<span class="tool-inline-chev" aria-hidden="true"></span>'
     + '</summary>'
@@ -514,6 +524,7 @@ export function settleInlineToolRow(
   if (toolIcon) toolIcon.innerHTML = toolTypeIconHtml(name);
   const label = row.querySelector('.tool-inline-label');
   if (label) {
+    label.classList.remove('shimmer-text');
     label.textContent = cancelled
       ? translate('tool.statusStopped', 'Stopped')
       : failed ? errorLabel(name, result) : doneLabel(name, result);

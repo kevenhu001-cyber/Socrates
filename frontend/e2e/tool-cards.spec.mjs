@@ -129,7 +129,8 @@ test('live chat shows a Searching label while the model is searching', async ({ 
         start(controller) {
           controllerRef = controller;
           controller.enqueue(encoder.encode(
-            'event: tool_use\ndata: [{"id":"late-search","name":"web_search","input":{"query":"weather today"}}]\n\n',
+            'data: {"choices":[{"delta":{"reasoning_content":"先判断需要查询哪些信息。"}}]}\n\n'
+            + 'event: tool_use\ndata: [{"id":"late-search","name":"web_search","input":{"query":"weather today"}}]\n\n',
           ));
         },
       });
@@ -169,11 +170,72 @@ test('live chat shows a Searching label while the model is searching', async ({ 
   const row = page.locator('.msg.assistant .tool-inline[data-tcid="late-search"]').last();
   await expect(row).toBeVisible();
   await expect(row.locator('.tool-inline-label')).toContainText('Searching');
+  await expect(row.locator('.tool-inline-label')).toHaveClass(/shimmer-text/);
+  await expect(page.locator('.msg.assistant .thinking-status')).toHaveCount(0);
   await expect(row).toHaveAttribute('data-state', 'running');
 
   await page.evaluate(() => window.__finishSearchStream());
   await expect(row).toHaveAttribute('data-state', 'done');
   await expect(row.locator('.tool-inline-label')).toContainText('Found 1');
+});
+
+test('code execution switches from executing to data analysis without thinking overlap', async ({ page }) => {
+  await page.addInitScript(() => {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = (input, init) => {
+      const url = typeof input === 'string' ? input : input && input.url ? input.url : '';
+      if (!url.includes('/chat/stream')) return nativeFetch(input, init);
+      const encoder = new TextEncoder();
+      let controllerRef;
+      const body = new ReadableStream({
+        start(controller) {
+          controllerRef = controller;
+          controller.enqueue(encoder.encode(
+            'event: tool_use\ndata: [{"id":"live-code","name":"code_interpreter","input":{"code":"print(1)"}}]\n\n',
+          ));
+        },
+      });
+      window.__sendCodeProgress = () => controllerRef.enqueue(encoder.encode(
+        'event: tool_progress\ndata: {"id":"live-code","phase":"stdout","elapsedMs":420,"chunk":"1\\n"}\n\n',
+      ));
+      window.__finishCodeStream = () => {
+        controllerRef.enqueue(encoder.encode(
+          'event: tool_result\ndata: {"id":"live-code","ok":true,"status":"completed","output":"1"}\n\n',
+        ));
+        controllerRef.enqueue(encoder.encode(
+          'data: {"choices":[{"delta":{"content":"Code finished."}}]}\n\n',
+        ));
+        controllerRef.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controllerRef.close();
+      };
+      return Promise.resolve(new Response(body, {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+      }));
+    };
+  });
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    const sessionId = '55555555-5555-4555-8555-555555555555';
+    window.state.phase = 'chat';
+    window.state.currentSessionId = sessionId;
+    window.state.session.currentSessionId = sessionId;
+    window.state.messages = [{ clientId: 'user-code', role: 'user', rawText: 'Run code', html: null }];
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    window.__codeTurnPromise = window.askChatTurn('Run code');
+  });
+
+  const bubble = page.locator('.msg.assistant').last();
+  const row = bubble.locator('.tool-inline[data-tcid="live-code"]').last();
+  await expect(row.locator('.tool-inline-label')).toContainText('Executing code');
+  await expect(bubble.locator('.thinking-status')).toHaveCount(0);
+  await page.evaluate(() => window.__sendCodeProgress());
+  await expect(row.locator('.tool-inline-label')).toContainText('Analyzing data');
+  await page.evaluate(() => window.__finishCodeStream());
+  await expect(row).toHaveAttribute('data-state', 'done');
 });
 
 test('Tutor streams the same native tools and sends the tutor mode contract', async ({ page }) => {

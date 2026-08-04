@@ -54,6 +54,11 @@ var I18N={
     "sidebar.more.settings":"API settings",
     "sidebar.more.skills":"Skills & shortcuts",
     "sidebar.more.display":"Display & theme",
+    "display.theme":"Theme",
+    "display.themeLight":"Light",
+    "display.themeDark":"Dark",
+    "display.themeSystem":"System",
+    "display.themeToggle":"Toggle theme",
     "sidebar.more.shortcuts":"Keyboard shortcuts",
     "sidebar.more.signOut":"Sign out",
     "sidebar.more.soonScheduled":"Scheduled tasks — coming soon",
@@ -674,8 +679,9 @@ var I18N={
     "tool.metaToolCount":"{n} tools",
     "tool.metaToolCountOne":"1 tool",
     "tool.actionSearch":"Searching the web…",
-    "tool.actionAnalyze":"Analyzing data",
-    "tool.actionVisual":"Creating a visual",
+    "tool.actionCode":"Executing code…",
+    "tool.actionAnalyze":"Analyzing data…",
+    "tool.actionVisual":"Visualizing data…",
     "tool.actionFetch":"Reading the page…",
     "tool.actionPlan":"Drafting a plan…",
     "tool.actionSpec":"Drafting a spec…",
@@ -778,6 +784,11 @@ var I18N={
     "sidebar.more.settings":"API 设置",
     "sidebar.more.skills":"技能与快捷键",
     "sidebar.more.display":"显示与主题",
+    "display.theme":"主题",
+    "display.themeLight":"浅色",
+    "display.themeDark":"深色",
+    "display.themeSystem":"跟随系统",
+    "display.themeToggle":"切换主题",
     "sidebar.more.shortcuts":"键盘快捷键",
     "sidebar.more.signOut":"退出登录",
     "sidebar.more.soonScheduled":"定时任务 —— 即将上线",
@@ -1393,10 +1404,11 @@ var I18N={
     "tool.metaFailedOfTotal":"{failed}/{total} 个失败",
     "tool.metaToolCount":"{n} 个工具",
     "tool.metaToolCountOne":"1 个工具",
-    "tool.actionSearch":"正在搜索网页…",
-    "tool.actionAnalyze":"正在分析数据",
-    "tool.actionVisual":"正在生成图表",
-    "tool.actionFetch":"正在读取网页…",
+    "tool.actionSearch":"正在搜索中…",
+    "tool.actionCode":"正在执行代码中…",
+    "tool.actionAnalyze":"正在数据分析中…",
+    "tool.actionVisual":"正在可视化中…",
+    "tool.actionFetch":"正在读取网页中…",
     "tool.actionPlan":"正在制定计划…",
     "tool.actionSpec":"正在起草规格…",
     "tool.actionRead":"正在读取文件",
@@ -1530,6 +1542,11 @@ function applyI18n(){
     var ak=arias[ai].getAttribute("data-i18n-aria");
     var av=t(ak);
     if(av&&av!==ak)arias[ai].setAttribute("aria-label",av);
+  }
+  /* The selected theme label is generated from the active preference, so
+     refresh it after a language switch alongside the static selector copy. */
+  if(typeof window.syncThemeUI === "function"){
+    try{window.syncThemeUI()}catch(_){/* theme UI may not be mounted yet */}
   }
   /* Placeholder / value updates — done selectively for now. */
   var ci=document.getElementById("chatComposerRoot");

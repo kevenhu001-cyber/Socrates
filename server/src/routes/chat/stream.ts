@@ -571,11 +571,15 @@ data: ${JSON.stringify({
               });
               result = execResult;
 
+              const isExecutionTimeout = execResult.status === 'timeout'
+                || execResult.errorCode === 'execution_timeout';
               if (execResult.status !== 'completed') {
                 codeInterpreterValidationFailures += 1;
-                result.retryable = codeInterpreterValidationFailures <= 2;
+                result.retryable = isExecutionTimeout ? false : codeInterpreterValidationFailures <= 2;
                 if (!result.retryable) {
-                  result.userMessage = '代码执行连续多次失败，本次不再自动重试。';
+                  result.userMessage = isExecutionTimeout
+                    ? '代码执行超过时间预算，请拆分步骤、减少循环规模或改用 numpy/pandas 向量化计算后重试。'
+                    : '代码执行连续多次失败，本次不再自动重试。';
                 }
               }
 
@@ -586,12 +590,11 @@ data: ${JSON.stringify({
                 output: execResult.stdout || '',
                 stderr: execResult.stderr || '',
                 error: execResult.status !== 'completed' ? (execResult.errorMessage || execResult.status) : null,
-                errorCode: execResult.status === 'timeout'
-                  ? 'execution_timeout'
-                  : (execResult.errorMessage || (execResult.status === 'skipped' ? 'code_interpreter_unavailable' : 'execution_failed')),
+                errorCode: execResult.errorCode
+                  || (execResult.status === 'skipped' ? 'code_interpreter_unavailable' : 'execution_failed'),
                 retryable: result.retryable === false ? false : true,
-                userMessage: execResult.status === 'timeout'
-                  ? '代码执行超时，请缩小计算规模后重试。'
+                userMessage: isExecutionTimeout
+                  ? '代码执行超过时间预算，请拆分步骤、减少循环规模或改用 numpy/pandas 向量化计算后重试。'
                   : (execResult.status === 'completed' ? null : (result.userMessage || '代码未能完成执行。')),
                 detail: execResult.stderr || execResult.errorMessage || null,
                 artifacts: execResult.artifactFileIds || [],

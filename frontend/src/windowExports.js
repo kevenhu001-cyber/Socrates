@@ -44,7 +44,7 @@ window.thinkingOn = thinkingOn;
 
 /* ─── displayPrefs.js ─── */
 import {
-  toggleGrid, setAccentColor, toggleDisplayPrefs, toggleTheme,
+  toggleGrid, setAccentColor, toggleDisplayPrefs, toggleTheme, setThemePreference, syncThemeUI,
   setAccentCustom, resetAccentColor,
   setBackgroundDark, setBackgroundLight, resetBackgroundDark, resetBackgroundLight,
 } from './displayPrefs.js';
@@ -52,6 +52,8 @@ window.toggleGrid = toggleGrid;
 window.setAccentColor = setAccentColor;
 window.toggleDisplayPrefs = toggleDisplayPrefs;
 window.toggleTheme = toggleTheme;
+window.setThemePreference = setThemePreference;
+window.syncThemeUI = syncThemeUI;
 window.setAccentCustom = setAccentCustom;
 window.resetAccentColor = resetAccentColor;
 window.setBackgroundDark = setBackgroundDark;
