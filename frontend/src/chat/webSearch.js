@@ -516,10 +516,11 @@ export async function rewriteQueryForSearch(rawText){
   var ac=new AbortController();
   var tmo=setTimeout(function(){ac.abort()},REWRITER_TIMEOUT_MS);
   try{
-    var r=await apiFetch("/api/chat",{method:"POST",body:{messages:msgs,temperature:0.3,max_tokens:250},signal:ac.signal});
+    var r=await apiFetch("/api/chat",{method:"POST",body:{messages:msgs,temperature:0.3,max_tokens:250,mode:"chat"},signal:ac.signal});
     clearTimeout(tmo);
-    if(!r||!r.choices||!r.choices[0]||!r.choices[0].message)return null;
-    var txt=r.choices[0].message.content||"";
+    var txt=(r&&typeof r.content==="string")?r.content:
+      (r&&r.choices&&r.choices[0]&&r.choices[0].message&&r.choices[0].message.content)||"";
+    if(!txt)return null;
     /* Extract the first JSON array. Be tolerant of stray prose. */
     var m=txt.match(/\[[\s\S]*?\]/);
     if(!m)return null;

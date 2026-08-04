@@ -65,8 +65,15 @@ router.post('/', requireAuth, chatRateLimitDispatch, audit('chat:sync'), async (
       });
     }
 
+    const content = completion.content || '';
+    /* P_chat-response-compat — /api/chat is our compact `{content}` API,
+       while older auxiliary clients and title/search helpers used the
+       OpenAI `choices[0].message.content` shape. Return both views during
+       the migration so a stale bundle cannot silently discard a successful
+       completion. */
     return res.json({
-      content: completion.content || '',
+      content,
+      choices: [{ message: { role: 'assistant', content } }],
       reasoning_content: completion.reasoning_content || null,
       usage: { promptTokens, completionTokens, totalTokens: promptTokens + completionTokens },
     });

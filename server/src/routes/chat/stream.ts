@@ -48,6 +48,8 @@ import { requireAuth } from '../../middleware/auth.js';
 
 import {
   prepareChatRequest,
+  appendNativeToolContract,
+  chatRateLimitDispatch,
   SSE_PRIME,
 } from './helpers.js';
 
@@ -115,7 +117,7 @@ export function registerStreamRoute(router: Router) {
    * with the sync POST / route in chat.js — both endpoints spend
    * the user's LLM quota and write per-user rows, so both must be
    * gated identically. */
-  router.post('/stream', requireAuth, async (req, res, next) => {
+  router.post('/stream', requireAuth, chatRateLimitDispatch, async (req, res, next) => {
     try {
       const prep = await prepareChatRequest(req, res);
       if (!prep.ok) return;
@@ -249,6 +251,14 @@ export function registerStreamRoute(router: Router) {
       }
       const toolRegistry = createToolRegistry({ codeInterpreterToolDef, mode, connectorConnectionsByProvider, projectConnectorConnectionsByProvider } as unknown as Parameters<typeof createToolRegistry>[0]);
       const toolDefs = toolRegistry.definitions;
+      /* P_native-tool-contract — derive the prompt appendix from the same
+       * definitions sent in the request. This keeps the injected system
+       * guidance aligned with the current tool registry after additions or
+       * connector changes. */
+      const contractMessages = appendNativeToolContract(
+        finalMessages,
+        toolDefs.map((tool) => (tool as { function?: { name?: string } }).function?.name || ''),
+      );
       // P_tutor-no-search — Tutor mode (the guided Socratic teacher)
       // does not need web search. Its answers are rooted in the
       // built-in knowledge map, not live results. Disabling web search
@@ -256,9 +266,9 @@ export function registerStreamRoute(router: Router) {
       // the conversation and confuse the teaching flow.
       type StreamMessage =
         | (typeof finalMessages)[number]
-        | { role: 'assistant'; content: null; tool_calls: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }> }
+        | { role: 'assistant'; content: string; tool_calls: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }> }
         | { role: 'tool'; tool_call_id: string; content: string };
-      let workingMessages: StreamMessage[] = finalMessages;
+      let workingMessages: StreamMessage[] = contractMessages;
       let visualizationValidationFailures = 0;
       let planningValidationFailures = 0;
       /* P_exec-retry-cap — mirrors the visualization/planning counters.
@@ -399,7 +409,9 @@ export function registerStreamRoute(router: Router) {
         // can reference the tool_call_id.
         workingMessages = workingMessages.concat([{
           role: 'assistant',
-          content: null,
+          /* Empty string is valid OpenAI content and is accepted by
+           * compatibility gateways that reject `content: null`. */
+          content: '',
           tool_calls: boundedToolCalls.map((t) => ({
             id: t.id,
             type: 'function',

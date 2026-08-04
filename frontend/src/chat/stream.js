@@ -183,17 +183,17 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           try { showToast && showToast(msg429, 8000); } catch (_) {}
           return null;
         }
-        /* Rate limit — retry up to STREAM_MAX_ATTEMPTS times before
-           showing the error to the user. The retry loop below handles
-           the actual back-off and continue; we just set lastErr and
-           fall through so STREAM_RETRYABLE_STATUS[429] catches it. */
+        /* Rate limit — surface the server cooldown immediately. The stream
+           retry budget is for transport failures, not a shared quota bucket. */
         var retryAfterSec429 = null;
         if (e && e.body && typeof e.body.retryAfterSeconds === "number") {
           retryAfterSec429 = e.body.retryAfterSeconds;
         }
         lastErr = "Rate limited (429). Try again in " + (retryAfterSec429 ? formatMinutes(retryAfterSec429) : "a moment") + ".";
-        try { showToast && showToast("Rate limited — auto-retrying...", 3000); } catch (_) {}
-        /* Fall through to the retry loop — STREAM_RETRYABLE_STATUS[429] is true. */
+        /* P_chat-429-no-storm — this is our shared server bucket. An
+           immediate stream retry only consumes the same budget again. */
+        state.lastCallError=lastErr;
+        return null;
       }
       /* P_network_retry — network errors (no HTTP status, e.g. DNS/TLS
          failures, mid-stream socket reset) are transient and should be

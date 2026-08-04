@@ -4,15 +4,23 @@ import { hasUsableActive } from '../config/providers.js';
 function getState() { return window.state; }
 
 /* Generate a declarative session title based on the user's first input.
-   Called fire-and-forget on first save; retries once if the API call
-   fails so a transient network glitch doesn't leave the session untitled.
+   Called fire-and-forget on first save. A short cooldown prevents repeated
+   saves from amplifying a 429 while still allowing a later retry.
    Uses getState().topic (the user's initial topic) as context. */
 var _titleGenQueued=false;
+var _titleGenSession=null;
+var _titleGenRetryAfter=0;
 export function generateSessionTitle(){
+  var sessionId=getState().session&&getState().session.currentSessionId;
   if(!hasUsableActive()||_titleGenQueued||getState().sessionTitle)return;
+  /* P_title-429 — background title generation must not turn repeated saves
+     into a request storm after a rate-limit response. */
+  if(sessionId&&_titleGenSession===sessionId&&Date.now()<_titleGenRetryAfter)return;
   var topic=(getState().topic||"").replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,"").trim();
   if(!topic)return;
   _titleGenQueued=true;
+  _titleGenSession=sessionId||null;
+  _titleGenRetryAfter=Date.now()+30000;
   /* Title language follows the language the user actually wrote the
      topic in; the UI preference is only a fallback when the topic
      carries no detectable language signal. */
@@ -39,10 +47,11 @@ export function generateSessionTitle(){
   var userMsg={role:"user",content:prompt};
   var msgs2=[sysMsg,userMsg];
   /* Always go through the server proxy — Beagle is registered server-side. */
-  apiFetch("/api/chat",{method:"POST",body:{messages:msgs2,temperature:0.3,max_tokens:30}}).then(function(r){
+  apiFetch("/api/chat",{method:"POST",body:{messages:msgs2,temperature:0.3,max_tokens:30,mode:"chat"}}).then(function(r){
     _titleGenQueued=false;
-    if(!r||!r.choices||!r.choices[0]||!r.choices[0].message)return;
-    var raw=(r.choices[0].message.content||"");
+    var raw=(r&&typeof r.content==="string")?r.content:
+      (r&&r.choices&&r.choices[0]&&r.choices[0].message&&r.choices[0].message.content)||"";
+    if(!raw)return;
     /* Mirror the strips formatMsg() / stripChatArtifacts() apply to
      * chat output, plus a few extra guards for title-gen quirks:
      *  - closed <think>…</think> and unclosed trailing <think>…$
@@ -69,6 +78,7 @@ export function generateSessionTitle(){
          saveCurrentSession() would either resurrect the deleted
          session or attach a stale title to the wrong session. */
       if(getState().session.currentSessionId)getState().sessionTitle=title;
+      _titleGenRetryAfter=0;
       if (typeof window.saveCurrentSession === "function") window.saveCurrentSession();
     }
   }).catch(function(e){

@@ -1767,10 +1767,19 @@ paths:
     post:
       tags: [users]
       summary: EXISTING — non-streaming chat
+      description: >-
+        Returns the canonical `content` field and a temporary OpenAI-compatible
+        `choices[0].message.content` view for older auxiliary clients. Native
+        tool definitions are used only by the streaming endpoint.
   /api/chat/stream:
     post:
       tags: [users]
       summary: EXISTING — SSE chat
+      description: >-
+        The server injects the native tool contract from the exact tool
+        registry for the current turn. Tool arguments are one JSON object that
+        matches the supplied function schema, without an input or arguments
+        wrapper. The stream shares the authenticated chat rate-limit bucket.
   /api/agent/run:
     post:
       tags: [agents]
