@@ -68,7 +68,7 @@ import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from './chat
 import { BASELINE_LEVEL, stageInstruction, fromBasicsDirective, tutorTurnDirective } from './chat/socraticDirectives.js';
 import { aiGenerate } from './chat/mockDiagnostic.js';
 import { extractHistory, buildUserContentParts } from './chat/history.js';
-import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './chat/systemPrompts.js';
+import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT, HIGH_EFFORT_OUTPUT_GUIDANCE } from './chat/systemPrompts.js';
 import { appendInlineArtifact, renderToolTextOutput } from './ui/toolCards.js';
 import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
 /* searchProgress UI removed in favour of the inline status label.
@@ -9027,7 +9027,10 @@ function beagleSuffix(){
    prose / chain-of-thought" phrasing the model tends to echo. The
    appendThinking() front-end filter is a second line of defense. */
 function thinkingSuffix(){
-  return "\n\nKeep your reply focused on the final answer. Do not expose scratch work, chain-of-thought, or <think> blocks to the reader.";
+  var highTutorGuidance = (appMode === "tutor" && typeof window.getReasoningEffort === "function" && window.getReasoningEffort() === "high")
+    ? "\n\n" + HIGH_EFFORT_OUTPUT_GUIDANCE
+    : "";
+  return highTutorGuidance + "\n\nKeep your reply focused on the final answer. Do not expose scratch work, chain-of-thought, or <think> blocks to the reader.";
 }
 
 function buildSocraticPrompt(topic,level,context){
