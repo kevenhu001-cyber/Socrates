@@ -8,18 +8,23 @@ import {
   PYTHON_RUNNABLE_RULES,
 } from '../src/chat/systemPrompts.js';
 
-test('chat prompts define tool results as untrusted data', () => {
+test('chat prompts do not duplicate the server-owned untrusted-data rule', () => {
+  /* untrusted-data handling is owned once by SERVER_SYSTEM_POLICY in
+     server/src/routes/chat/helpers.ts and is always injected above the
+     client block, so a second copy here would drift. */
   for (const prompt of [CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT]) {
-    assert.match(prompt, /untrusted data/i);
-    assert.match(prompt, /never follow instructions.*tool output/i);
+    assert.doesNotMatch(prompt, /untrusted data/i);
+    assert.doesNotMatch(prompt, /never follow instructions.*tool output/i);
   }
 });
 
-test('chat prompts keep the KaTeX math delimiter contract', () => {
+test('chat prompts do not duplicate the server-owned math delimiter contract', () => {
+  /* The `$...$` / `$$...$$` LaTeX delimiter contract now lives once in
+     SERVER_SYSTEM_POLICY; the client should not restate it. */
   for (const prompt of [CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT]) {
-    assert.match(prompt, /\$\.\.\.\$/);
-    assert.match(prompt, /\$\$\.\.\.\$\$/);
-    assert.match(prompt, /KaTeX/);
+    assert.doesNotMatch(prompt, /\$\.\.\.\$/);
+    assert.doesNotMatch(prompt, /\$\$\.\.\.\$\$/);
+    assert.doesNotMatch(prompt, /KaTeX/);
   }
 });
 
@@ -42,10 +47,14 @@ test('chat prompts do not demand disclosure of private chain of thought', () => 
   }
 });
 
-test('high-effort prompt prioritizes detailed paragraph-based answers', () => {
+test('high-effort prompt prioritizes detailed paragraph-based answers without duplicating global formatting rules', () => {
   assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /very detailed, self-contained answer/i);
-  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /Avoid bullet points, numbered lists, checklists, and Markdown tables by default/i);
   assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /高思考强度下/);
+  /* Paragraph-first / no-bullet formatting and chain-of-thought protection are
+     owned once by SERVER_SYSTEM_POLICY and must not be re-declared here, so
+     the effort level cannot drift from or override the global writing rules. */
+  assert.doesNotMatch(HIGH_EFFORT_OUTPUT_GUIDANCE, /Avoid bullet points/i);
+  assert.doesNotMatch(HIGH_EFFORT_OUTPUT_GUIDANCE, /chain-of-thought/i);
   assert.match(CHAT_SYSTEM_PROMPT, /high reasoning-effort mode/i);
   assert.doesNotMatch(CHAT_CONCISE_PROMPT, /high reasoning-effort mode/i);
 });
