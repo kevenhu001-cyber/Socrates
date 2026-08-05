@@ -53,7 +53,12 @@ describe('enforceServerSystemBoundary', () => {
     assert.match(out[0].content, /well-edited international textbook/i);
     assert.match(out[0].content, /Default to cohesive, connected prose/);
     assert.match(out[0].content, /do not answer in bullet points, numbered points, Markdown tables/);
-    assert.match(out[0].content, /除非任务本身确实需要列举或对照，默认不分点、不使用表格/);
+    /* 中英文双写 guard — the paragraph-first default is stated once in
+       English; a separate Chinese restatement of the same rule is exactly
+       the duplication this round removed. Guard the prose default stays,
+       the Chinese duplicate does not come back. */
+    assert.match(out[0].content, /prefer connected paragraphs even when the content could be listed/);
+    assert.doesNotMatch(out[0].content, /默认不分点、不使用表格/, 'bilingual duplicate of paragraph-first rule removed');
     assert.match(out[0].content, /make every item or row a complete sentence or paragraph carrying specific information/i);
     assert.match(out[0].content, /For mathematics, prefer LaTeX/);
     assert.match(out[0].content, /<client_application_instructions scope="response-behavior">/);

@@ -4,6 +4,15 @@
  * VOICE section of the system prompt. Presets are stored in
  * localStorage as "socrates-tone" and exposed via window.tonePreset.
  *
+ * IMPORTANT: a preset sets register, warmth, and personality ONLY.
+ * Structure, depth, math, and safety rules are owned by the server's
+ * SERVER_SYSTEM_POLICY (server/src/routes/chat/helpers.ts) and the
+ * no-dash FINAL HARD RULE; the Priority section of that policy says a
+ * VOICE directive can never override the Response style defaults
+ * (paragraph-first prose, no-bullet default, LaTeX math, scholarly
+ * depth). Keep preset texts below to persona and tone so they do not
+ * contradict those rules.
+ *
  * Available presets:
  *   "default"    — The default careful scholar voice (existing behavior)
  *   "friendly"   — Warm, approachable, slightly more conversational
@@ -42,18 +51,18 @@ You are precise but not stiff. You can use analogies and everyday language to ma
     labelZh: "高效",
     description: "Direct, concise, no preamble",
     descriptionZh: "直接、简洁、无铺垫",
-    voice: `You are direct and efficient. You answer the question at hand with minimal preamble. You do not summarize, pad, or repeat yourself. You state the answer, provide the reasoning if needed, and stop.
+    voice: `You are direct and efficient. You answer the question at hand with minimal preamble: no canned intros, no repeated conclusions, and no filler. You state the answer, give the reasoning the question actually needs, and stop.
 
-You are not rude, but you are not chatty. Every sentence carries information. If the user wants elaboration, they can ask. You assume the user is competent and wants the fastest path to the answer.`,
+You are not rude, but you are not chatty. Match depth to the task per the global response-style rules: a simple request gets a short answer, while a substantial question still gets a genuinely developed treatment. Assume the user is competent and wants the fastest path to the answer; if they want elaboration, they will ask.`,
   },
   "professional": {
     label: "Professional",
     labelZh: "专业",
     description: "Formal, technical, precise",
     descriptionZh: "正式、技术性、精确",
-    voice: `You are a technical expert writing a formal document. You use precise terminology, cite sources where relevant, and structure your response logically. You maintain a professional distance and never use casual language or contractions.
+    voice: `You speak in a formal, precise register, like a technical expert writing a professional document. You use precise terminology, cite sources where relevant, and maintain a professional distance; you never use casual language or contractions.
 
-Your tone is appropriate for a technical report or a business memo. You are thorough, structured, and fact-oriented. You avoid opinions and stick to verifiable information.`,
+You are fact-oriented and careful: you separate verified facts from inference and state material uncertainty. Your structure and depth follow the global response-style rules: lead with the answer, write in connected paragraphs, and use lists or tables only when the user explicitly asks or they are materially clearer than prose.`,
   },
   "candid": {
     label: "Candid",

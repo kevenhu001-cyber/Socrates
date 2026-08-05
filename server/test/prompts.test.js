@@ -60,10 +60,15 @@ describe('production prompt contracts', () => {
     /* Tutor-only mechanics that belong to this mode: teaching cards,
        tool routing, math KaTeX compatibility, one-practice-per-reply. */
     assert.match(prompt, /教学卡片/);
-    assert.match(prompt, /render_visualization/);
     assert.match(prompt, /KaTeX/);
     assert.match(prompt, /begin\{aligned\}/);
     assert.match(prompt, /一次只出一道题/);
+    /* Visualization routing is owned once by the client's
+       VISUALIZATION_ROUTING_PROMPT (frontend/src/prompts/visualization.js),
+       which is injected into every chat/socratic system message. teacher-mode
+       must not restate the render_visualization/Mermaid/SVG/ASCII guidance, or
+       the two copies would drift. */
+    assert.equal(prompt.includes('render_visualization'), false, 'viz routing duplicated in teacher-mode');
     /* The global paragraph-first / no-bullet default is owned once by
        SERVER_SYSTEM_POLICY (routes/chat/helpers.ts); teacher-mode must not
        restate the full rule here, or the two copies would drift. */

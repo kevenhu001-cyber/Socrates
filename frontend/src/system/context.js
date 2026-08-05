@@ -39,8 +39,6 @@ export function getSystemContext() {
     }) + ". Local time: " + now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
     if (_geoInfo.tz) ctx += " (" + _geoInfo.tz + ")";
     ctx += ".";
-    if (_geoInfo.country) ctx += " User location: " + _geoInfo.country + ".";
-    if (_geoInfo.locale) ctx += " Locale: " + _geoInfo.locale + ".";
     return ctx + "\n\nUse this context only when it is relevant to the answer.";
   } catch (_) {
     return "";
