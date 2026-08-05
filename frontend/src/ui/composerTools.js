@@ -1,6 +1,8 @@
 /* Compact, ChatGPT-style action menu for both composers.  Keeping the menu
  * in a body portal prevents the rounded input surface from clipping it. */
 
+import { registry as _extRegistry } from '../extensions/index.ts';
+
 var MENU_ID = "composerToolsMenu";
 var activeTrigger = null;
 
@@ -34,7 +36,12 @@ function item(action, icon, title, hint) {
     '</span>' + (hint ? '<small>' + hint + '</small>' : '') + '</span></button>';
 }
 
-function render(el) {
+/* Byte-identical fallback list. Reached only if the extensions registry
+   fails to load — should never happen in builds that ship with the React +
+   TS toolchain. windowExports.js:419-420 imports extensions/index.ts
+   before any user interaction can fire render(el), so the registry is
+   always populated by the time the menu opens. */
+function _hardcodedFallbackItems() {
   var upload = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 16V4M7.5 8.5 12 4l4.5 4.5"/><path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>';
   var pen = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
   var search = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>';
@@ -43,17 +50,38 @@ function render(el) {
   var exam = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 3h16v18H4z"/><path d="M8 8h8M8 12h5M8 16h3"/><path d="m15 15 1.5 1.5L20 13"/></svg>';
   var analyze = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/><path d="m4 7 6-4 6 7 5-4"/></svg>';
   var skills = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg>';
-  /* Keep the non-React fallback in sync with the React renderer. The second
-     line makes the next step obvious before a workflow is selected. */
-  el.innerHTML =
-    item("upload", upload, label("composer.menu.upload", "Upload files"), label("composer.menu.uploadHint", "Images, PDFs, notes and data")) +
-    item("write", pen, label("composer.write", "Write or edit"), label("composer.writeHint", "Draft, rewrite and polish")) +
-    item("research", search, label("composer.research", "Find resources"), label("composer.researchHint", "Search and compare evidence")) +
-    item("explore", compass, label("composer.explore", "Explore"), label("composer.exploreHint", "Scope, batch search, report")) +
-    item("deepResearch", telescope, label("composer.deepResearch", "Deep Research"), label("composer.deepResearchHint", "Plan, search, read, report")) +
-    item("analyze", analyze, label("composer.analyze", "Analyze data"), label("composer.analyzeHint", "Calculate, chart and export")) +
-    item("exam", exam, label("composer.exam", "Generate exam"), label("composer.examHint", "Blueprint, questions and grading")) +
-    item("skills", skills, label("composer.menu.skills", "Skills & shortcuts"), label("composer.menu.skillsHint", "Create your own"));
+  return [
+    item("upload", upload, label("composer.menu.upload", "Upload files"), label("composer.menu.uploadHint", "Images, PDFs, notes and data")),
+    item("write", pen, label("composer.write", "Write or edit"), label("composer.writeHint", "Draft, rewrite and polish")),
+    item("research", search, label("composer.research", "Find resources"), label("composer.researchHint", "Search and compare evidence")),
+    item("explore", compass, label("composer.explore", "Explore"), label("composer.exploreHint", "Scope, batch search, report")),
+    item("deepResearch", telescope, label("composer.deepResearch", "Deep Research"), label("composer.deepResearchHint", "Plan, search, read, report")),
+    item("analyze", analyze, label("composer.analyze", "Analyze data"), label("composer.analyzeHint", "Calculate, chart and export")),
+    item("exam", exam, label("composer.exam", "Generate exam"), label("composer.examHint", "Blueprint, questions and grading")),
+    item("skills", skills, label("composer.menu.skills", "Skills & shortcuts"), label("composer.menu.skillsHint", "Create your own")),
+  ];
+}
+
+function render(el) {
+  /* Single source of truth — the same registry.byPlacement('tools') that
+     ComposerToolsMenu.tsx consumes. Eliminates the legacy hardcoded list
+     so adding a new extension is a one-file change. */
+  var items;
+  try {
+    var defs = _extRegistry.byPlacement('tools');
+    items = defs.map(function (def) {
+      return item(
+        def.key,
+        def.icon,
+        label(def.nameKey, def.nameFallback),
+        label(def.descriptionKey, def.descriptionFallback)
+          || label('composer.' + def.key + 'Hint', '')
+      );
+    });
+  } catch (_) {
+    items = _hardcodedFallbackItems();
+  }
+  el.innerHTML = items.join('');
 }
 
 /* React migration bridge — fires whenever the menu opens/closes or
@@ -137,14 +165,20 @@ if (typeof document !== "undefined") {
       var mode = activeTrigger && activeTrigger.dataset.composerMode;
       var kind = action.dataset.composerAction || action.dataset.action;
       close();
-      if (kind === "upload" && typeof window.openAttachmentPicker === "function") window.openAttachmentPicker(mode === "topic" ? "topicAttachInput" : "attachInput");
-      if (kind === "write" && typeof window.composeAction === "function") window.composeAction();
-      if (kind === "research" && typeof window.researchAction === "function") window.researchAction();
-      if (kind === "explore" && typeof window.exploreAction === "function") window.exploreAction();
-      if (kind === "analyze" && typeof window.analyzeAction === "function") window.analyzeAction();
-      if (kind === "deepResearch" && typeof window.deepResearchAction === "function") window.deepResearchAction();
-      if (kind === "exam" && typeof window.toggleExtensionByKey === "function") window.toggleExtensionByKey(kind);
-      if (kind === "skills" && typeof window.openPromptTemplatesModal === "function") window.openPromptTemplatesModal();
+      /* 'upload' opens the native attachment picker directly; 'skills'
+         opens the prompt-templates modal. Both are not regular
+         ExtensionDefinitions — they don't run through dispatchExtension.
+         Everything else routes through the single dispatcher installed
+         by installWindowExtensionDelegates() (extensions/index.ts:99). */
+      if (kind === "upload") {
+        if (typeof window.openAttachmentPicker === "function") {
+          window.openAttachmentPicker(mode === "topic" ? "topicAttachInput" : "attachInput");
+        }
+      } else if (kind === "skills") {
+        if (typeof window.openPromptTemplatesModal === "function") window.openPromptTemplatesModal();
+      } else if (typeof window.__socratesExtensionDispatch === "function") {
+        window.__socratesExtensionDispatch(kind);
+      }
       return;
     }
     if (!event.target.closest || !event.target.closest(".composer-tools-trigger")) close();

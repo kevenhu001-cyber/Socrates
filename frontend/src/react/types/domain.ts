@@ -117,6 +117,16 @@ export interface LegacyChatMessage {
   modelInfo?: { label?: string; model?: string } | null;
   toolCalls?: ReadonlyArray<ToolCall>;
   restoredFromHistory?: boolean;
+  /* P_canvas-mode — ExtensionDefinition.outputMode carried onto the
+     finalized message entry. 'canvas' tells React's MessageItem to
+     mount <CanvasBlock> instead of falling through to dangerouslySetInnerHTML. */
+  outputMode?: 'chat' | 'canvas' | null;
+  canvasId?: string | null;
+  /* User-edited HTML inside the canvas block. Sanitized via DOMPurify
+     before write; persisted on state.messages[idx] for reload durability. */
+  editedText?: string | null;
+  /* Inline SVG of the active extension (chip icon in the canvas header). */
+  _extensionIcon?: string | null;
 }
 
 export interface ChatRuntimeSnapshot {

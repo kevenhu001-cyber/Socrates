@@ -86,6 +86,30 @@ test('research and explore share the legacy webSearch side-effect key', () => {
   assert.equal(exploreExtension.key, 'explore');
 });
 
+test('outputMode, when declared, is one of chat or canvas', () => {
+  for (const def of MODULES) {
+    if (def.outputMode === undefined) continue;
+    assert.ok(
+      ['chat', 'canvas'].includes(def.outputMode),
+      `${def.key} outputMode must be 'chat' or 'canvas' (got ${def.outputMode})`
+    );
+  }
+});
+
+test('write is the only canvas extension at ship time', () => {
+  const canvasKeys = MODULES.filter((d) => d.outputMode === 'canvas').map((d) => d.key);
+  assert.deepEqual(canvasKeys, ['write'],
+    `Only 'write' should opt into canvas right now; found ${canvasKeys.join(',')}`);
+});
+
+test('canvas extension autoLaunch is false (input bar stays visible)', () => {
+  for (const def of MODULES) {
+    if (def.outputMode !== 'canvas') continue;
+    assert.equal(def.autoLaunch, false,
+      `${def.key} is canvas so autoLaunch should be false (user iterates)`);
+  }
+});
+
 test('agent-run store publishes structured stage events', () => {
   publishAgentRun({
     runId: 'run-1',

@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 
 import { getLegacyActions, t } from '../legacy/gateway';
 import { ErrorBoundary } from '../ErrorBoundary';
-import { installSessionListBridge, publishSessionList } from './sessionListStore';
+import { installSessionListBridge, publishSessionList, setCurrentSessionId } from './sessionListStore';
 import { useSessionListSnapshot, formatRelativeTime } from './legacyAdapter';
 import type { SessionItem } from './types';
 
@@ -167,6 +167,9 @@ function SessionListInner() {
   const { sessions, currentSessionId, searchQuery, filter, fetchFailed } = snap;
 
   const handlePick = useCallback((id: string) => {
+    // Optimistically flip the active row so the highlight appears on the
+    // click frame instead of after loadSession's async fetch resolves.
+    setCurrentSessionId(id);
     getLegacyActions().sessions.loadSession(id);
   }, []);
 

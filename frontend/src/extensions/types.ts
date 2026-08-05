@@ -12,6 +12,13 @@ export type ExtensionKind = 'template' | 'toggle' | 'action';
 
 export type ComposerSurface = 'topic' | 'chat';
 
+/** How the assistant's reply should be rendered.
+ *  - 'chat' (default): the response flows through the regular chat bubble.
+ *  - 'canvas': the response is wrapped in a ChatGPT-style editable block
+ *    (.canvas-block) so the user can edit / copy / iterate / fullscreen
+ *    the assistant's writing. */
+export type ExtensionOutputMode = 'chat' | 'canvas';
+
 /** Menu placement + ordering. Omitted placement = not shown there. */
 export interface ExtensionPlacement {
   /** Order in the React "+" tools menu. */
@@ -44,6 +51,9 @@ export interface ExtensionContext {
       shortcut?: string;
       runId?: string;
       workflow?: 'explore' | 'deepResearch' | 'research' | 'analyze';
+      /** Output rendering mode forwarded to the legacy setActiveTemplate.
+       *  When 'canvas', the assistant's reply is wrapped in .canvas-block. */
+      outputMode?: ExtensionOutputMode;
     },
   ): void;
   /** Clear the active template (no-op if none active). */
@@ -127,5 +137,8 @@ export interface ExtensionDefinition {
   // ── behavior switches ──
   autoFocus?: boolean;
   autoLaunch?: boolean;
+  /** Output rendering mode for the assistant reply.
+   *  See ExtensionOutputMode. Defaults to 'chat' when omitted. */
+  outputMode?: ExtensionOutputMode;
   placement: ExtensionPlacement;
 }

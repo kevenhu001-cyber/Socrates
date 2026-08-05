@@ -2,6 +2,7 @@ import { useLayoutEffect } from 'react';
 
 import type { LegacyChatMessage } from '../types/domain';
 import { MessageToolbar } from './MessageToolbar';
+import { CanvasBlock } from '../canvas';
 import { getLegacyActions } from '../legacy/gateway';
 
 interface MessageItemProps {
@@ -112,10 +113,19 @@ function MessageItem({ message }: MessageItemProps) {
           })}
         </div>
       ) : null}
-      <div
-        className="msg-body"
-        {...(!preserveLiveBody ? { dangerouslySetInnerHTML: { __html: html } } : {})}
-      />
+      {message.outputMode === 'canvas' && message.canvasId && role === 'assistant' ? (
+        <CanvasBlock
+          message={message}
+          html={html}
+          canvasId={message.canvasId}
+          originalText={typeof message.rawText === 'string' ? message.rawText : ''}
+        />
+      ) : (
+        <div
+          className="msg-body"
+          {...(!preserveLiveBody ? { dangerouslySetInnerHTML: { __html: html } } : {})}
+        />
+      )}
       <MessageToolbar message={message} role={role === 'user' ? 'user' : 'assistant'} />
     </div>
   );

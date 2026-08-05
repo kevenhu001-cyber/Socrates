@@ -14,17 +14,6 @@ const MENU_ID = 'composerToolsMenu';
 
 type MenuItemSpec = ExtensionDefinition;
 
-const FALLBACK_DESCRIPTIONS: Record<string, string> = {
-  upload: 'Images, PDFs, notes and data',
-  write: 'Draft, rewrite and polish',
-  research: 'Search and compare evidence',
-  explore: 'Scope, batch search, report',
-  deepResearch: 'Plan, search, read, report',
-  analyze: 'Calculate, chart and export',
-  exam: 'Blueprint, questions and grading',
-  skills: 'Create your own',
-};
-
 function toolDefinitions(): MenuItemSpec[] {
   return registry.byPlacement('tools');
 }
@@ -45,8 +34,8 @@ function MenuItem({
 }) {
   const label = i18n(spec.nameKey, spec.nameFallback);
   const description = spec.descriptionKey
-    ? i18n(spec.descriptionKey, spec.descriptionFallback ?? FALLBACK_DESCRIPTIONS[spec.key] ?? '')
-    : FALLBACK_DESCRIPTIONS[spec.key] ?? '';
+    ? i18n(spec.descriptionKey, spec.descriptionFallback ?? '')
+    : '';
 
   return (
     <button

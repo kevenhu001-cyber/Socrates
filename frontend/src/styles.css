@@ -388,14 +388,14 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .recent-item{display:flex;align-items:center;padding:8px 12px;border-radius:8px;font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-200));transition:background .18s var(--ease-out),color .18s var(--ease-out),box-shadow .18s var(--ease-out);cursor:pointer;gap:8px;position:relative;-webkit-touch-callout:none}
 .recent-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .recent-item:active{transform:none}
-.recent-item.active{background:hsl(var(--bg-300));box-shadow:inset 0 0 0 1px hsl(var(--accent-000)/.24)}
+.recent-item.active{background:hsl(var(--bg-300))}
 /* Active session — the currently-open chat keeps a persistent accent
    tint so it stays identifiable while the user hovers other rows
    (which use the neutral bg-300 hover). Matches ChatGPT/Claude, where
    the selected conversation is always highlighted. Hovering the active
    row deepens the tint slightly rather than falling back to grey. */
 .recent-item.active .recent-item-text{color:hsl(var(--text-100));font-weight:600}
-.recent-item.active:hover{background:hsl(var(--bg-300));box-shadow:inset 0 0 0 1px hsl(var(--accent-000)/.32)}
+.recent-item.active:hover{background:hsl(var(--bg-300))}
 .recent-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .recent-item-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:hsl(var(--text-200))}
 .recent-item:hover .recent-item-text{color:hsl(var(--text-100))}
@@ -5811,5 +5811,150 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body,
   .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-body{
     padding:0 12px 12px 12px;
+  }
+}
+
+/* ── Canvas block (P_canvas-mode) ─────────────────────────────────
+   ChatGPT-style editable reply surface. Token-driven via the
+   tool-card palette so dark/light themes stay in lock-step. */
+.canvas-block{
+  margin:8px 0 12px;
+  background:var(--tool-card-bg-hover);
+  border:1px solid var(--tool-card-border);
+  border-radius:14px;
+  color:hsl(var(--text-100));
+  font-size:15px;
+  line-height:1.55;
+  overflow:hidden;
+  box-shadow:0 6px 18px hsl(0 0% 0%/.06);
+}
+.canvas-block-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 14px;
+  border-bottom:1px solid var(--tool-card-border);
+  background:var(--tool-card-bg-sunken);
+  flex-wrap:wrap;
+}
+.canvas-block-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:3px 10px 3px 6px;
+  border-radius:999px;
+  background:var(--tool-card-bg);
+  border:1px solid var(--tool-card-border);
+  font-size:12.5px;
+  font-weight:550;
+  color:hsl(var(--text-200));
+  min-width:0;
+}
+.canvas-block-chip-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  height:18px;
+  color:hsl(var(--accent-300));
+  flex-shrink:0;
+}
+.canvas-block-chip-icon svg{width:14px;height:14px;display:block}
+.canvas-block-chip-label{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:140px;
+}
+.canvas-block-actions{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.canvas-btn{
+  border:1px solid var(--tool-card-border-strong);
+  background:transparent;
+  color:hsl(var(--text-300));
+  padding:5px 10px;
+  border-radius:8px;
+  font-size:12.5px;
+  line-height:1;
+  cursor:pointer;
+  font-family:inherit;
+  transition:background-color .14s ease,color .14s ease,border-color .14s ease;
+}
+.canvas-btn:hover,
+.canvas-btn:focus-visible{
+  background:var(--tool-card-bg-hover);
+  color:hsl(var(--text-100));
+  outline:0;
+}
+.canvas-btn:focus-visible{
+  outline:2px solid hsl(var(--accent-500,222 89% 55%)/.35);
+  outline-offset:1px;
+}
+.canvas-btn[aria-pressed="true"]{
+  background:var(--tool-card-bg-hover);
+  color:hsl(var(--text-100));
+  border-color:hsl(var(--accent-500,222 89% 55%)/.45);
+}
+.canvas-block-body{
+  padding:14px 16px;
+  outline:none;
+  min-height:48px;
+  word-break:break-word;
+}
+.canvas-block-body.is-editing{
+  outline:2px solid hsl(var(--accent-500,222 89% 55%)/.45);
+  outline-offset:-2px;
+  caret-color:hsl(var(--accent-500,222 89% 55%));
+}
+.canvas-block-original{
+  margin:0;
+  padding:14px 16px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:12.5px;
+  color:hsl(var(--text-300));
+  white-space:pre-wrap;
+  background:var(--tool-card-bg-sunken);
+  max-height:480px;
+  overflow:auto;
+}
+.canvas-block-edited-badge{
+  display:inline-block;
+  margin:0 14px 8px;
+  padding:2px 10px;
+  border-radius:999px;
+  background:hsl(var(--accent-500,222 89% 55%)/.12);
+  color:hsl(var(--text-100));
+  font-size:11.5px;
+  font-weight:500;
+  border:1px solid hsl(var(--accent-500,222 89% 55%)/.25);
+}
+.canvas-block.is-fullscreen{
+  position:fixed;
+  inset:24px;
+  z-index:60;
+  box-shadow:0 24px 60px hsl(0 0% 0%/.4);
+  display:flex;
+  flex-direction:column;
+}
+.canvas-block.is-fullscreen .canvas-block-body{
+  flex:1;
+  overflow:auto;
+  max-height:none;
+}
+@media (max-width:640px){
+  .canvas-block-header{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .canvas-block-actions{
+    width:100%;
+    justify-content:flex-end;
+  }
+  .canvas-block-chip{
+    align-self:flex-start;
   }
 }

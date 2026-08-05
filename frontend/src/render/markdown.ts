@@ -56,7 +56,7 @@ interface DomPurifyLike {
 
 /* Apply DOMPurify (CDN global first, bundled copy as fallback); only
    if both are unusable fall back to sanitizeUrls. */
-function sanitizeHtml(html: string): string {
+export function sanitizeHtml(html: string): string {
   const dp = (globalThis as { DOMPurify?: DomPurifyLike }).DOMPurify
     ?? (bundledDomPurify as unknown as DomPurifyLike);
   if (typeof dp !== 'undefined' && typeof dp.sanitize === 'function') {
