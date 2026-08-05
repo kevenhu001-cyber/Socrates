@@ -9026,7 +9026,11 @@ function projectContextSuffix(){
 }
 
 /* Return a voice instruction based on the selected tone preset.
-   Overrides the default VOICE section of the system prompt. */
+   Sets register, warmth, and personality only. The server's
+   SERVER_SYSTEM_POLICY Priority section states that a VOICE directive
+   can never override the Response style defaults (paragraph-first
+   prose, no-bullet default, LaTeX math, scholarly depth), so this
+   label is deliberately NOT "override". */
 function toneVoiceSuffix(){
   if(typeof window.getTonePreset!=="function")return"";
   var tone=window.getTonePreset();
@@ -9034,7 +9038,7 @@ function toneVoiceSuffix(){
   if(typeof window.getToneVoice!=="function")return"";
   var voice=window.getToneVoice();
   if(!voice)return"";
-  return"\n\n## VOICE (override)\n"+voice+"\n";
+  return"\n\n## VOICE (tone and register)\n"+voice+"\n";
 }
 
 function beagleSuffix(){

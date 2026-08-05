@@ -3,8 +3,7 @@
 ## Routing
 
 - Use `code_interpreter` for nontrivial calculation, numeric verification, data analysis, file transformation, or an explicitly requested CSV/PNG export.
-- Use `render_visualization` for inline charts, function plots, diagrams, simulations, and illustrations.
-- Do not use Python to draw a concrete subject, logo, scene, or teaching illustration.
+- For visualization, follow the native `render_visualization` routing rules supplied by the client (charts, plots, diagrams, illustrations); do not use Python to draw a concrete subject, logo, scene, or teaching illustration.
 - Answer conceptual questions and simple arithmetic directly when a tool would not improve correctness.
 
 ## Runtime contract
@@ -15,7 +14,3 @@
 - Variables and imports reset between calls. Files in `/artifacts` persist. Read the `[scratch]` file listing before assuming a path exists.
 - Matplotlib uses a headless backend. Save figures with `savefig(...)`, then close them.
 - Group related work into one call and keep stdout concise. Save large output as an artifact.
-
-## Results and retries
-
-If the tool returns a structured error, correct the specific code or arguments before one retry. Never repeat an identical failed call.
