@@ -53,12 +53,21 @@ describe('production prompt contracts', () => {
     assert.equal(prompt.includes('[code_interpreter:'), false);
   });
 
-  test('teacher prompt prefers developed prose over list or table output', async () => {
+  test('teacher prompt keeps tutor-specific pedagogy without duplicating the global prose default', async () => {
     _clearPromptCacheForTests();
     const prompt = await getTeacherModePrompt();
     assert.ok(prompt);
-    assert.match(prompt, /连贯、完整/);
-    assert.match(prompt, /默认不要把正文写成项目符号、编号提纲或 Markdown 表格/);
-    assert.match(prompt, /只有当顺序、检查清单、精确对照或用户明确要求确实需要结构化表达/);
+    /* Tutor-only mechanics that belong to this mode: teaching cards,
+       tool routing, math KaTeX compatibility, one-practice-per-reply. */
+    assert.match(prompt, /教学卡片/);
+    assert.match(prompt, /render_visualization/);
+    assert.match(prompt, /KaTeX/);
+    assert.match(prompt, /begin\{aligned\}/);
+    assert.match(prompt, /一次只出一道题/);
+    /* The global paragraph-first / no-bullet default is owned once by
+       SERVER_SYSTEM_POLICY (routes/chat/helpers.ts); teacher-mode must not
+       restate the full rule here, or the two copies would drift. */
+    assert.equal(prompt.includes('默认不要把正文写成项目符号'), false, 'global prose default duplicated in teacher-mode');
+    assert.equal(prompt.includes('只有当顺序、检查清单'), false, 'global prose default duplicated in teacher-mode');
   });
 });
