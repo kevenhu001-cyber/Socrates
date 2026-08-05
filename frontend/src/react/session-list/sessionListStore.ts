@@ -67,3 +67,23 @@ export function publishSessionList(
 ): void {
   commit({ sessions, currentSessionId, searchQuery, filter, fetchFailed });
 }
+
+/**
+ * Optimistically update only the active session id without rebuilding the
+ * rest of the snapshot. Called from the row's click handler so the
+ * `.active` highlight appears immediately — without it, the highlight only
+ * changes after `loadSession()` finishes its async fetch and the next
+ * `renderRecents()` re-publishes the snapshot (visible lag).
+ * The next regular publish will reconcile any drift, so this is safe to
+ * fire before the legacy loadSession pipeline completes.
+ */
+export function setCurrentSessionId(id: string | null): void {
+  if (snapshot.currentSessionId === id) return;
+  commit({
+    sessions: snapshot.sessions,
+    currentSessionId: id,
+    searchQuery: snapshot.searchQuery,
+    filter: snapshot.filter,
+    fetchFailed: snapshot.fetchFailed,
+  });
+}

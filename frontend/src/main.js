@@ -22,6 +22,7 @@ import {
   setComposerMarkdown,
   subscribeComposer,
 } from './react/composer-input/controller.ts';
+import { wrapForCanvas } from './render/canvasWrap.ts';
 import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal } from './ui/share.js';
 import './ui/mobileModeSwitch.js';
 import { renderAttachmentChips, setupAttachmentInput, openAttachmentPicker } from './attachments/render.js';
@@ -3625,7 +3626,12 @@ function setActiveTemplate(t){
     hint:t.hint||t.description||"",
     extensionKey:nextExt,
     runId:t.runId||null,
-    workflow:t.workflow||null
+    workflow:t.workflow||null,
+    /* P_canvas-mode — declared on ExtensionDefinition.outputMode, carried
+       over so renderAssistantHTML can branch on _activeTemplate.outputMode
+       at the streaming→finalized boundary. Default 'chat' preserves the
+       legacy behaviour for every extension that doesn't opt in. */
+    outputMode:t.outputMode||'chat'
   }:null;
   if(prevExt!==nextExt) _applyExtensionSideEffects(prevExt,nextExt);
   renderTemplateModeChip();
@@ -6454,6 +6460,14 @@ function doRender(){
            Without this, no scaffold widgets ever rendered in live mode. */
         var finalHtml;
         try{
+          /* P_canvas-mode — seed a stable canvasId on state BEFORE any
+             renderAssistantHTML call so the canvas wrapper inside that
+             function reuses the same id. Both branches (with/without
+             inline tool rows) invoke renderAssistantHTML either directly
+             or via _renderSeg, so seeding once at the top covers both. */
+          if(window._activeTemplate&&window._activeTemplate.outputMode==='canvas'){
+            state._canvasPendingId='canvas-'+Math.random().toString(36).slice(2,10);
+          }
           /* P_inline-tools — assemble the final HTML by splicing the
              settled inline tool rows between the text segments they
              actually split. The serialized result goes into
@@ -6603,6 +6617,18 @@ function doRender(){
           /* P_reasoning-persist — preserve chain-of-thought text so it
              survives session save/load. */
           state.messages[msgIdx].reasoningContent=fullReasoning||null;
+          /* P_canvas-mode — copy the active template's outputMode + canvasId
+             onto the message so React's <CanvasBlock> can branch instead of
+             falling through to dangerouslySetInnerHTML. The id is seeded
+             BEFORE renderAssistantHTML runs (see ~line 6389) so the wrapper
+             in renderAssistantHTML reuses the same id. */
+          var _om=(window._activeTemplate&&window._activeTemplate.outputMode)||'chat';
+          state.messages[msgIdx].outputMode=_om;
+          if(_om==='canvas'){
+            state.messages[msgIdx].canvasId=state._canvasPendingId||('canvas-'+Math.random().toString(36).slice(2,10));
+            state.messages[msgIdx]._extensionIcon=(window._activeTemplate&&window._activeTemplate.icon)||'';
+          }
+          state._canvasPendingId=null;
         }
       }catch(e){
         console.log("[finish] formatMsg error");
@@ -7702,6 +7728,24 @@ function renderAssistantHTML(rawText){
       try{processPendingViz()}catch(_){}
       try{processPendingVizActions()}catch(_){}
     },0);
+  }
+  /* P_canvas-mode — write (and any future canvas-mode extension) wraps the
+     finalized HTML in a <div class="canvas-block"> so React can mount an
+     editable surface from data-canvas-id. The id is read from the message
+     entry that finish() seeded just before calling renderAssistantHTML
+     (state.messages[idx].canvasId); that keeps DOM and state in lock-step
+     across re-renders. */
+  var _activeTpl = (typeof window !== "undefined" && window._activeTemplate) || null;
+  if (_activeTpl && _activeTpl.outputMode === "canvas") {
+    var _extKey = _activeTpl.extensionKey || "canvas";
+    var _cid = "canvas-" + Math.random().toString(36).slice(2, 10);
+    /* If finish() pre-allocated a canvasId, use that one instead so the
+       React <CanvasBlock> reads the same id from state.messages[idx]. */
+    try {
+      var _seed = (window.state && window.state._canvasPendingId) || null;
+      if (_seed) _cid = _seed;
+    } catch (_) {}
+    html = wrapForCanvas(html, "canvas", _extKey, _cid);
   }
   return html;
 }

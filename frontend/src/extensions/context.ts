@@ -22,6 +22,7 @@ import type {
   AgentRunEvent,
   ComposerSurface,
   ExtensionContext,
+  ExtensionOutputMode,
   SearchProgressHandle,
   TemplateChipSpec,
 } from './types';
@@ -36,6 +37,9 @@ type SetActiveTemplateSpec = TemplateChipSpec & {
    *  the module used for its planning event. Absent for plain templates. */
   runId?: string;
   workflow?: 'explore' | 'deepResearch' | 'research' | 'analyze';
+  /** Output rendering mode carried onto _activeTemplate so renderAssistantHTML
+   *  can wrap the assistant's reply in a .canvas-block when this is 'canvas'. */
+  outputMode?: ExtensionOutputMode;
 };
 
 interface LegacyWindow {
@@ -50,6 +54,7 @@ interface LegacyWindow {
     extensionKey?: string;
     runId?: string;
     workflow?: string;
+    outputMode?: ExtensionOutputMode;
   }) => void;
   clearActiveTemplate?: () => void;
   showToast?: (msg: string) => void;
@@ -93,6 +98,7 @@ export function buildExtensionContext(surface: ComposerSurface): ExtensionContex
         extensionKey: spec.key,
         runId: spec.runId,
         workflow: spec.workflow,
+        outputMode: spec.outputMode,
       });
     },
 
