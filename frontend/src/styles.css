@@ -19,23 +19,23 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
    row. Every card reads from these tokens so a design tweak lands
    in one place rather than six. */
 :root{
-  --tool-card-bg:hsla(0,0%,100%,.02);
-  --tool-card-bg-hover:hsla(0,0%,100%,.05);
-  --tool-card-bg-sunken:hsla(0,0%,100%,.03);
-  --tool-card-border:hsla(0,0%,100%,.08);
-  --tool-card-border-strong:hsla(0,0%,100%,.14);
+  --tool-card-bg:hsla(0,0%,100%,.062);
+  --tool-card-bg-hover:hsla(0,0%,100%,.1);
+  --tool-card-bg-sunken:hsla(0,0%,100%,.04);
+  --tool-card-border:hsla(0,0%,100%,.095);
+  --tool-card-border-strong:hsla(0,0%,100%,.15);
   --tool-card-text:hsl(var(--text-200));
-  --tool-card-text-muted:hsl(var(--text-400));
+  --tool-card-text-muted:hsl(var(--text-350,var(--text-400)));
   --tool-card-text-subtle:hsl(var(--text-500));
-  --tool-card-icon:hsl(var(--text-300));
+  --tool-card-icon:hsl(var(--text-350,var(--text-300)));
   --tool-card-icon-hover:hsl(var(--text-100));
-  --tool-card-radius:12px;
-  --tool-card-radius-sm:10px;
+  --tool-card-radius:14px;
+  --tool-card-radius-sm:11px;
   --tool-card-pad-y:10px;
-  --tool-card-pad-x:12px;
+  --tool-card-pad-x:13px;
   --tool-card-title-size:14px;
   --tool-card-title-weight:550;
-  --tool-card-desc-size:12px;
+  --tool-card-desc-size:12.5px;
   --tool-card-desc-weight:400;
   --tool-card-meta-size:11px;
   --tool-card-meta-weight:400;
@@ -45,15 +45,15 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
   --tool-card-focus:hsla(0,0%,100%,.35)
 }
 [data-theme=socrates][data-mode=light]{
-  --tool-card-bg:hsla(40,10%,16%,.025);
-  --tool-card-bg-hover:hsla(40,10%,16%,.06);
-  --tool-card-bg-sunken:hsla(40,10%,16%,.015);
-  --tool-card-border:hsla(40,12%,10%,.10);
-  --tool-card-border-strong:hsla(40,12%,10%,.18);
+  --tool-card-bg:hsla(40,10%,16%,.05);
+  --tool-card-bg-hover:hsla(40,10%,16%,.08);
+  --tool-card-bg-sunken:hsla(40,10%,16%,.032);
+  --tool-card-border:hsla(40,12%,10%,.11);
+  --tool-card-border-strong:hsla(40,12%,10%,.19);
   --tool-card-text:hsl(var(--text-200));
-  --tool-card-text-muted:hsl(var(--text-400));
+  --tool-card-text-muted:hsl(var(--text-350,var(--text-400)));
   --tool-card-text-subtle:hsl(var(--text-500));
-  --tool-card-icon:hsl(var(--text-400));
+  --tool-card-icon:hsl(var(--text-350,var(--text-400)));
   --tool-card-icon-hover:hsl(var(--text-100));
   --tool-card-focus:hsla(40,12%,10%,.35)
 }
@@ -3271,13 +3271,13 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 
 /* Tool module cards — appended to assistant bubbles. Looks like
    a compact, collapsible summary line. */
-.agent-tool-card{margin-top:8px;font-size:calc(12px * var(--app-font-scale, 1));border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));border-radius:10px;background:hsl(var(--bg-100)/0.7);overflow:hidden;transition:border-color .15s,box-shadow .15s}
-.agent-tool-card:hover{border-color:hsl(var(--border-300))}
-.agent-tool-card.open{box-shadow:0 1px 3px hsl(220 30% 50%/0.06)}
-.agent-tool-head{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .12s}
-.agent-tool-head:hover{background:hsl(var(--bg-200)/.42)}
-.agent-tool-head:focus-visible{outline:2px solid hsl(var(--text-400)/.55);outline-offset:-2px;border-radius:10px}
-.agent-tool-icon{flex-shrink:0;width:22px;height:22px;border-radius:6px;background:hsl(var(--bg-300));color:hsl(var(--text-300));display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:calc(11px * var(--app-font-scale, 1));line-height:1;letter-spacing:-0.02em}
+.agent-tool-card{margin-top:8px;font-size:calc(12px * var(--app-font-scale, 1));border:0;border-radius:var(--tool-card-radius);background:var(--tool-card-bg);overflow:hidden;transition:background .15s ease,box-shadow .15s ease}
+.agent-tool-card:hover{background:var(--tool-card-bg-hover)}
+.agent-tool-card.open{box-shadow:0 2px 10px hsl(220 30% 50%/0.05)}
+.agent-tool-head{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .12s ease}
+.agent-tool-head:hover{background:var(--tool-card-bg-hover)}
+.agent-tool-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px;border-radius:var(--tool-card-radius)}
+.agent-tool-icon{flex-shrink:0;width:20px;height:20px;border-radius:5px;background:hsl(var(--bg-300));color:var(--tool-card-icon);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:calc(11px * var(--app-font-scale, 1));line-height:1;letter-spacing:-0.02em}
 .agent-tool-icon svg{display:block;width:14px;height:14px}
 /* Grayscale tool icons — every tool reads as a neutral glyph; the
    tool name carries the identity. No per-tool colour chips. */
@@ -3322,9 +3322,9 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 [data-theme=socrates][data-mode=dark] .agent-tool-card.websearch .agent-tool-icon,
 [data-theme=socrates][data-mode=dark] .agent-tool-card.codeint .agent-tool-icon,
 [data-theme=socrates][data-mode=dark] .agent-tool-card.code     .agent-tool-icon{background:hsl(var(--bg-200));color:hsl(var(--text-400))}
-.agent-tool-name{font-weight:600;color:hsl(var(--text-100));font-size:calc(11.5px * var(--app-font-scale, 1));flex-shrink:0;letter-spacing:-0.005em}
-.agent-tool-input{flex:1;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;opacity:.85}
-.agent-tool-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .2s cubic-bezier(.4,0,.2,1);flex-shrink:0;opacity:.6}
+.agent-tool-name{font-weight:600;color:hsl(var(--text-100));font-size:calc(12px * var(--app-font-scale, 1));flex-shrink:0;letter-spacing:-0.005em}
+.agent-tool-input{flex:1;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:var(--tool-card-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;opacity:.8}
+.agent-tool-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:var(--tool-card-text-subtle);transition:transform .2s cubic-bezier(.4,0,.2,1);flex-shrink:0;opacity:.6}
 .agent-tool-card.open .agent-tool-chev{transform:rotate(180deg);opacity:.95}
 
 /* Accent rail on the leading edge of the body — gives each tool
@@ -3356,7 +3356,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-card.code    .agent-tool-body::before,
 .agent-tool-card.codeint .agent-tool-body::before{background:hsl(var(--border-300)/.5)}
 
-.agent-tool-out{font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-000)/0.4);padding:8px 12px;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));white-space:pre-wrap;word-break:break-word;line-height:1.5;max-height:280px;overflow-y:auto}
+.agent-tool-out{font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-000)/.32);padding:8px 12px;border-top:0;white-space:pre-wrap;word-break:break-word;line-height:1.5;max-height:280px;overflow-y:auto}
 .agent-tool-out[hidden]{display:none}
 .agent-tool-out.error{color:hsl(0 60% 50%);background:hsl(0 50% 95%)}
 /* Code block inside an agent-tool-card (e.g. python source from
@@ -3364,7 +3364,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    head and the .agent-tool-out — visible by default so the user
    immediately sees what code was generated. Only the .agent-tool-out
    block (stdout/stderr/artifacts) still collapses with the card. */
-.agent-tool-code{margin:0;padding:10px 12px;font-family:var(--font-mono);font-size:calc(11.5px * var(--app-font-scale, 1));line-height:1.55;white-space:pre;overflow-x:auto;color:hsl(var(--text-100));max-height:280px;overflow-y:auto;tab-size:4;background:hsl(var(--bg-000)/0.5);border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6))}
+.agent-tool-code{margin:0;padding:10px 12px;font-family:var(--font-mono);font-size:calc(11.5px * var(--app-font-scale, 1));line-height:1.55;white-space:pre;overflow-x:auto;color:hsl(var(--text-100));max-height:280px;overflow-y:auto;tab-size:4;background:hsl(var(--bg-000)/.38);border-top:0}
 .agent-tool-code[hidden]{display:none}
 .agent-tool-code code{font-family:inherit;font-size:inherit;color:inherit;background:transparent;padding:0}
 /* Blinking caret on the last line of the code block while the LLM
@@ -3382,7 +3382,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-code-truncated::before{content:"";position:absolute;right:6px;top:6px;width:6px;height:6px;border-radius:50%;background:hsl(0 65% 50%);box-shadow:0 0 0 2px hsl(0 65% 50%/0.18);animation:truncation-pulse 1.4s ease-in-out infinite}
 @keyframes truncation-pulse{50%{opacity:.4}}
 /* Legacy alias used by older tool card builds (.agent-tool-code-wrap). */
-.agent-tool-code-wrap{display:block;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));background:hsl(var(--bg-200)/0.6)}
+.agent-tool-code-wrap{display:block;border-top:0;background:hsl(var(--bg-200)/.5)}
 [data-theme=socrates][data-mode=dark] .agent-tool-code-wrap{background:hsl(220 25% 14%/0.5)}
 /* Broken-artifact placeholder shown when an inline image (matplotlib
    PNG, etc.) fails to load. Replaces the <img> on error so the
@@ -3398,14 +3398,14 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    <pre> underneath streams stdout/stderr as it arrives. We cap
    height at 200px so a runaway print loop scrolls instead of
    pushing the page. */
-.agent-tool-progress{margin:0;padding:6px 12px;background:hsl(var(--bg-000)/0.55);border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));display:flex;align-items:center;gap:8px}
+.agent-tool-progress{margin:0;padding:6px 12px;background:hsl(var(--bg-000)/.4);border-top:0;display:flex;align-items:center;gap:8px}
 .agent-tool-progress-badge{display:inline-flex;align-items:center;font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;letter-spacing:0.4px;color:hsl(220 60% 60%);padding:2px 8px;border-radius:999px;background:hsl(220 60% 95%);font-variant-numeric:tabular-nums;flex-shrink:0}
 .agent-tool-progress .agent-tool-progress-spinner{display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;border:1.5px solid hsl(220 60% 60%/0.25);border-top-color:hsl(220 60% 60%);vertical-align:-1px;animation:agent-tool-spin 0.7s linear infinite}
 @keyframes agent-tool-spin{to{transform:rotate(360deg)}}
 [data-theme=socrates][data-mode=dark] .agent-tool-progress-badge{background:hsl(220 30% 22%);color:hsl(220 60% 78%)}
 [data-theme=socrates][data-mode=dark] .agent-tool-progress{background:hsl(220 25% 14%/0.55)}
 .agent-tool-stream{margin:0;padding:6px 12px 8px;background:transparent;font-family:var(--font-mono);font-size:calc(10.5px * var(--app-font-scale, 1));line-height:1.4;color:hsl(var(--text-300));white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;flex:1;min-width:0}
-.agent-tool-out-sep{height:1px;background:hsl(var(--border-300)/0.15);margin:4px 0 6px}
+.agent-tool-out-sep{height:1px;background:transparent;margin:2px 0 4px}
 [data-theme=socrates][data-mode=dark] .agent-tool-out.error{background:hsl(0 30% 18%);color:hsl(0 55% 70%)}
 
 /* Status badge: small monospaced glyph in the card header next to the
@@ -3428,7 +3428,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    skeleton + the eventual image. A 240px max-height keeps a tall PNG
    from pushing the page; a fade-in transition keeps the user from
    being visually startled when the image lands. */
-.exec-artifact{display:block;margin:6px 0 2px;padding:0;border:0.5px solid hsl(var(--border-300)/0.28);border-radius:8px;overflow:hidden;background:hsl(var(--bg-200)/0.5);position:relative}
+.exec-artifact{display:block;margin:6px 0 2px;padding:0;border:0;border-radius:var(--tool-card-radius-sm);overflow:hidden;background:hsl(var(--bg-200)/.45);position:relative}
 .exec-artifact::before{content:"";position:absolute;top:0;left:0;right:0;height:1.5px;background:hsl(var(--accent-000)/0.45);border-radius:8px 8px 0 0;pointer-events:none;z-index:1}
 .exec-artifact-image{display:block;max-width:100%;max-height:280px;border-radius:0;background:transparent;object-fit:contain;margin:0 auto;opacity:0;transition:opacity .25s ease-out;cursor:zoom-in}
 .exec-artifact-image.loaded{opacity:1}
@@ -3485,36 +3485,36 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   .wsr-url{white-space:normal;overflow-wrap:anywhere}
 }
 
-/* Tool cards deliberately stay quiet: the chat content is primary, while
-   execution/search details are available on demand. */
+/* Tool cards — clean, minimal ChatGPT-style disclosure.
+   The chat content is primary; tool details are available on demand. */
 .agent-tool-card,.agent-tool-card.code,.agent-tool-card.codeint{
-  background:hsl(var(--bg-100)/.82);
-  border:1px solid hsl(var(--border-300)/.38);
-  border-radius:7px;
+  background:var(--tool-card-bg);
+  border:0;
+  border-radius:var(--tool-card-radius-sm);
   box-shadow:none;
 }
-.agent-tool-card:hover{border-color:hsl(var(--border-300)/.7);box-shadow:none}
-.agent-tool-card.open{box-shadow:0 6px 18px hsl(var(--shadow-color,0 0% 0%)/.035)}
-.agent-tool-head{min-height:36px;padding:8px 10px;gap:7px;background:transparent}
-.agent-tool-head:hover{background:hsl(var(--bg-200)/.42)}
+.agent-tool-card:hover{background:var(--tool-card-bg-hover);box-shadow:none}
+.agent-tool-card.open{box-shadow:0 4px 14px hsl(220 30% 50%/0.05)}
+.agent-tool-head{min-height:36px;padding:9px 12px;gap:8px;background:transparent;border-radius:var(--tool-card-radius-sm) var(--tool-card-radius-sm) 0 0}
+.agent-tool-head:hover{background:var(--tool-card-bg-hover)}
 .agent-tool-card .agent-tool-body::before{display:none}
 .agent-tool-name,.agent-tool-input,.wsr-title{letter-spacing:0}
 .agent-tool-icon,.agent-tool-card.codeint .agent-tool-icon,.agent-tool-card.websearch .agent-tool-icon{
-  width:18px;height:18px;border-radius:4px;
+  width:18px;height:18px;border-radius:5px;
   background:transparent!important;
-  color:hsl(var(--text-400))!important;
+  color:var(--tool-card-icon)!important;
   font-size:calc(9.5px * var(--app-font-scale, 1));
 }
-.agent-tool-name{font-size:calc(11.5px * var(--app-font-scale, 1));font-weight:600}
-.agent-tool-input{font-size:calc(10.5px * var(--app-font-scale, 1));opacity:.72}
+.agent-tool-name{font-size:calc(12px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
+.agent-tool-input{font-size:calc(10.5px * var(--app-font-scale, 1));opacity:.7;color:hsl(var(--text-400))}
 .agent-tool-status{
   min-width:0;
   height:auto;
   margin-left:auto;
   padding:0 0 0 8px;
   background:transparent!important;
-  color:hsl(var(--text-500))!important;
-  font-size:calc(10px * var(--app-font-scale, 1));
+  color:var(--tool-card-text-subtle)!important;
+  font-size:calc(10.5px * var(--app-font-scale, 1));
   font-weight:500;
   white-space:nowrap;
   font-variant-numeric:tabular-nums;
@@ -3536,10 +3536,10 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   align-items:center;
   gap:10px;
   min-height:30px;
-  padding:5px 10px;
-  border-top:1px solid hsl(var(--border-300)/.26);
-  background:hsl(var(--bg-000)/.2);
-  color:hsl(var(--text-500));
+  padding:5px 12px;
+  border-top:0;
+  background:var(--tool-card-bg-sunken);
+  color:var(--tool-card-text-subtle);
 }
 .agent-tool-toolbar[hidden]{display:none}
 .agent-tool-toolbar-label{
@@ -3564,10 +3564,10 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-action:focus-visible{outline:2px solid hsl(var(--text-400)/.4);outline-offset:2px;border-radius:2px}
 .agent-tool-code,.agent-tool-out,.agent-tool-progress{
   background:hsl(var(--bg-000)/.32);
-  border-top:1px solid hsl(var(--border-300)/.26);
+  border-top:0;
 }
-.agent-tool-code{padding:8px 10px;font-size:calc(11px * var(--app-font-scale, 1));max-height:300px;line-height:1.52}
-.agent-tool-out{padding:8px 10px;font-size:calc(10.75px * var(--app-font-scale, 1));max-height:320px;line-height:1.5}
+.agent-tool-code{padding:8px 11px;font-size:calc(11px * var(--app-font-scale, 1));max-height:300px;line-height:1.52}
+.agent-tool-out{padding:8px 11px;font-size:calc(10.75px * var(--app-font-scale, 1));max-height:320px;line-height:1.5}
 .agent-tool-output-text{min-width:0}
 .agent-tool-output-pre{
   margin:0;
@@ -3592,8 +3592,8 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   gap:10px;
   margin-top:7px;
   padding-top:7px;
-  border-top:1px solid hsl(var(--border-300)/.22);
-  color:hsl(var(--text-500));
+  border-top:0;
+  color:var(--tool-card-text-subtle);
 }
 .agent-tool-output-summary{font-size:calc(10px * var(--app-font-scale, 1));font-variant-numeric:tabular-nums}
 .agent-tool-output-toggle{
@@ -3610,11 +3610,11 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-progress-badge{padding:0;background:transparent;color:hsl(var(--text-400));font-weight:500}
 .agent-tool-progress .agent-tool-progress-spinner{width:8px;height:8px}
 .agent-tool-stream{padding:0;max-height:180px}
-.exec-artifact{border:1px solid hsl(var(--border-300)/.35);border-radius:5px;background:transparent}
+.exec-artifact{border:0;border-radius:var(--tool-card-radius-sm);background:transparent}
 .exec-artifact::before{display:none}
 .exec-artifact-image{border-radius:4px;transition:none}
 .exec-artifact-skeleton{height:120px;background:hsl(var(--bg-200)/.35)}
-.artifact-error{align-items:flex-start;flex-wrap:wrap;margin:6px 0;padding:8px;border:1px solid hsl(0 45% 55%/.35);border-radius:5px;background:transparent}
+.artifact-error{align-items:flex-start;flex-wrap:wrap;margin:6px 0;padding:8px;border:1px solid hsl(0 45% 55%/.35);border-radius:var(--tool-card-radius-sm);background:transparent}
 .artifact-error-open,.artifact-error-retry{margin-left:0;border:0;background:transparent;color:hsl(var(--accent-000));padding:0;font:inherit;font-size:inherit;text-decoration:underline;cursor:pointer}
 .artifact-error-detail,.agent-tool-error-detail{width:100%;color:hsl(var(--text-400));font-size:inherit}
 .artifact-error-detail code,.agent-tool-error-detail code{display:block;margin-top:5px;white-space:pre-wrap;word-break:break-word;color:hsl(var(--text-400))}
@@ -3657,34 +3657,35 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-status{font-size:calc(11px * var(--app-font-scale,1));font-weight:400;color:hsl(var(--text-500))!important}
 .agent-tool-chev{font-size:10px;color:hsl(var(--text-500));transition:transform .2s}
 .agent-tool-body{
-  margin:4px 0 8px 23px;padding:10px;border:1px solid hsl(var(--border-300)/.32);
-  border-radius:14px;background:hsl(var(--bg-000)/.34);
+  margin:0;padding:10px 12px;
+  border-top:0;
+  background:var(--tool-card-bg-sunken);
 }
 .agent-tool-section + .agent-tool-section{margin-top:10px}
 .agent-tool-section-head{
   min-height:20px;margin-bottom:5px;padding:0 1px;display:flex;align-items:center;gap:8px;
-  color:hsl(var(--text-500));font:500 calc(10px * var(--app-font-scale,1))/1 var(--font-sans);
-  letter-spacing:.08em;text-transform:uppercase;
+  color:var(--tool-card-text-subtle);font:500 calc(10px * var(--app-font-scale,1))/1 var(--font-sans);
+  letter-spacing:.06em;text-transform:uppercase;
 }
 .agent-tool-section-head .agent-tool-action{margin-left:auto;text-transform:none;letter-spacing:0}
 .agent-tool-code,.agent-tool-out,.agent-tool-progress{
-  border:0;border-radius:8px;background:hsl(var(--bg-200)/.6);
+  border:0;border-radius:var(--tool-card-radius-sm);background:hsl(var(--bg-200)/.5);
 }
-.agent-tool-code{margin:0;padding:9px 10px;max-height:300px}
-.agent-tool-out{padding:9px 10px;max-height:320px}
+.agent-tool-code{margin:0;padding:9px 11px;max-height:300px}
+.agent-tool-out{padding:9px 11px;max-height:320px}
 .agent-tool-output-section:has(.agent-tool-out:empty){display:none}
 .agent-tool-input-section:has(.agent-tool-code[hidden]){display:none}
-.agent-tool-card.websearch .agent-tool-out{border-radius:8px;overflow:hidden}
+.agent-tool-card.websearch .agent-tool-out{border-radius:0 0 var(--tool-card-radius-sm) var(--tool-card-radius-sm);overflow:hidden}
 .agent-tool-card.websearch .web-search-results{border-top:0}
 .agent-tool-card.open .agent-tool-chev{transform:rotate(180deg)}
-.web-search-results{border-top:1px solid hsl(var(--border-300)/.24)}
+.web-search-results{border-top:0}
 .wsr-header{
   display:flex;
   align-items:center;
   min-height:28px;
-  padding:7px 10px;
-  border-bottom:1px solid hsl(var(--border-300)/.18);
-  color:hsl(var(--text-400));
+  padding:7px 12px;
+  border-bottom:0;
+  color:var(--tool-card-text-muted);
   font-size:calc(10.5px * var(--app-font-scale, 1));
 }
 .wsr-summary{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -3701,8 +3702,8 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 }
 .wsr-copy-all:hover,.wsr-copy-all:focus-visible{text-decoration:underline;text-underline-offset:2px}
 .wsr-copy-all:focus-visible{outline:2px solid hsl(var(--accent-000)/.3);outline-offset:2px;border-radius:2px}
-.wsr-item{padding:9px 10px;gap:9px}
-.wsr-item:hover{background:hsl(var(--bg-200)/.36)}
+.wsr-item{padding:9px 12px;gap:9px}
+.wsr-item:hover{background:var(--tool-card-bg-hover)}
 .wsr-index{
   min-width:24px;
   width:auto;
@@ -4159,26 +4160,28 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
    than wrapping and breaking visual rhythm with the surrounding prose. */
 .tool-inline{
   display:flex;
-  align-items:center;
-  gap:8px;
+  flex-direction:column;
+  align-items:stretch;
+  gap:0;
   clear:both;
   width:100%;
   box-sizing:border-box;
-  margin:4px 0;
+  margin:5px 0;
   padding:0;
   border:0;
-  border-radius:0;
-  background:transparent;
-  font-size:14.5px;
+  border-radius:var(--tool-card-radius-sm);
+  background:var(--tool-card-bg);
+  font-size:14px;
   line-height:1.55;
   color:hsl(var(--text-300));
-  transition:color .2s ease;
+  transition:background .18s ease,box-shadow .18s ease;
+  overflow:hidden
 }
-.tool-inline:hover{color:hsl(var(--text-100))}
+.tool-inline:hover{background:var(--tool-card-bg-hover);color:hsl(var(--text-200))}
 .tool-inline-head{
   display:flex; align-items:center; gap:8px;
-  min-height:32px;
-  padding:6px 8px;
+  min-height:34px;
+  padding:7px 11px;
   list-style:none;
   cursor:pointer;
   -webkit-user-select:none;
@@ -4191,8 +4194,8 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .tool-inline-head::marker{display:none;content:""}
 .tool-inline-head:hover{background:var(--tool-card-bg-hover)}
 .tool-inline-head:hover .tool-inline-label{color:var(--tool-card-text)}
-.tool-inline-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px}
-.tool-inline[open] .tool-inline-head{background:var(--tool-card-bg-sunken)}
+.tool-inline-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px;border-radius:var(--tool-card-radius-sm)}
+.tool-inline[open] > .tool-inline-head{background:var(--tool-card-bg-sunken)}
 /* The tool-type icon is the only glyph in the row; the label carries the
    lifecycle and the spinner occupies the same slot while running. */
 .tool-inline-icon{display:none}
@@ -4238,7 +4241,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .tool-inline-meta{display:none}
 .tool-inline-chev{display:none}
 .tool-inline-detail{
-  padding:4px 0 8px 24px;
+  padding:8px 11px 10px;
   border-top:0;
   animation:tool-inline-detail-enter .2s var(--composer-motion-ease,cubic-bezier(.22,1,.36,1));
 }
@@ -4257,11 +4260,11 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .tool-inline-detail-value{
   max-height:280px;
   margin:0;
-  padding:8px 10px;
+  padding:8px 11px;
   overflow:auto;
-  border:1px solid hsl(var(--border-300)/.24);
-  border-radius:9px;
-  background:hsl(var(--bg-200)/.52);
+  border:0;
+  border-radius:var(--tool-card-radius-sm);
+  background:hsl(var(--bg-000)/.32);
   color:hsl(var(--text-300));
   font:400 calc(11.5px * var(--app-font-scale,1))/1.55 var(--font-mono);
   white-space:pre-wrap;
@@ -4273,14 +4276,15 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   background:hsl(0 58% 52%/.055);
 }
 .tool-inline-detail-empty{margin:0;color:hsl(var(--text-500));font-size:12px}
-.tool-inline-sources{display:flex;flex-direction:column;gap:2px}
+.tool-inline-sources{display:flex;flex-direction:column;gap:1px}
 .tool-inline-src{
   display:flex;align-items:baseline;gap:8px;
-  padding:3px 6px;margin-left:-6px;border-radius:6px;
+  padding:4px 8px;margin:0 -4px;border-radius:6px;
   font-size:13px;color:hsl(var(--text-300));
   text-decoration:none;min-width:0;
+  transition:background .12s ease,color .12s ease;
 }
-a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-100))}
+a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--text-100))}
 .tool-inline-src-title{
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
 }
@@ -5094,13 +5098,13 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
 /* Expandable tool execution cards */
 .agent-tool-card{
   margin-top:10px;
-  border:1px solid var(--tool-card-border);
+  border:0;
   border-radius:var(--tool-card-radius);
   background:var(--tool-card-bg);
   box-shadow:none;
-  transition:background-color .16s ease,border-color .16s ease
+  transition:background-color .16s ease
 }
-.agent-tool-card:hover{border-color:var(--tool-card-border-strong)}
+.agent-tool-card:hover{background:var(--tool-card-bg-hover)}
 .agent-tool-card.open{box-shadow:none}
 .agent-tool-head{gap:10px;padding:12px var(--tool-card-pad-x);border-radius:var(--tool-card-radius-sm);transition:background-color .16s ease}
 .agent-tool-head:hover{background:var(--tool-card-bg-hover)}
@@ -5110,9 +5114,9 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
 .agent-tool-input{font-size:var(--tool-card-meta-size);color:var(--tool-card-text-subtle);opacity:1}
 .agent-tool-chev{color:var(--tool-card-text-subtle)}
 .agent-tool-card .agent-tool-body::before{display:none}
-.agent-tool-out,.agent-tool-code,.agent-tool-progress,.agent-tool-code-wrap{border-top:1px solid var(--tool-card-border);background:var(--tool-card-bg-sunken)}
+.agent-tool-out,.agent-tool-code,.agent-tool-progress,.agent-tool-code-wrap{border-top:0;background:var(--tool-card-bg-sunken)}
 .agent-tool-out{padding:12px var(--tool-card-pad-x);color:var(--tool-card-text-muted)}
-.agent-tool-code{padding:12px var(--tool-card-pad-x);color:var(--tool-card-text);border-top-color:var(--tool-card-border)}
+.agent-tool-code{padding:12px var(--tool-card-pad-x);color:var(--tool-card-text)}
 .agent-tool-code-streaming::after{color:var(--tool-card-icon)}
 .agent-tool-out.error{color:var(--tool-card-danger);background:var(--tool-card-danger-soft)}
 .agent-tool-progress{padding:10px var(--tool-card-pad-x);color:var(--tool-card-text-muted)}
@@ -5120,7 +5124,7 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
 .agent-tool-progress .agent-tool-progress-spinner{border-color:var(--tool-card-border-strong);border-top-color:var(--tool-card-icon)}
 .agent-tool-status.ok,.agent-tool-status.warn,.agent-tool-status.mute{background:transparent;color:var(--tool-card-text-subtle)}
 .agent-tool-status.err{background:var(--tool-card-danger-soft);color:var(--tool-card-danger)}
-.agent-tool-card[data-tool-state="cancelled"]{border-color:var(--tool-card-border)}
+.agent-tool-card[data-tool-state="cancelled"]{border-color:transparent}
 
 /* Inline tool activity and grouped tool output */
 .tool-inline-head{border-radius:var(--tool-card-radius-sm)}
@@ -5131,7 +5135,7 @@ a.tool-inline-src:hover{background:hsl(var(--bg-200)/.6);color:hsl(var(--text-10
 .tool-inline-label{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-muted)}
 .tool-inline[data-state="error"] .tool-inline-tool-icon{color:var(--tool-card-danger)}
 .tool-inline-detail{padding:8px 8px 10px 32px}
-.tool-inline-detail-value{border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius-sm);background:var(--tool-card-bg-sunken);color:var(--tool-card-text-muted)}
+.tool-inline-detail-value{border:0;border-radius:var(--tool-card-radius-sm);background:var(--tool-card-bg-sunken);color:var(--tool-card-text-muted)}
 .tool-inline-detail-section[data-kind="error"] .tool-inline-detail-value,.tool-inline-detail-section[data-kind="technical"] .tool-inline-detail-value{border-color:var(--tool-card-danger-soft-strong);background:var(--tool-card-danger-soft)}
 .tool-inline-src{color:var(--tool-card-text-muted)}
 a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text)}
