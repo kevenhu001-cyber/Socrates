@@ -634,31 +634,26 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
    is a subtle 5% white wash + border strengthening 1 step; no colour
    lift, no scale animation. */
 .composer-tools-item{
-  display:flex;align-items:center;gap:11px;width:100%;
+  display:flex;align-items:center;gap:12px;width:100%;
   min-height:38px;
   padding:8px 10px;
   margin:0;
-  border:0;border-radius:10px;
+  border:0;border-radius:8px;
   background:transparent;
   color:var(--tool-card-text-muted);
   font:inherit;
   font-size:calc(13.5px * var(--app-font-scale,1));
   font-weight:var(--tool-card-desc-weight);
   text-align:left;cursor:pointer;
-  transition:background-color .18s var(--ease-out),color .18s var(--ease-out),border-color .18s var(--ease-out)
+  transition:color .18s var(--ease-out)
 }
 .composer-tools-item + .composer-tools-item{margin-top:1px}
-.composer-tools-item:hover,
-.composer-tools-item:focus-visible{
-  background:var(--tool-card-bg-hover);
-  color:var(--tool-card-text);
-  outline:0
-}
-.composer-tools-item:focus-visible{box-shadow:inset 0 0 0 1px var(--tool-card-border-strong)}
-.composer-tools-item:active{background:var(--tool-card-bg-sunken)}
+.composer-tools-item:hover{color:var(--tool-card-text)}
+.composer-tools-item:focus-visible{color:var(--tool-card-text);outline:0;box-shadow:inset 0 0 0 1px var(--tool-card-border-strong)}
+.composer-tools-item:active{color:var(--tool-card-text)}
 .composer-tools-icon{
   display:grid;place-items:center;
-  width:18px;height:18px;
+  width:20px;height:20px;
   color:var(--tool-card-icon);
   flex-shrink:0;
   transition:color .18s ease
@@ -716,8 +711,8 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
  .composer-tools-item + .composer-tools-item{margin-top:2px}
  .composer-tools-icon{width:30px;height:30px;color:hsl(var(--text-200))}
  .composer-tools-icon svg{width:24px;height:24px}
- .composer-tools-item:hover,.composer-tools-item:focus-visible{background:hsl(var(--bg-200)/.7);color:hsl(var(--text-100))}
- .composer-tools-item:active{background:hsl(var(--bg-300));transform:scale(.985)}
+.composer-tools-item:hover,.composer-tools-item:focus-visible{color:hsl(var(--text-100))}
+.composer-tools-item:active{transform:scale(.985)}
  .composer-tools-item:hover .composer-tools-icon{color:hsl(var(--text-100))}
  .composer-tools-menu .composer-tools-copy{line-height:1.2}
  /* Scrim behind the sheet; ui/composerTools.js toggles the body class.
@@ -985,7 +980,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
      Focus feedback only changes the edge/shadow; the input stays fixed in place. */
   transition:box-shadow var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),background-color var(--composer-motion-duration) var(--composer-motion-ease);
   animation:emptyStateIn .4s var(--ease-out) 140ms both}
-.topic-input-wrap:focus-within{box-shadow:0 0 0 2px hsl(var(--accent-000)/.12),0 .25rem 1.5rem hsl(var(--always-black)/8%);border-color:hsl(var(--accent-000)/0.5)}
+.topic-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.5)}
 #topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(16px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-100));min-height:76px;max-height:320px;overflow-y:auto;font-family:var(--font-sans);padding:16px 20px 12px}
 #topicInput::placeholder{color:hsl(var(--text-400))}
 .topic-footer{display:flex;align-items:center;padding:0 20px 16px}
@@ -4373,7 +4368,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
 .chat-input-bar{background:linear-gradient(to bottom,transparent 0%,hsl(var(--surface-page))/26px);padding-top:18px;padding-inline:12px}
 .chat-input-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:4px;min-height:58px;margin:0 auto;width:min(100%,880px);padding:7px 8px;border-radius:30px;border-color:hsl(var(--border-300)/.42);background:hsl(var(--bg-000));box-shadow:0 10px 30px -6px hsl(var(--always-black)/.14),0 2px 8px hsl(var(--always-black)/.06)}
 .chat-composer-body{display:contents}
-.chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/.45);box-shadow:0 10px 30px -6px hsl(var(--always-black)/.14),0 2px 8px hsl(var(--always-black)/.06)}
+.chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/.45)}
  .chat-input-wrap .attachment-chips{order:0;flex-basis:100%}
 #chatInputArea{order:2;flex:1;min-width:120px;min-height:28px;padding:4px 4px 6px;line-height:1.45}
 .chat-input-footer{display:contents}
@@ -4468,11 +4463,11 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   }
   .chat-input-footer .send-btn{width:44px;height:44px;margin-left:0}
   .chat-input-footer .send-btn svg{width:18px;height:18px}
-  /* Desktop focus: subtle lift + enhanced shadow — same motion curve as
-     the wrap so it glides in lockstep. The composer-focused class is
-     toggled by RichComposer.tsx handleDOMEvents focus/blur. */
+  /* Desktop focus: quiet edge tint only — no glow cast; the accent
+     border is the sole focus affordance. Same motion curve as the wrap
+     so it glides in lockstep. The composer-focused class is toggled by
+     RichComposer.tsx handleDOMEvents focus/blur. */
   .chat-input-wrap.composer-focused{
-    box-shadow:0 0 0 2px hsl(var(--accent-000)/.12),0 6px 28px -4px hsl(var(--always-black)/.16),0 2px 8px hsl(var(--always-black)/.08);
     border-color:hsl(var(--accent-000)/.45);
   }
 }
@@ -4530,7 +4525,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   }
    .chat-input-wrap.composer-focused{
      min-height:116px;padding:8px;border-radius:26px;gap:4px 3px;
-     align-content:flex-start;box-shadow:0 0 0 2px hsl(var(--accent-000)/.12),0 10px 28px hsl(var(--always-black)/.14);
+     align-content:flex-start;
    }
    .chat-input-wrap.composer-focused .chat-composer-body{
      order:1;flex:0 0 100%;width:100%;min-width:100%;max-width:100%;
@@ -4636,7 +4631,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   .sources-row:hover{transform:none !important}
   /* Disable focus-within lift on the chat input. */
   .chat-input-wrap:focus-within{transform:none}
-  .chat-input-wrap.composer-focused{transform:none;box-shadow:0 2px 12px hsl(var(--always-black)/8%)}
+  .chat-input-wrap.composer-focused{transform:none}
   .topic-input-wrap:focus-within{transform:none}
   .send-btn.active{transform:none !important}
   .send-btn.active:hover{transform:none !important}
@@ -5009,17 +5004,17 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   min-height:46px;
   padding:10px 12px;
   gap:12px;
-  border-radius:var(--tool-card-radius-sm);
+  border-radius:8px;
   color:var(--tool-card-text-muted);
   font-size:var(--tool-card-desc-size);
   font-weight:var(--tool-card-desc-weight);
-  transition:background-color .16s ease,color .16s ease,border-color .16s ease
+  transition:color .16s ease
 }
 .composer-tools-item:hover,
-.composer-tools-item:focus-visible{background:var(--tool-card-bg-hover);color:var(--tool-card-text);outline:0}
+.composer-tools-item:focus-visible{color:var(--tool-card-text);outline:0}
 .composer-tools-item:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:2px;box-shadow:none}
-.composer-tools-item:active{background:var(--tool-card-bg-sunken);transform:none}
-.composer-tools-icon{color:var(--tool-card-icon)}
+.composer-tools-item:active{color:var(--tool-card-text);transform:none}
+.composer-tools-icon{width:22px;height:22px;color:var(--tool-card-icon)}
 .composer-tools-item:hover .composer-tools-icon,
 .composer-tools-item:focus-visible .composer-tools-icon{color:var(--tool-card-icon-hover)}
 .composer-tools-copy > span{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
@@ -5220,11 +5215,10 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   position:relative;
   min-height:48px;
   padding:9px 10px;
-  border:1px solid transparent;
+  border:0;
 }
 .composer-tools-item.is-active{
-  background:var(--tool-card-bg-hover);
-  border-color:var(--tool-card-border);
+  color:var(--tool-card-text);
 }
 .composer-tools-item kbd{
   flex:0 0 auto;
