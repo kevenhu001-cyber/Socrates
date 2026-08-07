@@ -6,8 +6,10 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
+import { ensureDiagPngs } from './tmp-gen-png.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+ensureDiagPngs();
 const NOISE_BUF = fs.readFileSync(resolve(__dirname, 'tmp-diag-noise.png'));
 const MIXED_BUF = fs.readFileSync(resolve(__dirname, 'tmp-diag-mixed.png'));
 const GRAD_BUF = fs.readFileSync(resolve(__dirname, 'tmp-diag-grad.png'));

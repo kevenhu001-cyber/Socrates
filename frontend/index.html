@@ -632,67 +632,9 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         <span>Read-only view — this is a shared conversation.</span>
       </div>
-      <div class="chat-view hidden" id="chatView">
-        <!-- P0.2 — In-session find bar. A browser-style "find on page"
-             control scoped to #msgList (distinct from the global Cmd-K
-             palette). Opened by Ctrl-F / the #findBtn header button;
-             logic lives in src/ui/findInSession.js. -->
-        <div class="find-bar hidden" id="findBar" role="search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="find-bar-icon" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" id="findInput" name="findInput" data-i18n-placeholder="find.placeholder" data-i18n-aria="find.placeholder" aria-label="Find in conversation" placeholder="Find in conversation…" autocomplete="off" spellcheck="false" data-action-input="onFindInput:value" data-action-keydown="onFindKey:event">
-          <span class="find-count" id="findCount" aria-live="polite"></span>
-          <button class="find-nav-btn" type="button" data-action="findPrev" title="Previous match" aria-label="Previous match">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
-          </button>
-          <button class="find-nav-btn" type="button" data-action="findNext" title="Next match" aria-label="Next match">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-          </button>
-          <button class="find-close-btn" type="button" data-action="closeFindInSession" title="Close find" aria-label="Close find">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-          </button>
-        </div>
-        <div class="msg-list" id="msgList"></div>
-        <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
-        <div class="chat-input-bar" id="chatInputBar">
-          <div class="chat-input-wrap" id="chatInputWrap">
-            <!-- P_attachments — chip strip above the textarea. Each
-                 chip is rendered by renderAttachmentChips() in main.js;
-                 this is just the empty container. -->
-            <div class="attachment-chips hidden" id="attachmentChips"></div>
-            <div class="chat-composer-body">
-              <div id="chatComposerRoot" class="composer-editor-root" aria-label="Type your thinking"></div>
-              <div class="chat-input-footer">
-                <div class="footer-left-group">
-                  <button class="attach-btn composer-tools-trigger" id="chatComposerToolsBtn" type="button" data-action="toggleComposerTools" data-action-arg="chat" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                  </button>
-                  <input type="file" id="attachInput" multiple
-                         accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
-                         hidden>
-                  <!-- P_chatgpt-landing — reasoning-effort selector (高/中/低)
-                       for the in-session composer; shares the persisted value
-                       with the landing one. -->
-                  <div class="effort-picker" data-open="false">
-                  <button type="button" class="effort-trigger" data-action="toggleEffortPicker" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
-                      <span class="effort-label">Medium</span>
-                      <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <div class="effort-menu" role="listbox" aria-label="Reasoning effort">
-                      <button type="button" class="effort-item" data-effort="high" role="option" data-action="setReasoningEffort" data-action-arg="high"><span data-i18n-key="effort.high">High</span></button>
-                      <button type="button" class="effort-item" data-effort="medium" role="option" data-action="setReasoningEffort" data-action-arg="medium"><span data-i18n-key="effort.medium">Medium</span></button>
-                      <button type="button" class="effort-item" data-effort="low" role="option" data-action="setReasoningEffort" data-action-arg="low"><span data-i18n-key="effort.low">Low</span></button>
-                    </div>
-                  </div>
-                </div>
-                <span class="chat-input-hint" id="chatInputHint">Shift+Enter for new line</span>
-                <button class="send-btn" id="sendBtn" aria-label="Send" data-action="handleSendClick">
-                  <span id="sendBtnContent"><svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- chat-view lifted out of .main-inner so the transcript
+           scrollbar pins to the right edge of the main pane.
+           See the sibling .chat-view-lifted below. -->
 
     <!-- Main-content pages for Library, Projects, Scheduled, Plugins -->
     <div class="library-panel main-page hidden" id="libraryPanel">
@@ -755,6 +697,77 @@
       <div class="exam-view-body" id="examViewBody"></div>
       <div class="exam-view-footer" id="examViewFooter"></div>
     </div>
+    <!-- chat-view + transcript + jump pill, lifted out of
+         .main-inner so the vertical scrollbar anchors to the
+         right edge of the main pane (page right minus sidebar)
+         instead of the right edge of the centred reading column.
+         The #msgList id is unchanged so every scrollTop /
+         scrollHeight call site in main.js continues to work. -->
+    <div class="chat-view chat-view-lifted hidden" id="chatView">
+
+        <!-- P0.2 — In-session find bar. A browser-style "find on page"
+             control scoped to #msgList (distinct from the global Cmd-K
+             palette). Opened by Ctrl-F / the #findBtn header button;
+             logic lives in src/ui/findInSession.js. -->
+        <div class="find-bar hidden" id="findBar" role="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="find-bar-icon" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="findInput" name="findInput" data-i18n-placeholder="find.placeholder" data-i18n-aria="find.placeholder" aria-label="Find in conversation" placeholder="Find in conversation…" autocomplete="off" spellcheck="false" data-action-input="onFindInput:value" data-action-keydown="onFindKey:event">
+          <span class="find-count" id="findCount" aria-live="polite"></span>
+          <button class="find-nav-btn" type="button" data-action="findPrev" title="Previous match" aria-label="Previous match">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+          </button>
+          <button class="find-nav-btn" type="button" data-action="findNext" title="Next match" aria-label="Next match">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <button class="find-close-btn" type="button" data-action="closeFindInSession" title="Close find" aria-label="Close find">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="chat-input-bar" id="chatInputBar">
+          <div class="chat-input-wrap" id="chatInputWrap">
+            <!-- P_attachments — chip strip above the textarea. Each
+                 chip is rendered by renderAttachmentChips() in main.js;
+                 this is just the empty container. -->
+            <div class="attachment-chips hidden" id="attachmentChips"></div>
+            <div class="chat-composer-body">
+              <div id="chatComposerRoot" class="composer-editor-root" aria-label="Type your thinking"></div>
+              <div class="chat-input-footer">
+                <div class="footer-left-group">
+                  <button class="attach-btn composer-tools-trigger" id="chatComposerToolsBtn" type="button" data-action="toggleComposerTools" data-action-arg="chat" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                  </button>
+                  <input type="file" id="attachInput" multiple
+                         accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
+                         hidden>
+                  <!-- P_chatgpt-landing — reasoning-effort selector (高/中/低)
+                       for the in-session composer; shares the persisted value
+                       with the landing one. -->
+                  <div class="effort-picker" data-open="false">
+                  <button type="button" class="effort-trigger" data-action="toggleEffortPicker" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
+                      <span class="effort-label">Medium</span>
+                      <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="effort-menu" role="listbox" aria-label="Reasoning effort">
+                      <button type="button" class="effort-item" data-effort="high" role="option" data-action="setReasoningEffort" data-action-arg="high"><span data-i18n-key="effort.high">High</span></button>
+                      <button type="button" class="effort-item" data-effort="medium" role="option" data-action="setReasoningEffort" data-action-arg="medium"><span data-i18n-key="effort.medium">Medium</span></button>
+                      <button type="button" class="effort-item" data-effort="low" role="option" data-action="setReasoningEffort" data-action-arg="low"><span data-i18n-key="effort.low">Low</span></button>
+                    </div>
+                  </div>
+                </div>
+                <span class="chat-input-hint" id="chatInputHint">Shift+Enter for new line</span>
+                <button class="send-btn" id="sendBtn" aria-label="Send" data-action="handleSendClick">
+                  <span id="sendBtnContent"><svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="msg-list" id="msgList"></div>
+    <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
+
+  </div>
   </div>
 
 </main>

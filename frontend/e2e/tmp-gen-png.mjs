@@ -1,4 +1,6 @@
-// tmp-gen-png.mjs — TEMPORARY: regenerate valid test PNGs (correct CRC32).
+// tmp-gen-png.mjs — regenerate valid test PNGs (correct CRC32).
+// The generated files are gitignored, so `ensureDiagPngs()` lets the
+// specs that consume them self-provision on a fresh clone / in CI.
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 import crypto from 'node:crypto';
@@ -38,40 +40,53 @@ function encodePng(w, h, rgbFn) {
   return Buffer.concat([sig, chunk('IHDR', ihdr), chunk('IDAT', idat), chunk('IEND', Buffer.alloc(0))]);
 }
 
-/* --- grad: 600×600 smooth gradient (small control) --- */
-const grad = encodePng(600, 600, (x, y, w, h) => [
-  Math.round(255 * x / w), Math.round(255 * y / h), Math.round(128 + 127 * Math.sin(x / 47)),
-]);
-fs.writeFileSync(new URL('./tmp-diag-grad.png', import.meta.url), grad);
+const FILES = ['tmp-diag-grad.png', 'tmp-diag-photo.png', 'tmp-diag-mixed.png', 'tmp-diag-noise.png'];
 
-/* --- photo: 4000×3000 large smooth photo-like gradient --- */
-const photo = encodePng(4000, 3000, (x, y, w, h) => [
-  Math.round(255 * x / w),
-  Math.round(255 * y / h),
-  Math.round(127 + 128 * Math.sin(x / 197) * Math.cos(y / 151)),
-]);
-fs.writeFileSync(new URL('./tmp-diag-photo.png', import.meta.url), photo);
+function build() {
+  /* grad: 600×600 smooth gradient (small control) */
+  fs.writeFileSync(new URL('./tmp-diag-grad.png', import.meta.url), encodePng(600, 600, (x, y, w, h) => [
+    Math.round(255 * x / w), Math.round(255 * y / h), Math.round(128 + 127 * Math.sin(x / 47)),
+  ]));
 
-/* --- mixed: 1200×1200 gradient + noise patches (compression-triggering) --- */
-const mixed = encodePng(1200, 1200, (x, y, w, h) => {
-  if (x % 160 < 80 && y % 160 < 80) {
+  /* photo: 4000×3000 large smooth photo-like gradient */
+  fs.writeFileSync(new URL('./tmp-diag-photo.png', import.meta.url), encodePng(4000, 3000, (x, y, w, h) => [
+    Math.round(255 * x / w),
+    Math.round(255 * y / h),
+    Math.round(127 + 128 * Math.sin(x / 197) * Math.cos(y / 151)),
+  ]));
+
+  /* mixed: 1200×1200 gradient + noise patches (compression-triggering) */
+  fs.writeFileSync(new URL('./tmp-diag-mixed.png', import.meta.url), encodePng(1200, 1200, (x, y, w, h) => {
+    if (x % 160 < 80 && y % 160 < 80) {
+      const rnd = crypto.randomBytes(3);
+      return [rnd[0], rnd[1], rnd[2]];
+    }
+    return [
+      Math.round(255 * x / w), Math.round(255 * y / h), Math.round(127 + 127 * Math.sin(x / 37)),
+    ];
+  }));
+
+  /* noise: 1200×1200 pure noise (>4MB limit) */
+  fs.writeFileSync(new URL('./tmp-diag-noise.png', import.meta.url), encodePng(1200, 1200, () => {
     const rnd = crypto.randomBytes(3);
     return [rnd[0], rnd[1], rnd[2]];
+  }));
+}
+
+/* Build the fixtures only when one is missing, so repeat local runs stay
+   fast and CI (which never has them) provisions them on first import. */
+export function ensureDiagPngs() {
+  const missing = FILES.some((f) => !fs.existsSync(new URL('./' + f, import.meta.url)));
+  if (missing) build();
+}
+
+const invokedDirectly = process.argv[1]
+  && import.meta.url === new URL('file://' + process.argv[1]).href;
+
+if (invokedDirectly) {
+  build();
+  for (const f of FILES) {
+    const b = fs.readFileSync(new URL('./' + f, import.meta.url));
+    console.log(f, Math.round(b.length / 1024) + 'KB');
   }
-  return [
-    Math.round(255 * x / w), Math.round(255 * y / h), Math.round(127 + 127 * Math.sin(x / 37)),
-  ];
-});
-fs.writeFileSync(new URL('./tmp-diag-mixed.png', import.meta.url), mixed);
-
-/* --- noise: 1200×1200 pure noise (>4MB limit) --- */
-const noise = encodePng(1200, 1200, () => {
-  const rnd = crypto.randomBytes(3);
-  return [rnd[0], rnd[1], rnd[2]];
-});
-fs.writeFileSync(new URL('./tmp-diag-noise.png', import.meta.url), noise);
-
-for (const f of ['tmp-diag-grad.png', 'tmp-diag-photo.png', 'tmp-diag-mixed.png', 'tmp-diag-noise.png']) {
-  const b = fs.readFileSync(new URL('./' + f, import.meta.url));
-  console.log(f, Math.round(b.length / 1024) + 'KB');
 }
