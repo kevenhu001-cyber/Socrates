@@ -6,8 +6,10 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
+import { ensureDiagPngs } from './tmp-gen-png.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+ensureDiagPngs();
 const PHOTO_BUF = fs.readFileSync(resolve(__dirname, 'tmp-diag-photo.png'));
 const MIXED_BUF = fs.readFileSync(resolve(__dirname, 'tmp-diag-mixed.png'));
 
@@ -175,7 +177,16 @@ test('PERF: legacy sync pipeline step-by-step (photo 2.8MB)', async ({ page }) =
   const report = await page.evaluate(() => window.__bench('/tmp-img/photo.png', { disableOffscreen: true }));
   console.log('[PERF-legacy] wallclock', Date.now() - t0, 'ms');
   for (const step of report) console.log('[PERF-legacy]', JSON.stringify(step));
-  expect(report.length).toBeGreaterThan(3);
+  /* Assert the legacy path was actually exercised end to end: read, decode,
+     and at least one toDataURL rung that lands under the size cap. The old
+     `report.length > 3` only held when the FIRST compression attempt missed,
+     which depends on how well the synthetic fixture compresses — this
+     gradient clears the cap on rung 1, so length is legitimately 3. */
+  const labels = report.map((s) => s.label);
+  expect(labels).toContain('readFileAsDataUrl');
+  expect(labels).toContain('imgDecode');
+  expect(labels).toContain('legacy.toDataURL');
+  expect(report.some((s) => s.label === 'legacy.toDataURL' && s.extra && s.extra.hit)).toBe(true);
 });
 
 test('PERF: mixed 1.9MB image decode+encode only', async ({ page }) => {

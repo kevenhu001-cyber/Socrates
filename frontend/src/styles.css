@@ -924,18 +924,17 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 .new-reply-pill:active{transform:translateY(0) scale(.96)}
 .new-reply-pill:focus-visible{outline:2px solid hsl(var(--accent-200));outline-offset:2px}
 .main-content{
-  flex:1;
-  position:relative;z-index:1;
-  /* The msg-list inside is the actual scroll container; this outer
-     one does not scroll, so the absolutely-positioned input bar
-     stays anchored to the visible area. */
-  overflow:hidden;
+  flex:1 1 0%;
   min-height:0;
+  position:relative;z-index:1;
+  /* #msgList is absolutely positioned inside this container;
+     it does not scroll the main-content itself. The in-flow
+     .chat-view sits at the bottom via margin-top:auto. */
+  overflow:hidden;
   display:flex;
   flex-direction:column;
 }
-.main-inner{
-  display:flex;
+.main-inner{display:flex;
   flex-direction:column;
   align-items:center;
   /* Tight top padding so the chat header sits close to the top
@@ -953,12 +952,20 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 /* Reserve space at the bottom for the absolutely-positioned
    input bar (~80-100px tall). Without this, the last message
    slides under the bar. */
-/* The msg-list inside .chat-view reserves its own bottom padding
-   (140px) so the input bar has its own breathing room without
-   affecting other views. The .main-inner itself doesn't need
-   extra bottom padding. */
+/* #msgList (now a sibling of .chat-view, not inside .main-inner)
+   reserves its own bottom padding so the input bar has breathing
+   room. .main-inner itself doesn't need extra bottom padding. */
 .topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;padding-top:clamp(56px,calc(var(--app-vh,100vh) * .12),136px);flex:1;min-height:0;overflow-y:auto}
-/* P_topic-kb-stable — the landing must not reflow when the virtual
+/* .hidden variants on chat-mode siblings of #msgList - kept out
+   of layout so they stop claiming flex space inside .main-content
+   when chat-view is active. */
+.topic-setup.hidden{display:none}
+.diagnostic-view.hidden{display:none}
+.shared-banner.hidden{display:none}
+.exam-view.hidden{display:none}
+
+.chat-view.hidden,.chat-view-lifted.hidden{display:none}
+.main-inner.hidden{display:none}/* P_topic-kb-stable — the landing must not reflow when the virtual
    keyboard opens or closes: the focused input keeps its exact position
    and the disclaimer below stays put (the keyboard may cover it — that
    is intended, it must never "avoid" the keyboard). Two mechanisms:
@@ -1391,44 +1398,81 @@ true) but the dropdown never shows — see commit history. */
    on `.chat-view` itself — the entire chat (list + bar) is pushed up by the
    keyboard's inset, rather than having the bar float above a manually-sized
    reserve. No measurement, no race, no overlap. */
+/* chat-view is a direct child of .main-content (lifted out of
+   .main-inner so the transcript scrollbar can pin to the right edge
+   of the main pane). It hosts only the floating find bar + the
+   chat-input-bar — the chat transcript (#msgList) is its sibling, not
+   its child. The bar sits at the bottom-centre of the main pane via
+   flex-column flow (chat-view flex-shrinks to its natural height,
+   margin-top:auto pushes it to the bottom; #msgList is absolutely
+   positioned and does not participate in the flex flow). */
 .chat-view{
   width:100%;
+  /* Sit centred horizontally in the main pane with the same
+     reading-column max-width as before, so the composer visually
+     lines up with the centred message text. */
+  max-width:calc(58rem * var(--app-width-scale, 1));
+  margin:0 auto;
   display:flex;
   flex-direction:column;
   gap:4px;
-  flex:1;
-  min-height:0;
+  flex:0 0 auto;
   position:relative;
-  /* Keyboard avoidance: shrink the chat's content box from the bottom
-     when the virtual keyboard rises. The bar (now in flow) is pushed
-     up with the list automatically — there is no longer a floating
-     composer to compensate for. `transition` smooths the lift on
-     platforms where the inset animates (iOS). */
+  transition:none;
+  /* Sit at the bottom of the main pane (below the absolute msg-list
+     scroll container). The bar's own padding-top provides the gap
+     between the last message and the composer. */
+  margin-top:auto;
+  /* keyboard avoidance: shift the composer up by the virtual
+     keyboard inset on mobile. */
   padding-bottom:var(--keyboard-inset, 0px);
-   /* The visual viewport already animates with the native keyboard. Do not
-      add a second CSS tween here: it makes the composer lag behind the
-      keyboard and leaves a measurable 1–3px undershoot during the opening
-      frame. Focus geometry has its own slower, coordinated transition below. */
-   transition:none;
 }
-.chat-view>.msg-list{
-  flex:1 1 auto;
-  min-height:0;
+
+/* Chat transcript — full-width vertical scroll container anchored to
+   the right edge of the main pane (page right minus sidebar). The
+   message column is centred with horizontal padding that mirrors
+   the original reading column width, so the scrollbar stays on the
+   page-right edge while the bubble text stays where the user
+   expects. */
+
+#msgList,.msg-list{
+  /* Cover the entire main pane above the chat-input-bar. Anchored
+     to .main-content (position:relative) so the absolute coords
+     map to the main pane edges. */
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:0;
+  right:0;
+  /* Leave room for the chat-input-bar at the bottom of the pane,
+     plus the keyboard inset on mobile. The 92px accounts for
+     .chat-input-bar's natural height (~64-72px) plus its
+     padding-top (12px) + a small visual gap. */
+  padding-top:calc(44px + env(safe-area-inset-top, 0px));
+  padding-bottom:calc(92px + var(--keyboard-inset, 0px) + env(safe-area-inset-bottom, 0px));
   overflow-y:auto;
   overflow-x:hidden;
   overscroll-behavior-y:contain;
   touch-action:pan-y;
   scroll-padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);
+  /* Centre the message column. The horizontal padding fills any
+     leftover space on either side, and the vertical scrollbar sits
+     at the right edge of the main pane because the scroll
+     container itself spans the full main pane width. */
+  padding-inline:max(16px, calc((100% - 58rem * var(--app-width-scale, 1)) / 2));
+  /* box-sizing so padding-top/bottom shrink the scroll viewport
+     instead of overflowing it. */
+  box-sizing:border-box;
 }
-@supports (scrollbar-width:thin){.chat-view>.msg-list{scrollbar-width:thin}}
-@supports (scrollbar-color:transparent transparent){.chat-view>.msg-list{scrollbar-color:transparent transparent}}
+@supports (scrollbar-width:thin){.msg-list{scrollbar-width:thin}}
+@supports (scrollbar-color:transparent transparent){.msg-list{scrollbar-color:transparent transparent}}
 @supports (scrollbar-color:hsl(var(--text-500)/0.25) transparent){
-  .chat-view>.msg-list.scrollbar-visible{scrollbar-color:hsl(var(--text-500)/0.25) transparent}
+  .msg-list.scrollbar-visible{scrollbar-color:hsl(var(--text-500)/0.25) transparent}
 }
-.chat-view>.msg-list::-webkit-scrollbar{width:5px}
-.chat-view>.msg-list::-webkit-scrollbar-track{background:transparent}
-.chat-view>.msg-list::-webkit-scrollbar-thumb{border-radius:3px;background:transparent;transition:background .25s}
-.chat-view>.msg-list.scrollbar-visible::-webkit-scrollbar-thumb{background:hsl(var(--text-500)/0.25)}
+.msg-list::-webkit-scrollbar{width:5px}
+.msg-list::-webkit-scrollbar-track{background:transparent}
+.msg-list::-webkit-scrollbar-thumb{border-radius:3px;background:transparent;transition:background .25s}
+.msg-list.scrollbar-visible::-webkit-scrollbar-thumb{background:hsl(var(--text-500)/0.25)}
 .demo-banner{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:hsl(var(--accent-000)/0.08);border:0.5px solid hsl(var(--accent-000)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));line-height:1.4}
 .demo-banner[hidden]{display:none}
 .demo-banner-text{flex:1}
@@ -1504,6 +1548,7 @@ body.workspace-active #modeSegmentedTop,
 body.workspace-active #mobileMode,
 body.workspace-active #mobileIncognitoBtn,
 body.workspace-active #topicDisclaimer{display:none!important}
+.main-content:has(#chatView:not(.hidden)) #topicDisclaimer{display:none}
 /* P_hide-mode-switch-in-conversation — once a conversation has started
    (topic set, KB nodes populated, phase===chat, or any message in
    msgList — same heuristic as toggleAppMode's inSession check), hide
