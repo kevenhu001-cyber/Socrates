@@ -21,20 +21,19 @@ var _mountingCards = new Map();
 
 async function loadEcharts() {
   if (!echartsPromise) {
-    echartsPromise = Promise.all([
-      import('echarts/core'), import('echarts/charts'), import('echarts/components'), import('echarts/renderers'),
-    ]).then(function (modules) {
-      var core = modules[0], charts = modules[1], components = modules[2], renderers = modules[3];
-      core.use([
-        charts.LineChart, charts.BarChart, charts.ScatterChart, charts.PieChart, charts.HeatmapChart,
-        charts.RadarChart, charts.BoxplotChart,
-        components.GridComponent, components.TooltipComponent, components.LegendComponent,
-        components.TitleComponent, components.DatasetComponent, components.TransformComponent,
-        components.AriaComponent, components.DataZoomComponent, components.VisualMapComponent,
-        components.ToolboxComponent, renderers.SVGRenderer, renderers.CanvasRenderer,
-      ].filter(Boolean));
-      return core;
-    });
+    /* Full echarts UMD is loaded as a classic <script> in index.html
+       (cdn.jsdelivr.net, SRI-pinned). The npm sub-imports would force
+       Rollup to walk echarts/core + echarts/charts + echarts/components
+       + echarts/renderers + zrender during build. The full bundle
+       already registers every chart/component/renderer globally, so
+       no manual `core.use([...])` step is needed. window.echarts is
+       guaranteed to be defined by the time a viz card mounts because
+       vite.config.js ensures ES modules start after the classic CDN
+       scripts. */
+    if (!window.echarts) {
+      throw new Error('echarts CDN not loaded');
+    }
+    echartsPromise = Promise.resolve(window.echarts);
   }
   return echartsPromise;
 }

@@ -48,7 +48,7 @@
   } catch (_) { /* not in Capacitor — fall through */ }
 })();
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <!-- P5.1 — Google Fonts CSS is intentionally NOT SRI-pinned: the CSS
      response is generated per-user-agent and is tiny; the actual
      font binaries are loaded with `crossorigin` and pinned with
@@ -782,7 +782,18 @@
      (\cancel, \bcancel, \xcancel) are emulated in KATEX_MACROS
      instead. See frontend/src/render/helpers.js for details. -->
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js" integrity="sha384-T/0lMUdJpd2S1ZHtRiofG3htU3xPCrFVeAQ1UUE2TJwlEJSV5NUwn30kP28n238E" crossorigin="anonymous" onload="try{var dm=document.documentElement.getAttribute('data-mode')==='dark';mermaid.initialize({startOnLoad:false,theme:dm?'dark':'default'})}catch(_){}"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.min.js" integrity="sha384-T/0lMUdJpd2S1ZHtRiofG3htU3xPCrFVeAQ1UUE2TJwlEJSV5NUwn30kP28n238E" crossorigin="anonymous" onload="try{var dm=document.documentElement.getAttribute('data-mode')==='dark';mermaid.initialize({startOnLoad:false,theme:dm?'dark':'default'})}catch(_){}"></script>
+<!-- P_viz-echarts-cdn — full echarts UMD, ~1.1 MB min. Importing via npm
+     pulled 4 sub-modules + zrender into the Rollup graph (~200 MB of
+     node_modules walked per build). The full bundle already registers
+     every chart/component/renderer, so visualization.js no longer needs
+     the `core.use([...])` step. SRI-pinned to echarts 6.1.0. -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js" integrity="sha384-C2iskrW/uPW46KzOjrvJIQo4YkV8lkD+QS0CrDN18IIPIpT/g2USu8bTP3nvmIAD" crossorigin="anonymous"></script>
+<!-- P_viz-plotly-cdn — plotly.js-dist-min ~4.85 MB. Imported via npm
+     it forces Rollup to parse a 4.85 MB single-file bundle just to
+     build the dynamic chunk, holding ~100 MB of AST in memory. The
+     CDN exposes the same Plotly global. SRI-pinned to 3.7.0. -->
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@3.7.0/plotly.min.js" integrity="sha384-l4G4qURPwALv583BKlynU/4LiUx0rk9jcTX58Aq+Jc+jgWb52zeH2geZkSS3UPPs" crossorigin="anonymous"></script>
 <!-- highlight.js (code syntax highlighting). Optional: if the CDN is
      blocked, hljs is undefined and addStreamingMessage falls back to
      plain <pre><code> rendering. -->

@@ -34,7 +34,13 @@ function downloadSvgAdapter(stage) {
 }
 
 async function mountPlotly(spec, stage, helpers) {
-  plotlyPromise ||= import('plotly.js-dist-min').then((module) => module.default || module);
+  /* Plotly is loaded as a classic <script> in index.html (SRI-pinned
+     cdn.jsdelivr.net). The npm import forced Rollup to parse the
+     4.85 MB plotly bundle just to build the dynamic chunk. */
+  if (!window.Plotly) {
+    throw new Error('plotly CDN not loaded');
+  }
+  plotlyPromise ||= Promise.resolve(window.Plotly);
   const Plotly = await plotlyPromise;
   const colors = {
     text: cssColor('--text-100', '#1c2637'),
@@ -122,7 +128,16 @@ function mermaidText(spec) {
 }
 
 async function mountMermaid(spec, stage) {
-  mermaidPromise ||= import('mermaid').then((module) => module.default || module);
+  /* Mermaid is loaded as a classic <script> in index.html (SRI-pinned
+     cdn.jsdelivr.net). The npm import would force Rollup to walk
+     mermaid.core.mjs's 38 lazy diagram imports — each pulling cytoscape
+     / fcose / dagre / lodash — adding ~500 MB to V8 old-space per build.
+     vite.config.js guarantees the ES bundle runs after the classic CDN
+     scripts, so window.mermaid is already populated here. */
+  if (!window.mermaid) {
+    throw new Error('mermaid CDN not loaded');
+  }
+  mermaidPromise ||= Promise.resolve(window.mermaid);
   const mermaid = await mermaidPromise;
   mermaid.initialize({
     startOnLoad: false,

@@ -14,6 +14,14 @@
  */
 export function stripChatArtifacts(t) {
   if (!t) return t;
+  /* PERF: this runs over the WHOLE accumulated response on every stream
+     frame. The six replaces below each scan the full string, but the
+     artifacts they strip are rare — a cheap scan for the only three
+     characters that can start one lets the common case exit after a
+     single pass instead of six. '<' covers <|im_start|>, <|tok|>, <s>
+     and <<SYS>>; '[' covers [INST]; the whitespace probe covers the
+     trailing-space / blank-line tidy. */
+  if (!/[<[]|[ \t]\n|\n{3,}/.test(t)) return t;
   /* Multi-line blocks first: ... including any
      system-prompt body the model also leaked. Non-greedy so the first
       closes the block. */

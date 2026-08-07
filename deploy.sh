@@ -18,11 +18,14 @@ STATUS_DIR="${STATUS_DIR:-/var/www/status.topodrive.top}"
 NGINX_SITE_CONF="${NGINX_SITE_CONF:-/etc/nginx/sites-available/status.topodrive.top}"
 DEPLOY_LOCK_FILE="${DEPLOY_LOCK_FILE:-${XDG_RUNTIME_DIR:-/tmp}/socrates-deploy.lock}"
 STATE_FILE="${STATE_FILE:-/home/ubuntu/User/Socrates/.deploy-state.json}"
-# The visualization bundle currently transforms ~3,700 modules. Rollup can
-# exceed Node's default ~2 GB old-space limit during chunk rendering even when
-# the host still has free RAM. Keep this override configurable for smaller or
-# larger deployment hosts, but use the value verified by the release build.
-FRONTEND_NODE_OPTIONS="${FRONTEND_NODE_OPTIONS:---max-old-space-size=4096}"
+# P_build-heap — the legacy 4 GB ceiling was needed because Rollup walked
+# mermaid's 38 lazy diagram imports + cytoscape/fcose/dagre, 4 echarts
+# sub-modules + zrender, and the 4.85 MB plotly bundle. With those three
+# heavy viz libs moved to the CDN (window.mermaid / window.echarts /
+# window.Plotly), the module count dropped from ~3,700 to ~1,100 and
+# the build fits comfortably in 1 GB. Keep this override configurable for
+# smaller or larger deployment hosts.
+FRONTEND_NODE_OPTIONS="${FRONTEND_NODE_OPTIONS:---max-old-space-size=1024}"
 
 if ! command -v flock >/dev/null 2>&1; then
   echo "ERROR: flock is required to serialize deployments" >&2
