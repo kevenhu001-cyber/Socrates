@@ -12,12 +12,29 @@ export function getStreamRenderInterval(textLength: number | null | undefined): 
   return 120;              /* very long answer: protect the main thread */
 }
 
+/* PERF: counts non-overlapping occurrences without allocating. The previous
+   form, `s.split(tok).length - 1`, allocated an array of every piece purely
+   to read its length — and this runs over the WHOLE accumulated response on
+   every render frame, so the garbage scaled with the answer. */
+function countOccurrences(s: string, needle: string): number {
+  let n = 0;
+  let i = s.indexOf(needle);
+  while (i !== -1) {
+    n += 1;
+    i = s.indexOf(needle, i + needle.length);
+  }
+  return n;
+}
+
 export function isStableMarkdownPrefix(text: string): boolean {
   const s = String(text || '');
-  if ((s.split('```').length - 1) % 2 !== 0) return false;
-  if ((s.split('$$').length - 1) % 2 !== 0) return false;
-  if ((s.split('\\[').length - 1) !== (s.split('\\]').length - 1)) return false;
-  if ((s.split('<think>').length - 1) !== (s.split('</think>').length - 1)) return false;
+  if (countOccurrences(s, '```') % 2 !== 0) return false;
+  if (countOccurrences(s, '$$') % 2 !== 0) return false;
+  if (countOccurrences(s, '\\[') !== countOccurrences(s, '\\]')) return false;
+  /* No '<' means no <think> and no scaffold tags, so the remaining checks
+     cannot fail. Skips the tag scan for ordinary prose, the common case. */
+  if (s.indexOf('<') === -1) return true;
+  if (countOccurrences(s, '<think>') !== countOccurrences(s, '</think>')) return false;
   /* Tutor scaffold bodies commonly contain blank lines. Do not promote a
      prefix containing an open <example>/<quiz>/... tag into the settled DOM,
      otherwise the remaining fields render outside the card and the next

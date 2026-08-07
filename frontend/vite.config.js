@@ -72,6 +72,7 @@ export default defineConfig({
   // old IIFE bundle) and moved the bundle after the CDN <script> tags.
   // With ES output the entry scripts stay `type="module"`, which the spec
   // defers until after HTML parsing — i.e. after the classic in-body CDN
-  // scripts (marked/katex/mermaid/hljs/fuse/dompurify) have executed — so
-  // every CDN global is already defined when a module first touches it.
+  // scripts (marked/dompurify/katex/echarts/plotly/mermaid/hljs/fuse)
+  // have executed — so every CDN global is already defined when a module
+  // first touches it.
 });

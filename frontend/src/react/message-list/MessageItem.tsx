@@ -1,4 +1,4 @@
-import { useLayoutEffect } from 'react';
+import { memo, useLayoutEffect } from 'react';
 
 import type { LegacyChatMessage } from '../types/domain';
 import { MessageToolbar } from './MessageToolbar';
@@ -9,24 +9,26 @@ interface MessageItemProps {
   message: LegacyChatMessage;
 }
 
+type LiveFields = LegacyChatMessage & {
+  _preserveLiveBody?: boolean;
+  _liveBodyHandedOff?: boolean;
+  _turnAnchorMinHeight?: number;
+  _turnAnchorMarginTop?: number;
+};
+
 function isRenderable(message: LegacyChatMessage): boolean {
   if (typeof message.html === 'string' && message.html.length > 0) return true;
   if (typeof message.rawText === 'string' && message.rawText.length > 0) return true;
   return false;
 }
 
-function MessageItem({ message }: MessageItemProps) {
+function MessageItemBase({ message }: MessageItemProps) {
   const role = typeof message.role === 'string' ? message.role : 'assistant';
   const clientId = typeof message.clientId === 'string' ? message.clientId
     : typeof message.id === 'string' ? message.id
     : '';
   const html = typeof message.html === 'string' ? message.html : '';
-  const liveMessage = message as LegacyChatMessage & {
-    _preserveLiveBody?: boolean;
-    _liveBodyHandedOff?: boolean;
-    _turnAnchorMinHeight?: number;
-    _turnAnchorMarginTop?: number;
-  };
+  const liveMessage = message as LiveFields;
   const preserveLiveBody = Boolean(liveMessage._preserveLiveBody);
   const handoffPending = preserveLiveBody && !liveMessage._liveBodyHandedOff;
   const turnAnchorMinHeight = Number.isFinite(liveMessage._turnAnchorMinHeight)
@@ -130,6 +132,37 @@ function MessageItem({ message }: MessageItemProps) {
     </div>
   );
 }
+
+/* The legacy pipeline MUTATES message objects in place — finish() assigns
+   state.messages[i].html = finalHtml on the same object React already
+   holds (main.js). A reference-equality memo would therefore never see a
+   finished answer and would freeze the bubble mid-stream. Compare the
+   fields actually rendered instead, and always re-render while a live
+   body handoff is pending. */
+const MessageItem = memo(MessageItemBase, (prev, next) => {
+  const a = prev.message as LiveFields;
+  const b = next.message as LiveFields;
+  if (a === b) {
+    return !a._preserveLiveBody || Boolean(a._liveBodyHandedOff);
+  }
+  return (
+    a.html === b.html
+    && a.rawText === b.rawText
+    && a.role === b.role
+    && a.clientId === b.clientId
+    && a.id === b.id
+    && a.type === b.type
+    && a.outputMode === b.outputMode
+    && a.canvasId === b.canvasId
+    && a.restoredFromHistory === b.restoredFromHistory
+    && a.attachments === b.attachments
+    && a.modelInfo?.label === b.modelInfo?.label
+    && a._preserveLiveBody === b._preserveLiveBody
+    && a._liveBodyHandedOff === b._liveBodyHandedOff
+    && a._turnAnchorMinHeight === b._turnAnchorMinHeight
+    && a._turnAnchorMarginTop === b._turnAnchorMarginTop
+  );
+});
 
 export { MessageItem };
 export type { LegacyChatMessage };

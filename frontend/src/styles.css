@@ -139,7 +139,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
    The search box is the default way to filter the single session list;
    the tutor-only icon buttons open the Knowledge / Mistakes views. */
 .sidebar-search-row{display:flex;align-items:center;gap:4px;padding:2px 8px 6px;flex-shrink:0}
-.sidebar-search{flex:1;min-width:0;display:flex;align-items:center;gap:7px;height:32px;padding:0 10px;border-radius:8px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.14);transition:border-color .18s var(--ease-out),background .18s var(--ease-out),box-shadow .18s var(--ease-out)}
+.sidebar-search{flex:1;min-width:0;display:flex;align-items:center;gap:7px;height:32px;padding:0 10px;border-radius:8px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.14);transition:border-color .18s var(--ease-out),background .18s var(--ease-out)}
 .sidebar-search:focus-within{background:hsl(var(--bg-000));border-color:hsl(var(--accent-000)/0.55)}
 .sidebar-search-icon{width:15px;height:15px;flex-shrink:0;color:hsl(var(--text-500));transition:color .18s cubic-bezier(.4,0,.2,1)}
 .sidebar-search:focus-within .sidebar-search-icon{color:hsl(var(--accent-000))}
@@ -385,7 +385,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .recents-new-btn:active{transform:scale(.96)}
 .recents-new-btn svg{stroke:currentColor;transition:transform .25s cubic-bezier(.4,0,.2,1)}
 .recents-new-btn:hover svg{transform:rotate(90deg)}
-.recent-item{display:flex;align-items:center;padding:8px 12px;border-radius:8px;font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-200));transition:background .18s var(--ease-out),color .18s var(--ease-out),box-shadow .18s var(--ease-out);cursor:pointer;gap:8px;position:relative;-webkit-touch-callout:none}
+.recent-item{display:flex;align-items:center;padding:8px 12px;border-radius:8px;font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-200));transition:background .18s var(--ease-out),color .18s var(--ease-out);cursor:pointer;gap:8px;position:relative;-webkit-touch-callout:none;contain:layout style}
 .recent-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .recent-item:active{transform:none}
 .recent-item.active{background:hsl(var(--bg-300))}
@@ -488,7 +488,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .library-tab:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
 .library-tab.active{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .library-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
-.library-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;cursor:pointer;transition:background .12s}
+.library-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;cursor:pointer;transition:background .12s;contain:layout style}
 .library-item:hover{background:hsl(var(--bg-300))}
 .library-item-icon{width:14px;height:14px;flex-shrink:0;color:hsl(var(--text-400))}
 .library-item-info{flex:1;min-width:0}
@@ -524,7 +524,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .spaces-add-btn{width:24px;height:24px;border-radius:6px;border:none;background:transparent;color:hsl(var(--text-400));cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s}
 .spaces-add-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .spaces-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
-.spaces-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s}
+.spaces-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s;contain:layout style}
 .spaces-item:hover{background:hsl(var(--bg-300))}
 .spaces-item-color{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .spaces-item-info{flex:1;min-width:0}
@@ -540,7 +540,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .scheduled-add-btn{width:24px;height:24px;border-radius:6px;border:none;background:transparent;color:hsl(var(--text-400));cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s}
 .scheduled-add-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .scheduled-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
-.scheduled-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s}
+.scheduled-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s;contain:layout style}
 .scheduled-item:hover{background:hsl(var(--bg-300))}
 .scheduled-item-icon{width:14px;height:14px;flex-shrink:0;color:hsl(var(--text-400))}
 .scheduled-item-info{flex:1;min-width:0}
@@ -560,7 +560,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .plugins-browse-btn{padding:4px 10px;border-radius:6px;border:none;background:hsl(var(--accent-000)/.12);color:hsl(var(--accent-000));font-size:calc(11px * var(--sidebar-font-scale));font-weight:500;cursor:pointer;transition:background .12s;font-family:var(--font-sans)}
 .plugins-browse-btn:hover{background:hsl(var(--accent-000)/.2)}
 .plugins-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
-.plugins-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s}
+.plugins-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s;contain:layout style}
 .plugins-item:hover{background:hsl(var(--bg-300))}
 .plugins-item-icon{width:14px;height:14px;flex-shrink:0;color:hsl(var(--text-400))}
 .plugins-item-info{flex:1;min-width:0}
@@ -1252,7 +1252,7 @@ true) but the dropdown never shows — see commit history. */
 .diag-card{display:flex;flex-direction:column}
 .diag-actions{margin-top:auto;padding-top:20px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .diag-actions-right{display:flex;gap:8px;align-items:center;margin-left:auto}
-.diag-btn{padding:9px 20px;border-radius:9px;font-size:calc(13px * var(--app-font-scale,1));font-weight:500;cursor:pointer;transition:all .12s;border:none;line-height:1.4;display:inline-flex;align-items:center;gap:4px}
+.diag-btn{padding:9px 20px;border-radius:9px;font-size:calc(13px * var(--app-font-scale,1));font-weight:500;cursor:pointer;transition:background .12s,color .12s,border-color .12s,opacity .12s;border:none;line-height:1.4;display:inline-flex;align-items:center;gap:4px}
 .diag-btn-back{color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.12)}
 .diag-btn-back:hover{color:hsl(var(--text-200));background:hsl(var(--bg-300));border-color:hsl(var(--border-200)/0.25)}
 .diag-btn-back.hidden{opacity:0;pointer-events:none}
@@ -2749,7 +2749,10 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
       Minimal think-block: thin border, neutral colours, no accent stripe,
       no gradient, no animations, no decorative icons. */
 .think-block{margin:8px 0;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.1);background:hsl(var(--bg-200)/0.15)}
-.think-block-streaming{will-change:contents}
+/* PERF: was `will-change:contents` — a no-op hint no browser promotes.
+   `contain:layout style` is the real win: it stops the think text
+   growing every stream frame from re-laying-out the whole message. */
+.think-block-streaming{contain:layout style}
 
 .think-summary{display:flex;align-items:center;gap:6px;min-height:32px;padding:6px 10px;font-size:calc(12px * var(--app-font-scale,1));font-weight:400;color:hsl(var(--text-400));cursor:pointer;-webkit-user-select:none;user-select:none;list-style:none}
 .think-summary::-webkit-details-marker{display:none}
@@ -4169,7 +4172,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   font-size:14px;
   line-height:1.55;
   color:hsl(var(--text-300));
-  transition:background .18s ease,box-shadow .18s ease;
+  transition:background .18s ease,color .18s ease;
   overflow:hidden
 }
 .tool-inline:hover{background:var(--tool-card-bg-hover);color:hsl(var(--text-200))}

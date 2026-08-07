@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState, memo } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { getLegacyActions, t } from '../legacy/gateway';
@@ -73,6 +73,10 @@ function buildMeta(session: SessionItem): string[] {
 interface SessionRowProps {
   session: SessionItem;
   isActive: boolean;
+  /* Bumped once a minute so memoised rows still refresh their
+     "5m ago" label. Without it a row whose data never changes would
+     freeze its relative timestamp for the life of the tab. */
+  nowTick: number;
   onPick: (id: string) => void;
   onTag: (id: string, e: React.MouseEvent) => void;
   onDelete: (id: string, e: React.MouseEvent) => void;
@@ -80,7 +84,7 @@ interface SessionRowProps {
   onDragEnd: (e: React.DragEvent) => void;
 }
 
-function SessionRow({ session, isActive, onPick, onTag, onDelete, onDragStart, onDragEnd }: SessionRowProps) {
+function SessionRowBase({ session, isActive, onPick, onTag, onDelete, onDragStart, onDragEnd }: SessionRowProps) {
   const ml = modeLabel(session);
   const meta = buildMeta(session);
   const sid = safeId(session.id);
@@ -162,9 +166,33 @@ function SessionRow({ session, isActive, onPick, onTag, onDelete, onDragStart, o
   );
 }
 
+function useMinuteTick(): number {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 60000);
+    return () => clearInterval(id);
+  }, []);
+  return tick;
+}
+
+/* Row identity is stabilised upstream by _stableSessionRow in main.js, so
+   an unchanged session compares equal by reference here. The handlers are
+   useCallback-stable, leaving nowTick as the only other trigger. */
+const SessionRow = memo(SessionRowBase, (prev, next) => (
+  prev.session === next.session
+  && prev.isActive === next.isActive
+  && prev.nowTick === next.nowTick
+  && prev.onPick === next.onPick
+  && prev.onTag === next.onTag
+  && prev.onDelete === next.onDelete
+  && prev.onDragStart === next.onDragStart
+  && prev.onDragEnd === next.onDragEnd
+));
+
 function SessionListInner() {
   const snap = useSessionListSnapshot();
   const { sessions, currentSessionId, searchQuery, filter, fetchFailed } = snap;
+  const nowTick = useMinuteTick();
 
   const handlePick = useCallback((id: string) => {
     // Optimistically flip the active row so the highlight appears on the
@@ -229,6 +257,7 @@ function SessionListInner() {
             <SessionRow
               session={session}
               isActive={session.id === currentSessionId}
+              nowTick={nowTick}
               onPick={handlePick}
               onTag={handleTag}
               onDelete={handleDelete}

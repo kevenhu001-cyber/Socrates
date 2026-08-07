@@ -7,6 +7,7 @@ import {
   splitStreamingMarkdown,
 } from '../src/render/streaming.js';
 import { formatMsg, formatMsgProgressive as renderProgressive } from '../src/render/markdown.js';
+import { stripChatArtifacts } from '../src/util/stripChatArtifacts.js';
 
 test('stream cadence adapts to response length', () => {
   assert.equal(getStreamRenderInterval(0), 50);
@@ -89,4 +90,55 @@ test('final Markdown rendering keeps horizontal rules when KaTeX is unavailable'
     if (previousKatex === undefined) delete globalThis.katex;
     else globalThis.katex = previousKatex;
   }
+});
+
+/* The two functions below run over the WHOLE accumulated response on every
+   stream frame, so both were given allocation-free fast paths. These tests
+   pin the observable behaviour so a future optimisation cannot change it. */
+
+test('prefix stability check is unchanged by the allocation-free counters', () => {
+  // Balanced delimiters -> stable.
+  assert.equal(isStableMarkdownPrefix(''), true);
+  assert.equal(isStableMarkdownPrefix('plain prose with no markers'), true);
+  assert.equal(isStableMarkdownPrefix('```js\ncode\n```'), true);
+  assert.equal(isStableMarkdownPrefix('$$a+b$$'), true);
+  assert.equal(isStableMarkdownPrefix('\\[x\\]'), true);
+  assert.equal(isStableMarkdownPrefix('<think>a</think>'), true);
+
+  // Unbalanced -> unstable.
+  assert.equal(isStableMarkdownPrefix('```js\ncode'), false);
+  assert.equal(isStableMarkdownPrefix('$$a+b'), false);
+  assert.equal(isStableMarkdownPrefix('\\[x'), false);
+  assert.equal(isStableMarkdownPrefix('<think>a'), false);
+
+  // Overlap-sensitive: '```' inside a longer run must count the same way
+  // indexOf-stepping does (non-overlapping), matching split() semantics.
+  assert.equal(isStableMarkdownPrefix('``````'), true);
+
+  // The '<' fast path must not mask an unbalanced fence.
+  assert.equal(isStableMarkdownPrefix('```js\nif (a < b) {}\n'), false);
+  // ...nor wrongly reject prose that merely contains '<'.
+  assert.equal(isStableMarkdownPrefix('use a < b to compare'), true);
+});
+
+test('chat-artifact stripping is unchanged by the fast-path guard', () => {
+  // Untouched inputs must round-trip identically.
+  for (const clean of ['', 'plain text', '中文内容', 'a\nb\nc', 'a\n\nb', 'arr[i] and x < y']) {
+    assert.equal(stripChatArtifacts(clean), clean);
+  }
+
+  // Artifacts must still be stripped.
+  assert.equal(stripChatArtifacts('<|im_start|>sys<|im_end|>keep'), 'keep');
+  assert.equal(stripChatArtifacts('<|endoftext|>keep'), 'keep');
+  assert.equal(stripChatArtifacts('<s>keep</s>'), 'keep');
+  assert.equal(stripChatArtifacts('[INST]keep[/INST]'), 'keep');
+  assert.equal(stripChatArtifacts('<<SYS>>keep<</SYS>>'), 'keep');
+
+  // Whitespace tidying must still apply.
+  assert.equal(stripChatArtifacts('a   \nb'), 'a\nb');
+  assert.equal(stripChatArtifacts('a\t\nb'), 'a\nb');
+  assert.equal(stripChatArtifacts('a\n\n\n\nb'), 'a\n\nb');
+
+  // Falsy passthrough (guards the early return).
+  assert.equal(stripChatArtifacts(''), '');
 });

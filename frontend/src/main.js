@@ -2641,11 +2641,60 @@ function deleteSvg(){
 /* React migration bridge — publishes the session list data so the React
    session list component can render declaratively. Works under `?react=1`;
    legacy mode never installs the bridge, so this is a cheap no-op. */
+/* PERF: returns the PREVIOUS row object when every field is equal, so an
+   unchanged row is referentially identical across publishes. Without this
+   the mapper minted fresh objects each time and React.memo on SessionRow
+   could never hit. */
+var _rowCache=Object.create(null);
+function _sessionRowFields(s){
+  return {
+    id: s.id,
+    title: s.title||"",
+    topic: s.topic||"",
+    updatedAt: s.updated_at||s.updatedAt||null,
+    createdAt: s.created_at||s.createdAt||null,
+    totalQ: s.total_q||s.totalQ||0,
+    mode: s.mode||"",
+    phase: s.phase||"",
+    kind: s.kind||"",
+    pinned: !!s.pinned,
+    tags: Array.isArray(s.tags)?s.tags:[],
+    label: (typeof window.getSessionLabel==="function")?window.getSessionLabel(s.id):"",
+    archivedAt: typeof s.archivedAt==="number"?s.archivedAt:null,
+    branchedFrom: s.branchedFrom||null,
+  };
+}
+function _sameRow(a,b){
+  if(!a||!b)return false;
+  if(a.title!==b.title||a.topic!==b.topic||a.updatedAt!==b.updatedAt
+    ||a.createdAt!==b.createdAt||a.totalQ!==b.totalQ||a.mode!==b.mode
+    ||a.phase!==b.phase||a.kind!==b.kind||a.pinned!==b.pinned
+    ||a.label!==b.label||a.archivedAt!==b.archivedAt)return false;
+  if(a.branchedFrom!==b.branchedFrom){
+    if(!a.branchedFrom||!b.branchedFrom)return false;
+    if(a.branchedFrom.sessionId!==b.branchedFrom.sessionId
+      ||a.branchedFrom.messageId!==b.branchedFrom.messageId
+      ||a.branchedFrom.reExplain!==b.branchedFrom.reExplain)return false;
+  }
+  if(a.tags!==b.tags){
+    if(a.tags.length!==b.tags.length)return false;
+    for(var i=0;i<a.tags.length;i++){if(a.tags[i]!==b.tags[i])return false}
+  }
+  return true;
+}
+function _stableSessionRow(s){
+  var next=_sessionRowFields(s);
+  var prev=_rowCache[next.id];
+  if(_sameRow(prev,next))return prev;
+  _rowCache[next.id]=next;
+  return next;
+}
 function _publishSessionList(){
   try{
     var bridge=window.__socratesSessionListBridge;
     if(!bridge||typeof bridge.publish!=="function")return;
-    var sessions=getRecents();
+    var allSessions=getRecents();
+    var sessions=allSessions;
     var filter=getRecentsFilter();
     /* Apply the persistent tag filter, same as doRenderRecents. */
     sessions=filterRecentsByChip(sessions,filter);
@@ -2657,25 +2706,20 @@ function _publishSessionList(){
         return hay.indexOf(searchQ)!==-1;
       });
     }
+    /* Drop cache entries for sessions that no longer exist, so deleting
+       sessions in a long-lived tab cannot grow _rowCache without bound.
+       Keyed off the UNFILTERED list — a row hidden by the current tag or
+       search filter is still live and must keep its identity. */
+    var _live=Object.create(null);
+    for(var _i=0;_i<allSessions.length;_i++){
+      if(allSessions[_i]&&allSessions[_i].id)_live[allSessions[_i].id]=true;
+    }
+    var _keys=Object.keys(_rowCache);
+    for(var _k=0;_k<_keys.length;_k++){
+      if(!_live[_keys[_k]])delete _rowCache[_keys[_k]];
+    }
     bridge.publish({
-      sessions: sessions.map(function(s){
-        return {
-          id: s.id,
-          title: s.title||"",
-          topic: s.topic||"",
-          updatedAt: s.updated_at||s.updatedAt||null,
-          createdAt: s.created_at||s.createdAt||null,
-          totalQ: s.total_q||s.totalQ||0,
-          mode: s.mode||"",
-          phase: s.phase||"",
-          kind: s.kind||"",
-          pinned: !!s.pinned,
-          tags: Array.isArray(s.tags)?s.tags:[],
-          label: (typeof window.getSessionLabel==="function")?window.getSessionLabel(s.id):"",
-          archivedAt: typeof s.archivedAt==="number"?s.archivedAt:null,
-          branchedFrom: s.branchedFrom||null,
-        };
-      }),
+      sessions: sessions.map(_stableSessionRow),
       currentSessionId: window.state?window.state.session.currentSessionId:null,
       searchQuery: searchQ,
       filter: filter,
@@ -5943,9 +5987,14 @@ function doRender(){
           settledContent.innerHTML="";
         }
       }
-      if(liveContent.dataset.lastRendered!==rendered){
+      /* PERF: the guard value is held as a plain JS property, not in
+         dataset. A dataset write serialises the whole rendered HTML into a
+         real DOM attribute every frame — several KB reflected into the
+         document and re-parsed on each tick, for a value nothing outside
+         this function ever reads. */
+      if(liveContent._lastRenderedHtml!==rendered){
         liveContent.innerHTML=rendered;
-        liveContent.dataset.lastRendered=rendered;
+        liveContent._lastRenderedHtml=rendered;
         /* Wire viz/mermaid iframes that were just injected by the
            streaming renderer so the loading spinner is hidden and
            the card transitions to the "ready" state. */
@@ -5968,15 +6017,15 @@ function doRender(){
          rendering. formatMsgProgressive handles partial $$ and ```
          with placeholders, so a half-arrived formula doesn't leak
          raw LaTeX into the live bubble. */
-      if(thinkState.beforeNode.dataset.lastRendered!==beforeText){
+      if(thinkState.beforeNode._lastRenderedHtml!==beforeText){
         thinkState.beforeNode.innerHTML=beforeText?formatMsgProgressive(beforeText):"";
-        thinkState.beforeNode.dataset.lastRendered=beforeText;
+        thinkState.beforeNode._lastRenderedHtml=beforeText;
         try{processPendingViz()}catch(_){}
         try{processPendingVizActions()}catch(_){}
       }
-      if(thinkState.afterNode.dataset.lastRendered!==afterText){
+      if(thinkState.afterNode._lastRenderedHtml!==afterText){
         thinkState.afterNode.innerHTML=afterText?formatMsgProgressive(afterText):"";
-        thinkState.afterNode.dataset.lastRendered=afterText;
+        thinkState.afterNode._lastRenderedHtml=afterText;
         try{processPendingViz()}catch(_){}
         try{processPendingVizActions()}catch(_){}
       }
@@ -5987,14 +6036,16 @@ function doRender(){
         var _doneLabel=(typeof window!=="undefined"&&window.t)?window.t("think.title"):"Thought";
         thinkState.summary.innerHTML='<span class="think-summary-label">'+esc(_doneLabel)+'</span><span class="think-summary-chevron" aria-hidden="true"></span>';
       }
-      /* Re-render the think content only if it changed. The
-         recursive formatMsg call is the same code path used by
-         the final render at finish(), so the live and final
-         look match exactly. */
+      /* Re-render the think content only if it changed. Uses
+         formatMsgProgressive for the same reason as the body path
+         above: think content is PARTIAL mid-stream, and formatMsg
+         assumes closed pairs, so a half-arrived $$…$$ leaks raw
+         LaTeX. finish() re-renders via renderAssistantHTML ->
+         formatMsg, so the settled look is unchanged. */
       if(thinkState.lastRenderedThink!==thinkContent){
         if(thinkContent){
           try{
-            thinkState.thinkDiv.innerHTML=formatMsg(thinkContent.replace(/<\/?think>/g,""));
+            thinkState.thinkDiv.innerHTML=formatMsgProgressive(thinkContent.replace(/<\/?think>/g,""));
             try{processPendingMermaid()}catch(_){}
             try{processPendingViz()}catch(_){}
             try{processPendingVizActions()}catch(_){}
@@ -6349,9 +6400,9 @@ function doRender(){
               ?(_liveFinalParts.tail?formatMsgProgressive(_liveFinalParts.tail):"")
               :(_liveVisibleFinal?formatMsgProgressive(_liveVisibleFinal):"");
           }
-          if(liveContent.dataset.lastRendered!==_liveFinalHtml){
+          if(liveContent._lastRenderedHtml!==_liveFinalHtml){
             liveContent.innerHTML=_liveFinalHtml;
-            liveContent.dataset.lastRendered=_liveFinalHtml;
+            liveContent._lastRenderedHtml=_liveFinalHtml;
           }
         }catch(_){}
       }
@@ -7665,6 +7716,15 @@ function renderAssistantHTML(rawText){
      untouched. The slots will land in the final HTML intact. */
   var html=formatMsg(text);
   var citeMasked = html.replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1>/gi, function (m) {
+    return m.replace(/\[(\d+)\]/g, '&#91;$1&#93;');
+  });
+  /* Mask [N] inside <iframe> tags too. A viz/plot srcdoc embeds the
+     card's own JS, which contains array indexing like n[0]. Linkifying
+     that injects a <sup class="cite-link" …"> INSIDE the srcdoc="…"
+     attribute; the quote closes the attribute early, so the parser drops
+     srcdoc and sandbox and the canvas renders blank. Matches the opening
+     tag only — attributes are where the damage happens. */
+  citeMasked = citeMasked.replace(/<iframe\b[^>]*>/gi, function (m) {
     return m.replace(/\[(\d+)\]/g, '&#91;$1&#93;');
   });
   citeMasked = citeMasked.replace(
