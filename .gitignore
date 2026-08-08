@@ -64,6 +64,18 @@ server/test_browser.mjs
 server/_test_date.mjs
 graphify-out/
 
+# ── E2E diagnostic / scratch artifacts ──
+# One-off probes that surface during playwright debugging. Note that the
+# legitimate shared helpers _lib.mjs and _mock-api.mjs are intentionally
+# NOT matched by these patterns (they are imported by other specs).
+frontend/e2e/_diag*.mjs
+frontend/e2e/_inspect.mjs
+frontend/e2e/zz-*.mjs
+frontend/e2e/tmp-*.mjs
+frontend/e2e/__probe*
+frontend/verify-cdn.mjs
+frontend/index.html.bak
+
 # ── UI mockup screenshots (not needed in version control) ──
 *.png
 
