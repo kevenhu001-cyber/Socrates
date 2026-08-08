@@ -60,6 +60,16 @@ nav{
   text-align:center;
 }
 
+/* Eyebrow kicker + sub-line under the tagline */
+.hero-eyebrow{
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.34em;
+  text-transform:uppercase;
+  color:hsl(var(--gold));
+  margin:0 auto 26px;
+}
+
 /* The knot stage — giant CRT letters drift behind the knot.
    A radial mask hides them where the topology ring sits (so
    the center stays clean) and lets them read clearly toward
@@ -250,9 +260,17 @@ nav{
 .hero-tagline{
   font-size:clamp(16px,2vw,21px);
   color:hsl(var(--text-200));
-  margin:26px auto 44px;
+  margin:26px auto 18px;
   letter-spacing:.01em;
   font-weight:400;
+}
+.hero-sub{
+  font-size:clamp(14px,1.7vw,16.5px);
+  color:hsl(var(--text-400));
+  max-width:560px;
+  margin:0 auto 32px;
+  line-height:1.75;
+  letter-spacing:.01em;
 }
 .hero-tagline em{
   font-family:var(--font-hero);
@@ -347,9 +365,117 @@ nav{
 }
 
 /* ───────────────────────────────────────────────────────────────────
+   PROVIDERS — real model-provider logos drifting past.
+   The JS duplicates .providers-set once, so sliding -50% loops
+   seamlessly with no gap. SVGs are explicitly sized so the
+   monochrome path art reads as a small logo row, not raw blocks.
+   ─────────────────────────────────────────────────────────────────── */
+.providers-section{
+  padding:38px 32px 72px;
+}
+.providers-cap{
+  font-size:10.5px;
+  font-weight:600;
+  letter-spacing:.26em;
+  text-transform:uppercase;
+  color:hsl(var(--text-500));
+  text-align:center;
+  margin-bottom:26px;
+}
+.providers-marquee{
+  overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+}
+.providers-track{
+  display:flex;
+  width:max-content;
+  animation:provmarq 38s linear infinite;
+}
+.providers-track:hover{animation-play-state:paused}
+.providers-set{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding-right:12px;
+}
+.provider-logo{
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  padding:9px 18px;
+  border-radius:14px;
+  border:1px solid hsl(var(--border-300) / 0.14);
+  background:hsl(var(--neu-bg));
+  white-space:nowrap;
+  font-size:13.5px;
+  font-weight:500;
+  color:hsl(var(--text-300));
+  transition:color var(--anim-fast),border-color var(--anim-fast),background var(--anim-fast);
+}
+.provider-logo:hover{
+  color:hsl(var(--text-000));
+  border-color:hsl(var(--accent-000) / 0.30);
+  background:hsl(var(--accent-000) / 0.05);
+}
+.provider-logo svg{
+  width:22px;
+  height:22px;
+  flex-shrink:0;
+  display:block;
+  fill:currentColor;
+}
+@keyframes provmarq{
+  to{transform:translateX(-50%)}
+}
+
+/* ───────────────────────────────────────────────────────────────────
    DIALOGUE — a conversation that types itself
    ─────────────────────────────────────────────────────────────────── */
 .dialogue-section{padding:130px 24px}
+/* Browser-chrome window that frames the live dialogue:
+   a title bar with traffic-light dots above the typed lines. */
+.product-window{
+  max-width:720px;
+  margin:0 auto;
+  border-radius:20px;
+  border:1px solid hsl(var(--border-300) / 0.18);
+  background:hsl(var(--neu-bg));
+  box-shadow:var(--shadow-raised);
+  overflow:hidden;
+}
+.product-window .pw-bar{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:13px 18px;
+  border-bottom:1px solid hsl(var(--border-300) / 0.14);
+  background:hsl(var(--neu-bg-deep));
+}
+.pw-dot{
+  width:11px;
+  height:11px;
+  border-radius:50%;
+  background:hsl(var(--border-300));
+  opacity:.85;
+}
+.pw-dot:nth-child(1){background:hsl(6 65% 58%)}
+.pw-dot:nth-child(2){background:hsl(45 90% 55%)}
+.pw-dot:nth-child(3){background:hsl(130 40% 50%)}
+.pw-title{
+  margin-left:10px;
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:hsl(var(--text-500));
+}
+.product-window .dialogue-frame{
+  max-width:none;
+  min-height:340px;
+  padding:34px 34px 26px;
+  margin:0;
+}
 .dialogue-frame{
   max-width:620px;
   margin:0 auto;
@@ -524,6 +650,113 @@ nav{
 }
 
 /* ───────────────────────────────────────────────────────────────────
+   PROOF — stats pills + testimonial cards
+   ─────────────────────────────────────────────────────────────────── */
+.proof-section{
+  padding:120px 32px;
+}
+.proof-section .stats-row{
+  margin:0 auto 64px;
+}
+.proof-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+  max-width:1080px;
+  margin:0 auto;
+}
+.proof-card blockquote{
+  font-size:14.5px;
+  line-height:1.75;
+  color:hsl(var(--text-200));
+  margin-bottom:28px;
+}
+.proof-card figcaption{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.proof-ava{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-family:var(--font-hero);
+  font-size:16px;
+  font-weight:500;
+  color:hsl(var(--accent-000));
+  background:hsl(var(--neu-bg-deep));
+  border:1px solid hsl(var(--accent-000) / 0.30);
+  flex-shrink:0;
+}
+.proof-card figcaption strong{
+  display:block;
+  font-size:13.5px;
+  font-weight:600;
+  color:hsl(var(--text-000));
+}
+.proof-card figcaption em{
+  display:block;
+  font-style:normal;
+  font-size:11.5px;
+  color:hsl(var(--text-500));
+  margin-top:2px;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   TRUST — three quiet reasons to begin
+   ─────────────────────────────────────────────────────────────────── */
+.trust-section{
+  padding:20px 32px 110px;
+}
+.trust-row{
+  display:flex;
+  justify-content:center;
+  gap:16px;
+  flex-wrap:wrap;
+  max-width:1080px;
+  margin:0 auto;
+}
+.trust-item{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:18px 22px;
+  border-radius:16px;
+  border:1px solid hsl(var(--border-300) / 0.14);
+  background:hsl(var(--neu-bg));
+  flex:1 1 260px;
+  max-width:340px;
+}
+.trust-ico{
+  width:42px;
+  height:42px;
+  border-radius:13px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  color:hsl(var(--accent-000));
+  background:hsl(var(--neu-bg-deep));
+  border:1px solid hsl(var(--border-300) / 0.12);
+  flex-shrink:0;
+}
+.trust-item strong{
+  display:block;
+  font-size:13.5px;
+  font-weight:600;
+  color:hsl(var(--text-000));
+  margin-bottom:3px;
+}
+.trust-item em{
+  display:block;
+  font-style:normal;
+  font-size:12px;
+  color:hsl(var(--text-500));
+}
+
+/* ───────────────────────────────────────────────────────────────────
    EPIGRAPH — the oldest words, largest
    ─────────────────────────────────────────────────────────────────── */
 .epigraph{
@@ -611,6 +844,8 @@ nav{
   .method-grid{grid-template-columns:1fr}
   .method-glyph{margin-bottom:64px}
   #frontier{height:420px}
+  .proof-grid{grid-template-columns:1fr;max-width:560px}
+  .trust-item{flex:1 1 100%;max-width:none}
 }
 @media(max-width:720px){
   .hero-cosmos{min-height:calc(100svh - 64px);padding-bottom:70px}
@@ -622,13 +857,22 @@ nav{
   .fl-zh{font-size:clamp(22px,6.5vw,32px)}
   .form-label-row2{font-size:11px;gap:10px;letter-spacing:.08em}
   .fl-en::before{margin-right:10px}
-  .hero-tagline{margin:20px auto 32px}
+  .hero-tagline{margin:20px auto 14px}
   .dialogue-section,.method-section{padding:90px 20px}
   .dialogue-frame{padding-left:22px;min-height:380px}
   .epigraph{padding:110px 20px}
   .frontier-section{padding:90px 0 70px}
   #frontier{height:360px;cursor:default}
   .begin-section{padding:40px 20px 110px}
+  .providers-section{padding:32px 20px 56px}
+  .providers-set{gap:10px;padding-right:10px}
+  .provider-logo{padding:8px 14px;gap:7px;font-size:12.5px}
+  .provider-logo svg{width:19px;height:19px}
+  .product-window .dialogue-frame{padding:26px 22px 20px;min-height:340px}
+  .proof-section{padding:90px 20px}
+  .proof-section .stats-row{margin:0 auto 48px}
+  .trust-section{padding:20px 20px 90px}
+  .trust-row{gap:12px}
 }
 @media(prefers-reduced-motion:reduce){
   .marquee-track{animation:none}
@@ -636,4 +880,5 @@ nav{
   .scroll-hint::after{animation:none}
   .dlg-caret{animation:none}
   .crt-track{animation:none}
+  .providers-track{animation:none}
 }
