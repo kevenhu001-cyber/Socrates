@@ -5089,10 +5089,12 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   border:1px solid var(--tool-card-border)!important;
   box-shadow:none!important;
   color:var(--tool-card-icon)!important;
-  filter:grayscale(1);
+  overflow:hidden;
 }
-.connector-row .connector-icon svg{width:18px;height:18px;filter:grayscale(1) contrast(.85);opacity:.78}
+.connector-row .connector-icon svg{width:18px;height:18px;color:inherit}
 .connector-row .connector-icon span{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:11px;font-weight:600;color:inherit}
+.connector-row .connector-icon .connector-logo{width:22px;height:22px;object-fit:contain;display:block}
+.connector-row .connector-icon .connector-logo-fallback{display:none;align-items:center;justify-content:center;width:100%;height:100%;font-size:11px;font-weight:600;color:inherit}
 .connector-row .workspace-row-copy{gap:4px}
 .connector-row .workspace-row-copy strong{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
 .connector-row .workspace-row-copy > span{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-muted)}

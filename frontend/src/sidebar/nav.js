@@ -39,13 +39,13 @@ function _publishWorkspaceState() {
   } catch (_) { /* swallow */ }
 }
 
-/* Connector brand marks come from the maintained @lobehub/icons-static-svg
-   set (Vite inlines each file as a raw string via the `?raw` suffix) so the
-   icons stay in one source of truth. Lobehub ships github/notion/gitee/baidu
-   but not feishu/onedrive/outlook/zotero/arxiv/qq-mail, so those keep their
-   hand-drawn SVGs below. `lobehubIcon` strips Lobehub's inline 1em sizing,
-   inline style, xmlns, and <title> so every mark renders with the same
-   viewBox + `currentColor` contract as the bespoke icons. */
+/* Connector brand marks prefer real brand-asset URLs (SimpleIcons CDN for
+   most services, each vendor's own brand URL for the rest) so the user
+   sees an actual brand mark, not a hand-drawn approximation. LobeHub
+   SVGs are kept as the offline fallback for the six connectors they
+   ship. `lobehubIcon` strips Lobehub's inline 1em sizing, inline style,
+   xmlns, and <title> so the offline fallback renders with the same
+   viewBox + currentColor contract. */
 import githubRaw from "@lobehub/icons-static-svg/icons/github.svg?raw";
 import notionRaw from "@lobehub/icons-static-svg/icons/notion.svg?raw";
 import giteeRaw from "@lobehub/icons-static-svg/icons/giteeai.svg?raw";
@@ -61,6 +61,41 @@ function lobehubIcon(raw) {
     .replace(/\sxmlns="[^"]*"/i, "")
     .replace(/<svg /i, '<svg aria-hidden="true" ');
 }
+
+const CONNECTOR_IMAGE_URLS = {
+  github: "https://icon.horse/icon/github.com",
+  notion: "https://icon.horse/icon/notion.so",
+  gitee: "https://icon.horse/icon/gitee.com",
+  'baidu-netdisk': "https://icon.horse/icon/baidu.com",
+  baiducloud: "https://icon.horse/icon/baidu.com",
+  gmail: "https://icon.horse/icon/mail.google.com",
+  googledrive: "https://icon.horse/icon/drive.google.com",
+  google_drive: "https://icon.horse/icon/drive.google.com",
+  googlecalendar: "https://cdn.simpleicons.org/googlecalendar",
+  google_calendar: "https://cdn.simpleicons.org/googlecalendar",
+  'google-calendar': "https://cdn.simpleicons.org/googlecalendar",
+  todoist: "https://icon.horse/icon/todoist.com",
+  ticktick: "https://icon.horse/icon/ticktick.com",
+  discord: "https://icon.horse/icon/discord.com",
+  gitlab: "https://icon.horse/icon/gitlab.com",
+  arxiv: "https://icon.horse/icon/arxiv.org",
+  zotero: "https://icon.horse/icon/zotero.org",
+  onedrive: "https://raw.githubusercontent.com/gilbarbara/logos/master/logos/microsoft-onedrive.svg",
+  outlook: "https://icon.horse/icon/outlook.live.com",
+  feishu: "https://icon.horse/icon/feishu.cn",
+  tencentdocs: "https://icon.horse/icon/docs.qq.com",
+  qqmail: "https://icon.horse/icon/mail.qq.com",
+};
+
+const CONNECTOR_OFFLINE_SVG = {
+  github: lobehubIcon(githubRaw),
+  notion: lobehubIcon(notionRaw),
+  gitee: lobehubIcon(giteeRaw),
+  baiducloud: lobehubIcon(baiduCloudRaw),
+  'baidu-netdisk': lobehubIcon(baiduCloudRaw),
+  tencent: lobehubIcon(tencentRaw),
+  microsoft: lobehubIcon(microsoftRaw),
+};
 
 var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "exam", "more"];
 var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [] };
@@ -88,47 +123,22 @@ function icon(name) {
   };
   return icons[name] || icons.file;
 }
+function normaliseProviderId(provider) {
+  return String(provider || "").toLowerCase().replace(/[_-]/g, "");
+}
+
 function connectorIcon(provider) {
-  var gmailIcon = '<svg viewBox="0 0 24 18" aria-hidden="true"><path fill="#fff" d="M2.25 0h19.5A2.25 2.25 0 0 1 24 2.25v13.5A2.25 2.25 0 0 1 21.75 18H2.25A2.25 2.25 0 0 1 0 15.75V2.25A2.25 2.25 0 0 1 2.25 0z"/><path fill="#EA4335" d="M2.1 3.36V16.2H5.4V6.1L12 11.05l6.6-4.95v10.1h3.3V3.36L12 10.8z"/><path fill="#FBBC04" d="M0 3.36 5.4 7.4V3.32L0 0z"/><path fill="#34A853" d="M18.6 7.4 24 3.36V0l-5.4 3.32z"/><path fill="#4285F4" d="M18.6 16.2h3.3V3.36l-3.3 2.74z"/><path fill="#C5221F" d="M2.1 16.2h3.3V6.1L2.1 3.36z"/></svg>';
-  var googleDriveIcon = '<svg viewBox="0 0 24 21" aria-hidden="true"><path fill="#1A73E8" d="M14.4 0 24 16.63 21.6 20.8 12 4.17z"/><path fill="#34A853" d="M9.6 0 0 16.63 2.4 20.8 12 4.17z"/><path fill="#FBBC04" d="M2.4 20.8 4.8 16.63h19.2l-2.4 4.17z"/></svg>';
-  var googleCalendarIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path fill="#4285F4" d="M22 8H2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><path fill="#34A853" d="M4 22h16a2 2 0 0 0 2-2v-4H2v4a2 2 0 0 0 2 2z"/><path fill="#FBBC04" d="M2 8h5v8H2z"/><path fill="#EA4335" d="M17 8h5v8h-5z"/><path fill="#1A73E8" d="M9.2 11.3h2.1v6.1H9.8v-4.2l-1.1.7-.7-1.1zM13.2 16.7l.9-.9c.4.4.8.6 1.3.6.6 0 1-.3 1-.8s-.4-.8-1.1-.8h-.7l-.2-.8 1.4-1.5h-2.3v-1.2h4.2v1.1l-1.5 1.5c.9.2 1.7.7 1.7 1.7 0 1.2-.9 2-2.4 2-.9 0-1.7-.3-2.3-.9z"/></svg>';
-  var todoistIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E44332" d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path fill="#fff" d="M7.1 7.35 5.7 6.5l1.4-.85 1.4.85zm2.2-.85h9v1.7h-9zM7.1 12.85 5.7 12l1.4-.85 1.4.85zm2.2-.85h9v1.7h-9zM7.1 18.35l-1.4-.85 1.4-.85 1.4.85zm2.2-.85h7.2v1.7H9.3z"/></svg>';
-  var ticktickIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" fill="#4772FA" rx="5"/><path fill="#fff" d="m10.1 15.7-3.6-3.6 1.7-1.7 1.9 1.9 5.8-5.8 1.7 1.7z"/><path fill="#AFC2FF" d="M18.5 16.5a6.5 6.5 0 1 1-1.1-9l-1.6 1.6a4.2 4.2 0 1 0 .9 5.8z"/></svg>';
-  var discordIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" fill="#5865F2" rx="6"/><path fill="#fff" d="M17.8 7.1a13.2 13.2 0 0 0-3.1-1l-.4.8a11.3 11.3 0 0 0-4.6 0l-.4-.8a13.2 13.2 0 0 0-3.1 1C4.2 10 3.7 12.8 4 15.6a12.7 12.7 0 0 0 3.8 1.9l.8-1.3c-.4-.2-.8-.4-1.2-.6l.3-.2a9.3 9.3 0 0 0 8.6 0l.3.2c-.4.2-.8.5-1.2.6l.8 1.3a12.7 12.7 0 0 0 3.8-1.9c.4-3.2-.6-5.9-2.2-8.5zM9.3 14.2c-.7 0-1.2-.6-1.2-1.3s.5-1.3 1.2-1.3 1.2.6 1.2 1.3-.5 1.3-1.2 1.3zm5.4 0c-.7 0-1.2-.6-1.2-1.3s.5-1.3 1.2-1.3 1.2.6 1.2 1.3-.5 1.3-1.2 1.3z"/></svg>';
-  var oneDriveIcon = '<svg viewBox="0 0 24 16" aria-hidden="true"><path fill="#0364B8" d="M9.3 3.6A5.9 5.9 0 0 1 18 8.8l-4.9 2.1-6.8-2.8z"/><path fill="#0078D4" d="M5.8 6.2a4.7 4.7 0 0 1 7.4 4.7l-8.4.1L0 9a5 5 0 0 1 5.8-2.8z"/><path fill="#1490DF" d="M13.2 10.9 18 8.8a3.8 3.8 0 0 1 .5 7.2H5a5 5 0 0 1-.2-5z"/><path fill="#28A8EA" d="M0 9h4.8l8.4 1.9-3.6 5.1H5A5 5 0 0 1 0 9z"/></svg>';
-  var outlookIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#0078D4" d="M9 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H9z"/><path fill="#50A7F2" d="M22 7.2 15.6 12 22 16.8z"/><path fill="#0A5DB3" d="m9 8 6.6 4L9 16z"/><rect width="11" height="13" x="2" y="5.5" fill="#106EBE" rx="1.5"/><path fill="#fff" d="M7.5 15.1c-1.8 0-3-1.3-3-3.1s1.2-3.1 3-3.1 3 1.3 3 3.1-1.2 3.1-3 3.1zm0-1.3c.9 0 1.4-.7 1.4-1.8s-.5-1.8-1.4-1.8-1.4.7-1.4 1.8.5 1.8 1.4 1.8z"/></svg>';
-  var gitlabIcon = '<svg viewBox="0 0 24 22" aria-hidden="true"><path fill="#E24329" d="m12 21.4 4.4-13.5H7.6z"/><path fill="#FC6D26" d="M12 21.4 7.6 7.9H1.5zM12 21.4l4.4-13.5h6.1z"/><path fill="#FCA326" d="M1.5 7.9.2 11.8a1 1 0 0 0 .36 1.14L12 21.4zM22.5 7.9l1.3 3.9a1 1 0 0 1-.36 1.14L12 21.4z"/><path fill="#E24329" d="M7.6 7.9 9.5 2a.65.65 0 0 1 1.24 0L12 7.9zM16.4 7.9 14.5 2a.65.65 0 0 0-1.24 0L12 7.9z"/></svg>';
-  var qqMailIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" fill="#12B76A" rx="5"/><path fill="#fff" d="M4.5 7h15a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 16.5v-8A1.5 1.5 0 0 1 4.5 7zm.9 2 6.6 4.6L18.6 9z"/></svg>';
-  var tencentDocsIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" fill="#1677FF" rx="5"/><path fill="#fff" d="M7 5h7l3 3v11H7z"/><path fill="#BEDBFF" d="M14 5v4h4z"/><path fill="#1677FF" d="M9 11h6v1.3H9zm0 3h6v1.3H9z"/></svg>';
-  var feishuIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#00D6B9" d="M5 4.2 12 2v6.9L5 11z"/><path fill="#3370FF" d="M12 2l7 2.2V11l-7-2.1z"/><path fill="#00A0FF" d="M5 13l7 2.1V22l-7-2.2z"/><path fill="#7B61FF" d="m12 15.1 7-2.1v6.8L12 22z"/></svg>';
-  var arxivIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" fill="#B31B1B" rx="5"/><path fill="#fff" d="M5.3 16.8 10.1 6h1.7l4.8 10.8h-2l-1-2.4H8.2l-1 2.4zm3.6-4h4l-2-4.7z"/><path fill="#fff" d="M17.2 16.8v-7h1.6v7zM17 8.2V6.6h1.9v1.6z"/></svg>';
-  var icons = {
-    github: lobehubIcon(githubRaw),
-    feishu: feishuIcon,
-    'baidu-netdisk': lobehubIcon(baiduCloudRaw),
-    gitee: lobehubIcon(giteeRaw),
-    onedrive: oneDriveIcon,
-    one_drive: oneDriveIcon,
-    outlook: outlookIcon,
-    notion: lobehubIcon(notionRaw),
-    zotero: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.231 2.462 7.18 20.923h14.564V24H2.256v-2.462L16.308 3.076H2.975V0h18.256v2.462z"/></svg>',
-    'qq-mail': qqMailIcon,
-    qq_mail: qqMailIcon,
-    gmail: gmailIcon,
-    googledrive: googleDriveIcon,
-    google_drive: googleDriveIcon,
-    googlecalendar: googleCalendarIcon,
-    google_calendar: googleCalendarIcon,
-    todoist: todoistIcon,
-    ticktick: ticktickIcon,
-    discord: discordIcon,
-    tencent_docs: tencentDocsIcon,
-    tencent: lobehubIcon(tencentRaw),
-    gitlab: gitlabIcon,
-    microsoft: lobehubIcon(microsoftRaw),
-    arxiv: arxivIcon
-  };
-  return icons[provider] || icon("app");
+  var key = normaliseProviderId(provider);
+  var url = CONNECTOR_IMAGE_URLS[key];
+  if (url) {
+    return '<img class="connector-logo" src="' + url + '" alt="" loading="lazy" decoding="async"'
+      + ' onerror="this.style.display=\'none\';var s=this.nextElementSibling;if(s)s.style.display=\'flex\';" />'
+      + '<span class="connector-logo-fallback" style="display:none" aria-hidden="true">'
+      + String(provider || "?").slice(0, 2).toUpperCase() + '</span>';
+  }
+  var offline = CONNECTOR_OFFLINE_SVG[key] || CONNECTOR_OFFLINE_SVG[provider];
+  if (offline) return offline;
+  return icon("app");
 }
 
 /* Connected-app slash commands. Each connector that has a matching
