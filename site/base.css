@@ -69,7 +69,7 @@
     inset 0 1px 2px hsl(var(--neu-shadow) / 0.20);
   --shadow-pressed-deep:
     inset 0 2px 3px hsl(var(--neu-shadow) / 0.25);
-  --shadow-flat:
+--shadow-flat:
     0 1px 0 hsl(var(--neu-shadow) / 0.06);
 }
 
@@ -186,6 +186,24 @@ nav .nav-inner{
 .lang-switch:hover{
   color:hsl(var(--accent-000))!important;
   border-color:hsl(var(--accent-000) / 0.25);
+}
+
+/* Nav auxiliary controls — login link, theme toggle, hamburger.
+   The hamburger is desktop-hidden and becomes the mobile entry
+   point for the collapsed .nav-links panel. */
+.nav-login{
+  color:hsl(var(--text-200))!important;
+  background:hsl(var(--neu-bg));
+  border:1px solid hsl(var(--border-300) / 0.14);
+  border-radius:12px;
+  margin-left:4px;
+}
+.nav-login:hover{
+  color:hsl(var(--accent-000))!important;
+  border-color:hsl(var(--accent-000) / 0.30);
+}
+.nav-toggle{
+  display:none;
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -1072,6 +1090,30 @@ footer{
   font-size:11.5px;
   color:hsl(var(--text-500));
 }
+.footer-social{
+  display:flex;
+  gap:10px;
+  margin-top:18px;
+}
+.footer-social a{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:36px;height:36px;
+  border-radius:10px;
+  color:hsl(var(--text-300));
+  background:hsl(var(--neu-bg-deep));
+  border:1px solid hsl(var(--border-300) / 0.18);
+  text-decoration:none;
+  transition:color var(--anim-fast),border-color var(--anim-fast),background var(--anim-fast),transform var(--anim-fast);
+}
+.footer-social a:hover{
+  color:hsl(var(--accent-000));
+  border-color:hsl(var(--accent-000) / 0.35);
+  background:hsl(var(--accent-000) / 0.08);
+  transform:translateY(-2px);
+}
+.footer-social svg{display:block}
 
 /* ───────────────────────────────────────────────────────────────────
    GENERIC NEUMORPHIC SURFACES
@@ -1104,7 +1146,60 @@ footer{
   nav{
     padding:12px;
   }
-  .nav-links a:not(.cta-btn):not(.lang-switch){display:none}
+  .nav-toggle{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:5px;
+    width:40px;
+    height:40px;
+    padding:0;
+    background:hsl(var(--neu-bg));
+    border:1px solid hsl(var(--border-300) / 0.14);
+    border-radius:12px;
+    cursor:pointer;
+    align-items:center;
+    flex-shrink:0;
+    transition:border-color var(--anim-fast),background var(--anim-fast);
+  }
+  .nav-toggle span{
+    display:block;
+    width:18px;
+    height:2px;
+    border-radius:2px;
+    background:hsl(var(--text-300));
+    transition:transform var(--anim-fast),background var(--anim-fast);
+  }
+  .nav-toggle:hover{border-color:hsl(var(--accent-000) / 0.30)}
+  .nav-toggle:hover span{background:hsl(var(--accent-000))}
+  .nav-links:not(.open) a:not(.cta-btn):not(.lang-switch),
+  .nav-links:not(.open) .nav-login{display:none}
+  .nav-links.open{
+    position:absolute;
+    top:calc(100% + 6px);
+    left:12px;
+    right:12px;
+    flex-direction:column;
+    align-items:stretch;
+    gap:4px;
+    padding:10px;
+    border-radius:18px;
+    background:hsl(var(--neu-bg));
+    border:1px solid hsl(var(--border-300) / 0.18);
+    box-shadow:var(--shadow-raised-lg);
+    z-index:120;
+  }
+  .nav-links.open a,
+  .nav-links.open .lang-switch{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    width:100%;
+    padding:12px 14px;
+    border-radius:12px;
+  }
+  .nav-links.open .cta-btn{justify-content:center;margin-top:4px}
+  body.nav-open{overflow:hidden}
   .hero{padding:80px 20px 60px}
   .hero-platform{padding:48px 28px 40px;border-radius:20px}
   .hero h1{font-size:clamp(36px,10vw,52px)}
