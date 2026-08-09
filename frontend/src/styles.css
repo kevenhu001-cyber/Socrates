@@ -1422,7 +1422,13 @@ true) but the dropdown never shows — see commit history. */
   flex:0 0 auto;
   order:2;
   position:relative;
-  transition:none;
+  --composer-motion-duration:.34s;
+  --composer-motion-ease:cubic-bezier(.22,1,.36,1);
+  /* P_keyboard-slide — smooth the padding-bottom so the composer
+     glides up when the keyboard opens instead of snapping. Same
+     duration/ease as the composer expand transition so all motion
+     stays in sync. */
+  transition:padding-bottom var(--composer-motion-duration) var(--composer-motion-ease);
   /* The transcript is the preceding flex item, so the composer naturally
      stays at the bottom of the main pane without overlapping the reader. */
   margin-top:0;
@@ -1453,6 +1459,11 @@ true) but the dropdown never shows — see commit history. */
   overscroll-behavior-y:contain;
   touch-action:pan-y;
   scroll-padding-bottom:12px;
+  /* Smooth scroll is disabled by default. The JS applies a temporary
+     class when the user submits a new message so the viewport glides
+     to the new content instead of snapping. */
+  scroll-behavior:auto;
+#msgList.smooth-scroll{scroll-behavior:smooth}
   /* Centre the message column. The horizontal padding fills any
      leftover space on either side, and the vertical scrollbar sits
      at the right edge of the main pane because the scroll
@@ -2856,10 +2867,15 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .katex-display::-webkit-scrollbar-thumb{background:transparent;border-radius:3px}
 .katex-display:hover::-webkit-scrollbar-thumb{background:hsl(var(--text-000)/0.25)}
 .katex-display>.katex{font-size:1.1em}
-.katex .mathnormal{color:hsl(var(--text-100))}
 .katex .mord{color:hsl(var(--text-100))}
 .katex .mbin{color:hsl(var(--accent-000))}
 .katex .mrel{color:hsl(var(--accent-000))}
+/* Force all KaTeX output to use normal (non-italic) style. KaTeX
+   applies italic to variables by default, which can look odd in
+   mixed-language chat. Use !important to override KaTeX's inline
+   style="font-style:italic" on mathnormal spans. */
+.katex .mathnormal{font-style:normal !important}
+.katex .mathvariant-italic{font-style:normal !important}
 @media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;background:hsl(var(--bg-000));-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),box-shadow .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:calc(var(--app-vh,100vh) * .04) 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{padding-top:20px}}
 .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:25;animation:fadeIn .15s}
 .sidebar-backdrop.show{display:block}
@@ -4534,6 +4550,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   .chat-input-bar{padding-inline:8px}
   .chat-input-wrap{
     width:100%;min-height:54px;padding:6px;gap:2px;flex-wrap:wrap;border-radius:28px;
+    position:relative;
     /* All properties share the unified --composer-motion-duration/ease so
        the focus-in expansion and blur-out collapse move as one motion —
        border, shadow, size, and reordered children glide in lockstep. */
@@ -4563,8 +4580,14 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
    }
    .chat-input-wrap .chat-input-footer > *{pointer-events:auto}
    .chat-input-wrap .chat-input-footer .footer-left-group{display:flex;align-items:center;gap:2px;margin-right:auto;order:0}
-   .chat-input-wrap .footer-left-group .effort-picker{display:none;order:initial}
    .chat-input-wrap .chat-input-footer .send-btn{order:1;margin-left:auto}
+   /* Show the effort picker (model + thinking intensity) as a floating
+      badge in the collapsed composer so users can change settings without
+      tapping into the input first. Absolute positioning escapes the
+      collapsed grid row (grid-row 2 / height 0px). */
+   .chat-input-wrap .footer-left-group .effort-picker{
+     position:absolute;right:50px;top:50%;transform:translateY(-50%);z-index:5;display:inline-flex;pointer-events:auto;
+   }
   .rich-composer[data-surface="chat"]{min-height:42px;display:flex;align-items:center}
   .rich-composer[data-surface="chat"] > div:last-child{width:100%;min-width:0}
   .rich-composer[data-surface="chat"] .rich-composer-toolbar{display:none}
@@ -4597,7 +4620,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
      transform:translateY(0);pointer-events:auto;
    }
    .chat-input-wrap.composer-focused .footer-left-group .effort-picker{
-     display:block;margin-left:auto;margin-right:8px;align-self:center;order:0;
+     position:static;display:block;margin-left:auto;margin-right:8px;align-self:center;order:0;transform:none;right:auto;top:auto;z-index:auto;pointer-events:auto;
    }
    .chat-input-wrap.composer-focused .chat-input-footer .footer-left-group{display:contents}
    .chat-input-wrap.composer-focused .chat-input-footer .attach-btn{order:0}

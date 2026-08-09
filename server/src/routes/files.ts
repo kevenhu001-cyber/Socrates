@@ -135,7 +135,14 @@ router.get('/:id/content', async (req, res, next) => {
     let meta: Record<string, unknown> = {};
     let truncated = false;
     if (PLAIN_TEXT_MIMES.has(file.mimeType)) {
-      text = await fs.readFile(file.storagePath, 'utf8');
+      // Stream only the head of the file instead of reading it all into
+      // memory. A user can upload up to the quota (250 MB) as text, so
+      // buffering the whole file here would let a single preview consume
+      // that much server memory. We read a little more than the char cap
+      // to avoid splitting a multi-byte UTF-8 sequence, then clean up the
+      // tail below via the same normalization + slice path.
+      const headBytes = await readHead(file.storagePath, MAX_PREVIEW_CHARS + 4096);
+      text = headBytes.toString('utf8');
     } else if (file.mimeType === 'application/pdf') {
       const mod = await import('pdf-parse');
       const pdfParse = mod.default || mod;
@@ -165,6 +172,22 @@ router.get('/:id/content', async (req, res, next) => {
     return res.status(422).json({ ok: false, error: 'Could not parse this file for preview.' });
   }
 });
+
+/**
+ * Read only the first `maxBytes` bytes from a file, avoiding buffering
+ * the entire file into memory. This is critical for the text preview
+ * path where a user could upload a 250 MB plain-text file.
+ */
+async function readHead(storagePath: string, maxBytes: number): Promise<Buffer> {
+  const handle = await fs.open(storagePath, 'r');
+  try {
+    const buf = Buffer.alloc(maxBytes);
+    const { bytesRead } = await handle.read(buf, 0, maxBytes, 0);
+    return buf.subarray(0, bytesRead);
+  } finally {
+    await handle.close();
+  }
+}
 
 /**
  * Compute the user's current storage footprint so the upload

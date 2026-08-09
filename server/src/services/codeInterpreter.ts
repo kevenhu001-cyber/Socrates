@@ -1026,7 +1026,7 @@ export const codeInterpreter = {
      when the conversation is deleted. Best-effort: filesystem may
      already be gone (TTL sweep, server crash, etc.). Safe to call
      repeatedly. */
-  async _reapSessionScratch(sessionId?: string | null) {
+  async reapSessionScratch(sessionId?: string | null) {
     if (!sessionId) return;
     const dir = path.join(SCRATCH_DIR, sessionId);
     try { await fs.rm(dir, { recursive: true, force: true }); }
