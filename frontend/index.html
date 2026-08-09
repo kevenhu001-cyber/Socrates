@@ -43,7 +43,7 @@
       document.documentElement.classList.add('is-native-app');
       /* Paint the root with the effective surface colour so the first
          frame is not white. The bundled CSS overrides this once it loads. */
-      document.documentElement.style.backgroundColor = '#000000';
+      document.documentElement.style.backgroundColor = initialMode === "light" ? '#e6dec8' : '#101318';
     }
   } catch (_) { /* not in Capacitor — fall through */ }
 })();
@@ -98,7 +98,7 @@
      flips to "auth" or "app", so the transition is smooth. -->
 <div class="boot-loading" id="bootLoading" aria-hidden="true">
   <div class="boot-loading-logo">
-    <img src="/logo.svg" width="20" height="20" alt="" class="logo-img">
+    <img src="/logo.png" width="20" height="20" alt="" class="logo-img">
     <span>Socrates</span>
     <span class="boot-loading-dots" aria-hidden="true"><span></span><span></span><span></span></span>
   </div>
@@ -115,7 +115,7 @@
 <div class="auth-gate" id="authGate" role="dialog" aria-modal="true" aria-label="Sign in">
   <div class="auth-card">
     <div class="auth-brand">
-      <img src="/logo.svg" width="22" height="22" alt="" class="logo-img">
+      <img src="/logo.png" width="22" height="22" alt="" class="logo-img">
       <span>Socrates</span>
     </div>
 
@@ -280,7 +280,7 @@
   <div class="sidebar-inner">
     <div class="sidebar-header" id="sidebarHeader">
       <div class="sidebar-logo">
-        <img src="/logo.svg" width="18" height="18" alt="" class="sidebar-logo-img">
+        <img src="/logo.png" width="18" height="18" alt="" class="sidebar-logo-img">
         <span><em>S</em>ocrates</span>
       </div>
       <div class="sidebar-header-actions">
@@ -525,10 +525,6 @@
          that the pill provided on desktop. Toggle + label sync live in
          src/ui/mobileModeSwitch.js. -->
     <div class="mobile-mode" id="mobileMode">
-      <div class="mobile-mode-segments" role="tablist" aria-label="Session mode">
-        <button type="button" class="mobile-mode-segment active" data-mode="chat" role="tab" aria-selected="true" data-action="selectAppMode" data-action-arg="chat">聊天</button>
-        <button type="button" class="mobile-mode-segment" data-mode="tutor" role="tab" aria-selected="false" data-action="selectAppMode" data-action-arg="tutor">工作</button>
-      </div>
       <button type="button" class="mobile-mode-trigger" id="mobileModeTrigger" aria-haspopup="menu" aria-expanded="false" data-action="toggleMobileModeMenu">
         <span class="mobile-mode-label" id="mobileModeLabel" data-i18n-key="tutor.modeChat">Chat</span>
         <svg class="mobile-mode-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
@@ -546,7 +542,7 @@
     </div>
     <div class="top-bar-left">
       <button class="toggle-sidebar" id="sidebarOpenBtn" data-action="toggleSidebar" title="Toggle sidebar (⌘B)" aria-controls="sidebar" aria-expanded="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><path d="M5 8h14M5 16h14"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
       </button>
       <span class="chat-stats hidden" id="chatStats"></span>
       <span class="exam-title-bar hidden" id="examTitleBar" data-exam-only="true"></span>
@@ -559,15 +555,6 @@
       <button type="button" class="mobile-incognito-btn" id="mobileIncognitoBtn" data-action="toggleIncognito" aria-pressed="false" aria-label="Incognito chat" title="Incognito chat">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 13h20"/><path d="M5 13l1.4-5.1A2 2 0 0 1 8.3 6.4h7.4a2 2 0 0 1 1.9 1.5L19 13"/><circle cx="7" cy="17" r="2.6"/><circle cx="17" cy="17" r="2.6"/><path d="M9.6 16.4h4.8"/></svg>
       </button>
-      <button type="button" class="mobile-empty-chat-action" id="mobileEmptyChatAction" data-action="toggleSidebar" aria-label="Open conversations" title="Open conversations">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17.5V7.8A2.8 2.8 0 0 1 7.8 5h8.4A2.8 2.8 0 0 1 19 7.8v5.4a2.8 2.8 0 0 1-2.8 2.8H11l-4 3v-3H5Z"/><path d="M8 10h8M8 13h5"/></svg>
-      </button>
-      <div class="mobile-session-actions" id="mobileSessionActions">
-        <button type="button" class="mobile-session-action" data-action="resetApp" aria-label="New conversation" title="New conversation">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-        </button>
-        <button type="button" class="mobile-session-action mobile-session-more" data-action="openNav" data-action-arg="more" aria-label="More conversation actions" title="More conversation actions"><span></span><span></span><span></span></button>
-      </div>
       <div class="chat-model-wrap hidden" id="chatModelWrap">
         <button class="chat-model-trigger" id="chatModel" type="button" aria-haspopup="listbox" aria-expanded="false" title="Pick or configure the model for this conversation">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/><circle cx="18" cy="6" r="1.5" opacity="0.6"/><path d="M5 17l2-1-2-1 2-1-2-1" opacity="0.7"/></svg>
@@ -588,7 +575,6 @@
       </button>
     </div>
   </div>
-  <div class="mobile-offline-banner hidden" id="mobileOfflineBanner" role="status">网络不可用，草稿会保留</div>
   <div class="main-content" id="mainContent">
     <div class="main-inner" id="mainInner">
 
@@ -614,9 +600,6 @@
               <button class="attach-btn composer-tools-trigger" id="topicComposerToolsBtn" type="button" data-action="toggleComposerTools" data-action-arg="topic" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               </button>
-              <button class="mic-btn" type="button" data-action="showMobileVoiceHint" aria-label="Voice input" title="Voice input">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3" width="8" height="12" rx="4"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></svg>
-              </button>
               <input type="file" id="topicAttachInput" multiple
                      accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
                      hidden>
@@ -636,7 +619,7 @@
               </div>
             </div>
             <button class="start-btn" id="startBtn" aria-label="Send" data-action="startSession">
-              <span id="startBtnContent"><svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M7 12v1M11 9v7M15 6v12M19 10v8"/></svg></span>
+              <span id="startBtnContent"><svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
             </button>
           </div>
         </div>
@@ -649,6 +632,9 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         <span>Read-only view — this is a shared conversation.</span>
       </div>
+      <!-- chat-view lifted out of .main-inner so the transcript
+           scrollbar pins to the right edge of the main pane.
+           See the sibling .chat-view-lifted below. -->
 
     <!-- Main-content pages for Library, Projects, Scheduled, Plugins -->
     <div class="library-panel main-page hidden" id="libraryPanel">

@@ -233,10 +233,6 @@ window.syncSettingsUI = syncSettingsUI;
 window.renderProviderList = renderProviderList;
 window.setActiveProvider = setActiveProvider;
 
-/* First-party React Native WebView shell. Imported after the navigation and
-   settings bridges above so it can activate the requested surface safely. */
-import './native/embedded.js';
-
 /* ─── ui/share.js ─── */
 import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal, selectShareVis, createShareLink, copyShareLink, revokeShareLink, loadSharedSession, _shareToken } from './ui/share.js';
 window.toggleShareBtn = toggleShareBtn;

@@ -295,9 +295,6 @@ app.use(timeoutMiddleware);
 // server.
 const DEFAULT_CORS_HOSTS = [
   'app.topodrive.top', 'topodrive.top', 'www.topodrive.top', 'status.topodrive.top',
-  // Capacitor's Android WebView uses https://localhost for bundled web assets.
-  // Keep bare local hosts for custom dev ports and the Android emulator bridge.
-  'localhost', '127.0.0.1', '10.0.2.2',
   'localhost:8080', 'localhost:3000', 'localhost:5173', 'localhost:5174', 'localhost:5175',
   '127.0.0.1:8080', '127.0.0.1:3000', '127.0.0.1:5173', '127.0.0.1:5174', '127.0.0.1:5175',
 ];

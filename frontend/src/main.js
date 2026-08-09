@@ -10,7 +10,6 @@ import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
 import { initChatComposerReserve, scrollContainer, scrollToBottomIfPinned } from './ui/scroll.js';
 import { initKeyboardViewport } from './ui/keyboardViewport.js';
 import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
-import './native/mobileUx.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
 import { showNewReplyPill, hideNewReplyPill, wireScrollPill } from './ui/scrollPill.js';
 import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
@@ -8592,7 +8591,6 @@ window.setCurrentUser = setCurrentUser;
    apiFetch / getCsrfToken are bridged via windowExports.js;
    apiFetchRaw / retryApiFetch are only used locally. */
 import { apiFetch, apiFetchRaw, retryApiFetch, makeApiError, installAuthHooks, getCsrfToken } from './util/api.js';
-import { clearMobileTokens, isNativeAuth, readMobileTokens } from './auth/mobileTokenStore.js';
 
 /* Post-auth grace window. Right after a successful register or
  * login the browser hasn't always written the new `sid` cookie to
@@ -8819,15 +8817,7 @@ function clearPerUserClientState(){
 window.clearPerUserClientState=clearPerUserClientState;
 
 async function signOut(){
-  if(isNativeAuth()){
-    try{
-      var mobileTokens=await readMobileTokens();
-      await apiFetch("/api/auth/mobile/logout",{method:"POST",_authEndpoint:true,body:{refreshToken:mobileTokens&&mobileTokens.refreshToken||""}});
-    }catch(_){}
-    try{await clearMobileTokens()}catch(_){}
-  }else{
-    try{await apiFetch("/api/auth/logout",{method:"POST"})}catch(_){}
-  }
+  try{await apiFetch("/api/auth/logout",{method:"POST"})}catch(_){}
   /* Clear browser cookies on the current domain. The server already
    * cleared both the host-only and .topodrive.top variants of `sid`
    * and `csrf`, but belt-and-braces: also expire the host-only copy

@@ -1709,80 +1709,6 @@ paths:
     get:
       tags: [users]
       summary: EXISTING
-  /api/auth/mobile/login:
-    post:
-      tags: [users]
-      summary: Native login; returns a short-lived access token and rotating refresh token
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, password]
-              properties:
-                email: { type: string, format: email }
-                password: { type: string, format: password }
-      responses:
-        '200':
-          description: Mobile token pair
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/MobileTokenPair' }
-  /api/auth/mobile/login-with-code:
-    post:
-      tags: [users]
-      summary: Native email-code login
-  /api/auth/mobile/refresh:
-    post:
-      tags: [users]
-      summary: Rotate a native refresh token
-  /api/auth/mobile/logout:
-    post:
-      tags: [users]
-      summary: Revoke a native refresh token
-  /api/auth/mobile/verify:
-    get:
-      tags: [users]
-      summary: Verify email and issue native tokens
-  /api/auth/mobile/web-session:
-    post:
-      tags: [users]
-      summary: Create a 60-second, one-time browser handoff for a first-party mobile WebView
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [target]
-              properties:
-                target:
-                  $ref: '#/components/schemas/EmbeddedTarget'
-      responses:
-        '200':
-          description: One-time exchange URL
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/MobileWebSession' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-  /api/auth/mobile/web-session/exchange:
-    get:
-      tags: [users]
-      summary: Consume a one-time mobile WebView handoff, set browser session/CSRF cookies, and redirect to the bound embedded target
-      security: []
-      parameters:
-        - in: query
-          name: code
-          required: true
-          schema: { type: string }
-      responses:
-        '302':
-          description: Browser cookies created and redirected to the embedded SPA
-        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/auth/oauth/github/start:
     get:
       tags: [users]
@@ -1884,10 +1810,6 @@ components:
       type: apiKey
       in: header
       name: X-CSRF-Token
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: SocratesAccessToken
 
   parameters:
     MessageId:
@@ -1975,27 +1897,6 @@ components:
         customInstructions: { type: string, nullable: true }
         preferences: { type: object, additionalProperties: true, nullable: true }
         defaultModel: { type: string, nullable: true }
-
-    MobileTokenPair:
-      type: object
-      required: [accessToken, refreshToken, expiresAt, refreshExpiresAt]
-      properties:
-        user: { $ref: '#/components/schemas/User' }
-        accessToken: { type: string }
-        refreshToken: { type: string }
-        expiresAt: { type: string, format: date-time }
-        refreshExpiresAt: { type: string, format: date-time }
-
-    EmbeddedTarget:
-      type: string
-      enum: [projects, scheduled, plugins, knowledge, mistakes, skills, api-settings]
-
-    MobileWebSession:
-      type: object
-      required: [url, expiresAt]
-      properties:
-        url: { type: string, format: uri }
-        expiresAt: { type: string, format: date-time }
 
     Message:
       type: object

@@ -8,17 +8,6 @@ import * as authService from '../services/auth.js';
 import { audit, recordAudit } from '../middleware/audit.js';
 import { shouldUseSharedDomain, SHARED_COOKIE_DOMAIN } from '../lib/cookieEnv.js';
 import { generateSessionToken } from '../lib/crypto.js';
-import { Unauthorized } from '../lib/errors.js';
-import {
-  issueMobileTokens,
-  revokeMobileRefreshToken,
-  rotateMobileRefreshToken,
-  exchangeMobileOAuthToken,
-  issueMobileOAuthExchangeToken,
-  exchangeMobileWebSessionToken,
-  isEmbeddedTarget,
-  issueMobileWebSessionToken,
-} from '../lib/mobileAuth.js';
 
 /* HMAC key for signing OAuth state parameters — derived from
    SESSION_SECRET so it stays consistent across restarts without
@@ -31,7 +20,7 @@ function signOAuthState(payload: unknown) {
   const sig = createHmac('sha256', OAUTH_STATE_KEY).update(encoded).digest('base64url');
   return `${encoded}.${sig}`;
 }
-function verifyOAuthState(state: unknown): { returnTo?: string; nonce?: string; mobile?: boolean } | null {
+function verifyOAuthState(state: unknown): { returnTo?: string; nonce?: string } | null {
   if (typeof state !== 'string') return null;
   const dot = state.lastIndexOf('.');
   if (dot < 0) return null;
@@ -129,98 +118,6 @@ router.post('/login', authLimiter, audit('login', (req) => ({ email: req.body?.e
     setCsrfCookie(res, req);
     return res.json({ user: result.user });
   } catch (err) { next(err); }
-});
-
-/* Mobile login uses the same password verification and lockout policy as the
- * web login, but returns an opaque refresh token plus a short-lived signed
- * access token instead of setting browser cookies. */
-router.post('/mobile/login', authLimiter, audit('mobile-login', (req) => ({ email: req.body?.email })), async (req, res, next) => {
-  try {
-    const { email, password } = req.body || {};
-    const result = await authService.login(email, password);
-    const tokens = await issueMobileTokens(result.user.id);
-    await authService.logout(result.sid);
-    return res.json({ user: result.user, ...tokens });
-  } catch (err) { next(err); }
-});
-
-router.post('/mobile/login-with-code', codeLoginLimiter, audit('mobile-login-code', (req) => ({ email: req.body?.email })), async (req, res, next) => {
-  try {
-    const { email, code } = req.body || {};
-    const result = await authService.loginWithCode(email, code);
-    const tokens = await issueMobileTokens(result.user.id);
-    await authService.logout(result.sid);
-    return res.json({ user: result.user, ...tokens });
-  } catch (err) { next(err); }
-});
-
-router.post('/mobile/refresh', async (req, res, next) => {
-  try {
-    const refreshToken = req.body?.refreshToken;
-    const tokens = await rotateMobileRefreshToken(typeof refreshToken === 'string' ? refreshToken : '');
-    return res.json(tokens);
-  } catch (err) { next(err); }
-});
-
-router.post('/mobile/logout', async (req, res, next) => {
-  try {
-    await revokeMobileRefreshToken(req.body?.refreshToken);
-    return res.json({ ok: true });
-  } catch (err) { next(err); }
-});
-
-/* The browser-based GitHub callback exchanges its short-lived, one-time
- * handoff token here. Keeping the actual access/refresh pair out of the
- * deep-link URL avoids leaking long-lived credentials to browser history or
- * link previews. */
-router.post('/mobile/oauth/exchange', async (req, res, next) => {
-  try {
-    const exchangeToken = req.body?.exchangeToken;
-    if (typeof exchangeToken !== 'string') throw new Unauthorized('Mobile OAuth token required');
-    return res.json(await exchangeMobileOAuthToken(exchangeToken));
-  } catch (err) { next(err); }
-});
-
-router.get('/mobile/verify', async (req, res, next) => {
-  try {
-    const result = await authService.verifyEmail(String(req.query.token || ''));
-    const tokens = await issueMobileTokens(result.user.id);
-    await authService.logout(result.sid);
-    return res.json({ user: result.user, ...tokens });
-  } catch (err) { next(err); }
-});
-
-/* A native bearer session can mint a 60-second, single-use browser handoff.
- * The access/refresh token pair never enters the WebView or its JavaScript. */
-router.post('/mobile/web-session', requireAuth, async (req, res, next) => {
-  try {
-    const target = req.body?.target;
-    if (!isEmbeddedTarget(target)) {
-      return res.status(400).json({ code: 'INVALID_EMBEDDED_TARGET', message: 'Unsupported embedded target' });
-    }
-    const handoff = await issueMobileWebSessionToken(req.userId!, target);
-      // Never derive the WebView handoff host from an untrusted Host header.
-      // Production and staging should set PUBLIC_URL/APP_URL explicitly; the
-      // fallback is the controlled first-party Socrates origin.
-      const publicBase = process.env.PUBLIC_URL || process.env.APP_URL || 'https://app.topodrive.top';
-    const exchangeUrl = new URL('/api/auth/mobile/web-session/exchange', publicBase);
-    exchangeUrl.searchParams.set('code', handoff.token);
-    return res.json({ url: exchangeUrl.toString(), expiresAt: handoff.expiresAt.toISOString() });
-  } catch (err) { return next(err); }
-});
-
-/* Safe top-level navigation endpoint consumed only by the first-party
- * WebView. The target comes from the database-backed token itself, not from a
- * redirect parameter, so this cannot become an open redirect. */
-router.get('/mobile/web-session/exchange', async (req, res, next) => {
-  try {
-    const code = typeof req.query.code === 'string' ? req.query.code : '';
-    const result = await exchangeMobileWebSessionToken(code);
-    clearSidCookie(res, req);
-    res.cookie('sid', result.sid, getSessionCookieOptions(req));
-    setCsrfCookie(res, req);
-    return res.redirect(`/?embedded=1&target=${encodeURIComponent(result.target)}`);
-  } catch (err) { return next(err); }
 });
 
 /* ─── Me (authenticated) ─── */
@@ -372,79 +269,6 @@ function safeReturnTo(input: unknown) {
   }
   return '/';
 }
-
-function mobileOAuthCallbackUrl(req: Request) {
-  if (process.env.GITHUB_MOBILE_CALLBACK_URL) return process.env.GITHUB_MOBILE_CALLBACK_URL;
-  const publicBase = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
-  return new URL('/api/auth/oauth/github/mobile-callback', publicBase).toString();
-}
-
-function safeMobileRedirect(input: unknown) {
-  return input === 'socrates://auth/callback' ? input : 'socrates://auth/callback';
-}
-
-router.get('/oauth/github/mobile/start', (req, res) => {
-  const clientId = process.env.GITHUB_CLIENT_ID;
-  if (!clientId) return res.redirect(`${safeMobileRedirect(req.query.redirect_uri)}?error=github_not_configured`);
-  const callbackUrl = mobileOAuthCallbackUrl(req);
-  const returnTo = safeMobileRedirect(req.query.redirect_uri);
-  const state = signOAuthState({ returnTo, mobile: true });
-  const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(callbackUrl)}&state=${encodeURIComponent(state)}&scope=user:email`;
-  return res.redirect(url);
-});
-
-router.get('/oauth/github/mobile-callback', async (req, res, next) => {
-  const { code, state, error } = req.query;
-  const parsed = verifyOAuthState(state);
-  const returnTo = safeMobileRedirect(parsed?.returnTo);
-  if (error) return res.redirect(`${returnTo}?error=${encodeURIComponent(String(error))}`);
-  if (!code || !parsed?.mobile) return res.redirect(`${returnTo}?error=invalid_oauth_state`);
-
-  try {
-    const clientId = process.env.GITHUB_CLIENT_ID;
-    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-    if (!clientId || !clientSecret) return res.redirect(`${returnTo}?error=github_not_configured`);
-    const callbackUrl = mobileOAuthCallbackUrl(req);
-    const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code: String(code), redirect_uri: callbackUrl }),
-    });
-    const tokenJson = await tokenRes.json() as { access_token?: string };
-    if (!tokenJson.access_token) return res.redirect(`${returnTo}?error=no_access_token`);
-
-    const profileRes = await fetch('https://api.github.com/user', {
-      headers: { Authorization: `Bearer ${tokenJson.access_token}`, 'User-Agent': 'Socrates/1.0' },
-    });
-    const profile = await profileRes.json() as { email?: string | null; name?: string | null; login?: string | null };
-    let email = profile.email;
-    if (!email) {
-      const emailsRes = await fetch('https://api.github.com/user/emails', {
-        headers: { Authorization: `Bearer ${tokenJson.access_token}`, 'User-Agent': 'Socrates/1.0' },
-      });
-      const emails = await emailsRes.json();
-      const primary = Array.isArray(emails) ? emails.find((item) => item.primary && item.verified) : null;
-      email = primary?.email;
-    }
-    if (!email) return res.redirect(`${returnTo}?error=no_email`);
-
-    const { getDb } = await import('../db/index.js');
-    const { users } = await import('../db/schema.js');
-    const { eq } = await import('drizzle-orm');
-    const db = getDb();
-    const normalizedEmail = email.toLowerCase().trim();
-    let [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
-    if (!user) {
-      const randomPassHash = await (await import('../lib/crypto.js')).hashPassword(randomBytes(32).toString('hex'));
-      [user] = await db.insert(users).values({ email: normalizedEmail, passwordHash: randomPassHash, displayName: profile.name || profile.login || null, verifiedAt: new Date() }).returning();
-    }
-
-    const exchangeToken = await issueMobileOAuthExchangeToken(user.id);
-    return res.redirect(`${returnTo}?exchangeToken=${encodeURIComponent(exchangeToken)}`);
-  } catch (err) {
-    return next(err);
-  }
-});
 
 router.get('/oauth/github/start', (_req, res) => {
   const clientId = process.env.GITHUB_CLIENT_ID;

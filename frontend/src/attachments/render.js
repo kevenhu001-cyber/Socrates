@@ -10,7 +10,6 @@
 // All inline handler references (window.renderAttachmentChips /
 // window.setupAttachmentInput) are re-bound in src/windowExports.js.
 import { attachments, addFiles, removeAttachment } from '../attachments.js';
-import { haptic, isNativeRuntime, plugin } from '../native/services.js';
 
 // i18n translator is bound on `window.t` by i18n.js. Resolve it lazily so
 // module evaluation order cannot freeze an English fallback before the
@@ -204,30 +203,7 @@ export function setupAttachmentInput(opts){
   };
   WIRED_INPUTS.push(cfg);
 
-  if(btn) btn.onclick = async function(){
-    /* Capacitor's picker returns real native document/gallery selections.
-       The browser input remains the fallback for web and for Android
-       versions that cannot return inline data. */
-    const nativePicker = isNativeRuntime() && plugin('FilePicker');
-    if(nativePicker?.pickFiles){
-      try{
-        haptic('light');
-        const picked = await nativePicker.pickFiles({ multiple: true, readData: true });
-        const files = (picked?.files || []).map(function(item){
-          if(!item?.data) return null;
-          const encoded = String(item.data).replace(/^data:[^,]+,/, '');
-          const binary = atob(encoded);
-          const bytes = new Uint8Array(binary.length);
-          for(let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-          return new File([bytes], item.name || 'attachment', { type: item.mimeType || 'application/octet-stream', lastModified: item.modifiedAt || Date.now() });
-        }).filter(Boolean);
-        if(files.length){
-          const result = await addComposerFiles(files, 'native-picker');
-          if(result.rejected?.length) surfaceRejectionToast(result);
-          return;
-        }
-      }catch(_){ /* user cancelled or plugin unavailable; use web picker */ }
-    }
+  if(btn) btn.onclick = function(){
     /* Reset value first so re-selecting the same file fires `change`. */
     input.value = "";
     input.click();

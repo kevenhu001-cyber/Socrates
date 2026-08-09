@@ -1,4 +1,4 @@
-:root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px;--native-statusbar-inset:0px;--native-navigationbar-inset:0px;--safe-area-top:max(env(safe-area-inset-top,0px),var(--native-statusbar-inset,0px));--safe-area-bottom:max(env(safe-area-inset-bottom,0px),var(--native-navigationbar-inset,0px))}
+:root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px}
 html[data-mode=dark]{color-scheme:dark}
 html[data-mode=light]{color-scheme:light}
 [data-theme=socrates][data-mode=dark]{--bg-000:0 0% 11%;--bg-100:0 0% 8%;--bg-200:0 0% 13%;--bg-300:0 0% 18%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
@@ -85,33 +85,6 @@ a{color:inherit;text-decoration:none}
   *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}
   ::view-transition-old(root),::view-transition-new(root){animation-duration:0.01ms!important}
 }
-
-/* Native app WebView mode: the React Native shell owns navigation and safe
-   areas, while the existing web panels keep their real production behavior. */
-html[data-embedded="true"],html[data-embedded="true"] body{background:#000!important}
-body[data-embedded="true"]{overflow:auto!important}
-body[data-embedded="true"] .top-bar,
-body[data-embedded="true"] .sidebar-backdrop,
-body[data-embedded="true"] .mobile-offline-banner{display:none!important}
-body[data-embedded="true"] .app{height:100dvh;min-height:100dvh;background:#000!important}
-body[data-embedded="true"] .main{height:100dvh;min-width:0;padding:0!important;background:#000!important}
-body[data-embedded="true"] .main-content{height:100dvh;min-height:100dvh;overflow:auto!important}
-body[data-embedded="true"] .main-page{min-height:100dvh;padding-top:18px}
-body[data-embedded="true"] .workspace-dialog{padding-top:18px;padding-bottom:18px}
-body[data-embedded="true"] .modal-overlay{padding:14px}
-body[data-embedded="true"] .sidebar{display:none!important}
-body[data-embedded="true"][data-embedded-target="knowledge"] .main,
-body[data-embedded="true"][data-embedded-target="mistakes"] .main{display:none!important}
-body[data-embedded="true"][data-embedded-target="knowledge"] .sidebar,
-body[data-embedded="true"][data-embedded-target="mistakes"] .sidebar{display:block!important;position:static!important;transform:none!important;width:100%!important;min-width:0!important;height:100dvh!important;border:0!important;padding:0!important;background:#000!important}
-body[data-embedded="true"][data-embedded-target="knowledge"] .sidebar-header,
-body[data-embedded="true"][data-embedded-target="mistakes"] .sidebar-header,
-body[data-embedded="true"][data-embedded-target="knowledge"] .sidebar-nav,
-body[data-embedded="true"][data-embedded-target="mistakes"] .sidebar-nav,
-body[data-embedded="true"][data-embedded-target="knowledge"] .sidebar-footer,
-body[data-embedded="true"][data-embedded-target="mistakes"] .sidebar-footer{display:none!important}
-body[data-embedded="true"][data-embedded-target="knowledge"] .sidebar-inner,
-body[data-embedded="true"][data-embedded-target="mistakes"] .sidebar-inner{height:100%;padding:14px 12px;overflow:auto}
 /* ─── Scrollbar — cross-browser ── */
 /* WebKit (Chrome, Edge, Safari) */
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
@@ -891,7 +864,6 @@ body.sidebar-resizing .main{transition:none!important}
 .main-bg{position:absolute;inset:0;pointer-events:none;z-index:0;background-color:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;clip-path:circle(150% at 50% 50%);opacity:0.5;will-change:transform;transform:translateZ(0)}
 html[data-show-grid="false"] .main-bg{background-image:none}
 .top-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;flex-shrink:0;position:relative;z-index:5;min-height:44px}
-html[data-capacitor] .top-bar{padding-top:calc(8px + var(--safe-area-top));}
 .top-bar-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1;overflow:hidden}
 .top-bar-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .toggle-sidebar{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .06s,background .06s;flex-shrink:0}
@@ -976,7 +948,6 @@ html[data-capacitor] .top-bar{padding-top:calc(8px + var(--safe-area-top));}
   width:100%;
   flex:1;
   min-height:0;
-  overflow:hidden;
 }
 /* Reserve space at the bottom for the absolutely-positioned
    input bar (~80-100px tall). Without this, the last message
@@ -1483,7 +1454,7 @@ true) but the dropdown never shows — see commit history. */
   overflow-x:hidden;
   overscroll-behavior-y:contain;
   touch-action:pan-y;
-scroll-padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);
+  scroll-padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);
   /* Centre the message column. The horizontal padding fills any
      leftover space on either side, and the vertical scrollbar sits
      at the right edge of the main pane because the scroll
@@ -1983,8 +1954,8 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
      leaves the right amount of room. There is no longer a floating
      overlay to position absolutely, so message length cannot push the
      composer off-screen and the focus-driven height growth on mobile
-   (`.chat-input-wrap.composer-focused` grows the in-flow editor/footer
-     rows) cannot race ahead of the last visible message. Keyboard
+     (`.chat-input-wrap.composer-focused` jumps min-height
+     54→116) cannot race ahead of the last visible message. Keyboard
      avoidance is handled by `padding-bottom` on `.chat-view` instead. */
   position:relative;
   left:auto;
@@ -1996,7 +1967,7 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
   z-index:10;
   background:transparent;
   padding-top:12px;
-  padding-bottom:var(--safe-area-bottom);
+  padding-bottom:env(safe-area-inset-bottom, 0px);
 }
 .chat-input-wrap{--composer-motion-duration:.34s;--composer-motion-ease:cubic-bezier(.22,1,.36,1);background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.55);border-radius:24px;overflow:hidden;
   /* Focus-driven geometry (min-height/padding/border-radius/gap jump in the
@@ -2528,7 +2499,6 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .share-opt-title{font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-100));margin-bottom:2px}
 .share-opt-desc{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.4}
 .share-link-area{display:flex;gap:8px;margin-top:12px;align-items:center}
-.share-link-actions{display:flex;gap:6px;flex:0 0 auto}
 .share-link-input{flex:1;padding:8px 10px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-200));color:hsl(var(--text-100));font-size:calc(12px * var(--app-font-scale, 1));font-family:var(--font-mono);outline:none}
 .share-link-input:focus{border-color:hsl(var(--accent-000)/0.5)}
 .share-copy-btn{padding:8px 14px;border-radius:8px;font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));cursor:pointer;transition:background-color .1s;white-space:nowrap}
@@ -4563,15 +4533,22 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   .chat-input-wrap .footer-left-group .attach-btn{order:1}
    .chat-input-wrap .chat-composer-body{
      order:2;flex:1 1 160px;width:auto;min-width:0;align-self:stretch;
-     display:contents;contain:layout;
-     transition:none;
+     display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(42px,auto) 0px;
+     /* Keep layout containment for the focus reflow, but do not use paint
+        containment here: the collapsed footer is translated over the editor
+        row, and paint containment clips the top of the neutral send circle. */
+     contain:layout;
+     transition:flex-basis var(--composer-motion-duration) var(--composer-motion-ease),width var(--composer-motion-duration) var(--composer-motion-ease),grid-template-rows var(--composer-motion-duration) var(--composer-motion-ease);
    }
    .chat-input-wrap .composer-editor-root{
-     order:2;flex:1 1 160px;width:auto;min-width:0;align-self:stretch;
+     order:initial;grid-column:1;grid-row:1;flex:none;width:100%;min-width:0;
    }
    .chat-input-wrap .chat-input-footer{
-     display:contents;align-items:center;width:100%;min-height:44px;padding:0 2px 6px;
-     transform:none;pointer-events:auto;transition:none;will-change:auto;
+     display:flex;grid-column:1;grid-row:2;align-items:center;width:100%;min-height:44px;padding:0 2px 6px;
+     /* The collapsed footer is overlaid on the editor row. Its 6px bottom
+        padding lifts the 40px control by 4px, so compensate here; the
+        focused state below restores translateY(0) for the full footer row. */
+     transform:translateY(-40px);pointer-events:none;transition:transform var(--composer-motion-duration) var(--composer-motion-ease);will-change:transform;
    }
    .chat-input-wrap .chat-input-footer > *{pointer-events:auto}
    .chat-input-wrap .chat-input-footer .footer-left-group{display:flex;align-items:center;gap:2px;margin-right:auto;order:0}
@@ -4595,17 +4572,18 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
     transition:min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease);
   }
    .chat-input-wrap.composer-focused{
-     min-height:112px;padding:8px;border-radius:26px;gap:4px 3px;
-     align-content:flex-start;align-items:flex-start;
+     min-height:116px;padding:8px;border-radius:26px;gap:4px 3px;
+     align-content:flex-start;
    }
    .chat-input-wrap.composer-focused .chat-composer-body{
      order:1;flex:0 0 100%;width:100%;min-width:100%;max-width:100%;
+     grid-template-rows:62px 44px;
    }
    .chat-input-wrap.composer-focused .composer-editor-root{
-     order:1;flex:0 0 100%;width:100%;min-width:0;max-width:none;
+     width:100%;min-width:0;max-width:none;
    }
    .chat-input-wrap.composer-focused .chat-input-footer{
-     display:flex;order:2;flex:0 0 100%;width:100%;min-height:44px;padding:0 2px 4px;transform:none;pointer-events:auto;
+     transform:translateY(0);pointer-events:auto;
    }
    .chat-input-wrap.composer-focused .footer-left-group .effort-picker{
      display:block;margin-left:auto;margin-right:8px;align-self:center;order:0;
@@ -6027,110 +6005,4 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   .canvas-block-chip{
     align-self:flex-start;
   }
-}
-
-/* Reference mobile surface -------------------------------------------------
- * The phone UI intentionally has its own composition: true-black canvas,
- * circular top actions, a centered mode capsule, and a floating composer.
- * The desktop information architecture remains unchanged. */
-.mobile-mode-segments{display:none}
-.mobile-empty-chat-action,.mobile-session-actions{display:none}
-.mic-btn{display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;color:hsl(var(--text-300));cursor:pointer;padding:0}
-.mic-btn svg{width:22px;height:22px}
-.mobile-offline-banner{position:fixed;left:16px;right:16px;top:calc(var(--safe-area-top) + 98px);z-index:80;padding:9px 14px;border:1px solid #343434;border-radius:16px;background:#1d1d1d;color:#d7d7d7;font-size:12px;text-align:center;box-shadow:0 8px 28px rgb(0 0 0 / .35)}
-
-@media (max-width:640px){
-  :root{color-scheme:dark;--keyboard-inset:0px}
-  html,body{background:#000!important;color:#f7f7f7;overscroll-behavior:none}
-  body{overflow:hidden}
-  .app,.main,.main-content,.main-inner,.topic-setup,.chat-view{background:#000!important}
-  .app{height:100dvh;min-height:100dvh}
-  .main-bg{display:none!important}
-  .main{min-width:0;padding:0!important}
-  .top-bar{height:calc(112px + var(--safe-area-top));min-height:calc(112px + var(--safe-area-top));padding:var(--safe-area-top) 32px 16px;border:0;background:#000;align-items:flex-end}
-  .top-bar-left,.top-bar-right{position:relative;z-index:7;flex:0 0 auto;overflow:visible}
-  .top-bar-left{width:52px}
-  .top-bar-right{width:52px}
-  body[data-conversation-active="true"] .top-bar-right{width:104px}
-  .toggle-sidebar,.mobile-empty-chat-action{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border:1px solid #393939;border-radius:50%;background:#222;color:#f4f4f4;box-shadow:inset 0 1px 0 rgb(255 255 255 / .05);-webkit-tap-highlight-color:transparent}
-  .toggle-sidebar svg,.mobile-empty-chat-action svg{width:27px;height:27px}
-  .toggle-sidebar:active,.mobile-empty-chat-action:active{transform:scale(.94);background:#2d2d2d}
-  .mobile-mode{display:block;top:calc(var(--safe-area-top) + 60px);z-index:8}
-  .mobile-mode-segments{display:flex;gap:3px;padding:4px;border:1px solid #3d3d3d;border-radius:999px;background:#464646;box-shadow:inset 0 1px 0 rgb(255 255 255 / .04)}
-  .mobile-mode-segment{width:94px;height:48px;border:0;border-radius:999px;background:transparent;color:#f4f4f4;font:600 19px/1 var(--font-sans);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .22s ease,transform .14s ease}
-  .mobile-mode-segment.active{background:#292929;box-shadow:0 2px 8px rgb(0 0 0 / .18)}
-  .mobile-mode-segment:active{transform:scale(.96)}
-  .mobile-mode-trigger,.mobile-mode-menu{display:none!important}
-  .mobile-incognito-btn{display:none!important}
-  .mobile-empty-chat-action{display:flex}
-  .mobile-session-actions{display:none;align-items:center;width:104px;height:52px;padding:0 3px;border:1px solid #393939;border-radius:999px;background:#222;box-shadow:inset 0 1px 0 rgb(255 255 255 / .05)}
-  .mobile-session-action{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border:0;border-radius:50%;background:transparent;color:#f4f4f4;cursor:pointer}
-  .mobile-session-action svg{width:27px;height:27px}
-  .mobile-session-more{gap:4px}
-  .mobile-session-more span{width:5px;height:5px;border-radius:50%;background:#f4f4f4}
-  body[data-conversation-active="true"] .mobile-mode{display:none!important}
-  body[data-conversation-active="true"] .mobile-empty-chat-action{display:none}
-  body[data-conversation-active="true"] .mobile-session-actions{display:flex}
-  body.exam-active .mobile-session-actions,body.workspace-active .mobile-session-actions{display:none!important}
-  .chat-model-wrap,.find-btn,.share-btn{display:none!important}
-  .main-content{height:calc(100dvh - 112px - var(--safe-area-top));min-height:0;overflow:hidden}
-  .main-inner{max-width:none;width:100%;height:100%;padding:0 12px 0;align-items:stretch}
-  .topic-setup{justify-content:flex-end;gap:0;padding:0 0 calc(var(--safe-area-bottom) + 18px);overflow:hidden}
-  .topic-title,.topic-sub,.topic-quick-actions,.topic-setup-row,.topic-disclaimer,#topicDisclaimer{display:none!important}
-  .topic-input-wrap{position:relative;width:100%;max-width:none;min-height:64px;margin:0;border:1px solid #3a3a3a;border-radius:34px;overflow:visible;background:#232323;box-shadow:0 1px 0 rgb(255 255 255 / .04),0 10px 30px rgb(0 0 0 / .28)}
-  .topic-input-wrap .composer-editor-root,.chat-input-wrap .composer-editor-root{min-width:0}
-  .topic-input-wrap .rich-composer{display:block;min-height:62px;width:100%}
-  .chat-input-wrap .rich-composer{display:flex;align-items:center;min-height:42px;width:100%;min-width:0}
-  .topic-input-wrap .rich-composer-toolbar,.chat-input-wrap .rich-composer-toolbar{display:none}
-  .topic-input-wrap .rich-composer .tiptap{min-height:62px;max-height:180px;padding:17px 72px 15px 48px;overflow-y:auto;color:#f4f4f4;font-size:18px;line-height:1.5}
-  .chat-input-wrap .rich-composer .tiptap{min-height:42px;max-height:180px;padding:9px 8px;overflow-y:auto;color:#f4f4f4;font-size:16px;line-height:1.5}
-  .rich-composer .tiptap p.is-editor-empty:first-child::before{color:#a3a3a3}
-  .topic-footer{display:flex;position:static;padding:0}
-  .topic-footer .footer-left-group{display:flex;align-items:center;position:static}
-  /* The chat composer is one flex row. `display:contents` removes the
-     intermediate body/footer wrappers without creating another scroll or
-     overlay layer; multiline text grows the editor and carries the controls
-     along with it. */
-  .chat-input-wrap .chat-composer-body,.chat-input-wrap .chat-input-footer{display:contents;transform:none;pointer-events:auto;transition:none;will-change:auto}
-  .chat-input-wrap .composer-editor-root{order:2;display:flex;flex:1 1 auto;align-items:center;width:auto;min-width:0}
-  .chat-input-wrap .chat-input-footer .footer-left-group{display:flex;align-items:center;gap:2px;order:1;margin-right:0}
-  .chat-input-wrap .chat-input-footer .send-btn{order:4;position:static;flex:0 0 auto;margin-left:0}
-  .topic-input-wrap .attachment-chips,.chat-input-wrap .attachment-chips{position:absolute;left:18px;right:18px;bottom:68px;z-index:2}
-  .topic-input-wrap .attach-btn{position:absolute;left:10px;top:11px;width:40px;height:40px;border:0;border-radius:50%;color:#f3f3f3;background:transparent;z-index:3}
-  .chat-input-wrap .attach-btn{position:static;width:40px;height:40px;border:0;border-radius:50%;color:#f3f3f3;background:transparent;z-index:3}
-  .topic-input-wrap .attach-btn svg,.chat-input-wrap .attach-btn svg{width:30px;height:30px}
-  .topic-input-wrap .mic-btn,.chat-input-wrap .mic-btn{position:absolute;right:63px;top:14px;width:32px;height:36px;color:#f4f4f4;z-index:3}
-  .topic-input-wrap .mic-btn svg,.chat-input-wrap .mic-btn svg{width:26px;height:26px}
-  .topic-input-wrap .effort-picker,.chat-input-wrap .effort-picker,.chat-input-hint{display:none!important}
-  .topic-input-wrap .start-btn{position:absolute;right:4px;top:4px;display:flex;align-items:center;justify-content:center;width:56px;height:56px;margin:0;padding:0;border:0;border-radius:50%;background:#3d83f5;color:#fff;box-shadow:0 4px 14px rgb(0 0 0 / .2);z-index:3}
-  .chat-input-wrap .send-btn{display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin:0;padding:0;border:0;border-radius:50%;background:#3d83f5;color:#fff;box-shadow:0 4px 14px rgb(0 0 0 / .2);z-index:3}
-  .topic-input-wrap .start-btn svg,.chat-input-wrap .send-btn svg{width:27px;height:27px}
-  .topic-input-wrap .start-btn:active,.chat-input-wrap .send-btn:active{transform:scale(.9)}
-  .chat-view{gap:0;padding-bottom:var(--keyboard-inset,0px);min-height:0}
-  .chat-view>.msg-list{padding:18px 10px 0;gap:18px;overscroll-behavior-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch;scroll-padding-bottom:calc(var(--safe-area-bottom) + 12px)}
-  .msg{gap:10px}
-  .msg-body{font-size:19px!important;line-height:1.78;color:#f5f5f5;padding:0;max-width:100%}
-  .msg-body p{margin-bottom:18px}
-  .msg.user .msg-body{max-width:88%;padding:14px 20px;border:0;border-radius:28px;background:#353535;color:#f5f5f5;font-size:19px!important;line-height:1.5}
-  .msg.assistant .msg-body{padding:0 2px}
-  .msg-toolbar,.assistant-avatar,.msg-meta{opacity:.7}
-  .chat-input-bar{position:relative;z-index:10;padding:10px 0 calc(var(--safe-area-bottom) + 14px);background:linear-gradient(to bottom,transparent,#000 16px)}
-  .chat-input-wrap{position:relative;display:flex;align-items:center;gap:2px;width:100%;min-height:64px;margin:0;padding:6px;border:1px solid #3a3a3a;border-radius:34px;background:#232323;box-shadow:0 1px 0 rgb(255 255 255 / .04),0 10px 30px rgb(0 0 0 / .28);overflow:visible;contain:layout}
-  .chat-input-wrap.composer-focused{min-height:112px;align-items:flex-start;align-content:flex-start;flex-wrap:wrap;padding:8px;border-radius:26px}
-  .chat-input-wrap.composer-focused .composer-editor-root{order:1;flex:0 0 100%;width:100%}
-  .chat-input-wrap.composer-focused .chat-input-footer{display:flex;order:2;align-items:center;flex:0 0 100%;width:100%;min-height:44px;padding:0 2px 4px;transform:none;pointer-events:auto}
-  .chat-input-wrap.composer-focused .chat-input-footer .footer-left-group{display:flex;align-items:center;gap:2px;margin-right:auto}
-  .chat-input-wrap.composer-focused .chat-input-footer .send-btn{margin-left:0}
-  .chat-input-wrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{min-height:62px;padding:12px 8px 8px}
-  .new-reply-pill{right:10px;bottom:calc(94px + var(--safe-area-bottom) + var(--keyboard-inset,0px));background:#252525;color:#eee}
-  .sidebar{top:0;bottom:0;width:min(86vw,340px);min-width:min(86vw,340px);background:#141414;border-right:1px solid #2f2f2f;padding-top:var(--safe-area-top)}
-  .sidebar-backdrop{background:rgb(0 0 0 / .64);backdrop-filter:blur(4px)}
-  .boot-loading,.auth-gate{background:#000!important}
-  .auth-card{border-color:#303030;background:#171717;border-radius:28px}
-  .mobile-offline-banner{display:block}
-  .mobile-offline-banner.hidden{display:none}
-}
-
-@media (prefers-reduced-motion: reduce){
-  .mobile-mode-segment,.toggle-sidebar,.mobile-empty-chat-action,.mobile-session-action,.start-btn,.send-btn{transition:none!important}
 }

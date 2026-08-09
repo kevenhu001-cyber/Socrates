@@ -102,14 +102,6 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      --app-vh, plus the width it was measured at (rotation detector). */
   let appliedStableVh = -1;
   let stableVhWidth = -1;
-  /* Native keyboard events are authoritative for the transition, but the
-   * visual viewport is still the source of truth once Android has finished
-   * resizing/panning the WebView. `closed` deliberately wins over a stale
-   * activeElement/visualViewport pair so the composer never remains lifted. */
-  let nativeKeyboardState = 'unknown';
-  let nativeKeyboardHeight = 0;
-  let nativeViewportSettled = false;
-  let nativeSettleTimer = 0;
 
   const applyInset = (inset) => {
     const roundedInset = Math.round(inset);
@@ -170,8 +162,6 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        the activeElement check is authoritative — visualViewport can
        be stale but focus cannot. */
     const focused = isInputFocused();
-    const nativeOpen = nativeKeyboardState === 'open';
-    const keyboardActive = nativeOpen || (focused && nativeKeyboardState !== 'closed');
     /* P_topic-kb-stable — freeze the shell's height reference while a
        tracked input is focused. Resize-mode keyboards (Capacitor
        Keyboard.resize:"native", Firefox Android, older Chrome) shrink
@@ -183,7 +173,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        covered pixels (the documented "stuck 100vh" case) so the chat
        composer still lifts via --keyboard-inset. A width change
        (rotation / desktop resize) refreshes the value even mid-focus. */
-    if (!keyboardActive || window.innerWidth !== stableVhWidth) {
+    if (!focused || window.innerWidth !== stableVhWidth) {
       const stableH = Math.round(window.innerHeight || 0);
       if (stableH > 0 && (stableH !== appliedStableVh || window.innerWidth !== stableVhWidth)) {
         root.style.setProperty('--app-vh', `${stableH}px`);
@@ -191,24 +181,11 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         stableVhWidth = window.innerWidth;
       }
     }
-    if (nativeKeyboardState === 'closed') {
-      applyInset(0);
-      return;
-    }
-
-    const measuredInset = keyboardActive
-      ? measureKeyboardInset(appShellBottom(), viewport, window.innerHeight)
-      : 0;
-    /* A keyboardWillShow event can arrive before visualViewport has caught up.
-     * Keep the native height for that short window, then switch to the shell
-     * vs. visual viewport measurement. This avoids both a visible jump and a
-     * second inset when `Keyboard.resize: native` has already shrunk the shell. */
-    const nativeFallback = nativeOpen
-      && !nativeViewportSettled
-      && nativeKeyboardHeight > 0
-      ? nativeKeyboardHeight
-      : 0;
-    applyInset(Math.max(measuredInset, nativeFallback));
+    applyInset(
+      focused
+        ? measureKeyboardInset(appShellBottom(), viewport, window.innerHeight)
+        : 0,
+    );
   };
 
   const schedule = () => {
@@ -231,60 +208,12 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     blurRecheckTimer = setTimeout(() => { blurRecheckTimer = 0; schedule(); }, 150);
   };
 
-  const onViewportChange = () => {
-    if (nativeKeyboardState === 'open') nativeViewportSettled = true;
-    schedule();
-  };
-  const onWindowResize = () => {
-    if (nativeKeyboardState === 'open') nativeViewportSettled = true;
-    schedule();
-  };
-
-  const onNativeKeyboard = (event) => {
-    const detail = event?.detail || {};
-    const state = detail.state === 'open' ? 'open' : 'closed';
-
-    if (nativeSettleTimer) {
-      clearTimeout(nativeSettleTimer);
-      nativeSettleTimer = 0;
-    }
-
-    nativeKeyboardState = state;
-    nativeKeyboardHeight = Number.isFinite(detail.height) && detail.height > 0
-      ? Math.round(detail.height)
-      : 0;
-
-    if (state === 'closed') {
-      nativeKeyboardHeight = 0;
-      nativeViewportSettled = false;
-      /* Clear synchronously. A delayed visualViewport close event must not
-       * leave a focused editor and its footer floating in the middle. */
-      applyInset(0);
-      schedule();
-      return;
-    }
-
-    nativeViewportSettled = !viewport;
-    if (nativeKeyboardHeight > 0) applyInset(nativeKeyboardHeight);
-    schedule();
-    /* Some Android WebViews only expose the final visual viewport on the
-     * layout-resize path. Do not wait forever if that notification is lost. */
-    if (viewport) {
-      nativeSettleTimer = setTimeout(() => {
-        nativeSettleTimer = 0;
-        nativeViewportSettled = true;
-        schedule();
-      }, 180);
-    }
-  };
-
   if (viewport) {
     // iOS Safari can pan the visual viewport without a paired resize event.
-    viewport.addEventListener('resize', onViewportChange);
-    viewport.addEventListener('scroll', onViewportChange);
+    viewport.addEventListener('resize', schedule);
+    viewport.addEventListener('scroll', schedule);
   }
-  window.addEventListener('resize', onWindowResize);
-  window.addEventListener('socrates:native-keyboard', onNativeKeyboard);
+  window.addEventListener('resize', schedule);
   /* focusout on document catches focus moving to ANY element (not just
      input.blur). This is the path that fires when the user dismisses
      the keyboard by tapping a message or the page background, where
@@ -304,14 +233,12 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (updateFrame) window.cancelAnimationFrame(updateFrame);
     if (pinFrame) window.cancelAnimationFrame(pinFrame);
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
-    if (nativeSettleTimer) clearTimeout(nativeSettleTimer);
     try { root.style.removeProperty('--app-vh'); } catch (_) { /* detached root */ }
     if (viewport) {
-      viewport.removeEventListener('resize', onViewportChange);
-      viewport.removeEventListener('scroll', onViewportChange);
+      viewport.removeEventListener('resize', schedule);
+      viewport.removeEventListener('scroll', schedule);
     }
-    window.removeEventListener('resize', onWindowResize);
-    window.removeEventListener('socrates:native-keyboard', onNativeKeyboard);
+    window.removeEventListener('resize', schedule);
     document.removeEventListener('focusin', schedule);
     document.removeEventListener('focusout', onBlur);
     document.removeEventListener('visibilitychange', schedule);
