@@ -3,6 +3,20 @@ import { Unauthorized } from '../lib/errors.js';
 import { getDb } from '../db/index.js';
 import { users, authSessions } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { verifyMobileAccessToken } from '../lib/mobileAuth.js';
+
+function bearerToken(req: Request) {
+  const value = req.headers.authorization;
+  if (typeof value !== 'string' || !value.startsWith('Bearer ')) return null;
+  const token = value.slice('Bearer '.length).trim();
+  return token || null;
+}
+
+async function loadUser(userId: string) {
+  const db = getDb();
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return user || null;
+}
 
 /**
  * Middleware that validates the `sid` session cookie.
@@ -13,6 +27,19 @@ import { eq } from 'drizzle-orm';
  * Route handlers can use `req.userId` to scope database queries.
  */
 export async function requireAuth(req: Request, _res: Response, next: NextFunction) {
+  const mobileToken = bearerToken(req);
+  if (mobileToken) {
+    try {
+      const user = await verifyMobileAccessToken(mobileToken);
+      if (!user) return next(new Unauthorized('Mobile access token expired'));
+      req.userId = user.id;
+      req.user = user;
+      return next();
+    } catch (err) {
+      return next(err);
+    }
+  }
+
   const sid = req.cookies?.sid;
   if (!sid) {
     return next(new Unauthorized('Not signed in'));
@@ -32,11 +59,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     }
 
     // Fetch the user (could cache, but for MVP direct lookup is fine)
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, session.userId))
-      .limit(1);
+    const user = await loadUser(session.userId);
 
     if (!user) {
       return next(new Unauthorized('User not found'));
@@ -57,6 +80,20 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
  * different behaviour for logged-in vs anonymous users.
  */
 export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  const mobileToken = bearerToken(req);
+  if (mobileToken) {
+    try {
+      const user = await verifyMobileAccessToken(mobileToken);
+      req.userId = user?.id || null;
+      req.user = user || null;
+      return next();
+    } catch {
+      req.userId = null;
+      req.user = null;
+      return next();
+    }
+  }
+
   const sid = req.cookies?.sid;
   if (!sid) {
     req.userId = null;
@@ -74,11 +111,7 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
       .limit(1);
 
     if (session && session.expiresAt >= new Date()) {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, session.userId))
-        .limit(1);
+      const user = await loadUser(session.userId);
       if (user) {
         req.userId = user.id;
         req.user = user;

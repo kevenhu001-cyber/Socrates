@@ -1598,7 +1598,13 @@ function applyI18n(){
   var tp=document.getElementById("topicComposerRoot");
   if(tp)tp.setAttribute("aria-label",t("topic.inputPlaceholder"));
   var sb=document.getElementById("startBtn");
-  if(sb)sb.textContent=t("topic.start");
+  if(sb){
+    /* Keep the React-owned waveform icon intact. The previous textContent
+       assignment replaced #startBtnContent during every language sync,
+       which made the mobile voice affordance turn into a plain "Begin"
+       label after cold start. */
+    sb.setAttribute("aria-label",t("topic.start"));
+  }
   var el=document.getElementById("extensionsLabel");
   if(el)el.textContent=t("topic.extensions");
   /* Exam content is generated dynamically, so static data-i18n scanning

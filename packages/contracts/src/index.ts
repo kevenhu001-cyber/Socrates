@@ -1,0 +1,193 @@
+export type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
+export type JsonObject = { [key: string]: JsonValue };
+
+export interface User {
+  id: string;
+  email: string;
+  displayName: string | null;
+  tier?: string | null;
+  plan?: string | null;
+  isGuest?: boolean;
+  verifiedAt?: string | null;
+  createdAt?: string | null;
+  customInstructions?: string | null;
+  preferences?: Record<string, JsonValue>;
+  defaultModel?: string | null;
+}
+
+export interface Attachment {
+  id: string;
+  kind: string;
+  docKind?: string;
+  name: string;
+  mime: string;
+  dataUrl?: string;
+  text?: string;
+  truncated?: boolean;
+  size: number;
+  fileId?: string;
+}
+
+export interface ToolCall {
+  id: string;
+  name: string;
+  input?: JsonValue;
+  output?: string | null;
+  isError?: boolean;
+  artifacts?: Array<{ id: string; mimeType?: string | null; name?: string | null }>;
+  results?: Array<Record<string, JsonValue>>;
+  textOffset?: number;
+  visualization?: JsonValue;
+}
+
+export interface Message {
+  id?: string;
+  clientId?: string | null;
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  rawText?: string | null;
+  content?: string | null;
+  html?: string | null;
+  type?: string | null;
+  reasoningContent?: string | null;
+  attachments?: Attachment[];
+  toolCalls?: ToolCall[];
+  createdAt?: string | null;
+}
+
+export interface TutorState {
+  teachingStage?: 'motivate' | 'define' | 'develop' | 'illustrate' | 'exercise' | 'check' | null;
+  currentExampleIdx?: number | null;
+  practiceAttempts?: number | null;
+  practicePhase?: string | null;
+  teachingPlan?: JsonValue;
+  boundariesHistory?: JsonValue[];
+  mistakeFilter?: string | null;
+}
+
+export interface ExamData {
+  [key: string]: JsonValue | undefined;
+  topic?: string;
+  difficulty?: string;
+  count?: number;
+  lang?: string;
+  types?: string[];
+  questions?: JsonValue[];
+  answers?: JsonObject;
+  submitted?: boolean;
+  results?: JsonValue;
+}
+
+export interface Session extends TutorState {
+  id: string;
+  title?: string | null;
+  topic: string;
+  domain?: string | null;
+  mode: 'chat' | 'tutor';
+  phase?: 'topic' | 'diagnostic' | 'chat' | string;
+  kind?: 'chat' | 'tutor' | 'exam' | string;
+  examData?: ExamData | null;
+  projectId?: string | null;
+  pinned?: boolean;
+  archivedAt?: string | null;
+  preview?: string | null;
+  totalQ?: number;
+  currentNode?: number;
+  branchedFrom?: JsonValue;
+  tags?: string[];
+  updatedAt?: string;
+  createdAt?: string;
+  messages?: Message[];
+  kbNodes?: JsonValue[];
+  mistakes?: JsonValue[];
+  streamingText?: string | null;
+  streamingReasoning?: string | null;
+}
+
+export interface ChatRequest {
+  messages: Array<{ role: string; content: string | JsonValue }>;
+  temperature?: number;
+  max_tokens?: number;
+  mode?: 'chat' | 'tutor';
+  reasoning_effort?: 'low' | 'medium' | 'high';
+  extra_body?: JsonObject;
+}
+
+export interface ChatSseHandlers {
+  onDelta?: (text: string) => void;
+  onReasoning?: (text: string) => void;
+  onToolUse?: (payload: JsonValue) => void;
+  onToolResult?: (payload: JsonValue) => void;
+  onToolProgress?: (payload: JsonValue) => void;
+  onToolCallDelta?: (payload: JsonValue) => void;
+  onExecutionStart?: (payload: JsonValue) => void;
+  onError?: (message: string) => void;
+  onDone?: () => void;
+}
+
+export interface MobileTokenPair {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: string;
+  refreshExpiresAt: string;
+}
+
+/** First-party web surfaces that may be opened inside the mobile app. */
+export type EmbeddedTarget =
+  | 'projects'
+  | 'scheduled'
+  | 'plugins'
+  | 'knowledge'
+  | 'mistakes'
+  | 'skills'
+  | 'api-settings';
+
+export interface MobileWebSessionRequest {
+  target: EmbeddedTarget;
+}
+
+export interface MobileWebSessionResponse {
+  url: string;
+  expiresAt: string;
+}
+
+export type MobileWebViewMessage =
+  | { type: 'ready' }
+  | { type: 'navigate'; target: EmbeddedTarget }
+  | { type: 'openExternal'; url: string }
+  | { type: 'download'; url: string; filename?: string }
+  | { type: 'authExpired' }
+  | { type: 'close' };
+
+export interface ApiErrorBody {
+  error?: string;
+  code?: string;
+  message?: string;
+  detail?: string;
+  retryAfterSeconds?: number;
+}
+
+export interface OutboxItem {
+  id: string;
+  sessionId: string;
+  clientId: string;
+  operation: 'create-session' | 'upsert-session' | 'upload-file';
+  payload: JsonValue;
+  retryCount: number;
+  createdAt: string;
+}
+
+export type ArtifactMessage =
+  | { type: 'ready'; artifactId: string }
+  | { type: 'resize'; height: number }
+  | { type: 'openLink'; url: string }
+  | { type: 'copy'; text: string }
+  | { type: 'share'; title: string; content: string }
+  | { type: 'error'; message: string };
+
+export type ChatSseEventName =
+  | 'tool_use'
+  | 'tool_result'
+  | 'tool_progress'
+  | 'tool_call_delta'
+  | 'execution_start'
+  | 'error';

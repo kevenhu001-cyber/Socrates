@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Socrates",
+    "slug": "socrates-mobile",
+    "version": "2.0.0",
+    "icon": "../assets/buildResources/icon_mobile_1024.png",
+    "orientation": "portrait",
+    "scheme": "socrates",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#000000",
+    "android": {
+      "package": "com.topodrive.socrates",
+      "versionCode": 2,
+      "adaptiveIcon": {
+        "foregroundImage": "../assets/buildResources/icon_mobile_1024.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "plugins": [
+      "./plugins/withReleaseSigning",
+      "expo-secure-store",
+      "expo-sqlite",
+      "expo-document-picker",
+      "expo-image-picker",
+      "expo-notifications",
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#000000",
+          "image": "../assets/buildResources/icon_1024.png",
+          "imageWidth": 168,
+          "resizeMode": "contain"
+        }
+      ]
+    ],
+    "extra": {
+      "apiBaseUrl": "https://app.topodrive.top/api"
+    }
+  }
+}

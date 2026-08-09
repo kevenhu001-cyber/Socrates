@@ -22,6 +22,13 @@ android/signing.properties
 .idea/
 *.hprof
 
+# ─── React Native / Expo ───
+mobile/node_modules/
+mobile/.expo/
+mobile/android/
+mobile/ios/
+mobile/.eas/
+
 # ── OS files ──
 .DS_Store
 Thumbs.db
@@ -78,6 +85,10 @@ frontend/index.html.bak
 
 # ── UI mockup screenshots (not needed in version control) ──
 *.png
+!assets/buildResources/icon_mobile_1024.png
+!capacitor/android/app/src/main/res/drawable-nodpi/
+!capacitor/android/app/src/main/res/drawable-nodpi/socrates_logo.png
+!capacitor/android/app/src/main/res/drawable-nodpi/socrates_splash_logo.png
 
 # ── Large planning docs (not needed in version control) ──
 UI-UX-UPGRADE-ACTION-PLAN.md

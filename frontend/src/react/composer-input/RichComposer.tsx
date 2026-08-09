@@ -142,6 +142,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
       attributes: {
         class: 'rich-composer-editor',
         'aria-label': placeholder,
+        'aria-multiline': 'true',
       },
       transformPastedHTML: (html) => DOMPurify.sanitize(html, {
         USE_PROFILES: { html: true },

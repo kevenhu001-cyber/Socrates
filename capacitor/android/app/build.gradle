@@ -15,13 +15,6 @@ android {
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
-        /* Backend origin is configured in ../capacitor.config.js under
-           server.url (env: SOCRATES_SERVER_URL). The WebView loads the
-           frontend from that URL so all API calls are same-origin — no
-           BASE_URL needed at the Gradle layer. Retarget via
-           `npm run apk:debug:local` / `apk:debug:staging`, or set
-           SOCRATES_SERVER_URL and run `npx cap sync android` to
-           propagate the change into the native project. */
     }
     buildTypes {
         release {

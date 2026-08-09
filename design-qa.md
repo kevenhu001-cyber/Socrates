@@ -76,3 +76,21 @@ No actionable P0, P1, or P2 differences remain for the requested mobile composer
 - [x] Typecheck, unit tests, production build, keyboard tests, chat-send tests, and visual tests pass.
 
 final result: passed
+
+## Expo Android 2.0 authentication parity
+
+- Reference: `C:\Users\Jiacheng\AppData\Local\Temp\socrates-web-audit-01-auth.png`
+- Native implementation: `C:\Users\Jiacheng\AppData\Local\Temp\socrates-mobile-auth-x86_64-final.png`
+- Combined comparison: `C:\Users\Jiacheng\AppData\Local\Temp\socrates-auth-comparison-final.png`
+- Device: `Medium_Phone` Android x86_64 emulator, 1080 × 2400 physical pixels, normalized to 432 × 960.
+- State: clean install, signed-out authentication screen, dark theme.
+
+The native screen matches the web mobile reference for the black canvas, centered rounded card, Socrates brand mark, tab treatment, gold primary action, GitHub/code links, input hierarchy, and explanatory footnote. The native layout keeps all touch targets at or above 44dp and uses the existing logo asset. The implementation has slightly taller native text inputs/buttons than the CSS reference because Android TextInput typography reserves platform line-height; this is a P3 density difference with no clipping or interaction impact.
+
+## Expo Android launch and icon QA
+
+- APK: `mobile/android/app/build/outputs/apk/release/app-release.apk`
+- ABI verifier: `mobile/scripts/verify-apk.mjs`
+- Result: `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64` each contain `libreactnative.so`.
+- Clean install and cold launch passed on `Medium_Phone` x86_64; `adb logcat` contained no fatal exception or React Native error.
+- Launcher screenshot: `C:\Users\Jiacheng\AppData\Local\Temp\socrates-mobile-home2.png`; the Socrates logo is visible in the launcher grid.

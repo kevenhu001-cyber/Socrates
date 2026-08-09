@@ -12,6 +12,7 @@
    sequence. */
 
 import { apiFetch } from '../util/api.js';
+import { isNativeAuth, writeMobileTokens } from './mobileTokenStore.js';
 
 /* ── Gate display helpers ── */
 
@@ -206,7 +207,9 @@ export async function submitAuthSignin(){
   var btn=document.getElementById("authSigninBtn");btn.disabled=true;btn.textContent="Signing in…";
   var markAuthSuccess=window.markAuthSuccess;
   try{
-    var r=await apiFetch("/api/auth/login",{method:"POST",_authEndpoint:true,body:{email,password}});
+    var native=isNativeAuth();
+    var r=await apiFetch(native?"/api/auth/mobile/login":"/api/auth/login",{method:"POST",_authEndpoint:true,body:{email,password}});
+    if(native)await writeMobileTokens(r);
     if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){}
     markAuthSuccess&&markAuthSuccess();
     try{
@@ -290,7 +293,9 @@ export async function submitAuthVerify(token){
   document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
   var markAuthSuccess=window.markAuthSuccess;
   try{
-    var r=await apiFetch("/api/auth/verify?token="+encodeURIComponent(token));
+    var native=isNativeAuth();
+    var r=await apiFetch((native?"/api/auth/mobile/verify?token=":"/api/auth/verify?token=")+encodeURIComponent(token),{_authEndpoint:true});
+    if(native)await writeMobileTokens(r);
     /* Verification creates the user account (from pending registration)
        and starts a session. Adopt the canonical user object from the
        response or /me to enter the app. */
@@ -386,7 +391,9 @@ export async function submitAuthLoginWithCode(){
   var btn=document.getElementById("authCodeLoginBtn");btn.disabled=true;btn.textContent="Logging in…";
   var markAuthSuccess=window.markAuthSuccess;
   try{
-    var r=await apiFetch("/api/auth/login-with-code",{method:"POST",_authEndpoint:true,body:{email,code}});
+    var native=isNativeAuth();
+    var r=await apiFetch(native?"/api/auth/mobile/login-with-code":"/api/auth/login-with-code",{method:"POST",_authEndpoint:true,body:{email,code}});
+    if(native)await writeMobileTokens(r);
     markAuthSuccess&&markAuthSuccess();
     try{
       var me=await apiFetch("/api/auth/me",{_authEndpoint:true});

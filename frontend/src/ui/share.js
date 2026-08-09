@@ -15,6 +15,7 @@
 
 import { esc } from '../render/helpers.js';
 import { apiFetch } from '../util/api.js';
+import { writeClipboard } from '../native/services.js';
 
 var _shareVisibility = "public";
 var _shareToken = null;
@@ -156,7 +157,8 @@ function showShareLink() {
 
 function copyShareLink() {
   if (!_shareUrl) return;
-  navigator.clipboard.writeText(_shareUrl).then(function () {
+  writeClipboard(_shareUrl).then(function (copied) {
+    if (!copied) throw new Error("clipboard unavailable");
     _setShareStatus("Link copied to clipboard.");
   }).catch(function () {
     var input = document.getElementById("shareLinkInput");
