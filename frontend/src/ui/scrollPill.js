@@ -91,6 +91,15 @@ export function wireScrollPill(){
        guard, scrolling inside a <pre> code block or a viz iframe
        could set _userScrolledAway=true and break auto-scroll. */
     if(ev.target !== sc) return;
+    /* P_auto-scroll-respect — velocityScrollTo() tags the list with
+       `data-auto-scrolling="true"` while it programmatically
+       scrolls. Any scroll event fired during that window is from
+       our own interpolation, not the user; flipping
+       _userScrolledAway here would break the keyboard/scroll
+       lockstep guarantee (the keyboard lift would stop being
+       followed by the scroll because wasPinned would already be
+       false by the time the inset animation reached its target). */
+    if(sc.dataset.autoScrolling === 'true') return;
     const previousTop = sc===lastScroller ? lastScrollTop : null;
     lastScroller = sc;
     lastScrollTop = sc.scrollTop;

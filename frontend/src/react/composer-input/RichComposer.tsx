@@ -15,6 +15,7 @@ import {
   type ComposerSurface,
 } from './controller';
 import { ExtensionToken } from './extensionToken';
+import { useAutoHeight } from './useAutoHeight';
 import type { ComposerExtensionToken } from './types';
 import { addComposerFiles } from '../../attachments/render.js';
 
@@ -274,6 +275,40 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
       composerWrapRef.current = null;
     };
   }, []);
+
+  /* P_composer-auto-height — animate the desktop composer's height as
+     the user types past one line, matching the mobile focus-in
+     expansion. Without this, the Tiptap contenteditable snaps to
+     each new content height on every input event (a one-line
+     "thunk" per newline). The hook observes the contenteditable's
+     intrinsic `scrollHeight` and animates its `style.height` via
+     the project's velocity planner. Once the content hits
+     max-height (132px on desktop, 150px on mobile, 180px on the
+     mobile focused state) the editor scrolls internally and the
+     height change ceases — the hook's scrollHeight read clamps
+     naturally because the element's `scrollHeight` exceeds its
+     rendered height and we only animate towards the rendered
+     natural size.
+
+     On mobile, the focus-in state already drives a shape change
+     (min-height 54→116, grid-template-rows 0fr→1fr), and running
+     this hook in parallel would race the CSS transition. We
+     restrict the hook to desktop (min-width:769px matches the
+     existing media query for the PC composer rules) so the two
+     animation systems don't compete. */
+  const editorElement = editor ? (editor.view.dom as HTMLElement) : null;
+  const isDesktop = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(min-width:769px)').matches
+    : true;
+  useAutoHeight(isDesktop ? editorElement : null, {
+    motion: {
+      /* Slightly slower than the chat scroll/inset velocity so a
+         multi-line expansion feels deliberate rather than snappy.
+         Still well under the user-perceived "drag" threshold. */
+      velocity: 1100,
+      maxDuration: 360,
+    },
+  });
 
   if (!editor) return null;
   return (

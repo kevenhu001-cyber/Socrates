@@ -1,17 +1,23 @@
+import { planMotionForUser, easeOutQuint } from './motion.js';
+
 // src/ui/scroll.js — Phase 1.4 extraction (main.js A.4)
 // scrollContainer() returns whichever element is currently the
 // scrollable surface (#msgList when chat/tutor active, else
 // #mainContent for start screen / settings). Centralises the
 // "where do I scroll" question for ~12 callers across main.js.
 //
+// velocityScrollTo() is the lower-level primitive: it scrolls an
+// arbitrary target in `distance` px using the velocity-based duration
+// planner in ui/motion.js. Both the keyboard-inset lift and the
+// content-follow scroll share this planner so they finish in
+// lockstep; that is what keeps the "AI content moves up with the
+// input" geometry constant. smoothScrollToBottom() is layered on
+// top of velocityScrollTo() so the data-auto-scrolling flag and the
+// cancellation semantics are written once.
+//
 // smoothScrollToBottom() centralises the "glide to the new bottom"
-// motion for send, keyboard open, and in-message content growth. It
-// uses the browser-native Element.scrollTo({behavior:'smooth'}) so
-// the platform owns the easing curve, duration, and interruption
-// behaviour. prefers-reduced-motion degrades to 'auto'. The list is
-// tagged with data-auto-scrolling while the smooth scroll runs so the
-// global scroll listener in scrollPill.js does not flip
-// _userScrolledAway against the programmatic motion.
+// motion for send, keyboard open, and in-message content growth.
+// prefers-reduced-motion degrades to an instant snap.
 //
 // scrollToBottomIfPinned() snaps back to bottom (or preserves the
 // relative scroll position) after a font-size / width change so
@@ -22,10 +28,8 @@
 // participates in the chat flex layout; this controller only preserves
 // bottom-follow intent for in-message content growth (streaming text,
 // image decode, tool card expansion). Keyboard-driven layout shifts
-// are handled by keyboardViewport.js via a single smoothScrollToBottom
-// call — the previous 450 ms ResizeObserver-driven RAF loop was the
-// source of the keyboard/send stutter (it raced the CSS padding-bottom
-// transition and reset scrollTop every frame).
+// are handled by keyboardViewport.js via a paired keyboard-inset +
+// velocityScrollTo call that share one motion plan.
 
 /* The page's scrollable area is .msg-list (when chat/tutor is
    active) or #mainContent (for the start screen, settings, etc.).
@@ -59,54 +63,125 @@ function prefersReducedMotion(){
   }
 }
 
-/* Glide the scrollable chat container to its current bottom using the
-   browser-native smooth-scroll pipeline. Falls back to an instant
-   `scrollTop` write when the platform rejects the options object
-   (older WebViews), so the caller always lands at the bottom.
-   `opts.smooth` defaults to true; setting it to false forces an
-   instant snap (used by the streaming growth path where every chunk
-   would otherwise queue its own animation).
+/* Cache the last animation started by velocityScrollTo on a given
+   list so a follow-up call (e.g. keyboard inset changes from 250 to
+   280 px mid-animation) cancels the previous one and starts a fresh
+   run from the current position. Cancelling is essential — without
+   it, two parallel scroll animations race and the visible scrollTop
+   jitters between their interpolated values. */
+const activeScrollAnims = typeof WeakMap === 'function' ? new WeakMap() : null;
+
+/* `easeOutQuint` lives in ui/motion.js alongside the velocity planner
+   so the per-frame interpolation matches the curve the WAAPI
+   consumers see in planMotion(). KeyboardViewport's inset
+   interpolation also uses it (see applyInset in keyboardViewport.js)
+   — three call sites, one implementation, kept consistent by the
+   shared import. */
+
+/* Glide the chat container from its current `scrollTop` to
+   `targetTop` using the velocity-based duration planner from
+   ui/motion.js. Honours prefers-reduced-motion (snaps) and
+   `opts.smooth:false` (snaps). Returns a Promise that resolves when
+   the animation settles, or immediately when snapping.
+
+   The planner guarantees a constant perceived velocity regardless of
+   the distance — the keyboard-inset lift and the scroll-follow use
+   the same planner, so when they are dispatched together (from
+   keyboardViewport.applyInset) they share the same duration and
+   finish in lockstep. That is the geometry contract that keeps the
+   AI content and the input box at a constant relative distance.
+
+   Implementation: manual requestAnimationFrame interpolation of
+   `list.scrollTop`. WAAPI cannot animate scrollTop directly (it is
+   a JS property, not a CSS property), and the platform's
+   `scrollTo({behavior:'smooth'})` ignores the duration we want —
+   we use it only to seed a fast first paint, then drive the rest of
+   the motion ourselves so duration, easing, and cancellation are
+   all under our control. Cancellation matters: rapid keyboard show
+   / hide cycles must not leave a stray rAF writing to scrollTop
+   after the user has manually scrolled.
 
    Side effect: sets `data-auto-scrolling="true"` on the container
    while the motion runs and clears it on completion so the global
    scroll listener (scrollPill.js) does not treat the programmatic
    motion as user scroll-away intent. */
-export function smoothScrollToBottom(list, opts){
-  if(!list)return;
-  var o=opts||{};
-  var target=list.scrollHeight;
-  if(typeof target!=='number'||!isFinite(target))return;
-  var behavior=o.smooth===false||prefersReducedMotion()?'auto':'smooth';
-  var previous=list.dataset.autoScrolling;
-  list.dataset.autoScrolling='true';
-  var settle=function(){
-    try {
-      if(list.dataset.autoScrolling==='true'&&previous===undefined){
-        delete list.dataset.autoScrolling;
-      } else if(previous===undefined){
-        delete list.dataset.autoScrolling;
-      }
-    } catch(_){/* detached node */}
-  };
-  try {
-    var ret=list.scrollTo({top:target,left:0,behavior:behavior});
-    if(ret&&typeof ret.then==='function'){
-      /* Wrap settle() so the returned promise chains after the platform
-         motion completes. Callers (and tests) can await settle so the
-         data-auto-scrolling flag is reliably cleared by the time they
-         observe the DOM. */
-      var chained=ret.then(function(){settle();},function(){settle();});
-      return chained;
-    }
-  } catch(_){
-    /* options-object scrollTo unsupported: fall through to the direct
-       assignment below so the caller still reaches the bottom. */
+export function velocityScrollTo(list, targetTop, opts){
+  if(!list)return Promise.resolve();
+  const o = opts || {};
+  const startTop = list.scrollTop;
+  const distance = targetTop - startTop;
+  if (!isFinite(distance) || distance === 0) {
+    return Promise.resolve();
   }
-  try { list.scrollTop=list.scrollHeight; } catch(_){/* readonly */}
-  /* The smooth path has no completion signal here; clear the flag on
-     a best-effort timer that matches the CSS motion duration (~340 ms)
-     plus a small safety margin. */
-  setTimeout(settle,500);
+  const absDistance = Math.abs(distance);
+  const reduced = prefersReducedMotion();
+  const snap = reduced || o.smooth === false || absDistance <= 24 || typeof requestAnimationFrame !== 'function';
+  const previous = list.dataset.autoScrolling;
+  list.dataset.autoScrolling = 'true';
+  const settle = function(){
+    try {
+      if (previous === undefined) delete list.dataset.autoScrolling;
+      else list.dataset.autoScrolling = previous;
+    } catch(_){ /* detached node */ }
+  };
+  const cancelActive = function(){
+    if (activeScrollAnims && activeScrollAnims.has(list)) {
+      try { activeScrollAnims.get(list).cancel(); } catch(_){}
+      activeScrollAnims.delete(list);
+    }
+  };
+  if (snap) {
+    cancelActive();
+    list.scrollTop = targetTop;
+    settle();
+    return Promise.resolve();
+  }
+  const plan = planMotionForUser(absDistance, o.motion);
+  const duration = plan.duration;
+  cancelActive();
+  return new Promise(function(resolve){
+    let startedAt = 0;
+    let handle = 0;
+    let cancelled = false;
+    const tick = function(now){
+      if (cancelled) return;
+      if (!startedAt) startedAt = now;
+      const elapsed = now - startedAt;
+      if (elapsed >= duration) {
+        list.scrollTop = targetTop;
+        cancelActive();
+        settle();
+        resolve();
+        return;
+      }
+      const t = elapsed / duration;
+      list.scrollTop = startTop + distance * easeOutQuint(t);
+      handle = requestAnimationFrame(tick);
+    };
+    handle = requestAnimationFrame(tick);
+    if (activeScrollAnims) activeScrollAnims.set(list, {
+      cancel: function(){
+        cancelled = true;
+        if (handle && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(handle);
+      },
+    });
+  });
+}
+
+/* Glide the scrollable chat container to its current bottom using the
+   velocity-based planner. Thin convenience wrapper around
+   velocityScrollTo() — the heavy lifting lives there so send-time,
+   keyboard-time, and stream-time scroll-to-bottom share one code
+   path and one timeline.
+
+   `opts.smooth` defaults to true; setting it to false forces an
+   instant snap (used by streaming chunks where a smooth scroll per
+   chunk would queue an unending animation chain). */
+export function smoothScrollToBottom(list, opts){
+  if(!list)return Promise.resolve();
+  const target = list.scrollHeight;
+  if(typeof target !== 'number' || !isFinite(target)) return Promise.resolve();
+  return velocityScrollTo(list, target, opts);
 }
 
 /* Keep a reader who was pinned to the bottom of the transcript

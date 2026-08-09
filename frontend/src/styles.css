@@ -1424,17 +1424,45 @@ true) but the dropdown never shows — see commit history. */
   position:relative;
   --composer-motion-duration:.34s;
   --composer-motion-ease:cubic-bezier(.22,1,.36,1);
-  /* P_keyboard-slide — smooth the padding-bottom so the composer
-     glides up when the keyboard opens instead of snapping. Same
-     duration/ease as the composer expand transition so all motion
-     stays in sync. */
-  transition:padding-bottom var(--composer-motion-duration) var(--composer-motion-ease);
-  /* The transcript is the preceding flex item, so the composer naturally
-     stays at the bottom of the main pane without overlapping the reader. */
+  /* P_keyboard-slide-velocity — --keyboard-inset is now driven from
+     JS by keyboardViewport.js via a velocity-based animation that
+     shares its duration with the content scroll, so the input and
+     the AI content move up in lockstep. The CSS transition is
+     dropped because two independent timelines (CSS transition +
+     scrollTo smooth scroll) drifted and produced the visible
+     "layout jump" when the keyboard opened. */
   margin-top:0;
   /* keyboard avoidance: shift the composer up by the virtual
      keyboard inset on mobile. */
   padding-bottom:var(--keyboard-inset, 0px);
+}
+
+/* P_composer-anim-no-fr — when the engine does not interpolate fr
+   grid track sizes (the focus-in animation would otherwise snap),
+   swap the chat-composer-body layout to a fixed min-height that
+   animates between two known values via the same transition curve.
+   The collapsed body holds just the editor row (42 px); the focused
+   body holds editor + footer (106 px). The footer still slides in
+   via its own transform:translateY transition, so the visible
+   motion matches what fr-interpolating engines produce — wrap
+   grows, footer slides in, no snap. */
+.composer-anim-no-fr .chat-input-wrap .chat-composer-body{
+  display:block;
+  grid-template-rows:auto;
+  min-height:42px;
+  transition:min-height var(--composer-motion-duration) var(--composer-motion-ease);
+}
+.composer-anim-no-fr .chat-input-wrap.composer-focused .chat-composer-body{
+  min-height:106px;
+}
+.composer-anim-no-fr .chat-input-wrap .chat-input-footer{
+  /* Same translate trick as the default layout, but pinned to the
+     body's bottom so the row-2 grid split is not required. */
+  transform:translateY(-44px);
+  transition:transform var(--composer-motion-duration) var(--composer-motion-ease);
+}
+.composer-anim-no-fr .chat-input-wrap.composer-focused .chat-input-footer{
+  transform:translateY(0);
 }
 
 /* Chat transcript — full-width vertical scroll container anchored to
@@ -4563,7 +4591,14 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   .chat-input-wrap .footer-left-group .attach-btn{order:1}
    .chat-input-wrap .chat-composer-body{
      order:2;flex:1 1 160px;width:auto;min-width:0;align-self:stretch;
-     display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(42px,auto) 0px;
+     /* Collapsed: row 1 keeps its 42px min so the editor stays usable;
+        row 2 collapses to 0fr so the footer slides off-screen.
+        `fr` track sizes INTERPOLATE between two `fr` values in modern
+        browsers (Chrome 102+, Firefox 117+, Safari 17+), so swapping
+        row 2 from `0fr` to `1fr` on focus glides instead of jumping.
+        `0px` does NOT interpolate — that was the source of the
+        visible "snap" the user reported when focus landed. */
+     display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(42px,1fr) 0fr;
      /* Keep layout containment for the focus reflow, but do not use paint
         containment here: the collapsed footer is translated over the editor
         row, and paint containment clips the top of the neutral send circle. */
@@ -4613,7 +4648,10 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
    }
    .chat-input-wrap.composer-focused .chat-composer-body{
      order:1;flex:0 0 100%;width:100%;min-width:100%;max-width:100%;
-     grid-template-rows:62px 44px;
+     /* Focused: both rows expand into `1fr`. The transition from
+        `minmax(42px,1fr) 0fr` to `minmax(42px,1fr) 1fr` interpolates
+        the row track sizes smoothly. */
+     grid-template-rows:minmax(42px,1fr) minmax(44px,1fr);
    }
    .chat-input-wrap.composer-focused .composer-editor-root{
      width:100%;min-width:0;max-width:none;

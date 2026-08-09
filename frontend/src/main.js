@@ -691,6 +691,33 @@ if(sbBackdrop)sbBackdrop.addEventListener("click",function(e){e.stopPropagation(
    machine mutating scrollTop) used to sit here behind `if(false)`; it was
    removed — the CSS-inset approach below superseded it. */
 
+/* P_composer-fr-anim — the mobile composer's focus-in expansion relies
+   on `grid-template-rows: 0fr → 1fr` interpolating smoothly. Modern
+   engines (Chrome 102+, Firefox 117+, Safari 17+) interpolate fr
+   track sizes; older engines snap, producing the visible "shape
+   jump" the user reported. CSS.supports() is the canonical
+   feature-detect (browsers without fr interpolation report
+   `false` for the value query). We tag <body> so the CSS can
+   branch into a min-height + JS-driven animation path on engines
+   that do not interpolate fr units. The detection runs once on
+   load; CSS does the rest. */
+function detectComposerAnimSupport(){
+  try {
+    if (typeof CSS === 'undefined' || !CSS.supports) return false;
+    /* Some older engines accept the property name but ignore the
+       track interpolation. Probe a second time with an explicitly
+       `0fr`-shaped value as the parsed test. */
+    return CSS.supports('grid-template-rows', '0fr');
+  } catch (_) { return false; }
+}
+function applyComposerAnimClass(){
+  if (typeof document === 'undefined') return;
+  var ok = detectComposerAnimSupport();
+  document.documentElement.classList.toggle('composer-anim-fr', ok);
+  document.documentElement.classList.toggle('composer-anim-no-fr', !ok);
+}
+applyComposerAnimClass();
+
 /* Use a CSS inset instead of imperative scroll compensation. This keeps the
    composer stable when browsers report VisualViewport measurements differently.
    Track both composers so the data-keyboard-open attribute and
