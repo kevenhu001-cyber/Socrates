@@ -42,6 +42,14 @@ let sendButtonRoot: Root | null = null;
 let topicComposerRoot: Root | null = null;
 let chatComposerRoot: Root | null = null;
 
+function isReferenceMobile(): boolean {
+  return typeof window !== 'undefined' && Boolean(window.matchMedia?.('(max-width: 640px)').matches);
+}
+
+function composerPlaceholder(key: string, fallback: string): string {
+  return isReferenceMobile() ? '问问 Socrates' : i18n(key, fallback);
+}
+
 function NewReplyPillContent(): string {
   // Establish the first React subscription without changing the legacy
   // element's markup, text, visibility logic, or delegated click behavior.
@@ -74,12 +82,11 @@ function SendButtonContent() {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2.5"
+      strokeWidth="2.6"
       strokeLinecap="round"
-      strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M12 19V5M5 12l7-7 7 7" />
+      <path d="M7 12v1M11 9v7M15 6v12M19 10v8" />
     </svg>
   );
 }
@@ -117,8 +124,8 @@ export function bootstrapReactCompatibilityRuntime(): Root {
     const startRoot = createRoot(startBtnContent);
     startRoot.render(
       <StrictMode>
-        <svg className="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M12 19V5M5 12l7-7 7 7" />
+        <svg className="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+          <path d="M7 12v1M11 9v7M15 6v12M19 10v8" />
         </svg>
       </StrictMode>,
     );
@@ -181,7 +188,7 @@ export function bootstrapReactCompatibilityRuntime(): Root {
       <ErrorBoundary>
         <RichComposer
           surface="topic"
-          placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
+          placeholder={composerPlaceholder('topic.inputPlaceholder', 'What would you like to explore?')}
           onSubmit={() => legacyComposer.startSession()}
         />
       </ErrorBoundary>,
@@ -196,7 +203,7 @@ export function bootstrapReactCompatibilityRuntime(): Root {
       <ErrorBoundary>
         <RichComposer
           surface="chat"
-          placeholder={i18n('chat.inputPlaceholder', 'Send a message')}
+          placeholder={isReferenceMobile() ? '回复 Socrates' : i18n('chat.inputPlaceholder', 'Send a message')}
           onSubmit={() => legacyComposer.submitChatMessage()}
           onEscape={() => legacyComposer.stopChatResponse()}
         />

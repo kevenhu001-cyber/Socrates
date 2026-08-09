@@ -1,0 +1,49 @@
+// Prefer mainland China Maven mirrors for local Android builds.
+// The official repositories remain as fallbacks for artifacts not mirrored.
+gradle.beforeSettings { settings ->
+  settings.pluginManagement.repositories.clear()
+  settings.pluginManagement.repositories.maven { url = uri('https://maven.aliyun.com/repository/gradle-plugin') }
+  settings.pluginManagement.repositories.maven { url = uri('https://maven.aliyun.com/repository/public') }
+  settings.pluginManagement.repositories.maven { url = uri('https://maven.aliyun.com/repository/google') }
+  settings.pluginManagement.repositories.gradlePluginPortal()
+}
+
+gradle.beforeProject { project ->
+  // Keep repositories injected by Expo autolinking (notably each module's local-maven-repo).
+  project.buildscript.repositories.maven { url = uri('https://maven.aliyun.com/repository/google') }
+  project.buildscript.repositories.maven { url = uri('https://maven.aliyun.com/repository/public') }
+  project.buildscript.repositories.maven { url = uri('https://mirrors.cloud.tencent.com/repository/maven/google') }
+  project.buildscript.repositories.maven { url = uri('https://mirrors.cloud.tencent.com/repository/maven/public') }
+  project.buildscript.repositories.google()
+  project.buildscript.repositories.mavenCentral()
+
+  // Keep repositories injected by Expo autolinking (notably each module's local-maven-repo).
+  project.repositories.maven { url = uri('https://maven.aliyun.com/repository/google') }
+  project.repositories.maven { url = uri('https://maven.aliyun.com/repository/public') }
+  project.repositories.maven { url = uri('https://mirrors.cloud.tencent.com/repository/maven/google') }
+  project.repositories.maven { url = uri('https://mirrors.cloud.tencent.com/repository/maven/public') }
+  project.repositories.google()
+  project.repositories.mavenCentral()
+}
+
+gradle.afterProject { project, state ->
+  def blockedHosts = [
+    'https://repo.maven.apache.org',
+    'https://dl.google.com',
+    'https://maven.expo.dev',
+    'https://www.jitpack.io',
+    'https://jitpack.io'
+  ]
+  def rewriteRepositories = { repositories ->
+    repositories.findAll { repository ->
+      repository.hasProperty('url') && blockedHosts.any { host -> repository.url.toString().startsWith(host) }
+    }.each { repository -> repositories.remove(repository) }
+    repositories.maven { url = uri('https://maven.aliyun.com/repository/google') }
+    repositories.maven { url = uri('https://maven.aliyun.com/repository/public') }
+    repositories.maven { url = uri('https://mirrors.cloud.tencent.com/repository/maven/google') }
+    repositories.maven { url = uri('https://mirrors.cloud.tencent.com/repository/maven/public') }
+  }
+
+  rewriteRepositories(project.repositories)
+  rewriteRepositories(project.buildscript.repositories)
+}
