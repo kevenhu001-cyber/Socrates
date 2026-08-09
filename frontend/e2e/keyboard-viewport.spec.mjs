@@ -215,6 +215,50 @@ test('desktop answer bottom remains above the composer', async ({ page }) => {
   expect(geometry.clearance).toBeGreaterThanOrEqual(8);
 });
 
+test('conversation transcript remains independently scrollable', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window.state.phase = 'chat';
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    for (let index = 0; index < 32; index += 1) {
+      window.addMessage(
+        index % 2 ? 'assistant' : 'user',
+        `Scrollable history ${index + 1}: ${'conversation content '.repeat(8)}`,
+      );
+    }
+  });
+  await expect(page.locator('#msgList .msg')).toHaveCount(32);
+
+  const transcript = page.locator('#msgList');
+  const geometry = await transcript.evaluate((list) => {
+    list.scrollTop = list.scrollHeight;
+    return {
+      parentId: list.parentElement?.id,
+      overflowY: getComputedStyle(list).overflowY,
+      clientHeight: list.clientHeight,
+      scrollHeight: list.scrollHeight,
+      bottomScrollTop: list.scrollTop,
+    };
+  });
+
+  expect(geometry.parentId).toBe('mainContent');
+  expect(geometry.overflowY).toBe('auto');
+  expect(geometry.clientHeight).toBeGreaterThan(0);
+  expect(geometry.scrollHeight).toBeGreaterThan(geometry.clientHeight);
+  expect(geometry.bottomScrollTop).toBeGreaterThan(0);
+
+  await transcript.hover();
+  await page.mouse.wheel(0, -500);
+  await expect.poll(() => transcript.evaluate((list) => list.scrollTop))
+    .toBeLessThan(geometry.bottomScrollTop);
+});
+
 test('a growing composer keeps the latest message visible and the transcript pinned', async ({ page }) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 1280, height: 800 });

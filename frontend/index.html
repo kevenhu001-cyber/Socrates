@@ -428,9 +428,9 @@
               <span class="value" id="displayThemeModeLabel">Dark</span>
             </div>
             <div class="display-prefs-segs display-theme-segs" id="displayThemeSegs" role="radiogroup" data-i18n-aria="display.theme" aria-label="Theme">
-              <button class="display-prefs-seg" type="button" data-theme-option="system" role="radio" data-i18n-key="display.themeSystem">System</button>
-              <button class="display-prefs-seg" type="button" data-theme-option="light" role="radio" data-i18n-key="display.themeLight">Light</button>
-              <button class="display-prefs-seg" type="button" data-theme-option="dark" role="radio" data-i18n-key="display.themeDark">Dark</button>
+              <button class="display-prefs-seg" type="button" data-theme-option="system" role="radio" aria-checked="false" data-i18n-key="display.themeSystem">System</button>
+              <button class="display-prefs-seg" type="button" data-theme-option="light" role="radio" aria-checked="false" data-i18n-key="display.themeLight">Light</button>
+              <button class="display-prefs-seg" type="button" data-theme-option="dark" role="radio" aria-checked="true" data-i18n-key="display.themeDark">Dark</button>
             </div>
           </div>
           <div class="display-prefs-row">
@@ -763,7 +763,6 @@
         </div>
         <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
       </div>
-    </div>
     <!-- #msgList is a direct child of #mainContent so the chat-view
          can own one vertical flex column (transcript + composer). The
          scroll viewport ends at the composer's real top edge instead

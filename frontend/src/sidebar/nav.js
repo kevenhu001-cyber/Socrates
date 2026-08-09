@@ -555,7 +555,7 @@ function ensureDialog() {
   document.body.appendChild(dialog);
   return dialog;
 }
-function showDialog(markup) { var dialog = ensureDialog(); dialog.innerHTML = '<div class="workspace-dialog-card">' + markup + "</div>"; dialog.classList.remove("hidden"); var focus = dialog.querySelector("input, textarea, select"); if (focus) setTimeout(function () { focus.focus(); }, 0); }
+function showDialog(markup, cardClass) { var dialog = ensureDialog(); var extraClass = cardClass === "library-file-preview-card" ? " " + cardClass : ""; dialog.innerHTML = '<div class="workspace-dialog-card' + extraClass + '">' + markup + "</div>"; dialog.classList.remove("hidden"); var focus = dialog.querySelector("input, textarea, select"); if (focus) setTimeout(function () { focus.focus(); }, 0); }
 function field(label, name, value, type, extra) { return '<label class="workspace-field"><span>' + label + '</span><' + (type || "input") + ' name="' + name + '" ' + (type === "textarea" ? "" : 'type="text"') + ' ' + (extra || "") + ">" + (type === "textarea" ? esc(value || "") + "</textarea>" : "") + "</label>"; }
 function closeWorkspaceDialog() { var dialog = byId("workspaceDialog"); if (dialog) { dialog.classList.add("hidden"); dialog.innerHTML = ""; } }
 
@@ -566,7 +566,7 @@ function openProjectForm(project) {
   showDialog('<div class="workspace-dialog-title"><div><h2>' + (editing ? t("dialog.project.editTitle", "Edit project") : t("dialog.project.newTitle", "New project")) + '</h2><p>' + t("dialog.project.subtitle", "Give this work a home and a clear instruction.") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><form id="projectForm" class="workspace-form"><label class="workspace-field"><span>' + t("dialog.field.name", "Name") + '</span><input name="name" maxlength="80" required value="' + esc(project && project.name) + '" placeholder="' + t("dialog.project.namePh", "Research, writing, a course…") + '"></label><label class="workspace-field"><span>' + t("dialog.field.description", "Description") + ' <em>' + t("dialog.optional", "Optional") + '</em></span><input name="description" maxlength="180" value="' + esc(project && project.description) + '" placeholder="' + t("dialog.project.descPh", "What are you working toward?") + '"></label><label class="workspace-field"><span>' + t("dialog.field.instructions", "Instructions") + ' <em>' + t("dialog.optional", "Optional") + '</em></span><textarea name="systemPrompt" rows="3" placeholder="' + t("dialog.project.instrPh", "How should Socrates approach work in this project?") + '">' + esc(project && project.systemPrompt) + '</textarea></label><label class="workspace-field"><span>' + t("dialog.field.color", "Color") + '</span><input name="color" type="color" value="' + esc((project && project.color) || "#c69a2d") + '"></label><div class="workspace-dialog-actions">' + (editing ? '<button type="button" class="workspace-danger" onclick="deleteProject(\'' + esc(project.id) + '\')">' + t("common.delete", "Delete") + '</button>' : "") + '<span></span><button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">' + t("common.cancel", "Cancel") + '</button><button class="workspace-primary" type="submit">' + (editing ? t("dialog.project.save", "Save changes") : t("projects.create", "Create project")) + "</button></div></form>");
   byId("projectForm").addEventListener("submit", async function (event) { event.preventDefault(); var data = Object.fromEntries(new FormData(event.currentTarget)); try { if (editing) await api("/api/projects/" + project.id, { method: "PATCH", body: data }); else await api("/api/projects", { method: "POST", body: data }); closeWorkspaceDialog(); renderProjects(); toast(editing ? t("toast.projectUpdated", "Project updated") : t("toast.projectCreated", "Project created")); } catch (_) { toast(t("toast.projectSaveFailed", "Could not save project")); } });
 }
-window.deleteProject = async function (id) { if (!(await confirmAction(t("confirm.deleteProject.title", "Delete this project?"), t("confirm.deleteProject.msg", "Chats will remain in your inbox.")))) return; try { await api("/api/projects/" + id, { method: "DELETE" }); closeWorkspaceDialog(); renderProjects(); toast(t("toast.projectDeleted", "Project deleted")); } catch (_) { toast(t("toast.projectDeleteFailed", "Could not delete project")); } };
+window.deleteProject = async function (id) { if (!(await confirmAction(t("confirm.deleteProject.title", "Delete this project?"), t("confirm.deleteProject.msg", "This permanently deletes the project's chats, files, artifacts, and memories. This cannot be undone.")))) return; try { await api("/api/projects/" + id, { method: "DELETE" }); workspaceCache.projects = (workspaceCache.projects || []).filter(function (project) { return project.id !== id; }); if (Array.isArray(window.__projectsCache)) window.__projectsCache = window.__projectsCache.filter(function (project) { return project.id !== id; }); closeWorkspaceDialog(); renderProjects(); if (typeof window.refreshServerSessions === "function") window.refreshServerSessions(); toast(t("toast.projectDeleted", "Project deleted")); } catch (_) { toast(t("toast.projectDeleteFailed", "Could not delete project")); } };
 window.openProjectWorkspace = function (id) { var project = workspaceCache.projects.filter(function (item) { return item.id === id; })[0]; if (!project) return; showDialog('<div class="workspace-dialog-title"><div><h2>' + esc(project.name) + '</h2><p>' + esc(project.description || t("dialog.project.defaultDesc", "A focused place for related work.")) + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><div class="project-workspace-actions"><button class="workspace-primary" onclick="startProjectChat(\'' + esc(id) + '\')">' + t("dialog.project.newChat", "New chat in project") + '</button><button class="workspace-secondary" onclick="moveCurrentChatToProject(\'' + esc(id) + '\')">' + t("dialog.project.moveCurrent", "Move current chat here") + '</button></div><p class="workspace-note">' + t("dialog.project.note", "Project instructions are saved with the project. Files and chats remain available as shared context for future work.") + '</p>'); };
 window.startProjectChat = async function (id) { window._nextProjectId = id; window.__activeProject = workspaceCache.projects.filter(function (item) { return item.id === id; })[0] || null; closeWorkspaceDialog(); if (typeof window.resetApp === "function") await window.resetApp(); };
 window.moveCurrentChatToProject = async function (id) { var state = window.state; if (!state) return; state.currentProjectId = id; window.__activeProject = workspaceCache.projects.filter(function (item) { return item.id === id; })[0] || null; var sessionId = state.currentSessionId; try { if (sessionId) await api("/api/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: { projectId: id } }); closeWorkspaceDialog(); toast(t("toast.chatMoved", "Current chat moved to project")); if (typeof window.refreshServerSessions === "function") window.refreshServerSessions(); } catch (_) { toast(t("toast.chatMoveFailed", "Could not move the current chat")); } };
@@ -594,7 +594,76 @@ window.deleteScheduledTask = async function (id) { if (!(await confirmAction(t("
 
 window.switchLibraryTab = function (tab) { document.querySelectorAll(".library-tab").forEach(function (button) { button.classList.toggle("active", button.dataset.libraryTab === tab); }); paintLibrary(); _publishWorkspaceState(); };
 window.filterLibrary = function (query) { workspaceCache.library.query = query || ""; paintLibrary(); _publishWorkspaceState(); };
-window.openLibraryItem = function (id, kind) { if (kind === "files") window.open("/api/files/" + encodeURIComponent(id) + "/raw", "_blank", "noopener"); else toast(t("toast.artifactsOpenHint", "Artifacts can be opened from the chat where they were created.")); };
+function libraryFileRawUrl(id) {
+  return "/api/v2/files/" + encodeURIComponent(id) + "/raw?inline=1";
+}
+
+function libraryPreviewHeader(title, subtitle) {
+  return '<div class="workspace-dialog-title"><div><h2>' + esc(title) + '</h2><p>' + esc(subtitle || "") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div>';
+}
+
+function openLibraryArtifactPreview(item) {
+  var title = item && (item.title || item.name) || t("library.untitled", "Untitled");
+  var source = item && item.source || "";
+  showDialog(libraryPreviewHeader(title, t("library.preview.artifactSource", "Created item source")) + '<pre class="library-file-preview-text library-artifact-source">' + esc(source) + '</pre>', "library-file-preview-card");
+}
+
+async function loadLibraryFileContent(id) {
+  var body = byId("libraryFilePreviewBody");
+  if (!body) return;
+  try {
+    var result = await api("/api/files/" + encodeURIComponent(id) + "/content");
+    var currentBody = byId("libraryFilePreviewBody");
+    if (!currentBody) return;
+    if (!result || result.ok === false) throw new Error(result && result.error || t("library.preview.failed", "Could not load this file."));
+    currentBody.innerHTML = '<pre class="library-file-preview-text">' + esc(result.text || "") + '</pre>' + (result.truncated ? '<p class="workspace-note library-file-preview-note">' + t("library.preview.truncated", "Only the first part of this file is shown.") + '</p>' : '');
+  } catch (error) {
+    var failedBody = byId("libraryFilePreviewBody");
+    if (!failedBody) return;
+    failedBody.innerHTML = '<div class="workspace-empty library-file-preview-error"><strong>' + t("library.preview.failed", "Could not load this file.") + '</strong><span>' + esc(error && error.message || "") + '</span></div>';
+  }
+}
+
+window.openLibraryItem = function (id, kind, collection) {
+  var files = workspaceCache.library.files || [];
+  var artifacts = workspaceCache.library.artifacts || [];
+  var file = files.filter(function (item) { return item.id === id; })[0] || null;
+  var artifact = artifacts.filter(function (item) { return item.id === id; })[0] || null;
+
+  /* The collection is passed by the React row so a file kind such as
+     "pdf" is never confused with the files tab. Keep the old two-argument
+     call shape working for any legacy caller by falling back to the cached
+     item type. */
+  if (collection === "artifacts" || (!collection && !file && artifact)) {
+    if (artifact) openLibraryArtifactPreview(artifact);
+    return;
+  }
+  if (collection !== "files" && !file) {
+    toast(t("toast.fileOpenFailed", "Could not open this file."));
+    return;
+  }
+  if (!file) return;
+
+  var name = file.name || t("library.untitled", "Untitled");
+  var mime = String(file.mimeType || "").toLowerCase();
+  var rawUrl = libraryFileRawUrl(file.id);
+  var isMedia = mime.indexOf("image/") === 0 || mime === "application/pdf" || mime.indexOf("video/") === 0 || mime.indexOf("audio/") === 0;
+  var body;
+  if (mime.indexOf("image/") === 0) {
+    body = '<div class="library-file-preview-media"><img src="' + esc(rawUrl) + '" alt="' + esc(name) + '" /></div>';
+  } else if (mime === "application/pdf") {
+    body = '<iframe class="library-file-preview-frame" src="' + esc(rawUrl) + '" title="' + esc(name) + '"></iframe>';
+  } else if (mime.indexOf("video/") === 0) {
+    body = '<div class="library-file-preview-media"><video controls preload="metadata" src="' + esc(rawUrl) + '"></video></div>';
+  } else if (mime.indexOf("audio/") === 0) {
+    body = '<div class="library-file-preview-audio"><audio controls preload="metadata" src="' + esc(rawUrl) + '"></audio></div>';
+  } else {
+    body = '<div id="libraryFilePreviewBody" class="library-file-preview-loading">' + t("library.preview.loading", "Loading file content…") + '</div>';
+  }
+
+  showDialog(libraryPreviewHeader(name, mime || t("library.preview.file", "File")) + body, "library-file-preview-card");
+  if (!isMedia) loadLibraryFileContent(file.id);
+};
 window.openLibraryUpload = function () { var input = byId("libraryUploadInput"); if (input) input.click(); };
 window.deleteLibraryFile = async function (id) { if (!(await confirmAction(t("confirm.deleteFile.title", "Delete this file?"), t("confirm.deleteFile.msg", "It will be removed from your library.")))) return; try { await api("/api/files/" + encodeURIComponent(id), { method: "DELETE" }); renderLibrary(); toast(t("toast.fileDeleted", "File deleted")); } catch (_) { toast(t("toast.fileDeleteFailed", "Could not delete file")); } };
 var libraryUpload = byId("libraryUploadInput");

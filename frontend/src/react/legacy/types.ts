@@ -96,7 +96,7 @@ export interface LegacyProfile {
 export interface LegacyWorkspace {
   switchLibraryTab(tab: string): void;
   filterLibrary(query: string): void;
-  openLibraryItem(id: string, kind: string): void;
+  openLibraryItem(id: string, kind: string, collection?: string): void;
   toggleLibrarySelect(id: string, checked: boolean): void;
   toggleSelectAllLibrary(checked: boolean): void;
   deleteSelectedLibrary(): void;
