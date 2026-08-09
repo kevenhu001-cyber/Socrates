@@ -4,7 +4,7 @@
  *
  * Used by the desktop chat composer (RichComposer.tsx) to make the
  * Tiptap editor expand smoothly when the user types past the first
- * line, matching the mobile composer's focus-in expansion animation.
+ * line, matching the mobile composer's focus-in expansion morph.
  *
  * The Tiptap contenteditable grows naturally as the user types; the
  * wrap around it has no `min-height` to gate that growth. Without
@@ -15,20 +15,44 @@
  * (keyboard lift, scroll-to-bottom) so the composer expansion feels
  * part of the same continuous animation system.
  *
- * The hook:
- *   - Mounts a ResizeObserver on the element
- *   - Reads `scrollHeight` after each observed resize
- *   - Animates `style.height` via Web Animations API with the
- *     velocity planner from ui/motion.js
- *   - Cancels any in-flight animation when a new one starts (so
- *     rapid typing does not stack overlapping height animations)
- *   - Degrades to setting `style.height = 'auto'` when prefers-
- *     reduced-motion is set, so the composer still resizes but
- *     without animation
+ * Why this hook exists at all (the "snap" trap)
+ * ---------------------------------------------
+ * A naive `ResizeObserver` cannot animate this growth. The observer
+ * fires AFTER the browser has already re-laid-out the box to fit the
+ * new content (the element is `height: auto`, so the box tracks the
+ * content automatically). By the time the callback runs there is no
+ * "old" height to animate from — `getBoundingClientRect().height` is
+ * already the new height. The animation is impossible without our
+ * intervention.
  *
- * The element's `box-sizing` must be `border-box` (the default for
- * every chat surface) so `scrollHeight` and the explicit `height`
- * agree on what they include.
+ * The fix: keep the element's `style.height` LOCKED to its last
+ * displayed value at all times (initially the rendered height, after
+ * each animation the new natural height). The lock prevents the
+ * browser from auto-growing the box, so the next content change does
+ * not cause an instant snap. Then:
+ *
+ *   1. A MutationObserver watches the contenteditable subtree. When
+ *      the user types, pastes, or the editor applies a transaction,
+ *      the mutation observer fires synchronously AFTER the DOM change
+ *      but BEFORE the browser commits a new layout.
+ *   2. In the callback we force a layout pass with the existing lock
+ *      still in place (the lock ensures `scrollHeight` now reports
+ *      the new content size but the rendered box is still the old
+ *      height — no visible snap). This gives us a real
+ *      old-to-new delta to animate over.
+ *   3. The hook animates `style.height` from the old lock value to
+ *      the new natural size via the velocity planner.
+ *   4. When the animation finishes we leave `style.height` set to
+ *      the new value (we do NOT release back to `auto`); releasing
+ *      would re-introduce the snap on the next keystroke. The lock
+ *      stays so future changes can animate the same way.
+ *
+ * On unmount the lock is cleared so the consumer does not retain an
+ * inline style they did not set.
+ *
+ * Reduced-motion and unsupported environments degrade to a plain
+ * height write so the box still tracks the content (without the
+ * animation), and the absence of WAAPI falls back to a rAF chain.
  */
 
 import { useEffect, type DependencyList } from 'react';
@@ -51,7 +75,7 @@ export function useAutoHeight(
   const options = opts;
   useEffect(() => {
     if (!element || typeof ResizeObserver !== 'function') return undefined;
-    let anim: { cancel(): void; handle?: number } | null = null;
+    let anim: { cancel(): void } | null = null;
     const reduced = (function () {
       try {
         const hasWindow = typeof window !== 'undefined' && window;
@@ -60,14 +84,12 @@ export function useAutoHeight(
         return host.matchMedia('(prefers-reduced-motion: reduce)').matches;
       } catch (_) { return false; }
     })();
-    /* A4: read the computed `max-height` so we do not animate past the
+    /* Read the computed `min/max-height` so we do not animate past the
        CSS cap. The Tiptap editor clamps its rendered height at
-       max-height and scrolls internally past it; without this
-       clamp the hook animates `style.height` to a value larger
-       than the cap, the browser re-clamps each frame, and the
-       user sees no motion while the JS thread burns cycles. We
-       also respect `min-height` for the same reason in reverse
-       (height can't shrink below min-height). */
+       max-height and scrolls internally past it; without this clamp
+       the hook animates `style.height` to a value larger than the
+       cap, the browser re-clamps each frame, and the user sees no
+       motion while the JS thread burns cycles. */
     function readHeightCap(target: HTMLElement): { min: number; max: number } {
       try {
         const cs = window.getComputedStyle(target);
@@ -84,48 +106,57 @@ export function useAutoHeight(
       }
     }
 
-    const observer = new ResizeObserver(function (entries) {
-      if (!entries.length) return;
-      const target = entries[0].target as HTMLElement;
-      const cap = readHeightCap(target);
+    function readNatural(target: HTMLElement, cap: { min: number; max: number }): number {
       const naturalRaw = target.scrollHeight;
-      const natural = Math.max(cap.min, Math.min(cap.max, naturalRaw));
-      const current = target.getBoundingClientRect().height;
-      const distance = Math.abs(natural - current);
-      if (distance < 1) return;
-      if (reduced) {
-        target.style.height = natural + 'px';
-        return;
-      }
-      const plan = planMotionForUser(distance, options.motion);
-      if (plan.duration === 0) {
-        target.style.height = natural + 'px';
-        return;
-      }
-      /* A2: cancel the previous animation through a real cancel
-         handle. WAAPI's cancel is real; the rAF fallback uses a
-         `cancelled` flag the next tick checks. Without this the
-         rAF chain would keep writing stale values while a new
-         chain wrote fresh ones, producing the same jitter
-         pattern keyboardViewport had before A1. */
+      return Math.max(cap.min, Math.min(cap.max, naturalRaw));
+    }
+
+    function lockAt(target: HTMLElement, value: number): void {
+      try { target.style.height = value + 'px'; } catch (_) { /* detached */ }
+    }
+
+    /* Run one animated transition from `from` to `natural`. When it
+       finishes, re-read the content: if it moved while the box was
+       locked (fast typing past the observed size), chain a new
+       animation from the old target to the new natural height so the
+       motion stays continuous; otherwise lock at the new height so
+       the next change can animate the same way (we deliberately do
+       NOT release back to `auto`). */
+    function animateTo(target: HTMLElement, from: number, natural: number, cap: { min: number; max: number }): void {
       if (anim) {
         try { anim.cancel(); } catch (_) { /* not animatable */ }
         anim = null;
       }
+      const distance = Math.abs(natural - from);
+      const plan = planMotionForUser(distance, options.motion);
+      const finish = function () {
+        anim = null;
+        const latest = readNatural(target, cap);
+        if (Math.abs(latest - natural) >= 1) {
+          animateTo(target, natural, latest, cap);
+          return;
+        }
+        lockAt(target, natural);
+      };
+      if (plan.duration === 0) {
+        lockAt(target, natural);
+        return;
+      }
       if (typeof target.animate === 'function') {
         try {
+          /* WAAPI animates the inline height alongside our lock. We
+             use `fill: 'none'` because `fill: 'forwards'` would keep
+             the final keyframe applied forever, which would re-freeze
+             the box even after the lock is refreshed at `finish`. */
           const animation = target.animate(
-            { height: [current + 'px', natural + 'px'] },
+            { height: [from + 'px', natural + 'px'] },
             {
               duration: plan.duration,
               easing: plan.easing,
-              fill: 'forwards',
+              fill: 'none',
             }
           );
-          animation.onfinish = function () {
-            try { target.style.height = natural + 'px'; } catch (_) { /* detached */ }
-            anim = null;
-          };
+          animation.onfinish = finish;
           animation.oncancel = function () { anim = null; };
           anim = animation as unknown as { cancel(): void };
           return;
@@ -139,32 +170,98 @@ export function useAutoHeight(
         if (cancelled) return;
         const elapsed = now - startedAt;
         if (elapsed >= plan.duration) {
-          target.style.height = natural + 'px';
-          if (anim && anim.handle === handle) anim = null;
+          lockAt(target, natural);
+          finish();
           return;
         }
         const t = elapsed / plan.duration;
         const eased = easeOutQuint(t);
-        target.style.height = (current + (natural - current) * eased) + 'px';
+        lockAt(target, from + (natural - from) * eased);
         handle = requestAnimationFrame(tick);
       };
       anim = {
-        handle: 0,
         cancel() {
           cancelled = true;
           if (handle) cancelAnimationFrame(handle);
         },
       };
       handle = requestAnimationFrame(tick);
-      anim.handle = handle;
+    }
+
+    /* The single source of truth for "the content size changed, do
+       an animated transition". Called from:
+         - the MutationObserver (primary: typing, paste, transactions)
+         - the ResizeObserver fallback (window resize, parent reflow)
+       Both call paths share the same lock-and-animate dance so the
+       motion feels identical no matter how the change arrived. */
+    function update(target: HTMLElement): void {
+      const cap = readHeightCap(target);
+      /* Always read the CURRENT lock value as the animation start.
+         The lock is set on mount (initial lock) and after every
+         finish (chain-lock), so it is the most recent settled
+         height. If the lock is somehow missing (race during unmount
+         or first paint) fall back to the rendered height. */
+      let current = parseFloat(target.style.height);
+      if (!Number.isFinite(current)) {
+        current = target.getBoundingClientRect().height;
+      }
+      const natural = readNatural(target, cap);
+      const distance = Math.abs(natural - current);
+      if (distance < 1) {
+        /* No motion needed — re-assert the lock so the box stays
+           locked at this size for the next change. */
+        lockAt(target, current);
+        return;
+      }
+      if (reduced) {
+        lockAt(target, natural);
+        return;
+      }
+      animateTo(target, current, natural, cap);
+    }
+
+    /* Initial lock: set the inline height to whatever the browser
+       already rendered. This is an invisible change (the rendered
+       box stays the same) but ensures the first content change does
+       not trigger an instant snap. */
+    const initialCap = readHeightCap(element);
+    const initialNatural = readNatural(element, initialCap);
+    lockAt(element, initialNatural);
+
+    /* MutationObserver: fires synchronously after every DOM change in
+       the contenteditable subtree (typing, paste, transactions). It
+       runs BEFORE the next layout pass, so `getBoundingClientRect`
+       at this point still reflects the pre-mutation layout — exactly
+       what we need to derive the animation start height from the
+       existing lock. */
+    const mutation = new MutationObserver(function () {
+      update(element);
     });
-    observer.observe(element);
+    mutation.observe(element, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    /* ResizeObserver fallback for non-mutation size changes (window
+       resize rewraps text, parent reflow, font scale change). The
+       element's own box cannot change while we hold the lock, but
+       the cap / parent / wrap can, so this observer is here to pick
+       those up. */
+    const resize = new ResizeObserver(function (entries) {
+      if (!entries.length) return;
+      update(entries[0].target as HTMLElement);
+    });
+    resize.observe(element);
+
     return function () {
       if (anim) {
         try { anim.cancel(); } catch (_) { /* not animatable */ }
         anim = null;
       }
-      observer.disconnect();
+      mutation.disconnect();
+      resize.disconnect();
+      try { element.style.height = ''; } catch (_) { /* detached */ }
     };
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [element, JSON.stringify(options.motion)] as DependencyList);

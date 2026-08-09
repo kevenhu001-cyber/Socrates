@@ -1457,11 +1457,16 @@ true) but the dropdown never shows — see commit history. */
 }
 .composer-anim-no-fr .chat-input-wrap .chat-input-footer{
   /* Same translate trick as the default layout, but pinned to the
-     body's bottom so the row-2 grid split is not required. */
-  transform:translateY(-44px);
+     body's bottom so the row-2 grid split is not required. The
+     collapsed footer is lifted out of flow entirely: in a display:block
+     body its in-flow 44px would inflate the collapsed composer the
+     same way the `0fr` row did on the grid path. */
+  position:absolute;left:2px;right:2px;bottom:0;
+  transform:translateY(0);
   transition:transform var(--composer-motion-duration) var(--composer-motion-ease);
 }
 .composer-anim-no-fr .chat-input-wrap.composer-focused .chat-input-footer{
+  position:static;
   transform:translateY(0);
 }
 
@@ -4556,10 +4561,29 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   .rich-composer[data-surface="chat"] > div:last-child{flex:1;min-width:0}
   .rich-composer[data-surface="chat"] .rich-composer-toolbar{display:none}
   .rich-composer[data-surface="chat"] .tiptap{
-    min-height:44px;max-height:132px;padding:10px 8px;
+    /* min-height in em terms (line-height 1.5 × one line + vertical
+       padding 10px+10px) so the box always fits a single line of text
+       at the current --app-font-scale. A fixed 44px left 3px of
+       overflow at scale 1.125 (18px font → 27px line + 20px padding =
+       47px), which surfaced as a spurious scrollbar on single-line
+       input.
+       max-height is set generously so a typical multi-line message
+       stays fully readable inside the composer instead of being
+       scrolled off the top behind an invisible (thin + transparent)
+       scrollbar. ~280px ≈ 9 visible lines at scale 1.125; past that the
+       scrollbar kicks in. We also re-assert a visible scrollbar on this
+       element because the global `* { scrollbar-width: thin }` rule
+       makes the auto scrollbar effectively invisible on the dark
+       background, so users had no way to scroll back to earlier text. */
+    min-height:calc(1.5em + 20px);max-height:280px;padding:10px 8px;
     font-size:calc(16px * var(--app-font-scale,1));line-height:1.5;
+    scrollbar-width:auto;
+    scrollbar-color:hsl(var(--text-500)/0.45) transparent;
     transition:min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease);
   }
+  .rich-composer[data-surface="chat"] .tiptap::-webkit-scrollbar{width:8px;height:8px}
+  .rich-composer[data-surface="chat"] .tiptap::-webkit-scrollbar-thumb{background:hsl(var(--text-500)/0.45);border-radius:4px}
+  .rich-composer[data-surface="chat"] .tiptap::-webkit-scrollbar-track{background:transparent}
   .chat-input-footer .attach-btn{width:40px;height:40px}
   .chat-input-footer .attach-btn svg{width:22px;height:22px}
   .chat-input-footer .effort-trigger{
@@ -4589,16 +4613,22 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   .chat-input-wrap .chat-input-footer,
   .chat-input-wrap .footer-left-group{display:contents}
   .chat-input-wrap .footer-left-group .attach-btn{order:1}
-   .chat-input-wrap .chat-composer-body{
-     order:2;flex:1 1 160px;width:auto;min-width:0;align-self:stretch;
-     /* Collapsed: row 1 keeps its 42px min so the editor stays usable;
-        row 2 collapses to 0fr so the footer slides off-screen.
-        `fr` track sizes INTERPOLATE between two `fr` values in modern
-        browsers (Chrome 102+, Firefox 117+, Safari 17+), so swapping
-        row 2 from `0fr` to `1fr` on focus glides instead of jumping.
-        `0px` does NOT interpolate — that was the source of the
-        visible "snap" the user reported when focus landed. */
-     display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(42px,1fr) 0fr;
+    .chat-input-wrap .chat-composer-body{
+      order:2;flex:1 1 160px;width:auto;min-width:0;align-self:stretch;
+      /* Collapsed: row 1 keeps its 42px min so the editor stays usable;
+         row 2 is a definite 0px track so the footer slides off-screen.
+         Both rows are definite-length tracks (row 2 animates 0px → 44px
+         on focus). Do NOT use `fr` tracks here: this grid container's
+         height is content-driven (auto), and in that situation flexible
+         tracks resolve to the items' intrinsic sizes instead of
+         distributing free space — `0fr` stayed at the footer's 44px
+         min-height and `1fr` inflated to the editor's max-content,
+         which is what made the mobile composer render ~102px collapsed
+         and ~142px focused instead of the intended ~56px / ~124px.
+         Definite tracks ignore item contributions entirely, so row 2
+         genuinely collapses to 0. Engines that cannot interpolate track
+         sizes are routed to the `.composer-anim-no-fr` block below. */
+      display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(42px,1fr) 0px;
      /* Keep layout containment for the focus reflow, but do not use paint
         containment here: the collapsed footer is translated over the editor
         row, and paint containment clips the top of the neutral send circle. */
@@ -4648,10 +4678,11 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
    }
    .chat-input-wrap.composer-focused .chat-composer-body{
      order:1;flex:0 0 100%;width:100%;min-width:100%;max-width:100%;
-     /* Focused: both rows expand into `1fr`. The transition from
-        `minmax(42px,1fr) 0fr` to `minmax(42px,1fr) 1fr` interpolates
-        the row track sizes smoothly. */
-     grid-template-rows:minmax(42px,1fr) minmax(44px,1fr);
+     /* Focused: row 2 expands to the footer's definite 44px track. The
+        transition from `0px` to `44px` interpolates the track size
+        smoothly on track-interpolating engines (same capability gate as
+        the old `0fr → 1fr` swap, see the collapsed rule above). */
+     grid-template-rows:minmax(42px,1fr) 44px;
    }
    .chat-input-wrap.composer-focused .composer-editor-root{
      width:100%;min-width:0;max-width:none;
