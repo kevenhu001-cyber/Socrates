@@ -34,7 +34,7 @@ SH
 #!/usr/bin/env bash
 set -e
 if [[ "${1:-}" == "run" && "${2:-}" == "build" ]]; then
-  if [[ "${NODE_OPTIONS:-}" != *"--max-old-space-size=4096"* ]]; then
+  if [[ "${NODE_OPTIONS:-}" != *"--max-old-space-size=1024"* ]]; then
     echo "frontend build heap limit missing: ${NODE_OPTIONS:-unset}" >&2
     exit 1
   fi
@@ -55,6 +55,12 @@ SH
 
   cat > "$base/bin/nginx" <<'SH'
 #!/usr/bin/env bash
+exit 0
+SH
+
+  cat > "$base/bin/flock" <<'SH'
+#!/usr/bin/env bash
+if [[ "${MOCK_FLOCK_HELD:-0}" == "1" ]]; then exit 1; fi
 exit 0
 SH
 
@@ -127,6 +133,8 @@ run_deploy() {
     NGINX_SITE_CONF="$base/etc/status.conf" \
     DEPLOY_LOCK_FILE="$base/deploy.lock" \
     STATE_FILE="$base/deploy-state.json" \
+    DEPLOY_USER="tester" \
+    DEPLOY_GROUP="tester" \
     "$@" \
     "$base/deploy.sh"
 }
@@ -137,6 +145,8 @@ grep -q 'new backend' "$success_base/server/dist/index.runtime.js"
 grep -q 'old backend' "$success_base/server/dist.previous/index.runtime.js"
 grep -q 'new frontend' "$success_base/app-root/index.html"
 grep -q '"lastSuccessfulDeploy"' "$success_base/deploy-state.json"
+grep -q 'mobile.bootstrap contract v1 aligned' "$success_base/output.log"
+grep -q '"mobileBootstrapAligned": true' "$success_base/deploy-state.json"
 if compgen -G "$success_base/server/.dist-next.*" >/dev/null; then
   echo "candidate cleanup failed on success" >&2
   exit 1
@@ -155,14 +165,10 @@ if compgen -G "$rollback_base/server/.dist-next.*" >/dev/null; then
 fi
 
 lock_base=$(make_fixture lock)
-(
-  exec 8>"$lock_base/deploy.lock"
-  flock 8
-  if run_deploy "$lock_base" >"$lock_base/output.log" 2>&1; then
-    echo "lock contention unexpectedly succeeded" >&2
-    exit 1
-  fi
-  grep -q 'another Socrates deploy is already in progress' "$lock_base/output.log"
-)
+if run_deploy "$lock_base" MOCK_FLOCK_HELD=1 >"$lock_base/output.log" 2>&1; then
+  echo "lock contention unexpectedly succeeded" >&2
+  exit 1
+fi
+grep -q 'another Socrates deploy is already in progress' "$lock_base/output.log"
 
 echo "deploy flow: success, lock contention, health gate, cleanup, and rollback passed"

@@ -2,8 +2,8 @@ openapi: 3.1.0
 info:
   title: Socrates Backend API
   description: |
-    REST + SSE API consumed by the Socrates web SPA
-    (`index.html`) and the Android Kotlin client. The existing
+    REST + SSE API consumed by the Socrates web SPA and the Expo Android
+    shell. The existing
     endpoints (auth, captcha, sessions, share, api-key, migrate,
     chat, agent, search, fetch-batch) are summarised at the end
     of this file for completeness; the new endpoints introduced
@@ -22,6 +22,8 @@ security:
   - csrfHeader: []
 
 tags:
+  - name: mobile
+    description: Android shell bootstrap and API-origin contract
   - name: messages
     description: Per-message actions (P1.1 — Copy/Edit/Regenerate/Feedback)
   - name: search
@@ -60,6 +62,30 @@ tags:
     description: Prompt templates (P5.8)
 
 paths:
+  /api/mobile/bootstrap:
+    get:
+      tags: [mobile]
+      operationId: getMobileBootstrap
+      summary: Return the Android shell's same-origin API contract
+      security: []
+      responses:
+        '200':
+          description: Public, secret-free mobile endpoint configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, contractVersion, webBaseUrl, apiBaseUrl, canonicalApiBaseUrl, healthPath]
+                properties:
+                  ok: { type: boolean, const: true }
+                  contractVersion: { type: integer, const: 1 }
+                  product: { type: string, const: socrates }
+                  platform: { type: string, const: android }
+                  webBaseUrl: { type: string, format: uri }
+                  apiBaseUrl: { type: string, format: uri, description: Cache-bypass API prefix used by mobile and web clients. }
+                  canonicalApiBaseUrl: { type: string, format: uri }
+                  healthPath: { type: string, const: /api/v2/health }
+
   # ========================================================================
   # P1.1 — Message operations
   # ========================================================================
@@ -1784,7 +1810,7 @@ paths:
     post:
       tags: [agents]
       summary: EXISTING — SSE agent run
-  /api/search:
+  /api/web-search:
     post:
       tags: [search]
       summary: EXISTING — web search proxy

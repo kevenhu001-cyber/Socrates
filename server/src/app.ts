@@ -35,6 +35,7 @@ import mistakesRouter from './routes/mistakes.js';
 import knowledgeBoundaryRouter from './routes/knowledgeBoundary.js';
 import visionRouter from './routes/vision.js';
 import statusRouter from './routes/status.js';
+import mobileRouter from './routes/mobile.js';
 import { recordRequestSample } from './services/statusMonitor.js';
 import executionRouter from './routes/execution.js';
 import scheduledTasksRouter from './routes/scheduledTasks.js';
@@ -382,6 +383,10 @@ app.get('/api/hello', (_req, res) => {
 /* ─── Public system status feed (status.topodrive.top) ─── */
 /* Unauthenticated, no secrets. Mounted before auth-gated routes. */
 app.use('/api/status', statusRouter);
+
+// Android shell bootstrap (public, secret-free). Mounted before auth routes
+// so a fresh install can verify its same-origin API contract before login.
+app.use('/api/mobile', mobileRouter);
 
 // Public configuration endpoint (no auth required).
 // Tells the SPA whether the built-in Beagle provider is available.

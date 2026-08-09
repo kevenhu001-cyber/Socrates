@@ -22,6 +22,14 @@ android/signing.properties
 .idea/
 *.hprof
 
+# ─── React Native / Expo generated state ───
+mobile/node_modules/
+mobile/.expo/
+mobile/android/
+mobile/ios/
+mobile/.eas/
+mobile/dist/
+
 # ── OS files ──
 .DS_Store
 Thumbs.db
@@ -78,6 +86,8 @@ frontend/index.html.bak
 
 # ── UI mockup screenshots (not needed in version control) ──
 *.png
+!assets/buildResources/icon_android_1024.png
+!assets/buildResources/icon_android_foreground_1024.png
 
 # ── Large planning docs (not needed in version control) ──
 UI-UX-UPGRADE-ACTION-PLAN.md
