@@ -1,9 +1,8 @@
 /**
- * XLSX text extractor — wraps SheetJS (xlsx).
+ * XLSX text extractor — wraps exceljs.
  *
- * XLSX is a ZIP of XML — SheetJS reads it into a workbook of named
- * sheets. For LLM consumption we want each sheet's tabular content
- * as plain text:
+ * ExcelJS reads the workbook into a structured model. For LLM consumption
+ * we want each sheet's tabular content as plain text:
  *
  *   Sheet: <name>
  *   <header row, tab-separated>
@@ -12,61 +11,55 @@
  * Tab-separated keeps multi-space cell values intact (CSV quoting is
  * noisy for LLMs). We cap total output at the route's MAX_TEXT_BYTES.
  */
-import fs from 'node:fs/promises';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 const SHEET_HEADER = (name: string) => `### Sheet: ${name || 'Untitled'}\n`;
 
-function sheetToTSV(sheet: XLSX.WorkSheet | undefined) {
-  if (!sheet) return '';
-  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
-  const rows: string[] = [];
-  for (let r = range.s.r; r <= range.e.r; r++) {
-    const cells = [];
-    let anyValue = false;
-    for (let c = range.s.c; c <= range.e.c; c++) {
-      const addr = XLSX.utils.encode_cell({ r, c });
-      const cell = sheet[addr];
-      let v = '';
-      if (cell !== undefined && cell !== null) {
-        v = cell.w !== undefined ? String(cell.w)
-          : cell.v !== undefined ? String(cell.v)
-          : '';
-        anyValue = anyValue || v.length > 0;
-      }
-      cells.push(v);
-    }
-    if (anyValue) rows.push(cells.join('\t'));
+function cellValue(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  // Dates — format as ISO date string
+  if (value instanceof Date) return value.toISOString().split('T')[0];
+  // Rich text — extract plain text
+  if (typeof value === 'object' && 'richText' in (value as Record<string, unknown>)) {
+    return ((value as Record<string, unknown>).richText as Array<{ text: string }>)
+      .map((rt: { text: string }) => rt.text).join('');
   }
-  return rows.join('\n');
+  // Hyperlink — prefer displayed text over the URL
+  if (typeof value === 'object' && 'text' in (value as Record<string, unknown>)) {
+    return String((value as Record<string, unknown>).text ?? '');
+  }
+  // Result object (e.g. formula result)
+  if (typeof value === 'object' && 'result' in (value as Record<string, unknown>)) {
+    return String((value as Record<string, unknown>).result ?? '');
+  }
+  return String(value);
 }
 
 export async function extract(filepath: string) {
-  let wb;
-  try {
-    /* The xlsx (SheetJS) ESM build doesn't expose readFile(). read()
-       accepts a filename but only when type:'file' is explicit; without
-       that hint it tries to parse the filename string as a workbook.
-       Reading into a Buffer first and passing type:'buffer' is the
-       most portable. */
-    const buf = await fs.readFile(filepath);
-    wb = XLSX.read(buf, { type: 'buffer', cellDates: true, cellNF: false });
-  } catch (e) {
-    const em = e as Error;
-    const err = new Error('xlsx_parse_failed: ' + (em.message || em)) as Error & { code: string };
-    err.code = 'PARSE_FAILED';
-    throw err;
-  }
-  const sheetNames = wb.SheetNames || [];
-  const parts = [];
-  for (const name of sheetNames) {
-    parts.push(SHEET_HEADER(name));
-    parts.push(sheetToTSV(wb.Sheets[name]));
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.readFile(filepath);
+
+  const parts: string[] = [];
+  let sheetCount = 0;
+
+  wb.eachSheet((worksheet) => {
+    sheetCount++;
+    parts.push(SHEET_HEADER(worksheet.name));
+    const rows: string[] = [];
+    worksheet.eachRow({ includeEmpty: false }, (row) => {
+      const values: string[] = [];
+      row.eachCell({ includeEmpty: false }, (cell) => {
+        values.push(cellValue(cell.value));
+      });
+      if (values.length > 0) rows.push(values.join('\t'));
+    });
+    parts.push(rows.join('\n'));
     parts.push('');
-  }
+  });
+
   return {
     text: parts.join('\n').replace(/\r\n/g, '\n'),
     truncated: false,
-    meta: { sheetCount: sheetNames.length },
+    meta: { sheetCount },
   };
 }

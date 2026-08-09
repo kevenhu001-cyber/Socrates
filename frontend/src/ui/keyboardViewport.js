@@ -128,7 +128,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       pinFrame = requestAnimationFrame(() => {
         pinFrame = 0;
         if (!window.state || !window.state._userScrolledAway) {
+          /* Smooth the re-pin so the transcript glides up with the
+             composer instead of snapping when the keyboard opens. */
+          list.classList.add('smooth-scroll');
           list.scrollTop = list.scrollHeight;
+          setTimeout(function() {
+            try { list.classList.remove('smooth-scroll'); } catch (_) {}
+          }, 400);
         }
       });
     }
@@ -162,25 +168,6 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        the activeElement check is authoritative — visualViewport can
        be stale but focus cannot. */
     const focused = isInputFocused();
-    /* P_topic-kb-stable — freeze the shell's height reference while a
-       tracked input is focused. Resize-mode keyboards (Capacitor
-       Keyboard.resize:"native", Firefox Android, older Chrome) shrink
-       the layout viewport itself, so a 100dvh shell plus every vh-based
-       padding reflows and the topic landing's input and disclaimer
-       visibly jump. --app-vh holds the last keyboard-closed innerHeight;
-       while focus lasts the shell keeps that height, the keyboard simply
-       covers its bottom edge, and measureKeyboardInset() reports the
-       covered pixels (the documented "stuck 100vh" case) so the chat
-       composer still lifts via --keyboard-inset. A width change
-       (rotation / desktop resize) refreshes the value even mid-focus. */
-    if (!focused || window.innerWidth !== stableVhWidth) {
-      const stableH = Math.round(window.innerHeight || 0);
-      if (stableH > 0 && (stableH !== appliedStableVh || window.innerWidth !== stableVhWidth)) {
-        root.style.setProperty('--app-vh', `${stableH}px`);
-        appliedStableVh = stableH;
-        stableVhWidth = window.innerWidth;
-      }
-    }
     applyInset(
       focused
         ? measureKeyboardInset(appShellBottom(), viewport, window.innerHeight)

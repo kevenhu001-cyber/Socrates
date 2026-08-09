@@ -548,7 +548,7 @@ router.delete('/:id', async (req, res, next) => {
        conversation was using. Best-effort: if the worker crashed
        mid-run the dir might already be gone, and the TTL sweep
        would catch that case anyway. */
-    await codeInterpreter._reapSessionScratch(req.params.id).catch(() => {});
+    await codeInterpreter.reapSessionScratch(req.params.id).catch(() => {});
 
     return res.status(204).end();
   } catch (err) { next(err); }
@@ -602,7 +602,7 @@ router.delete('/', async (req, res, next) => {
     /* P_session-scoped-scratch — reap every cleared session's
        scratch dir. Parallel: each fs.rm is independent. */
     await Promise.all(
-      allDeletedIds.map(id => codeInterpreter._reapSessionScratch(id).catch(() => {}))
+      allDeletedIds.map(id => codeInterpreter.reapSessionScratch(id).catch(() => {}))
     );
 
     return res.json({ ok: true, deleted });

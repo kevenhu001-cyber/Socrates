@@ -4071,7 +4071,7 @@ async function submitChatMessage(textOverride,opts){
   if(isComposerSubmit){
     addMessage("user",text,null,null,immediateAttList);
     clearComposer("chat");updateSendBtn();
-    scheduleScrollMainToBottom({force:true});
+    scheduleScrollMainToBottom({force:true,smooth:true});
     /* Click-send (opts.blurAfterSend) ends the typing session: drop the
        editor focus so the composer collapses out of its focus-within
        visuals. Enter-send keeps the classic keep-typing flow by
@@ -4992,16 +4992,34 @@ function scrollMainToBottom(opts){
   if(!sc)return;
   var slack=64;
   var atBottom=sc.scrollHeight-sc.scrollTop-sc.clientHeight<=slack;
-  if(opts.force||atBottom)sc.scrollTop=sc.scrollHeight;
+  if(opts.force||atBottom){
+    if(opts.smooth){
+      sc.classList.add('smooth-scroll');
+      sc.scrollTop=sc.scrollHeight;
+      // Remove the class after the animation completes so streaming
+      // scrolls stay instant. The default 0.34s matches the composer
+      // motion duration used elsewhere.
+      setTimeout(function(){sc.classList.remove('smooth-scroll');}, 400);
+    }else{
+      sc.scrollTop=sc.scrollHeight;
+    }
+  }
 }
 
 function scheduleScrollMainToBottom(opts){
-  requestAnimationFrame(function(){
-    scrollMainToBottom(opts);
+  if(opts&&opts.smooth){
+    // Smooth scroll only needs one call after layout settles.
     requestAnimationFrame(function(){
       scrollMainToBottom(opts);
     });
-  });
+  }else{
+    requestAnimationFrame(function(){
+      scrollMainToBottom(opts);
+      requestAnimationFrame(function(){
+        scrollMainToBottom(opts);
+      });
+    });
+  }
 }
 
 /* Position a newly submitted turn like a document page: the user's prompt

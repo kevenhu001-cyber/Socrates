@@ -150,7 +150,7 @@ router.delete('/:id', async (req, res, next) => {
     });
 
     await Promise.all([...new Set(deletedFilePaths)].map((storagePath) => fs.unlink(storagePath).catch(() => {})));
-    await Promise.all(deletedSessionIds.map((sessionId) => codeInterpreter._reapSessionScratch(sessionId).catch(() => {})));
+    await Promise.all(deletedSessionIds.map((sessionId) => codeInterpreter.reapSessionScratch(sessionId).catch(() => {})));
     return res.status(204).end();
   } catch (err) { next(err); }
 });
