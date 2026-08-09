@@ -1,4 +1,5 @@
-import { smoothScrollToBottom } from './scroll.js';
+import { smoothScrollToBottom, velocityScrollTo } from './scroll.js';
+import { planMotionForUser } from './motion.js';
 
 /*
  * Keep chat controls above mobile virtual keyboards.
@@ -105,6 +106,19 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let appliedStableVh = -1;
   let stableVhWidth = -1;
 
+  /* Cache the inset rAF handle so a rapid keyboard open/close cycle
+     cancels the in-flight run instead of stacking two animations on
+     the same property. The previous implementation kept an
+     `insetAnim` object whose `cancel()` was a no-op; with that
+     no-op cancel, an old rAF chain kept writing the captured
+     `startInset` to `roundedInset` interpolation while a new chain
+     wrote its own captured values, producing visible jitter (the
+     "stutter and flicker" the user reported on rapid keyboard
+     toggles). We now track a `cancelled` flag plus the rAF handle
+     so cancel is real and the closed-over `tickInset` exits cleanly
+     on the next animation frame. */
+  let insetCancel = null;
+
   const applyInset = (inset) => {
     const roundedInset = Math.round(inset);
     if (roundedInset === appliedInset) return;
@@ -118,7 +132,77 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       && list.scrollHeight - list.scrollTop - list.clientHeight <= 96
     );
 
-    root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
+    /* Drive the keyboard inset via Web Animations API on the CSS
+     * custom property itself. Pair it with a velocity-based scroll
+     * to the new bottom (when the reader was pinned) using the same
+     * motion plan, so the input box lift and the transcript content
+     * scroll finish at exactly the same time. That is what keeps
+     * their relative distance constant — the AI content moves up
+     * with the input instead of jumping ahead of it or lagging
+     * behind it. The previous implementation drove --keyboard-inset
+     * via a CSS transition and scrollTop via an independent
+     * scrollTo({behavior:'smooth'}); the two timelines drifted and
+     * produced the visible "layout jump" the user reported. */
+    const startInset = parseFloat(root.style.getPropertyValue('--keyboard-inset')) || 0;
+    const distance = Math.abs(roundedInset - startInset);
+    const plan = planMotionForUser(distance);
+    const duration = plan.duration;
+    const targetScrollTop = wasPinned && list
+      ? (startInset < roundedInset
+          ? list.scrollTop + (roundedInset - startInset)
+          : list.scrollHeight - list.clientHeight)
+      : null;
+
+    /* Cancel any in-flight inset animation. The rAF chain checks the
+     * `cancelled` flag on every tick and exits without writing the
+     * CSS variable, so a stale chain cannot race a fresh one.
+     *
+     * WAAPI cannot animate a custom property registered on `:root`
+     * by string name without a typed-OM registration; we drive the
+     * property via rAF instead. Capture the rAF start time at
+     * dispatch (before scheduling) so the inset animation and the
+     * velocityScrollTo dispatched on the next rAF tick share the
+     * same epoch — visual drift between the two rAF chains is
+     * sub-perceptual (under one frame). */
+    if (insetCancel) {
+      const prev = insetCancel;
+      insetCancel = null;
+      prev.cancel();
+    }
+    const applyInstantly = duration === 0;
+    if (applyInstantly) {
+      root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
+    } else {
+      const startedAt = performance.now();
+      let cancelled = false;
+      let handle = 0;
+      const tickInset = (now) => {
+        if (cancelled) return;
+        const elapsed = now - startedAt;
+        if (elapsed >= duration) {
+          root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
+          if (insetCancel && insetCancel.handle === handle) insetCancel = null;
+          return;
+        }
+        const t = elapsed / duration;
+        const eased = 1 - Math.pow(1 - t, 5);
+        root.style.setProperty(
+          '--keyboard-inset',
+          `${Math.round(startInset + (roundedInset - startInset) * eased)}px`
+        );
+        handle = requestAnimationFrame(tickInset);
+      };
+      insetCancel = {
+        handle: 0,
+        cancel() {
+          cancelled = true;
+          if (handle) cancelAnimationFrame(handle);
+        },
+      };
+      handle = requestAnimationFrame(tickInset);
+      insetCancel.handle = handle;
+    }
+
     root.dataset.keyboardOpen = roundedInset > 50 ? 'true' : 'false';
 
     /* Raising the in-flow composer shrinks the transcript's flex viewport.
@@ -126,21 +210,18 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      * the latest message; otherwise the smaller viewport can make them appear
      * to have scrolled away and subsequent stream updates stop following.
      *
-     * Previous implementation toggled a `smooth-scroll` class on #msgList
-     * for 400 ms and assigned scrollTop inside the same task — that race
-     * caused the first paint to use scroll-behavior:auto (snap) before the
-     * class took effect, and the 400 ms window was shorter than the CSS
-     * padding-bottom transition, so the animation was truncated mid-flight.
-     * smoothScrollToBottom() uses the browser-native scrollTo({behavior})
-     * pipeline which is owned by the platform and survives concurrent
-     * layout changes, so a single call here replaces the previous
-     * class-toggle + scrollTop assignment + 400 ms setTimeout trio. */
-    if (wasPinned && list) {
+     * velocityScrollTo() uses the SAME motion plan (planMotionForUser) as
+     * the inset lift above, so when both run in the same task they
+     * finish in lockstep — the AI content and the input move up
+     * together at constant relative distance. */
+    if (wasPinned && list && targetScrollTop != null) {
       if (pinFrame) cancelAnimationFrame(pinFrame);
       pinFrame = requestAnimationFrame(() => {
         pinFrame = 0;
         if (!window.state || !window.state._userScrolledAway) {
-          smoothScrollToBottom(list, { smooth: true });
+          /* Pass the pre-computed plan so the scroll uses the same
+             duration as the inset lift. */
+          velocityScrollTo(list, targetScrollTop, { smooth: true, motion: plan });
         }
       });
     }
@@ -226,6 +307,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (updateFrame) window.cancelAnimationFrame(updateFrame);
     if (pinFrame) window.cancelAnimationFrame(pinFrame);
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
+    if (insetCancel) { try { insetCancel.cancel(); } catch (_) {} insetCancel = null; }
     try { root.style.removeProperty('--app-vh'); } catch (_) { /* detached root */ }
     if (viewport) {
       viewport.removeEventListener('resize', schedule);

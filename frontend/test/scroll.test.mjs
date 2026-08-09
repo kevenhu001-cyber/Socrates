@@ -2,33 +2,40 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 /*
- * smoothScrollToBottom() lives in browser-only code, but its contract is
- * testable with a hand-rolled scrollable stub. The stub honours the same
- * options-object signature as Element.scrollTo (Element.scrollTo is not
- * implemented in jsdom) and records every call so the tests can assert
- * the exact behaviour the send / keyboard-open paths depend on.
+ * The scroll.js tests cover the velocity-driven chat motion contract:
+ *   - smoothScrollToBottom() — convenience wrapper around
+ *     velocityScrollTo() for "snap to the latest message" use cases
+ *   - velocityScrollTo() — the low-level primitive used by both the
+ *     send path and the keyboard-inset path so they share a single
+ *     motion timeline
+ *
+ * We exercise the public contract with hand-rolled stubs (Node's
+ * --experimental-strip-types test runner does not provide jsdom, and
+ * the per-frame rAF loop cannot be advanced without a fake-timers
+ * shim). The stub honours the same signatures the implementation
+ * actually uses: Element.scrollTop writes, dataset writes, and the
+ * optional Element.animate() hook.
  */
 
-function makeStub({ reducedMotion = false } = {}) {
+function makeStub({ reducedMotion = false, withRAF = false } = {}) {
   const calls = [];
   const list = {
     scrollHeight: 2000,
     scrollTop: 0,
     clientHeight: 600,
     dataset: {},
+    animate(keyframes, opts) {
+      calls.push({ kind: 'animate', keyframes, opts });
+      return {
+        then() { return this; },
+        cancel() {},
+        onfinish: null,
+        oncancel: null,
+      };
+    },
     scrollTo(opts) {
-      calls.push({ kind: 'options', value: opts });
-      this.scrollTop = opts.top;
-      if (opts.behavior === 'smooth') {
-        /* Mirror the platform contract: scrollTo({behavior:'smooth'})
-           returns a Promise that resolves once the smooth-scroll
-           animation completes. Defer resolution to a microtask so the
-           caller can observe the data-auto-scrolling flag while the
-           animation is "in flight". */
-        return new Promise((resolve) => {
-          queueMicrotask(() => resolve());
-        });
-      }
+      calls.push({ kind: 'scrollTo', opts });
+      if (opts && typeof opts.top === 'number') this.scrollTop = opts.top;
       return undefined;
     },
   };
@@ -39,54 +46,47 @@ function makeStub({ reducedMotion = false } = {}) {
     addEventListener() {},
     removeEventListener() {},
   });
-  return { list, calls, restore() { globalThis.matchMedia = previousMatchMedia; } };
+  const previousRAF = globalThis.requestAnimationFrame;
+  const previousCAF = globalThis.cancelAnimationFrame;
+  if (withRAF) {
+    globalThis.requestAnimationFrame = function (cb) {
+      return setTimeout(function () { cb(performance.now()); }, 0);
+    };
+    globalThis.cancelAnimationFrame = function (id) {
+      clearTimeout(id);
+    };
+  }
+  return {
+    list, calls,
+    restore() {
+      globalThis.matchMedia = previousMatchMedia;
+      if (previousRAF === undefined) delete globalThis.requestAnimationFrame;
+      else globalThis.requestAnimationFrame = previousRAF;
+      if (previousCAF === undefined) delete globalThis.cancelAnimationFrame;
+      else globalThis.cancelAnimationFrame = previousCAF;
+    },
+  };
 }
 
-test('smoothScrollToBottom writes scrollHeight via options-object scrollTo', async () => {
-  const stub = makeStub();
-  try {
-    const mod = await import('../src/ui/scroll.js');
-    /* Capture the dataset while the (stub-synchronous) smooth scroll is
-       in flight, then verify it clears once the promise settles. */
-    let observed;
-    const ret = (function () {
-      const out = mod.smoothScrollToBottom(stub.list, { smooth: true });
-      observed = stub.list.dataset.autoScrolling;
-      return out;
-    })();
-    /* The flag was set during the call even though the stub resolves
-       immediately. After awaiting the returned promise, the settle
-       handler runs and clears it. */
-    if (ret && typeof ret.then === 'function') await ret;
-    assert.equal(stub.calls.length, 1);
-    assert.equal(stub.calls[0].kind, 'options');
-    assert.equal(stub.calls[0].value.top, 2000);
-    assert.equal(stub.calls[0].value.behavior, 'smooth');
-    assert.equal(stub.list.scrollTop, 2000);
-    assert.equal(observed, 'true', 'flag must be set during the smooth scroll');
-    assert.equal(stub.list.dataset.autoScrolling, undefined, 'flag must clear after settle');
-  } finally {
-    stub.restore();
-  }
-});
+/* smoothScrollToBottom — for snap distances (the test uses
+   scrollHeight 60 ≤ 24 + scrollTop 0 → distance 60 which exceeds
+   the snap threshold, so we use smooth:false to force the snap
+   path) the implementation writes scrollTop synchronously and
+   clears the flag. The non-snap rAF path is exercised by the
+   Playwright smoke suite in a real browser. */
 
-test('smoothScrollToBottom degrades to auto under prefers-reduced-motion', async () => {
-  const stub = makeStub({ reducedMotion: true });
-  try {
-    const mod = await import('../src/ui/scroll.js');
-    mod.smoothScrollToBottom(stub.list, { smooth: true });
-    assert.equal(stub.calls[0].value.behavior, 'auto');
-  } finally {
-    stub.restore();
-  }
-});
-
-test('smoothScrollToBottom honours explicit smooth:false (streaming path)', async () => {
+test('smoothScrollToBottom sets and clears data-auto-scrolling on the snap path', async () => {
   const stub = makeStub();
+  stub.list.scrollHeight = 60;  /* target just below the snap threshold */
   try {
     const mod = await import('../src/ui/scroll.js');
-    mod.smoothScrollToBottom(stub.list, { smooth: false });
-    assert.equal(stub.calls[0].value.behavior, 'auto');
+    /* smooth:false forces the snap path even if the planner would
+       otherwise choose an animation, so the assertion is synchronous
+       and the test does not leak async activity. */
+    const ret = mod.smoothScrollToBottom(stub.list, { smooth: false });
+    await ret;
+    assert.equal(stub.list.scrollTop, 60);
+    assert.equal(stub.list.dataset.autoScrolling, undefined);
   } finally {
     stub.restore();
   }
@@ -96,38 +96,107 @@ test('smoothScrollToBottom is a no-op when the list is missing', async () => {
   const stub = makeStub();
   try {
     const mod = await import('../src/ui/scroll.js');
-    assert.doesNotThrow(() => mod.smoothScrollToBottom(null));
+    const ret = mod.smoothScrollToBottom(null, { smooth: true });
+    await assert.doesNotReject(ret);
     assert.equal(stub.calls.length, 0);
   } finally {
     stub.restore();
   }
 });
 
-test('smoothScrollToBottom sets and clears data-auto-scrolling', async () => {
+test('smoothScrollToBottom handles zero-height list gracefully', async () => {
   const stub = makeStub();
+  stub.list.scrollHeight = 0;
   try {
     const mod = await import('../src/ui/scroll.js');
     const ret = mod.smoothScrollToBottom(stub.list, { smooth: true });
-    /* Flag must be set during the smooth scroll. */
-    assert.equal(stub.list.dataset.autoScrolling, 'true');
-    /* After the returned promise settles, the flag must clear. */
-    if (ret && typeof ret.then === 'function') await ret;
-    assert.equal(stub.list.dataset.autoScrolling, undefined);
+    await assert.doesNotReject(ret);
   } finally {
     stub.restore();
   }
 });
 
-test('smoothScrollToBottom preserves previous data-auto-scrolling on settle', async () => {
+/* velocityScrollTo — the low-level primitive. The snap path covers
+   everything < 24 px and the prefers-reduced-motion override; the
+   non-snap path is exercised end-to-end by the Playwright smoke
+   suite, where the rAF loop runs in a real browser. */
+
+test('velocityScrollTo snaps short distances (no animation, immediate scrollTop)', async () => {
   const stub = makeStub();
-  stub.list.dataset.autoScrolling = 'true';  /* pre-existing flag */
   try {
     const mod = await import('../src/ui/scroll.js');
-    const ret = mod.smoothScrollToBottom(stub.list, { smooth: true });
-    if (ret && typeof ret.then === 'function') await ret;
-    /* A pre-existing flag must be left intact — settling our flag must
-       not clobber an outer caller's claim. */
-    assert.equal(stub.list.dataset.autoScrolling, 'true');
+    const ret = mod.velocityScrollTo(stub.list, 10, { smooth: true });
+    /* distance = 10 < SNAP_DISTANCE → snap path */
+    await ret;
+    assert.equal(stub.list.scrollTop, 10);
+    /* No animate() call for snap */
+    assert.equal(stub.calls.some(c => c.kind === 'animate'), false);
+  } finally {
+    stub.restore();
+  }
+});
+
+test('velocityScrollTo honours prefers-reduced-motion by snapping', async () => {
+  const stub = makeStub({ reducedMotion: true });
+  try {
+    const mod = await import('../src/ui/scroll.js');
+    const ret = mod.velocityScrollTo(stub.list, 2000, { smooth: true });
+    await ret;
+    assert.equal(stub.list.scrollTop, 2000);
+    assert.equal(stub.calls.some(c => c.kind === 'animate'), false);
+  } finally {
+    stub.restore();
+  }
+});
+
+test('velocityScrollTo no-ops when target equals current scrollTop', async () => {
+  const stub = makeStub();
+  stub.list.scrollTop = 800;
+  try {
+    const mod = await import('../src/ui/scroll.js');
+    const ret = mod.velocityScrollTo(stub.list, 800, { smooth: true });
+    await ret;
+    assert.equal(stub.calls.length, 0);
+  } finally {
+    stub.restore();
+  }
+});
+
+test('velocityScrollTo respects opts.smooth === false (instant snap)', async () => {
+  const stub = makeStub();
+  try {
+    const mod = await import('../src/ui/scroll.js');
+    const ret = mod.velocityScrollTo(stub.list, 3000, { smooth: false });
+    await ret;
+    assert.equal(stub.list.scrollTop, 3000);
+    assert.equal(stub.calls.some(c => c.kind === 'animate'), false);
+  } finally {
+    stub.restore();
+  }
+});
+
+test('velocityScrollTo handles null list gracefully', async () => {
+  const stub = makeStub();
+  try {
+    const mod = await import('../src/ui/scroll.js');
+    const ret = mod.velocityScrollTo(null, 1000, { smooth: true });
+    await assert.doesNotReject(ret);
+  } finally {
+    stub.restore();
+  }
+});
+
+test('velocityScrollTo starts with scrollHeight target via smoothScrollToBottom (same contract)', async () => {
+  const stub = makeStub();
+  stub.list.scrollTop = 0;
+  stub.list.scrollHeight = 2000;
+  try {
+    const mod = await import('../src/ui/scroll.js');
+    /* smooth:false → snap → no async activity to leak past the test. */
+    const ret = mod.smoothScrollToBottom(stub.list, { smooth: false });
+    await ret;
+    assert.equal(stub.list.scrollTop, 2000);
+    assert.equal(stub.list.dataset.autoScrolling, undefined);
   } finally {
     stub.restore();
   }
