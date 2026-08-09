@@ -548,7 +548,14 @@ app.get('/api/files/:id/raw', optionalAuth, async (req, res, next) => {
     if (!allowed) return res.status(404).json({ code: 'NOT_FOUND', message: 'File not found' });
     res.set('X-Content-Type-Options', 'nosniff');
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    if (!file.mimeType.startsWith('image/') && file.mimeType !== 'application/pdf') {
+    res.set('Content-Type', file.mimeType);
+    const inlinePreview = req.query.inline === '1' && (
+      file.mimeType.startsWith('audio/')
+      || file.mimeType.startsWith('video/')
+      || (file.mimeType.startsWith('text/') && file.mimeType !== 'text/html' && file.mimeType !== 'text/xhtml' && file.mimeType !== 'text/xhtml+xml')
+      || file.mimeType === 'application/json'
+    );
+    if (!file.mimeType.startsWith('image/') && file.mimeType !== 'application/pdf' && !inlinePreview) {
       res.set('Content-Disposition', 'attachment');
     }
     return res.sendFile(file.storagePath);

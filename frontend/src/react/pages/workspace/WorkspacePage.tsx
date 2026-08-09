@@ -84,12 +84,12 @@ function LibraryItemRow({ item, itemKey, tab, selection, renameItem, dispatch }:
       <label className="library-checkbox-label" onClick={(e) => e.stopPropagation()}>
         <input type="checkbox" className="library-checkbox" checked={isSelected} onChange={(e) => dispatch.toggleSelect(item.id, e.target.checked)} aria-label={'Select ' + name} />
       </label>
-      <span className="workspace-row-icon" onClick={() => dispatch.openItem(item.id, item.kind || 'file')}>
+      <span className="workspace-row-icon" onClick={() => dispatch.openItem(item.id, item.kind || 'file', itemKey)}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <use href={'#icon-' + (item.kind === 'image' ? 'image' : 'file')} />
         </svg>
       </span>
-      <div className="workspace-row-copy" onClick={() => dispatch.openItem(item.id, item.kind || 'file')}>
+      <div className="workspace-row-copy" onClick={() => dispatch.openItem(item.id, item.kind || 'file', itemKey)}>
         {nameEl}
         <span>{fileMeta(item)}</span>
       </div>

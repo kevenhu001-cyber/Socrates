@@ -9,7 +9,7 @@ export interface WorkspaceSnapshot {
   revision: number;
 }
 
-export interface LibraryItem { id: string; name?: string; title?: string; kind?: string; size?: number; uploadedAt?: string; updatedAt?: string; mimeType?: string; }
+export interface LibraryItem { id: string; name?: string; title?: string; kind?: string; size?: number; uploadedAt?: string; updatedAt?: string; mimeType?: string; source?: string; }
 export interface ProjectItem { id: string; name: string; description?: string; color?: string; systemPrompt?: string; }
 export interface PluginItem { id: string; name: string; description?: string; capabilities?: string[]; authType?: string; connection?: { status?: string; displayName?: string } | null; credentialInput?: { fields: Array<{ key: string; label: string; type?: string; required?: boolean; help?: string }> } }
 
@@ -25,7 +25,7 @@ declare global {
     __socratesMountWorkspace?: (page: string) => void;
     switchLibraryTab?: (tab: string) => void;
     filterLibrary?: (query: string) => void;
-    openLibraryItem?: (id: string, kind: string) => void;
+    openLibraryItem?: (id: string, kind: string, collection?: string) => void;
     toggleLibrarySelect?: (id: string, checked: boolean) => void;
     toggleSelectAllLibrary?: (checked: boolean) => void;
     deleteSelectedLibrary?: () => void;

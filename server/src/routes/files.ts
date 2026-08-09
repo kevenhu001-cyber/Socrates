@@ -9,6 +9,7 @@ import multer from 'multer';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import { extractText as extractDocumentText } from '../services/fileParsers/index.js';
 
 import os from 'node:os';
 
@@ -25,6 +26,11 @@ const USER_QUOTA_BYTES = (() => {
   const n = raw ? parseInt(raw, 10) : 250 * 1024 * 1024;
   return Number.isFinite(n) && n > 0 ? n : 250 * 1024 * 1024;
 })();
+const MAX_PREVIEW_CHARS = 200 * 1024;
+const PLAIN_TEXT_MIMES = new Set([
+  'application/json',
+  'text/plain', 'text/csv', 'text/markdown',
+]);
 
 // Ensure upload dir exists
 fs.mkdir(UPLOAD_DIR, { recursive: true }).catch(() => {});
@@ -106,6 +112,58 @@ router.get('/', async (req, res, next) => {
       nextCursor: hasMore ? rows[rows.length - 1]?.id : null,
     });
   } catch (err) { next(err); }
+});
+
+/* GET /api/files/:id/content — return a safe, text-only preview.
+ * Plain text files are read directly. PDF and Office-family files use the
+ * same server-side extractors as chat attachments, so the library can show
+ * their contents without asking the user to start or reopen a conversation.
+ * The response is capped to keep a large workbook or document from turning
+ * a simple preview into an unbounded memory/JSON response. */
+router.get('/:id/content', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const [file] = await db.select({
+      id: files.id, name: files.name, mimeType: files.mimeType,
+      kind: files.kind, storagePath: files.storagePath,
+    }).from(files)
+      .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId!)))
+      .limit(1);
+    if (!file) throw new NotFound('File not found');
+
+    let text = '';
+    let meta: Record<string, unknown> = {};
+    let truncated = false;
+    if (PLAIN_TEXT_MIMES.has(file.mimeType)) {
+      text = await fs.readFile(file.storagePath, 'utf8');
+    } else if (file.mimeType === 'application/pdf') {
+      const mod = await import('pdf-parse');
+      const pdfParse = mod.default || mod;
+      const result = await pdfParse(await fs.readFile(file.storagePath));
+      text = String((result && result.text) || '');
+      meta = { pageCount: result && result.numpages ? Number(result.numpages) : 0 };
+    } else if (['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/epub+zip', 'application/rtf'].includes(file.mimeType)) {
+      const result = await extractDocumentText(file.mimeType, file.storagePath);
+      text = String(result.text || '');
+      meta = result.meta || {};
+      truncated = !!result.truncated;
+    } else {
+      return res.status(415).json({ ok: false, error: 'This file type cannot be previewed as text.' });
+    }
+
+    text = text.replace(/\r\n/g, '\n');
+    if (text.length > MAX_PREVIEW_CHARS) {
+      text = text.slice(0, MAX_PREVIEW_CHARS);
+      truncated = true;
+    }
+    return res.json({ ok: true, id: file.id, name: file.name, mimeType: file.mimeType, kind: file.kind, text, truncated, meta });
+  } catch (err) {
+    if (err instanceof NotFound) throw err;
+    return res.status(422).json({ ok: false, error: 'Could not parse this file for preview.' });
+  }
 });
 
 /**

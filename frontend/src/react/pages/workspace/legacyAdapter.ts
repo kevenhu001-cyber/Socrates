@@ -12,7 +12,7 @@ export function useWorkspaceDispatch() {
   return {
     switchTab: (tab: string) => w.switchLibraryTab(tab),
     filter: (q: string) => w.filterLibrary(q),
-    openItem: (id: string, kind: string) => w.openLibraryItem(id, kind),
+    openItem: (id: string, kind: string, collection: string) => w.openLibraryItem(id, kind, collection),
     toggleSelect: (id: string, checked: boolean) => w.toggleLibrarySelect(id, checked),
     toggleSelectAll: (checked: boolean) => w.toggleSelectAllLibrary(checked),
     deleteSelected: () => w.deleteSelectedLibrary(),

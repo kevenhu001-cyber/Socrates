@@ -378,12 +378,11 @@ paths:
     delete:
       tags: [projects]
       operationId: deleteProject
-      parameters:
-        - in: query
-          name: cascade
-          schema: { type: boolean, default: false, description: If true, also archive all sessions. }
+      summary: Hard-delete a project and its related data
+      description: Permanently deletes the project, its sessions and messages, project-scoped files, artifacts and versions, memories, execution records, and execution metadata.
       responses:
         '204': { description: Deleted }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /api/projects/{projectId}/sessions:
     parameters:
@@ -598,6 +597,31 @@ paths:
           content:
             application/octet-stream:
               schema: { type: string, format: binary }
+
+  /api/files/{fileId}/content:
+    parameters:
+      - $ref: '#/components/parameters/FileId'
+    get:
+      tags: [files]
+      operationId: getFilePreviewContent
+      summary: Extract a bounded text preview for the library viewer
+      responses:
+        '200':
+          description: Text preview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  id: { type: string, format: uuid }
+                  name: { type: string }
+                  mimeType: { type: string }
+                  kind: { type: string }
+                  text: { type: string }
+                  truncated: { type: boolean }
+                  meta: { type: object, additionalProperties: true }
+        '415': { $ref: '#/components/responses/BadRequest' }
 
   /api/files/{fileId}/thumbnail:
     parameters:
