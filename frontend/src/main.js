@@ -7,7 +7,7 @@ import './windowExports.js';
 import './state.js';
 import './i18n.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
-import { initChatComposerReserve, scrollContainer, scrollToBottomIfPinned } from './ui/scroll.js';
+import { initChatComposerReserve, scrollContainer, scrollToBottomIfPinned, smoothScrollToBottom } from './ui/scroll.js';
 import { initKeyboardViewport } from './ui/keyboardViewport.js';
 import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
@@ -4993,33 +4993,30 @@ function scrollMainToBottom(opts){
   var slack=64;
   var atBottom=sc.scrollHeight-sc.scrollTop-sc.clientHeight<=slack;
   if(opts.force||atBottom){
-    if(opts.smooth){
-      sc.classList.add('smooth-scroll');
-      sc.scrollTop=sc.scrollHeight;
-      // Remove the class after the animation completes so streaming
-      // scrolls stay instant. The default 0.34s matches the composer
-      // motion duration used elsewhere.
-      setTimeout(function(){sc.classList.remove('smooth-scroll');}, 400);
-    }else{
-      sc.scrollTop=sc.scrollHeight;
-    }
+    /* Delegate to smoothScrollToBottom() so the same browser-native
+       scrollTo({behavior}) pipeline handles send, keyboard-open, and
+       content-growth follow. Previously this path toggled a
+       `smooth-scroll` class on #msgList for 400 ms and assigned
+       scrollTop inside the same task — that race caused the first
+       paint to use scroll-behavior:auto (snap) before the class took
+       effect, and the 400 ms window was shorter than the 340 ms
+       composer motion duration, truncating the animation. */
+    smoothScrollToBottom(sc,{smooth:opts.smooth!==false});
   }
 }
 
 function scheduleScrollMainToBottom(opts){
-  if(opts&&opts.smooth){
-    // Smooth scroll only needs one call after layout settles.
+  /* Wait two animation frames so the freshly added message bubble has
+     been measured before we ask for scrollHeight. A single rAF is too
+     early: addMessage()'s DOM write has not yet completed layout and
+     scrollHeight reflects the pre-bubble height, so the smooth scroll
+     targets a stale bottom and the next rAF + rAF + scroll lands one
+     pixel short of the true bottom. */
+  requestAnimationFrame(function(){
     requestAnimationFrame(function(){
       scrollMainToBottom(opts);
     });
-  }else{
-    requestAnimationFrame(function(){
-      scrollMainToBottom(opts);
-      requestAnimationFrame(function(){
-        scrollMainToBottom(opts);
-      });
-    });
-  }
+  });
 }
 
 /* Position a newly submitted turn like a document page: the user's prompt

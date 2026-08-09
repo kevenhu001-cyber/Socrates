@@ -1459,11 +1459,13 @@ true) but the dropdown never shows — see commit history. */
   overscroll-behavior-y:contain;
   touch-action:pan-y;
   scroll-padding-bottom:12px;
-  /* Smooth scroll is disabled by default. The JS applies a temporary
-     class when the user submits a new message so the viewport glides
-     to the new content instead of snapping. */
+  /* Smooth scroll is disabled by default. JS uses the browser-native
+     Element.scrollTo({behavior:'smooth'}) pipeline (see
+     ui/scroll.js#smoothScrollToBottom) when the reader needs to be
+     re-pinned, so no class toggle is needed and the platform owns the
+     easing curve. A class-based toggle on scroll-behavior raced the
+     first paint and produced a visible snap on send / keyboard open. */
   scroll-behavior:auto;
-#msgList.smooth-scroll{scroll-behavior:smooth}
   /* Centre the message column. The horizontal padding fills any
      leftover space on either side, and the vertical scrollbar sits
      at the right edge of the main pane because the scroll
