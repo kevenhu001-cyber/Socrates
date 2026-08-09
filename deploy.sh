@@ -15,6 +15,13 @@ APP_WEB_ROOT="${APP_WEB_ROOT:-/var/www/app.topodrive.top}"
 SITE_WEB_ROOT="${SITE_WEB_ROOT:-/var/www/topodrive.top}"
 SITE_DIR="${SITE_DIR:-/home/ubuntu/User/Socrates/site}"
 STATUS_DIR="${STATUS_DIR:-/var/www/status.topodrive.top}"
+APP_PUBLIC_URL="${APP_PUBLIC_URL:-https://app.topodrive.top}"
+SITE_PUBLIC_URL="${SITE_PUBLIC_URL:-https://topodrive.top}"
+STATUS_PUBLIC_URL="${STATUS_PUBLIC_URL:-https://status.topodrive.top}"
+# The Expo shell, responsive SPA, and backend deliberately share one origin.
+# `/api/v2` is the cache-bypass prefix used by both mobile and frontend; nginx
+# or Express rewrites it to the canonical `/api` routes internally.
+MOBILE_API_BASE_URL="${MOBILE_API_BASE_URL:-${APP_PUBLIC_URL%/}/api/v2}"
 NGINX_SITE_CONF="${NGINX_SITE_CONF:-/etc/nginx/sites-available/status.topodrive.top}"
 DEPLOY_LOCK_FILE="${DEPLOY_LOCK_FILE:-${XDG_RUNTIME_DIR:-/tmp}/socrates-deploy.lock}"
 STATE_FILE="${STATE_FILE:-/home/ubuntu/User/Socrates/.deploy-state.json}"
@@ -343,11 +350,37 @@ if [[ -n "${DIST_DIR:-}" && -f "${DIST_DIR}/index.html" && -f "$APP_WEB_ROOT/ind
 fi
 
 # 4.5b. Public endpoints — catches nginx→wrong port, DNS/SSL/firewall issues.
-gate_check "app.topodrive.top   " "https://app.topodrive.top/"
-gate_check "topodrive.top       " "https://topodrive.top/"
-gate_check "status.topodrive.top" "https://status.topodrive.top/"
+gate_check "app frontend        " "${APP_PUBLIC_URL%/}/"
+gate_check "marketing site      " "${SITE_PUBLIC_URL%/}/"
+gate_check "status page         " "${STATUS_PUBLIC_URL%/}/"
 
-# 4.5c. API JSON shape via direct backend port — catches nginx 200'ing
+# 4.5c. Mobile bootstrap contract through the exact public `/api/v2` path the
+# APK and SPA use. This catches stale nginx rewrites, a mismatched APP_URL in
+# the systemd environment, or a mobile build pointing at a different origin.
+MOBILE_BOOTSTRAP_URL="${MOBILE_API_BASE_URL%/}/mobile/bootstrap"
+MOBILE_BOOTSTRAP_BODY=$(curl -sf --max-time 8 "$MOBILE_BOOTSTRAP_URL" || true)
+EXPECTED_WEB_BASE_URL="${APP_PUBLIC_URL%/}"
+EXPECTED_MOBILE_API_BASE_URL="${MOBILE_API_BASE_URL%/}"
+EXPECTED_CANONICAL_API_BASE_URL="${EXPECTED_WEB_BASE_URL}/api"
+if [[ -n "$MOBILE_BOOTSTRAP_BODY" ]] && echo "$MOBILE_BOOTSTRAP_BODY" | jq -e \
+  --arg web "$EXPECTED_WEB_BASE_URL" \
+  --arg api "$EXPECTED_MOBILE_API_BASE_URL" \
+  --arg canonical "$EXPECTED_CANONICAL_API_BASE_URL" \
+  '.ok == true and .contractVersion == 1 and .webBaseUrl == $web and .apiBaseUrl == $api and .canonicalApiBaseUrl == $canonical and .healthPath == "/api/v2/health"' \
+  >/dev/null 2>&1; then
+  GATE_RESULTS+=("  mobile.bootstrap contract v1 aligned")
+else
+  echo "GATE FAIL: mobile bootstrap is missing or misaligned ($MOBILE_BOOTSTRAP_URL)" >&2
+  GATE_FAILED=1
+  GATE_RESULTS+=("  mobile.bootstrap MISALIGNED  ← FAIL")
+fi
+
+# Unlike /api/config, /api/health also checks PostgreSQL. Reach it through the
+# public versioned prefix so an APK cannot pass deployment while nginx or the
+# database path it actually uses is broken.
+gate_check "mobile api + db     " "${MOBILE_API_BASE_URL%/}/health"
+
+# 4.5d. API JSON shape via direct backend port — catches nginx 200'ing
 # an HTML error page from wrong upstream. Previously went through the
 # now-retired api.topodrive.top virtual host; check the same upstream
 # (127.0.0.1:3037) directly instead.
@@ -360,7 +393,7 @@ else
   GATE_RESULTS+=("  api.config INVALID  ← FAIL")
 fi
 
-# 4.5d. Direct backend port — disambiguates "nginx broken" vs "backend broken".
+# 4.5e. Direct backend port — disambiguates "nginx broken" vs "backend broken".
 DIRECT_API=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:3037/api/config || echo 000)
 if [[ "$DIRECT_API" =~ ^2 ]]; then
   GATE_RESULTS+=("  backend:3037 $DIRECT_API")
@@ -370,7 +403,7 @@ else
   GATE_FAILED=1
 fi
 
-# 4.5e. State file: update only on full success so last-known-good is preserved.
+# 4.5f. State file: update only on full success so last-known-good is preserved.
 if [[ $GATE_FAILED -eq 0 ]]; then
   DEPLOY_COMMIT=$(git -C "$(dirname "$(readlink -f "$0")")" rev-parse HEAD 2>/dev/null || echo unknown)
   DEPLOY_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -387,6 +420,8 @@ if [[ $GATE_FAILED -eq 0 ]]; then
       "frontendReachable": true,
       "siteReachable": true,
       "statusReachable": true,
+      "mobileBootstrapAligned": true,
+      "mobileApiDatabaseReachable": true,
       "apiConfigJsonValid": true,
       "backendDirectReachable": true,
       "bundleMd5Integrity": true,
