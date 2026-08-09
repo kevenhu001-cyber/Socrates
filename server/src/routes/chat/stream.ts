@@ -47,7 +47,6 @@ import { executeProjectConnectorTool, PROJECT_CONNECTOR_TOOL_NAMES } from '../..
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../../services/usageTracker.js';
 import { trackSseConnection, startSseKeepalive } from '../../lib/sse.js';
 import { requireAuth } from '../../middleware/auth.js';
-import { sendPushToUser } from '../../services/pushNotifications.js';
 
 import {
   prepareChatRequest,
@@ -1003,12 +1002,6 @@ data: ${JSON.stringify({
           promptTokens,
           completionTokens,
           source: 'chat',
-        });
-        void sendPushToUser(req.userId, {
-          title: 'Socrates',
-          body: 'Your response is ready.',
-          data: { type: 'reply', ...(sessionIdFromQuery ? { sessionId: sessionIdFromQuery } : {}) },
-          channelId: 'replies',
         });
       }
       // P_streaming-survival — mark stream as completed BEFORE clearing

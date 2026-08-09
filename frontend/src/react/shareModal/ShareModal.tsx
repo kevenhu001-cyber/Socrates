@@ -9,7 +9,6 @@ import {
   useShareSnapshot,
 } from './legacyAdapter';
 import type { ShareVisibility } from './types';
-import { shareContent } from '../../native/services.js';
 
 const OVERLAY_ID = 'shareOverlay';
 
@@ -121,23 +120,14 @@ function ShareModal() {
           aria-label="Share link"
           value={snap.shareUrl}
         />
-        <div className="share-link-actions">
-          <button
-            type="button"
-            className="share-copy-btn"
-            id="shareCopyBtn"
-            onClick={() => dispatch.copyLink()}
-          >
-            {i18n('share.copy', 'Copy')}
-          </button>
-          <button
-            type="button"
-            className="share-copy-btn share-native-btn"
-            onClick={() => { void shareContent({ title: 'Socrates', text: snap.shareUrl, url: snap.shareUrl }); }}
-          >
-            {i18n('share.share', 'Share')}
-          </button>
-        </div>
+        <button
+          type="button"
+          className="share-copy-btn"
+          id="shareCopyBtn"
+          onClick={() => dispatch.copyLink()}
+        >
+          {i18n('share.copy', 'Copy')}
+        </button>
       </div>
 
       <div

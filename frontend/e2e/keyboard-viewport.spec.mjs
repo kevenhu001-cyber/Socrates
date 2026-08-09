@@ -39,43 +39,6 @@ test('recognizes focus inside the nested rich-composer editor', () => {
   expect(isTrackedInputFocused([composerRoot], {})).toBe(false);
 });
 
-test('native keyboard events clear stale insets and cover both composers', async ({ page }) => {
-  await mockAuthedApp(page);
-  await page.setViewportSize({ width: 390, height: 844 });
-  await gotoAndSettle(page, '/');
-  await waitForAppShell(page);
-
-  await page.evaluate(() => {
-    const root = document.documentElement;
-    const topicEditor = document.querySelector('#topicComposerRoot .rich-composer-editor');
-    const chatEditor = document.querySelector('#chatComposerRoot .rich-composer-editor');
-    if (!topicEditor || !chatEditor) throw new Error('both composer editors must mount');
-
-    chatEditor.focus();
-    window.dispatchEvent(new CustomEvent('socrates:native-keyboard', {
-      detail: { state: 'open', height: 296 },
-    }));
-    if (root.style.getPropertyValue('--keyboard-inset') !== '296px') {
-      throw new Error('native open event must apply its height immediately');
-    }
-
-    /* keyboardWillHide can arrive before DOM focus moves. The close event is
-       responsible for clearing the stale inset synchronously. */
-    window.dispatchEvent(new CustomEvent('socrates:native-keyboard', {
-      detail: { state: 'closed' },
-    }));
-    if (root.style.getPropertyValue('--keyboard-inset') !== '0px') {
-      throw new Error('native close event must clear the inset immediately');
-    }
-
-    topicEditor.focus();
-    window.dispatchEvent(new CustomEvent('socrates:native-keyboard', {
-      detail: { state: 'open', height: 272 },
-    }));
-    return root.style.getPropertyValue('--keyboard-inset');
-  }).then((inset) => expect(inset).toBe('272px'));
-});
-
 test('in-flow composer and transcript follow the normalized keyboard inset on mobile', async ({ page }) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });

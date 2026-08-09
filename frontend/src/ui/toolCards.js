@@ -16,7 +16,6 @@
 import { esc } from '../render/helpers.js';
 import { sanitizeUrl } from '../util/safe.js';
 import { formatToolOutput } from '../render/toolOutput.js';
-import { writeClipboard } from '../native/services.js';
 
 /* ============================================================
    TOOL-CALLING UI HELPERS
@@ -162,10 +161,9 @@ function trTool(key, fallback, vars) {
 function copyText(text) {
   var value = String(text || "");
   if (!value) return Promise.reject(new Error("empty"));
-  if (typeof window !== "undefined") return writeClipboard(value).then(function (copied) {
-    if (copied) return;
-    throw new Error("clipboard unavailable");
-  });
+  if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    return navigator.clipboard.writeText(value);
+  }
   return new Promise(function (resolve, reject) {
     try {
       var area = document.createElement("textarea");

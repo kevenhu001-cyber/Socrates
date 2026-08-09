@@ -24,66 +24,10 @@
  * for /api/ paths and ignores Cache-Control headers. Use /api/v2/ prefix
  * which the CDN has never seen, so every request hits the origin fresh.
  * Nginx rewrites /api/v2/* → /api/* before proxying to the backend. */
-import { clearMobileTokens, isNativeAuth, readMobileTokens, writeMobileTokens } from '../auth/mobileTokenStore.js';
-
 const API_PREFIX = '/api/v2';
 
 let _on401 = null;
 let _isInGraceWindow = () => false;
-let _mobileRefreshInFlight = null;
-
-function setHeader(headers, name, value) {
-  if (headers && typeof headers.set === 'function') headers.set(name, value);
-  else if (headers) headers[name] = value;
-}
-
-async function attachNativeAuth(headers) {
-  if (!isNativeAuth()) return null;
-  const tokens = await readMobileTokens();
-  if (tokens?.accessToken) setHeader(headers, 'Authorization', 'Bearer ' + tokens.accessToken);
-  return tokens;
-}
-
-async function refreshNativeAuth() {
-  if (_mobileRefreshInFlight) return _mobileRefreshInFlight;
-  _mobileRefreshInFlight = (async () => {
-    const current = await readMobileTokens();
-    if (!current?.refreshToken) return false;
-    try {
-      const response = await fetch('/api/v2/auth/mobile/refresh', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: current.refreshToken }),
-      });
-      if (!response.ok) {
-        await clearMobileTokens();
-        return false;
-      }
-      const tokens = await response.json();
-      if (!tokens?.accessToken || !tokens?.refreshToken) {
-        await clearMobileTokens();
-        return false;
-      }
-      await writeMobileTokens(tokens);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  })().finally(() => { _mobileRefreshInFlight = null; });
-  return _mobileRefreshInFlight;
-}
-
-async function retryAfterNative401(path, opts, method) {
-  if (!isNativeAuth() || opts._mobileRetried || path.includes('/auth/mobile/')) return null;
-  if (!await refreshNativeAuth()) {
-    await clearMobileTokens();
-    return false;
-  }
-  return method === 'RAW'
-    ? apiFetchRaw(path, Object.assign({}, opts, { _mobileRetried: true }))
-    : apiFetch(path, Object.assign({}, opts, { _mobileRetried: true }));
-}
 
 export function installAuthHooks({ on401, isInGraceWindow }) {
   if (on401) _on401 = on401;
@@ -134,7 +78,6 @@ export async function apiFetchRaw(path, opts = {}) {
     opts.headers['Content-Type'] = 'application/json';
   }
   const method = (opts.method || 'GET').toUpperCase();
-  await attachNativeAuth(opts.headers);
   if (method !== 'GET' && method !== 'HEAD') {
     const t = getCsrfToken();
     if (t) opts.headers['X-CSRF-Token'] = t;
@@ -171,10 +114,6 @@ export async function apiFetchRaw(path, opts = {}) {
     try { opts.signal.removeEventListener('abort', onCallerAbort); } catch (_) {}
   }
   if (!r.ok) {
-    if (r.status === 401 && isNativeAuth()) {
-      const retried = await retryAfterNative401(path, opts, 'RAW');
-      if (retried !== null && retried !== false) return retried;
-    }
     if (r.status === 401 && !opts._authEndpoint && !_isInGraceWindow()) {
       try { _on401 && _on401('apiFetchRaw:' + method + ' ' + path); } catch (_) {}
     } else if (r.status === 403 && !opts._csrfRetried && method !== 'GET' && method !== 'HEAD') {
@@ -203,7 +142,6 @@ export async function apiFetch(path, opts = {}) {
     opts.headers['Content-Type'] = 'application/json';
   }
   const method = (opts.method || 'GET').toUpperCase();
-  await attachNativeAuth(opts.headers);
   if (method !== 'GET' && method !== 'HEAD') {
     const token = getCsrfToken();
     if (token) opts.headers['X-CSRF-Token'] = token;
@@ -271,10 +209,6 @@ export async function apiFetch(path, opts = {}) {
   if (!r.ok) {
     const msg = (json && (json.detail || json.title || json.error)) || ('HTTP ' + r.status);
     const err = makeApiError(r.status, msg, json, json && json.code, 0);
-    if (r.status === 401 && isNativeAuth()) {
-      const retried = await retryAfterNative401(path, opts, method);
-      if (retried !== null && retried !== false) return retried;
-    }
     if (r.status === 401 && !opts._authEndpoint && !_isInGraceWindow()) {
       try { _on401 && _on401('apiFetch:' + method + ' ' + path); } catch (_) {}
     } else if (r.status === 403 && !opts._csrfRetried && method !== 'GET' && method !== 'HEAD') {

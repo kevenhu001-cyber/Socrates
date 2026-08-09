@@ -20,8 +20,6 @@ import { BadRequest } from '../lib/errors.js';
 const NotificationRegisterSchema = z.object({
   token: z.string().min(10).max(4096),
   platform: z.enum(['web', 'ios', 'android']),
-  deviceId: z.string().max(256).optional(),
-  channels: z.array(z.string().max(80)).max(32).optional(),
 }).strict();
 
 const router = Router();
@@ -34,11 +32,9 @@ router.post('/register', async (req, res, next) => {
     if (!parsed.success) {
       throw new BadRequest('Invalid notification payload: ' + (parsed.error.issues[0]?.message || 'validation failed'));
     }
-    const { token, platform, deviceId, channels } = parsed.data;
+    const { token, platform } = parsed.data;
+    const { deviceId, channels } = req.body;
     const db = getDb();
-    await db.delete(notificationTokens).where(deviceId
-      ? and(eq(notificationTokens.userId, req.userId!), eq(notificationTokens.platform, platform), eq(notificationTokens.deviceId, deviceId))
-      : and(eq(notificationTokens.userId, req.userId!), eq(notificationTokens.platform, platform), eq(notificationTokens.token, token)));
     const [n] = await db.insert(notificationTokens).values({
       userId: req.userId!, platform, token, deviceId, channels: channels || [],
     }).returning();

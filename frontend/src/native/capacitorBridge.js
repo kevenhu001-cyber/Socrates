@@ -8,9 +8,9 @@
  * Goals:
  *  - Status bar: keep the OS chrome in sync with the in-app theme so
  *    the bar reads as part of the UI on both dark and light backgrounds.
- *  - Keyboard: forward Capacitor's keyboardWillShow/Hide as an explicit
- *    native event. Focus belongs to the editor; it must not be faked to
- *    represent an OS keyboard transition.
+ *  - Keyboard: forward Capacitor's keyboardWillShow/Hide to the
+ *    focusin/focusout pipeline that keyboardViewport.js already listens
+ *    to, so the visualViewport measurement has the correct focus state.
  *  - Back button: route Android's hardware back through the in-app
  *    router/history so the user can navigate Recents / modal stacks
  *    the same way as on desktop browsers, falling back to Capacitor's
@@ -18,7 +18,6 @@
  */
 
 const ROOT = document.documentElement;
-export const NATIVE_KEYBOARD_EVENT = 'socrates:native-keyboard';
 
 function getCapacitor() {
   // window.Capacitor is injected by the Capacitor runtime before any
@@ -56,8 +55,8 @@ function getPlugin(name) {
  * the bridge can run before any CSS is parsed.
  */
 const STATUS_BAR_BG = {
-  light: '#000000',
-  dark:  '#000000',
+  light: '#E6DEC8',
+  dark:  '#101318',
 };
 
 function currentMode() {
@@ -67,10 +66,7 @@ function currentMode() {
 async function applyStatusBar() {
   const StatusBar = getPlugin('StatusBar');
   if (!StatusBar) return;
-  /* The Android reference surface is intentionally black even when the
-     desktop theme preference is light; keep status-bar icons white so the
-     OS chrome never fights the mobile canvas. */
-  const mode = isNativeApp() ? 'dark' : currentMode();
+  const mode = currentMode();
   try {
     await StatusBar.setStyle({ style: mode === 'light' ? 'LIGHT' : 'DARK' });
     await StatusBar.setBackgroundColor({ color: STATUS_BAR_BG[mode] });
@@ -98,26 +94,34 @@ function setupStatusBarThemeSync() {
 
 /*
  * Capacitor's Keyboard plugin fires keyboardWillShow/Hide with the
- * keyboard height. Keep that signal separate from DOM focus: the same
- * viewport helper is used by both the topic and chat composers, and a
- * synthetic focus event cannot change document.activeElement anyway.
+ * keyboard height. We forward those as focusin/focusout on the input
+ * element so keyboardViewport.js's focus-authoritative path fires
+ * immediately on the native signal (visualViewport.resize on Android
+ * can lag by 16-50ms, and on some Samsung builds it never fires for
+ * the dismiss path).
  */
 function wireKeyboardBridge() {
   const Keyboard = getPlugin('Keyboard');
   if (!Keyboard) return () => {};
 
-  const showHandle = Keyboard.addListener('keyboardWillShow', (info) => {
-    const height = Number.isFinite(info?.keyboardHeight) ? info.keyboardHeight : undefined;
-    ROOT.dataset.nativeKeyboardOpen = 'true';
-    window.dispatchEvent(new CustomEvent(NATIVE_KEYBOARD_EVENT, {
-      detail: { state: 'open', ...(height === undefined ? {} : { height }) },
-    }));
+  const findInput = () => document.querySelector('#chatComposerRoot .rich-composer-editor');
+
+  const showHandle = Keyboard.addListener('keyboardWillShow', () => {
+    const input = findInput();
+    if (input && document.activeElement !== input) {
+      input.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    }
   });
   const hideHandle = Keyboard.addListener('keyboardWillHide', () => {
-    ROOT.dataset.nativeKeyboardOpen = 'false';
-    window.dispatchEvent(new CustomEvent(NATIVE_KEYBOARD_EVENT, {
-      detail: { state: 'closed' },
-    }));
+    const input = findInput();
+    if (input) {
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    }
+    // Always force a re-measure even if focusout didn't fire from a
+    // tap-away path — visualViewport can be stale on Android.
+    window.requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
   });
 
   return () => {
@@ -137,17 +141,8 @@ function wireKeyboardBridge() {
 function setupBackButton() {
   const App = getPlugin('App');
   if (!App || getPlatform() !== 'android') return () => {};
-  const Keyboard = getPlugin('Keyboard');
 
   const handle = App.addListener('backButton', ({ canGoBack }) => {
-    /* Android sends the same back gesture for the IME and the page. Let the
-       IME consume the first press; the page/router only sees the next one. */
-    if (Keyboard && (ROOT.dataset.nativeKeyboardOpen === 'true'
-      || ROOT.dataset.keyboardOpen === 'true')) {
-      void Keyboard.hide?.();
-      return;
-    }
-
     /* If a modal/overlay is open it should intercept first. The web
        app dispatches a custom event that listeners can call
        preventDefault() on. */

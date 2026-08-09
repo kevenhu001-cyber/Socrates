@@ -26,12 +26,6 @@ function _currentMode() {
   return window.appMode === "tutor" ? "tutor" : "chat";
 }
 
-function _referenceLabels() {
-  return typeof window !== "undefined" && window.matchMedia
-    ? window.matchMedia("(max-width: 640px)").matches
-    : false;
-}
-
 function _setOpen(open) {
   var wrap = document.getElementById("mobileMode");
   if (!wrap) return;
@@ -46,14 +40,10 @@ export function syncMobileModeSwitch() {
   var label = document.getElementById("mobileModeLabel");
   if (label) {
     label.setAttribute("data-i18n-key", key);
-    label.textContent = _referenceLabels()
-      ? (mode === "tutor" ? "工作" : "聊天")
-      : _t(key, mode === "tutor" ? "Tutor" : "Chat");
+    label.textContent = _t(key, mode === "tutor" ? "Tutor" : "Chat");
   }
-  document.querySelectorAll("#mobileModeMenu .mobile-mode-item, #mobileMode .mobile-mode-segment").forEach(function (item) {
-    var active = item.getAttribute("data-mode") === mode;
-    item.classList.toggle("active", active);
-    if (item.hasAttribute("aria-selected")) item.setAttribute("aria-selected", active ? "true" : "false");
+  document.querySelectorAll("#mobileModeMenu .mobile-mode-item").forEach(function (item) {
+    item.classList.toggle("active", item.getAttribute("data-mode") === mode);
   });
 }
 

@@ -1,6 +1,12 @@
-name: Legacy Capacitor APK (manual rollback only)
+name: Build Capacitor APK
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'capacitor/**'
+      - 'frontend/**'
+      - '.github/workflows/build-capacitor-apk.yml'
   workflow_dispatch:
     inputs:
       build_type:
@@ -81,3 +87,41 @@ jobs:
           name: socrates-capacitor-apk-${{ steps.build-type.outputs.type }}-${{ github.sha }}
           path: ${{ steps.apk.outputs.path }}
           if-no-files-found: error
+
+  release:
+    name: Create Release (debug)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: socrates-capacitor-apk-debug-${{ github.sha }}
+          path: ./apk
+
+      - name: Generate release tag and date
+        id: tag
+        run: |
+          DATE_TAG="capacitor-nightly-$(date -u +%Y%m%d-%H%M%S)"
+          BUILD_DATE="$(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          echo "tag=$DATE_TAG" >> $GITHUB_OUTPUT
+          echo "date=$BUILD_DATE" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "Capacitor Nightly Build ${{ steps.tag.outputs.tag }}"
+          body: |
+            Auto-built Capacitor APK from the latest commit on `main`.
+
+            - Commit: ${{ github.sha }}
+            - Build date: ${{ steps.build-type.outputs.date }}
+          files: |
+            apk/*.apk
+          make_latest: true
+          prerelease: true
