@@ -1,3 +1,5 @@
+import { smoothScrollToBottom } from './scroll.js';
+
 /*
  * Keep chat controls above mobile virtual keyboards.
  *
@@ -122,19 +124,23 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     /* Raising the in-flow composer shrinks the transcript's flex viewport.
      * Preserve the bottom anchor only for a reader who was already following
      * the latest message; otherwise the smaller viewport can make them appear
-     * to have scrolled away and subsequent stream updates stop following. */
+     * to have scrolled away and subsequent stream updates stop following.
+     *
+     * Previous implementation toggled a `smooth-scroll` class on #msgList
+     * for 400 ms and assigned scrollTop inside the same task — that race
+     * caused the first paint to use scroll-behavior:auto (snap) before the
+     * class took effect, and the 400 ms window was shorter than the CSS
+     * padding-bottom transition, so the animation was truncated mid-flight.
+     * smoothScrollToBottom() uses the browser-native scrollTo({behavior})
+     * pipeline which is owned by the platform and survives concurrent
+     * layout changes, so a single call here replaces the previous
+     * class-toggle + scrollTop assignment + 400 ms setTimeout trio. */
     if (wasPinned && list) {
       if (pinFrame) cancelAnimationFrame(pinFrame);
       pinFrame = requestAnimationFrame(() => {
         pinFrame = 0;
         if (!window.state || !window.state._userScrolledAway) {
-          /* Smooth the re-pin so the transcript glides up with the
-             composer instead of snapping when the keyboard opens. */
-          list.classList.add('smooth-scroll');
-          list.scrollTop = list.scrollHeight;
-          setTimeout(function() {
-            try { list.classList.remove('smooth-scroll'); } catch (_) {}
-          }, 400);
+          smoothScrollToBottom(list, { smooth: true });
         }
       });
     }
