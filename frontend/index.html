@@ -697,12 +697,11 @@
       <div class="exam-view-body" id="examViewBody"></div>
       <div class="exam-view-footer" id="examViewFooter"></div>
     </div>
-    <!-- chat-view + transcript + jump pill, lifted out of
-         .main-inner so the vertical scrollbar anchors to the
-         right edge of the main pane (page right minus sidebar)
-         instead of the right edge of the centred reading column.
-         The #msgList id is unchanged so every scrollTop /
-         scrollHeight call site in main.js continues to work. -->
+    <!-- Chat controls and transcript share the same main-content flex
+         column. Keeping #msgList in this flow makes its viewport end at
+         the real composer top instead of relying on a fixed bottom reserve.
+         The scrollbar still spans the main pane, while the message column
+         remains centred by its horizontal padding. -->
     <div class="chat-view chat-view-lifted hidden" id="chatView">
 
         <!-- P0.2 — In-session find bar. A browser-style "find on page"
@@ -762,11 +761,18 @@
             </div>
           </div>
         </div>
+        <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
       </div>
     </div>
+    <!-- #msgList is a direct child of #mainContent so the chat-view
+         can own one vertical flex column (transcript + composer). The
+         scroll viewport ends at the composer's real top edge instead
+         of relying on a fixed bottom reserve, and the new-reply pill
+         sits inside the chat-view wrapper so it can track the
+         composer's measured height. -->
     <div class="msg-list" id="msgList"></div>
-    <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
 
+  </div>
   </div>
   </div>
 
