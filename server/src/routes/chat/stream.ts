@@ -50,6 +50,7 @@ import { requireAuth } from '../../middleware/auth.js';
 
 import {
   prepareChatRequest,
+  prependCodeInterpreterPrompt,
   appendNativeToolContract,
   appendToolRoutingHints,
   chatRateLimitDispatch,
@@ -289,13 +290,20 @@ export function registerStreamRoute(router: Router) {
          * this request. In the final, tools-disabled hop the upstream gets no
          * `tools` field, so do not leave the initial registry list in the
          * system message and invite an unavailable call. */
-        const requestMessages = appendToolRoutingHints(
+        let requestMessages = appendToolRoutingHints(
           appendNativeToolContract(
             workingMessages,
             toolsAllowed ? toolNames : [],
           ),
           toolsAllowed ? toolNames : [],
         );
+        /* Keep the code-runtime appendix aligned with the executable tool
+         * list. In particular, the final tools-disabled hop must not tell
+         * the model that code_interpreter is callable. The helper inserts
+         * the appendix before FINAL_OUTPUT_CONSTRAINTS and is idempotent. */
+        if (toolsAllowed && toolNames.includes('code_interpreter')) {
+          requestMessages = await prependCodeInterpreterPrompt(requestMessages);
+        }
         let iterFinishReason: string | null = null;
         const toolCallsThisTurn: ToolCall[] = [];
 
@@ -913,7 +921,7 @@ data: ${JSON.stringify({
               lines.push('- `output_limit_exceeded` → stdout/stderr hit the 64 KB cap. Save the data to a file, print a summary, describe the summary in prose.');
               lines.push('- `code_interpreter_unavailable` / `skipped` → the runner is off; do not retry. Tell the user.');
               lines.push('- `illustration_not_supported` → you tried to draw an SVG / illustration via code_interpreter. Call render_visualization with the svg_illustration template instead.');
-              lines.push('- `SyntaxError: \'await\' outside function` → you wrote top-level `await`. Wrap in `def main(): await ...` and call `asyncio.run(main())` at the end.');
+              lines.push('- `SyntaxError: \'await\' outside function` → you wrote top-level `await`. Put the awaited statements inside `async def main():` and call `asyncio.run(main())` at the end.');
               lines.push('- `SyntaxError` (other) / `IndentationError` → re-read the source as if it were the body of `def __main__():`; fix indentation; nothing is permitted at module scope that would not be valid in `python -c`.');
               lines.push('- `NameError` → the variable was from a previous call. Recompute it in this run.');
               lines.push('- `ModuleNotFoundError` → use `import micropip; micropip.install("pkg")` at the top. NEVER use `pip install` or `subprocess` (the runner is WASM, no shell, no network).');

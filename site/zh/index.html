@@ -1,360 +1,194 @@
-<!DOCTYPE html>
-<html lang="zh-CN" data-theme="socrates" data-mode="dark">
+<!doctype html>
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/logo.png">
-<title>Socrates — 循序渐进，学无止境</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=Noto+Serif+SC:wght@300;400;500&display=swap" rel="stylesheet">
-<link href="/base.css?v=20260731" rel="stylesheet">
-<link href="/home.css?v=20260731" rel="stylesheet">
-<script>
-!function(){
-  try{
-    var p=localStorage.getItem("socrates-lang");
-    if(!p)return;
-    var c=document.documentElement.lang;
-    var here=window.location.pathname;
-    if(p==="zh"&&c.indexOf("zh")!==0){
-      var target=here.replace(/\.html$/,"");
-      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
-    }else if(p==="en"&&c.indexOf("en")!==0){
-      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
-      window.location.replace(target2==="/"||target2===""?"/":target2);
-    }
-  }catch(e){}
-}();
-</script>
-<style>
-  html[lang^="zh"] body{font-family:"Inter","PingFang SC","Hiragino Sans GB","Noto Sans SC",sans-serif}
-  html[lang^="zh"] .section-title, html[lang^="zh"] .page-header h1, html[lang^="zh"] .hero h1, html[lang^="zh"] .narrative-heading, html[lang^="zh"] .pricing-block-name, html[lang^="zh"] .cta-section h2, html[lang^="zh"] .pull-quote blockquote, html[lang^="zh"] .footer-tag, html[lang^="zh"] .stat-number{font-family:"Noto Serif SC","Newsreader",serif}
-  /* Chinese home — flatten the static .hero card so the topology
-     ring + CRT marquee can sit on a clean black void like the
-     English homepage. */
-  html[lang^="zh"] section.hero{padding:0}
-  html[lang^="zh"] .hero-platform{
-    background:transparent;border:0;padding:0;border-radius:0;
-    max-width:none;
-  }
-  /* Chinese needs a serif CRT track for the 4-character slogan;
-     keep the same gold/moonlight palette. */
-  html[lang^="zh"] .crt-track span{
-    font-family:"Noto Serif SC","Cormorant Garamond",serif;
-    font-weight:500;
-    letter-spacing:.32em;
-  }
-  html[lang^="zh"] .hero-tagline{
-    font-family:"Noto Serif SC","Newsreader",serif;
-  }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Socrates 是一位 AI 导师，帮助你把困难的想法变成真正留下来的理解。">
+  <title>Socrates — 用更好的问题学习。</title>
+  <link rel="icon" href="../favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../marketing.css">
+  <link rel="stylesheet" href="../home.css">
 </head>
-<body>
-<div class="bg-ambient"><canvas id="stars" aria-hidden="true"></canvas></div>
-<div class="page">
+<body class="xa-page">
+  <a class="xa-skip-link" href="#main">跳到正文</a>
 
-<nav>
-  <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt=""><span><em>S</em>ocrates</span></a>
-    <button class="nav-toggle" id="navToggle" aria-label="切换菜单" aria-expanded="false"><span></span><span></span><span></span></button>
-    <div class="nav-links" id="navLinks">
-      <a href="/pricing">套餐</a>
-      <a href="/guide">指南</a>
-      <a href="/about">关于</a>
-      <a href="/contact">联系</a>
-      <a href="https://app.topodrive.top" class="nav-login">登录</a>
-      <a class="lang-switch">English</a>
-      <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+  <header class="xa-header" data-site-nav>
+    <div class="xa-container xa-header-inner">
+      <a class="xa-brand" href="index.html" aria-label="Socrates 首页">
+        <img src="../logo.png" width="22" height="22" alt="">
+        <span>Socrates</span>
+      </a>
+
+      <nav class="xa-nav" id="site-menu" data-menu-panel aria-label="主导航">
+        <a href="#product">产品</a>
+        <a href="#method">方法</a>
+        <a href="guide.html">研究</a>
+        <a href="about.html">公司</a>
+        <a href="pricing.html">套餐</a>
+      </nav>
+
+      <button class="xa-search-button" type="button" data-search-toggle aria-expanded="false" aria-controls="oa-search-panel" aria-label="打开搜索">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="5.8" stroke="currentColor" stroke-width="1.6"></circle><path d="m15.2 15.2 4.2 4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+      </button>
+
+      <div class="xa-header-actions">
+        <a class="xa-quiet-link" href="https://app.topodrive.top">登录</a>
+        <a class="xa-top-cta" href="https://app.topodrive.top">试用 Socrates <svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
+        <a class="xa-locale" href="../index.html" lang="en">EN</a>
+      </div>
+
+      <button class="xa-mobile-menu" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="打开菜单">
+        <span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="oa-search-panel" id="oa-search-panel" data-search-panel hidden>
+    <div class="xa-container">
+      <form class="oa-search-form" data-search-form>
+        <label class="xa-visually-hidden" for="site-search">搜索 Socrates</label>
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="5.8" stroke="currentColor" stroke-width="1.6"></circle><path d="m15.2 15.2 4.2 4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+        <input id="site-search" data-search-input type="search" placeholder="搜索学习循环" autocomplete="off">
+        <button type="button" data-search-close aria-label="关闭搜索">关闭</button>
+      </form>
+      <p class="oa-search-hint" data-search-hint>试试“考试模式”“知识图谱”或“API”。</p>
     </div>
   </div>
-</nav>
 
-<!-- ═══════════ HERO — 苏格拉底：始终流动的拓扑 ═══════════ -->
-<header class="hero-cosmos">
-  <div class="hero-core">
-    <p class="hero-eyebrow">苏格拉底式 AI 学伴</p>
-    <div class="eclipse-stage">
-      <div class="crt-marquee" aria-hidden="true">
-        <div class="crt-track">
-          <span>苏格拉底&nbsp;·&nbsp;学无止境&nbsp;·&nbsp;</span>
-          <span>苏格拉底&nbsp;·&nbsp;学无止境&nbsp;·&nbsp;</span>
-          <span>苏格拉底&nbsp;·&nbsp;学无止境&nbsp;·&nbsp;</span>
-          <span>苏格拉底&nbsp;·&nbsp;学无止境&nbsp;·&nbsp;</span>
-          <span>苏格拉底&nbsp;·&nbsp;学无止境&nbsp;·&nbsp;</span>
-          <span>苏格拉底&nbsp;·&nbsp;学无止境&nbsp;·&nbsp;</span>
+  <main id="main">
+    <section class="xa-hero oa-home-hero" id="top">
+      <div class="xa-container" data-demo-shell data-mode="dialogue">
+        <div class="oa-hero-copy xa-reveal">
+          <h1 class="oa-hero-title">你想了解什么？</h1>
+          <form class="oa-prompt" data-prompt-form>
+            <label class="xa-visually-hidden" for="demo-prompt">向 Socrates 提问</label>
+            <input id="demo-prompt" data-demo-prompt value="" autocomplete="off" placeholder="随便问问">
+            <button type="submit" aria-label="发送问题"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 4.5a1.5 1.5 0 0 1 1.5 1.5v4.5H18a1.5 1.5 0 0 1 0 3h-4.5V18a1.5 1.5 0 0 1-3 0v-4.5H6a1.5 1.5 0 0 1 0-3h4.5V6A1.5 1.5 0 0 1 12 4.5Z"></path></svg></button>
+          </form>
+          <div class="oa-topic-links" role="tablist" aria-label="Socrates 学习模式">
+            <button type="button" role="tab" aria-selected="true" class="is-active" data-demo-tab="dialogue"><svg class="oa-topic-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5.5 6.5h13v9h-7l-4 3v-3h-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>对话</button>
+            <button type="button" role="tab" aria-selected="false" data-demo-tab="exam"><svg class="oa-topic-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3.75h7l3 3v13.5H7zM14 3.75v3h3M9.5 11h5M9.5 14.5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>考试</button>
+            <button type="button" role="tab" aria-selected="false" data-demo-tab="map"><svg class="oa-topic-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="6" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="17.5" cy="6.5" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="17.5" cy="17.5" r="2" stroke="currentColor" stroke-width="1.5"/><path d="m7.8 11 7.8-3.4M7.8 13l7.8 3.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>知识图谱</button>
+          </div>
+          <p class="oa-hero-status" data-answer-status aria-live="polite"><span data-demo-mode-label>对话</span> 会把下一个有用的问题留在眼前。</p>
         </div>
       </div>
-      <div class="topo-wrap">
-        <canvas id="topo" aria-hidden="true"></canvas>
-      </div>
-    </div>
-    <p class="hero-tagline">以提问<em>唤醒</em>你心中已有的答案</p>
-    <p class="hero-sub">不是直接给答案的聊天机器人，而是用提问带你思考的 AI 导师。适合学习者、构建者与永远好奇的人。</p>
-    <div class="hero-cta-row">
-      <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
-      <a href="/guide" class="cta-btn ghost">了解原理</a>
-    </div>
-    <p class="hero-note">内置 Beagle AI 模型，开箱即用，也可使用自己的 LLM 密钥。无需信用卡。</p>
-  </div>
-  <div class="scroll-hint" aria-hidden="true"></div>
-</header>
+    </section>
 
-<!-- ═══════════ PROVIDERS — 真实模型提供商 logo，旋转展示 ═══════════ -->
-<section class="providers-section" aria-label="Socrates 兼容的模型提供商">
-  <p class="providers-cap">自带密钥 — 兼容主流模型</p>
-  <div class="providers-marquee">
-    <div class="providers-track">
-      <div class="providers-set">
-        <div class="provider-logo" title="Anthropic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/></svg><span>Anthropic</span></div>
-        <div class="provider-logo" title="Google Gemini"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81"/></svg><span>Gemini</span></div>
-        <div class="provider-logo" title="Mistral AI"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.143 3.429v3.428h-3.429v3.429h-3.428V6.857H6.857V3.43H3.43v13.714H0v3.428h10.286v-3.428H6.857v-3.429h3.429v3.429h3.429v-3.429h3.428v3.429h-3.428v3.428H24v-3.428h-3.43V3.429z"/></svg><span>Mistral</span></div>
-        <div class="provider-logo" title="Meta AI"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z"/></svg><span>Meta</span></div>
-        <div class="provider-logo" title="DeepSeek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.748 4.651c-.254-.124-.364.113-.512.233-.051.04-.094.09-.137.137-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.155-.708-.311-.955-.65-.172-.24-.219-.509-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.094.172.187.129.323-.082.28-.18.553-.266.833-.055.179-.137.218-.328.14a5.5 5.5 0 0 1-1.737-1.179c-.857-.828-1.631-1.743-2.597-2.46a12 12 0 0 0-.689-.47c-.985-.957.13-1.743.387-1.836.27-.098.094-.433-.778-.428-.872.003-1.67.295-2.687.685a3 3 0 0 1-.465.136 9.6 9.6 0 0 0-2.883-.101c-1.885.21-3.39 1.1-4.497 2.622C.082 8.776-.231 10.854.152 13.02c.403 2.284 1.568 4.175 3.36 5.653 1.857 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.132-.284 4.994-1.86.47.234.962.328 1.78.398.629.058 1.235-.031 1.705-.129.735-.155.684-.836.418-.961-2.155-1.004-1.682-.595-2.112-.926 1.095-1.295 2.768-3.598 3.284-6.733.05-.346.115-.834.108-1.114-.004-.171.035-.238.23-.257a4.2 4.2 0 0 0 1.545-.475c1.397-.763 1.96-2.016 2.093-3.517.02-.23-.004-.467-.247-.588M11.58 18.168c-2.088-1.642-3.101-2.183-3.52-2.16-.39.024-.32.472-.234.763.09.288.207.487.371.74.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.168-1.361-.801-2.5-1.86-3.301-3.306-.775-1.393-1.225-2.888-1.299-4.482-.02-.385.094-.522.477-.592a4.7 4.7 0 0 1 1.53-.038c2.131.311 3.946 1.264 5.467 2.774.868.86 1.525 1.887 2.202 2.89.72 1.066 1.494 2.082 2.48 2.915.348.291.626.513.892.677-.802.09-2.14.109-3.055-.615zm1.001-6.44a.306.306 0 0 1 .415-.287.3.3 0 0 1 .113.074.3.3 0 0 1 .086.214c0 .17-.136.307-.308.307a.303.303 0 0 1-.306-.307m3.11 1.596c-.2.081-.4.151-.591.16a1.25 1.25 0 0 1-.798-.254c-.274-.23-.47-.358-.551-.758a1.7 1.7 0 0 1 .015-.588c.07-.327-.007-.537-.238-.727-.188-.156-.426-.199-.689-.199a.6.6 0 0 1-.254-.078.253.253 0 0 1-.114-.358 1 1 0 0 1 .192-.21c.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.392.451.462.576.685.915.176.264.336.536.446.848.066.194-.02.353-.25.45"/></svg><span>DeepSeek</span></div>
-        <div class="provider-logo" title="Perplexity"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22.3977 7.0896h-2.3106V.0676l-7.5094 6.3542V.1577h-1.1554v6.1966L4.4904 0v7.0896H1.6023v10.3976h2.8882V24l6.932-6.3591v6.2005h1.1554v-6.0469l6.9318 6.1807v-6.4879h2.8882V7.0896zm-3.4657-4.531v4.531h-5.355l5.355-4.531zm-13.2862.0676 4.8691 4.4634H5.6458V2.6262zM2.7576 16.332V8.245h7.8476l-6.1149 6.1147v1.9723H2.7576zm2.8882 5.0404v-3.8852h.0001v-2.6488l5.7763-5.7764v7.0111l-5.7764 5.2993zm12.7086.0248-5.7766-5.1509V9.0618l5.7766 5.7766v6.5588zm2.8882-5.0652h-1.733v-1.9723L13.3948 8.245h7.8478v8.087z"/></svg><span>Perplexity</span></div>
-        <div class="provider-logo" title="Qwen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.919 14.545 20.817 9.17l1.47-2.544a.56.56 0 0 0 0-.566l-1.633-2.83a.57.57 0 0 0-.49-.283h-6.207L12.487.402a.57.57 0 0 0-.49-.284H8.732a.56.56 0 0 0-.49.284L5.139 5.775h-2.94a.56.56 0 0 0-.49.284L.077 8.887a.56.56 0 0 0 0 .567L3.18 14.83l-1.47 2.545a.56.56 0 0 0 0 .566l1.634 2.83a.57.57 0 0 0 .49.283h6.205l1.47 2.545a.57.57 0 0 0 .49.284h3.266a.57.57 0 0 0 .49-.284l3.104-5.375h2.94a.57.57 0 0 0 .49-.283l1.634-2.828a.55.55 0 0 0-.004-.568M8.733.686l1.634 2.828-1.634 2.828H21.8L20.164 9.17H7.425L5.63 6.06Zm1.306 19.801-6.205-.002 1.634-2.83h3.265L2.201 6.344h3.267q3.182 5.517 6.367 11.032zm10.124-5.66L18.53 12l-6.532 11.315-1.634-2.83c2.129-3.673 4.25-7.351 6.373-11.028h3.592l3.102 5.374z"/></svg><span>Qwen</span></div>
-        <div class="provider-logo" title="Hugging Face"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.025 1.13c-5.77 0-10.449 4.647-10.449 10.378 0 1.112.178 2.181.503 3.185.064-.222.203-.444.416-.577a.96.96 0 0 1 .524-.15c.293 0 .584.124.84.284.278.173.48.408.71.694.226.282.458.611.684.951v-.014c.017-.324.106-.622.264-.874s.403-.487.762-.543c.3-.047.596.06.787.203s.31.313.4.467c.15.257.212.468.233.542.01.026.653 1.552 1.657 2.54.616.605 1.01 1.223 1.082 1.912.055.537-.096 1.059-.38 1.572.637.121 1.294.187 1.967.187.657 0 1.298-.063 1.921-.178-.287-.517-.44-1.041-.384-1.581.07-.69.465-1.307 1.081-1.913 1.004-.987 1.647-2.513 1.657-2.539.021-.074.083-.285.233-.542.09-.154.208-.323.4-.467a1.08 1.08 0 0 1 .787-.203c.359.056.604.29.762.543s.247.55.265.874v.015c.225-.34.457-.67.683-.952.23-.286.432-.52.71-.694.257-.16.547-.284.84-.285a.97.97 0 0 1 .524.151c.228.143.373.388.43.625l.006.04a10.3 10.3 0 0 0 .534-3.273c0-5.731-4.678-10.378-10.449-10.378M8.327 6.583a1.5 1.5 0 0 1 .713.174 1.487 1.487 0 0 1 .617 2.013c-.183.343-.762-.214-1.102-.094-.38.134-.532.914-.917.71a1.487 1.487 0 0 1 .69-2.803m7.486 0a1.487 1.487 0 0 1 .689 2.803c-.385.204-.536-.576-.916-.71-.34-.12-.92.437-1.103.094a1.487 1.487 0 0 1 .617-2.013 1.5 1.5 0 0 1 .713-.174m-10.68 1.55a.96.96 0 1 1 0 1.921.96.96 0 0 1 0-1.92m13.838 0a.96.96 0 1 1 0 1.92.96.96 0 0 1 0-1.92M8.489 11.458c.588.01 1.965 1.157 3.572 1.164 1.607-.007 2.984-1.155 3.572-1.164.196-.003.305.12.305.454 0 .886-.424 2.328-1.563 3.202-.22-.756-1.396-1.366-1.63-1.32q-.011.001-.02.006l-.044.026-.01.008-.03.024q-.018.017-.035.036l-.032.04a1 1 0 0 0-.058.09l-.014.025q-.049.088-.11.19a1 1 0 0 1-.083.116 1.2 1.2 0 0 1-.173.18q-.035.029-.075.058a1.3 1.3 0 0 1-.251-.243 1 1 0 0 1-.076-.107c-.124-.193-.177-.363-.337-.444-.034-.016-.104-.008-.2.022q-.094.03-.216.087-.06.028-.125.063l-.13.074q-.067.04-.136.086a3 3 0 0 0-.135.096 3 3 0 0 0-.26.219 2 2 0 0 0-.12.121 2 2 0 0 0-.106.128l-.002.002a2 2 0 0 0-.09.132l-.001.001a1.2 1.2 0 0 0-.105.212q-.013.036-.024.073c-1.139-.875-1.563-2.317-1.563-3.203 0-.334.109-.457.305-.454m.836 10.354c.824-1.19.766-2.082-.365-3.194-1.13-1.112-1.789-2.738-1.789-2.738s-.246-.945-.806-.858-.97 1.499.202 2.362c1.173.864-.233 1.45-.685.64-.45-.812-1.683-2.896-2.322-3.295s-1.089-.175-.938.647 2.822 2.813 2.562 3.244-1.176-.506-1.176-.506-2.866-2.567-3.49-1.898.473 1.23 2.037 2.16c1.564.932 1.686 1.178 1.464 1.53s-3.675-2.511-4-1.297c-.323 1.214 3.524 1.567 3.287 2.405-.238.839-2.71-1.587-3.216-.642-.506.946 3.49 2.056 3.522 2.064 1.29.33 4.568 1.028 5.713-.624m5.349 0c-.824-1.19-.766-2.082.365-3.194 1.13-1.112 1.789-2.738 1.789-2.738s.246-.945.806-.858.97 1.499-.202 2.362c-1.173.864.233 1.45.685.64.451-.812 1.683-2.896 2.322-3.295s1.089-.175.938.647-2.822 2.813-2.562 3.244 1.176-.506 1.176-.506 2.866-2.567 3.49-1.898-.473 1.23-2.037 2.16c-1.564.932-1.686 1.178-1.464 1.53s3.675-2.511 4-1.297c.323 1.214-3.524 1.567-3.287 2.405.238.839 2.71-1.587 3.216-.642.506.946-3.49 2.056-3.522 2.064-1.29.33-4.568 1.028-5.713-.624"/></svg><span>Hugging Face</span></div>
-        <div class="provider-logo" title="Ollama"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.361 10.26a.894.894 0 0 0-.558.47l-.072.148.001.207c0 .193.004.217.059.353.076.193.152.312.291.448.24.238.51.3.872.205a.86.86 0 0 0 .517-.436.752.752 0 0 0 .08-.498c-.064-.453-.33-.782-.724-.897a1.06 1.06 0 0 0-.466 0zm-9.203.005c-.305.096-.533.32-.65.639a1.187 1.187 0 0 0-.06.52c.057.309.31.59.598.667.362.095.632.033.872-.205.14-.136.215-.255.291-.448.055-.136.059-.16.059-.353l.001-.207-.072-.148a.894.894 0 0 0-.565-.472 1.02 1.02 0 0 0-.474.007Zm4.184 2c-.131.071-.223.25-.195.383.031.143.157.288.353.407.105.063.112.072.117.136.004.038-.01.146-.029.243-.02.094-.036.194-.036.222.002.074.07.195.143.253.064.052.076.054.255.059.164.005.198.001.264-.03.169-.082.212-.234.15-.525-.052-.243-.042-.28.087-.355.137-.08.281-.219.324-.314a.365.365 0 0 0-.175-.48.394.394 0 0 0-.181-.033c-.126 0-.207.03-.355.124l-.085.053-.053-.032c-.219-.13-.259-.145-.391-.143a.396.396 0 0 0-.193.032zm.39-2.195c-.373.036-.475.05-.654.086-.291.06-.68.195-.951.328-.94.46-1.589 1.226-1.787 2.114-.04.176-.045.234-.045.53 0 .294.005.357.043.524.264 1.16 1.332 2.017 2.714 2.173.3.033 1.596.033 1.896 0 1.11-.125 2.064-.727 2.493-1.571.114-.226.169-.372.22-.602.039-.167.044-.23.044-.523 0-.297-.005-.355-.045-.531-.288-1.29-1.539-2.304-3.072-2.497a6.873 6.873 0 0 0-.855-.031zm.645.937a3.283 3.283 0 0 1 1.44.514c.223.148.537.458.671.662.166.251.26.508.303.82.02.143.01.251-.043.482-.08.345-.332.705-.672.957a3.115 3.115 0 0 1-.689.348c-.382.122-.632.144-1.525.138-.582-.006-.686-.01-.853-.042-.57-.107-1.022-.334-1.35-.68-.264-.28-.385-.535-.45-.946-.03-.192.025-.509.137-.776.136-.326.488-.73.836-.963.403-.269.934-.46 1.422-.512.187-.02.586-.02.773-.002zm-5.503-11a1.653 1.653 0 0 0-.683.298C5.617.74 5.173 1.666 4.985 2.819c-.07.436-.119 1.04-.119 1.503 0 .544.064 1.24.155 1.721.02.107.031.202.023.208a8.12 8.12 0 0 1-.187.152 5.324 5.324 0 0 0-.949 1.02 5.49 5.49 0 0 0-.94 2.339 6.625 6.625 0 0 0-.023 1.357c.091.78.325 1.438.727 2.04l.13.195-.037.064c-.269.452-.498 1.105-.605 1.732-.084.496-.095.629-.095 1.294 0 .67.009.803.088 1.266.095.555.288 1.143.503 1.534.071.128.243.393.264.407.007.003-.014.067-.046.141a7.405 7.405 0 0 0-.548 1.873c-.062.417-.071.552-.071.991 0 .56.031.832.148 1.279L3.42 24h1.478l-.05-.091c-.297-.552-.325-1.575-.068-2.597.117-.472.25-.819.498-1.296l.148-.29v-.177c0-.165-.003-.184-.057-.293a.915.915 0 0 0-.194-.25 1.74 1.74 0 0 1-.385-.543c-.424-.92-.506-2.286-.208-3.451.124-.486.329-.918.544-1.154a.787.787 0 0 0 .223-.531c0-.195-.07-.355-.224-.522a3.136 3.136 0 0 1-.817-1.729c-.14-.96.114-2.005.69-2.834.563-.814 1.353-1.336 2.237-1.475.199-.033.57-.028.776.01.226.04.367.028.512-.041.179-.085.268-.19.374-.431.093-.215.165-.333.36-.576.234-.29.46-.489.822-.729.413-.27.884-.467 1.352-.561.17-.035.25-.04.569-.04.319 0 .398.005.569.04a4.07 4.07 0 0 1 1.914.997c.117.109.398.457.488.602.034.057.095.177.132.267.105.241.195.346.374.43.14.068.286.082.503.045.343-.058.607-.053.943.016 1.144.23 2.14 1.173 2.581 2.437.385 1.108.276 2.267-.296 3.153-.097.15-.193.27-.333.419-.301.322-.301.722-.001 1.053.493.539.801 1.866.708 3.036-.062.772-.26 1.463-.533 1.854a2.096 2.096 0 0 1-.224.258.916.916 0 0 0-.194.25c-.054.109-.057.128-.057.293v.178l.148.29c.248.476.38.823.498 1.295.253 1.008.231 2.01-.059 2.581a.845.845 0 0 0-.044.098c0 .006.329.009.732.009h.73l.02-.074.036-.134c.019-.076.057-.3.088-.516.029-.217.029-1.016 0-1.258-.11-.875-.295-1.57-.597-2.226-.032-.074-.053-.138-.046-.141.008-.005.057-.074.108-.152.376-.569.607-1.284.724-2.228.031-.26.031-1.378 0-1.628-.083-.645-.182-1.082-.348-1.525a6.083 6.083 0 0 0-.329-.7l-.038-.064.131-.194c.402-.604.636-1.262.727-2.04a6.625 6.625 0 0 0-.024-1.358 5.512 5.512 0 0 0-.939-2.339 5.325 5.325 0 0 0-.95-1.02 8.097 8.097 0 0 1-.186-.152.692.692 0 0 1 .023-.208c.208-1.087.201-2.443-.017-3.503-.19-.924-.535-1.658-.98-2.082-.354-.338-.716-.482-1.15-.455-.996.059-1.8 1.205-2.116 3.01a6.805 6.805 0 0 0-.097.726c0 .036-.007.066-.015.066a.96.96 0 0 1-.149-.078A4.857 4.857 0 0 0 12 3.03c-.832 0-1.687.243-2.456.698a.958.958 0 0 1-.148.078c-.008 0-.015-.03-.015-.066a6.71 6.71 0 0 0-.097-.725C8.997 1.392 8.337.319 7.46.048a2.096 2.096 0 0 0-.585-.041Zm.293 1.402c.248.197.523.759.682 1.388.03.113.06.244.069.292.007.047.026.152.041.233.067.365.098.76.102 1.24l.002.475-.12.175-.118.178h-.278c-.324 0-.646.041-.954.124l-.238.06c-.033.007-.038-.003-.057-.144a8.438 8.438 0 0 1 .016-2.323c.124-.788.413-1.501.696-1.711.067-.05.079-.049.157.013zm9.825-.012c.17.126.358.46.498.888.28.854.36 2.028.212 3.145-.019.14-.024.151-.057.144l-.238-.06a3.693 3.693 0 0 0-.954-.124h-.278l-.119-.178-.119-.175.002-.474c.004-.669.066-1.19.214-1.772.157-.623.434-1.185.68-1.382.078-.062.09-.063.159-.012z"/></svg><span>Ollama</span></div>
-        <div class="provider-logo" title="OpenAI / ChatGPT"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22.282 9.821a6 6 0 0 0-.516-4.91a6.05 6.05 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a6 6 0 0 0-3.998 2.9a6.05 6.05 0 0 0 .743 7.097a5.98 5.98 0 0 0 .51 4.911a6.05 6.05 0 0 0 6.515 2.9A6 6 0 0 0 13.26 24a6.06 6.06 0 0 0 5.772-4.206a6 6 0 0 0 3.997-2.9a6.06 6.06 0 0 0-.747-7.073M13.26 22.43a4.48 4.48 0 0 1-2.876-1.04l.141-.081l4.779-2.758a.8.8 0 0 0 .392-.681v-6.737l2.02 1.168a.07.07 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494M3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085l4.783 2.759a.77.77 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646M2.34 7.896a4.5 4.5 0 0 1 2.366-1.973V11.6a.77.77 0 0 0 .388.677l5.815 3.354l-2.02 1.168a.08.08 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.872zm16.597 3.855l-5.833-3.387L15.119 7.2a.08.08 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.407-.667m2.01-3.023l-.141-.085l-4.774-2.782a.78.78 0 0 0-.785 0L9.409 9.23V6.897a.07.07 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zm-12.64 4.135l-2.02-1.164a.08.08 0 0 1-.038-.057V6.075a4.5 4.5 0 0 1 7.375-3.453l-.142.08L8.704 5.46a.8.8 0 0 0-.393.681zm1.097-2.365l2.602-1.5 2.607 1.5v2.999l-2.597 1.5-2.607-1.5Z"/></svg><span>OpenAI</span></div>
-        <div class="provider-logo" title="xAI / Grok"><svg viewBox="66 72 380 365" aria-hidden="true"><path d="M213.235 306.019l178.976-180.002v.169l51.695-51.763c-.924 1.32-1.86 2.605-2.785 3.89-39.281 54.164-58.46 80.649-43.07 146.922l-.09-.101c10.61 45.11-.744 95.137-37.398 131.836-46.216 46.306-120.167 56.611-181.063 14.928l42.462-19.675c38.863 15.278 81.392 8.57 111.947-22.03 30.566-30.6 37.432-75.159 22.065-112.252-2.92-7.025-11.67-8.795-17.792-4.263l-124.947 92.341zm-25.786 22.437l-.033.034L68.094 435.217c7.565-10.429 16.957-20.294 26.327-30.149 26.428-27.803 52.653-55.359 36.654-94.302-21.422-52.112-8.952-113.177 30.724-152.898 41.243-41.254 101.98-51.661 152.706-30.758 11.23 4.172 21.016 10.114 28.638 15.639l-42.359 19.584c-39.44-16.563-84.629-5.299-112.207 22.313-37.298 37.308-44.84 102.003-1.128 143.81z"/></svg><span>Grok</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="visual-divider"></div>
-
-<!-- Stats -->
-<section class="sr" style="padding:48px 32px">
-  <div class="section-inner" style="text-align:center">
-    <div class="stats-row">
-      <div class="stat-pill">
-        <div class="stat-number">40+</div>
-        <div class="stat-label">覆盖国家</div>
-      </div>
-      <div class="stat-pill">
-        <div class="stat-number">4</div>
-        <div class="stat-label">学习层级</div>
-      </div>
-      <div class="stat-pill">
-        <div class="stat-number">任意</div>
-        <div class="stat-label">学科</div>
-      </div>
-    </div>
-    <div class="free-tag">永久免费起步，内置 Beagle 模型或自带 API 密钥</div>
-  </div>
-</section>
-
-<div class="visual-divider"></div>
-
-<section id="how-it-works">
-  <div class="section-inner">
-    <div style="text-align:center">
-      <div class="section-eyebrow sr">工作原理</div>
-      <h2 class="section-title sr">一场对话，<br><strong>从零开始构建理解</strong></h2>
-    </div>
-
-    <div class="narrative-row">
-      <div class="neu-card sr sr-d1">
-        <div class="feature-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    <section class="oa-feature-section" id="product">
+      <div class="xa-container">
+        <div class="oa-feature-grid">
+          <a class="oa-feature-primary xa-reveal" href="product.html">
+            <div class="oa-feature-image"><img src="../media/socrates-feature-study.png" alt="画有相互连接想法的层叠纸张" loading="eager"></div>
+            <div class="oa-feature-caption"><span class="oa-meta">产品</span><h2>一套会记住路径的学习循环。</h2><span class="oa-meta">对话、考试与知识图谱集中在一个地方</span></div>
+          </a>
+          <div class="oa-feature-rail">
+            <a class="oa-side-card xa-reveal" href="product.html#exam-mode">
+              <div class="oa-side-image"><img src="../media/socrates-recall.png" alt="画在纹理纸张上的学习图示" loading="lazy"></div>
+              <div class="oa-side-copy"><span class="oa-meta">考试模式</span><h3>测试你的理解。</h3><p>考试会根据你已经掌握的内容调整。</p></div>
+            </a>
+            <a class="oa-side-card xa-reveal" href="product.html#knowledge-graph">
+              <div class="oa-side-image"><img src="../media/socrates-new-idea.png" alt="珊瑚色图示表面上的白色学习物件" loading="lazy"></div>
+              <div class="oa-side-copy"><span class="oa-meta">知识图谱</span><h3>看见完整的图景。</h3><p>探索想法如何跨越主题彼此连接。</p></div>
+            </a>
+          </div>
         </div>
-        <div class="narrative-caption">01 &mdash; 基础</div>
-        <h3 class="narrative-heading">从你需要知道的开始</h3>
-        <p class="narrative-text">告诉 Socrates 你想学什么，它会从零开始构建结构化课程，定义每个概念，用实例夯实，并与前面的知识建立联系。每节课都是为你量身定制的专属课程，没有千篇一律的教案。</p>
       </div>
-      <div class="neu-card sr sr-d2">
-        <div class="feature-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    </section>
+
+    <section class="xa-section oa-feed-section" id="updates">
+      <div class="xa-container">
+        <div class="oa-section-heading xa-reveal"><div><span class="oa-meta">最新笔记</span><h2>让学习方式发生一点小变化。</h2></div><a class="oa-text-link" href="guide.html">查看全部更新 <svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a></div>
+        <div class="oa-feed-list xa-reveal">
+          <a class="oa-feed-row" href="product.html#knowledge-graph"><time>2026 年 5 月 15 日</time><span>产品</span><strong>知识图谱现在支持自定义节点</strong><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
+          <a class="oa-feed-row" href="guide.html"><time>2026 年 4 月 28 日</time><span>方法</span><strong>推出让理解更持久的回忆组</strong><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
+          <a class="oa-feed-row" href="product.html"><time>2026 年 4 月 10 日</time><span>开发者</span><strong>API 更新：可携带的对话状态与引用</strong><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
+          <a class="oa-feed-row" href="product.html#exam-mode"><time>2026 年 3 月 27 日</time><span>产品</span><strong>考试模式现在会根据你的盲区调整</strong><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
         </div>
-        <div class="narrative-caption">02 &mdash; 教学</div>
-        <h3 class="narrative-heading">实时呈现，教科书级讲解</h3>
-        <p class="narrative-text">每次讲解都遵循清晰的叙事弧线：引入、解释、举例、检验。Socrates 层层递进地呈现知识，绝不会在基础不牢时贸然跳步。</p>
-        <div class="narrative-divider"></div>
-        <p class="narrative-text">数学公式通过 LaTeX 精美渲染。代码示例带有语法高亮和行号。读起来像一本精心撰写的教科书，而且是此刻专为你而写的。</p>
       </div>
-    </div>
+    </section>
 
-    <div class="narrative-row">
-      <div class="neu-card sr sr-d1">
-        <div class="feature-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <section class="xa-section oa-developer-section" id="developers">
+      <div class="xa-container">
+        <div class="oa-section-heading xa-reveal"><div><span class="oa-meta">开发者</span><h2>围绕问题构建，而不只是围绕答案。</h2></div><p>使用你信任的模型。Socrates 会让学习状态保持结构化且可携带。</p></div>
+        <div class="xa-developer-layout xa-reveal">
+          <div class="xa-code-area" data-code-group>
+            <div class="xa-code-toolbar">
+              <div class="xa-code-tabs" role="tablist" aria-label="代码示例">
+                <button class="is-active" type="button" role="tab" aria-selected="true" data-code-tab="curl">curl</button>
+                <button type="button" role="tab" aria-selected="false" data-code-tab="python">Python</button>
+                <button type="button" role="tab" aria-selected="false" data-code-tab="typescript">TypeScript</button>
+              </div>
+              <button class="xa-copy-button" type="button" data-copy-code>复制</button>
+            </div>
+            <pre data-code-panel="curl"><code>curl https://api.socrates.ai/v1/dialogue \
+  -H "Authorization: Bearer $YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "为什么极限会存在？",
+    "context": { "topic": "limits" },
+    "mode": "dialogue"
+  }'</code></pre>
+            <pre data-code-panel="python" hidden><code>from socrates import Client
+
+client = Client()
+dialogue = client.dialogue.create(
+  message="为什么极限会存在？",
+  topic="limits",
+  mode="dialogue"
+)
+print(dialogue.next_question)</code></pre>
+            <pre data-code-panel="typescript" hidden><code>const dialogue = await socrates.dialogue.create({
+  message: "为什么极限会存在？",
+  context: { topic: "limits" },
+  mode: "dialogue"
+});
+
+console.log(dialogue.nextQuestion);</code></pre>
+          </div>
+          <aside class="xa-developer-notes">
+            <p class="xa-preview-kicker"><span>为学习而建</span><span>API</span></p>
+            <ul><li>结构化对话</li><li>自带模型</li><li>导出知识图谱</li></ul>
+            <a class="oa-text-link" href="product.html">阅读文档 <svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
+          </aside>
         </div>
-        <div class="narrative-caption">03 &mdash; 检验</div>
-        <h3 class="narrative-heading">诊断式提问，及早发现盲区</h3>
-        <p class="narrative-text">每个关键概念之后，Socrates 都会提出针对性的诊断问题来确认你的理解。答错不是失败，而是信号，提示你需要换个角度重新审视，避免误解累积。你的知识图谱会追踪你真正掌握的内容。</p>
       </div>
-      <div class="neu-card sr sr-d2">
-        <div class="feature-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    </section>
+
+    <section class="xa-section oa-method-section" id="method">
+      <div class="xa-container">
+        <div class="oa-section-heading xa-reveal"><div><span class="oa-meta">学习方法</span><h2>理解是一件你亲自做的事。</h2></div><p>每一步都足够小，可以开始；又足够相连，可以继续。</p></div>
+        <div class="oa-method-list xa-reveal">
+          <a href="product.html#input"><span>01</span><div><h3>提问</h3><p>从你已经知道的地方开始，找到让想法变清楚的下一个问题。</p></div><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
+          <a href="product.html#question"><span>02</span><div><h3>测试</h3><p>用自己的话解释概念，再找出仍然需要工作的部分。</p></div><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
+          <a href="product.html#knowledge-graph"><span>03</span><div><h3>连接</h3><p>留下有用的关系，让一个真正学会的想法变成可以回来的路径。</p></div><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
         </div>
-        <div class="narrative-caption">04 &mdash; 深度</div>
-        <h3 class="narrative-heading">准备好了再前进，而不是等时间到</h3>
-        <p class="narrative-text">掌握了概念？Socrates 会推进到下一层。遇到困难？它会自适应调整，提供替代解释、补充示例和更基础的知识回顾。节奏由你的理解程度决定，而非固定课表，所以你既不会被落下，也不会被拖住。</p>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
 
-<div class="visual-divider"></div>
+    <section class="oa-cta-section" id="start">
+      <div class="xa-container"><div class="oa-cta-grid xa-reveal"><div><span class="oa-meta">从一个问题开始</span><h2>为下一个想法留出空间。</h2></div><a class="xa-top-cta" href="https://app.topodrive.top">免费开始 <svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a></div></div>
+    </section>
+  </main>
 
-<section class="sr">
-  <div class="section-inner">
-    <div class="pull-quote">
-      <div class="pull-quote-inner">
-        <blockquote>&ldquo;学习不是事实的堆砌，而是心智模型的构建。每节课都是一场对话，从第一性原理出发，逐步建立理解。&rdquo;</blockquote>
-        <cite>苏格拉底方法，为 AI 时代重新演绎</cite>
+  <footer class="xa-footer">
+    <div class="xa-container">
+      <div class="xa-footer-top"><a class="xa-brand" href="index.html"><img src="../logo.png" width="22" height="22" alt=""><span>Socrates</span></a><p>为想要真正理解的人而建的 AI 导师。</p></div>
+      <div class="xa-footer-columns">
+        <div><span>产品</span><a href="product.html">对话</a><a href="product.html#exam-mode">考试模式</a><a href="product.html#knowledge-graph">知识图谱</a></div>
+        <div><span>开发者</span><a href="#developers">API 概览</a><a href="guide.html">文档</a><a href="api-keys.html">API 密钥</a></div>
+        <div><span>公司</span><a href="about.html">关于</a><a href="guide.html">更新</a><a href="contact.html">联系</a></div>
+        <div><span>其他</span><a href="https://app.topodrive.top">应用</a><a href="../index.html" lang="en">English</a><a href="https://github.com">GitHub</a></div>
       </div>
+      <div class="xa-footer-bottom"><span>© 2026 Socrates AI, Inc.</span><span>为想要真正理解的人而建。</span><a href="../index.html" lang="en">切换 English</a></div>
     </div>
-  </div>
-</section>
+  </footer>
 
-<!-- Features -->
-<section class="sr">
-  <div class="section-inner" style="text-align:center">
-    <div class="section-eyebrow">功能特性</div>
-    <h2 class="section-title" style="margin-bottom:32px">深度学习所需的<strong>一切</strong></h2>
-    <div class="feat-list">
-      <div class="feat-item"><div class="feat-bullet">01</div><div><div class="feat-item-title">结构化课程</div><div class="feat-item-desc">概念按逻辑顺序层层递进。不跳步，不遗漏前置知识。</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">02</div><div><div class="feat-item-title">诊断式提问</div><div class="feat-item-desc">每个概念在继续前都会经过验证。答错会触发替代讲解。</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">03</div><div><div class="feat-item-title">知识图谱</div><div class="feat-item-desc">可视化你已学内容。查看概念间的关联，追踪学习进度。</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">04</div><div><div class="feat-item-title">错题本</div><div class="feat-item-desc">每道错题都被保存并整理。定期回顾错题，巩固薄弱环节。</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">05</div><div><div class="feat-item-title">内置 Beagle 模型</div><div class="feat-item-desc">开箱即用的 Beagle AI 导师，无需 API 密钥。每个套餐均配有月度 token 配额。</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">06</div><div><div class="feat-item-title">考试与测评</div><div class="feat-item-desc">在任意主题上生成结构化考试。答题交卷，自动评分，长期追踪学习效果。</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">07</div><div><div class="feat-item-title">导师模式</div><div class="feat-item-desc">结构化的苏格拉底式教学，包含诊断检测、知识追踪、错题回顾和个性化学习计划。</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">08</div><div><div class="feat-item-title">联网搜索</div><div class="feat-item-desc">Riemann 及以上套餐解锁实时联网搜索。Socrates 将最新信息融入课程。</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">09</div><div><div class="feat-item-title">LaTeX + 代码</div><div class="feat-item-desc">数学公式通过 KaTeX 渲染。代码块带有语法高亮和规范的排版。</div></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- Provider logos text -->
-<section class="sr" style="padding-top:40px">
-  <div class="section-inner" style="text-align:center">
-    <div class="section-eyebrow" style="margin-bottom:18px">兼容你的 LLM</div>
-    <p style="font-size:14px;color:hsl(var(--text-300));margin-bottom:20px">内置 Beagle 模型，也可携带任意支持平台的 API 密钥</p>
-    <div class="provider-row">
-      <span class="provider-pill is-primary">Beagle（内置）</span>
-      <span class="provider-pill">OpenAI</span>
-      <span class="provider-pill">Anthropic</span>
-      <span class="provider-pill">DeepSeek</span>
-      <span class="provider-pill">Together</span>
-      <span class="provider-pill">Groq</span>
-    </div>
-  </div>
-</section>
-
-<div class="visual-divider"></div>
-
-<!-- Built for depth -->
-<section class="sr">
-  <div class="section-inner" style="text-align:center">
-    <div class="section-eyebrow">为深度而生</div>
-    <h2 class="section-title" style="margin-bottom:32px">真正<strong>记得住</strong>的学习</h2>
-    <div class="feat-list">
-      <div class="feat-item"><div class="feat-bullet">01</div><div><div class="feat-item-title">深度优先于速度</div><div class="feat-item-desc">理解不能急于求成。每个概念都从零开始，层层拆解。没有捷径。</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">02</div><div><div class="feat-item-title">自适应节奏</div><div class="feat-item-desc">课程根据你的理解程度自动调整，擅长的部分加快，薄弱的部分放慢。</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">03</div><div><div class="feat-item-title">内置 Beagle</div><div class="feat-item-desc">没有 API 密钥？没问题。内置 Beagle AI 导师即开即用，每个套餐都有慷慨的月度 token 配额。</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">04</div><div><div class="feat-item-title">考试模式</div><div class="feat-item-desc">用结构化考试检验你的知识水平。生成任意主题的试题，提交评分，查看结果。</div></div></div>
-      <div class="feat-item"><div class="feat-bullet">05</div><div><div class="feat-item-title">自有 AI 密钥</div><div class="feat-item-desc">所有套餐均支持自有 LLM 提供商。使用你信任的模型，直接控制成本。</div></div></div>
-    </div>
-  </div>
-</section>
-
-<section class="cta-section sr">
-  <div class="section-inner">
-    <div class="neu-cta-card">
-      <h2>准备好<strong>深度学习</strong>了吗？</h2>
-      <p>从任何主题开始。带上你的 API 密钥，开启学习之旅。</p>
-      <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div class="footer-tag"><em>S</em>ocrates</div>
-      <p>AI 驱动的苏格拉底式导师。循序渐进，学无止境。</p>
-      <div class="footer-social">
-        <a href="https://x.com/socratesai" target="_blank" rel="noopener" aria-label="X / Twitter" title="X">
-          <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/></svg>
-        </a>
-        <a href="https://github.com/topodrive" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 1.5C6.2 1.5 1.5 6.2 1.5 12c0 4.63 3.01 8.56 7.18 9.95.53.1.72-.23.72-.5v-1.96c-2.92.63-3.54-1.25-3.54-1.25-.48-1.22-1.17-1.54-1.17-1.54-.96-.65.07-.64.07-.64 1.06.08 1.62 1.09 1.62 1.09.94 1.6 2.46 1.14 3.06.87.1-.68.37-1.14.67-1.4-2.33-.27-4.78-1.16-4.78-5.18 0-1.15.41-2.08 1.09-2.82-.11-.27-.47-1.35.1-2.82 0 0 .89-.28 2.92 1.07a10.2 10.2 0 0 1 5.32 0c2.03-1.35 2.92-1.07 2.92-1.07.57 1.47.21 2.55.1 2.82.68.74 1.09 1.67 1.09 2.82 0 4.03-2.45 4.9-4.79 5.17.38.33.71.97.71 1.96v2.9c0 .28.19.61.73.5A10.51 10.51 0 0 0 22.5 12C22.5 6.2 17.8 1.5 12 1.5Z"/></svg>
-        </a>
-        <a href="https://discord.gg/socrates" target="_blank" rel="noopener" aria-label="Discord" title="Discord">
-          <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><path d="M20.32 4.57A19.8 19.8 0 0 0 15.4 3.1a.07.07 0 0 0-.08.04c-.21.38-.44.87-.6 1.26a18.3 18.3 0 0 0-5.44 0c-.16-.39-.39-.88-.6-1.26a.07.07 0 0 0-.08-.04A19.74 19.74 0 0 0 3.68 4.57a.06.06 0 0 0-.03.03C.53 9.03-.33 13.36.14 17.63a.07.07 0 0 0 .03.05 19.9 19.9 0 0 0 5.99 3.04.07.07 0 0 0 .08-.03c.46-.63.87-1.29 1.22-1.99a.07.07 0 0 0-.04-.1c-.65-.24-1.27-.54-1.87-.88a.07.07 0 0 1-.01-.12c.13-.1.25-.2.37-.3a.07.07 0 0 1 .07-.01c3.94 1.8 8.2 1.8 12.1 0a.07.07 0 0 1 .07.01c.12.1.24.2.37.3a.07.07 0 0 1-.01.12c-.6.34-1.22.64-1.87.88a.07.07 0 0 0-.04.1c.36.7.78 1.36 1.22 1.99a.07.07 0 0 0 .08.03 19.84 19.84 0 0 0 6-3.04.07.07 0 0 0 .03-.05c.5-4.77-.84-9.07-3.54-13.03a.06.06 0 0 0-.03-.03ZM8.02 14.81c-1.18 0-2.15-1.09-2.15-2.43 0-1.34.95-2.43 2.15-2.43 1.2 0 2.17 1.1 2.15 2.43 0 1.34-.95 2.43-2.15 2.43Zm7.96 0c-1.18 0-2.15-1.09-2.15-2.43 0-1.34.95-2.43 2.15-2.43 1.2 0 2.17 1.1 2.15 2.43 0 1.34-.96 2.43-2.15 2.43Z"/></svg>
-        </a>
-      </div>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">产品</div>
-      <a href="/pricing">套餐</a>
-      <a href="/guide">指南</a>
-      <a href="https://app.topodrive.top">应用</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">公司</div>
-      <a href="/about">关于</a>
-      <a href="/contact">联系</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">账户</div>
-      <a href="/account">我的账户</a>
-      <a href="/api-keys">API 密钥</a>
-      <a href="/profile">个人资料</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">法律</div>
-      <a href="/terms">服务条款</a>
-      <a href="/privacy">隐私政策</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">支持</div>
-      <a href="mailto:help@addtech.site">help@addtech.site</a>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 Socrates · Topodrive. 保留所有权利。</p>
-      <p>用心打造，服务全球学习者。</p>
-      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
-    </div>
-  </div>
-</footer>
-
-</div>
-
-<script>
-/* Scroll reveal */
-const srObserver = new IntersectionObserver((entries) => {
-  entries.forEach(function(entry){
-    if (entry.isIntersecting) entry.target.classList.add('in');
-  });
-}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-document.querySelectorAll('.sr').forEach(function(el){ srObserver.observe(el) });
-
-/* Mobile nav toggle */
-(function(){
-  var t = document.getElementById('navToggle');
-  var l = document.getElementById('navLinks');
-  if(!t || !l) return;
-  t.addEventListener('click', function(){
-    var open = l.classList.toggle('open');
-    t.setAttribute('aria-expanded', open ? 'true' : 'false');
-    document.body.classList.toggle('nav-open', open);
-  });
-  l.addEventListener('click', function(e){
-    if(e.target.closest('a')){ l.classList.remove('open'); t.setAttribute('aria-expanded','false'); document.body.classList.remove('nav-open'); }
-  });
-})();
-
-/* Duplicate the provider logo set so the marquee can loop seamlessly. */
-(function(){
-  var track = document.querySelector('.providers-track');
-  var set = document.querySelector('.providers-set');
-  if(track && set){ track.appendChild(set.cloneNode(true)); }
-})();
-</script>
-<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/^\/zh/,'').replace(/\.html$/,'');b.href=p==='/'||p===''?'/':p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","en")}catch(e){}});})();</script>
-<script src="/home.js?v=20260731" defer></script>
+  <script src="../marketing.js"></script>
+  <script src="../home.js"></script>
 </body>
 </html>

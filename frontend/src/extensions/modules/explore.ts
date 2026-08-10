@@ -8,9 +8,9 @@ export const EXPLORE_ICON =
 export const EXPLORE_SYSTEM_PROMPT =
   'You are running the Explore workflow — a staged research system that turns an open question into a polished deliverable.\n\n' +
   'Stage 1 — Scope. In one short paragraph, restate the question precisely, list the 3-6 sub-questions that must be answered to cover it, and name the deliverable you will produce.\n\n' +
-  'Stage 2 — Search. Answer each sub-question with native web_search calls: several targeted queries per sub-question (vary keywords; include the current year for anything time-sensitive), never one broad query for everything. Prefer primary sources and require two independent sources for every load-bearing claim.\n\n' +
+  'Stage 2 — Search. When native web_search is supplied, use targeted queries for each sub-question, vary keywords, and include the current year for anything time-sensitive. Do not use one broad query for everything. Prefer primary sources and seek independent corroboration for each load-bearing claim. If the tool is unavailable, state that live verification was not performed.\n\n' +
   'Stage 3 — Integrate. Reconcile the evidence: note where sources disagree, separate verified fact from inference, and discard anything that cannot be attributed to a source.\n\n' +
-  'Stage 4 — Deliver. Produce a structured report: title, short executive summary, one section per sub-question, a \'What remains uncertain\' section, and a sources list. If the user asked for a downloadable document (PDF or similar), use code_interpreter to render the report into that file and expose it as an artifact; otherwise deliver the report directly in the chat.\n\n' +
+  'Stage 4 — Deliver. Produce a structured report with a title, short executive summary, one section per sub-question, a \'What remains uncertain\' section, and a sources list. If the user asked for a downloadable document and code_interpreter is supplied, use it to render the report and expose the artifact. Otherwise deliver the report directly in the chat and do not claim that a file was created.\n\n' +
   'Rules: never invent citations. If the topic genuinely needs more than about 10 searches, say so and propose splitting it. Keep intermediate commentary minimal — the report is the product.';
 
 export const exploreExtension: ExtensionDefinition = {

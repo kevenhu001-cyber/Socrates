@@ -36,14 +36,11 @@ function formatMinutesApi(seconds) {
 
    Side effects (window reads):
      isReasoningProvider / getReasoningEffort / isMiniMaxProvider
-     getActiveProvider                  (used to decide built-in identity)
      getCustomInstructionsString        (user-saved preferences)
 
-   The built-in identity prepend is here (not duplicated per call site)
-   because both callAPIStream (synchronous stream start) and callAPI
-   (sync request) need the same identity message. Removing the previous
-   stream.js copy is the source-side simplification that justifies this
-   single builder. */
+   Provider identity and server-owned behavior are injected at the server
+   boundary. Keeping them out of this client builder prevents the built-in
+   Beagle identity from being sent once by the browser and once by the proxy. */
 export function buildChatRequestBody(messages, maxTokens, temperature) {
   var body = {
     messages: messages.slice(),
@@ -51,20 +48,6 @@ export function buildChatRequestBody(messages, maxTokens, temperature) {
     max_tokens: maxTokens,
     mode: window.appMode === "tutor" ? "tutor" : "chat"
   };
-
-  var provider = (typeof window.getActiveProvider === "function") ? window.getActiveProvider() : null;
-  if (provider && provider.isBuiltIn) {
-    /* P_built_in_identity — server already injects beagle.md for the
-       built-in path, but the legacy frontend still relies on a short
-       client-side identity so a server load failure or prompt-cache
-       miss does not regress the model to its training identity.
-       "Beagle" (no A) keeps the wording consistent across call sites. */
-    body.messages.unshift({
-      role: "system",
-      content: "Your name is Beagle. You are an AI assistant developed by Topodrive. " +
-        "Never identify as MiniMax or any other model."
-    });
-  }
 
   var customInst = (typeof window.getCustomInstructionsString === "function") ? window.getCustomInstructionsString() : "";
   if (customInst) {

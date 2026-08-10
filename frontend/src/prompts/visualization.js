@@ -1,4 +1,6 @@
-/* Compact routing guidance only. The native tool schema is authoritative for
+/* Legacy compatibility export. Runtime routing is server-owned and appended
+ * only when the matching native tool is available. The native tool schema is
+ * authoritative for
  * field validation; duplicating every renderer manual here made weaker models
  * mix examples and produce malformed calls. */
 export const VISUALIZATION_ROUTING_PROMPT = `
@@ -7,9 +9,9 @@ export const VISUALIZATION_ROUTING_PROMPT = `
 
 When \`render_visualization\` is supplied, use it for an explicitly requested chart, function graph, diagram, timeline, comparison, simulation, or illustration. Do not add a visual as decoration, emit a Mermaid/SVG/HTML fence, or use Python merely to draw it. Use \`code_interpreter\` first only when data must be calculated, read from files, transformed, or exported.
 
-Follow the native JSON schema exactly. Every call has only \`version: 1\`, \`template\`, \`title\`, \`accessibilitySummary\`, and \`payload\` at the top level. Put template data inside \`payload\`:
+Follow the native JSON schema exactly. The required top-level fields are \`version: 1\`, \`template\`, \`title\`, \`accessibilitySummary\`, and \`payload\`; \`caption\` is optional. Do not add other top-level fields. Put template data inside \`payload\`:
 
-- \`function\`: \`{functions:[{expression,label?,domain?,role?}],xLabel?,yLabel?}\`
+- \`function\`: \`{mode?,functions:[{expression,label?,domain?,role?}],xLabel?,yLabel?,description?}\`
 - data charts: \`{categories?,series:[{name?,role?,data}],xLabel?,yLabel?}\`
 - flow/tree/network diagrams: \`{nodes:[{id,label,detail?}],edges:[{from,to,label?}],direction?}\`
 - timelines/comparisons/processes: \`{items:[{label,detail?,value?,role?}]}\`

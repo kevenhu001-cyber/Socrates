@@ -7,11 +7,8 @@
  * IMPORTANT: a preset sets register, warmth, and personality ONLY.
  * Structure, depth, math, and safety rules are owned by the server's
  * SERVER_SYSTEM_POLICY (server/src/routes/chat/helpers.ts) and the
- * no-dash FINAL HARD RULE; the Priority section of that policy says a
- * VOICE directive can never override the Response style defaults
- * (paragraph-first prose, no-bullet default, LaTeX math, scholarly
- * depth). Keep preset texts below to persona and tone so they do not
- * contradict those rules.
+ * final output constraints. Keep preset texts limited to persona and
+ * tone so they cannot contradict those rules.
  *
  * Available presets:
  *   "default"    — The default careful scholar voice (existing behavior)
