@@ -10,7 +10,10 @@ import { apiFetchRaw } from '../util/api.js';
 
 /* Local copy of the Retry-After formatter — chat/stream.js has the same
    helper but extracting it to a shared util for two callsites is more
-   weight than it's worth. Keep them in sync if you change one. */
+   weight than it's worth. Keep them in sync if you change one. The two
+   callers use the formatter in different places (sync non-stream error
+   surfacing vs. streaming 429 toasts), so unifying them is a future
+   refactor rather than a current necessity. */
 function formatMinutesApi(seconds) {
   if (!seconds || !isFinite(seconds) || seconds <= 0) return "a moment";
   if (seconds < 60) return Math.round(seconds) + "s";
@@ -21,30 +24,64 @@ function formatMinutesApi(seconds) {
   return rem ? (h + "h " + rem + "m") : (h + "h");
 }
 
-/* P_reasoning_effort_sync — same intent as chat/stream.js's
-   apiBody.reasoning_effort wiring. chat/stream.js already attaches the
-   user-selected effort (high/medium/low) when the active provider is a
-   reasoning model so the upstream gets a real reasoning_budget / thinking
-   knob. The sync path (webSearch, topic-KB nodes, diagnostic generator)
-   used to drop it, which meant the round-1 detection probe and any
-   non-stream background call silently disagreed with the streamed answer
-   about how much thinking the model should do. Centralising the body
-   shape here keeps both paths in lock-step. */
-function _chatRequestBodyWithEffort(messages, maxTokens, temperature) {
+/* P_request_body_singleton — single source of truth for the chat request
+   payload. Shared by callAPI (sync, built-in + custom providers) and
+   callAPIStream so the two paths cannot drift on reasoning knobs,
+   built-in identity, or custom-instructions prepending.
+
+   Inputs:
+     messages      conversation array (caller owns ordering)
+     maxTokens      max_tokens for the upstream call
+     temperature     sampling temperature
+
+   Side effects (window reads):
+     isReasoningProvider / getReasoningEffort / isMiniMaxProvider
+     getActiveProvider                  (used to decide built-in identity)
+     getCustomInstructionsString        (user-saved preferences)
+
+   The built-in identity prepend is here (not duplicated per call site)
+   because both callAPIStream (synchronous stream start) and callAPI
+   (sync request) need the same identity message. Removing the previous
+   stream.js copy is the source-side simplification that justifies this
+   single builder. */
+export function buildChatRequestBody(messages, maxTokens, temperature) {
   var body = {
-    messages: messages,
+    messages: messages.slice(),
     temperature: temperature,
     max_tokens: maxTokens,
     mode: window.appMode === "tutor" ? "tutor" : "chat"
   };
+
+  var provider = (typeof window.getActiveProvider === "function") ? window.getActiveProvider() : null;
+  if (provider && provider.isBuiltIn) {
+    /* P_built_in_identity — server already injects beagle.md for the
+       built-in path, but the legacy frontend still relies on a short
+       client-side identity so a server load failure or prompt-cache
+       miss does not regress the model to its training identity.
+       "Beagle" (no A) keeps the wording consistent across call sites. */
+    body.messages.unshift({
+      role: "system",
+      content: "Your name is Beagle. You are an AI assistant developed by Topodrive. " +
+        "Never identify as MiniMax or any other model."
+    });
+  }
+
+  var customInst = (typeof window.getCustomInstructionsString === "function") ? window.getCustomInstructionsString() : "";
+  if (customInst) {
+    body.messages.unshift({
+      role: "system",
+      content: "[User custom instructions]\n" + customInst
+    });
+  }
+
   var isReasoning = (typeof window.isReasoningProvider === "function" && window.isReasoningProvider());
   if (isReasoning) {
     var effort = (typeof window.getReasoningEffort === "function" && window.getReasoningEffort()) || "medium";
     body.reasoning_effort = effort;
-    /* P_minimax-reasoning-split — MiniMax-M3 needs reasoning_split in
-       extra_body to emit reasoning_content in SSE deltas. Without this
-       its thinking is hidden even though adaptive thinking is on by
-       default. */
+    /* P_minimax-reasoning_split — MiniMax-M3 needs reasoning_split in
+       extra_body to emit reasoning_content in SSE deltas. Without
+       this its thinking is hidden even though adaptive thinking is on
+       by default. */
     if (typeof window.isMiniMaxProvider === "function" && window.isMiniMaxProvider()) {
       body.extra_body = { reasoning_split: true };
     }
@@ -77,7 +114,7 @@ export async function callAPIChat(messages,maxTokens,timeoutMs){
      * Pre-stringified bodies cause express.json() to skip parsing. */
     r=await apiFetchRaw("/api/chat/stream",{
       method:"POST",
-      body:_chatRequestBodyWithEffort(messages,maxTokens,0.2),
+      body:buildChatRequestBody(messages,maxTokens,0.2),
       signal:ac.signal
     });
   }catch(e){
@@ -119,14 +156,13 @@ export async function callAPIChat(messages,maxTokens,timeoutMs){
    - /api/chat for non-built-in providers
    Both paths use the same retry/timeout pattern. */
 export async function callAPI(messages,maxTokens,timeoutMs){
-  /* state, apiConfig, getActiveProvider, getCustomInstructionsString,
-     makeAIWatchdog, STREAM_TIMEOUT_MS, STREAM_HEARTBEAT_MS,
-     getCsrfToken, STREAM_RETRYABLE_STATUS, sleepBackoff live in
-     main.js — read them via window so this module stays independent. */
+  /* state, getActiveProvider, makeAIWatchdog, STREAM_TIMEOUT_MS,
+     STREAM_HEARTBEAT_MS, getCsrfToken, STREAM_RETRYABLE_STATUS,
+     sleepBackoff live in main.js — read them via window so this module
+     stays independent. Built-in identity + custom-instructions
+     prepending is centralized in buildChatRequestBody. */
   var state=window.state;
-  var apiConfig=window.apiConfig;
   var getActiveProvider=window.getActiveProvider;
-  var getCustomInstructionsString=window.getCustomInstructionsString;
   var makeAIWatchdog=window.makeAIWatchdog;
   var getCsrfToken=window.getCsrfToken;
   var sleepBackoff=window.sleepBackoff;
@@ -147,21 +183,11 @@ export async function callAPI(messages,maxTokens,timeoutMs){
     return null; /* fall back to mock */
   }
   state.lastCallError=null;
-  /* Prepend the user's Custom Instructions to the system-context block.
-     Loaded fresh on every call so changes from another tab (or a future
-     Android device that syncs the same /api/users/me.customInstructions)
-     are visible immediately. */
-  var customInst=getCustomInstructionsString();
-  if(customInst){
-    messages=messages.slice();
-    messages.unshift({role:"system",content:"[User custom instructions]\n"+customInst});
-  }
-  /* Built-in Beagle: call MiniMax directly (server proxy can't route there). */
+  /* Built-in identity + custom-instructions prepending is handled centrally
+    inside buildChatRequestBody, so the built-in branch here only has to
+    deal with the direct MiniMax API hop (the proxy can't route to it). */
   if(provider.isBuiltIn){
-    var beagleMsgs=messages.slice();
-    beagleMsgs.unshift({role:"system",
-      content:"Your name is Beagle. You are an AI assistant developed by Topodrive company. "+
-        "You are helpful, knowledgeable, and precise. Never identify as MiniMax or any other model."});
+    var beagleBody=buildChatRequestBody(messages,maxTokens,0.7);
     /* Reasoning models (MiniMax-M2.7, DeepSeek R1, QwQ) regularly
        take 2-4 minutes to think before producing the answer. The
        previous 90s hard timeout cut off the call mid-think and the
@@ -188,7 +214,7 @@ export async function callAPI(messages,maxTokens,timeoutMs){
           method:"POST",
           credentials:"include",
           headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key,"X-CSRF-Token":csrfBeagle||""},
-          body:JSON.stringify(_chatRequestBodyWithEffort(beagleMsgs,maxTokens,0.7)),
+          body:JSON.stringify(beagleBody),
           signal:wdB.ac.signal
         });
         /* Read the response body BEFORE stopping the watchdog.
@@ -250,7 +276,7 @@ export async function callAPI(messages,maxTokens,timeoutMs){
     nsAttempt++;
     var wdN=makeAIWatchdog(EFFECTIVE_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdN&&wdN.stop("non-builtin-watchdog")}catch(_){}});
     try{
-      var resp=await apiFetch("/api/chat",{method:"POST",body:_chatRequestBodyWithEffort(messages,maxTokens,0.7),signal:wdN.ac.signal,timeoutMs:EFFECTIVE_TIMEOUT_MS});
+      var resp=await apiFetch("/api/chat",{method:"POST",body:buildChatRequestBody(messages,maxTokens,0.7),signal:wdN.ac.signal,timeoutMs:EFFECTIVE_TIMEOUT_MS});
       wdN.stop("done");
       if(!resp||typeof resp.content!=="string"){
         state.lastCallError="malformed response";

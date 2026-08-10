@@ -9,6 +9,7 @@
    STREAM_TIMEOUT_MS, etc.). */
 
 import { apiFetchRaw } from '../util/api.js';
+import { buildChatRequestBody } from './api.js';
 import { shouldRetryInterruptedStream } from './streamRetry.js';
 
 /* P_log-gating — DEV-only diagnostics. Tool-event frames used to be
@@ -72,23 +73,11 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   }
   state.lastCallError=null;
 
-  /* Built-in Beagle: route through the Express backend's /api/chat/stream
-     so the server registry's exact native tool definitions are sent and
-     tool calls are handled server-side, just like external providers. */
-  if(provider.isBuiltIn){
-    /* Prepend the Beagle A identity system message. */
-    var hasIdentity=false;
-    for(var bi=0;bi<messages.length;bi++){
-      if(messages[bi].role==="system"&&messages[bi].content.indexOf("Beagle A")>=0)hasIdentity=true;
-    }
-    if(!hasIdentity){
-      messages=messages.slice();
-      messages.unshift({role:"system",
-        content:"Your name is Beagle A. You are an AI assistant developed by Topodrive company. "+
-          "You are helpful, knowledgeable, and precise. Never identify as MiniMax or any other model."});
-    }
-    /* Fall through to the general /api/chat/stream path below. */
-  }
+  /* Built-in identity + custom-instructions prepending + reasoning
+     knobs are all centralized in buildChatRequestBody (chat/api.js),
+     so this streaming path does not duplicate that logic and cannot
+     drift from the sync /api/chat path. The body returned below
+     already carries the correct messages array. */
 
   var attempt=0;
   var lastErr=null;
@@ -113,35 +102,10 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        * an ApiError on non-2xx, which we catch below to decide whether
        * to retry (transient 5xx/429) or fail terminally.
        * Pass body as an object so apiFetchRaw stringifies it and sets
-       * Content-Type: application/json — pre-stringified bodies are skipped. */
-      var apiBody={
-        messages:messages,
-        temperature:0.7,
-        max_tokens:maxTokens,
-        mode:window.appMode==="tutor"?"tutor":"chat"
-      };
-      /* P_chat-bridge-defence — call isReasoningProvider via the
-         window getter inside a typeof guard so a missing bridge
-         binding surfaces as "no reasoning flag" (safe) rather than
-         "TypeError: d is not a function" (whole stream dead). The
-         earlier `var isReasoningProvider = window.isReasoningProvider`
-         at the top of this function reads `undefined` if the bridge
-         forgot to expose the helper, and esbuild minifies
-         `isReasoningProvider()` to `d()` — losing the original name
-         in the stack trace. Reading window.isReasoningProvider
-         lazily keeps the source-level name visible in dev too. */
-      if(typeof window.isReasoningProvider==="function" && window.isReasoningProvider()){
-        /* P_chatgpt-landing — user-selected effort (高/中/低) from the
-           composer picker; falls back to "medium" when unset. */
-        apiBody.reasoning_effort=(typeof window.getReasoningEffort==="function"&&window.getReasoningEffort())||"medium";
-        /* P_minimax-reasoning-split — MiniMax-M3 needs reasoning_split
-           in extra_body to emit reasoning_content in SSE deltas.
-           Without this, its thinking is hidden even though adaptive
-           thinking is enabled by default. */
-        if(typeof window.isMiniMaxProvider==="function" && window.isMiniMaxProvider()){
-          apiBody.extra_body={reasoning_split:true};
-        }
-      }
+       * Content-Type: application/json — pre-stringified bodies are skipped.
+       * Reasoning knobs, built-in identity, and custom-instructions
+       * prepending are owned by buildChatRequestBody — see chat/api.js. */
+      var apiBody=buildChatRequestBody(messages,maxTokens,0.7);
       resp=await apiFetchRaw("/api/chat/stream",{
         method:"POST",
         body:apiBody,

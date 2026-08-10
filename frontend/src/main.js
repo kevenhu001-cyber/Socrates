@@ -37,9 +37,6 @@ import { LOCAL_MEMORY_MAX, loadLocalMemory, appendLocalMemory, clearLocalMemory,
 import { formatTickSlice, formatMsgProgressive, formatMsg, stripMarkdown, findLastUserMessage } from './render/markdown.js';
 import { findInlineToolBoundary, getStreamRenderInterval, splitStreamingMarkdown } from './render/streaming.js';
 import { SOCRATIC_SYSTEM_PROMPT } from './prompts/socratic.js';
-import { VISUALIZATION_ROUTING_PROMPT } from './prompts/visualization.js';
-import { PLANNING_ROUTING_PROMPT } from './prompts/planning.js';
-import { fetchGeoInfo, getSystemContext, resetGeoInfo } from './system/context.js';
 import {
   getChatIdFromURL, setChatIdInURL, pushChatIdToURL,
   getExamIdFromURL, setExamIdInURL, pushExamIdToURL,
@@ -3461,7 +3458,6 @@ async function askChatTurn(userText,pendingOverride){
       }
     }catch(_){}
   }
-  var sysCtx=getSystemContext();
   /* P_lang-directive — inject a strong language directive at the very
    * top of the system message, derived from the user's actual input.
    * Earlier the prompt itself only said "match the user's language",
@@ -3483,7 +3479,7 @@ async function askChatTurn(userText,pendingOverride){
   var chatPrompt = _effortHigh ? CHAT_SYSTEM_PROMPT : CHAT_CONCISE_PROMPT;
   var thinkSuffix = _effortHigh ? thinkingSuffix() : "";
   var toneSuffix = toneVoiceSuffix();
-  var msgs=[{role:"system",content:langDir+sysCtx+"\n\n"+chatPrompt+VISUALIZATION_ROUTING_PROMPT+PLANNING_ROUTING_PROMPT+toneSuffix+beagleSuffix()+thinkSuffix+memoriesSuffix()+projectContextSuffix()}];
+  var msgs=[{role:"system",content:langDir+chatPrompt+toneSuffix+beagleSuffix()+thinkSuffix+memoriesSuffix()+projectContextSuffix()}];
   /* P5.8 — active prompt template: inject the template's
      specialized system prompt as a fresh system message so
      the model commits to that role for this turn. */
@@ -5522,20 +5518,22 @@ function addStreamingMessage(opts){
   var needNewSegment=false;
   var inlineToolRows=[];
   var segHost=null;
-  /* P_tool_live_card — single visible tool card during live streaming.
-     Lives at the END of the bubble body, after the current segment host.
-     Each new tool id fades the previous card out and replaces it here;
-     finished messages still serialize every inlineToolRows row into
-     state.messages[i].html via the finish() path, so history / share /
-     reload keep all of them. */
+  /* P_tool-inline-position — tool rows always render inline at the
+     position in the assistant's text where the corresponding tool_use
+     event fired (offset = findInlineToolBoundary), never as a single
+     "current card" pinned to the bottom of the bubble. The previous
+     live-slot design showed only the most recent tool at the bubble
+     bottom while hiding earlier ones, which detached the visual
+     reading order from the assistant's prose. Without the slot every
+     row lives at its textOffset, so the user reads the answer in the
+     same order it was written. Group/merge semantics still update
+     the visible row's label in place. */
   var _liveToolSlot=null;
   function ensureLiveToolSlot(){
-    if(_liveToolSlot&&_liveToolSlot.isConnected)return _liveToolSlot;
-    _liveToolSlot=document.createElement("div");
-    _liveToolSlot.className="tool-inline-live-slot";
-    _liveToolSlot.setAttribute("data-live-single-card","1");
-    body.appendChild(_liveToolSlot);
-    return _liveToolSlot;
+    /* No longer creating a visible slot; rows mount directly via
+       onInlineTool → body.appendChild so they sit inline. The slot
+       helper is preserved as a no-op for source-compat with callers. */
+    return null;
   }
   function ensureSegHost(){
     if(segHost&&segHost.isConnected)return segHost;
@@ -6224,13 +6222,13 @@ function doRender(){
           else _oldSegHost.remove();
         }catch(_){}
       }
-      /* P_tool_live_card — when the live single-card slot is in use, the
-         runtime has already mounted `row` into `_liveToolSlot` (or
-         `replaceLiveInlineToolRow` is about to). Skip the body.appendChild
-         step so the row isn't momentarily visible at the bubble bottom. */
-      if(!_liveToolSlot||row.parentNode!==_liveToolSlot){
-        body.appendChild(row);
-      }
+      /* P_tool-inline-position — the row always mounts directly into
+         the bubble body at the text offset recorded below. The earlier
+         "single visible card at the bubble bottom" slot is removed;
+         the row needs to appear at the position the assistant was at
+         when it called the tool, not as a pinned running indicator
+         below the bubble. */
+      body.appendChild(row);
       inlineToolRows.push({id:entry.id,name:entry.name,offset:_toolOffset,row:row});
       segBase=_toolOffset;
       if(_toolOffset<full.length){
@@ -8670,7 +8668,6 @@ function handleAuthExpired(cause){
        _pendingChatContent could replay a draft image after the
        user signs back in. */
     try{_userMemories=[]}catch(_){}
-    try{resetGeoInfo({clearCache:true})}catch(_){}
     try{window._pendingChatContent=null}catch(_){}
     /* P_bleed-auth-expired — same comprehensive wipe as signOut(). A
        401 may fire mid-session; without clearing SERVER_SESSIONS /
@@ -8819,7 +8816,6 @@ function clearPerUserClientState(){
   try{resetCrossSessionKBCache()}catch(_){}
   try{_examAnswerSaveTimer=null;_examSaveInFlight=null}catch(_){}
   try{_userMemories=[]}catch(_){}
-  try{resetGeoInfo()}catch(_){}
   try{if(window._pendingChatContent!==undefined)window._pendingChatContent=null}catch(_){}
   /* P_locale-ghost — `state.locale` was never a real field (the real
      language selector is window._currentLang, managed by i18n.js).
@@ -8830,7 +8826,6 @@ function clearPerUserClientState(){
   try{localStorage.removeItem("socrates-sessions-v2")}catch(_){}
   try{localStorage.removeItem("socrates-api")}catch(_){}
   try{localStorage.removeItem("socrates-guest")}catch(_){}
-  try{localStorage.removeItem("socrates-geo")}catch(_){}
   try{localStorage.removeItem("socrates-projects")}catch(_){}
   try{localStorage.removeItem("socrates-recents-filter")}catch(_){}
   try{localStorage.removeItem("socrates-provider-keys")}catch(_){}
@@ -9025,7 +9020,7 @@ import {
    ============================================================ */
 var _userMemories=[];   /* cached memories injected into system context */
 
-/* Fetch the user's saved memories from the server so getSystemContext
+/* Fetch the user's saved memories from the server so memoriesSuffix()
    can inject them as long-term context. Memories are cached globally.
 
    P_bleed-memories — three safety rules to keep memories from leaking
@@ -9045,7 +9040,6 @@ var _userMemories=[];   /* cached memories injected into system context */
 /* P_main-split — Wave 2: loadUserMemories extracted to ui/profile.js. */
 import { loadUserMemories } from './ui/profile.js';
 
-/* P_main-split: system context and geolocation live in system/context.js. */
 /* ============================================================
    SYSTEM PROMPTS
    ============================================================ */
@@ -9144,24 +9138,16 @@ function toneVoiceSuffix(){
 }
 
 function beagleSuffix(){
-  /* The full Beagle behavior spec (Socratic tutor rules, copyright
-     guardrails, child-safety clauses, tool-usage conventions, knowledge
-     cutoff, search-first policy, etc.) is now injected server-side by
-     minimaxProxy.js from prompts/beagle.md — see server/src/lib/prompts.js.
+  /* The full Beagle behavior spec (identity, tool routing, response
+     style) is injected server-side by minimaxProxy.ts from
+     prompts/beagle.md — see server/src/lib/prompts.ts.
 
-     What remains here is a small defensive belt-and-suspenders suffix:
-     the upstream MiniMax-M3 sometimes leaks its training name in
-     long conversations, so we explicitly forbid the model from
-     identifying as anything other than Beagle / Topodrive. Keeping
-     this client-side means it travels with the request even if the
-     backend loader ever fails to read the .md file. */
-  var p=getActiveProvider();
-  if(p&&p.isBuiltIn){
-    return "\n\nYou are Beagle, built by Topodrive. "+
-      "Never identify yourself as MiniMax or by any other name. "+
-      "If asked which model you are, answer 'Beagle'. "+
-      "If asked who made you, answer 'Topodrive'.";
-  }
+     The client-side identity message (Beagle / Topodrive / no
+     MiniMax) is also prepended centrally in buildChatRequestBody for
+     the built-in provider. This function is kept as a no-op so legacy
+     call sites continue to compose the system message the same way;
+     update buildChatRequestBody if the canonical identity wording
+     ever changes. */
   return "";
 }
 /* Suffix injected into every chat / socratic system prompt to tell
@@ -9184,7 +9170,6 @@ function thinkingSuffix(){
 }
 
 function buildSocraticPrompt(topic,level,context){
-  var sysCtx=getSystemContext();
   var full=context||"Start by asking a diagnostic question to understand what the user already knows.";
   /* Append the [Web research] block separately (not into the
      per-turn {context} slot) so the model can clearly distinguish the
@@ -9195,7 +9180,7 @@ function buildSocraticPrompt(topic,level,context){
   }else{
     full+="\n\nNote: no [Web research] block is present. You do not have live web access for this turn — say so honestly rather than guessing about current events, prices, dates, or anything that may have changed since your training cutoff.";
   }
-  return sysCtx+"\n\n"+SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+TUTOR_SEARCH_POLICY_PROMPT+VISUALIZATION_ROUTING_PROMPT+PLANNING_ROUTING_PROMPT+toneVoiceSuffix()+beagleSuffix()+thinkingSuffix()+memoriesSuffix()+projectContextSuffix();
+  return SOCRATIC_SYSTEM_PROMPT.replace("{topic}",topic).replace("{level}",level).replace("{context}",full)+TUTOR_SEARCH_POLICY_PROMPT+toneVoiceSuffix()+beagleSuffix()+thinkingSuffix()+memoriesSuffix()+projectContextSuffix();
 }
 
 /* ============================================================
