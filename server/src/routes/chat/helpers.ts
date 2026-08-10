@@ -107,7 +107,7 @@ Pick the format that is clearest for the task: connected prose for explanations 
    system prompt, where models weight it most heavily. */
 export const FINAL_OUTPUT_CONSTRAINTS = `# FINAL HARD RULE (highest priority; read last; overrides everything above)
 
-Never output dash punctuation as sentence structure: no em dash (\u2014), no en dash (\u2013), no double-hyphen (\u2014\u2014), and no \`--\` used as punctuation. Rewrite with commas, semicolons, parentheses, or split sentences. The same applies to the Chinese 破折号 (\u2014\u2014).
+Never output dash punctuation as sentence structure: no em dash (\u2014), no en dash (\u2013), no double-hyphen (\u2014\u2014), and no \`--\` used as punctuation. Rewrite with commas, semicolons, parentheses, or split sentences. The same applies to the Chinese 破折号 (\u2014\u2014). For example, write "他迟到了，因为他堵车了" instead of "他迟到了\u2014\u2014因为他堵车了"; write "We waited, but no one came" instead of "We waited\u2014but no one came".
 
 Allowed only when the dash is a real syntactic token: hyphens inside words (state-of-the-art), minus signs and numeric hyphens in code, math, file names, CLI flags, identifiers, and ranges (1990-2000); Markdown structural syntax such as a standalone \`---\` horizontal rule; or dashes preserved verbatim inside quoted source material and tool output. A standalone \`---\` line is formatting, not punctuation.`;
 
@@ -264,14 +264,21 @@ const TEMPLATE_MARKER_REGEX = /^\s*\[template:[^\]]+\]/;
 type Classified = { kind: 'application' | 'context'; content: string; contextExtras?: string[] };
 function classifyClientSystem(raw: string): Classified {
   /* P_injection_purity — a system string is treated as application
-     instructions ONLY when it is "pure": the first line is an
-     application marker (`[User custom instructions]` or
-     `[template:...]`) and the entire string is composed of such
-     markers + their payloads. If the string mixes an application
-     marker with a `## ` heading, with a bullet list, or with any
-     non-marker line preceding the first marker, the WHOLE string is
-     context data — so a hostile memory entry cannot promote itself
-     by appending the marker to a bullet line. */
+     instructions ONLY when it is "pure": the first non-empty line is
+     an application marker (`[User custom instructions]` or
+     `[template:...]`). The previous revision demoted the string as
+     soon as it saw any `## ` heading OR any bullet line anywhere in
+     the body. That silently discarded well-formed user custom
+     instructions written as markdown lists (a very common authoring
+     style: e.g.
+     "[User custom instructions]\n- Answer in Chinese\n- Use KaTeX"),
+     which dropped the user's own directives into context-data where
+     the model no longer follows them. The new rule trusts the
+     leading marker as the application's identity; we still demote
+     when the marker coexists with a `## ` data heading in the same
+     string, since that pattern is how the frontend surfaces
+     project metadata + project instructions in one block (see the
+     PROJECT_INSTRUCTION_PREFIX branch below). */
   const trimmed = raw.trim();
   if (!trimmed) return { kind: 'context', content: '' };
 
@@ -282,9 +289,8 @@ function classifyClientSystem(raw: string): Classified {
     lines[0].startsWith(CUSTOM_INSTRUCTION_PREFIX) ||
     TEMPLATE_MARKER_REGEX.test(lines[0]);
   const hasDataHeading = lines.some((line) => line.startsWith('## '));
-  const hasBullet = lines.some((line) => /^[-*]\s+/.test(line));
 
-  if (firstIsAppMarker && !hasDataHeading && !hasBullet) {
+  if (firstIsAppMarker && !hasDataHeading) {
     return { kind: 'application', content: trimmed };
   }
 
@@ -616,7 +622,7 @@ export function transformMessagesForModel(messages: ChatMessage[], provider: Pro
    SSE prime
    ───────────────────────────────────────────────────────────────── */
 
-/* SSE_PRIME — 12 KB comment-padding frame written immediately after the
+/* SSE_PRIME — 32 KB comment-padding frame written immediately after the
    response headers to flush first-chunk buffers that sit between Node and
    the browser:
 
@@ -631,18 +637,20 @@ export function transformMessagesForModel(messages: ChatMessage[], provider: Pro
      origin connection Safari paints nothing until enough bytes accumulate.
 
    8 bytes (the previous `: open\n\n`) is far below both thresholds, so the
-   priming never actually flushed either buffer. 12 KB provides ~1.5× margin
+   priming never actually flushed either buffer. 32 KB provides ~4× margin
    over the assumed 8 KB threshold — enough to overflow EdgeOne's default
-   buffer and Safari's 1 KB threshold while keeping the priming overhead
-   low enough that slow connections (3G, mobile) don't add seconds of
-   latency before the first real data byte.
+   buffer, Safari's 1 KB threshold, and any operator-tuned larger buffer,
+   while keeping the priming overhead low enough that slow connections
+   (3G, mobile) don't add seconds of latency before the first real data
+   byte. The chat stream route and the built-in minimax proxy both reuse
+   this single constant; do not redefine it locally.
 
    Comment lines (leading `:`) are valid per the SSE spec and ignored by
    every parser, including ours (the frontend skips frames that contain no
    `data:` line). Split into 33 short lines so no single line exceeds ~1 KB,
    staying under any intermediary line-length limit. Precomputed once at
    module load — zero per-request cost. */
-export const SSE_PRIME = ': open\n' + Array.from({ length: 12 }, () => ':' + 'o'.repeat(1022)).join('\n') + '\n\n';
+export const SSE_PRIME = ': open\n' + Array.from({ length: 32 }, () => ':' + 'o'.repeat(1022)).join('\n') + '\n\n';
 
 /* ─────────────────────────────────────────────────────────────────
    Shared request prep — both / and /stream call this.

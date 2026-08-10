@@ -68,7 +68,7 @@ var state={
   /* call: most recent API call metadata — used by the chatApiBadge. */
   call:{source:null,error:null},
   /* ui: ephemeral UI state (per-tab, never persisted). */
-  ui:{_userScrolledAway:false,_examInView:false},
+  ui:{_userScrolledAway:false,_examInView:false,_canvasPendingId:null},
   /* exam: exam-mode state (ephemeral, never persisted). */
   exam:{cancel:false,questions:[],answers:{},submitted:false,topic:"",count:0,_examScrollBound:false,readOnly:false,lang:"",difficulty:"intermediate",instructions:"",types:[],_examPrevActiveId:null},
   /* tutor: ephemeral working state for the tutoring feature. */
@@ -114,6 +114,12 @@ var STATE_FLAT_TO_NS={
   /* ui */
   _userScrolledAway:"ui._userScrolledAway",
   _examInView:"ui._examInView",
+  /* P_canvas-mode — transient scratch key seeded by finish() before
+     renderAssistantHTML runs so the canvas wrapper reuses the same
+     id that the message entry later stores. Lives on `ui` (per-tab,
+     never persisted) and is cleared as soon as the message captures
+     it (see ~main.js:6722) and again by resetState. */
+  _canvasPendingId:"ui._canvasPendingId",
   /* exam */
   examCancel:"exam.cancel",examQuestions:"exam.questions",
   examAnswers:"exam.answers",examSubmitted:"exam.submitted",
@@ -318,6 +324,11 @@ function resetState(){
   state.call.error=null;
   state.ui._userScrolledAway=false;
   state.ui._examInView=false;
+  /* Clear the canvas-mode scratch key so a previous turn's seeded id
+     can't bleed into a new turn's first canvas-mode message (would
+     cause the React <CanvasBlock> to mount against a stale id and
+     miss the freshly-rendered DOM). */
+  state.ui._canvasPendingId=null;
   /* Clear exam-mode fields so a fresh session doesn't inherit stale
      topic / language / difficulty / instructions / types from a prior
      exam. */
