@@ -6,8 +6,9 @@
 <link rel="apple-touch-icon" href="/logo.png">
 <title>Socrates — My Account</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
 <link href="/base.css" rel="stylesheet">
+<link href="/marketing.css" rel="stylesheet">
 <style>
 /* ── Account dashboard layout ────────────────────────── */
 .acct-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:860px;margin:0 auto}
@@ -222,6 +223,7 @@
 </script>
 </head>
 <body>
+<script src="/marketing.js"></script>
 <div class="bg-grid"></div>
 <div class="page">
 
@@ -540,7 +542,7 @@ document.querySelectorAll('.sr').forEach(el => srObs.observe(el));
       })
       .catch(function(err) {
         clearTimeout(timeout);
-        console.error('Account error:', err);
+        console.info('Account data unavailable in this session:', err.message || err);
         if (err.name === 'AbortError') {
           grid.innerHTML = '<div class="acct-state" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><h2>Request timed out</h2><p>The server took too long to respond. Please check your connection and try again.</p><button class="btn btn-outline" onclick="location.reload()">Retry</button></div>';
         } else {
@@ -677,7 +679,7 @@ window.renderHeatmap=renderHeatmap;
     /* Round up to a nice number */
     var mag=Math.pow(10,Math.floor(Math.log10(maxTokens)));
     maxTokens=Math.ceil(maxTokens/mag)*mag;
-    /* Catmull-Rom → Cubic Bezier for smooth curves */
+    /* Catmull-Rom to Cubic Bezier for smooth curves */
     function catmullRom(pts){
       if(pts.length<2)return'';
       var d='M'+pts[0][0]+','+pts[0][1];

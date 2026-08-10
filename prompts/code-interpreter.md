@@ -1,16 +1,27 @@
-# Code Interpreter
+# Code interpreter routing
 
-## Routing
+This appendix is active only when the server includes `code_interpreter` in the native tools for the current turn. The native tool description and JSON schema are the authoritative execution contract. Do not call or imitate this tool when it is absent.
 
-- Use `code_interpreter` for nontrivial calculation, numeric verification, data analysis, file transformation, or an explicitly requested CSV/PNG export.
-- For visualization, follow the native `render_visualization` routing rules supplied by the client (charts, plots, diagrams, illustrations); do not use Python to draw a concrete subject, logo, scene, or teaching illustration.
-- Answer conceptual questions and simple arithmetic directly when a tool would not improve correctness.
+## When to use it
 
-## Runtime contract
+- Use it for non-trivial calculation, numeric verification, data analysis, file transformation, or an explicitly requested CSV or PNG export.
+- Use `render_visualization` for a reader-facing chart, function graph, diagram, timeline, simulation, or illustration when that native tool is supplied. Use code first only when data must be calculated, read from files, transformed, or exported.
+- Answer conceptual questions, simple arithmetic, code review, and prose requests directly when execution would not improve correctness.
 
-- The tool accepts module-level Python, not a notebook cell. There is no top-level `await`, stdin, shell, or network.
-- For asynchronous code, define `async def main(): ...` and invoke it with `asyncio.run(main())`.
-- Never call `input()`, `pip`, `subprocess`, or `plt.show()`.
-- Variables and imports reset between calls. Files in `/artifacts` persist. Read the `[scratch]` file listing before assuming a path exists.
-- Matplotlib uses a headless backend. Save figures with `savefig(...)`, then close them.
-- Group related work into one call and keep stdout concise. Save large output as an artifact.
+## Small execution reminders
+
+- The runner accepts module-level Python, not a notebook cell. For asynchronous work, use valid Python such as
+
+  ```python
+  import asyncio
+
+  async def main():
+      await asyncio.sleep(0)
+      print("done")
+
+  asyncio.run(main())
+  ```
+
+- There is no stdin or shell. Do not use `input()`, `subprocess`, or `plt.show()`. Save figures with `plt.savefig(...)`.
+- Files written in `/artifacts` persist for this conversation. Read the `[scratch]` listing emitted by the runner before guessing a path. Imports, variables, and function definitions reset between calls, so recompute them in each call.
+- If execution fails, follow the structured error and retry only with a materially corrected call when it is marked retryable. Do not repeat an identical call.

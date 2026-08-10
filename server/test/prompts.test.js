@@ -15,7 +15,7 @@ describe('production prompt contracts', () => {
     const prompt = await getBeagleSystemPrompt();
     assert.ok(prompt);
     assert.ok(prompt.length < 4_000, `Beagle prompt grew to ${prompt.length} characters`);
-    assert.match(prompt, /server system policy/i);
+    assert.match(prompt, /server policy above/i);
     assert.match(prompt, /`tools` array supplied by the server/i);
     assert.match(prompt, /render_visualization/);
     assert.match(prompt, /code_interpreter/);
@@ -49,6 +49,8 @@ describe('production prompt contracts', () => {
     assert.ok(prompt);
     assert.match(prompt, /async def main\(\)/);
     assert.match(prompt, /asyncio\.run\(main\(\)\)/);
+    assert.match(prompt, /await asyncio\.sleep\(0\)/);
+    assert.doesNotMatch(prompt, /def main\(\): await/);
     assert.equal(prompt.includes('def main(): await'), false);
     assert.equal(prompt.includes('[code_interpreter:'), false);
   });
@@ -63,13 +65,13 @@ describe('production prompt contracts', () => {
     assert.match(prompt, /KaTeX/);
     assert.match(prompt, /begin\{aligned\}/);
     assert.match(prompt, /一次只出一道题/);
-    /* Visualization routing is owned once by the client's
-       VISUALIZATION_ROUTING_PROMPT (frontend/src/prompts/visualization.js),
-       which is injected into every chat/socratic system message. teacher-mode
-       must not restate the render_visualization/Mermaid/SVG/ASCII guidance, or
-       the two copies would drift. */
+    /* Visualization routing is owned once by the server's
+       appendToolRoutingHints helper (routes/chat/helpers.ts) and is appended
+       only when the matching native tool is available. teacher-mode must not
+       restate the render_visualization/Mermaid/SVG/ASCII guidance, or the two
+       copies would drift. */
     assert.equal(prompt.includes('render_visualization'), false, 'viz routing duplicated in teacher-mode');
-    /* The global paragraph-first / no-bullet default is owned once by
+    /* Global response-format guidance is owned once by
        SERVER_SYSTEM_POLICY (routes/chat/helpers.ts); teacher-mode must not
        restate the full rule here, or the two copies would drift. */
     assert.equal(prompt.includes('默认不要把正文写成项目符号'), false, 'global prose default duplicated in teacher-mode');

@@ -7,8 +7,9 @@
 <link rel="apple-touch-icon" href="/logo.png">
 <title>Socrates — 我的账户</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
 <link href="/base.css" rel="stylesheet">
+<link href="/marketing.css" rel="stylesheet">
 <style>
 /* ── Account dashboard layout ────────────────────────── */
 .acct-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:860px;margin:0 auto}
@@ -217,6 +218,7 @@
 </style>
 </head>
 <body>
+<script src="/marketing.js"></script>
 <div class="bg-grid"></div>
 <div class="page">
 
@@ -523,7 +525,7 @@ var srObs = new IntersectionObserver(function(entries) {
       })
       .catch(function(err) {
         clearTimeout(timeout);
-        console.error('账户加载错误:', err);
+        console.info('当前会话暂时无法加载账户数据:', err.message || err);
         if (err.name === 'AbortError') {
           grid.innerHTML = '<div class="acct-state" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><h2>请求超时</h2><p>服务器响应超时，请检查网络后重试。</p><button class="btn btn-outline" onclick="location.reload()">重试</button></div>';
         } else {
@@ -679,7 +681,7 @@ var srObs = new IntersectionObserver(function(entries) {
     /* Round up to a nice number */
     var mag=Math.pow(10,Math.floor(Math.log10(maxTokens)));
     maxTokens=Math.ceil(maxTokens/mag)*mag;
-    /* Catmull-Rom → Cubic Bezier for smooth curves */
+    /* Catmull-Rom to Cubic Bezier for smooth curves */
     function catmullRom(pts){
       if(pts.length<2)return'';
       var d='M'+pts[0][0]+','+pts[0][1];

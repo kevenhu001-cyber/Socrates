@@ -86,6 +86,7 @@ frontend/index.html.bak
 
 # ── UI mockup screenshots (not needed in version control) ──
 *.png
+!site/media/*.png
 !assets/buildResources/icon_android_1024.png
 !assets/buildResources/icon_android_foreground_1024.png
 

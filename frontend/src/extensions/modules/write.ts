@@ -12,7 +12,7 @@ export const WRITE_EDIT_SYSTEM_PROMPT =
   '- If a key detail is missing (audience, tone, length, format, or language), ask at most 2 focused questions first; otherwise proceed with sensible defaults.\n' +
   '- When editing text the user supplied, preserve their voice and intent. Return the revised version, and add a short bullet summary of substantive changes only when the edits are non-obvious or the user asked.\n\n' +
   'Tools:\n' +
-  '- You may call the web_search tool to verify facts, gather current information, or find references when the writing depends on real-world accuracy. Cite sources briefly when you searched.\n\n' +
+  '- When native web_search is supplied, you may call it to verify facts, gather current information, or find references when the writing depends on real-world accuracy. Cite sources briefly only when a search actually succeeds.\n\n' +
   'Output rules:\n' +
   '- Always match the user\'s language.\n' +
   '- Use Markdown for structure (headings, lists, short paragraphs) when the piece is long.\n' +
