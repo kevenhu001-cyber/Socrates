@@ -107,8 +107,9 @@ export async function getBeagleSystemPrompt() {
 
 /**
  * Same loader, exposed for any future caller that needs teacher-mode.
- * (chat.js still owns its own cached copy at the route level — keeping
- * this here so future prompt files have a single place to register.)
+ * The chat route (server/src/routes/chat/helpers.ts) is the current
+ * sole consumer; this stays here so future prompt files have a
+ * single place to register their loader.
  */
 export async function getTeacherModePrompt() {
   return loadPrompt(TEACHER_MODE_PROMPT_PATH);

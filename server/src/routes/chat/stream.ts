@@ -51,6 +51,7 @@ import { requireAuth } from '../../middleware/auth.js';
 import {
   prepareChatRequest,
   appendNativeToolContract,
+  appendToolRoutingHints,
   chatRateLimitDispatch,
   SSE_PRIME,
 } from './helpers.js';
@@ -287,8 +288,11 @@ export function registerStreamRoute(router: Router) {
          * this request. In the final, tools-disabled hop the upstream gets no
          * `tools` field, so do not leave the initial registry list in the
          * system message and invite an unavailable call. */
-        const requestMessages = appendNativeToolContract(
-          workingMessages,
+        const requestMessages = appendToolRoutingHints(
+          appendNativeToolContract(
+            workingMessages,
+            toolsAllowed ? toolNames : [],
+          ),
           toolsAllowed ? toolNames : [],
         );
         let iterFinishReason: string | null = null;
