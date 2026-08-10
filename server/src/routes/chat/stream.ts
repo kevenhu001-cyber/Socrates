@@ -152,10 +152,11 @@ export function registerStreamRoute(router: Router) {
             the client receives the whole response in one shot at the end
             — no progressive streaming, no Thinking pill.
 
-            SSE_PRIME (12 KB of `:` comment lines) overflows both buffers
-            so subsequent writes — even one-byte deltas — flow through
-            immediately. Comment lines are valid per the SSE spec and
-            ignored by every parser, including ours. */
+            SSE_PRIME (32 KB of `:` comment lines, shared with the
+            built-in minimax proxy) overflows both buffers so subsequent
+            writes — even one-byte deltas — flow through immediately.
+            Comment lines are valid per the SSE spec and ignored by every
+            parser, including ours. */
       try {
         res.flushHeaders();
         res.write(SSE_PRIME);

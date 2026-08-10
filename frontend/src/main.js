@@ -4,6 +4,14 @@
    in the bundle. Without this, esbuild's tree-shaking would drop
    the file because main.js never references its named exports. */
 import './windowExports.js';
+/* P_storage-shim — import before any other module so the in-memory
+   localStorage/sessionStorage shim is installed before downstream
+   imports (state.js, i18n.js, providers.js, displayPrefs.js, …)
+   touch storage. Without this ordering, first-party storage calls
+   made during module evaluation can fire one
+   "Tracking Prevention blocked access to storage" warning each
+   before the shim's IIFE kicks in. */
+import './batchStorage.js';
 import './state.js';
 import './i18n.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
@@ -33,6 +41,9 @@ import {
 import { openUsageModal, closeUsageModal, loadUsageData, loadUsageMonth, renderUsageHeatmap, showUsageTip, hideUsageTip } from './ui/usage.js';
 import { createMistakeBook } from './ui/mistakeBook.js';
 import { batchSetItem, batchRemoveItem } from './batchStorage.js';
+/* (side-effect-only import already loaded above; this named-import
+   line just keeps the bundler from tree-shaking the module when only
+   batchStorage is referenced via the side-effect import above.) */
 import { LOCAL_MEMORY_MAX, loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from './storage/localMemory.js';
 import { formatTickSlice, formatMsgProgressive, formatMsg, stripMarkdown, findLastUserMessage } from './render/markdown.js';
 import { findInlineToolBoundary, getStreamRenderInterval, splitStreamingMarkdown } from './render/streaming.js';

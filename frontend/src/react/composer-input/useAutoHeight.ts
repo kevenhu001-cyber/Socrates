@@ -247,10 +247,30 @@ export function useAutoHeight(
        resize rewraps text, parent reflow, font scale change). The
        element's own box cannot change while we hold the lock, but
        the cap / parent / wrap can, so this observer is here to pick
-       those up. */
+       those up.
+       ─────────────────────────────────────────────────────────────────
+       The callback is deferred to requestAnimationFrame so the
+       mutation runs OUTSIDE the current layout pass. Without this
+       deferral the observer fires every time our own WAAPI animation
+       interpolates `style.height` (each interpolated value is a
+       layout-affecting change), the callback synchronously writes
+       the next lock value, the browser queues another notification
+       before the previous one is delivered, and Chromium/Firefox
+       surface the spec-mandated "ResizeObserver loop completed with
+       undelivered notifications" warning. Deferring to the next
+       frame lets the browser finish delivering the queued
+       notification first.
+       We additionally skip notifications while `anim` is in flight:
+       during the animation we are the SOLE source of size change on
+       the observed element, so there is nothing external to react
+       to. The animation's own `finish()` re-reads the natural height
+       and chains the next transition, which covers any content that
+       moved while we were animating. */
     const resize = new ResizeObserver(function (entries) {
       if (!entries.length) return;
-      update(entries[0].target as HTMLElement);
+      if (anim) return;
+      const target = entries[0].target as HTMLElement;
+      requestAnimationFrame(function () { update(target); });
     });
     resize.observe(element);
 

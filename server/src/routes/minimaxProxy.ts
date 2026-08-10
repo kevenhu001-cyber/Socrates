@@ -7,17 +7,9 @@ import { chatLimiter } from '../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../lib/sanitize.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
 import { getBeagleSystemPrompt } from '../lib/prompts.js';
-import { enforceServerSystemBoundary, appendFinalOutputConstraints } from './chat/helpers.js';
+import { enforceServerSystemBoundary, appendFinalOutputConstraints, injectUserContext, transformMessagesForModel, SSE_PRIME } from './chat/helpers.js';
 
 const router = Router();
-
-/* SSE_PRIME — 32 KB comment-padding frame that flushes EdgeOne CDN's first-
-   chunk buffer (expected ~8 KB but may be configured larger) and Safari's ~1
-   KB fetch ReadableStream buffer so the built-in Beagle stream also delivers
-   deltas immediately. 32 KB provides ~4× margin over the assumed ~8 KB
-   threshold. See chat.js for the full rationale. Comment lines (leading `:`)
-   are spec-valid and ignored by the frontend parser. */
-const SSE_PRIME = ': open\n' + Array.from({ length: 32 }, () => ':' + 'o'.repeat(1022)).join('\n') + '\n\n';
 
 /**
  * Proxy for the built-in Beagle (MiniMax) provider.
@@ -49,12 +41,12 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
     const { messages: rawMessages, model, temperature, max_tokens, stream, reasoning_effort, extra_body } = req.body;
 
     /* P_beagle-system-prompt — inject the full behavior spec from
-       prompts/beagle.md as the first system message. This is what
-       actually teaches MiniMax-M3 the Socratic-tutor role, copyright
-       rules, child-safety guardrails, and tool-usage conventions. The
-       frontend previously only sent a ~30-line identity+visual-routing
-       suffix; the full spec lives on disk and is loaded/cached by
-       lib/prompts.js so editing the .md is picked up on the next request.
+       prompts/beagle.md as the first system message. This is the
+       Beagle identity (Topodrive), tool-routing guidance, and response-
+       behavior rules that the built-in MiniMax-M3 base model must
+       follow when called through this proxy. The full spec lives on
+       disk and is loaded/cached by lib/prompts.js so editing the .md
+       is picked up on the next request.
 
        If the file can't be read for any reason, we continue without it
        rather than 500 — the upstream still works, just with weaker
@@ -70,6 +62,12 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
        writing rules. Collapsing client system blocks first also leaves one
        canonical system message for every upstream provider. */
     let messages = enforceServerSystemBoundary(Array.isArray(rawMessages) ? rawMessages : []);
+    /* P_proxy-user-context — mirror the /api/chat assembly: inject the
+       current date, user display name/tier, and the image-description
+       untrusted-data rule as the freshest data the model reads. Without
+       this the built-in path silently skips the date / locale / image-
+       injection rules that /api/chat enforces. */
+    messages = injectUserContext(messages, req.user);
     if (beaglePrompt) {
       const BEAGLE_MARKER = '<!-- @beagle-system-prompt -->';
       const alreadyHasBeagle = messages.some(
@@ -84,6 +82,12 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         };
       }
     }
+    /* P_proxy-multimodal-transform — defense-in-depth for any future
+       built-in model that is text-only (the current provider is marked
+       multimodal, so this is currently a no-op). Mirrors /api/chat so
+       non-multimodal upstreams get a coherent text placeholder instead
+       of a confusing upstream 400. */
+    messages = transformMessagesForModel(messages, provider);
     /* P_no-dash-final — mirror the /api/chat assembly: the no-dash hard rule
        must be the LAST text of the system prompt on the built-in Beagle path
        too, so it cannot be buried under beagle.md. Keep this after every
@@ -117,10 +121,11 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         'X-Accel-Buffering': 'no',
       });
 
-      /* Prime the stream — see chat.js for the full rationale.
-         SSE_PRIME (32 KB of `:` comment lines) overflows buffers
-         and Safari's ~1 KB first-chunk buffers so deltas reach the browser
-         as soon as the upstream emits them, not in one coalesced blob. */
+      /* Prime the stream — see chat/helpers.js SSE_PRIME for the full
+         rationale. 32 KB of `:` comment lines overflows EdgeOne's
+         ~8 KB first-chunk buffer and Safari's ~1 KB fetch ReadableStream
+         buffer so deltas reach the browser as soon as the upstream
+         emits them, not in one coalesced blob. */
       try {
         res.flushHeaders();
         res.write(SSE_PRIME);

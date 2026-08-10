@@ -13,15 +13,26 @@
    ────────────────────────────────────────────── */
 import { and, eq, inArray, isNotNull, lte } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { scheduledTasks, sessions, messages } from '../db/schema.js';
+import { scheduledTasks, sessions, messages, users } from '../db/schema.js';
 import { getActiveApiKey } from './apiKey.js';
 import { callChatCompletion } from './llm.js';
+import {
+  SERVER_SYSTEM_POLICY,
+  appendFinalOutputConstraints,
+  injectUserContext,
+} from '../routes/chat/helpers.js';
 
 const POLL_INTERVAL_MS = parseInt(process.env.SCHEDULER_POLL_MS || '60000', 10);
 const MAX_TASKS_PER_POLL = 10;
 
 type ScheduledTaskRow = typeof scheduledTasks.$inferSelect;
 
+/* P_scheduler-mode-marker — the scheduler runs without /api/chat, so we
+ * can't use prependTeacherModePrompt(). Instead we splice the mode
+ * prompt into the canonical first system message with a stable marker
+ * so it lands below SERVER_SYSTEM_POLICY but above any client text,
+ * matching the documented priority chain. */
+const SCHEDULED_MODE_MARKER = '[Server policy: scheduled-mode]';
 const SCHEDULED_SYSTEM_PROMPT =
   'You are Socrates, an AI learning assistant, running a scheduled background task for the user. ' +
   'Complete the task described in the user message directly and concisely, without asking follow-up ' +
@@ -70,14 +81,35 @@ async function executeTask(task: ScheduledTaskRow): Promise<void> {
   }
 
   const promptText = (task.prompt || '').trim() || task.title;
+  /* P_scheduler-safety — assemble a system prompt that mirrors the
+   * /api/chat order: SERVER_SYSTEM_POLICY first, then the scheduler
+   * mode prompt with its stable marker, then the user-context block
+   * (date / display name / image-description rule), and finally the
+   * FINAL_OUTPUT_CONSTRAINTS no-dash/no-emoji block closes the prompt.
+   * Earlier revisions skipped every one of those, so a scheduled
+   * task whose title or prompt was authored as a system override
+   * would silently land as the only instruction. The local variable
+   * is named `chatMessages` to avoid shadowing the `messages`
+   * drizzle table imported above (which db.insert expects). */
+  let chatMessages: Parameters<typeof injectUserContext>[0] = [
+    {
+      role: 'system',
+      content: `${SERVER_SYSTEM_POLICY}\n\n${SCHEDULED_MODE_MARKER}\n${SCHEDULED_SYSTEM_PROMPT}`,
+    },
+    { role: 'user', content: promptText },
+  ];
+  const [owner] = await db.select().from(users)
+    .where(eq(users.id, task.userId)).limit(1);
+  if (owner) {
+    chatMessages = injectUserContext(chatMessages, owner);
+  }
+  chatMessages = appendFinalOutputConstraints(chatMessages);
+
   const result = await callChatCompletion({
     apiBase: (provider.url || '').replace(/\/+$/, ''),
     apiKey: provider.keyPlaintext,
     model: provider.model,
-    messages: [
-      { role: 'system', content: SCHEDULED_SYSTEM_PROMPT },
-      { role: 'user', content: promptText },
-    ],
+    messages: chatMessages,
     maxTokens: 8000,
     temperature: 0.5,
   });
