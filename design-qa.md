@@ -97,4 +97,75 @@ The user-supplied references and the latest local captures were opened together 
 - The design deliberately reuses only broad visual grammar visible in the supplied references: warm paper ground, unframed navigation, generous editorial spacing, serif/sans contrast, restrained rules, limited rounded surfaces, and a dark research figure.
 - The Socrates information architecture intentionally uses direct functional links (`Research`, `Principles`, `Learn`, `News`, `Company`) instead of recreating third-party drop-down menu contents.
 
+Historical result: passed
+
+## 2026-08-11 — original editorial-tech visual system refresh
+
+### Source visual truth
+
+- Primary selected art direction: `C:\Users\Jiacheng\.codex\generated_images\019fef26-cc9a-7980-b72b-c354bac99af0\exec-5d20eef1-e733-4c7c-a246-4a3d68f8f29a.png` (`1672 × 941`). It combines the chosen question-path, recall-cycle, and knowledge-topology concepts into one original Socrates visual system.
+- The user-provided Anthropic screenshots remained high-level mood references only. No third-party artwork, source, logo, copy, or distinctive composition was copied.
+- The implementation applies the selected system as one unique image per page/slot: question-to-understanding, dialogue, recall, knowledge mapping, policy guardrails, shared team learning, and contextual support each have a separate original asset.
+
+### Rendered implementation evidence
+
+- Local route: `http://127.0.0.1:4173/index.html`.
+- Browser-rendered implementation capture: `C:\Users\Jiacheng\.codex\visualizations\2026\08\11\019fef26-cc9a-7980-b72b-c354bac99af0\04-home-hero-implementation.png`.
+- Browser CSS viewport: `1280 × 720`; the in-app Browser emitted a `628 × 773` JPEG inspection capture despite the `.png` filename. The home stage measured `576 × 343.88` CSS pixels and rendered the `1672 × 941` master source without overflow.
+- State: default home-page state, home-stage in view, menu closed. The comparison opened the raw source asset and browser-rendered implementation together in the same review pass. The source/implementation density difference was treated as a capture limitation rather than a fidelity issue; crop, placement, contrast, and hierarchy were judged at the rendered CSS size.
+- Focused region: the generated source is a full-bleed hero asset, so the home-stage frame was the relevant focused region. Dedicated element screenshots are unavailable in the in-app Browser; the browser screenshot was scrolled to the stage and reviewed alongside the source asset.
+
+### Asset map
+
+| Surface | Original Socrates asset | Visual meaning |
+| --- | --- | --- |
+| English home hero | `socrates-home-question-atlas-v2.png` | ask → reason → recall → connect |
+| English home dialogue band | `socrates-home-dialogue-thread-v2.png` | two ideas meet in a shared inquiry |
+| Product journey | `socrates-product-reasoning-path-v2.png` | a question travels through evidence |
+| Product recall feature | `socrates-product-recall-intervals-v2.png` | retrieval at useful intervals |
+| Documents | `socrates-document-recall-cycle-v2.png` | durable review loop |
+| Research | `socrates-research-knowledge-topology-v3.png` | connected research knowledge |
+| News | `socrates-newsroom-signal-v2.png` | research becoming a shared signal |
+| Pricing / teams | `socrates-team-topology-v2.png` | multiple contributors, one knowledge graph |
+| Learn | `socrates-learning-practice-cycle-v3.png` | feedback-driven practice |
+| Principles | `socrates-policy-guardrails-v3.png` | bounded, responsible exploration |
+| Guide | `socrates-guide-question-lenses-v2.png` | multiple useful question lenses |
+| About | `socrates-about-hard-question-v2.png` | patient investigation of a hard idea |
+| Contact | `socrates-contact-context-signal-v2.png` | context resolving into a useful start |
+| Chinese home | `socrates-question-orbit-v2.png` | learning insights orbiting a question |
+
+### Browser and integrity checks
+
+- Browser audited: `index.html`, `product.html`, `documents.html`, `research.html`, `announcements.html`, `pricing.html`, `learn.html`, `policy.html`, `guide.html`, `about.html`, `contact.html`, and `zh/index.html`.
+- All audited page images completed with a non-zero natural size; no audited page had horizontal overflow; in-app Browser diagnostics returned `[]` for every route.
+- The responsive menu changed `aria-expanded` from `false` → `true` → `false` in the default inspection viewport.
+- `node --check site/editorial.js` passed.
+- `git diff --check` passed (only Git CRLF notices; no whitespace errors).
+- The image-reference audit across `site/**/*.html`, `site/**/*.css`, and `site/**/*.js` found 15 image references, each with a distinct filename, and every referenced asset exists.
+
+### Required fidelity surfaces
+
+**Findings**
+
+- No actionable P0, P1, or P2 issues found in the refresh pass.
+- Fonts and typography: existing sans-display / serif-body hierarchy remains intact. Home-stage overlay copy retains readable contrast over the new near-black art field; no wrapping or truncation regressed in the reviewed viewport.
+- Spacing and layout rhythm: the existing editorial shell, 16:9 stage, dark split bands, and rounded media frames preserve their intended breathing room. Generated subjects were positioned with central or side-safe negative space so no key visual information collides with copy.
+- Colors and visual tokens: every replacement conforms to the existing warm ivory, carbon, graphite, muted copper, and single cobalt accent system. The warm news/recall assets and dark research/policy assets deliberately alternate without losing family resemblance.
+- Image quality and asset fidelity: all visible imagery is project-bound raster art with matched paper grain, high-resolution source dimensions, and no placeholder, CSS-drawn, SVG-drawn, watermark, or third-party visual artifacts. The product recall portrait is intentionally centre-cropped by the existing `ed-inline-feature` frame; its copper route and recall fragments remain visible in the rendered feature.
+- Copy and content: the image subjects are tied directly to Socrates concepts (questioning, explanation, retrieval, connection, guardrails, and team learning). All site copy remains Socrates-original.
+
+**Open Questions**
+
+- None for the implemented visual system. Additional image directions can be created later without reusing any of the current assets.
+
+**Implementation Checklist**
+
+1. Confirm all 14 semantic image slots use the new original generated assets. Done.
+2. Confirm every loaded image has a natural size and every audited route has no horizontal overflow. Done.
+3. Confirm unique image references and static-script validity. Done.
+
+**Follow-up Polish**
+
+- [P3] If future desktop marketing captures are needed, take a larger in-app Browser viewport capture so type and image density can be reviewed at native desktop scale. This does not affect the current responsive render.
+
 final result: passed
