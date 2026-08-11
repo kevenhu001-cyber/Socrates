@@ -3,192 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <meta name="description" content="Socrates 是一位 AI 导师，帮助你把困难的想法变成真正留下来的理解。">
-  <title>Socrates — 用更好的问题学习。</title>
+  <meta name="description" content="Socrates 帮助你把困难的问题变成持久的理解。">
+  <title>Socrates — 从一个问题开始理解。</title>
   <link rel="icon" href="../favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../marketing.css">
-  <link rel="stylesheet" href="../home.css">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../editorial.css">
 </head>
-<body class="xa-page">
-  <a class="xa-skip-link" href="#main">跳到正文</a>
-
-  <header class="xa-header" data-site-nav>
-    <div class="xa-container xa-header-inner">
-      <a class="xa-brand" href="index.html" aria-label="Socrates 首页">
-        <img src="../logo.png" width="22" height="22" alt="">
-        <span>Socrates</span>
-      </a>
-
-      <nav class="xa-nav" id="site-menu" data-menu-panel aria-label="主导航">
-        <a href="#product">产品</a>
-        <a href="#method">方法</a>
-        <a href="guide.html">研究</a>
-        <a href="about.html">公司</a>
-        <a href="pricing.html">套餐</a>
-      </nav>
-
-      <button class="xa-search-button" type="button" data-search-toggle aria-expanded="false" aria-controls="oa-search-panel" aria-label="打开搜索">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="5.8" stroke="currentColor" stroke-width="1.6"></circle><path d="m15.2 15.2 4.2 4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
-      </button>
-
-      <div class="xa-header-actions">
-        <a class="xa-quiet-link" href="https://app.topodrive.top">登录</a>
-        <a class="xa-top-cta" href="https://app.topodrive.top">试用 Socrates <svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-        <a class="xa-locale" href="../index.html" lang="en">EN</a>
-      </div>
-
-      <button class="xa-mobile-menu" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="打开菜单">
-        <span></span><span></span>
-      </button>
-    </div>
-  </header>
-
-  <div class="oa-search-panel" id="oa-search-panel" data-search-panel hidden>
-    <div class="xa-container">
-      <form class="oa-search-form" data-search-form>
-        <label class="xa-visually-hidden" for="site-search">搜索 Socrates</label>
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="5.8" stroke="currentColor" stroke-width="1.6"></circle><path d="m15.2 15.2 4.2 4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
-        <input id="site-search" data-search-input type="search" placeholder="搜索学习循环" autocomplete="off">
-        <button type="button" data-search-close aria-label="关闭搜索">关闭</button>
-      </form>
-      <p class="oa-search-hint" data-search-hint>试试“考试模式”“知识图谱”或“API”。</p>
-    </div>
-  </div>
-
+<body class="ed-site">
+  <a class="ed-skip" href="#main">跳到正文</a>
+  <header class="ed-header"><div class="ed-shell"><nav class="ed-header-inner" data-ed-nav aria-label="主导航"><a class="ed-brand" href="index.html" aria-label="Socrates 首页">SOCRATES</a><div class="ed-nav-links" id="site-menu" data-menu-panel><a href="../research.html">研究</a><a href="../documents.html">文档</a><a href="../about.html">关于我们</a><a href="../announcements.html">动态</a><a href="../index.html">English</a></div><div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">试用 Socrates</a></div><button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu">菜单</button></nav></div></header>
   <main id="main">
-    <section class="xa-hero oa-home-hero" id="top">
-      <div class="xa-container" data-demo-shell data-mode="dialogue">
-        <div class="oa-hero-copy xa-reveal">
-          <h1 class="oa-hero-title">你想了解什么？</h1>
-          <form class="oa-prompt" data-prompt-form>
-            <label class="xa-visually-hidden" for="demo-prompt">向 Socrates 提问</label>
-            <input id="demo-prompt" data-demo-prompt value="" autocomplete="off" placeholder="随便问问">
-            <button type="submit" aria-label="发送问题"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 4.5a1.5 1.5 0 0 1 1.5 1.5v4.5H18a1.5 1.5 0 0 1 0 3h-4.5V18a1.5 1.5 0 0 1-3 0v-4.5H6a1.5 1.5 0 0 1 0-3h4.5V6A1.5 1.5 0 0 1 12 4.5Z"></path></svg></button>
-          </form>
-          <div class="oa-topic-links" role="tablist" aria-label="Socrates 学习模式">
-            <button type="button" role="tab" aria-selected="true" class="is-active" data-demo-tab="dialogue"><svg class="oa-topic-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5.5 6.5h13v9h-7l-4 3v-3h-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>对话</button>
-            <button type="button" role="tab" aria-selected="false" data-demo-tab="exam"><svg class="oa-topic-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3.75h7l3 3v13.5H7zM14 3.75v3h3M9.5 11h5M9.5 14.5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>考试</button>
-            <button type="button" role="tab" aria-selected="false" data-demo-tab="map"><svg class="oa-topic-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="6" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="17.5" cy="6.5" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="17.5" cy="17.5" r="2" stroke="currentColor" stroke-width="1.5"/><path d="m7.8 11 7.8-3.4M7.8 13l7.8 3.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>知识图谱</button>
-          </div>
-          <p class="oa-hero-status" data-answer-status aria-live="polite"><span data-demo-mode-label>对话</span> 会把下一个有用的问题留在眼前。</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="oa-feature-section" id="product">
-      <div class="xa-container">
-        <div class="oa-feature-grid">
-          <a class="oa-feature-primary xa-reveal" href="product.html">
-            <div class="oa-feature-image"><img src="../media/socrates-feature-study.png" alt="画有相互连接想法的层叠纸张" loading="eager"></div>
-            <div class="oa-feature-caption"><span class="oa-meta">产品</span><h2>一套会记住路径的学习循环。</h2><span class="oa-meta">对话、考试与知识图谱集中在一个地方</span></div>
-          </a>
-          <div class="oa-feature-rail">
-            <a class="oa-side-card xa-reveal" href="product.html#exam-mode">
-              <div class="oa-side-image"><img src="../media/socrates-recall.png" alt="画在纹理纸张上的学习图示" loading="lazy"></div>
-              <div class="oa-side-copy"><span class="oa-meta">考试模式</span><h3>测试你的理解。</h3><p>考试会根据你已经掌握的内容调整。</p></div>
-            </a>
-            <a class="oa-side-card xa-reveal" href="product.html#knowledge-graph">
-              <div class="oa-side-image"><img src="../media/socrates-new-idea.png" alt="珊瑚色图示表面上的白色学习物件" loading="lazy"></div>
-              <div class="oa-side-copy"><span class="oa-meta">知识图谱</span><h3>看见完整的图景。</h3><p>探索想法如何跨越主题彼此连接。</p></div>
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="xa-section oa-feed-section" id="updates">
-      <div class="xa-container">
-        <div class="oa-section-heading xa-reveal"><div><span class="oa-meta">最新笔记</span><h2>让学习方式发生一点小变化。</h2></div><a class="oa-text-link" href="guide.html">查看全部更新 <svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a></div>
-        <div class="oa-feed-list xa-reveal">
-          <a class="oa-feed-row" href="product.html#knowledge-graph"><time>2026 年 5 月 15 日</time><span>产品</span><strong>知识图谱现在支持自定义节点</strong><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-          <a class="oa-feed-row" href="guide.html"><time>2026 年 4 月 28 日</time><span>方法</span><strong>推出让理解更持久的回忆组</strong><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-          <a class="oa-feed-row" href="product.html"><time>2026 年 4 月 10 日</time><span>开发者</span><strong>API 更新：可携带的对话状态与引用</strong><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-          <a class="oa-feed-row" href="product.html#exam-mode"><time>2026 年 3 月 27 日</time><span>产品</span><strong>考试模式现在会根据你的盲区调整</strong><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-        </div>
-      </div>
-    </section>
-
-    <section class="xa-section oa-developer-section" id="developers">
-      <div class="xa-container">
-        <div class="oa-section-heading xa-reveal"><div><span class="oa-meta">开发者</span><h2>围绕问题构建，而不只是围绕答案。</h2></div><p>使用你信任的模型。Socrates 会让学习状态保持结构化且可携带。</p></div>
-        <div class="xa-developer-layout xa-reveal">
-          <div class="xa-code-area" data-code-group>
-            <div class="xa-code-toolbar">
-              <div class="xa-code-tabs" role="tablist" aria-label="代码示例">
-                <button class="is-active" type="button" role="tab" aria-selected="true" data-code-tab="curl">curl</button>
-                <button type="button" role="tab" aria-selected="false" data-code-tab="python">Python</button>
-                <button type="button" role="tab" aria-selected="false" data-code-tab="typescript">TypeScript</button>
-              </div>
-              <button class="xa-copy-button" type="button" data-copy-code>复制</button>
-            </div>
-            <pre data-code-panel="curl"><code>curl https://api.socrates.ai/v1/dialogue \
-  -H "Authorization: Bearer $YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "为什么极限会存在？",
-    "context": { "topic": "limits" },
-    "mode": "dialogue"
-  }'</code></pre>
-            <pre data-code-panel="python" hidden><code>from socrates import Client
-
-client = Client()
-dialogue = client.dialogue.create(
-  message="为什么极限会存在？",
-  topic="limits",
-  mode="dialogue"
-)
-print(dialogue.next_question)</code></pre>
-            <pre data-code-panel="typescript" hidden><code>const dialogue = await socrates.dialogue.create({
-  message: "为什么极限会存在？",
-  context: { topic: "limits" },
-  mode: "dialogue"
-});
-
-console.log(dialogue.nextQuestion);</code></pre>
-          </div>
-          <aside class="xa-developer-notes">
-            <p class="xa-preview-kicker"><span>为学习而建</span><span>API</span></p>
-            <ul><li>结构化对话</li><li>自带模型</li><li>导出知识图谱</li></ul>
-            <a class="oa-text-link" href="product.html">阅读文档 <svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-          </aside>
-        </div>
-      </div>
-    </section>
-
-    <section class="xa-section oa-method-section" id="method">
-      <div class="xa-container">
-        <div class="oa-section-heading xa-reveal"><div><span class="oa-meta">学习方法</span><h2>理解是一件你亲自做的事。</h2></div><p>每一步都足够小，可以开始；又足够相连，可以继续。</p></div>
-        <div class="oa-method-list xa-reveal">
-          <a href="product.html#input"><span>01</span><div><h3>提问</h3><p>从你已经知道的地方开始，找到让想法变清楚的下一个问题。</p></div><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-          <a href="product.html#question"><span>02</span><div><h3>测试</h3><p>用自己的话解释概念，再找出仍然需要工作的部分。</p></div><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-          <a href="product.html#knowledge-graph"><span>03</span><div><h3>连接</h3><p>留下有用的关系，让一个真正学会的想法变成可以回来的路径。</p></div><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-        </div>
-      </div>
-    </section>
-
-    <section class="oa-cta-section" id="start">
-      <div class="xa-container"><div class="oa-cta-grid xa-reveal"><div><span class="oa-meta">从一个问题开始</span><h2>为下一个想法留出空间。</h2></div><a class="xa-top-cta" href="https://app.topodrive.top">免费开始 <svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a></div></div>
-    </section>
+    <section class="ed-home-hero"><div class="ed-shell"><div class="ed-hero-grid ed-reveal"><h1 class="ed-display">理解，从一个问题开始。</h1><p class="ed-serif">沿着对话、回忆与连接，跟随一个想法慢慢展开。</p></div><div class="ed-home-stage ed-reveal"><nav class="ed-stage-index" aria-label="探索 Socrates"><a href="../announcements.html">动态</a><a href="../documents.html">文档</a><a href="../research.html">研究</a></nav><img src="../media/socrates-question-orbit-v1.png" alt="深蓝底上由纸张、矿物蓝亚克力与铜线构成的问题轨道"><p class="ed-meta ed-stage-caption">问题研究 / 2026</p></div></div></section>
+    <section class="ed-section"><div class="ed-shell ed-home-index"><div class="ed-manifesto ed-reveal"><p class="ed-kicker">Socrates 的练习</p><h2 class="ed-statement-title">让问题成为持久的学习练习。</h2><p class="ed-copy-serif">学习不只是累积答案，而是在恰当的时刻重新提出更好的问题。</p><p class="ed-manifesto-note">Socrates 从你所在的地方开始，挑战假设，并帮你建立能留下来的理解。</p></div><div class="ed-ledger ed-reveal"><a class="ed-ledger-row" href="../announcements.html"><span>01</span><strong>重新回顾的一种方法</strong><span>学习科学</span></a><a class="ed-ledger-row" href="../documents.html"><span>02</span><strong>一个有用问题的结构</strong><span>教育法</span></a><a class="ed-ledger-row" href="../research.html"><span>03</span><strong>公开学习的随笔</strong><span>社群</span></a><a class="ed-ledger-row" href="../product.html"><span>04</span><strong>从对话走向理解</strong><span>方法</span></a><a class="ed-ledger-row" href="../product.html#knowledge-map"><span>05</span><strong>建立自己的知识地图</strong><span>练习</span></a><a class="ed-ledger-row" href="../about.html"><span>06</span><strong>我们为什么做 Socrates</strong><span>公司</span></a></div></div></section>
+    <section class="ed-section-tight"><div class="ed-shell ed-portal-grid"><a class="ed-portal ed-reveal" href="../announcements.html"><div><p class="ed-kicker">动态</p><h3>我们正在做什么。</h3><p>产品更新、实验与那些让练习更清晰的小决定。</p></div><span class="ed-link">阅读动态</span></a><a class="ed-portal ed-reveal" href="../documents.html"><div><p class="ed-kicker">文档</p><h3>留下更好的笔记。</h3><p>关于更审慎学习方式的指南与工作随笔。</p></div><span class="ed-link">浏览文档</span></a><a class="ed-portal ed-reveal" href="../research.html"><div><p class="ed-kicker">研究</p><h3>研究理解如何留下。</h3><p>探索解释、记忆，以及让观点沉淀下来的条件。</p></div><span class="ed-link">查看研究</span></a></div></section>
   </main>
-
-  <footer class="xa-footer">
-    <div class="xa-container">
-      <div class="xa-footer-top"><a class="xa-brand" href="index.html"><img src="../logo.png" width="22" height="22" alt=""><span>Socrates</span></a><p>为想要真正理解的人而建的 AI 导师。</p></div>
-      <div class="xa-footer-columns">
-        <div><span>产品</span><a href="product.html">对话</a><a href="product.html#exam-mode">考试模式</a><a href="product.html#knowledge-graph">知识图谱</a></div>
-        <div><span>开发者</span><a href="#developers">API 概览</a><a href="guide.html">文档</a><a href="api-keys.html">API 密钥</a></div>
-        <div><span>公司</span><a href="about.html">关于</a><a href="guide.html">更新</a><a href="contact.html">联系</a></div>
-        <div><span>其他</span><a href="https://app.topodrive.top">应用</a><a href="../index.html" lang="en">English</a><a href="https://github.com">GitHub</a></div>
-      </div>
-      <div class="xa-footer-bottom"><span>© 2026 Socrates AI, Inc.</span><span>为想要真正理解的人而建。</span><a href="../index.html" lang="en">切换 English</a></div>
-    </div>
-  </footer>
-
-  <script src="../marketing.js"></script>
-  <script src="../home.js"></script>
+  <footer class="ed-footer"><div class="ed-shell ed-footer-frame"><div class="ed-footer-top"><div class="ed-footer-brand"><a class="ed-brand" href="index.html">SOCRATES</a><p>为真正想理解的人打造的 AI 导师。</p></div><div class="ed-footer-column"><h2>产品</h2><a href="../product.html">学习循环</a><a href="../pricing.html">定价</a><a href="https://app.topodrive.top">打开 Socrates</a></div><div class="ed-footer-column"><h2>资料库</h2><a href="../announcements.html">动态</a><a href="../documents.html">文档</a><a href="../research.html">研究</a></div><div class="ed-footer-column"><h2>公司</h2><a href="../about.html">关于我们</a><a href="../contact.html">联系我们</a><a href="../guide.html">学习指南</a></div><div class="ed-footer-column"><h2>其他</h2><a href="../index.html">English</a><a href="privacy.html">隐私</a><a href="terms.html">条款</a></div></div><div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>为真正想理解的人打造。</span></div></div></footer>
+  <script src="../editorial.js"></script>
 </body>
 </html>
