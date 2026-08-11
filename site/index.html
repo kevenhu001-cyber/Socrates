@@ -3,198 +3,113 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <meta name="description" content="Socrates is an AI tutor that helps people turn difficult ideas into durable understanding.">
-  <title>Socrates — Learn with better questions.</title>
+  <meta name="description" content="Socrates helps people turn difficult questions into durable understanding.">
+  <title>Socrates — Questions make room for understanding.</title>
   <link rel="icon" href="favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="marketing.css">
-  <link rel="stylesheet" href="home.css">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="editorial.css">
 </head>
-<body class="xa-page">
-  <a class="xa-skip-link" href="#main">Skip to content</a>
+<body class="ed-site">
+  <a class="ed-skip" href="#main">Skip to content</a>
 
-  <header class="xa-header" data-site-nav>
-    <div class="xa-container xa-header-inner">
-      <a class="xa-brand" href="index.html" aria-label="Socrates home">
-        <img src="logo.png" width="22" height="22" alt="">
-        <span>Socrates</span>
-      </a>
-
-      <nav class="xa-nav" id="site-menu" data-menu-panel aria-label="Primary navigation">
-        <a href="#product">Product</a>
-        <a href="#method">Method</a>
-        <a href="guide.html">Research</a>
-        <a href="about.html">Company</a>
-        <a href="pricing.html">Pricing</a>
+  <header class="ed-header">
+    <div class="ed-shell">
+      <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
+        <a class="ed-brand" href="index.html" aria-label="Socrates home">SOCRATES</a>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel>
+          <a href="research.html">Research</a>
+          <a href="documents.html">Library</a>
+          <a href="about.html">Company</a>
+          <a href="announcements.html">News</a>
+          <a href="zh/index.html">中文</a>
+        </div>
+        <div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu">Menu</button>
       </nav>
-
-      <button class="xa-search-button" type="button" data-search-toggle aria-expanded="false" aria-controls="oa-search-panel" aria-label="Open search">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="5.8" stroke="currentColor" stroke-width="1.6"></circle><path d="m15.2 15.2 4.2 4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
-      </button>
-
-      <div class="xa-header-actions">
-        <a class="xa-quiet-link" href="https://app.topodrive.top">Log in</a>
-        <a class="xa-top-cta" href="https://app.topodrive.top">Try Socrates <svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-        <a class="xa-locale" href="zh/index.html" lang="zh-CN">中文</a>
-      </div>
-
-      <button class="xa-mobile-menu" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Open menu">
-        <span></span><span></span>
-      </button>
     </div>
   </header>
 
-  <div class="oa-search-panel" id="oa-search-panel" data-search-panel hidden>
-    <div class="xa-container">
-      <form class="oa-search-form" data-search-form>
-        <label class="xa-visually-hidden" for="site-search">Search Socrates</label>
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="5.8" stroke="currentColor" stroke-width="1.6"></circle><path d="m15.2 15.2 4.2 4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
-        <input id="site-search" data-search-input type="search" placeholder="Search the learning loop" autocomplete="off">
-        <button type="button" data-search-close aria-label="Close search">Close</button>
-      </form>
-      <p class="oa-search-hint" data-search-hint>Try “exam mode”, “knowledge map”, or “API”.</p>
-    </div>
-  </div>
-
   <main id="main">
-    <section class="xa-hero oa-home-hero" id="top">
-      <div class="xa-container" data-demo-shell data-mode="dialogue">
-        <div class="oa-hero-copy xa-reveal">
-          <h1 class="oa-hero-title">What would you like to understand?</h1>
-          <form class="oa-prompt" data-prompt-form>
-            <label class="xa-visually-hidden" for="demo-prompt">Ask Socrates</label>
-            <input id="demo-prompt" data-demo-prompt value="" autocomplete="off" placeholder="Ask anything">
-            <button type="submit" aria-label="Send question"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 4.5a1.5 1.5 0 0 1 1.5 1.5v4.5H18a1.5 1.5 0 0 1 0 3h-4.5V18a1.5 1.5 0 0 1-3 0v-4.5H6a1.5 1.5 0 0 1 0-3h4.5V6A1.5 1.5 0 0 1 12 4.5Z"></path></svg></button>
-          </form>
-          <div class="oa-topic-links" role="tablist" aria-label="Socrates learning modes">
-            <button type="button" role="tab" aria-selected="true" class="is-active" data-demo-tab="dialogue"><svg class="oa-topic-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5.5 6.5h13v9h-7l-4 3v-3h-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Dialogue</button>
-            <button type="button" role="tab" aria-selected="false" data-demo-tab="exam"><svg class="oa-topic-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3.75h7l3 3v13.5H7zM14 3.75v3h3M9.5 11h5M9.5 14.5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Exam</button>
-            <button type="button" role="tab" aria-selected="false" data-demo-tab="map"><svg class="oa-topic-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="6" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="17.5" cy="6.5" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="17.5" cy="17.5" r="2" stroke="currentColor" stroke-width="1.5"/><path d="m7.8 11 7.8-3.4M7.8 13l7.8 3.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Knowledge map</button>
+    <section class="ed-home-hero">
+      <div class="ed-shell">
+        <div class="ed-hero-grid ed-reveal">
+          <h1 class="ed-display">Understanding begins with a question.</h1>
+          <p class="ed-serif">Follow a thought through dialogue, recall, and connection.</p>
+        </div>
+        <div class="ed-home-stage ed-reveal">
+          <nav class="ed-stage-index" aria-label="Explore Socrates">
+            <a href="research.html">Research</a>
+            <a href="policy.html">Principles</a>
+            <a href="learn.html">Learn</a>
+          </nav>
+          <img src="media/socrates-home-question-atlas-v1.png" alt="A dark question atlas of graphite plates, copper paths, and a cobalt glass slab">
+          <div class="ed-network-copy"><h2>Questions become a field of study.</h2><p>Trace a difficult subject through dialogue, recall, and the connections that make it useful again.</p></div>
+          <p class="ed-meta ed-stage-caption">Socrates research / 2026</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="ed-section">
+      <div class="ed-shell ed-home-index">
+        <div class="ed-manifesto">
+          <h2 class="ed-statement-title">Questions become a durable learning practice.</h2>
+          <p class="ed-manifesto-note">Socrates meets you where you are, challenges your assumptions, and helps you build understanding that lasts.</p>
+        </div>
+        <div class="ed-ledger" aria-label="Selected writing">
+          <a class="ed-ledger-row" href="announcements.html"><span>01</span><strong>A new way to revisit</strong><span>Learning science</span></a>
+          <a class="ed-ledger-row" href="documents.html"><span>02</span><strong>The anatomy of a useful question</strong><span>Pedagogy</span></a>
+          <a class="ed-ledger-row" href="research.html"><span>03</span><strong>Notes on learning in public</strong><span>Community</span></a>
+          <a class="ed-ledger-row" href="product.html"><span>04</span><strong>From dialogue to understanding</strong><span>Method</span></a>
+          <a class="ed-ledger-row" href="product.html#knowledge-map"><span>05</span><strong>Building a personal knowledge map</strong><span>Practice</span></a>
+          <a class="ed-ledger-row" href="about.html"><span>06</span><strong>Why we built Socrates</strong><span>Company</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="ed-section-tight">
+      <div class="ed-shell ed-portal-grid">
+        <a class="ed-portal ed-reveal" href="announcements.html">
+          <div><p class="ed-kicker">Announcements</p><h3>What we are making next.</h3><p>Product changes, experiments, and the small decisions that make practice clearer.</p></div>
+          <span class="ed-link">Read announcements</span>
+        </a>
+        <a class="ed-portal ed-reveal" href="learn.html">
+          <div><p class="ed-kicker">Learn</p><h3>Keep a better set of questions.</h3><p>Guides and small learning paths for a more deliberate practice.</p></div>
+          <span class="ed-link">Explore the Studio</span>
+        </a>
+        <a class="ed-portal ed-reveal" href="research.html">
+          <div><p class="ed-kicker">Research</p><h3>Study how understanding holds.</h3><p>Explorations into explanation, memory, and the conditions that help ideas stay.</p></div>
+          <span class="ed-link">Explore research</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="ed-section-tight">
+      <div class="ed-shell ed-black-band ed-reveal">
+        <div class="ed-black-band-inner">
+          <div class="ed-black-band-copy">
+            <div><p class="ed-kicker" style="color:rgba(244,241,233,.44)">The product</p><h2>A tutor that stays with the question.</h2><p>Ask in your own words. Test the edges of an idea. Return to the useful connection when you need it again.</p></div>
+            <a class="ed-link ed-link-light" href="product.html">Explore the learning loop</a>
           </div>
-          <p class="oa-hero-status" data-answer-status aria-live="polite"><span data-demo-mode-label>Dialogue</span> keeps the next useful question in view.</p>
+          <div class="ed-black-band-media"><img src="media/socrates-home-dialogue-thread-v1.png" alt="Three tactile paper fragments linked by a continuous copper thread"></div>
         </div>
-      </div>
-    </section>
-
-    <section class="oa-feature-section" id="product">
-      <div class="xa-container">
-        <div class="oa-feature-grid">
-          <a class="oa-feature-primary xa-reveal" href="product.html">
-            <div class="oa-feature-image"><img src="media/socrates-feature-study.png" alt="Layered paper with a hand-drawn network of connected ideas" loading="eager"></div>
-            <div class="oa-feature-caption"><span class="oa-meta">Product</span><h2>A learning loop that remembers the path.</h2><span class="oa-meta">Dialogue, exams, and knowledge maps in one place</span></div>
-          </a>
-          <div class="oa-feature-rail">
-            <a class="oa-side-card xa-reveal" href="product.html#exam-mode">
-              <div class="oa-side-image"><img src="media/socrates-recall.png" alt="A study diagram drawn on textured paper" loading="lazy"></div>
-              <div class="oa-side-copy"><span class="oa-meta">Exam mode</span><h3>Test understanding</h3><p>Take exams that adapt to what you know.</p></div>
-            </a>
-            <a class="oa-side-card xa-reveal" href="product.html#knowledge-graph">
-              <div class="oa-side-image"><img src="media/socrates-new-idea.png" alt="A white study object on a coral diagram surface" loading="lazy"></div>
-              <div class="oa-side-copy"><span class="oa-meta">Knowledge map</span><h3>See the big picture</h3><p>Explore how ideas connect across topics.</p></div>
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="xa-section oa-feed-section" id="updates">
-      <div class="xa-container">
-        <div class="oa-section-heading xa-reveal"><div><span class="oa-meta">Latest notes</span><h2>Small changes to the way learning works.</h2></div><a class="oa-text-link" href="guide.html">View all updates <svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a></div>
-        <div class="oa-feed-list xa-reveal">
-          <a class="oa-feed-row" href="product.html#knowledge-graph"><time>May 15, 2026</time><span>Product</span><strong>Knowledge maps now support custom node types</strong><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-          <a class="oa-feed-row" href="guide.html"><time>Apr 28, 2026</time><span>Method</span><strong>Introducing Recall Sets for durable understanding</strong><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-          <a class="oa-feed-row" href="product.html"><time>Apr 10, 2026</time><span>Developer</span><strong>API update: portable conversation state and citations</strong><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-          <a class="oa-feed-row" href="product.html#exam-mode"><time>Mar 27, 2026</time><span>Product</span><strong>Exam mode now adapts to the gaps you show</strong><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-        </div>
-      </div>
-    </section>
-
-    <section class="xa-section oa-developer-section" id="developers">
-      <div class="xa-container">
-        <div class="oa-section-heading xa-reveal"><div><span class="oa-meta">For developers</span><h2>Build around the question, not just the answer.</h2></div><p>Use the model you trust. Socrates keeps the learning state structured and portable.</p></div>
-        <div class="xa-developer-layout xa-reveal">
-          <div class="xa-code-area" data-code-group>
-            <div class="xa-code-toolbar">
-              <div class="xa-code-tabs" role="tablist" aria-label="Code examples">
-                <button class="is-active" type="button" role="tab" aria-selected="true" data-code-tab="curl">curl</button>
-                <button type="button" role="tab" aria-selected="false" data-code-tab="python">Python</button>
-                <button type="button" role="tab" aria-selected="false" data-code-tab="typescript">TypeScript</button>
-              </div>
-              <button class="xa-copy-button" type="button" data-copy-code>Copy</button>
-            </div>
-            <pre data-code-panel="curl"><code>curl https://api.socrates.ai/v1/dialogue \
-  -H "Authorization: Bearer $YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "Why does the limit exist?",
-    "context": { "topic": "limits" },
-    "mode": "dialogue"
-  }'</code></pre>
-            <pre data-code-panel="python" hidden><code>from socrates import Client
-
-client = Client()
-dialogue = client.dialogue.create(
-  message="Why does the limit exist?",
-  topic="limits",
-  mode="dialogue"
-)
-print(dialogue.next_question)</code></pre>
-            <pre data-code-panel="typescript" hidden><code>const dialogue = await socrates.dialogue.create({
-  message: "Why does the limit exist?",
-  context: { topic: "limits" },
-  mode: "dialogue"
-});
-
-console.log(dialogue.nextQuestion);</code></pre>
-          </div>
-          <aside class="xa-developer-notes">
-            <p class="xa-preview-kicker"><span>Built for learning</span><span>API</span></p>
-            <ul>
-              <li>Structured conversations</li>
-              <li>Bring your own model</li>
-              <li>Export knowledge maps</li>
-            </ul>
-            <a class="oa-text-link" href="product.html">Read the docs <svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-          </aside>
-        </div>
-      </div>
-    </section>
-
-    <section class="xa-section oa-method-section" id="method">
-      <div class="xa-container">
-        <div class="oa-section-heading xa-reveal"><div><span class="oa-meta">The method</span><h2>Understanding is something you do.</h2></div><p>Each step is small enough to start and connected enough to carry forward.</p></div>
-        <div class="oa-method-list xa-reveal">
-          <a href="product.html#input"><span>01</span><div><h3>Ask</h3><p>Start from what you already know and find the next question that makes the idea clearer.</p></div><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-          <a href="product.html#question"><span>02</span><div><h3>Test</h3><p>Explain the concept in your own words, then expose the parts that still need work.</p></div><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-          <a href="product.html#knowledge-graph"><span>03</span><div><h3>Connect</h3><p>Keep the useful links and turn one hard-won idea into a path you can return to.</p></div><svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a>
-        </div>
-      </div>
-    </section>
-
-    <section class="oa-cta-section" id="start">
-      <div class="xa-container">
-        <div class="oa-cta-grid xa-reveal"><div><span class="oa-meta">Start with one question</span><h2>Make room for the next idea.</h2></div><a class="xa-top-cta" href="https://app.topodrive.top">Begin free <svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"></path></svg></a></div>
       </div>
     </section>
   </main>
 
-  <footer class="xa-footer">
-    <div class="xa-container">
-      <div class="xa-footer-top"><a class="xa-brand" href="index.html"><img src="logo.png" width="22" height="22" alt=""><span>Socrates</span></a><p>An AI tutor for people who want to understand.</p></div>
-      <div class="xa-footer-columns">
-        <div><span>Product</span><a href="product.html">Dialogue</a><a href="product.html#exam-mode">Exam mode</a><a href="product.html#knowledge-graph">Knowledge map</a></div>
-        <div><span>Developers</span><a href="#developers">API overview</a><a href="guide.html">Documentation</a><a href="api-keys.html">API keys</a></div>
-        <div><span>Company</span><a href="about.html">About</a><a href="guide.html">Updates</a><a href="contact.html">Contact</a></div>
-        <div><span>Elsewhere</span><a href="https://app.topodrive.top">App</a><a href="zh/index.html" lang="zh-CN">中文</a><a href="https://github.com">GitHub</a></div>
+  <footer class="ed-footer">
+    <div class="ed-shell ed-footer-frame">
+      <div class="ed-footer-top">
+        <div class="ed-footer-brand"><a class="ed-brand" href="index.html">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div>
+        <div class="ed-footer-column"><h2>Product</h2><a href="product.html">Learning loop</a><a href="pricing.html">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
+        <div class="ed-footer-column"><h2>Library</h2><a href="announcements.html">Announcements</a><a href="documents.html">Documents</a><a href="research.html">Research</a></div>
+        <div class="ed-footer-column"><h2>Company</h2><a href="about.html">About</a><a href="contact.html">Contact</a><a href="guide.html">Learning guide</a></div>
+        <div class="ed-footer-column"><h2>Elsewhere</h2><a href="zh/index.html">中文</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></div>
       </div>
-      <div class="xa-footer-bottom"><span>© 2026 Socrates AI, Inc.</span><span>Built for people who want to understand.</span><a href="zh/index.html" lang="zh-CN">切换中文</a></div>
+      <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
     </div>
   </footer>
-
-  <script src="marketing.js"></script>
-  <script src="home.js"></script>
+  <script src="editorial.js"></script>
 </body>
 </html>
