@@ -202,6 +202,12 @@ body.ed-site .ed-network-copy h2 {
 body.ed-site .ed-display { font-size: clamp(44px, 5.4vw, 80px); line-height: 1.06; }
 body.ed-site .ed-page-title { max-width: 14ch; font-size: clamp(44px, 5.2vw, 72px); }
 body.ed-site .ed-title { font-size: clamp(32px, 3.4vw, 52px); font-weight: 400; line-height: 1.1; }
+body.ed-site .ed-title.ed-artifact {
+  font-family: var(--site-sans-latin);
+  font-weight: 600;
+  letter-spacing: -.03em;
+  line-height: 1.06;
+}
 body.ed-site .ed-statement-title { font-size: clamp(34px, 3.6vw, 56px); }
 body.ed-site .ed-reference-title,
 body.ed-site .ed-news-hero h1,
