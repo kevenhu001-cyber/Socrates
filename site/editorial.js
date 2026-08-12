@@ -351,6 +351,9 @@
     initialiseReveal();
     initialiseWordAnimation();
     initialiseFooter();
+    if (window.SocratesLocale && typeof window.SocratesLocale.localizeLinks === 'function') {
+      window.SocratesLocale.localizeLinks();
+    }
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);

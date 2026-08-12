@@ -6,7 +6,7 @@
 <link rel="apple-touch-icon" href="/logo.png">
 <title>Socrates — 服务条款</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="/base.css" rel="stylesheet">
 <link href="/marketing.css" rel="stylesheet">
 <style>
@@ -20,25 +20,9 @@
 .legal-section a{color:hsl(var(--accent-000))}
 .legal-date{text-align:center;font-size:12px;color:hsl(var(--text-500));margin-top:48px;padding-top:24px;border-top:0.5px solid hsl(var(--border-300)/0.06)}
 </style>
-<script>
-!function(){
-  try{
-    var p=localStorage.getItem("socrates-lang");
-    if(!p)return;
-    var c=document.documentElement.lang;
-    var here=window.location.pathname;
-    if(p==="zh"&&c.indexOf("zh")!==0){
-      var target=here.replace(/\.html$/,"");
-      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
-    }else if(p==="en"&&c.indexOf("en")!==0){
-      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
-      window.location.replace(target2==="/"||target2===""?"/":target2);
-    }
-  }catch(e){}
-}();
-</script>
+
 <link rel="stylesheet" href="../brand.css?cb=20260814">
-</head>
+<script src="../locale.js"></script></head>
 <body class="legal-page">
 <script src="/marketing.js"></script>
 <div class="bg-grid"></div>
@@ -46,7 +30,7 @@
 
 <nav>
   <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px"><span><em>S</em>ocrates</span></a>
+    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px"><span>Socrates</span></a>
     <div class="nav-links">
       <a href="/pricing">套餐</a>
       <a href="/guide">指南</a>
@@ -66,7 +50,7 @@
     <p>生效日期：2026年3月1日</p>
     <a href="mailto:hello@topodrive.top?subject=Previous%20Terms%20of%20Service">上一版本</a>
     <label>语言
-      <select onchange="if(this.value) window.location.href=this.value">
+      <select onchange="window.SocratesLocale.setLocale(this.value.indexOf('zh') === 0 ? 'zh' : 'en')">
         <option value="/zh/terms" selected>中文</option>
         <option value="/terms">English</option>
       </select>
@@ -309,7 +293,7 @@
 <footer>
   <div class="footer-inner">
     <div class="footer-brand">
-      <div class="footer-tag"><em>S</em>ocrates</div>
+      <div class="footer-tag">Socrates</div>
       <p>AI驱动的苏格拉底式导师。循序渐进，学无止境。</p>
     </div>
     <div class="footer-col">
@@ -356,6 +340,6 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 document.querySelectorAll('.sr').forEach(el => observer.observe(el));
 </script>
-<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/^\/zh/,'').replace(/\.html$/,'');b.href=p==='/'||p===''?'/':p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","en")}catch(e){}});})();</script>
+
 </body>
 </html>
