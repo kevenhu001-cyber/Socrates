@@ -60,7 +60,7 @@ body.ed-site ::-moz-selection { color: var(--ed-paper); background: var(--ed-cla
 body.ed-site a { text-decoration: none; }
 body.ed-site button,
 body.ed-site input { font: inherit; }
-body.ed-site img { display: block; max-width: 100%; }
+body.ed-site img { display: block; max-width: 100%; height: auto; }
 body.ed-menu-open { overflow: hidden; }
 
 /* Webkit scrollbars (Safari/Chrome/Edge) — match the warm paper palette
@@ -812,7 +812,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
 }
 
 @media (max-width: 820px) {
-  .ed-header-inner { grid-template-columns: 1fr auto; }
+  .ed-header-inner { grid-template-columns: 1fr auto auto; gap: 12px; }
   .ed-menu-toggle { display: inline-flex; }
   .ed-nav-links {
     position: absolute;

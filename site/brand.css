@@ -142,7 +142,7 @@ html:lang(zh) body {
 body::selection { color: var(--site-paper); background: var(--site-ink); }
 a { color: inherit; }
 button, input, select, textarea { font: inherit; }
-img { display: block; max-width: 100%; }
+img { display: block; max-width: 100%; height: auto; }
 :focus-visible { outline: 2px solid var(--site-clay); outline-offset: 4px; }
 .bg-grid { display: none !important; }
 
