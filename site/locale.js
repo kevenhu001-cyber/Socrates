@@ -417,9 +417,73 @@
     localizeLinks: localiseLinks
   };
 
+  /*
+   * Custom language switcher. Each [data-lang-root] holds a toggle button
+   * and a [data-lang-menu] of locale options (data-lang="en" | "zh"). We
+   * open/close the menu, mark the current locale, and switch via
+   * SocratesLocale.setLocale — a designed UI, not a native <select>.
+   */
+  function enhanceLangDropdown() {
+    var roots = document.querySelectorAll("[data-lang-root]");
+    Array.prototype.forEach.call(roots, function (root) {
+      if (root.getAttribute("data-lang-ready") === "true") return;
+      root.setAttribute("data-lang-ready", "true");
+
+      var toggle = root.querySelector("[data-lang-toggle]");
+      var menu = root.querySelector("[data-lang-menu]");
+      if (!toggle || !menu) return;
+
+      var items = Array.prototype.slice.call(menu.querySelectorAll(".ed-lang-item"));
+
+      function syncCurrent() {
+        var locale = currentLocale();
+        items.forEach(function (item) {
+          if (item.getAttribute("data-lang") === locale) item.setAttribute("aria-current", "true");
+          else item.removeAttribute("aria-current");
+        });
+      }
+      function close() {
+        root.classList.remove("is-open");
+        toggle.setAttribute("aria-expanded", "false");
+        menu.setAttribute("hidden", "");
+      }
+      function open() {
+        syncCurrent();
+        root.classList.add("is-open");
+        toggle.setAttribute("aria-expanded", "true");
+        menu.removeAttribute("hidden");
+      }
+
+      toggle.addEventListener("click", function (event) {
+        event.preventDefault();
+        if (root.classList.contains("is-open")) close(); else open();
+      });
+
+      items.forEach(function (item) {
+        item.addEventListener("click", function () {
+          var target = item.getAttribute("data-lang");
+          close();
+          if (target && target !== currentLocale() && window.SocratesLocale) {
+            window.SocratesLocale.setLocale(target);
+          }
+        });
+      });
+
+      document.addEventListener("click", function (event) {
+        if (root.classList.contains("is-open") && !root.contains(event.target)) close();
+      });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") close();
+      });
+
+      syncCurrent();
+    });
+  }
+
   function bootLocale() {
     enhanceLegacyLegalLayout();
     localiseLinks();
+    enhanceLangDropdown();
 
     if (!window.MutationObserver || !document.body) return;
 
