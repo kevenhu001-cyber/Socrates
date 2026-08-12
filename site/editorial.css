@@ -16,8 +16,8 @@
   --ed-clay: #9a5a3b;
   --ed-clay-warm: #b86a45;
   --ed-clay-soft: rgba(154, 90, 59, .12);
-  --ed-serif: "Newsreader", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  --ed-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --ed-serif: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, "Noto Sans SC", "Source Han Sans SC", "PingFang SC", sans-serif;
+  --ed-sans: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, "Noto Sans SC", "Source Han Sans SC", "PingFang SC", sans-serif;
   --ed-mono: "Geist Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
   --ed-radius-lg: 28px;
   --ed-radius-md: 20px;

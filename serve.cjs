@@ -34,15 +34,24 @@ const server = http.createServer((req, res) => {
 
   fs.stat(filePath, (err, stat) => {
     if (err || !stat.isFile()) {
-      // try with .html (pretty URLs)
-      const alt = filePath + '.html';
-      fs.stat(alt, (e2, s2) => {
-        if (e2 || !s2.isFile()) {
-          res.writeHead(404, { 'Content-Type': 'text/plain' });
-          res.end('404 not found: ' + urlPath);
-        } else {
-          serve(alt);
+      // Resolve extensionless research/article routes to their directory index.
+      const directoryIndex = path.join(filePath, 'index.html');
+      fs.stat(directoryIndex, (directoryError, directoryStat) => {
+        if (!directoryError && directoryStat.isFile()) {
+          serve(directoryIndex);
+          return;
         }
+
+        // try with .html (pretty URLs)
+        const alt = filePath + '.html';
+        fs.stat(alt, (e2, s2) => {
+          if (e2 || !s2.isFile()) {
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('404 not found: ' + urlPath);
+          } else {
+            serve(alt);
+          }
+        });
       });
     } else {
       serve(filePath);

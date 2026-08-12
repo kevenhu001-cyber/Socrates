@@ -70,19 +70,23 @@
 
   function setLocaleLink(link) {
     if (!link) return;
-    var path = window.location.pathname.replace(/\.html$/, '');
-    if (isChinese) {
-      link.href = path.replace(/^\/zh/, '') || '/';
-      link.textContent = 'EN';
-      link.setAttribute('lang', 'en');
-    } else {
-      link.href = path === '/' || path === '' ? '/zh/' : '/zh' + path;
-      link.textContent = '中文';
-      link.setAttribute('lang', 'zh-CN');
+    var targetLocale = isChinese ? 'en' : 'zh';
+    var localeApi = window.SocratesLocale;
+    link.href = localeApi ? localeApi.hrefFor(localeApi.currentHref(), targetLocale) : (isChinese ? '/' : '/zh/');
+    link.textContent = targetLocale === 'zh' ? '中文' : 'English';
+    link.setAttribute('lang', targetLocale === 'zh' ? 'zh-CN' : 'en');
+    link.setAttribute('data-socrates-locale', targetLocale);
+    if (link.getAttribute('data-locale-bound') !== 'true') {
+      link.addEventListener('click', function (event) {
+        event.preventDefault();
+        if (localeApi) localeApi.setLocale(targetLocale);
+        else {
+          try { localStorage.setItem('socrates-lang', targetLocale); } catch (error) {}
+          window.location.href = link.href;
+        }
+      });
+      link.setAttribute('data-locale-bound', 'true');
     }
-    link.addEventListener('click', function () {
-      try { localStorage.setItem('socrates-lang', isChinese ? 'en' : 'zh'); } catch (error) {}
-    });
   }
 
   function normalizeMarketingNavigation() {

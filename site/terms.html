@@ -8,7 +8,7 @@
   <link rel="icon" href="favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="editorial.css?cb=20260815">
   <style>
     .ed-legal-wrap { padding: clamp(48px, 7vw, 96px) 0; }
@@ -47,13 +47,13 @@
     }
   </style>
   <link rel="stylesheet" href="brand.css?cb=20260815">
-</head>
+<script src="locale.js"></script></head>
 <body class="ed-site legal-page">
   <a class="ed-skip" href="#main">Skip to content</a>
   <header class="ed-header">
     <div class="ed-shell">
       <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
-        <a class="ed-brand" href="index" aria-label="Socrates home">SOCRATES</a>
+        <a class="ed-brand" href="index" aria-label="Socrates home"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a>
         <div class="ed-nav-links" id="site-menu" data-menu-panel>
           <a href="research">Research</a>
           <a href="documents">Library</a>
@@ -77,7 +77,7 @@
           <p>Effective date: March 1, 2026</p>
           <a href="mailto:hello@topodrive.top?subject=Previous%20Terms%20of%20Service">Previous version</a>
           <label>Language
-            <select onchange="if(this.value) window.location.href=this.value">
+            <select onchange="window.SocratesLocale.setLocale(this.value.indexOf('zh') === 0 ? 'zh' : 'en')">
               <option value="terms" selected>English</option>
               <option value="zh/terms">中文</option>
             </select>
@@ -351,7 +351,7 @@
   <footer class="ed-footer">
     <div class="ed-shell ed-footer-frame">
       <div class="ed-footer-top">
-        <div class="ed-footer-brand"><a class="ed-brand" href="index">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div>
+        <div class="ed-footer-brand"><a class="ed-brand" href="index"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a><p>An AI tutor for people who want to understand.</p></div>
         <div class="ed-footer-column"><h2>Product</h2><a href="product">Learning loop</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
         <div class="ed-footer-column"><h2>Library</h2><a href="announcements">Announcements</a><a href="documents">Documents</a><a href="research">Research</a></div>
         <div class="ed-footer-column"><h2>Company</h2><a href="about">About</a><a href="contact">Contact</a><a href="guide">Learning guide</a></div>
