@@ -287,6 +287,30 @@
     }
   }
 
+  /*
+   * Login button — a persistent "Log in" entry at the top-right of the
+   * header. It is hidden on desktop (the header already carries "Try
+   * Socrates") and only shown on mobile via CSS, where the header-actions
+   * row is otherwise collapsed. i18n label: "Log in" / "登录".
+   */
+  function addLoginButton() {
+    var actions = document.querySelector(".ed-header-actions");
+    if (!actions) return;
+    var locale = currentLocale();
+    var label = locale === LOCALES.zh ? "登录" : "Log in";
+    var loginHref = "https://app.topodrive.top";
+    var existing = actions.querySelector(".ed-header-login");
+    if (existing) {
+      existing.textContent = label;
+      return;
+    }
+    var btn = document.createElement("a");
+    btn.className = "ed-button ed-header-login";
+    btn.href = loginHref;
+    btn.textContent = label;
+    actions.appendChild(btn);
+  }
+
   function enhanceLegacyLegalLayout() {
     var body = document.body;
     if (!body || !body.classList.contains("legal-page") || body.classList.contains("ed-site")) return;
@@ -380,6 +404,7 @@
 
     document.querySelectorAll(".ed-brand").forEach(normaliseBrand);
     addAccountShortcuts();
+    addLoginButton();
   }
 
   applyStoredPreference();
