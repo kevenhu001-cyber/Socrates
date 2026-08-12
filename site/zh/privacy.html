@@ -1,565 +1,361 @@
-<!DOCTYPE html>
-<html lang="zh-CN" data-theme="socrates" data-mode="dark">
+<!doctype html>
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/logo.png">
-<title>Socrates — 隐私政策</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link href="/base.css?cb=20260817" rel="stylesheet">
-<link href="/marketing.css?cb=20260819" rel="stylesheet">
-<style>
-.legal-section{margin-bottom:40px}
-.legal-section h3{font-family:var(--font-display);font-size:20px;font-weight:400;color:hsl(var(--text-000));margin-bottom:16px;letter-spacing:-.02em;padding-bottom:8px;border-bottom:0.5px solid hsl(var(--border-300)/0.06)}
-.legal-section h4{font-size:15px;font-weight:500;color:hsl(var(--text-100));margin:16px 0 8px}
-.legal-section p{font-size:14px;color:hsl(var(--text-400));line-height:1.8;margin-bottom:12px}
-.legal-section ul{padding-left:20px;margin-bottom:12px}
-.legal-section li{font-size:14px;color:hsl(var(--text-400));line-height:1.8;margin-bottom:6px}
-.legal-section strong{color:hsl(var(--text-100));font-weight:500}
-.legal-section a{color:hsl(var(--accent-000))}
-.legal-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px}
-.legal-table th,.legal-table td{padding:10px 14px;text-align:left;border-bottom:0.5px solid hsl(var(--border-300)/0.06)}
-.legal-table th{font-size:11px;font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.05em}
-.legal-table td{color:hsl(var(--text-400))}
-.legal-date{text-align:center;font-size:12px;color:hsl(var(--text-500));margin-top:48px;padding-top:24px;border-top:0.5px solid hsl(var(--border-300)/0.06)}
-</style>
-
-<link rel="stylesheet" href="../brand.css?cb=20260822">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Socrates 隐私政策——我们如何收集、使用、存储和保护您的个人信息。">
+  <title>Socrates — 隐私政策</title>
+  <link rel="icon" href="../favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../editorial.css?cb=20260820">
+  <style>
+    .ed-legal-wrap { padding: clamp(48px, 7vw, 96px) 0; }
+    .ed-legal-layout { display: grid; grid-template-columns: minmax(220px, .24fr) minmax(0, 1fr); gap: clamp(40px, 6vw, 96px); align-items: start; }
+    .ed-legal-toc { position: sticky; top: 32px; }
+    .ed-legal-toc h2 { margin: 0 0 18px; font-family: var(--ed-mono); font-size: 10px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--ed-ink-muted); }
+    .ed-legal-toc nav { display: grid; gap: 2px; }
+    .ed-legal-toc a { display: block; padding: 6px 0; color: var(--ed-ink-soft); font-size: 13px; line-height: 1.3; border-bottom: 1px solid transparent; transition: color .18s var(--ed-ease), border-color .18s var(--ed-ease); }
+    .ed-legal-toc a:hover { color: var(--ed-ink); border-bottom-color: var(--ed-ink); }
+    .ed-legal-body { max-width: 980px; }
+    .ed-legal-section { margin-bottom: 52px; scroll-margin-top: 40px; }
+    .ed-legal-section h3 { margin: 0 0 18px; font-family: var(--ed-serif); font-size: clamp(26px, 2.4vw, 32px); font-weight: 500; letter-spacing: -.018em; line-height: 1.1; color: var(--ed-ink); }
+    .ed-legal-section h4 { margin: 26px 0 12px; font-size: 17px; font-weight: 600; color: var(--ed-ink); }
+    .ed-legal-section p { margin: 0 0 14px; font-size: 17px; color: var(--ed-ink-soft); line-height: 1.72; max-width: 76ch; }
+    .ed-legal-section ul, .ed-legal-section ol { padding-left: 24px; margin: 0 0 14px; max-width: 76ch; }
+    .ed-legal-section li { font-size: 17px; color: var(--ed-ink-soft); line-height: 1.72; margin-bottom: 6px; }
+    .ed-legal-section strong { color: var(--ed-ink); font-weight: 600; }
+    .ed-legal-section a { color: var(--ed-ink); border-bottom: 1px solid var(--ed-line); transition: border-color .18s var(--ed-ease), color .18s var(--ed-ease); }
+    .ed-legal-section a:hover { color: var(--ed-clay); border-bottom-color: var(--ed-clay); }
+    .ed-legal-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 4px 0 20px; border-radius: 10px; }
+    .ed-legal-table-scroll table { margin: 0; }
+    .ed-legal-table-scroll th, .ed-legal-table-scroll td { min-width: 150px; white-space: nowrap; }
+    @media (max-width: 900px) {
+      .ed-legal-layout { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+      .ed-legal-toc { position: static; }
+      .ed-legal-section { margin-bottom: 42px; }
+    }
+    @media (max-width: 620px) {
+      .ed-legal-section h3 { font-size: 24px; letter-spacing: -.04em; }
+      .ed-legal-section p, .ed-legal-section li { font-size: 15px; line-height: 1.68; }
+      .ed-legal-section table { font-size: 13px; }
+      .ed-legal-section th, .ed-legal-section td { padding: 9px 12px; }
+      .ed-legal-section td { line-height: 1.5; }
+      .ed-legal-toc nav { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+      .ed-legal-toc a { font-size: 12px; padding: 3px 0; }
+    }
+  </style>
+  <link rel="stylesheet" href="../brand.css?cb=20260822">
 <script src="../locale.js?cb=20260822"></script></head>
-<body class="legal-page">
-<script src="/marketing.js"></script>
-<div class="bg-grid"></div>
-<div class="page">
+<body class="ed-site legal-page">
+  <a class="ed-skip" href="#main">跳到正文</a>
+  <header class="ed-header"><div class="ed-shell"><nav class="ed-header-inner" data-ed-nav aria-label="主导航">
+    <a class="ed-brand" href="index" aria-label="Socrates 首页"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a>
+    <div class="ed-nav-links" id="site-menu" data-menu-panel><a href="../research">研究</a><a href="../policy">原则</a><a href="../learn">学习</a><a href="../announcements">动态</a><a href="../about">公司</a></div>
+    <div class="ed-header-actions"><div class="ed-lang" data-lang-root><button class="ed-lang-toggle" type="button" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Language"><svg class="ed-lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18" stroke="currentColor" stroke-width="1.6"/></svg><span class="ed-lang-label">语言</span><svg class="ed-lang-caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="ed-lang-menu" data-lang-menu role="menu" hidden><button class="ed-lang-item" type="button" data-lang="en" role="menuitem"><span>English</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ed-lang-item" type="button" data-lang="zh" role="menuitem"><span>中文</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div><a class="ed-button" href="https://app.topodrive.top">试用 Socrates</a></div>
+    <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="菜单"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+  </nav></div></header>
 
-<nav>
-  <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px"><span>Socrates</span></a>
-    <div class="nav-links">
-      <a href="/pricing">套餐</a>
-      <a href="/guide">指南</a>
-      <a href="/about">关于</a>
-      <a href="/contact">联系</a>
-      <a href="/account">账户</a>
-      <a class="lang-switch">EN</a>
-      <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
-    </div>
-  </div>
-</nav>
+  <main id="main">
+    <section class="ed-page-hero">
+      <div class="ed-shell ed-legal-hero ed-reveal">
+        <div>
+          <p class="ed-kicker">法律</p>
+          <h1 class="ed-page-title">隐私政策</h1>
+        </div>
+        <div class="ed-legal-meta" aria-label="政策信息">
+          <p>生效日期：2026年3月1日</p>
+          <a href="mailto:hello@topodrive.top?subject=Previous%20Privacy%20Policy">上一版本</a>
+          <div class="ed-lang" data-lang-root><button class="ed-lang-toggle" type="button" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Language"><svg class="ed-lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18" stroke="currentColor" stroke-width="1.6"/></svg><span class="ed-lang-label">语言</span><svg class="ed-lang-caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="ed-lang-menu" data-lang-menu role="menu" hidden><button class="ed-lang-item" type="button" data-lang="en" role="menuitem"><span>English</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ed-lang-item" type="button" data-lang="zh" role="menuitem"><span>中文</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
+        </div>
+      </div>
+    </section>
+    <section class="ed-section-tight">
+      <div class="ed-shell ed-legal-layout">
+        <aside class="ed-legal-toc">
+          <h2>目录</h2>
+          <nav>
+            <a href="#section-1">1. 引言</a>
+            <a href="#section-2">2. 我们收集的信息</a>
+            <a href="#section-3">3. 处理的法律依据</a>
+            <a href="#section-4">4. 我们如何使用您的信息</a>
+            <a href="#section-5">5. API 密钥处理与安全</a>
+            <a href="#section-6">6. Cookie 及类似技术</a>
+            <a href="#section-7">7. 数据共享与第三方披露</a>
+            <a href="#section-8">8. 数据存储、传输与安全</a>
+            <a href="#section-9">9. 数据保留</a>
+            <a href="#section-10">10. 您的权利与选择</a>
+            <a href="#section-11">11. 儿童隐私</a>
+            <a href="#section-12">12. AI 教学数据与自动化处理</a>
+            <a href="#section-13">13. 敏感个人信息</a>
+            <a href="#section-14">14. 数据安全事件</a>
+            <a href="#section-15">15. 隐私联系方式</a>
+            <a href="#section-16">16. 隐私政策变更</a>
+            <a href="#section-17">17. 投诉与监管机构</a>
+            <a href="#section-18">18. 中国用户的特别规定</a>
+            <a href="#section-19">19. 加利福尼亚用户的特别规定</a>
+            <a href="#section-20">20. 联系信息</a>
+          </nav>
+        </aside>
+        <div class="ed-legal-body">
 
-<div class="page-header">
-  <div class="section-eyebrow">法律</div>
-  <h1>隐私<strong>政策</strong></h1>
-  <div class="ed-legal-meta" aria-label="政策信息">
-    <p>生效日期：2026年3月1日</p>
-    <a href="mailto:hello@topodrive.top?subject=Previous%20Privacy%20Policy">上一版本</a>
-    <div class="ed-lang" data-lang-root><button class="ed-lang-toggle" type="button" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Language"><svg class="ed-lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18" stroke="currentColor" stroke-width="1.6"/></svg><span class="ed-lang-label">语言</span><svg class="ed-lang-caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="ed-lang-menu" data-lang-menu role="menu" hidden><button class="ed-lang-item" type="button" data-lang="en" role="menuitem"><span>English</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ed-lang-item" type="button" data-lang="zh" role="menuitem"><span>中文</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
-  </div>
-</div>
+          <div class="ed-legal-section" id="section-1">
+            <h3>1. 引言</h3>
+            <p>Topodrive（以下简称<strong>"我们""我方"</strong>或<strong>"Socrates"</strong>）致力于保护您的隐私。本隐私政策（以下简称<strong>"政策"</strong>）解释了我们如何在您使用我们的网站（<strong>topodrive.top</strong>）、应用程序及相关服务（以下统称<strong>"服务"</strong>）时收集、使用、存储、共享和保护您的个人信息。</p>
+            <p>本政策适用于全球所有服务用户。使用服务即表示您确认已阅读并理解本政策。如果您不同意我们的做法，请不要使用服务。此处未定义的大写术语具有我们的<a href="../terms">服务条款</a>中给出的含义。</p>
+            <p>我们总部位于中国陕西省西安市。根据您的所在地，不同的数据保护法可能适用于您的信息处理。我们将遵守有关个人数据收集、使用和传输的适用法律。</p>
+          </div>
 
-<section style="padding-top:0">
-  <div class="section-inner">
+          <div class="ed-legal-section" id="section-2">
+            <h3>2. 我们收集的信息</h3>
+            <h4>2.1 您直接提供的信息</h4>
+            <div class="ed-legal-table-scroll"><table>
+              <tr><th>类别</th><th>示例</th><th>目的</th></tr>
+              <tr><td><strong>账户信息</strong></td><td>电子邮件地址、加密密码、显示名称、头像</td><td>账户注册与身份验证</td></tr>
+              <tr><td><strong>个人资料信息</strong></td><td>偏好名称、学习偏好、语言设置</td><td>个性化您的体验</td></tr>
+              <tr><td><strong>付款信息</strong></td><td>账单地址、交易记录、银行卡末四位数字</td><td>订阅管理与会计核算</td></tr>
+              <tr><td><strong>API 密钥</strong></td><td>LLM 提供商 API 密钥（加密存储）</td><td>将推理请求路由至您选择的提供商</td></tr>
+              <tr><td><strong>教学内容</strong></td><td>会话记录、诊断答案、知识图谱数据、笔记</td><td>提供并改进辅导体验</td></tr>
+              <tr><td><strong>通信内容</strong></td><td>您联系支持时的电子邮件内容</td><td>客户支持与服务改进</td></tr>
+            </table></div>
+            <h4>2.2 自动收集的信息</h4>
+            <div class="ed-legal-table-scroll"><table>
+              <tr><th>类别</th><th>示例</th><th>目的</th></tr>
+              <tr><td><strong>使用数据</strong></td><td>会话时长、使用的功能、访问的页面、功能交互</td><td>服务优化与产品改进</td></tr>
+              <tr><td><strong>设备信息</strong></td><td>IP 地址、浏览器类型及版本、操作系统、设备类型、屏幕分辨率</td><td>服务交付、安全与分析</td></tr>
+              <tr><td><strong>日志数据</strong></td><td>API 请求时间戳、错误日志、性能指标、请求量</td><td>系统监控、调试与安全</td></tr>
+              <tr><td><strong>Cookie 及类似技术</strong></td><td>身份验证令牌、会话标识符、偏好 Cookie</td><td>身份验证、会话管理与基本分析</td></tr>
+            </table></div>
+            <p>我们不会收集或处理敏感个人信息（健康数据、生物识别数据、基因数据、政治观点、宗教信仰、工会成员身份、性取向），除非您在教学内容中明确且知情地提供了此类信息，违反了我们的服务条款第 11 条。我们不会故意收集此类数据，并要求您不要提交。</p>
+          </div>
 
-    <div class="legal-section sr">
-      <h3>1. 引言</h3>
-      <p>Topodrive（以下简称<strong>"我们""我方"</strong>或<strong>"Socrates"</strong>）致力于保护您的隐私。本隐私政策（以下简称<strong>"政策"</strong>）解释了我们如何在您使用我们的网站（<strong>topodrive.top</strong>）、应用程序及相关服务（以下统称<strong>"服务"</strong>）时收集、使用、存储、共享和保护您的个人信息。</p>
-      <p>本政策适用于全球所有服务用户。使用服务即表示您确认已阅读并理解本政策。如果您不同意我们的做法，请不要使用服务。此处未定义的大写术语具有我们的<a href="/terms">服务条款</a>中给出的含义。</p>
-      <p>我们总部位于中国陕西省西安市。根据您的所在地，不同的数据保护法可能适用于您的信息处理。我们将遵守有关个人数据收集、使用和传输的适用法律。</p>
-    </div>
+          <div class="ed-legal-section" id="section-3">
+            <h3>3. 处理的法律依据（GDPR 及类似法律）</h3>
+            <p>如果您位于欧洲经济区（EEA）、瑞士、英国或其他具有类似数据保护法律的司法管辖区，我们处理您个人数据的法律依据如下：</p>
+            <div class="ed-legal-table-scroll"><table>
+              <tr><th>处理目的</th><th>法律依据</th></tr>
+              <tr><td>账户创建与管理</td><td>合同履行（GDPR 第 6 条第 1 款第 b 项）</td></tr>
+              <tr><td>订阅计费与付款</td><td>合同履行（GDPR 第 6 条第 1 款第 b 项）</td></tr>
+              <tr><td>服务交付与运营</td><td>合同履行（GDPR 第 6 条第 1 款第 b 项）</td></tr>
+              <tr><td>安全与欺诈防范</td><td>合法利益（GDPR 第 6 条第 1 款第 f 项）</td></tr>
+              <tr><td>分析与产品改进</td><td>合法利益（GDPR 第 6 条第 1 款第 f 项）</td></tr>
+              <tr><td>营销通信（含退订选项）</td><td>同意（GDPR 第 6 条第 1 款第 a 项）</td></tr>
+              <tr><td>遵守法律义务</td><td>法律义务（GDPR 第 6 条第 1 款第 c 项）</td></tr>
+            </table></div>
+            <p>对于基于同意的处理，您有权随时撤回同意。撤回不影响撤回前基于同意进行的处理的合法性。</p>
+          </div>
 
-    <div class="legal-section sr sr-d1">
-      <h3>2. 我们收集的信息</h3>
+          <div class="ed-legal-section" id="section-4">
+            <h3>4. 我们如何使用您的信息</h3>
+            <p>我们将收集的信息用于以下目的：</p>
+            <ul>
+              <li><strong>提供服务。</strong> 运营 Socrates 教学引擎，处理您的学习会话，管理您的账户和订阅，并将 API 请求路由至您选择的 LLM 提供商。</li>
+              <li><strong>改进服务。</strong> 分析使用模式，识别常见错误，优化教学算法，提升用户体验。</li>
+              <li><strong>安全与合规。</strong> 检测和防止滥用、欺诈或服务条款违规行为；响应法律请求；维护系统完整性。</li>
+              <li><strong>通信。</strong> 发送与服务相关的通知（账单提醒、服务变更、安全警报）；发送产品更新和促销内容（含退订选项）；回复支持咨询。</li>
+              <li><strong>个性化。</strong> 根据您的进度和偏好定制教学内容、推荐学习路径并调整难度级别。</li>
+              <li><strong>聚合分析。</strong> 创建无法单独识别您身份的聚合、匿名统计数据，用于产品规划和报告。</li>
+            </ul>
+          </div>
 
-      <h4>2.1 您直接提供的信息</h4>
-      <table class="legal-table">
-        <tr>
-          <th>类别</th>
-          <th>示例</th>
-          <th>目的</th>
-        </tr>
-        <tr>
-          <td><strong>账户信息</strong></td>
-          <td>电子邮件地址、加密密码、显示名称、头像</td>
-          <td>账户注册与身份验证</td>
-        </tr>
-        <tr>
-          <td><strong>个人资料信息</strong></td>
-          <td>偏好名称、学习偏好、语言设置</td>
-          <td>个性化您的体验</td>
-        </tr>
-        <tr>
-          <td><strong>付款信息</strong></td>
-          <td>账单地址、交易记录、银行卡末四位数字</td>
-          <td>订阅管理与会计核算</td>
-        </tr>
-        <tr>
-          <td><strong>API 密钥</strong></td>
-          <td>LLM 提供商 API 密钥（加密存储）</td>
-          <td>将推理请求路由至您选择的提供商</td>
-        </tr>
-        <tr>
-          <td><strong>教学内容</strong></td>
-          <td>会话记录、诊断答案、知识图谱数据、笔记</td>
-          <td>提供并改进辅导体验</td>
-        </tr>
-        <tr>
-          <td><strong>通信内容</strong></td>
-          <td>您联系支持时的电子邮件内容</td>
-          <td>客户支持与服务改进</td>
-        </tr>
-      </table>
+          <div class="ed-legal-section" id="section-5">
+            <h3>5. API 密钥处理与安全</h3>
+            <p>您的 LLM 提供商 API 密钥是我们处理的最敏感数据之一。我们按以下方式处理：</p>
+            <ul>
+              <li><strong>静态加密。</strong> API 密钥在存入数据库前使用 AES-256-GCM 加密。加密密钥由服务器 Session Secret 派生，浏览器不会收到存储的密文。</li>
+              <li><strong>传输加密。</strong> API 请求应通过 HTTPS 传输；具体 TLS 配置取决于提供服务的部署环境。</li>
+              <li><strong>有限使用。</strong> 密钥仅用于向您配置的 LLM 提供商验证 API 请求。除身份验证外，我们不会检查、记录或存储 API 密钥的内容。</li>
+              <li><strong>访问控制。</strong> 只有服务器在需要向您配置的提供商转发请求时才会解密密钥，浏览器只收到元数据和遮罩提示。</li>
+              <li><strong>不用于模型训练。</strong> 我们从不使用您的 API 密钥或通过它们传输的数据来训练、微调或改进我们自己的 AI 模型。</li>
+              <li><strong>删除。</strong> 您可以在账户设置中更新或删除密钥。删除账户会通过服务器端删除流程移除该账户的 API 密钥记录；独立备份或法律保留要求可能遵循不同的时间表。</li>
+              <li><strong>不共享。</strong> 除法律要求外，我们不会向任何第三方出售、出租或共享您的 API 密钥。</li>
+            </ul>
+          </div>
 
-      <h4>2.2 自动收集的信息</h4>
-      <table class="legal-table">
-        <tr>
-          <th>类别</th>
-          <th>示例</th>
-          <th>目的</th>
-        </tr>
-        <tr>
-          <td><strong>使用数据</strong></td>
-          <td>会话时长、使用的功能、访问的页面、功能交互</td>
-          <td>服务优化与产品改进</td>
-        </tr>
-        <tr>
-          <td><strong>设备信息</strong></td>
-          <td>IP 地址、浏览器类型及版本、操作系统、设备类型、屏幕分辨率</td>
-          <td>服务交付、安全与分析</td>
-        </tr>
-        <tr>
-          <td><strong>日志数据</strong></td>
-          <td>API 请求时间戳、错误日志、性能指标、请求量</td>
-          <td>系统监控、调试与安全</td>
-        </tr>
-        <tr>
-          <td><strong>Cookie 及类似技术</strong></td>
-          <td>身份验证令牌、会话标识符、偏好 Cookie</td>
-          <td>身份验证、会话管理与基本分析</td>
-        </tr>
-      </table>
+          <div class="ed-legal-section" id="section-6">
+            <h3>6. Cookie 及类似技术</h3>
+            <p>我们使用 Cookie 和类似跟踪技术来运营和改进服务。以下是我们的使用方式：</p>
+            <div class="ed-legal-table-scroll"><table>
+              <tr><th>类型</th><th>目的</th><th>持续时间</th><th>退订方式</th></tr>
+              <tr><td><strong>必要/严格必需</strong></td><td>身份验证、会话管理、CSRF 防护、安全</td><td>会话至 1 年</td><td>无法退订（服务将无法运行）</td></tr>
+              <tr><td><strong>偏好</strong></td><td>记住您的设置、语言、主题偏好</td><td>1 年</td><td>浏览器设置</td></tr>
+              <tr><td><strong>分析</strong></td><td>第一方分析：页面浏览量、功能使用、错误跟踪</td><td>由部署环境配置</td><td>浏览器设置或可用的退订控件</td></tr>
+              <tr><td><strong>营销</strong></td><td>当前未使用。如引入，我们将通知并征求同意。</td><td>不适用</td><td>不适用</td></tr>
+            </table></div>
+            <p>您可以通过浏览器设置控制 Cookie。阻止必要 Cookie 将导致服务无法运行。我们不使用第三方广告 Cookie、跨站跟踪或行为广告跟踪器。</p>
+            <p>当适用法律要求时，我们将显示 Cookie 同意横幅，并在您的设备上放置非必要 Cookie 之前获得您的明确同意。</p>
+          </div>
 
-      <p>我们不会收集或处理敏感个人信息（健康数据、生物识别数据、基因数据、政治观点、宗教信仰、工会成员身份、性取向），除非您在教学内容中明确且知情地提供了此类信息，违反了我们的服务条款第 11 条。我们不会故意收集此类数据，并要求您不要提交。</p>
-    </div>
+          <div class="ed-legal-section" id="section-7">
+            <h3>7. 数据共享与第三方披露</h3>
+            <p>我们不会出售您的个人信息。我们仅在以下有限情况下共享您的数据：</p>
+            <div class="ed-legal-table-scroll"><table>
+              <tr><th>接收方</th><th>共享数据</th><th>目的</th><th>保障措施</th></tr>
+              <tr><td><strong>LLM 提供商</strong>（OpenAI、Anthropic 等）</td><td>会话提示和生成内容（通过您的 API 密钥）</td><td>教学会话的 AI 推理</td><td>受您与提供商协议的约束</td></tr>
+              <tr><td><strong>Stripe</strong></td><td>支付卡数据、账单信息</td><td>付款处理</td><td>符合 PCI-DSS 标准；我们从不存储完整卡号</td></tr>
+              <tr><td><strong>托管与存储提供商</strong></td><td>所有存储数据（加密）</td><td>托管与基础设施</td><td>服务商和保护措施取决于部署环境</td></tr>
+              <tr><td><strong>电子邮件服务提供商</strong></td><td>电子邮件地址、支持通信</td><td>交易邮件、支持通信</td><td>服务商和保留期限取决于使用的通信渠道</td></tr>
+              <tr><td><strong>法律/监管机构</strong></td><td>适用法律要求的范围</td><td>法律合规</td><td>除非法律禁止，我们将通知您</td></tr>
+            </table></div>
+            <p>第三方服务商的处理方式、合同安排和保留期限取决于实际使用的部署和通信渠道。我们会在适用情况下采取合理措施保护共享数据。</p>
+          </div>
 
-    <div class="legal-section sr sr-d1">
-      <h3>3. 处理的法律依据（GDPR 及类似法律）</h3>
-      <p>如果您位于欧洲经济区（EEA）、瑞士、英国或其他具有类似数据保护法律的司法管辖区，我们处理您个人数据的法律依据如下：</p>
-      <table class="legal-table">
-        <tr>
-          <th>处理目的</th>
-          <th>法律依据</th>
-        </tr>
-        <tr>
-          <td>账户创建与管理</td>
-          <td>合同履行（GDPR 第 6 条第 1 款第 b 项）</td>
-        </tr>
-        <tr>
-          <td>订阅计费与付款</td>
-          <td>合同履行（GDPR 第 6 条第 1 款第 b 项）</td>
-        </tr>
-        <tr>
-          <td>服务交付与运营</td>
-          <td>合同履行（GDPR 第 6 条第 1 款第 b 项）</td>
-        </tr>
-        <tr>
-          <td>安全与欺诈防范</td>
-          <td>合法利益（GDPR 第 6 条第 1 款第 f 项）</td>
-        </tr>
-        <tr>
-          <td>分析与产品改进</td>
-          <td>合法利益（GDPR 第 6 条第 1 款第 f 项）</td>
-        </tr>
-        <tr>
-          <td>营销通信（含退订选项）</td>
-          <td>同意（GDPR 第 6 条第 1 款第 a 项）</td>
-        </tr>
-        <tr>
-          <td>遵守法律义务</td>
-          <td>法律义务（GDPR 第 6 条第 1 款第 c 项）</td>
-        </tr>
-      </table>
-      <p>对于基于同意的处理，您有权随时撤回同意。撤回不影响撤回前基于同意进行的处理的合法性。</p>
-    </div>
+          <div class="ed-legal-section" id="section-8">
+            <h3>8. 数据存储、传输与安全</h3>
+            <p><strong>存储位置。</strong> 您的数据存储在中国和/或我们或我们的基础设施提供商设有设施的其他司法管辖区的安全服务器上。使用服务即表示您同意将您的数据传输至这些地点。</p>
+            <p><strong>跨境传输。</strong> 如果我们将您的个人数据从 EEA、英国或瑞士传输至欧洲委员会未认定为充分保护的国家，我们将实施适当的保障措施，包括欧洲委员会批准的标准合同条款（SCCs），或适用法律下的同等机制。</p>
+            <p><strong>安全措施。</strong> 我们实施以下技术和组织安全措施：</p>
+            <ul>
+              <li>在部署环境中配置的 HTTPS/TLS 保护。</li>
+              <li>对存储 API 密钥使用 AES-256-GCM 加密。</li>
+              <li>对账户和密钥操作执行服务器端身份验证与授权检查。</li>
+              <li>定期安全测试：由独立安全公司每季度进行漏洞扫描，每年进行渗透测试。</li>
+              <li>员工培训：所有处理个人数据的员工必须接受强制性的安全和隐私培训。</li>
+              <li>事件响应：针对数据安全事件制定成文的事件响应计划。</li>
+            </ul>
+            <p>虽然我们实施了这些措施，但没有任何电子存储或传输方法是 100% 安全的。我们无法保证绝对安全。</p>
+          </div>
 
-    <div class="legal-section sr sr-d2">
-      <h3>4. 我们如何使用您的信息</h3>
-      <p>我们将收集的信息用于以下目的：</p>
-      <ul>
-        <li><strong>提供服务。</strong> 运营 Socrates 教学引擎，处理您的学习会话，管理您的账户和订阅，并将 API 请求路由至您选择的 LLM 提供商。</li>
-        <li><strong>改进服务。</strong> 分析使用模式，识别常见错误，优化教学算法，提升用户体验。</li>
-        <li><strong>安全与合规。</strong> 检测和防止滥用、欺诈或服务条款违规行为；响应法律请求；维护系统完整性。</li>
-        <li><strong>通信。</strong> 发送与服务相关的通知（账单提醒、服务变更、安全警报）；发送产品更新和促销内容（含退订选项）；回复支持咨询。</li>
-        <li><strong>个性化。</strong> 根据您的进度和偏好定制教学内容、推荐学习路径并调整难度级别。</li>
-        <li><strong>聚合分析。</strong> 创建无法单独识别您身份的聚合、匿名统计数据，用于产品规划和报告。</li>
-      </ul>
-    </div>
+          <div class="ed-legal-section" id="section-9">
+            <h3>9. 数据保留</h3>
+            <p>我们仅在为实现本政策所述目的所必需的期限内保留您的个人数据，除非法律要求或允许更长的保留期限。</p>
+            <div class="ed-legal-table-scroll"><table>
+              <tr><th>数据类型</th><th>保留期限</th><th>理由</th></tr>
+              <tr><td>账户信息</td><td>账户存续期间，之后按照删除和法律义务处理</td><td>账户运营与合规</td></tr>
+              <tr><td>会话/教学数据</td><td>提供服务所需期间，受账户删除和适用义务约束</td><td>提供学习体验</td></tr>
+              <tr><td>付款记录</td><td>按照支付服务商以及适用会计或税法要求</td><td>账单、会计与合规</td></tr>
+              <tr><td>服务器日志</td><td>安全、调试与运营所需期间</td><td>服务可靠性与安全</td></tr>
+              <tr><td>API 密钥</td><td>直到您更新/删除或删除账户，受独立保留要求约束</td><td>服务功能</td></tr>
+              <tr><td>支持通信</td><td>解决请求和维护服务记录所需期间</td><td>支持与争议解决</td></tr>
+              <tr><td>分析数据（匿名化）</td><td>无限期（匿名化）</td><td>产品改进；无法识别个人身份</td></tr>
+            </table></div>
+            <p>适用保留期限届满后，数据会根据涉及的系统和服务商被删除或匿名化。我们不对独立备份或第三方系统承诺统一的删除时间。</p>
+          </div>
 
-    <div class="legal-section sr sr-d2">
-      <h3>5. API 密钥处理与安全</h3>
-      <p>您的 LLM 提供商 API 密钥是我们处理的最敏感数据之一。我们按以下方式处理：</p>
-      <ul>
-        <li><strong>静态加密。</strong> API 密钥在存入数据库前使用 AES-256-GCM 加密。加密密钥由服务器 Session Secret 派生，浏览器不会收到存储的密文。</li>
-        <li><strong>传输加密。</strong> API 请求应通过 HTTPS 传输；具体 TLS 配置取决于提供服务的部署环境。</li>
-        <li><strong>有限使用。</strong> 密钥仅用于向您配置的 LLM 提供商验证 API 请求。除身份验证外，我们不会检查、记录或存储 API 密钥的内容。</li>
-        <li><strong>访问控制。</strong> 只有服务器在需要向您配置的提供商转发请求时才会解密密钥，浏览器只收到元数据和遮罩提示。</li>
-        <li><strong>不用于模型训练。</strong> 我们从不使用您的 API 密钥或通过它们传输的数据来训练、微调或改进我们自己的 AI 模型。</li>
-        <li><strong>删除。</strong> 您可以在账户设置中更新或删除密钥。删除账户会通过服务器端删除流程移除该账户的 API 密钥记录；独立备份或法律保留要求可能遵循不同的时间表。</li>
-        <li><strong>不共享。</strong> 除法律要求外，我们不会向任何第三方出售、出租或共享您的 API 密钥。</li>
-      </ul>
-    </div>
+          <div class="ed-legal-section" id="section-10">
+            <h3>10. 您的权利与选择</h3>
+            <p>根据您所在的司法管辖区，您可能对您的个人数据享有以下权利。我们将在适用法律要求的时限内（通常为 30 天）回应所有合法请求。</p>
+            <div class="ed-legal-table-scroll"><table>
+              <tr><th>权利</th><th>描述</th><th>行使方式</th></tr>
+              <tr><td><strong>访问权</strong></td><td>请求获取我们持有的关于您的个人数据副本。</td><td>发送电子邮件至 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a></td></tr>
+              <tr><td><strong>更正权</strong></td><td>更正不准确或不完整的数据。</td><td>账户设置或发送电子邮件</td></tr>
+              <tr><td><strong>删除权</strong>（"被遗忘权"）</td><td>请求删除您的个人数据。</td><td>在设置中删除账户或发送电子邮件</td></tr>
+              <tr><td><strong>限制处理权</strong></td><td>在特定情况下限制对您数据的处理。</td><td>发送电子邮件至 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a></td></tr>
+              <tr><td><strong>数据可携带权</strong></td><td>以结构化、常用、机器可读的格式接收您的数据。</td><td>发送电子邮件至 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a></td></tr>
+              <tr><td><strong>反对权</strong></td><td>反对基于合法利益或直接营销目的的处理。</td><td>发送电子邮件至 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a></td></tr>
+              <tr><td><strong>撤回同意权</strong></td><td>在基于同意进行处理的情况下撤回同意。</td><td>账户设置或发送电子邮件</td></tr>
+              <tr><td><strong>投诉权</strong></td><td>向当地数据保护机构提出投诉。</td><td>联系您当地的 DPA（见第 17 节）</td></tr>
+            </table></div>
+            <p>要行使您的权利，请通过 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a> 联系我们。我们可能需要先验证您的身份，然后才能处理您的请求。我们不会因您行使权利而歧视您。我们旨在 30 天内回应所有合法请求。复杂请求可能需要最多 60 天，并会提前通知。</p>
+          </div>
 
-    <div class="legal-section sr sr-d3">
-      <h3>6. Cookie 及类似技术</h3>
-      <p>我们使用 Cookie 和类似跟踪技术来运营和改进服务。以下是我们的使用方式：</p>
-      <table class="legal-table">
-        <tr>
-          <th>类型</th>
-          <th>目的</th>
-          <th>持续时间</th>
-          <th>退订方式</th>
-        </tr>
-        <tr>
-          <td><strong>必要/严格必需</strong></td>
-          <td>身份验证、会话管理、CSRF 防护、安全</td>
-          <td>会话至 1 年</td>
-          <td>无法退订（服务将无法运行）</td>
-        </tr>
-        <tr>
-          <td><strong>偏好</strong></td>
-          <td>记住您的设置、语言、主题偏好</td>
-          <td>1 年</td>
-          <td>浏览器设置</td>
-        </tr>
-        <tr>
-          <td><strong>分析</strong></td>
-          <td>第一方分析：页面浏览量、功能使用、错误跟踪</td>
-          <td>由部署环境配置</td>
-          <td>浏览器设置或可用的退订控件</td>
-        </tr>
-        <tr>
-          <td><strong>营销</strong></td>
-          <td>当前未使用。如引入，我们将通知并征求同意。</td>
-          <td>不适用</td>
-          <td>不适用</td>
-        </tr>
-      </table>
-      <p>您可以通过浏览器设置控制 Cookie。阻止必要 Cookie 将导致服务无法运行。我们不使用第三方广告 Cookie、跨站跟踪或行为广告跟踪器。</p>
-      <p>当适用法律要求时，我们将显示 Cookie 同意横幅，并在您的设备上放置非必要 Cookie 之前获得您的明确同意。</p>
-    </div>
+          <div class="ed-legal-section" id="section-11">
+            <h3>11. 儿童隐私</h3>
+            <p>本服务不面向 13 岁以下儿童（或适用司法管辖区规定的同等最低年龄）。我们不会故意收集 13 岁以下儿童的个人信息。</p>
+            <p>如果我们得知在未经验证的父母同意的情况下收集了 13 岁以下儿童的个人信息，我们将立即删除该信息。如果您认为 13 岁以下儿童可能向我们提供了个人数据，请立即通过 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a> 联系我们。</p>
+            <p>在适用更高同意年龄的司法管辖区（例如某些欧盟成员国的 16 岁），我们遵守当地年龄要求，并在需要时寻求父母同意。</p>
+          </div>
 
-    <div class="legal-section sr sr-d3">
-      <h3>7. 数据共享与第三方披露</h3>
-      <p>我们不会出售您的个人信息。我们仅在以下有限情况下共享您的数据：</p>
-      <table class="legal-table">
-        <tr>
-          <th>接收方</th>
-          <th>共享数据</th>
-          <th>目的</th>
-          <th>保障措施</th>
-        </tr>
-        <tr>
-          <td><strong>LLM 提供商</strong>（OpenAI、Anthropic 等）</td>
-          <td>会话提示和生成内容（通过您的 API 密钥）</td>
-          <td>教学会话的 AI 推理</td>
-          <td>受您与提供商协议的约束</td>
-        </tr>
-        <tr>
-          <td><strong>Stripe</strong></td>
-          <td>支付卡数据、账单信息</td>
-          <td>付款处理</td>
-          <td>符合 PCI-DSS 标准；我们从不存储完整卡号</td>
-        </tr>
-        <tr>
-          <td><strong>托管与存储提供商</strong></td>
-          <td>所有存储数据（加密）</td>
-          <td>托管与基础设施</td>
-          <td>服务商和保护措施取决于部署环境</td>
-        </tr>
-        <tr>
-          <td><strong>电子邮件服务提供商</strong></td>
-          <td>电子邮件地址、支持通信</td>
-          <td>交易邮件、支持通信</td>
-          <td>服务商和保留期限取决于使用的通信渠道</td>
-        </tr>
-        <tr>
-          <td><strong>法律/监管机构</strong></td>
-          <td>适用法律要求的范围</td>
-          <td>法律合规</td>
-          <td>除非法律禁止，我们将通知您</td>
-        </tr>
-      </table>
-      <p>第三方服务商的处理方式、合同安排和保留期限取决于实际使用的部署和通信渠道。我们会在适用情况下采取合理措施保护共享数据。</p>
-    </div>
+          <div class="ed-legal-section" id="section-12">
+            <h3>12. AI 教学数据与自动化处理</h3>
+            <p><strong>教学数据流。</strong> 当您使用 Socrates 进行学习会话时，您的对话内容、诊断答案和知识图谱数据将通过您的 API 密钥发送至您配置的 LLM 提供商。这是生成教育回复所必需的。此处理受 LLM 提供商条款和隐私政策的约束。</p>
+            <p><strong>不用于模型训练。</strong> 我们不会使用您的会话数据、教学内容或 API 密钥来训练、微调或改进我们自己的 AI 模型。您的数据仅用于提供您请求的教学会话。</p>
+            <p><strong>自动化决策。</strong> Socrates 使用算法来：(a) 根据您的诊断答案调整教学难度；(b) 推荐学习路径；(c) 识别知识缺口。这些自动化决策是辅导体验的组成部分，不会产生针对您的法律效果。如果您希望对自动化决策提出异议，请通过 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a> 联系我们。</p>
+            <p><strong>人工审查。</strong> 我们不会例行审查个别教学会话。我们的团队仅在必要时基于"需要知道"原则访问会话数据，用于调试、质量保证或回复您的支持请求。任何此类访问均被记录和审计。</p>
+            <p><strong>画像分析。</strong> 我们不会基于您的教学数据进行用于营销或广告目的的画像分析。</p>
+          </div>
 
-    <div class="legal-section sr sr-d4">
-      <h3>8. 数据存储、传输与安全</h3>
-      <p><strong>存储位置。</strong> 您的数据存储在中国和/或我们或我们的基础设施提供商设有设施的其他司法管辖区的安全服务器上。使用服务即表示您同意将您的数据传输至这些地点。</p>
-      <p><strong>跨境传输。</strong> 如果我们将您的个人数据从 EEA、英国或瑞士传输至欧洲委员会未认定为充分保护的国家，我们将实施适当的保障措施，包括欧洲委员会批准的标准合同条款（SCCs），或适用法律下的同等机制。</p>
-      <p><strong>安全措施。</strong> 我们实施以下技术和组织安全措施：</p>
-      <ul>
-        <li>在部署环境中配置的 HTTPS/TLS 保护。</li>
-        <li>对存储 API 密钥使用 AES-256-GCM 加密。</li>
-        <li>对账户和密钥操作执行服务器端身份验证与授权检查。</li>
-        <li>定期安全测试：由独立安全公司每季度进行漏洞扫描，每年进行渗透测试。</li>
-        <li>员工培训：所有处理个人数据的员工必须接受强制性的安全和隐私培训。</li>
-        <li>事件响应：针对数据安全事件制定成文的事件响应计划。</li>
-      </ul>
-      <p>虽然我们实施了这些措施，但没有任何电子存储或传输方法是 100% 安全的。我们无法保证绝对安全。</p>
-    </div>
+          <div class="ed-legal-section" id="section-13">
+            <h3>13. 敏感个人信息</h3>
+            <p>我们不会要求或需要敏感个人信息（如健康数据、生物识别数据、基因数据、政治观点、宗教信仰、工会成员身份、性取向或犯罪记录）来提供服务。您不应通过服务提交敏感个人信息。</p>
+            <p>如果我们发现违反本政策提交了敏感个人信息，我们将立即删除。对于您违反本政策提交敏感个人信息而引起的任何后果，我们不承担责任。</p>
+          </div>
 
-    <div class="legal-section sr sr-d4">
-      <h3>9. 数据保留</h3>
-      <p>我们仅在为实现本政策所述目的所必需的期限内保留您的个人数据，除非法律要求或允许更长的保留期限。</p>
-      <table class="legal-table">
-        <tr>
-          <th>数据类型</th>
-          <th>保留期限</th>
-          <th>理由</th>
-        </tr>
-        <tr>
-          <td>账户信息</td>
-          <td>账户存续期间，之后按照删除和法律义务处理</td>
-          <td>账户运营与合规</td>
-        </tr>
-        <tr>
-          <td>会话/教学数据</td>
-          <td>提供服务所需期间，受账户删除和适用义务约束</td>
-          <td>提供学习体验</td>
-        </tr>
-        <tr>
-          <td>付款记录</td>
-          <td>按照支付服务商以及适用会计或税法要求</td>
-          <td>账单、会计与合规</td>
-        </tr>
-        <tr>
-          <td>服务器日志</td>
-          <td>安全、调试与运营所需期间</td>
-          <td>服务可靠性与安全</td>
-        </tr>
-        <tr>
-          <td>API 密钥</td>
-          <td>直到您更新/删除或删除账户，受独立保留要求约束</td>
-          <td>服务功能</td>
-        </tr>
-        <tr>
-          <td>支持通信</td>
-          <td>解决请求和维护服务记录所需期间</td>
-          <td>支持与争议解决</td>
-        </tr>
-        <tr>
-          <td>分析数据（匿名化）</td>
-          <td>无限期（匿名化）</td>
-          <td>产品改进；无法识别个人身份</td>
-        </tr>
-      </table>
-      <p>适用保留期限届满后，数据会根据涉及的系统和服务商被删除或匿名化。我们不对独立备份或第三方系统承诺统一的删除时间。</p>
-    </div>
+          <div class="ed-legal-section" id="section-14">
+            <h3>14. 数据安全事件</h3>
+            <p>如果发生危及您个人数据的数据安全事件，我们将：</p>
+            <ul>
+              <li>在知悉后毫不迟延地（通常在 72 小时内）通过电子邮件和/或服务上的通知通知您。</li>
+              <li>提供违规性质的描述，以及受影响的数据主体和记录的大致类别和数量。</li>
+              <li>告知隐私联系人或其他联系点的姓名和联系方式，以获取更多信息。</li>
+              <li>描述违规的可能后果，以及我们已采取或拟采取的措施来解决该问题。</li>
+              <li>根据适用法律通知相关监管机构。</li>
+            </ul>
+            <p>我们制定了成文的事件响应计划，并定期进行桌面演练以确保准备就绪。安全事件由我们的安全团队调查，经验教训将纳入我们的安全流程。</p>
+          </div>
 
-    <div class="legal-section sr">
-      <h3>10. 您的权利与选择</h3>
-      <p>根据您所在的司法管辖区，您可能对您的个人数据享有以下权利。我们将在适用法律要求的时限内（通常为 30 天）回应所有合法请求。</p>
+          <div class="ed-legal-section" id="section-15">
+            <h3>15. 隐私联系方式</h3>
+            <p>如果您对本政策或我们的数据实践有任何疑问，请联系：</p>
+            <p><strong>隐私联系人</strong><br>
+            Topodrive<br>
+            Xi'an, Shaanxi, China<br>
+            电子邮件：<a href="mailto:hello@topodrive.top">hello@topodrive.top</a></p>
+            <p>一般隐私咨询：<a href="mailto:hello@topodrive.top">hello@topodrive.top</a></p>
+            <p>我们会在适用法律要求的时限内处理隐私请求。</p>
+          </div>
 
-      <table class="legal-table">
-        <tr>
-          <th>权利</th>
-          <th>描述</th>
-          <th>行使方式</th>
-        </tr>
-        <tr>
-          <td><strong>访问权</strong></td>
-          <td>请求获取我们持有的关于您的个人数据副本。</td>
-          <td>发送电子邮件至 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a></td>
-        </tr>
-        <tr>
-          <td><strong>更正权</strong></td>
-          <td>更正不准确或不完整的数据。</td>
-          <td>账户设置或发送电子邮件</td>
-        </tr>
-        <tr>
-          <td><strong>删除权</strong>（"被遗忘权"）</td>
-          <td>请求删除您的个人数据。</td>
-          <td>在设置中删除账户或发送电子邮件</td>
-        </tr>
-        <tr>
-          <td><strong>限制处理权</strong></td>
-          <td>在特定情况下限制对您数据的处理。</td>
-          <td>发送电子邮件至 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a></td>
-        </tr>
-        <tr>
-          <td><strong>数据可携带权</strong></td>
-          <td>以结构化、常用、机器可读的格式接收您的数据。</td>
-          <td>发送电子邮件至 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a></td>
-        </tr>
-        <tr>
-          <td><strong>反对权</strong></td>
-          <td>反对基于合法利益或直接营销目的的处理。</td>
-          <td>发送电子邮件至 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a></td>
-        </tr>
-        <tr>
-          <td><strong>撤回同意权</strong></td>
-          <td>在基于同意进行处理的情况下撤回同意。</td>
-          <td>账户设置或发送电子邮件</td>
-        </tr>
-        <tr>
-          <td><strong>投诉权</strong></td>
-          <td>向当地数据保护机构提出投诉。</td>
-          <td>联系您当地的 DPA（见第 17 节）</td>
-        </tr>
-      </table>
+          <div class="ed-legal-section" id="section-16">
+            <h3>16. 隐私政策变更</h3>
+            <p>我们可能会不时更新本政策。当我们进行重大变更时，我们将在变更生效前至少 14 天通过电子邮件（发送至与您账户关联的地址）和/或服务上的显著通知通知您。</p>
+            <p>我们鼓励您定期审阅本政策。最近更新日期显示在本页面顶部。在生效日期后继续使用服务即构成对更新后政策的接受。如果您不同意，您可以在生效日期前删除您的账户。</p>
+            <p>对于根据适用法律需要您同意的变更，我们将在实施前获得您的明确同意。</p>
+          </div>
 
-      <p>要行使您的权利，请通过 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a> 联系我们。我们可能需要先验证您的身份，然后才能处理您的请求。我们不会因您行使权利而歧视您。我们旨在 30 天内回应所有合法请求。复杂请求可能需要最多 60 天，并会提前通知。</p>
-    </div>
+          <div class="ed-legal-section" id="section-17">
+            <h3>17. 投诉与监管机构</h3>
+            <p>如果您位于 EEA、瑞士或英国，如果您认为我们对您个人数据的处理违反了适用法律，您有权向当地数据保护监管机构提出投诉。我们鼓励您先联系我们，以便我们尝试非正式地解决您的疑虑。</p>
+            <p>通过以下方式联系您当地的数据保护机构：<a href="https://edpb.europa.eu/about-edpb/about-edpb/members_en" target="_blank">https://edpb.europa.eu/about-edpb/about-edpb/members_en</a>（适用于欧盟/EEA）。</p>
+            <p>如果您在中国，您可以联系国家互联网信息办公室（CAC）或陕西省当地同等机构。</p>
+          </div>
 
-    <div class="legal-section sr sr-d1">
-      <h3>11. 儿童隐私</h3>
-      <p>本服务不面向 13 岁以下儿童（或适用司法管辖区规定的同等最低年龄）。我们不会故意收集 13 岁以下儿童的个人信息。</p>
-      <p>如果我们得知在未经验证的父母同意的情况下收集了 13 岁以下儿童的个人信息，我们将立即删除该信息。如果您认为 13 岁以下儿童可能向我们提供了个人数据，请立即通过 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a> 联系我们。</p>
-      <p>在适用更高同意年龄的司法管辖区（例如某些欧盟成员国的 16 岁），我们遵守当地年龄要求，并在需要时寻求父母同意。</p>
-    </div>
+          <div class="ed-legal-section" id="section-18">
+            <h3>18. 中国用户的特别规定</h3>
+            <p>对于中华人民共和国用户，根据《个人信息保护法》（PIPL），以下附加规定适用：</p>
+            <ul>
+              <li><strong>个人信息清单。</strong> 我们收集的个人信息的完整清单可应要求通过发送电子邮件至 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a> 获取。</li>
+              <li><strong>同意。</strong> 对于敏感个人信息的处理以及所需的跨境数据传输，我们分别取得知情同意。</li>
+              <li><strong>第三方共享清单。</strong> 与我们共享个人数据的第三方详细清单可应要求提供。</li>
+              <li><strong>数据影响评估。</strong> 在适用法律要求时，我们会在开展高风险处理活动前完成相应的影响评估。</li>
+              <li><strong>自动化决策。</strong> 您有权要求对自动化决策方法作出解释，并有权拒绝将自动化决策用于营销或信息推送。</li>
+              <li><strong>删除请求。</strong> 我们会按照适用法律以及保护账户所需的身份验证流程处理删除请求。</li>
+            </ul>
+          </div>
 
-    <div class="legal-section sr sr-d1">
-      <h3>12. AI 教学数据与自动化处理</h3>
-      <p><strong>教学数据流。</strong> 当您使用 Socrates 进行学习会话时，您的对话内容、诊断答案和知识图谱数据将通过您的 API 密钥发送至您配置的 LLM 提供商。这是生成教育回复所必需的。此处理受 LLM 提供商条款和隐私政策的约束。</p>
-      <p><strong>不用于模型训练。</strong> 我们不会使用您的会话数据、教学内容或 API 密钥来训练、微调或改进我们自己的 AI 模型。您的数据仅用于提供您请求的教学会话。</p>
-      <p><strong>自动化决策。</strong> Socrates 使用算法来：(a) 根据您的诊断答案调整教学难度；(b) 推荐学习路径；(c) 识别知识缺口。这些自动化决策是辅导体验的组成部分，不会产生针对您的法律效果。如果您希望对自动化决策提出异议，请通过 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a> 联系我们。</p>
-      <p><strong>人工审查。</strong> 我们不会例行审查个别教学会话。我们的团队仅在必要时基于"需要知道"原则访问会话数据，用于调试、质量保证或回复您的支持请求。任何此类访问均被记录和审计。</p>
-      <p><strong>画像分析。</strong> 我们不会基于您的教学数据进行用于营销或广告目的的画像分析。</p>
-    </div>
+          <div class="ed-legal-section" id="section-19">
+            <h3>19. 加利福尼亚用户的特别规定（CCPA/CPRA）</h3>
+            <p>如果您是加利福尼亚州居民，《加利福尼亚消费者隐私法》（CCPA）和《加利福尼亚隐私权法》（CPRA）赋予您额外的权利：</p>
+            <ul>
+              <li><strong>知情权。</strong> 您可以要求我们披露我们收集的关于您的个人信息的类别和具体片段、来源类别、收集的商业目的，以及与我们共享数据的第三方类别。</li>
+              <li><strong>删除权。</strong> 您可以要求我们删除已收集的个人信息，但须遵守某些例外情况。</li>
+              <li><strong>退出权。</strong> 我们不会出售您的个人信息。我们实际上并不知晓出售 16 岁以下未成年人的个人信息。</li>
+              <li><strong>不受歧视权。</strong> 我们不会因您行使任何 CCPA/CPRA 权利而歧视您。</li>
+              <li><strong>更正权。</strong> 您可以要求更正不准确的个人信息。</li>
+              <li><strong>限制敏感个人信息使用权。</strong> 我们不会将敏感个人信息用于提供服务所必需的目的之外。</li>
+            </ul>
+            <p>要行使您的加利福尼亚权利，请通过 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a> 联系我们。我们会在处理请求前验证您的身份，并在适用法律要求的时限内回复。</p>
+          </div>
 
-    <div class="legal-section sr sr-d1">
-      <h3>13. 敏感个人信息</h3>
-      <p>我们不会要求或需要敏感个人信息（如健康数据、生物识别数据、基因数据、政治观点、宗教信仰、工会成员身份、性取向或犯罪记录）来提供服务。您不应通过服务提交敏感个人信息。</p>
-      <p>如果我们发现违反本政策提交了敏感个人信息，我们将立即删除。对于您违反本政策提交敏感个人信息而引起的任何后果，我们不承担责任。</p>
-    </div>
+          <div class="ed-legal-section" id="section-20">
+            <h3>20. 联系信息</h3>
+            <p>如果您对本隐私政策或我们的数据实践有任何问题、疑虑或请求，请通过以下方式联系我们：</p>
+            <p><strong>电子邮件（一般咨询）：</strong> <a href="mailto:hello@topodrive.top">hello@topodrive.top</a><br>
+            <strong>支持：</strong> <a href="mailto:help@addtech.site">help@addtech.site</a><br>
+            <strong>地址：</strong> Topodrive, Xi'an, Shaanxi, China</p>
+          </div>
 
-    <div class="legal-section sr sr-d2">
-      <h3>14. 数据安全事件</h3>
-      <p>如果发生危及您个人数据的数据安全事件，我们将：</p>
-      <ul>
-        <li>在知悉后毫不迟延地（通常在 72 小时内）通过电子邮件和/或服务上的通知通知您。</li>
-        <li>提供违规性质的描述，以及受影响的数据主体和记录的大致类别和数量。</li>
-        <li>告知隐私联系人或其他联系点的姓名和联系方式，以获取更多信息。</li>
-        <li>描述违规的可能后果，以及我们已采取或拟采取的措施来解决该问题。</li>
-        <li>根据适用法律通知相关监管机构。</li>
-      </ul>
-      <p>我们制定了成文的事件响应计划，并定期进行桌面演练以确保准备就绪。安全事件由我们的安全团队调查，经验教训将纳入我们的安全流程。</p>
-    </div>
-
-    <div class="legal-section sr sr-d2">
-      <h3>15. 隐私联系方式</h3>
-      <p>如果您对本政策或我们的数据实践有任何疑问，请联系：</p>
-      <p><strong>隐私联系人</strong><br>
-      Topodrive<br>
-      Xi'an, Shaanxi, China<br>
-      电子邮件：<a href="mailto:hello@topodrive.top">hello@topodrive.top</a></p>
-      <p>一般隐私咨询：<a href="mailto:hello@topodrive.top">hello@topodrive.top</a></p>
-      <p>我们会在适用法律要求的时限内处理隐私请求。</p>
-    </div>
-
-    <div class="legal-section sr sr-d3">
-      <h3>16. 隐私政策变更</h3>
-      <p>我们可能会不时更新本政策。当我们进行重大变更时，我们将在变更生效前至少 14 天通过电子邮件（发送至与您账户关联的地址）和/或服务上的显著通知通知您。</p>
-      <p>我们鼓励您定期审阅本政策。最近更新日期显示在本页面顶部。在生效日期后继续使用服务即构成对更新后政策的接受。如果您不同意，您可以在生效日期前删除您的账户。</p>
-      <p>对于根据适用法律需要您同意的变更，我们将在实施前获得您的明确同意。</p>
-    </div>
-
-    <div class="legal-section sr sr-d3">
-      <h3>17. 投诉与监管机构</h3>
-      <p>如果您位于 EEA、瑞士或英国，如果您认为我们对您个人数据的处理违反了适用法律，您有权向当地数据保护监管机构提出投诉。我们鼓励您先联系我们，以便我们尝试非正式地解决您的疑虑。</p>
-      <p>通过以下方式联系您当地的数据保护机构：<a href="https://edpb.europa.eu/about-edpb/about-edpb/members_en" target="_blank">https://edpb.europa.eu/about-edpb/about-edpb/members_en</a>（适用于欧盟/EEA）。</p>
-      <p>如果您在中国，您可以联系国家互联网信息办公室（CAC）或陕西省当地同等机构。</p>
-    </div>
-
-    <div class="legal-section sr sr-d3">
-      <h3>18. 中国用户的特别规定</h3>
-      <p>对于中华人民共和国用户，根据《个人信息保护法》（PIPL），以下附加规定适用：</p>
-      <ul>
-        <li><strong>个人信息清单。</strong> 我们收集的个人信息的完整清单可应要求通过发送电子邮件至 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a> 获取。</li>
-        <li><strong>同意。</strong> 对于敏感个人信息的处理以及所需的跨境数据传输，我们分别取得知情同意。</li>
-        <li><strong>第三方共享清单。</strong> 与我们共享个人数据的第三方详细清单可应要求提供。</li>
-        <li><strong>数据影响评估。</strong> 在适用法律要求时，我们会在开展高风险处理活动前完成相应的影响评估。</li>
-        <li><strong>自动化决策。</strong> 您有权要求对自动化决策方法作出解释，并有权拒绝将自动化决策用于营销或信息推送。</li>
-        <li><strong>删除请求。</strong> 我们会按照适用法律以及保护账户所需的身份验证流程处理删除请求。</li>
-      </ul>
-    </div>
-
-    <div class="legal-section sr sr-d4">
-      <h3>19. 加利福尼亚用户的特别规定（CCPA/CPRA）</h3>
-      <p>如果您是加利福尼亚州居民，《加利福尼亚消费者隐私法》（CCPA）和《加利福尼亚隐私权法》（CPRA）赋予您额外的权利：</p>
-      <ul>
-        <li><strong>知情权。</strong> 您可以要求我们披露我们收集的关于您的个人信息的类别和具体片段、来源类别、收集的商业目的，以及与我们共享数据的第三方类别。</li>
-        <li><strong>删除权。</strong> 您可以要求我们删除已收集的个人信息，但须遵守某些例外情况。</li>
-        <li><strong>退出权。</strong> 我们不会出售您的个人信息。我们实际上并不知晓出售 16 岁以下未成年人的个人信息。</li>
-        <li><strong>不受歧视权。</strong> 我们不会因您行使任何 CCPA/CPRA 权利而歧视您。</li>
-        <li><strong>更正权。</strong> 您可以要求更正不准确的个人信息。</li>
-        <li><strong>限制敏感个人信息使用权。</strong> 我们不会将敏感个人信息用于提供服务所必需的目的之外。</li>
-      </ul>
-      <p>要行使您的加利福尼亚权利，请通过 <a href="mailto:hello@topodrive.top">hello@topodrive.top</a> 联系我们。我们会在处理请求前验证您的身份，并在适用法律要求的时限内回复。</p>
-    </div>
-
-    <div class="legal-section sr sr-d4">
-      <h3>20. 联系信息</h3>
-      <p>如果您对本隐私政策或我们的数据实践有任何问题、疑虑或请求，请通过以下方式联系我们：</p>
-      <p><strong>电子邮件（一般咨询）：</strong> <a href="mailto:hello@topodrive.top">hello@topodrive.top</a><br>
-      <strong>支持：</strong> <a href="mailto:help@addtech.site">help@addtech.site</a><br>
-      <strong>地址：</strong> Topodrive, Xi'an, Shaanxi, China</p>
-    </div>
-
-    <p class="legal-date sr">&copy; 2026 Topodrive. 保留所有权利。</p>
-
-  </div>
-</section>
-
-<footer>
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div class="footer-tag">Socrates</div>
-      <p>AI驱动的苏格拉底式导师。循序渐进，学无止境。</p>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">产品</div>
-      <a href="/pricing">套餐</a>
-      <a href="/guide">指南</a>
-      <a href="https://app.topodrive.top">应用</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">公司</div>
-      <a href="/about">关于</a>
-      <a href="/contact">联系</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">账户</div>
-      <a href="/zh/account">我的账户</a>
-      <a href="/zh/api-keys">API 密钥</a>
-      <a href="/zh/profile">个人资料</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">法律</div>
-      <a href="/terms">服务条款</a>
-      <a href="/privacy">隐私政策</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">支持</div>
-      <a href="mailto:help@addtech.site">help@addtech.site</a>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 Topodrive. 保留所有权利。</p>
-      <p>用心打造，服务全球学习者。</p>
-      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
-    </div>
-  </div>
-</footer>
-
-</div>
-
-<script>
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) entry.target.classList.add('in');
-  });
-}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-document.querySelectorAll('.sr').forEach(el => observer.observe(el));
-</script>
-
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="ed-footer"><div class="ed-shell ed-footer-frame"><div class="ed-footer-top">
+    <div class="ed-footer-brand"><a class="ed-brand" href="index"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a><p>为真正想理解的人打造的 AI 导师。</p></div>
+    <div class="ed-footer-column"><h2>产品</h2><a href="product">学习循环</a><a href="../pricing">定价</a><a href="https://app.topodrive.top">打开 Socrates</a></div>
+    <div class="ed-footer-column"><h2>资料库</h2><a href="../announcements">动态</a><a href="../documents">文档</a><a href="../research">研究</a></div>
+    <div class="ed-footer-column"><h2>公司</h2><a href="../about">关于</a><a href="../contact">联系</a><a href="../guide">学习指南</a></div>
+    <div class="ed-footer-column"><h2>其他</h2><a href="../index">English</a><a href="../privacy">隐私</a><a href="../terms">条款</a></div>
+  </div><div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>为真正想理解的人打造。</span></div></div></footer>
+  <script src="../editorial.js?cb=20260822"></script>
 </body>
 </html>
