@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Update your display name, password, and manage your Socrates account data.">
-  <title>Profile — Socrates</title>
+  <title>Profile —Socrates</title>
   <link rel="icon" href="favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="editorial.css?cb=20260814">
-  <link rel="stylesheet" href="brand.css?cb=20260814">
+  <link rel="stylesheet" href="editorial.css?cb=20260815">
+  <link rel="stylesheet" href="brand.css?cb=20260815">
   <link rel="stylesheet" href="account.css">
 </head>
 <body class="ed-site">
@@ -193,7 +193,7 @@
       var name = document.getElementById('profName').value.trim();
       var el = document.getElementById('profileMsg');
       if (!name) { showMsg(el, 'Display name cannot be empty.', 'err'); return; }
-      showMsg(el, 'Saving…', '');
+      showMsg(el, 'Saving—, '');
       fetch('/api/users/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
@@ -215,7 +215,7 @@
       var el = document.getElementById('passMsg');
       if (!oldP || !newP) { showMsg(el, 'Please fill in both fields.', 'err'); return; }
       if (newP.length < 6) { showMsg(el, 'New password must be at least 6 characters.', 'err'); return; }
-      showMsg(el, 'Updating…', '');
+      showMsg(el, 'Updating—, '');
       fetch('/api/auth/password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },

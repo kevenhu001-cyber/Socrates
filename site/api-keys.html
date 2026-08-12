@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Manage your LLM provider API keys for Socrates.">
-  <title>API Keys — Socrates</title>
+  <title>API Keys —Socrates</title>
   <link rel="icon" href="favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="editorial.css?cb=20260814">
-  <link rel="stylesheet" href="brand.css?cb=20260814">
+  <link rel="stylesheet" href="editorial.css?cb=20260815">
+  <link rel="stylesheet" href="brand.css?cb=20260815">
   <link rel="stylesheet" href="account.css">
 </head>
 <body class="ed-site">
@@ -146,7 +146,7 @@
 
             <div class="ed-field">
               <label for="keyValue">API key</label>
-              <input id="keyValue" type="password" placeholder="sk-…" autocomplete="off">
+              <input id="keyValue" type="password" placeholder="sk-— autocomplete="off">
               <p class="ed-field-hint">Encrypted before storage. We never log the value and it cannot be retrieved again after saving.</p>
             </div>
 
@@ -162,7 +162,7 @@
                 <p class="ed-kicker">Configured providers</p>
                 <h2 class="ed-app-card-title">Keys saved to your account.</h2>
               </div>
-              <span id="keyCount" class="ed-meta">—</span>
+              <span id="keyCount" class="ed-meta">—/span>
             </header>
             <div id="keyItems"></div>
           </article>
@@ -234,7 +234,7 @@
       var host = document.getElementById('toastHost');
       var t = document.createElement('div');
       t.className = 'ed-toast is-' + type;
-      t.innerHTML = '<span class="ed-toast-icon">' + (type === 'success' ? '✓' : type === 'error' ? '!' : '·') + '</span><span>' + msg + '</span><button class="ed-toast-close" aria-label="Dismiss">×</button>';
+      t.innerHTML = '<span class="ed-toast-icon">' + (type === 'success' ? '✓ : type === 'error' ? '!' : '·') + '</span><span>' + msg + '</span><button class="ed-toast-close" aria-label="Dismiss">×</button>';
       host.appendChild(t);
       t.querySelector('.ed-toast-close').addEventListener('click', function(){ dismiss(t); });
       setTimeout(function(){ dismiss(t); }, 4000);
@@ -320,7 +320,7 @@
       if (!url) { msg('Please select or enter a provider URL.', 'err'); return; }
       if (!model) { msg('Please enter the model name.', 'err'); return; }
       if (!key) { msg('Please enter your API key.', 'err'); return; }
-      msg('Saving…', 'info');
+      msg('Saving—, 'info');
       fetch('/api/api-key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
