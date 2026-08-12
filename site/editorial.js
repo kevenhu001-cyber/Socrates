@@ -31,8 +31,7 @@
       { href: prefix + 'policy', label: 'Principles', key: 'policy' },
       { href: prefix + 'learn', label: 'Learn', key: 'learn' },
       { href: prefix + 'announcements', label: 'News', key: 'announcements' },
-      { href: prefix + 'about', label: 'Company', key: 'about' },
-      { href: prefix + 'zh/index', label: '中文', key: 'zh/index' }
+      { href: prefix + 'about', label: 'Company', key: 'about' }
     ];
 
     document.querySelectorAll('[data-ed-nav]').forEach(function (nav) {
