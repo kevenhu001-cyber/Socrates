@@ -268,6 +268,15 @@ if [ -d "$SITE_DIR" ]; then
       $SUDO cp -a "$SITE_DIR/$sub/." "$SITE_WEB_ROOT/$sub/"
     fi
   done
+
+  # Copy translated article subdirectories as well. These live below
+  # site/zh/ and must mirror the English directory layout on the public site.
+  for sub in research learn announcements guides posts articles; do
+    if [ -d "$SITE_DIR/zh/$sub" ]; then
+      $SUDO mkdir -p "$SITE_WEB_ROOT/zh/$sub"
+      $SUDO cp -a "$SITE_DIR/zh/$sub/." "$SITE_WEB_ROOT/zh/$sub/"
+    fi
+  done
 fi
 
 # ─── 2b. Status page (status.topodrive.top) ──────────────────────────
