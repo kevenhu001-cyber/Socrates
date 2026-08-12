@@ -1,5 +1,10 @@
-/* Socrates editorial marketing system — warm paper, ink, and research objects. */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+/* Socrates editorial marketing system — warm paper, ink, and research objects.
+   Editorial.css is the older of the two style layers (brand.css is loaded
+   last and overrides it). We keep the variables here only for backwards
+   compatibility with the legacy selectors that still live below. The
+   actual visible typography — display serif, CJK stack, legal layout,
+   product-block scale — is owned by brand.css. */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500&family=Noto+Sans+SC:wght@400;500;600;700&display=swap");
 :root {
   --ed-paper: #f4f1e9;
   --ed-paper-strong: #eee8dc;
@@ -16,9 +21,13 @@
   --ed-clay: #9a5a3b;
   --ed-clay-warm: #b86a45;
   --ed-clay-soft: rgba(154, 90, 59, .12);
-  --ed-serif: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, "Noto Sans SC", "Source Han Sans SC", "PingFang SC", sans-serif;
-  --ed-sans: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, "Noto Sans SC", "Source Han Sans SC", "PingFang SC", sans-serif;
-  --ed-mono: "Geist Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
+  /* Legacy aliases — kept so selectors that still reference --ed-serif
+     and --ed-sans below don't crash, but brand.css wins on the visible
+     surface. We deliberately removed "Segoe UI" and the system CJK
+     fallbacks so Microsoft YaHei / SimSun never leak through on Windows. */
+  --ed-serif: "Newsreader", "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Source Han Sans SC", sans-serif;
+  --ed-sans: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Source Han Sans SC", sans-serif;
+  --ed-mono: "Geist Mono", "JetBrains Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
   --ed-radius-lg: 28px;
   --ed-radius-md: 20px;
   --ed-radius-sm: 14px;
@@ -571,10 +580,14 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   transition: color .15s ease;
 }
 .ed-product-block:last-child { border-bottom: 1px solid var(--ed-line); }
-.ed-product-block h2 { margin: 0; font-family: var(--ed-serif); font-size: clamp(30px, 3.4vw, 48px); font-weight: 400; letter-spacing: -.022em; line-height: 1.06; transition: color .15s ease; }
+/* Product-block headline baseline. brand.css tightens this further
+   (22–26px) on top of the legacy 30–48px range so the row reads as
+   a single horizontal band rather than a giant headline floating
+   next to small body copy. */
+.ed-product-block h2 { margin: 0; font-family: var(--ed-serif); font-size: clamp(22px, 2.05vw, 26px); font-weight: 500; letter-spacing: -.018em; line-height: 1.18; transition: color .15s ease; }
 .ed-product-block:hover h2 { color: var(--ed-clay); }
-.ed-product-block p { max-width: 31ch; margin: 5px 0 0; color: var(--ed-ink-soft); font-size: 16px; line-height: 1.58; }
-.ed-product-block .ed-meta { margin-top: 10px; }
+.ed-product-block p { max-width: 36ch; margin: 0; color: var(--ed-ink-soft); font-size: 17px; line-height: 1.6; }
+.ed-product-block .ed-meta { margin-top: 8px; font-size: 14px; line-height: 1.5; }
 .ed-about-grid { display: grid; grid-template-columns: minmax(0, .78fr) minmax(0, 1.22fr); gap: clamp(40px, 9vw, 150px); }
 .ed-principles { border-top: 1px solid var(--ed-line); }
 .ed-principle { display: grid; grid-template-columns: 70px minmax(0, 1fr) minmax(200px, .45fr); gap: 28px; padding: 24px 0; border-bottom: 1px solid var(--ed-line); transition: color .15s ease; }
