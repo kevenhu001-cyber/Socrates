@@ -1267,3 +1267,75 @@ body.legal-page .page > nav .nav-links .lang-switch {
   body.legal-page:not(.ed-site):not(.mk-page):not(.xa-page) .site-legal-toc nav { display: flex; flex-wrap: wrap; gap: 6px 14px; }
   body.legal-page:not(.ed-site):not(.mk-page):not(.xa-page) .site-legal-toc a { padding: 3px 0; font-size: 12px; }
 }
+
+/* ── Custom language switcher (designed UI, not a native <select>) ──────
+   A "Language" toggle that reveals a small menu listing the available
+   locales. Used in the top bar (.ed-header-actions) and in the legal
+   page meta row. Locale.js (enhanceLangDropdown) wires open/close,
+   outside-click, Escape, and item selection → SocratesLocale.setLocale. */
+.ed-lang { position: relative; display: inline-flex; }
+.ed-lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--site-ink);
+  background: transparent;
+  border: 1px solid var(--site-line);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s ease, border-color .15s ease;
+}
+.ed-lang-toggle:hover { background: var(--site-paper-strong); }
+.ed-lang-toggle:focus-visible { outline: 2px solid var(--site-clay); outline-offset: 2px; }
+.ed-lang-globe { width: 16px; height: 16px; display: block; color: var(--site-ink-soft); }
+.ed-lang-caret { width: 10px; height: 10px; display: block; color: var(--site-ink-soft); transition: transform .18s ease; }
+.ed-lang.is-open .ed-lang-caret { transform: rotate(180deg); }
+.ed-lang-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 172px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--site-paper-soft);
+  border: 1px solid var(--site-line);
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(23, 23, 22, .16);
+  z-index: 60;
+  display: none;
+}
+.ed-lang.is-open .ed-lang-menu { display: block; }
+.ed-lang-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--site-ink);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.ed-lang-item:hover { background: var(--site-paper-strong); }
+.ed-lang-item:focus-visible { outline: 2px solid var(--site-clay); outline-offset: -2px; }
+.ed-lang-item[aria-current="true"] { color: var(--site-clay); font-weight: 600; }
+.ed-lang-check { width: 14px; height: 14px; color: var(--site-clay); opacity: 0; flex: 0 0 auto; }
+.ed-lang-item[aria-current="true"] .ed-lang-check { opacity: 1; }
+
+@media (max-width: 820px) {
+  .ed-lang-label { display: none; }
+  .ed-lang-toggle { padding: 8px; }
+}
