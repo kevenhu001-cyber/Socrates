@@ -1,594 +1,357 @@
-<!DOCTYPE html>
-<html lang="zh-CN" data-theme="socrates" data-mode="dark">
+<!doctype html>
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/logo.png">
-<title>订阅 — Socrates</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
-<link href="/base.css" rel="stylesheet">
-<script>
-!function(){
-  try{
-    var p=localStorage.getItem("socrates-lang");
-    if(!p)return;
-    var c=document.documentElement.lang;
-    var here=window.location.pathname;
-    if(p==="zh"&&c.indexOf("zh")!==0){
-      var target=here.replace(/\.html$/,"");
-      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
-    }else if(p==="en"&&c.indexOf("en")!==0){
-      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
-      window.location.replace(target2==="/"||target2===""?"/":target2);
-    }
-  }catch(e){}
-}();
-</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="订阅 Socrates，开始一种更审慎的学习练习。">
+  <title>订阅 — Socrates</title>
+  <link rel="icon" href="../favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../editorial.css?cb=20260814">
+  <link rel="stylesheet" href="../brand.css?cb=20260814">
+  <link rel="stylesheet" href="../account.css">
+  <style>
+    .ed-checkout-shell { display: grid; gap: 28px; max-width: 720px; margin: 0 auto; }
+    .ed-card-input { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0; padding: 4px 14px; border: 1px solid var(--ed-line); border-radius: 12px; background: var(--ed-paper); transition: border-color .18s var(--ed-ease), box-shadow .18s var(--ed-ease); }
+    .ed-card-input:focus-within { border-color: var(--ed-clay); box-shadow: 0 0 0 3px rgba(154, 90, 59, .15); }
+    .ed-card-input.is-err { border-color: var(--ed-clay); }
+    .ed-card-input.is-ok { border-color: #6e8155; }
+    .ed-card-input-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px 76px; gap: 8px; align-items: center; padding: 8px 0; }
+    .ed-card-input-row input { border: 0; background: transparent; padding: 6px 0; color: var(--ed-ink); font-family: var(--ed-mono); font-size: 15px; outline: 0; width: 100%; }
+    .ed-card-input-row input#inputExp, .ed-card-input-row input#inputCvc { text-align: center; }
+    .ed-card-brand { display: inline-flex; align-items: center; padding-left: 8px; opacity: .5; transition: opacity .2s var(--ed-ease); }
+    .ed-card-brand.is-on { opacity: 1; }
+    .ed-secure { display: inline-flex; align-items: center; gap: 6px; color: var(--ed-ink-muted); font-size: 12.5px; font-family: var(--ed-mono); letter-spacing: .04em; }
+    .ed-secure svg { color: #6e8155; }
+    .ed-total { display: grid; grid-template-columns: 1fr auto; align-items: baseline; padding: 22px 0; margin-top: 8px; border-top: 1px solid var(--ed-line); }
+    .ed-total-label { color: var(--ed-ink-soft); font-size: 14px; }
+    .ed-total-amount strong { color: var(--ed-ink); font-size: 26px; font-weight: 600; letter-spacing: -.04em; }
+    .ed-total-amount span { color: var(--ed-ink-muted); font-size: 13px; margin-left: 4px; }
+    .ed-submit { width: 100%; min-height: 50px; padding: 0 24px; border: 0; border-radius: 14px; background: var(--ed-ink); color: var(--ed-paper); font-family: var(--ed-sans); font-size: 15px; font-weight: 600; letter-spacing: -.01em; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: background .2s var(--ed-ease), transform .15s var(--ed-ease), box-shadow .2s var(--ed-ease); margin-top: 18px; }
+    .ed-submit:hover:not(:disabled) { background: #000; transform: translateY(-1px); box-shadow: 0 10px 24px rgba(23, 23, 22, .25); }
+    .ed-submit:disabled { opacity: .35; cursor: not-allowed; }
+    .ed-foot { margin: 16px 0 0; color: var(--ed-ink-muted); font-size: 12.5px; text-align: center; line-height: 1.6; }
+    .ed-foot a { color: var(--ed-ink); border-bottom: 1px solid var(--ed-line); }
+    .ed-foot a:hover { color: var(--ed-clay); border-bottom-color: var(--ed-clay); }
+    .ed-guarantee { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; padding: 18px 22px; border: 1px solid var(--ed-line); border-radius: 14px; background: var(--ed-paper-soft); }
+    .ed-guarantee svg { color: var(--ed-clay); flex-shrink: 0; margin-top: 2px; }
+    .ed-guarantee strong { color: var(--ed-ink); font-weight: 600; }
+    .ed-guarantee p { margin: 0; color: var(--ed-ink-soft); font-size: 13.5px; line-height: 1.6; }
+    .ed-pay-overlay { position: fixed; inset: 0; z-index: 9998; display: none; align-items: center; justify-content: center; background: rgba(23, 23, 22, .55); padding: 20px; }
+    .ed-pay-overlay.is-open { display: flex; }
+    .ed-pay-card { width: 100%; max-width: 380px; padding: 38px 32px 30px; background: var(--ed-paper); border: 1px solid var(--ed-line); border-radius: var(--ed-radius-md); text-align: center; box-shadow: 0 24px 60px rgba(23, 23, 22, .25); animation: edModalUp .22s var(--ed-ease); }
+    .ed-pay-icon { width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 50%; background: var(--ed-sand); display: inline-flex; align-items: center; justify-content: center; transition: background .3s var(--ed-ease); }
+    .ed-pay-icon.is-success { background: rgba(110, 129, 85, .15); color: #6e8155; }
+    .ed-pay-icon.is-fail { background: rgba(154, 90, 59, .15); color: var(--ed-clay); }
+    .ed-pay-spinner { color: var(--ed-clay); animation: edSpin .8s linear infinite; }
+    .ed-pay-steps { display: grid; gap: 8px; margin-top: 18px; text-align: left; }
+    .ed-pay-step { display: grid; grid-template-columns: 10px minmax(0, 1fr); align-items: center; gap: 10px; color: var(--ed-ink-muted); font-size: 13px; transition: color .35s var(--ed-ease); }
+    .ed-pay-step.is-active { color: var(--ed-ink); }
+    .ed-pay-step.is-done { color: #6e8155; }
+    .ed-pay-step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ed-ink-muted); opacity: .4; transition: opacity .35s var(--ed-ease), background .35s var(--ed-ease), box-shadow .35s var(--ed-ease); }
+    .ed-pay-step.is-active .ed-pay-step-dot { background: var(--ed-clay); opacity: 1; box-shadow: 0 0 0 4px rgba(154, 90, 59, .2); animation: edPulse 1.2s var(--ed-ease) infinite; }
+    .ed-pay-step.is-done .ed-pay-step-dot { background: #6e8155; opacity: 1; }
+    @keyframes edPulse { 0%,100% { box-shadow: 0 0 0 4px rgba(154, 90, 59, .2); } 50% { box-shadow: 0 0 0 8px rgba(154, 90, 59, .05); } }
+    @keyframes edSpin { to { transform: rotate(360deg); } }
+    .ed-field-msg { min-height: 18px; line-height: 1.4; font-size: 12.5px; transition: color .15s var(--ed-ease); margin: 4px 0 0; }
+    .ed-field-msg.is-ok { color: #6e8155; }
+    .ed-field-msg.is-err { color: var(--ed-clay); }
+    .ed-field input.is-err { border-color: var(--ed-clay); }
+    .ed-field input.is-ok { border-color: #6e8155; }
+    .ed-field select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2377716a' stroke-width='1.6'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer; }
+    .dim { color: var(--ed-ink-muted); }
+  </style>
 </head>
-<body>
-<div class="bg-grid"></div>
-<div class="page">
+<body class="ed-site">
+  <a class="ed-skip" href="#main">跳到正文</a>
 
-<nav>
-  <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px"><span><em>S</em>ocrates</span></a>
-    <div class="nav-links">
-      <a href="/pricing">套餐</a>
-      <a href="/guide">指南</a>
-      <a href="/about">关于</a>
-      <a href="/contact">联系</a>
-      <a href="/account">账户</a>
-      <a class="lang-switch">EN</a>
-      <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+  <header class="ed-header">
+    <div class="ed-shell">
+      <nav class="ed-header-inner" data-ed-nav aria-label="主导航">
+        <a class="ed-brand" href="index" aria-label="Socrates 首页">SOCRATES</a>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel>
+          <a href="../research">研究</a>
+          <a href="../documents">文档</a>
+          <a href="../about">关于我们</a>
+          <a href="../announcements">动态</a>
+          <a href="../index">English</a>
+        </div>
+        <div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">试用 Socrates</a></div>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="菜单"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="ed-page-hero ed-app-page-hero">
+      <div class="ed-shell" style="text-align:center;max-width:680px">
+        <p class="ed-kicker ed-reveal">订阅</p>
+        <h1 class="ed-page-title ed-app-page-title ed-reveal" style="margin:14px auto 18px">选择套餐，<br><span class="dim" style="color:var(--ed-clay)">按月付费。</span></h1>
+        <p class="ed-copy-serif ed-reveal">随时可在账户页取消。在套餐有效期内，我们会一直保留你签订时的价格。</p>
+      </div>
+    </section>
+
+    <section class="ed-section-tight ed-app-section">
+      <div class="ed-shell">
+        <div class="ed-checkout-shell ed-reveal">
+          <div class="ed-app-card">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">选择套餐</p>
+                <h2 class="ed-app-card-title">三个诚实的选项。</h2>
+              </div>
+            </header>
+
+            <div class="ed-plans" id="checkoutPlans">
+              <label class="ed-plan" data-plan="riemann" data-price="9">
+                <input type="radio" name="plan" value="riemann" checked>
+                <span class="ed-plan-radio"></span>
+                <div class="ed-plan-info">
+                  <div class="ed-plan-name">Riemann</div>
+                  <div class="ed-plan-desc">适合稳定学习者：50 次会话，3 个 LLM 密钥，网页搜索。</div>
+                </div>
+                <div class="ed-plan-price"><strong>¥63</strong><span>/ 月</span></div>
+              </label>
+              <label class="ed-plan" data-plan="descartes" data-price="19">
+                <input type="radio" name="plan" value="descartes">
+                <span class="ed-plan-radio"></span>
+                <div class="ed-plan-info">
+                  <div class="ed-plan-name">Descartes</div>
+                  <div class="ed-plan-desc">适合认真的学生：200 次会话，5 个 LLM 密钥，考试模式，优先支持。</div>
+                </div>
+                <div class="ed-plan-price"><strong>¥133</strong><span>/ 月</span></div>
+              </label>
+              <label class="ed-plan" data-plan="euclid" data-price="39">
+                <span class="ed-plan-badge">最受欢迎</span>
+                <input type="radio" name="plan" value="euclid">
+                <span class="ed-plan-radio"></span>
+                <div class="ed-plan-info">
+                  <div class="ed-plan-name">Euclid</div>
+                  <div class="ed-plan-desc">适合高级用户：不限次数会话，不限 LLM 密钥，完整工具集。</div>
+                </div>
+                <div class="ed-plan-price"><strong>¥273</strong><span>/ 月</span></div>
+              </label>
+            </div>
+          </div>
+
+          <div class="ed-app-card">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">付款信息</p>
+                <h2 class="ed-app-card-title">银行卡与账单。</h2>
+              </div>
+              <span class="ed-secure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>由 Stripe 保护</span>
+            </header>
+
+            <div class="ed-field" id="fieldEmail">
+              <label for="inputEmail">邮箱</label>
+              <input type="email" id="inputEmail" placeholder="you@example.com" autocomplete="email" oninput="validateField('email')">
+              <p class="ed-field-msg ed-msg" id="msgEmail"></p>
+            </div>
+
+            <div class="ed-field" id="fieldCard">
+              <label for="inputCard">卡片信息</label>
+              <div class="ed-card-input" id="cardInputWrap">
+                <div class="ed-card-input-row">
+                  <input type="text" id="inputCard" placeholder="1234 1234 1234 1234" autocomplete="cc-number" maxlength="19" oninput="formatCard();validateField('card')">
+                  <input type="text" id="inputExp" placeholder="月 / 年" maxlength="7" autocomplete="cc-exp" oninput="formatExp();validateField('exp')">
+                  <input type="text" id="inputCvc" placeholder="CVC" maxlength="4" autocomplete="cc-csc" oninput="validateField('cvc')">
+                </div>
+                <div class="ed-card-brand" id="cardBrand">
+                  <svg viewBox="0 0 48 32" width="34" height="22"><rect width="48" height="32" rx="4" fill="#171716"/><text x="10" y="22" font-family="Arial, sans-serif" font-weight="700" font-size="14" fill="#F4F1E9">VISA</text></svg>
+                </div>
+              </div>
+              <p class="ed-field-msg ed-msg" id="msgCard"></p>
+            </div>
+
+            <div class="ed-field" id="fieldName">
+              <label for="inputName">持卡人姓名</label>
+              <input type="text" id="inputName" placeholder="全名" autocomplete="cc-name" oninput="validateField('name')">
+              <p class="ed-field-msg ed-msg" id="msgName"></p>
+            </div>
+
+            <div class="ed-field">
+              <label for="inputCountry">国家或地区</label>
+              <select id="inputCountry">
+                <option>中国大陆</option>
+                <option selected>中国香港</option>
+                <option>中国台湾</option>
+                <option>新加坡</option>
+                <option>日本</option>
+                <option>韩国</option>
+                <option>美国</option>
+                <option>加拿大</option>
+                <option>英国</option>
+                <option>德国</option>
+                <option>法国</option>
+                <option>澳大利亚</option>
+                <option>其他</option>
+              </select>
+            </div>
+
+            <div class="ed-total">
+              <div class="ed-total-label">本次应付</div>
+              <div class="ed-total-amount" id="checkoutTotal"><strong>¥63</strong><span>.00 CNY</span></div>
+            </div>
+
+            <button class="ed-submit" id="checkoutSubmit" onclick="handleCheckout()" disabled>
+              <span>订阅 <span id="submitPlanName">Riemann</span></span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+
+            <p class="ed-foot">订阅从今天开始。我们将每月扣款，直到你取消。可在<a href="account">账户页</a>管理一切。</p>
+          </div>
+
+          <div class="ed-guarantee ed-reveal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <div>
+              <p><strong>随时取消。</strong>没有长期合同。如果你取消，你可以一直用到当前计费周期结束；首次付费 14 天内取消，我们会退款，请写信到 <a href="mailto:help@addtech.site">help@addtech.site</a>。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="ed-pay-overlay" id="paymentOverlay">
+    <div class="ed-pay-card">
+      <div class="ed-pay-icon" id="paymentIcon">
+        <svg class="ed-pay-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="60" stroke-linecap="round"/></svg>
+      </div>
+      <div class="ed-modal-title" id="paymentTitle">正在处理付款</div>
+      <div class="ed-modal-msg" id="paymentDesc">请稍等，我们正在处理你的交易。请勿关闭此页面。</div>
+      <div class="ed-pay-steps">
+        <div class="ed-pay-step" data-step="1"><span class="ed-pay-step-dot"></span>正在校验信息</div>
+        <div class="ed-pay-step" data-step="2"><span class="ed-pay-step-dot"></span>正在授权扣款</div>
+        <div class="ed-pay-step" data-step="3"><span class="ed-pay-step-dot"></span>正在确认订阅</div>
+      </div>
     </div>
   </div>
-</nav>
 
-<section style="padding:60px 32px 100px">
-  <div class="section-inner" style="max-width:800px">
-    <div class="section-eyebrow sr" style="text-align:center">订阅</div>
-    <h1 class="sr sr-d1" style="font-family:var(--font-display);font-size:clamp(28px,4vw,36px);font-weight:300;color:hsl(var(--text-000));text-align:center;margin-bottom:40px;letter-spacing:-.03em">选择套餐，<br><strong style="font-weight:500;color:hsl(var(--accent-000))">按月付费</strong></h1>
-
-    <div class="checkout-plans sr sr-d2" id="checkoutPlans">
-      <label class="checkout-plan" data-plan="riemann" data-price="9">
-        <input type="radio" name="plan" value="riemann" checked>
-        <div class="checkout-plan-info">
-          <div class="checkout-plan-name">Riemann</div>
-          <div class="checkout-plan-desc">适合常规学习者：50 次会话，3 个 LLM 密钥，网页搜索</div>
-        </div>
-        <div class="checkout-plan-price"><strong>$9</strong><span>/月</span></div>
-      </label>
-      <label class="checkout-plan" data-plan="descartes" data-price="19">
-        <input type="radio" name="plan" value="descartes">
-        <div class="checkout-plan-info">
-          <div class="checkout-plan-name">Descartes</div>
-          <div class="checkout-plan-desc">适合认真学习者：200 次会话，5 个 LLM 密钥，优先支持</div>
-        </div>
-        <div class="checkout-plan-price"><strong>$19</strong><span>/月</span></div>
-      </label>
-      <label class="checkout-plan featured" data-plan="euclid" data-price="39">
-        <input type="radio" name="plan" value="euclid">
-        <div class="checkout-plan-badge">高级版</div>
-        <div class="checkout-plan-info">
-          <div class="checkout-plan-name">Euclid</div>
-          <div class="checkout-plan-desc">适合重度用户：无限会话，无限 LLM 密钥，优先支持</div>
-        </div>
-        <div class="checkout-plan-price"><strong>$39</strong><span>/月</span></div>
-      </label>
-    </div>
-
-    <!-- Payment card -->
-    <div class="checkout-card sr sr-d3">
-      <div class="checkout-card-header">
-        <div class="checkout-card-title">支付详情</div>
-        <div class="checkout-card-secure">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          由 Stripe 安全保护
-        </div>
+  <footer class="ed-footer">
+    <div class="ed-shell ed-footer-frame">
+      <div class="ed-footer-top">
+        <div class="ed-footer-brand"><a class="ed-brand" href="index">SOCRATES</a><p>为真正想理解的人打造的 AI 导师。</p></div>
+        <div class="ed-footer-column"><h2>产品</h2><a href="../product">学习循环</a><a href="../pricing">定价</a><a href="https://app.topodrive.top">打开 Socrates</a></div>
+        <div class="ed-footer-column"><h2>账户</h2><a href="account">我的账户</a><a href="api-keys">API 密钥</a><a href="profile">个人资料</a></div>
+        <div class="ed-footer-column"><h2>资料库</h2><a href="../announcements">动态</a><a href="../documents">文档</a><a href="../research">研究</a></div>
+        <div class="ed-footer-column"><h2>其他</h2><a href="../index">English</a><a href="privacy">隐私</a><a href="terms">条款</a></div>
       </div>
-
-      <div class="checkout-field" id="fieldEmail">
-        <label class="checkout-label">邮箱</label>
-        <input type="email" class="checkout-input" id="inputEmail" placeholder="you@example.com" autocomplete="email" oninput="validateField('email')">
-        <div class="checkout-field-msg" id="msgEmail"></div>
-      </div>
-
-      <div class="checkout-field" id="fieldCard">
-        <label class="checkout-label">卡片信息</label>
-        <div class="checkout-card-input" id="cardInputWrap">
-          <div class="checkout-card-row">
-            <input type="text" class="checkout-card-field" id="inputCard" placeholder="1234 1234 1234 1234" autocomplete="cc-number" maxlength="19" oninput="formatCard();validateField('card')">
-            <input type="text" class="checkout-card-field" id="inputExp" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp" oninput="formatExp();validateField('exp')">
-            <input type="text" class="checkout-card-field" id="inputCvc" placeholder="CVC" maxlength="4" autocomplete="cc-csc" oninput="validateField('cvc')">
-          </div>
-          <div class="checkout-card-icons" id="cardBrand">
-            <svg viewBox="0 0 48 32" width="24" height="16"><rect width="48" height="32" rx="4" fill="#1A1F36"/><text x="8" y="22" font-family="Arial" font-weight="bold" font-size="14" fill="#FFF">VISA</text></svg>
-          </div>
-        </div>
-        <div class="checkout-field-msg" id="msgCard"></div>
-      </div>
-
-      <div class="checkout-field" id="fieldName">
-        <label class="checkout-label">持卡人姓名</label>
-        <input type="text" class="checkout-input" id="inputName" placeholder="全名" autocomplete="cc-name" oninput="validateField('name')">
-        <div class="checkout-field-msg" id="msgName"></div>
-      </div>
-
-      <div class="checkout-field">
-        <label class="checkout-label">国家或地区</label>
-        <select class="checkout-input checkout-select" id="inputCountry">
-          <option>美国</option>
-          <option>加拿大</option>
-          <option>英国</option>
-          <option>德国</option>
-          <option>法国</option>
-          <option>澳大利亚</option>
-          <option>日本</option>
-          <option selected>新加坡</option>
-          <option>中国</option>
-          <option>香港</option>
-          <option>台湾</option>
-          <option>韩国</option>
-          <option>其他</option>
-        </select>
-      </div>
-
-      <div class="checkout-total">
-        <div class="checkout-total-label">今日应付总额</div>
-        <div class="checkout-total-amount" id="checkoutTotal"><strong>$9</strong><span>.00 USD</span></div>
-      </div>
-
-      <!-- Payment status overlay (shown during transaction) -->
-      <div class="payment-overlay hidden" id="paymentOverlay">
-        <div class="payment-card" id="paymentCard">
-          <div class="payment-icon" id="paymentIcon">
-            <svg class="payment-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="60" stroke-linecap="round"/></svg>
-            <svg class="payment-check hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="4 12 9 17 20 6"/></svg>
-            <svg class="payment-x hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 6l12 12M18 6l-12 12"/></svg>
-          </div>
-          <div class="payment-title" id="paymentTitle">正在处理支付</div>
-          <div class="payment-desc" id="paymentDesc">请稍候，我们正在处理你的交易。请勿关闭此页面。</div>
-          <div class="payment-steps" id="paymentSteps">
-            <div class="payment-step" data-step="1"><span class="ps-dot"></span> 验证信息</div>
-            <div class="payment-step" data-step="2"><span class="ps-dot"></span> 授权支付</div>
-            <div class="payment-step" data-step="3"><span class="ps-dot"></span> 确认订阅</div>
-          </div>
-        </div>
-      </div>
-
-      <button class="checkout-submit" id="checkoutSubmit" onclick="handleCheckout()">
-        <span>订阅 <span id="submitPlanName">Riemann</span></span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </button>
-
-      <p class="checkout-footnote">你的订阅从今天开始。你将按月付费，直到取消为止。可随时在个人资料设置中取消。</p>
+      <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>为真正想理解的人打造。</span></div>
     </div>
+  </footer>
 
-    <div class="checkout-guarantee sr sr-d4">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      <div>
-        <strong>随时取消。</strong>无长期合同。如果取消，你将在计费周期结束前保留访问权限。
-      </div>
-    </div>
-  </div>
-</section>
+  <script>
+    var srObs = new IntersectionObserver(function(e){e.forEach(function(entry){if(entry.isIntersecting)entry.target.classList.add('in')})},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+    document.querySelectorAll('.ed-reveal').forEach(function(el){srObs.observe(el)});
 
-<footer>
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div class="footer-tag"><em>S</em>ocrates</div>
-      <p>AI 驱动的苏格拉底式导师。循序渐进，学无止境。</p>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">产品</div>
-      <a href="/pricing">套餐</a>
-      <a href="/guide">指南</a>
-      <a href="https://app.topodrive.top">应用</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">公司</div>
-      <a href="/about">关于</a>
-      <a href="/contact">联系</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">账户</div>
-      <a href="/zh/account">我的账户</a>
-      <a href="/zh/api-keys">API 密钥</a>
-      <a href="/zh/profile">个人资料</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">法律</div>
-      <a href="/terms">服务条款</a>
-      <a href="/privacy">隐私政策</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">支持</div>
-      <a href="mailto:help@addtech.site">help@addtech.site</a>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 Topodrive. 保留所有权利。</p>
-      <p>用心打造，服务全球学习者。</p>
-      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
-    </div>
-  </div>
-</footer>
+    document.querySelectorAll('[data-ed-nav]').forEach(function (nav) {
+      var button = nav.querySelector('[data-menu-button]');
+      var panel = nav.querySelector('[data-menu-panel]');
+      if (!button || !panel) return;
+      button.addEventListener('click', function () {
+        var willOpen = !nav.classList.contains('is-open');
+        nav.classList.toggle('is-open', willOpen);
+        button.setAttribute('aria-expanded', String(willOpen));
+        document.body.classList.toggle('ed-menu-open', willOpen);
+      });
+      document.addEventListener('keydown', function (event) { if (event.key === 'Escape') { nav.classList.remove('is-open'); button.setAttribute('aria-expanded', 'false'); document.body.classList.remove('ed-menu-open'); } });
+    });
 
-</div>
-
-<style>
-.checkout-plans{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
-.checkout-plan{display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:12px;border:1.5px solid hsl(var(--border-300)/0.12);background:hsl(var(--bg-200));cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s;position:relative}
-.checkout-plan:hover{border-color:hsl(var(--border-200)/0.3);background:hsl(var(--bg-000))}
-.checkout-plan:has(input:checked){border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--bg-000));box-shadow:0 0 0 1px hsl(var(--accent-000)/0.2),0 4px 16px hsl(var(--accent-000)/0.06)}
-.checkout-plan input{position:absolute;opacity:0}
-.checkout-plan input:checked + .checkout-plan-info .checkout-plan-name{color:hsl(var(--accent-000))}
-.checkout-plan.featured{border-color:hsl(var(--accent-000)/0.25)}
-.checkout-plan-badge{position:absolute;top:-7px;right:20px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;padding:2px 10px;border-radius:4px;background:hsl(var(--accent-000));color:hsl(var(--bg-400))}
-.checkout-plan-info{flex:1;min-width:0}
-.checkout-plan-name{font-family:var(--font-display);font-size:17px;font-weight:500;color:hsl(var(--text-000));margin-bottom:2px;transition:color .2s;letter-spacing:-.01em}
-.checkout-plan-desc{font-size:12px;color:hsl(var(--text-400));line-height:1.4}
-.checkout-plan-price{text-align:right;flex-shrink:0}
-.checkout-plan-price strong{font-size:20px;font-weight:500;color:hsl(var(--text-000))}
-.checkout-plan-price span{font-size:13px;color:hsl(var(--text-500));margin-left:2px}
-
-.checkout-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.12);border-radius:16px;padding:28px 32px 32px;box-shadow:0 2px 16px hsl(var(--always-black)/0.12)}
-.checkout-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
-.checkout-card-title{font-size:15px;font-weight:600;color:hsl(var(--text-100))}
-.checkout-card-secure{display:flex;align-items:center;gap:6px;font-size:12px;color:hsl(145 50% 60%)}
-.checkout-card-input{display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));transition:border-color .15s,box-shadow .15s}
-.checkout-card-input:focus-within{border-color:hsl(var(--accent-000)/0.4);box-shadow:0 0 0 1px hsl(var(--accent-000)/0.1)}
-.checkout-card-input.err{border-color:hsl(0 60% 50%/0.5);box-shadow:0 0 0 1px hsl(0 60% 50%/0.15)}
-.checkout-card-input.ok{border-color:hsl(145 50% 45%/0.5)}
-.checkout-card-row{display:flex;align-items:center;gap:8px;flex:1}
-.checkout-card-field{width:0;flex:1;border:none;outline:none;background:transparent;color:hsl(var(--text-100));font-family:var(--font-mono);font-size:15px;min-width:0;letter-spacing:0}
-.checkout-card-field#inputExp{max-width:84px;text-align:center}
-.checkout-card-field#inputCvc{max-width:60px;text-align:center}
-.checkout-card-icons{display:flex;gap:4px;flex-shrink:0;opacity:0.4;transition:opacity .3s}
-.checkout-card-icons.show{opacity:1}
-.checkout-field{margin-bottom:18px}
-.checkout-label{display:block;font-size:12px;font-weight:500;color:hsl(var(--text-400));margin-bottom:6px;letter-spacing:.02em}
-.checkout-input{display:block;width:100%;padding:10px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:var(--font-sans);outline:none;transition:border-color .15s,box-shadow .15s;letter-spacing:0}
-.checkout-input:focus{border-color:hsl(var(--accent-000)/0.4);box-shadow:0 0 0 1px hsl(var(--accent-000)/0.1)}
-.checkout-input::placeholder{color:hsl(var(--text-500))}
-.checkout-input.err{border-color:hsl(0 60% 50%/0.5);box-shadow:0 0 0 1px hsl(0 60% 50%/0.15)}
-.checkout-input.ok{border-color:hsl(145 50% 45%/0.5)}
-.checkout-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
-.checkout-field-msg{font-size:12px;min-height:18px;line-height:1.4;margin-top:4px;transition:color .15s}
-.checkout-field-msg.ok{color:hsl(145 50% 55%)}
-.checkout-field-msg.err{color:hsl(0 60% 65%)}
-
-.checkout-total{display:flex;align-items:center;justify-content:space-between;padding:16px 0;margin-top:8px;border-top:0.5px solid hsl(var(--border-300)/0.08)}
-.checkout-total-label{font-size:14px;color:hsl(var(--text-300))}
-.checkout-total-amount strong{font-size:22px;font-weight:500;color:hsl(var(--text-000))}
-.checkout-total-amount span{font-size:14px;color:hsl(var(--text-500));margin-left:4px}
-
-.checkout-submit{width:100%;padding:14px;border-radius:12px;border:none;font-size:15px;font-weight:600;color:hsl(var(--oncolor-100));background:linear-gradient(135deg,hsl(var(--accent-000)),hsl(var(--brand-100)));cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s,transform .1s,box-shadow .2s,background .3s;font-family:var(--font-sans);margin-top:16px;position:relative}
-.checkout-submit:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 24px hsl(var(--accent-000)/0.3)}
-.checkout-submit:active{transform:translateY(0)}
-.checkout-submit:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
-.checkout-footnote{font-size:12px;color:hsl(var(--text-500));text-align:center;margin-top:14px;line-height:1.5}
-
-/* Payment overlay */
-.payment-overlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:hsl(var(--always-black)/0.65);backdrop-filter:blur(4px);animation:fadeIn .25s}
-.payment-overlay.hidden{display:none}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.payment-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:20px;padding:40px 36px 32px;width:90%;max-width:380px;text-align:center;box-shadow:0 12px 48px hsl(var(--always-black)/0.5);animation:paySlideUp .35s cubic-bezier(0.16,1,0.3,1)}
-@keyframes paySlideUp{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-.payment-icon{width:56px;height:56px;margin:0 auto 20px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .3s}
-.payment-icon.processing{background:hsl(var(--accent-000)/0.12)}
-.payment-icon.success{background:hsl(145 50% 45%/0.15)}
-.payment-icon.fail{background:hsl(0 60% 50%/0.15)}
-.payment-icon svg{width:28px;height:28px}
-.payment-icon .payment-spinner{color:hsl(var(--accent-000));animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.payment-icon .payment-check{color:hsl(145 50% 50%)}
-.payment-icon .payment-x{color:hsl(0 60% 55%)}
-.payment-icon svg.hidden{display:none}
-.payment-title{font-size:17px;font-weight:600;color:hsl(var(--text-000));margin-bottom:6px}
-.payment-desc{font-size:13px;color:hsl(var(--text-400));line-height:1.5;margin-bottom:20px}
-.payment-steps{display:flex;flex-direction:column;gap:8px;text-align:left}
-.payment-step{display:flex;align-items:center;gap:10px;font-size:13px;color:hsl(var(--text-500));transition:color .35s}
-.payment-step.active{color:hsl(var(--text-100))}
-.payment-step.done{color:hsl(145 50% 55%)}
-.ps-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:hsl(var(--text-500)/0.3);transition:background .35s,box-shadow .35s}
-.payment-step.active .ps-dot{background:hsl(var(--accent-000));box-shadow:0 0 0 3px hsl(var(--accent-000)/0.2);animation:pulse 1.2s ease-in-out infinite}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 3px hsl(var(--accent-000)/0.2)}50%{box-shadow:0 0 0 6px hsl(var(--accent-000)/0.05)}}
-.payment-step.done .ps-dot{background:hsl(145 50% 50%);box-shadow:0 0 0 0 transparent}
-.payment-step.done::after{content:'✓';margin-left:auto;font-size:11px;font-weight:600}
-
-.checkout-guarantee{display:flex;align-items:flex-start;gap:10px;margin-top:20px;padding:16px 20px;border-radius:12px;background:hsl(var(--bg-200));font-size:13px;color:hsl(var(--text-400));line-height:1.6}
-.checkout-guarantee svg{flex-shrink:0;margin-top:2px;color:hsl(var(--accent-000)/0.6)}
-.checkout-guarantee strong{color:hsl(var(--text-100))}
-
-@media(max-width:720px){
-  .checkout-card{padding:20px}
-  .checkout-card-row{gap:4px}
-  .checkout-card-field#inputExp{max-width:60px}
-  .checkout-card-field#inputCvc{max-width:48px}
-  .checkout-plan-desc{display:none}
-}
-</style>
-
-<script>
-/* ── Helpers ──────────────────────────────────────────────── */
-var EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-function $(id){return document.getElementById(id)}
-
-/* Luhn check (card number validation) */
-function luhnOk(num){
-  var sum=0,alt=false,i=num.length;
-  while(i--){
-    var d=parseInt(num[i],10);
-    if(alt){d*=2;if(d>9)d-=9}
-    sum+=d;alt=!alt
-  }
-  return sum%10===0;
-}
-
-/* Card brand detection */
-function detectBrand(num){
-  var c=num.replace(/\s/g,'');
-  if(/^4/.test(c))return'VISA';
-  if(/^5[1-5]/.test(c))return'MC';
-  if(/^3[47]/.test(c))return'AMEX';
-  if(/^6(?:011|5)/.test(c))return'DISC';
-  return'';
-}
-
-function brandSvg(b){
-  var svgs={VISA:'<svg viewBox="0 0 48 32" width="24" height="16"><rect width="48" height="32" rx="4" fill="#1A1F36"/><text x="8" y="22" font-family="Arial" font-weight="bold" font-size="14" fill="#FFF">VISA</text></svg>',
-  MC:'<svg viewBox="0 0 48 32" width="24" height="16"><rect width="48" height="32" rx="4" fill="#1A1F36"/><circle cx="17" cy="16" r="8" fill="#EB001B" opacity=".9"/><circle cx="25" cy="16" r="8" fill="#F79E1B" opacity=".9"/><circle cx="21" cy="16" r="5" fill="#FF5F00" opacity=".8"/></svg>',
-  AMEX:'<svg viewBox="0 0 48 32" width="24" height="16"><rect width="48" height="32" rx="4" fill="#1A1F36"/><text x="2" y="20" font-family="Arial" font-weight="bold" font-size="10" fill="#FFF">AMEX</text></svg>',
-  DISC:'<svg viewBox="0 0 48 32" width="24" height="16"><rect width="48" height="32" rx="4" fill="#1A1F36"/><text x="2" y="20" font-family="Arial" font-weight="bold" font-size="10" fill="#FFF">DISC</text></svg>'};
-  return svgs[b]||svgs.VISA;
-}
-
-/* ── Card number formatting ───────────────────────────────── */
-function formatCard(){
-  var el=$('inputCard');
-  var raw=el.value.replace(/\D/g,'').slice(0,16);
-  var parts=[];
-  for(var i=0;i<raw.length;i+=4)parts.push(raw.slice(i,i+4));
-  el.value=parts.join(' ');
-  var brand=detectBrand(raw);
-  var icon=$('cardBrand');
-  if(brand){icon.innerHTML=brandSvg(brand);icon.classList.add('show')}
-  else{icon.innerHTML=brandSvg('VISA');icon.classList.remove('show')}
-}
-
-/* ── Expiry formatting ────────────────────────────────────── */
-function formatExp(){
-  var el=$('inputExp');
-  var raw=el.value.replace(/\D/g,'').slice(0,4);
-  if(raw.length>=3)el.value=raw.slice(0,2)+' / '+raw.slice(2);
-  else el.value=raw;
-}
-
-/* ── Validation ────────────────────────────────────────────── */
-var validation={email:false,card:false,exp:false,cvc:false,name:false};
-
-function validateField(field){
-  var ok=false,msg='';
-  switch(field){
-    case'email':{
-      var v=$('inputEmail').value.trim();
-      if(!v){msg='请输入邮箱'}else if(!EMAIL_RE.test(v)){msg='邮箱格式无效'}
-      else{ok=true}
-      break;
-    }
-    case'card':{
-      var v=$('inputCard').value.replace(/\s/g,'');
-      if(!v){msg='请输入卡号'}
-      else if(v.length<13||v.length>16){msg='卡号应为 13-16 位数字'}
-      else if(!luhnOk(v)){msg='卡号无效（校验失败）'}
-      else{ok=true}
-      break;
-    }
-    case'exp':{
-      var v=$('inputExp').value.replace(/\s|\//g,'');
-      if(!v||v.length<4){msg='请输入有效期（MMYY）'}
-      else{
-        var m=parseInt(v.slice(0,2),10),y=parseInt(v.slice(2),10)+2000;
-        var now=new Date();
-        var exp=new Date(y,m,1);
-        if(m<1||m>12){msg='月份无效'}
-        else if(exp<now){msg='卡片已过期'}
-        else{ok=true}
+    var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    function $(id) { return document.getElementById(id); }
+    function luhnOk(num) { var sum = 0, alt = false, i = num.length; while (i--) { var d = parseInt(num[i], 10); if (alt) { d *= 2; if (d > 9) d -= 9; } sum += d; alt = !alt; } return sum % 10 === 0; }
+    function detectBrand(num) { var c = num.replace(/\s/g, ''); if (/^4/.test(c)) return 'VISA'; if (/^5[1-5]/.test(c)) return 'MC'; if (/^3[47]/.test(c)) return 'AMEX'; if (/^6(?:011|5)/.test(c)) return 'DISC'; return ''; }
+    function brandSvg(b) { var svgs = { VISA: '<svg viewBox="0 0 48 32" width="34" height="22"><rect width="48" height="32" rx="4" fill="#171716"/><text x="10" y="22" font-family="Arial, sans-serif" font-weight="700" font-size="14" fill="#F4F1E9">VISA</text></svg>', MC: '<svg viewBox="0 0 48 32" width="34" height="22"><rect width="48" height="32" rx="4" fill="#171716"/><circle cx="17" cy="16" r="8" fill="#EB001B" opacity=".9"/><circle cx="25" cy="16" r="8" fill="#F79E1B" opacity=".9"/><circle cx="21" cy="16" r="5" fill="#FF5F00" opacity=".8"/></svg>', AMEX: '<svg viewBox="0 0 48 32" width="34" height="22"><rect width="48" height="32" rx="4" fill="#171716"/><text x="4" y="20" font-family="Arial, sans-serif" font-weight="700" font-size="10" fill="#F4F1E9">AMEX</text></svg>', DISC: '<svg viewBox="0 0 48 32" width="34" height="22"><rect width="48" height="32" rx="4" fill="#171716"/><text x="4" y="20" font-family="Arial, sans-serif" font-weight="700" font-size="10" fill="#F4F1E9">DISC</text></svg>' }; return svgs[b] || svgs.VISA; }
+    function formatCard() { var el = $('inputCard'); var raw = el.value.replace(/\D/g, '').slice(0, 16); var parts = []; for (var i = 0; i < raw.length; i += 4) parts.push(raw.slice(i, i + 4)); el.value = parts.join(' '); var brand = detectBrand(raw); var icon = $('cardBrand'); if (brand) { icon.innerHTML = brandSvg(brand); icon.classList.add('is-on'); } else { icon.innerHTML = brandSvg('VISA'); icon.classList.remove('is-on'); } }
+    function formatExp() { var el = $('inputExp'); var raw = el.value.replace(/\D/g, '').slice(0, 4); if (raw.length >= 3) el.value = raw.slice(0, 2) + ' / ' + raw.slice(2); else el.value = raw; }
+    var validation = { email: false, card: false, exp: false, cvc: false, name: false };
+    function validateField(field) {
+      var ok = false, msg = '';
+      switch (field) {
+        case 'email': { var v = $('inputEmail').value.trim(); if (!v) msg = '请输入邮箱'; else if (!EMAIL_RE.test(v)) msg = '邮箱格式不正确'; else ok = true; break; }
+        case 'card': { var v = $('inputCard').value.replace(/\s/g, ''); if (!v) msg = '请输入卡号'; else if (v.length < 13 || v.length > 16) msg = '卡号应为 13–16 位'; else if (!luhnOk(v)) msg = '卡号未通过校验'; else ok = true; break; }
+        case 'exp': { var v = $('inputExp').value.replace(/\s|\//g, ''); if (!v || v.length < 4) msg = '请输入有效期（月年）'; else { var m = parseInt(v.slice(0, 2), 10); var y = parseInt(v.slice(2), 10) + 2000; var exp = new Date(y, m, 1); if (m < 1 || m > 12) msg = '月份不正确'; else if (exp < new Date()) msg = '卡片已过期'; else ok = true; } break; }
+        case 'cvc': { var v = $('inputCvc').value.trim(); if (!v) msg = '请输入 CVC'; else if (!/^\d{3,4}$/.test(v)) msg = 'CVC 应为 3–4 位'; else ok = true; break; }
+        case 'name': { var v = $('inputName').value.trim(); if (!v) msg = '请输入姓名'; else if (v.length < 2) msg = '请输入完整姓名'; else ok = true; break; }
       }
-      break;
+      validation[field] = ok;
+      var inputMap = { email: 'inputEmail', card: 'inputCard', exp: 'inputExp', cvc: 'inputCvc', name: 'inputName' };
+      var msgMap = { email: 'msgEmail', card: 'msgCard', exp: 'msgCard', cvc: 'msgCard', name: 'msgName' };
+      var inp = $(inputMap[field]);
+      var msgEl = $(msgMap[field]);
+      if (msgEl) { msgEl.textContent = msg; msgEl.className = 'ed-field-msg ed-msg ' + (ok ? 'is-ok' : (msg ? 'is-err' : '')); }
+      if (field === 'card' || field === 'exp' || field === 'cvc') {
+        var wrap = $('cardInputWrap');
+        if (!ok && msg) { wrap.classList.add('is-err'); wrap.classList.remove('is-ok'); }
+        else if (ok) { wrap.classList.remove('is-err'); wrap.classList.add('is-ok'); }
+        else { wrap.classList.remove('is-err', 'is-ok'); }
+      } else if (inp) { inp.classList.toggle('is-err', !ok && !!msg); inp.classList.toggle('is-ok', ok); }
+      updateSubmitBtn();
     }
-    case'cvc':{
-      var v=$('inputCvc').value.trim();
-      if(!v){msg='请输入 CVC'}
-      else if(!/^\d{3,4}$/.test(v)){msg='CVC 应为 3-4 位数字'}
-      else{ok=true}
-      break;
+    function allValid() { return validation.email && validation.card && validation.exp && validation.cvc && validation.name; }
+    function updateSubmitBtn() { var btn = $('checkoutSubmit'); btn.disabled = !allValid(); }
+    formatCard(); updateSubmitBtn();
+
+    document.querySelectorAll('.ed-plan input').forEach(function(r){
+      r.addEventListener('change', function(){
+        var label = this.closest('.ed-plan');
+        var price = label.getAttribute('data-price');
+        var name = label.querySelector('.ed-plan-name').textContent;
+        $('checkoutTotal').innerHTML = '<strong>¥' + (price * 7) + '</strong><span>.00 CNY</span>';
+        $('submitPlanName').textContent = name;
+      });
+    });
+    var checked = document.querySelector('.ed-plan input:checked');
+    if (checked) checked.dispatchEvent(new Event('change'));
+
+    var planParam = new URLSearchParams(location.search).get('plan');
+    if (planParam) {
+      var radio = document.querySelector('.ed-plan input[value="' + planParam + '"]');
+      if (radio) { radio.checked = true; radio.dispatchEvent(new Event('change')); }
     }
-    case'name':{
-      var v=$('inputName').value.trim();
-      if(!v){msg='请输入姓名'}
-      else if(v.length<2){msg='请输入全名'}
-      else{ok=true}
-      break;
-    }
-  }
-  validation[field]=ok;
-  /* Update field styling */
-  var inputMap={email:'inputEmail',card:'inputCard',exp:'inputExp',cvc:'inputCvc',name:'inputName'};
-  var msgMap={email:'msgEmail',card:'msgCard',exp:'msgCard',cvc:'msgCard',name:'msgName'};
-  var fieldMap={email:'fieldEmail',card:'fieldCard',name:'fieldName'};
-  var inp=$('inputMap[field]')||$(inputMap[field]);
-  var msgEl=$(msgMap[field]);
-  if(msgEl){
-    msgEl.textContent=msg;
-    msgEl.className='checkout-field-msg '+(ok?'ok':(msg?'err':''));
-  }
-  if(field==='card'||field==='exp'||field==='cvc'){
-    var wrap=$('cardInputWrap');
-    if(!ok && msg){wrap.classList.add('err');wrap.classList.remove('ok')}
-    else if(ok){wrap.classList.remove('err');wrap.classList.add('ok')}
-    else{wrap.classList.remove('err','ok')}
-  } else if(inp){
-    inp.classList.toggle('err',!ok && !!msg);
-    inp.classList.toggle('ok',ok);
-  }
-  /* Clear msgCard when all three card fields are ok */
-  if(field==='card'||field==='exp'||field==='cvc'){
-    var allCardOk=validation.card&&validation.exp&&validation.cvc;
-    $('msgCard').textContent=allCardOk?'':$('msgCard').textContent;
-    if(allCardOk){$('msgCard').className='checkout-field-msg ok';$('cardInputWrap').classList.remove('err')}
-  }
-  updateSubmitBtn();
-}
 
-function allValid(){
-  return validation.email&&validation.card&&validation.exp&&validation.cvc&&validation.name;
-}
-
-function updateSubmitBtn(){
-  var btn=$('checkoutSubmit');
-  if(allValid()){btn.disabled=false;btn.style.opacity='1'}
-  else{btn.disabled=true;btn.style.opacity='0.5'}
-}
-
-/* ── Initialise card number (trigger format + brand) ──────── */
-formatCard();
-/* Disable submit until all valid */
-updateSubmitBtn();
-
-/* ── Plan selection: update total ──────────────────────────── */
-document.querySelectorAll('.checkout-plan input').forEach(function(r){
-  r.addEventListener('change',function(){
-    var label=this.closest('.checkout-plan');
-    var price=label.getAttribute('data-price');
-    var name=label.querySelector('.checkout-plan-name').textContent;
-    $('checkoutTotal').innerHTML='<strong>$'+price+'</strong><span>.00 USD</span>';
-    $('submitPlanName').textContent=name;
-  });
-});
-var checked=document.querySelector('.checkout-plan input:checked');
-if(checked){
-  var e=new Event('change');
-  checked.dispatchEvent(e);
-}
-
-/* ── Plan from URL ──────────────────────────────────────── */
-var planParam=new URLSearchParams(location.search).get('plan');
-if(planParam){
-  var radio=document.querySelector('.checkout-plan input[value="'+planParam+'"]');
-  if(radio){radio.checked=true;radio.dispatchEvent(new Event('change'))}
-}
-
-/* ── Transaction animation ─────────────────────────────────── */
-function stepDelay(n){return 300+n*800}
-
-function handleCheckout(){
-  if(!allValid())return;
-  /* Disable the form */
-  $('checkoutSubmit').disabled=true;
-  $('checkoutSubmit').innerHTML='<span class="processing-text"><span class="dot-pulse"></span> 处理中</span>';
-
-  /* Show overlay */
-  var overlay=$('paymentOverlay');
-  overlay.classList.remove('hidden');
-
-  /* Animate steps */
-  var steps=[1,2,3];
-  var totalDelay=0;
-  var success=true;
-
-  steps.forEach(function(s,i){
-    setTimeout(function(){
-      var el=document.querySelector('.payment-step[data-step="'+s+'"]');
-      if(el){el.classList.remove('active');el.classList.add('done')}
-      /* Activate next step */
-      var next=document.querySelector('.payment-step[data-step="'+(s+1)+'"]');
-      if(next)next.classList.add('active');
-    },stepDelay(i));
-  });
-
-  /* After all steps complete — show result */
-  setTimeout(function(){
-    var icon=$('paymentIcon');
-    var title=$('paymentTitle');
-    var desc=$('paymentDesc');
-    var spinner=icon.querySelector('.payment-spinner');
-    var check=icon.querySelector('.payment-check');
-    var xMark=icon.querySelector('.payment-x');
-
-    if(success){
-      icon.classList.remove('processing');
-      icon.classList.add('success');
-      spinner.classList.add('hidden');
-      check.classList.remove('hidden');
-      title.textContent='订阅已确认！';
-      desc.textContent='欢迎订阅 '+$('submitPlanName').textContent+'。正在跳转到你的仪表盘…';
-
-      /* Update submit button */
-      var btn=$('checkoutSubmit');
-      btn.innerHTML='<span>✓ 已订阅 '+$('submitPlanName').textContent+'</span>';
-      btn.style.background='hsl(145 50% 45%)';
-      btn.disabled=false;
-
-      /* Redirect to app */
-      setTimeout(function(){
-        window.location.href='https://app.topodrive.top';
-      },2000);
-    } else {
-      icon.classList.remove('processing');
-      icon.classList.add('fail');
-      spinner.classList.add('hidden');
-      xMark.classList.remove('hidden');
-      title.textContent='支付被拒绝';
-      desc.textContent='你的卡片被拒绝。请检查信息后重试。';
-
-      setTimeout(function(){
-        overlay.classList.add('hidden');
-        $('checkoutSubmit').disabled=false;
-        $('checkoutSubmit').innerHTML='<span>重试</span>';
-      },3000);
-    }
-  },stepDelay(2)+1600);
-
-  /* Activate step 1 */
-  setTimeout(function(){
-    document.querySelector('.payment-step[data-step="1"]').classList.add('active');
-  },200);
-}
-
-/* ── IP geolocation — auto-fill country ─────────────────── */
-var COUNTRY_MAP={
-  US:'美国',CA:'加拿大',GB:'英国',DE:'德国',
-  FR:'法国',AU:'澳大利亚',JP:'日本',SG:'新加坡',
-  CN:'中国',HK:'香港',TW:'台湾',KR:'韩国'
-};
-
-function autoFillCountry(){
-  var sel=$('inputCountry');
-  if(!sel)return;
-  fetch('https://ipapi.co/json/',{signal:AbortSignal.timeout(5000)})
-    .then(function(r){return r.json()})
-    .then(function(d){
-      var name=COUNTRY_MAP[d.country_code];
-      if(!name)return;
-      for(var i=0;i<sel.options.length;i++){
-        if(sel.options[i].textContent===name){
-          sel.options[i].selected=true;
-          break;
+    function stepDelay(n) { return 300 + n * 800; }
+    function handleCheckout() {
+      if (!allValid()) return;
+      var btn = $('checkoutSubmit');
+      btn.disabled = true;
+      btn.innerHTML = '<span>正在处理…</span>';
+      var overlay = $('paymentOverlay');
+      overlay.classList.add('is-open');
+      var steps = [1, 2, 3];
+      var success = true;
+      steps.forEach(function(s, i) {
+        setTimeout(function() {
+          var el = document.querySelector('.ed-pay-step[data-step="' + s + '"]');
+          if (el) { el.classList.remove('is-active'); el.classList.add('is-done'); }
+          var next = document.querySelector('.ed-pay-step[data-step="' + (s + 1) + '"]');
+          if (next) next.classList.add('is-active');
+        }, stepDelay(i));
+      });
+      setTimeout(function() {
+        var icon = $('paymentIcon');
+        var title = $('paymentTitle');
+        var desc = $('paymentDesc');
+        icon.querySelector('.ed-pay-spinner').style.display = 'none';
+        if (success) {
+          icon.classList.add('is-success');
+          icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28" height="28"><polyline points="4 12 9 17 20 6"/></svg>';
+          title.textContent = '订阅已确认';
+          desc.textContent = '欢迎使用 ' + $('submitPlanName').textContent + '。正在跳转到你的面板…';
+          btn.innerHTML = '<span>已订阅 ' + $('submitPlanName').textContent + '</span><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 8 7 12 13 4"/></svg>';
+        } else {
+          icon.classList.add('is-fail');
+          icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28" height="28"><path d="M6 6l12 12M18 6l-12 12"/></svg>';
+          title.textContent = '付款失败';
+          desc.textContent = '请检查卡片信息后重试。';
+          btn.disabled = false;
+          btn.innerHTML = '<span>重试</span>';
         }
-      }
-    })
-    .catch(function(){/* keep default */});
-}
-autoFillCountry();
-
-/* ── Scroll-reveal ──────────────────────────────────────── */
-var srObs=new IntersectionObserver(function(entries){
-  entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in')});
-},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
-document.querySelectorAll('.sr').forEach(function(el){srObs.observe(el)});
-</script>
-<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/^\/zh/,'').replace(/\.html$/,'');b.href=p==='/'||p===''?'/':p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","en")}catch(e){}});})();</script>
+      }, stepDelay(2) + 700);
+    }
+  </script>
 </body>
 </html>

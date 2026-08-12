@@ -169,3 +169,80 @@ Historical result: passed
 - [P3] If future desktop marketing captures are needed, take a larger in-app Browser viewport capture so type and image density can be reviewed at native desktop scale. This does not affect the current responsive render.
 
 final result: passed
+
+## 2026-08-12 — Anthropic-style information architecture pass
+
+### Source visual truth
+
+- Official reference pages: `https://www.anthropic.com/` and `https://www.anthropic.com/research`.
+- Captured source evidence: `/tmp/anthropic-home-desktop.png`, `/tmp/anthropic-home-mobile.png`, `/tmp/anthropic-research-desktop.png`, and `/tmp/anthropic-research-mobile-retry.png`.
+- The implementation keeps Socrates' own logo, copy, and original media. The reference is used for information architecture, spacing rhythm, editorial hierarchy, and interaction pattern—not for copied assets or text.
+
+### Rendered implementation evidence
+
+- Updated routes: `/index.html`, `/research.html`, `/research/memory-recall/`, and `/research/tutor-curiosity/`.
+- Desktop evidence: `/tmp/updated-home-desktop.png`, `/tmp/updated-research-desktop.png`, `/tmp/updated-article-desktop.png`.
+- Mobile evidence: `/tmp/updated-research-mobile.png`, `/tmp/updated-article-mobile.png`.
+- Same-viewport comparison sheets: `/tmp/qa-home-comparison.png`, `/tmp/qa-research-comparison.png`, `/tmp/qa-research-mobile-comparison.png`.
+- Viewports: desktop `1440 × 1000`, mobile `390 × 844`, device scale factor `1`; no horizontal overflow (`scrollWidth === clientWidth`) on tested home/research pages.
+
+### Fidelity ledger
+
+| Comparison point | Result | Notes |
+| --- | --- | --- |
+| Navigation density | Passed | One quiet masthead, text links, compact dark CTA, and a collapsed mobile menu. |
+| Home information hierarchy | Passed | One statement, one large visual, one restrained latest-research ledger; removed the repeated portal/card layer. |
+| Research information hierarchy | Passed | Research threads → team descriptions → featured entries → publication list → research coda. |
+| Typography and spacing | Passed | Large sans display, serif explanatory copy, thin rules, generous page gutters, and one-column mobile collapse remain consistent with the source grammar. |
+| Content and links | Passed | Six publication rows are searchable/filterable and route to full research notes; the missing tutoring article was added. |
+| Responsive behavior | Passed | Desktop and mobile captures show no clipping or horizontal overflow; mobile menu opens with `aria-expanded="true"`. |
+
+### Interaction checks
+
+- Research filter `Memory` reduces the publication list from `6` to `1` visible row.
+- Search term `pause` leaves `1` matching publication.
+- Clicking the first publication routes to `/research/memory-recall/` and renders `The route back to an idea.`.
+- Mobile menu opens with six links and a true expanded state.
+- Internal links collected from the home, Research, and two article routes: `30` checked, `0` failures under the local static server.
+- `node --check site/editorial.js` — passed; `git diff --check` — passed.
+
+### Intentional deviations
+
+- Socrates keeps its own warm-paper palette, wordmark, original research artwork, and original copy. This is intentional brand differentiation while adopting Anthropic's restrained page rhythm.
+- The Research mobile capture uses Socrates' five learning threads rather than Anthropic's AI safety team names; the structure is parallel, not copied.
+
+final result: passed
+
+---
+
+## 2026-08-12 — 全面修缮 + 1:1 对齐 anthropic.com（视觉/排版语法 + 信息架构）
+
+### 范围与边界声明
+- **仅 1:1 对齐 anthropic.com 的视觉语法（留白/栅格/字体层级/分隔线/卡片语言）与信息架构（栏目结构、列表节奏、导航层级）。**
+- **内容（文案、标题、研究摘要、logo、图片）全部为 Socrates 自有原创**，未复制任何 anthropic 文本、商标、截图或独特构图（与既有逆向工程约束一致）。
+- 参考页（仅用于理解结构/排版）：`/` `/research` `/news` `/policy`。
+
+### 已落地改动
+1. **URL 统一带 `.html`（方案A）**：全站正文/页脚/ledger 链接统一 `href="xxx.html"`；`zh/*` 改 `../xxx.html`；Research 子页 `../xxx` 保持；功能页（account/api-keys/checkout/profile）自链同步。生产 nginx 无需改动（与 `editorial.js` 重建导航一致）。
+2. **修 Research footer 错误线程标签**：`memory-recall` 的 "Next in Memory →" 改为中性 "Next research note →"，6 篇 footer 互指正确。
+3. **去 Research note 编号**：kicker 去掉 "· Research note NN"，仅留线程名（Memory / Explanation / Practice / Knowledge mapping / Tutoring）。
+4. **清内联 style**：`learn.html`/`documents.html`/`policy.html` 的内联 `style` 提取为 `editorial.css` 新增类（`.ed-split-grid`、`.ed-split-heading`、`.ed-mt-*`、`.ed-lede-wide`、`.ed-feature-kicker`），HTML 内联全部删除。
+5. **Library 链接去误导**：`documents.html` 交叉链接文案改为 "View product / View research / View principles / About Socrates / View news"；唯一真实文档 `guide.html` 保留 "Read the guide"。
+6. **统一静态导航**：`documents.html`/`announcements.html` 无 JS 时手写导航与 `editorial.js` 的 6 项（Research/Principles/Learn/Library/News/Company/中文）顺序与文案一致（含"中文"与 `aria-current`）。
+7. **1:1 IA 对齐**：Research/News/Library 列表统一 **Date / Category / Title** 三列节奏 + 分类 pill（`.ed-pill` 含色点）+ **Search** + **See more** 钩子 + 年份分组（`.ed-year-rule`）；News 加 press 联系 rail + Search 工具栏；Principles 保留原则卡网格 + 分节长文结构。
+8. **排版美化 + 双端适配**：`.ed-article` 行宽改为 `min(720px,100%)`；正文 `clamp(18px,1.15vw+14px,21px)`/行高 1.62；`h2`→`clamp(24px,2.2vw,32px)`、`h3`→`clamp(20px,1.6vw,25px)` 拉开层级；`lede` 强化为带钴蓝左边线的摘要块；文章 byline 加线程 pill（`.ed-thread`）；**新增 620px 断点补强**（`.ed-article` / `.ed-news-item` / `.ed-publication-row` / `.ed-essay-row` 小屏收紧，双端无挤压/无溢出）。
+
+### 验证
+- `node --check site/editorial.js` — 通过。
+- `git diff --check` — 通过（无空白错误）。
+- 本地 `node serve.cjs` 路由抽检：`index.html` / `research.html` / `announcements.html` / `policy.html` / `documents.html` / `learn.html` / `research/memory-recall/` / `zh/index.html` / `product.html` 均 HTTP 200。
+- 全站 grep：无残留 `style="` 内联、无残留裸页链接（`href="xxx"` 无扩展名）。
+
+### 死 CSS 处理
+- 经跨页确认：`marketing.css` 被 `zh/*.html` 引用、`home.css` 被 `marketing.css` 引入 → **二者均不可删除**，保留不动（不影响 `deploy.sh` 按扩展名拷贝）。
+
+### 2026-08-12（补充）— 线上 URL 去除 .html 后缀（clean URLs）
+- 用户要求浏览器地址栏不显示 `.html` 后缀。nginx `topodrive.top` 的 `location /` 已配置 `try_files $uri $uri.html $uri/ =404;`，服务端本就支持 clean URL。
+- 因此将全站**站内链接改回无扩展名**（`href="research"`、`href="../research"`、`href="../../research"`、`product#knowledge-map` 锚点保留），由 nginx 自动补 `.html`；磁盘文件仍为 `.html`。
+- 同步将 `editorial.js` 重建的导航项改为无扩展名（`key`/`href` 均去 `.html`），保证 masthead 与正文一致。
+- 验证：`serve.cjs` 下 `/research` `/announcements` `/policy` `/documents` `/learn` `/product` `/zh/index` 均 200；生产 nginx `$uri.html` + `$uri/` 回退覆盖页面与 `research/<slug>/` 子目录。

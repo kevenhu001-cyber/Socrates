@@ -223,12 +223,14 @@ if [ -d "$SITE_DIR" ]; then
   backup_previous "$SITE_WEB_ROOT"
   $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/base.css" "$SITE_WEB_ROOT/base.css"
   $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/index.html" "$SITE_WEB_ROOT/index.html"
-  for page in pricing guide about contact terms privacy account api-keys profile checkout; do
-    $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/$page.html" "$SITE_WEB_ROOT/$page.html"
+  for page in pricing guide about contact terms privacy account api-keys profile checkout announcements documents learn policy product research; do
+    if [ -f "$SITE_DIR/$page.html" ]; then
+      $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/$page.html" "$SITE_WEB_ROOT/$page.html"
+    fi
   done
   if [ -d "$SITE_DIR/zh" ]; then
     $SUDO mkdir -p "$SITE_WEB_ROOT/zh"
-    for page in index pricing guide about contact terms privacy checkout account api-keys profile; do
+    for page in index pricing guide about contact terms privacy checkout account api-keys profile announcements documents learn policy product research; do
       if [ -f "$SITE_DIR/zh/$page.html" ]; then
         $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/zh/$page.html" "$SITE_WEB_ROOT/zh/$page.html"
       fi
@@ -250,6 +252,22 @@ if [ -d "$SITE_DIR" ]; then
       ! -name '.*' \
       ! -name '*~' \
       -print0)
+
+  # Copy site/media/ directory (editorial images referenced by new pages)
+  if [ -d "$SITE_DIR/media" ]; then
+    $SUDO mkdir -p "$SITE_WEB_ROOT/media"
+    $SUDO cp -a "$SITE_DIR/media/"* "$SITE_WEB_ROOT/media/"
+  fi
+
+  # Copy article subdirectories (research/, learn/, etc.) so each
+  # essay/guide page is reachable as /research/<slug>/. nginx's
+  # try_files already falls back to index.html inside the directory.
+  for sub in research learn announcements guides posts articles; do
+    if [ -d "$SITE_DIR/$sub" ]; then
+      $SUDO mkdir -p "$SITE_WEB_ROOT/$sub"
+      $SUDO cp -a "$SITE_DIR/$sub/." "$SITE_WEB_ROOT/$sub/"
+    fi
+  done
 fi
 
 # ─── 2b. Status page (status.topodrive.top) ──────────────────────────

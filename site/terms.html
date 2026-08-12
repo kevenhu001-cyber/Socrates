@@ -1,356 +1,365 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="socrates" data-mode="dark">
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/logo.png">
-<title>Socrates — Terms of Service</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
-<link href="/base.css" rel="stylesheet">
-<link href="/marketing.css" rel="stylesheet">
-<style>
-.legal-section{margin-bottom:40px}
-.legal-section h3{font-family:var(--font-display);font-size:20px;font-weight:400;color:hsl(var(--text-000));margin-bottom:16px;letter-spacing:-.02em;padding-bottom:8px;border-bottom:0.5px solid hsl(var(--border-300)/0.06)}
-.legal-section h4{font-size:15px;font-weight:500;color:hsl(var(--text-100));margin:16px 0 8px}
-.legal-section p{font-size:14px;color:hsl(var(--text-400));line-height:1.8;margin-bottom:12px}
-.legal-section ul{padding-left:20px;margin-bottom:12px}
-.legal-section li{font-size:14px;color:hsl(var(--text-400));line-height:1.8;margin-bottom:6px}
-.legal-section strong{color:hsl(var(--text-100));font-weight:500}
-.legal-section a{color:hsl(var(--accent-000))}
-.legal-date{text-align:center;font-size:12px;color:hsl(var(--text-500));margin-top:48px;padding-top:24px;border-top:0.5px solid hsl(var(--border-300)/0.06)}
-</style>
-<script>
-!function(){
-  try{
-    var p=localStorage.getItem("socrates-lang");
-    if(!p)return;
-    var c=document.documentElement.lang;
-    var here=window.location.pathname;
-    if(p==="zh"&&c.indexOf("zh")!==0){
-      var target=here.replace(/\.html$/,"");
-      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
-    }else if(p==="en"&&c.indexOf("en")!==0){
-      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
-      window.location.replace(target2==="/"||target2===""?"/":target2);
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Socrates Terms of Service — your rights and responsibilities when using the Socrates learning platform.">
+  <title>Socrates — Terms of Service</title>
+  <link rel="icon" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="editorial.css?cb=20260814">
+  <style>
+    .ed-legal-wrap { padding: clamp(48px, 7vw, 96px) 0; }
+    .ed-legal-layout { display: grid; grid-template-columns: minmax(230px, .4fr) minmax(0, 1fr); gap: clamp(40px, 8vw, 120px); align-items: start; }
+    .ed-legal-toc { position: sticky; top: 32px; }
+    .ed-legal-toc h2 { margin: 0 0 18px; font-family: var(--ed-mono); font-size: 10px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--ed-ink-muted); }
+    .ed-legal-toc nav { display: grid; gap: 2px; }
+    .ed-legal-toc a { display: block; padding: 6px 0; color: var(--ed-ink-soft); font-size: 13px; line-height: 1.3; border-bottom: 1px solid transparent; transition: color .18s var(--ed-ease), border-color .18s var(--ed-ease); }
+    .ed-legal-toc a:hover { color: var(--ed-ink); border-bottom-color: var(--ed-ink); }
+    .ed-legal-body { max-width: 720px; }
+    .ed-legal-section { margin-bottom: 52px; scroll-margin-top: 40px; }
+    .ed-legal-section h3 { margin: 0 0 18px; font-family: var(--ed-serif); font-size: clamp(26px, 2.4vw, 34px); font-weight: 400; letter-spacing: -.045em; line-height: 1.05; color: var(--ed-ink); }
+    .ed-legal-section h4 { margin: 26px 0 12px; font-size: 17px; font-weight: 600; color: var(--ed-ink); }
+    .ed-legal-section p { margin: 0 0 14px; font-size: 16px; color: var(--ed-ink-soft); line-height: 1.72; }
+    .ed-legal-section ul, .ed-legal-section ol { padding-left: 24px; margin: 0 0 14px; }
+    .ed-legal-section li { font-size: 16px; color: var(--ed-ink-soft); line-height: 1.72; margin-bottom: 6px; }
+    .ed-legal-section strong { color: var(--ed-ink); font-weight: 600; }
+    .ed-legal-section a { color: var(--ed-ink); border-bottom: 1px solid var(--ed-line); transition: border-color .18s var(--ed-ease), color .18s var(--ed-ease); }
+    .ed-legal-section a:hover { color: var(--ed-clay); border-bottom-color: var(--ed-clay); }
+    .ed-legal-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 4px 0 20px; border-radius: 10px; }
+    .ed-legal-table-scroll table { margin: 0; }
+    .ed-legal-table-scroll th, .ed-legal-table-scroll td { min-width: 150px; white-space: nowrap; }
+    @media (max-width: 900px) {
+      .ed-legal-layout { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+      .ed-legal-toc { position: static; }
+      .ed-legal-section { margin-bottom: 42px; }
     }
-  }catch(e){}
-}();
-</script>
+    @media (max-width: 620px) {
+      .ed-legal-section h3 { font-size: 24px; letter-spacing: -.04em; }
+      .ed-legal-section p, .ed-legal-section li { font-size: 15px; line-height: 1.68; }
+      .ed-legal-section table { font-size: 13px; }
+      .ed-legal-section th, .ed-legal-section td { padding: 9px 12px; }
+      .ed-legal-section td { line-height: 1.5; }
+      .ed-legal-toc nav { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+      .ed-legal-toc a { font-size: 12px; padding: 3px 0; }
+    }
+  </style>
+  <link rel="stylesheet" href="brand.css?cb=20260814">
 </head>
-<body class="legal-page">
-<script src="/marketing.js"></script>
-<div class="bg-grid"></div>
-<div class="page">
-
-<nav>
-  <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px"><span><em>S</em>ocrates</span></a>
-    <div class="nav-links">
-      <a href="/pricing">Pricing</a>
-      <a href="/guide">Guide</a>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-      <a href="/account">Account</a>
-      <a class="lang-switch">中文</a>
-      <a href="https://app.topodrive.top" class="cta-btn">Start learning</a>
+<body class="ed-site legal-page">
+  <a class="ed-skip" href="#main">Skip to content</a>
+  <header class="ed-header">
+    <div class="ed-shell">
+      <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
+        <a class="ed-brand" href="index" aria-label="Socrates home">SOCRATES</a>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel>
+          <a href="research">Research</a>
+          <a href="documents">Library</a>
+          <a href="about">Company</a>
+          <a href="announcements">News</a>
+          <a href="zh/index">中文</a>
+        </div>
+        <div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+      </nav>
     </div>
-  </div>
-</nav>
+  </header>
+  <main id="main">
+    <section class="ed-page-hero">
+      <div class="ed-shell ed-legal-hero ed-reveal">
+        <div>
+          <p class="ed-kicker">Legal</p>
+          <h1 class="ed-page-title">Terms of Service</h1>
+        </div>
+        <div class="ed-legal-meta" aria-label="Terms details">
+          <p>Effective date: March 1, 2026</p>
+          <a href="mailto:hello@topodrive.top?subject=Previous%20Terms%20of%20Service">Previous version</a>
+          <label>Language
+            <select onchange="if(this.value) window.location.href=this.value">
+              <option value="terms.html" selected>English</option>
+              <option value="zh/terms.html">中文</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </section>
+    <section class="ed-section-tight">
+      <div class="ed-shell ed-legal-layout">
+        <aside class="ed-legal-toc">
+          <h2>Contents</h2>
+          <nav>
+            <a href="#section-1">1. Acceptance of Terms</a>
+            <a href="#section-2">2. Service Description</a>
+            <a href="#section-3">3. Eligibility</a>
+            <a href="#section-4">4. Account Registration &amp; Security</a>
+            <a href="#section-5">5. API Keys &amp; Third-Party Services</a>
+            <a href="#section-6">6. Subscriptions, Billing &amp; Payments</a>
+            <a href="#section-7">7. Refund Policy</a>
+            <a href="#section-8">8. Fair Use Policy</a>
+            <a href="#section-9">9. Availability</a>
+            <a href="#section-10">10. User Conduct &amp; Prohibited Activities</a>
+            <a href="#section-11">11. User Content &amp; License</a>
+            <a href="#section-12">12. AI Teaching Data &amp; Model Output</a>
+            <a href="#section-13">13. Intellectual Property Rights</a>
+            <a href="#section-14">14. Feedback &amp; Suggestions</a>
+            <a href="#section-15">15. Third-Party Links &amp; Services</a>
+            <a href="#section-16">16. Data Backup &amp; Recovery</a>
+            <a href="#section-17">17. Disclaimer of Warranties</a>
+            <a href="#section-18">18. Limitation of Liability</a>
+            <a href="#section-19">19. Indemnification</a>
+            <a href="#section-20">20. Termination &amp; Suspension</a>
+            <a href="#section-21">21. Governing Law &amp; Dispute Resolution</a>
+            <a href="#section-22">22. Force Majeure</a>
+            <a href="#section-23">23. Entire Agreement &amp; Severability</a>
+            <a href="#section-24">24. Changes to These Terms</a>
+            <a href="#section-25">25. Notice &amp; Communication</a>
+            <a href="#section-26">26. Contact Information</a>
+          </nav>
+        </aside>
+        <div class="ed-legal-body">
 
-<div class="page-header">
-  <div class="section-eyebrow">Legal</div>
-  <h1>Terms of <strong>Service</strong></h1>
-  <p>Last updated: March 1, 2026</p>
-</div>
+          <div class="ed-legal-section" id="section-1">
+            <h3>1. Acceptance of Terms</h3>
+            <p>These Terms of Service (the <strong>"Terms"</strong>) govern your access to and use of the Socrates website, application, and related services (collectively, the <strong>"Service"</strong>), operated by Topodrive (<strong>"we," "us," "our,"</strong> or <strong>"Socrates"</strong>).</p>
+            <p>By creating an account, accessing, or using the Service, you agree to be bound by these Terms and our Privacy Policy. If you do not agree with any part of these Terms, you must not access or use the Service. These Terms constitute a legally binding agreement between you and Topodrive.</p>
+            <p>Additional policies — including our Privacy Policy, Acceptable Use Policy, and Refund Policy — are incorporated into these Terms by reference.</p>
+          </div>
 
-<section style="padding-top:0">
-  <div class="section-inner">
+          <div class="ed-legal-section" id="section-2">
+            <h3>2. Service Description</h3>
+            <p>Socrates is an AI-powered Socratic tutoring platform. The Service enables you to engage in structured, adaptive learning sessions by connecting your own large language model (LLM) provider API keys to our proprietary teaching engine.</p>
+            <p><strong>BYOK Model.</strong> The Service operates on a Bring-Your-Own-Key (BYOK) model. You are responsible for obtaining and maintaining your own API keys from supported third-party LLM providers, including but not limited to OpenAI, Anthropic, and OpenAI-compatible endpoints. We never charge for model inference; you pay your LLM provider directly for usage incurred through the Service.</p>
+            <p><strong>Modifications.</strong> We reserve the right to modify, suspend, or discontinue any part of the Service at any time, with or without notice. We will use commercially reasonable efforts to provide advance notice of material changes that materially diminish your access rights. We are not liable to you or any third party for any modification, suspension, or discontinuation of the Service.</p>
+          </div>
 
-    <div class="legal-section sr">
-      <h3>1. Acceptance of Terms</h3>
-      <p>These Terms of Service (the <strong>"Terms"</strong>) govern your access to and use of the Socrates website, application, and related services (collectively, the <strong>"Service"</strong>), operated by Topodrive (<strong>"we," "us," "our,"</strong> or <strong>"Socrates"</strong>).</p>
-      <p>By creating an account, accessing, or using the Service, you agree to be bound by these Terms and our Privacy Policy. If you do not agree with any part of these Terms, you must not access or use the Service. These Terms constitute a legally binding agreement between you and Topodrive.</p>
-      <p>Additional policies — including our Privacy Policy, Acceptable Use Policy, and Refund Policy — are incorporated into these Terms by reference.</p>
-    </div>
+          <div class="ed-legal-section" id="section-3">
+            <h3>3. Eligibility</h3>
+            <p>By using the Service, you represent and warrant that:</p>
+            <ul>
+              <li>You are at least 13 years of age. If you are between 13 and 18, a parent or legal guardian has reviewed and agreed to these Terms on your behalf.</li>
+              <li>You have full power and authority to enter into this agreement.</li>
+              <li>You are not located in a country subject to a U.S. or Chinese government embargo or designated as a "terrorist-supporting" country.</li>
+              <li>You are not listed on any U.S. or Chinese government list of prohibited or restricted parties.</li>
+              <li>You have not been previously suspended or removed from the Service for violating our policies.</li>
+            </ul>
+          </div>
 
-    <div class="legal-section sr sr-d1">
-      <h3>2. Service Description</h3>
-      <p>Socrates is an AI-powered Socratic tutoring platform. The Service enables you to engage in structured, adaptive learning sessions by connecting your own large language model (LLM) provider API keys to our proprietary teaching engine.</p>
-      <p><strong>BYOK Model.</strong> The Service operates on a Bring-Your-Own-Key (BYOK) model. You are responsible for obtaining and maintaining your own API keys from supported third-party LLM providers, including but not limited to OpenAI, Anthropic, and OpenAI-compatible endpoints. We never charge for model inference; you pay your LLM provider directly for usage incurred through the Service.</p>
-      <p><strong>Modifications.</strong> We reserve the right to modify, suspend, or discontinue any part of the Service at any time, with or without notice. We will use commercially reasonable efforts to provide advance notice of material changes that materially diminish your access rights. We are not liable to you or any third party for any modification, suspension, or discontinuation of the Service.</p>
-    </div>
+          <div class="ed-legal-section" id="section-4">
+            <h3>4. Account Registration &amp; Security</h3>
+            <p><strong>Registration.</strong> To access certain features, you must register for an account. You agree to provide accurate, current, and complete information and to keep it updated. You may register via email or supported third-party authentication providers.</p>
+            <p><strong>Account Responsibility.</strong> You are solely responsible for all activity under your account, including actions taken by anyone you grant access to. Notify us immediately of any unauthorized use or security breach at <a href="mailto:help@addtech.site">help@addtech.site</a>.</p>
+            <p><strong>Password Security.</strong> You are responsible for maintaining the confidentiality of your login credentials. We are not liable for loss or damage arising from your failure to protect your account. You may not use another user's account without their express permission.</p>
+            <p><strong>Account Transfer.</strong> Accounts are non-transferable. You may not sell, rent, lease, or otherwise transfer your account or access rights to any third party without our prior written consent.</p>
+            <p><strong>Account Deletion.</strong> You may delete your account at any time via account settings. Upon deletion, we deactivate your account and remove personal data in accordance with our Privacy Policy. Session history and generated content may be irrecoverable after deletion.</p>
+          </div>
 
-    <div class="legal-section sr sr-d1">
-      <h3>3. Eligibility</h3>
-      <p>By using the Service, you represent and warrant that:</p>
-      <ul>
-        <li>You are at least 13 years of age. If you are between 13 and 18, a parent or legal guardian has reviewed and agreed to these Terms on your behalf.</li>
-        <li>You have full power and authority to enter into this agreement.</li>
-        <li>You are not located in a country subject to a U.S. or Chinese government embargo or designated as a "terrorist-supporting" country.</li>
-        <li>You are not listed on any U.S. or Chinese government list of prohibited or restricted parties.</li>
-        <li>You have not been previously suspended or removed from the Service for violating our policies.</li>
-      </ul>
-    </div>
+          <div class="ed-legal-section" id="section-5">
+            <h3>5. API Keys &amp; Third-Party Services</h3>
+            <p><strong>Your Keys.</strong> Socrates requires you to provide API keys from third-party LLM providers. You represent that you have the legal right to use any keys you provide and that doing so does not violate any agreement with the corresponding provider.</p>
+            <p><strong>Key Handling.</strong> API keys are encrypted at rest with AES-256-GCM and are used server-side to route inference requests to your designated LLM provider. HTTPS/TLS protection depends on the deployment serving the Service. We do not use your keys for model training, analytics, or any purpose other than providing the Service.</p>
+            <p><strong>Key Revocation.</strong> You may update or revoke keys anytime via account settings. Account deletion removes the account's API-key records through the server-side deletion flow, subject to any independent retention requirements.</p>
+            <p><strong>Third-Party Providers.</strong> We are not responsible for the availability, accuracy, security, or performance of any third-party LLM provider. Your use of third-party services is governed by their respective terms and privacy policies. Disputes between you and a third party are your responsibility.</p>
+          </div>
 
-    <div class="legal-section sr sr-d2">
-      <h3>4. Account Registration & Security</h3>
-      <p><strong>Registration.</strong> To access certain features, you must register for an account. You agree to provide accurate, current, and complete information and to keep it updated. You may register via email or supported third-party authentication providers.</p>
-      <p><strong>Account Responsibility.</strong> You are solely responsible for all activity under your account, including actions taken by anyone you grant access to. Notify us immediately of any unauthorized use or security breach at <a href="mailto:help@addtech.site">help@addtech.site</a>.</p>
-      <p><strong>Password Security.</strong> You are responsible for maintaining the confidentiality of your login credentials. We are not liable for loss or damage arising from your failure to protect your account. You may not use another user's account without their express permission.</p>
-      <p><strong>Account Transfer.</strong> Accounts are non-transferable. You may not sell, rent, lease, or otherwise transfer your account or access rights to any third party without our prior written consent.</p>
-      <p><strong>Account Deletion.</strong> You may delete your account at any time via account settings. Upon deletion, we deactivate your account and remove personal data in accordance with our Privacy Policy. Session history and generated content may be irrecoverable after deletion.</p>
-    </div>
+          <div class="ed-legal-section" id="section-6">
+            <h3>6. Subscriptions, Billing &amp; Payments</h3>
+            <p><strong>Pricing.</strong> Current plans are listed on our <a href="pricing">Pricing page</a>. All prices are in USD and exclude applicable taxes, which may be added based on your jurisdiction.</p>
+            <p><strong>Trials and Billing Cycles.</strong> Trial availability, plan limits, prices, and renewal terms are shown at the time of purchase. You may cancel an active subscription through your account settings, subject to the terms shown at checkout and applicable law.</p>
+            <p><strong>Payment Processing.</strong> Payments are processed through the payment provider shown at checkout. The Service receives the payment status and transaction information needed to manage your subscription; card details are handled by the payment flow and provider.</p>
+            <p><strong>Taxes.</strong> You are responsible for all applicable taxes, including VAT, GST, sales tax, or withholding tax. If we are required to collect taxes, the amount will be shown at checkout.</p>
+            <p><strong>Price Changes.</strong> We may change subscription fees. Where notice is required, we will provide it before the changed price applies to an existing subscription.</p>
+            <p><strong>Late Payment.</strong> If payment fails, access may be limited or suspended until payment succeeds, subject to the payment provider's process and applicable law.</p>
+          </div>
 
-    <div class="legal-section sr sr-d2">
-      <h3>5. API Keys & Third-Party Services</h3>
-      <p><strong>Your Keys.</strong> Socrates requires you to provide API keys from third-party LLM providers. You represent that you have the legal right to use any keys you provide and that doing so does not violate any agreement with the corresponding provider.</p>
-      <p><strong>Key Handling.</strong> Your API keys are encrypted at rest (AES-256) and in transit (TLS 1.3). They are used solely to route inference requests to your designated LLM provider. We do not use your keys for model training, analytics, or any purpose other than providing the Service.</p>
-      <p><strong>Key Revocation.</strong> You may update or revoke keys anytime via account settings. On account deletion, all stored keys are permanently deleted within 30 days.</p>
-      <p><strong>Third-Party Providers.</strong> We are not responsible for the availability, accuracy, security, or performance of any third-party LLM provider. Your use of third-party services is governed by their respective terms and privacy policies. Disputes between you and a third party are your responsibility.</p>
-    </div>
+          <div class="ed-legal-section" id="section-7">
+            <h3>7. Refund Policy</h3>
+            <p><strong>Refunds.</strong> Refund eligibility is determined by the terms shown at checkout, the payment provider's process, and applicable consumer-protection law. Contact <a href="mailto:help@addtech.site">help@addtech.site</a> with the relevant order details.</p>
+            <p><strong>Service Outages.</strong> We may provide a service credit for a material, verifiable outage at our discretion. Any applicable credit or claim process will be communicated through the Service or support channel.</p>
+            <p><strong>Statutory Rights.</strong> Nothing in this policy limits your statutory rights under applicable consumer protection laws.</p>
+          </div>
 
-    <div class="legal-section sr sr-d3">
-      <h3>6. Subscriptions, Billing & Payments</h3>
-      <p><strong>Pricing.</strong> Current plans are listed on our <a href="/pricing">Pricing page</a>. All prices are in USD and exclude applicable taxes, which may be added based on your jurisdiction.</p>
-      <p><strong>Free Trial.</strong> Each paid tier includes a 7-day free trial of the next tier up. No credit card is required to start on the free (Diophantus) tier. If you activate a paid plan trial, you will not be charged until the trial ends. Cancel during the trial with no charge.</p>
-      <p><strong>Billing Cycles.</strong> Subscriptions are billed in advance on a monthly or annual basis. Renewal is automatic unless you cancel before the renewal date. You may cancel anytime through your account settings.</p>
-      <p><strong>Payment Processing.</strong> All payments are securely processed by Stripe (PCI-DSS compliant). We do not store full credit card numbers, CVV codes, or bank account numbers. We retain only transaction records (date, amount, last four digits) and billing address for accounting and tax purposes.</p>
-      <p><strong>Taxes.</strong> You are responsible for all applicable taxes, including VAT, GST, sales tax, or withholding tax. If we are required to collect taxes, the amount will be shown at checkout.</p>
-      <p><strong>Price Changes.</strong> We may change subscription fees at any time. For existing subscribers, price increases take effect at the next billing period following 30 days' email notice. Price decreases apply immediately to your next billing cycle.</p>
-      <p><strong>Late Payment.</strong> If payment fails, we will retry. After 7 days of unsuccessful attempts, we may downgrade your account to the free tier or suspend access until payment succeeds.</p>
-    </div>
+          <div class="ed-legal-section" id="section-8">
+            <h3>8. Fair Use Policy</h3>
+            <p>Paid tiers include defined session limits and feature access levels as described on our Pricing page. The following activities constitute abuse of the Service:</p>
+            <ul>
+              <li>Automated, scripted, or programmatic access beyond normal human usage patterns.</li>
+              <li>Operating multiple accounts to circumvent session or feature limits.</li>
+              <li>Using the Service for large-scale batch processing, data mining, or content generation exceeding reasonable per-session limits.</li>
+              <li>Excessive API calls or request volumes that degrade service performance for other users.</li>
+            </ul>
+            <p>If we determine in our reasonable discretion that your usage exceeds fair limits, we may: (a) request that you reduce usage; (b) upgrade your subscription to a higher tier; or (c) temporarily throttle or suspend your access. We will make reasonable efforts to contact you before taking enforcement action.</p>
+          </div>
 
-    <div class="legal-section sr sr-d3">
-      <h3>7. Refund Policy</h3>
-      <p><strong>Monthly Subscriptions.</strong> We do not offer refunds for partial months. Each paid subscription includes a 7-day free trial so you can evaluate before committing. Cancel during the trial and you will not be charged.</p>
-      <p><strong>Annual Subscriptions.</strong> Annual subscriptions may be cancelled within the first 14 days for a full pro-rated refund of remaining months (less months used). After 14 days, refunds are calculated at 50% of remaining months' value. Refunds are processed to the original payment method within 5–10 business days of approval.</p>
-      <p><strong>Service Outages.</strong> For material, verifiable outages caused by our infrastructure (not by your LLM provider or internet connection), we may provide service credit equal to the pro-rated value of downtime at our discretion. Claims must be submitted within 7 days to <a href="mailto:help@addtech.site">help@addtech.site</a>.</p>
-      <p><strong>Statutory Rights.</strong> Nothing in this policy limits your statutory rights under applicable consumer protection laws.</p>
-    </div>
+          <div class="ed-legal-section" id="section-9">
+            <h3>9. Availability</h3>
+            <p>The Service may be unavailable or degraded from time to time because of maintenance, infrastructure issues, third-party providers, network conditions, or other events outside our control. Unless a separate written agreement says otherwise, these Terms do not create a specific uptime commitment or service-credit schedule.</p>
+          </div>
 
-    <div class="legal-section sr sr-d3">
-      <h3>8. Fair Use Policy</h3>
-      <p>Paid tiers include defined session limits and feature access levels as described on our Pricing page. The following activities constitute abuse of the Service:</p>
-      <ul>
-        <li>Automated, scripted, or programmatic access beyond normal human usage patterns.</li>
-        <li>Operating multiple accounts to circumvent session or feature limits.</li>
-        <li>Using the Service for large-scale batch processing, data mining, or content generation exceeding reasonable per-session limits.</li>
-        <li>Excessive API calls or request volumes that degrade service performance for other users.</li>
-      </ul>
-      <p>If we determine in our reasonable discretion that your usage exceeds fair limits, we may: (a) request that you reduce usage; (b) upgrade your subscription to a higher tier; or (c) temporarily throttle or suspend your access. We will make reasonable efforts to contact you before taking enforcement action.</p>
-    </div>
+          <div class="ed-legal-section" id="section-10">
+            <h3>10. User Conduct &amp; Prohibited Activities</h3>
+            <p>You agree not to engage in any of the following:</p>
+            <ul>
+              <li><strong>Illegal Use.</strong> Using the Service for any illegal purpose or in violation of any applicable law or regulation.</li>
+              <li><strong>Abuse.</strong> Interfering with, compromising, disrupting, or degrading the Service, our servers, or connected networks.</li>
+              <li><strong>Security Violations.</strong> Attempting to bypass or disable security measures; conducting penetration testing without prior written authorization; reverse-engineering, decompiling, or disassembling the Service.</li>
+              <li><strong>Content Violations.</strong> Using the Service to generate, store, or transmit illegal, harmful, threatening, abusive, harassing, defamatory, vulgar, obscene, pornographic, or hateful content.</li>
+              <li><strong>Impersonation.</strong> Impersonating any person or entity or misrepresenting your affiliation.</li>
+              <li><strong>Automated Access.</strong> Using bots, crawlers, scrapers, scripts, or other automated means without our express written permission.</li>
+              <li><strong>Data Mining.</strong> Extracting, scraping, or harvesting data from the Service for purposes unrelated to your personal learning use.</li>
+              <li><strong>Commercial Exploitation.</strong> Reselling, sublicensing, or commercially exploiting the Service or its output without our prior written consent.</li>
+              <li><strong>Benchmarking.</strong> Using the Service or its output for competitive analysis, benchmarking, or building competing products.</li>
+            </ul>
+            <p>Violation may result in immediate suspension or termination of your account without refund. We may report serious violations to relevant authorities.</p>
+          </div>
 
-    <div class="legal-section sr sr-d4">
-      <h3>9. Service Level Agreement (SLA)</h3>
-      <p><strong>Uptime Commitment.</strong> We use commercially reasonable efforts to maintain 99.5% Service availability on a monthly basis, excluding scheduled maintenance (announced at least 48 hours in advance) and outages caused by third-party LLM providers.</p>
-      <p><strong>Scheduled Maintenance.</strong> Maintenance is typically performed during low-usage hours (02:00–05:00 UTC+8) with at least 48 hours' notice via email or in-app banner.</p>
-      <p><strong>Service Credits.</strong> If unplanned downtime exceeds 4 consecutive hours, you may request a service credit of 5% of your monthly fee per additional downtime hour, up to a maximum of 50% of your monthly fee. Claims must be submitted within 7 days to <a href="mailto:help@addtech.site">help@addtech.site</a>.</p>
-      <p><strong>Exclusions.</strong> This SLA does not apply to: (a) the free tier; (b) outages caused by your LLM provider; (c) your internet connection or local infrastructure; (d) force majeure events; (e) scheduled maintenance.</p>
-    </div>
+          <div class="ed-legal-section" id="section-11">
+            <h3>11. User Content &amp; License</h3>
+            <p><strong>User Content Defined.</strong> "User Content" means any data, text, files, information, images, or other materials you submit, post, display, or make available on or through the Service.</p>
+            <p><strong>Ownership.</strong> You retain all right, title, and interest in your User Content. We do not claim ownership.</p>
+            <p><strong>License to Us.</strong> By submitting User Content, you grant us a non-exclusive, worldwide, royalty-free, sublicensable (through multiple tiers), and transferable license to use, reproduce, modify, adapt, publish, and display your User Content solely for providing, operating, improving, and developing the Service. This license terminates when you delete your User Content or account, except to the extent anonymized or previously shared with others.</p>
+            <p><strong>Your Warranties.</strong> You represent and warrant that: (a) you own your User Content or have the necessary rights to grant these licenses; and (b) your User Content does not violate, misappropriate, or infringe any third-party rights.</p>
+            <p><strong>No Sensitive Data.</strong> You agree not to submit sensitive personal data (health information, financial account numbers, government identifiers, biometric data) through the Service unless explicitly required for a specific feature. We assume no liability for sensitive data submitted in violation of this section.</p>
+          </div>
 
-    <div class="legal-section sr sr-d4">
-      <h3>10. User Conduct & Prohibited Activities</h3>
-      <p>You agree not to engage in any of the following:</p>
-      <ul>
-        <li><strong>Illegal Use.</strong> Using the Service for any illegal purpose or in violation of any applicable law or regulation.</li>
-        <li><strong>Abuse.</strong> Interfering with, compromising, disrupting, or degrading the Service, our servers, or connected networks.</li>
-        <li><strong>Security Violations.</strong> Attempting to bypass or disable security measures; conducting penetration testing without prior written authorization; reverse-engineering, decompiling, or disassembling the Service.</li>
-        <li><strong>Content Violations.</strong> Using the Service to generate, store, or transmit illegal, harmful, threatening, abusive, harassing, defamatory, vulgar, obscene, pornographic, or hateful content.</li>
-        <li><strong>Impersonation.</strong> Impersonating any person or entity or misrepresenting your affiliation.</li>
-        <li><strong>Automated Access.</strong> Using bots, crawlers, scrapers, scripts, or other automated means without our express written permission.</li>
-        <li><strong>Data Mining.</strong> Extracting, scraping, or harvesting data from the Service for purposes unrelated to your personal learning use.</li>
-        <li><strong>Commercial Exploitation.</strong> Reselling, sublicensing, or commercially exploiting the Service or its output without our prior written consent.</li>
-        <li><strong>Benchmarking.</strong> Using the Service or its output for competitive analysis, benchmarking, or building competing products.</li>
-      </ul>
-      <p>Violation may result in immediate suspension or termination of your account without refund. We may report serious violations to relevant authorities.</p>
-    </div>
+          <div class="ed-legal-section" id="section-12">
+            <h3>12. AI Teaching Data &amp; Model Output</h3>
+            <p><strong>Generated Content.</strong> The Service generates educational content based on your inputs and the capabilities of the LLM providers you connect. We do not guarantee the accuracy, completeness, or reliability of AI-generated content. The Service is an educational tool and should not be relied upon as the sole source of truth.</p>
+            <p><strong>Data for AI Processing.</strong> Your session data (prompts, answers, knowledge graph data) is sent to your configured LLM provider for processing under that provider's terms. We do not use your session data to train or fine-tune our AI models.</p>
+            <p><strong>Accuracy Warning.</strong> AI-generated content may contain errors, omissions, or inaccuracies. You are responsible for critically evaluating information obtained through the Service. Socrates is a learning tool and does not replace professional judgment in academic, medical, legal, or other professional contexts.</p>
+            <p><strong>Hallucination Warning.</strong> Large language models can produce plausible-sounding but factually incorrect information ("hallucinations"). Independently verify critical information obtained through the Service.</p>
+          </div>
 
-    <div class="legal-section sr sr-d4">
-      <h3>11. User Content & License</h3>
-      <p><strong>User Content Defined.</strong> "User Content" means any data, text, files, information, images, or other materials you submit, post, display, or make available on or through the Service.</p>
-      <p><strong>Ownership.</strong> You retain all right, title, and interest in your User Content. We do not claim ownership.</p>
-      <p><strong>License to Us.</strong> By submitting User Content, you grant us a non-exclusive, worldwide, royalty-free, sublicensable (through multiple tiers), and transferable license to use, reproduce, modify, adapt, publish, and display your User Content solely for providing, operating, improving, and developing the Service. This license terminates when you delete your User Content or account, except to the extent anonymized or previously shared with others.</p>
-      <p><strong>Your Warranties.</strong> You represent and warrant that: (a) you own your User Content or have the necessary rights to grant these licenses; and (b) your User Content does not violate, misappropriate, or infringe any third-party rights.</p>
-      <p><strong>No Sensitive Data.</strong> You agree not to submit sensitive personal data (health information, financial account numbers, government identifiers, biometric data) through the Service unless explicitly required for a specific feature. We assume no liability for sensitive data submitted in violation of this section.</p>
-    </div>
+          <div class="ed-legal-section" id="section-13">
+            <h3>13. Intellectual Property Rights</h3>
+            <p><strong>Our IP.</strong> The Service — including source code, database structure, teaching engine algorithms, UI/UX design, the "Socrates" brand name and logo — is owned by Topodrive and protected by applicable laws of the People's Republic of China and international treaties. All rights not expressly granted are reserved.</p>
+            <p><strong>License to Use.</strong> Subject to these Terms, we grant you a limited, non-exclusive, non-transferable, non-sublicensable, revocable license to access and use the Service for your personal, non-commercial educational purposes.</p>
+            <p><strong>Restrictions.</strong> You may not: (a) copy, modify, or create derivative works of the Service; (b) distribute, transfer, sell, or sublicense the Service; (c) reverse-engineer, decompile, or disassemble the Service; (d) remove proprietary notices; or (e) use the Service to build a competing product.</p>
+            <p><strong>Open Source.</strong> Certain components may be open-source software governed by separate license terms. Where conflicts exist, the open-source license prevails for those components.</p>
+          </div>
 
-    <div class="legal-section sr">
-      <h3>12. AI Teaching Data & Model Output</h3>
-      <p><strong>Generated Content.</strong> The Service generates educational content based on your inputs and the capabilities of the LLM providers you connect. We do not guarantee the accuracy, completeness, or reliability of AI-generated content. The Service is an educational tool and should not be relied upon as the sole source of truth.</p>
-      <p><strong>Data for AI Processing.</strong> Your session data (prompts, answers, knowledge graph data) is sent to your configured LLM provider for processing under that provider's terms. We do not use your session data to train or fine-tune our AI models.</p>
-      <p><strong>Accuracy Warning.</strong> AI-generated content may contain errors, omissions, or inaccuracies. You are responsible for critically evaluating information obtained through the Service. Socrates is a learning tool and does not replace professional judgment in academic, medical, legal, or other professional contexts.</p>
-      <p><strong>Hallucination Warning.</strong> Large language models can produce plausible-sounding but factually incorrect information ("hallucinations"). Independently verify critical information obtained through the Service.</p>
-    </div>
+          <div class="ed-legal-section" id="section-14">
+            <h3>14. Feedback &amp; Suggestions</h3>
+            <p>We welcome feedback and suggestions. If you submit feedback, you agree we may use it without restriction or obligation. We are under no obligation to maintain confidentiality of any feedback, even if designated as confidential. This does not limit our obligations under separate nondisclosure agreements.</p>
+          </div>
 
-    <div class="legal-section sr">
-      <h3>13. Intellectual Property Rights</h3>
-      <p><strong>Our IP.</strong> The Service — including source code, database structure, teaching engine algorithms, UI/UX design, the "Socrates" brand name and logo — is owned by Topodrive and protected by applicable laws of the People's Republic of China and international treaties. All rights not expressly granted are reserved.</p>
-      <p><strong>License to Use.</strong> Subject to these Terms, we grant you a limited, non-exclusive, non-transferable, non-sublicensable, revocable license to access and use the Service for your personal, non-commercial educational purposes.</p>
-      <p><strong>Restrictions.</strong> You may not: (a) copy, modify, or create derivative works of the Service; (b) distribute, transfer, sell, or sublicense the Service; (c) reverse-engineer, decompile, or disassemble the Service; (d) remove proprietary notices; or (e) use the Service to build a competing product.</p>
-      <p><strong>Open Source.</strong> Certain components may be open-source software governed by separate license terms. Where conflicts exist, the open-source license prevails for those components.</p>
-    </div>
+          <div class="ed-legal-section" id="section-15">
+            <h3>15. Third-Party Links &amp; Services</h3>
+            <p>The Service may contain links to third-party websites, services, or resources (including LLM provider endpoints, payment processors, and analytics services). These links are provided for convenience only. We do not endorse and are not responsible for the content, products, services, or practices of any third party. Your interactions with third parties are solely between you and them.</p>
+          </div>
 
-    <div class="legal-section sr">
-      <h3>14. Feedback & Suggestions</h3>
-      <p>We welcome feedback and suggestions. If you submit feedback, you agree we may use it without restriction or obligation. We are under no obligation to maintain confidentiality of any feedback, even if designated as confidential. This does not limit our obligations under separate nondisclosure agreements.</p>
-    </div>
+          <div class="ed-legal-section" id="section-16">
+            <h3>16. Data Backup &amp; Recovery</h3>
+            <p><strong>Backups.</strong> Backup and recovery practices depend on the deployment and systems used to operate the Service. You are responsible for keeping copies of important learning materials; we do not promise a particular backup frequency or retention period.</p>
+            <p><strong>Your Responsibility.</strong> You are encouraged to maintain your own records of important learning materials. We are not responsible for data loss resulting from: (a) failure to maintain your own backups; (b) account termination or expiration; (c) errors in your use of the Service; or (d) events outside our reasonable control.</p>
+          </div>
 
-    <div class="legal-section sr sr-d1">
-      <h3>15. Third-Party Links & Services</h3>
-      <p>The Service may contain links to third-party websites, services, or resources (including LLM provider endpoints, payment processors, and analytics services). These links are provided for convenience only. We do not endorse and are not responsible for the content, products, services, or practices of any third party. Your interactions with third parties are solely between you and them.</p>
-    </div>
+          <div class="ed-legal-section" id="section-17">
+            <h3>17. Disclaimer of Warranties</h3>
+            <p>THE SERVICE IS PROVIDED ON AN <strong>"AS IS"</strong> AND <strong>"AS AVAILABLE"</strong> BASIS. TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, TOPODRIVE DISCLAIMS ALL WARRANTIES OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE, INCLUDING BUT NOT LIMITED TO:</p>
+            <ul>
+              <li>IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, QUIET ENJOYMENT, AND NON-INFRINGEMENT.</li>
+              <li>WARRANTIES THAT THE SERVICE WILL MEET YOUR REQUIREMENTS OR BE UNINTERRUPTED, SECURE, OR ERROR-FREE.</li>
+              <li>WARRANTIES REGARDING THE ACCURACY, RELIABILITY, OR QUALITY OF AI-GENERATED CONTENT.</li>
+              <li>WARRANTIES THAT DEFECTS WILL BE CORRECTED.</li>
+            </ul>
+            <p>NO ADVICE OR INFORMATION OBTAINED FROM US OR THROUGH THE SERVICE SHALL CREATE ANY WARRANTY NOT EXPRESSLY STATED IN THESE TERMS.</p>
+            <p><strong>AI Accuracy Disclaimer.</strong> AI-generated content may contain errors. Socrates is an AI-assisted learning tool, not a substitute for professional instruction or authoritative sources.</p>
+          </div>
 
-    <div class="legal-section sr sr-d1">
-      <h3>16. Data Backup & Recovery</h3>
-      <p><strong>Our Backups.</strong> We perform regular automated backups of Service data, including session history and account information, to secure off-site storage. Backups are retained for a minimum of 30 days.</p>
-      <p><strong>Your Responsibility.</strong> You are encouraged to maintain your own records of important learning materials. We are not responsible for data loss resulting from: (a) failure to maintain your own backups; (b) account termination or expiration; (c) errors in your use of the Service; or (d) events outside our reasonable control.</p>
-    </div>
+          <div class="ed-legal-section" id="section-18">
+            <h3>18. Limitation of Liability</h3>
+            <p>TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL TOPODRIVE, ITS AFFILIATES, OFFICERS, DIRECTORS, EMPLOYEES, AGENTS, OR LICENSORS BE LIABLE FOR:</p>
+            <ul>
+              <li>ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, PUNITIVE, OR EXEMPLARY DAMAGES.</li>
+              <li>LOSS OF PROFITS, REVENUE, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES.</li>
+              <li>DAMAGES RELATED TO INABILITY TO USE THE SERVICE, UNAUTHORIZED ACCESS, OR RELIANCE ON AI-GENERATED CONTENT.</li>
+              <li>DOWNTIME, SERVICE INTERRUPTIONS, OR DATA LOSS CAUSED BY THIRD-PARTY LLM PROVIDERS.</li>
+              <li>DAMAGES ARISING FROM FORCE MAJEURE EVENTS.</li>
+            </ul>
+            <p>OUR TOTAL LIABILITY TO YOU FOR ALL CLAIMS SHALL NOT EXCEED THE GREATER OF: (A) THE TOTAL AMOUNT YOU PAID US IN THE 12 MONTHS PRECEDING THE EVENT GIVING RISE TO LIABILITY; OR (B) ONE HUNDRED DOLLARS ($100).</p>
+            <p>THIS LIMITATION APPLIES REGARDLESS OF THE THEORY OF LIABILITY (CONTRACT, TORT, NEGLIGENCE, STRICT LIABILITY, OR OTHERWISE) AND EVEN IF WE WERE ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. SOME JURISDICTIONS DO NOT ALLOW THESE LIMITATIONS, SO THEY MAY NOT APPLY TO YOU.</p>
+          </div>
 
-    <div class="legal-section sr sr-d1">
-      <h3>17. Disclaimer of Warranties</h3>
-      <p>THE SERVICE IS PROVIDED ON AN <strong>"AS IS"</strong> AND <strong>"AS AVAILABLE"</strong> BASIS. TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, TOPODRIVE DISCLAIMS ALL WARRANTIES OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE, INCLUDING BUT NOT LIMITED TO:</p>
-      <ul>
-        <li>IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, QUIET ENJOYMENT, AND NON-INFRINGEMENT.</li>
-        <li>WARRANTIES THAT THE SERVICE WILL MEET YOUR REQUIREMENTS OR BE UNINTERRUPTED, SECURE, OR ERROR-FREE.</li>
-        <li>WARRANTIES REGARDING THE ACCURACY, RELIABILITY, OR QUALITY OF AI-GENERATED CONTENT.</li>
-        <li>WARRANTIES THAT DEFECTS WILL BE CORRECTED.</li>
-      </ul>
-      <p>NO ADVICE OR INFORMATION OBTAINED FROM US OR THROUGH THE SERVICE SHALL CREATE ANY WARRANTY NOT EXPRESSLY STATED IN THESE TERMS.</p>
-      <p><strong>AI Accuracy Disclaimer.</strong> AI-generated content may contain errors. Socrates is an AI-assisted learning tool, not a substitute for professional instruction or authoritative sources.</p>
-    </div>
+          <div class="ed-legal-section" id="section-19">
+            <h3>19. Indemnification</h3>
+            <p>You agree to indemnify, defend, and hold harmless Topodrive, its affiliates, officers, directors, employees, contractors, agents, and licensors from all claims, demands, losses, liabilities, damages, costs, and expenses (including reasonable attorneys' fees) arising out of or relating to:</p>
+            <ul>
+              <li>Your use of the Service in violation of these Terms.</li>
+              <li>Your violation of any applicable law or regulation.</li>
+              <li>Your User Content, including claims that it infringes third-party rights.</li>
+              <li>Your API keys or relationship with third-party LLM providers.</li>
+              <li>Any dispute between you and another user of the Service.</li>
+            </ul>
+            <p>We reserve the right to assume exclusive defense and control of any matter subject to indemnification at your expense, in which case you agree to cooperate.</p>
+          </div>
 
-    <div class="legal-section sr sr-d2">
-      <h3>18. Limitation of Liability</h3>
-      <p>TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL TOPODRIVE, ITS AFFILIATES, OFFICERS, DIRECTORS, EMPLOYEES, AGENTS, OR LICENSORS BE LIABLE FOR:</p>
-      <ul>
-        <li>ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, PUNITIVE, OR EXEMPLARY DAMAGES.</li>
-        <li>LOSS OF PROFITS, REVENUE, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES.</li>
-        <li>DAMAGES RELATED TO INABILITY TO USE THE SERVICE, UNAUTHORIZED ACCESS, OR RELIANCE ON AI-GENERATED CONTENT.</li>
-        <li>DOWNTIME, SERVICE INTERRUPTIONS, OR DATA LOSS CAUSED BY THIRD-PARTY LLM PROVIDERS.</li>
-        <li>DAMAGES ARISING FROM FORCE MAJEURE EVENTS.</li>
-      </ul>
-      <p>OUR TOTAL LIABILITY TO YOU FOR ALL CLAIMS SHALL NOT EXCEED THE GREATER OF: (A) THE TOTAL AMOUNT YOU PAID US IN THE 12 MONTHS PRECEDING THE EVENT GIVING RISE TO LIABILITY; OR (B) ONE HUNDRED DOLLARS ($100).</p>
-      <p>THIS LIMITATION APPLIES REGARDLESS OF THE THEORY OF LIABILITY (CONTRACT, TORT, NEGLIGENCE, STRICT LIABILITY, OR OTHERWISE) AND EVEN IF WE WERE ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. SOME JURISDICTIONS DO NOT ALLOW THESE LIMITATIONS, SO THEY MAY NOT APPLY TO YOU.</p>
-    </div>
+          <div class="ed-legal-section" id="section-20">
+            <h3>20. Termination &amp; Suspension</h3>
+            <p><strong>By You.</strong> Stop using the Service anytime and delete your account via settings. Termination is effective immediately upon deletion.</p>
+            <p><strong>By Us.</strong> We may suspend or terminate your access at any time without prior notice if: (a) you breach these Terms; (b) your conduct could harm other users, third parties, or our business; (c) we are required by law; or (d) we discontinue the Service with reasonable notice where practicable.</p>
+            <p><strong>Effect of Termination.</strong> Upon termination: (a) your license ends immediately; (b) we deactivate your account; (c) we delete or anonymize personal data per our Privacy Policy; and (d) you remain liable for fees incurred before termination. Sections 13, 17, 18, 19, and 21 survive termination.</p>
+          </div>
 
-    <div class="legal-section sr sr-d2">
-      <h3>19. Indemnification</h3>
-      <p>You agree to indemnify, defend, and hold harmless Topodrive, its affiliates, officers, directors, employees, contractors, agents, and licensors from all claims, demands, losses, liabilities, damages, costs, and expenses (including reasonable attorneys' fees) arising out of or relating to:</p>
-      <ul>
-        <li>Your use of the Service in violation of these Terms.</li>
-        <li>Your violation of any applicable law or regulation.</li>
-        <li>Your User Content, including claims that it infringes third-party rights.</li>
-        <li>Your API keys or relationship with third-party LLM providers.</li>
-        <li>Any dispute between you and another user of the Service.</li>
-      </ul>
-      <p>We reserve the right to assume exclusive defense and control of any matter subject to indemnification at your expense, in which case you agree to cooperate.</p>
-    </div>
+          <div class="ed-legal-section" id="section-21">
+            <h3>21. Governing Law &amp; Dispute Resolution</h3>
+            <p><strong>Governing Law.</strong> These Terms are governed by the laws of the People's Republic of China, without regard to conflict of laws principles. The UN Convention on Contracts for the International Sale of Goods does not apply.</p>
+            <p><strong>Informal Resolution.</strong> Before filing any claim, you agree to attempt informal resolution by contacting <a href="mailto:hello@topodrive.top">hello@topodrive.top</a>. We will attempt to resolve within 30 days.</p>
+            <p><strong>Arbitration.</strong> Disputes not resolved informally shall be settled by binding arbitration administered by the China International Economic and Trade Arbitration Commission (CIETAC) in Xi'an, Shaanxi, in English. The arbitrator's decision is final and binding.</p>
+            <p><strong>Class Action Waiver.</strong> You agree to resolve disputes on an individual basis only, and waive any right to participate in a class, consolidated, or representative action against Topodrive.</p>
+            <p><strong>Small Claims.</strong> Either party may bring an individual action in small claims court in Xi'an, Shaanxi, if permitted by applicable law.</p>
+          </div>
 
-    <div class="legal-section sr sr-d2">
-      <h3>20. Termination & Suspension</h3>
-      <p><strong>By You.</strong> Stop using the Service anytime and delete your account via settings. Termination is effective immediately upon deletion.</p>
-      <p><strong>By Us.</strong> We may suspend or terminate your access at any time without prior notice if: (a) you breach these Terms; (b) your conduct could harm other users, third parties, or our business; (c) we are required by law; or (d) we discontinue the Service with reasonable notice where practicable.</p>
-      <p><strong>Effect of Termination.</strong> Upon termination: (a) your license ends immediately; (b) we deactivate your account; (c) we delete or anonymize personal data per our Privacy Policy; and (d) you remain liable for fees incurred before termination. Sections 13, 17, 18, 19, and 21 survive termination.</p>
-    </div>
+          <div class="ed-legal-section" id="section-22">
+            <h3>22. Force Majeure</h3>
+            <p>Neither party shall be liable for failure or delay in performance (other than payment obligations) due to causes beyond reasonable control, including: acts of God, natural disasters, war, terrorism, civil unrest, labor strikes, government actions, internet service provider failures, denial-of-service attacks, pandemics, epidemics, or failure of third-party LLM providers. The affected party shall provide prompt notice and use reasonable efforts to resume performance.</p>
+          </div>
 
-    <div class="legal-section sr sr-d3">
-      <h3>21. Governing Law & Dispute Resolution</h3>
-      <p><strong>Governing Law.</strong> These Terms are governed by the laws of the People's Republic of China, without regard to conflict of laws principles. The UN Convention on Contracts for the International Sale of Goods does not apply.</p>
-      <p><strong>Informal Resolution.</strong> Before filing any claim, you agree to attempt informal resolution by contacting <a href="mailto:hello@topodrive.top">hello@topodrive.top</a>. We will attempt to resolve within 30 days.</p>
-      <p><strong>Arbitration.</strong> Disputes not resolved informally shall be settled by binding arbitration administered by the China International Economic and Trade Arbitration Commission (CIETAC) in Xi'an, Shaanxi, in English. The arbitrator's decision is final and binding.</p>
-      <p><strong>Class Action Waiver.</strong> You agree to resolve disputes on an individual basis only, and waive any right to participate in a class, consolidated, or representative action against Topodrive.</p>
-      <p><strong>Small Claims.</strong> Either party may bring an individual action in small claims court in Xi'an, Shaanxi, if permitted by applicable law.</p>
-    </div>
+          <div class="ed-legal-section" id="section-23">
+            <h3>23. Entire Agreement &amp; Severability</h3>
+            <p><strong>Entire Agreement.</strong> These Terms, together with our Privacy Policy and incorporated policies, constitute the entire agreement between you and Topodrive regarding the Service, superseding all prior agreements and understandings.</p>
+            <p><strong>Severability.</strong> If any provision is held invalid or unenforceable, the remaining provisions continue in full force. The invalid provision shall be modified to the minimum extent necessary to make it enforceable while preserving the original intent.</p>
+            <p><strong>Waiver.</strong> Our failure to enforce any right or provision is not a waiver. No waiver is effective unless in writing and signed by an authorized Topodrive representative.</p>
+            <p><strong>No Partnership.</strong> These Terms do not create a partnership, joint venture, agency, franchise, or employment relationship between you and Topodrive.</p>
+          </div>
 
-    <div class="legal-section sr sr-d3">
-      <h3>22. Force Majeure</h3>
-      <p>Neither party shall be liable for failure or delay in performance (other than payment obligations) due to causes beyond reasonable control, including: acts of God, natural disasters, war, terrorism, civil unrest, labor strikes, government actions, internet service provider failures, denial-of-service attacks, pandemics, epidemics, or failure of third-party LLM providers. The affected party shall provide prompt notice and use reasonable efforts to resume performance.</p>
-    </div>
+          <div class="ed-legal-section" id="section-24">
+            <h3>24. Changes to These Terms</h3>
+            <p>We may modify these Terms at any time. Material changes will be announced via the Service and/or email to your account address. The most recent update date is shown at the top of this page.</p>
+            <p>Changes become effective upon posting unless otherwise stated. Continued use after the effective date constitutes acceptance. If you do not agree, stop using the Service and delete your account before the effective date. For changes requiring your consent under applicable law, we will seek affirmative consent.</p>
+          </div>
 
-    <div class="legal-section sr sr-d3">
-      <h3>23. Entire Agreement & Severability</h3>
-      <p><strong>Entire Agreement.</strong> These Terms, together with our Privacy Policy and incorporated policies, constitute the entire agreement between you and Topodrive regarding the Service, superseding all prior agreements and understandings.</p>
-      <p><strong>Severability.</strong> If any provision is held invalid or unenforceable, the remaining provisions continue in full force. The invalid provision shall be modified to the minimum extent necessary to make it enforceable while preserving the original intent.</p>
-      <p><strong>Waiver.</strong> Our failure to enforce any right or provision is not a waiver. No waiver is effective unless in writing and signed by an authorized Topodrive representative.</p>
-      <p><strong>No Partnership.</strong> These Terms do not create a partnership, joint venture, agency, franchise, or employment relationship between you and Topodrive.</p>
-    </div>
+          <div class="ed-legal-section" id="section-25">
+            <h3>25. Notice &amp; Communication</h3>
+            <p>We may provide notices via: (a) email to your account address; (b) in-app notification; or (c) posting on our website. Electronic communications satisfy any legal requirement that notices be in writing.</p>
+            <p>Send notices to us at <a href="mailto:hello@topodrive.top">hello@topodrive.top</a> or Topodrive, Xi'an, Shaanxi, China. Notices are effective upon confirmed delivery if by email, or three (3) days after mailing if by registered mail.</p>
+          </div>
 
-    <div class="legal-section sr sr-d4">
-      <h3>24. Changes to These Terms</h3>
-      <p>We may modify these Terms at any time. Material changes will be announced via the Service and/or email to your account address. The most recent update date is shown at the top of this page.</p>
-      <p>Changes become effective upon posting unless otherwise stated. Continued use after the effective date constitutes acceptance. If you do not agree, stop using the Service and delete your account before the effective date. For changes requiring your consent under applicable law, we will seek affirmative consent.</p>
-    </div>
+          <div class="ed-legal-section" id="section-26">
+            <h3>26. Contact Information</h3>
+            <p>For questions, concerns, or requests regarding these Terms:</p>
+            <p><strong>Email:</strong> <a href="mailto:hello@topodrive.top">hello@topodrive.top</a><br>
+            <strong>Support:</strong> <a href="mailto:help@addtech.site">help@addtech.site</a><br>
+            <strong>Address:</strong> Topodrive, Xi'an, Shaanxi, China</p>
+          </div>
 
-    <div class="legal-section sr sr-d4">
-      <h3>25. Notice & Communication</h3>
-      <p>We may provide notices via: (a) email to your account address; (b) in-app notification; or (c) posting on our website. Electronic communications satisfy any legal requirement that notices be in writing.</p>
-      <p>Send notices to us at <a href="mailto:hello@topodrive.top">hello@topodrive.top</a> or Topodrive, Xi'an, Shaanxi, China. Notices are effective upon confirmed delivery if by email, or three (3) days after mailing if by registered mail.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="ed-footer">
+    <div class="ed-shell ed-footer-frame">
+      <div class="ed-footer-top">
+        <div class="ed-footer-brand"><a class="ed-brand" href="index">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div>
+        <div class="ed-footer-column"><h2>Product</h2><a href="product">Learning loop</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
+        <div class="ed-footer-column"><h2>Library</h2><a href="announcements">Announcements</a><a href="documents">Documents</a><a href="research">Research</a></div>
+        <div class="ed-footer-column"><h2>Company</h2><a href="about">About</a><a href="contact">Contact</a><a href="guide">Learning guide</a></div>
+        <div class="ed-footer-column"><h2>Elsewhere</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div>
+      </div>
+      <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
     </div>
-
-    <div class="legal-section sr">
-      <h3>26. Contact Information</h3>
-      <p>For questions, concerns, or requests regarding these Terms:</p>
-      <p><strong>Email:</strong> <a href="mailto:hello@topodrive.top">hello@topodrive.top</a><br>
-      <strong>Support:</strong> <a href="mailto:help@addtech.site">help@addtech.site</a><br>
-      <strong>Address:</strong> Topodrive, Xi'an, Shaanxi, China</p>
-    </div>
-
-    <p class="legal-date sr">&copy; 2026 Topodrive. All rights reserved.</p>
-
-  </div>
-</section>
-
-<footer>
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div class="footer-tag"><em>S</em>ocrates</div>
-      <p>An AI-powered Socratic tutor. Learn anything, step by step.</p>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Product</div>
-      <a href="/pricing">Pricing</a>
-      <a href="/guide">Guide</a>
-      <a href="https://app.topodrive.top">App</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Company</div>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Account</div>
-      <a href="/account">My Account</a>
-      <a href="/api-keys">API Keys</a>
-      <a href="/profile">Profile</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Legal</div>
-      <a href="/terms">Terms of Service</a>
-      <a href="/privacy">Privacy Policy</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Support</div>
-      <a href="mailto:help@addtech.site">help@addtech.site</a>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 Topodrive. All rights reserved.</p>
-      <p>Built with care, for learners everywhere.</p>
-      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
-    </div>
-  </div>
-</footer>
-
-</div>
-
-<script>
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) entry.target.classList.add('in');
-  });
-}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-document.querySelectorAll('.sr').forEach(el => observer.observe(el));
-</script>
-<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/\.html$/,'');b.href=p==='/'||p===''?'/zh/':'/zh'+p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","zh")}catch(e){}});})();</script>
+  </footer>
+  <script src="editorial.js?cb=20260814"></script>
 </body>
 </html>

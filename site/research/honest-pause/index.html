@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Why a moment of uncertainty can give an intelligent tutor better material to work with.">
+  <title>The value of an honest pause — Socrates Research</title>
+  <link rel="icon" href="../../favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../editorial.css?cb=20260814">
+  <link rel="stylesheet" href="../../brand.css?cb=20260814">
+</head>
+<body class="ed-site">
+  <a class="ed-skip" href="#main">Skip to content</a>
+
+  <header class="ed-header">
+    <div class="ed-shell">
+      <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
+        <a class="ed-brand" href="../../index" aria-label="Socrates home">SOCRATES</a>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel>
+          <a href="../../research">Research</a>
+          <a href="../../documents">Library</a>
+          <a href="../../about">Company</a>
+          <a href="../../announcements">News</a>
+          <a href="../../zh/index.html">中文</a>
+        </div>
+        <div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="ed-article-hero">
+      <div class="ed-shell ed-article-hero-grid ed-reveal">
+        <div>
+          <p class="ed-kicker">Practice</p>
+          <h1 class="ed-page-title">The value of an honest pause.</h1>
+          <p class="ed-copy-serif" style="margin-top:20px;max-width:48ch">In our sessions, a moment of explicit uncertainty is almost always followed by a sharper question than a moment of fluent confidence.</p>
+        </div>
+        <div class="ed-article-byline">
+          <span><strong>Team</strong> · Socrates Research</span><span class="ed-thread">Practice</span>
+          <span>Jul 11, 2026</span>
+          <span>5 min read</span>
+        </div>
+      </div>
+    </section>
+
+    <article class="ed-article">
+      <p class="lede">The fastest way to make a tutoring session worse is to answer the learner's question too quickly. The second fastest is to never let them notice they were confused in the first place.</p>
+
+      <h2>The pattern we were not looking for</h2>
+      <p>We were studying something else entirely—how the tutor's recall prompts affected long-term retention—and we noticed an unrelated pattern in the transcripts. When a learner wrote the words <em>"I am not sure"</em>, or <em>"wait"</em>, or <em>"let me think"</em>, the next message in the session was almost always a better question than the previous one. Not a slightly better question. A structurally better one.</p>
+      <p>The pattern held across subjects, across confidence levels, and across the model the tutor was running on. It was particularly strong in mathematical subjects, where a moment of explicit uncertainty reliably preceded a request for a worked example or a smaller case.</p>
+
+      <h2>What the pause is doing</h2>
+      <p>Our current interpretation is that the pause is a <em>commitment</em>. The learner has stopped trying to perform understanding and has signalled that they are ready to do the work. The tutor, on receiving that signal, can stop being polite and start being useful. The questions become harder, the examples become smaller, and the conversation shifts from "I am explaining this to you" to "we are working on this together".</p>
+      <p>The same shift does not happen when a learner is uncertain but does not say so. Sessions where the learner is quietly confused tend to produce long, vague, ultimately unsatisfying explanations. The tutor does not know it is confused, so it keeps going.</p>
+
+      <blockquote>An honest pause is the smallest possible commitment to the next question.</blockquote>
+
+      <h2>How the tutor responds now</h2>
+      <p>For the last four months the tutor has treated explicit pauses as a green light for harder questions. It does not ask "do you want to keep going?" or "is this making sense?"—those questions tend to produce polite yeses that hide the real state. Instead, it changes the next move: smaller case, different angle, harder version of the same problem. The pattern is small, but in our logs it produces the largest jump in question quality across an entire session.</p>
+
+      <h2>What we are watching for</h2>
+      <p>The honest pause is also a fragility. We are watching for two failure modes. The first is over-reliance: a learner who learns that "I am not sure" unlocks better responses may start to say it strategically, even when they are not actually uncertain. We have not seen this in the data yet, but it is the kind of behaviour the current system could accidentally teach.</p>
+      <p>The second is the opposite failure: a learner who has internalised the value of the pause, but who is working in a domain where the tutor is confidently wrong. The honest pause only helps when the tutor knows what to do next. In the cases where it does not, we have to design a different path—and we are still working on what that looks like.</p>
+
+      <hr>
+
+      <p class="ed-meta ed-method-note"><span class="ed-method-label">Method note</span>The pause-detection logic was introduced in March 2026 and is the default behaviour of the production tutor. The detection is regex-based and explicitly trigger-only; the tutor does not currently infer uncertainty from tone.</p>
+    </article>
+
+    <nav class="ed-article-foot" aria-label="Article navigation">
+      <div class="ed-shell ed-article-foot-grid">
+        <a href="../explanation-evidence">
+          <span class="ed-meta">← Previous</span>
+          <span class="ed-link-arrow">When a clear explanation becomes evidence</span>
+        </a>
+        <a href="../maps-preserve-path" style="text-align:right">
+          <span class="ed-meta">Next →</span>
+          <span class="ed-link-arrow">Maps that preserve the path</span>
+        </a>
+      </div>
+    </nav>
+  </main>
+
+  <footer class="ed-footer">
+    <div class="ed-shell ed-footer-frame">
+      <div class="ed-footer-top">
+        <div class="ed-footer-brand"><a class="ed-brand" href="../../index">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div>
+        <div class="ed-footer-column"><h2>Product</h2><a href="../../product">Learning loop</a><a href="../../pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
+        <div class="ed-footer-column"><h2>Library</h2><a href="../../announcements">Announcements</a><a href="../../documents">Documents</a><a href="../../research">Research</a></div>
+        <div class="ed-footer-column"><h2>Company</h2><a href="../../about">About</a><a href="../../contact">Contact</a><a href="../../guide">Learning guide</a></div>
+        <div class="ed-footer-column"><h2>Elsewhere</h2><a href="../../zh/index.html">中文</a><a href="../../privacy">Privacy</a><a href="../../terms">Terms</a></div>
+      </div>
+      <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
+    </div>
+  </footer>
+  <script src="../../editorial.js?cb=20260814"></script>
+</body>
+</html>

@@ -1,594 +1,444 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="socrates" data-mode="dark">
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/logo.png">
-<title>Subscribe — Socrates</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
-<link href="/base.css" rel="stylesheet">
-<script>
-!function(){
-  try{
-    var p=localStorage.getItem("socrates-lang");
-    if(!p)return;
-    var c=document.documentElement.lang;
-    var here=window.location.pathname;
-    if(p==="zh"&&c.indexOf("zh")!==0){
-      var target=here.replace(/\.html$/,"");
-      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
-    }else if(p==="en"&&c.indexOf("en")!==0){
-      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
-      window.location.replace(target2==="/"||target2===""?"/":target2);
-    }
-  }catch(e){}
-}();
-</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Subscribe to Socrates and start a more deliberate learning practice.">
+  <title>Subscribe — Socrates</title>
+  <link rel="icon" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="editorial.css?cb=20260814">
+  <link rel="stylesheet" href="brand.css?cb=20260814">
+  <link rel="stylesheet" href="account.css">
+  <style>
+    /* Checkout-specific overrides on top of account.css */
+    .ed-checkout-shell { display: grid; gap: 28px; max-width: 720px; margin: 0 auto; }
+    .ed-card-input { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0; padding: 4px 14px; border: 1px solid var(--ed-line); border-radius: 12px; background: var(--ed-paper); transition: border-color .18s var(--ed-ease), box-shadow .18s var(--ed-ease); }
+    .ed-card-input:focus-within { border-color: var(--ed-clay); box-shadow: 0 0 0 3px rgba(154, 90, 59, .15); }
+    .ed-card-input.is-err { border-color: var(--ed-clay); }
+    .ed-card-input.is-ok { border-color: #6e8155; }
+    .ed-card-input-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px 76px; gap: 8px; align-items: center; padding: 8px 0; }
+    .ed-card-input-row input { border: 0; background: transparent; padding: 6px 0; color: var(--ed-ink); font-family: var(--ed-mono); font-size: 15px; outline: 0; width: 100%; }
+    .ed-card-input-row input#inputExp, .ed-card-input-row input#inputCvc { text-align: center; }
+    .ed-card-brand { display: inline-flex; align-items: center; padding-left: 8px; opacity: .5; transition: opacity .2s var(--ed-ease); }
+    .ed-card-brand.is-on { opacity: 1; }
+    .ed-secure { display: inline-flex; align-items: center; gap: 6px; color: var(--ed-ink-muted); font-size: 12.5px; font-family: var(--ed-mono); letter-spacing: .04em; }
+    .ed-secure svg { color: #6e8155; }
+    .ed-total { display: grid; grid-template-columns: 1fr auto; align-items: baseline; padding: 22px 0; margin-top: 8px; border-top: 1px solid var(--ed-line); }
+    .ed-total-label { color: var(--ed-ink-soft); font-size: 14px; }
+    .ed-total-amount strong { color: var(--ed-ink); font-size: 26px; font-weight: 600; letter-spacing: -.04em; }
+    .ed-total-amount span { color: var(--ed-ink-muted); font-size: 13px; margin-left: 4px; }
+    .ed-submit { width: 100%; min-height: 50px; padding: 0 24px; border: 0; border-radius: 14px; background: var(--ed-ink); color: var(--ed-paper); font-family: var(--ed-sans); font-size: 15px; font-weight: 600; letter-spacing: -.01em; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: background .2s var(--ed-ease), transform .15s var(--ed-ease), box-shadow .2s var(--ed-ease); margin-top: 18px; }
+    .ed-submit:hover:not(:disabled) { background: #000; transform: translateY(-1px); box-shadow: 0 10px 24px rgba(23, 23, 22, .25); }
+    .ed-submit:disabled { opacity: .35; cursor: not-allowed; }
+    .ed-foot { margin: 16px 0 0; color: var(--ed-ink-muted); font-size: 12.5px; text-align: center; line-height: 1.6; }
+    .ed-foot a { color: var(--ed-ink); border-bottom: 1px solid var(--ed-line); }
+    .ed-foot a:hover { color: var(--ed-clay); border-bottom-color: var(--ed-clay); }
+    .ed-guarantee { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; padding: 18px 22px; border: 1px solid var(--ed-line); border-radius: 14px; background: var(--ed-paper-soft); }
+    .ed-guarantee svg { color: var(--ed-clay); flex-shrink: 0; margin-top: 2px; }
+    .ed-guarantee strong { color: var(--ed-ink); font-weight: 600; }
+    .ed-guarantee p { margin: 0; color: var(--ed-ink-soft); font-size: 13.5px; line-height: 1.6; }
+
+    /* Payment overlay */
+    .ed-pay-overlay { position: fixed; inset: 0; z-index: 9998; display: none; align-items: center; justify-content: center; background: rgba(23, 23, 22, .55); padding: 20px; }
+    .ed-pay-overlay.is-open { display: flex; }
+    .ed-pay-card { width: 100%; max-width: 380px; padding: 38px 32px 30px; background: var(--ed-paper); border: 1px solid var(--ed-line); border-radius: var(--ed-radius-md); text-align: center; box-shadow: 0 24px 60px rgba(23, 23, 22, .25); animation: edModalUp .22s var(--ed-ease); }
+    .ed-pay-icon { width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 50%; background: var(--ed-sand); display: inline-flex; align-items: center; justify-content: center; transition: background .3s var(--ed-ease); }
+    .ed-pay-icon.is-success { background: rgba(110, 129, 85, .15); color: #6e8155; }
+    .ed-pay-icon.is-fail { background: rgba(154, 90, 59, .15); color: var(--ed-clay); }
+    .ed-pay-spinner { color: var(--ed-clay); animation: edSpin .8s linear infinite; }
+    .ed-pay-steps { display: grid; gap: 8px; margin-top: 18px; text-align: left; }
+    .ed-pay-step { display: grid; grid-template-columns: 10px minmax(0, 1fr); align-items: center; gap: 10px; color: var(--ed-ink-muted); font-size: 13px; transition: color .35s var(--ed-ease); }
+    .ed-pay-step.is-active { color: var(--ed-ink); }
+    .ed-pay-step.is-done { color: #6e8155; }
+    .ed-pay-step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ed-ink-muted); opacity: .4; transition: opacity .35s var(--ed-ease), background .35s var(--ed-ease), box-shadow .35s var(--ed-ease); }
+    .ed-pay-step.is-active .ed-pay-step-dot { background: var(--ed-clay); opacity: 1; box-shadow: 0 0 0 4px rgba(154, 90, 59, .2); animation: edPulse 1.2s var(--ed-ease) infinite; }
+    .ed-pay-step.is-done .ed-pay-step-dot { background: #6e8155; opacity: 1; }
+    @keyframes edPulse { 0%,100% { box-shadow: 0 0 0 4px rgba(154, 90, 59, .2); } 50% { box-shadow: 0 0 0 8px rgba(154, 90, 59, .05); } }
+    @keyframes edSpin { to { transform: rotate(360deg); } }
+  </style>
 </head>
-<body>
-<div class="bg-grid"></div>
-<div class="page">
+<body class="ed-site">
+  <a class="ed-skip" href="#main">Skip to content</a>
 
-<nav>
-  <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px"><span><em>S</em>ocrates</span></a>
-    <div class="nav-links">
-      <a href="/pricing">Pricing</a>
-      <a href="/guide">Guide</a>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-      <a href="/account">Account</a>
-      <a class="lang-switch">中文</a>
-      <a href="https://app.topodrive.top" class="cta-btn">Start learning</a>
+  <header class="ed-header">
+    <div class="ed-shell">
+      <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
+        <a class="ed-brand" href="index" aria-label="Socrates home">SOCRATES</a>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel>
+          <a href="research">Research</a>
+          <a href="documents">Library</a>
+          <a href="about">Company</a>
+          <a href="announcements">News</a>
+          <a href="zh/index">中文</a>
+        </div>
+        <div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="ed-page-hero ed-app-page-hero">
+      <div class="ed-shell" style="text-align:center;max-width:680px">
+        <p class="ed-kicker ed-reveal">Subscribe</p>
+        <h1 class="ed-page-title ed-app-page-title ed-reveal" style="margin:14px auto 18px">Choose a plan,<br><span class="dim" style="color:var(--ed-clay)">pay monthly.</span></h1>
+        <p class="ed-copy-serif ed-reveal">Cancel any time from your account page. We hold the rate you signed up at for as long as the plan is active.</p>
+      </div>
+    </section>
+
+    <section class="ed-section-tight ed-app-section">
+      <div class="ed-shell">
+        <div class="ed-checkout-shell ed-reveal">
+          <div class="ed-app-card">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">Choose your plan</p>
+                <h2 class="ed-app-card-title">Three honest options.</h2>
+              </div>
+            </header>
+
+            <div class="ed-plans" id="checkoutPlans">
+              <label class="ed-plan" data-plan="riemann" data-price="9">
+                <input type="radio" name="plan" value="riemann" checked>
+                <span class="ed-plan-radio"></span>
+                <div class="ed-plan-info">
+                  <div class="ed-plan-name">Riemann</div>
+                  <div class="ed-plan-desc">For regular learners — 50 sessions, 3 LLM keys, web search.</div>
+                </div>
+                <div class="ed-plan-price"><strong>$9</strong><span>/ month</span></div>
+              </label>
+              <label class="ed-plan" data-plan="descartes" data-price="19">
+                <input type="radio" name="plan" value="descartes">
+                <span class="ed-plan-radio"></span>
+                <div class="ed-plan-info">
+                  <div class="ed-plan-name">Descartes</div>
+                  <div class="ed-plan-desc">For serious students — 200 sessions, 5 LLM keys, exam mode, priority support.</div>
+                </div>
+                <div class="ed-plan-price"><strong>$19</strong><span>/ month</span></div>
+              </label>
+              <label class="ed-plan" data-plan="euclid" data-price="39">
+                <span class="ed-plan-badge">Most popular</span>
+                <input type="radio" name="plan" value="euclid">
+                <span class="ed-plan-radio"></span>
+                <div class="ed-plan-info">
+                  <div class="ed-plan-name">Euclid</div>
+                  <div class="ed-plan-desc">For power users — unlimited sessions, unlimited LLM keys, full toolkit.</div>
+                </div>
+                <div class="ed-plan-price"><strong>$39</strong><span>/ month</span></div>
+              </label>
+            </div>
+          </div>
+
+          <div class="ed-app-card">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">Payment details</p>
+                <h2 class="ed-app-card-title">Card and billing.</h2>
+              </div>
+              <span class="ed-secure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Secured by Stripe</span>
+            </header>
+
+            <div class="ed-field" id="fieldEmail">
+              <label for="inputEmail">Email</label>
+              <input type="email" id="inputEmail" placeholder="you@example.com" autocomplete="email" oninput="validateField('email')">
+              <p class="ed-field-msg ed-msg" id="msgEmail"></p>
+            </div>
+
+            <div class="ed-field" id="fieldCard">
+              <label for="inputCard">Card information</label>
+              <div class="ed-card-input" id="cardInputWrap">
+                <div class="ed-card-input-row">
+                  <input type="text" id="inputCard" placeholder="1234 1234 1234 1234" autocomplete="cc-number" maxlength="19" oninput="formatCard();validateField('card')">
+                  <input type="text" id="inputExp" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp" oninput="formatExp();validateField('exp')">
+                  <input type="text" id="inputCvc" placeholder="CVC" maxlength="4" autocomplete="cc-csc" oninput="validateField('cvc')">
+                </div>
+                <div class="ed-card-brand" id="cardBrand">
+                  <svg viewBox="0 0 48 32" width="34" height="22"><rect width="48" height="32" rx="4" fill="#171716"/><text x="10" y="22" font-family="Arial, sans-serif" font-weight="700" font-size="14" fill="#F4F1E9">VISA</text></svg>
+                </div>
+              </div>
+              <p class="ed-field-msg ed-msg" id="msgCard"></p>
+            </div>
+
+            <div class="ed-field" id="fieldName">
+              <label for="inputName">Name on card</label>
+              <input type="text" id="inputName" placeholder="Full name" autocomplete="cc-name" oninput="validateField('name')">
+              <p class="ed-field-msg ed-msg" id="msgName"></p>
+            </div>
+
+            <div class="ed-field">
+              <label for="inputCountry">Country or region</label>
+              <select id="inputCountry">
+                <option>United States</option>
+                <option>Canada</option>
+                <option>United Kingdom</option>
+                <option>Germany</option>
+                <option>France</option>
+                <option>Australia</option>
+                <option>Japan</option>
+                <option selected>Singapore</option>
+                <option>China</option>
+                <option>Hong Kong</option>
+                <option>Taiwan</option>
+                <option>South Korea</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <div class="ed-total">
+              <div class="ed-total-label">Total due today</div>
+              <div class="ed-total-amount" id="checkoutTotal"><strong>$9</strong><span>.00 USD</span></div>
+            </div>
+
+            <button class="ed-submit" id="checkoutSubmit" onclick="handleCheckout()" disabled>
+              <span>Subscribe to <span id="submitPlanName">Riemann</span></span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+
+            <p class="ed-foot">Your subscription starts today. You will be charged monthly until you cancel. Manage everything from the <a href="account">account page</a>.</p>
+          </div>
+
+          <div class="ed-guarantee ed-reveal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <div>
+              <p><strong>Cancel any time.</strong> No long-term contracts. If you cancel within 14 days of a first paid plan, we will refund the period — write to <a href="mailto:help@addtech.site">help@addtech.site</a>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="ed-pay-overlay" id="paymentOverlay">
+    <div class="ed-pay-card">
+      <div class="ed-pay-icon" id="paymentIcon">
+        <svg class="ed-pay-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="60" stroke-linecap="round"/></svg>
+      </div>
+      <div class="ed-modal-title" id="paymentTitle">Processing payment</div>
+      <div class="ed-modal-msg" id="paymentDesc">Please wait while we process your transaction. Do not close this page.</div>
+      <div class="ed-pay-steps">
+        <div class="ed-pay-step" data-step="1"><span class="ed-pay-step-dot"></span>Validating information</div>
+        <div class="ed-pay-step" data-step="2"><span class="ed-pay-step-dot"></span>Authorising payment</div>
+        <div class="ed-pay-step" data-step="3"><span class="ed-pay-step-dot"></span>Confirming subscription</div>
+      </div>
     </div>
   </div>
-</nav>
 
-<section style="padding:60px 32px 100px">
-  <div class="section-inner" style="max-width:800px">
-    <div class="section-eyebrow sr" style="text-align:center">Subscribe</div>
-    <h1 class="sr sr-d1" style="font-family:var(--font-display);font-size:clamp(28px,4vw,36px);font-weight:300;color:hsl(var(--text-000));text-align:center;margin-bottom:40px;letter-spacing:-.03em">Choose a plan,<br><strong style="font-weight:500;color:hsl(var(--accent-000))">pay monthly</strong></h1>
-
-    <div class="checkout-plans sr sr-d2" id="checkoutPlans">
-      <label class="checkout-plan" data-plan="riemann" data-price="9">
-        <input type="radio" name="plan" value="riemann" checked>
-        <div class="checkout-plan-info">
-          <div class="checkout-plan-name">Riemann</div>
-          <div class="checkout-plan-desc">For regular learners: 50 sessions, 3 LLM keys, web search</div>
-        </div>
-        <div class="checkout-plan-price"><strong>$9</strong><span>/month</span></div>
-      </label>
-      <label class="checkout-plan" data-plan="descartes" data-price="19">
-        <input type="radio" name="plan" value="descartes">
-        <div class="checkout-plan-info">
-          <div class="checkout-plan-name">Descartes</div>
-          <div class="checkout-plan-desc">For serious students: 200 sessions, 5 LLM keys, priority support</div>
-        </div>
-        <div class="checkout-plan-price"><strong>$19</strong><span>/month</span></div>
-      </label>
-      <label class="checkout-plan featured" data-plan="euclid" data-price="39">
-        <input type="radio" name="plan" value="euclid">
-        <div class="checkout-plan-badge">Premium</div>
-        <div class="checkout-plan-info">
-          <div class="checkout-plan-name">Euclid</div>
-          <div class="checkout-plan-desc">For power users: unlimited sessions, unlimited LLM keys, priority support</div>
-        </div>
-        <div class="checkout-plan-price"><strong>$39</strong><span>/month</span></div>
-      </label>
-    </div>
-
-    <!-- Payment card -->
-    <div class="checkout-card sr sr-d3">
-      <div class="checkout-card-header">
-        <div class="checkout-card-title">Payment details</div>
-        <div class="checkout-card-secure">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Secured with Stripe
-        </div>
+  <footer class="ed-footer">
+    <div class="ed-shell ed-footer-frame">
+      <div class="ed-footer-top">
+        <div class="ed-footer-brand"><a class="ed-brand" href="index">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div>
+        <div class="ed-footer-column"><h2>Product</h2><a href="product">Learning loop</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
+        <div class="ed-footer-column"><h2>Account</h2><a href="account">My account</a><a href="api-keys">API keys</a><a href="profile">Profile</a></div>
+        <div class="ed-footer-column"><h2>Library</h2><a href="announcements">Announcements</a><a href="documents">Documents</a><a href="research">Research</a></div>
+        <div class="ed-footer-column"><h2>Elsewhere</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div>
       </div>
-
-      <div class="checkout-field" id="fieldEmail">
-        <label class="checkout-label">Email</label>
-        <input type="email" class="checkout-input" id="inputEmail" placeholder="you@example.com" autocomplete="email" oninput="validateField('email')">
-        <div class="checkout-field-msg" id="msgEmail"></div>
-      </div>
-
-      <div class="checkout-field" id="fieldCard">
-        <label class="checkout-label">Card information</label>
-        <div class="checkout-card-input" id="cardInputWrap">
-          <div class="checkout-card-row">
-            <input type="text" class="checkout-card-field" id="inputCard" placeholder="1234 1234 1234 1234" autocomplete="cc-number" maxlength="19" oninput="formatCard();validateField('card')">
-            <input type="text" class="checkout-card-field" id="inputExp" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp" oninput="formatExp();validateField('exp')">
-            <input type="text" class="checkout-card-field" id="inputCvc" placeholder="CVC" maxlength="4" autocomplete="cc-csc" oninput="validateField('cvc')">
-          </div>
-          <div class="checkout-card-icons" id="cardBrand">
-            <svg viewBox="0 0 48 32" width="24" height="16"><rect width="48" height="32" rx="4" fill="#1A1F36"/><text x="8" y="22" font-family="Arial" font-weight="bold" font-size="14" fill="#FFF">VISA</text></svg>
-          </div>
-        </div>
-        <div class="checkout-field-msg" id="msgCard"></div>
-      </div>
-
-      <div class="checkout-field" id="fieldName">
-        <label class="checkout-label">Name on card</label>
-        <input type="text" class="checkout-input" id="inputName" placeholder="Full name" autocomplete="cc-name" oninput="validateField('name')">
-        <div class="checkout-field-msg" id="msgName"></div>
-      </div>
-
-      <div class="checkout-field">
-        <label class="checkout-label">Country or region</label>
-        <select class="checkout-input checkout-select" id="inputCountry">
-          <option>United States</option>
-          <option>Canada</option>
-          <option>United Kingdom</option>
-          <option>Germany</option>
-          <option>France</option>
-          <option>Australia</option>
-          <option>Japan</option>
-          <option selected>Singapore</option>
-          <option>China</option>
-          <option>Hong Kong</option>
-          <option>Taiwan</option>
-          <option>South Korea</option>
-          <option>Other</option>
-        </select>
-      </div>
-
-      <div class="checkout-total">
-        <div class="checkout-total-label">Total due today</div>
-        <div class="checkout-total-amount" id="checkoutTotal"><strong>$9</strong><span>.00 USD</span></div>
-      </div>
-
-      <!-- Payment status overlay (shown during transaction) -->
-      <div class="payment-overlay hidden" id="paymentOverlay">
-        <div class="payment-card" id="paymentCard">
-          <div class="payment-icon" id="paymentIcon">
-            <svg class="payment-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="60" stroke-linecap="round"/></svg>
-            <svg class="payment-check hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="4 12 9 17 20 6"/></svg>
-            <svg class="payment-x hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 6l12 12M18 6l-12 12"/></svg>
-          </div>
-          <div class="payment-title" id="paymentTitle">Processing payment</div>
-          <div class="payment-desc" id="paymentDesc">Please wait while we process your transaction. Do not close this page.</div>
-          <div class="payment-steps" id="paymentSteps">
-            <div class="payment-step" data-step="1"><span class="ps-dot"></span> Validating information</div>
-            <div class="payment-step" data-step="2"><span class="ps-dot"></span> Authorizing payment</div>
-            <div class="payment-step" data-step="3"><span class="ps-dot"></span> Confirming subscription</div>
-          </div>
-        </div>
-      </div>
-
-      <button class="checkout-submit" id="checkoutSubmit" onclick="handleCheckout()">
-        <span>Subscribe to <span id="submitPlanName">Riemann</span></span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </button>
-
-      <p class="checkout-footnote">Your subscription starts today. You'll be charged monthly until you cancel. Cancel anytime in your profile settings.</p>
+      <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
     </div>
+  </footer>
 
-    <div class="checkout-guarantee sr sr-d4">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      <div>
-        <strong>Cancel anytime.</strong> No long-term contracts. If you cancel, you'll retain access through the end of your billing period.
-      </div>
-    </div>
-  </div>
-</section>
+  <script>
+    /* Reveal */
+    var srObs = new IntersectionObserver(function(e){
+      e.forEach(function(entry){if(entry.isIntersecting)entry.target.classList.add('in')});
+    },{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+    document.querySelectorAll('.ed-reveal').forEach(function(el){srObs.observe(el)});
 
-<footer>
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div class="footer-tag"><em>S</em>ocrates</div>
-      <p>An AI-powered Socratic tutor. Learn anything, step by step.</p>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Product</div>
-      <a href="/pricing">Pricing</a>
-      <a href="/guide">Guide</a>
-      <a href="https://app.topodrive.top">App</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Company</div>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Account</div>
-      <a href="/account">My Account</a>
-      <a href="/api-keys">API Keys</a>
-      <a href="/profile">Profile</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Legal</div>
-      <a href="/terms">Terms of Service</a>
-      <a href="/privacy">Privacy Policy</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Support</div>
-      <a href="mailto:help@addtech.site">help@addtech.site</a>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 Topodrive. All rights reserved.</p>
-      <p>Built with care, for learners everywhere.</p>
-      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
-    </div>
-  </div>
-</footer>
+    /* Mobile menu */
+    document.querySelectorAll('[data-ed-nav]').forEach(function (nav) {
+      var button = nav.querySelector('[data-menu-button]');
+      var panel = nav.querySelector('[data-menu-panel]');
+      if (!button || !panel) return;
+      button.addEventListener('click', function () {
+        var willOpen = !nav.classList.contains('is-open');
+        nav.classList.toggle('is-open', willOpen);
+        button.setAttribute('aria-expanded', String(willOpen));
+        document.body.classList.toggle('ed-menu-open', willOpen);
+      });
+      document.addEventListener('keydown', function (event) { if (event.key === 'Escape') { nav.classList.remove('is-open'); button.setAttribute('aria-expanded', 'false'); document.body.classList.remove('ed-menu-open'); } });
+    });
 
-</div>
+    var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    function $(id) { return document.getElementById(id); }
 
-<style>
-.checkout-plans{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
-.checkout-plan{display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:12px;border:1.5px solid hsl(var(--border-300)/0.12);background:hsl(var(--bg-200));cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s;position:relative}
-.checkout-plan:hover{border-color:hsl(var(--border-200)/0.3);background:hsl(var(--bg-000))}
-.checkout-plan:has(input:checked){border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--bg-000));box-shadow:0 0 0 1px hsl(var(--accent-000)/0.2),0 4px 16px hsl(var(--accent-000)/0.06)}
-.checkout-plan input{position:absolute;opacity:0}
-.checkout-plan input:checked + .checkout-plan-info .checkout-plan-name{color:hsl(var(--accent-000))}
-.checkout-plan.featured{border-color:hsl(var(--accent-000)/0.25)}
-.checkout-plan-badge{position:absolute;top:-7px;right:20px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;padding:2px 10px;border-radius:4px;background:hsl(var(--accent-000));color:hsl(var(--bg-400))}
-.checkout-plan-info{flex:1;min-width:0}
-.checkout-plan-name{font-family:var(--font-display);font-size:17px;font-weight:500;color:hsl(var(--text-000));margin-bottom:2px;transition:color .2s;letter-spacing:-.01em}
-.checkout-plan-desc{font-size:12px;color:hsl(var(--text-400));line-height:1.4}
-.checkout-plan-price{text-align:right;flex-shrink:0}
-.checkout-plan-price strong{font-size:20px;font-weight:500;color:hsl(var(--text-000))}
-.checkout-plan-price span{font-size:13px;color:hsl(var(--text-500));margin-left:2px}
-
-.checkout-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.12);border-radius:16px;padding:28px 32px 32px;box-shadow:0 2px 16px hsl(var(--always-black)/0.12)}
-.checkout-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
-.checkout-card-title{font-size:15px;font-weight:600;color:hsl(var(--text-100))}
-.checkout-card-secure{display:flex;align-items:center;gap:6px;font-size:12px;color:hsl(145 50% 60%)}
-.checkout-card-input{display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));transition:border-color .15s,box-shadow .15s}
-.checkout-card-input:focus-within{border-color:hsl(var(--accent-000)/0.4);box-shadow:0 0 0 1px hsl(var(--accent-000)/0.1)}
-.checkout-card-input.err{border-color:hsl(0 60% 50%/0.5);box-shadow:0 0 0 1px hsl(0 60% 50%/0.15)}
-.checkout-card-input.ok{border-color:hsl(145 50% 45%/0.5)}
-.checkout-card-row{display:flex;align-items:center;gap:8px;flex:1}
-.checkout-card-field{width:0;flex:1;border:none;outline:none;background:transparent;color:hsl(var(--text-100));font-family:var(--font-mono);font-size:15px;min-width:0;letter-spacing:0}
-.checkout-card-field#inputExp{max-width:84px;text-align:center}
-.checkout-card-field#inputCvc{max-width:60px;text-align:center}
-.checkout-card-icons{display:flex;gap:4px;flex-shrink:0;opacity:0.4;transition:opacity .3s}
-.checkout-card-icons.show{opacity:1}
-.checkout-field{margin-bottom:18px}
-.checkout-label{display:block;font-size:12px;font-weight:500;color:hsl(var(--text-400));margin-bottom:6px;letter-spacing:.02em}
-.checkout-input{display:block;width:100%;padding:10px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:var(--font-sans);outline:none;transition:border-color .15s,box-shadow .15s;letter-spacing:0}
-.checkout-input:focus{border-color:hsl(var(--accent-000)/0.4);box-shadow:0 0 0 1px hsl(var(--accent-000)/0.1)}
-.checkout-input::placeholder{color:hsl(var(--text-500))}
-.checkout-input.err{border-color:hsl(0 60% 50%/0.5);box-shadow:0 0 0 1px hsl(0 60% 50%/0.15)}
-.checkout-input.ok{border-color:hsl(145 50% 45%/0.5)}
-.checkout-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
-.checkout-field-msg{font-size:12px;min-height:18px;line-height:1.4;margin-top:4px;transition:color .15s}
-.checkout-field-msg.ok{color:hsl(145 50% 55%)}
-.checkout-field-msg.err{color:hsl(0 60% 65%)}
-
-.checkout-total{display:flex;align-items:center;justify-content:space-between;padding:16px 0;margin-top:8px;border-top:0.5px solid hsl(var(--border-300)/0.08)}
-.checkout-total-label{font-size:14px;color:hsl(var(--text-300))}
-.checkout-total-amount strong{font-size:22px;font-weight:500;color:hsl(var(--text-000))}
-.checkout-total-amount span{font-size:14px;color:hsl(var(--text-500));margin-left:4px}
-
-.checkout-submit{width:100%;padding:14px;border-radius:12px;border:none;font-size:15px;font-weight:600;color:hsl(var(--oncolor-100));background:linear-gradient(135deg,hsl(var(--accent-000)),hsl(var(--brand-100)));cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s,transform .1s,box-shadow .2s,background .3s;font-family:var(--font-sans);margin-top:16px;position:relative}
-.checkout-submit:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 24px hsl(var(--accent-000)/0.3)}
-.checkout-submit:active{transform:translateY(0)}
-.checkout-submit:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
-.checkout-footnote{font-size:12px;color:hsl(var(--text-500));text-align:center;margin-top:14px;line-height:1.5}
-
-/* Payment overlay */
-.payment-overlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:hsl(var(--always-black)/0.65);backdrop-filter:blur(4px);animation:fadeIn .25s}
-.payment-overlay.hidden{display:none}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.payment-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:20px;padding:40px 36px 32px;width:90%;max-width:380px;text-align:center;box-shadow:0 12px 48px hsl(var(--always-black)/0.5);animation:paySlideUp .35s cubic-bezier(0.16,1,0.3,1)}
-@keyframes paySlideUp{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-.payment-icon{width:56px;height:56px;margin:0 auto 20px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .3s}
-.payment-icon.processing{background:hsl(var(--accent-000)/0.12)}
-.payment-icon.success{background:hsl(145 50% 45%/0.15)}
-.payment-icon.fail{background:hsl(0 60% 50%/0.15)}
-.payment-icon svg{width:28px;height:28px}
-.payment-icon .payment-spinner{color:hsl(var(--accent-000));animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.payment-icon .payment-check{color:hsl(145 50% 50%)}
-.payment-icon .payment-x{color:hsl(0 60% 55%)}
-.payment-icon svg.hidden{display:none}
-.payment-title{font-size:17px;font-weight:600;color:hsl(var(--text-000));margin-bottom:6px}
-.payment-desc{font-size:13px;color:hsl(var(--text-400));line-height:1.5;margin-bottom:20px}
-.payment-steps{display:flex;flex-direction:column;gap:8px;text-align:left}
-.payment-step{display:flex;align-items:center;gap:10px;font-size:13px;color:hsl(var(--text-500));transition:color .35s}
-.payment-step.active{color:hsl(var(--text-100))}
-.payment-step.done{color:hsl(145 50% 55%)}
-.ps-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:hsl(var(--text-500)/0.3);transition:background .35s,box-shadow .35s}
-.payment-step.active .ps-dot{background:hsl(var(--accent-000));box-shadow:0 0 0 3px hsl(var(--accent-000)/0.2);animation:pulse 1.2s ease-in-out infinite}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 3px hsl(var(--accent-000)/0.2)}50%{box-shadow:0 0 0 6px hsl(var(--accent-000)/0.05)}}
-.payment-step.done .ps-dot{background:hsl(145 50% 50%);box-shadow:0 0 0 0 transparent}
-.payment-step.done::after{content:'';margin-left:auto;display:inline-block;width:11px;height:11px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z' fill='%2338b05e'/%3E%3C/svg%3E") center/contain no-repeat}
-
-.checkout-guarantee{display:flex;align-items:flex-start;gap:10px;margin-top:20px;padding:16px 20px;border-radius:12px;background:hsl(var(--bg-200));font-size:13px;color:hsl(var(--text-400));line-height:1.6}
-.checkout-guarantee svg{flex-shrink:0;margin-top:2px;color:hsl(var(--accent-000)/0.6)}
-.checkout-guarantee strong{color:hsl(var(--text-100))}
-
-@media(max-width:720px){
-  .checkout-card{padding:20px}
-  .checkout-card-row{gap:4px}
-  .checkout-card-field#inputExp{max-width:60px}
-  .checkout-card-field#inputCvc{max-width:48px}
-  .checkout-plan-desc{display:none}
-}
-</style>
-
-<script>
-/* ── Helpers ──────────────────────────────────────────────── */
-var EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-function $(id){return document.getElementById(id)}
-
-/* Luhn check (card number validation) */
-function luhnOk(num){
-  var sum=0,alt=false,i=num.length;
-  while(i--){
-    var d=parseInt(num[i],10);
-    if(alt){d*=2;if(d>9)d-=9}
-    sum+=d;alt=!alt
-  }
-  return sum%10===0;
-}
-
-/* Card brand detection */
-function detectBrand(num){
-  var c=num.replace(/\s/g,'');
-  if(/^4/.test(c))return'VISA';
-  if(/^5[1-5]/.test(c))return'MC';
-  if(/^3[47]/.test(c))return'AMEX';
-  if(/^6(?:011|5)/.test(c))return'DISC';
-  return'';
-}
-
-function brandSvg(b){
-  var svgs={VISA:'<svg viewBox="0 0 48 32" width="24" height="16"><rect width="48" height="32" rx="4" fill="#1A1F36"/><text x="8" y="22" font-family="Arial" font-weight="bold" font-size="14" fill="#FFF">VISA</text></svg>',
-  MC:'<svg viewBox="0 0 48 32" width="24" height="16"><rect width="48" height="32" rx="4" fill="#1A1F36"/><circle cx="17" cy="16" r="8" fill="#EB001B" opacity=".9"/><circle cx="25" cy="16" r="8" fill="#F79E1B" opacity=".9"/><circle cx="21" cy="16" r="5" fill="#FF5F00" opacity=".8"/></svg>',
-  AMEX:'<svg viewBox="0 0 48 32" width="24" height="16"><rect width="48" height="32" rx="4" fill="#1A1F36"/><text x="2" y="20" font-family="Arial" font-weight="bold" font-size="10" fill="#FFF">AMEX</text></svg>',
-  DISC:'<svg viewBox="0 0 48 32" width="24" height="16"><rect width="48" height="32" rx="4" fill="#1A1F36"/><text x="2" y="20" font-family="Arial" font-weight="bold" font-size="10" fill="#FFF">DISC</text></svg>'};
-  return svgs[b]||svgs.VISA;
-}
-
-/* ── Card number formatting ───────────────────────────────── */
-function formatCard(){
-  var el=$('inputCard');
-  var raw=el.value.replace(/\D/g,'').slice(0,16);
-  var parts=[];
-  for(var i=0;i<raw.length;i+=4)parts.push(raw.slice(i,i+4));
-  el.value=parts.join(' ');
-  var brand=detectBrand(raw);
-  var icon=$('cardBrand');
-  if(brand){icon.innerHTML=brandSvg(brand);icon.classList.add('show')}
-  else{icon.innerHTML=brandSvg('VISA');icon.classList.remove('show')}
-}
-
-/* ── Expiry formatting ────────────────────────────────────── */
-function formatExp(){
-  var el=$('inputExp');
-  var raw=el.value.replace(/\D/g,'').slice(0,4);
-  if(raw.length>=3)el.value=raw.slice(0,2)+' / '+raw.slice(2);
-  else el.value=raw;
-}
-
-/* ── Validation ────────────────────────────────────────────── */
-var validation={email:false,card:false,exp:false,cvc:false,name:false};
-
-function validateField(field){
-  var ok=false,msg='';
-  switch(field){
-    case'email':{
-      var v=$('inputEmail').value.trim();
-      if(!v){msg='Email is required'}else if(!EMAIL_RE.test(v)){msg='Invalid email format'}
-      else{ok=true}
-      break;
+    function luhnOk(num) {
+      var sum = 0, alt = false, i = num.length;
+      while (i--) { var d = parseInt(num[i], 10); if (alt) { d *= 2; if (d > 9) d -= 9; } sum += d; alt = !alt; }
+      return sum % 10 === 0;
     }
-    case'card':{
-      var v=$('inputCard').value.replace(/\s/g,'');
-      if(!v){msg='Card number is required'}
-      else if(v.length<13||v.length>16){msg='Card number should be 13-16 digits'}
-      else if(!luhnOk(v)){msg='Invalid card number (failed checksum)'}
-      else{ok=true}
-      break;
+    function detectBrand(num) {
+      var c = num.replace(/\s/g, '');
+      if (/^4/.test(c)) return 'VISA';
+      if (/^5[1-5]/.test(c)) return 'MC';
+      if (/^3[47]/.test(c)) return 'AMEX';
+      if (/^6(?:011|5)/.test(c)) return 'DISC';
+      return '';
     }
-    case'exp':{
-      var v=$('inputExp').value.replace(/\s|\//g,'');
-      if(!v||v.length<4){msg='Expiry is required (MMYY)'}
-      else{
-        var m=parseInt(v.slice(0,2),10),y=parseInt(v.slice(2),10)+2000;
-        var now=new Date();
-        var exp=new Date(y,m,1);
-        if(m<1||m>12){msg='Invalid month'}
-        else if(exp<now){msg='Card has expired'}
-        else{ok=true}
-      }
-      break;
+    function brandSvg(b) {
+      var svgs = {
+        VISA: '<svg viewBox="0 0 48 32" width="34" height="22"><rect width="48" height="32" rx="4" fill="#171716"/><text x="10" y="22" font-family="Arial, sans-serif" font-weight="700" font-size="14" fill="#F4F1E9">VISA</text></svg>',
+        MC:   '<svg viewBox="0 0 48 32" width="34" height="22"><rect width="48" height="32" rx="4" fill="#171716"/><circle cx="17" cy="16" r="8" fill="#EB001B" opacity=".9"/><circle cx="25" cy="16" r="8" fill="#F79E1B" opacity=".9"/><circle cx="21" cy="16" r="5" fill="#FF5F00" opacity=".8"/></svg>',
+        AMEX: '<svg viewBox="0 0 48 32" width="34" height="22"><rect width="48" height="32" rx="4" fill="#171716"/><text x="4" y="20" font-family="Arial, sans-serif" font-weight="700" font-size="10" fill="#F4F1E9">AMEX</text></svg>',
+        DISC: '<svg viewBox="0 0 48 32" width="34" height="22"><rect width="48" height="32" rx="4" fill="#171716"/><text x="4" y="20" font-family="Arial, sans-serif" font-weight="700" font-size="10" fill="#F4F1E9">DISC</text></svg>'
+      };
+      return svgs[b] || svgs.VISA;
     }
-    case'cvc':{
-      var v=$('inputCvc').value.trim();
-      if(!v){msg='CVC is required'}
-      else if(!/^\d{3,4}$/.test(v)){msg='CVC must be 3-4 digits'}
-      else{ok=true}
-      break;
+    function formatCard() {
+      var el = $('inputCard');
+      var raw = el.value.replace(/\D/g, '').slice(0, 16);
+      var parts = [];
+      for (var i = 0; i < raw.length; i += 4) parts.push(raw.slice(i, i + 4));
+      el.value = parts.join(' ');
+      var brand = detectBrand(raw);
+      var icon = $('cardBrand');
+      if (brand) { icon.innerHTML = brandSvg(brand); icon.classList.add('is-on'); }
+      else { icon.innerHTML = brandSvg('VISA'); icon.classList.remove('is-on'); }
     }
-    case'name':{
-      var v=$('inputName').value.trim();
-      if(!v){msg='Name is required'}
-      else if(v.length<2){msg='Enter full name'}
-      else{ok=true}
-      break;
+    function formatExp() {
+      var el = $('inputExp');
+      var raw = el.value.replace(/\D/g, '').slice(0, 4);
+      if (raw.length >= 3) el.value = raw.slice(0, 2) + ' / ' + raw.slice(2); else el.value = raw;
     }
-  }
-  validation[field]=ok;
-  /* Update field styling */
-  var inputMap={email:'inputEmail',card:'inputCard',exp:'inputExp',cvc:'inputCvc',name:'inputName'};
-  var msgMap={email:'msgEmail',card:'msgCard',exp:'msgCard',cvc:'msgCard',name:'msgName'};
-  var fieldMap={email:'fieldEmail',card:'fieldCard',name:'fieldName'};
-  var inp=$('inputMap[field]')||$(inputMap[field]);
-  var msgEl=$(msgMap[field]);
-  if(msgEl){
-    msgEl.textContent=msg;
-    msgEl.className='checkout-field-msg '+(ok?'ok':(msg?'err':''));
-  }
-  if(field==='card'||field==='exp'||field==='cvc'){
-    var wrap=$('cardInputWrap');
-    if(!ok && msg){wrap.classList.add('err');wrap.classList.remove('ok')}
-    else if(ok){wrap.classList.remove('err');wrap.classList.add('ok')}
-    else{wrap.classList.remove('err','ok')}
-  } else if(inp){
-    inp.classList.toggle('err',!ok && !!msg);
-    inp.classList.toggle('ok',ok);
-  }
-  /* Clear msgCard when all three card fields are ok */
-  if(field==='card'||field==='exp'||field==='cvc'){
-    var allCardOk=validation.card&&validation.exp&&validation.cvc;
-    $('msgCard').textContent=allCardOk?'':$('msgCard').textContent;
-    if(allCardOk){$('msgCard').className='checkout-field-msg ok';$('cardInputWrap').classList.remove('err')}
-  }
-  updateSubmitBtn();
-}
-
-function allValid(){
-  return validation.email&&validation.card&&validation.exp&&validation.cvc&&validation.name;
-}
-
-function updateSubmitBtn(){
-  var btn=$('checkoutSubmit');
-  if(allValid()){btn.disabled=false;btn.style.opacity='1'}
-  else{btn.disabled=true;btn.style.opacity='0.5'}
-}
-
-/* ── Initialise card number (trigger format + brand) ──────── */
-formatCard();
-/* Disable submit until all valid */
-updateSubmitBtn();
-
-/* ── Plan selection: update total ──────────────────────────── */
-document.querySelectorAll('.checkout-plan input').forEach(function(r){
-  r.addEventListener('change',function(){
-    var label=this.closest('.checkout-plan');
-    var price=label.getAttribute('data-price');
-    var name=label.querySelector('.checkout-plan-name').textContent;
-    $('checkoutTotal').innerHTML='<strong>$'+price+'</strong><span>.00 USD</span>';
-    $('submitPlanName').textContent=name;
-  });
-});
-var checked=document.querySelector('.checkout-plan input:checked');
-if(checked){
-  var e=new Event('change');
-  checked.dispatchEvent(e);
-}
-
-/* ── Plan from URL ──────────────────────────────────────── */
-var planParam=new URLSearchParams(location.search).get('plan');
-if(planParam){
-  var radio=document.querySelector('.checkout-plan input[value="'+planParam+'"]');
-  if(radio){radio.checked=true;radio.dispatchEvent(new Event('change'))}
-}
-
-/* ── Transaction animation ─────────────────────────────────── */
-function stepDelay(n){return 300+n*800}
-
-function handleCheckout(){
-  if(!allValid())return;
-  /* Disable the form */
-  $('checkoutSubmit').disabled=true;
-  $('checkoutSubmit').innerHTML='<span class="processing-text"><span class="dot-pulse"></span> Processing</span>';
-
-  /* Show overlay */
-  var overlay=$('paymentOverlay');
-  overlay.classList.remove('hidden');
-
-  /* Animate steps */
-  var steps=[1,2,3];
-  var totalDelay=0;
-  var success=true;
-
-  steps.forEach(function(s,i){
-    setTimeout(function(){
-      var el=document.querySelector('.payment-step[data-step="'+s+'"]');
-      if(el){el.classList.remove('active');el.classList.add('done')}
-      /* Activate next step */
-      var next=document.querySelector('.payment-step[data-step="'+(s+1)+'"]');
-      if(next)next.classList.add('active');
-    },stepDelay(i));
-  });
-
-  /* After all steps complete — show result */
-  setTimeout(function(){
-    var icon=$('paymentIcon');
-    var title=$('paymentTitle');
-    var desc=$('paymentDesc');
-    var spinner=icon.querySelector('.payment-spinner');
-    var check=icon.querySelector('.payment-check');
-    var xMark=icon.querySelector('.payment-x');
-
-    if(success){
-      icon.classList.remove('processing');
-      icon.classList.add('success');
-      spinner.classList.add('hidden');
-      check.classList.remove('hidden');
-      title.textContent='Subscription confirmed!';
-      desc.textContent='Welcome to '+$('submitPlanName').textContent+'. Redirecting to your dashboard…';
-
-      /* Update submit button */
-      var btn=$('checkoutSubmit');
-      btn.innerHTML='<span><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:4px"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"/></svg> Subscribed to '+$('submitPlanName').textContent+'</span>';
-      btn.style.background='hsl(145 50% 45%)';
-      btn.disabled=false;
-
-      /* Redirect to app */
-      setTimeout(function(){
-        window.location.href='https://app.topodrive.top';
-      },2000);
-    } else {
-      icon.classList.remove('processing');
-      icon.classList.add('fail');
-      spinner.classList.add('hidden');
-      xMark.classList.remove('hidden');
-      title.textContent='Payment declined';
-      desc.textContent='Your card was declined. Please check your details and try again.';
-
-      setTimeout(function(){
-        overlay.classList.add('hidden');
-        $('checkoutSubmit').disabled=false;
-        $('checkoutSubmit').innerHTML='<span>Try again</span>';
-      },3000);
-    }
-  },stepDelay(2)+1600);
-
-  /* Activate step 1 */
-  setTimeout(function(){
-    document.querySelector('.payment-step[data-step="1"]').classList.add('active');
-  },200);
-}
-
-/* ── IP geolocation — auto-fill country ─────────────────── */
-var COUNTRY_MAP={
-  US:'United States',CA:'Canada',GB:'United Kingdom',DE:'Germany',
-  FR:'France',AU:'Australia',JP:'Japan',SG:'Singapore',
-  CN:'China',HK:'Hong Kong',TW:'Taiwan',KR:'South Korea'
-};
-
-function autoFillCountry(){
-  var sel=$('inputCountry');
-  if(!sel)return;
-  fetch('https://ipapi.co/json/',{signal:AbortSignal.timeout(5000)})
-    .then(function(r){return r.json()})
-    .then(function(d){
-      var name=COUNTRY_MAP[d.country_code];
-      if(!name)return;
-      for(var i=0;i<sel.options.length;i++){
-        if(sel.options[i].textContent===name){
-          sel.options[i].selected=true;
+    var validation = { email: false, card: false, exp: false, cvc: false, name: false };
+    function validateField(field) {
+      var ok = false, msg = '';
+      switch (field) {
+        case 'email': {
+          var v = $('inputEmail').value.trim();
+          if (!v) msg = 'Email is required';
+          else if (!EMAIL_RE.test(v)) msg = 'Invalid email format';
+          else ok = true;
+          break;
+        }
+        case 'card': {
+          var v = $('inputCard').value.replace(/\s/g, '');
+          if (!v) msg = 'Card number is required';
+          else if (v.length < 13 || v.length > 16) msg = 'Card number should be 13–16 digits';
+          else if (!luhnOk(v)) msg = 'Invalid card number (failed checksum)';
+          else ok = true;
+          break;
+        }
+        case 'exp': {
+          var v = $('inputExp').value.replace(/\s|\//g, '');
+          if (!v || v.length < 4) msg = 'Expiry is required (MMYY)';
+          else { var m = parseInt(v.slice(0, 2), 10); var y = parseInt(v.slice(2), 10) + 2000; var exp = new Date(y, m, 1); if (m < 1 || m > 12) msg = 'Invalid month'; else if (exp < new Date()) msg = 'Card has expired'; else ok = true; }
+          break;
+        }
+        case 'cvc': {
+          var v = $('inputCvc').value.trim();
+          if (!v) msg = 'CVC is required';
+          else if (!/^\d{3,4}$/.test(v)) msg = 'CVC must be 3–4 digits';
+          else ok = true;
+          break;
+        }
+        case 'name': {
+          var v = $('inputName').value.trim();
+          if (!v) msg = 'Name is required';
+          else if (v.length < 2) msg = 'Enter full name';
+          else ok = true;
           break;
         }
       }
-    })
-    .catch(function(){/* keep default */});
-}
-autoFillCountry();
+      validation[field] = ok;
+      var inputMap = { email: 'inputEmail', card: 'inputCard', exp: 'inputExp', cvc: 'inputCvc', name: 'inputName' };
+      var msgMap = { email: 'msgEmail', card: 'msgCard', exp: 'msgCard', cvc: 'msgCard', name: 'msgName' };
+      var inp = $(inputMap[field]);
+      var msgEl = $(msgMap[field]);
+      if (msgEl) {
+        msgEl.textContent = msg;
+        msgEl.className = 'ed-field-msg ed-msg ' + (ok ? 'is-ok' : (msg ? 'is-err' : ''));
+      }
+      if (field === 'card' || field === 'exp' || field === 'cvc') {
+        var wrap = $('cardInputWrap');
+        if (!ok && msg) { wrap.classList.add('is-err'); wrap.classList.remove('is-ok'); }
+        else if (ok) { wrap.classList.remove('is-err'); wrap.classList.add('is-ok'); }
+        else { wrap.classList.remove('is-err', 'is-ok'); }
+      } else if (inp) {
+        inp.classList.toggle('is-err', !ok && !!msg);
+        inp.classList.toggle('is-ok', ok);
+      }
+      updateSubmitBtn();
+    }
+    function allValid() { return validation.email && validation.card && validation.exp && validation.cvc && validation.name; }
+    function updateSubmitBtn() { var btn = $('checkoutSubmit'); btn.disabled = !allValid(); }
 
-/* ── Scroll-reveal ──────────────────────────────────────── */
-var srObs=new IntersectionObserver(function(entries){
-  entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in')});
-},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
-document.querySelectorAll('.sr').forEach(function(el){srObs.observe(el)});
-</script>
-<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/\.html$/,'');b.href=p==='/'||p===''?'/zh/':'/zh'+p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","zh")}catch(e){}});})();</script>
+    formatCard();
+    updateSubmitBtn();
+
+    document.querySelectorAll('.ed-plan input').forEach(function(r){
+      r.addEventListener('change', function(){
+        var label = this.closest('.ed-plan');
+        var price = label.getAttribute('data-price');
+        var name = label.querySelector('.ed-plan-name').textContent;
+        $('checkoutTotal').innerHTML = '<strong>$' + price + '</strong><span>.00 USD</span>';
+        $('submitPlanName').textContent = name;
+      });
+    });
+    var checked = document.querySelector('.ed-plan input:checked');
+    if (checked) checked.dispatchEvent(new Event('change'));
+
+    var planParam = new URLSearchParams(location.search).get('plan');
+    if (planParam) {
+      var radio = document.querySelector('.ed-plan input[value="' + planParam + '"]');
+      if (radio) { radio.checked = true; radio.dispatchEvent(new Event('change')); }
+    }
+
+    function stepDelay(n) { return 300 + n * 800; }
+    function handleCheckout() {
+      if (!allValid()) return;
+      var btn = $('checkoutSubmit');
+      btn.disabled = true;
+      btn.innerHTML = '<span>Processing…</span>';
+
+      var overlay = $('paymentOverlay');
+      overlay.classList.add('is-open');
+
+      var steps = [1, 2, 3];
+      var success = true;
+
+      steps.forEach(function(s, i) {
+        setTimeout(function() {
+          var el = document.querySelector('.ed-pay-step[data-step="' + s + '"]');
+          if (el) { el.classList.remove('is-active'); el.classList.add('is-done'); }
+          var next = document.querySelector('.ed-pay-step[data-step="' + (s + 1) + '"]');
+          if (next) next.classList.add('is-active');
+        }, stepDelay(i));
+      });
+
+      setTimeout(function() {
+        var icon = $('paymentIcon');
+        var title = $('paymentTitle');
+        var desc = $('paymentDesc');
+        icon.querySelector('.ed-pay-spinner').style.display = 'none';
+        if (success) {
+          icon.classList.add('is-success');
+          icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28" height="28"><polyline points="4 12 9 17 20 6"/></svg>';
+          title.textContent = 'Subscription confirmed';
+          desc.textContent = 'Welcome to ' + $('submitPlanName').textContent + '. Redirecting to your dashboard…';
+          btn.innerHTML = '<span>Subscribed to ' + $('submitPlanName').textContent + '</span><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 8 7 12 13 4"/></svg>';
+        } else {
+          icon.classList.add('is-fail');
+          icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28" height="28"><path d="M6 6l12 12M18 6l-12 12"/></svg>';
+          title.textContent = 'Payment failed';
+          desc.textContent = 'Please check your card details and try again.';
+          btn.disabled = false;
+          btn.innerHTML = '<span>Try again</span>';
+        }
+      }, stepDelay(2) + 700);
+    }
+  </script>
+
+  <style>
+    /* Field-msg states for checkout */
+    .ed-field-msg { min-height: 18px; line-height: 1.4; font-size: 12.5px; transition: color .15s var(--ed-ease); margin: 4px 0 0; }
+    .ed-field-msg.is-ok { color: #6e8155; }
+    .ed-field-msg.is-err { color: var(--ed-clay); }
+    .ed-field input.is-err { border-color: var(--ed-clay); }
+    .ed-field input.is-ok { border-color: #6e8155; }
+    .ed-field select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2377716a' stroke-width='1.6'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer; }
+    .dim { color: var(--ed-ink-muted); }
+  </style>
 </body>
 </html>

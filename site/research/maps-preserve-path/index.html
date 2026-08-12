@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A field note on showing relationships without turning a living subject into a static diagram.">
+  <title>Maps that preserve the path — Socrates Research</title>
+  <link rel="icon" href="../../favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../editorial.css?cb=20260814">
+  <link rel="stylesheet" href="../../brand.css?cb=20260814">
+</head>
+<body class="ed-site">
+  <a class="ed-skip" href="#main">Skip to content</a>
+
+  <header class="ed-header">
+    <div class="ed-shell">
+      <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
+        <a class="ed-brand" href="../../index" aria-label="Socrates home">SOCRATES</a>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel>
+          <a href="../../research">Research</a>
+          <a href="../../documents">Library</a>
+          <a href="../../about">Company</a>
+          <a href="../../announcements">News</a>
+          <a href="../../zh/index.html">中文</a>
+        </div>
+        <div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="ed-article-hero">
+      <div class="ed-shell ed-article-hero-grid ed-reveal">
+        <div>
+          <p class="ed-kicker">Knowledge mapping</p>
+          <h1 class="ed-page-title">Maps that preserve the path.</h1>
+          <p class="ed-copy-serif" style="margin-top:20px;max-width:48ch">A knowledge map is only useful if it tells you not just what you know, but how you came to know it. Otherwise it is a summary, and summaries age badly.</p>
+        </div>
+        <div class="ed-article-byline">
+          <span><strong>Team</strong> · Socrates Research</span><span class="ed-thread">Knowledge mapping</span>
+          <span>Jun 24, 2026</span>
+          <span>8 min read</span>
+        </div>
+      </div>
+    </section>
+
+    <article class="ed-article">
+      <p class="lede">The first version of our knowledge map looked like a real map. Nodes, edges, clusters. It was beautiful, it was technically impressive, and after six months of use we had to delete the feature.</p>
+
+      <h2>The map that did not survive</h2>
+      <p>The map showed every concept a learner had touched. The edges were weighted by how often the concepts appeared together in sessions. The clusters were computed automatically from the co-occurrence graph. The visualisation was a force-directed layout that updated live.</p>
+      <p>Learners stopped opening it.</p>
+      <p>The post-session interviews were unsentimental. The map told them what they had asked about, but not what they had learned. It treated every node as equal, when in fact some nodes were anchors (a definition that everything else hung from) and some were waypoints (a passing curiosity that did not need to be remembered). And it had no sense of <em>time</em>—no record of how the learner had come to know the idea, which questions had opened it, which detours had made it stick.</p>
+
+      <h2>What a useful map has to do</h2>
+      <p>A useful map, we now believe, has to do three things that the original map did not.</p>
+      <p>First, it has to preserve the path. A node is not just a fact; it is the result of a sequence of questions, examples, and corrections. When the learner returns to the node, they should be able to see the path that brought them there—not in full, but in enough detail to remind them how the idea was assembled.</p>
+      <p>Second, it has to age. Some nodes should fade as the learner's recall weakens; others should stay bright because the idea is now load-bearing. The map should make it obvious which is which, so the learner can spend their time on the things that need attention.</p>
+      <p>Third, it has to be navigable in plain language. The original map made us feel clever. The current map should make the learner feel capable. The same information, drawn so it can be read at a glance.</p>
+
+      <blockquote>The point of a map is not to show you what is on the territory. The point is to help you decide where to walk next.</blockquote>
+
+      <h2>What we built instead</h2>
+      <p>The current knowledge map is built around three primitives: <em>anchors</em>, <em>bridges</em>, and <em>threads</em>. Anchors are ideas the learner has explained cleanly in their own words; they stay bright. Bridges are ideas that connect two anchors; they stay visible but quieter. Threads are the sequences of questions that brought the learner to each anchor, and they are stored on the anchor itself.</p>
+      <p>The result is less impressive to look at and much more useful. When a learner returns to an anchor, they can see the thread that built it. When an anchor is fading, they can see which bridges depend on it. When the learner is starting something new, the map shows them which anchors are likely to be useful—not by topic, but by how well they remember them.</p>
+
+      <h2>What we are still working on</h2>
+      <p>Two open questions. The first is the question of scale: a map of fifty anchors is a pleasure; a map of five hundred is overwhelming. We have not yet found a way to make the large map feel as navigable as the small one, and the approaches we have tried—automatic clustering, time-windowing, importance scoring—each have a way of being wrong that the learner notices.</p>
+      <p>The second is the question of editing. Learners sometimes want to remove an anchor that they no longer care about, or to merge two anchors that turned out to be the same idea. The current map lets them do this, but the undo flow is awkward. We are still working on the right verb set for editing a learning map, and we will publish what we land on.</p>
+
+      <hr>
+
+      <p class="ed-meta ed-method-note"><span class="ed-method-label">Method note</span>The current knowledge map shipped in April 2026. The previous version is documented in <a href="../../announcements" style="color:var(--ed-clay)">the announcements archive</a> for completeness, but is no longer available in the product.</p>
+    </article>
+
+    <nav class="ed-article-foot" aria-label="Article navigation">
+      <div class="ed-shell ed-article-foot-grid">
+        <a href="../honest-pause">
+          <span class="ed-meta">← Previous</span>
+          <span class="ed-link-arrow">The value of an honest pause</span>
+        </a>
+        <a href="../what-learners-keep" style="text-align:right">
+          <span class="ed-meta">Next →</span>
+          <span class="ed-link-arrow">What learners keep after a session</span>
+        </a>
+      </div>
+    </nav>
+  </main>
+
+  <footer class="ed-footer">
+    <div class="ed-shell ed-footer-frame">
+      <div class="ed-footer-top">
+        <div class="ed-footer-brand"><a class="ed-brand" href="../../index">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div>
+        <div class="ed-footer-column"><h2>Product</h2><a href="../../product">Learning loop</a><a href="../../pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
+        <div class="ed-footer-column"><h2>Library</h2><a href="../../announcements">Announcements</a><a href="../../documents">Documents</a><a href="../../research">Research</a></div>
+        <div class="ed-footer-column"><h2>Company</h2><a href="../../about">About</a><a href="../../contact">Contact</a><a href="../../guide">Learning guide</a></div>
+        <div class="ed-footer-column"><h2>Elsewhere</h2><a href="../../zh/index.html">中文</a><a href="../../privacy">Privacy</a><a href="../../terms">Terms</a></div>
+      </div>
+      <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
+    </div>
+  </footer>
+  <script src="../../editorial.js?cb=20260814"></script>
+</body>
+</html>

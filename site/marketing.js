@@ -1,6 +1,16 @@
 (function () {
   'use strict';
 
+  /* The legacy marketing shell imports the shared brand layer early so the
+   * variables exist. Load it once more after the legacy rules so the shared
+   * typography and warm-paper component styles win the cascade. */
+  if (!document.querySelector('link[href$="/brand.css"], link[href="brand.css"], link[href="../brand.css"]')) {
+    var brandLink = document.createElement('link');
+    brandLink.rel = 'stylesheet';
+    brandLink.href = '/brand.css';
+    document.head.appendChild(brandLink);
+  }
+
   var isChinese = document.documentElement.lang.toLowerCase().indexOf('zh') === 0;
   var focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 

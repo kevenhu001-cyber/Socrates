@@ -37,6 +37,7 @@
   }catch(e){}
 }();
 </script>
+<link rel="stylesheet" href="../brand.css?cb=20260814">
 </head>
 <body class="legal-page">
 <script src="/marketing.js"></script>
@@ -61,7 +62,16 @@
 <div class="page-header">
   <div class="section-eyebrow">法律</div>
   <h1>服务<strong>条款</strong></h1>
-  <p>最后更新：2026年3月1日</p>
+  <div class="ed-legal-meta" aria-label="条款信息">
+    <p>生效日期：2026年3月1日</p>
+    <a href="mailto:hello@topodrive.top?subject=Previous%20Terms%20of%20Service">上一版本</a>
+    <label>语言
+      <select onchange="if(this.value) window.location.href=this.value">
+        <option value="/zh/terms.html" selected>中文</option>
+        <option value="/terms.html">English</option>
+      </select>
+    </label>
+  </div>
 </div>
 
 <section style="padding-top:0">
@@ -105,27 +115,25 @@
     <div class="legal-section sr sr-d2">
       <h3>5. API 密钥与第三方服务</h3>
       <p><strong>您的密钥。</strong> Socrates 要求您提供第三方 LLM 提供商的 API 密钥。您声明您拥有使用您提供的任何密钥的合法权利，且这样做不违反与相应提供商的任何协议。</p>
-      <p><strong>密钥处理。</strong> 您的 API 密钥在静态存储时加密（AES-256），在传输过程中加密（TLS 1.3）。它们仅用于将推理请求路由到您指定的 LLM 提供商。我们不会将您的密钥用于模型训练、分析或提供服务以外的任何目的。</p>
-      <p><strong>密钥撤销。</strong> 您可以随时通过账户设置更新或撤销密钥。账户删除后，所有存储的密钥将在 30 天内永久删除。</p>
+      <p><strong>密钥处理。</strong> API 密钥在静态存储时使用 AES-256-GCM 加密，并在服务器端用于将推理请求路由到您指定的 LLM 提供商。HTTPS/TLS 保护取决于提供服务的部署环境。我们不会将您的密钥用于模型训练、分析或提供服务以外的任何目的。</p>
+      <p><strong>密钥撤销。</strong> 您可以随时通过账户设置更新或撤销密钥。删除账户会通过服务器端删除流程移除该账户的 API 密钥记录，但独立保留要求可能不同。</p>
       <p><strong>第三方提供商。</strong> 对于任何第三方 LLM 提供商的可用性、准确性、安全性或性能，我们不承担责任。您对第三方服务的使用受其各自条款和隐私政策的约束。您与第三方之间的争议由您自行负责。</p>
     </div>
 
     <div class="legal-section sr sr-d3">
       <h3>6. 订阅、账单与付款</h3>
       <p><strong>定价。</strong> 当前套餐列于我们的<a href="/pricing">套餐页面</a>。所有价格均以美元计价，不含适用税费，税费可能根据您所在司法管辖区另行加收。</p>
-      <p><strong>免费试用。</strong> 每个付费套餐均包含上一级套餐的 7 天免费试用。免费（Diophantus）套餐无需信用卡即可开始使用。如果您激活付费套餐试用，在试用期结束前不会向您收费。在试用期内取消，不收取任何费用。</p>
-      <p><strong>账单周期。</strong> 订阅按月或按年提前计费。除非您在续订日期前取消，否则将自动续订。您可以随时通过账户设置取消。</p>
-      <p><strong>付款处理。</strong> 所有付款均由 Stripe（符合 PCI-DSS 标准）安全处理。我们不存储完整的信用卡号、CVV 代码或银行账户号码。我们仅保留交易记录（日期、金额、末四位数字）和账单地址，用于会计和税务目的。</p>
+      <p><strong>试用与账单周期。</strong> 试用资格、套餐限制、价格和续订条款会在购买时显示。您可以通过账户设置取消有效订阅，但仍受结账页面和适用法律的约束。</p>
+      <p><strong>付款处理。</strong> 付款通过结账时显示的支付服务商处理。服务只接收管理订阅所需的支付状态和交易信息；卡片详情由支付流程和支付服务商处理。</p>
       <p><strong>税费。</strong> 您负责缴纳所有适用税费，包括增值税（VAT）、商品及服务税（GST）、销售税或预扣税。如果我们被要求代收税费，该金额将在结账时显示。</p>
-      <p><strong>价格变更。</strong> 我们可随时更改订阅费用。对于现有订阅者，价格上涨将在提前 30 天通过电子邮件通知后的下一个计费周期生效。价格下调将立即适用于您的下一个计费周期。</p>
-      <p><strong>逾期付款。</strong> 如果付款失败，我们将重试。在 7 天尝试 unsuccessful 后，我们可能会将您的账户降级至免费套餐，或在付款成功前暂停访问。</p>
+      <p><strong>价格变更。</strong> 我们可以更改订阅费用。若适用法律要求通知，我们会在新价格对现有订阅生效前提供通知。</p>
+      <p><strong>逾期付款。</strong> 如果付款失败，服务访问可能受到限制或暂停，具体取决于支付服务商流程和适用法律。</p>
     </div>
 
     <div class="legal-section sr sr-d3">
       <h3>7. 退款政策</h3>
-      <p><strong>月度订阅。</strong> 我们不提供部分月份的退款。每个付费订阅均包含 7 天免费试用，以便您在承诺前进行评估。在试用期内取消，您不会被收费。</p>
-      <p><strong>年度订阅。</strong> 年度订阅可在首 14 天内取消，按剩余月份全额比例退款（扣除已使用月份）。14 天后，退款按剩余月份价值的 50% 计算。退款将在批准后 5 至 10 个工作日内退回原付款方式。</p>
-      <p><strong>服务中断。</strong> 对于由我们的基础设施（而非您的 LLM 提供商或互联网连接）造成的重大、可核实的中断，我们可酌情提供相当于停机时间比例价值的服务积分。索赔必须在 7 天内提交至 <a href="mailto:help@addtech.site">help@addtech.site</a>。</p>
+      <p><strong>退款。</strong> 退款资格由结账页面显示的条款、支付服务商流程和适用消费者保护法共同决定。如需申请，请将订单信息发送至 <a href="mailto:help@addtech.site">help@addtech.site</a>。</p>
+      <p><strong>服务中断。</strong> 对于重大且可核实的服务中断，我们可能酌情提供服务积分。任何适用的积分或申请流程会通过服务或支持渠道说明。</p>
       <p><strong>法定权利。</strong> 本政策中的任何内容均不限制您根据适用消费者保护法享有的法定权利。</p>
     </div>
 
@@ -142,11 +150,8 @@
     </div>
 
     <div class="legal-section sr sr-d4">
-      <h3>9. 服务等级协议（SLA）</h3>
-      <p><strong>可用性承诺。</strong> 我们尽商业上合理的努力，在每月基础上保持 99.5% 的服务可用性，不包括计划维护（至少提前 48 小时公告）和由第三方 LLM 提供商造成的中断。</p>
-      <p><strong>计划维护。</strong> 维护通常在低使用时段（UTC+8 02:00–05:00）进行，至少提前 48 小时通过电子邮件或应用内横幅通知。</p>
-      <p><strong>服务积分。</strong> 如果计划外停机时间超过连续 4 小时，您可以申请相当于每月费用 5% 的服务积分，每增加一小时停机时间累加，最高不超过每月费用的 50%。索赔必须在 7 天内提交至 <a href="mailto:help@addtech.site">help@addtech.site</a>。</p>
-      <p><strong>排除情形。</strong> 本 SLA 不适用于：(a) 免费套餐；(b) 由您的 LLM 提供商造成的中断；(c) 您的互联网连接或本地基础设施；(d) 不可抗力事件；(e) 计划维护。</p>
+      <h3>9. 服务可用性</h3>
+      <p>服务可能因为维护、基础设施问题、第三方服务、网络状况或其他我们无法控制的事件而暂时不可用或降级。除非另有单独书面协议，本条款不构成具体的可用性承诺或服务积分计划。</p>
     </div>
 
     <div class="legal-section sr sr-d4">
@@ -203,7 +208,7 @@
 
     <div class="legal-section sr sr-d1">
       <h3>16. 数据备份与恢复</h3>
-      <p><strong>我们的备份。</strong> 我们定期对服务数据（包括会话历史和账户信息）进行自动备份，存储至安全的异地存储。备份至少保留 30 天。</p>
+      <p><strong>备份。</strong> 备份与恢复实践取决于运行服务所使用的部署环境和系统。我们不承诺特定的备份频率或保留期限，您应自行保存重要学习材料。</p>
       <p><strong>您的责任。</strong> 我们鼓励您自行保存重要学习材料的记录。对于以下原因导致的数据丢失，我们不承担责任：(a) 未能自行维护备份；(b) 账户终止或到期；(c) 您使用服务时的错误；或 (d) 超出我们合理控制范围的事件。</p>
     </div>
 

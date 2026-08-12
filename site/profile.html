@@ -1,237 +1,237 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="socrates" data-mode="dark">
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/logo.png">
-<title>Socrates — Profile</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
-<link href="/base.css" rel="stylesheet">
-<link href="/marketing.css" rel="stylesheet">
-<style>
-.profile-form{max-width:440px;margin:0 auto}
-.profile-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:16px;padding:28px 32px 32px;box-shadow:0 2px 12px hsl(var(--always-black)/0.08)}
-.profile-card h3{font-size:15px;font-weight:600;color:hsl(var(--text-100));margin-bottom:16px;padding-bottom:12px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
-.profile-field{margin-bottom:16px}
-.profile-field label{display:block;font-size:12px;color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
-.profile-field input{width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:inherit;outline:none;transition:border-color .15s}
-.profile-field input:focus{border-color:hsl(var(--accent-000)/0.4)}
-.profile-field input:disabled{opacity:0.5}
-.profile-msg{font-size:13px;padding:10px 16px;border-radius:8px;margin-bottom:14px;display:none}
-.profile-msg.ok{display:block;background:hsl(145 50% 45%/0.08);color:hsl(145 50% 50%);border:0.5px solid hsl(145 50% 45%/0.15)}
-.profile-msg.err{display:block;background:hsl(0 60% 50%/0.08);color:hsl(0 60% 55%);border:0.5px solid hsl(0 60% 50%/0.12)}
-.profile-divider{height:0.5px;background:hsl(var(--border-300)/0.08);margin:24px 0}
-.profile-card + .profile-card{margin-top:16px}
-@media(max-width:720px){.profile-card{padding:20px}}
-</style>
-<script>
-!function(){
-  try{
-    var p=localStorage.getItem("socrates-lang");
-    if(!p)return;
-    var c=document.documentElement.lang;
-    var here=window.location.pathname;
-    if(p==="zh"&&c.indexOf("zh")!==0){
-      var target=here.replace(/\.html$/,"");
-      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
-    }else if(p==="en"&&c.indexOf("en")!==0){
-      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
-      window.location.replace(target2==="/"||target2===""?"/":target2);
-    }
-  }catch(e){}
-}();
-</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Update your display name, password, and manage your Socrates account data.">
+  <title>Profile — Socrates</title>
+  <link rel="icon" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="editorial.css?cb=20260814">
+  <link rel="stylesheet" href="brand.css?cb=20260814">
+  <link rel="stylesheet" href="account.css">
 </head>
-<body>
-<script src="/marketing.js"></script>
-<div class="bg-grid"></div>
-<div class="page">
+<body class="ed-site">
+  <a class="ed-skip" href="#main">Skip to content</a>
 
-<nav>
-  <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px"><span><em>S</em>ocrates</span></a>
-    <div class="nav-links">
-      <a href="/pricing">Pricing</a>
-      <a href="/guide">Guide</a>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-      <a href="/account">Account</a>
-      <a class="lang-switch">中文</a>
-      <a href="https://app.topodrive.top" class="cta-btn">Start learning</a>
+  <header class="ed-header">
+    <div class="ed-shell">
+      <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
+        <a class="ed-brand" href="index" aria-label="Socrates home">SOCRATES</a>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel>
+          <a href="research">Research</a>
+          <a href="documents">Library</a>
+          <a href="about">Company</a>
+          <a href="announcements">News</a>
+          <a href="zh/index">中文</a>
+        </div>
+        <div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+      </nav>
     </div>
-  </div>
-</nav>
+  </header>
 
-<div class="page-header">
-  <div class="section-eyebrow">Settings</div>
-  <h1>Your <strong>Profile</strong></h1>
-  <p>Manage your display name and password.</p>
-</div>
-
-<section style="padding-top:0">
-  <div class="section-inner" style="max-width:480px">
-
-    <div id="profileContent">
-      <!-- Profile info card -->
-      <div class="profile-card sr">
-        <h3>Profile Information</h3>
-        <div id="profileMsg" class="profile-msg"></div>
-        <div class="profile-field">
-          <label>Email</label>
-          <input id="profEmail" disabled>
+  <main id="main">
+    <section class="ed-page-hero ed-app-page-hero">
+      <div class="ed-shell ed-page-hero-grid ed-reveal">
+        <div>
+          <p class="ed-kicker">Settings</p>
+          <h1 class="ed-page-title ed-app-page-title">Your profile.</h1>
         </div>
-        <div class="profile-field">
-          <label for="profName">Display Name</label>
-          <input id="profName" placeholder="Your display name" maxlength="100">
-        </div>
-        <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+        <p class="ed-copy-serif">Manage your display name, password, and the data Socrates holds for you. Changes apply to your account immediately.</p>
       </div>
+    </section>
 
-      <!-- Password card -->
-      <div class="profile-card sr sr-d1">
-        <h3>Change Password</h3>
-        <div id="passMsg" class="profile-msg"></div>
-        <div class="profile-field">
-          <label for="oldPass">Current Password</label>
-          <input id="oldPass" type="password" placeholder="Current password">
+    <section class="ed-section-tight ed-app-section">
+      <div class="ed-shell ed-app-grid">
+        <aside class="ed-app-side ed-reveal" aria-label="Account navigation">
+          <p class="ed-kicker">Account</p>
+          <nav class="ed-app-side-nav">
+            <a href="account"><span>01</span>Subscription &amp; usage</a>
+            <a href="api-keys"><span>02</span>API keys</a>
+            <a href="profile" class="is-current" aria-current="page"><span>03</span>Profile</a>
+            <a href="pricing"><span>04</span>Change plan</a>
+          </nav>
+          <p class="ed-app-side-note">Need to leave? The danger actions live on the <a href="account">subscription page</a> so they are never one tap away.</p>
+        </aside>
+
+        <div id="profileContent" class="ed-app-main">
+          <article class="ed-app-card ed-reveal">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">Profile information</p>
+                <h2 class="ed-app-card-title">How you appear in Socrates.</h2>
+              </div>
+            </header>
+            <div id="profileMsg" class="ed-app-msg"></div>
+            <div class="ed-field">
+              <label for="profEmail">Email</label>
+              <input id="profEmail" disabled>
+              <p class="ed-field-hint">Your email is the identifier on your account and cannot be changed here. Write to <a href="mailto:help@addtech.site">help@addtech.site</a> if you need to move to a new address.</p>
+            </div>
+            <div class="ed-field">
+              <label for="profName">Display name</label>
+              <input id="profName" placeholder="Your display name" maxlength="100">
+              <p class="ed-field-hint">Shown in your sessions and on your knowledge map.</p>
+            </div>
+            <div class="ed-app-actions">
+              <button class="ed-button" onclick="saveProfile()">Save changes</button>
+            </div>
+          </article>
+
+          <article class="ed-app-card ed-reveal">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">Password</p>
+                <h2 class="ed-app-card-title">Change your password.</h2>
+              </div>
+            </header>
+            <div id="passMsg" class="ed-app-msg"></div>
+            <div class="ed-field">
+              <label for="oldPass">Current password</label>
+              <input id="oldPass" type="password" placeholder="Current password" autocomplete="current-password">
+            </div>
+            <div class="ed-field">
+              <label for="newPass">New password</label>
+              <input id="newPass" type="password" placeholder="At least 6 characters" autocomplete="new-password">
+              <p class="ed-field-hint">Six characters or more. Pick a phrase you will remember and no one else will guess.</p>
+            </div>
+            <div class="ed-app-actions">
+              <button class="ed-button" onclick="changePass()">Update password</button>
+            </div>
+          </article>
+
+          <article class="ed-app-card ed-reveal">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">Your data</p>
+                <h2 class="ed-app-card-title">Export everything Socrates holds for you.</h2>
+              </div>
+            </header>
+            <p class="ed-copy">A JSON file with your sessions, knowledge graph, mistake book, API provider configurations, and account information. Nothing leaves your account until you press the button.</p>
+            <div class="ed-app-actions">
+              <a class="ed-button-quiet" href="/api/account/export" download>Download export</a>
+            </div>
+          </article>
+
+          <article class="ed-app-card ed-reveal ed-app-card-danger">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">Leaving</p>
+                <h2 class="ed-app-card-title">Sign out of this browser.</h2>
+              </div>
+            </header>
+            <p class="ed-copy">Signing out clears this session. Your account and data stay where they are. You can sign back in any time from the account page.</p>
+            <div class="ed-app-actions">
+              <a class="ed-button-quiet" href="/api/auth/logout">Sign out</a>
+            </div>
+          </article>
         </div>
-        <div class="profile-field">
-          <label for="newPass">New Password</label>
-          <input id="newPass" type="password" placeholder="At least 6 characters">
-        </div>
-        <button class="btn btn-primary" onclick="changePass()">Update Password</button>
       </div>
+    </section>
+  </main>
 
-      <!-- Export card -->
-      <div class="profile-card sr sr-d2">
-        <h3>Export Your Data</h3>
-        <p style="font-size:13px;color:hsl(var(--text-400));line-height:1.7;margin-bottom:14px">Download all your data including chat sessions, API provider configurations, and account information as a JSON file.</p>
-        <a href="/api/account/export" class="btn btn-outline" download>Download Export</a>
+  <footer class="ed-footer">
+    <div class="ed-shell ed-footer-frame">
+      <div class="ed-footer-top">
+        <div class="ed-footer-brand"><a class="ed-brand" href="index">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div>
+        <div class="ed-footer-column"><h2>Product</h2><a href="product">Learning loop</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
+        <div class="ed-footer-column"><h2>Account</h2><a href="account">My account</a><a href="api-keys">API keys</a><a href="profile">Profile</a></div>
+        <div class="ed-footer-column"><h2>Library</h2><a href="announcements">Announcements</a><a href="documents">Documents</a><a href="research">Research</a></div>
+        <div class="ed-footer-column"><h2>Elsewhere</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div>
       </div>
+      <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
     </div>
+  </footer>
 
-  </div>
-</section>
+  <script>
+    /* Scroll reveal */
+    var srObs = new IntersectionObserver(function(e){
+      e.forEach(function(entry){if(entry.isIntersecting)entry.target.classList.add('in')});
+    },{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+    document.querySelectorAll('.ed-reveal').forEach(function(el){srObs.observe(el)});
 
-<footer>
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div class="footer-tag"><em>S</em>ocrates</div>
-      <p>An AI-powered Socratic tutor. Learn anything, step by step.</p>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Product</div>
-      <a href="/pricing">Pricing</a>
-      <a href="/guide">Guide</a>
-      <a href="https://app.topodrive.top">App</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Company</div>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Account</div>
-      <a href="/account">My Account</a>
-      <a href="/api-keys">API Keys</a>
-      <a href="/profile">Profile</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Legal</div>
-      <a href="/terms">Terms of Service</a>
-      <a href="/privacy">Privacy Policy</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Support</div>
-      <a href="mailto:help@addtech.site">help@addtech.site</a>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 Topodrive. All rights reserved.</p>
-      <p>Built with care, for learners everywhere.</p>
-      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
-    </div>
-  </div>
-</footer>
+    /* Mobile menu */
+    document.querySelectorAll('[data-ed-nav]').forEach(function (nav) {
+      var button = nav.querySelector('[data-menu-button]');
+      var panel = nav.querySelector('[data-menu-panel]');
+      if (!button || !panel) return;
+      button.addEventListener('click', function () {
+        var willOpen = !nav.classList.contains('is-open');
+        nav.classList.toggle('is-open', willOpen);
+        button.setAttribute('aria-expanded', String(willOpen));
+        document.body.classList.toggle('ed-menu-open', willOpen);
+      });
+      document.addEventListener('keydown', function (event) { if (event.key === 'Escape') { nav.classList.remove('is-open'); button.setAttribute('aria-expanded', 'false'); document.body.classList.remove('ed-menu-open'); } });
+    });
 
-</div>
+    /* Helpers */
+    function getCookie(name) {
+      var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '=([^;]*)'));
+      return m ? m[1] : null;
+    }
+    function showMsg(el, text, type) {
+      el.textContent = text;
+      el.className = 'ed-app-msg ' + (type || '');
+    }
 
-<script>
-/* ── Scroll reveal ─────────────────────────────────── */
-var srObs = new IntersectionObserver(function(e){
-  e.forEach(function(entry){if(entry.isIntersecting)entry.target.classList.add('in')});
-},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
-document.querySelectorAll('.sr').forEach(function(el){srObs.observe(el)});
+    /* Load profile */
+    function loadProfile() {
+      fetch('/api/auth/me', { credentials: 'same-origin' }).then(function(r) {
+        if (r.status === 401) { window.location.href = '/account'; return null; }
+        return r.json();
+      }).then(function(d) {
+        if (!d || !d.user) return;
+        document.getElementById('profEmail').value = d.user.email || '';
+        document.getElementById('profName').value = d.user.displayName || '';
+      }).catch(function(){});
+    }
 
-/* ── CSRF / cookie helpers ─────────────────────────── */
-function getCookie(name) {
-  var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '=([^;]*)'));
-  return m ? m[1] : null;
-}
-function msg(el, text, type) {
-  el.textContent = text;
-  el.className = 'profile-msg ' + (type || '');
-}
+    function saveProfile() {
+      var name = document.getElementById('profName').value.trim();
+      var el = document.getElementById('profileMsg');
+      if (!name) { showMsg(el, 'Display name cannot be empty.', 'err'); return; }
+      showMsg(el, 'Saving…', '');
+      fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
+        body: JSON.stringify({ displayName: name }),
+        credentials: 'same-origin'
+      }).then(function(r){
+        if (!r.ok) { return r.json().then(function(d){ throw new Error(d.detail || d.message || 'request failed'); }); }
+        return r.json();
+      }).then(function(){
+        showMsg(el, 'Profile updated successfully.', 'ok');
+      }).catch(function(e){
+        showMsg(el, e.message || 'Connection error.', 'err');
+      });
+    }
 
-/* ── Load profile ──────────────────────────────────── */
-function loadProfile() {
-  fetch('/api/auth/me', { credentials: 'same-origin' }).then(function(r) {
-    if (r.status === 401) { window.location.href = '/account'; return null; }
-    return r.json();
-  }).then(function(d) {
-    if (!d || !d.user) return;
-    document.getElementById('profEmail').value = d.user.email || '';
-    document.getElementById('profName').value = d.user.displayName || '';
-  }).catch(function(){});
-}
+    function changePass() {
+      var oldP = document.getElementById('oldPass').value;
+      var newP = document.getElementById('newPass').value;
+      var el = document.getElementById('passMsg');
+      if (!oldP || !newP) { showMsg(el, 'Please fill in both fields.', 'err'); return; }
+      if (newP.length < 6) { showMsg(el, 'New password must be at least 6 characters.', 'err'); return; }
+      showMsg(el, 'Updating…', '');
+      fetch('/api/auth/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
+        body: JSON.stringify({ oldPassword: oldP, newPassword: newP }),
+        credentials: 'same-origin'
+      }).then(function(r){return r.json()}).then(function(d){
+        if (d.error) { showMsg(el, d.error, 'err'); return; }
+        showMsg(el, 'Password updated successfully.', 'ok');
+        document.getElementById('oldPass').value = '';
+        document.getElementById('newPass').value = '';
+      }).catch(function(){ showMsg(el, 'Connection error.', 'err'); });
+    }
 
-/* ── Save profile ──────────────────────────────────── */
-function saveProfile() {
-  var name = document.getElementById('profName').value.trim();
-  var el = document.getElementById('profileMsg');
-  if (!name) { msg(el, 'Display name cannot be empty.', 'err'); return; }
-  msg(el, 'Saving…', '');
-  fetch('/api/users/me', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
-    body: JSON.stringify({ displayName: name }),
-    credentials: 'same-origin'
-  }).then(function(r){
-    if (!r.ok) { return r.json().then(function(d){ throw new Error(d.detail || d.message || 'request failed'); }); }
-    return r.json();
-  }).then(function(d){
-    msg(el, 'Profile updated successfully.', 'ok');
-  }).catch(function(e){
-    msg(el, e.message || 'Connection error.', 'err');
-  });
-}
-
-/* ── Change password ──────────────────────────────── */
-function changePass() {
-  var oldP = document.getElementById('oldPass').value;
-  var newP = document.getElementById('newPass').value;
-  var el = document.getElementById('passMsg');
-  if (!oldP || !newP) { msg(el, 'Please fill in both fields.', 'err'); return; }
-  if (newP.length < 6) { msg(el, 'New password must be at least 6 characters.', 'err'); return; }
-  msg(el, 'Updating…', '');
-  fetch('/api/auth/password', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
-    body: JSON.stringify({ oldPassword: oldP, newPassword: newP }),
-    credentials: 'same-origin'
-  }).then(function(r){return r.json()}).then(function(d){
-    if (d.error) { msg(el, d.error, 'err'); return; }
-    msg(el, 'Password updated successfully.', 'ok');
-    document.getElementById('oldPass').value = '';
-    document.getElementById('newPass').value = '';
-  }).catch(function(){ msg(el, 'Connection error.', 'err'); });
-}
-
-/* ── Init ──────────────────────────────────────────── */
-(function(){
-  fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}).then(function(){ loadProfile(); });
-})();
-</script>
-<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/\.html$/,'');b.href=p==='/'||p===''?'/zh/':'/zh'+p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","zh")}catch(e){}});})();</script>
+    (function(){
+      fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}).then(function(){ loadProfile(); });
+    })();
+  </script>
 </body>
 </html>

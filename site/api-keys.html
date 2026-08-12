@@ -1,406 +1,402 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="socrates" data-mode="dark">
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/logo.png">
-<title>Socrates — API Keys</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
-<link href="/base.css" rel="stylesheet">
-<link href="/marketing.css" rel="stylesheet">
-<style>
-.apikey-list{max-width:600px;margin:0 auto}
-.apikey-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:12px;padding:18px 22px;margin-bottom:10px;display:flex;align-items:center;gap:14px;transition:border-color var(--anim-fast),box-shadow var(--anim-fast)}
-.apikey-card:hover{border-color:hsl(var(--border-300)/0.18)}
-.apikey-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.apikey-dot.active{background:hsl(145 50% 50%)}
-.apikey-dot.inactive{background:hsl(var(--text-500)/0.3)}
-.apikey-info{flex:1;min-width:0}
-.apikey-label{font-size:14px;font-weight:500;color:hsl(var(--text-100))}
-.apikey-model{font-size:12px;color:hsl(var(--text-500));margin-top:1px}
-.apikey-del{background:none;border:none;color:hsl(var(--text-500));cursor:pointer;padding:6px;border-radius:6px;transition:color var(--anim-fast),background var(--anim-fast);flex-shrink:0}
-.apikey-del:hover{color:hsl(0 60% 60%);background:hsl(0 60% 50%/0.08)}
-.apikey-form{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:12px;padding:24px 28px 28px;margin-bottom:24px}
-.apikey-form h3{font-size:15px;font-weight:600;color:hsl(var(--text-100));margin-bottom:16px}
-.apikey-field{margin-bottom:14px}
-.apikey-field label{display:block;font-size:12px;color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
-.apikey-field input{width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:inherit;outline:none;transition:border-color .15s}
-.apikey-field input:focus{border-color:hsl(var(--accent-000)/0.4)}
-.custom-select{position:relative}
-.custom-select-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:inherit;outline:none;cursor:pointer;transition:border-color .15s,box-shadow .15s;gap:8px;text-align:left}
-.custom-select-trigger:hover{border-color:hsl(var(--border-300)/0.25)}
-.custom-select-trigger:focus-visible{border-color:hsl(var(--accent-000)/0.4);box-shadow:0 0 0 3px hsl(var(--accent-000)/0.08)}
-.custom-select-trigger.active{border-color:hsl(var(--accent-000)/0.4);box-shadow:0 0 0 3px hsl(var(--accent-000)/0.08)}
-.custom-select-trigger-content{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
-.custom-select-value{font-weight:500;font-size:14px;color:hsl(var(--text-100));line-height:1.3}
-.custom-select-url{font-size:12px;color:hsl(var(--text-500));line-height:1.3}
-.custom-select-chevron{width:16px;height:16px;color:hsl(var(--text-500));flex-shrink:0;transition:transform .2s ease}
-.custom-select-trigger.active .custom-select-chevron{transform:rotate(180deg)}
-.custom-select-panel{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:50;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:10px;padding:4px;box-shadow:0 8px 32px hsl(var(--bg-400)/0.4),0 2px 8px hsl(var(--bg-400)/0.2);opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .15s ease,transform .15s ease,visibility .15s}
-.custom-select-panel.open{opacity:1;visibility:visible;transform:translateY(0)}
-.custom-select-option{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:6px;cursor:pointer;transition:background .1s,color .1s}
-.custom-select-option:hover{background:hsl(var(--bg-200)/0.6)}
-.custom-select-option.selected{background:hsl(var(--accent-000)/0.06)}
-.custom-select-option-content{flex:1;min-width:0}
-.custom-select-option-name{font-size:14px;font-weight:500;color:hsl(var(--text-100));line-height:1.3}
-.custom-select-option-url{font-size:12px;color:hsl(var(--text-500));line-height:1.3}
-.custom-select-option:hover .custom-select-option-name{color:hsl(var(--accent-000))}
-.custom-select-check{width:16px;height:16px;color:hsl(var(--accent-000));flex-shrink:0;opacity:0;transition:opacity .15s}
-.custom-select-option.selected .custom-select-check{opacity:1}
-.custom-url-wrap{max-height:0;overflow:hidden;opacity:0;transition:max-height .25s ease,opacity .2s ease,margin-top .25s ease;margin-top:0}
-.custom-url-wrap.visible{max-height:60px;opacity:1;margin-top:8px}
-.apikey-field .hint{font-size:11px;color:hsl(var(--text-500));margin-top:4px}
-.apikey-empty{text-align:center;padding:48px 20px;color:hsl(var(--text-500))}
-.apikey-empty svg{width:36px;height:36px;margin-bottom:12px;opacity:0.25}
-.apikey-empty p{font-size:14px}
-.apikey-msg{font-size:13px;padding:10px 16px;border-radius:8px;margin-bottom:14px;display:none}
-.apikey-msg.ok{display:block;background:hsl(145 50% 45%/0.08);color:hsl(145 50% 50%);border:0.5px solid hsl(145 50% 45%/0.15)}
-.apikey-msg.err{display:block;background:hsl(0 60% 50%/0.08);color:hsl(0 60% 55%);border:0.5px solid hsl(0 60% 50%/0.12)}
-@media(max-width:720px){.apikey-card{padding:14px 16px}.apikey-form{padding:18px 20px}}
-</style>
-<script>
-!function(){
-  try{
-    var p=localStorage.getItem("socrates-lang");
-    if(!p)return;
-    var c=document.documentElement.lang;
-    var here=window.location.pathname;
-    if(p==="zh"&&c.indexOf("zh")!==0){
-      var target=here.replace(/\.html$/,"");
-      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
-    }else if(p==="en"&&c.indexOf("en")!==0){
-      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
-      window.location.replace(target2==="/"||target2===""?"/":target2);
-    }
-  }catch(e){}
-}();
-</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Manage your LLM provider API keys for Socrates.">
+  <title>API Keys — Socrates</title>
+  <link rel="icon" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="editorial.css?cb=20260814">
+  <link rel="stylesheet" href="brand.css?cb=20260814">
+  <link rel="stylesheet" href="account.css">
 </head>
-<body>
-<script src="/marketing.js"></script>
-<div class="bg-grid"></div>
-<div class="page">
+<body class="ed-site">
+  <a class="ed-skip" href="#main">Skip to content</a>
 
-<nav>
-  <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px"><span><em>S</em>ocrates</span></a>
-    <div class="nav-links">
-      <a href="/pricing">Pricing</a>
-      <a href="/guide">Guide</a>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-      <a href="/account">Account</a>
-      <a class="lang-switch">中文</a>
-      <a href="https://app.topodrive.top" class="cta-btn">Start learning</a>
-    </div>
-  </div>
-</nav>
-
-<div class="page-header">
-  <div class="section-eyebrow">Settings</div>
-  <h1>API <strong>Keys</strong></h1>
-  <p>Manage your LLM provider keys. Keys are encrypted at rest and never shared.</p>
-</div>
-
-<section style="padding-top:0">
-  <div class="section-inner">
-    <div id="apikey-content" style="max-width:600px;margin:0 auto">
-      <div class="apikey-form sr" id="addKeyForm">
-        <h3>Add Provider Key</h3>
-        <div id="keyMsg" class="apikey-msg"></div>
-        <div class="apikey-field">
-          <label for="keyLabel">Label</label>
-          <input id="keyLabel" placeholder="e.g. My OpenAI Key" autocomplete="off">
+  <header class="ed-header">
+    <div class="ed-shell">
+      <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
+        <a class="ed-brand" href="index" aria-label="Socrates home">SOCRATES</a>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel>
+          <a href="research">Research</a>
+          <a href="documents">Library</a>
+          <a href="about">Company</a>
+          <a href="announcements">News</a>
+          <a href="zh/index">中文</a>
         </div>
-        <div class="apikey-field">
-          <label for="keyUrlTrigger">API URL</label>
-          <div class="custom-select" id="keyUrlSelect">
-            <input type="hidden" id="keyUrl" value="https://api.openai.com/v1">
-            <button class="custom-select-trigger" id="keyUrlTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
-              <div class="custom-select-trigger-content">
-                <span class="custom-select-value">OpenAI</span>
-                <span class="custom-select-url">api.openai.com</span>
+        <div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="ed-page-hero ed-app-page-hero">
+      <div class="ed-shell ed-page-hero-grid ed-reveal">
+        <div>
+          <p class="ed-kicker">Settings</p>
+          <h1 class="ed-page-title ed-app-page-title">API keys.</h1>
+        </div>
+        <p class="ed-copy-serif">Bring your own model provider. Keys are encrypted at rest, never shared, and never visible again after they are saved.</p>
+      </div>
+    </section>
+
+    <section class="ed-section-tight ed-app-section">
+      <div class="ed-shell ed-app-grid">
+        <aside class="ed-app-side ed-reveal" aria-label="Account navigation">
+          <p class="ed-kicker">Account</p>
+          <nav class="ed-app-side-nav">
+            <a href="account"><span>01</span>Subscription &amp; usage</a>
+            <a href="api-keys" class="is-current" aria-current="page"><span>02</span>API keys</a>
+            <a href="profile"><span>03</span>Profile</a>
+            <a href="pricing"><span>04</span>Change plan</a>
+          </nav>
+          <p class="ed-app-side-note">Free and Riemann plans support up to three provider keys. Descartes and Euclid plans support more, and let you pin a default per subject.</p>
+        </aside>
+
+        <div id="apikey-content" class="ed-app-main">
+
+          <article class="ed-app-card ed-reveal" id="addKeyForm">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">Add a provider key</p>
+                <h2 class="ed-app-card-title">Connect a model provider.</h2>
               </div>
-              <svg class="custom-select-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <div class="custom-select-panel" role="listbox">
-              <div class="custom-select-option selected" data-value="https://api.openai.com/v1" role="option">
-                <div class="custom-select-option-content">
-                  <span class="custom-select-option-name">OpenAI</span>
-                  <span class="custom-select-option-url">api.openai.com</span>
+            </header>
+
+            <div id="keyMsg" class="ed-app-msg"></div>
+
+            <div class="ed-field">
+              <label for="keyLabel">Label</label>
+              <input id="keyLabel" placeholder="e.g. My OpenAI Key" autocomplete="off">
+              <p class="ed-field-hint">A short name so you can recognise this key later. The model name is used if you leave this blank.</p>
+            </div>
+
+            <div class="ed-field">
+              <label for="keyUrlTrigger">Provider</label>
+              <div class="ed-select" id="keyUrlSelect">
+                <input type="hidden" id="keyUrl" value="https://api.openai.com/v1">
+                <button class="ed-select-trigger" id="keyUrlTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+                  <div class="ed-select-content">
+                    <span class="ed-select-value">OpenAI</span>
+                    <span class="ed-select-url">api.openai.com</span>
+                  </div>
+                  <svg class="ed-select-chev" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="ed-select-panel" role="listbox">
+                  <div class="ed-select-option is-selected" data-value="https://api.openai.com/v1" role="option">
+                    <div class="ed-select-content">
+                      <span class="ed-select-option-name">OpenAI</span>
+                      <span class="ed-select-option-url">api.openai.com</span>
+                    </div>
+                    <svg class="ed-select-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="ed-select-option" data-value="https://api.anthropic.com/v1" role="option">
+                    <div class="ed-select-content">
+                      <span class="ed-select-option-name">Anthropic</span>
+                      <span class="ed-select-option-url">api.anthropic.com</span>
+                    </div>
+                    <svg class="ed-select-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="ed-select-option" data-value="https://api.together.xyz" role="option">
+                    <div class="ed-select-content">
+                      <span class="ed-select-option-name">Together.ai</span>
+                      <span class="ed-select-option-url">api.together.xyz</span>
+                    </div>
+                    <svg class="ed-select-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="ed-select-option" data-value="https://api.groq.com/openai/v1" role="option">
+                    <div class="ed-select-content">
+                      <span class="ed-select-option-name">Groq</span>
+                      <span class="ed-select-option-url">api.groq.com</span>
+                    </div>
+                    <svg class="ed-select-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="ed-select-option" data-value="https://api.deepseek.com" role="option">
+                    <div class="ed-select-content">
+                      <span class="ed-select-option-name">DeepSeek</span>
+                      <span class="ed-select-option-url">api.deepseek.com</span>
+                    </div>
+                    <svg class="ed-select-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="ed-select-option" data-value="" role="option">
+                    <div class="ed-select-content">
+                      <span class="ed-select-option-name">Custom endpoint</span>
+                      <span class="ed-select-option-url">Enter your own URL</span>
+                    </div>
+                    <svg class="ed-select-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
                 </div>
-                <svg class="custom-select-check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </div>
-              <div class="custom-select-option" data-value="https://api.anthropic.com/v1" role="option">
-                <div class="custom-select-option-content">
-                  <span class="custom-select-option-name">Anthropic</span>
-                  <span class="custom-select-option-url">api.anthropic.com</span>
+              <div class="ed-select-extra" id="keyUrlCustomWrap">
+                <div class="ed-field" style="margin-bottom:0">
+                  <input id="keyUrlCustom" placeholder="https://your-endpoint.com/v1">
                 </div>
-                <svg class="custom-select-check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </div>
-              <div class="custom-select-option" data-value="https://api.together.xyz" role="option">
-                <div class="custom-select-option-content">
-                  <span class="custom-select-option-name">Together.ai</span>
-                  <span class="custom-select-option-url">api.together.xyz</span>
-                </div>
-                <svg class="custom-select-check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </div>
-              <div class="custom-select-option" data-value="https://api.groq.com/openai/v1" role="option">
-                <div class="custom-select-option-content">
-                  <span class="custom-select-option-name">Groq</span>
-                  <span class="custom-select-option-url">api.groq.com</span>
-                </div>
-                <svg class="custom-select-check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </div>
-              <div class="custom-select-option" data-value="https://api.deepseek.com" role="option">
-                <div class="custom-select-option-content">
-                  <span class="custom-select-option-name">DeepSeek</span>
-                  <span class="custom-select-option-url">api.deepseek.com</span>
-                </div>
-                <svg class="custom-select-check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </div>
-              <div class="custom-select-option" data-value="" role="option">
-                <div class="custom-select-option-content">
-                  <span class="custom-select-option-name">Custom URL</span>
-                  <span class="custom-select-option-url">Enter your own endpoint</span>
-                </div>
-                <svg class="custom-select-check" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </div>
             </div>
-          </div>
-          <div class="custom-url-wrap" id="keyUrlCustomWrap">
-            <input id="keyUrlCustom" placeholder="https://your-endpoint.com/v1">
-          </div>
+
+            <div class="ed-field">
+              <label for="keyModel">Model</label>
+              <input id="keyModel" placeholder="e.g. gpt-5.5, claude-opus-4-8">
+              <p class="ed-field-hint">The model ID your provider uses. The tutor picks the best model for each subject unless you pin a default here.</p>
+            </div>
+
+            <div class="ed-field">
+              <label for="keyValue">API key</label>
+              <input id="keyValue" type="password" placeholder="sk-…" autocomplete="off">
+              <p class="ed-field-hint">Encrypted before storage. We never log the value and it cannot be retrieved again after saving.</p>
+            </div>
+
+            <div class="ed-app-actions">
+              <button class="ed-button" onclick="addKey()">Save key</button>
+              <button class="ed-button-quiet" type="button" onclick="document.getElementById('addKeyForm').querySelectorAll('input').forEach(i=>{if(i.type!=='hidden'&&!i.disabled)i.value=''})">Clear</button>
+            </div>
+          </article>
+
+          <article class="ed-app-card ed-reveal" id="keyListCard">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">Configured providers</p>
+                <h2 class="ed-app-card-title">Keys saved to your account.</h2>
+              </div>
+              <span id="keyCount" class="ed-meta">—</span>
+            </header>
+            <div id="keyItems"></div>
+          </article>
+
+          <article class="ed-app-card ed-reveal">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">How Socrates uses your keys</p>
+                <h2 class="ed-app-card-title">A short note on what we send and what we do not.</h2>
+              </div>
+            </header>
+            <p class="ed-copy">Your key is sent only to the provider you selected, and only with the prompts that arise from your sessions. We do not proxy traffic through our servers, do not log your prompts, and do not include any identifier that ties the request back to you beyond what your provider already sees.</p>
+            <p class="ed-copy" style="margin-top:14px">Removing a key stops Socrates from using it on the next turn. Past turns that already used the key are preserved.</p>
+            <div class="ed-app-actions">
+              <a class="ed-button-quiet" href="privacy">Read the privacy notice</a>
+            </div>
+          </article>
         </div>
-        <div class="apikey-field">
-          <label for="keyModel">Model</label>
-          <input id="keyModel" placeholder="e.g. gpt-5.5, claude-opus-4-8">
-          <div class="hint">Enter the model ID your provider uses.</div>
-        </div>
-        <div class="apikey-field">
-          <label for="keyValue">API Key</label>
-          <input id="keyValue" type="password" placeholder="sk-…">
-          <div class="hint">Encrypted before storage. Never visible again after saving.</div>
-        </div>
-        <button class="btn btn-primary" onclick="addKey()">Save Key</button>
       </div>
-      <div id="keyList" class="sr sr-d1">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <span style="font-size:12px;font-weight:600;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em">Configured Providers</span>
-          <span id="keyCount" style="font-size:12px;color:hsl(var(--text-500))"></span>
-        </div>
-        <div id="keyItems"></div>
+    </section>
+  </main>
+
+  <footer class="ed-footer">
+    <div class="ed-shell ed-footer-frame">
+      <div class="ed-footer-top">
+        <div class="ed-footer-brand"><a class="ed-brand" href="index">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div>
+        <div class="ed-footer-column"><h2>Product</h2><a href="product">Learning loop</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
+        <div class="ed-footer-column"><h2>Account</h2><a href="account">My account</a><a href="api-keys">API keys</a><a href="profile">Profile</a></div>
+        <div class="ed-footer-column"><h2>Library</h2><a href="announcements">Announcements</a><a href="documents">Documents</a><a href="research">Research</a></div>
+        <div class="ed-footer-column"><h2>Elsewhere</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div>
       </div>
+      <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
+    </div>
+  </footer>
+
+  <div class="ed-toast-host" id="toastHost"></div>
+  <div class="ed-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
+    <div class="ed-modal" onclick="event.stopPropagation()">
+      <div class="ed-modal-title" id="confirmTitle">Confirm?</div>
+      <div class="ed-modal-msg" id="confirmMsg">This action cannot be undone.</div>
+      <div class="ed-modal-actions" id="confirmActions"></div>
     </div>
   </div>
-</section>
 
-<footer>
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div class="footer-tag"><em>S</em>ocrates</div>
-      <p>An AI-powered Socratic tutor. Learn anything, step by step.</p>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Product</div>
-      <a href="/pricing">Pricing</a>
-      <a href="/guide">Guide</a>
-      <a href="https://app.topodrive.top">App</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Company</div>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Account</div>
-      <a href="/account">My Account</a>
-      <a href="/api-keys">API Keys</a>
-      <a href="/profile">Profile</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Legal</div>
-      <a href="/terms">Terms of Service</a>
-      <a href="/privacy">Privacy Policy</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Support</div>
-      <a href="mailto:help@addtech.site">help@addtech.site</a>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 Topodrive. All rights reserved.</p>
-      <p>Built with care, for learners everywhere.</p>
-      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
-    </div>
-  </div>
-</footer>
+  <script>
+    /* Reveal */
+    var srObs = new IntersectionObserver(function(e){
+      e.forEach(function(entry){if(entry.isIntersecting)entry.target.classList.add('in')});
+    },{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+    document.querySelectorAll('.ed-reveal').forEach(function(el){srObs.observe(el)});
 
-</div>
+    /* Mobile menu */
+    document.querySelectorAll('[data-ed-nav]').forEach(function (nav) {
+      var button = nav.querySelector('[data-menu-button]');
+      var panel = nav.querySelector('[data-menu-panel]');
+      if (!button || !panel) return;
+      button.addEventListener('click', function () {
+        var willOpen = !nav.classList.contains('is-open');
+        nav.classList.toggle('is-open', willOpen);
+        button.setAttribute('aria-expanded', String(willOpen));
+        document.body.classList.toggle('ed-menu-open', willOpen);
+      });
+      document.addEventListener('keydown', function (event) { if (event.key === 'Escape') { nav.classList.remove('is-open'); button.setAttribute('aria-expanded', 'false'); document.body.classList.remove('ed-menu-open'); } });
+    });
 
-<script>
-/* ── Scroll reveal ─────────────────────────────────── */
-var srObs = new IntersectionObserver(function(e){
-  e.forEach(function(entry){if(entry.isIntersecting)entry.target.classList.add('in')});
-},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
-document.querySelectorAll('.sr').forEach(function(el){srObs.observe(el)});
-
-/* ── API key management ────────────────────────────── */
-function msg(text, type) {
-  var el = document.getElementById('keyMsg');
-  el.textContent = text;
-  el.className = 'apikey-msg ' + (type || '');
-}
-
-function renderKeys(providers) {
-  var container = document.getElementById('keyItems');
-  var count = document.getElementById('keyCount');
-  if (!providers || providers.length === 0) {
-    container.innerHTML = '<div class="apikey-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg><p>No API keys configured yet. Add one above.</p></div>';
-    count.textContent = '0 configured';
-    return;
-  }
-  count.textContent = providers.length + ' configured';
-  container.innerHTML = providers.map(function(p) {
-    return '<div class="apikey-card">' +
-      '<span class="apikey-dot ' + (p.is_active ? 'active' : 'inactive') + '"></span>' +
-      '<div class="apikey-info"><div class="apikey-label">' + esc(p.label || p.model) + '</div><div class="apikey-model">' + esc(p.url) + ' — ' + esc(p.model) + '</div></div>' +
-      '<button class="apikey-del" onclick="deleteKey(\'' + p.id + '\')" title="Delete"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg></button>' +
-    '</div>';
-  }).join('');
-}
-
-function esc(s) { return String(s).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]}) }
-
-function loadKeys() {
-  fetch('/api/api-key', { credentials: 'same-origin' }).then(function(r) {
-    if (r.status === 401) { window.location.href = '/account'; return null; }
-    return r.json();
-  }).then(function(d) {
-    if (d) renderKeys(d.providers);
-  }).catch(function(){});
-}
-
-function addKey() {
-  var label = document.getElementById('keyLabel').value.trim();
-  var urlEl = document.getElementById('keyUrl');
-  var url = urlEl.value || document.getElementById('keyUrlCustom').value.trim();
-  var model = document.getElementById('keyModel').value.trim();
-  var key = document.getElementById('keyValue').value.trim();
-
-  if (!url) { msg('Please select or enter an API URL.', 'err'); return; }
-  if (!model) { msg('Please enter the model name.', 'err'); return; }
-  if (!key) { msg('Please enter your API key.', 'err'); return; }
-
-  msg('Saving…', '');
-  fetch('/api/api-key', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
-    body: JSON.stringify({ label: label || model, url: url, model: model, key: key }),
-    credentials: 'same-origin'
-  }).then(function(r) { return r.json(); }).then(function(d) {
-    if (d.error) { msg(d.error, 'err'); return; }
-    msg('Key saved successfully.', 'ok');
-    document.getElementById('keyLabel').value = '';
-    document.getElementById('keyValue').value = '';
-    loadKeys();
-  }).catch(function(){ msg('Connection error.', 'err'); });
-}
-
-function deleteKey(id) {
-  if (!confirm('Remove this API key?')) return;
-  fetch('/api/api-key/' + id, {
-    method: 'DELETE',
-    headers: { 'X-CSRF-Token': getCookie('csrf') || '' },
-    credentials: 'same-origin'
-  }).then(function(r) { return r.json(); }).then(function(d) {
-    if (d.error) { msg(d.error, 'err'); return; }
-    loadKeys();
-  }).catch(function(){ msg('Connection error.', 'err'); });
-}
-
-/* CSRF cookie reader */
-function getCookie(name) {
-  var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '=([^;]*)'));
-  return m ? m[1] : null;
-}
-
-/* Custom select dropdown */
-(function(){
-  var select = document.getElementById('keyUrlSelect');
-  var hiddenInput = document.getElementById('keyUrl');
-  var trigger = select.querySelector('.custom-select-trigger');
-  var panel = select.querySelector('.custom-select-panel');
-  var options = select.querySelectorAll('.custom-select-option');
-  var customUrlWrap = document.getElementById('keyUrlCustomWrap');
-
-  function updateTrigger(option) {
-    trigger.querySelector('.custom-select-value').textContent = option.querySelector('.custom-select-option-name').textContent;
-    trigger.querySelector('.custom-select-url').textContent = option.querySelector('.custom-select-option-url').textContent;
-  }
-
-  function selectOption(option) {
-    options.forEach(function(o){ o.classList.remove('selected') });
-    option.classList.add('selected');
-    hiddenInput.value = option.getAttribute('data-value');
-    updateTrigger(option);
-    if (hiddenInput.value === '') {
-      customUrlWrap.classList.add('visible');
-      document.getElementById('keyUrlCustom').focus();
-    } else {
-      customUrlWrap.classList.remove('visible');
+    /* Toast */
+    function showToast(msg, type) {
+      type = type || 'info';
+      var host = document.getElementById('toastHost');
+      var t = document.createElement('div');
+      t.className = 'ed-toast is-' + type;
+      t.innerHTML = '<span class="ed-toast-icon">' + (type === 'success' ? '✓' : type === 'error' ? '!' : '·') + '</span><span>' + msg + '</span><button class="ed-toast-close" aria-label="Dismiss">×</button>';
+      host.appendChild(t);
+      t.querySelector('.ed-toast-close').addEventListener('click', function(){ dismiss(t); });
+      setTimeout(function(){ dismiss(t); }, 4000);
     }
-    closePanel();
-  }
+    function dismiss(t) { t.style.animation = 'edToastOut .2s var(--ed-ease) forwards'; setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 220); }
 
-  function openPanel() {
-    panel.classList.add('open');
-    trigger.classList.add('active');
-    trigger.setAttribute('aria-expanded', 'true');
-  }
-
-  function closePanel() {
-    panel.classList.remove('open');
-    trigger.classList.remove('active');
-    trigger.setAttribute('aria-expanded', 'false');
-  }
-
-  trigger.addEventListener('click', function() {
-    if (panel.classList.contains('open')) { closePanel(); } else { openPanel(); }
-  });
-
-  options.forEach(function(option) {
-    option.addEventListener('click', function() { selectOption(option); });
-  });
-
-  document.addEventListener('click', function(e) {
-    if (!select.contains(e.target)) { closePanel(); }
-  });
-
-  trigger.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      if (panel.classList.contains('open')) { closePanel(); } else { openPanel(); }
-    } else if (e.key === 'Escape') {
-      closePanel();
-    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (!panel.classList.contains('open')) { openPanel(); }
-      var sel = select.querySelector('.custom-select-option.selected');
-      var next;
-      if (e.key === 'ArrowDown') { next = sel.nextElementSibling || options[0]; }
-      else { next = sel.previousElementSibling || options[options.length - 1]; }
-      selectOption(next);
+    /* Confirm modal */
+    function showConfirm(title, msg, opts) {
+      opts = opts || {};
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMsg').textContent = msg;
+      var actions = document.getElementById('confirmActions');
+      actions.innerHTML = '';
+      var cancel = document.createElement('button');
+      cancel.className = 'ed-button-quiet';
+      cancel.textContent = opts.cancelText || 'Cancel';
+      cancel.onclick = closeConfirm;
+      actions.appendChild(cancel);
+      var danger = document.createElement('button');
+      danger.className = 'ed-button';
+      danger.style.background = opts.danger ? 'var(--ed-clay)' : 'var(--ed-ink)';
+      danger.style.color = 'var(--ed-paper)';
+      danger.textContent = opts.confirmText || 'Confirm';
+      danger.onclick = function(){ closeConfirm(); if (opts.onConfirm) opts.onConfirm(); };
+      actions.appendChild(danger);
+      document.getElementById('confirmOverlay').classList.add('is-open');
     }
-  });
-})();
+    function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('is-open'); }
 
-/* Load keys on page load */
-(function(){
-  /* Fetch CSRF token first */
-  fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}).then(function(){ loadKeys(); });
-})();
-</script>
-<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/\.html$/,'');b.href=p==='/'||p===''?'/zh/':'/zh'+p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","zh")}catch(e){}});})();</script>
+    /* Helpers */
+    function getCookie(name) {
+      var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '=([^;]*)'));
+      return m ? m[1] : null;
+    }
+    function esc(s) { return String(s).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]}); }
+    function msg(text, type) {
+      var el = document.getElementById('keyMsg');
+      el.textContent = text;
+      el.className = 'ed-app-msg' + (type ? ' ' + type : '');
+    }
+
+    /* Render keys */
+    function renderKeys(providers) {
+      var container = document.getElementById('keyItems');
+      var count = document.getElementById('keyCount');
+      if (!providers || providers.length === 0) {
+        container.innerHTML = '<div class="ed-state" style="padding:36px 12px">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="9" cy="13" r="5"/><path d="M14 8l4-4M14 8h3M14 8V5"/><path d="M13.5 13.5L21 21"/></svg>' +
+          '<h2>No providers configured yet</h2>' +
+          '<p>Add your first key above. You can switch between providers per session, and Socrates will pick the best one for each subject.</p>' +
+          '</div>';
+        count.textContent = '0 configured';
+        return;
+      }
+      count.textContent = providers.length + ' configured';
+      container.innerHTML = '<div class="ed-keys-list">' + providers.map(function(p) {
+        var on = p.is_active;
+        return '<div class="ed-key">' +
+          '<span class="ed-key-dot ' + (on ? 'is-on' : 'is-off') + '" aria-label="' + (on ? 'Active' : 'Inactive') + '"></span>' +
+          '<div><div class="ed-key-name">' + esc(p.label || p.model) + '</div><div class="ed-key-meta">' + esc(p.url) + ' · ' + esc(p.model) + '</div></div>' +
+          '<button class="ed-key-del" onclick="deleteKey(\'' + p.id + '\')" title="Remove" aria-label="Remove key">' +
+          '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg>' +
+          '</button>' +
+        '</div>';
+      }).join('') + '</div>';
+    }
+
+    function loadKeys() {
+      fetch('/api/api-key', { credentials: 'same-origin' }).then(function(r) {
+        if (r.status === 401) { window.location.href = '/account'; return null; }
+        return r.json();
+      }).then(function(d) {
+        if (d) renderKeys(d.providers);
+      }).catch(function(){});
+    }
+
+    function addKey() {
+      var label = document.getElementById('keyLabel').value.trim();
+      var urlEl = document.getElementById('keyUrl');
+      var url = urlEl.value || document.getElementById('keyUrlCustom').value.trim();
+      var model = document.getElementById('keyModel').value.trim();
+      var key = document.getElementById('keyValue').value.trim();
+      if (!url) { msg('Please select or enter a provider URL.', 'err'); return; }
+      if (!model) { msg('Please enter the model name.', 'err'); return; }
+      if (!key) { msg('Please enter your API key.', 'err'); return; }
+      msg('Saving…', 'info');
+      fetch('/api/api-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
+        body: JSON.stringify({ label: label || model, url: url, model: model, key: key }),
+        credentials: 'same-origin'
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.error) { msg(d.error, 'err'); return; }
+        msg('Key saved successfully. The tutor will use it on your next session.', 'ok');
+        document.getElementById('keyLabel').value = '';
+        document.getElementById('keyValue').value = '';
+        loadKeys();
+      }).catch(function(){ msg('Connection error. Please try again.', 'err'); });
+    }
+
+    function deleteKey(id) {
+      showConfirm('Remove this key?', 'Socrates will stop sending prompts to this provider. Past sessions are not affected.', {
+        confirmText: 'Remove key',
+        danger: true,
+        onConfirm: function() {
+          fetch('/api/api-key/' + id, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-Token': getCookie('csrf') || '' },
+            credentials: 'same-origin'
+          }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.error) { showToast(d.error, 'error'); return; }
+            showToast('Provider key removed.', 'success');
+            loadKeys();
+          }).catch(function(){ showToast('Connection error.', 'error'); });
+        }
+      });
+    }
+
+    /* Custom select */
+    (function(){
+      var select = document.getElementById('keyUrlSelect');
+      var hiddenInput = document.getElementById('keyUrl');
+      var trigger = select.querySelector('.ed-select-trigger');
+      var panel = select.querySelector('.ed-select-panel');
+      var options = select.querySelectorAll('.ed-select-option');
+      var customWrap = document.getElementById('keyUrlCustomWrap');
+
+      function updateTrigger(option) {
+        trigger.querySelector('.ed-select-value').textContent = option.querySelector('.ed-select-option-name').textContent;
+        trigger.querySelector('.ed-select-url').textContent = option.querySelector('.ed-select-option-url').textContent;
+      }
+      function selectOption(option) {
+        options.forEach(function(o){ o.classList.remove('is-selected') });
+        option.classList.add('is-selected');
+        hiddenInput.value = option.getAttribute('data-value');
+        updateTrigger(option);
+        if (hiddenInput.value === '') { customWrap.classList.add('is-open'); document.getElementById('keyUrlCustom').focus(); }
+        else { customWrap.classList.remove('is-open'); }
+        closePanel();
+      }
+      function openPanel() { panel.classList.add('is-open'); trigger.classList.add('is-open'); trigger.setAttribute('aria-expanded', 'true'); }
+      function closePanel() { panel.classList.remove('is-open'); trigger.classList.remove('is-open'); trigger.setAttribute('aria-expanded', 'false'); }
+
+      trigger.addEventListener('click', function(e){ e.stopPropagation(); if (panel.classList.contains('is-open')) closePanel(); else openPanel(); });
+      options.forEach(function(option){ option.addEventListener('click', function(){ selectOption(option); }); });
+      document.addEventListener('click', function(e){ if (!select.contains(e.target)) closePanel(); });
+      trigger.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); panel.classList.contains('is-open') ? closePanel() : openPanel(); }
+        else if (e.key === 'Escape') { closePanel(); }
+        else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (!panel.classList.contains('is-open')) openPanel();
+          var sel = select.querySelector('.ed-select-option.is-selected');
+          var next = e.key === 'ArrowDown' ? (sel.nextElementSibling || options[0]) : (sel.previousElementSibling || options[options.length - 1]);
+          selectOption(next);
+        }
+      });
+    })();
+
+    (function(){
+      fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}).then(function(){ loadKeys(); });
+    })();
+  </script>
 </body>
 </html>

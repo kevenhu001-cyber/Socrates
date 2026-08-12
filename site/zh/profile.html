@@ -1,237 +1,233 @@
-<!DOCTYPE html>
-<html lang="zh-CN" data-theme="socrates" data-mode="dark">
+<!doctype html>
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/logo.png">
-<title>Socrates — 个人资料</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
-<link href="/base.css" rel="stylesheet">
-<link href="/marketing.css" rel="stylesheet">
-<style>
-.profile-form{max-width:440px;margin:0 auto}
-.profile-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:16px;padding:28px 32px 32px;box-shadow:0 2px 12px hsl(var(--always-black)/0.08)}
-.profile-card h3{font-size:15px;font-weight:600;color:hsl(var(--text-100));margin-bottom:16px;padding-bottom:12px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
-.profile-field{margin-bottom:16px}
-.profile-field label{display:block;font-size:12px;color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
-.profile-field input{width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:inherit;outline:none;transition:border-color .15s}
-.profile-field input:focus{border-color:hsl(var(--accent-000)/0.4)}
-.profile-field input:disabled{opacity:0.5}
-.profile-msg{font-size:13px;padding:10px 16px;border-radius:8px;margin-bottom:14px;display:none}
-.profile-msg.ok{display:block;background:hsl(145 50% 45%/0.08);color:hsl(145 50% 50%);border:0.5px solid hsl(145 50% 45%/0.15)}
-.profile-msg.err{display:block;background:hsl(0 60% 50%/0.08);color:hsl(0 60% 55%);border:0.5px solid hsl(0 60% 50%/0.12)}
-.profile-divider{height:0.5px;background:hsl(var(--border-300)/0.08);margin:24px 0}
-.profile-card + .profile-card{margin-top:16px}
-@media(max-width:720px){.profile-card{padding:20px}}
-</style>
-<script>
-!function(){
-  try{
-    var p=localStorage.getItem("socrates-lang");
-    if(!p)return;
-    var c=document.documentElement.lang;
-    var here=window.location.pathname;
-    if(p==="zh"&&c.indexOf("zh")!==0){
-      var target=here.replace(/\.html$/,"");
-      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
-    }else if(p==="en"&&c.indexOf("en")!==0){
-      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
-      window.location.replace(target2==="/"||target2===""?"/":target2);
-    }
-  }catch(e){}
-}();
-</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="更新 Socrates 账户的昵称、密码与导出数据。">
+  <title>个人资料 — Socrates</title>
+  <link rel="icon" href="../favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../editorial.css?cb=20260814">
+  <link rel="stylesheet" href="../brand.css?cb=20260814">
+  <link rel="stylesheet" href="../account.css">
 </head>
-<body>
-<script src="/marketing.js"></script>
-<div class="bg-grid"></div>
-<div class="page">
+<body class="ed-site">
+  <a class="ed-skip" href="#main">跳到正文</a>
 
-<nav>
-  <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px"><span><em>S</em>ocrates</span></a>
-    <div class="nav-links">
-      <a href="/pricing">套餐</a>
-      <a href="/guide">指南</a>
-      <a href="/about">关于</a>
-      <a href="/contact">联系</a>
-      <a href="/account">账户</a>
-      <a class="lang-switch">EN</a>
-      <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+  <header class="ed-header">
+    <div class="ed-shell">
+      <nav class="ed-header-inner" data-ed-nav aria-label="主导航">
+        <a class="ed-brand" href="index" aria-label="Socrates 首页">SOCRATES</a>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel>
+          <a href="../research">研究</a>
+          <a href="../documents">文档</a>
+          <a href="../about">关于我们</a>
+          <a href="../announcements">动态</a>
+          <a href="../index">English</a>
+        </div>
+        <div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">试用 Socrates</a></div>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="菜单"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+      </nav>
     </div>
-  </div>
-</nav>
+  </header>
 
-<div class="page-header">
-  <div class="section-eyebrow">设置</div>
-  <h1>个人<strong>资料</strong></h1>
-  <p>管理您的显示名称和密码。</p>
-</div>
-
-<section style="padding-top:0">
-  <div class="section-inner" style="max-width:480px">
-
-    <div id="profileContent">
-      <!-- Profile info card -->
-      <div class="profile-card sr">
-        <h3>个人信息</h3>
-        <div id="profileMsg" class="profile-msg"></div>
-        <div class="profile-field">
-          <label>邮箱</label>
-          <input id="profEmail" disabled>
+  <main id="main">
+    <section class="ed-page-hero ed-app-page-hero">
+      <div class="ed-shell ed-page-hero-grid ed-reveal">
+        <div>
+          <p class="ed-kicker">设置</p>
+          <h1 class="ed-page-title ed-app-page-title">个人资料。</h1>
         </div>
-        <div class="profile-field">
-          <label for="profName">显示名称</label>
-          <input id="profName" placeholder="您的显示名称" maxlength="100">
-        </div>
-        <button class="btn btn-primary" onclick="saveProfile()">保存修改</button>
+        <p class="ed-copy-serif">管理昵称、密码，以及 Socrates 为你保存的数据。修改会立即在你的账户上生效。</p>
       </div>
+    </section>
 
-      <!-- Password card -->
-      <div class="profile-card sr sr-d1">
-        <h3>修改密码</h3>
-        <div id="passMsg" class="profile-msg"></div>
-        <div class="profile-field">
-          <label for="oldPass">当前密码</label>
-          <input id="oldPass" type="password" placeholder="当前密码">
+    <section class="ed-section-tight ed-app-section">
+      <div class="ed-shell ed-app-grid">
+        <aside class="ed-app-side ed-reveal" aria-label="账户导航">
+          <p class="ed-kicker">账户</p>
+          <nav class="ed-app-side-nav">
+            <a href="account"><span>01</span>订阅与用量</a>
+            <a href="api-keys"><span>02</span>API 密钥</a>
+            <a href="profile" class="is-current" aria-current="page"><span>03</span>个人资料</a>
+            <a href="../pricing"><span>04</span>更换套餐</a>
+          </nav>
+          <p class="ed-app-side-note">需要离开吗？危险操作都在<a href="account">订阅页</a>，不会离主操作太近。</p>
+        </aside>
+
+        <div id="profileContent" class="ed-app-main">
+          <article class="ed-app-card ed-reveal">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">个人资料</p>
+                <h2 class="ed-app-card-title">你在 Socrates 中的样子。</h2>
+              </div>
+            </header>
+            <div id="profileMsg" class="ed-app-msg"></div>
+            <div class="ed-field">
+              <label for="profEmail">邮箱</label>
+              <input id="profEmail" disabled>
+              <p class="ed-field-hint">邮箱是账户的唯一标识，不能在这里修改。如需更换地址，请写信到 <a href="mailto:help@addtech.site">help@addtech.site</a>。</p>
+            </div>
+            <div class="ed-field">
+              <label for="profName">昵称</label>
+              <input id="profName" placeholder="你的昵称" maxlength="100">
+              <p class="ed-field-hint">会在你的会话和知识地图上显示。</p>
+            </div>
+            <div class="ed-app-actions">
+              <button class="ed-button" onclick="saveProfile()">保存修改</button>
+            </div>
+          </article>
+
+          <article class="ed-app-card ed-reveal">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">密码</p>
+                <h2 class="ed-app-card-title">修改登录密码。</h2>
+              </div>
+            </header>
+            <div id="passMsg" class="ed-app-msg"></div>
+            <div class="ed-field">
+              <label for="oldPass">当前密码</label>
+              <input id="oldPass" type="password" placeholder="当前密码" autocomplete="current-password">
+            </div>
+            <div class="ed-field">
+              <label for="newPass">新密码</label>
+              <input id="newPass" type="password" placeholder="至少 6 个字符" autocomplete="new-password">
+              <p class="ed-field-hint">至少 6 个字符。选一句你记得、别人猜不到的短语。</p>
+            </div>
+            <div class="ed-app-actions">
+              <button class="ed-button" onclick="changePass()">更新密码</button>
+            </div>
+          </article>
+
+          <article class="ed-app-card ed-reveal">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">你的数据</p>
+                <h2 class="ed-app-card-title">导出 Socrates 为你保存的所有内容。</h2>
+              </div>
+            </header>
+            <p class="ed-copy">一个 JSON 文件，包含你的会话、知识地图、错题本、API 密钥配置与账户信息。在你按下按钮之前，所有数据都留在你的账户里。</p>
+            <div class="ed-app-actions">
+              <a class="ed-button-quiet" href="/api/account/export" download>下载导出</a>
+            </div>
+          </article>
+
+          <article class="ed-app-card ed-reveal ed-app-card-danger">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">离开</p>
+                <h2 class="ed-app-card-title">退出这个浏览器。</h2>
+              </div>
+            </header>
+            <p class="ed-copy">退出后只清除这个会话。账户和数据保留原样，你可以随时从账户页重新登录。</p>
+            <div class="ed-app-actions">
+              <a class="ed-button-quiet" href="/api/auth/logout">退出登录</a>
+            </div>
+          </article>
         </div>
-        <div class="profile-field">
-          <label for="newPass">新密码</label>
-          <input id="newPass" type="password" placeholder="至少6个字符">
-        </div>
-        <button class="btn btn-primary" onclick="changePass()">更新密码</button>
       </div>
+    </section>
+  </main>
 
-      <!-- Export card -->
-      <div class="profile-card sr sr-d2">
-        <h3>导出数据</h3>
-        <p style="font-size:13px;color:hsl(var(--text-400));line-height:1.7;margin-bottom:14px">下载您的所有数据，包括对话会话、API提供商配置和账户信息，格式为JSON文件。</p>
-        <a href="/api/account/export" class="btn btn-outline" download>下载导出</a>
+  <footer class="ed-footer">
+    <div class="ed-shell ed-footer-frame">
+      <div class="ed-footer-top">
+        <div class="ed-footer-brand"><a class="ed-brand" href="index">SOCRATES</a><p>为真正想理解的人打造的 AI 导师。</p></div>
+        <div class="ed-footer-column"><h2>产品</h2><a href="../product">学习循环</a><a href="../pricing">定价</a><a href="https://app.topodrive.top">打开 Socrates</a></div>
+        <div class="ed-footer-column"><h2>账户</h2><a href="account">我的账户</a><a href="api-keys">API 密钥</a><a href="profile">个人资料</a></div>
+        <div class="ed-footer-column"><h2>资料库</h2><a href="../announcements">动态</a><a href="../documents">文档</a><a href="../research">研究</a></div>
+        <div class="ed-footer-column"><h2>其他</h2><a href="../index">English</a><a href="privacy">隐私</a><a href="terms">条款</a></div>
       </div>
+      <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>为真正想理解的人打造。</span></div>
     </div>
+  </footer>
 
-  </div>
-</section>
+  <script>
+    var srObs = new IntersectionObserver(function(e){
+      e.forEach(function(entry){if(entry.isIntersecting)entry.target.classList.add('in')});
+    },{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+    document.querySelectorAll('.ed-reveal').forEach(function(el){srObs.observe(el)});
 
-<footer>
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div class="footer-tag"><em>S</em>ocrates</div>
-      <p>AI驱动的苏格拉底式导师。循序渐进，学无止境。</p>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">产品</div>
-      <a href="/pricing">套餐</a>
-      <a href="/guide">指南</a>
-      <a href="https://app.topodrive.top">应用</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">公司</div>
-      <a href="/about">关于</a>
-      <a href="/contact">联系</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">账户</div>
-      <a href="/account">我的账户</a>
-      <a href="/api-keys">API密钥</a>
-      <a href="/profile">个人资料</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">法律</div>
-      <a href="/terms">服务条款</a>
-      <a href="/privacy">隐私政策</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">支持</div>
-      <a href="mailto:help@addtech.site">help@addtech.site</a>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 Topodrive. All rights reserved.</p>
-      <p>用心打造，服务全球学习者。</p>
-      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
-    </div>
-  </div>
-</footer>
+    document.querySelectorAll('[data-ed-nav]').forEach(function (nav) {
+      var button = nav.querySelector('[data-menu-button]');
+      var panel = nav.querySelector('[data-menu-panel]');
+      if (!button || !panel) return;
+      button.addEventListener('click', function () {
+        var willOpen = !nav.classList.contains('is-open');
+        nav.classList.toggle('is-open', willOpen);
+        button.setAttribute('aria-expanded', String(willOpen));
+        document.body.classList.toggle('ed-menu-open', willOpen);
+      });
+      document.addEventListener('keydown', function (event) { if (event.key === 'Escape') { nav.classList.remove('is-open'); button.setAttribute('aria-expanded', 'false'); document.body.classList.remove('ed-menu-open'); } });
+    });
 
-</div>
+    function getCookie(name) {
+      var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '=([^;]*)'));
+      return m ? m[1] : null;
+    }
+    function showMsg(el, text, type) {
+      el.textContent = text;
+      el.className = 'ed-app-msg ' + (type || '');
+    }
 
-<script>
-/* ── Scroll reveal ─────────────────────────────────── */
-var srObs = new IntersectionObserver(function(e){
-  e.forEach(function(entry){if(entry.isIntersecting)entry.target.classList.add('in')});
-},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
-document.querySelectorAll('.sr').forEach(function(el){srObs.observe(el)});
+    function loadProfile() {
+      fetch('/api/auth/me', { credentials: 'same-origin' }).then(function(r) {
+        if (r.status === 401) { window.location.href = '/zh/account'; return null; }
+        return r.json();
+      }).then(function(d) {
+        if (!d || !d.user) return;
+        document.getElementById('profEmail').value = d.user.email || '';
+        document.getElementById('profName').value = d.user.displayName || '';
+      }).catch(function(){});
+    }
 
-/* ── CSRF / cookie helpers ─────────────────────────── */
-function getCookie(name) {
-  var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '=([^;]*)'));
-  return m ? m[1] : null;
-}
-function msg(el, text, type) {
-  el.textContent = text;
-  el.className = 'profile-msg ' + (type || '');
-}
+    function saveProfile() {
+      var name = document.getElementById('profName').value.trim();
+      var el = document.getElementById('profileMsg');
+      if (!name) { showMsg(el, '昵称不能为空。', 'err'); return; }
+      showMsg(el, '保存中…', '');
+      fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
+        body: JSON.stringify({ displayName: name }),
+        credentials: 'same-origin'
+      }).then(function(r){
+        if (!r.ok) { return r.json().then(function(d){ throw new Error(d.detail || d.message || 'request failed'); }); }
+        return r.json();
+      }).then(function(){
+        showMsg(el, '个人资料已更新。', 'ok');
+      }).catch(function(e){
+        showMsg(el, e.message || '连接错误。', 'err');
+      });
+    }
 
-/* ── Load profile ──────────────────────────────────── */
-function loadProfile() {
-  fetch('/api/auth/me', { credentials: 'same-origin' }).then(function(r) {
-    if (r.status === 401) { window.location.href = '/account'; return null; }
-    return r.json();
-  }).then(function(d) {
-    if (!d || !d.user) return;
-    document.getElementById('profEmail').value = d.user.email || '';
-    document.getElementById('profName').value = d.user.displayName || '';
-  }).catch(function(){});
-}
+    function changePass() {
+      var oldP = document.getElementById('oldPass').value;
+      var newP = document.getElementById('newPass').value;
+      var el = document.getElementById('passMsg');
+      if (!oldP || !newP) { showMsg(el, '请填写两个字段。', 'err'); return; }
+      if (newP.length < 6) { showMsg(el, '新密码至少 6 个字符。', 'err'); return; }
+      showMsg(el, '更新中…', '');
+      fetch('/api/auth/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
+        body: JSON.stringify({ oldPassword: oldP, newPassword: newP }),
+        credentials: 'same-origin'
+      }).then(function(r){return r.json()}).then(function(d){
+        if (d.error) { showMsg(el, d.error, 'err'); return; }
+        showMsg(el, '密码已更新。', 'ok');
+        document.getElementById('oldPass').value = '';
+        document.getElementById('newPass').value = '';
+      }).catch(function(){ showMsg(el, '连接错误。', 'err'); });
+    }
 
-/* ── Save profile ──────────────────────────────────── */
-function saveProfile() {
-  var name = document.getElementById('profName').value.trim();
-  var el = document.getElementById('profileMsg');
-  if (!name) { msg(el, '显示名称不能为空。', 'err'); return; }
-  msg(el, '保存中…', '');
-  fetch('/api/users/me', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
-    body: JSON.stringify({ displayName: name }),
-    credentials: 'same-origin'
-  }).then(function(r){
-    if (!r.ok) { return r.json().then(function(d){ throw new Error(d.detail || d.message || '请求失败'); }); }
-    return r.json();
-  }).then(function(d){
-    msg(el, '个人资料更新成功。', 'ok');
-  }).catch(function(e){
-    msg(el, e.message || '连接错误。', 'err');
-  });
-}
-
-/* ── Change password ──────────────────────────────── */
-function changePass() {
-  var oldP = document.getElementById('oldPass').value;
-  var newP = document.getElementById('newPass').value;
-  var el = document.getElementById('passMsg');
-  if (!oldP || !newP) { msg(el, '请填写两个字段。', 'err'); return; }
-  if (newP.length < 6) { msg(el, '新密码必须至少6个字符。', 'err'); return; }
-  msg(el, '更新中…', '');
-  fetch('/api/auth/password', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
-    body: JSON.stringify({ oldPassword: oldP, newPassword: newP }),
-    credentials: 'same-origin'
-  }).then(function(r){return r.json()}).then(function(d){
-    if (d.error) { msg(el, d.error, 'err'); return; }
-    msg(el, '密码更新成功。', 'ok');
-    document.getElementById('oldPass').value = '';
-    document.getElementById('newPass').value = '';
-  }).catch(function(){ msg(el, '连接错误。', 'err'); });
-}
-
-/* ── Init ──────────────────────────────────────────── */
-(function(){
-  fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}).then(function(){ loadProfile(); });
-})();
-</script>
-<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/^\/zh/,'').replace(/\.html$/,'');b.href=p==='/'||p===''?'/':p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","en")}catch(e){}});})();</script>
+    (function(){
+      fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}).then(function(){ loadProfile(); });
+    })();
+  </script>
 </body>
 </html>
