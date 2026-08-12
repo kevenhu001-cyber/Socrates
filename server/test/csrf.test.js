@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 
-import { csrfProtection, setCsrfCookie, clearCsrfCookie } from '../src/middleware/csrf.js';
+import { csrfProtection, setCsrfCookie, clearCsrfCookie } from '../src/middleware/csrf.ts';
 import { errorHandler } from '../src/middleware/error.js';
 import { listen, httpRequest } from './_http.js';
 
