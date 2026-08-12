@@ -32,20 +32,23 @@
      system stacks after Inter are deliberately limited so CJK characters
      never collapse onto Microsoft YaHei / SimSun on Windows hosts. */
   --site-sans-latin: "Geist", "Inter", "Helvetica Neue", Arial, sans-serif;
-  /* CJK UI sans — Noto Sans SC is loaded as a webfont, so we don't reach
-     the OS fallback ("PingFang SC" / "Hiragino Sans GB") on macOS, nor the
-     YaHei/SimSun fallbacks Windows would otherwise inject. */
-  --site-sans-cjk: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", sans-serif;
+  /* CJK UI sans — the Latin families (Geist / Inter) are listed FIRST so
+     any Latin glyph inside a Chinese page renders with the English-interface
+     sans, and only CJK glyphs fall through to 思源黑体 (Noto Sans SC), which
+     is loaded as a webfont (no YaHei / SimSun fallback on Windows). */
+  --site-sans-cjk: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", sans-serif;
   /* Latin editorial serif — Newsreader is a contemporary book serif that
      stays comfortable at long measure without the museum-piece weight of
      Spectral or Source Serif. Geist is intentionally NOT in this stack:
      it reads as "UI sans" and loses the quiet differentiation we want
      between the marketing display and the body copy. */
-  --site-serif-latin: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", Georgia, serif;
-  /* CJK editorial serif — Noto Serif SC is loaded as a webfont so we get
-     the same kind of book-serif feel for Chinese body copy without dipping
-     into a system default. */
-  --site-serif-cjk: "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
+  --site-serif-latin: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", serif;
+  /* CJK editorial serif — the Latin families (Newsreader …) are listed
+     FIRST so embedded English inside a Chinese page matches the
+     English-interface serif; CJK glyphs fall through to 思源黑体
+     (Noto Sans SC) per the Chinese-page typography spec, with Noto Serif SC
+     / Songti SC kept only as further fallbacks. */
+  --site-serif-cjk: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Sans SC", "Source Han Serif SC", "Songti SC", serif;
   --site-mono: "Geist Mono", "JetBrains Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
   --site-shadow: 0 16px 42px rgba(33, 28, 22, .08);
 
@@ -105,7 +108,9 @@
 
 html:lang(zh) {
   --font-sans: var(--site-sans-cjk);
-  --font-display: var(--site-sans-cjk);
+  /* Display uses the serif CJK stack so embedded Latin matches the
+     English-interface display (Newsreader) and Chinese uses 思源黑体. */
+  --font-display: var(--site-serif-cjk);
   --mk-sans: var(--site-sans-cjk);
 }
 
@@ -237,7 +242,9 @@ html:lang(zh) body.ed-site .ed-footer-brand p,
 html:lang(zh) body.ed-site .ed-product-block h2,
 html:lang(zh) body.ed-site .ed-contact-card h2,
 html:lang(zh) body.ed-site .ed-price-card h2 {
-  font-family: var(--site-sans-cjk);
+  /* Mirror the English interface: display/headings use the serif stack
+     (Latin → Newsreader), so Chinese falls through to 思源黑体. */
+  font-family: var(--site-serif-cjk);
   letter-spacing: 0;
   line-height: 1.14;
   font-weight: 600;
@@ -986,6 +993,8 @@ body.ed-site .ed-price-card h2 {
   font-family: var(--site-sans-latin);
 }
 
+/* Chinese display/headings mirror the English interface (serif Latin),
+   so Latin → Newsreader and Chinese → 思源黑体. */
 html:lang(zh) body.ed-site .ed-display,
 html:lang(zh) body.ed-site .ed-page-title,
 html:lang(zh) body.ed-site .ed-title,
@@ -998,7 +1007,13 @@ html:lang(zh) body.ed-site .ed-copy-serif,
 html:lang(zh) body.ed-site .ed-footer-brand p,
 html:lang(zh) body.ed-site .ed-product-block h2,
 html:lang(zh) body.ed-site .ed-contact-card h2,
-html:lang(zh) body.ed-site .ed-price-card h2,
+html:lang(zh) body.ed-site .ed-price-card h2 {
+  font-family: var(--site-serif-cjk);
+  letter-spacing: 0;
+}
+
+/* Old marketing pages are intentionally ALL SANS — keep their Chinese
+   stack on the sans CJK variable (Latin → Geist). */
 html:lang(zh) body.mk-page h1,
 html:lang(zh) body.mk-page h2,
 html:lang(zh) body.mk-page h3,
@@ -1082,7 +1097,9 @@ body.ed-site.legal-page .ed-legal-section li {
 
 html:lang(zh) body.ed-site.legal-page .ed-legal-section p,
 html:lang(zh) body.ed-site.legal-page .ed-legal-section li {
-  font-family: var(--site-sans-cjk);
+  /* English legal body copy uses the serif Latin stack; keep the Chinese
+     page in step (Latin → Newsreader, Chinese → 思源黑体). */
+  font-family: var(--site-serif-cjk);
   font-size: 16px;
   line-height: 1.75;
 }
@@ -1102,7 +1119,7 @@ body.legal-page:not(.ed-site):not(.mk-page) .legal-section li {
 
 html:lang(zh) body.legal-page:not(.ed-site):not(.mk-page) .legal-section p,
 html:lang(zh) body.legal-page:not(.ed-site):not(.mk-page) .legal-section li {
-  font-family: var(--site-sans-cjk);
+  font-family: var(--site-serif-cjk);
   line-height: 1.75;
 }
 
