@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Subscribe to Socrates and start a more deliberate learning practice.">
-  <title>Subscribe — Socrates</title>
+  <title>Subscribe —Socrates</title>
   <link rel="icon" href="favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="editorial.css?cb=20260814">
-  <link rel="stylesheet" href="brand.css?cb=20260814">
+  <link rel="stylesheet" href="editorial.css?cb=20260815">
+  <link rel="stylesheet" href="brand.css?cb=20260815">
   <link rel="stylesheet" href="account.css">
   <style>
     /* Checkout-specific overrides on top of account.css */
@@ -106,7 +106,7 @@
                 <span class="ed-plan-radio"></span>
                 <div class="ed-plan-info">
                   <div class="ed-plan-name">Riemann</div>
-                  <div class="ed-plan-desc">For regular learners — 50 sessions, 3 LLM keys, web search.</div>
+                  <div class="ed-plan-desc">For regular learners —50 sessions, 3 LLM keys, web search.</div>
                 </div>
                 <div class="ed-plan-price"><strong>$9</strong><span>/ month</span></div>
               </label>
@@ -115,7 +115,7 @@
                 <span class="ed-plan-radio"></span>
                 <div class="ed-plan-info">
                   <div class="ed-plan-name">Descartes</div>
-                  <div class="ed-plan-desc">For serious students — 200 sessions, 5 LLM keys, exam mode, priority support.</div>
+                  <div class="ed-plan-desc">For serious students —200 sessions, 5 LLM keys, exam mode, priority support.</div>
                 </div>
                 <div class="ed-plan-price"><strong>$19</strong><span>/ month</span></div>
               </label>
@@ -125,7 +125,7 @@
                 <span class="ed-plan-radio"></span>
                 <div class="ed-plan-info">
                   <div class="ed-plan-name">Euclid</div>
-                  <div class="ed-plan-desc">For power users — unlimited sessions, unlimited LLM keys, full toolkit.</div>
+                  <div class="ed-plan-desc">For power users —unlimited sessions, unlimited LLM keys, full toolkit.</div>
                 </div>
                 <div class="ed-plan-price"><strong>$39</strong><span>/ month</span></div>
               </label>
@@ -203,7 +203,7 @@
           <div class="ed-guarantee ed-reveal">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             <div>
-              <p><strong>Cancel any time.</strong> No long-term contracts. If you cancel within 14 days of a first paid plan, we will refund the period — write to <a href="mailto:help@addtech.site">help@addtech.site</a>.</p>
+              <p><strong>Cancel any time.</strong> No long-term contracts. If you cancel within 14 days of a first paid plan, we will refund the period —write to <a href="mailto:help@addtech.site">help@addtech.site</a>.</p>
             </div>
           </div>
         </div>
@@ -315,7 +315,7 @@
         case 'card': {
           var v = $('inputCard').value.replace(/\s/g, '');
           if (!v) msg = 'Card number is required';
-          else if (v.length < 13 || v.length > 16) msg = 'Card number should be 13–16 digits';
+          else if (v.length < 13 || v.length > 16) msg = 'Card number should be 13—6 digits';
           else if (!luhnOk(v)) msg = 'Invalid card number (failed checksum)';
           else ok = true;
           break;
@@ -329,7 +329,7 @@
         case 'cvc': {
           var v = $('inputCvc').value.trim();
           if (!v) msg = 'CVC is required';
-          else if (!/^\d{3,4}$/.test(v)) msg = 'CVC must be 3–4 digits';
+          else if (!/^\d{3,4}$/.test(v)) msg = 'CVC must be 3— digits';
           else ok = true;
           break;
         }
@@ -390,7 +390,7 @@
       if (!allValid()) return;
       var btn = $('checkoutSubmit');
       btn.disabled = true;
-      btn.innerHTML = '<span>Processing…</span>';
+      btn.innerHTML = '<span>Processing—/span>';
 
       var overlay = $('paymentOverlay');
       overlay.classList.add('is-open');
@@ -416,7 +416,7 @@
           icon.classList.add('is-success');
           icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28" height="28"><polyline points="4 12 9 17 20 6"/></svg>';
           title.textContent = 'Subscription confirmed';
-          desc.textContent = 'Welcome to ' + $('submitPlanName').textContent + '. Redirecting to your dashboard…';
+          desc.textContent = 'Welcome to ' + $('submitPlanName').textContent + '. Redirecting to your dashboard—;
           btn.innerHTML = '<span>Subscribed to ' + $('submitPlanName').textContent + '</span><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 8 7 12 13 4"/></svg>';
         } else {
           icon.classList.add('is-fail');

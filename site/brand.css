@@ -10,7 +10,7 @@
  */
 :root {
   --site-paper: #f4f1e9;
-  --site-paper-soft: #fbfaf6;
+  --site-paper-soft: #faf9f5;
   --site-paper-strong: #eee8dc;
   --site-sand: #e5dbc9;
   --site-ink: #171716;
@@ -139,34 +139,55 @@ body.ed-site .ed-button { color: var(--site-paper); background: var(--site-ink);
 body.ed-site .ed-button:hover { color: #fff; background: #000; border-color: #000; }
 body.ed-site .ed-button-quiet { color: var(--site-ink); border-color: var(--site-line); }
 body.ed-site .ed-button-quiet:hover { background: var(--site-paper-soft); border-color: var(--site-ink); }
+/* Anthropic-style type hierarchy: serif for display + prose, sans for UI chrome.
+   Avoid the tight sans tracking that reads as generic AI-SaaS hero copy. */
 body.ed-site .ed-display,
 body.ed-site .ed-page-title,
 body.ed-site .ed-title,
-body.ed-site .ed-statement-title {
-  letter-spacing: -.045em;
-  line-height: .98;
-}
-body.ed-site .ed-display { font-size: clamp(48px, 6vw, 88px); }
-body.ed-site .ed-page-title { max-width: 14ch; font-size: clamp(50px, 6vw, 78px); }
-body.ed-site .ed-title { font-size: clamp(38px, 4vw, 64px); }
-body.ed-site .ed-statement-title { font-size: clamp(40px, 4.2vw, 66px); }
+body.ed-site .ed-statement-title,
 body.ed-site .ed-reference-title,
 body.ed-site .ed-news-hero h1,
-body.ed-site .ed-learning-hero h1 { font-size: clamp(48px, 6vw, 88px); letter-spacing: -.045em; line-height: .98; }
+body.ed-site .ed-learning-hero h1,
+body.ed-site .ed-research-coda h2,
+body.ed-site .ed-policy-manifesto h2,
+body.ed-site .ed-course-intro h2,
+body.ed-site .ed-learning-object h2,
+body.ed-site .ed-network-copy h2 {
+  font-family: var(--site-serif-latin);
+  font-weight: 400;
+  letter-spacing: -.012em;
+  line-height: 1.08;
+}
+body.ed-site .ed-display { font-size: clamp(44px, 5.4vw, 80px); line-height: 1.06; }
+body.ed-site .ed-page-title { max-width: 14ch; font-size: clamp(44px, 5.2vw, 72px); }
+body.ed-site .ed-title { font-size: clamp(32px, 3.4vw, 52px); font-weight: 400; line-height: 1.1; }
+body.ed-site .ed-statement-title { font-size: clamp(34px, 3.6vw, 56px); }
+body.ed-site .ed-reference-title,
+body.ed-site .ed-news-hero h1,
+body.ed-site .ed-learning-hero h1 { font-size: clamp(44px, 5.4vw, 80px); }
 body.ed-site .ed-research-coda h2,
 body.ed-site .ed-policy-manifesto h2,
 body.ed-site .ed-policy-visual h2,
 body.ed-site .ed-course-intro h2,
 body.ed-site .ed-learning-object h2,
-body.ed-site .ed-network-copy h2 { font-size: clamp(38px, 4.5vw, 64px); letter-spacing: -.045em; line-height: .98; }
+body.ed-site .ed-network-copy h2 { font-size: clamp(32px, 3.8vw, 56px); }
 body.ed-site .ed-serif,
 body.ed-site .ed-copy-serif,
 body.ed-site .ed-footer-brand p,
 body.ed-site .ed-product-block h2,
 body.ed-site .ed-contact-card h2,
 body.ed-site .ed-price-card h2,
-body.ed-site .ed-policy-visual h2,
-body.ed-site .ed-learning-hero h1 { font-family: var(--site-serif-latin); }
+body.ed-site .ed-policy-visual h2 { font-family: var(--site-serif-latin); }
+body.ed-site .ed-copy { font-size: 17px; line-height: 1.62; }
+body.ed-site .ed-copy-serif { font-size: clamp(18px, 1.4vw, 22px); line-height: 1.48; }
+body.ed-site .ed-team-grid h2,
+body.ed-site .ed-showcase-entry h2,
+body.ed-site .ed-principle h3,
+body.ed-site .ed-essay-row .ed-essay-title {
+  font-family: var(--site-sans-latin);
+  font-weight: 500;
+  letter-spacing: -.018em;
+}
 html:lang(zh) body.ed-site .ed-display,
 html:lang(zh) body.ed-site .ed-page-title,
 html:lang(zh) body.ed-site .ed-title,
@@ -477,13 +498,18 @@ html:lang(zh) body.legal-page .ed-legal-section li { font-family: var(--site-ser
   body.ed-site.legal-page .ed-legal-body { width: 100%; max-width: 640px; }
   body.legal-page:not(.ed-site) .page-header { padding-left: 0; padding-right: 0; }
   body.legal-page:not(.ed-site) .page > section { padding-left: 32px; padding-right: 32px; }
-  body.ed-site .ed-display { font-size: clamp(42px, 12vw, 60px); letter-spacing: -.02em; line-height: 1.05; }
+  body.ed-site .ed-display { font-size: clamp(36px, 9.2vw, 48px); letter-spacing: -.008em; line-height: 1.1; }
   body.ed-site .ed-page-title,
   body.mk-page .mk-display,
-  body.mk-page .mk-title { font-size: clamp(40px, 12vw, 58px); letter-spacing: 0; line-height: 1.08; }
+  body.mk-page .mk-title { font-size: clamp(34px, 8.8vw, 46px); letter-spacing: -.008em; line-height: 1.1; }
+  body.ed-site .ed-title,
+  body.ed-site .ed-statement-title { font-size: clamp(28px, 7.2vw, 38px); letter-spacing: -.008em; line-height: 1.12; }
   body.ed-site .ed-reference-title,
   body.ed-site .ed-news-hero h1,
-  body.ed-site .ed-learning-hero h1 { font-size: clamp(42px, 12vw, 60px); letter-spacing: 0; line-height: 1.08; }
+  body.ed-site .ed-learning-hero h1 { font-size: clamp(36px, 9.2vw, 48px); letter-spacing: -.008em; line-height: 1.1; }
+  body.ed-site .ed-copy { font-size: 16px; line-height: 1.65; }
+  body.ed-site .ed-copy-serif { font-size: 18px; line-height: 1.5; }
+  body.ed-site .ed-essay-row .ed-essay-title { font-size: 19px; font-weight: 500; line-height: 1.22; }
   body:not(.ed-site):not(.mk-page) .page-header h1,
   body.legal-page .page-header h1 { font-size: clamp(38px, 11vw, 52px); letter-spacing: 0; line-height: 1.08; }
   body.legal-page:not(.ed-site) .page > nav .nav-inner,
@@ -500,4 +526,349 @@ html:lang(zh) body.legal-page .ed-legal-section li { font-family: var(--site-ser
   body.legal-page .ed-legal-section table { display: block; overflow-x: auto; white-space: nowrap; }
   body.legal-page .ed-legal-meta { align-items: flex-start; flex-direction: column; }
   body.legal-page .ed-legal-meta select { width: 100%; }
+}
+
+/* -------------------------------------------------------------------------
+ * 2026 editorial polish
+ *
+ * The marketing surface should feel composed before it feels clever. Keep
+ * the paper/ink palette, but remove the dense SaaS cues: oversized display
+ * type, monospaced labels everywhere, floating logo chrome, and card-heavy
+ * mobile navigation.
+ * ------------------------------------------------------------------------- */
+body.ed-site .ed-shell {
+  width: min(1280px, calc(100% - 120px));
+}
+
+body.ed-site .ed-header {
+  padding: 16px 0 12px;
+  border-bottom-color: transparent;
+}
+
+body.ed-site .ed-header.is-scrolled {
+  padding: 12px 0 10px;
+  border-bottom-color: var(--site-line);
+}
+
+body.ed-site .ed-header-inner {
+  min-height: 40px;
+}
+
+body.ed-site .ed-brand {
+  gap: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: .07em;
+}
+
+/* The wordmark has enough character on its own. The round mark made the
+   header read like an app shell rather than a research institution. */
+body.ed-site .ed-brand-mark,
+body.ed-site .ed-brand img { display: none; }
+
+body.ed-site .ed-nav-links { gap: 28px; }
+body.ed-site .ed-nav-links a { font-size: 14px; }
+
+body.ed-site .ed-button {
+  min-height: 38px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Anthropic's strongest contrast is typographic: a weighty sans headline
+   paired with a quieter serif explanation. Apply that contrast only to the
+   home hero so the editorial sub-pages can keep their more literary rhythm. */
+body.ed-site .ed-home-hero .ed-hero-grid {
+  grid-template-columns: minmax(0, 1.08fr) minmax(260px, .62fr);
+  gap: clamp(40px, 8vw, 132px);
+  align-items: end;
+}
+
+body.ed-site .ed-home-hero .ed-hero-lead {
+  max-width: none;
+}
+
+body.ed-site .ed-home-hero .ed-display {
+  max-width: 680px;
+  font-family: var(--site-sans-latin);
+  font-size: clamp(56px, 6.3vw, 88px);
+  font-weight: 600;
+  letter-spacing: -.055em;
+  line-height: .98;
+}
+
+body.ed-site .ed-home-hero .ed-hero-sub {
+  max-width: 27ch;
+  margin: 0 0 6px;
+  font-family: var(--site-serif-latin);
+  font-size: clamp(22px, 2vw, 30px);
+  line-height: 1.2;
+  letter-spacing: -.02em;
+}
+
+body.ed-site .ed-home-stage {
+  margin-top: clamp(68px, 8vw, 112px);
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+body.ed-site .ed-home-stage img {
+  aspect-ratio: 1.86;
+}
+
+body.ed-site .ed-kicker,
+body.ed-site .ed-meta,
+body.ed-site .ed-row-meta,
+body.ed-site .ed-essay-date,
+body.ed-site .ed-essay-tag {
+  font-family: var(--site-sans-latin);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .035em;
+  text-transform: none;
+}
+
+body.ed-site .ed-link {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+body.ed-site .ed-footer-frame {
+  border-radius: 18px;
+}
+
+@media (max-width: 980px) {
+  body.ed-site .ed-shell { width: min(100% - 48px, 680px); }
+
+  body.ed-site .ed-home-hero .ed-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    align-items: start;
+  }
+
+  body.ed-site .ed-home-hero .ed-hero-lead { max-width: none; }
+  body.ed-site .ed-home-hero .ed-display { max-width: 680px; }
+  body.ed-site .ed-home-hero .ed-hero-sub { margin: 0; max-width: 34ch; }
+}
+
+@media (max-width: 820px) {
+  body.ed-site .ed-nav-links {
+    top: 68px;
+    right: 0;
+    left: 0;
+    display: flex;
+    gap: 8px;
+    padding: 28px 24px 36px;
+    border: 0;
+    border-top: 1px solid var(--site-line);
+    border-radius: 0;
+    background: var(--site-paper);
+  }
+
+  body.ed-site .ed-header-inner.is-open .ed-nav-links {
+    position: fixed;
+    z-index: 40;
+    min-height: calc(100dvh - 68px);
+    overflow-y: auto;
+    border-bottom: 0;
+  }
+
+  body.ed-site .ed-nav-links a {
+    padding: 10px 0;
+    border-radius: 0;
+    font-size: 16px;
+  }
+
+  body.ed-site .ed-nav-links a:hover { background: transparent; }
+}
+
+@media (max-width: 620px) {
+  body.ed-site .ed-shell { width: calc(100% - 48px); }
+  body.ed-site .ed-header { padding: 16px 0 12px; }
+  body.ed-site .ed-brand { font-size: 16px; }
+
+  body.ed-site .ed-home-hero {
+    padding-top: 76px;
+    padding-bottom: 34px;
+  }
+
+  body.ed-site .ed-home-hero .ed-display {
+    max-width: none;
+    font-size: clamp(42px, 11.2vw, 50px);
+    letter-spacing: -.052em;
+    line-height: .99;
+  }
+
+  body.ed-site .ed-home-hero .ed-hero-sub {
+    max-width: 28ch;
+    font-size: 20px;
+    line-height: 1.28;
+  }
+
+  body.ed-site .ed-home-stage {
+    margin-top: 56px;
+    border-radius: 14px;
+  }
+
+  body.ed-site .ed-home-stage img {
+    aspect-ratio: 1.2;
+    border-radius: 14px;
+  }
+
+  body.ed-site .ed-kicker,
+  body.ed-site .ed-meta,
+  body.ed-site .ed-row-meta,
+  body.ed-site .ed-essay-date,
+  body.ed-site .ed-essay-tag {
+    font-size: 12px;
+    letter-spacing: .015em;
+  }
+
+  body.ed-site .ed-footer-frame { border-radius: 14px; }
+}
+
+/* Research imagery and safe text zones ----------------------------------
+   The stage copy is a two column band pinned to the same inset as the stage
+   nav and the caption: headline flush left, standfirst flush right, both
+   starting on one line. */
+@media (min-width: 981px) {
+  body.ed-site .ed-home-stage .ed-network-copy {
+    inset: auto;
+    top: calc(var(--ed-stage-inset) + 40px);
+    left: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, clamp(220px, 24vw, 340px));
+    column-gap: clamp(32px, 5vw, 80px);
+    align-items: start;
+    justify-items: stretch;
+    width: 100%;
+    padding: 0 var(--ed-stage-inset);
+    text-align: left;
+  }
+
+  body.ed-site .ed-home-stage .ed-network-copy h2 {
+    width: auto;
+    max-width: 18ch;
+    font-size: clamp(38px, 3.4vw, 54px);
+    line-height: 1.02;
+    letter-spacing: -.032em;
+    text-wrap: balance;
+  }
+
+  body.ed-site .ed-home-stage .ed-network-copy p {
+    position: static;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    font-size: clamp(15px, 1.15vw, 17px);
+    line-height: 1.48;
+    text-align: right;
+    text-wrap: pretty;
+  }
+}
+
+body.ed-site .ed-article-hero-aside {
+  display: grid;
+  gap: 22px;
+  align-content: start;
+}
+
+body.ed-site .ed-article-hero-media {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--site-black);
+}
+
+body.ed-site .ed-article-hero-media img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+body.ed-site .ed-publication-row {
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 220px);
+  gap: clamp(24px, 4vw, 60px);
+  align-items: start;
+}
+
+body.ed-site .ed-publication-copy { min-width: 0; }
+
+body.ed-site .ed-publication-side {
+  display: grid;
+  gap: 14px;
+  align-content: end;
+  justify-items: end;
+  min-width: 0;
+}
+
+body.ed-site .ed-publication-side img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 12px;
+  background: var(--site-black);
+}
+
+body.ed-site .ed-publication-side .ed-link {
+  justify-self: end;
+}
+
+/* The stage stacks at 980px (editorial.css), so the copy has to follow the
+   same breakpoint or it keeps the desktop column widths while flowing. */
+@media (max-width: 980px) {
+  body.ed-site .ed-home-stage .ed-network-copy {
+    position: static;
+    inset: auto;
+    display: block;
+    width: auto;
+    padding: 22px 0 0;
+    color: var(--site-ink);
+    text-align: left;
+  }
+
+  body.ed-site .ed-home-stage .ed-network-copy h2 {
+    width: auto;
+    max-width: 20ch;
+    color: var(--site-ink);
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.06;
+    letter-spacing: -.028em;
+    text-wrap: balance;
+  }
+
+  body.ed-site .ed-home-stage .ed-network-copy p {
+    max-width: 36ch;
+    margin-top: 12px;
+    color: var(--site-ink-soft);
+    font-size: 16px;
+    line-height: 1.5;
+    text-align: left;
+    text-wrap: pretty;
+  }
+}
+
+@media (max-width: 820px) {
+  body.ed-site .ed-article-hero-aside { gap: 18px; }
+  body.ed-site .ed-article-hero-media { border-radius: 14px; }
+
+  body.ed-site .ed-publication-row {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  body.ed-site .ed-publication-side {
+    grid-template-columns: minmax(140px, 180px) auto;
+    align-items: end;
+    justify-items: start;
+    gap: 16px;
+  }
+
+  body.ed-site .ed-publication-side img { width: min(48vw, 180px); }
+  body.ed-site .ed-publication-side .ed-link { justify-self: start; }
 }

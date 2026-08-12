@@ -39,9 +39,9 @@
       return [
         { key: 'product', label: homeLabels.product, href: '#product' },
         { key: 'method', label: homeLabels.method, href: '#method' },
-        { key: 'research', label: homeLabels.research, href: localHref('guide.html') },
-        { key: 'company', label: homeLabels.company, href: localHref('about.html') },
-        { key: 'pricing', label: homeLabels.pricing, href: localHref('pricing.html') }
+        { key: 'research', label: homeLabels.research, href: localHref('guide') },
+        { key: 'company', label: homeLabels.company, href: localHref('about') },
+        { key: 'pricing', label: homeLabels.pricing, href: localHref('pricing') }
       ];
     }
     var labels = isChinese ? {
@@ -50,12 +50,12 @@
       product: 'Product', research: 'Research', developer: 'Developers', company: 'Company', pricing: 'Pricing', updates: 'Updates'
     };
     return [
-      { key: 'product', label: labels.product, href: homepage ? '#product' : localHref('product.html') },
-      { key: 'research', label: labels.research, href: homepage ? '#method' : localHref('guide.html') },
-      { key: 'developer', label: labels.developer, href: homepage ? '#developers' : localHref('product.html', '#developers') },
-      { key: 'company', label: labels.company, href: localHref('about.html') },
-      { key: 'pricing', label: labels.pricing, href: localHref('pricing.html') },
-      { key: 'updates', label: labels.updates, href: homepage ? '#updates' : localHref('guide.html') }
+      { key: 'product', label: labels.product, href: homepage ? '#product' : localHref('product') },
+      { key: 'research', label: labels.research, href: homepage ? '#method' : localHref('guide') },
+      { key: 'developer', label: labels.developer, href: homepage ? '#developers' : localHref('product', '#developers') },
+      { key: 'company', label: labels.company, href: localHref('about') },
+      { key: 'pricing', label: labels.pricing, href: localHref('pricing') },
+      { key: 'updates', label: labels.updates, href: homepage ? '#updates' : localHref('guide') }
     ];
   }
 
