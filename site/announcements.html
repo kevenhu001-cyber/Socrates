@@ -9,34 +9,52 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="editorial.css">
+  <link rel="stylesheet" href="editorial.css?cb=20260814">
+  <link rel="stylesheet" href="brand.css?cb=20260814">
 </head>
 <body class="ed-site ed-news-page">
   <a class="ed-skip" href="#main">Skip to content</a>
   <header class="ed-header">
-    <div class="ed-shell"><nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation"><a class="ed-brand" href="index.html">SOCRATES</a><div class="ed-nav-links" id="site-menu" data-menu-panel><a href="research.html">Research</a><a href="policy.html">Principles</a><a href="learn.html">Learn</a><a href="announcements.html" aria-current="page">News</a><a href="about.html">Company</a></div><div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div><button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu">Menu</button></nav></div>
+    <div class="ed-shell"><nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation"><a class="ed-brand" href="index">SOCRATES</a><div class="ed-nav-links" id="site-menu" data-menu-panel><a href="research">Research</a><a href="policy">Principles</a><a href="learn">Learn</a><a href="announcements" aria-current="page">News</a><a href="about">Company</a><a href="zh/index">中文</a></div><div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div><button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button></nav></div>
   </header>
   <main id="main">
     <section class="ed-shell ed-news-hero ed-reveal">
       <h1>Newsroom</h1>
       <div class="ed-news-contact" aria-label="News contacts">
-        <a href="contact.html"><span>Product and press</span><strong>Bring us a question</strong></a>
-        <a href="contact.html"><span>Learning support</span><strong>How to get help</strong></a>
-        <a href="documents.html"><span>Media and documents</span><strong>Browse the library</strong></a>
+        <a href="contact"><span>Product and press</span><strong>Bring us a question</strong></a>
+        <a href="contact"><span>Learning support</span><strong>How to get help</strong></a>
+        <a href="documents"><span>Media and documents</span><strong>Browse the library</strong></a>
       </div>
     </section>
 
     <section class="ed-shell ed-news-split">
       <figure class="ed-reveal"><img src="media/socrates-newsroom-signal-v2.png" alt="An archival editorial signal of linked research fragments and a cobalt relay mark"></figure>
-      <div class="ed-news-rail ed-reveal">
-        <article class="ed-news-item"><div class="ed-row-meta"><span>Announcements</span><span>August 12, 2026</span></div><h2>Introducing guided recall.</h2><p>A new way to return to questions worth keeping open, with enough pause for your own first attempt.</p></article>
-        <article class="ed-news-item"><div class="ed-row-meta"><span>Research</span><span>August 02, 2026</span></div><h2>Notes on the route back to an idea.</h2><p>New field research on prompts that make a concept available without flattening its context.</p></article>
-        <article class="ed-news-item"><div class="ed-row-meta"><span>Learning</span><span>July 18, 2026</span></div><h2>Socrates Studio is open.</h2><p>A smaller set of practical paths for beginning a topic, testing an explanation, and building a knowledge map.</p></article>
-        <article class="ed-news-item"><div class="ed-row-meta"><span>Product</span><span>July 04, 2026</span></div><h2>A clearer way to follow a learning path.</h2><p>Topics, questions, and the useful links between them now stay visible as you work.</p></article>
+      <div class="ed-news-feed">
+        <div class="ed-news-toolbar ed-reveal">
+          <p class="ed-kicker">News</p>
+          <label class="ed-search-field ed-news-search"><span>Search news</span><input type="search" data-ed-search aria-controls="news-list" placeholder="Search by title or topic" autocomplete="off"></label>
+        </div>
+        <p class="ed-year-rule">2026</p>
+        <div class="ed-news-rail ed-reveal" id="news-list" aria-live="polite">
+          <article class="ed-news-item" data-ed-item="announcements"><div class="ed-row-meta"><span class="ed-pill" data-cat="Announcements">Announcements</span><span>August 12, 2026</span></div><h2>Introducing guided recall.</h2><p>A new way to return to questions worth keeping open, with enough pause for your own first attempt.</p></article>
+          <article class="ed-news-item" data-ed-item="research"><div class="ed-row-meta"><span class="ed-pill" data-cat="Research">Research</span><span>August 02, 2026</span></div><h2>Notes on the route back to an idea.</h2><p>New field research on prompts that make a concept available without flattening its context.</p></article>
+          <article class="ed-news-item" data-ed-item="learning"><div class="ed-row-meta"><span class="ed-pill" data-cat="Learning">Learning</span><span>July 18, 2026</span></div><h2>Socrates Studio is open.</h2><p>A smaller set of practical paths for beginning a topic, testing an explanation, and building a knowledge map.</p></article>
+          <article class="ed-news-item" data-ed-item="product"><div class="ed-row-meta"><span class="ed-pill" data-cat="Product">Product</span><span>July 04, 2026</span></div><h2>A clearer way to follow a learning path.</h2><p>Topics, questions, and the useful links between them now stay visible as you work.</p></article>
+          <article class="ed-news-item" data-ed-item="announcements"><div class="ed-row-meta"><span class="ed-pill" data-cat="Announcements">Announcements</span><span>June 21, 2026</span></div><h2>A new home for the research threads.</h2><p>The five ongoing research threads—memory, explanation, practice, knowledge mapping, and tutoring—now live on a single research page.</p></article>
+          <article class="ed-news-item" data-ed-item="product"><div class="ed-row-meta"><span class="ed-pill" data-cat="Product">Product</span><span>June 09, 2026</span></div><h2>Bring your own model key.</h2><p>Connect Anthropic, OpenAI, or compatible providers from the API Keys page and use them inside any session.</p></article>
+          <article class="ed-news-item" data-ed-item="learning"><div class="ed-row-meta"><span class="ed-pill" data-cat="Learning">Learning</span><span>May 28, 2026</span></div><h2>Anatomy of a useful question, now in print.</h2><p>The Studio guide is now a longer essay with worked examples from real subjects.</p></article>
+          <article class="ed-news-item" data-ed-item="announcements"><div class="ed-row-meta"><span class="ed-pill" data-cat="Announcements">Announcements</span><span>May 14, 2026</span></div><h2>Knowledge maps age with your study.</h2><p>Maps now keep a record of when a node was last visited, so you can see what is fresh and what needs a return.</p></article>
+          <article class="ed-news-item" data-ed-item="research"><div class="ed-row-meta"><span class="ed-pill" data-cat="Research">Research</span><span>April 30, 2026</span></div><h2>What learners keep after a session.</h2><p>A small study on the parts of a conversation that people actually revisit a week later.</p></article>
+          <article class="ed-news-item" data-ed-item="product"><div class="ed-row-meta"><span class="ed-pill" data-cat="Product">Product</span><span>April 18, 2026</span></div><h2>Calmer interface, deeper sessions.</h2><p>The default interface now steps out of the way as a conversation deepens, instead of asking for the next turn.</p></article>
+          <article class="ed-news-item" data-ed-item="announcements"><div class="ed-row-meta"><span class="ed-pill" data-cat="Announcements">Announcements</span><span>April 02, 2026</span></div><h2>Privacy page rewritten, plainly.</h2><p>The privacy notice is now written to be readable. Every data category, every destination, every retention rule.</p></article>
+          <article class="ed-news-item" data-ed-item="learning"><div class="ed-row-meta"><span class="ed-pill" data-cat="Learning">Learning</span><span>March 20, 2026</span></div><h2>A first look at exam mode.</h2><p>Exam mode asks first, then explains. The first version is rolling out to Descartes and Euclid plans.</p></article>
+        </div>
+        <p class="ed-filter-empty" data-ed-empty hidden>No news matched that search.</p>
+        <a class="ed-see-more" href="#">See more</a>
       </div>
     </section>
   </main>
-  <footer class="ed-footer"><div class="ed-shell ed-footer-frame"><div class="ed-footer-top"><div class="ed-footer-brand"><a class="ed-brand" href="index.html">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div><div class="ed-footer-column"><h2>Product</h2><a href="product.html">Learning loop</a><a href="pricing.html">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div><div class="ed-footer-column"><h2>Explore</h2><a href="research.html">Research</a><a href="policy.html">Principles</a><a href="learn.html">Learn</a></div><div class="ed-footer-column"><h2>Company</h2><a href="about.html">About</a><a href="contact.html">Contact</a><a href="announcements.html">News</a></div><div class="ed-footer-column"><h2>Elsewhere</h2><a href="zh/index.html">中文</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></div></div><div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div></div></footer>
-  <script src="editorial.js"></script>
+  <footer class="ed-footer"><div class="ed-shell ed-footer-frame"><div class="ed-footer-top"><div class="ed-footer-brand"><a class="ed-brand" href="index">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div><div class="ed-footer-column"><h2>Product</h2><a href="product">Learning loop</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div><div class="ed-footer-column"><h2>Explore</h2><a href="research">Research</a><a href="policy">Principles</a><a href="learn">Learn</a></div><div class="ed-footer-column"><h2>Company</h2><a href="about">About</a><a href="contact">Contact</a><a href="announcements" aria-current="page">News</a></div><div class="ed-footer-column"><h2>Elsewhere</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div></div><div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div></div></footer>
+  <script src="editorial.js?cb=20260814"></script>
 </body>
 </html>

@@ -90,5 +90,8 @@ frontend/index.html.bak
 !assets/buildResources/icon_android_1024.png
 !assets/buildResources/icon_android_foreground_1024.png
 
+# ── Local Playwright debug probe scripts/artifacts ──
+frontend/debug/
+
 # ── Large planning docs (not needed in version control) ──
 UI-UX-UPGRADE-ACTION-PLAN.md

@@ -1,270 +1,350 @@
-<!DOCTYPE html>
-<html lang="zh-CN" data-theme="socrates" data-mode="dark">
+<!doctype html>
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/logo.png">
-<title>Socrates — API 密钥</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
-<link href="/base.css" rel="stylesheet">
-<link href="/marketing.css" rel="stylesheet">
-<style>
-.apikey-list{max-width:600px;margin:0 auto}
-.apikey-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:12px;padding:18px 22px;margin-bottom:10px;display:flex;align-items:center;gap:14px;transition:border-color var(--anim-fast),box-shadow var(--anim-fast)}
-.apikey-card:hover{border-color:hsl(var(--border-300)/0.18)}
-.apikey-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.apikey-dot.active{background:hsl(145 50% 50%)}
-.apikey-dot.inactive{background:hsl(var(--text-500)/0.3)}
-.apikey-info{flex:1;min-width:0}
-.apikey-label{font-size:14px;font-weight:500;color:hsl(var(--text-100))}
-.apikey-model{font-size:12px;color:hsl(var(--text-500));margin-top:1px}
-.apikey-del{background:none;border:none;color:hsl(var(--text-500));cursor:pointer;padding:6px;border-radius:6px;transition:color var(--anim-fast),background var(--anim-fast);flex-shrink:0}
-.apikey-del:hover{color:hsl(0 60% 60%);background:hsl(0 60% 50%/0.08)}
-.apikey-form{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:12px;padding:24px 28px 28px;margin-bottom:24px}
-.apikey-form h3{font-size:15px;font-weight:600;color:hsl(var(--text-100));margin-bottom:16px}
-.apikey-field{margin-bottom:14px}
-.apikey-field label{display:block;font-size:12px;color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
-.apikey-field input,.apikey-field select{width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:inherit;outline:none;transition:border-color .15s}
-.apikey-field input:focus,.apikey-field select:focus{border-color:hsl(var(--accent-000)/0.4)}
-.apikey-field .hint{font-size:11px;color:hsl(var(--text-500));margin-top:4px}
-.apikey-empty{text-align:center;padding:48px 20px;color:hsl(var(--text-500))}
-.apikey-empty svg{width:36px;height:36px;margin-bottom:12px;opacity:0.25}
-.apikey-empty p{font-size:14px}
-.apikey-msg{font-size:13px;padding:10px 16px;border-radius:8px;margin-bottom:14px;display:none}
-.apikey-msg.ok{display:block;background:hsl(145 50% 45%/0.08);color:hsl(145 50% 50%);border:0.5px solid hsl(145 50% 45%/0.15)}
-.apikey-msg.err{display:block;background:hsl(0 60% 50%/0.08);color:hsl(0 60% 55%);border:0.5px solid hsl(0 60% 50%/0.12)}
-@media(max-width:720px){.apikey-card{padding:14px 16px}.apikey-form{padding:18px 20px}}
-</style>
-<script>
-!function(){
-  try{
-    var p=localStorage.getItem("socrates-lang");
-    if(!p)return;
-    var c=document.documentElement.lang;
-    var here=window.location.pathname;
-    if(p==="zh"&&c.indexOf("zh")!==0){
-      var target=here.replace(/\.html$/,"");
-      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
-    }else if(p==="en"&&c.indexOf("en")!==0){
-      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
-      window.location.replace(target2==="/"||target2===""?"/":target2);
-    }
-  }catch(e){}
-}();
-</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="在 Socrates 中管理你的模型 API 密钥。">
+  <title>API 密钥 — Socrates</title>
+  <link rel="icon" href="../favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../editorial.css?cb=20260814">
+  <link rel="stylesheet" href="../brand.css?cb=20260814">
+  <link rel="stylesheet" href="../account.css">
 </head>
-<body>
-<script src="/marketing.js"></script>
-<div class="bg-grid"></div>
-<div class="page">
+<body class="ed-site">
+  <a class="ed-skip" href="#main">跳到正文</a>
 
-<nav>
-  <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px"><span><em>S</em>ocrates</span></a>
-    <div class="nav-links">
-      <a href="/pricing">套餐</a>
-      <a href="/guide">指南</a>
-      <a href="/about">关于</a>
-      <a href="/contact">联系</a>
-      <a href="/account">账户</a>
-      <a class="lang-switch">EN</a>
-      <a href="https://app.topodrive.top" class="cta-btn">开始学习</a>
+  <header class="ed-header">
+    <div class="ed-shell">
+      <nav class="ed-header-inner" data-ed-nav aria-label="主导航">
+        <a class="ed-brand" href="index" aria-label="Socrates 首页">SOCRATES</a>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel>
+          <a href="../research">研究</a>
+          <a href="../documents">文档</a>
+          <a href="../about">关于我们</a>
+          <a href="../announcements">动态</a>
+          <a href="../index">English</a>
+        </div>
+        <div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">试用 Socrates</a></div>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="菜单"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+      </nav>
     </div>
-  </div>
-</nav>
+  </header>
 
-<div class="page-header">
-  <div class="section-eyebrow">设置</div>
-  <h1>API <strong>密钥</strong></h1>
-  <p>管理你的 LLM 提供商密钥。密钥在静态时加密存储，不会对外分享。</p>
-</div>
-
-<section style="padding-top:0">
-  <div class="section-inner">
-    <div id="apikey-content" style="max-width:600px;margin:0 auto">
-      <div class="apikey-form sr" id="addKeyForm">
-        <h3>添加提供商密钥</h3>
-        <div id="keyMsg" class="apikey-msg"></div>
-        <div class="apikey-field">
-          <label for="keyLabel">标签</label>
-          <input id="keyLabel" placeholder="例如：我的 OpenAI 密钥" autocomplete="off">
+  <main id="main">
+    <section class="ed-page-hero ed-app-page-hero">
+      <div class="ed-shell ed-page-hero-grid ed-reveal">
+        <div>
+          <p class="ed-kicker">设置</p>
+          <h1 class="ed-page-title ed-app-page-title">API 密钥。</h1>
         </div>
-        <div class="apikey-field">
-          <label for="keyUrl">API 地址</label>
-          <select id="keyUrl">
-            <option value="https://api.openai.com/v1">OpenAI — api.openai.com</option>
-            <option value="https://api.anthropic.com/v1">Anthropic — api.anthropic.com</option>
-            <option value="https://api.together.xyz">Together.ai</option>
-            <option value="https://api.groq.com/openai/v1">Groq</option>
-            <option value="https://api.deepseek.com">DeepSeek</option>
-            <option value="">自定义地址</option>
-          </select>
-          <input id="keyUrlCustom" style="display:none;margin-top:8px" placeholder="https://your-endpoint.com/v1">
-        </div>
-        <div class="apikey-field">
-          <label for="keyModel">模型</label>
-          <input id="keyModel" placeholder="例如：gpt-5.5、claude-opus-4-8">
-          <div class="hint">输入你的提供商使用的模型 ID。</div>
-        </div>
-        <div class="apikey-field">
-          <label for="keyValue">API 密钥</label>
-          <input id="keyValue" type="password" placeholder="sk-…">
-          <div class="hint">存储前加密。保存后不再显示。</div>
-        </div>
-        <button class="btn btn-primary" onclick="addKey()">保存密钥</button>
+        <p class="ed-copy-serif">接入你自己的模型供应商。密钥在静止时被加密，绝不分享，保存后也无法再次查看。</p>
       </div>
-      <div id="keyList" class="sr sr-d1">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <span style="font-size:12px;font-weight:600;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em">已配置的提供商</span>
-          <span id="keyCount" style="font-size:12px;color:hsl(var(--text-500))"></span>
+    </section>
+
+    <section class="ed-section-tight ed-app-section">
+      <div class="ed-shell ed-app-grid">
+        <aside class="ed-app-side ed-reveal" aria-label="账户导航">
+          <p class="ed-kicker">账户</p>
+          <nav class="ed-app-side-nav">
+            <a href="account"><span>01</span>订阅与用量</a>
+            <a href="api-keys" class="is-current" aria-current="page"><span>02</span>API 密钥</a>
+            <a href="profile"><span>03</span>个人资料</a>
+            <a href="../pricing"><span>04</span>更换套餐</a>
+          </nav>
+          <p class="ed-app-side-note">免费版与 Riemann 套餐支持三个供应商密钥。Descartes 与 Euclid 支持更多，并可按主题指定默认模型。</p>
+        </aside>
+
+        <div id="apikey-content" class="ed-app-main">
+
+          <article class="ed-app-card ed-reveal" id="addKeyForm">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">添加供应商密钥</p>
+                <h2 class="ed-app-card-title">接入一个模型供应商。</h2>
+              </div>
+            </header>
+
+            <div id="keyMsg" class="ed-app-msg"></div>
+
+            <div class="ed-field">
+              <label for="keyLabel">标签</label>
+              <input id="keyLabel" placeholder="例如 我的 OpenAI Key" autocomplete="off">
+              <p class="ed-field-hint">一个简短的名字，方便日后识别这个密钥。如果留空，将使用模型名。</p>
+            </div>
+
+            <div class="ed-field">
+              <label for="keyUrlTrigger">供应商</label>
+              <div class="ed-select" id="keyUrlSelect">
+                <input type="hidden" id="keyUrl" value="https://api.openai.com/v1">
+                <button class="ed-select-trigger" id="keyUrlTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+                  <div class="ed-select-content">
+                    <span class="ed-select-value">OpenAI</span>
+                    <span class="ed-select-url">api.openai.com</span>
+                  </div>
+                  <svg class="ed-select-chev" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="ed-select-panel" role="listbox">
+                  <div class="ed-select-option is-selected" data-value="https://api.openai.com/v1" role="option">
+                    <div class="ed-select-content"><span class="ed-select-option-name">OpenAI</span><span class="ed-select-option-url">api.openai.com</span></div>
+                    <svg class="ed-select-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="ed-select-option" data-value="https://api.anthropic.com/v1" role="option">
+                    <div class="ed-select-content"><span class="ed-select-option-name">Anthropic</span><span class="ed-select-option-url">api.anthropic.com</span></div>
+                    <svg class="ed-select-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="ed-select-option" data-value="https://api.together.xyz" role="option">
+                    <div class="ed-select-content"><span class="ed-select-option-name">Together.ai</span><span class="ed-select-option-url">api.together.xyz</span></div>
+                    <svg class="ed-select-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="ed-select-option" data-value="https://api.groq.com/openai/v1" role="option">
+                    <div class="ed-select-content"><span class="ed-select-option-name">Groq</span><span class="ed-select-option-url">api.groq.com</span></div>
+                    <svg class="ed-select-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="ed-select-option" data-value="https://api.deepseek.com" role="option">
+                    <div class="ed-select-content"><span class="ed-select-option-name">DeepSeek</span><span class="ed-select-option-url">api.deepseek.com</span></div>
+                    <svg class="ed-select-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="ed-select-option" data-value="" role="option">
+                    <div class="ed-select-content"><span class="ed-select-option-name">自定义端点</span><span class="ed-select-option-url">输入你自己的 URL</span></div>
+                    <svg class="ed-select-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div class="ed-select-extra" id="keyUrlCustomWrap">
+                <div class="ed-field" style="margin-bottom:0"><input id="keyUrlCustom" placeholder="https://your-endpoint.com/v1"></div>
+              </div>
+            </div>
+
+            <div class="ed-field">
+              <label for="keyModel">模型</label>
+              <input id="keyModel" placeholder="例如 gpt-5.5, claude-opus-4-8">
+              <p class="ed-field-hint">供应商使用的模型 ID。除非你在这里指定默认，否则导师会按主题选择最合适的模型。</p>
+            </div>
+
+            <div class="ed-field">
+              <label for="keyValue">API 密钥</label>
+              <input id="keyValue" type="password" placeholder="sk-…" autocomplete="off">
+              <p class="ed-field-hint">保存前已被加密。我们从不记录密钥值，保存后也无法再次查看。</p>
+            </div>
+
+            <div class="ed-app-actions">
+              <button class="ed-button" onclick="addKey()">保存密钥</button>
+              <button class="ed-button-quiet" type="button" onclick="document.getElementById('addKeyForm').querySelectorAll('input').forEach(function(i){if(i.type!=='hidden'&&!i.disabled)i.value=''})">清空</button>
+            </div>
+          </article>
+
+          <article class="ed-app-card ed-reveal" id="keyListCard">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">已配置的供应商</p>
+                <h2 class="ed-app-card-title">账户中已保存的密钥。</h2>
+              </div>
+              <span id="keyCount" class="ed-meta">—</span>
+            </header>
+            <div id="keyItems"></div>
+          </article>
+
+          <article class="ed-app-card ed-reveal">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">Socrates 如何使用你的密钥</p>
+                <h2 class="ed-app-card-title">一份关于发送内容与不发送内容的简短说明。</h2>
+              </div>
+            </header>
+            <p class="ed-copy">你的密钥只会发往你选择的供应商，并且只会带上你会话中产生的提示词。我们不会通过自己的服务器转发流量，不记录你的提示，也不会附加任何把请求与你关联的标识符——除了供应商本身已经看到的那些。</p>
+            <p class="ed-copy" style="margin-top:14px">移除密钥后，下一轮对话 Socrates 就会停用。已经使用过该密钥的过往对话会被保留。</p>
+            <div class="ed-app-actions">
+              <a class="ed-button-quiet" href="privacy">阅读隐私说明</a>
+            </div>
+          </article>
         </div>
-        <div id="keyItems"></div>
       </div>
+    </section>
+  </main>
+
+  <footer class="ed-footer">
+    <div class="ed-shell ed-footer-frame">
+      <div class="ed-footer-top">
+        <div class="ed-footer-brand"><a class="ed-brand" href="index">SOCRATES</a><p>为真正想理解的人打造的 AI 导师。</p></div>
+        <div class="ed-footer-column"><h2>产品</h2><a href="../product">学习循环</a><a href="../pricing">定价</a><a href="https://app.topodrive.top">打开 Socrates</a></div>
+        <div class="ed-footer-column"><h2>账户</h2><a href="account">我的账户</a><a href="api-keys">API 密钥</a><a href="profile">个人资料</a></div>
+        <div class="ed-footer-column"><h2>资料库</h2><a href="../announcements">动态</a><a href="../documents">文档</a><a href="../research">研究</a></div>
+        <div class="ed-footer-column"><h2>其他</h2><a href="../index">English</a><a href="privacy">隐私</a><a href="terms">条款</a></div>
+      </div>
+      <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>为真正想理解的人打造。</span></div>
+    </div>
+  </footer>
+
+  <div class="ed-toast-host" id="toastHost"></div>
+  <div class="ed-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
+    <div class="ed-modal" onclick="event.stopPropagation()">
+      <div class="ed-modal-title" id="confirmTitle">确认？</div>
+      <div class="ed-modal-msg" id="confirmMsg">这个操作无法撤销。</div>
+      <div class="ed-modal-actions" id="confirmActions"></div>
     </div>
   </div>
-</section>
 
-<footer>
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div class="footer-tag"><em>S</em>ocrates</div>
-      <p>AI 驱动的苏格拉底式导师。循序渐进，学无止境。</p>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">产品</div>
-      <a href="/pricing">套餐</a>
-      <a href="/guide">指南</a>
-      <a href="https://app.topodrive.top">应用</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">公司</div>
-      <a href="/about">关于</a>
-      <a href="/contact">联系</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">账户</div>
-      <a href="/account">我的账户</a>
-      <a href="/api-keys">API 密钥</a>
-      <a href="/profile">个人资料</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">法律</div>
-      <a href="/terms">服务条款</a>
-      <a href="/privacy">隐私政策</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">支持</div>
-      <a href="mailto:help@addtech.site">help@addtech.site</a>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 Topodrive。保留所有权利。</p>
-      <p>用心打造，服务全球学习者。</p>
-      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
-    </div>
-  </div>
-</footer>
+  <script>
+    var srObs = new IntersectionObserver(function(e){e.forEach(function(entry){if(entry.isIntersecting)entry.target.classList.add('in')})},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+    document.querySelectorAll('.ed-reveal').forEach(function(el){srObs.observe(el)});
 
-</div>
+    document.querySelectorAll('[data-ed-nav]').forEach(function (nav) {
+      var button = nav.querySelector('[data-menu-button]');
+      var panel = nav.querySelector('[data-menu-panel]');
+      if (!button || !panel) return;
+      button.addEventListener('click', function () {
+        var willOpen = !nav.classList.contains('is-open');
+        nav.classList.toggle('is-open', willOpen);
+        button.setAttribute('aria-expanded', String(willOpen));
+        document.body.classList.toggle('ed-menu-open', willOpen);
+      });
+      document.addEventListener('keydown', function (event) { if (event.key === 'Escape') { nav.classList.remove('is-open'); button.setAttribute('aria-expanded', 'false'); document.body.classList.remove('ed-menu-open'); } });
+    });
 
-<script>
-/* ── Scroll reveal ─────────────────────────────────── */
-var srObs = new IntersectionObserver(function(e){
-  e.forEach(function(entry){if(entry.isIntersecting)entry.target.classList.add('in')});
-},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
-document.querySelectorAll('.sr').forEach(function(el){srObs.observe(el)});
+    function showToast(msg, type) {
+      type = type || 'info';
+      var host = document.getElementById('toastHost');
+      var t = document.createElement('div');
+      t.className = 'ed-toast is-' + type;
+      t.innerHTML = '<span class="ed-toast-icon">' + (type === 'success' ? '✓' : type === 'error' ? '!' : '·') + '</span><span>' + msg + '</span><button class="ed-toast-close" aria-label="关闭">×</button>';
+      host.appendChild(t);
+      t.querySelector('.ed-toast-close').addEventListener('click', function(){ dismiss(t); });
+      setTimeout(function(){ dismiss(t); }, 4000);
+    }
+    function dismiss(t) { t.style.animation = 'edToastOut .2s var(--ed-ease) forwards'; setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 220); }
 
-/* ── API key management ────────────────────────────── */
-function msg(text, type) {
-  var el = document.getElementById('keyMsg');
-  el.textContent = text;
-  el.className = 'apikey-msg ' + (type || '');
-}
+    function showConfirm(title, msg, opts) {
+      opts = opts || {};
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMsg').textContent = msg;
+      var actions = document.getElementById('confirmActions');
+      actions.innerHTML = '';
+      var cancel = document.createElement('button'); cancel.className = 'ed-button-quiet'; cancel.textContent = opts.cancelText || '取消'; cancel.onclick = closeConfirm; actions.appendChild(cancel);
+      var ok = document.createElement('button'); ok.className = 'ed-button'; ok.style.background = opts.danger ? 'var(--ed-clay)' : 'var(--ed-ink)'; ok.style.color = 'var(--ed-paper)'; ok.textContent = opts.confirmText || '确认'; ok.onclick = function(){ closeConfirm(); if (opts.onConfirm) opts.onConfirm(); }; actions.appendChild(ok);
+      document.getElementById('confirmOverlay').classList.add('is-open');
+    }
+    function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('is-open'); }
 
-function renderKeys(providers) {
-  var container = document.getElementById('keyItems');
-  var count = document.getElementById('keyCount');
-  if (!providers || providers.length === 0) {
-    container.innerHTML = '<div class="apikey-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg><p>尚未配置 API 密钥。请在上方添加。</p></div>';
-    count.textContent = '0 个已配置';
-    return;
-  }
-  count.textContent = providers.length + ' 个已配置';
-  container.innerHTML = providers.map(function(p) {
-    return '<div class="apikey-card">' +
-      '<span class="apikey-dot ' + (p.is_active ? 'active' : 'inactive') + '"></span>' +
-      '<div class="apikey-info"><div class="apikey-label">' + esc(p.label || p.model) + '</div><div class="apikey-model">' + esc(p.url) + ' — ' + esc(p.model) + '</div></div>' +
-      '<button class="apikey-del" onclick="deleteKey(\'' + p.id + '\')" title="删除"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg></button>' +
-    '</div>';
-  }).join('');
-}
+    function getCookie(name) {
+      var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '=([^;]*)'));
+      return m ? m[1] : null;
+    }
+    function esc(s) { return String(s).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]}); }
+    function msg(text, type) { var el = document.getElementById('keyMsg'); el.textContent = text; el.className = 'ed-app-msg' + (type ? ' ' + type : ''); }
 
-function esc(s) { return String(s).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]}) }
+    function renderKeys(providers) {
+      var container = document.getElementById('keyItems');
+      var count = document.getElementById('keyCount');
+      if (!providers || providers.length === 0) {
+        container.innerHTML = '<div class="ed-state" style="padding:36px 12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="9" cy="13" r="5"/><path d="M14 8l4-4M14 8h3M14 8V5"/><path d="M13.5 13.5L21 21"/></svg><h2>还没有配置供应商</h2><p>在上方添加第一个密钥。你可以在每次会话之间切换供应商，Socrates 会为每个主题选择最合适的那个。</p></div>';
+        count.textContent = '已配置 0 个';
+        return;
+      }
+      count.textContent = '已配置 ' + providers.length + ' 个';
+      container.innerHTML = '<div class="ed-keys-list">' + providers.map(function(p) {
+        var on = p.is_active;
+        return '<div class="ed-key">' +
+          '<span class="ed-key-dot ' + (on ? 'is-on' : 'is-off') + '" aria-label="' + (on ? '启用' : '停用') + '"></span>' +
+          '<div><div class="ed-key-name">' + esc(p.label || p.model) + '</div><div class="ed-key-meta">' + esc(p.url) + ' · ' + esc(p.model) + '</div></div>' +
+          '<button class="ed-key-del" onclick="deleteKey(\'' + p.id + '\')" title="移除" aria-label="移除密钥">' +
+          '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg>' +
+          '</button>' +
+        '</div>';
+      }).join('') + '</div>';
+    }
 
-function loadKeys() {
-  fetch('/api/api-key', { credentials: 'same-origin' }).then(function(r) {
-    if (r.status === 401) { window.location.href = '/account'; return null; }
-    return r.json();
-  }).then(function(d) {
-    if (d) renderKeys(d.providers);
-  }).catch(function(){});
-}
+    function loadKeys() {
+      fetch('/api/api-key', { credentials: 'same-origin' }).then(function(r) {
+        if (r.status === 401) { window.location.href = '/zh/account'; return null; }
+        return r.json();
+      }).then(function(d) { if (d) renderKeys(d.providers); }).catch(function(){});
+    }
 
-function addKey() {
-  var label = document.getElementById('keyLabel').value.trim();
-  var urlEl = document.getElementById('keyUrl');
-  var url = urlEl.value || document.getElementById('keyUrlCustom').value.trim();
-  var model = document.getElementById('keyModel').value.trim();
-  var key = document.getElementById('keyValue').value.trim();
+    function addKey() {
+      var label = document.getElementById('keyLabel').value.trim();
+      var urlEl = document.getElementById('keyUrl');
+      var url = urlEl.value || document.getElementById('keyUrlCustom').value.trim();
+      var model = document.getElementById('keyModel').value.trim();
+      var key = document.getElementById('keyValue').value.trim();
+      if (!url) { msg('请选择或填写供应商 URL。', 'err'); return; }
+      if (!model) { msg('请填写模型名称。', 'err'); return; }
+      if (!key) { msg('请填写你的 API 密钥。', 'err'); return; }
+      msg('保存中…', 'info');
+      fetch('/api/api-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
+        body: JSON.stringify({ label: label || model, url: url, model: model, key: key }),
+        credentials: 'same-origin'
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.error) { msg(d.error, 'err'); return; }
+        msg('密钥保存成功。下次会话导师会使用它。', 'ok');
+        document.getElementById('keyLabel').value = '';
+        document.getElementById('keyValue').value = '';
+        loadKeys();
+      }).catch(function(){ msg('连接错误，请重试。', 'err'); });
+    }
 
-  if (!url) { msg('请选择或输入 API 地址。', 'err'); return; }
-  if (!model) { msg('请输入模型名称。', 'err'); return; }
-  if (!key) { msg('请输入你的 API 密钥。', 'err'); return; }
+    function deleteKey(id) {
+      showConfirm('移除这个密钥？', 'Socrates 会停止向这个供应商发送提示。过往会话不受影响。', {
+        confirmText: '移除密钥', danger: true,
+        onConfirm: function() {
+          fetch('/api/api-key/' + id, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-Token': getCookie('csrf') || '' },
+            credentials: 'same-origin'
+          }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.error) { showToast(d.error, 'error'); return; }
+            showToast('供应商密钥已移除。', 'success');
+            loadKeys();
+          }).catch(function(){ showToast('连接错误。', 'error'); });
+        }
+      });
+    }
 
-  msg('保存中…', '');
-  fetch('/api/api-key', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
-    body: JSON.stringify({ label: label || model, url: url, model: model, key: key }),
-    credentials: 'same-origin'
-  }).then(function(r) { return r.json(); }).then(function(d) {
-    if (d.error) { msg(d.error, 'err'); return; }
-    msg('密钥保存成功。', 'ok');
-    document.getElementById('keyLabel').value = '';
-    document.getElementById('keyValue').value = '';
-    loadKeys();
-  }).catch(function(){ msg('连接错误。', 'err'); });
-}
+    (function(){
+      var select = document.getElementById('keyUrlSelect');
+      var hiddenInput = document.getElementById('keyUrl');
+      var trigger = select.querySelector('.ed-select-trigger');
+      var panel = select.querySelector('.ed-select-panel');
+      var options = select.querySelectorAll('.ed-select-option');
+      var customWrap = document.getElementById('keyUrlCustomWrap');
+      function updateTrigger(option) {
+        trigger.querySelector('.ed-select-value').textContent = option.querySelector('.ed-select-option-name').textContent;
+        trigger.querySelector('.ed-select-url').textContent = option.querySelector('.ed-select-option-url').textContent;
+      }
+      function selectOption(option) {
+        options.forEach(function(o){ o.classList.remove('is-selected') });
+        option.classList.add('is-selected');
+        hiddenInput.value = option.getAttribute('data-value');
+        updateTrigger(option);
+        if (hiddenInput.value === '') { customWrap.classList.add('is-open'); document.getElementById('keyUrlCustom').focus(); }
+        else { customWrap.classList.remove('is-open'); }
+        closePanel();
+      }
+      function openPanel() { panel.classList.add('is-open'); trigger.classList.add('is-open'); trigger.setAttribute('aria-expanded', 'true'); }
+      function closePanel() { panel.classList.remove('is-open'); trigger.classList.remove('is-open'); trigger.setAttribute('aria-expanded', 'false'); }
+      trigger.addEventListener('click', function(e){ e.stopPropagation(); if (panel.classList.contains('is-open')) closePanel(); else openPanel(); });
+      options.forEach(function(option){ option.addEventListener('click', function(){ selectOption(option); }); });
+      document.addEventListener('click', function(e){ if (!select.contains(e.target)) closePanel(); });
+      trigger.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); panel.classList.contains('is-open') ? closePanel() : openPanel(); }
+        else if (e.key === 'Escape') { closePanel(); }
+        else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (!panel.classList.contains('is-open')) openPanel();
+          var sel = select.querySelector('.ed-select-option.is-selected');
+          var next = e.key === 'ArrowDown' ? (sel.nextElementSibling || options[0]) : (sel.previousElementSibling || options[options.length - 1]);
+          selectOption(next);
+        }
+      });
+    })();
 
-function deleteKey(id) {
-  if (!confirm('删除此 API 密钥？')) return;
-  fetch('/api/api-key/' + id, {
-    method: 'DELETE',
-    headers: { 'X-CSRF-Token': getCookie('csrf') || '' },
-    credentials: 'same-origin'
-  }).then(function(r) { return r.json(); }).then(function(d) {
-    if (d.error) { msg(d.error, 'err'); return; }
-    loadKeys();
-  }).catch(function(){ msg('连接错误。', 'err'); });
-}
-
-/* CSRF cookie reader */
-function getCookie(name) {
-  var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '=([^;]*)'));
-  return m ? m[1] : null;
-}
-
-/* Custom URL toggle */
-document.getElementById('keyUrl').addEventListener('change', function(){
-  document.getElementById('keyUrlCustom').style.display = this.value === '' ? 'block' : 'none';
-});
-
-/* Load keys on page load */
-(function(){
-  /* Fetch CSRF token first */
-  fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}).then(function(){ loadKeys(); });
-})();
-</script>
-<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/^\/zh/,'').replace(/\.html$/,'');b.href=p==='/'||p===''?'/':p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","en")}catch(e){}});})();</script>
+    (function(){
+      fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}).then(function(){ loadKeys(); });
+    })();
+  </script>
 </body>
 </html>

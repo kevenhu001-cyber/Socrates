@@ -1,1112 +1,703 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="socrates" data-mode="dark">
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/logo.png">
-<title>Socrates — My Account</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
-<link href="/base.css" rel="stylesheet">
-<link href="/marketing.css" rel="stylesheet">
-<style>
-/* ── Account dashboard layout ────────────────────────── */
-.acct-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:860px;margin:0 auto}
-.acct-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.1);border-radius:16px;padding:28px 32px 32px;box-shadow:0 2px 12px hsl(var(--always-black)/0.08);transition:border-color var(--anim-fast),box-shadow var(--anim-fast)}
-.acct-card:hover{border-color:hsl(var(--border-300)/0.18);box-shadow:0 4px 20px hsl(var(--always-black)/0.12)}
-.acct-card.full{grid-column:1/-1}
-.acct-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
-.acct-card-title{font-size:14px;font-weight:600;color:hsl(var(--text-100));text-transform:uppercase;letter-spacing:.04em}
-
-/* Subscription hero */
-.acct-sub{text-align:center;padding-bottom:12px}
-.acct-sub-plan{font-family:var(--font-display);font-size:32px;font-weight:400;color:hsl(var(--text-000));letter-spacing:-.02em}
-.acct-sub-plan strong{font-weight:500;color:hsl(var(--accent-000))}
-.acct-sub-price{font-size:16px;color:hsl(var(--text-400));margin:4px 0 12px}
-.acct-sub-price strong{font-size:28px;font-weight:500;color:hsl(var(--text-000))}
-.acct-badge{display:inline-flex;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:4px 14px;border-radius:999px}
-.acct-badge.active{background:hsl(145 50% 45%/0.12);color:hsl(145 50% 50%);border:0.5px solid hsl(145 50% 45%/0.2)}
-.acct-badge.cancelled{background:hsl(35 80% 50%/0.12);color:hsl(35 80% 55%);border:0.5px solid hsl(35 80% 50%/0.2)}
-.acct-badge.expired{background:hsl(0 60% 50%/0.1);color:hsl(0 60% 55%);border:0.5px solid hsl(0 60% 50%/0.15)}
-.acct-sub-meta{display:flex;justify-content:center;gap:32px;margin-top:16px;flex-wrap:wrap}
-.acct-sub-meta-item{text-align:center}
-.acct-sub-meta-label{font-size:11px;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
-.acct-sub-meta-value{font-size:18px;font-weight:500;color:hsl(var(--text-000))}
-.acct-actions{display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
-
-/* Usage bars */
-.acct-usage{margin-bottom:16px}
-.acct-usage:last-child{margin-bottom:0}
-.acct-usage-header{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
-.acct-usage-label{color:hsl(var(--text-400))}
-.acct-usage-count{color:hsl(var(--text-100));font-weight:500}
-.acct-usage-bar{height:4px;border-radius:4px;background:hsl(var(--bg-300));overflow:hidden}
-.acct-usage-fill{height:100%;border-radius:4px;transition:width var(--anim-slow)}
-.acct-usage-fill.green{background:linear-gradient(90deg,hsl(145 50% 45%),hsl(145 50% 55%))}
-.acct-usage-fill.gold{background:linear-gradient(90deg,hsl(var(--accent-000)),hsl(var(--brand-100)))}
-.acct-usage-fill.blue{background:linear-gradient(90deg,hsl(210 60% 50%),hsl(210 60% 60%))}
-.acct-usage-fill.red{background:linear-gradient(90deg,hsl(0 60% 50%),hsl(0 60% 60%))}
-
-/* Invoices */
-.acct-table{width:100%;border-collapse:collapse;font-size:13px}
-.acct-table th,.acct-table td{padding:10px 0;text-align:left;border-bottom:0.5px solid hsl(var(--border-300)/0.06)}
-.acct-table th{font-size:10px;font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
-.acct-table tr:last-child td{border-bottom:none}
-.acct-table td{color:hsl(var(--text-400))}
-.acct-table td:last-child{text-align:right}
-.acct-table .paid{color:hsl(145 50% 50%)}
-.acct-table .pending{color:hsl(35 80% 55%)}
-
-/* Scrollable table wrapper on mobile */
-.acct-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:-4px 0}
-.acct-table-wrap::-webkit-scrollbar{height:3px}
-.acct-table-wrap::-webkit-scrollbar-thumb{background:hsl(var(--border-300)/0.3);border-radius:9px}
-.acct-table-wrap::-webkit-scrollbar-track{background:transparent}
-
-/* Payment method */
-.acct-pm{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:12px;background:hsl(var(--bg-200)/0.5);border:0.5px solid hsl(var(--border-300)/0.08)}
-.acct-pm-icon{width:40px;height:28px;border-radius:4px;background:hsl(var(--bg-300));display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
-.acct-pm-icon svg{display:block;width:100%;height:100%}
-.acct-pm-info{flex:1;min-width:0}
-.acct-pm-name{font-size:14px;font-weight:500;color:hsl(var(--text-100))}
-.acct-pm-desc{font-size:12px;color:hsl(var(--text-500));margin-top:1px}
-.acct-pm-badge{font-size:10px;padding:2px 10px;border-radius:999px;background:hsl(145 50% 45%/0.1);color:hsl(145 50% 50%)}
-
-/* Danger zone */
-.acct-danger-zone{padding:16px 24px 20px 24px;border-left:3px solid hsl(0 60% 50%/0.25);margin:0 20px 4px 20px;border-radius:0}
-.acct-danger{padding:0 0 20px 0}
-.acct-danger:last-child{padding-bottom:0}
-.acct-danger+.acct-danger{border-top:0.5px solid hsl(var(--border-300)/0.15);padding-top:20px}
-.acct-danger-title{font-size:13px;font-weight:500;color:hsl(0 60% 50%);margin-bottom:4px}
-.acct-danger p{font-size:12.5px;color:hsl(var(--text-500));line-height:1.6;margin:0 0 14px 0;max-width:520px}
-
-/* Buttons */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all var(--anim-fast);border:none;font-family:inherit}
-.btn-primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))!important}
-.btn-primary:hover{background:hsl(var(--accent-100));transform:translateY(-1px);box-shadow:0 4px 16px hsl(var(--accent-000)/0.25)}
-.btn-outline{background:transparent;color:hsl(var(--text-100))!important;border:0.5px solid hsl(var(--border-300)/0.2)}
-.btn-outline:hover{background:hsl(var(--bg-300))}
-.btn-ghost{background:transparent;color:hsl(var(--text-400))!important}
-.btn-ghost:hover{color:hsl(var(--text-100))!important}
-.btn-danger{background:hsl(0 60% 50%/0.1);color:hsl(0 60% 60%)!important;border:0.5px solid hsl(0 60% 50%/0.2)}
-.btn-danger:hover{background:hsl(0 60% 50%/0.18)}
-.btn-danger-outline{background:transparent;color:hsl(0 60% 50%)!important;border:0.5px solid hsl(0 60% 50%/0.25)}
-.btn-danger-outline:hover{background:hsl(0 60% 50%/0.06)}
-.btn-sm{padding:7px 16px;font-size:12px}
-
-/* Token heatmap (GitHub-style) — 7 days × 24 hours */
-.acct-heatmap-grid{display:grid;grid-template-columns:64px repeat(24,1fr);gap:4px;margin-top:8px}
-.acct-heatmap-day-label{font-size:10px;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center}
-.acct-heatmap-row{display:contents}
-.acct-heatmap-cell{aspect-ratio:1/1;border-radius:3px;background:hsl(var(--bg-300));transition:transform var(--anim-fast);position:relative}
-.acct-heatmap-cell:hover{transform:scale(1.25);z-index:2}
-.acct-heatmap-cell[data-level="0"]{background:hsl(var(--bg-300)/0.4)}
-.acct-heatmap-cell[data-level="1"]{background:hsl(35 85% 50%/0.18)}
-.acct-heatmap-cell[data-level="2"]{background:hsl(35 85% 50%/0.4)}
-.acct-heatmap-cell[data-level="3"]{background:hsl(35 85% 50%/0.7)}
-.acct-heatmap-cell[data-level="4"]{background:hsl(35 85% 55%)}
-.acct-heatmap-axis{display:flex;justify-content:space-between;font-size:10px;color:hsl(var(--text-500));margin-top:8px;letter-spacing:.04em;padding-left:68px}
-.acct-heatmap-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity var(--anim-fast);border:0.5px solid hsl(var(--border-300)/0.2);z-index:3}
-.acct-heatmap-cell:hover .acct-heatmap-tooltip{opacity:1}
-.acct-heatmap-legend{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:11px;color:hsl(var(--text-500));justify-content:flex-end}
-.acct-heatmap-legend-cells{display:flex;gap:3px}
-.acct-heatmap-legend-cells span{width:11px;height:11px;border-radius:2px;background:hsl(var(--bg-300)/0.4)}
-.acct-heatmap-legend-cells span:nth-child(2){background:hsl(35 85% 50%/0.18)}
-.acct-heatmap-legend-cells span:nth-child(3){background:hsl(35 85% 50%/0.4)}
-.acct-heatmap-legend-cells span:nth-child(4){background:hsl(35 85% 50%/0.7)}
-.acct-heatmap-legend-cells span:nth-child(5){background:hsl(35 85% 55%)}
-.acct-heatmap-summary{display:flex;gap:24px;margin-bottom:14px;font-size:13px;color:hsl(var(--text-400))}
-.acct-heatmap-summary strong{color:hsl(var(--text-100));font-weight:500}
-.acct-heatmap-empty{text-align:center;color:hsl(var(--text-500));font-size:13px;padding:24px 0}
-/* ── Toast notifications ──────────────────────────── */
-.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none}
-.toast{pointer-events:auto;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:10px;padding:14px 18px;box-shadow:0 8px 32px hsl(var(--always-black)/0.3);min-width:280px;max-width:400px;display:flex;align-items:center;gap:12px;animation:toastIn .25s var(--ease-out);font-size:13px;color:hsl(var(--text-100));line-height:1.4}
-.toast.success{border-left:3px solid hsl(145 50% 50%)}
-.toast.error{border-left:3px solid hsl(0 60% 55%)}
-.toast.info{border-left:3px solid hsl(var(--accent-000))}
-.toast.warning{border-left:3px solid hsl(35 80% 55%)}
-.toast-icon{flex-shrink:0;width:20px;height:20px}
-.toast-text{flex:1;min-width:0;word-break:break-word}
-.toast-close{flex-shrink:0;width:20px;height:20px;border-radius:4px;background:transparent;border:none;color:hsl(var(--text-400));cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;padding:0;line-height:1}
-.toast-close:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
-@keyframes toastIn{from{opacity:0;transform:translateY(16px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes toastOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(16px) scale(.95)}}
-/* ── Custom confirm dialog ────────────────────────── */
-.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;display:none;align-items:center;justify-content:center;animation:fadeIn .15s}
-.confirm-overlay.show{display:flex}
-.confirm-box{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;padding:28px 24px 20px;width:90%;max-width:400px;box-shadow:0 12px 48px hsl(var(--always-black)/0.4);animation:slideUp .2s var(--ease-out)}
-.confirm-title{font-size:16px;font-weight:600;color:hsl(var(--text-000));margin-bottom:8px}
-.confirm-msg{font-size:13px;color:hsl(var(--text-400));line-height:1.6;margin-bottom:20px}
-.confirm-actions{display:flex;gap:10px;justify-content:flex-end}
-.confirm-btn{padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;border:none;cursor:pointer;font-family:inherit}
-.confirm-btn.cancel{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
-.confirm-btn.cancel:hover{background:hsl(var(--bg-400));color:hsl(var(--text-100))}
-.confirm-btn.danger{background:hsl(0 60% 50%/0.12);color:hsl(0 60% 60%);border:0.5px solid hsl(0 60% 50%/0.2)}
-.confirm-btn.danger:hover{background:hsl(0 60% 50%/0.2)}
-.confirm-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))}
-.confirm-btn.primary:hover{background:hsl(var(--accent-100))}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes slideUp{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-/* ── Modal overlay ────────────────────────────────── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9997;display:none;align-items:center;justify-content:center;animation:fadeIn .15s}
-.modal-overlay.show{display:flex}
-.modal-box{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;padding:24px;width:90%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 12px 48px hsl(var(--always-black)/0.4);animation:slideUp .2s var(--ease-out)}
-.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:14px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
-.modal-title{font-size:15px;font-weight:600;color:hsl(var(--text-000))}
-.modal-close{width:28px;height:28px;border-radius:6px;border:none;background:transparent;color:hsl(var(--text-400));cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px}
-.modal-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.modal-body{font-size:13px;color:hsl(var(--text-400));line-height:1.6}
-.modal-input{width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:inherit;outline:none;margin-bottom:14px}
-.modal-input:focus{border-color:hsl(var(--accent-000)/0.5)}
-.modal-label{font-size:12px;color:hsl(var(--text-400));display:block;margin-bottom:4px}
-.modal-btn{padding:10px 22px;border-radius:8px;font-size:13px;font-weight:500;border:none;cursor:pointer;font-family:inherit}
-.modal-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))}
-.modal-btn.primary:hover{background:hsl(var(--accent-100))}
-.modal-btn.full{width:100%;text-align:center}
-/* Token Usage Trend — smooth SVG line chart */
-.trend-chart-wrap{position:relative;width:100%;overflow:hidden}
-.trend-chart-wrap svg{display:block;width:100%;height:auto}
-.trend-chart-wrap .trend-line{fill:none;stroke:hsl(var(--accent-000));stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.trend-chart-wrap .trend-area{fill:url(#trendGrad);opacity:0.25}
-.trend-chart-wrap .trend-dot{fill:hsl(var(--accent-000));r:3;opacity:0;transition:opacity .15s}
-.trend-chart-wrap:hover .trend-dot{opacity:1}
-.trend-chart-wrap .trend-dot:hover{r:5}
-.trend-chart-wrap .trend-grid{stroke:hsl(var(--text-500));stroke-width:0.5;opacity:0.15}
-.trend-chart-wrap .trend-axis-label{fill:hsl(var(--text-500));font-size:10px;text-anchor:middle}
-.trend-chart-wrap .trend-y-label{fill:hsl(var(--text-500));font-size:10px;text-anchor:end}
-.trend-chart-wrap .trend-tooltip-bg{fill:hsl(var(--bg-100));rx:6;opacity:0;pointer-events:none}
-.trend-chart-wrap .trend-tooltip-text{fill:hsl(var(--text-100));font-size:11px;text-anchor:middle;pointer-events:none}
-
-/* Loading / error / sign-in states */
-.acct-state{text-align:center;padding:80px 20px}
-.acct-state svg{width:44px;height:44px;margin-bottom:16px;opacity:0.25}
-.acct-state h2{font-family:var(--font-display);font-size:22px;font-weight:400;color:hsl(var(--text-000));margin-bottom:8px;letter-spacing:-.02em}
-.acct-state p{font-size:14px;color:hsl(var(--text-500));line-height:1.7;max-width:360px;margin:0 auto}
-.acct-state .btn{margin-top:20px}
-.acct-spinner{animation:acctSpin .8s linear infinite;color:hsl(var(--accent-000)/0.4)}
-@keyframes acctSpin{to{transform:rotate(360deg)}}
-
-/* Empty state */
-.acct-empty{text-align:center;padding:40px 20px;color:hsl(var(--text-500))}
-.acct-empty svg{width:40px;height:40px;margin-bottom:12px;opacity:0.3}
-.acct-empty p{font-size:14px}
-
-@media(max-width:720px){
-.acct-grid{grid-template-columns:1fr}
-.acct-card{padding:20px}
-.acct-sub-meta{gap:16px}
-.acct-actions{flex-direction:column;align-items:center}
-/* Heatmap mobile: allow horizontal scroll */
-#usageHeatmapCard{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.acct-heatmap-grid{min-width:580px}
-.acct-heatmap-axis{padding-left:68px}
-.acct-heatmap-summary{gap:16px;flex-wrap:wrap}
-.acct-heatmap-cell{width:14px;height:14px}
-}
-</style>
-<script>
-!function(){
-  try{
-    var p=localStorage.getItem("socrates-lang");
-    if(!p)return;
-    var c=document.documentElement.lang;
-    var here=window.location.pathname;
-    if(p==="zh"&&c.indexOf("zh")!==0){
-      var target=here.replace(/\.html$/,"");
-      window.location.replace(target==="/"||target===""?"/zh/":"/zh"+target);
-    }else if(p==="en"&&c.indexOf("en")!==0){
-      var target2=here.replace(/^\/zh/,"").replace(/\.html$/,"");
-      window.location.replace(target2==="/"||target2===""?"/":target2);
-    }
-  }catch(e){}
-}();
-</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Manage your Socrates subscription, monitor usage, and review your billing history.">
+  <title>My Account — Socrates</title>
+  <link rel="icon" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="editorial.css?cb=20260814">
+  <link rel="stylesheet" href="brand.css?cb=20260814">
+  <link rel="stylesheet" href="account.css">
 </head>
-<body>
-<script src="/marketing.js"></script>
-<div class="bg-grid"></div>
-<div class="page">
+<body class="ed-site">
+  <a class="ed-skip" href="#main">Skip to content</a>
 
-<nav>
-  <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/logo.png" width="24" height="24" alt="" style="vertical-align:middle;margin-right:6px;border-radius:4px"><span><em>S</em>ocrates</span></a>
-    <div class="nav-links">
-      <a href="/pricing">Pricing</a>
-      <a href="/guide">Guide</a>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-      <a href="/account" class="nav-active">Account</a>
-      <a class="lang-switch">中文</a>
-      <a href="https://app.topodrive.top" class="cta-btn">Start learning</a>
+  <header class="ed-header">
+    <div class="ed-shell">
+      <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
+        <a class="ed-brand" href="index" aria-label="Socrates home">SOCRATES</a>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel>
+          <a href="research">Research</a>
+          <a href="documents">Library</a>
+          <a href="about">Company</a>
+          <a href="announcements">News</a>
+          <a href="zh/index">中文</a>
+        </div>
+        <div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="ed-page-hero ed-app-page-hero">
+      <div class="ed-shell ed-page-hero-grid ed-reveal">
+        <div>
+          <p class="ed-kicker">Account</p>
+          <h1 class="ed-page-title ed-app-page-title">Your subscription.</h1>
+        </div>
+        <p class="ed-copy-serif">Manage your plan, monitor usage, and review your billing history. Changes apply to your account immediately.</p>
+      </div>
+    </section>
+
+    <section class="ed-section-tight ed-app-section">
+      <div class="ed-shell ed-app-grid">
+        <aside class="ed-app-side ed-reveal" aria-label="Account navigation">
+          <p class="ed-kicker">Account</p>
+          <nav class="ed-app-side-nav">
+            <a href="account" class="is-current" aria-current="page"><span>01</span>Subscription &amp; usage</a>
+            <a href="api-keys"><span>02</span>API keys</a>
+            <a href="profile"><span>03</span>Profile</a>
+            <a href="pricing"><span>04</span>Change plan</a>
+          </nav>
+          <p class="ed-app-side-note">Billing questions? Write to <a href="mailto:help@addtech.site">help@addtech.site</a> and we will reply within one working day.</p>
+        </aside>
+
+        <div id="acct-grid" class="ed-app-main">
+          <div class="ed-state">
+            <svg class="ed-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="60" stroke-linecap="round"/></svg>
+            <p>Loading your account data…</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="ed-toast-host" id="toastHost"></div>
+  <div class="ed-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
+    <div class="ed-modal" onclick="event.stopPropagation()">
+      <div class="ed-modal-title" id="confirmTitle">Confirm?</div>
+      <div class="ed-modal-msg" id="confirmMsg">This action cannot be undone.</div>
+      <div class="ed-modal-actions" id="confirmActions"></div>
     </div>
   </div>
-</nav>
-
-<div class="page-header">
-  <div class="section-eyebrow">Account</div>
-  <h1>Your <strong>Subscription</strong></h1>
-  <p>Manage your plan, monitor usage, and view billing history.</p>
-</div>
-
-<section style="padding-top:0">
-  <div class="section-inner" style="max-width:900px">
-
-    <div class="acct-grid" id="acct-grid">
+  <div class="ed-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+    <div class="ed-modal" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;margin-bottom:18px;border-bottom:1px solid var(--ed-line)">
+        <span class="ed-modal-title" id="modalTitle" style="margin:0;font-size:18px">Modal</span>
+        <button class="ed-modal-close" onclick="closeModal()" aria-label="Close">×</button>
+      </div>
+      <div id="modalBody"></div>
     </div>
   </div>
-</section>
 
-<div class="toast-container" id="toastContainer"></div>
-<div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
-  <div class="confirm-box" onclick="event.stopPropagation()">
-    <div class="confirm-title" id="confirmTitle">Confirm?</div>
-    <div class="confirm-msg" id="confirmMsg">This action cannot be undone.</div>
-    <div class="confirm-actions" id="confirmActions"></div>
-  </div>
-</div>
-<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
-  <div class="modal-box" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <span class="modal-title" id="modalTitle">Modal</span>
-      <button class="modal-close" onclick="closeModal()">&times;</button>
+  <footer class="ed-footer">
+    <div class="ed-shell ed-footer-frame">
+      <div class="ed-footer-top">
+        <div class="ed-footer-brand"><a class="ed-brand" href="index">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div>
+        <div class="ed-footer-column"><h2>Product</h2><a href="product">Learning loop</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
+        <div class="ed-footer-column"><h2>Account</h2><a href="account">My account</a><a href="api-keys">API keys</a><a href="profile">Profile</a></div>
+        <div class="ed-footer-column"><h2>Library</h2><a href="announcements">Announcements</a><a href="documents">Documents</a><a href="research">Research</a></div>
+        <div class="ed-footer-column"><h2>Elsewhere</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div>
+      </div>
+      <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
     </div>
-    <div class="modal-body" id="modalBody"></div>
-  </div>
-</div>
+  </footer>
 
-<footer>
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div class="footer-tag"><em>S</em>ocrates</div>
-      <p>An AI-powered Socratic tutor. Learn anything, step by step.</p>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Product</div>
-      <a href="/pricing">Pricing</a>
-      <a href="/guide">Guide</a>
-      <a href="https://app.topodrive.top">App</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Company</div>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Account</div>
-      <a href="/account">My Account</a>
-      <a href="/api-keys">API Keys</a>
-      <a href="/profile">Profile</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Legal</div>
-      <a href="/terms">Terms of Service</a>
-      <a href="/privacy">Privacy Policy</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Support</div>
-      <a href="mailto:help@addtech.site">help@addtech.site</a>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 Topodrive. All rights reserved.</p>
-      <p>Built with care, for learners everywhere.</p>
-      <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">渝ICP备2026002900号</a></p>
-    </div>
-  </div>
-</footer>
+  <script>
+    /* Reveal */
+    var srObs = new IntersectionObserver(function(e){
+      e.forEach(function(entry){if(entry.isIntersecting)entry.target.classList.add('in')});
+    },{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+    document.querySelectorAll('.ed-reveal').forEach(function(el){srObs.observe(el)});
 
-</div>
+    /* Mobile menu */
+    document.querySelectorAll('[data-ed-nav]').forEach(function (nav) {
+      var button = nav.querySelector('[data-menu-button]');
+      var panel = nav.querySelector('[data-menu-panel]');
+      if (!button || !panel) return;
+      button.addEventListener('click', function () {
+        var willOpen = !nav.classList.contains('is-open');
+        nav.classList.toggle('is-open', willOpen);
+        button.setAttribute('aria-expanded', String(willOpen));
+        document.body.classList.toggle('ed-menu-open', willOpen);
+      });
+      document.addEventListener('keydown', function (event) { if (event.key === 'Escape') { nav.classList.remove('is-open'); button.setAttribute('aria-expanded', 'false'); document.body.classList.remove('ed-menu-open'); } });
+    });
 
-<script>
-/* ── Scroll-reveal ─────────────────────────────────── */
-const srObs = new IntersectionObserver((entries) => {
-  entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('in'); });
-}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-document.querySelectorAll('.sr').forEach(el => srObs.observe(el));
+    /* Toast */
+    function showToast(msg, type) {
+      type = type || 'info';
+      var host = document.getElementById('toastHost');
+      var t = document.createElement('div');
+      t.className = 'ed-toast is-' + type;
+      var iconChar = type === 'success' ? '✓' : type === 'error' ? '!' : '·';
+      t.innerHTML = '<span class="ed-toast-icon">' + iconChar + '</span><span>' + msg + '</span><button class="ed-toast-close" aria-label="Dismiss">×</button>';
+      host.appendChild(t);
+      t.querySelector('.ed-toast-close').addEventListener('click', function(){ dismiss(t); });
+      setTimeout(function(){ dismiss(t); }, 4000);
+    }
+    function dismiss(t) { t.style.animation = 'edToastOut .2s var(--ed-ease) forwards'; setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 220); }
 
-/* ── Real account data from API ────────────────────── */
-(function(){
-  var grid = document.getElementById('acct-grid');
-  var loginHTML = '<div class="acct-state" style="grid-column:1/-1">' +
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13 12H3"/></svg>' +
-    '<h2>Sign in to view your account</h2>' +
-    '<p style="margin-bottom:20px">Enter your credentials to access subscription details and usage data.</p>' +
-    '<form id="loginForm" style="max-width:320px;margin:0 auto;text-align:left" onsubmit="return doLogin(event)">' +
-      '<div style="margin-bottom:14px">' +
-        '<label style="font-size:12px;color:hsl(var(--text-400));display:block;margin-bottom:4px">Email</label>' +
-        '<input type="email" id="loginEmail" style="width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:inherit;outline:none" placeholder="you@example.com" autocomplete="email">' +
-      '</div>' +
-      '<div style="margin-bottom:14px">' +
-        '<label style="font-size:12px;color:hsl(var(--text-400));display:block;margin-bottom:4px">Password</label>' +
-        '<input type="password" id="loginPass" style="width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-200));font-size:14px;color:hsl(var(--text-100));font-family:inherit;outline:none" placeholder="Password" autocomplete="current-password">' +
-      '</div>' +
-      '<div id="captchaWrap" style="margin-bottom:14px;display:none">' +
-        '<label style="font-size:12px;color:hsl(var(--text-400));display:block;margin-bottom:4px">Verify you\'re human: <span id="captchaQuestion" style="color:hsl(var(--accent-000))"></span></label>' +
-        '<input type="hidden" id="captchaToken">' +
-        '<input type="text" id="captchaAnswer" style="width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-200));font-size:14px;font-family:inherit;outline:none" placeholder="Answer" autocomplete="off">' +
-      '</div>' +
-      '<div id="loginError" style="font-size:13px;color:hsl(0 60% 60%);margin-bottom:10px;display:none"></div>' +
-      '<button type="submit" style="width:100%;padding:11px;border-radius:8px;border:none;font-size:14px;font-weight:500;color:hsl(var(--bg-400));background:hsl(var(--accent-000));cursor:pointer;font-family:inherit">Sign In</button>' +
-      '<div style="display:flex;align-items:center;gap:10px;margin:14px 0;color:hsl(var(--text-500));font-size:11px"><div style="flex:1;height:0.5px;background:hsl(var(--border-300)/0.15)"></div><span>or</span><div style="flex:1;height:0.5px;background:hsl(var(--border-300)/0.15)"></div></div>' +
-      '<a href="/api/auth/oauth/github/start?return_to=/account" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px 14px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:transparent;color:hsl(var(--text-100));font-size:14px;font-weight:500;text-decoration:none;font-family:inherit">' +
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>' +
-        ' Continue with GitHub' +
-      '</a>' +
-      '<p style="font-size:12px;color:hsl(var(--text-500));margin-top:12px;text-align:center">Don\'t have an account? <a href="https://app.topodrive.top" style="color:hsl(var(--accent-000))">Create one</a></p>' +
-    '</form></div>';
-  var errHTML = '<div class="acct-state" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><h2>Unable to load account</h2><p>We couldn\'t fetch your subscription data. Please try again later.</p><button class="btn btn-outline" onclick="location.reload()">Retry</button></div>';
+    /* Confirm dialog */
+    function showConfirm(title, msg, opts) {
+      opts = opts || {};
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMsg').textContent = msg;
+      var actions = document.getElementById('confirmActions');
+      actions.innerHTML = '';
+      var cancel = document.createElement('button');
+      cancel.className = 'ed-button-quiet';
+      cancel.textContent = opts.cancelText || 'Cancel';
+      cancel.onclick = closeConfirm;
+      actions.appendChild(cancel);
+      var danger = document.createElement('button');
+      danger.className = 'ed-button';
+      danger.style.background = opts.danger ? 'var(--ed-clay)' : 'var(--ed-ink)';
+      danger.style.color = 'var(--ed-paper)';
+      danger.textContent = opts.confirmText || 'Confirm';
+      danger.onclick = function(){ closeConfirm(); if (opts.onConfirm) opts.onConfirm(); };
+      actions.appendChild(danger);
+      document.getElementById('confirmOverlay').classList.add('is-open');
+    }
+    function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('is-open'); }
 
-  function fmtDate(ts) {
-    if (!ts) return '—';
-    var d = new Date(ts);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
+    /* Modal */
+    function showModal(title, bodyHTML) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalBody').innerHTML = bodyHTML;
+      document.getElementById('modalOverlay').classList.add('is-open');
+    }
+    function closeModal() { document.getElementById('modalOverlay').classList.remove('is-open'); }
 
-  function buildCards(data) {
-    var u = data.user, p = data.plan, usage = data.usage;
-    var isUnlimited = p.maxSessions === 0;
-
-    var badgeClass = 'active', badgeText = 'Active';
-    if (u.cancelAtPeriodEnd) { badgeClass = 'cancelled'; badgeText = 'Will not renew'; }
-    else if (u.subscriptionEnd) {
-      var now = Date.now();
-      if (u.subscriptionEnd < now) { badgeClass = 'expired'; badgeText = 'Expired'; }
-      else if (u.tier === 'diophantus') { badgeClass = 'active'; badgeText = 'Free'; }
-    } else if (u.tier === 'diophantus') { badgeClass = 'active'; badgeText = 'Free'; }
-
-    var priceHTML = p.price === 0 ? '<strong>Free</strong>' : '<strong>$' + p.price + '</strong> /month';
-
-    var daysLeft = '—';
-    if (u.subscriptionEnd) {
-      var dl = Math.ceil((u.subscriptionEnd - Date.now()) / (1000 * 60 * 60 * 24));
-      daysLeft = dl > 0 ? dl : 0;
+    /* Cookie helpers */
+    function getCookie(name) {
+      var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
+      return m ? m[1] : null;
     }
 
-    var tierLabels = ['Free', 'Basic', 'Standard', 'Premium'];
-    var tierLabel = tierLabels[p.rank] || p.name;
+    /* ── Account dashboard ─────────────────────────────────── */
+    (function(){
+      var grid = document.getElementById('acct-grid');
 
-    var upgradeBtnHTML = '';
-    if (p.rank < 3) {
-      var nextPlan = ['riemann', 'descartes', 'euclid'][p.rank];
-      var nextName = ['Riemann', 'Descartes', 'Euclid'][p.rank];
-      upgradeBtnHTML = '<a href="/checkout?plan=' + nextPlan + '" class="btn btn-primary">Upgrade to ' + nextName + '</a>';
-    } else {
-      upgradeBtnHTML = '<span class="btn btn-ghost btn-sm" style="cursor:default">Current plan</span>';
-    }
-
-    var maxS = isUnlimited ? 'Unlimited' : p.maxSessions;
-    var sPct = isUnlimited ? 100 : Math.min((usage.sessionCount / p.maxSessions) * 100, 100);
-    var kMax = p.maxKeys >= 999 ? 999 : p.maxKeys;
-    var kPct = Math.min((usage.providerCount / kMax) * 100, 100);
-
-    var nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 1); nextMonth.setDate(1);
-
-    /* Free-tier guard: Payment Method, Billing History, and the
-       "Cancel Subscription" button are only meaningful for paid users.
-       `diophantus` is the canonical free tier (rank 0). Deleting the
-       account is always allowed regardless of tier. */
-    var isFree = (u.tier === 'diophantus' || !u.tier);
-
-    return '' +
-      /* Subscription card */
-      '<div class="acct-card full sr">' +
-        '<div class="acct-sub">' +
-          '<div style="margin-bottom:12px"><span class="acct-badge acct-badge-' + badgeClass + '">' + badgeText + '</span></div>' +
-          '<div class="acct-sub-plan">' + p.name + ' <strong>Plan</strong></div>' +
-          '<div class="acct-sub-price">' + priceHTML + '</div>' +
-          '<div class="acct-sub-meta">' +
-            '<div class="acct-sub-meta-item"><div class="acct-sub-meta-label">Next billing</div><div class="acct-sub-meta-value">' + (u.subscriptionEnd ? fmtDate(u.subscriptionEnd) : '—') + '</div></div>' +
-            '<div class="acct-sub-meta-item"><div class="acct-sub-meta-label">Days left</div><div class="acct-sub-meta-value" style="color:hsl(var(--accent-000))">' + daysLeft + '</div></div>' +
-            '<div class="acct-sub-meta-item"><div class="acct-sub-meta-label">Member since</div><div class="acct-sub-meta-value">' + (u.createdAt ? fmtDate(u.createdAt) : '—') + '</div></div>' +
-            '<div class="acct-sub-meta-item"><div class="acct-sub-meta-label">Plan tier</div><div class="acct-sub-meta-value">' + tierLabel + '</div></div>' +
+      var loginHTML =
+        '<div class="ed-auth">' +
+          '<div class="ed-auth-icon">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="22" height="22"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M13 12H3"/></svg>' +
           '</div>' +
-          '<div class="acct-actions">' + upgradeBtnHTML + '</div>' +
-        '</div>' +
-      '</div>' +
+          '<h2 class="ed-auth-title">Sign in to your account</h2>' +
+          '<p class="ed-auth-copy">Enter your credentials to access subscription details and usage data.</p>' +
+          '<form id="loginForm" class="ed-auth-form" onsubmit="return doLogin(event)">' +
+            '<div class="ed-field"><label for="loginEmail">Email</label><input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email"></div>' +
+            '<div class="ed-field"><label for="loginPass">Password</label><input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"></div>' +
+            '<div id="captchaWrap" class="ed-field" style="display:none">' +
+              '<label>Verify you\'re human: <span id="captchaQuestion" style="color:var(--ed-clay)"></span></label>' +
+              '<input type="hidden" id="captchaToken">' +
+              '<input type="text" id="captchaAnswer" placeholder="Answer" autocomplete="off">' +
+            '</div>' +
+            '<div id="loginError" class="ed-app-msg err" style="margin-bottom:14px"></div>' +
+            '<button class="ed-button" type="submit" style="width:100%">Sign in</button>' +
+            '<div class="ed-auth-divider"><span>or</span></div>' +
+            '<a class="ed-button-quiet" href="/api/auth/oauth/github/start?return_to=/account" style="width:100%;justify-content:center">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>' +
+              '<span>Continue with GitHub</span>' +
+            '</a>' +
+            '<p class="ed-auth-foot">Don\'t have an account? <a href="https://app.topodrive.top">Create one</a></p>' +
+          '</form>' +
+        '</div>';
 
-      /* Usage card */
-      '<div class="acct-card sr sr-d1">' +
-        '<div class="acct-card-header"><div class="acct-card-title">Usage this month</div><span style="font-size:12px;color:hsl(var(--text-500))">Resets ' + fmtDate(nextMonth) + '</span></div>' +
-        '<div class="acct-usage"><div class="acct-usage-header"><span class="acct-usage-label">Teaching sessions</span><span class="acct-usage-count">' + usage.sessionCount + ' / ' + maxS + '</span></div><div class="acct-usage-bar"><div class="acct-usage-fill green" style="width:' + sPct + '%"></div></div></div>' +
-        '<div class="acct-usage"><div class="acct-usage-header"><span class="acct-usage-label">API keys configured</span><span class="acct-usage-count">' + usage.providerCount + ' / ' + (p.maxKeys >= 999 ? 'Unlimited' : p.maxKeys) + '</span></div><div class="acct-usage-bar"><div class="acct-usage-fill gold" style="width:' + kPct + '%"></div></div></div>' +
-        '<div class="acct-usage"><div class="acct-usage-header"><span class="acct-usage-label">Knowledge graph nodes</span><span class="acct-usage-count">' + usage.graphNodes + (isUnlimited ? '' : ' / 500') + '</span></div><div class="acct-usage-bar"><div class="acct-usage-fill blue" style="width:' + (isUnlimited ? 100 : Math.min((usage.graphNodes / 500) * 100, 100)) + '%"></div></div></div>' +
-        (usage.beagleUsed !== undefined ? '<div class="acct-usage"><div class="acct-usage-header"><span class="acct-usage-label">Beagle model usage</span><span class="acct-usage-count">' + usage.beagleUsed.toLocaleString() + ' / ' + usage.beagleLimit.toLocaleString() + '</span></div><div class="acct-usage-bar"><div class="acct-usage-fill ' + (usage.beagleUsed / usage.beagleLimit >= 0.9 ? 'red' : usage.beagleUsed / usage.beagleLimit >= 0.7 ? 'gold' : 'green') + '" style="width:' + Math.min(100, (usage.beagleUsed / usage.beagleLimit) * 100) + '%"></div></div></div>' : '') +
-      '</div>' +
+      var errHTML =
+        '<div class="ed-state">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>' +
+          '<h2>Unable to load account</h2>' +
+          '<p>We couldn\'t fetch your subscription data. Please try again in a moment.</p>' +
+          '<button class="ed-button-quiet" onclick="location.reload()">Retry</button>' +
+        '</div>';
 
-      /* Quick Actions */
-      '<div class="acct-card sr sr-d2">' +
-        '<div class="acct-card-header"><div class="acct-card-title">Quick Actions</div></div>' +
-        '<div style="display:flex;flex-direction:column;gap:8px">' +
-          '<a href="/api-keys" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>Manage API Keys</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
-          '<a href="/profile" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>Update Profile</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
-          '<a href="https://app.topodrive.top" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>View Knowledge Graph</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
-          '<a href="https://app.topodrive.top" class="btn btn-outline" style="justify-content:space-between;width:100%"><span>Mistake Book Review</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
-          '<a href="javascript:void(0)" class="btn btn-outline" style="justify-content:space-between;width:100%" onclick="showExportModal()"><span>Download Data Export</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
-        '</div>' +
-      '</div>' +
+      function fmtDate(ts) {
+        if (!ts) return '—';
+        var d = new Date(ts);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
 
-      /* Payment Method — paid tiers only */
-      (isFree ? '' :
-      '<div class="acct-card sr sr-d1" id="pmCardContainer">' +
-        (u.paymentMethod ?
-        '<div class="acct-card-header"><div class="acct-card-title">Payment Method</div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" onclick="showPaymentModal()">Edit</button><button class="btn btn-ghost btn-sm" style="color:hsl(0 60% 60%)" onclick="deletePaymentMethod()">Remove</button></div></div>' +
-        '<div class="acct-pm"><div class="acct-pm-icon">' + brandSvg(u.paymentMethod.brand) + '</div><div class="acct-pm-info"><div class="acct-pm-name">' + u.paymentMethod.brand + ' ending in ' + u.paymentMethod.last4 + '</div><div class="acct-pm-desc">Expires ' + String(u.paymentMethod.expMonth).padStart(2,'0') + '/' + u.paymentMethod.expYear + '</div></div><span class="acct-pm-badge">Default</span></div>'
-        :
-        '<div class="acct-card-header"><div class="acct-card-title">Payment Method</div></div>' +
-        '<div style="text-align:center;padding:16px 0"><p style="font-size:13px;color:hsl(var(--text-400));margin-bottom:16px">No payment method saved yet.</p><button class="btn btn-primary btn-sm" onclick="showPaymentModal()">Add Payment Method</button></div>'
-        ) +
-      '</div>'
-      ) +
+      function buildCards(data) {
+        var u = data.user, p = data.plan, usage = data.usage;
+        var isUnlimited = p.maxSessions === 0;
 
-      /* Billing History — paid tiers only */
-      (isFree ? '' :
-      '<div class="acct-card sr sr-d2">' +
-        '<div class="acct-card-header"><div class="acct-card-title">Billing History</div><button class="btn btn-ghost btn-sm" onclick="showBillingModal()">View All</button></div>' +
-        '<div class="acct-table-wrap"><table class="acct-table"><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr><tr><td>' + fmtDate(Date.now()) + '</td><td>' + p.name + '</td><td>$' + p.price.toFixed(2) + '</td><td class="paid">Paid</td></tr></table></div>' +
-      '</div>'
-      ) +
+        var badgeClass = 'is-active', badgeText = 'Active';
+        if (u.cancelAtPeriodEnd) { badgeClass = 'is-cancelled'; badgeText = 'Will not renew'; }
+        else if (u.subscriptionEnd) {
+          var now = Date.now();
+          if (u.subscriptionEnd < now) { badgeClass = 'is-expired'; badgeText = 'Expired'; }
+          else if (u.tier === 'diophantus') { badgeClass = 'is-active'; badgeText = 'Free'; }
+        } else if (u.tier === 'diophantus') { badgeClass = 'is-active'; badgeText = 'Free'; }
 
-      /* Token Usage Heatmap — every user (free + paid).
-         Wrapped in a container the JS will fill in with hourly
-         cells once /api/account/usage-heatmap responds. */
-      '<div class="acct-card full sr sr-d2" id="usageHeatmapCard">' +
-        '<div class="acct-card-header"><div class="acct-card-title">Token Activity</div><span id="usageHeatmapSub" style="font-size:12px;color:hsl(var(--text-500))">Last 7 days, hourly</span></div>' +
-        '<div class="acct-heatmap-summary" id="usageHeatmapSummary"></div>' +
-        '<div id="usageHeatmapBody"><div class="acct-heatmap-empty">Loading token activity…</div></div>' +
-      '</div>' +
-      /* Token Usage Trend — daily line chart for the last 30 days. */
-      '<div class="acct-card full sr sr-d2" id="usageTrendCard">' +
-        '<div class="acct-card-header"><div class="acct-card-title">Token Usage Trend</div><span style="font-size:12px;color:hsl(var(--text-500))">Last 30 days</span></div>' +
-        '<div id="usageTrendSummary" style="display:flex;gap:20px;margin-bottom:10px;font-size:13px;color:hsl(var(--text-400))"></div>' +
-        '<div id="usageTrendBody"><div class="acct-heatmap-empty">Loading trend data…</div></div>' +
-      '</div>' +
+        var priceHTML = p.price === 0 ? '<strong>Free</strong>' : '<strong>$' + p.price + '</strong> /month';
 
-      /* Danger Zone — Cancel Subscription (paid) + Delete Account (always) */
-      '<div class="acct-card full sr sr-d3">' +
-        '<div class="acct-card-header" style="border-bottom:0"><div class="acct-card-title">Danger Zone</div></div>' +
-        '<div class="acct-danger-zone">' +
-        (isFree ? '' :
-          '<div class="acct-danger"><div class="acct-danger-title">Cancel Subscription</div>' +
-          '<p>Once you cancel, your subscription will remain active until the end of your current billing period. After that, your account will be downgraded to the free Diophantus tier. Your session history and knowledge graph will be preserved but limited to 5 saved sessions.</p>' +
-          '<button class="btn btn-danger-outline btn-sm" onclick="cancelSubscription()">Cancel Subscription</button></div>'
-        ) +
-        '<div class="acct-danger"><div class="acct-danger-title">Delete Account</div>' +
-        '<p>Permanently delete your account and all associated data — sessions, messages, knowledge graph, mistake book, and API keys. This action cannot be undone.</p>' +
-        '<button class="btn btn-danger-outline btn-sm" onclick="deleteAccount()">Delete Account</button></div>' +
-        '</div>' +
-      '</div>';
-  }
+        var daysLeft = '—';
+        if (u.subscriptionEnd) {
+          var dl = Math.ceil((u.subscriptionEnd - Date.now()) / (1000 * 60 * 60 * 24));
+          daysLeft = dl > 0 ? dl : 0;
+        }
 
-  function loadAccount() {
-    grid.innerHTML = '<div class="acct-state" style="grid-column:1/-1"><svg class="acct-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="10" stroke-dasharray="50" stroke-dashoffset="50" stroke-linecap="round"/></svg><p>Loading your account data…</p></div>';
+        var tierLabels = ['Free', 'Basic', 'Standard', 'Premium'];
+        var tierLabel = tierLabels[p.rank] || p.name;
 
-    var controller = new AbortController();
-    var timeout = setTimeout(function() { controller.abort(); }, 10000);
+        var upgradeBtnHTML = '';
+        if (p.rank < 3) {
+          var nextPlan = ['riemann', 'descartes', 'euclid'][p.rank];
+          var nextName = ['Riemann', 'Descartes', 'Euclid'][p.rank];
+          upgradeBtnHTML = '<a href="/checkout?plan=' + nextPlan + '" class="ed-button">Upgrade to ' + nextName + '</a>';
+        } else {
+          upgradeBtnHTML = '<span class="ed-button-quiet" style="cursor:default;color:var(--ed-ink-muted)">Current plan</span>';
+        }
 
-    fetch('/api/account/usage', { credentials: 'same-origin', signal: controller.signal })
-      .then(function(r) {
-        clearTimeout(timeout);
-        if (r.status === 401) {
-          grid.innerHTML = '<div class="acct-state" style="grid-column:1/-1"><svg class="acct-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="10" stroke-dasharray="50" stroke-dashoffset="50" stroke-linecap="round"/></svg><p>Preparing login…</p></div>';
-          /* Fetch CSRF token + CAPTCHA in parallel, then show form */
-          Promise.all([
-            fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}),
-            fetch('/api/captcha/generate', { credentials: 'same-origin' }).then(function(r){return r.json();}).catch(function(){return null;})
-          ]).then(function(results) {
-            var captcha = results[1];
-            grid.innerHTML = loginHTML;
-            if (captcha && captcha.token) {
-              document.getElementById('captchaToken').value = captcha.token;
-              document.getElementById('captchaQuestion').textContent = captcha.question || 'Math challenge';
-              document.getElementById('captchaWrap').style.display = 'block';
+        var maxS = isUnlimited ? 'Unlimited' : p.maxSessions;
+        var sPct = isUnlimited ? 100 : Math.min((usage.sessionCount / p.maxSessions) * 100, 100);
+        var kMax = p.maxKeys >= 999 ? 999 : p.maxKeys;
+        var kPct = Math.min((usage.providerCount / kMax) * 100, 100);
+
+        var nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 1); nextMonth.setDate(1);
+
+        var isFree = (u.tier === 'diophantus' || !u.tier);
+
+        return '' +
+          /* Subscription card */
+          '<article class="ed-app-card ed-reveal">' +
+            '<div class="ed-sub-hero">' +
+              '<div style="margin-bottom:14px"><span class="ed-badge ' + badgeClass + '">' + badgeText + '</span></div>' +
+              '<div class="ed-sub-name">' + p.name + ' <strong>plan</strong></div>' +
+              '<div class="ed-sub-price">' + priceHTML + '</div>' +
+              '<div class="ed-sub-meta">' +
+                '<div class="ed-sub-meta-item"><span class="ed-sub-meta-label">Next billing</span><span class="ed-sub-meta-value">' + (u.subscriptionEnd ? fmtDate(u.subscriptionEnd) : '—') + '</span></div>' +
+                '<div class="ed-sub-meta-item"><span class="ed-sub-meta-label">Days left</span><span class="ed-sub-meta-value is-accent">' + daysLeft + '</span></div>' +
+                '<div class="ed-sub-meta-item"><span class="ed-sub-meta-label">Member since</span><span class="ed-sub-meta-value">' + (u.createdAt ? fmtDate(u.createdAt) : '—') + '</span></div>' +
+                '<div class="ed-sub-meta-item"><span class="ed-sub-meta-label">Tier</span><span class="ed-sub-meta-value">' + tierLabel + '</span></div>' +
+              '</div>' +
+              '<div class="ed-app-actions" style="justify-content:center">' + upgradeBtnHTML + '</div>' +
+            '</div>' +
+          '</article>' +
+
+          /* Usage card */
+          '<article class="ed-app-card ed-reveal">' +
+            '<header class="ed-app-card-head"><div><p class="ed-kicker">Usage this month</p><h2 class="ed-app-card-title">Resets ' + fmtDate(nextMonth) + '</h2></div></header>' +
+            '<div class="ed-usage"><div class="ed-usage-head"><span>Teaching sessions</span><span class="ed-usage-count">' + usage.sessionCount + ' / ' + maxS + '</span></div><div class="ed-usage-bar"><div class="ed-usage-fill is-green" style="width:' + sPct + '%"></div></div></div>' +
+            '<div class="ed-usage"><div class="ed-usage-head"><span>API keys configured</span><span class="ed-usage-count">' + usage.providerCount + ' / ' + (p.maxKeys >= 999 ? 'Unlimited' : p.maxKeys) + '</span></div><div class="ed-usage-bar"><div class="ed-usage-fill is-gold" style="width:' + kPct + '%"></div></div></div>' +
+            '<div class="ed-usage"><div class="ed-usage-head"><span>Knowledge graph nodes</span><span class="ed-usage-count">' + usage.graphNodes + (isUnlimited ? '' : ' / 500') + '</span></div><div class="ed-usage-bar"><div class="ed-usage-fill is-blue" style="width:' + (isUnlimited ? 100 : Math.min((usage.graphNodes / 500) * 100, 100)) + '%"></div></div></div>' +
+            (usage.beagleUsed !== undefined ? '<div class="ed-usage"><div class="ed-usage-head"><span>Beagle model usage</span><span class="ed-usage-count">' + usage.beagleUsed.toLocaleString() + ' / ' + usage.beagleLimit.toLocaleString() + '</span></div><div class="ed-usage-bar"><div class="ed-usage-fill ' + (usage.beagleUsed / usage.beagleLimit >= 0.9 ? 'is-red' : usage.beagleUsed / usage.beagleLimit >= 0.7 ? 'is-gold' : 'is-green') + '" style="width:' + Math.min(100, (usage.beagleUsed / usage.beagleLimit) * 100) + '%"></div></div></div>' : '') +
+          '</article>' +
+
+          /* Quick Actions */
+          '<article class="ed-app-card ed-reveal">' +
+            '<header class="ed-app-card-head"><div><p class="ed-kicker">Quick actions</p><h2 class="ed-app-card-title">Where to go next.</h2></div></header>' +
+            '<div class="ed-actions-list">' +
+              '<a href="/api-keys" class="ed-action"><span>Manage API keys</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
+              '<a href="/profile" class="ed-action"><span>Update profile</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
+              '<a href="https://app.topodrive.top" class="ed-action"><span>Open knowledge graph</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
+              '<a href="https://app.topodrive.top" class="ed-action"><span>Mistake book review</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
+              '<a href="javascript:void(0)" class="ed-action" onclick="showExportModal()"><span>Download data export</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>' +
+            '</div>' +
+          '</article>' +
+
+          /* Payment Method — paid tiers only */
+          (isFree ? '' :
+          '<article class="ed-app-card ed-reveal" id="pmCardContainer">' +
+            (u.paymentMethod ?
+            '<header class="ed-app-card-head"><div><p class="ed-kicker">Payment method</p><h2 class="ed-app-card-title">Card on file.</h2></div>' +
+              '<div class="ed-app-card-actions"><button class="ed-button-quiet" onclick="showPaymentModal()">Edit</button><button class="ed-button-quiet" style="color:var(--ed-clay)" onclick="deletePaymentMethod()">Remove</button></div></header>' +
+            '<div class="ed-pm"><div class="ed-pm-brand">' + esc((u.paymentMethod.brand || '').toUpperCase().slice(0, 4)) + '</div><div class="ed-pm-meta"><span class="ed-pm-name">' + u.paymentMethod.brand + ' ending in ' + u.paymentMethod.last4 + '</span><span class="ed-pm-exp">Expires ' + String(u.paymentMethod.expMonth).padStart(2, '0') + ' / ' + u.paymentMethod.expYear + '</span></div><span class="ed-pm-tag">Default</span></div>'
+            :
+            '<header class="ed-app-card-head"><div><p class="ed-kicker">Payment method</p><h2 class="ed-app-card-title">No card on file.</h2></div></header>' +
+            '<div style="text-align:center;padding:18px 0"><p style="color:var(--ed-ink-soft);font-size:14px;margin:0 0 16px">Add a card to keep your subscription active.</p><button class="ed-button" onclick="showPaymentModal()">Add payment method</button></div>'
+            ) +
+          '</article>'
+          ) +
+
+          /* Billing History — paid tiers only */
+          (isFree ? '' :
+          '<article class="ed-app-card ed-reveal">' +
+            '<header class="ed-app-card-head"><div><p class="ed-kicker">Billing history</p><h2 class="ed-app-card-title">Your recent invoices.</h2></div>' +
+              '<button class="ed-button-quiet" onclick="showBillingModal()">View all</button></header>' +
+            '<div class="ed-table-wrap"><table class="ed-table"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead><tbody><tr><td>' + fmtDate(Date.now()) + '</td><td>' + p.name + '</td><td>$' + p.price.toFixed(2) + '</td><td class="is-paid">Paid</td></tr></tbody></table></div>' +
+          '</article>'
+          ) +
+
+          /* Token Activity Heatmap */
+          '<article class="ed-app-card ed-reveal" id="usageHeatmapCard">' +
+            '<header class="ed-app-card-head"><div><p class="ed-kicker">Token activity</p><h2 class="ed-app-card-title">When you learn, in one frame.</h2></div><span id="usageHeatmapSub" class="ed-meta">Last 7 days, hourly</span></header>' +
+            '<div class="ed-heatmap-summary" id="usageHeatmapSummary"></div>' +
+            '<div id="usageHeatmapBody"><div class="ed-state" style="padding:24px 0"><p>Loading token activity…</p></div></div>' +
+          '</article>' +
+
+          /* Token Usage Trend */
+          '<article class="ed-app-card ed-reveal" id="usageTrendCard">' +
+            '<header class="ed-app-card-head"><div><p class="ed-kicker">Token trend</p><h2 class="ed-app-card-title">The shape of the last 30 days.</h2></div><span class="ed-meta">Daily tokens</span></header>' +
+            '<div id="usageTrendSummary" class="ed-heatmap-summary"></div>' +
+            '<div id="usageTrendBody"><div class="ed-state" style="padding:24px 0"><p>Loading trend data…</p></div></div>' +
+          '</article>' +
+
+          /* Danger Zone */
+          '<article class="ed-app-card ed-reveal ed-app-card-danger">' +
+            '<header class="ed-app-card-head"><div><p class="ed-kicker">Danger zone</p><h2 class="ed-app-card-title">Actions that cannot be undone.</h2></div></header>' +
+            (isFree ? '' :
+              '<div style="padding:0 0 22px">' +
+                '<p style="margin:0 0 8px;color:var(--ed-clay);font-weight:600;font-size:13.5px">Cancel subscription</p>' +
+                '<p style="margin:0 0 14px;color:var(--ed-ink-soft);font-size:13.5px;line-height:1.65;max-width:540px">Once you cancel, your subscription stays active until the end of your current billing period. After that, your account drops to the free Diophantus tier. Your session history and knowledge graph are preserved but limited to 5 saved sessions.</p>' +
+                '<button class="ed-button-quiet" style="color:var(--ed-clay);border-color:var(--ed-clay);background:rgba(154,90,59,.06)" onclick="cancelSubscription()">Cancel subscription</button>' +
+              '</div>'
+            ) +
+            '<div style="padding:' + (isFree ? '0' : '22px 0 0;border-top:1px solid var(--ed-line)') + '">' +
+              '<p style="margin:0 0 8px;color:var(--ed-clay);font-weight:600;font-size:13.5px">Delete account</p>' +
+              '<p style="margin:0 0 14px;color:var(--ed-ink-soft);font-size:13.5px;line-height:1.65;max-width:540px">Permanently delete your account and all associated data — sessions, messages, knowledge graph, mistake book, and API keys. This action cannot be undone.</p>' +
+              '<button class="ed-button-quiet" style="color:var(--ed-clay);border-color:var(--ed-clay);background:rgba(154,90,59,.06)" onclick="deleteAccount()">Delete account</button>' +
+            '</div>' +
+          '</article>';
+      }
+
+      function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
+
+      function loadAccount() {
+        grid.innerHTML =
+          '<div class="ed-state">' +
+            '<svg class="ed-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="60" stroke-linecap="round"/></svg>' +
+            '<p>Loading your account data…</p>' +
+          '</div>';
+
+        var controller = new AbortController();
+        var timeout = setTimeout(function(){ controller.abort(); }, 10000);
+
+        fetch('/api/account/usage', { credentials: 'same-origin', signal: controller.signal })
+          .then(function(r) {
+            clearTimeout(timeout);
+            if (r.status === 401) {
+              grid.innerHTML =
+                '<div class="ed-state">' +
+                  '<svg class="ed-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="60" stroke-linecap="round"/></svg>' +
+                  '<p>Preparing login…</p>' +
+                '</div>';
+              Promise.all([
+                fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}),
+                fetch('/api/captcha/generate', { credentials: 'same-origin' }).then(function(r){return r.json();}).catch(function(){return null;})
+              ]).then(function(results) {
+                var captcha = results[1];
+                grid.innerHTML = loginHTML;
+                if (captcha && captcha.token) {
+                  document.getElementById('captchaToken').value = captcha.token;
+                  document.getElementById('captchaQuestion').textContent = captcha.question || 'Math challenge';
+                  document.getElementById('captchaWrap').style.display = '';
+                }
+              });
+              return null;
+            }
+            if (!r.ok) throw new Error('Server returned ' + r.status);
+            return r.json().catch(function() { throw new Error('Invalid response from server'); });
+          })
+          .then(function(data) {
+            if (!data || !data.user || !data.plan) return;
+            try {
+              grid.innerHTML = buildCards(data);
+              window.__pm = data.user.paymentMethod || null;
+              document.querySelectorAll('.ed-reveal').forEach(function(el) { srObs.observe(el); });
+              if (typeof loadUsageHeatmap === 'function') loadUsageHeatmap();
+              if (typeof loadUsageTrend === 'function') loadUsageTrend();
+            } catch(e) {
+              console.error('Render error:', e);
+              grid.innerHTML = errHTML;
+            }
+          })
+          .catch(function(err) {
+            clearTimeout(timeout);
+            console.info('Account data unavailable in this session:', err.message || err);
+            if (err.name === 'AbortError') {
+              grid.innerHTML =
+                '<div class="ed-state">' +
+                  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>' +
+                  '<h2>Request timed out</h2>' +
+                  '<p>The server took too long to respond. Check your connection and try again.</p>' +
+                  '<button class="ed-button-quiet" onclick="location.reload()">Retry</button>' +
+                '</div>';
+            } else {
+              grid.innerHTML = errHTML;
             }
           });
-          return null;
-        }
-        if (!r.ok) throw new Error('Server returned ' + r.status);
-        return r.json().catch(function() { throw new Error('Invalid response from server'); });
-      })
-      .then(function(data) {
-        if (!data || !data.user || !data.plan) return;
-        try {
-          grid.innerHTML = buildCards(data);
-          window.__pm = data.user.paymentMethod || null;
-          document.querySelectorAll('.sr').forEach(function(el) { srObs.observe(el); });
-          /* Token heatmap loads independently — its slow endpoint
-             shouldn't block the rest of the dashboard. */
-          loadUsageHeatmap();
-          if(typeof loadUsageTrend==='function')loadUsageTrend();
-        } catch(e) {
-          console.error('Render error:', e);
-          grid.innerHTML = errHTML;
-        }
-      })
-      .catch(function(err) {
-        clearTimeout(timeout);
-        console.info('Account data unavailable in this session:', err.message || err);
-        if (err.name === 'AbortError') {
-          grid.innerHTML = '<div class="acct-state" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><h2>Request timed out</h2><p>The server took too long to respond. Please check your connection and try again.</p><button class="btn btn-outline" onclick="location.reload()">Retry</button></div>';
-        } else {
-          grid.innerHTML = errHTML;
-        }
-      });
-  }
-
-  loadAccount();
-})();
-
-/* ── Token usage heatmap ─────────────────────────── */
-function loadUsageHeatmap(){
-  var body=document.getElementById('usageHeatmapBody');
-  var sumEl=document.getElementById('usageHeatmapSummary');
-  if(!body)return;
-  fetch('/api/account/usage-heatmap',{credentials:'same-origin'})
-    .then(function(r){return r.json()})
-    .then(function(data){
-      if(!data||!Array.isArray(data.buckets)){
-        body.innerHTML='<div class="acct-heatmap-empty">No token activity yet. Start a chat to populate this graph.</div>';
-        return;
       }
-      renderHeatmap(data);
-    })
-    .catch(function(){
-      body.innerHTML='<div class="acct-heatmap-empty">Couldn\'t load token activity.</div>';
-    });
-}
 
-function fmtTokens(n){
-  if(n>=1000000)return(n/1000000).toFixed(1)+'M';
-  if(n>=1000)return(n/1000).toFixed(1)+'k';
-  return String(n);
-}
+      loadAccount();
+    })();
 
-function renderHeatmap(data){
-  var body=document.getElementById('usageHeatmapBody');
-  var sumEl=document.getElementById('usageHeatmapSummary');
-  /* Bucket = 168 hourly slots (7 days × 24 hours). Each bucket
-     carries an `hour` ISO timestamp (UTC). We convert to local
-     timezone for display so the heatmap matches the user's clock. */
-  var buckets=data.buckets||[];
-  var p95=Math.max(data.p95||0,1);
-  /* Build per-day hour maps keyed by LOCAL date string. */
-  var byDayHour={}; /* 'YYYY-MM-DD' -> {hour -> tokens} */
-  for(var i=0;i<buckets.length;i++){
-    var d=new Date(buckets[i].hour);
-    /* Use local timezone instead of UTC */
-    var y=d.getFullYear();
-    var m=String(d.getMonth()+1).padStart(2,'0');
-    var day=String(d.getDate()).padStart(2,'0');
-    var key=y+'-'+m+'-'+day;
-    if(!byDayHour[key])byDayHour[key]={};
-    byDayHour[key][d.getHours()]=buckets[i].tokens;
-  }
-  /* Build the 7 calendar days ending today (LOCAL time). */
-  var today=new Date();
-  today.setHours(0,0,0,0);
-  var days=[];
-  for(var off=6;off>=0;off--){
-    var dt=new Date(today.getTime()-off*86400000);
-    var y2=dt.getFullYear();
-    var m2=String(dt.getMonth()+1).padStart(2,'0');
-    var d2=String(dt.getDate()).padStart(2,'0');
-    var key2=y2+'-'+m2+'-'+d2;
-    days.push({date:dt,key:key2});
-  }
-  var monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  /* Render: for each of the 7 days, render a left-side date label
-     followed by 24 hour cells. We use grid-template-columns:
-     80px repeat(24, 1fr) so labels sit in the first column. */
-  var html='<div class="acct-heatmap-grid">';
-  for(var di=0;di<days.length;di++){
-    var dInfo=days[di];
-    var dLabel=monthNames[dInfo.date.getMonth()]+' '+dInfo.date.getDate();
-    html+='<div class="acct-heatmap-day-label">'+dLabel+'</div>';
-    for(var h=0;h<24;h++){
-      var tokens=(byDayHour[dInfo.key]&&byDayHour[dInfo.key][h])||0;
-      var level=0;
-      if(tokens>0){
-        var ratio=tokens/p95;
-        if(ratio>0.75)level=4;
-        else if(ratio>0.5)level=3;
-        else if(ratio>0.25)level=2;
-        else level=1;
+    /* ── Login handler ─────────────────────────────────────── */
+    function doLogin(e) {
+      e.preventDefault();
+      var email = document.getElementById('loginEmail').value.trim();
+      var pass = document.getElementById('loginPass').value;
+      var captchaToken = document.getElementById('captchaToken').value;
+      var captchaAns = document.getElementById('captchaAnswer').value.trim();
+      var errEl = document.getElementById('loginError');
+      var btn = document.querySelector('#loginForm button[type="submit"]');
+
+      if (!email || !pass) {
+        errEl.textContent = 'Please enter your email and password.';
+        errEl.style.display = 'block';
+        return false;
       }
-      var tooltipLabel=dLabel+' '+String(h).padStart(2,'0')+':00 — '+fmtTokens(tokens)+' tokens';
-      html+='<div class="acct-heatmap-cell" data-level="'+level+'">'+
-              '<span class="acct-heatmap-tooltip">'+tooltipLabel+'</span>'+
-            '</div>';
+      errEl.style.display = 'none';
+      btn.textContent = 'Signing in…';
+      btn.disabled = true;
+
+      var csrfToken = getCookie('csrf');
+      if (!csrfToken) {
+        fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).then(function() {
+          csrfToken = getCookie('csrf');
+          submitLogin(email, pass, captchaToken, captchaAns, csrfToken, errEl, btn);
+        }).catch(function() {
+          submitLogin(email, pass, captchaToken, captchaAns, '', errEl, btn);
+        });
+        return false;
+      }
+      submitLogin(email, pass, captchaToken, captchaAns, csrfToken, errEl, btn);
+      return false;
     }
-  }
-  html+='</div>';
-  html+='<div class="acct-heatmap-axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>';
-  html+='<div class="acct-heatmap-legend"><span>Less</span><div class="acct-heatmap-legend-cells"><span></span><span></span><span></span><span></span><span></span></div><span>More</span></div>';
-  body.innerHTML=html;
-  if(sumEl){
-    sumEl.innerHTML=
-      '<div><strong>'+fmtTokens(data.totalTokens||0)+'</strong> tokens used</div>'+
-      '<div><strong>'+fmtTokens(data.totalCalls||0)+'</strong> chat calls</div>'+
-      '<div><strong>'+fmtTokens(data.p95||0)+'</strong> tokens / hour (peak)</div>';
-  }
-}
-window.loadUsageHeatmap=loadUsageHeatmap;
-window.renderHeatmap=renderHeatmap;
-/* ── Token usage trend (30-day smooth line chart) ── */
-(function(){
-  function loadTrend(){
-    var body=document.getElementById('usageTrendBody');
-    var sumEl=document.getElementById('usageTrendSummary');
-    if(!body)return;
-    fetch('/api/account/usage-trend?days=30',{credentials:'same-origin'})
-      .then(function(r){return r.json()})
-      .then(function(data){
-        if(!data||!data.entries||!data.entries.length){
-          body.innerHTML='<div class="acct-heatmap-empty">No usage data yet.</div>';
+
+    function submitLogin(email, pass, captchaToken, captchaAns, csrfToken, errEl, btn) {
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
+        body: JSON.stringify({ email: email, password: pass, captchaToken: captchaToken || undefined, captchaAnswer: captchaAns || undefined }),
+        credentials: 'same-origin'
+      }).then(function(r) {
+        return r.json().then(function(d) { return { status: r.status, data: d }; });
+      }).then(function(res) {
+        if (res.status >= 400) {
+          var msg = (res.data && res.data.detail) || (res.data && res.data.title) || 'Login failed. Please try again.';
+          if (res.data && res.data.detail === 'Email or password is incorrect') msg = 'Invalid email or password.';
+          if (res.data && res.data.title === 'Invalid CSRF token') msg = 'Session expired. Please refresh the page and try again.';
+          errEl.textContent = msg;
+          errEl.style.display = 'block';
+          btn.textContent = 'Sign in';
+          btn.disabled = false;
           return;
         }
-        renderTrendChart(data);
-      })
-      .catch(function(){
-        body.innerHTML='<div class="acct-heatmap-empty">Couldn\'t load trend data.</div>';
+        window.location.reload();
+      }).catch(function() {
+        errEl.textContent = 'Connection error. Please try again.';
+        errEl.style.display = 'block';
+        btn.textContent = 'Sign in';
+        btn.disabled = false;
       });
-  }
-  function renderTrendChart(data){
-    var body=document.getElementById('usageTrendBody');
-    var sumEl=document.getElementById('usageTrendSummary');
-    var entries=data.entries||[];
-    var W=680,H=200,padL=50,padR=20,padT=10,padB=30;
-    var gW=W-padL-padR,gH=H-padT-padB;
-    var maxTokens=Math.max.apply(null,entries.map(function(e){return e.tokens}||0));
-    if(maxTokens===0)maxTokens=1;
-    /* Round up to a nice number */
-    var mag=Math.pow(10,Math.floor(Math.log10(maxTokens)));
-    maxTokens=Math.ceil(maxTokens/mag)*mag;
-    /* Catmull-Rom to Cubic Bezier for smooth curves */
-    function catmullRom(pts){
-      if(pts.length<2)return'';
-      var d='M'+pts[0][0]+','+pts[0][1];
-      for(var i=0;i<pts.length-1;i++){
-        var p0=pts[Math.max(i-1,0)];
-        var p1=pts[i];
-        var p2=pts[i+1];
-        var p3=pts[Math.min(i+2,pts.length-1)];
-        var cp1x=p1[0]+(p2[0]-p0[0])/6;
-        var cp1y=p1[1]+(p2[1]-p0[1])/6;
-        var cp2x=p2[0]-(p3[0]-p1[0])/6;
-        var cp2y=p2[1]-(p3[1]-p1[1])/6;
-        d+=' C'+cp1x+','+cp1y+' '+cp2x+','+cp2y+' '+p2[0]+','+p2[1];
+      return false;
+    }
+
+    /* ── Account actions ───────────────────────────────────── */
+    function cancelSubscription() {
+      showConfirm('Cancel subscription?', 'Your subscription stays active until the end of the current billing period, then drops to the free Diophantus tier. Your data is preserved.', {
+        confirmText: 'Cancel at period end',
+        danger: true,
+        onConfirm: function() {
+          fetch('/api/account/cancel', { method: 'POST', headers: { 'X-CSRF-Token': getCookie('csrf') || '' }, credentials: 'same-origin' })
+            .then(function(r){ return r.json(); })
+            .then(function(d){ if (d.error) { showToast(d.error, 'error'); return; } showToast('Subscription will end at the close of the current period.', 'success'); setTimeout(function(){ location.reload(); }, 1200); })
+            .catch(function(){ showToast('Connection error.', 'error'); });
+        }
+      });
+    }
+
+    function deleteAccount() {
+      showConfirm('Delete your account?', 'This permanently removes your account and every session, knowledge graph node, mistake book entry, and API key attached to it. This cannot be undone.', {
+        confirmText: 'Delete forever',
+        danger: true,
+        onConfirm: function() {
+          fetch('/api/account/delete', { method: 'POST', headers: { 'X-CSRF-Token': getCookie('csrf') || '' }, credentials: 'same-origin' })
+            .then(function(r){ return r.json(); })
+            .then(function(d){ if (d.error) { showToast(d.error, 'error'); return; } window.location.href = '/'; })
+            .catch(function(){ showToast('Connection error.', 'error'); });
+        }
+      });
+    }
+
+    function showPaymentModal() {
+      showModal('Payment method', '<p style="margin:0 0 18px;color:var(--ed-ink-soft);font-size:14px;line-height:1.6">Card management is handled securely by Stripe from your account dashboard. The link opens in a new tab.</p><a class="ed-button" href="/api/account/billing-portal" target="_blank" rel="noopener">Open billing portal</a>');
+    }
+
+    function showBillingModal() {
+      showModal('Billing history', '<p style="margin:0;color:var(--ed-ink-soft);font-size:14px">Your full invoice history is available in the Stripe billing portal.</p><div style="margin-top:18px"><a class="ed-button" href="/api/account/billing-portal" target="_blank" rel="noopener">Open billing portal</a></div>');
+    }
+
+    function deletePaymentMethod() {
+      showConfirm('Remove card?', 'Your subscription will switch to the free tier at the end of the current billing period if no other card is added.', {
+        confirmText: 'Remove card',
+        danger: true,
+        onConfirm: function() {
+          fetch('/api/account/payment-method', { method: 'DELETE', headers: { 'X-CSRF-Token': getCookie('csrf') || '' }, credentials: 'same-origin' })
+            .then(function(r){ return r.json(); })
+            .then(function(d){ if (d.error) { showToast(d.error, 'error'); return; } showToast('Card removed.', 'success'); setTimeout(function(){ location.reload(); }, 800); })
+            .catch(function(){ showToast('Connection error.', 'error'); });
+        }
+      });
+    }
+
+    function showExportModal() {
+      showModal('Download your data', '<p style="margin:0 0 18px;color:var(--ed-ink-soft);font-size:14px;line-height:1.6">A JSON file containing your chat sessions, knowledge graph, mistake book, API provider configurations, and account information. Nothing leaves your account until you press the button.</p><a class="ed-button" href="/api/account/export" download>Download export</a>');
+    }
+
+    /* ── Heatmap ───────────────────────────────────────────── */
+    function fmtTokens(n) {
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+      return String(n);
+    }
+
+    function loadUsageHeatmap() {
+      var body = document.getElementById('usageHeatmapBody');
+      var sumEl = document.getElementById('usageHeatmapSummary');
+      if (!body) return;
+      fetch('/api/account/usage-heatmap', { credentials: 'same-origin' })
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+          if (!data || !Array.isArray(data.buckets)) {
+            body.innerHTML = '<div class="ed-state" style="padding:32px 0"><p>No token activity yet. Start a chat to populate this graph.</p></div>';
+            return;
+          }
+          renderHeatmap(data);
+        })
+        .catch(function() {
+          body.innerHTML = '<div class="ed-state" style="padding:32px 0"><p>Could not load token activity.</p></div>';
+        });
+    }
+
+    function renderHeatmap(data) {
+      var body = document.getElementById('usageHeatmapBody');
+      var sumEl = document.getElementById('usageHeatmapSummary');
+      var buckets = data.buckets || [];
+      var p95 = Math.max(data.p95 || 0, 1);
+      var byDayHour = {};
+      for (var i = 0; i < buckets.length; i++) {
+        var d = new Date(buckets[i].hour);
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        var key = y + '-' + m + '-' + day;
+        if (!byDayHour[key]) byDayHour[key] = {};
+        byDayHour[key][d.getHours()] = buckets[i].tokens;
       }
-      return d;
-    }
-    /* Map entries to pixel coordinates */
-    var pts=[];
-    entries.forEach(function(e,i){
-      var x=padL+(i/(entries.length-1||1))*gW;
-      var y=padT+gH-(e.tokens/maxTokens)*gH;
-      pts.push([x,y]);
-    });
-    var lineD=catmullRom(pts);
-    /* Area path (close to bottom) */
-    var areaD=lineD+' L'+pts[pts.length-1][0]+','+(padT+gH)+' L'+pts[0][0]+','+(padT+gH)+' Z';
-    /* Grid lines (5 horizontal) */
-    var gridSvg='';
-    for(var g=0;g<=4;g++){
-      var gy=padT+gH*(g/4);
-      var gVal=Math.round(maxTokens*(1-g/4));
-      gridSvg+='<line class="trend-grid" x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'"/>';
-      gridSvg+='<text class="trend-y-label" x="'+(padL-6)+'" y="'+(gy+3)+'">'+fmtTokens(gVal)+'</text>';
-    }
-    /* X-axis labels: show every 5th day */
-    var xLabels='';
-    entries.forEach(function(e,i){
-      if(i%5===0||i===entries.length-1){
-        var lx=padL+(i/(entries.length-1||1))*gW;
-        var label=e.day.slice(5); /* MM-DD */
-        xLabels+='<text class="trend-axis-label" x="'+lx+'" y="'+(H-4)+'">'+label+'</text>';
+      var today = new Date(); today.setHours(0, 0, 0, 0);
+      var days = [];
+      for (var off = 6; off >= 0; off--) {
+        var dt = new Date(today.getTime() - off * 86400000);
+        var y2 = dt.getFullYear(); var m2 = String(dt.getMonth() + 1).padStart(2, '0'); var day2 = String(dt.getDate()).padStart(2, '0');
+        days.push({ key: y2 + '-' + m2 + '-' + day2, label: dt.toLocaleDateString('en-US', { weekday: 'short' }) });
       }
-    });
-    /* Dots */
-    var dotsSvg='';
-    entries.forEach(function(e,i){
-      var px=pts[i][0],py=pts[i][1];
-      dotsSvg+='<circle class="trend-dot" cx="'+px+'" cy="'+py+'" r="3"><title>'+e.day+': '+fmtTokens(e.tokens)+' tokens, '+e.calls+' calls</title></circle>';
-    });
-    var svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">'+
-      '<defs><linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">'+
-      '<stop offset="0%" stop-color="hsl(var(--accent-000))" stop-opacity="1"/>'+
-      '<stop offset="100%" stop-color="hsl(var(--accent-000))" stop-opacity="0"/>'+
-      '</linearGradient></defs>'+
-      gridSvg+xLabels+
-      '<path class="trend-area" d="'+areaD+'"/>'+
-      '<path class="trend-line" d="'+lineD+'"/>'+
-      dotsSvg+'</svg>';
-    body.innerHTML='<div class="trend-chart-wrap">'+svg+'</div>';
-    if(sumEl){
-      var totalT=data.totalTokens||entries.reduce(function(s,e){return s+e.tokens},0);
-      var totalC=data.totalCalls||entries.reduce(function(s,e){return s+e.calls},0);
-      var activeDays=entries.filter(function(e){return e.tokens>0}).length;
-      sumEl.innerHTML=
-        '<div><strong>'+fmtTokens(totalT)+'</strong> total tokens</div>'+
-        '<div><strong>'+fmtTokens(totalC)+'</strong> chat calls</div>'+
-        '<div><strong>'+activeDays+'</strong> active days</div>'+
-        '<div><strong>'+fmtTokens(activeDays?Math.round(totalT/activeDays):0)+'</strong> avg / active day</div>';
+      var html = '<div class="ed-heatmap-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px"><div class="ed-heatmap">';
+      days.forEach(function(day) {
+        html += '<span class="ed-heatmap-day">' + day.label + '</span>';
+        var hourMap = byDayHour[day.key] || {};
+        for (var h = 0; h < 24; h++) {
+          var tokens = hourMap[h] || 0;
+          var level = 0;
+          if (tokens > 0) {
+            var ratio = tokens / p95;
+            if (ratio >= 0.85) level = 4;
+            else if (ratio >= 0.55) level = 3;
+            else if (ratio >= 0.25) level = 2;
+            else level = 1;
+          }
+          html += '<span class="ed-heatmap-cell" data-level="' + level + '" title="' + day.label + ' ' + String(h).padStart(2,'0') + ':00 — ' + fmtTokens(tokens) + ' tokens"></span>';
+        }
+      });
+      html += '</div>';
+      html += '<div class="ed-heatmap-axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div></div>';
+      body.innerHTML = html;
+      if (sumEl) {
+        var totalT = data.totalTokens || buckets.reduce(function(s, b){ return s + b.tokens; }, 0);
+        var totalC = data.totalCalls || buckets.reduce(function(s, b){ return s + (b.calls || 0); }, 0);
+        var activeDays = days.filter(function(d) { return Object.keys(byDayHour[d.key] || {}).length > 0; }).length;
+        sumEl.innerHTML =
+          '<div><strong>' + fmtTokens(totalT) + '</strong> total tokens</div>' +
+          '<div><strong>' + fmtTokens(totalC) + '</strong> chat calls</div>' +
+          '<div><strong>' + activeDays + '</strong> active days</div>' +
+          '<div><strong>' + fmtTokens(activeDays ? Math.round(totalT / activeDays) : 0) + '</strong> avg / active day</div>';
+      }
     }
-  }
-  /* Expose for the page lifecycle */
-  window.loadUsageTrend=loadTrend;
-})();
 
-/* ── Login form handler ──────────────────────────── */
-function loadCaptcha() {
-  fetch('/api/captcha/generate', { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(d) {
-    var wrap = document.getElementById('captchaWrap');
-    var qEl = document.getElementById('captchaQuestion');
-    var tEl = document.getElementById('captchaToken');
-    if (wrap && qEl && tEl && d && d.token) {
-      document.getElementById('captchaToken').value = d.token;
-      qEl.textContent = d.question || 'Math challenge';
-      wrap.style.display = 'block';
+    /* ── Trend chart ───────────────────────────────────────── */
+    function loadUsageTrend() {
+      var body = document.getElementById('usageTrendBody');
+      if (!body) return;
+      fetch('/api/account/usage-trend', { credentials: 'same-origin' })
+        .then(function(r){ return r.json(); })
+        .then(function(data){ renderTrend(data); })
+        .catch(function(){ body.innerHTML = '<div class="ed-state" style="padding:32px 0"><p>Could not load trend data.</p></div>'; });
     }
-  }).catch(function() {});
-}
 
-function getCookie(name) {
-  var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
-  return m ? m[1] : null;
-}
-
-function doLogin(e) {
-  e.preventDefault();
-  var email = document.getElementById('loginEmail').value.trim();
-  var pass = document.getElementById('loginPass').value;
-  var captchaToken = document.getElementById('captchaToken').value;
-  var captchaAns = document.getElementById('captchaAnswer').value.trim();
-  var errEl = document.getElementById('loginError');
-  var btn = document.querySelector('#loginForm button[type="submit"]');
-
-  if (!email || !pass) {
-    errEl.textContent = 'Please enter your email and password.';
-    errEl.style.display = 'block';
-    return false;
-  }
-
-  errEl.style.display = 'none';
-  btn.textContent = 'Signing in…';
-  btn.disabled = true;
-
-  var csrfToken = getCookie('csrf');
-  if (!csrfToken) {
-    /* CSRF cookie not yet set — fetch it synchronously first */
-    fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).then(function() {
-      csrfToken = getCookie('csrf');
-      submitLogin(email, pass, captchaToken, captchaAns, csrfToken, errEl, btn);
-    }).catch(function() {
-      submitLogin(email, pass, captchaToken, captchaAns, '', errEl, btn);
-    });
-    return false;
-  }
-  submitLogin(email, pass, captchaToken, captchaAns, csrfToken, errEl, btn);
-  return false;
-}
-
-function submitLogin(email, pass, captchaToken, captchaAns, csrfToken, errEl, btn) {
-
-  fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
-    body: JSON.stringify({ email: email, password: pass, captchaToken: captchaToken || undefined, captchaAnswer: captchaAns || undefined }),
-    credentials: 'same-origin'
-  }).then(function(r) {
-    return r.json().then(function(d) { return { status: r.status, data: d }; });
-  }).then(function(res) {
-    if (res.status >= 400) {
-      var msg = (res.data && res.data.detail) || (res.data && res.data.title) || 'Login failed. Please try again.';
-      if (res.data && res.data.detail === 'Email or password is incorrect') msg = 'Invalid email or password.';
-      if (res.data && res.data.title === 'Invalid CSRF token') msg = 'Session expired. Please refresh the page and try again.';
-      errEl.textContent = msg;
-      errEl.style.display = 'block';
-      btn.textContent = 'Sign In';
-      btn.disabled = false;
-      loadCaptcha();
-      return;
-    }
-    /* Login successful — reload page to show account data */
-    window.location.reload();
-  }).catch(function() {
-    errEl.textContent = 'Connection error. Please try again.';
-    errEl.style.display = 'block';
-    btn.textContent = 'Sign In';
-    btn.disabled = false;
-  });
-  return false;
-}
-
-/* ── Toast notification system ────────────────────── */
-function showToast(msg, type) {
-  type = type || 'info';
-  var container = document.getElementById('toastContainer');
-  if (!container) { container = document.createElement('div'); container.id = 'toastContainer'; container.className = 'toast-container'; document.body.appendChild(container); }
-  var t = document.createElement('div');
-  t.className = 'toast ' + type;
-  var icons = { success: '\u2713', error: '\u2717', info: '\u2248', warning: '\u26A0' };
-  t.innerHTML = '<span class="toast-icon">' + (icons[type] || '\u2248') + '</span><span class="toast-text">' + msg + '</span><button class="toast-close" onclick="this.parentElement.style.animation=\'toastOut .2s var(--ease-out) forwards\';setTimeout(function(){this.parentElement.remove()}.bind(this),200)">\u00D7</button>';
-  container.appendChild(t);
-  setTimeout(function() { t.style.animation = 'toastOut .2s var(--ease-out) forwards'; setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 200); }, 4000);
-}
-window.showToast = showToast;
-
-/* ── Custom confirm dialog ────────────────────────── */
-function showConfirm(title, msg, opts) {
-  opts = opts || {};
-  return new Promise(function(resolve) {
-    var overlay = document.getElementById('confirmOverlay');
-    var titleEl = document.getElementById('confirmTitle');
-    var msgEl = document.getElementById('confirmMsg');
-    var actionsEl = document.getElementById('confirmActions');
-    if (!overlay || !titleEl || !msgEl || !actionsEl) { resolve(false); return; }
-    titleEl.textContent = title;
-    msgEl.textContent = msg;
-    actionsEl.innerHTML = '';
-    var cancelBtn = document.createElement('button');
-    cancelBtn.className = 'confirm-btn cancel';
-    cancelBtn.textContent = opts.cancelText || 'Cancel';
-    cancelBtn.onclick = function() { overlay.classList.remove('show'); resolve(false); };
-    actionsEl.appendChild(cancelBtn);
-    var okBtn = document.createElement('button');
-    okBtn.className = 'confirm-btn ' + (opts.danger ? 'danger' : 'primary');
-    okBtn.textContent = opts.okText || 'OK';
-    okBtn.onclick = function() { overlay.classList.remove('show'); resolve(true); };
-    actionsEl.appendChild(okBtn);
-    overlay.classList.add('show');
-  });
-}
-function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('show'); }
-
-/* ── Modal system ─────────────────────────────────── */
-function showModal(title, bodyHTML) {
-  var overlay = document.getElementById('modalOverlay');
-  var titleEl = document.getElementById('modalTitle');
-  var bodyEl = document.getElementById('modalBody');
-  if (!overlay || !titleEl || !bodyEl) return;
-  titleEl.textContent = title;
-  bodyEl.innerHTML = bodyHTML;
-  overlay.classList.add('show');
-}
-function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
-
-function brandSvg(brand) {
-  var s = {Visa:'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><path d="M780 0H0v500h780V0Z" fill="#1434CB"/><path d="M489.823 143.111c-46.835 0-88.689 24.282-88.689 69.145 0 51.45 74.23 55.003 74.23 80.85 0 10.883-12.469 20.625-33.764 20.625-30.223 0-52.811-13.612-52.811-13.612l-9.666 45.272s26.022 11.498 60.569 11.498c51.206 0 91.498-25.474 91.498-71.105 0-54.365-74.538-57.813-74.538-81.803 0-8.526 10.235-17.867 31.47-17.867 23.959 0 43.506 9.9 43.506 9.9l9.459-43.725s-21.269-9.178-51.264-9.178ZM61.33 146.411l-1.135 6.6c0 0 19.704 3.607 37.45 10.803 22.85 8.25 24.477 13.054 28.326 27.972l41.934 161.7h56.213l86.601-207.075h-56.084l-45.646 140.791-22.707-119.341c-2.083-13.658-12.631-21.45-25.542-21.45H61.33ZM333.271 146.411l-43.996 207.075h53.481l43.842-207.075h-53.327ZM631.554 146.411c-12.896 0-19.729 6.907-24.743 18.975l-78.353 187.975h56.084l10.851-31.35h68.327l6.598 31.35h49.487l-43.172-207.075h-45.079Zm7.294 55.945 16.625 77.705h-44.538l27.913-77.705Z" fill="#FFF"/></svg>',
-    Mastercard:'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><path d="M780 0H0v500h780V0Z" fill="#253747"/><path d="M465.738 69.139H313.812v272.949h151.926V69.139Z" fill="#FF5A00"/><path d="M323.926 205.613c0-55.455 26.07-104.673 66.074-136.474-29.441-23.149-66.58-37.139-107.09-37.139-95.965 0-173.613 77.648-173.613 173.613s77.648 173.614 173.613 173.614c40.51 0 77.649-13.99 107.09-37.139-40.06-31.351-66.074-81.019-66.074-136.475Z" fill="#EB001B"/><path d="M670.711 205.613c0 95.965-77.649 173.614-173.613 173.614-40.51 0-77.649-13.99-107.09-37.139 40.51-31.857 66.074-81.019 66.074-136.475s-26.07-104.673-66.074-136.475c29.385-23.149 66.524-37.139 107.033-37.139 95.965 0 173.614 78.154 173.614 173.614h.056Z" fill="#F79E1B"/></svg>',
-    Amex:'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><rect width="780" height="500" fill="#2557D6"/><path d="m0.253 235.69h37.441l8.442-19.51h18.9l8.42 19.51h73.668v-14.915l6.576 14.98h38.243l6.576-15.202v15.138h183.08l-0.085-32.026h3.542c2.479 0.083 3.204 0.302 3.204 4.226v27.8h94.689v-7.455c7.639 3.92 19.518 7.455 35.148 7.455h39.836l8.525-19.51h18.9l8.337 19.51h76.765v-18.532l11.626 18.532h61.515v-122.51h-60.88v14.468l-8.522-14.468h-62.471v14.468l-7.828-14.468h-84.38c-14.123 0-26.539 1.889-36.569 7.153v-7.153h-58.229v7.153c-6.383-5.426-15.079-7.153-24.75-7.153h-212.74l-14.274 31.641-14.659-31.641h-67.005v14.468l-7.362-14.468h-57.145l-26.539 58.246v64.261h3e-3zm236.34-17.67h-22.464l-0.083-68.794-31.775 68.793h-19.24l-31.858-68.854v68.854h-44.57l-8.42-19.592h-45.627l-8.505 19.592h-23.801l39.241-87.837h32.559l37.269 83.164v-83.164h35.766l28.678 59.587 26.344-59.587h36.485l1e-3 87.838zm-165.9-37.823-14.998-35.017-14.915 35.017h29.913zm255.3 37.821h-73.203v-87.837h73.203v18.291h-51.289v15.833h50.06v18.005h-50.061v17.542h51.289l1e-3 18.166zm103.16-64.18c0 14.004-9.755 21.24-15.439 23.412 4.794 1.748 8.891 4.838 10.84 7.397 3.094 4.369 3.628 8.271 3.628 16.116v17.255h-22.104l-0.083-11.077c0-5.285 0.528-12.886-3.458-17.112-3.202-3.09-8.083-3.76-15.973-3.76h-23.523v31.95h-21.914v-87.838h50.401c11.199 0 19.451 0.283 26.535 4.207 6.933 3.924 11.09 9.652 11.09 19.45zm-27.699 13.042c-3.013 1.752-6.573 1.81-10.841 1.81h-26.62v-19.51h26.982c3.818 0 7.804 0.164 10.393 1.584 2.842 1.28 4.601 4.003 4.601 7.765 0 3.84-1.674 6.929-4.515 8.351zm62.844 51.138h-22.358v-87.837h22.358v87.837zm259.56 0h-31.053l-41.535-65.927v65.927h-44.628l-8.527-19.592h-45.521l-8.271 19.592h-25.648c-10.649 0-24.138-2.257-31.773-9.715-7.701-7.458-11.708-17.56-11.708-33.533 0-13.027 2.395-24.936 11.812-34.347 7.085-7.01 18.18-10.242 33.28-10.242h21.215v18.821h-20.771c-7.997 0-12.514 1.14-16.862 5.203-3.735 3.699-6.298 10.69-6.298 19.897 0 9.41 1.951 16.196 6.023 20.628 3.373 3.476 9.506 4.53 15.272 4.53h9.842l30.884-69.076h32.835l37.102 83.081v-83.08h33.366l38.519 61.174v-61.174h22.445v87.833zm-133.2-37.82-15.165-35.017-15.081 35.017h30.246z" fill="#fff"/></svg>',
-    Discover:'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><path d="M54.992 0C0 0 0 0 0 0v501h670.016C755.373 501 780 476.37 780 445.996V0H54.992z" fill="#4D4D4D"/><path d="M327.152 161.893c8.837 0 16.248 1.784 25.268 6.09v22.751c-8.544-7.863-15.955-11.154-25.756-11.154-19.264 0-34.414 15.015-34.414 34.05 0 20.075 14.681 34.196 35.37 34.196 9.312 0 16.586-3.12 24.8-10.857v22.763c-9.341 4.14-16.911 5.776-25.756 5.776-31.278 0-55.582-22.596-55.582-51.737 0-28.826 24.951-51.878 56.07-51.878zm-97.113.627c11.546 0 22.11 3.72 30.943 10.994l-10.748 13.248c-5.35-5.646-10.41-8.028-16.564-8.028-8.853 0-15.3 4.745-15.3 10.989 0 5.354 3.619 8.188 15.944 12.482 23.365 8.044 30.29 15.176 30.29 30.926 0 19.193-14.976 32.553-36.32 32.553-15.63 0-26.994-5.795-36.458-18.872l13.268-12.03c4.73 8.61 12.622 13.222 22.42 13.222 9.163 0 15.947-5.952 15.947-13.984 0-4.164-2.055-7.734-6.158-10.258-2.066-1.195-6.158-2.977-14.2-5.647-19.291-6.538-25.91-13.527-25.91-27.185 0-16.225 14.214-28.41 32.846-28.41zm234.723 1.728h22.437l28.084 66.592 28.446-66.592h22.267l-45.494 101.686h-11.053l-44.687-101.686z" fill="#FFF"/><path d="M415.13 161.213c30.941 0 56.022 23.58 56.022 52.709v.033c0 29.13-25.081 52.742-56.021 52.742s-56.022-23.613-56.022-52.742v-.033c0-29.13 25.082-52.71 56.022-52.71zM779.983 288.36c-26.05 18.33-221.077 149.34-558.754 212.623H724.99c30.365 0 54.992 0 54.992 0V0z" fill="#F47216"/></svg>',
-    'UnionPay':'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><rect width="780" height="500" fill="#FFF"/><path d="m216.4 69.791h142.39c19.87 0 32.287 16.406 27.63 36.47l-66.333 287.48c-4.656 20.063-24.629 36.47-44.498 36.47h-142.39c-19.87 0-32.287-16.406-27.63-36.47l66.331-287.48c4.657-20.168 24.526-36.47 44.395-36.47h0.104z" fill="#D10429"/><path d="m346.34 69.791h163.82c19.868 0 10.865 16.406 6.209 36.47l-66.334 287.48c-4.657 20.063-3.208 36.47-23.077 36.47h-163.81c-19.972 0-32.287-16.406-27.527-36.47l66.334-287.48c4.656-20.168 24.524-36.47 44.498-36.47h-0.104z" fill="#022E64"/><path d="m504.41 69.791h142.4c19.869 0 32.287 16.406 27.629 36.47l-66.332 287.48c-4.658 20.063-24.631 36.47-44.499 36.47h-142.39c-19.973 0-32.287-16.406-27.63-36.47l66.333-287.48c4.656-20.168 24.525-36.47 44.394-36.47h0.104z" fill="#076F74"/><path d="m498.86 256.54c11.684 0.253 23.437-0.516 35.076 0.4 11.787 2.199 14.629 20.043 4.156 25.888-7.141 3.851-15.633 1.433-23.379 2.113h-15.852l-1e-3 -28.401zm41.833-32.145c2.596 9.164-6.238 17.392-15.066 16.13h-26.767c0.185-8.642-0.368-18.021 0.271-26.208 10.725 0.301 21.549-0.616 32.21 0.479 4.581 1.151 8.414 4.917 9.352 9.599z" fill="#FFF"/></svg>',
-    JCB:'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><rect width="780" height="500" fill="#0E4C96"/><path d="m632.24 361.27c0 41.615-33.729 75.36-75.36 75.36h-409.13v-297.88c0-41.626 33.733-75.37 75.365-75.37l409.12-1e-3 1e-3 297.89z" fill="#fff"/><path d="m498.86 256.54c11.684 0.253 23.437-0.516 35.076 0.4 11.787 2.199 14.629 20.043 4.156 25.888-7.141 3.851-15.633 1.433-23.379 2.113h-15.852l-1e-3 -28.401zm41.833-32.145c2.596 9.164-6.238 17.392-15.066 16.13h-26.767c0.185-8.642-0.368-18.021 0.271-26.208 10.725 0.301 21.549-0.616 32.21 0.479 4.581 1.151 8.414 4.917 9.352 9.599z" fill="#007B40"/><path d="m174.74 139.54c0.674-27.163 24.889-50.611 51.875-51.007 26.944-0.083 53.891-0.012 80.837-0.036-0.074 90.885 0.148 181.78-0.112 272.66-1.038 26.835-24.99 49.835-51.679 50.308-26.996 0.099-53.995 0.014-80.992 0.042v-113.45c26.223 6.194 53.722 8.832 80.473 4.721 15.993-2.574 33.488-10.424 38.902-27.014 3.986-14.191 1.742-29.126 2.334-43.691v-33.824h-46.297c-0.208 22.369 0.426 44.779-0.335 67.125-1.248 13.734-14.846 22.46-27.8 21.994-16.066 0.17-47.898-11.639-47.898-11.639-0.08-41.918 0.466-94.409 0.692-136.18z" fill="#006DBA"/><path d="m324.72 211.89c-2.434 0.517-0.489-8.301-1.113-11.646 0.165-21.15-0.347-42.323 0.283-63.458 2.083-26.829 26.991-48.916 53.739-48.288h78.766c-0.073 90.884 0.147 181.78-0.111 272.66-1.039 26.834-24.992 49.833-51.681 50.308-26.997 0.1-53.997 0.015-80.997 0.043v-124.3c18.44 15.128 43.5 17.483 66.473 17.524 17.316-6e-3 34.534-2.674 51.35-6.67v-22.772c-18.953 9.446-41.232 15.446-62.243 10.019-14.655-3.65-25.294-17.812-25.056-32.937-1.699-15.728 7.524-32.335 22.981-37.011 19.189-6.008 40.107-1.413 58.096 6.397 3.854 2.019 7.765 4.521 6.222-1.921v-17.9c-30.084-7.156-62.101-9.792-92.329-2.004-8.749 2.469-17.271 6.212-24.38 11.958z" fill="#E30138"/></svg>',
-    Diners:'<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg"><rect width="780" height="500" fill="#0079BE"/><path d="m599.93 251.45c0-99.415-82.98-168.13-173.9-168.1h-78.242c-92.003-0.033-167.73 68.705-167.73 168.1 0 90.93 75.727 165.64 167.73 165.2h78.242c90.914 0.436 173.9-74.294 173.9-165.2z" fill="#fff"/><path d="m348.28 97.43c-84.07 0.027-152.19 68.308-152.21 152.58 0.02 84.258 68.144 152.53 152.21 152.56 84.09-0.027 152.23-68.303 152.24-152.56-0.011-84.272-68.149-152.55-152.24-152.58z" fill="#0079BE"/><path d="m252.07 249.6c0.08-41.181 25.746-76.297 61.94-90.25v180.48c-36.194-13.948-61.861-49.045-61.94-90.23zm131 90.274v-180.53c36.207 13.92 61.914 49.057 61.979 90.257-0.065 41.212-25.772 76.322-61.979 90.269z" fill="#fff"/></svg>'};
-  return s[brand] || s.Visa;
-}
-
-function showPaymentModal() {
-  var pm = window.__pm;
-  var cardVal = pm ? pm.last4.padStart(16,'*').replace(/(.{4})/g,'$1 ').trim() : '4242 4242 4242 4242';
-  var expVal = pm ? String(pm.expMonth).padStart(2,'0') + '/' + pm.expYear : '12/27';
-  showModal('Edit Payment Method',
-    '<div style="margin-bottom:16px"><label class="modal-label">Card Number</label><input class="modal-input" type="text" id="pmCard" value="' + cardVal + '" placeholder="Card number" maxlength="19" oninput="formatPmCard()"></div>' +
-    '<div style="display:flex;gap:12px;margin-bottom:16px"><div style="flex:1"><label class="modal-label">Expiry</label><input class="modal-input" type="text" id="pmExp" value="' + expVal + '" placeholder="MM/YY" maxlength="7" oninput="formatPmExp()"></div><div style="flex:1"><label class="modal-label">CVC</label><input class="modal-input" type="text" id="pmCvc" value="" placeholder="CVC" maxlength="4"></div></div>' +
-    '<div id="pmError" style="font-size:13px;color:hsl(0 60% 60%);margin-bottom:10px;display:none"></div>' +
-    '<button class="modal-btn primary full" id="pmSaveBtn" onclick="savePayment()">Save Payment Method</button>'
-  );
-}
-function formatPmCard(){
-  var el=document.getElementById('pmCard');if(!el)return;
-  var raw=el.value.replace(/\D/g,'').slice(0,16);
-  var parts=[];for(var i=0;i<raw.length;i+=4)parts.push(raw.slice(i,i+4));
-  el.value=parts.join(' ');
-}
-function formatPmExp(){
-  var el=document.getElementById('pmExp');if(!el)return;
-  var raw=el.value.replace(/\D/g,'').slice(0,4);
-  el.value=raw.length>=3?raw.slice(0,2)+' / '+raw.slice(2):raw;
-}
-function detectBrand(num){
-  var c=num.replace(/\s/g,'');
-  if(/^62/.test(c))return'UnionPay';
-  if(/^81/.test(c))return'UnionPay';
-  if(/^4/.test(c))return'Visa';
-  if(/^5[1-5]/.test(c))return'Mastercard';
-  if(/^3[47]/.test(c))return'Amex';
-  if(/^35(?:2[89]|[3-8])/.test(c))return'JCB';
-  if(/^30[0-5]/.test(c)||/^36/.test(c)||/^38/.test(c))return'Diners';
-  if(/^6(?:011|5)/.test(c))return'Discover';
-  return'Visa';
-}
-function savePayment() {
-  var cardEl=document.getElementById('pmCard');
-  var expEl=document.getElementById('pmExp');
-  var cvcEl=document.getElementById('pmCvc');
-  var errEl=document.getElementById('pmError');
-  var btn=document.getElementById('pmSaveBtn');
-  if(!cardEl||!expEl)return;
-  var raw=cardEl.value.replace(/\s/g,'');
-  var expRaw=expEl.value.replace(/\s|\//g,'');
-  if(raw.length<13||raw.length>16){errEl.textContent='Invalid card number';errEl.style.display='block';return;}
-  if(expRaw.length<4){errEl.textContent='Invalid expiry';errEl.style.display='block';return;}
-  var last4=raw.slice(-4);
-  var brand=detectBrand(raw);
-  var expMonth=parseInt(expRaw.slice(0,2),10);
-  var expYear=parseInt(expRaw.slice(2),10);
-  if(cvcEl)cvcEl.value='';
-  errEl.style.display='none';btn.textContent='Saving…';btn.disabled=true;
-  var csrf=getCookie('csrf');
-  fetch('/api/account/payment-method',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','X-CSRF-Token':csrf||''},
-    body:JSON.stringify({brand:brand,last4:last4,expMonth:expMonth,expYear:expYear}),
-    credentials:'same-origin'
-  }).then(function(r){return r.json()}).then(function(d){
-    if(d.ok){closeModal();showToast('Payment method updated successfully.','success');window.__pm=d.paymentMethod;renderPaymentCard()}
-    else{errEl.textContent=d.message||'Failed to save';errEl.style.display='block';btn.textContent='Save Payment Method';btn.disabled=false}
-  }).catch(function(){errEl.textContent='Connection error';errEl.style.display='block';btn.textContent='Save Payment Method';btn.disabled=false});
-}
-function deletePaymentMethod() {
-  showConfirm('Remove Payment Method', 'Are you sure you want to remove your saved payment method?', { okText:'Remove', cancelText:'Cancel', danger:true }).then(function(confirmed){
-    if(!confirmed)return;
-    var csrf=getCookie('csrf');
-    fetch('/api/account/payment-method',{
-      method:'DELETE',
-      headers:{'Content-Type':'application/json','X-CSRF-Token':csrf||''},
-      credentials:'same-origin'
-    }).then(function(r){return r.json()}).then(function(d){
-      if(d.ok){window.__pm=null;renderPaymentCard();showToast('Payment method removed.','success')}
-    });
-  });
-}
-function renderPaymentCard() {
-  var container=document.getElementById('pmCardContainer');
-  if(!container)return;
-  var pm=window.__pm;
-  container.innerHTML=pm?
-    '<div class="acct-card-header"><div class="acct-card-title">Payment Method</div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" onclick="showPaymentModal()">Edit</button><button class="btn btn-ghost btn-sm" style="color:hsl(0 60% 60%)" onclick="deletePaymentMethod()">Remove</button></div></div>' +
-    '<div class="acct-pm"><div class="acct-pm-icon">'+brandSvg(pm.brand)+'</div><div class="acct-pm-info"><div class="acct-pm-name">'+pm.brand+' ending in '+pm.last4+'</div><div class="acct-pm-desc">Expires '+String(pm.expMonth).padStart(2,'0')+'/'+pm.expYear+'</div></div><span class="acct-pm-badge">Default</span></div>'
-    :
-    '<div class="acct-card-header"><div class="acct-card-title">Payment Method</div></div>' +
-    '<div style="text-align:center;padding:16px 0"><p style="font-size:13px;color:hsl(var(--text-400));margin-bottom:16px">No payment method saved yet.</p><button class="btn btn-primary btn-sm" onclick="showPaymentModal()">Add Payment Method</button></div>';
-}
-
-function showBillingModal() {
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var d = new Date();
-  var rows = '';
-  for (var i = 0; i < 6; i++) {
-    var m = d.getMonth() - i, y = d.getFullYear();
-    if (m < 0) { m += 12; y--; }
-    rows += '<tr><td>' + months[m] + ' 1</td><td>Current Plan</td><td>$29.00</td><td class="paid">Paid</td></tr>';
-  }
-  showModal('Billing History', '<div class="acct-table-wrap"><table class="acct-table"><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr>' + rows + '</table></div>');
-}
-
-function showExportModal() {
-  showModal('Download Data Export',
-    '<p style="margin-bottom:14px">For security, please re-enter your password to download your data.</p>' +
-    '<label class="modal-label">Password</label><input class="modal-input" id="exportPassword" type="password" placeholder="Your password" autocomplete="off">' +
-    '<div id="exportError" style="font-size:13px;color:hsl(0 60% 60%);margin-bottom:10px;display:none"></div>' +
-    '<button class="modal-btn primary full" onclick="doExport()">Download Export</button>'
-  );
-}
-function doExport() {
-  var pw = document.getElementById('exportPassword').value;
-  if (!pw) { document.getElementById('exportError').textContent = 'Please enter your password.'; document.getElementById('exportError').style.display = 'block'; return; }
-  document.getElementById('exportError').style.display = 'none';
-  var btn = document.querySelector('#modalBody .modal-btn');
-  btn.textContent = 'Verifying\u2026'; btn.disabled = true;
-  /* Step 1: refresh CSRF cookie, then fetch the export via GET.
-     The /api/account/export GET endpoint uses X-Reauth-Password
-     header for re-auth. On success it returns JSON with
-     Content-Disposition: attachment — the browser saves the file. */
-  fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).then(function() {
-    return fetch('/api/account/export', {
-      headers: { 'X-CSRF-Token': getCookie('csrf') || '', 'X-Reauth-Password': pw },
-      credentials: 'same-origin'
-    });
-  }).then(function(r) {
-    /* Parse the response as text first; we need to check whether
-       it is an error (JSON) or the actual export data (JSON too,
-       but with Content-Disposition header). */
-    return r.text().then(function(text) {
-      /* Successful file download responses have Content-Disposition. */
-      var cd = r.headers.get('Content-Disposition');
-      if (r.ok && cd && cd.indexOf('attachment') !== -1) {
-        /* It's the actual export file — trigger a download. */
-        var blob = new Blob([text], { type: 'application/json' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        /* Extract filename from Content-Disposition if present */
-        var match = cd.match(/filename="?([^"]+)"?/);
-        a.download = match ? match[1] : 'socrates-export.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        closeModal();
-        showToast('Data export downloaded successfully.', 'success');
+    function renderTrend(data) {
+      var body = document.getElementById('usageTrendBody');
+      var sumEl = document.getElementById('usageTrendSummary');
+      var entries = (data && data.entries) || [];
+      if (!entries.length) {
+        body.innerHTML = '<div class="ed-state" style="padding:32px 0"><p>Not enough data yet. Keep studying and the trend will appear.</p></div>';
         return;
       }
-      /* Error responses arrive as JSON with a message field. */
-      var errData;
-      try { errData = JSON.parse(text); } catch(e) { errData = {}; }
-      if (r.status === 401) {
-        var msg = errData.message || 'Authentication failed';
-        document.getElementById('exportError').textContent = msg === 'Re-authentication failed'
-          ? 'Incorrect password. Please try again.'
-          : msg === 'Not signed in' || msg === 'Session expired'
-            ? 'Your session has expired. Please refresh the page and log in again.'
-            : msg;
-        document.getElementById('exportError').style.display = 'block';
-        btn.textContent = 'Download Export'; btn.disabled = false;
-        return;
+      var W = 720, H = 180, padL = 36, padR = 12, padT = 14, padB = 22;
+      var gW = W - padL - padR, gH = H - padT - padB;
+      var maxTokens = Math.max.apply(null, entries.map(function(e){ return e.tokens; }).concat([1]));
+      function catmullRom(pts) {
+        if (pts.length < 2) return '';
+        var d = 'M' + pts[0][0] + ',' + pts[0][1];
+        for (var i = 0; i < pts.length - 1; i++) {
+          var p0 = pts[i - 1] || pts[i];
+          var p1 = pts[i];
+          var p2 = pts[i + 1];
+          var p3 = pts[i + 2] || p2;
+          var cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+          var cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+          var cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+          var cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+          d += ' C' + cp1x + ',' + cp1y + ' ' + cp2x + ',' + cp2y + ' ' + p2[0] + ',' + p2[1];
+        }
+        return d;
       }
-      throw new Error(errData.message || 'Server returned ' + r.status);
-    });
-  }).catch(function(err) {
-    closeModal();
-    showToast('Export failed: ' + (err.message || 'unknown error'), 'error');
-  });
-}
-
-/* ── Danger-zone handlers ──────────────────────────── */
-function ensureCsrf() {
-  return fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).then(function() { return getCookie('csrf') || ''; });
-}
-
-function cancelSubscription() {
-  showConfirm('Cancel Subscription?', 'Your subscription will remain active until the end of your current billing period. After that, your account will be downgraded to the free Diophantus tier. Your session history and knowledge graph will be preserved.', { okText:'Cancel Subscription', cancelText:'Keep Plan', danger:true }).then(function(confirmed) {
-    if (!confirmed) return;
-    ensureCsrf().then(function(csrfToken) {
-      fetch('/api/account/cancel', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-CSRF-Token':csrfToken||'' }, credentials:'same-origin' })
-      .then(function(r) { if (!r.ok) throw new Error('Server returned '+r.status); return r.json(); })
-      .then(function() { showToast('Subscription cancelled. It will expire at the end of your billing period.', 'success'); window.location.reload(); })
-      .catch(function(err) { showToast('Could not cancel subscription: '+(err&&err.message?err.message:'unknown error'), 'error'); });
-    });
-  });
-}
-
-function deleteAccount() {
-  showConfirm('Delete Account', 'This will permanently erase all of your sessions, messages, knowledge graph, mistake book, and API keys. This cannot be undone.', { okText:'Delete Account', danger:true }).then(function(confirmed) {
-    if (!confirmed) return;
-    showConfirm('Are you absolutely sure?', 'There is no recovery from this. Your data will be permanently lost.', { okText:'Yes, Delete Everything', danger:true }).then(function(confirmed2) {
-      if (!confirmed2) return;
-      ensureCsrf().then(function(csrfToken) {
-        fetch('/api/auth/account', { method:'DELETE', headers:{ 'Content-Type':'application/json', 'X-CSRF-Token':csrfToken||'' }, credentials:'same-origin' })
-        .then(function(r) { if (!r.ok) throw new Error('Server returned '+r.status); return r.json(); })
-        .then(function() { showToast('Your account has been deleted.', 'success'); setTimeout(function(){window.location.href='/';},1500); })
-        .catch(function(err) { showToast('Could not delete account: '+(err&&err.message?err.message:'unknown error'), 'error'); });
-    });
-  });
-});
-}
-window.cancelSubscription = cancelSubscription;
-window.deleteAccount = deleteAccount;
-
-</script>
-<script></script>
-<script>(function(){var b=document.querySelector('.lang-switch');if(!b)return;var p=window.location.pathname.replace(/\.html$/,'');b.href=p==='/'||p===''?'/zh/':'/zh'+p;b.addEventListener("click",function(){try{localStorage.setItem("socrates-lang","zh")}catch(e){}});})();</script>
+      var pts = entries.map(function(e, i) {
+        var x = padL + (i / (entries.length - 1 || 1)) * gW;
+        var y = padT + gH - (e.tokens / maxTokens) * gH;
+        return [x, y];
+      });
+      var lineD = catmullRom(pts);
+      var areaD = lineD + ' L' + pts[pts.length - 1][0] + ',' + (padT + gH) + ' L' + pts[0][0] + ',' + (padT + gH) + ' Z';
+      var gridSvg = '';
+      for (var g = 0; g <= 4; g++) {
+        var gy = padT + gH * (g / 4);
+        var gVal = Math.round(maxTokens * (1 - g / 4));
+        gridSvg += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '" stroke="var(--ed-line)" stroke-width=".5" opacity=".6"/>';
+        gridSvg += '<text x="' + (padL - 6) + '" y="' + (gy + 3) + '" fill="var(--ed-ink-muted)" font-size="10" text-anchor="end" font-family="var(--ed-mono)">' + fmtTokens(gVal) + '</text>';
+      }
+      var xLabels = '';
+      entries.forEach(function(e, i) {
+        if (i % 5 === 0 || i === entries.length - 1) {
+          var lx = padL + (i / (entries.length - 1 || 1)) * gW;
+          var label = e.day.slice(5);
+          xLabels += '<text x="' + lx + '" y="' + (H - 6) + '" fill="var(--ed-ink-muted)" font-size="10" text-anchor="middle" font-family="var(--ed-mono)">' + label + '</text>';
+        }
+      });
+      var dotsSvg = '';
+      pts.forEach(function(p, i) {
+        dotsSvg += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="3" fill="var(--ed-clay)" opacity="0"><title>' + entries[i].day + ': ' + fmtTokens(entries[i].tokens) + ' tokens, ' + entries[i].calls + ' calls</title></circle>';
+      });
+      var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">' +
+        '<defs><linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="#9a5a3b" stop-opacity=".22"/>' +
+          '<stop offset="100%" stop-color="#9a5a3b" stop-opacity="0"/>' +
+        '</linearGradient></defs>' +
+        gridSvg + xLabels +
+        '<path d="' + areaD + '" fill="url(#trendGrad)"/>' +
+        '<path d="' + lineD + '" fill="none" stroke="var(--ed-clay)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<g class="trend-dots">' + dotsSvg + '</g>' +
+        '<style>.trend-dots circle:hover{opacity:1!important;r:5;transition:all .15s}</style>' +
+        '</svg>';
+      body.innerHTML = svg;
+      if (sumEl) {
+        var totalT = data.totalTokens || entries.reduce(function(s, e){ return s + e.tokens; }, 0);
+        var totalC = data.totalCalls || entries.reduce(function(s, e){ return s + e.calls; }, 0);
+        var activeDays = entries.filter(function(e){ return e.tokens > 0; }).length;
+        sumEl.innerHTML =
+          '<div><strong>' + fmtTokens(totalT) + '</strong> total tokens</div>' +
+          '<div><strong>' + fmtTokens(totalC) + '</strong> chat calls</div>' +
+          '<div><strong>' + activeDays + '</strong> active days</div>' +
+          '<div><strong>' + fmtTokens(activeDays ? Math.round(totalT / activeDays) : 0) + '</strong> avg / active day</div>';
+      }
+    }
+  </script>
 </body>
 </html>

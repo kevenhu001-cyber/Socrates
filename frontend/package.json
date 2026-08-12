@@ -14,7 +14,10 @@
     "test:unit": "node --experimental-strip-types --test test/*.test.mjs",
     "test:smoke": "playwright test --config=playwright.config.mjs",
     "test:smoke:headed": "playwright test --config=playwright.config.mjs --headed",
-    "test:smoke:ui": "playwright test --config=playwright.config.mjs --ui"
+    "test:smoke:ui": "playwright test --config=playwright.config.mjs --ui",
+    "debug:shoot": "node debug/shoot.mjs",
+    "debug:probe": "node debug/probe.mjs",
+    "debug:interactive": "node debug/interactive.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

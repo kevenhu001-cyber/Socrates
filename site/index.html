@@ -9,7 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="editorial.css">
+  <link rel="stylesheet" href="editorial.css?cb=20260814">
+  <link rel="stylesheet" href="brand.css?cb=20260814">
 </head>
 <body class="ed-site">
   <a class="ed-skip" href="#main">Skip to content</a>
@@ -17,16 +18,17 @@
   <header class="ed-header">
     <div class="ed-shell">
       <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
-        <a class="ed-brand" href="index.html" aria-label="Socrates home">SOCRATES</a>
+        <a class="ed-brand" href="index" aria-label="Socrates home">SOCRATES</a>
         <div class="ed-nav-links" id="site-menu" data-menu-panel>
-          <a href="research.html">Research</a>
-          <a href="documents.html">Library</a>
-          <a href="about.html">Company</a>
-          <a href="announcements.html">News</a>
-          <a href="zh/index.html">中文</a>
+          <a href="research">Research</a>
+          <a href="policy">Principles</a>
+          <a href="learn">Learn</a>
+          <a href="announcements">News</a>
+          <a href="about">Company</a>
+          <a href="zh/index">中文</a>
         </div>
         <div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div>
-        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu">Menu</button>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
       </nav>
     </div>
   </header>
@@ -40,9 +42,9 @@
         </div>
         <div class="ed-home-stage ed-reveal">
           <nav class="ed-stage-index" aria-label="Explore Socrates">
-            <a href="research.html">Research</a>
-            <a href="policy.html">Principles</a>
-            <a href="learn.html">Learn</a>
+            <a href="research">Research</a>
+            <a href="product">Product</a>
+            <a href="policy">Principles</a>
           </nav>
           <img src="media/socrates-home-question-atlas-v2.png" alt="A dark editorial learning map that carries a question through evidence, recall, and connected ideas">
           <div class="ed-network-copy"><h2>Questions become a field of study.</h2><p>Trace a difficult subject through dialogue, recall, and the connections that make it useful again.</p></div>
@@ -51,48 +53,51 @@
       </div>
     </section>
 
-    <section class="ed-section">
-      <div class="ed-shell ed-home-index">
-        <div class="ed-manifesto">
-          <h2 class="ed-statement-title">Questions become a durable learning practice.</h2>
-          <p class="ed-manifesto-note">Socrates meets you where you are, challenges your assumptions, and helps you build understanding that lasts.</p>
+    <section class="ed-section ed-section-line">
+      <div class="ed-shell ed-home-statement ed-reveal">
+        <div>
+          <p class="ed-kicker">Built around hard questions</p>
+          <h2 class="ed-statement-title">We do not make the subject smaller. We make the path into it clearer.</h2>
         </div>
-        <div class="ed-ledger" aria-label="Selected writing">
-          <a class="ed-ledger-row" href="announcements.html"><span>01</span><strong>A new way to revisit</strong><span>Learning science</span></a>
-          <a class="ed-ledger-row" href="documents.html"><span>02</span><strong>The anatomy of a useful question</strong><span>Pedagogy</span></a>
-          <a class="ed-ledger-row" href="research.html"><span>03</span><strong>Notes on learning in public</strong><span>Community</span></a>
-          <a class="ed-ledger-row" href="product.html"><span>04</span><strong>From dialogue to understanding</strong><span>Method</span></a>
-          <a class="ed-ledger-row" href="product.html#knowledge-map"><span>05</span><strong>Building a personal knowledge map</strong><span>Practice</span></a>
-          <a class="ed-ledger-row" href="about.html"><span>06</span><strong>Why we built Socrates</strong><span>Company</span></a>
+        <div class="ed-home-statement-copy">
+          <p class="ed-copy-serif">Socrates is an AI tutor for people who want to understand—not just finish an answer.</p>
+          <p class="ed-copy">Start where you are. Test the edges of an idea. Return to the useful connection when you need it again.</p>
+          <a class="ed-link" href="product">Explore the learning loop →</a>
         </div>
       </div>
     </section>
 
-    <section class="ed-section-tight">
-      <div class="ed-shell ed-portal-grid">
-        <a class="ed-portal ed-reveal" href="announcements.html">
-          <div><p class="ed-kicker">Announcements</p><h3>What we are making next.</h3><p>Product changes, experiments, and the small decisions that make practice clearer.</p></div>
-          <span class="ed-link">Read announcements</span>
-        </a>
-        <a class="ed-portal ed-reveal" href="learn.html">
-          <div><p class="ed-kicker">Learn</p><h3>Keep a better set of questions.</h3><p>Guides and small learning paths for a more deliberate practice.</p></div>
-          <span class="ed-link">Explore the Studio</span>
-        </a>
-        <a class="ed-portal ed-reveal" href="research.html">
-          <div><p class="ed-kicker">Research</p><h3>Study how understanding holds.</h3><p>Explorations into explanation, memory, and the conditions that help ideas stay.</p></div>
-          <span class="ed-link">Explore research</span>
-        </a>
-      </div>
-    </section>
-
-    <section class="ed-section-tight">
-      <div class="ed-shell ed-black-band ed-reveal">
-        <div class="ed-black-band-inner">
-          <div class="ed-black-band-copy">
-            <div><p class="ed-kicker" style="color:rgba(244,241,233,.44)">The product</p><h2>A tutor that stays with the question.</h2><p>Ask in your own words. Test the edges of an idea. Return to the useful connection when you need it again.</p></div>
-            <a class="ed-link ed-link-light" href="product.html">Explore the learning loop</a>
+    <section class="ed-section ed-section-line" aria-labelledby="latest-research-title">
+      <div class="ed-shell">
+        <div class="ed-home-research-heading ed-reveal">
+          <div>
+            <p class="ed-kicker">Latest research</p>
+            <h2 class="ed-title" id="latest-research-title">What we are learning about learning.</h2>
           </div>
-          <div class="ed-black-band-media"><img src="media/socrates-home-dialogue-thread-v2.png" alt="Two editorial research fragments joined by a copper dialogue thread and a shared cobalt point"></div>
+          <a class="ed-link" href="research">View all research →</a>
+        </div>
+
+        <div class="ed-essay-list ed-reveal">
+          <a class="ed-essay-row" href="research/memory-recall/">
+            <span class="ed-essay-date">Aug 12, 2026</span>
+            <span class="ed-essay-title">The route back to an idea.</span>
+            <span class="ed-essay-tag">Memory · 7 min</span>
+          </a>
+          <a class="ed-essay-row" href="research/explanation-evidence/">
+            <span class="ed-essay-date">Jul 29, 2026</span>
+            <span class="ed-essay-title">When a clear explanation becomes evidence.</span>
+            <span class="ed-essay-tag">Explanation · 6 min</span>
+          </a>
+          <a class="ed-essay-row" href="research/honest-pause/">
+            <span class="ed-essay-date">Jul 11, 2026</span>
+            <span class="ed-essay-title">The value of an honest pause.</span>
+            <span class="ed-essay-tag">Practice · 5 min</span>
+          </a>
+          <a class="ed-essay-row" href="research/maps-preserve-path/">
+            <span class="ed-essay-date">Jun 24, 2026</span>
+            <span class="ed-essay-title">Maps that preserve the path.</span>
+            <span class="ed-essay-tag">Knowledge mapping · 8 min</span>
+          </a>
         </div>
       </div>
     </section>
@@ -101,15 +106,15 @@
   <footer class="ed-footer">
     <div class="ed-shell ed-footer-frame">
       <div class="ed-footer-top">
-        <div class="ed-footer-brand"><a class="ed-brand" href="index.html">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div>
-        <div class="ed-footer-column"><h2>Product</h2><a href="product.html">Learning loop</a><a href="pricing.html">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
-        <div class="ed-footer-column"><h2>Library</h2><a href="announcements.html">Announcements</a><a href="documents.html">Documents</a><a href="research.html">Research</a></div>
-        <div class="ed-footer-column"><h2>Company</h2><a href="about.html">About</a><a href="contact.html">Contact</a><a href="guide.html">Learning guide</a></div>
-        <div class="ed-footer-column"><h2>Elsewhere</h2><a href="zh/index.html">中文</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></div>
+        <div class="ed-footer-brand"><a class="ed-brand" href="index">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div>
+        <div class="ed-footer-column"><h2>Product</h2><a href="product">Learning loop</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
+        <div class="ed-footer-column"><h2>Library</h2><a href="announcements">Announcements</a><a href="documents">Documents</a><a href="research">Research</a></div>
+        <div class="ed-footer-column"><h2>Company</h2><a href="about">About</a><a href="contact">Contact</a><a href="guide">Learning guide</a></div>
+        <div class="ed-footer-column"><h2>Elsewhere</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div>
       </div>
       <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
     </div>
   </footer>
-  <script src="editorial.js"></script>
+  <script src="editorial.js?cb=20260814"></script>
 </body>
 </html>

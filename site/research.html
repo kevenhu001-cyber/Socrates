@@ -9,13 +9,30 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="editorial.css">
+  <link rel="stylesheet" href="editorial.css?cb=20260814">
+  <link rel="stylesheet" href="brand.css?cb=20260814">
 </head>
 <body class="ed-site ed-research-page">
   <a class="ed-skip" href="#main">Skip to content</a>
+
   <header class="ed-header">
-    <div class="ed-shell"><nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation"><a class="ed-brand" href="index.html">SOCRATES</a><div class="ed-nav-links" id="site-menu" data-menu-panel><a href="research.html" aria-current="page">Research</a><a href="policy.html">Principles</a><a href="learn.html">Learn</a><a href="announcements.html">News</a><a href="about.html">Company</a></div><div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div><button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu">Menu</button></nav></div>
+    <div class="ed-shell">
+      <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
+        <a class="ed-brand" href="index" aria-label="Socrates home">SOCRATES</a>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel>
+          <a href="research" aria-current="page">Research</a>
+          <a href="policy">Principles</a>
+          <a href="learn">Learn</a>
+          <a href="announcements">News</a>
+          <a href="about">Company</a>
+          <a href="zh/index">中文</a>
+        </div>
+        <div class="ed-header-actions"><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+      </nav>
+    </div>
   </header>
+
   <main id="main">
     <section class="ed-reference-hero">
       <div class="ed-shell ed-reference-hero-grid ed-reveal">
@@ -27,7 +44,7 @@
       </div>
     </section>
 
-    <section class="ed-reference-rule">
+    <section class="ed-reference-rule" aria-label="Research teams">
       <div class="ed-shell ed-team-grid ed-reveal">
         <article id="memory"><h2>Memory</h2><p>We test the small conditions that let an idea be recalled instead of merely recognized.</p></article>
         <article id="explanation"><h2>Explanation</h2><p>We examine what changes when a learner has to make the shape of an idea clear in their own words.</p></article>
@@ -37,14 +54,71 @@
       </div>
     </section>
 
-    <section class="ed-shell ed-research-showcase" aria-label="Latest research">
+    <section class="ed-shell ed-research-showcase" aria-labelledby="featured-research-title">
       <div class="ed-showcase-media ed-reveal"><img src="media/socrates-research-knowledge-topology-v3.png" alt="A dark research topology of linked paper studies, map fragments, and a cobalt focal node"></div>
       <div class="ed-showcase-rail ed-reveal">
-        <article class="ed-showcase-entry"><div class="ed-row-meta"><span>Memory</span><span>August 12, 2026</span></div><h2>The route back to an idea.</h2><p>A study of why a changed prompt can surface a concept more reliably than a repeated answer.</p></article>
-        <article class="ed-showcase-entry"><div class="ed-row-meta"><span>Explanation</span><span>July 29, 2026</span></div><h2>When a clear explanation becomes evidence.</h2><p>Making an idea teachable exposes the part that still needs a smaller case or another question.</p></article>
-        <article class="ed-showcase-entry"><div class="ed-row-meta"><span>Practice</span><span>July 11, 2026</span></div><h2>The value of an honest pause.</h2><p>Why a moment of uncertainty can give an intelligent tutor better material to work with.</p></article>
-        <article class="ed-showcase-entry"><div class="ed-row-meta"><span>Knowledge mapping</span><span>June 24, 2026</span></div><h2>Maps that preserve the path.</h2><p>A field note on showing relationships without turning a living subject into a static diagram.</p></article>
+        <a class="ed-showcase-entry" href="research/memory-recall/">
+          <div class="ed-row-meta"><span class="ed-pill" data-cat="Memory">Memory</span><span>August 12, 2026</span></div>
+          <h2 id="featured-research-title">The route back to an idea.</h2>
+          <p>A study of why a changed prompt can surface a concept more reliably than a repeated answer.</p>
+        </a>
+        <a class="ed-showcase-entry" href="research/explanation-evidence/">
+          <div class="ed-row-meta"><span class="ed-pill" data-cat="Explanation">Explanation</span><span>July 29, 2026</span></div>
+          <h2>When a clear explanation becomes evidence.</h2>
+          <p>Making an idea teachable exposes the part that still needs a smaller case or another question.</p>
+        </a>
+        <a class="ed-showcase-entry" href="research/honest-pause/">
+          <div class="ed-row-meta"><span class="ed-pill" data-cat="Practice">Practice</span><span>July 11, 2026</span></div>
+          <h2>The value of an honest pause.</h2>
+          <p>Why a moment of uncertainty can give an intelligent tutor better material to work with.</p>
+        </a>
       </div>
+    </section>
+
+    <section class="ed-reference-rule" aria-labelledby="publications-title">
+      <div class="ed-shell ed-section ed-research-publications">
+        <div class="ed-publications-toolbar ed-reveal">
+          <div>
+            <p class="ed-kicker">Publications</p>
+            <h2 class="ed-title" id="publications-title">Notes from the work.</h2>
+            <p class="ed-copy">Read the methods, observations, and open questions behind our research threads.</p>
+          </div>
+          <label class="ed-search-field"><span>Search research</span><input type="search" data-ed-search aria-controls="research-publications" placeholder="Search by title or thread" autocomplete="off"></label>
+        </div>
+
+        <div class="ed-filter-bar" data-ed-filters aria-label="Filter publications">
+          <button class="is-active" type="button" data-ed-filter="all" aria-pressed="true">All</button>
+          <button type="button" data-ed-filter="memory" aria-pressed="false">Memory</button>
+          <button type="button" data-ed-filter="explanation" aria-pressed="false">Explanation</button>
+          <button type="button" data-ed-filter="practice" aria-pressed="false">Practice</button>
+          <button type="button" data-ed-filter="mapping" aria-pressed="false">Knowledge mapping</button>
+          <button type="button" data-ed-filter="tutoring" aria-pressed="false">Tutoring</button>
+        </div>
+
+        <div class="ed-publication-list ed-reveal" id="research-publications" aria-live="polite">
+          <a class="ed-publication-row" data-ed-item="memory" data-ed-publication href="research/memory-recall/">
+            <div><div class="ed-row-meta"><span class="ed-pill" data-cat="Memory">Memory</span><span>August 12, 2026</span><span>7 min read</span></div><h2>The route back to an idea.</h2><p>A changed prompt can surface a concept more reliably than a repeated answer. We ran a six-week intervention to understand why.</p></div><span class="ed-link">Open publication →</span>
+          </a>
+          <a class="ed-publication-row" data-ed-item="explanation" data-ed-publication href="research/explanation-evidence/">
+            <div><div class="ed-row-meta"><span class="ed-pill" data-cat="Explanation">Explanation</span><span>July 29, 2026</span><span>6 min read</span></div><h2>When a clear explanation becomes evidence.</h2><p>Asking a learner to teach an idea back reveals the seam where the next useful question belongs.</p></div><span class="ed-link">Open publication →</span>
+          </a>
+          <a class="ed-publication-row" data-ed-item="practice" data-ed-publication href="research/honest-pause/">
+            <div><div class="ed-row-meta"><span class="ed-pill" data-cat="Practice">Practice</span><span>July 11, 2026</span><span>5 min read</span></div><h2>The value of an honest pause.</h2><p>A moment of explicit uncertainty is often followed by a sharper question than a moment of fluent confidence.</p></div><span class="ed-link">Open publication →</span>
+          </a>
+          <a class="ed-publication-row" data-ed-item="mapping" data-ed-publication href="research/maps-preserve-path/">
+            <div><div class="ed-row-meta"><span class="ed-pill" data-cat="Knowledge mapping">Knowledge mapping</span><span>June 24, 2026</span><span>8 min read</span></div><h2>Maps that preserve the path.</h2><p>A useful knowledge map shows not only what a learner knows, but how the idea was assembled and where to walk next.</p></div><span class="ed-link">Open publication →</span>
+          </a>
+          <a class="ed-publication-row" data-ed-item="practice" data-ed-publication href="research/what-learners-keep/">
+            <div><div class="ed-row-meta"><span class="ed-pill" data-cat="Practice">Practice</span><span>April 30, 2026</span><span>6 min read</span></div><h2>What learners keep after a session.</h2><p>We asked 47 learners which moments they still remembered a week later. The answers changed how we end a session.</p></div><span class="ed-link">Open publication →</span>
+          </a>
+          <a class="ed-publication-row" data-ed-item="tutoring" data-ed-publication href="research/tutor-curiosity/">
+            <div><div class="ed-row-meta"><span class="ed-pill" data-cat="Tutoring">Tutoring</span><span>February 18, 2026</span><span>7 min read</span></div><h2>When a tutor should say it is unsure.</h2><p>On the conditions under which a model admitting uncertainty is more useful than a fluent guess.</p></div><span class="ed-link">Open publication →</span>
+          </a>
+        </div>
+        <p class="ed-filter-empty" data-ed-empty hidden>No publications matched that search.</p>
+      </div>
+        <p class="ed-year-rule">2026</p>
+        <a class="ed-see-more" href="#">See more</a>
     </section>
 
     <section class="ed-reference-rule">
@@ -54,7 +128,19 @@
       </div>
     </section>
   </main>
-  <footer class="ed-footer"><div class="ed-shell ed-footer-frame"><div class="ed-footer-top"><div class="ed-footer-brand"><a class="ed-brand" href="index.html">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div><div class="ed-footer-column"><h2>Product</h2><a href="product.html">Learning loop</a><a href="pricing.html">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div><div class="ed-footer-column"><h2>Explore</h2><a href="research.html">Research</a><a href="policy.html">Principles</a><a href="learn.html">Learn</a></div><div class="ed-footer-column"><h2>Company</h2><a href="about.html">About</a><a href="contact.html">Contact</a><a href="announcements.html">News</a></div><div class="ed-footer-column"><h2>Elsewhere</h2><a href="zh/index.html">中文</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></div></div><div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div></div></footer>
-  <script src="editorial.js"></script>
+
+  <footer class="ed-footer">
+    <div class="ed-shell ed-footer-frame">
+      <div class="ed-footer-top">
+        <div class="ed-footer-brand"><a class="ed-brand" href="index">SOCRATES</a><p>An AI tutor for people who want to understand.</p></div>
+        <div class="ed-footer-column"><h2>Product</h2><a href="product">Learning loop</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
+        <div class="ed-footer-column"><h2>Library</h2><a href="announcements">Announcements</a><a href="documents">Documents</a><a href="research">Research</a></div>
+        <div class="ed-footer-column"><h2>Company</h2><a href="about">About</a><a href="contact">Contact</a><a href="guide">Learning guide</a></div>
+        <div class="ed-footer-column"><h2>Elsewhere</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div>
+      </div>
+      <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
+    </div>
+  </footer>
+  <script src="editorial.js?cb=20260814"></script>
 </body>
 </html>
