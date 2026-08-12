@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Manage your Socrates subscription, monitor usage, and review your billing history.">
-  <title>My Account —Socrates</title>
+  <title>My Account — Socrates</title>
   <link rel="icon" href="favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -60,7 +60,7 @@
         <div id="acct-grid" class="ed-app-main">
           <div class="ed-state">
             <svg class="ed-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="60" stroke-linecap="round"/></svg>
-            <p>Loading your account data—/p>
+            <p>Loading your account data…</p>
           </div>
         </div>
       </div>
@@ -125,7 +125,7 @@
       var host = document.getElementById('toastHost');
       var t = document.createElement('div');
       t.className = 'ed-toast is-' + type;
-      var iconChar = type === 'success' ? '✓ : type === 'error' ? '!' : '·';
+      var iconChar = type === 'success' ? '✓' : type === 'error' ? '!' : '·';
       t.innerHTML = '<span class="ed-toast-icon">' + iconChar + '</span><span>' + msg + '</span><button class="ed-toast-close" aria-label="Dismiss">×</button>';
       host.appendChild(t);
       t.querySelector('.ed-toast-close').addEventListener('click', function(){ dismiss(t); });
@@ -209,7 +209,7 @@
         '</div>';
 
       function fmtDate(ts) {
-        if (!ts) return '—;
+        if (!ts) return '—';
         var d = new Date(ts);
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       }
@@ -228,7 +228,7 @@
 
         var priceHTML = p.price === 0 ? '<strong>Free</strong>' : '<strong>$' + p.price + '</strong> /month';
 
-        var daysLeft = '—;
+        var daysLeft = '—';
         if (u.subscriptionEnd) {
           var dl = Math.ceil((u.subscriptionEnd - Date.now()) / (1000 * 60 * 60 * 24));
           daysLeft = dl > 0 ? dl : 0;
@@ -263,9 +263,9 @@
               '<div class="ed-sub-name">' + p.name + ' <strong>plan</strong></div>' +
               '<div class="ed-sub-price">' + priceHTML + '</div>' +
               '<div class="ed-sub-meta">' +
-                '<div class="ed-sub-meta-item"><span class="ed-sub-meta-label">Next billing</span><span class="ed-sub-meta-value">' + (u.subscriptionEnd ? fmtDate(u.subscriptionEnd) : '—) + '</span></div>' +
+                '<div class="ed-sub-meta-item"><span class="ed-sub-meta-label">Next billing</span><span class="ed-sub-meta-value">' + (u.subscriptionEnd ? fmtDate(u.subscriptionEnd) : '—') + '</span></div>' +
                 '<div class="ed-sub-meta-item"><span class="ed-sub-meta-label">Days left</span><span class="ed-sub-meta-value is-accent">' + daysLeft + '</span></div>' +
-                '<div class="ed-sub-meta-item"><span class="ed-sub-meta-label">Member since</span><span class="ed-sub-meta-value">' + (u.createdAt ? fmtDate(u.createdAt) : '—) + '</span></div>' +
+                '<div class="ed-sub-meta-item"><span class="ed-sub-meta-label">Member since</span><span class="ed-sub-meta-value">' + (u.createdAt ? fmtDate(u.createdAt) : '—') + '</span></div>' +
                 '<div class="ed-sub-meta-item"><span class="ed-sub-meta-label">Tier</span><span class="ed-sub-meta-value">' + tierLabel + '</span></div>' +
               '</div>' +
               '<div class="ed-app-actions" style="justify-content:center">' + upgradeBtnHTML + '</div>' +
@@ -293,7 +293,7 @@
             '</div>' +
           '</article>' +
 
-          /* Payment Method —paid tiers only */
+          /* Payment Method — paid tiers only */
           (isFree ? '' :
           '<article class="ed-app-card ed-reveal" id="pmCardContainer">' +
             (u.paymentMethod ?
@@ -307,7 +307,7 @@
           '</article>'
           ) +
 
-          /* Billing History —paid tiers only */
+          /* Billing History — paid tiers only */
           (isFree ? '' :
           '<article class="ed-app-card ed-reveal">' +
             '<header class="ed-app-card-head"><div><p class="ed-kicker">Billing history</p><h2 class="ed-app-card-title">Your recent invoices.</h2></div>' +
@@ -320,14 +320,14 @@
           '<article class="ed-app-card ed-reveal" id="usageHeatmapCard">' +
             '<header class="ed-app-card-head"><div><p class="ed-kicker">Token activity</p><h2 class="ed-app-card-title">When you learn, in one frame.</h2></div><span id="usageHeatmapSub" class="ed-meta">Last 7 days, hourly</span></header>' +
             '<div class="ed-heatmap-summary" id="usageHeatmapSummary"></div>' +
-            '<div id="usageHeatmapBody"><div class="ed-state" style="padding:24px 0"><p>Loading token activity—/p></div></div>' +
+            '<div id="usageHeatmapBody"><div class="ed-state" style="padding:24px 0"><p>Loading token activity…</p></div></div>' +
           '</article>' +
 
           /* Token Usage Trend */
           '<article class="ed-app-card ed-reveal" id="usageTrendCard">' +
             '<header class="ed-app-card-head"><div><p class="ed-kicker">Token trend</p><h2 class="ed-app-card-title">The shape of the last 30 days.</h2></div><span class="ed-meta">Daily tokens</span></header>' +
             '<div id="usageTrendSummary" class="ed-heatmap-summary"></div>' +
-            '<div id="usageTrendBody"><div class="ed-state" style="padding:24px 0"><p>Loading trend data—/p></div></div>' +
+            '<div id="usageTrendBody"><div class="ed-state" style="padding:24px 0"><p>Loading trend data…</p></div></div>' +
           '</article>' +
 
           /* Danger Zone */
@@ -342,7 +342,7 @@
             ) +
             '<div style="padding:' + (isFree ? '0' : '22px 0 0;border-top:1px solid var(--ed-line)') + '">' +
               '<p style="margin:0 0 8px;color:var(--ed-clay);font-weight:600;font-size:13.5px">Delete account</p>' +
-              '<p style="margin:0 0 14px;color:var(--ed-ink-soft);font-size:13.5px;line-height:1.65;max-width:540px">Permanently delete your account and all associated data —sessions, messages, knowledge graph, mistake book, and API keys. This action cannot be undone.</p>' +
+              '<p style="margin:0 0 14px;color:var(--ed-ink-soft);font-size:13.5px;line-height:1.65;max-width:540px">Permanently delete your account and all associated data — sessions, messages, knowledge graph, mistake book, and API keys. This action cannot be undone.</p>' +
               '<button class="ed-button-quiet" style="color:var(--ed-clay);border-color:var(--ed-clay);background:rgba(154,90,59,.06)" onclick="deleteAccount()">Delete account</button>' +
             '</div>' +
           '</article>';
@@ -354,7 +354,7 @@
         grid.innerHTML =
           '<div class="ed-state">' +
             '<svg class="ed-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="60" stroke-linecap="round"/></svg>' +
-            '<p>Loading your account data—/p>' +
+            '<p>Loading your account data…</p>' +
           '</div>';
 
         var controller = new AbortController();
@@ -367,7 +367,7 @@
               grid.innerHTML =
                 '<div class="ed-state">' +
                   '<svg class="ed-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="60" stroke-linecap="round"/></svg>' +
-                  '<p>Preparing login—/p>' +
+                  '<p>Preparing login…</p>' +
                 '</div>';
               Promise.all([
                 fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}),
@@ -435,7 +435,7 @@
         return false;
       }
       errEl.style.display = 'none';
-      btn.textContent = 'Signing in—;
+      btn.textContent = 'Signing in…';
       btn.disabled = true;
 
       var csrfToken = getCookie('csrf');
@@ -594,7 +594,7 @@
             else if (ratio >= 0.25) level = 2;
             else level = 1;
           }
-          html += '<span class="ed-heatmap-cell" data-level="' + level + '" title="' + day.label + ' ' + String(h).padStart(2,'0') + ':00 —' + fmtTokens(tokens) + ' tokens"></span>';
+          html += '<span class="ed-heatmap-cell" data-level="' + level + '" title="' + day.label + ' ' + String(h).padStart(2,'0') + ':00 — ' + fmtTokens(tokens) + ' tokens"></span>';
         }
       });
       html += '</div>';

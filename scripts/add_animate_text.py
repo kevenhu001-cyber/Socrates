@@ -11,7 +11,7 @@ re-tag an element that already has the attribute.
 import re
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\Jiacheng\Desktop\Socrates\site")
+ROOT = Path(__file__).resolve().parents[1] / "site"
 TARGET_CLASSES = ("ed-display", "ed-page-title", "ed-reference-title")
 
 # Pages where the hero h1 should animate. Skip account/checkout/api-keys/profile/privacy/terms
@@ -39,8 +39,6 @@ def upgrade(match: re.Match) -> str:
 
 def process(path: Path) -> int:
     src = path.read_text(encoding="utf-8")
-    if "data-animate-text" in src:
-        return 0
     new = OPEN.sub(upgrade, src)
     if new == src:
         return 0
