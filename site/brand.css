@@ -1,4 +1,12 @@
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap");
+/*
+ * Web font stack — chosen so the marketing surface renders cleanly on every
+ * major OS without falling back to system CJK fonts we don't control
+ * (Microsoft YaHei / 微软雅黑 / SimSun / 宋体 on Windows). We load the
+ * full Noto Sans SC weight range and a proper Newsreader serif for the
+ * editorial copy on English pages. Both families ship with `font-display:
+ * swap` so first paint is never blocked on the webfont.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600&display=swap");
 
 /*
  * Socrates brand layer
@@ -19,11 +27,26 @@
   --site-line: #d9d0c3;
   --site-black: #171716;
   --site-clay: #9a5a3b;
-  --site-sans-latin: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --site-sans-cjk: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Hiragino Sans GB", -apple-system, BlinkMacSystemFont, sans-serif;
-  --site-serif-latin: var(--site-sans-latin);
-  --site-serif-cjk: var(--site-sans-cjk);
-  --site-mono: "Geist Mono", "SFMono-Regular", Consolas, monospace;
+  /* Latin UI sans — Geist is the product's default. Inter is a visual
+     sibling that most readers already have, so it's a safe fallback. The
+     system stacks after Inter are deliberately limited so CJK characters
+     never collapse onto Microsoft YaHei / SimSun on Windows hosts. */
+  --site-sans-latin: "Geist", "Inter", "Helvetica Neue", Arial, sans-serif;
+  /* CJK UI sans — Noto Sans SC is loaded as a webfont, so we don't reach
+     the OS fallback ("PingFang SC" / "Hiragino Sans GB") on macOS, nor the
+     YaHei/SimSun fallbacks Windows would otherwise inject. */
+  --site-sans-cjk: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", sans-serif;
+  /* Latin editorial serif — Newsreader is a contemporary book serif that
+     stays comfortable at long measure without the museum-piece weight of
+     Spectral or Source Serif. Geist is intentionally NOT in this stack:
+     it reads as "UI sans" and loses the quiet differentiation we want
+     between the marketing display and the body copy. */
+  --site-serif-latin: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", Georgia, serif;
+  /* CJK editorial serif — Noto Serif SC is loaded as a webfont so we get
+     the same kind of book-serif feel for Chinese body copy without dipping
+     into a system default. */
+  --site-serif-cjk: "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
+  --site-mono: "Geist Mono", "JetBrains Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
   --site-shadow: 0 16px 42px rgba(33, 28, 22, .08);
 
   /* HSL aliases retained for the functional pages' inline styles. */
@@ -109,7 +132,7 @@ body {
 html:lang(zh) body {
   font-family: var(--site-sans-cjk);
   letter-spacing: 0;
-  line-height: 1.7;
+  line-height: 1.72;
 }
 body::selection { color: var(--site-paper); background: var(--site-ink); }
 a { color: inherit; }
@@ -130,6 +153,16 @@ body.ed-site .ed-shell { width: min(1272px, calc(100% - 64px)); }
 body.ed-site .ed-header { padding-top: 16px; background: var(--site-paper); }
 body.ed-site .ed-header-inner { min-height: 52px; }
 body.ed-site .ed-brand { color: var(--site-ink); }
+body.ed-site .ed-brand img {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  border-radius: 7px;
+  background: var(--site-black);
+  padding: 3px;
+  box-sizing: border-box;
+  object-fit: contain;
+}
 body.ed-site .ed-nav-links a,
 body.ed-site .ed-header-language { color: var(--site-ink-soft); }
 body.ed-site .ed-nav-links a:hover,
@@ -140,7 +173,9 @@ body.ed-site .ed-button:hover { color: #fff; background: #000; border-color: #00
 body.ed-site .ed-button-quiet { color: var(--site-ink); border-color: var(--site-line); }
 body.ed-site .ed-button-quiet:hover { background: var(--site-paper-soft); border-color: var(--site-ink); }
 /* Anthropic-style type hierarchy: serif for display + prose, sans for UI chrome.
-   Avoid the tight sans tracking that reads as generic AI-SaaS hero copy. */
+   The serif is now Newsreader (loaded as a webfont) so English editorial
+   copy reads as a book face rather than a UI sans. Chinese pages fall
+   back to Noto Serif SC through html:lang(zh) overrides below. */
 body.ed-site .ed-display,
 body.ed-site .ed-page-title,
 body.ed-site .ed-title,
@@ -154,9 +189,10 @@ body.ed-site .ed-course-intro h2,
 body.ed-site .ed-learning-object h2,
 body.ed-site .ed-network-copy h2 {
   font-family: var(--site-serif-latin);
-  font-weight: 400;
-  letter-spacing: -.012em;
+  font-weight: 500;
+  letter-spacing: -.014em;
   line-height: 1.08;
+  font-feature-settings: "kern", "liga", "calt";
 }
 body.ed-site .ed-display { font-size: clamp(44px, 5.4vw, 80px); line-height: 1.06; }
 body.ed-site .ed-page-title { max-width: 14ch; font-size: clamp(44px, 5.2vw, 72px); }
@@ -177,7 +213,7 @@ body.ed-site .ed-footer-brand p,
 body.ed-site .ed-product-block h2,
 body.ed-site .ed-contact-card h2,
 body.ed-site .ed-price-card h2,
-body.ed-site .ed-policy-visual h2 { font-family: var(--site-serif-latin); }
+body.ed-site .ed-policy-visual h2 { font-family: var(--site-serif-latin); font-weight: 500; }
 body.ed-site .ed-copy { font-size: 17px; line-height: 1.62; }
 body.ed-site .ed-copy-serif { font-size: clamp(18px, 1.4vw, 22px); line-height: 1.48; }
 body.ed-site .ed-team-grid h2,
@@ -192,18 +228,27 @@ html:lang(zh) body.ed-site .ed-display,
 html:lang(zh) body.ed-site .ed-page-title,
 html:lang(zh) body.ed-site .ed-title,
 html:lang(zh) body.ed-site .ed-statement-title,
+html:lang(zh) body.ed-site .ed-reference-title,
+html:lang(zh) body.ed-site .ed-news-hero h1,
+html:lang(zh) body.ed-site .ed-learning-hero h1,
 html:lang(zh) body.ed-site .ed-serif,
 html:lang(zh) body.ed-site .ed-copy-serif,
-html:lang(zh) body.ed-site h1,
-html:lang(zh) body.ed-site h2,
-html:lang(zh) body.ed-site h3 {
+html:lang(zh) body.ed-site .ed-footer-brand p,
+html:lang(zh) body.ed-site .ed-product-block h2,
+html:lang(zh) body.ed-site .ed-contact-card h2,
+html:lang(zh) body.ed-site .ed-price-card h2 {
   font-family: var(--site-sans-cjk);
   letter-spacing: 0;
   line-height: 1.14;
+  font-weight: 600;
 }
 html:lang(zh) body.ed-site .ed-serif,
 html:lang(zh) body.ed-site .ed-copy-serif,
-html:lang(zh) body.ed-site .ed-footer-brand p { font-family: var(--site-serif-cjk); line-height: 1.65; }
+html:lang(zh) body.ed-site .ed-footer-brand p {
+  font-family: var(--site-serif-cjk);
+  line-height: 1.65;
+  font-weight: 500;
+}
 body.ed-site .ed-page-hero { padding: clamp(72px, 9vw, 116px) 0 46px; }
 body.ed-site .ed-section { padding: clamp(62px, 8vw, 120px) 0; }
 body.ed-site .ed-section-tight { padding: clamp(44px, 6vw, 84px) 0; }
@@ -395,19 +440,25 @@ body.legal-page .page-header {
 }
 body.legal-page .page-header h1 { max-width: none; font-size: clamp(48px, 5.2vw, 64px); }
 body.legal-page .page-header p { margin-top: 20px; font-family: var(--site-serif-latin); font-size: 17px; line-height: 1.55; }
-body.legal-page .section-inner { width: min(640px, calc(100% - 64px)); max-width: 640px; }
+/* Legal pages fill the available width on desktop. The reader expects
+   line length to sit around 70–80 characters, so the text column caps
+   near 760px on narrow screens and grows with the viewport. */
+body.legal-page .section-inner {
+  width: min(100%, 1180px);
+  max-width: 1180px;
+}
 body.legal-page .legal-section,
 body.legal-page .ed-legal-section { margin-bottom: 48px; scroll-margin-top: 36px; }
 body.legal-page .legal-section h3,
 body.legal-page .ed-legal-section h3 {
-  margin: 0 0 10px;
+  margin: 0 0 14px;
   padding: 0;
   color: var(--site-ink);
   font-family: var(--site-sans-latin);
-  font-size: 25px;
+  font-size: 26px;
   font-weight: 600;
   letter-spacing: -.025em;
-  line-height: 1.2;
+  line-height: 1.18;
   border: 0;
 }
 body.legal-page .legal-section h4,
@@ -419,7 +470,8 @@ body.legal-page .ed-legal-section li {
   color: var(--site-ink-soft);
   font-family: var(--site-serif-latin);
   font-size: 17px;
-  line-height: 1.55;
+  line-height: 1.72;
+  max-width: 76ch;
 }
 body.legal-page .legal-section p,
 body.legal-page .ed-legal-section p { margin-bottom: 16px; }
@@ -444,10 +496,10 @@ body.legal-page .ed-legal-section th { color: var(--site-ink-muted); font-family
 body.legal-page .legal-date { color: var(--site-ink-muted); font-family: var(--site-mono); font-size: 11px; }
 body.legal-page .ed-legal-layout { display: block; }
 body.legal-page .ed-legal-toc { display: none; }
-body.legal-page .ed-legal-body { width: min(640px, 100%); max-width: 640px; margin: 0 auto; }
+body.legal-page .ed-legal-body { width: min(100%, 1180px); max-width: 1180px; margin: 0 auto; }
 body.legal-page:not(.ed-site):not(.mk-page):not(.xa-page) .section-inner {
-  width: min(640px, 100%);
-  max-width: 640px;
+  width: min(100%, 1180px);
+  max-width: 1180px;
   margin-inline: auto;
 }
 body.ed-site.legal-page .ed-page-hero { padding: clamp(72px, 8vw, 112px) 0 40px; }
@@ -462,9 +514,9 @@ body.legal-page .ed-legal-meta p { margin: 0; }
 body.legal-page .ed-legal-meta a { color: var(--site-ink); text-decoration: underline; text-underline-offset: 3px; }
 body.legal-page .ed-legal-meta label { display: inline-flex; align-items: center; gap: 8px; color: var(--site-ink-muted); font-family: inherit; font-size: inherit; }
 body.legal-page .ed-legal-meta select { min-height: 32px; padding: 5px 28px 5px 10px; color: var(--site-ink); border: 1px solid var(--site-line); border-radius: 8px; background: var(--site-paper-soft); font-family: inherit; font-size: 11px; }
-body.ed-site.legal-page .ed-legal-section h3 { font-family: var(--site-sans-latin); font-size: 25px; font-weight: 600; letter-spacing: -.025em; line-height: 1.2; }
+body.ed-site.legal-page .ed-legal-section h3 { font-family: var(--site-sans-latin); font-size: 26px; font-weight: 600; letter-spacing: -.025em; line-height: 1.2; }
 body.ed-site.legal-page .ed-legal-section p,
-body.ed-site.legal-page .ed-legal-section li { font-family: var(--site-serif-latin); font-size: 17px; line-height: 1.55; }
+body.ed-site.legal-page .ed-legal-section li { font-family: var(--site-serif-latin); font-size: 17px; line-height: 1.72; max-width: 76ch; }
 html:lang(zh) body.legal-page .page-header h1,
 html:lang(zh) body.legal-page .legal-section h3,
 html:lang(zh) body.legal-page .ed-legal-section h3 { font-family: var(--site-sans-cjk); letter-spacing: 0; line-height: 1.18; }
@@ -882,15 +934,24 @@ body.ed-site .ed-brand {
   text-transform: none;
 }
 
+body.ed-site .ed-brand-mark,
 body.ed-site .ed-brand img {
   display: block !important;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
-  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  border-radius: 7px;
+  background: var(--site-black);
+  padding: 3px;
+  box-sizing: border-box;
   object-fit: contain;
 }
 
+body.ed-site .ed-footer .ed-brand-mark,
+body.ed-site .ed-footer .ed-brand img {
+  background: rgba(255, 255, 255, .08);
+  filter: none;
+}
 body.ed-site .ed-brand-word { white-space: nowrap; }
 body.mk-page .mk-brand { gap: 9px; letter-spacing: -.025em; }
 body.mk-page .mk-brand img { width: 24px; height: 24px; border-radius: 6px; }
@@ -942,36 +1003,44 @@ html:lang(zh) body.mk-page button {
 }
 
 body.ed-site .ed-product-block {
-  grid-template-columns: minmax(116px, .28fr) minmax(300px, 1.08fr) minmax(240px, .72fr);
-  gap: clamp(24px, 4vw, 58px);
+  grid-template-columns: minmax(120px, .28fr) minmax(280px, 1.04fr) minmax(240px, .68fr);
+  gap: clamp(24px, 4vw, 56px);
   padding: 30px 0;
+  align-items: start;
 }
 
+/* Balanced product-block type scale — the kicker (12px), headline (24px),
+   and body (17px) now sit on a tighter ratio so the row reads as a unit
+   instead of a 38px headline floating next to 16px prose. */
 body.ed-site .ed-product-block h2 {
-  max-width: 21ch;
-  font-size: clamp(30px, 2.75vw, 38px);
+  max-width: 22ch;
+  font-size: clamp(22px, 2.05vw, 26px);
   font-weight: 500;
-  letter-spacing: -.04em;
-  line-height: 1.12;
+  letter-spacing: -.018em;
+  line-height: 1.18;
+  font-family: var(--site-serif-latin);
 }
 
 body.ed-site .ed-product-block p {
-  max-width: 34ch;
-  margin-top: 4px;
-  font-size: 16px;
-  line-height: 1.62;
+  max-width: 36ch;
+  margin-top: 0;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--site-ink-soft);
 }
 
 body.ed-site .ed-product-block .ed-kicker {
   font-size: 12px;
   line-height: 1.35;
+  letter-spacing: .04em;
 }
 
 body.ed-site .ed-product-block .ed-meta {
-  margin-top: 12px;
+  margin-top: 8px;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.5;
   letter-spacing: 0;
+  color: var(--site-ink-muted);
 }
 
 body.ed-site .ed-page-hero .ed-page-title,
@@ -1030,8 +1099,17 @@ html:lang(zh) body.legal-page:not(.ed-site):not(.mk-page) .legal-section li {
   line-height: 1.75;
 }
 
-.ed-account-shortcut { white-space: nowrap; }
+/* Account shortcut — header quick-entry shown on every page (desktop),
+   plus a mobile menu entry that slides in with the rest of the nav. */
+.ed-account-shortcut {
+  white-space: nowrap;
+  margin-right: 4px;
+}
 .ed-account-menu-link { display: none; }
+
+/* Footer account column — added by locale.js on non-app pages so visitors
+   have a clear path to /account without scrolling past the marketing nav. */
+.ed-footer-account a { color: rgba(244, 241, 233, .78); }
 
 @media (max-width: 980px) {
   body.ed-site .ed-product-block {
@@ -1044,7 +1122,7 @@ html:lang(zh) body.legal-page:not(.ed-site):not(.mk-page) .legal-section li {
   body.ed-site.legal-page .ed-legal-layout {
     grid-template-columns: 1fr;
     gap: 36px;
-    width: min(100% - 48px, 760px);
+    width: min(100% - 48px, 880px);
   }
 
   body.ed-site.legal-page .ed-legal-toc { position: static; }
@@ -1060,6 +1138,8 @@ html:lang(zh) body.legal-page:not(.ed-site):not(.mk-page) .legal-section li {
     color: var(--site-ink);
     font-weight: 600;
   }
+
+  body.ed-site .ed-account-shortcut { display: none; }
 }
 
 @media (max-width: 620px) {

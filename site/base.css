@@ -45,8 +45,10 @@
   --brand-100:     0 0% 100%;
   --oncolor-100:   0 0% 0%;
 
-  --font-sans:    "Geist", "Inter", "Noto Sans SC", "Source Han Sans SC", "PingFang SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Geist", "Inter", "Noto Sans SC", "Source Han Sans SC", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+  /* CJK stack: webfont first so we never fall through to Microsoft YaHei
+     (微软雅黑) or SimSun (宋体) on Windows. */
+  --font-sans:    "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", Arial, sans-serif;
   --font-mono:    "Geist Mono", "JetBrains Mono", "Cascadia Code", "Fira Code", ui-monospace, monospace;
 
   --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
