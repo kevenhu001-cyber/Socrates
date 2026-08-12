@@ -1127,6 +1127,10 @@ html:lang(zh) body.legal-page:not(.ed-site):not(.mk-page) .legal-section li {
    as a footer column. No desktop header button (it looked duplicated). */
 .ed-account-menu-link { display: none; }
 
+/* Mobile-only "Log in" button injected by locale.js. Hidden on desktop
+   because the header already shows the "Try Socrates" button there. */
+.ed-header-login { display: none; }
+
 /* Footer account column — added by locale.js on non-app pages so visitors
    have a clear path to /account without scrolling past the marketing nav. */
 .ed-footer-account a { color: rgba(244, 241, 233, .78); }
@@ -1158,6 +1162,15 @@ html:lang(zh) body.legal-page:not(.ed-site):not(.mk-page) .legal-section li {
     color: var(--site-ink);
     font-weight: 600;
   }
+
+  /* Show the mobile Login button top-right; keep "Try Socrates" hidden
+     there (the action row is collapsed on mobile by editorial.css). */
+  body .ed-header-actions {
+    display: flex;
+    gap: 8px;
+  }
+  body .ed-header-actions .ed-button:not(.ed-header-login) { display: none; }
+  body .ed-header-login { display: inline-flex; }
 }
 
 @media (max-width: 620px) {
