@@ -941,18 +941,25 @@ body.ed-site .ed-brand img {
   height: 26px;
   flex: 0 0 26px;
   border-radius: 7px;
-  background: var(--site-black);
   padding: 3px;
   box-sizing: border-box;
   object-fit: contain;
 }
 
+/* Footer brand mark needs a subtle backdrop because the logo's dark
+   circle would otherwise sink into the dark footer background. */
 body.ed-site .ed-footer .ed-brand-mark,
 body.ed-site .ed-footer .ed-brand img {
   background: rgba(255, 255, 255, .08);
   filter: none;
 }
-body.ed-site .ed-brand-word { white-space: nowrap; }
+
+body.ed-site .ed-brand-word {
+  white-space: nowrap;
+  font-family: var(--site-serif-latin);
+  font-weight: 500;
+  letter-spacing: -.02em;
+}
 body.mk-page .mk-brand { gap: 9px; letter-spacing: -.025em; }
 body.mk-page .mk-brand img { width: 24px; height: 24px; border-radius: 6px; }
 body.mk-page .mk-brand-word em { font-style: normal; }
@@ -1099,12 +1106,8 @@ html:lang(zh) body.legal-page:not(.ed-site):not(.mk-page) .legal-section li {
   line-height: 1.75;
 }
 
-/* Account shortcut — header quick-entry shown on every page (desktop),
-   plus a mobile menu entry that slides in with the rest of the nav. */
-.ed-account-shortcut {
-  white-space: nowrap;
-  margin-right: 4px;
-}
+/* Account shortcut — only shown inside the mobile slide-out menu and
+   as a footer column. No desktop header button (it looked duplicated). */
 .ed-account-menu-link { display: none; }
 
 /* Footer account column — added by locale.js on non-app pages so visitors
@@ -1138,8 +1141,6 @@ html:lang(zh) body.legal-page:not(.ed-site):not(.mk-page) .legal-section li {
     color: var(--site-ink);
     font-weight: 600;
   }
-
-  body.ed-site .ed-account-shortcut { display: none; }
 }
 
 @media (max-width: 620px) {

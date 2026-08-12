@@ -244,10 +244,10 @@
   }
 
   /*
-   * Account shortcut — shown in the header on every app page so visitors
-   * can jump from /product, /research, etc. directly into their account.
-   * Footer link is added on pages that don't already include an
-   * "Account" column.
+   * Account shortcut — shown only in the mobile slide-out menu and as a
+   * footer column on marketing pages. We deliberately do NOT add a
+   * desktop header button; the header already carries "Try Socrates" and
+   * a second top-level button looked duplicated/unwanted.
    */
   function addAccountShortcuts() {
     var path = window.location.pathname.replace(/^\/zh/, "") || "/";
@@ -255,17 +255,6 @@
     var locale = currentLocale();
     var accountHref = hrefFor("/account", locale);
     var accountLabel = locale === LOCALES.zh ? "我的账户" : "My account";
-
-    /* Header quick-entry — visible whenever the header actions row is
-       rendered (desktop + tablet). Mobile uses the menu instead. */
-    var actions = document.querySelector(".ed-header-actions");
-    if (actions && !actions.querySelector(".ed-account-shortcut")) {
-      var desktopLink = document.createElement("a");
-      desktopLink.className = "ed-button-quiet ed-account-shortcut";
-      desktopLink.href = accountHref;
-      desktopLink.textContent = accountLabel;
-      actions.insertBefore(desktopLink, actions.firstChild);
-    }
 
     /* Mobile menu entry — kept off-screen on desktop via CSS, shown
        inside the open menu on mobile. */
