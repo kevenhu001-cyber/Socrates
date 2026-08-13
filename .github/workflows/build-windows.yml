@@ -1,0 +1,108 @@
+name: Build Socrates Native Windows Desktop
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/windows/**'
+      - 'packages/contracts/**'
+      - 'packages/core/**'
+      - '.github/workflows/build-windows.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'desktop/windows/**'
+      - 'packages/contracts/**'
+      - 'packages/core/**'
+      - '.github/workflows/build-windows.yml'
+  workflow_dispatch:
+    inputs:
+      build_profile:
+        description: Windows package profile
+        required: true
+        type: choice
+        options:
+          - debug
+          - release
+        default: debug
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  RN_VERSION: '0.84.1'
+  RNW_VERSION: '0.84.0'
+
+jobs:
+  build-windows:
+    name: Build RNW Windows package
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    runs-on: windows-latest
+    env:
+      BUILD_PROFILE: ${{ github.event_name == 'workflow_dispatch' && inputs.build_profile || 'release' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Generate lockstep RNW host
+        shell: pwsh
+        run: |
+          $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
+          if (Test-Path $project) { Remove-Item -Recurse -Force $project }
+          Push-Location $env:RUNNER_TEMP
+          npx --yes @react-native-community/cli@latest init SocratesWindows --version $env:RN_VERSION --skip-install --skip-git
+          Pop-Location
+          Set-Location $project
+
+          npm install --save --no-audit --no-fund "react-native-windows@$env:RNW_VERSION"
+          npm install --save --no-audit --no-fund `
+            (Join-Path $env:GITHUB_WORKSPACE 'packages\contracts') `
+            (Join-Path $env:GITHUB_WORKSPACE 'packages\core')
+
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'desktop\windows\App.tsx') (Join-Path $project 'App.tsx') -Force
+          npx react-native init-windows --overwrite
+          if (-not (Test-Path (Join-Path $project 'windows'))) { throw 'RNW did not generate a Windows host project.' }
+
+      - name: Typecheck Windows shell
+        shell: pwsh
+        run: |
+          Set-Location (Join-Path $env:RUNNER_TEMP 'SocratesWindows')
+          npx tsc --noEmit --pretty false
+
+      - name: Build Windows package
+        shell: pwsh
+        run: |
+          Set-Location (Join-Path $env:RUNNER_TEMP 'SocratesWindows')
+          $args = @('--arch', 'x64', '--no-launch', '--logging')
+          if ($env:BUILD_PROFILE -eq 'release') { $args += '--release' }
+          & npx react-native run-windows @args
+
+      - name: Collect Windows package
+        shell: pwsh
+        run: |
+          $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
+          $files = @(Get-ChildItem -Path (Join-Path $project 'windows') -Recurse -File `
+            | Where-Object { $_.Extension -in @('.msix', '.msixbundle', '.appx', '.appxbundle', '.zip') })
+          if ($files.Count -eq 0) {
+            Get-ChildItem -Path (Join-Path $project 'windows') -Recurse -File | Select-Object -First 100 FullName
+            throw 'No Windows package was produced.'
+          }
+          $out = Join-Path $env:GITHUB_WORKSPACE 'desktop\windows-dist'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $files | ForEach-Object { Copy-Item $_.FullName (Join-Path $out $_.Name) -Force }
+
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: socrates-windows-${{ env.BUILD_PROFILE }}-${{ github.sha }}
+          path: desktop/windows-dist
+          if-no-files-found: error
+          retention-days: 30

@@ -9,9 +9,17 @@ either into this app would create an unsupported RN peer-version mix, so the
 native Windows shell must be a separate lockstep entry.
 
 The browser desktop surface is already runnable through Expo Web and uses the
-same RN screens. A native Windows installer is deliberately not claimed yet:
-it requires the Windows toolchain and a matching RNW project, neither of which
-can be compiled in this Linux workspace.
+same RN screens. A full native Windows installer cannot be claimed from this
+Linux workspace until the Windows runner completes the generated host build;
+it requires the Windows toolchain and a matching RNW project.
+
+The first native Windows shell now lives in [`windows/`](windows/). It is
+generated and built independently on the GitHub `windows-latest` runner by
+[`build-windows.yml`](../.github/workflows/build-windows.yml), pinned to the
+RN 0.84.1 / RNW 0.84.0 pair. The shell currently covers native sign-in,
+recent sessions, a multi-column chat surface, SSE streaming, stop, and
+sign-out. It is a foundation for moving the remaining screens without
+mixing RNW's dependency line into the Expo Android/Web app.
 
 ## Windows first
 
