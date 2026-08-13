@@ -47,10 +47,12 @@ Workspace 和 HTML artifact 仍通过明确隔离的 WebView 路由承载，属�
   可视化渲染逻辑。
 - 共享协议必须保持无 DOM、无 React、无平台存储依赖。
 
-### 3. 聊天体验对齐（下一阶段）
+### 3. 聊天体验对齐（第一轮已完成）
 
-- 对齐流式文本、推理块、工具调用、停止/重试、错误和离线恢复。
-- 对齐附件、Markdown、代码、公式、viz/HTML 作品预览。
+- 第一轮已经接通流式文本、推理块、工具调用、停止/重试、错误和离线恢复。
+- RN 聊天已接通文件、相册、相机入口；共享 core 会在重试和后续历史请求中重建
+  图片 `image_url` 与解析后的文本/PDF content parts。
+- Markdown、代码、公式、viz/HTML 作品预览仍按组件逐项对齐。
 - 每个差异都记录为 Web 基准与 RN 行为的可解释平台差异，不能用“移动端简化”
   代替验收。
 
@@ -69,6 +71,9 @@ Workspace 和 HTML artifact 仍通过明确隔离的 WebView 路由承载，属�
   当前 Linux 工作区只验证共享代码，不能宣称已经生成 WinAppSDK/Xcode 安装包。
 - 桌面端共享 `packages/contracts`、`packages/core`、API 层和组件语义，允许
   使用键盘快捷键、多栏布局、窗口尺寸和文件系统等平台增强。
+- 当前可交付的桌面产物是 Expo Web/RN Web bundle；它不是把移动页面套进一个完整
+  SPA WebView。原生 Windows 壳仍需单独锁定 RN/RNW 版本并在 Windows runner 上
+  生成、打包和验收，当前不把它标记为已完成。
 
 ## 功能验收清单
 
@@ -77,6 +82,7 @@ Workspace 和 HTML artifact 仍通过明确隔离的 WebView 路由承载，属�
 - [x] `RN-AUTH-01` 登录、退出、启动恢复和 401 失效状态正确（代码/单测覆盖）。
 - [x] `RN-CHAT-01` 新建会话、发送消息、SSE 增量、停止、重试和错误提示（代码/单测覆盖）。
 - [x] `RN-CHAT-02` reasoning/tool 事件不会丢失，消息最终内容可持久化（共享核心/单测覆盖）。
+- [x] `RN-CHAT-03` 附件可从文件、相册、相机进入；图片和解析文本会随会话保存并参与模型请求。
 - [x] `RN-LIB-01` Recents、Library、Search 能打开同一会话并刷新状态（代码覆盖）。
 - [x] `RN-EXAM-01` 考试生成、答题、提交和结果页可完成闭环（代码/单测覆盖）。
 - [x] `RN-OFFLINE-01` 无网时显示缓存和离线状态，恢复网络后可刷新（native/Web storage adapter）。
@@ -94,6 +100,8 @@ Android 设备对返回键、键盘、安全区域和状态栏做最终签收。
 - [x] `WEB-BASE-01` `npm run lint`、`npm run test:unit`、`npm run build` 通过。
 - [ ] `WEB-BASE-02` 关键 Playwright smoke 覆盖登录、聊天、会话、搜索、分享和响应式布局（本次未改动既有 Web UI，需 CI/真实 API 环境继续跑）。
 - [x] `WEB-CORE-01` Web 流式分帧与 RN 使用同一个 `packages/core` 实现。
+- [x] `RN-WEB-01` Expo Web 桌面 bundle 在 GitHub Actions 中导出，并用 Chromium 桌面/移动视口
+  做启动、登录入口和响应式 smoke；浏览器插件不可用时使用 Playwright fallback。
 
 ### 跨端协议与发布
 
