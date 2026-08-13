@@ -7,6 +7,7 @@ import type {
   Project,
   ProjectConnector,
   KnowledgeNode,
+  Memory,
   Mistake,
   ScheduledTask,
   Session,
@@ -167,6 +168,21 @@ export const embeddedApi = {
   createSession: (target: EmbeddedTarget) => apiRequest<MobileWebSessionResponse>('/auth/mobile/web-session', {
     method: 'POST', body: JSON.stringify({ target }),
   }),
+};
+
+export const usersApi = {
+  updateMe: (payload: Partial<Pick<User, 'displayName' | 'customInstructions' | 'preferences' | 'defaultModel'>>) => apiRequest<User>('/users/me', {
+    method: 'PATCH', body: JSON.stringify(payload),
+  }),
+};
+
+export const memoryApi = {
+  list: () => apiRequest<{ memories: Memory[]; nextCursor?: string | null }>('/memory?limit=100&includeDisabled=true'),
+  create: (text: string) => apiRequest<Memory>('/memory', { method: 'POST', body: JSON.stringify({ text, source: 'user' }) }),
+  patch: (id: string, payload: Partial<Pick<Memory, 'text' | 'enabled'>>) => apiRequest<Memory>(`/memory/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify(payload),
+  }),
+  remove: (id: string) => apiRequest<void>(`/memory/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };
 
 export const sessionsApi = {

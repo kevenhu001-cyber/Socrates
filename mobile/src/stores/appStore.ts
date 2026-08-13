@@ -250,6 +250,10 @@ class AppStore {
     this.setState({ error });
   }
 
+  setUser(user: User) {
+    this.setState({ user, error: null });
+  }
+
   addAttachment(attachment: Attachment) {
     if (this.state.pendingAttachments.length >= 6) {
       this.setState({ error: tSync('chat.maxAttachments') });

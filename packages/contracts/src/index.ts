@@ -181,6 +181,17 @@ export interface Mistake {
   resolvedAt?: string | null;
 }
 
+export interface Memory {
+  id: string;
+  text: string;
+  scope?: string;
+  projectId?: string | null;
+  source?: string;
+  enabled?: boolean;
+  confidence?: number | null;
+  createdAt?: string | null;
+}
+
 export interface ChatRequest {
   messages: Array<{ role: string; content: string | JsonValue }>;
   temperature?: number;
