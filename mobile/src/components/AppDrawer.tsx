@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { EmbeddedTarget } from '@socrates/contracts';
@@ -35,68 +35,99 @@ export function useAppDrawer() {
   return useContext(DrawerContext);
 }
 
-type NativeDestination = 'Home' | 'Library' | 'Search' | 'ExamSession' | 'Settings';
+type NativeDestination = 'Home' | 'Library' | 'Search' | 'ExamSession' | 'Settings' | 'More' | 'Workspace' | 'Projects' | 'Scheduled' | 'Plugins' | 'Knowledge' | 'Mistakes';
 
 type Props = {
   onNavigate: (route: NativeDestination) => void;
   onOpenEmbedded: (target: EmbeddedTarget, title: string) => void;
 };
 
-const PRIMARY_ITEMS: Array<{ route?: NativeDestination; target?: EmbeddedTarget; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }> = [
-  { route: 'Home', label: 'New chat', icon: 'create-outline' },
-  { route: 'Library', label: 'Library', icon: 'library-outline' },
-  { target: 'projects', label: 'Projects', icon: 'folder-open-outline' },
-  { target: 'scheduled', label: 'Scheduled', icon: 'calendar-outline' },
-  { target: 'plugins', label: 'Plugins', icon: 'extension-puzzle-outline' },
-  { route: 'ExamSession', label: 'Exam', icon: 'document-text-outline' },
+type DrawerItem = { route?: NativeDestination; target?: EmbeddedTarget; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] };
+
+const DRAWER_LABELS = {
+  newChat: 'sidebar.nav.new',
+  library: 'sidebar.nav.library',
+  projects: 'drawer.projects',
+  scheduled: 'drawer.scheduled',
+  plugins: 'drawer.plugins',
+  exam: 'sidebar.nav.exam',
+  search: 'more.search',
+  knowledge: 'drawer.knowledge',
+  mistakes: 'drawer.mistakes',
+  skills: 'drawer.skills',
+  apiSettings: 'drawer.apiSettings',
+  settings: 'more.settings',
+  more: 'drawer.more',
+} as const;
+
+const PRIMARY_ITEMS: DrawerItem[] = [
+  { route: 'Home', label: DRAWER_LABELS.newChat, icon: 'create-outline' },
+  { route: 'Library', label: DRAWER_LABELS.library, icon: 'library-outline' },
+  { route: 'Projects', label: DRAWER_LABELS.projects, icon: 'folder-open-outline' },
+  { route: 'Scheduled', label: DRAWER_LABELS.scheduled, icon: 'calendar-outline' },
+  { route: 'Plugins', label: DRAWER_LABELS.plugins, icon: 'extension-puzzle-outline' },
+  { route: 'ExamSession', label: DRAWER_LABELS.exam, icon: 'document-text-outline' },
 ];
 
-const SECONDARY_ITEMS: Array<{ route?: NativeDestination; target?: EmbeddedTarget; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }> = [
-  { route: 'Search', label: 'Search', icon: 'search-outline' },
-  { target: 'knowledge', label: 'Knowledge map', icon: 'git-network-outline' },
-  { target: 'mistakes', label: 'Mistake book', icon: 'book-outline' },
-  { target: 'skills', label: 'Skills & shortcuts', icon: 'sparkles-outline' },
-  { target: 'api-settings', label: 'API settings', icon: 'key-outline' },
-  { route: 'Settings', label: 'Settings', icon: 'settings-outline' },
+const SECONDARY_ITEMS: DrawerItem[] = [
+  { route: 'Search', label: DRAWER_LABELS.search, icon: 'search-outline' },
+  { route: 'Knowledge', label: DRAWER_LABELS.knowledge, icon: 'git-network-outline' },
+  { route: 'Mistakes', label: DRAWER_LABELS.mistakes, icon: 'book-outline' },
+  { target: 'skills', label: DRAWER_LABELS.skills, icon: 'sparkles-outline' },
+  { target: 'api-settings', label: DRAWER_LABELS.apiSettings, icon: 'key-outline' },
+  { route: 'Settings', label: DRAWER_LABELS.settings, icon: 'settings-outline' },
+  { route: 'More', label: DRAWER_LABELS.more, icon: 'ellipsis-horizontal-outline' },
 ];
 
 export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
   const { open, closeDrawer } = useAppDrawer();
+  const { width } = useWindowDimensions();
+  const permanent = Platform.OS === 'windows' || (Platform.OS === 'web' && width >= 1080);
+  if (permanent) return <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} permanent />;
+  return (
+    <Modal visible={open} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={closeDrawer}>
+      <View style={styles.overlay}>
+        <Pressable accessibilityLabel="Close navigation" onPress={closeDrawer} style={styles.backdrop} />
+        <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} />
+      </View>
+    </Modal>
+  );
+}
+
+function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props & { permanent?: boolean }) {
+  const { closeDrawer } = useAppDrawer();
   const { colors, typography } = useTheme();
   const state = useAppStore();
   const t = useT();
 
-  const activate = (item: (typeof PRIMARY_ITEMS)[number]) => {
+  const activate = (item: DrawerItem) => {
     closeDrawer();
     if (item.route) onNavigate(item.route);
-    else if (item.target) onOpenEmbedded(item.target, item.label);
+    else if (item.target) onOpenEmbedded(item.target, t(item.label));
   };
 
-  const renderItem = (item: (typeof PRIMARY_ITEMS)[number]) => (
+  const renderItem = (item: DrawerItem) => (
     <AnimatedPressable
       key={item.route || item.target}
       accessibilityRole="button"
-      accessibilityLabel={item.label}
+      accessibilityLabel={t(item.label)}
       onPress={() => activate(item)}
       style={styles.item}
     >
       <Ionicons name={item.icon} size={21} color={colors.textMuted} />
-      <Text style={[styles.itemText, { color: colors.text, fontFamily: typography.medium }]}>{item.label}</Text>
+      <Text style={[styles.itemText, { color: colors.text, fontFamily: typography.medium }]}>{t(item.label)}</Text>
     </AnimatedPressable>
   );
 
   const name = state.user?.displayName || state.user?.email || t('more.learner');
   return (
-    <Modal visible={open} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={closeDrawer}>
-      <View style={styles.overlay}>
-        <Pressable accessibilityLabel="Close navigation" onPress={closeDrawer} style={styles.backdrop} />
-        <SafeAreaView edges={['top', 'bottom', 'left']} style={[styles.panel, { backgroundColor: '#141414', borderRightColor: colors.border }]}>
+    <SafeAreaView edges={['top', 'bottom', 'left']} style={[styles.panel, permanent && styles.permanentPanel, { backgroundColor: '#141414', borderRightColor: colors.border }]}>
           <View style={styles.brandRow}>
             <BrandMark size={30} />
             <Text style={[styles.brand, { color: colors.text, fontFamily: typography.display }]}>Socrates</Text>
-            <AnimatedPressable accessibilityLabel="Close navigation" onPress={closeDrawer} style={styles.closeButton}>
+            {!permanent ? <AnimatedPressable accessibilityLabel="Close navigation" onPress={closeDrawer} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={colors.textMuted} />
-            </AnimatedPressable>
+            </AnimatedPressable> : null}
           </View>
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
             <View style={styles.group}>{PRIMARY_ITEMS.map(renderItem)}</View>
@@ -115,9 +146,7 @@ export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
               <Ionicons name="log-out-outline" size={22} color={colors.textMuted} />
             </AnimatedPressable>
           </View>
-        </SafeAreaView>
-      </View>
-    </Modal>
+    </SafeAreaView>
   );
 }
 
@@ -125,6 +154,7 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, flexDirection: 'row' },
   backdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.64)' },
   panel: { width: '86%', maxWidth: 340, borderRightWidth: 1 },
+  permanentPanel: { width: 320, maxWidth: 320, flex: 1 },
   brandRow: { height: 72, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 9 },
   brand: { fontSize: 20, flex: 1 },
   closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../theme/ThemeProvider';
@@ -9,10 +9,12 @@ import { AnimatedPressable } from '../components/AnimatedPressable';
 import { AppHeader } from '../components/AppHeader';
 import { Screen } from '../components/Screen';
 import { artifactsApi, filesApi } from '../data/api/client';
+import { native } from '../native/native';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Library'>;
 type Tab = 'chats' | 'uploads' | 'created';
+type FilePreview = { name: string; mimeType: string; text: string; truncated: boolean };
 
 export function RecentsScreen({ navigation }: Props) {
   const { colors, radius, typography } = useTheme();
@@ -22,6 +24,8 @@ export function RecentsScreen({ navigation }: Props) {
   const [files, setFiles] = useState<Array<Record<string, unknown>>>([]);
   const [artifacts, setArtifacts] = useState<Array<Record<string, unknown>>>([]);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState<FilePreview | null>(null);
   const [error, setError] = useState('');
 
   const load = async (active = tab) => {
@@ -60,7 +64,28 @@ export function RecentsScreen({ navigation }: Props) {
       });
       return;
     }
-    Alert.alert(String(item.name || t('library.upload')), `${String(item.mimeType || '')}\n${formatBytes(Number(item.size || 0))}`);
+    try {
+      const result = await filesApi.content(String(item.id));
+      setPreview({ name: result.name, mimeType: result.mimeType, text: result.text, truncated: result.truncated });
+    } catch (caught) {
+      Alert.alert(String(item.name || t('library.upload')), caught instanceof Error ? caught.message : t('library.previewUnavailable'));
+    }
+  };
+
+  const upload = async () => {
+    const result = await native.pickFile();
+    if (result.canceled || !result.assets[0]) return;
+    setUploading(true);
+    setError('');
+    try {
+      const asset = result.assets[0];
+      await filesApi.upload({ uri: asset.uri, name: asset.name, mimeType: asset.mimeType, size: asset.size });
+      await load('uploads');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t('library.uploadFailed'));
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -77,6 +102,9 @@ export function RecentsScreen({ navigation }: Props) {
             {tab === value ? <View style={[styles.tabLine, { backgroundColor: colors.accent }]} /> : null}
           </AnimatedPressable>
         ))}
+        {tab === 'uploads' ? <AnimatedPressable accessibilityLabel={t('library.upload')} onPress={() => { void upload(); }} disabled={uploading} style={styles.refresh}>
+          <Ionicons name="cloud-upload-outline" size={21} color={uploading ? colors.textSubtle : colors.accent} />
+        </AnimatedPressable> : null}
         <AnimatedPressable accessibilityLabel={t('library.refresh')} onPress={() => { void load(); }} style={styles.refresh}>
           <Ionicons name="refresh-outline" size={21} color={colors.textMuted} />
         </AnimatedPressable>
@@ -118,6 +146,25 @@ export function RecentsScreen({ navigation }: Props) {
           )}
         />
       )}
+      <Modal visible={Boolean(preview)} transparent animationType="slide" onRequestClose={() => setPreview(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.previewModal, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl }]}>
+            <View style={styles.previewHeader}>
+              <View style={styles.previewTitleWrap}>
+                <Text numberOfLines={1} style={[styles.previewTitle, { color: colors.text, fontFamily: typography.semibold }]}>{preview?.name || t('library.preview')}</Text>
+                {preview?.mimeType ? <Text style={[styles.previewMime, { color: colors.textMuted }]}>{preview.mimeType}</Text> : null}
+              </View>
+              <AnimatedPressable accessibilityLabel={t('library.closePreview')} onPress={() => setPreview(null)} style={styles.close}>
+                <Ionicons name="close" size={22} color={colors.textMuted} />
+              </AnimatedPressable>
+            </View>
+            <ScrollView style={styles.previewScroll} contentContainerStyle={styles.previewContent}>
+              <Text selectable style={[styles.previewText, { color: colors.text }]}>{preview?.text || t('library.previewUnavailable')}</Text>
+            </ScrollView>
+            {preview?.truncated ? <Text style={[styles.truncated, { color: colors.textMuted }]}>{t('library.previewTruncated')}</Text> : null}
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -145,4 +192,15 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 17, marginTop: 13 },
   loading: { marginTop: 56 },
   error: { fontSize: 12, lineHeight: 18, marginHorizontal: 18, marginTop: 12 },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', justifyContent: 'flex-end' },
+  previewModal: { maxHeight: '88%', minHeight: '42%', borderWidth: 1, padding: 18 },
+  previewHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingBottom: 12 },
+  previewTitleWrap: { flex: 1, minWidth: 0 },
+  previewTitle: { fontSize: 18 },
+  previewMime: { fontSize: 11, marginTop: 4 },
+  close: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  previewScroll: { flex: 1 },
+  previewContent: { paddingVertical: 10 },
+  previewText: { fontFamily: 'monospace', fontSize: 13, lineHeight: 20 },
+  truncated: { fontSize: 11, lineHeight: 16, paddingTop: 12 },
 });

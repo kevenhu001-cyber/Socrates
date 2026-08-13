@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen } from '../components/Screen';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { useTheme } from '../theme/ThemeProvider';
@@ -7,10 +8,11 @@ import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
 import type { RootStackParamList } from '../navigation/types';
 
-type Props = { navigation: any };
+type Props = NativeStackScreenProps<RootStackParamList, 'More'>;
+type MoreRoute = 'Settings' | 'Workspace' | 'Search';
 
 /** Route name paired with the keys for its title and description. */
-const ITEMS: Array<[keyof RootStackParamList, string, string]> = [
+const ITEMS: Array<[MoreRoute, string, string]> = [
   ['Settings', 'more.settings', 'more.settingsBody'],
   ['Workspace', 'more.workspace', 'more.workspaceBody'],
   ['Search', 'more.search', 'more.searchBody'],
@@ -34,7 +36,7 @@ export function MoreScreen({ navigation }: Props) {
         </View>
       </View>
       {ITEMS.map(([route, titleKey, bodyKey]) => (
-        <AnimatedPressable key={route} onPress={() => navigation.getParent()?.navigate(route)} style={[styles.row, { borderBottomColor: colors.border }]}>
+        <AnimatedPressable key={route} onPress={() => navigation.navigate(route)} style={[styles.row, { borderBottomColor: colors.border }]}>
           <View>
             <Text style={[styles.rowTitle, { color: colors.text }]}>{t(titleKey)}</Text>
             <Text style={[styles.rowBody, { color: colors.textMuted }]}>{t(bodyKey)}</Text>

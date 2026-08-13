@@ -1,10 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
-// `setStatusBarStyle` is a standalone export of expo-status-bar. React Native's
-// own StatusBar only exposes the static `setBarStyle`, so calling
-// `StatusBar.setStatusBarStyle` threw on mount and crashed the whole app.
-import { setStatusBarStyle } from 'expo-status-bar';
-import * as SecureStore from 'expo-secure-store';
 import { buildTheme, type Theme, type ThemeMode } from './theme';
+import { setItem } from '../platform/secureStorage';
+import { setAppStatusBarStyle } from '../native/statusBar';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
 const STORAGE_KEY = 'socrates.theme.preference';
@@ -31,7 +28,7 @@ const ThemeContext = createContext<ThemeContextValue>({
 
 async function writeStoredPreference(value: ThemePreference) {
   try {
-    await SecureStore.setItemAsync(STORAGE_KEY, value);
+    await setItem(STORAGE_KEY, value);
   } catch {
     // best effort; the in-memory value still applies
   }
@@ -48,7 +45,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Never let a status-bar tweak take down the app again.
     try {
-      setStatusBarStyle(theme.colors.statusBarStyle, true);
+      setAppStatusBarStyle(theme.colors.statusBarStyle, true);
     } catch {
       // cosmetic only — the app must keep rendering
     }

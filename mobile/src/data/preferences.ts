@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import { getItem, setItem } from '../platform/secureStorage';
 
 /**
  * Small persisted flags that are not part of the auth/session state. Kept out of
@@ -35,7 +35,7 @@ export async function loadPreferences(): Promise<Preferences> {
   const next = { ...defaults };
   for (const key of Object.keys(KEYS) as Array<keyof Preferences>) {
     try {
-      const stored = await SecureStore.getItemAsync(KEYS[key]);
+      const stored = await getItem(KEYS[key]);
       if (stored === 'true' || stored === 'false') next[key] = stored === 'true';
     } catch {
       // keep the default for this flag
@@ -50,7 +50,7 @@ export async function setPreference(key: keyof Preferences, value: boolean) {
   cache = { ...cache, [key]: value };
   listeners.forEach((listener) => listener());
   try {
-    await SecureStore.setItemAsync(KEYS[key], String(value));
+    await setItem(KEYS[key], String(value));
   } catch {
     // best effort; the in-memory value still applies for this session
   }

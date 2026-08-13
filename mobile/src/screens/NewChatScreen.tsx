@@ -15,15 +15,17 @@ import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-export function NewChatScreen({ navigation }: Props) {
+export function NewChatScreen({ navigation, route }: Props) {
   const { colors, radius, typography } = useTheme();
   const t = useT();
   const state = useAppStore();
   const mode = state.activeSession?.mode || 'chat';
 
   useEffect(() => {
-    if (!state.activeSession || state.activeSession.messages?.length) appStore.startNewSession('chat', true);
-  }, []);
+    const projectId = route.params?.projectId || null;
+    if (!state.activeSession || state.activeSession.messages?.length || (projectId && state.activeSession.projectId !== projectId)) appStore.startNewSession('chat', true, projectId);
+    if (projectId) navigation.setParams({ projectId: undefined });
+  }, [navigation, route.params?.projectId]);
 
   const changeMode = (next: 'chat' | 'tutor') => {
     if (next === mode) return;

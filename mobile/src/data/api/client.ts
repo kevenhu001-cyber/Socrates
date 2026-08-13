@@ -4,6 +4,11 @@ import type {
   EmbeddedTarget,
   MobileTokenPair,
   MobileWebSessionResponse,
+  Project,
+  ProjectConnector,
+  KnowledgeNode,
+  Mistake,
+  ScheduledTask,
   Session,
   User,
 } from '@socrates/contracts';
@@ -177,6 +182,49 @@ export const sessionsApi = {
   delete: (id: string) => apiRequest(`/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };
 
+export const projectsApi = {
+  list: () => apiRequest<{ projects: Project[] }>('/projects'),
+  create: (payload: Pick<Project, 'name'> & Partial<Pick<Project, 'description' | 'color' | 'icon' | 'systemPrompt'>>) => apiRequest<Project>('/projects', {
+    method: 'POST', body: JSON.stringify(payload),
+  }),
+  update: (id: string, payload: Partial<Pick<Project, 'name' | 'description' | 'color' | 'icon' | 'systemPrompt'>>) => apiRequest<Project>(`/projects/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify(payload),
+  }),
+  remove: (id: string) => apiRequest<void>(`/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+};
+
+export const scheduledApi = {
+  list: () => apiRequest<{ tasks: ScheduledTask[] }>('/scheduled-tasks'),
+  create: (payload: Pick<ScheduledTask, 'title' | 'prompt'> & Partial<Pick<ScheduledTask, 'sessionId' | 'cronExpression' | 'frequency' | 'nextRunAt'>>) => apiRequest<ScheduledTask>('/scheduled-tasks', {
+    method: 'POST', body: JSON.stringify(payload),
+  }),
+  update: (id: string, payload: Partial<Pick<ScheduledTask, 'title' | 'prompt' | 'sessionId' | 'cronExpression' | 'frequency' | 'status' | 'nextRunAt'>>) => apiRequest<ScheduledTask>(`/scheduled-tasks/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify(payload),
+  }),
+  run: (id: string) => apiRequest<ScheduledTask>(`/scheduled-tasks/${encodeURIComponent(id)}/run`, { method: 'POST' }),
+  remove: (id: string) => apiRequest<void>(`/scheduled-tasks/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+};
+
+export const projectConnectorsApi = {
+  list: () => apiRequest<{ mode?: string; configured: boolean; connectors: ProjectConnector[] }>('/project-connectors'),
+  connect: (id: string, body?: { apiKey?: string; values?: Record<string, string> }) => apiRequest<{ status?: string; requestId?: string; authorizationUrl?: string; expiresAt?: string; connectedAccountId?: string; displayName?: string | null }>(`/project-connectors/${encodeURIComponent(id)}/connect`, {
+    method: 'POST', body: JSON.stringify(body || {}),
+  }),
+  status: (id: string) => apiRequest<{ connection: ProjectConnector['connection'] }>(`/project-connectors/${encodeURIComponent(id)}/status`),
+};
+
+export const knowledgeApi = {
+  list: (status?: string) => apiRequest<{ items: KnowledgeNode[]; summary: Record<string, number> }>(`/knowledge-boundary${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+};
+
+export const mistakesApi = {
+  list: (resolved?: boolean) => apiRequest<{ items: Mistake[]; total: number }>(`/mistakes?limit=100${resolved === undefined ? '' : `&resolved=${resolved}`}`),
+  resolve: (id: string, isResolved: boolean) => apiRequest<Mistake>(`/mistakes/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify({ isResolved }),
+  }),
+  remove: (id: string) => apiRequest<void>(`/mistakes/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+};
+
 export const messagesApi = {
   edit: (id: string, content: string, regenerate = false) => apiRequest(`/messages/${encodeURIComponent(id)}`, {
     method: 'PATCH', body: JSON.stringify({ content, regenerate }),
@@ -212,6 +260,7 @@ export const filesApi = {
     return apiRequest<{ id: string; name: string; mimeType: string; size: number; kind: string }>('/files', { method: 'POST', body: form });
   },
   get: (id: string) => apiRequest<Record<string, unknown>>(`/files/${encodeURIComponent(id)}`),
+  content: (id: string) => apiRequest<{ ok: boolean; id: string; name: string; mimeType: string; kind: string; text: string; truncated: boolean; meta?: Record<string, unknown> }>(`/files/${encodeURIComponent(id)}/content`),
   rawUrl: (id: string) => `${API_BASE_URL}/files/${encodeURIComponent(id)}/raw`,
   async raw(id: string) {
     const tokens = await readTokens();
