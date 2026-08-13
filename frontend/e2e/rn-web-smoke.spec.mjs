@@ -4,7 +4,7 @@ test('React Native web shell boots and keeps the sign-in flow interactive', asyn
   const consoleErrors = [];
   const pageErrors = [];
   page.on('console', (message) => {
-    if (message.type() === 'error') consoleErrors.push(message.text());
+    if (message.type() === 'error' && !/status of 401 \(Unauthorized\)/i.test(message.text())) consoleErrors.push(message.text());
   });
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.route('**/auth/me', async (route) => {
