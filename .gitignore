@@ -72,6 +72,7 @@ server/_repro_*.mjs
 server/test_browser.mjs
 server/_test_date.mjs
 graphify-out/
+mobile/e2e-artifacts/
 
 # ── E2E diagnostic / scratch artifacts ──
 # One-off probes that surface during playwright debugging. Note that the
