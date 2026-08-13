@@ -17,7 +17,7 @@ test('React Native web shell boots and keeps the sign-in flow interactive', asyn
   await expect(page.getByText(/Sign up with your email/i)).toBeVisible();
   await page.getByRole('tab', { name: 'Sign in' }).click();
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByText('Please enter your email.')).toBeVisible();
+  await expect(page.getByText('Please enter your email and password.')).toBeVisible();
 
   expect(pageErrors, pageErrors.join('\n')).toEqual([]);
   expect(consoleErrors, consoleErrors.join('\n')).toEqual([]);
