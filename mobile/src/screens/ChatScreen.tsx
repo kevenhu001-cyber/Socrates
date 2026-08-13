@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Message } from '@socrates/contracts';
@@ -13,7 +13,8 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
 import { native } from '../native/native';
-import { filesApi, sharesApi } from '../data/api/client';
+import { sharesApi } from '../data/api/client';
+import { pickChatAttachment, type ChatAttachmentSource } from '../data/chat/attachments';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
@@ -27,19 +28,23 @@ export function ChatScreen({ navigation }: Props) {
   const messages = state.activeSession?.messages || [];
   useEffect(() => { listRef.current?.scrollToEnd({ animated: true }); }, [messages.length, messages.at(-1)?.rawText]);
   const onSend = async () => { await native.vibrate('light'); await appStore.sendMessage(state.draft); };
-  const onAttach = async () => {
-    const result = await native.pickFile();
-    if (result.canceled || !result.assets[0]) return;
+  const attach = async (source: ChatAttachmentSource) => {
     try {
-      const asset = result.assets[0];
-      const uploaded = await filesApi.upload({ uri: asset.uri, name: asset.name, mimeType: asset.mimeType, size: asset.size }, state.activeSession?.id);
-      appStore.addAttachment({ id: uploaded.id, fileId: uploaded.id, kind: uploaded.kind, name: uploaded.name, mime: uploaded.mimeType, size: uploaded.size });
+      const attachment = await pickChatAttachment(source, state.activeSession?.id);
+      if (!attachment) return;
+      appStore.addAttachment(attachment);
       await native.vibrate('success');
     } catch (error) {
       appStore.setError(error instanceof Error ? error.message : t('chat.uploadFailed'));
       await native.vibrate('error');
     }
   };
+  const onAttach = () => Alert.alert(t('chat.attach'), t('chat.attachOptions'), [
+    { text: t('chat.attachFile'), onPress: () => { void attach('file'); } },
+    { text: t('chat.attachImage'), onPress: () => { void attach('image'); } },
+    { text: t('chat.capturePhoto'), onPress: () => { void attach('camera'); } },
+    { text: t('common.cancel'), style: 'cancel' },
+  ]);
   const onShare = async () => {
     const session = state.activeSession;
     if (!session) return;
@@ -60,7 +65,12 @@ export function ChatScreen({ navigation }: Props) {
         </View>
       ) : null}
       <FlatList ref={listRef} data={messages} keyExtractor={(item, index) => item.clientId || item.id || String(index)} renderItem={({ item }) => <MessageBubble message={item} />} contentContainerStyle={[styles.messages, { paddingHorizontal: spacing.sm }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" ListEmptyComponent={<View style={styles.empty} />} />
-      {state.error ? <Text style={[styles.error, { color: colors.danger, fontFamily: typography.body }]}>{state.error}</Text> : null}
+      {state.error ? (
+        <View style={styles.errorRow}>
+          <Text style={[styles.error, { color: colors.danger, fontFamily: typography.body }]}>{state.error}</Text>
+          {!state.isStreaming ? <AnimatedPressable onPress={() => { void appStore.retryLastResponse(); }} style={[styles.retry, { borderColor: colors.border, borderRadius: radius.sm }]}><Text style={[styles.retryText, { color: colors.text, fontFamily: typography.medium }]}>{t('chat.retry')}</Text></AnimatedPressable> : null}
+        </View>
+      ) : null}
       <View style={[styles.composerWrap, { backgroundColor: colors.background }]}> 
         {state.pendingAttachments.length ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attachments} keyboardShouldPersistTaps="handled">
@@ -78,10 +88,10 @@ export function ChatScreen({ navigation }: Props) {
             ))}
           </ScrollView>
         ) : null}
-        <Composer value={state.draft} disabled={state.isStreaming} onChangeText={(value) => appStore.setDraft(value)} onSend={onSend} onStop={() => appStore.stopGenerating()} onAttach={onAttach} />
+        <Composer value={state.draft} hasAttachments={state.pendingAttachments.length > 0} disabled={state.isStreaming} onChangeText={(value) => appStore.setDraft(value)} onSend={onSend} onStop={() => appStore.stopGenerating()} onAttach={onAttach} />
       </View>
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({ screen: { paddingTop: 0 }, offline: { minHeight: 34, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 }, offlineDot: { width: 6, height: 6, borderRadius: 3 }, offlineText: { fontSize: 12, fontWeight: '600' }, messages: { flexGrow: 1, paddingTop: 18, paddingBottom: 12 }, empty: { flex: 1 }, error: { fontSize: 12, lineHeight: 18, paddingHorizontal: 16, paddingVertical: 8 }, composerWrap: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 4 }, attachments: { gap: 8, paddingBottom: 8 }, attachmentChip: { maxWidth: 250, minHeight: 38, borderWidth: 1, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 7 }, attachmentName: { flexShrink: 1, fontSize: 12 }, });
+const styles = StyleSheet.create({ screen: { paddingTop: 0 }, offline: { minHeight: 34, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 }, offlineDot: { width: 6, height: 6, borderRadius: 3 }, offlineText: { fontSize: 12, fontWeight: '600' }, messages: { flexGrow: 1, paddingTop: 18, paddingBottom: 12 }, empty: { flex: 1 }, errorRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16 }, error: { flex: 1, fontSize: 12, lineHeight: 18, paddingVertical: 8 }, retry: { minHeight: 32, justifyContent: 'center', paddingHorizontal: 10, borderWidth: 1 }, retryText: { fontSize: 12 }, composerWrap: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 4 }, attachments: { gap: 8, paddingBottom: 8 }, attachmentChip: { maxWidth: 250, minHeight: 38, borderWidth: 1, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 7 }, attachmentName: { flexShrink: 1, fontSize: 12 }, });

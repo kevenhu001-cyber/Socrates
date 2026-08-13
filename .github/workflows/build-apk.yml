@@ -138,6 +138,27 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Install browser regression runner
+        working-directory: frontend
+        run: |
+          npm ci --include=dev
+          npx playwright install --with-deps chromium
+
+      - name: Run RN Web boot and responsive smoke tests
+        env:
+          RN_WEB_BASE_URL: http://127.0.0.1:4174
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4174 --directory desktop/dist > /tmp/socrates-rn-web.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent "$RN_WEB_BASE_URL" >/dev/null; then break; fi
+            sleep 1
+          done
+          cd frontend
+          npx playwright test rn-web-smoke.spec.mjs --config=playwright.rn-web.config.mjs
+
   build-android:
     name: Build Android APK/AAB
     needs: verify

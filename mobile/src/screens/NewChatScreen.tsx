@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen } from '../components/Screen';
@@ -9,7 +9,7 @@ import { AnimatedPressable } from '../components/AnimatedPressable';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
-import { filesApi } from '../data/api/client';
+import { pickChatAttachment, type ChatAttachmentSource } from '../data/chat/attachments';
 import { native } from '../native/native';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -34,22 +34,26 @@ export function NewChatScreen({ navigation, route }: Props) {
 
   const newChat = () => appStore.startNewSession(mode);
 
-  const onAttach = async () => {
-    const result = await native.pickFile();
-    if (result.canceled || !result.assets[0]) return;
+  const attach = async (source: ChatAttachmentSource) => {
     try {
-      const asset = result.assets[0];
-      const uploaded = await filesApi.upload({ uri: asset.uri, name: asset.name, mimeType: asset.mimeType, size: asset.size }, state.activeSession?.id);
-      appStore.addAttachment({ id: uploaded.id, fileId: uploaded.id, kind: uploaded.kind, name: uploaded.name, mime: uploaded.mimeType, size: uploaded.size });
+      const attachment = await pickChatAttachment(source, state.activeSession?.id);
+      if (!attachment) return;
+      appStore.addAttachment(attachment);
       await native.vibrate('success');
     } catch (error) {
       appStore.setError(error instanceof Error ? error.message : t('chat.uploadFailed'));
       await native.vibrate('error');
     }
   };
+  const onAttach = () => Alert.alert(t('chat.attach'), t('chat.attachOptions'), [
+    { text: t('chat.attachFile'), onPress: () => { void attach('file'); } },
+    { text: t('chat.attachImage'), onPress: () => { void attach('image'); } },
+    { text: t('chat.capturePhoto'), onPress: () => { void attach('camera'); } },
+    { text: t('common.cancel'), style: 'cancel' },
+  ]);
 
   const send = async () => {
-    if (!state.draft.trim()) return;
+    if (!state.draft.trim() && !state.pendingAttachments.length) return;
     navigation.navigate('Chat');
     await native.vibrate('light');
     await appStore.sendMessage(state.draft);
@@ -83,6 +87,7 @@ export function NewChatScreen({ navigation, route }: Props) {
         ) : null}
         <Composer
           value={state.draft}
+          hasAttachments={state.pendingAttachments.length > 0}
           disabled={state.isStreaming}
           onChangeText={(value) => appStore.setDraft(value)}
           onSend={send}
