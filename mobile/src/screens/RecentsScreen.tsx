@@ -79,7 +79,7 @@ export function RecentsScreen({ navigation }: Props) {
     setError('');
     try {
       const asset = result.assets[0];
-      await filesApi.upload({ uri: asset.uri, name: asset.name, mimeType: asset.mimeType, size: asset.size });
+      await filesApi.upload({ uri: asset.uri, name: asset.name || asset.fileName || 'attachment', mimeType: asset.mimeType, size: asset.size || asset.fileSize });
       await load('uploads');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t('library.uploadFailed'));
