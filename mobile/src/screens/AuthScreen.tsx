@@ -2,8 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as Linking from 'expo-linking';
-import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { AnimatedPressable } from '../components/AnimatedPressable';
@@ -11,6 +9,8 @@ import { BrandMark } from '../components/BrandMark';
 import { appStore } from '../stores/appStore';
 import { AUTH_BASE_URL, authApi } from '../data/api/client';
 import { native } from '../native/native';
+import { getInitialLink, parseLink, subscribeToLinks } from '../native/links';
+import { deleteItem, setItem } from '../platform/secureStorage';
 
 type AuthView = 'signin' | 'register' | 'verifySent' | 'verifyFailed' | 'verifying' | 'forgot' | 'forgotSent' | 'reset' | 'resetSuccess' | 'code';
 
@@ -70,8 +70,8 @@ export function AuthScreen() {
   const show = (next: AuthView) => { setError(''); setView(next); };
 
   const rememberGuest = async () => {
-    if (guest) await SecureStore.setItemAsync('socrates.auth.guest-mode', 'true').catch(() => undefined);
-    else await SecureStore.deleteItemAsync('socrates.auth.guest-mode').catch(() => undefined);
+    if (guest) await setItem('socrates.auth.guest-mode', 'true').catch(() => undefined);
+    else await deleteItem('socrates.auth.guest-mode').catch(() => undefined);
   };
 
   const verify = useCallback(async (token: string) => {
@@ -88,7 +88,7 @@ export function AuthScreen() {
 
   const handleUrl = useCallback(async (url: string | null) => {
     if (!url) return;
-    const params = Linking.parse(url).queryParams || {};
+    const params = parseLink(url).queryParams || {};
     const oauthError = params.error;
     if (typeof oauthError === 'string' && oauthError) {
       setError(`${t('auth.githubFailed')}: ${oauthError}`);
@@ -115,8 +115,8 @@ export function AuthScreen() {
   }, [t, verify]);
 
   useEffect(() => {
-    void Linking.getInitialURL().then(handleUrl);
-    const subscription = Linking.addEventListener('url', ({ url }) => { void handleUrl(url); });
+    void getInitialLink().then(handleUrl);
+    const subscription = subscribeToLinks((url) => { void handleUrl(url); });
     return () => subscription.remove();
   }, [handleUrl]);
 

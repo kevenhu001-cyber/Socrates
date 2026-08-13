@@ -1,35 +1,11 @@
 import type { ChatRequest, ChatSseHandlers } from '@socrates/contracts';
+import { consumeSseBuffer, dispatchChatSseFrame } from '@socrates/core';
 import { chatStreamUrl, refreshAccessToken, serializeChatRequest } from '../api/client';
 import { readTokens } from '../api/tokenStore';
 
 type XhrLike = XMLHttpRequest & { _socratesLastLength?: number };
 
-export function dispatchSseFrame(frame: string, handlers: ChatSseHandlers) {
-  let event = 'message';
-  const data: string[] = [];
-  for (const line of frame.split(/\r?\n/)) {
-    if (line.startsWith('event:')) event = line.slice(6).trim();
-    if (line.startsWith('data:')) data.push(line.slice(5).trim());
-  }
-  if (!data.length) return;
-  const payload = data.join('\n');
-  if (payload === '[DONE]') { handlers.onDone?.(); return; }
-  let parsed: any = payload;
-  try { parsed = JSON.parse(payload); } catch { /* error text is still useful */ }
-
-  if (event === 'error') {
-    handlers.onError?.(typeof parsed === 'string' ? parsed : parsed?.error || parsed?.message || 'Stream failed');
-    return;
-  }
-  if (event === 'tool_use') { handlers.onToolUse?.(parsed); return; }
-  if (event === 'tool_result') { handlers.onToolResult?.(parsed); return; }
-  if (event === 'tool_progress') { handlers.onToolProgress?.(parsed); return; }
-  if (event === 'tool_call_delta') { handlers.onToolCallDelta?.(parsed); return; }
-  if (event === 'execution_start') { handlers.onExecutionStart?.(parsed); return; }
-  const delta = parsed?.choices?.[0]?.delta;
-  if (typeof delta?.content === 'string') handlers.onDelta?.(delta.content);
-  if (typeof delta?.reasoning_content === 'string') handlers.onReasoning?.(delta.reasoning_content);
-}
+export const dispatchSseFrame = dispatchChatSseFrame;
 
 export async function startChatStream(sessionId: string, request: ChatRequest, handlers: ChatSseHandlers) {
   let xhr: XhrLike | null = null;
@@ -50,14 +26,10 @@ export async function startChatStream(sessionId: string, request: ChatRequest, h
       buffer += next;
       // SSE permits either LF or CRLF line endings. Keep an incomplete frame
       // buffered so a chunk boundary never causes duplicate or lost deltas.
-      let match = /\r?\n\r?\n/.exec(buffer);
-      while (match && match.index >= 0) {
-        const frame = buffer.slice(0, match.index);
+      buffer = consumeSseBuffer(buffer, (frame) => {
         if (/^(?:event|data):/m.test(frame)) receivedEvent = true;
         dispatchSseFrame(frame, handlers);
-        buffer = buffer.slice(match.index + match[0].length);
-        match = /\r?\n\r?\n/.exec(buffer);
-      }
+      });
     };
 
     xhr.open('POST', chatStreamUrl(sessionId));

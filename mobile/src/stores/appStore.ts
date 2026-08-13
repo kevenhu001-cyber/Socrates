@@ -1,4 +1,5 @@
 import type { Attachment, Message, Session, User } from '@socrates/contracts';
+import { createDraftSession, messageText } from '@socrates/core';
 import { useSyncExternalStore } from 'react';
 import { ApiError, authApi } from '../data/api/client';
 import { readCachedUser } from '../data/api/tokenStore';
@@ -183,22 +184,13 @@ class AppStore {
     await Promise.allSettled(tasks);
   }
 
-  startNewSession(mode: 'chat' | 'tutor' = 'chat', preserveComposer = false) {
+  startNewSession(mode: 'chat' | 'tutor' = 'chat', preserveComposer = false, projectId?: string | null) {
     this.stopStream?.();
     this.stopStream = null;
     this.streamFinished = true;
-    const session: Session = {
-      id: uuid(),
-      title: null,
-      topic: '',
-      mode,
-      phase: 'topic',
-      kind: mode === 'tutor' ? 'tutor' : 'chat',
-      messages: [],
-      updatedAt: new Date().toISOString(),
-    };
+    const session = createDraftSession(uuid(), mode);
     this.setState({
-      activeSession: session,
+      activeSession: projectId ? { ...session, projectId } : session,
       draft: preserveComposer ? this.state.draft : '',
       pendingAttachments: preserveComposer ? this.state.pendingAttachments : [],
       error: null,
@@ -290,7 +282,7 @@ class AppStore {
     const streamingSession = { ...session, messages: [...nextMessages, assistant] };
     this.setState({ activeSession: streamingSession, isStreaming: true, error: null });
     this.stopStream = await startChatStream(session.id, {
-      messages: nextMessages.map((message) => ({ role: message.role, content: message.rawText || message.content || '' })),
+      messages: nextMessages.map((message) => ({ role: message.role, content: messageText(message) })),
       mode: session.mode,
     }, {
       onDelta: (delta) => this.appendAssistant(delta),

@@ -8,7 +8,7 @@
 [![应用状态](https://img.shields.io/badge/应用-在线-d8a85b?style=flat-square)](https://app.topodrive.top/)
 [![后端](https://img.shields.io/badge/后端-TypeScript%20%2B%20Node.js-3178c6?style=flat-square&logo=typescript&logoColor=white)](server/)
 [![前端](https://img.shields.io/badge/前端-Vite%20SPA-f3c769?style=flat-square&logo=vite&logoColor=black)](frontend/)
-[![Android](https://img.shields.io/badge/Android-Kotlin%20%2B%20Compose-3DDC84?style=flat-square&logo=android&logoColor=white)](android/)
+[![Android](https://img.shields.io/badge/Android-React%20Native%20%2B%20Expo-3DDC84?style=flat-square&logo=android&logoColor=white)](mobile/)
 [![数据库](https://img.shields.io/badge/数据库-PostgreSQL%2014%2B-4169e1?style=flat-square&logo=postgresql&logoColor=white)](server/src/db/)
 [![许可](https://img.shields.io/badge/许可-专有-555555?style=flat-square)](#-许可)
 
@@ -120,10 +120,11 @@
 - **团队工作区** — 多用户同一计费实体
 - **语音转录** — 音频消息处理
 
-### Android
+### Android / 桌面端
 
-- **Kotlin + Jetpack Compose** 原生客户端，共享同一后端
-- 一个 Gradle 工作流自动构建 debug 和 release APK
+- **React Native + Expo** 原生客户端，共享同一后端和 TypeScript 核心
+- Android 主流程使用 RN 原生导航和组件；复杂编辑器/HTML 作品暂时隔离在局部 WebView
+- Expo Web 已可导出同一套 RN 应用，Windows/macOS 桌面适配按迁移路线逐步接入
 
 ### 市场与文档
 
@@ -133,13 +134,13 @@
 
 ## 架构
 
-系统是一个单页 Web 应用，通过小型 Node API 扇出到 OpenAI 兼容的 LLM 提供商。Android 客户端是同一 API 的轻量原生封装。
+系统保留现有单页 Web 应用作为回归基准，同时通过小型 Node API 扇出到 OpenAI 兼容的 LLM 提供商。React Native 客户端复用同一 API、协议和共享核心。
 
 ```mermaid
 flowchart LR
   subgraph Client["客户端"]
     SPA["Web SPA<br/>(React/TS + 遗留 JS)"]
-    APK["Android<br/>(Kotlin + Compose)"]
+    APK["Android / Web / Desktop<br/>(React Native + Expo)"]
   end
 
   subgraph Edge["nginx (topodrive.top)"]
@@ -227,9 +228,10 @@ sequenceDiagram
 | 邮件 | `nodemailer` (SMTP) 用于验证和密码重置 | |
 | 文件上传 | `multer` | |
 | 代码执行 | Pyodide WASM (Python 沙箱) | [`server/src/services/codeInterpreter.ts`](server/src/services/codeInterpreter.ts) |
-| Android UI | Jetpack Compose (Material 3) | [`android/app/src/main/`](android/app/src/main/) |
-| Android 网络 | OkHttp + Kotlinx Serialization | |
-| CI | GitHub Actions: push 到 `main` 时构建 APK | [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) |
+| RN UI | React Native + Expo + React Navigation | [`mobile/`](mobile/) |
+| RN 网络/离线 | TypeScript API + SSE、Android SQLite、Web storage adapter | [`mobile/src/data/`](mobile/src/data/) |
+| 跨端核心 | SSE 分帧、聊天事件路由、会话纯函数 | [`packages/core/`](packages/core/) |
+| CI | GitHub Actions: RN 类型检查、测试、Web 基线和 APK | [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) |
 | 边缘 | nginx 反向代理 + 静态文件服务 | [deploy.sh](deploy.sh) |
 | CDN 依赖 | `cdn.jsdelivr.net` (KaTeX, marked) — 全部 SRI 固定 | |
 
@@ -287,9 +289,13 @@ Socrates/
 │       ├── middleware/     # 认证、CSRF、错误处理
 │       ├── routes/         # 认证、对话、会话、分享、文件……
 │       └── services/       # LLM、Web 搜索、文件解析、代码执行……
-├── android/                # Kotlin / Compose 客户端
-│   ├── build.gradle.kts
-│   └── app/
+├── mobile/                 # Expo + React Native 主应用
+│   ├── App.tsx             # 原生导航主入口
+│   ├── src/screens/        # Android/Web 共用 RN 页面
+│   └── app.json             # Expo 原生配置
+├── packages/
+│   ├── contracts/          # API 和跨客户端协议
+│   └── core/               # 跨端 SSE/会话核心
 ├── prompts/
 │   └── teacher-mode.md     # 苏格拉底教师提示词（原样）
 ├── docs/
@@ -344,13 +350,17 @@ npm start
 ### 3. Android 客户端
 
 ```bash
-cd android
-./gradlew assembleDebug                       # 调试构建
-./gradlew assembleRelease \
-  -PBASE_URL=https://app.topodrive.top/      # 正式构建，自定义 URL
+cd mobile
+npm install
+npm run typecheck
+npm test -- --watch=false
 ```
 
-CI 工作流在每次推送到 `main` 分支时自动构建 APK。
+CI 工作流在每次推送到 `main` 分支时检查 RN、Web、Server，并自动构建 Android
+APK/AAB 与 Expo Web 桌面端产物。原生 Android 构建统一在 GitHub Actions 执行，
+不要求开发机安装 Android SDK/NDK。需要验收时可执行
+`gh workflow run build-apk.yml --ref <branch> -f build_profile=debug`。
+完整迁移阶段和验收项见 [`docs/rn-migration.md`](docs/rn-migration.md)。
 
 ## 配置
 
@@ -490,7 +500,7 @@ Android 客户端由 GitHub Actions 自动构建，产物可在 Actions 页下�
 
 - **应用问题** — 发邮件至 [help@addtech.site](mailto:help@addtech.site) 或使用应用内帮助
 - **API 规范问题** — 先阅读 [`docs/api/openapi.yaml`](docs/api/openapi.yaml)
-- **Android 构建失败** — CI 工作流日志包含 Gradle 堆栈；最常见原因是 Kotlin Compose 版本升级后 Android SDK 缓存过期
+- **Android 构建失败** — CI 工作流日志包含 Expo prebuild/Gradle 堆栈；请确认 JDK 17、Android SDK 和 Gradle 缓存可用
 
 <div align="center">
 

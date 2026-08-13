@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
-import * as Speech from 'expo-speech';
 import type { Message } from '@socrates/contracts';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
@@ -10,6 +8,8 @@ import { Markdown } from '../render/MarkdownView';
 import { ToolCard } from './ToolCard';
 import { AnimatedPressable } from './AnimatedPressable';
 import { messagesApi } from '../data/api/client';
+import { setClipboardText } from '../native/clipboard';
+import * as Speech from '../native/speech';
 
 export function MessageBubble({ message }: { message: Message }) {
   const { colors, radius, spacing, typography } = useTheme();
@@ -59,7 +59,7 @@ export function MessageBubble({ message }: { message: Message }) {
           : <Markdown text={text} streaming={streaming} />}
         {!streaming && text ? (
           <View style={[styles.toolbar, isUser && styles.toolbarUser]}>
-            <AnimatedPressable accessibilityLabel="Copy message" onPress={() => { void Clipboard.setStringAsync(text); }} style={styles.toolbarButton}>
+            <AnimatedPressable accessibilityLabel="Copy message" onPress={() => { void setClipboardText(text); }} style={styles.toolbarButton}>
               <Ionicons name="copy-outline" size={17} color={colors.textSubtle} />
             </AnimatedPressable>
             {!isUser ? (

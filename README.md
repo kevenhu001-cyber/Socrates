@@ -8,7 +8,7 @@
 [![App status](https://img.shields.io/badge/app-online-d8a85b?style=flat-square)](https://app.topodrive.top/)
 [![Backend](https://img.shields.io/badge/backend-TypeScript%20%2B%20Node.js-3178c6?style=flat-square&logo=typescript&logoColor=white)](server/)
 [![Frontend](https://img.shields.io/badge/frontend-Vite%20SPA-f3c769?style=flat-square&logo=vite&logoColor=black)](frontend/)
-[![Android](https://img.shields.io/badge/android-Kotlin%20%2B%20Compose-3DDC84?style=flat-square&logo=android&logoColor=white)](android/)
+[![Android](https://img.shields.io/badge/android-React%20Native%20%2B%20Expo-3DDC84?style=flat-square&logo=android&logoColor=white)](mobile/)
 [![Database](https://img.shields.io/badge/database-PostgreSQL%2014%2B-4169e1?style=flat-square&logo=postgresql&logoColor=white)](server/src/db/)
 [![License](https://img.shields.io/badge/license-proprietary-555555?style=flat-square)](#-license)
 
@@ -184,13 +184,15 @@ builds and copies the bundle into the nginx web root.
 - **Team workspaces** (multi-user under one billing entity).
 - **Voice transcription** endpoint for audio messages.
 
-### Android
+### Android / desktop
 
-- **Kotlin + Jetpack Compose** native client in
-  [`android/`](android/), sharing the same backend.
-- One Gradle workflow ([`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml))
-  builds debug and release APKs against a configurable
-  `BASE_URL` (default `https://app.topodrive.top/`).
+- **React Native + Expo** client in [`mobile/`](mobile/), sharing the same
+  backend and platform-neutral TypeScript core.
+- Android's primary flows use native RN navigation and components. Complex
+  editors and HTML artifacts are isolated WebView islands while they are
+  being rewritten.
+- Expo Web can export the same RN application; Windows and macOS desktop
+  adapters are tracked in [`docs/rn-migration.md`](docs/rn-migration.md).
 
 ### Marketing & docs
 
@@ -203,15 +205,15 @@ builds and copies the bundle into the nginx web root.
 
 ## Architecture
 
-The system is a single-page web app that talks to a small Node API
-that fans out to an OpenAI-compatible LLM provider. The Android client
-is a thin native wrapper around the same API.
+The repository keeps the existing single-page web app as the regression
+baseline while a React Native application talks to the same Node API and
+shares protocol/session logic across Android, Web, and future desktop targets.
 
 ```mermaid
 flowchart LR
   subgraph Client["Client"]
     SPA["Web SPA<br/>(React/TS + legacy JS)"]
-    APK["Android<br/>(Kotlin + Compose)"]
+    APK["Android / Web / Desktop<br/>(React Native + Expo)"]
   end
 
   subgraph Edge["nginx (topodrive.top)"]
@@ -299,9 +301,10 @@ sequenceDiagram
 | Email | `nodemailer` (SMTP) for verification, magic-link reset | |
 | File upload | `multer` | |
 | Code execution | Pyodide WASM (Python sandbox) | [`server/src/services/codeInterpreter.ts`](server/src/services/codeInterpreter.ts) |
-| Android UI | Jetpack Compose (Material 3) | [`android/app/src/main/`](android/app/src/main/) |
-| Android networking | OkHttp + Kotlinx Serialization | |
-| CI | GitHub Actions: build Android APK on push to `main` | [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) |
+| RN UI | React Native + Expo + React Navigation | [`mobile/`](mobile/) |
+| RN networking/offline | TypeScript API + SSE, Android SQLite, Web storage adapter | [`mobile/src/data/`](mobile/src/data/) |
+| Shared core | SSE framing, chat event routing, session pure functions | [`packages/core/`](packages/core/) |
+| CI | GitHub Actions: RN checks, Web baseline, server checks, and APK | [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) |
 | Edge | nginx reverse proxy + static file server | [deploy.sh](deploy.sh) |
 | CDN deps | `cdn.jsdelivr.net` (KaTeX, marked) — all SRI-pinned | |
 
@@ -359,9 +362,13 @@ Socrates/
 │       ├── middleware/     # auth, csrf, error
 │       ├── routes/         # auth, chat, sessions, share, files, ...
 │       └── services/       # llm, webSearch, fileParsers, codeInterpreter, ...
-├── android/                # Kotlin / Compose client
-│   ├── build.gradle.kts
-│   └── app/
+├── mobile/                 # Expo + React Native primary app
+│   ├── App.tsx             # Native navigation entry point
+│   ├── src/screens/        # Shared RN screens
+│   └── app.json            # Expo native configuration
+├── packages/
+│   ├── contracts/          # API and cross-client contracts
+│   └── core/               # Cross-platform SSE/session core
 ├── prompts/
 │   └── teacher-mode.md     # The Socratic system prompt (verbatim)
 ├── docs/
@@ -419,14 +426,19 @@ The server listens on `http://0.0.0.0:8080` by default.
 ### 3. Android client
 
 ```bash
-cd android
-./gradlew assembleDebug                       # debug build, default API URL
-./gradlew assembleRelease \
-  -PBASE_URL=https://app.topodrive.top/      # release build, custom URL
+cd mobile
+npm install
+npm run typecheck
+npm test -- --watch=false
 ```
 
 The CI workflow at [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml)
-runs on every push to `main` and attaches the resulting APK as a workflow artefact.
+checks RN, Web, and server compatibility, then builds and attaches the Android
+APK/AAB and Expo Web desktop bundle. Native Android builds are intentionally run
+on GitHub Actions rather than on a developer workstation. Trigger a debug build
+with `gh workflow run build-apk.yml --ref <branch> -f build_profile=debug`.
+See [`docs/rn-migration.md`](docs/rn-migration.md) for the phase plan and
+acceptance checklist.
 
 ## Configuration
 
@@ -658,8 +670,8 @@ only" until a public release is announced.
 - **API spec questions** — read [`docs/api/openapi.yaml`](docs/api/openapi.yaml)
   first, then ping the backend on-call.
 - **Android build failures** — the CI workflow logs include the
-  Gradle stack; the most common cause is a stale Android SDK
-  cache after a Kotlin Compose version bump.
+  Expo prebuild/Gradle stack; confirm JDK 17, Android SDK, and Gradle
+  dependencies are available after an Expo/RN version bump.
 
 <div align="center">
 

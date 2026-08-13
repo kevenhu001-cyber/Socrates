@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { AnimatedPressable } from './AnimatedPressable';
 import { useAppDrawer } from './AppDrawer';
+import { useT } from '../i18n';
 
 type Props = {
   title?: string;
@@ -27,10 +28,11 @@ export function AppHeader({
   onMore,
 }: Props) {
   const { colors, typography } = useTheme();
+  const t = useT();
   const { openDrawer } = useAppDrawer();
   return (
     <View style={styles.header}>
-      <AnimatedPressable accessibilityLabel="Open navigation" onPress={openDrawer} style={[styles.circle, { borderColor: colors.borderStrong, backgroundColor: colors.surfaceRaised }]}>
+      <AnimatedPressable accessibilityLabel={t('common.openNavigation')} onPress={openDrawer} style={[styles.circle, { borderColor: colors.borderStrong, backgroundColor: colors.surfaceRaised }]}>
         <Ionicons name="menu-outline" size={29} color={colors.text} />
       </AnimatedPressable>
 
@@ -46,7 +48,7 @@ export function AppHeader({
                 onPress={() => onModeChange?.(value)}
                 style={[styles.modeButton, selected && { backgroundColor: '#292929' }]}
               >
-                <Text style={[styles.modeText, { color: colors.text, fontFamily: typography.semibold }]}>{value === 'chat' ? 'Chat' : 'Tutor'}</Text>
+                <Text style={[styles.modeText, { color: colors.text, fontFamily: typography.semibold }]}>{value === 'chat' ? t('sidebar.nav.chat') : t('sidebar.nav.tutor')}</Text>
               </AnimatedPressable>
             );
           })}
@@ -57,15 +59,15 @@ export function AppHeader({
 
       {conversationActive ? (
         <View style={[styles.actionPill, { borderColor: colors.borderStrong, backgroundColor: colors.surfaceRaised }]}>
-          <AnimatedPressable accessibilityLabel="Share conversation" onPress={onShare} style={styles.pillAction}>
+          <AnimatedPressable accessibilityLabel={t('common.share')} onPress={onShare} style={styles.pillAction}>
             <Ionicons name="share-outline" size={25} color={colors.text} />
           </AnimatedPressable>
-          <AnimatedPressable accessibilityLabel="Conversation actions" onPress={onMore} style={styles.pillAction}>
+          <AnimatedPressable accessibilityLabel={t('common.more')} onPress={onMore} style={styles.pillAction}>
             <Ionicons name="ellipsis-horizontal" size={25} color={colors.text} />
           </AnimatedPressable>
         </View>
       ) : (
-        <AnimatedPressable accessibilityLabel="New chat" onPress={onNewChat} style={[styles.circle, { borderColor: colors.borderStrong, backgroundColor: colors.surfaceRaised }]}>
+        <AnimatedPressable accessibilityLabel={t('sidebar.nav.new')} onPress={onNewChat} style={[styles.circle, { borderColor: colors.borderStrong, backgroundColor: colors.surfaceRaised }]}>
           <Ionicons name="create-outline" size={27} color={colors.text} />
         </AnimatedPressable>
       )}

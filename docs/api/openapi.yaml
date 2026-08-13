@@ -409,7 +409,270 @@ paths:
                   nextCursor: { type: string, nullable: true }
 
   # ========================================================================
-  # P2.2 — Tags & pinning
+  # P2.2 — Scheduled tasks, connectors and learning state
+  # ========================================================================
+  /api/scheduled-tasks:
+    get:
+      tags: [scheduled]
+      operationId: listScheduledTasks
+      responses:
+        '200':
+          description: Scheduled tasks owned by the current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks: { type: array, items: { $ref: '#/components/schemas/ScheduledTask' } }
+    post:
+      tags: [scheduled]
+      operationId: createScheduledTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, prompt]
+              properties:
+                title: { type: string }
+                prompt: { type: string }
+                sessionId: { type: string, format: uuid, nullable: true }
+                cronExpression: { type: string, nullable: true }
+                frequency: { type: string, enum: [once, hourly, daily, weekly, monthly, custom] }
+                nextRunAt: { type: string, format: date-time, nullable: true }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ScheduledTask' }
+
+  /api/scheduled-tasks/{taskId}:
+    parameters:
+      - in: path
+        name: taskId
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [scheduled]
+      operationId: updateScheduledTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                prompt: { type: string }
+                sessionId: { type: string, format: uuid, nullable: true }
+                cronExpression: { type: string, nullable: true }
+                frequency: { type: string }
+                status: { type: string, enum: [pending, active, paused, completed, failed] }
+                nextRunAt: { type: string, format: date-time, nullable: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ScheduledTask' }
+    delete:
+      tags: [scheduled]
+      operationId: deleteScheduledTask
+      responses:
+        '204': { description: Deleted }
+
+  /api/scheduled-tasks/{taskId}/run:
+    parameters:
+      - in: path
+        name: taskId
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [scheduled]
+      operationId: runScheduledTask
+      summary: Execute a scheduled task immediately without moving its next slot
+      responses:
+        '200':
+          description: Updated task
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ScheduledTask' }
+
+  /api/project-connectors:
+    get:
+      tags: [connectors]
+      operationId: listProjectConnectors
+      responses:
+        '200':
+          description: Product-owned connector catalogue and opaque connection state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mode: { type: string }
+                  configured: { type: boolean }
+                  connectors: { type: array, items: { $ref: '#/components/schemas/ProjectConnector' } }
+
+  /api/project-connectors/{provider}/connect:
+    parameters:
+      - in: path
+        name: provider
+        required: true
+        schema: { type: string }
+    post:
+      tags: [connectors]
+      operationId: connectProjectConnector
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                apiKey: { type: string, format: password }
+                values: { type: object, additionalProperties: { type: string } }
+      responses:
+        '201':
+          description: OAuth request or connected account metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  requestId: { type: string }
+                  authorizationUrl: { type: string, format: uri }
+                  expiresAt: { type: string, format: date-time }
+                  connectedAccountId: { type: string }
+                  displayName: { type: string, nullable: true }
+
+  /api/project-connectors/{provider}/status:
+    parameters:
+      - in: path
+        name: provider
+        required: true
+        schema: { type: string }
+    get:
+      tags: [connectors]
+      operationId: getProjectConnectorStatus
+      responses:
+        '200':
+          description: Opaque connection state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connection:
+                    allOf:
+                      - $ref: '#/components/schemas/ProjectConnectorConnection'
+                    nullable: true
+
+  /api/knowledge-boundary:
+    get:
+      tags: [knowledge]
+      operationId: listKnowledgeBoundary
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [fuzzy, internalized, blank] }
+        - in: query
+          name: sessionId
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Aggregated knowledge nodes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/KnowledgeNode' } }
+                  summary: { type: object, additionalProperties: { type: integer } }
+
+  /api/mistakes:
+    get:
+      tags: [mistakes]
+      operationId: listMistakes
+      parameters:
+        - in: query
+          name: resolved
+          schema: { type: boolean }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: User mistakes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Mistake' } }
+                  total: { type: integer }
+    post:
+      tags: [mistakes]
+      operationId: createMistake
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [questionContent]
+              properties:
+                sessionId: { type: string, format: uuid, nullable: true }
+                nodeName: { type: string, nullable: true }
+                questionContent: { type: string }
+                userAnswer: { type: string, nullable: true }
+                correctAnswer: { type: string, nullable: true }
+                source: { type: string, enum: [quiz, practice, manual] }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Mistake' }
+
+  /api/mistakes/{mistakeId}:
+    parameters:
+      - in: path
+        name: mistakeId
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [mistakes]
+      operationId: updateMistake
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isResolved: { type: boolean }
+                resolvedAt: { type: string, format: date-time, nullable: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Mistake' }
+    delete:
+      tags: [mistakes]
+      operationId: deleteMistake
+      responses:
+        '204': { description: Deleted }
+
+  # ========================================================================
+  # P2.3 — Tags & pinning
   # ========================================================================
   /api/sessions/{sessionId}/tags:
     parameters:
@@ -2024,6 +2287,82 @@ components:
             recentSessions:
               type: array
               items: { $ref: '#/components/schemas/SessionSummary' }
+
+    ScheduledTask:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        prompt: { type: string }
+        sessionId: { type: string, format: uuid, nullable: true }
+        cronExpression: { type: string, nullable: true }
+        frequency: { type: string, enum: [once, hourly, daily, weekly, monthly, custom] }
+        status: { type: string, enum: [pending, active, paused, completed, failed] }
+        nextRunAt: { type: string, format: date-time, nullable: true }
+        lastRunAt: { type: string, format: date-time, nullable: true }
+        runCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    ProjectConnectorField:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        type: { type: string }
+        required: { type: boolean }
+        help: { type: string }
+
+    ProjectConnectorConnection:
+      type: object
+      properties:
+        status: { type: string }
+        connectionName: { type: string, nullable: true }
+        requestId: { type: string, nullable: true }
+        connectedAccountId: { type: string, nullable: true }
+        displayName: { type: string, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+        lastError: { type: string, nullable: true }
+
+    ProjectConnector:
+      type: object
+      properties:
+        id: { type: string }
+        service: { type: string }
+        name: { type: string }
+        description: { type: string }
+        capabilities: { type: array, items: { type: string } }
+        authType: { type: string, enum: [oauth, api_key, custom_credential] }
+        credentialInput:
+          type: object
+          properties:
+            fields: { type: array, items: { $ref: '#/components/schemas/ProjectConnectorField' } }
+        connection:
+          allOf:
+            - $ref: '#/components/schemas/ProjectConnectorConnection'
+          nullable: true
+
+    KnowledgeNode:
+      type: object
+      properties:
+        nodeName: { type: string, nullable: true }
+        status: { type: string, enum: [fuzzy, internalized, blank] }
+        sessionId: { type: string, format: uuid }
+        sessionTitle: { type: string, nullable: true }
+
+    Mistake:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        sessionId: { type: string, format: uuid, nullable: true }
+        nodeName: { type: string, nullable: true }
+        questionContent: { type: string }
+        userAnswer: { type: string, nullable: true }
+        correctAnswer: { type: string, nullable: true }
+        source: { type: string, enum: [quiz, practice, manual] }
+        isResolved: { type: boolean }
+        resolvedAt: { type: string, format: date-time, nullable: true }
+        collectedAt: { type: string, format: date-time }
 
     FileRef:
       type: object

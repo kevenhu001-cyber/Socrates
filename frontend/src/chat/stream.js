@@ -11,6 +11,7 @@
 import { apiFetchRaw } from '../util/api.js';
 import { buildChatRequestBody } from './api.js';
 import { shouldRetryInterruptedStream } from './streamRetry.js';
+import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
 
 /* P_log-gating — DEV-only diagnostics. Tool-event frames used to be
    parsed inside bare `catch(_){}` blocks, so a malformed tool_use /
@@ -500,13 +501,12 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         /* Decode with stream:true so multi-byte chars split across chunks
            are buffered properly. The decoder remembers the trailing bytes. */
         buf+=decoder.decode(step.value,{stream:true});
-        var idx;
-        while((idx=buf.indexOf("\n\n"))>=0){
-          var frame=buf.slice(0,idx);
-          buf=buf.slice(idx+2);
-          processFrame(frame);
-          if(cancelled)break;
-        }
+        /* Keep framing identical to the native clients. Web-specific
+           parsing remains inside processFrame for <think>, HTML, widgets,
+           and tool-card rendering. */
+        buf=consumeSseBuffer(buf,function(frame){
+          if(!cancelled)processFrame(frame);
+        });
         if(cancelled)break;
       }
       /* Clear heartbeat — stream ended naturally. */

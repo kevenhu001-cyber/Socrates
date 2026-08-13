@@ -19,6 +19,9 @@
       ],
       "@socrates/contracts": [
         "../packages/contracts/src/index.ts"
+      ],
+      "@socrates/core": [
+        "../packages/core/src/index.ts"
       ]
     }
   },

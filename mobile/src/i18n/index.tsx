@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { NativeModules, Platform } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import { STRINGS, type Language, type StringKey } from './strings';
+import { getItem, setItem } from '../platform/secureStorage';
 
 const STORAGE_KEY = 'socrates.language.preference';
 
@@ -79,7 +79,7 @@ const I18nContext = createContext<I18nContextValue>(fallbackValue);
 
 async function readStoredLanguage(): Promise<Language | null> {
   try {
-    const value = await SecureStore.getItemAsync(STORAGE_KEY);
+    const value = await getItem(STORAGE_KEY);
     if (value === 'en' || value === 'zh') return value;
   } catch {
     // ignore — fall back to the device locale
@@ -110,7 +110,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const setLanguage = useCallback(async (next: Language) => {
     setLanguageState(next);
     try {
-      await SecureStore.setItemAsync(STORAGE_KEY, next);
+      await setItem(STORAGE_KEY, next);
     } catch {
       // best effort; the in-memory choice still applies for this session
     }

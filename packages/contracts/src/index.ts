@@ -103,6 +103,84 @@ export interface Session extends TutorState {
   streamingReasoning?: string | null;
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  description?: string | null;
+  color?: string | null;
+  icon?: string | null;
+  systemPrompt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export type ScheduledFrequency = 'once' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';
+export type ScheduledStatus = 'pending' | 'active' | 'paused' | 'completed' | 'failed';
+
+export interface ScheduledTask {
+  id: string;
+  title: string;
+  prompt: string;
+  sessionId?: string | null;
+  cronExpression?: string | null;
+  frequency: ScheduledFrequency | string;
+  status: ScheduledStatus | string;
+  nextRunAt?: string | null;
+  lastRunAt?: string | null;
+  runCount?: number;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface ProjectConnectorField {
+  key: string;
+  label: string;
+  type?: string;
+  required?: boolean;
+  help?: string;
+}
+
+export interface ProjectConnector {
+  id: string;
+  service?: string;
+  name: string;
+  description?: string;
+  capabilities?: string[];
+  authType?: 'oauth' | 'api_key' | 'custom_credential' | string;
+  credentialInput?: { fields: ProjectConnectorField[] };
+  connection?: {
+    status?: string;
+    connectionName?: string | null;
+    requestId?: string | null;
+    connectedAccountId?: string | null;
+    displayName?: string | null;
+    updatedAt?: string | null;
+    lastError?: string | null;
+  } | null;
+}
+
+export type KnowledgeNodeStatus = 'fuzzy' | 'internalized' | 'blank' | string;
+
+export interface KnowledgeNode {
+  nodeName: string | null;
+  status: KnowledgeNodeStatus;
+  sessionId: string;
+  sessionTitle: string | null;
+}
+
+export interface Mistake {
+  id: string;
+  sessionId?: string | null;
+  nodeName?: string | null;
+  questionContent: string;
+  userAnswer?: string | null;
+  correctAnswer?: string | null;
+  source?: string;
+  isResolved?: boolean;
+  collectedAt?: string | null;
+  resolvedAt?: string | null;
+}
+
 export interface ChatRequest {
   messages: Array<{ role: string; content: string | JsonValue }>;
   temperature?: number;
