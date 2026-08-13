@@ -29,6 +29,12 @@ jobs:
 
       - run: npm ci --include=dev
 
+      - name: Build Rust WASM support
+        run: |
+          rustup target add wasm32-unknown-unknown
+          cargo install wasm-bindgen-cli --version 0.2.126 --locked
+          npm run build:wasm
+
       - name: Lint
         run: npm run lint
 
