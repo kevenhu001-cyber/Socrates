@@ -259,10 +259,10 @@ export default function App() {
     const consume = () => {
       buffer += (xhr.responseText || '').slice(cursor);
       cursor = (xhr.responseText || '').length;
-      buffer = consumeSseBuffer(buffer, (frame) => dispatchChatSseFrame(frame, {
-        onDelta: (value) => patchAssistant((message) => ({ ...message, rawText: `${message.rawText || ''}${value}`, content: `${message.content || ''}${value}` })),
-        onReasoning: (value) => patchAssistant((message) => ({ ...message, reasoningContent: `${message.reasoningContent || ''}${value}` })),
-        onError: (value) => setError(value),
+      buffer = consumeSseBuffer(buffer, (frame: string) => dispatchChatSseFrame(frame, {
+        onDelta: (value: string) => patchAssistant((message) => ({ ...message, rawText: `${message.rawText || ''}${value}`, content: `${message.content || ''}${value}` })),
+        onReasoning: (value: string) => patchAssistant((message) => ({ ...message, reasoningContent: `${message.reasoningContent || ''}${value}` })),
+        onError: (value: string) => setError(value),
         onDone: () => undefined,
       }));
     };
