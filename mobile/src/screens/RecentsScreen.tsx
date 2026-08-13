@@ -171,7 +171,7 @@ export function RecentsScreen({ navigation }: Props) {
                   <Text numberOfLines={1} style={[styles.preview, { color: colors.textMuted, fontFamily: typography.body }]}>{preview}</Text>
                 </View>
                 {kind === 'session' && item.pinned === true ? <Ionicons name="pin" size={15} color={colors.accent} /> : null}
-                {kind === 'session' ? <AnimatedPressable accessibilityLabel={`${title}: ${t('common.more')}`} onPress={() => openSessionActions(item)} style={styles.more}><Ionicons name="ellipsis-horizontal" size={20} color={colors.textSubtle} /></AnimatedPressable> : null}
+                {kind === 'session' ? <AnimatedPressable accessibilityLabel={`${title}: ${t('common.more')}`} onPress={(event) => { event.stopPropagation(); openSessionActions(item); }} style={styles.more}><Ionicons name="ellipsis-horizontal" size={20} color={colors.textSubtle} /></AnimatedPressable> : null}
                 <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
               </AnimatedPressable>
             );
