@@ -115,6 +115,7 @@ jobs:
               '<WindowsTargetPlatformVersion>[^<]*</WindowsTargetPlatformVersion>',
               "<WindowsTargetPlatformVersion>$env:WINDOWS_SDK_VERSION</WindowsTargetPlatformVersion>"
             )
+            $after = $after.Replace('10.0.22621.0', $env:WINDOWS_SDK_VERSION)
             if ($after -ne $before) {
               [System.IO.File]::WriteAllText($file.FullName, $after, [System.Text.UTF8Encoding]::new($false))
               $changed++
