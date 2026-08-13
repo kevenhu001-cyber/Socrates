@@ -58,6 +58,16 @@ on:
         required: true
         type: boolean
         default: false
+      run_device_smoke:
+        description: Run the Android emulator Detox smoke suite
+        required: true
+        type: boolean
+        default: false
+      device_smoke_only:
+        description: Skip verification, web, Android package, and Windows jobs
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -79,7 +89,7 @@ jobs:
     name: Verify shared clients and API contract
     if: >-
       github.event_name != 'workflow_dispatch' ||
-      (inputs.run_verification && !inputs.build_windows_only)
+      (inputs.run_verification && !inputs.build_windows_only && !inputs.device_smoke_only)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -127,7 +137,7 @@ jobs:
     needs: verify
     if: >-
       always() &&
-      (github.event_name != 'workflow_dispatch' || !inputs.build_windows_only) &&
+      (github.event_name != 'workflow_dispatch' || (!inputs.build_windows_only && !inputs.device_smoke_only)) &&
       (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
@@ -181,7 +191,7 @@ jobs:
     needs: verify
     if: >-
       always() && github.event_name != 'pull_request' &&
-      (github.event_name != 'workflow_dispatch' || !inputs.build_windows_only) &&
+      (github.event_name != 'workflow_dispatch' || (!inputs.build_windows_only && !inputs.device_smoke_only)) &&
       (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     runs-on: ubuntu-latest
     env:
@@ -419,3 +429,81 @@ jobs:
           path: desktop/windows-dist
           if-no-files-found: error
           retention-days: 30
+
+  android-device-smoke:
+    name: Android emulator RN smoke
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.run_device_smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DETOX_AVD_NAME: 'socrates_api_35'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install pinned Android build components
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager \
+            "platform-tools" \
+            "platforms;${ANDROID_PLATFORM}" \
+            "build-tools;${ANDROID_BUILD_TOOLS}" \
+            "ndk;${ANDROID_NDK_VERSION}"
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Generate Detox-enabled Android project
+        working-directory: mobile
+        env:
+          DETOX_E2E: '1'
+        run: npx expo prebuild --platform android --clean --no-install
+
+      - name: Enable KVM group permissions
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-socrates-kvm.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run Detox smoke on Android API 35
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          DETOX_AVD_NAME: ${{ env.DETOX_AVD_NAME }}
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          avd-name: ${{ env.DETOX_AVD_NAME }}
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          enable-hw-keyboard: true
+          working-directory: mobile
+          script: |
+            mkdir -p e2e-artifacts
+            npm run test:e2e -- --headless 2>&1 | tee e2e-artifacts/detox.log
+
+      - name: Upload Detox artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: socrates-android-device-smoke-${{ github.sha }}
+          path: mobile/e2e-artifacts
+          if-no-files-found: ignore
+          retention-days: 14
