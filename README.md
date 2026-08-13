@@ -433,10 +433,12 @@ npm test -- --watch=false
 ```
 
 The CI workflow at [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml)
-checks RN, Web, and server compatibility, then builds and attaches the Android
-APK/AAB and Expo Web desktop bundle. Native Android builds are intentionally run
-on GitHub Actions rather than on a developer workstation. Trigger a debug build
-with `gh workflow run build-apk.yml --ref <branch> -f build_profile=debug`.
+checks RN, Web, and server compatibility, then builds a debug Android APK and
+Expo Web desktop bundle. Native Android builds are intentionally run on GitHub
+Actions rather than on a developer workstation. Trigger a debug build with
+`gh workflow run build-apk.yml --ref <branch> -f build_profile=debug`; use
+[`release-clients.yml`](.github/workflows/release-clients.yml) for a signed APK/AAB
+and versioned desktop/Windows release.
 See [`docs/rn-migration.md`](docs/rn-migration.md) for the phase plan and
 acceptance checklist.
 
@@ -584,9 +586,14 @@ The backend runs as a systemd unit (`Restart=always`). The
 server is stateless beyond PostgreSQL, so horizontal scaling is
 just a matter of running more processes behind the same nginx.
 
-The Android client is built by
-[`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml);
-artefacts are downloadable from the Actions tab.
+The Android client and Expo Web desktop bundle are built by
+[`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml). Native Windows
+packages use the same reusable workflow on a Windows runner. Use
+[`.github/workflows/release-clients.yml`](.github/workflows/release-clients.yml) for
+versioned releases: it verifies, signs, checksums, and attaches desktop/Android/Windows
+artifacts to a GitHub Release. Google Play publishing is opt-in and requires a service
+account secret. See [`docs/client-release.md`](docs/client-release.md) for the complete
+workflow and secret contract.
 
 ## Security model
 

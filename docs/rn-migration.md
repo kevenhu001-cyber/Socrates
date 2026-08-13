@@ -147,8 +147,9 @@ gh run watch
 ```
 
 成功后在 workflow run 的 Artifacts 中取得 Android APK/AAB、SHA-256 文件和 Expo Web
-桌面 bundle。Pull Request 只执行校验，不生成发布包；push 到 `main` 会执行完整流水线，
-其他分支通过上面的 `workflow_dispatch` 选择 debug 或 release 构建。
+桌面 bundle。Pull Request 只执行校验，不生成发布包；普通 `main` 构建生成 debug
+验收包。正式 Android/Windows/桌面版本使用
+`.github/workflows/release-clients.yml` 的版本 tag 或手动发布入口。
 
 ## 本地静态检查
 

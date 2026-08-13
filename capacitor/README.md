@@ -71,6 +71,12 @@ Convenience scripts: `npm run apk:debug`, `npm run apk:debug:staging`,
 Each wraps frontend build + `cap sync` + the platform-correct gradle
 wrapper (`scripts/apk.mjs`), so a single command produces a working APK.
 
+The canonical Android release is the Expo/RN app under `mobile/`. The
+Capacitor workflow (`.github/workflows/build-capacitor-apk.yml`) is retained as
+a compatibility/debug shell: it creates an Actions artifact only and does not
+publish a second package with the same application id to GitHub Releases or
+Google Play.
+
 ## Status bar & keyboard avoidance
 
 The web frontend already ships a sophisticated `visualViewport`-driven
