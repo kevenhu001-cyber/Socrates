@@ -21,11 +21,13 @@ be moved into it after their platform adapters are covered.
 Trigger it manually:
 
 ```bash
-gh workflow run build-windows.yml \
+gh workflow run build-apk.yml \
   --ref <branch> \
-  -f build_profile=debug
+  -f build_profile=debug \
+  -f build_windows_only=true
 ```
 
-The workflow is the only supported Windows build path from this Linux
-workspace. It requires the hosted Windows image's Visual Studio/WinAppSDK
-toolchain and does not change the Android/Web build workflow.
+After the workflow is merged to the default branch, `build-windows.yml` can
+also be dispatched directly. Both paths use the hosted Windows image's
+Visual Studio/WinAppSDK toolchain; this Linux workspace never runs the Windows
+or Android native build locally.

@@ -15,6 +15,8 @@ on:
       - 'docs/api/openapi.yaml'
       - 'docs/rn-migration.md'
       - '.github/workflows/build-apk.yml'
+      - '.github/workflows/build-windows.yml'
+      - 'desktop/windows/**'
   pull_request:
     branches: [main]
     paths:
@@ -29,6 +31,8 @@ on:
       - 'docs/api/openapi.yaml'
       - 'docs/rn-migration.md'
       - '.github/workflows/build-apk.yml'
+      - '.github/workflows/build-windows.yml'
+      - 'desktop/windows/**'
   workflow_dispatch:
     inputs:
       build_profile:
@@ -44,6 +48,16 @@ on:
         required: true
         type: boolean
         default: true
+      build_windows:
+        description: Also build the isolated RNW Windows shell
+        required: true
+        type: boolean
+        default: false
+      build_windows_only:
+        description: Build only the isolated RNW Windows shell
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -63,7 +77,9 @@ env:
 jobs:
   verify:
     name: Verify shared clients and API contract
-    if: github.event_name != 'workflow_dispatch' || inputs.run_verification
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      (inputs.run_verification && !inputs.build_windows_only)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -111,6 +127,7 @@ jobs:
     needs: verify
     if: >-
       always() &&
+      (github.event_name != 'workflow_dispatch' || !inputs.build_windows_only) &&
       (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
@@ -164,6 +181,7 @@ jobs:
     needs: verify
     if: >-
       always() && github.event_name != 'pull_request' &&
+      (github.event_name != 'workflow_dispatch' || !inputs.build_windows_only) &&
       (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     runs-on: ubuntu-latest
     env:
@@ -286,3 +304,13 @@ jobs:
       - name: Remove signing material
         if: always()
         run: rm -f mobile/release.keystore
+
+  build-windows:
+    name: Build RNW Windows shell
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      (inputs.build_windows || inputs.build_windows_only)
+    uses: ./.github/workflows/build-windows.yml
+    with:
+      build_profile: ${{ inputs.build_profile }}
+    secrets: inherit
