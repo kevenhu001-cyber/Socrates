@@ -1,5 +1,6 @@
 import { Linking } from 'react-native';
 import { getPreferences } from '../data/preferences';
+import type { NativePickerResult } from './native';
 
 /**
  * Windows adapter boundary. The desktop shell can replace these implementations
@@ -21,13 +22,13 @@ export const native = {
   async share(url: string) {
     return Linking.openURL(url);
   },
-  async pickFile() {
-    return { canceled: true, assets: [] as Array<{ uri: string; name: string; mimeType?: string; size?: number }> };
+  async pickFile(): Promise<NativePickerResult> {
+    return { canceled: true, assets: [] };
   },
-  async pickImage() {
-    return { canceled: true, assets: [] as Array<{ uri: string; fileName?: string; mimeType?: string; fileSize?: number }> };
+  async pickImage(): Promise<NativePickerResult> {
+    return { canceled: true, assets: [] };
   },
-  async capturePhoto() {
-    return { canceled: true, assets: [] as Array<{ uri: string; fileName?: string; mimeType?: string; fileSize?: number }> };
+  async capturePhoto(): Promise<NativePickerResult> {
+    return { canceled: true, assets: [] };
   },
 };

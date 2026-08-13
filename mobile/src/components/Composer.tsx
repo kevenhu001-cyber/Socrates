@@ -23,12 +23,12 @@ function planHeightDuration(distance: number): number {
   return Math.max(MIN_DURATION_MS, Math.min(MAX_DURATION_MS, raw));
 }
 
-export function Composer({ value, disabled, onChangeText, onSend, onStop, onAttach }: { value: string; disabled?: boolean; onChangeText: (value: string) => void; onSend: () => void; onStop: () => void; onAttach: () => void }) {
+export function Composer({ value, disabled, hasAttachments = false, onChangeText, onSend, onStop, onAttach }: { value: string; disabled?: boolean; hasAttachments?: boolean; onChangeText: (value: string) => void; onSend: () => void; onStop: () => void; onAttach: () => void }) {
   const { colors, radius, spacing, typography } = useTheme();
   const t = useT();
   const ref = useRef<TextInput>(null);
   const [focused, setFocused] = useState(false);
-  const canSend = value.trim().length > 0 && !disabled;
+  const canSend = (value.trim().length > 0 || hasAttachments) && !disabled;
 
   /* Interpolate minHeight so the focus-in expansion matches the
      mobile composer's focus state and the desktop web's

@@ -21,6 +21,7 @@ function AuthField({ label, ...props }: TextInputProps & { label: string }) {
       <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium }]}>{label}</Text>
       <TextInput
         {...props}
+        accessibilityLabel={label}
         placeholderTextColor={colors.textSubtle}
         style={[styles.input, { color: colors.text, backgroundColor: '#202020', borderColor: colors.border, borderRadius: radius.sm, fontFamily: typography.body }, props.style]}
       />

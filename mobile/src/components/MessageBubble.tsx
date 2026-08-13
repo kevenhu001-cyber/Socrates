@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Message } from '@socrates/contracts';
 import { useTheme } from '../theme/ThemeProvider';
@@ -47,9 +47,16 @@ export function MessageBubble({ message }: { message: Message }) {
           </View>
         ) : null}
         {message.attachments?.map((attachment) => (
-          <View key={attachment.id} style={[styles.attachment, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text numberOfLines={1} style={[styles.attachmentText, { color: colors.textMuted }]}>{attachment.name}</Text>
-          </View>
+          attachment.kind === 'image' && attachment.dataUrl ? (
+            <View key={attachment.id} style={[styles.imageAttachment, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Image accessibilityLabel={attachment.name} source={{ uri: attachment.dataUrl }} style={styles.image} resizeMode="contain" />
+              <Text numberOfLines={1} style={[styles.attachmentText, { color: colors.textMuted }]}>{attachment.name}</Text>
+            </View>
+          ) : (
+            <View key={attachment.id} style={[styles.attachment, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text numberOfLines={1} style={[styles.attachmentText, { color: colors.textMuted }]}>{attachment.name}</Text>
+            </View>
+          )
         ))}
         {message.toolCalls?.map((tool) => <ToolCard key={tool.id} call={tool} />)}
         {/* The user's own text is what they typed: render it verbatim rather than
@@ -90,6 +97,8 @@ const styles = StyleSheet.create({
   reasoningLabel: { fontSize: 10, letterSpacing: 1, fontWeight: '700', marginBottom: 4, textTransform: 'uppercase' },
   reasoningText: { fontSize: 12, lineHeight: 18 },
   attachment: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 8, maxWidth: 240 },
+  imageAttachment: { borderWidth: 1, borderRadius: 10, padding: 6, marginBottom: 8, maxWidth: 260 },
+  image: { width: 248, height: 170, borderRadius: 7, marginBottom: 5 },
   attachmentText: { fontSize: 12, fontWeight: '600' },
   toolbar: { minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 6, marginLeft: -8 },
   toolbarUser: { justifyContent: 'flex-end', marginLeft: 0, marginRight: -8, marginBottom: -8 },

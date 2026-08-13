@@ -1,5 +1,5 @@
 import type { Attachment, Message, Session, User } from '@socrates/contracts';
-import { createDraftSession, messageText } from '@socrates/core';
+import { buildChatHistory, createDraftSession } from '@socrates/core';
 import { useSyncExternalStore } from 'react';
 import { ApiError, authApi } from '../data/api/client';
 import { readCachedUser } from '../data/api/tokenStore';
@@ -209,6 +209,10 @@ class AppStore {
   }
 
   addAttachment(attachment: Attachment) {
+    if (this.state.pendingAttachments.length >= 6) {
+      this.setState({ error: tSync('chat.maxAttachments') });
+      return;
+    }
     this.setState({ pendingAttachments: [...this.state.pendingAttachments, attachment], error: null });
   }
 
@@ -227,7 +231,8 @@ class AppStore {
 
   async sendMessage(rawText: string) {
     const text = rawText.trim();
-    if (!text || this.state.isStreaming) return;
+    const attachments = this.state.pendingAttachments;
+    if ((!text && !attachments.length) || this.state.isStreaming) return;
     let session = this.state.activeSession;
     if (!session) {
       this.startNewSession('chat');
@@ -235,12 +240,11 @@ class AppStore {
     }
     if (!session) return;
 
-    const attachments = this.state.pendingAttachments;
     const nextMessages = [...(session.messages || []), { ...userMessage(text), attachments: attachments.length ? attachments : undefined }];
     session = {
       ...session,
-      topic: session.topic || text.slice(0, 100),
-      title: session.title || text.slice(0, 54),
+      topic: session.topic || text.slice(0, 100) || attachments[0]?.name || tSync('chat.newConversation'),
+      title: session.title || text.slice(0, 54) || attachments[0]?.name || tSync('chat.newConversation'),
       messages: nextMessages,
       updatedAt: new Date().toISOString(),
     };
@@ -282,7 +286,7 @@ class AppStore {
     const streamingSession = { ...session, messages: [...nextMessages, assistant] };
     this.setState({ activeSession: streamingSession, isStreaming: true, error: null });
     this.stopStream = await startChatStream(session.id, {
-      messages: nextMessages.map((message) => ({ role: message.role, content: messageText(message) })),
+      messages: buildChatHistory(nextMessages),
       mode: session.mode,
     }, {
       onDelta: (delta) => this.appendAssistant(delta),
@@ -295,6 +299,27 @@ class AppStore {
       onError: (message) => this.finishStream(message),
       onDone: () => this.finishStream(),
     });
+  }
+
+  async retryLastResponse() {
+    if (this.state.isStreaming) return;
+    const session = this.state.activeSession;
+    if (!session) return;
+    const messages = session.messages || [];
+    const last = messages.at(-1);
+    const nextMessages = last?.role === 'assistant' ? messages.slice(0, -1) : messages.slice();
+    if (nextMessages.at(-1)?.role !== 'user') return;
+    if (!this.state.isOnline) {
+      this.setState({ error: tSync('chat.offline') });
+      return;
+    }
+    const retrySession = { ...session, messages: nextMessages, updatedAt: new Date().toISOString() };
+    this.setState({ activeSession: retrySession, error: null });
+    try {
+      await this.startAssistantStream(retrySession, nextMessages);
+    } catch (error) {
+      this.setState({ error: error instanceof Error ? error.message : tSync('chat.offline') });
+    }
   }
 
   /**

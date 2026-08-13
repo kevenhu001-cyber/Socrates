@@ -5,6 +5,21 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { getPreferences } from '../data/preferences';
 
+export interface NativeFileAsset {
+  uri: string;
+  name?: string;
+  fileName?: string | null;
+  mimeType?: string | null;
+  size?: number | null;
+  fileSize?: number | null;
+  base64?: string | null;
+}
+
+export interface NativePickerResult {
+  canceled: boolean;
+  assets: NativeFileAsset[];
+}
+
 export const native = {
   async vibrate(kind: 'light' | 'success' | 'error' = 'light') {
     // Respects the Haptics switch in Settings.
@@ -23,15 +38,15 @@ export const native = {
     if (await Sharing.isAvailableAsync()) return Sharing.shareAsync(url);
     return undefined;
   },
-  async pickFile() {
-    return DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false });
+  async pickFile(): Promise<NativePickerResult> {
+    return DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false }) as Promise<NativePickerResult>;
   },
-  async pickImage() {
-    return ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85, allowsEditing: false });
+  async pickImage(): Promise<NativePickerResult> {
+    return ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.75, base64: true, allowsEditing: false }) as Promise<NativePickerResult>;
   },
-  async capturePhoto() {
+  async capturePhoto(): Promise<NativePickerResult> {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) return { canceled: true, assets: [] };
-    return ImagePicker.launchCameraAsync({ quality: 0.85, allowsEditing: false });
+    return ImagePicker.launchCameraAsync({ quality: 0.75, base64: true, allowsEditing: false }) as Promise<NativePickerResult>;
   },
 };
