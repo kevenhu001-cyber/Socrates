@@ -7,6 +7,13 @@ test('React Native web shell boots and keeps the sign-in flow interactive', asyn
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
   page.on('pageerror', (error) => pageErrors.push(error.message));
+  await page.route('**/auth/me', async (route) => {
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Unauthorized' }),
+    });
+  });
 
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.getByText('Socrates', { exact: true })).toBeVisible();
