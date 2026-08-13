@@ -116,6 +116,19 @@ jobs:
               "<WindowsTargetPlatformVersion>$env:WINDOWS_SDK_VERSION</WindowsTargetPlatformVersion>"
             )
             $after = [regex]::Replace($after, '10\.0\.22621(?:\.0)?', $env:WINDOWS_SDK_VERSION)
+            if ($file.Extension -eq '.wapproj') {
+              # The generated package project imports WinUI's debug UCRT SDK by
+              # default. GitHub's Windows image has a newer Windows SDK but not
+              # the exact 10.0.22621 debug framework package, so opt out of the
+              # optional framework dependencies for this standalone RNW shell.
+              $after = [regex]::Replace($after, '<WinUISDKReferences>[^<]*</WinUISDKReferences>', '<WinUISDKReferences>false</WinUISDKReferences>')
+              if ($after -notmatch '<WinUISDKReferences>') {
+                $propertyGroup = [regex]::Match($after, '<PropertyGroup[^>]*>')
+                if ($propertyGroup.Success) {
+                  $after = $after.Insert($propertyGroup.Index + $propertyGroup.Length, "`r`n    <WinUISDKReferences>false</WinUISDKReferences>")
+                }
+              }
+            }
             if ($after -ne $before) {
               [System.IO.File]::WriteAllText($file.FullName, $after, [System.Text.UTF8Encoding]::new($false))
               $changed++
