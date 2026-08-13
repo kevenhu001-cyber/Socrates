@@ -66,14 +66,15 @@ Workspace 和 HTML artifact 仍通过明确隔离的 WebView 路由承载，属�
 
 - 用 Expo Web/RN Web 验证同一 RN 屏幕在浏览器的可用性，再按 Web 信息密度做
   响应式布局，而不是把 Android 尺寸直接放大到桌面。
-- Windows 优先评估 React Native Windows；macOS 单独评估 React Native macOS。
+- Windows 优先采用独立的 React Native Windows lockstep 工程；macOS 单独评估 React Native macOS。
 - 桌面适配的环境要求和 Windows/macOS 验收项见 [`desktop/README.md`](../desktop/README.md)；
   当前 Linux 工作区只验证共享代码，不能宣称已经生成 WinAppSDK/Xcode 安装包。
 - 桌面端共享 `packages/contracts`、`packages/core`、API 层和组件语义，允许
   使用键盘快捷键、多栏布局、窗口尺寸和文件系统等平台增强。
-- 当前可交付的桌面产物是 Expo Web/RN Web bundle；它不是把移动页面套进一个完整
-  SPA WebView。原生 Windows 壳仍需单独锁定 RN/RNW 版本并在 Windows runner 上
-  生成、打包和验收，当前不把它标记为已完成。
+- 当前稳定可交付的桌面产物是 Expo Web/RN Web bundle；它不是把移动页面套进一个完整
+  SPA WebView。原生 Windows 壳已经放在 `desktop/windows/`，固定 RN 0.84.1 + RNW
+  0.84.0，并由 `.github/workflows/build-windows.yml` 在 Windows runner 上生成；
+  仍需等待 Windows 构建和交互验收通过，不能把“已接入工作流”当成最终发布完成。
 
 ## 功能验收清单
 
@@ -102,6 +103,7 @@ Android 设备对返回键、键盘、安全区域和状态栏做最终签收。
 - [x] `WEB-CORE-01` Web 流式分帧与 RN 使用同一个 `packages/core` 实现。
 - [x] `RN-WEB-01` Expo Web 桌面 bundle 在 GitHub Actions 中导出，并用 Chromium 桌面/移动视口
   做启动、登录入口和响应式 smoke；浏览器插件不可用时使用 Playwright fallback。
+- [ ] `WIN-01` 独立 RNW Windows shell 在 Windows runner 生成、打包并完成安装/启动验收。
 
 ### 跨端协议与发布
 
