@@ -89,6 +89,9 @@ jobs:
           arch: x86_64
           profile: pixel_6
           avd-name: ${{ env.DETOX_AVD_NAME }}
+          disk-size: 4096M
+          ram-size: 2048M
+          cores: 4
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           enable-hw-keyboard: true
