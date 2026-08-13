@@ -91,7 +91,9 @@ Workspace 和 HTML artifact 仍通过明确隔离的 WebView 路由承载，属�
 - [ ] `RN-BACK-01` Android 硬件返回、键盘、状态栏和安全区域符合系统习惯。
 
 硬件返回的代码路径已接入（先关闭抽屉，再回退 RN navigation）；该项仍需真实
-Android 设备对返回键、键盘、安全区域和状态栏做最终签收。
+Android 设备对返回键、键盘、安全区域和状态栏做最终签收。远程 Android
+Emulator + Detox 验收由 `.github/workflows/android-device-smoke.yml` 提供，先覆盖
+启动登录壳和硬件键盘环境，再补充需要鉴权的交互用例。
 
 勾选“代码/单测覆盖”不等于真实设备签收；发布前仍需在 Android 设备上完成
 触摸、键盘、返回键、网络切换和真实 API 的验收。
@@ -117,6 +119,10 @@ Android 设备对返回键、键盘、安全区域和状态栏做最终签收。
 Android 原生构建和 Expo Web 桌面产物统一在 `.github/workflows/build-apk.yml` 中完成，
 不依赖开发机的 Android SDK、NDK、JDK 或 Gradle 缓存。工作流固定 Java 17、Android
 API 35、Build Tools 35.0.0 和 NDK 27.1.12297006。
+
+Android 设备 smoke 使用独立的 `.github/workflows/android-device-smoke.yml`，在 GitHub
+Ubuntu runner 上创建 API 35 x86_64 emulator，启用硬件键盘并运行 Detox；它不替代真实
+厂商设备的最终签收，但能把 RN 导航、启动壳和 Android 系统输入环境纳入远程回归。
 
 手动触发 debug 构建（无需签名密钥，适合验收）：
 

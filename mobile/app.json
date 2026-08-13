@@ -18,6 +18,7 @@
     },
     "plugins": [
       "./plugins/withReleaseSigning",
+      "./plugins/withDetoxE2E",
       "expo-secure-store",
       "expo-sqlite",
       "expo-document-picker",
