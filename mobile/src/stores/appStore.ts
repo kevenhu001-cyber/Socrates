@@ -1,7 +1,7 @@
 import type { Attachment, Message, Session, User } from '@socrates/contracts';
 import { buildChatHistory, createDraftSession } from '@socrates/core';
 import { useSyncExternalStore } from 'react';
-import { ApiError, authApi } from '../data/api/client';
+import { ApiError, authApi, sessionsApi } from '../data/api/client';
 import { readCachedUser } from '../data/api/tokenStore';
 import { startChatStream } from '../data/sse/sseClient';
 import { enqueue, incrementOutboxRetry, readDraft, readOutbox, removeOutbox, saveDraft } from '../data/offline/sqlite';
@@ -173,6 +173,48 @@ class AppStore {
     this.setState({ isLoading: true, error: null });
     const session = await sessionRepository.get(sessionId);
     this.setState({ activeSession: session, draft: session ? readDraft(session.id) : '', pendingAttachments: [], isLoading: false });
+  }
+
+  async renameSession(sessionId: string, title: string) {
+    const nextTitle = title.trim();
+    if (!nextTitle) return;
+    const saved = await sessionsApi.patch(sessionId, { title: nextTitle });
+    this.setState({
+      sessions: [saved, ...this.state.sessions.filter((session) => session.id !== saved.id)],
+      activeSession: this.state.activeSession?.id === saved.id
+        ? { ...this.state.activeSession, ...saved }
+        : this.state.activeSession,
+      error: null,
+    });
+  }
+
+  async togglePinnedSession(session: Pick<Session, 'id' | 'pinned'>) {
+    const saved = await sessionsApi.patch(session.id, { pinned: !session.pinned });
+    this.setState({
+      sessions: [saved, ...this.state.sessions.filter((item) => item.id !== saved.id)],
+      activeSession: this.state.activeSession?.id === saved.id
+        ? { ...this.state.activeSession, ...saved }
+        : this.state.activeSession,
+      error: null,
+    });
+  }
+
+  async archiveSession(sessionId: string) {
+    await sessionsApi.archive(sessionId);
+    this.setState({
+      sessions: this.state.sessions.filter((session) => session.id !== sessionId),
+      activeSession: this.state.activeSession?.id === sessionId ? null : this.state.activeSession,
+      error: null,
+    });
+  }
+
+  async deleteSession(sessionId: string) {
+    await sessionsApi.delete(sessionId);
+    this.setState({
+      sessions: this.state.sessions.filter((session) => session.id !== sessionId),
+      activeSession: this.state.activeSession?.id === sessionId ? null : this.state.activeSession,
+      error: null,
+    });
   }
 
   async resumeForeground() {

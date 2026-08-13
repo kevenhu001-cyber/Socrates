@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { Session } from '@socrates/contracts';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { useAppStore, appStore } from '../stores/appStore';
@@ -26,6 +27,9 @@ export function RecentsScreen({ navigation }: Props) {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<FilePreview | null>(null);
+  const [renameId, setRenameId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [renameBusy, setRenameBusy] = useState(false);
   const [error, setError] = useState('');
 
   const load = async (active = tab) => {
@@ -88,6 +92,35 @@ export function RecentsScreen({ navigation }: Props) {
     }
   };
 
+  const openSessionActions = (item: Record<string, unknown>) => {
+    const sessionId = String(item.id);
+    const title = String(item.title || item.topic || t('library.untitled'));
+    const pinned = item.pinned === true;
+    Alert.alert(title, undefined, [
+      { text: t('library.rename'), onPress: () => { setRenameId(sessionId); setRenameValue(title); } },
+      { text: pinned ? t('library.unpin') : t('library.pin'), onPress: () => { void appStore.togglePinnedSession(item as unknown as Pick<Session, 'id' | 'pinned'>).catch((caught) => setError(caught instanceof Error ? caught.message : t('library.refreshFailed'))); } },
+      { text: t('library.archive'), onPress: () => { void appStore.archiveSession(sessionId).catch((caught) => setError(caught instanceof Error ? caught.message : t('library.refreshFailed'))); } },
+      { text: t('library.deleteChat'), style: 'destructive', onPress: () => Alert.alert(t('library.deleteChat'), t('library.deleteChatConfirm'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.delete'), style: 'destructive', onPress: () => { void appStore.deleteSession(sessionId).catch((caught) => setError(caught instanceof Error ? caught.message : t('library.refreshFailed'))); } },
+      ]) },
+      { text: t('common.cancel'), style: 'cancel' },
+    ]);
+  };
+
+  const saveRename = async () => {
+    if (!renameId || !renameValue.trim()) return;
+    setRenameBusy(true);
+    try {
+      await appStore.renameSession(renameId, renameValue);
+      setRenameId(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t('library.refreshFailed'));
+    } finally {
+      setRenameBusy(false);
+    }
+  };
+
   return (
     <Screen style={styles.screen}>
       <AppHeader title={t('library.heading')} onNewChat={() => { appStore.startNewSession('chat'); navigation.navigate('Home'); }} />
@@ -125,7 +158,11 @@ export function RecentsScreen({ navigation }: Props) {
                 : `${String(item.type || t('library.artifact'))} · ${String(item.language || '')}`;
             const icon = kind === 'session' ? 'chatbubble-outline' : kind === 'file' ? 'document-outline' : 'sparkles-outline';
             return (
-              <AnimatedPressable onPress={() => { void openItem(item); }} style={[styles.row, { borderBottomColor: colors.border }]}> 
+              <AnimatedPressable
+                onPress={() => { void openItem(item); }}
+                onLongPress={kind === 'session' ? () => openSessionActions(item) : undefined}
+                style={[styles.row, { borderBottomColor: colors.border }]}
+              >
                 <View style={[styles.icon, { backgroundColor: colors.surfaceRaised, borderRadius: radius.sm }]}>
                   <Ionicons name={icon} size={20} color={colors.textMuted} />
                 </View>
@@ -133,6 +170,8 @@ export function RecentsScreen({ navigation }: Props) {
                   <Text numberOfLines={1} style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>{title}</Text>
                   <Text numberOfLines={1} style={[styles.preview, { color: colors.textMuted, fontFamily: typography.body }]}>{preview}</Text>
                 </View>
+                {kind === 'session' && item.pinned === true ? <Ionicons name="pin" size={15} color={colors.accent} /> : null}
+                {kind === 'session' ? <AnimatedPressable accessibilityLabel={`${title}: ${t('common.more')}`} onPress={() => openSessionActions(item)} style={styles.more}><Ionicons name="ellipsis-horizontal" size={20} color={colors.textSubtle} /></AnimatedPressable> : null}
                 <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
               </AnimatedPressable>
             );
@@ -165,6 +204,28 @@ export function RecentsScreen({ navigation }: Props) {
           </View>
         </View>
       </Modal>
+      <Modal visible={Boolean(renameId)} transparent animationType="fade" onRequestClose={() => setRenameId(null)}>
+        <View style={styles.renameBackdrop}>
+          <View style={[styles.renameCard, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}
+          >
+            <Text style={[styles.renameTitle, { color: colors.text, fontFamily: typography.semibold }]}>{t('library.rename')}</Text>
+            <TextInput
+              autoFocus
+              value={renameValue}
+              onChangeText={setRenameValue}
+              onSubmitEditing={() => { void saveRename(); }}
+              placeholder={t('library.renamePlaceholder')}
+              placeholderTextColor={colors.textSubtle}
+              style={[styles.renameInput, { color: colors.text, borderColor: colors.borderStrong, backgroundColor: colors.background, borderRadius: radius.sm, fontFamily: typography.body }]}
+              returnKeyType="done"
+            />
+            <View style={styles.renameActions}>
+              <AnimatedPressable onPress={() => setRenameId(null)} style={styles.renameButton}><Text style={[styles.renameButtonText, { color: colors.textMuted, fontFamily: typography.medium }]}>{t('common.cancel')}</Text></AnimatedPressable>
+              <AnimatedPressable disabled={renameBusy || !renameValue.trim()} onPress={() => { void saveRename(); }} style={[styles.renameButton, { backgroundColor: colors.accent, borderRadius: radius.sm }]}><Text style={[styles.renameButtonText, { color: colors.white, fontFamily: typography.medium }]}>{t('library.saveName')}</Text></AnimatedPressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -188,6 +249,7 @@ const styles = StyleSheet.create({
   copy: { flex: 1, minWidth: 0 },
   title: { fontSize: 15 },
   preview: { fontSize: 12, lineHeight: 18, marginTop: 5 },
+  more: { width: 36, height: 42, alignItems: 'center', justifyContent: 'center' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 110 },
   emptyTitle: { fontSize: 17, marginTop: 13 },
   loading: { marginTop: 56 },
@@ -203,4 +265,11 @@ const styles = StyleSheet.create({
   previewContent: { paddingVertical: 10 },
   previewText: { fontFamily: 'monospace', fontSize: 13, lineHeight: 20 },
   truncated: { fontSize: 11, lineHeight: 16, paddingTop: 12 },
+  renameBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', alignItems: 'center', justifyContent: 'center', padding: 22 },
+  renameCard: { width: '100%', maxWidth: 420, borderWidth: 1, padding: 18 },
+  renameTitle: { fontSize: 18, marginBottom: 14 },
+  renameInput: { minHeight: 46, borderWidth: 1, paddingHorizontal: 12, fontSize: 15 },
+  renameActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginTop: 14 },
+  renameButton: { minHeight: 40, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
+  renameButtonText: { fontSize: 13 },
 });
