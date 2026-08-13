@@ -2,10 +2,10 @@ import { Router } from 'express';
 import type { Request, Response, CookieOptions } from 'express';
 import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
 import { setCsrfToken, setCsrfCookie, clearCsrfCookie } from '../middleware/csrf.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireMobileBearer, requestCredential } from '../middleware/auth.js';
 import { authLimiter, codeLoginLimiter, resetLimiter } from '../middleware/rateLimit.js';
 import * as authService from '../services/auth.js';
-import { audit, recordAudit } from '../middleware/audit.js';
+import { audit } from '../middleware/audit.js';
 import { shouldUseSharedDomain, SHARED_COOKIE_DOMAIN } from '../lib/cookieEnv.js';
 import { generateSessionToken } from '../lib/crypto.js';
 
@@ -20,7 +20,8 @@ function signOAuthState(payload: unknown) {
   const sig = createHmac('sha256', OAUTH_STATE_KEY).update(encoded).digest('base64url');
   return `${encoded}.${sig}`;
 }
-function verifyOAuthState(state: unknown): { returnTo?: string; nonce?: string } | null {
+type OAuthState = { returnTo?: string; nonce?: string; mobileRedirectUri?: string };
+function verifyOAuthState(state: unknown): OAuthState | null {
   if (typeof state !== 'string') return null;
   const dot = state.lastIndexOf('.');
   if (dot < 0) return null;
@@ -86,6 +87,25 @@ function clearSidCookie(res: Response, req: Request) {
   }
 }
 
+/** Complete a consumed native WebView hand-off without ever retaining the
+ * capability in a response body, cache, or referrer. Kept separate from the
+ * database read so this security-sensitive response contract is testable. */
+export function redirectMobileWebSession(
+  req: Request,
+  res: Response,
+  sid: string,
+  target: authService.EmbeddedMobileTarget,
+) {
+  clearSidCookie(res, req);
+  res.cookie('sid', sid, getSessionCookieOptions(req));
+  setCsrfCookie(res, req);
+  const destination = new URL('/', `${req.protocol}://${req.get('host')}`);
+  destination.searchParams.set('mobile_target', target);
+  res.set('Referrer-Policy', 'no-referrer');
+  res.set('Cache-Control', 'no-store');
+  return res.redirect(302, destination.pathname + destination.search);
+}
+
 router.get('/csrf-token', setCsrfToken);
 
 router.post('/register', authLimiter, audit('register'), async (req, res, next) => {
@@ -117,6 +137,96 @@ router.post('/login', authLimiter, audit('login', (req) => ({ email: req.body?.e
     // doesn't fail with "CSRF token required".
     setCsrfCookie(res, req);
     return res.json({ user: result.user });
+  } catch (err) { next(err); }
+});
+
+/* ─── Mobile bearer-token contract ─────────────────────────────
+ *
+ * React Native cannot rely on browser cookie persistence, so it receives a
+ * short-lived bearer credential plus a rotating opaque refresh credential.
+ * These routes intentionally sit beside the cookie flow rather than changing
+ * it: browser clients retain their CSRF-protected sid session unchanged.
+ */
+router.post('/mobile/login', authLimiter, audit('login:mobile', (req) => ({ email: req.body?.email })), async (req, res, next) => {
+  try {
+    const { email, password } = req.body || {};
+    const result = await authService.loginMobile(email, password);
+    const tokens = await authService.createMobileTokenPair(result.user.id);
+    return res.json({ user: result.user, ...tokens });
+  } catch (err) { next(err); }
+});
+
+/* Exported only for the no-DB route-shape contract test.  Keeping the list
+ * close to route registration makes accidental mobile API removal visible in
+ * CI before a device discovers it as a 404. */
+export const MOBILE_AUTH_ROUTE_PATHS = [
+  '/mobile/login',
+  '/mobile/refresh',
+  '/mobile/login-with-code',
+  '/mobile/verify',
+  '/mobile/logout',
+  '/mobile/web-session',
+  '/mobile/web-session/consume',
+  '/mobile/oauth/exchange',
+] as const;
+
+router.post('/mobile/refresh', authLimiter, async (req, res, next) => {
+  try {
+    const tokens = await authService.refreshMobileTokenPair(req.body?.refreshToken);
+    return res.json(tokens);
+  } catch (err) { next(err); }
+});
+
+router.post('/mobile/login-with-code', codeLoginLimiter, audit('login:mobile-code', (req) => ({ email: req.body?.email })), async (req, res, next) => {
+  try {
+    const { email, code } = req.body || {};
+    const result = await authService.loginWithCodeMobile(email, code);
+    const tokens = await authService.createMobileTokenPair(result.user.id);
+    return res.json({ user: result.user, ...tokens });
+  } catch (err) { next(err); }
+});
+
+router.get('/mobile/verify', async (req, res, next) => {
+  try {
+    const result = await authService.verifyEmailMobile(req.query.token as string);
+    const tokens = await authService.createMobileTokenPair(result.user.id);
+    return res.json({ user: result.user, ...tokens });
+  } catch (err) { next(err); }
+});
+
+router.post('/mobile/logout', async (req, res, next) => {
+  try {
+    await authService.logoutMobile(req.body?.refreshToken);
+    return res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+router.post('/mobile/web-session', requireMobileBearer, async (req, res, next) => {
+  try {
+    const webSession = await authService.createMobileWebSession(req.userId!, req.body?.target);
+    const origin = `${req.protocol}://${req.get('host')}`;
+    const url = new URL('/api/auth/mobile/web-session/consume', origin);
+    url.searchParams.set('token', webSession.token);
+    return res.json({ url: url.toString(), expiresAt: webSession.expiresAt.toISOString() });
+  } catch (err) { next(err); }
+});
+
+/* This is the only endpoint that puts a one-time capability in a URL. It
+ * consumes it atomically, sets the normal HttpOnly sid cookie, and redirects
+ * to a strictly allow-listed SPA target. The long-lived mobile bearer token
+ * never enters a WebView URL or browser history. */
+router.get('/mobile/web-session/consume', async (req, res, next) => {
+  try {
+    const { userId, target } = await authService.consumeMobileWebSession(req.query.token);
+    const sid = await authService.createBrowserSession(userId);
+    return redirectMobileWebSession(req, res, sid, target);
+  } catch (err) { next(err); }
+});
+
+router.post('/mobile/oauth/exchange', async (req, res, next) => {
+  try {
+    const tokens = await authService.exchangeMobileOAuthToken(req.body?.exchangeToken);
+    return res.json(tokens);
   } catch (err) { next(err); }
 });
 
@@ -206,10 +316,13 @@ router.post('/reset-password', resetLimiter, async (req, res, next) => {
 router.post('/password', requireAuth, authLimiter, async (req, res, next) => {
   try {
     const { oldPassword, newPassword } = req.body;
-    // Pass the caller's sid so the service can keep THIS session
-    // alive while invalidating every other device/browser for the
-    // user. If the sid is missing for any reason we drop them all.
-    await authService.changePassword(req.userId!, oldPassword, newPassword, req.cookies?.sid);
+    /* Keep the currently authenticated credential alive, whether it is the
+     * browser sid or the mobile ma.* bearer.  For mobile, the auth service
+     * recognizes the pair id and preserves its matching refresh token too;
+     * otherwise a successful password change would immediately invalidate
+     * the app that initiated it. */
+    const currentCredential = requestCredential(req)?.token;
+    await authService.changePassword(req.userId!, oldPassword, newPassword, currentCredential);
     return res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -270,6 +383,21 @@ function safeReturnTo(input: unknown) {
   return '/';
 }
 
+/* The native client registers one custom scheme.  Keep the callback target
+ * exact rather than accepting arbitrary schemes/hosts supplied in the OAuth
+ * start request. */
+const MOBILE_OAUTH_REDIRECT_URI = 'socrates://auth/callback';
+function safeMobileRedirectUri(input: unknown): string | null {
+  return input === MOBILE_OAUTH_REDIRECT_URI ? MOBILE_OAUTH_REDIRECT_URI : null;
+}
+
+function oauthErrorRedirect(mobileRedirectUri: string | null, reason: string) {
+  if (!mobileRedirectUri) return '/?oauth_error=' + encodeURIComponent(reason);
+  const destination = new URL(mobileRedirectUri);
+  destination.searchParams.set('error', reason);
+  return destination.toString();
+}
+
 router.get('/oauth/github/start', (_req, res) => {
   const clientId = process.env.GITHUB_CLIENT_ID;
   if (!clientId) {
@@ -282,6 +410,21 @@ router.get('/oauth/github/start', (_req, res) => {
   return res.redirect(url);
 });
 
+/* Native OAuth returns only a short-lived, one-time exchange capability to
+ * the app scheme.  Unlike the browser flow it never creates a sid cookie in
+ * the external browser, and the request's redirect_uri is exact-matched. */
+router.get('/oauth/github/mobile/start', (req, res) => {
+  const clientId = process.env.GITHUB_CLIENT_ID;
+  const redirectUri = safeMobileRedirectUri(req.query.redirect_uri);
+  if (!clientId || !redirectUri) {
+    return res.status(400).json({ code: 'BAD_REQUEST', message: 'GitHub mobile OAuth is not configured' });
+  }
+  const cbUrl = process.env.GITHUB_CALLBACK_URL || '';
+  const state = signOAuthState({ mobileRedirectUri: redirectUri });
+  const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(cbUrl)}&state=${state}&scope=user:email`;
+  return res.redirect(url);
+});
+
 /* ─── OAuth GitHub callback ───
  * GitHub redirects the browser here after the user authorises the app.
  * We exchange the `code` for an access token, fetch the user's primary
@@ -289,23 +432,25 @@ router.get('/oauth/github/start', (_req, res) => {
  */
 router.get('/oauth/github/callback', async (req, res, next) => {
   const { code, state, error } = req.query;
-  if (error) {
-    return res.redirect('/?oauth_error=' + encodeURIComponent(String(error)));
+  let returnTo = '/';
+  let mobileRedirectUri: string | null = null;
+  if (state) {
+    const parsed = verifyOAuthState(state);
+    if (parsed && parsed.returnTo) returnTo = safeReturnTo(parsed.returnTo);
+    if (parsed) mobileRedirectUri = safeMobileRedirectUri(parsed.mobileRedirectUri);
   }
+
+  if (error) return res.redirect(oauthErrorRedirect(mobileRedirectUri, String(error)));
   if (!code) {
+    if (mobileRedirectUri) return res.redirect(oauthErrorRedirect(mobileRedirectUri, 'missing_code'));
     return res.status(400).json({ code: 'BAD_REQUEST', message: 'Missing code' });
   }
 
   const clientId = process.env.GITHUB_CLIENT_ID;
   const clientSecret = process.env.GITHUB_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
+    if (mobileRedirectUri) return res.redirect(oauthErrorRedirect(mobileRedirectUri, 'not_configured'));
     return res.status(501).json({ code: 'NOT_CONFIGURED', message: 'GitHub OAuth is not configured' });
-  }
-
-  let returnTo = '/';
-  if (state) {
-    const parsed = verifyOAuthState(state);
-    if (parsed && parsed.returnTo) returnTo = safeReturnTo(parsed.returnTo);
   }
 
   try {
@@ -318,7 +463,7 @@ router.get('/oauth/github/callback', async (req, res, next) => {
     const tokenJson = await tokenRes.json() as { access_token?: string };
     const accessToken = tokenJson.access_token;
     if (!accessToken) {
-      return res.redirect('/?oauth_error=' + encodeURIComponent('no_access_token'));
+      return res.redirect(oauthErrorRedirect(mobileRedirectUri, 'no_access_token'));
     }
 
     // 2) Fetch the user's profile
@@ -337,7 +482,7 @@ router.get('/oauth/github/callback', async (req, res, next) => {
       email = primary?.email;
     }
     if (!email) {
-      return res.redirect('/?oauth_error=' + encodeURIComponent('no_email'));
+      return res.redirect(oauthErrorRedirect(mobileRedirectUri, 'no_email'));
     }
     const normalizedEmail = email.toLowerCase().trim();
 
@@ -359,16 +504,22 @@ router.get('/oauth/github/callback', async (req, res, next) => {
       }).returning();
     }
 
+    if (mobileRedirectUri) {
+      const exchange = await authService.createMobileOAuthExchangeToken(user.id);
+      const destination = new URL(mobileRedirectUri);
+      destination.searchParams.set('exchangeToken', exchange.token);
+      return res.redirect(destination.toString());
+    }
+
     const token = generateSessionToken();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await db.insert(authSessions).values({ token, userId: user.id, expiresAt });
-
     clearSidCookie(res, req);
     res.cookie('sid', token, getSessionCookieOptions(req));
     return res.redirect(returnTo);
   } catch (err) {
     console.error('[auth] OAuth callback failed:', err);
-    return res.redirect('/?oauth_error=' + encodeURIComponent('callback_failed'));
+    return res.redirect(oauthErrorRedirect(mobileRedirectUri, 'callback_failed'));
   }
 });
 

@@ -11,6 +11,7 @@ import { AUTH_BASE_URL, authApi } from '../data/api/client';
 import { native } from '../native/native';
 import { getInitialLink, parseLink, subscribeToLinks } from '../native/links';
 import { deleteItem, setItem } from '../platform/secureStorage';
+import { isValidLoginCode, normalizeLoginCode } from '../data/auth/loginCode';
 
 type AuthView = 'signin' | 'register' | 'verifySent' | 'verifyFailed' | 'verifying' | 'forgot' | 'forgotSent' | 'reset' | 'resetSuccess' | 'code';
 
@@ -29,11 +30,12 @@ function AuthField({ label, ...props }: TextInputProps & { label: string }) {
   );
 }
 
-function AuthButton({ label, busy, secondary = false, icon, onPress, disabled }: { label: string; busy?: boolean; secondary?: boolean; icon?: React.ComponentProps<typeof Ionicons>['name']; onPress: () => void; disabled?: boolean }) {
+function AuthButton({ label, busy, secondary = false, icon, onPress, disabled, testID }: { label: string; busy?: boolean; secondary?: boolean; icon?: React.ComponentProps<typeof Ionicons>['name']; onPress: () => void; disabled?: boolean; testID?: string }) {
   const { colors, radius, typography } = useTheme();
   return (
     <AnimatedPressable
       accessibilityRole="button"
+      testID={testID}
       disabled={busy || disabled}
       onPress={onPress}
       style={[styles.button, { borderRadius: radius.sm }, secondary ? { borderColor: colors.border, borderWidth: 1, backgroundColor: 'transparent' } : { backgroundColor: colors.accent }]}
@@ -162,9 +164,10 @@ export function AuthScreen() {
   };
 
   const submitCode = async () => {
-    if (!/^\d{6}$/.test(code)) { setError(t('auth.codeInvalid')); return; }
+    const normalizedCode = normalizeLoginCode(code);
+    if (!isValidLoginCode(normalizedCode)) { setError(t('auth.codeInvalid')); return; }
     setBusy(true); setError('');
-    try { await rememberGuest(); await appStore.loginWithUser(await authApi.loginWithCode(email.trim(), code)); }
+    try { await rememberGuest(); await appStore.loginWithUser(await authApi.loginWithCode(email.trim(), normalizedCode)); }
     catch (caught) { setError(caught instanceof Error ? caught.message : t('auth.cannotSignIn')); }
     finally { setBusy(false); }
   };
@@ -212,12 +215,12 @@ export function AuthScreen() {
         </View>
         {view === 'signin' ? (
           <>
-            <AuthField label={t('auth.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" placeholder="you@example.com" />
+            <AuthField testID="auth-email-input" label={t('auth.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" placeholder="you@example.com" />
             <AuthField label={t('auth.password')} value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" placeholder="••••••••" />
             <AnimatedPressable onPress={() => show('forgot')} style={styles.inlineRight}><Text style={[styles.inlineLink, { color: colors.accent, fontFamily: typography.body }]}>{t('auth.forgotPassword')}</Text></AnimatedPressable>
             {error ? <Text style={[styles.error, { color: colors.danger, fontFamily: typography.body }]}>{error}</Text> : null}
             {guestControl}
-            <AuthButton label={t('auth.signIn')} busy={busy} onPress={() => { void submitSignIn(); }} />
+            <AuthButton testID="auth-sign-in-button" label={t('auth.signIn')} busy={busy} onPress={() => { void submitSignIn(); }} />
             <View style={styles.separator}><View style={[styles.separatorLine, { backgroundColor: colors.border }]} /><Text style={[styles.separatorText, { color: colors.textSubtle, fontFamily: typography.body }]}>{t('auth.or')}</Text><View style={[styles.separatorLine, { backgroundColor: colors.border }]} /></View>
             <AuthButton label={t('auth.github')} busy={busy} secondary icon="logo-github" onPress={() => { void signInWithGithub(); }} />
             <AnimatedPressable onPress={() => show('code')} style={styles.centerLink}><Text style={[styles.inlineLink, { color: colors.accent, fontFamily: typography.body }]}>{t('auth.codeLogin')}</Text></AnimatedPressable>
@@ -246,7 +249,7 @@ export function AuthScreen() {
   } else if (view === 'reset' || view === 'resetSuccess') {
     content = view === 'reset' ? <><StateIcon name="lock-open-outline" success /><Text style={[styles.stateTitle, { color: colors.text, fontFamily: typography.display }]}>{t('auth.setNewPassword')}</Text><Text style={[styles.lede, { color: colors.textMuted, fontFamily: typography.body }]}>{t('auth.setNewPasswordBody')}</Text><AuthField label={t('auth.newPassword')} value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" placeholder={t('auth.atLeastEight')} /><AuthField label={t('auth.confirmPassword')} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry autoComplete="new-password" placeholder={t('auth.repeatPassword')} />{error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}<AuthButton label={t('auth.resetPassword')} busy={busy} onPress={() => { void submitReset(); }} /></> : <><StateIcon name="checkmark" success /><Text style={[styles.stateTitle, { color: colors.text, fontFamily: typography.display }]}>{t('auth.passwordUpdated')}</Text><Text style={[styles.lede, { color: colors.textMuted, fontFamily: typography.body }]}>{t('auth.passwordUpdatedBody')}</Text><AuthButton label={t('auth.signIn')} onPress={() => show('signin')} /></>;
   } else {
-    content = <>{backLink}<StateIcon name="keypad-outline" /><Text style={[styles.stateTitle, { color: colors.text, fontFamily: typography.display }]}>{t('auth.emailCodeLogin')}</Text><Text style={[styles.lede, { color: colors.textMuted, fontFamily: typography.body }]}>{t('auth.emailCodeLede')}</Text><AuthField label={t('auth.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" />{codeSent ? <><AuthField label={t('auth.sixDigitCode')} value={code} onChangeText={(value) => setCode(value.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" autoComplete="one-time-code" placeholder="000000" style={styles.codeInput} /><Text style={[styles.codeMessage, { color: colors.textMuted, fontFamily: typography.body }]}>{t('auth.codeSentBody', { email })}</Text></> : null}{error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}{guestControl}<AuthButton label={codeSent ? t('auth.logIn') : t('auth.sendCode')} busy={busy} onPress={() => { void (codeSent ? submitCode() : sendCode()); }} />{codeSent ? <AnimatedPressable onPress={() => { void sendCode(); }} style={styles.centerLink}><Text style={[styles.inlineLink, { color: colors.accent }]}>{t('auth.resendCode')}</Text></AnimatedPressable> : null}</>;
+    content = <>{backLink}<StateIcon name="keypad-outline" /><Text style={[styles.stateTitle, { color: colors.text, fontFamily: typography.display }]}>{t('auth.emailCodeLogin')}</Text><Text style={[styles.lede, { color: colors.textMuted, fontFamily: typography.body }]}>{t('auth.emailCodeLede')}</Text><AuthField testID="auth-code-email-input" label={t('auth.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" />{codeSent ? <><AuthField testID="auth-login-code-input" label={t('auth.sixDigitCode')} value={code} onChangeText={(value) => setCode(normalizeLoginCode(value))} autoCapitalize="characters" autoCorrect={false} autoComplete="one-time-code" maxLength={8} placeholder="ABCD2345" style={styles.codeInput} /><Text style={[styles.codeMessage, { color: colors.textMuted, fontFamily: typography.body }]}>{t('auth.codeSentBody', { email })}</Text></> : null}{error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}{guestControl}<AuthButton testID="auth-code-submit-button" label={codeSent ? t('auth.logIn') : t('auth.sendCode')} busy={busy} onPress={() => { void (codeSent ? submitCode() : sendCode()); }} />{codeSent ? <AnimatedPressable onPress={() => { void sendCode(); }} style={styles.centerLink}><Text style={[styles.inlineLink, { color: colors.accent }]}>{t('auth.resendCode')}</Text></AnimatedPressable> : null}</>;
   }
 
   return (

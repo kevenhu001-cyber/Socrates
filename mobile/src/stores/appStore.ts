@@ -56,6 +56,11 @@ class AppStore {
   private listeners = new Set<() => void>();
   private stopStream: (() => void) | null = null;
   private streamFinished = false;
+  /** Identifies callbacks belonging to the currently visible stream. */
+  private streamGeneration = 0;
+  /** Coalesce high-frequency token/progress frames before touching React state. */
+  private pendingAssistantPatches: Array<(assistant: Message) => Partial<Message>> = [];
+  private streamFlushTimer: ReturnType<typeof setTimeout> | null = null;
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -112,6 +117,8 @@ class AppStore {
     this.stopStream?.();
     this.stopStream = null;
     this.streamFinished = true;
+    this.streamGeneration += 1;
+    this.clearPendingAssistantPatches();
     try {
       await unregisterPushNotifications().catch(() => undefined);
       await authApi.logout();
@@ -230,6 +237,8 @@ class AppStore {
     this.stopStream?.();
     this.stopStream = null;
     this.streamFinished = true;
+    this.streamGeneration += 1;
+    this.clearPendingAssistantPatches();
     const session = createDraftSession(uuid(), mode);
     this.setState({
       activeSession: projectId ? { ...session, projectId } : session,
@@ -269,10 +278,14 @@ class AppStore {
   }
 
   stopGenerating() {
+    if (!this.state.isStreaming || this.streamFinished) return;
+    const generation = this.streamGeneration;
     this.stopStream?.();
     this.stopStream = null;
-    this.streamFinished = true;
-    this.setState({ isStreaming: false });
+    // Keep partial text and any tool output. A stop is a normal terminal state,
+    // not an abandoned stream: pending batched frames are flushed, spinning
+    // tools are settled, and the session is durably saved below.
+    void this.finishStream(undefined, generation);
   }
 
   async sendMessage(rawText: string) {
@@ -328,23 +341,38 @@ class AppStore {
   private async startAssistantStream(session: Session, nextMessages: Message[]) {
     if (this.state.isStreaming) return;
     const assistant: Message = { clientId: id('assistant'), role: 'assistant', rawText: '', content: '', type: 'streaming' };
+    const generation = this.streamGeneration + 1;
+    this.streamGeneration = generation;
     this.streamFinished = false;
+    this.clearPendingAssistantPatches();
     const streamingSession = { ...session, messages: [...nextMessages, assistant] };
     this.setState({ activeSession: streamingSession, isStreaming: true, error: null });
-    this.stopStream = await startChatStream(session.id, {
-      messages: buildChatHistory(nextMessages),
-      mode: session.mode,
-    }, {
-      onDelta: (delta) => this.appendAssistant(delta),
-      onReasoning: (reasoning) => this.appendReasoning(reasoning),
-      onToolUse: (payload) => this.addToolEvent('tool_use', payload),
-      onToolResult: (payload) => this.addToolEvent('tool_result', payload),
-      onToolProgress: (payload) => this.addToolEvent('tool_progress', payload),
-      onToolCallDelta: (payload) => this.addToolEvent('tool_call_delta', payload),
-      onExecutionStart: (payload) => this.addToolEvent('execution_start', payload),
-      onError: (message) => this.finishStream(message),
-      onDone: () => this.finishStream(),
-    });
+    try {
+      const stop = await startChatStream(session.id, {
+        messages: buildChatHistory(nextMessages),
+        mode: session.mode,
+      }, {
+        onDelta: (delta) => this.appendAssistant(delta, generation),
+        onReasoning: (reasoning) => this.appendReasoning(reasoning, generation),
+        onToolUse: (payload) => this.addToolEvent('tool_use', payload, generation),
+        onToolResult: (payload) => this.addToolEvent('tool_result', payload, generation),
+        onToolProgress: (payload) => this.addToolEvent('tool_progress', payload, generation),
+        onToolCallDelta: (payload) => this.addToolEvent('tool_call_delta', payload, generation),
+        onExecutionStart: (payload) => this.addToolEvent('execution_start', payload, generation),
+        onError: (message) => { void this.finishStream(message, generation); },
+        onDone: () => { void this.finishStream(undefined, generation); },
+      });
+      // The user can press Stop while token retrieval/XHR setup is still
+      // pending. Abort this late handle rather than resurrecting the stream.
+      if (generation !== this.streamGeneration || this.streamFinished) {
+        stop();
+        return;
+      }
+      this.stopStream = stop;
+    } catch (error) {
+      await this.finishStream(error instanceof Error ? error.message : tSync('chat.offline'), generation);
+      throw error;
+    }
   }
 
   async retryLastResponse() {
@@ -383,33 +411,73 @@ class AppStore {
     this.setState({ activeSession: { ...session, messages: next } });
   }
 
-  private appendAssistant(delta: string) {
+  private clearPendingAssistantPatches() {
+    if (this.streamFlushTimer) clearTimeout(this.streamFlushTimer);
+    this.streamFlushTimer = null;
+    this.pendingAssistantPatches = [];
+  }
+
+  private queueAssistantPatch(generation: number, patch: (assistant: Message) => Partial<Message>) {
+    if (generation !== this.streamGeneration || this.streamFinished) return;
+    this.pendingAssistantPatches.push(patch);
+    if (this.streamFlushTimer) return;
+    // Rendering an entire markdown tree once per transport chunk is needlessly
+    // expensive. 32ms keeps the live response responsive while capping commits
+    // at roughly one per frame on 30fps devices.
+    this.streamFlushTimer = setTimeout(() => this.flushAssistantPatches(generation), 32);
+  }
+
+  private flushAssistantPatches(generation: number) {
+    if (this.streamFlushTimer) clearTimeout(this.streamFlushTimer);
+    this.streamFlushTimer = null;
+    if (generation !== this.streamGeneration || !this.pendingAssistantPatches.length) {
+      this.pendingAssistantPatches = [];
+      return;
+    }
+    const patches = this.pendingAssistantPatches;
+    this.pendingAssistantPatches = [];
     this.patchAssistant((assistant) => {
+      let next = assistant;
+      for (const patch of patches) next = { ...next, ...patch(next) };
+      return next;
+    });
+  }
+
+  private appendAssistant(delta: string, generation: number) {
+    if (!delta) return;
+    this.queueAssistantPatch(generation, (assistant) => {
       const rawText = `${assistant.rawText || ''}${delta}`;
       return { rawText, content: rawText };
     });
   }
 
-  private appendReasoning(reasoning: string) {
-    this.patchAssistant((assistant) => ({
+  private appendReasoning(reasoning: string, generation: number) {
+    if (!reasoning) return;
+    this.queueAssistantPatch(generation, (assistant) => ({
       reasoningContent: `${assistant.reasoningContent || ''}${reasoning}`,
     }));
   }
 
-  private addToolEvent(kind: ToolEventKind, payload: unknown) {
-    this.patchAssistant((assistant) => ({
+  private addToolEvent(kind: ToolEventKind, payload: unknown, generation: number) {
+    this.queueAssistantPatch(generation, (assistant) => ({
       // Fold the frame onto the card for its tool-call id rather than pushing a
       // synthetic row per SSE event.
       toolCalls: reduceToolEvent(assistant.toolCalls, kind, payload),
     }));
   }
 
-  private async finishStream(error?: string) {
-    if (this.streamFinished) return;
+  private async finishStream(error?: string, generation = this.streamGeneration) {
+    if (generation !== this.streamGeneration || this.streamFinished) return;
+    // Do this before flipping streamFinished so the final partial token/tool
+    // result cannot be lost behind the terminal state transition.
+    this.flushAssistantPatches(generation);
     this.streamFinished = true;
     const session = this.state.activeSession;
     this.stopStream = null;
-    if (!session) return;
+    if (!session) {
+      this.setState({ isStreaming: false, error: error || null });
+      return;
+    }
     const messages = (session.messages || []).map((message) => {
       if (message.type !== 'streaming') return message;
       const settled = { ...message, type: 'assistant' } as Message;
@@ -419,12 +487,20 @@ class AppStore {
     });
     const finalSession = { ...session, messages, updatedAt: new Date().toISOString() };
     this.setState({ activeSession: finalSession, isStreaming: false, error: error || null });
-    if (!error) {
-      try {
-        const saved = await sessionRepository.save(finalSession, messages);
-        this.setState({ activeSession: { ...finalSession, ...saved }, sessions: [saved, ...this.state.sessions.filter((item) => item.id !== saved.id)] });
-      } catch (saveError) {
-        this.enqueueSession(finalSession, id('save'));
+    // A stopped or interrupted answer is still useful. Persist it just like a
+    // completed answer, and queue the write when connectivity disappeared.
+    try {
+      const saved = await sessionRepository.save(finalSession, messages);
+      this.setState({
+        activeSession: this.state.activeSession?.id === finalSession.id
+          ? { ...finalSession, ...saved, messages }
+          : this.state.activeSession,
+        sessions: [saved, ...this.state.sessions.filter((item) => item.id !== saved.id)],
+        ...(error ? {} : { error: null }),
+      });
+    } catch (saveError) {
+      this.enqueueSession(finalSession, id('save'));
+      if (this.state.activeSession?.id === finalSession.id) {
         this.setState({ error: saveError instanceof Error ? saveError.message : tSync('chat.queuedResponse') });
       }
     }

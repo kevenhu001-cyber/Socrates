@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Alert, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useRef } from 'react';
+import { Alert, FlatList, ScrollView, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Message } from '@socrates/contracts';
@@ -18,17 +18,39 @@ import { pickChatAttachment, type ChatAttachmentSource } from '../data/chat/atta
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
+const EMPTY_MESSAGES: Message[] = [];
+const BOTTOM_TOLERANCE = 96;
 
 export function ChatScreen({ navigation }: Props) {
   const { colors, radius, spacing, typography } = useTheme();
   const t = useT();
   const state = useAppStore();
   const listRef = useRef<FlatList<Message>>(null);
+  const stickToBottom = useRef(true);
+  const pendingScroll = useRef(false);
   const { openDrawer } = useAppDrawer();
-  const messages = state.activeSession?.messages || [];
-  useEffect(() => { listRef.current?.scrollToEnd({ animated: true }); }, [messages.length, messages.at(-1)?.rawText]);
-  const onSend = async () => { await native.vibrate('light'); await appStore.sendMessage(state.draft); };
-  const attach = async (source: ChatAttachmentSource) => {
+  const messages = state.activeSession?.messages || EMPTY_MESSAGES;
+  const scrollToLatest = useCallback((animated = false) => {
+    if (!stickToBottom.current || pendingScroll.current) return;
+    pendingScroll.current = true;
+    // Wait for FlatList layout; non-animated scrolling avoids queuing a native
+    // animation for every streaming markdown reflow.
+    setTimeout(() => {
+      listRef.current?.scrollToEnd({ animated });
+      pendingScroll.current = false;
+    }, 0);
+  }, []);
+  const onContentSizeChange = useCallback(() => scrollToLatest(false), [scrollToLatest]);
+  const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    stickToBottom.current = contentSize.height - layoutMeasurement.height - contentOffset.y <= BOTTOM_TOLERANCE;
+  }, []);
+  const onSend = useCallback(async () => {
+    stickToBottom.current = true;
+    await native.vibrate('light');
+    await appStore.sendMessage(state.draft);
+  }, [state.draft]);
+  const attach = useCallback(async (source: ChatAttachmentSource) => {
     try {
       const attachment = await pickChatAttachment(source, state.activeSession?.id);
       if (!attachment) return;
@@ -38,14 +60,14 @@ export function ChatScreen({ navigation }: Props) {
       appStore.setError(error instanceof Error ? error.message : t('chat.uploadFailed'));
       await native.vibrate('error');
     }
-  };
-  const onAttach = () => Alert.alert(t('chat.attach'), t('chat.attachOptions'), [
+  }, [state.activeSession?.id, t]);
+  const onAttach = useCallback(() => Alert.alert(t('chat.attach'), t('chat.attachOptions'), [
     { text: t('chat.attachFile'), onPress: () => { void attach('file'); } },
     { text: t('chat.attachImage'), onPress: () => { void attach('image'); } },
     { text: t('chat.capturePhoto'), onPress: () => { void attach('camera'); } },
     { text: t('common.cancel'), style: 'cancel' },
-  ]);
-  const onShare = async () => {
+  ]), [attach, t]);
+  const onShare = useCallback(async () => {
     const session = state.activeSession;
     if (!session) return;
     try {
@@ -54,7 +76,9 @@ export function ChatScreen({ navigation }: Props) {
     } catch (error) {
       appStore.setError(error instanceof Error ? error.message : t('share.failed'));
     }
-  };
+  }, [navigation, state.activeSession, t]);
+  const renderMessage = useCallback(({ item }: { item: Message }) => <MessageBubble message={item} />, []);
+  const keyForMessage = useCallback((item: Message, index: number) => item.clientId || item.id || String(index), []);
   return (
     <Screen keyboard style={styles.screen}>
       <AppHeader conversationActive onShare={() => { void onShare(); }} onMore={openDrawer} />
@@ -64,7 +88,23 @@ export function ChatScreen({ navigation }: Props) {
           <Text style={[styles.offlineText, { color: colors.textMuted }]}>{t('chat.offlineBanner')}</Text>
         </View>
       ) : null}
-      <FlatList ref={listRef} data={messages} keyExtractor={(item, index) => item.clientId || item.id || String(index)} renderItem={({ item }) => <MessageBubble message={item} />} contentContainerStyle={[styles.messages, { paddingHorizontal: spacing.sm }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" ListEmptyComponent={<View style={styles.empty} />} />
+      <FlatList
+        ref={listRef}
+        data={messages}
+        keyExtractor={keyForMessage}
+        renderItem={renderMessage}
+        onContentSizeChange={onContentSizeChange}
+        onScroll={onScroll}
+        scrollEventThrottle={32}
+        initialNumToRender={10}
+        maxToRenderPerBatch={8}
+        updateCellsBatchingPeriod={50}
+        windowSize={9}
+        contentContainerStyle={[styles.messages, { paddingHorizontal: spacing.sm }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        ListEmptyComponent={<View style={styles.empty} />}
+      />
       {state.error ? (
         <View style={styles.errorRow}>
           <Text style={[styles.error, { color: colors.danger, fontFamily: typography.body }]}>{state.error}</Text>

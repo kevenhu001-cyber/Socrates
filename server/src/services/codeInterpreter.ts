@@ -34,6 +34,9 @@ import { recordAudit } from '../middleware/audit.js';
 import { persistArtifact } from './fileArtifacts.js';
 import { TooManyRequests } from '../lib/errors.js';
 import { publish, subscribe as pubsubSubscribe, getStatus as pubsubStatus } from '../lib/pubsub.js';
+import { parseChatSessionId, requireOwnedSession } from '../lib/sessionOwnership.js';
+import { isUuid } from '../lib/validate.js';
+import { createSessionExecutionLock } from './sessionExecutionLock.js';
 
 /* ─── Execution progress pub/sub ───
  * P_pubsub — replaces the in-process EventEmitter so SSE clients on
@@ -105,6 +108,19 @@ const MAX_ARTIFACT_BYTES = parseInt(process.env.EXEC_MAX_ARTIFACT_BYTES || '1048
 const MAX_CODE_CHARS = parseInt(process.env.EXEC_MAX_CODE_CHARS || '200000', 10);
 const SCRATCH_DIR = process.env.EXEC_SCRATCH_DIR
   || (process.env.NODE_ENV === 'production' ? '/var/lib/socrates/exec' : path.join(os.tmpdir(), 'socrates-exec'));
+
+/* Scratch paths are owner-namespaced as defense in depth. Route and service
+ * ownership checks remain mandatory, but a future missed predicate can no
+ * longer make two users resolve the same on-disk directory for one session
+ * ID. Session IDs are globally unique, yet user scoping makes the filesystem
+ * boundary match the database/files API boundary as well. */
+function sessionScratchPath(userId: string, sessionId: string) {
+  return path.join(SCRATCH_DIR, userId, sessionId);
+}
+
+function executionScratchPath(userId: string, executionId: string) {
+  return path.join(SCRATCH_DIR, userId, 'executions', executionId);
+}
 
 interface PyodideWorkerEntry {
   file: string;
@@ -496,6 +512,10 @@ class PyodidePool {
 
 let pool: PyodidePool | null = null;
 let _poolInitLock: Promise<void> | null = null;
+
+/* A pool slot only prevents two calls from sharing one worker. This separate
+ * lock protects the mutable scratch directory shared by one conversation. */
+const sessionExecutionLock = createSessionExecutionLock();
 /* P_pool-retry — `_poolInitLock` was previously a Promise that, on
    failure, was never cleared. Every subsequent getPool() call would
    await the same rejected promise and re-throw, permanently disabling
@@ -713,6 +733,309 @@ interface ExecuteOpts {
   signal?: AbortSignal | null;
   onProgress?: ProgressListener | null;
 }
+
+type ExecutionResponse = {
+  executionId?: string;
+  status: string;
+  stdout?: string;
+  stderr?: string;
+  exitCode?: number | null;
+  durationMs?: number;
+  errorCode?: string;
+  errorMessage?: string | null;
+  artifacts?: unknown[];
+  artifactFileIds: Array<{ id?: string; name?: string; mimeType?: string | null }>;
+  artifactCount: number;
+};
+
+async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse> {
+  const requestStartedAt = Date.now();
+  if (EXEC_RUNNER === 'disabled') {
+    /* P_progress — still emit a terminal so the chat route can
+       clear its "queued" spinner even on the disabled path. */
+    if (typeof opts.onProgress === 'function') {
+      try { opts.onProgress({ phase: 'skipped', reason: 'runner_disabled' }); } catch (_) {}
+    }
+    return {
+      status: 'skipped',
+      errorCode: 'code_interpreter_disabled',
+      errorMessage: 'code_interpreter_disabled',
+      durationMs: Math.max(1, Date.now() - requestStartedAt),
+      artifactFileIds: [],
+      artifactCount: 0,
+    };
+  }
+  const userId = opts.userId || null;
+  const sessionId = opts.sessionId || null;
+  const code = String(opts.code || '');
+  const language = opts.language || 'python';
+  const timeoutMs = opts.timeoutMs || DEFAULT_TIMEOUT_MS;
+  const signal = opts.signal || null;
+  const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
+
+  /* P_exec-missing-user — the `executions.user_id` column is
+   * NOT NULL and references users(id). When a caller (currently
+   * the chat SSE route) hands us `opts.userId` of null/undefined,
+   * the previous code coerced it to null and let the INSERT fail
+   * at the DB layer with a confusing "Failed query: insert into
+   * executions… params: ,,…" that the model surfaced verbatim.
+   * Fail fast here with a structured error so the chat route can
+   * log it cleanly and tell the user that the request was not
+   * authenticated. Catching this at the boundary also makes the
+   * tool behave predictably if it is ever called from a context
+   * without an authenticated user (background job, test, etc). */
+  if (!userId) {
+    if (typeof onProgress === 'function') {
+      try { onProgress({ phase: 'skipped', reason: 'missing_user' }); } catch (_) {}
+    }
+    return {
+      status: 'failed',
+      errorCode: 'missing_user',
+      errorMessage: 'missing_user: code_interpreter requires an authenticated user (req.userId was not set on the call)',
+      stdout: '', stderr: '', exitCode: 1,
+      durationMs: Math.max(1, Date.now() - requestStartedAt),
+      artifacts: [], artifactFileIds: [], artifactCount: 0,
+    };
+  }
+
+  /* A direct service caller must meet the same session contract as the SSE
+     route. This is critical defense in depth: otherwise a future route could
+     accidentally reintroduce cross-user scratch access by calling execute()
+     with an arbitrary sessionId. */
+  let validatedSessionId: string | null;
+  try {
+    validatedSessionId = parseChatSessionId(sessionId);
+    if (validatedSessionId) {
+      await requireOwnedSession(getDb(), validatedSessionId, userId);
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'invalid_session';
+    if (typeof onProgress === 'function') {
+      try { onProgress({ phase: 'skipped', reason: 'invalid_session' }); } catch (_) {}
+    }
+    return {
+      status: 'failed',
+      errorCode: 'session_not_owned',
+      errorMessage,
+      stdout: '', stderr: '', exitCode: 1,
+      durationMs: Math.max(1, Date.now() - requestStartedAt),
+      artifacts: [], artifactFileIds: [], artifactCount: 0,
+    };
+  }
+
+  /* P_code-size-cap — reject oversized sources BEFORE we touch
+     the database, the scratch dir, or the worker pool. The user
+     sees a stable 'failed/code_too_large' status and we never
+     persist a 10 MB `executions.code` row. */
+  if (code.length > MAX_CODE_CHARS) {
+    const maxKb = Math.round(MAX_CODE_CHARS / 1024);
+    return {
+      status: 'failed',
+      errorCode: 'code_too_large',
+      errorMessage: `code_too_large: source exceeds ${maxKb} KB limit`,
+      stdout: '',
+      stderr: '',
+      exitCode: 1,
+      durationMs: Math.max(1, Date.now() - requestStartedAt),
+      artifacts: [],
+      artifactFileIds: [],
+      artifactCount: 0,
+    };
+  }
+
+  const executionStartedAt = Date.now();
+  let pool: PyodidePool | null;
+  try {
+    pool = await getPool();
+  } catch (err) {
+    const errorMessage = String(err && (err as Error).message || err);
+    return {
+      status: 'failed',
+      errorCode: 'pyodide_worker_boot_failed',
+      errorMessage,
+      stdout: '',
+      stderr: '',
+      exitCode: 1,
+      durationMs: Math.max(1, Date.now() - executionStartedAt),
+      artifacts: [],
+      artifactFileIds: [],
+      artifactCount: 0,
+    };
+  }
+  if (!pool) {
+    return {
+      status: 'skipped',
+      errorCode: 'code_interpreter_disabled',
+      errorMessage: 'code_interpreter_disabled',
+      artifactFileIds: [],
+      artifactCount: 0,
+    };
+  }
+
+  const db = getDb();
+
+  // Insert the running row up front so we have an ID for foreign keys
+  // and so the row exists even if the worker crashes mid-run.
+  const [inserted] = await db.insert(executions).values({
+    userId,
+    sessionId: validatedSessionId,
+    language,
+    code,
+    status: 'running',
+    startedAt: new Date(),
+  }).returning();
+  const executionId = inserted.id;
+
+  /* P_session-scoped-scratch — files written by an earlier execution
+     in the same conversation remain available in the next run's
+     cwd. Without this, the model would write transcendental.png in
+     run N, then FileNotFoundError on the same path in run N+1.
+     The session-scoped dir lives under SCRATCH_DIR/<sessionId> and
+     is reused across every execution in the conversation. Reaping
+     is deferred to session-delete (deleteSession routes) plus a
+     boot-time TTL sweep for orphaned sessions. */
+  const sessionScratchDir = validatedSessionId
+    ? sessionScratchPath(userId, validatedSessionId)
+    : executionScratchPath(userId, executionId);
+  let result: WorkerResult;
+  try {
+    await fs.mkdir(sessionScratchDir, { recursive: true });
+    /* P_scratch-header — prepend a small stdout header that lists
+       the current files in the scratch dir so the AI knows what's
+       available without guessing. This runs BEFORE the user's code
+       so the listing appears at the top of stdout. Use a unique
+       marker name that cannot collide with user code. */
+    const scratchMarker = '___socrates_scratch_' + executionId.replace(/-/g, '_') + '___';
+    const scratchHeader = 'import os; ' + scratchMarker + ' = os.getcwd(); print(f\'[scratch] cwd: {os.listdir(' + scratchMarker + ') if os.path.isdir(' + scratchMarker + ') else "(not a dir)"}\')';
+    const wrappedCode = code.includes(scratchMarker) ? code : scratchHeader + '\n' + code;
+    result = await runOnWorker({
+      executionId,
+      code: wrappedCode,
+      timeoutMs,
+      signal,
+      scratchDir: sessionScratchDir,
+      maxOutputBytes: MAX_OUTPUT_BYTES,
+      onProgress,
+    });
+  } catch (err) {
+    const typed = err as Error & { code?: string; status?: string; durationMs?: number };
+    const msg = String(typed && typed.message || err);
+    const status = typed.status || 'failed';
+    const errorCode = typed.code || (status === 'timeout' ? 'execution_timeout' : 'code_execution_failed');
+    result = {
+      status,
+      errorCode,
+      errorMessage: status === 'timeout'
+        ? 'execution_timeout'
+        : status === 'cancelled'
+          ? 'cancelled_by_caller'
+          : msg,
+      stdout: '',
+      stderr: '',
+      exitCode: status === 'timeout' ? 124 : status === 'cancelled' ? 130 : 1,
+      durationMs: Math.max(1, typed.durationMs ?? Date.now() - executionStartedAt),
+      artifacts: [],
+    };
+    // Emit failure result to pubsub subscribers (SSE clients).
+    publish(`exec_result:${executionId}`, {
+      phase: 'failed',
+      executionId,
+      status: result.status,
+      errorMessage: result.errorMessage,
+      stdout: '',
+      stderr: '',
+      durationMs: result.durationMs,
+      errorCode: result.errorCode,
+    }).catch(() => { /* logged in pubsub */ });
+  }
+
+  // Persist artifacts. Each file in result.artifacts is something the
+  // user's Python wrote into the artifacts/ subdir.
+  const artifactFileIds: Array<{ id?: string; name?: string; mimeType?: string | null }> = [];
+  const persistedArtifacts: any[] = [];
+  for (const art of (result.artifacts || [])) {
+    if (art.size > MAX_ARTIFACT_BYTES) {
+      // Too big — drop it (still count as a failed artifact so the
+      // user can see why their PNG didn't show).
+      persistedArtifacts.push({ ...art, dropped: true, reason: 'too_large' });
+      continue;
+    }
+    try {
+      const { id: fileId, sha256, mimeType } = await persistArtifact({
+        userId,
+        sessionId: validatedSessionId,
+        executionId,
+        sourcePath: art.absPath,
+        originalName: art.name,
+        size: art.size,
+      });
+      artifactFileIds.push({ id: fileId, name: art.name, mimeType });
+      persistedArtifacts.push({ ...art, fileId, mimeType });
+    } catch (err) {
+      persistedArtifacts.push({ ...art, error: String(err && (err as Error).message || err) });
+    }
+  }
+
+  const finalStatus = result.status || 'failed';
+  const finalArtifactCount = artifactFileIds.length;
+
+  // Update the execution row.
+  await db.update(executions).set({
+    status: finalStatus,
+    exitCode: result.exitCode ?? null,
+    durationMs: result.durationMs ?? null,
+    stdout: (result.stdout || '').slice(0, MAX_OUTPUT_BYTES),
+    stderr: (result.stderr || '').slice(0, MAX_OUTPUT_BYTES),
+    artifactCount: finalArtifactCount,
+    completedAt: new Date(),
+  }).where(eq(executions.id, executionId));
+
+  // Audit. Best-effort — never throw out of execute() on audit failure.
+  recordAudit(userId, 'code_execution', {
+    executionId,
+    language,
+    status: finalStatus,
+    exitCode: result.exitCode,
+    durationMs: result.durationMs,
+    artifactCount: finalArtifactCount,
+    errorMessage: result.errorMessage || null,
+  }).catch(() => {});
+
+  // P_session-scoped-scratch — files in the session scratch dir
+  // outlive this run; they're reaped only when the session is
+  // deleted (see _reapSessionScratch below) or by the TTL sweep at
+  // boot for orphaned sessions whose conversation was abandoned.
+  // fs.rm(executionScratchDir, …) intentionally removed.
+
+  // Emit final result to pubsub subscribers (SSE clients, possibly
+  // on another process). Fire-and-forget — pubsub logs internally
+  // on failure; we never let the emit block the resolve.
+  publish(`exec_result:${executionId}`, {
+    phase: 'completed',
+    executionId,
+    status: finalStatus,
+    stdout: result.stdout || '',
+    stderr: result.stderr || '',
+    durationMs: result.durationMs || 0,
+    exitCode: result.exitCode,
+    errorMessage: result.errorMessage || null,
+    errorCode: result.errorCode,
+    artifactFileIds,                 // [{id, name, mimeType}] — was missing!
+  }).catch(() => { /* logged in pubsub */ });
+
+  return {
+    executionId,
+    status: finalStatus,
+    stdout: result.stdout || '',
+    stderr: result.stderr || '',
+    exitCode: result.exitCode,
+    durationMs: result.durationMs,
+    errorCode: result.errorCode,
+    errorMessage: result.errorMessage || null,
+    artifactFileIds,                 // [{id, name, mimeType}]
+    artifactCount: finalArtifactCount,
+  };
+}
 export const codeInterpreter = {
   /**
    * Run code through the pool. Persists a row in `executions`, runs
@@ -723,268 +1046,12 @@ export const codeInterpreter = {
    * Returns: { executionId, status, stdout, stderr, exitCode, durationMs,
    *            errorMessage, artifactFileIds, artifactCount }
    */
-  async execute(opts: ExecuteOpts) {
-    const requestStartedAt = Date.now();
-    if (EXEC_RUNNER === 'disabled') {
-      /* P_progress — still emit a terminal so the chat route can
-         clear its "queued" spinner even on the disabled path. */
-      if (typeof opts.onProgress === 'function') {
-        try { opts.onProgress({ phase: 'skipped', reason: 'runner_disabled' }); } catch (_) {}
-      }
-      return {
-        status: 'skipped',
-        errorCode: 'code_interpreter_disabled',
-        errorMessage: 'code_interpreter_disabled',
-        durationMs: Math.max(1, Date.now() - requestStartedAt),
-        artifactFileIds: [],
-        artifactCount: 0,
-      };
-    }
-    const userId = opts.userId || null;
-    const sessionId = opts.sessionId || null;
-    const code = String(opts.code || '');
-    const language = opts.language || 'python';
-    const timeoutMs = opts.timeoutMs || DEFAULT_TIMEOUT_MS;
-    const signal = opts.signal || null;
-    const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
-
-    /* P_exec-missing-user — the `executions.user_id` column is
-     * NOT NULL and references users(id). When a caller (currently
-     * the chat SSE route) hands us `opts.userId` of null/undefined,
-     * the previous code coerced it to null and let the INSERT fail
-     * at the DB layer with a confusing "Failed query: insert into
-     * executions… params: ,,…" that the model surfaced verbatim.
-     * Fail fast here with a structured error so the chat route can
-     * log it cleanly and tell the user that the request was not
-     * authenticated. Catching this at the boundary also makes the
-     * tool behave predictably if it is ever called from a context
-     * without an authenticated user (background job, test, etc). */
-    if (!userId) {
-      if (typeof onProgress === 'function') {
-        try { onProgress({ phase: 'skipped', reason: 'missing_user' }); } catch (_) {}
-      }
-      return {
-        status: 'failed',
-        errorCode: 'missing_user',
-        errorMessage: 'missing_user: code_interpreter requires an authenticated user (req.userId was not set on the call)',
-        stdout: '', stderr: '', exitCode: 1,
-        durationMs: Math.max(1, Date.now() - requestStartedAt),
-        artifacts: [], artifactFileIds: [], artifactCount: 0,
-      };
-    }
-
-    /* P_code-size-cap — reject oversized sources BEFORE we touch
-       the database, the scratch dir, or the worker pool. The user
-       sees a stable 'failed/code_too_large' status and we never
-       persist a 10 MB `executions.code` row. */
-    if (code.length > MAX_CODE_CHARS) {
-      const maxKb = Math.round(MAX_CODE_CHARS / 1024);
-      return {
-        status: 'failed',
-        errorCode: 'code_too_large',
-        errorMessage: `code_too_large: source exceeds ${maxKb} KB limit`,
-        stdout: '',
-        stderr: '',
-        exitCode: 1,
-        durationMs: Math.max(1, Date.now() - requestStartedAt),
-        artifacts: [],
-        artifactFileIds: [],
-        artifactCount: 0,
-      };
-    }
-
-    const executionStartedAt = Date.now();
-    let pool: PyodidePool | null;
-    try {
-      pool = await getPool();
-    } catch (err) {
-      const errorMessage = String(err && (err as Error).message || err);
-      return {
-        status: 'failed',
-        errorCode: 'pyodide_worker_boot_failed',
-        errorMessage,
-        stdout: '',
-        stderr: '',
-        exitCode: 1,
-        durationMs: Math.max(1, Date.now() - executionStartedAt),
-        artifacts: [],
-        artifactFileIds: [],
-        artifactCount: 0,
-      };
-    }
-    if (!pool) {
-      return {
-        status: 'skipped',
-        errorCode: 'code_interpreter_disabled',
-        errorMessage: 'code_interpreter_disabled',
-        artifactFileIds: [],
-        artifactCount: 0,
-      };
-    }
-
-    const db = getDb();
-
-    // Insert the running row up front so we have an ID for foreign keys
-    // and so the row exists even if the worker crashes mid-run.
-    const [inserted] = await db.insert(executions).values({
-      userId,
-      sessionId,
-      language,
-      code,
-      status: 'running',
-      startedAt: new Date(),
-    }).returning();
-    const executionId = inserted.id;
-
-    /* P_session-scoped-scratch — files written by an earlier execution
-       in the same conversation remain available in the next run's
-       cwd. Without this, the model would write transcendental.png in
-       run N, then FileNotFoundError on the same path in run N+1.
-       The session-scoped dir lives under SCRATCH_DIR/<sessionId> and
-       is reused across every execution in the conversation. Reaping
-       is deferred to session-delete (deleteSession routes) plus a
-       boot-time TTL sweep for orphaned sessions. */
-    const sessionScratchDir = path.join(SCRATCH_DIR, sessionId || executionId);
-    let result: WorkerResult;
-    try {
-      await fs.mkdir(sessionScratchDir, { recursive: true });
-      /* P_scratch-header — prepend a small stdout header that lists
-         the current files in the scratch dir so the AI knows what's
-         available without guessing. This runs BEFORE the user's code
-         so the listing appears at the top of stdout. Use a unique
-         marker name that cannot collide with user code. */
-      const scratchMarker = '___socrates_scratch_' + executionId.replace(/-/g, '_') + '___';
-      const scratchHeader = 'import os; ' + scratchMarker + ' = os.getcwd(); print(f\'[scratch] cwd: {os.listdir(' + scratchMarker + ') if os.path.isdir(' + scratchMarker + ') else "(not a dir)"}\')';
-      const wrappedCode = code.includes(scratchMarker) ? code : scratchHeader + '\n' + code;
-      result = await runOnWorker({
-        executionId,
-        code: wrappedCode,
-        timeoutMs,
-        signal,
-        scratchDir: sessionScratchDir,
-        maxOutputBytes: MAX_OUTPUT_BYTES,
-        onProgress,
-      });
-    } catch (err) {
-      const typed = err as Error & { code?: string; status?: string; durationMs?: number };
-      const msg = String(typed && typed.message || err);
-      const status = typed.status || 'failed';
-      const errorCode = typed.code || (status === 'timeout' ? 'execution_timeout' : 'code_execution_failed');
-      result = {
-        status,
-        errorCode,
-        errorMessage: status === 'timeout'
-          ? 'execution_timeout'
-          : status === 'cancelled'
-            ? 'cancelled_by_caller'
-            : msg,
-        stdout: '',
-        stderr: '',
-        exitCode: status === 'timeout' ? 124 : status === 'cancelled' ? 130 : 1,
-        durationMs: Math.max(1, typed.durationMs ?? Date.now() - executionStartedAt),
-        artifacts: [],
-      };
-      // Emit failure result to pubsub subscribers (SSE clients).
-      publish(`exec_result:${executionId}`, {
-        phase: 'failed',
-        executionId,
-        status: result.status,
-        errorMessage: result.errorMessage,
-        stdout: '',
-        stderr: '',
-        durationMs: result.durationMs,
-        errorCode: result.errorCode,
-      }).catch(() => { /* logged in pubsub */ });
-    }
-
-    // Persist artifacts. Each file in result.artifacts is something the
-    // user's Python wrote into the artifacts/ subdir.
-    const artifactFileIds: any[] = [];
-    const persistedArtifacts: any[] = [];
-    for (const art of (result.artifacts || [])) {
-      if (art.size > MAX_ARTIFACT_BYTES) {
-        // Too big — drop it (still count as a failed artifact so the
-        // user can see why their PNG didn't show).
-        persistedArtifacts.push({ ...art, dropped: true, reason: 'too_large' });
-        continue;
-      }
-      try {
-        const { id: fileId, sha256, mimeType } = await persistArtifact({
-          userId,
-          sessionId,
-          executionId,
-          sourcePath: art.absPath,
-          originalName: art.name,
-          size: art.size,
-        });
-        artifactFileIds.push({ id: fileId, name: art.name, mimeType });
-        persistedArtifacts.push({ ...art, fileId, mimeType });
-      } catch (err) {
-        persistedArtifacts.push({ ...art, error: String(err && (err as Error).message || err) });
-      }
-    }
-
-    const finalStatus = result.status || 'failed';
-    const finalArtifactCount = artifactFileIds.length;
-
-    // Update the execution row.
-    await db.update(executions).set({
-      status: finalStatus,
-      exitCode: result.exitCode ?? null,
-      durationMs: result.durationMs ?? null,
-      stdout: (result.stdout || '').slice(0, MAX_OUTPUT_BYTES),
-      stderr: (result.stderr || '').slice(0, MAX_OUTPUT_BYTES),
-      artifactCount: finalArtifactCount,
-      completedAt: new Date(),
-    }).where(eq(executions.id, executionId));
-
-    // Audit. Best-effort — never throw out of execute() on audit failure.
-    if (userId) {
-      recordAudit(userId, 'code_execution', {
-        executionId,
-        language,
-        status: finalStatus,
-        exitCode: result.exitCode,
-        durationMs: result.durationMs,
-        artifactCount: finalArtifactCount,
-        errorMessage: result.errorMessage || null,
-      }).catch(() => {});
-    }
-
-    // P_session-scoped-scratch — files in the session scratch dir
-    // outlive this run; they're reaped only when the session is
-    // deleted (see _reapSessionScratch below) or by the TTL sweep at
-    // boot for orphaned sessions whose conversation was abandoned.
-    // fs.rm(executionScratchDir, …) intentionally removed.
-
-    // Emit final result to pubsub subscribers (SSE clients, possibly
-    // on another process). Fire-and-forget — pubsub logs internally
-    // on failure; we never let the emit block the resolve.
-    publish(`exec_result:${executionId}`, {
-      phase: 'completed',
-      executionId,
-      status: finalStatus,
-      stdout: result.stdout || '',
-      stderr: result.stderr || '',
-      durationMs: result.durationMs || 0,
-      exitCode: result.exitCode,
-      errorMessage: result.errorMessage || null,
-      errorCode: result.errorCode,
-      artifactFileIds,                 // [{id, name, mimeType}] — was missing!
-    }).catch(() => { /* logged in pubsub */ });
-
-    return {
-      executionId,
-      status: finalStatus,
-      stdout: result.stdout || '',
-      stderr: result.stderr || '',
-      exitCode: result.exitCode,
-      durationMs: result.durationMs,
-      errorCode: result.errorCode,
-      errorMessage: result.errorMessage || null,
-      artifactFileIds,                 // [{id, name, mimeType}]
-      artifactCount: finalArtifactCount,
-    };
+  async execute(opts: ExecuteOpts): Promise<ExecutionResponse> {
+    const rawSessionId = opts.sessionId || null;
+    /* Serialize full execution lifecycles, including artifact persistence.
+       Doing only runOnWorker() would still let a later call observe a file
+       before its predecessor had copied/recorded the corresponding artifact. */
+    return sessionExecutionLock.run(rawSessionId, () => executeCode(opts));
   },
 
   /**
@@ -1021,16 +1088,36 @@ export const codeInterpreter = {
     scratchDir: SCRATCH_DIR,
     runner: EXEC_RUNNER,
   },
+  _internal: {
+    sessionExecutionLock,
+  },
 
   /* P_session-scoped-scratch — delete the session's scratch dir
      when the conversation is deleted. Best-effort: filesystem may
      already be gone (TTL sweep, server crash, etc.). Safe to call
      repeatedly. */
-  async reapSessionScratch(sessionId?: string | null) {
-    if (!sessionId) return;
-    const dir = path.join(SCRATCH_DIR, sessionId);
-    try { await fs.rm(dir, { recursive: true, force: true }); }
-    catch (e) { /* logged below if non-ENOENT */ }
+  async reapSessionScratch(sessionId?: string | null, userId?: string | null) {
+    if (!sessionId || !isUuid(sessionId)) return;
+    if (userId && isUuid(userId)) {
+      await fs.rm(sessionScratchPath(userId, sessionId), { recursive: true, force: true }).catch(() => {});
+      return;
+    }
+
+    /* Compatibility for callers that only know the session ID. We never use
+       this path for execution; it merely clears legacy root-layout dirs and
+       discovers the owner namespace during deletion/cleanup. UUID validation
+       above keeps every joined path beneath SCRATCH_DIR. */
+    await fs.rm(path.join(SCRATCH_DIR, sessionId), { recursive: true, force: true }).catch(() => {});
+    let owners: import('node:fs').Dirent[] = [];
+    try { owners = await fs.readdir(SCRATCH_DIR, { withFileTypes: true }); } catch { return; }
+    await Promise.all(owners
+      .filter((entry) => entry.isDirectory() && isUuid(entry.name))
+      .map((entry) => fs.rm(path.join(SCRATCH_DIR, entry.name, sessionId), { recursive: true, force: true }).catch(() => {})));
+  },
+
+  async reapExecutionScratch(executionId?: string | null, userId?: string | null) {
+    if (!executionId || !userId || !isUuid(executionId) || !isUuid(userId)) return;
+    await fs.rm(executionScratchPath(userId, executionId), { recursive: true, force: true }).catch(() => {});
   },
 
   /* TTL sweep — remove session dirs whose conversation hasn't run
@@ -1043,19 +1130,44 @@ export const codeInterpreter = {
     const ttlMs = days * 24 * 60 * 60 * 1000;
     const cutoff = Date.now() - ttlMs;
     let removed = 0;
-    let entries: any[] = [];
-    try { entries = await fs.readdir(SCRATCH_DIR, { withFileTypes: true }); }
-    catch (e) { return { removed: 0, error: String(e && (e as Error).message || e) }; }
-    for (const ent of entries) {
-      if (!ent.isDirectory()) continue;
-      const dir = path.join(SCRATCH_DIR, ent.name);
+    const reapIfStale = async (dir: string) => {
       try {
         const st = await fs.stat(dir);
-        if (st.mtimeMs >= cutoff) continue;
+        if (st.mtimeMs >= cutoff) return;
         await fs.rm(dir, { recursive: true, force: true });
         removed++;
       } catch (_) { /* skip — race with delete or transient ENOENT */ }
-    }
+    };
+    const visit = async (dir: string, depth: number): Promise<void> => {
+      let entries: import('node:fs').Dirent[];
+      try { entries = await fs.readdir(dir, { withFileTypes: true }); }
+      catch (_) { return; }
+      // A scratch root always owns an artifacts child. Treat it as a leaf
+      // rather than recursing into artifact files themselves.
+      if (entries.some((entry) => entry.isDirectory() && entry.name === 'artifacts')) {
+        await reapIfStale(dir);
+        return;
+      }
+      /* Direct UUID children of SCRATCH_DIR are ambiguous during the
+         migration: old installs used <root>/<session>, while the new layout
+         uses <root>/<user>. A legacy session has an artifacts child and was
+         handled above. Otherwise treat this level as an owner namespace so
+         an active user's directory is never reaped merely because the parent
+         mtime is older than its active session child. */
+      if (depth >= 2 && isUuid(path.basename(dir))) {
+        await reapIfStale(dir);
+        return;
+      }
+      // New layout is <user>/<session> or <user>/executions/<execution>.
+      // Keep a small finite walk so malformed filesystem contents cannot turn
+      // a periodic cleanup into an unbounded recursive scan.
+      if (depth >= 3) return;
+      await Promise.all(entries
+        .filter((entry) => entry.isDirectory() && (isUuid(entry.name) || entry.name === 'executions'))
+        .map((entry) => visit(path.join(dir, entry.name), depth + 1)));
+    };
+    try { await visit(SCRATCH_DIR, 0); }
+    catch (e) { return { removed: 0, error: String(e && (e as Error).message || e) }; }
     if (removed > 0) console.log(`[code-interpreter] TTL sweep reaped ${removed} stale session scratch dir(s) (older than ${days}d)`);
     return { removed };
   },

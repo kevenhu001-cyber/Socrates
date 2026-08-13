@@ -11,6 +11,10 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { codeInterpreter, CODE_INTERPRETER_TOOL, resolvePyodideWorkerEntry } from '../src/services/codeInterpreter.js';
 import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 describe('codeInterpreter.execute — input guard rails', () => {
   test('resolves the compiled worker or the TypeScript worker in source mode', () => {
@@ -20,6 +24,14 @@ describe('codeInterpreter.execute — input guard rails', () => {
     if (entry.file.endsWith('.ts')) {
       assert.ok(entry.execArgv?.includes('tsx'));
     }
+  });
+
+  test('the TypeScript worker remains valid ESM without CommonJS require()', async () => {
+    const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/services/pyodideWorker.ts');
+    const workerSource = await fsPromises.readFile(source, 'utf8');
+    assert.doesNotMatch(workerSource, /require\s*\(/);
+    assert.match(workerSource, /import os from 'node:os'/);
+    assert.equal(typeof os.tmpdir(), 'string');
   });
 
   test('rejects sources larger than MAX_CODE_CHARS without touching the pool', async () => {

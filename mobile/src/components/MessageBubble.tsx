@@ -11,7 +11,7 @@ import { messagesApi } from '../data/api/client';
 import { setClipboardText } from '../native/clipboard';
 import * as Speech from '../native/speech';
 
-export function MessageBubble({ message }: { message: Message }) {
+export const MessageBubble = React.memo(function MessageBubble({ message }: { message: Message }) {
   const { colors, radius, spacing, typography } = useTheme();
   const t = useT();
   const isUser = message.role === 'user';
@@ -87,7 +87,7 @@ export function MessageBubble({ message }: { message: Message }) {
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', marginVertical: 5 },

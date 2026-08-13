@@ -21,6 +21,7 @@
 import { parentPort } from 'node:worker_threads';
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { loadPyodide, type PyodideInterface, type TypedArray } from 'pyodide';
 
@@ -74,7 +75,7 @@ const PRELOAD_PACKAGES = ['numpy', 'pandas', 'matplotlib'];
    which then ate into the first call's 30s user-code budget and
    surfaced as a spurious "代码执行超时" error. */
 const CJK_FONT_HOST_DIR = process.env.EXEC_CJK_FONT_DIR
-  || path.join(process.env.NODE_ENV === 'production' ? '/var/lib/socrates' : require('node:os').tmpdir(), 'socrates-cjk-fonts');
+  || path.join(process.env.NODE_ENV === 'production' ? '/var/lib/socrates' : os.tmpdir(), 'socrates-cjk-fonts');
 const CJK_FONT_FILENAME = 'NotoSansSC-Regular.otf';
 const CJK_FONT_URL = process.env.EXEC_CJK_FONT_URL
   || 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf';

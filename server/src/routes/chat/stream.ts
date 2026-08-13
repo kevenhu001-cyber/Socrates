@@ -27,7 +27,6 @@
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
 import { sessions, executions, connectorConnections, projectConnectorConnections } from '../../db/schema.js';
-import { isUuid } from '../../lib/validate.js';
 import { getExecutionsPerDay } from '../../lib/tiers.js';
 import { isToolFinishReason, streamChatCompletion } from '../../services/llm.js';
 import { codeInterpreter } from '../../services/codeInterpreter.js';
@@ -36,6 +35,7 @@ import { fetchBatch } from '../../services/fetchBatch.js';
 import { executeVisualization } from '../../services/visualization.js';
 import { executePlan, executeSpec } from '../../services/planning.js';
 import { createToolRegistry } from '../../services/toolRegistry.js';
+import { dispatchToolCalls } from '../../services/toolDispatch.js';
 import {
   normalizeToolCalls,
   parseToolArguments,
@@ -56,6 +56,7 @@ import {
   chatRateLimitDispatch,
   SSE_PRIME,
 } from './helpers.js';
+import { parseChatSessionId, requireOwnedSession } from '../../lib/sessionOwnership.js';
 
 import type { Router } from 'express';
 
@@ -123,6 +124,11 @@ export function registerStreamRoute(router: Router) {
    * gated identically. */
   router.post('/stream', requireAuth, chatRateLimitDispatch, async (req, res, next) => {
     try {
+      const sessionIdFromQuery = parseChatSessionId(req.query.sessionId);
+      if (sessionIdFromQuery) {
+        await requireOwnedSession(getDb(), sessionIdFromQuery, req.userId!);
+      }
+
       const prep = await prepareChatRequest(req, res);
       if (!prep.ok) return;
       const { messages: finalMessages, provider, safeExtraBody, mode, temperature, maxTokens, reasoning_effort } = prep.payload;
@@ -190,9 +196,6 @@ export function registerStreamRoute(router: Router) {
 
       const abortController = new AbortController();
       let streamCompleted = false;  // P_streaming-survival — prevents close handler from overwriting cleared streaming_text
-      const sessionIdFromQuery = typeof req.query.sessionId === 'string' && isUuid(req.query.sessionId)
-        ? req.query.sessionId
-        : null;
 
       req.on('close', () => {
         trackSseConnection(req.app, -1);
@@ -210,7 +213,7 @@ export function registerStreamRoute(router: Router) {
               streamingText: fullText || null,
               streamingReasoning: fullReasoning || null,
             })
-            .where(eq(sessions.id, sessionIdFromQuery))
+            .where(and(eq(sessions.id, sessionIdFromQuery), eq(sessions.userId, req.userId!)))
             .catch((err) => console.error('[chat/stream] save streaming text on close failed:', err.message));
         }
       });
@@ -450,13 +453,13 @@ export function registerStreamRoute(router: Router) {
         // LLM streaming, skip tool execution and terminate the loop.
         if (abortController.signal.aborted) break;
 
-        // Run tool calls concurrently to cut turn latency when a model
-        // emits several in one turn (e.g. web_search + render_visualization).
-        // Each invocation resolves to its own role:'tool' message; the
-        // results are re-appended in the original tool_call order so the
-        // transcript stays deterministic. SSE frames from different tools
-        // may interleave, but the client correlates every frame by the
-        // tool_call id it carries.
+        // Run independent tool calls concurrently to cut turn latency when a
+        // model emits several in one turn (e.g. web_search + visualization).
+        // The registry marks code_interpreter sessionSerial because its
+        // scratch directory is mutable; dispatchToolCalls queues those calls
+        // while retaining the original result order for the provider hop.
+        // SSE frames from independent tools may interleave, but the client
+        // correlates every frame by tool_call id.
         const runToolCall = async (tc: ToolCall): Promise<StreamMessage> => {
           let result: ToolResult;
           let toolName: string | undefined = undefined;
@@ -828,7 +831,19 @@ data: ${JSON.stringify({
               };
               const projectToolResult = await executeProjectConnectorTool(toolName, args, req.userId!, PROJECT_TOOL_TO_PROVIDER[toolName] ?? null);
               const ok = projectToolResult.status === 'completed';
-              writeSse(`event: tool_result\ndata: ${JSON.stringify({ id: tc.id, ok, status: projectToolResult.status, output: projectToolResult.output || '', error: projectToolResult.error || null, errorCode: projectToolResult.errorCode || null, retryable: false, userMessage: projectToolResult.userMessage || null })}\n\n`);
+              writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                id: tc.id,
+                ok,
+                status: projectToolResult.status,
+                output: projectToolResult.output || '',
+                error: projectToolResult.error || null,
+                errorCode: projectToolResult.errorCode || null,
+                retryable: false,
+                userMessage: projectToolResult.userMessage || null,
+                // Keep the model-facing correction detail and the mobile card
+                // aligned for rejected connector argument objects.
+                detail: projectToolResult.error || null,
+              })}\n\n`);
               result = projectToolResult;
             } else if (Object.values(CONNECTOR_TOOL_NAMES).includes(toolName)) {
               // Connector tools — execute via the shared connectorTools executor.
@@ -973,7 +988,12 @@ data: ${JSON.stringify({
           };
         };
 
-        const toolMessages = await Promise.all(boundedToolCalls.map(runToolCall));
+        const toolMessages = await dispatchToolCalls(
+          boundedToolCalls,
+          (tc) => tc.function?.name || '',
+          toolRegistry,
+          runToolCall,
+        );
         workingMessages = workingMessages.concat(toolMessages);
       }
 
@@ -1026,7 +1046,7 @@ data: ${JSON.stringify({
         const db = getDb();
         db.update(sessions)
           .set({ streamingText: null, streamingReasoning: null })
-          .where(eq(sessions.id, sessionIdFromQuery))
+          .where(and(eq(sessions.id, sessionIdFromQuery), eq(sessions.userId, req.userId!)))
           .catch(() => {});
       }
     } catch (err) { next(err); }

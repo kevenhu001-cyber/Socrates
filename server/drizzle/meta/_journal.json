@@ -169,6 +169,13 @@
       "when": 1787500000000,
       "tag": "0023_teaching_state",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1787586400000,
+      "tag": "0024_active_session_index",
+      "breakpoints": true
     }
   ]
 }

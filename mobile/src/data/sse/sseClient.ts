@@ -15,6 +15,10 @@ export async function startChatStream(sessionId: string, request: ChatRequest, h
 
   const connect = async (): Promise<void> => {
     const tokens = await readTokens();
+    // A 401 refresh is asynchronous. The user may have pressed Stop while
+    // secure storage was being read, in which case starting a fresh XHR would
+    // resurrect an intentionally cancelled stream.
+    if (closed) return;
     xhr = new XMLHttpRequest() as XhrLike;
     let buffer = '';
     let cursor = 0;
@@ -48,7 +52,13 @@ export async function startChatStream(sessionId: string, request: ChatRequest, h
         if (closed) return;
         if (status === 401 && attempt === 0 && !receivedEvent) {
           attempt += 1;
-          void refreshAccessToken().then((refreshed) => refreshed ? connect() : handlers.onError?.('Session expired')).catch(() => handlers.onError?.('Session expired'));
+          void refreshAccessToken().then((refreshed) => {
+            if (closed) return;
+            if (refreshed) return connect();
+            handlers.onError?.('Session expired');
+          }).catch(() => {
+            if (!closed) handlers.onError?.('Session expired');
+          });
           return;
         }
         if (status >= 400) handlers.onError?.(`Stream failed (${status})`);
@@ -59,7 +69,9 @@ export async function startChatStream(sessionId: string, request: ChatRequest, h
       xhr = null;
       if (attempt === 0 && !receivedEvent) {
         attempt += 1;
-        void connect().catch(() => handlers.onError?.('Network unavailable'));
+        void connect().catch(() => {
+          if (!closed) handlers.onError?.('Network unavailable');
+        });
       } else handlers.onError?.('Network unavailable');
     };
     xhr.onabort = () => { xhr = null; };

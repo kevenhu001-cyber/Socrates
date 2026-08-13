@@ -79,6 +79,19 @@ const SessionPayloadSchema = z.object({
       input: z.any().optional().nullable(),
       output: z.string().max(500_000).optional().nullable(),
       isError: z.boolean().optional().nullable(),
+      /* Preserve structured native-tool output and bounded execution metadata
+       * so a reload has the same cards as the live SSE stream. */
+      plan: z.any().optional().nullable(),
+      spec: z.any().optional().nullable(),
+      executionId: z.string().max(200).optional().nullable(),
+      durationMs: z.number().nonnegative().max(86_400_000).optional().nullable(),
+      progressPhase: z.string().max(200).optional().nullable(),
+      argumentsText: z.string().max(500_000).optional().nullable(),
+      stderr: z.string().max(500_000).optional().nullable(),
+      errorText: z.string().max(100_000).optional().nullable(),
+      userMessage: z.string().max(500_000).optional().nullable(),
+      detail: z.string().max(100_000).optional().nullable(),
+      retryable: z.boolean().optional().nullable(),
       artifacts: z.array(z.object({
         id: z.string().max(100),
         mimeType: z.string().max(200).optional().nullable(),
@@ -373,6 +386,17 @@ router.post('/', writeLimiter, async (req, res, next) => {
                     input: tc.input == null ? null : tc.input,
                     output: tc.output == null ? null : String(tc.output),
                     isError: tc.isError === true,
+                    plan: tc.plan == null ? null : tc.plan,
+                    spec: tc.spec == null ? null : tc.spec,
+                    executionId: tc.executionId == null ? null : String(tc.executionId),
+                    durationMs: typeof tc.durationMs === 'number' ? tc.durationMs : null,
+                    progressPhase: tc.progressPhase == null ? null : String(tc.progressPhase),
+                    argumentsText: tc.argumentsText == null ? null : String(tc.argumentsText),
+                    stderr: tc.stderr == null ? null : String(tc.stderr),
+                    errorText: tc.errorText == null ? null : String(tc.errorText),
+                    userMessage: tc.userMessage == null ? null : String(tc.userMessage),
+                    detail: tc.detail == null ? null : String(tc.detail),
+                    retryable: tc.retryable === true,
                     artifacts: Array.isArray(tc.artifacts)
                       ? tc.artifacts.slice(0, 20).map(function(a) {
                           return { id: String(a.id || ''), mimeType: a.mimeType || null, name: a.name || null };
@@ -548,7 +572,7 @@ router.delete('/:id', async (req, res, next) => {
        conversation was using. Best-effort: if the worker crashed
        mid-run the dir might already be gone, and the TTL sweep
        would catch that case anyway. */
-    await codeInterpreter.reapSessionScratch(req.params.id).catch(() => {});
+    await codeInterpreter.reapSessionScratch(req.params.id, req.userId!).catch(() => {});
 
     return res.status(204).end();
   } catch (err) { next(err); }
@@ -602,7 +626,7 @@ router.delete('/', async (req, res, next) => {
     /* P_session-scoped-scratch — reap every cleared session's
        scratch dir. Parallel: each fs.rm is independent. */
     await Promise.all(
-      allDeletedIds.map(id => codeInterpreter.reapSessionScratch(id).catch(() => {}))
+      allDeletedIds.map(id => codeInterpreter.reapSessionScratch(id, req.userId!).catch(() => {}))
     );
 
     return res.json({ ok: true, deleted });

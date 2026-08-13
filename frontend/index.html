@@ -253,12 +253,12 @@
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 11v4"/><circle cx="12" cy="8" r=".5" fill="currentColor"/></svg>
         </div>
         <h2 class="auth-title">Email code login</h2>
-        <p class="auth-lede">Enter your email to receive a 6-digit login code.</p>
+        <p class="auth-lede">Enter your email to receive an 8-character login code.</p>
         <label class="auth-label" for="authCodeEmail">Email</label>
         <input class="auth-input" id="authCodeEmail" name="authCodeEmail" type="email" autocomplete="email" required placeholder="you@example.com">
         <div id="authCodeCodeWrap" class="hidden">
-          <label class="auth-label" for="authCodeInput">6-digit code</label>
-          <input class="auth-input auth-code-input" id="authCodeInput" name="authCodeInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="000000">
+          <label class="auth-label" for="authCodeInput">8-character code</label>
+          <input class="auth-input auth-code-input" id="authCodeInput" name="authCodeInput" type="text" inputmode="text" pattern="[A-HJ-KM-NP-Z2-9]{8}" maxlength="8" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="ABCD2345">
           <p class="auth-msg hidden" id="authCodeSentMsg">We sent a code to <strong id="authCodeSentEmail"></strong>. It expires in 10 minutes.</p>
         </div>
         <div class="auth-error" id="authCodeError"></div>

@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { useTheme } from '../theme/ThemeProvider';
 import { native } from '../native/native';
-import { escapeHtml } from './markdown';
+import { escapeHtml, safeHref } from './markdown';
 
 // react-native-webview's exported ref type is narrower than the RN 0.86 JSX
 // definitions under strict mode; the alias keeps this boundary typed.
@@ -216,7 +216,8 @@ a{color:${colors.accent}}
     } else if (message.type === 'error') {
       setFailed(true);
     } else if (message.type === 'openLink' && message.url) {
-      void native.openBrowser(message.url);
+      const href = safeHref(message.url);
+      if (href) void native.openBrowser(href);
     }
   };
 
@@ -233,7 +234,7 @@ a{color:${colors.accent}}
     <View style={[styles.host, { height }]}>
       <NativeWebView
         ref={ref}
-        originWhitelist={['*']}
+        originWhitelist={['https://localhost/']}
         source={{ html: source, baseUrl: 'https://localhost/' }}
         onMessage={handleMessage}
         onError={() => setFailed(true)}
@@ -249,7 +250,8 @@ a{color:${colors.accent}}
         // The page never navigates; anything trying to is a link the user tapped.
         onShouldStartLoadWithRequest={(request: { url: string }) => {
           if (request.url === 'about:blank' || request.url.startsWith('https://localhost/')) return true;
-          void native.openBrowser(request.url);
+          const href = safeHref(request.url);
+          if (href) void native.openBrowser(href);
           return false;
         }}
         style={styles.webview}

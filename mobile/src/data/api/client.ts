@@ -15,6 +15,7 @@ import type {
 } from '@socrates/contracts';
 import { clearTokens, readTokens, writeCachedUser, writeTokens } from './tokenStore';
 import { API_BASE_URL, AUTH_BASE_URL, WEB_BASE_URL } from './config';
+import { shouldRefreshAfterUnauthorized } from './retryPolicy';
 
 export { API_BASE_URL, AUTH_BASE_URL, WEB_BASE_URL } from './config';
 
@@ -77,7 +78,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retry 
     throw new ApiError(0, error instanceof Error ? error.message : 'Network unavailable', { code: 'NETWORK' });
   }
 
-  if (response.status === 401 && retry && !path.includes('/auth/mobile/')) {
+  if (response.status === 401 && retry && shouldRefreshAfterUnauthorized(path)) {
     if (await refreshAccessToken()) return apiRequest<T>(path, init, false);
   }
 
