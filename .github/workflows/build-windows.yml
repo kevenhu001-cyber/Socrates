@@ -25,6 +25,13 @@ on:
           - debug
           - release
         default: debug
+  workflow_call:
+    inputs:
+      build_profile:
+        description: Windows package profile
+        required: false
+        type: string
+        default: debug
 
 permissions:
   contents: read
@@ -44,7 +51,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
     runs-on: windows-latest
     env:
-      BUILD_PROFILE: ${{ github.event_name == 'workflow_dispatch' && inputs.build_profile || 'release' }}
+      BUILD_PROFILE: ${{ inputs.build_profile || 'release' }}
     steps:
       - uses: actions/checkout@v4
 
