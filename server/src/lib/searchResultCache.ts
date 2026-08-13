@@ -23,6 +23,10 @@
 import { createHash } from 'node:crypto';
 
 const _cache = new Map();
+/* Concurrent identical searches should share the same upstream work. This is
+ * deliberately separate from the completed-result LRU: promises are removed
+ * as soon as they settle, while completed responses retain the normal TTL. */
+const _inFlight = new Map<string, Promise<unknown>>();
 const TTL_MS = 5 * 60 * 1000;
 const MAX_ENTRIES = 256;
 const MAX_QUERY_LEN = 500;
@@ -48,6 +52,36 @@ function makeKey(
   h.update('\x1f');
   h.update(String(apiKeyHint || ''));
   return h.digest('hex');
+}
+
+export function keyFor({
+  userId,
+  query,
+  count,
+  locale,
+  apiKeyHint,
+}: {
+  userId: string | undefined;
+  query: string;
+  count: number;
+  locale: string | null;
+  apiKeyHint: string;
+}) {
+  return makeKey(userId, query, count, locale, apiKeyHint);
+}
+
+/** Return the one currently running operation for `key`, or start one.
+ * Errors intentionally are not cached: a later request can retry a transient
+ * provider/network failure. */
+export function getOrCreateInFlight<T>(key: string, factory: () => Promise<T>): Promise<T> {
+  const existing = _inFlight.get(key) as Promise<T> | undefined;
+  if (existing) return existing;
+  const promise = Promise.resolve().then(factory);
+  _inFlight.set(key, promise);
+  void promise.finally(() => {
+    if (_inFlight.get(key) === promise) _inFlight.delete(key);
+  }).catch(() => undefined);
+  return promise;
 }
 
 export function get({
@@ -107,8 +141,15 @@ export function set({
 /**
  * Drop everything (e.g. on global config change).
  */
-export function clear() { _cache.clear(); }
+export function clear() {
+  _cache.clear();
+  /* `clear()` is primarily a test/config-reset hook.  Dropping the map
+   * references does not cancel callers already awaiting their shared work,
+   * but it prevents a stale in-flight promise from being reused after a
+   * configuration reset. */
+  _inFlight.clear();
+}
 
 export function stats() {
-  return { entries: _cache.size };
+  return { entries: _cache.size, inFlight: _inFlight.size };
 }

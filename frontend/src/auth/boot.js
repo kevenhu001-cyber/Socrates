@@ -8,6 +8,7 @@
    apiFetch, etc.). */
 
 import { apiFetch } from '../util/api.js';
+import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.js';
 
 /* Hoisted flag — `var` so it's available to refreshApiConfig()
    even if the boot IIFE completes before that function is defined. */
@@ -153,6 +154,10 @@ export async function authBoot(){
     try{window.markAuthSuccess&&window.markAuthSuccess()}catch(_){}
     if(typeof window.afterAuthEnter==="function")await window.afterAuthEnter();
     window.hideGate&&window.hideGate();
+    /* The one-time mobile web-session consume route leaves an allow-listed
+       target in the query. Open it only after normal authenticated hydration
+       so its list data and controls match a first-party browser visit. */
+    openMobileTargetFromUrl();
     return;
   }
   /* /me never resolved with a user — surface a visible error and

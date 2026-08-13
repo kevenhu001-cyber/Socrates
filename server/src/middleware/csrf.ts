@@ -2,6 +2,19 @@ import crypto from 'node:crypto';
 import type { Request, Response, NextFunction, CookieOptions } from 'express';
 import { Forbidden } from '../lib/errors.js';
 import { shouldUseSharedDomain, SHARED_COOKIE_DOMAIN } from '../lib/cookieEnv.js';
+import { isMobileAccessToken } from '../services/auth.js';
+
+/* These routes authenticate with an explicit body credential and never read
+ * the ambient browser sid. Exempting them avoids a stale WebView csrf cookie
+ * blocking React Native refresh/login requests, without weakening a
+ * cookie-authenticated browser action. */
+const MOBILE_CREDENTIAL_PATHS = new Set([
+  '/api/auth/mobile/login',
+  '/api/auth/mobile/refresh',
+  '/api/auth/mobile/login-with-code',
+  '/api/auth/mobile/logout',
+  '/api/auth/mobile/oauth/exchange',
+]);
 
 function timingSafeEqual(a: unknown, b: unknown): boolean {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
@@ -112,6 +125,15 @@ export function setCsrfToken(req: Request, res: Response) {
  *       only arise if an attacker injects a csrf cookie via Set-
  *       Cookie — which a same-origin XSS could already leverage for
  *       much worse, so we treat that as a forced sign to investigate.
+ *
+ *   (d) A syntactically valid `Authorization: Bearer ma.*` mobile access
+ *       credential bypasses this check. Bearer values are explicitly supplied
+ *       by the caller rather than ambient browser credentials, so CSRF does
+ *       not apply. Refresh and one-time capability tokens do not qualify.
+ *
+ *   (e) Public mobile credential-exchange routes are also skipped. They do
+ *       not use the ambient browser sid; their supplied password, email code,
+ *       refresh token, or OAuth capability is the credential instead.
  */
 export function csrfProtection(req: Request, res: Response, next: NextFunction) {
   // Skip for safe methods
@@ -129,6 +151,17 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
   // request path (/api/status/subscribe), not the router-relative one.
   if (req.path === '/api/status/subscribe' || req.path === '/api/status/confirm') {
     return next();
+  }
+
+  if (MOBILE_CREDENTIAL_PATHS.has(req.path)) return next();
+
+  // A React Native request may coexist with an old WebView csrf cookie. Its
+  // explicit access bearer remains safe without a double-submit header; do
+  // not let a stale ambient cookie turn that valid request into a 403.
+  const authorization = req.headers.authorization;
+  if (typeof authorization === 'string') {
+    const bearer = /^Bearer ([^\s,]+)$/i.exec(authorization.trim());
+    if (bearer && isMobileAccessToken(bearer[1])) return next();
   }
 
   const headerToken = req.headers['x-csrf-token'];

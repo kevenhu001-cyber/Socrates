@@ -12,6 +12,14 @@
    sequence. */
 
 import { apiFetch } from '../util/api.js';
+import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.js';
+
+function isEmbeddedNativeWebView(){
+  try{
+    var bridge=window.ReactNativeWebView;
+    return !!(bridge&&typeof bridge.postMessage==="function");
+  }catch(_){return false}
+}
 
 /* ── Gate display helpers ── */
 
@@ -30,6 +38,11 @@ export function showGate(){
   try{document.documentElement.dataset.bootState="auth"}catch(_){}
   var g=document.getElementById("authGate");if(g)g.classList.remove("hidden");
   var s=document.getElementById("appShell");if(s)s.classList.add("hidden");
+  /* A normal browser reaches the auth gate during first paint and during
+   * local login flows.  Only tell the native shell that its cookie expired
+   * when this is actually a WebView hand-off; otherwise a regular desktop
+   * browser does not see an irrelevant bridge message. */
+  if(isEmbeddedNativeWebView())notifyEmbeddedAuthExpired();
 }
 
 export function showAuthView(id){
@@ -379,10 +392,13 @@ export async function submitAuthSendCode(){
 
 export async function submitAuthLoginWithCode(){
   var email=document.getElementById("authCodeEmail").value.trim();
-  var code=document.getElementById("authCodeInput").value.trim();
+  var code=document.getElementById("authCodeInput").value.trim().toUpperCase();
   var guest=document.getElementById("authCodeGuestCheckbox").checked;
   setAuthError("authCodeError","");
-  if(!code||code.length!==6)return setAuthError("authCodeError","Please enter the 6-digit code.");
+  /* Login codes are eight unambiguous alphanumeric characters
+     (server/lib/crypto.ts). Keep the client validator in lockstep so it
+     never rejects a valid code before it reaches the server. */
+  if(!/^[A-HJ-KM-NP-Z2-9]{8}$/.test(code))return setAuthError("authCodeError","Please enter the 8-character code.");
   var btn=document.getElementById("authCodeLoginBtn");btn.disabled=true;btn.textContent="Logging in…";
   var markAuthSuccess=window.markAuthSuccess;
   try{

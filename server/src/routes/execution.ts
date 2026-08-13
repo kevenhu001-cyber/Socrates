@@ -96,12 +96,19 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
         res.write(`event: result\ndata: ${JSON.stringify(event)}\n\n`);
         (res as { flush?: () => void }).flush?.();
       } catch {}
+      /* A result is terminal. Leaving this EventSource open kept its
+       * subscriber and keepalive timer alive until the mobile/web client
+       * happened to close it, which accumulated idle sockets during a busy
+       * code session. Finish it here; the close handler below performs the
+       * common unsubscribe and metric cleanup. */
+      if (!res.writableEnded && !res.destroyed) res.end();
     };
     const onError = (event: any) => {
       try {
         res.write(`event: error\ndata: ${JSON.stringify({ error: event.errorMessage || event })}\n\n`);
         (res as { flush?: () => void }).flush?.();
       } catch {}
+      if (!res.writableEnded && !res.destroyed) res.end();
     };
 
     const unsubProgress = await subscribeExecution(executionId, onProgress);

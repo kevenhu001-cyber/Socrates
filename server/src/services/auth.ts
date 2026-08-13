@@ -1,4 +1,4 @@
-import { eq, and, gte, ne, desc, sql } from 'drizzle-orm';
+import { eq, and, gte, ne, desc, sql, like } from 'drizzle-orm';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -34,9 +34,28 @@ function maskEmail(e: string): string {
 }
 
 const SESSION_TTL_DAYS = 30;
+/* Mobile access credentials are deliberately short lived.  The refresh
+ * credential is an opaque, rotating session-row token and never doubles as
+ * an API bearer credential. */
+const MOBILE_ACCESS_TTL_MS = 15 * 60 * 1000;
+const MOBILE_REFRESH_TTL_MS = SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
 const VERIFY_TTL_HOURS = 24;
 const RESET_TTL_HOURS = 1;
 const CODE_TTL_MINUTES = 10;
+const MOBILE_OAUTH_EXCHANGE_TTL_HOURS = 5 / 60;
+
+export type MobileTokenPair = {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: string;
+  refreshExpiresAt: string;
+};
+
+type BuiltMobileTokenPair = MobileTokenPair & {
+  pairId: string;
+  accessExpiresAt: Date;
+  refreshExpiresAtDate: Date;
+};
 
 /* Minimum password length — must match the front-end gate
  * (index.html:8065/8243) and the input minlength="8" attribute. */
@@ -61,13 +80,45 @@ const MAX_PASSWORD_LENGTH = 64;
    Helpers
    ────────────────────────────────────────────── */
 
-function sessionCookieOptions() {
+/* A mobile token has a public, non-secret pair id plus a 256-bit random
+ * secret.  The pair id lets refresh/logout revoke the matching short-lived
+ * access credential without making access and refresh interchangeable. */
+const MOBILE_TOKEN_RE = /^(ma|mr)\.([a-f0-9]{32})\.([a-f0-9]{64})$/;
+
+function mobileTokenParts(token: unknown) {
+  if (typeof token !== 'string') return null;
+  const match = MOBILE_TOKEN_RE.exec(token);
+  return match ? { kind: match[1], pairId: match[2] } : null;
+}
+
+export function isMobileAccessToken(token: unknown): token is string {
+  return mobileTokenParts(token)?.kind === 'ma';
+}
+
+export function isMobileRefreshToken(token: unknown): token is string {
+  return mobileTokenParts(token)?.kind === 'mr';
+}
+
+export function mobileTokenPairId(token: unknown): string | null {
+  return mobileTokenParts(token)?.pairId ?? null;
+}
+
+/** Pure token builder kept separate from persistence for contract tests. */
+export function buildMobileTokenPair(now = Date.now()): BuiltMobileTokenPair {
+  /* Keep this component hex-only because it is also used as a SQL LIKE
+   * prefix during rotation/revocation; unlike base64url it has no LIKE
+   * wildcard characters. */
+  const pairId = crypto.randomBytes(16).toString('hex');
+  const accessExpiresAt = new Date(now + MOBILE_ACCESS_TTL_MS);
+  const refreshExpiresAtDate = new Date(now + MOBILE_REFRESH_TTL_MS);
   return {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: SESSION_TTL_DAYS * 24 * 60 * 60 * 1000,
+    pairId,
+    accessToken: `ma.${pairId}.${generateSessionToken()}`,
+    refreshToken: `mr.${pairId}.${generateSessionToken()}`,
+    expiresAt: accessExpiresAt.toISOString(),
+    refreshExpiresAt: refreshExpiresAtDate.toISOString(),
+    accessExpiresAt,
+    refreshExpiresAtDate,
   };
 }
 
@@ -96,7 +147,9 @@ export function publicUser(user: User) {
   };
 }
 
-async function createSession(userId: string) {
+/** Create the existing browser-cookie session.  Exported only for the
+ * one-time mobile WebView hand-off; mobile API requests use token pairs. */
+export async function createBrowserSession(userId: string) {
   const db = getDb();
   // Opportunistic cleanup — drop any expired sessions for this user
   // so the table doesn't grow unbounded. Done in the same await
@@ -111,6 +164,176 @@ async function createSession(userId: string) {
   const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
   await db.insert(authSessions).values({ token, userId, expiresAt });
   return token;
+}
+
+/** Create a short-lived API credential plus a rotating refresh credential.
+ *
+ * The existing auth_sessions table is intentionally reused: both values are
+ * high-entropy opaque secrets, inherit the existing user cascade/expiry
+ * cleanup, and their prefixes make a refresh credential unusable as a bearer
+ * credential.  We do not store a plaintext-derived hash because legacy sid
+ * sessions are already stored as opaque values in this table; changing only
+ * mobile rows would not materially improve the table's compromise model.
+ */
+export async function createMobileTokenPair(userId: string): Promise<MobileTokenPair> {
+  const db = getDb();
+  const pair = buildMobileTokenPair();
+
+  await db.transaction(async (tx) => {
+    await tx.delete(authSessions).where(and(
+      eq(authSessions.userId, userId),
+      sql`${authSessions.expiresAt} < NOW()`,
+    ));
+    await tx.insert(authSessions).values([
+      { token: pair.accessToken, userId, expiresAt: pair.accessExpiresAt },
+      { token: pair.refreshToken, userId, expiresAt: pair.refreshExpiresAtDate },
+    ]);
+  });
+
+  return {
+    accessToken: pair.accessToken,
+    refreshToken: pair.refreshToken,
+    expiresAt: pair.expiresAt,
+    refreshExpiresAt: pair.refreshExpiresAt,
+  };
+}
+
+function mobileAccessPattern(pairId: string) {
+  return `ma.${pairId}.%`;
+}
+
+/** Rotate a refresh credential exactly once.  DELETE ... RETURNING is the
+ * replay guard: concurrent refresh requests race to consume the old token,
+ * and only one can mint a successor pair. */
+export async function refreshMobileTokenPair(refreshToken: unknown): Promise<MobileTokenPair> {
+  const parsed = mobileTokenParts(refreshToken);
+  if (!parsed || parsed.kind !== 'mr' || typeof refreshToken !== 'string') {
+    throw new Unauthorized('Invalid refresh token');
+  }
+
+  const db = getDb();
+  const nextPair = buildMobileTokenPair();
+  return db.transaction(async (tx) => {
+    const [refresh] = await tx.delete(authSessions)
+      .where(eq(authSessions.token, refreshToken))
+      .returning({ userId: authSessions.userId, expiresAt: authSessions.expiresAt });
+
+    if (!refresh || refresh.expiresAt < new Date()) {
+      throw new Unauthorized('Refresh token expired');
+    }
+
+    // Revoke the prior short-lived bearer for this pair as soon as refresh is
+    // consumed.  The pair id is hex and the dot separators are literal in SQL
+    // LIKE, so this cannot accidentally match a different pair.
+    await tx.delete(authSessions)
+      .where(and(
+        eq(authSessions.userId, refresh.userId),
+        like(authSessions.token, mobileAccessPattern(parsed.pairId)),
+      ));
+    await tx.insert(authSessions).values([
+      { token: nextPair.accessToken, userId: refresh.userId, expiresAt: nextPair.accessExpiresAt },
+      { token: nextPair.refreshToken, userId: refresh.userId, expiresAt: nextPair.refreshExpiresAtDate },
+    ]);
+
+    return {
+      accessToken: nextPair.accessToken,
+      refreshToken: nextPair.refreshToken,
+      expiresAt: nextPair.expiresAt,
+      refreshExpiresAt: nextPair.refreshExpiresAt,
+    };
+  });
+}
+
+/** Revoke a mobile refresh credential and its paired bearer.  This is
+ * idempotent so a client can safely clear local secure storage after a
+ * network retry without learning whether a token existed. */
+export async function logoutMobile(refreshToken: unknown) {
+  const parsed = mobileTokenParts(refreshToken);
+  if (!parsed || parsed.kind !== 'mr' || typeof refreshToken !== 'string') return;
+
+  const db = getDb();
+  await db.transaction(async (tx) => {
+    const [refresh] = await tx.delete(authSessions)
+      .where(eq(authSessions.token, refreshToken))
+      .returning({ userId: authSessions.userId });
+    if (!refresh) return;
+    await tx.delete(authSessions)
+      .where(and(
+        eq(authSessions.userId, refresh.userId),
+        like(authSessions.token, mobileAccessPattern(parsed.pairId)),
+      ));
+  });
+}
+
+export type EmbeddedMobileTarget =
+  | 'projects'
+  | 'scheduled'
+  | 'plugins'
+  | 'knowledge'
+  | 'mistakes'
+  | 'skills'
+  | 'api-settings';
+
+const EMBEDDED_MOBILE_TARGETS = new Set<EmbeddedMobileTarget>([
+  'projects', 'scheduled', 'plugins', 'knowledge', 'mistakes', 'skills', 'api-settings',
+]);
+const MOBILE_WEB_SESSION_RE = /^mw\.(projects|scheduled|plugins|knowledge|mistakes|skills|api-settings)\.([a-f0-9]{64})$/;
+const MOBILE_OAUTH_EXCHANGE_RE = /^mo\.([a-f0-9]{64})$/;
+
+export function isEmbeddedMobileTarget(value: unknown): value is EmbeddedMobileTarget {
+  return typeof value === 'string' && EMBEDDED_MOBILE_TARGETS.has(value as EmbeddedMobileTarget);
+}
+
+function mobileWebSessionTarget(token: unknown): EmbeddedMobileTarget | null {
+  if (typeof token !== 'string') return null;
+  const match = MOBILE_WEB_SESSION_RE.exec(token);
+  return match ? match[1] as EmbeddedMobileTarget : null;
+}
+
+/** Issue a one-time, five-minute web capability.  It is consumed by a
+ * same-origin GET that converts it into the normal HttpOnly browser cookie;
+ * the mobile bearer token itself is never placed in a WebView URL. */
+export async function createMobileWebSession(userId: string, target: unknown) {
+  if (!isEmbeddedMobileTarget(target)) throw new BadRequest('Invalid embedded target');
+  const token = `mw.${target}.${generateSessionToken()}`;
+  const expiresAt = new Date(Date.now() + MOBILE_OAUTH_EXCHANGE_TTL_HOURS * 60 * 60 * 1000);
+  const db = getDb();
+  await db.insert(authSessions).values({ token, userId, expiresAt });
+  return { token, expiresAt, target };
+}
+
+/** Atomically consume a mobile WebView capability. */
+export async function consumeMobileWebSession(token: unknown) {
+  const target = mobileWebSessionTarget(token);
+  if (!target || typeof token !== 'string') throw new Unauthorized('Invalid web session');
+  const db = getDb();
+  const [row] = await db.delete(authSessions)
+    .where(eq(authSessions.token, token))
+    .returning({ userId: authSessions.userId, expiresAt: authSessions.expiresAt });
+  if (!row || row.expiresAt < new Date()) throw new Unauthorized('Web session expired');
+  return { userId: row.userId, target };
+}
+
+/** OAuth callbacks cannot safely put a long-lived mobile credential in a
+ * custom-scheme URL, so they carry this one-time exchange capability instead. */
+export async function createMobileOAuthExchangeToken(userId: string) {
+  const token = `mo.${generateSessionToken()}`;
+  const expiresAt = new Date(Date.now() + MOBILE_OAUTH_EXCHANGE_TTL_HOURS * 60 * 60 * 1000);
+  const db = getDb();
+  await db.insert(authSessions).values({ token, userId, expiresAt });
+  return { token, expiresAt };
+}
+
+export async function exchangeMobileOAuthToken(token: unknown): Promise<MobileTokenPair> {
+  if (typeof token !== 'string' || !MOBILE_OAUTH_EXCHANGE_RE.test(token)) {
+    throw new Unauthorized('Invalid OAuth exchange token');
+  }
+  const db = getDb();
+  const [exchange] = await db.delete(authSessions)
+    .where(eq(authSessions.token, token))
+    .returning({ userId: authSessions.userId, expiresAt: authSessions.expiresAt });
+  if (!exchange || exchange.expiresAt < new Date()) throw new Unauthorized('OAuth exchange token expired');
+  return createMobileTokenPair(exchange.userId);
 }
 
 async function createVerificationToken(userId: string, kind: string, ttlHours: number) {
@@ -234,7 +457,7 @@ export async function resendVerification(email: string) {
 /**
  * POST /api/auth/login
  */
-export async function login(email: string, password: string) {
+async function authenticatePassword(email: string, password: string) {
   if (!email || !password) throw new BadRequest('Email and password are required');
 
   const normalizedEmail = email.toLowerCase().trim();
@@ -267,13 +490,20 @@ export async function login(email: string, password: string) {
 
   // Successful login — wipe any prior failure count for this email.
   await recordSuccess(normalizedEmail);
+  return user;
+}
 
-  const sid = await createSession(user.id);
+/** Browser-cookie login. Mobile clients use `loginMobile` so they never
+ * allocate a transient sid row before receiving their token pair. */
+export async function login(email: string, password: string) {
+  const user = await authenticatePassword(email, password);
+  const sid = await createBrowserSession(user.id);
+  return { user: publicUser(user), sid };
+}
 
-  return {
-    user: publicUser(user),
-    sid,
-  };
+export async function loginMobile(email: string, password: string) {
+  const user = await authenticatePassword(email, password);
+  return { user: publicUser(user) };
 }
 
 /**
@@ -314,7 +544,7 @@ export async function logout(sid: string | null | undefined) {
  * Move the user from pending_registrations into the users table and create a
  * session so they are recognised as logged in.
  */
-export async function verifyEmail(token: string) {
+async function verifyPendingEmail(token: string) {
   if (!token) throw new BadRequest('Verification token is required');
   const db = getDb();
 
@@ -343,17 +573,22 @@ export async function verifyEmail(token: string) {
   // Clean up the pending registration
   await db.delete(pendingRegistrations).where(eq(pendingRegistrations.id, pending.id));
 
-  // Create a session so the user is logged in immediately
-  const sid = await createSession(user.id);
+  return user;
+}
 
-  return {
-    user: publicUser(user),
-    sid,
-  };
+export async function verifyEmail(token: string) {
+  const user = await verifyPendingEmail(token);
+  const sid = await createBrowserSession(user.id);
+  return { user: publicUser(user), sid };
+}
+
+export async function verifyEmailMobile(token: string) {
+  const user = await verifyPendingEmail(token);
+  return { user: publicUser(user) };
 }
 
 /**
- * POST /api/auth/send-code — send a 6-digit login code
+ * POST /api/auth/send-code — send an eight-character login code
  */
 export async function sendCode(email: string) {
   if (!email) throw new BadRequest('Email is required');
@@ -405,10 +640,14 @@ export async function sendCode(email: string) {
 /**
  * POST /api/auth/login-with-code
  */
-export async function loginWithCode(email: string, code: string) {
+async function consumeLoginCode(email: string, code: string) {
   if (!email || !code) throw new BadRequest('Email and code are required');
 
   const normalizedEmail = email.toLowerCase().trim();
+  const normalizedCode = code.trim().toUpperCase();
+  if (!/^[A-HJ-KM-NP-Z2-9]{8}$/.test(normalizedCode)) {
+    throw new Unauthorized('Invalid or expired code');
+  }
   const db = getDb();
 
   const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
@@ -416,7 +655,7 @@ export async function loginWithCode(email: string, code: string) {
 
   const [vt] = await db.select().from(verificationTokens)
     .where(and(
-      eq(verificationTokens.token, code),
+      eq(verificationTokens.token, normalizedCode),
       eq(verificationTokens.kind, 'login_code'),
       eq(verificationTokens.userId, user.id),
       gte(verificationTokens.expiresAt, new Date()),
@@ -425,13 +664,20 @@ export async function loginWithCode(email: string, code: string) {
   if (!vt) throw new Unauthorized('Invalid or expired code');
 
   // Consume the code
-  await db.delete(verificationTokens).where(eq(verificationTokens.token, code));
+  await db.delete(verificationTokens).where(eq(verificationTokens.token, normalizedCode));
 
-  const sid = await createSession(user.id);
-  return {
-    user: publicUser(user),
-    sid,
-  };
+  return user;
+}
+
+export async function loginWithCode(email: string, code: string) {
+  const user = await consumeLoginCode(email, code);
+  const sid = await createBrowserSession(user.id);
+  return { user: publicUser(user), sid };
+}
+
+export async function loginWithCodeMobile(email: string, code: string) {
+  const user = await consumeLoginCode(email, code);
+  return { user: publicUser(user) };
 }
 
 /**
@@ -542,10 +788,18 @@ export async function changePassword(userId: string, oldPassword: string, newPas
 
   const passwordHash = await hashPassword(newPassword);
   await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
-  // Drop every session for this user EXCEPT the one making the
-  // change — that session is the user's own browser, which we
-  // want to keep logged in.
-  if (currentSid) {
+  // Drop every session for this user except the credential making the
+  // change. A mobile access token is one half of a rotating pair, so keep
+  // its paired refresh token as well; preserving only ma.* would leave the
+  // mobile client signed in until the first refresh and then abruptly fail.
+  const mobilePair = mobileTokenParts(currentSid);
+  if (mobilePair?.kind === 'ma' && currentSid) {
+    await db.delete(authSessions).where(and(
+      eq(authSessions.userId, userId),
+      sql`${authSessions.token} NOT LIKE ${`ma.${mobilePair.pairId}.%`}
+        AND ${authSessions.token} NOT LIKE ${`mr.${mobilePair.pairId}.%`}`,
+    ));
+  } else if (currentSid) {
     await db.delete(authSessions).where(and(
       eq(authSessions.userId, userId),
       // Drizzle's `ne` is the NOT-EQUALS operator; imported below.

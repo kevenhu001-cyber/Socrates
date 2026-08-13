@@ -22,6 +22,12 @@ export const native = {
   async share(url: string) {
     return Linking.openURL(url);
   },
+  async shareBlob(_blob: Blob, _name: string, _mimeType?: string) {
+    // A Windows shell adapter can replace this with a temp-file share target.
+    // Keep the fallback non-destructive rather than exposing an unauthenticated
+    // artifact URL to a browser.
+    return undefined;
+  },
   async pickFile(): Promise<NativePickerResult> {
     return { canceled: true, assets: [] };
   },

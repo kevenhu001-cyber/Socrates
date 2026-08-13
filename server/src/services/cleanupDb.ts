@@ -8,7 +8,6 @@
  * the current user; this ensures stale rows are cleared globally.
  */
 import { lt, sql, and } from 'drizzle-orm';
-import path from 'node:path';
 import fs from 'node:fs/promises';
 import { getDb } from '../db/index.js';
 import {
@@ -16,6 +15,7 @@ import {
   usageEvents, auditEvents, executions, files,
   statusMonitorEvents, statusSubscribers,
 } from '../db/schema.js';
+import { codeInterpreter } from './codeInterpreter.js';
 
 let _timer: ReturnType<typeof setInterval> | null = null;
 
@@ -26,8 +26,6 @@ let _timer: ReturnType<typeof setInterval> | null = null;
 const USAGE_RETENTION_DAYS = Math.max(7, parseInt(process.env.USAGE_RETENTION_DAYS || '365', 10));
 const AUDIT_RETENTION_DAYS = Math.max(7, parseInt(process.env.AUDIT_RETENTION_DAYS || '180', 10));
 const EXEC_RETENTION_DAYS = Math.max(1, parseInt(process.env.EXEC_RETENTION_DAYS || '30', 10));
-const EXEC_SCRATCH_DIR = process.env.EXEC_SCRATCH_DIR
-  || (process.env.NODE_ENV === 'production' ? '/var/lib/socrates/exec' : '/tmp/socrates-exec');
 
 /* Status-page tables:
  *  - status_monitor_events drives the 90-day timeline / uptime /
@@ -77,7 +75,7 @@ export async function runExpiredCleanup() {
     const execCutoff = new Date(now.getTime() - EXEC_RETENTION_DAYS * 86400000);
     const expiredExec = await db.delete(executions)
       .where(lt(executions.startedAt, execCutoff))
-      .returning({ id: executions.id });
+      .returning({ id: executions.id, sessionId: executions.sessionId, userId: executions.userId });
 
     /* Status monitor events: roll off beyond the retention window so the
        table can't grow unbounded. The 90-day timeline/uptime still has
@@ -95,16 +93,19 @@ export async function runExpiredCleanup() {
       .where(and(lt(statusSubscribers.createdAt, unconfirmedCutoff), sql`${statusSubscribers.confirmedAt} IS NULL`))
       .returning({ id: statusSubscribers.id });
 
-    /* Best-effort scratch-dir reap. If the execution already cleaned
-       up after itself (the common case), fs.rm silently no-ops on
-       ENOENT. Errors are swallowed so a permissions issue on one
-       directory can't block the rest of the cleanup. */
+    /* Best-effort scratch-dir reap. The code interpreter owns the
+       owner-namespaced directory layout, so cleanup must call its public
+       helper rather than reconstruct a path from an execution ID. Session
+       scratch is shared by several runs and is intentionally retained until
+       its own TTL sweep; execution-only scratch is removed here. */
     let reapedScratch = 0;
     for (const row of expiredExec) {
-      try {
-        await fs.rm(path.join(EXEC_SCRATCH_DIR, row.id), { recursive: true, force: true });
-        reapedScratch++;
-      } catch (_) { /* ignore — directory may not exist */ }
+      if (!row.sessionId) {
+        try {
+          await codeInterpreter.reapExecutionScratch(row.id, row.userId);
+          reapedScratch++;
+        } catch (_) { /* ignore — directory may not exist */ }
+      }
     }
 
     const total = expiredAuth.length + expiredPending.length + expiredTokens.length

@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   pgTable, uuid, text, timestamp, boolean, integer, jsonb, varchar, uniqueIndex, index,
 } from 'drizzle-orm/pg-core';
@@ -115,6 +116,11 @@ export const sessions = pgTable('sessions', {
   branchedFrom: jsonb('branched_from'),           // {sessionId, title, ...}
 }, (table) => [
   index('sessions_user_id_idx').on(table.userId),
+  /* The library hot path filters an owner's active sessions and orders by
+   * recency. The old independent indexes forced PostgreSQL to filter then
+   * sort as a user's history grew. This partial index matches that query
+   * without bloating archived-session writes. */
+  index('sessions_active_user_updated_idx').on(table.userId, table.updatedAt.desc()).where(sql`${table.archivedAt} IS NULL`),
   index('sessions_archived_at_idx').on(table.archivedAt),
   index('sessions_updated_at_idx').on(table.updatedAt),
   index('sessions_project_id_idx').on(table.projectId),

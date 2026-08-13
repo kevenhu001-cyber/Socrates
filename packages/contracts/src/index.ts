@@ -34,6 +34,19 @@ export interface ToolCall {
   input?: JsonValue;
   output?: string | null;
   isError?: boolean;
+  /** Structured planning/specification output emitted by native tools. */
+  plan?: JsonValue;
+  spec?: JsonValue;
+  /** Execution metadata is optional because it is only available for some tools. */
+  executionId?: string | null;
+  durationMs?: number | null;
+  progressPhase?: string | null;
+  argumentsText?: string | null;
+  stderr?: string | null;
+  errorText?: string | null;
+  userMessage?: string | null;
+  detail?: string | null;
+  retryable?: boolean;
   artifacts?: Array<{ id: string; mimeType?: string | null; name?: string | null }>;
   results?: Array<Record<string, JsonValue>>;
   textOffset?: number;

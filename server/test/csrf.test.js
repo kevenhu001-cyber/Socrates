@@ -17,7 +17,14 @@ import cookieParser from 'cookie-parser';
 
 import { csrfProtection, setCsrfCookie, clearCsrfCookie } from '../src/middleware/csrf.ts';
 import { errorHandler } from '../src/middleware/error.js';
+import { buildMobileTokenPair } from '../src/services/auth.js';
 import { listen, httpRequest } from './_http.js';
+
+const originalConsoleError = console.error;
+function quietExpectedCsrfError(...args) {
+  if (String(args[0]).startsWith('[error]')) return;
+  originalConsoleError(...args);
+}
 
 function buildApp() {
   const app = express();
@@ -27,6 +34,7 @@ function buildApp() {
   app.post('/write', (req, res) => res.json({ ok: true }));
   app.get('/read', (req, res) => res.json({ ok: true }));
   app.get('/api/auth/csrf-token', (req, res) => res.json({ ok: true }));
+  app.post('/api/auth/mobile/refresh', (req, res) => res.json({ refreshToken: req.body.refreshToken }));
   app.use(errorHandler);
   return app;
 }
@@ -57,8 +65,14 @@ describe('csrf: unsafe methods without an authenticated session', () => {
 
 describe('csrf: unsafe methods with an authenticated session', () => {
   let server;
-  before(async () => { server = await listen(buildApp()); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    console.error = quietExpectedCsrfError;
+    server = await listen(buildApp());
+  });
+  after(async () => {
+    await server.close();
+    console.error = originalConsoleError;
+  });
 
   test('POST with sid cookie + matching csrf pair is allowed', async () => {
     const r = await httpRequest(server.url + '/write', {
@@ -95,6 +109,29 @@ describe('csrf: unsafe methods with an authenticated session', () => {
     assert.equal(r.status, 403);
     assert.equal(r.body.code, 'CSRF_TOKEN_MISMATCH');
   });
+
+  test('POST with a valid explicit mobile bearer bypasses stale browser CSRF cookies', async () => {
+    const tokens = buildMobileTokenPair();
+    const r = await httpRequest(server.url + '/write', {
+      method: 'POST',
+      cookies: { sid: 'session-token-abc', csrf: 'token-xyz' },
+      headers: { Authorization: `Bearer ${tokens.accessToken}` },
+      body: {},
+    });
+    assert.equal(r.status, 200);
+  });
+
+  test('POST with a refresh bearer remains subject to CSRF validation', async () => {
+    const tokens = buildMobileTokenPair();
+    const r = await httpRequest(server.url + '/write', {
+      method: 'POST',
+      cookies: { sid: 'session-token-abc', csrf: 'token-xyz' },
+      headers: { Authorization: `Bearer ${tokens.refreshToken}` },
+      body: {},
+    });
+    assert.equal(r.status, 403);
+    assert.equal(r.body.code, 'CSRF_TOKEN_PARTIAL');
+  });
 });
 
 describe('csrf: csrf-token endpoint is exempt', () => {
@@ -104,6 +141,21 @@ describe('csrf: csrf-token endpoint is exempt', () => {
 
   test('GET /api/auth/csrf-token does not require a csrf header', async () => {
     const r = await httpRequest(server.url + '/api/auth/csrf-token');
+    assert.equal(r.status, 200);
+  });
+});
+
+describe('csrf: mobile credential exchanges', () => {
+  let server;
+  before(async () => { server = await listen(buildApp()); });
+  after(async () => { await server.close(); });
+
+  test('POST refresh accepts its explicit refresh credential despite stale browser CSRF cookies', async () => {
+    const r = await httpRequest(server.url + '/api/auth/mobile/refresh', {
+      method: 'POST',
+      cookies: { sid: 'session-token-abc', csrf: 'token-xyz' },
+      body: { refreshToken: `mr.${'a'.repeat(32)}.${'b'.repeat(64)}` },
+    });
     assert.equal(r.status, 200);
   });
 });

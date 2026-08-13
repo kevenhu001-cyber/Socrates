@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,9 @@ import { AnimatedPressable } from '../components/AnimatedPressable';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import type { RootStackParamList } from '../navigation/types';
+import type { ArtifactMessage } from '@socrates/contracts';
+import { native } from '../native/native';
+import { setClipboardText } from '../native/clipboard';
 
 export function ArtifactPreviewScreen() {
   const { colors, radius } = useTheme();
@@ -14,6 +17,13 @@ export function ArtifactPreviewScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute<RouteProp<RootStackParamList, 'ArtifactPreview'>>();
+  const onArtifactMessage = useCallback((message: ArtifactMessage) => {
+    if (message.type === 'openLink') void native.openBrowser(message.url);
+    if (message.type === 'copy') void setClipboardText(message.text);
+    // Native sharing accepts file URLs. Copy share content so it remains useful
+    // without treating generated HTML as a privileged browser URL.
+    if (message.type === 'share') void setClipboardText(`${message.title}\n${message.content}`);
+  }, []);
   return (
     // The screen hides the stack header, so it has to draw its own back control
     // and respect the status bar instead of a hardcoded 64pt pad.
@@ -29,7 +39,7 @@ export function ArtifactPreviewScreen() {
         </AnimatedPressable>
         <Text style={[styles.title, { color: colors.text }]}>{t('artifact.title')}</Text>
       </View>
-      <ArtifactWebView artifactId={route.params.artifactId} html={route.params.html} />
+      <ArtifactWebView artifactId={route.params.artifactId} html={route.params.html} onMessage={onArtifactMessage} />
     </View>
   );
 }

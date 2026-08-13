@@ -2026,6 +2026,172 @@ paths:
     get:
       tags: [users]
       summary: EXISTING
+  /api/auth/mobile/login:
+    post:
+      tags: [mobile]
+      summary: Sign in from the native client and issue a bearer/refresh token pair
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MobileLoginRequest'
+      responses:
+        '200':
+          description: Authenticated user and rotating mobile credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileAuthResponse'
+  /api/auth/mobile/login-with-code:
+    post:
+      tags: [mobile]
+      summary: Exchange an eight-character email login code for mobile credentials
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email: { type: string, format: email }
+                code: { type: string, pattern: '^[A-HJ-KM-NP-Z2-9]{8}$' }
+      responses:
+        '200':
+          description: Authenticated user and rotating mobile credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileAuthResponse'
+  /api/auth/mobile/verify:
+    get:
+      tags: [mobile]
+      summary: Verify an email-registration token and issue mobile credentials
+      security: []
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Authenticated user and rotating mobile credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileAuthResponse'
+  /api/auth/mobile/refresh:
+    post:
+      tags: [mobile]
+      summary: Rotate a native refresh credential once
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string, pattern: '^mr\\.[a-f0-9]{32}\\.[a-f0-9]{64}$' }
+      responses:
+        '200':
+          description: New mobile token pair
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileTokenPair'
+  /api/auth/mobile/logout:
+    post:
+      tags: [mobile]
+      summary: Revoke a mobile refresh credential and its paired bearer
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken: { type: string, pattern: '^mr\\.[a-f0-9]{32}\\.[a-f0-9]{64}$' }
+      responses:
+        '200': { description: Revoked (idempotent) }
+  /api/auth/mobile/oauth/exchange:
+    post:
+      tags: [mobile]
+      summary: Exchange the short-lived GitHub native OAuth capability for credentials
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [exchangeToken]
+              properties:
+                exchangeToken: { type: string, pattern: '^mo\\.[a-f0-9]{64}$' }
+      responses:
+        '200':
+          description: Mobile token pair
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileTokenPair'
+  /api/auth/mobile/web-session:
+    post:
+      tags: [mobile]
+      summary: Mint a one-time WebView session hand-off URL
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target]
+              properties:
+                target:
+                  type: string
+                  enum: [projects, scheduled, plugins, knowledge, mistakes, skills, api-settings]
+      responses:
+        '200':
+          description: Five-minute one-time URL that consumes into a HttpOnly web cookie
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, expiresAt]
+                properties:
+                  url: { type: string, format: uri }
+                  expiresAt: { type: string, format: date-time }
+  /api/auth/mobile/web-session/consume:
+    get:
+      tags: [mobile]
+      summary: Consume a one-time native WebView hand-off and redirect into the SPA
+      security: []
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema: { type: string, pattern: '^mw\\.(projects|scheduled|plugins|knowledge|mistakes|skills|api-settings)\\.[a-f0-9]{64}$' }
+      responses:
+        '302': { description: Sets an HttpOnly sid cookie and redirects to an allow-listed SPA target }
+  /api/auth/oauth/github/mobile/start:
+    get:
+      tags: [mobile]
+      summary: Begin the native GitHub OAuth authorization-code exchange
+      security: []
+      parameters:
+        - in: query
+          name: redirect_uri
+          required: true
+          schema: { type: string, enum: ['socrates://auth/callback'] }
+      responses:
+        '302': { description: Redirect to GitHub authorization }
   /api/captcha/generate:
     get:
       tags: [users]
@@ -2123,6 +2289,10 @@ components:
       type: apiKey
       in: header
       name: X-CSRF-Token
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Socrates mobile access token (ma.<pair>.<secret>)
 
   parameters:
     MessageId:
@@ -2188,6 +2358,36 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
 
   schemas:
+    MobileTokenPair:
+      type: object
+      required: [accessToken, refreshToken, expiresAt, refreshExpiresAt]
+      properties:
+        accessToken:
+          type: string
+          description: Short-lived bearer credential; send as Authorization Bearer.
+          pattern: '^ma\\.[a-f0-9]{32}\\.[a-f0-9]{64}$'
+        refreshToken:
+          type: string
+          description: Rotating opaque credential; only accepted by refresh/logout.
+          pattern: '^mr\\.[a-f0-9]{32}\\.[a-f0-9]{64}$'
+        expiresAt: { type: string, format: date-time }
+        refreshExpiresAt: { type: string, format: date-time }
+
+    MobileLoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+
+    MobileAuthResponse:
+      allOf:
+        - $ref: '#/components/schemas/MobileTokenPair'
+        - type: object
+          required: [user]
+          properties:
+            user: { $ref: '#/components/schemas/User' }
+
     Error:
       type: object
       required: [code, message]

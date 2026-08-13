@@ -149,13 +149,22 @@ function unavailableResults(reason: string): SearchResult[] {
   return result;
 }
 
-function withTimeout(promise: Promise<SearchResult[]>, ms: number, label: string): Promise<SearchResult[]> {
+function withTimeout(
+  promise: Promise<SearchResult[]>,
+  ms: number,
+  label: string,
+  abort?: (reason: string) => void,
+): Promise<SearchResult[]> {
   let timer: ReturnType<typeof setTimeout>;
   return Promise.race([
     promise,
     new Promise<SearchResult[]>((resolve) => {
       timer = setTimeout(() => {
         console.warn(`[webSearch] ${label} hit ${ms}ms timeout`);
+        /* Promise.race alone only returns early; the old code left the
+         * outbound fetch/CLI subprocess running. Abort its shared controller
+         * so a timed-out search does not keep consuming sockets or CPU. */
+        abort?.(`${label}_timeout`);
         resolve(unavailableResults('timeout'));
       }, ms);
     }),
@@ -172,12 +181,26 @@ export async function webSearch(query: string, count: string | number = 10, opts
 
   // 0. Cross-request result cache (per user × query × count × locale × apiKeyHint)
   const apiKeyHint = opts.apiKeyHint || 'no-key';
-  const cacheHit = searchResultCache.get({
-    userId: opts.userId, query, count: limit, locale, apiKeyHint,
-  });
+  const cacheInput = { userId: opts.userId, query, count: limit, locale, apiKeyHint };
+  const cacheHit = searchResultCache.get(cacheInput);
   if (cacheHit) {
     return cacheHit;
   }
+
+  return searchResultCache.getOrCreateInFlight(
+    searchResultCache.keyFor(cacheInput),
+    () => runWebSearch(query, limit, locale, apiKeyHint, opts.userId, langCluster),
+  );
+}
+
+async function runWebSearch(
+  query: string,
+  limit: number,
+  locale: string | null,
+  apiKeyHint: string,
+  userId: string | undefined,
+  langCluster: ReturnType<typeof detectLanguageCluster>,
+): Promise<SearchResult[]> {
 
   const ac = new AbortController();
   const totalTimer = setTimeout(() => ac.abort('total_timeout'), TOTAL_SEARCH_TIMEOUT);
@@ -194,7 +217,7 @@ export async function webSearch(query: string, count: string | number = 10, opts
   let variants: string[];
   try {
     variants = await expandQuery(query, {
-      userId: opts.userId ?? null,
+      userId: userId ?? null,
       signal: acSignal,
       variantCount: 4,
     });
@@ -217,10 +240,18 @@ export async function webSearch(query: string, count: string | number = 10, opts
     label: string,
     timeoutMs: number,
   ): Promise<SearchResult[]> => {
+    /* Do not abort the entire search when one provider is slow. Each engine
+     * gets its own controller, combined with the turn-wide deadline, so its
+     * timeout really cancels its outstanding I/O while healthy providers can
+     * still contribute results. */
+    const engineController = new AbortController();
+    const engineSignal = typeof AbortSignal.any === 'function'
+      ? AbortSignal.any([acSignal, engineController.signal])
+      : (acSignal.aborted ? acSignal : engineController.signal);
     return withTimeout(
       Promise.all(
         variants.map((v) =>
-          searchFn(v, perVariantLimit, acSignal).then((results) => {
+          searchFn(v, perVariantLimit, engineSignal).then((results) => {
             // Each engine's searchXxx returns its own _engineStatus on the
             // array. Keep the first non-'ok' status (if any) so diagnostic
             // reporting works even when all variants fail.
@@ -253,6 +284,7 @@ export async function webSearch(query: string, count: string | number = 10, opts
       }),
       timeoutMs,
       label,
+      (reason) => { if (!engineController.signal.aborted) engineController.abort(reason); },
     );
   };
 
@@ -318,10 +350,15 @@ export async function webSearch(query: string, count: string | number = 10, opts
   for (const r of bingResults) { if (finalResults.length >= limit) break; if (push(r)) {} }
 
   if (finalResults.length === 0) {
+    const fallbackController = new AbortController();
+    const fallbackSignal = typeof AbortSignal.any === 'function'
+      ? AbortSignal.any([acSignal, fallbackController.signal])
+      : (acSignal.aborted ? acSignal : fallbackController.signal);
     const searxngResults = await withTimeout(
-      searchSearxng(query, limit, acSignal),
+      searchSearxng(query, limit, fallbackSignal),
       TIMEOUT_SEARXNG_MS,
       'searxng',
+      (reason) => { if (!fallbackController.signal.aborted) fallbackController.abort(reason); },
     ).catch(() => unavailableResults('error'));
     outcomes.push({
       name: 'searxng',
@@ -373,7 +410,7 @@ export async function webSearch(query: string, count: string | number = 10, opts
 
   try {
     searchResultCache.set({
-      userId: opts.userId, query, count: limit, locale, apiKeyHint,
+      userId, query, count: limit, locale, apiKeyHint,
       result: finalResults,
     });
   } catch { /* cache is best-effort */ }

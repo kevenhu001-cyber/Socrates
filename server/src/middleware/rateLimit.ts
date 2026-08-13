@@ -118,9 +118,9 @@ export const authLimiter = rateLimit({
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many auth attempts; try again later.'),
 });
 
-/* Tighter limiter for the login-with-code endpoint. Codes are 6 digits
-   (20 bits) with a 10-minute TTL — finite but small enough to brute
-   force in ~10s at 100 req/s. Capping at 5 per email+IP per hour
+/* Tighter limiter for the login-with-code endpoint. Codes are eight
+   unambiguous alphanumeric characters with a 10-minute TTL. Capping at
+   5 per email+IP per hour
    makes a remote brute force infeasible.
 
    P_rate-limit-key-cardinality — M4 audit fix. The previous key

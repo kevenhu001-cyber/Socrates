@@ -20,14 +20,10 @@ export interface MobileToolCall extends ToolCall {
   status?: ToolStatus;
   /** Streamed stdout/stderr chunks joined in arrival order. */
   progress?: string;
-  executionId?: string | null;
-  /** Raw streamed argument text, before the arguments parse to JSON. */
-  argumentsText?: string;
-  /** Machine error code from a failed tool_result. */
-  errorText?: string;
-  /** Human-facing explanation the server supplies for unretryable failures. */
-  userMessage?: string;
 }
+
+const MAX_STREAMED_TEXT = 48_000;
+const TRUNCATED_STREAM_PREFIX = '… earlier streamed output truncated …\n';
 
 function asRecord(payload: unknown): Record<string, unknown> | null {
   return payload && typeof payload === 'object' && !Array.isArray(payload)
@@ -37,6 +33,55 @@ function asRecord(payload: unknown): Record<string, unknown> | null {
 
 function str(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
+}
+
+function appendCapped(existing: string, chunk: string): string {
+  const combined = `${existing}${chunk}`;
+  if (combined.length <= MAX_STREAMED_TEXT) return combined;
+  return `${TRUNCATED_STREAM_PREFIX}${combined.slice(-(MAX_STREAMED_TEXT - TRUNCATED_STREAM_PREFIX.length))}`;
+}
+
+function displayText(value: unknown): string | null {
+  const direct = str(value);
+  if (direct != null) return direct;
+  if (value == null) return null;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return null;
+  }
+}
+
+function jsonValue(value: unknown): JsonValue | undefined {
+  if (value === undefined) return undefined;
+  // SSE payloads are server-originated JSON. Keep the structured payload so
+  // cards can render plans, visualisations and search results instead of
+  // reducing them to an opaque string.
+  return value as JsonValue;
+}
+
+function artifacts(value: unknown): ToolCall['artifacts'] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const parsed = value.flatMap((entry) => {
+    const record = asRecord(entry);
+    const id = record ? str(record.id) : null;
+    return id && record
+      ? [{
+        id,
+        name: str(record.name),
+        mimeType: str(record.mimeType),
+      }]
+      : [];
+  });
+  return parsed;
+}
+
+function results(value: unknown): ToolCall['results'] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value
+    .filter((entry) => asRecord(entry) != null)
+    .slice(0, 24)
+    .map((entry) => entry as Record<string, JsonValue>);
 }
 
 /** Find an existing card by id, else by a pending delta at the same index. */
@@ -89,11 +134,13 @@ export function reduceToolEvent(
     // Deltas may precede the tool_use frame; buffer argument text by id.
     if (!id) return calls;
     const at = indexOfCall(calls, id);
-    const chunk = str(record.arguments) || '';
-    const existing = at >= 0 ? calls[at].argumentsText || '' : '';
+    // The backend forwards the provider's cumulative arguments snapshot, not
+    // an append-only fragment. Appending here duplicated every prefix and
+    // produced invalid JSON such as {"q"}{"query":"..."}.
+    const argumentsText = str(record.arguments);
     return upsert(calls, id, {
       name: str(record.name) || (at >= 0 ? calls[at].name : 'tool'),
-      argumentsText: `${existing}${chunk}`,
+      ...(argumentsText != null ? { argumentsText } : {}),
       status: 'running',
     });
   }
@@ -107,13 +154,16 @@ export function reduceToolEvent(
   if (kind === 'tool_progress') {
     const at = indexOfCall(calls, id);
     const chunk = str(record.chunk) || '';
-    if (!chunk) return calls;
     const existing = at >= 0 ? calls[at].progress || '' : '';
-    return upsert(calls, id, { progress: `${existing}${chunk}`, status: 'running' });
+    return upsert(calls, id, {
+      ...(chunk ? { progress: appendCapped(existing, chunk) } : {}),
+      ...(str(record.phase) ? { progressPhase: str(record.phase) } : {}),
+      status: 'running',
+    });
   }
 
   if (kind === 'tool_result') {
-    const ok = record.ok === true;
+    const ok = record.ok === true || record.status === 'completed';
     const error = str(record.error);
     const userMessage = str(record.userMessage);
     const patch: Partial<MobileToolCall> = {
@@ -124,6 +174,28 @@ export function reduceToolEvent(
     // Surface the friendly message when the server provides one.
     if (error) patch.errorText = error;
     if (userMessage) patch.userMessage = userMessage;
+    const stderr = str(record.stderr);
+    const executionId = str(record.executionId);
+    const durationMs = typeof record.durationMs === 'number' && Number.isFinite(record.durationMs)
+      ? record.durationMs
+      : undefined;
+    const retryable = typeof record.retryable === 'boolean' ? record.retryable : undefined;
+    const detail = displayText(record.detail);
+    const resultArtifacts = artifacts(record.artifacts);
+    const resultResults = results(record.results);
+    const plan = jsonValue(record.plan);
+    const spec = jsonValue(record.spec);
+    const visualization = jsonValue(record.visualization);
+    if (stderr != null) patch.stderr = stderr;
+    if (executionId != null) patch.executionId = executionId;
+    if (durationMs != null) patch.durationMs = durationMs;
+    if (retryable != null) patch.retryable = retryable;
+    if (detail != null) patch.detail = detail;
+    if (resultArtifacts != null) patch.artifacts = resultArtifacts;
+    if (resultResults != null) patch.results = resultResults;
+    if (plan != null) patch.plan = plan;
+    if (spec != null) patch.spec = spec;
+    if (visualization != null) patch.visualization = visualization;
     return upsert(calls, id, patch);
   }
 

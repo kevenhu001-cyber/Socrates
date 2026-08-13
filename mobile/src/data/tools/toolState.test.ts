@@ -35,25 +35,58 @@ describe('reduceToolEvent', () => {
     expect(calls[0].userMessage).toContain('不再自动重试');
   });
 
-  it('accumulates progress chunks in arrival order', () => {
+  it('accumulates progress chunks in arrival order and retains the phase', () => {
     let calls = reduceToolEvent([], 'tool_use', [{ id: 'c', name: 'code_interpreter', input: {} }]);
     calls = reduceToolEvent(calls, 'execution_start', { id: 'c', executionId: 'exec-9' });
-    calls = reduceToolEvent(calls, 'tool_progress', { id: 'c', chunk: 'line 1\n', stream: 'stdout' });
+    calls = reduceToolEvent(calls, 'tool_progress', { id: 'c', phase: 'running', chunk: 'line 1\n', stream: 'stdout' });
     calls = reduceToolEvent(calls, 'tool_progress', { id: 'c', chunk: 'line 2\n', stream: 'stdout' });
     expect(calls).toHaveLength(1);
     expect(calls[0].executionId).toBe('exec-9');
+    expect(calls[0].progressPhase).toBe('running');
     expect(calls[0].progress).toBe('line 1\nline 2\n');
   });
 
-  it('buffers tool_call_delta arguments that arrive before tool_use', () => {
+  it('keeps the latest cumulative tool_call_delta arguments snapshot', () => {
     let calls = reduceToolEvent([], 'tool_call_delta', { index: 0, id: 'c', name: 'web_search', arguments: '{"qu' });
-    calls = reduceToolEvent(calls, 'tool_call_delta', { index: 0, id: 'c', name: 'web_search', arguments: 'ery":"x"}' });
+    calls = reduceToolEvent(calls, 'tool_call_delta', { index: 0, id: 'c', name: 'web_search', arguments: '{"query":"x"}' });
     expect(calls).toHaveLength(1);
     expect(calls[0].argumentsText).toBe('{"query":"x"}');
     // the later tool_use must not duplicate the card
     calls = reduceToolEvent(calls, 'tool_use', [{ id: 'c', name: 'web_search', input: { query: 'x' } }]);
     expect(calls).toHaveLength(1);
     expect(calls[0].input).toEqual({ query: 'x' });
+  });
+
+  it('retains rich tool result payloads used by the live renderer', () => {
+    let calls = reduceToolEvent([], 'tool_use', [{ id: 'c', name: 'code_interpreter', input: {} }]);
+    calls = reduceToolEvent(calls, 'tool_result', {
+      id: 'c',
+      ok: true,
+      output: 'Visualization ready',
+      stderr: 'warning',
+      executionId: 'exec-10',
+      durationMs: 412,
+      retryable: false,
+      detail: [{ message: 'details' }],
+      artifacts: [{ id: 'file-1', name: 'chart.png', mimeType: 'image/png' }],
+      results: [{ title: 'Source', url: 'https://example.com', snippet: 'Useful' }],
+      plan: { title: 'Plan', steps: [{ title: 'Step' }] },
+      spec: { title: 'Spec', requirements: ['A'] },
+      visualization: { template: 'bar', title: 'Chart' },
+    });
+    expect(calls[0]).toMatchObject({
+      status: 'done',
+      stderr: 'warning',
+      executionId: 'exec-10',
+      durationMs: 412,
+      retryable: false,
+      detail: '[{"message":"details"}]',
+      artifacts: [{ id: 'file-1', name: 'chart.png', mimeType: 'image/png' }],
+      results: [{ title: 'Source', url: 'https://example.com', snippet: 'Useful' }],
+      plan: { title: 'Plan' },
+      spec: { title: 'Spec' },
+      visualization: { template: 'bar' },
+    });
   });
 
   it('never mutates the array it is given', () => {

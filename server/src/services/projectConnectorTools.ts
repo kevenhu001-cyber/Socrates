@@ -1,4 +1,5 @@
 import { connectorErrorPayload, externalUserId, getProjectConnector } from './oomolProjectConnector.js';
+import { z } from 'zod';
 
 /* Explicit tool allow-list. Do not turn the catalog into an unrestricted
  * model tool: every agent-visible action is reviewed here and runs only for
@@ -66,7 +67,49 @@ const ACTIONS = {
   [PROJECT_CONNECTOR_TOOL_NAMES.QQ_MAIL_SEARCH]:              { provider: 'qq_mail',        actionId: 'qq_mail.search_threads' },
 };
 
-export async function executeProjectConnectorTool(toolName: string, args: Record<string, any>, userId: string, connection: { status?: string; connectionName?: string | null; connectedAccountId?: string | null } | null) {
+/* The JSON schemas sent to a model are an instruction, not an enforcement
+ * boundary. Validate again immediately before crossing into the external
+ * ProjectConnector so malformed tool calls cannot smuggle unknown fields or
+ * unexpectedly large values to a connected third-party account. */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const EMPTY_INPUT = z.object({}).strict();
+const SEARCH_INPUT = z.object({ query: z.string().trim().min(1).max(300) }).strict();
+const CALENDAR_INPUT = z.object({
+  date: z.string().regex(ISO_DATE, 'date must be YYYY-MM-DD').optional(),
+}).strict();
+const TODOIST_INPUT = z.object({ filter: z.string().trim().min(1).max(300).optional() }).strict();
+
+const INPUT_SCHEMAS: Record<string, z.ZodType<Record<string, unknown>>> = {
+  [PROJECT_CONNECTOR_TOOL_NAMES.GITHUB_IDENTITY]: EMPTY_INPUT,
+  [PROJECT_CONNECTOR_TOOL_NAMES.GMAIL_SEARCH]: SEARCH_INPUT,
+  [PROJECT_CONNECTOR_TOOL_NAMES.GOOGLE_CALENDAR_LIST_EVENTS]: CALENDAR_INPUT,
+  [PROJECT_CONNECTOR_TOOL_NAMES.TODOIST_LIST_TASKS]: TODOIST_INPUT,
+  [PROJECT_CONNECTOR_TOOL_NAMES.GITLAB_IDENTITY]: EMPTY_INPUT,
+  [PROJECT_CONNECTOR_TOOL_NAMES.QQ_MAIL_SEARCH]: SEARCH_INPUT,
+};
+
+export function validateProjectConnectorToolArguments(toolName: string, args: unknown):
+  | { ok: true; args: Record<string, unknown> }
+  | { ok: false; error: string } {
+  const schema = INPUT_SCHEMAS[toolName];
+  if (!schema) return { ok: false, error: 'unknown_project_connector_tool' };
+  const parsed = schema.safeParse(args);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message || 'invalid_project_connector_arguments' };
+  }
+  return { ok: true, args: parsed.data };
+}
+
+export async function executeProjectConnectorTool(toolName: string, args: Record<string, unknown>, userId: string, connection: { status?: string; connectionName?: string | null; connectedAccountId?: string | null } | null) {
+  const validated = validateProjectConnectorToolArguments(toolName, args);
+  if (!validated.ok) {
+    return {
+      status: 'failed',
+      errorCode: 'invalid_tool_arguments',
+      error: validated.error,
+      userMessage: '工具参数无效，请按要求重新生成。',
+    };
+  }
   const spec = ACTIONS[toolName];
   if (!spec || !connection || connection.status !== 'connected') {
     return { status: 'failed', errorCode: 'app_not_connected', error: 'The required app is not connected.', userMessage: 'Connect this app in Plugin Center first.' };
@@ -74,7 +117,7 @@ export async function executeProjectConnectorTool(toolName: string, args: Record
   const project = getProjectConnector();
   if (!project) return { status: 'failed', errorCode: 'project_connector_not_configured', error: 'OOMOL ProjectConnector is not configured.', userMessage: 'The connector service is not configured yet.' };
   try {
-    const data = await project.execute(externalUserId(userId), spec.actionId, args || {}, {
+    const data = await project.execute(externalUserId(userId), spec.actionId, validated.args, {
       connectionName: connection.connectionName || 'socrates',
       connectedAccountId: connection.connectedAccountId || undefined,
     });
