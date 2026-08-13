@@ -73,7 +73,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: >-
+    ${{ github.workflow }}-${{ github.ref }}-
+    ${{ inputs.device_smoke_only && 'device' || inputs.build_windows_only && 'windows' || 'full' }}
   cancel-in-progress: true
 
 env:
