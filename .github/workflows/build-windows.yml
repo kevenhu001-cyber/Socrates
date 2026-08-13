@@ -65,7 +65,7 @@ jobs:
           $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
           if (Test-Path $project) { Remove-Item -Recurse -Force $project }
           Push-Location $env:RUNNER_TEMP
-          npx --yes @react-native-community/cli@latest init SocratesWindows --version $env:RN_VERSION --skip-install --skip-git
+          npx --yes @react-native-community/cli@latest init SocratesWindows --version $env:RN_VERSION --skip-install
           Pop-Location
           Set-Location $project
 
