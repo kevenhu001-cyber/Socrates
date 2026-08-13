@@ -133,7 +133,7 @@ jobs:
           retention-days: 14
 
   build-android:
-    name: Build Android ${{ github.event_name == 'workflow_dispatch' && inputs.build_profile || 'release' }} APK/AAB
+    name: Build Android APK/AAB
     needs: verify
     if: >-
       always() && github.event_name != 'pull_request' &&
