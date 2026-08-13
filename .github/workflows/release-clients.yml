@@ -1,0 +1,135 @@
+name: Release Socrates Desktop and Android Clients
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing or new release tag (for example v2.1.0)
+        required: true
+        type: string
+      publish_google_play:
+        description: Upload the Android AAB to Google Play production track
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-release:
+    name: Validate release tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - name: Validate tag format
+        id: release
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Release tag must look like v2.1.0 or v2.1.0-rc.1" >&2
+            exit 1
+          fi
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build release clients
+    needs: validate-release
+    uses: ./.github/workflows/build-apk.yml
+    with:
+      build_profile: release
+      run_verification: true
+      build_windows: true
+      build_windows_only: false
+      run_device_smoke: false
+      device_smoke_only: false
+    secrets: inherit
+
+  publish-github:
+    name: Publish GitHub release assets
+    needs: [validate-release, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download desktop web bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: socrates-desktop-web-package-${{ github.sha }}
+          path: release-assets
+
+      - name: Download Android release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: socrates-android-release-*-${{ github.sha }}
+          path: release-assets
+          merge-multiple: true
+
+      - name: Download Windows release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: socrates-windows-release-${{ github.sha }}
+          path: release-assets
+
+      - name: Validate and checksum release assets
+        run: |
+          set -euo pipefail
+          test -n "$(find release-assets -type f -print -quit)"
+          find release-assets -type f -name '*.sha256' -delete
+          find release-assets -type f -name 'SHA256SUMS.txt' -delete
+          (cd release-assets && find . -type f ! -name 'SHA256SUMS.txt' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt)
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.validate-release.outputs.tag }}
+          name: Socrates ${{ needs.validate-release.outputs.tag }}
+          generate_release_notes: true
+          prerelease: ${{ contains(needs.validate-release.outputs.tag, '-') }}
+          files: release-assets/*
+
+  publish-google-play:
+    name: Publish Android bundle to Google Play
+    needs: [validate-release, build]
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_google_play
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Download Android release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: socrates-android-release-*-${{ github.sha }}
+          path: release-assets
+          merge-multiple: true
+
+      - name: Require Google Play credentials
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: test -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"
+
+      - name: Select Android App Bundle
+        run: |
+          set -euo pipefail
+          AAB=$(find release-assets -maxdepth 1 -type f -name '*.aab' -print -quit)
+          test -n "$AAB"
+          cp "$AAB" release-assets/socrates-release.aab
+
+      - name: Publish AAB to Google Play production
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.topodrive.socrates
+          releaseFiles: release-assets/socrates-release.aab
+          track: production
+          status: completed

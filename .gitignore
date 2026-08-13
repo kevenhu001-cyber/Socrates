@@ -29,6 +29,7 @@ mobile/android/
 mobile/ios/
 mobile/.eas/
 mobile/dist/
+desktop/dist/
 desktop/windows-dist/
 
 # ── OS files ──

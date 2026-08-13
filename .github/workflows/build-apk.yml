@@ -16,6 +16,8 @@ on:
       - 'docs/rn-migration.md'
       - '.github/workflows/build-apk.yml'
       - '.github/workflows/build-windows.yml'
+      - '.github/workflows/release-clients.yml'
+      - 'docs/client-release.md'
       - 'desktop/windows/**'
   pull_request:
     branches: [main]
@@ -32,6 +34,8 @@ on:
       - 'docs/rn-migration.md'
       - '.github/workflows/build-apk.yml'
       - '.github/workflows/build-windows.yml'
+      - '.github/workflows/release-clients.yml'
+      - 'docs/client-release.md'
       - 'desktop/windows/**'
   workflow_dispatch:
     inputs:
@@ -68,6 +72,53 @@ on:
         required: true
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      build_profile:
+        description: Android and Windows build profile
+        required: false
+        type: string
+        default: release
+      run_verification:
+        description: Run frontend, server, and mobile checks before packaging
+        required: false
+        type: boolean
+        default: true
+      build_windows:
+        description: Also build the isolated RNW Windows shell
+        required: false
+        type: boolean
+        default: false
+      build_windows_only:
+        description: Build only the isolated RNW Windows shell
+        required: false
+        type: boolean
+        default: false
+      run_device_smoke:
+        description: Run the Android emulator Detox smoke suite
+        required: false
+        type: boolean
+        default: false
+      device_smoke_only:
+        description: Skip verification, web, Android package, and Windows jobs
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: false
+      ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      ANDROID_KEY_ALIAS:
+        required: false
+      ANDROID_KEY_PASSWORD:
+        required: false
+      WINDOWS_PFX_BASE64:
+        required: false
+      WINDOWS_PFX_PASSWORD:
+        required: false
+      WINDOWS_PUBLISHER:
+        required: false
 
 permissions:
   contents: read
@@ -90,8 +141,9 @@ jobs:
   verify:
     name: Verify shared clients and API contract
     if: >-
-      github.event_name != 'workflow_dispatch' ||
-      (inputs.run_verification && !inputs.build_windows_only && !inputs.device_smoke_only)
+      !inputs.build_windows_only &&
+      !inputs.device_smoke_only &&
+      ((github.event_name != 'workflow_dispatch' && github.event_name != 'workflow_call') || inputs.run_verification)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -139,7 +191,8 @@ jobs:
     needs: verify
     if: >-
       always() &&
-      (github.event_name != 'workflow_dispatch' || (!inputs.build_windows_only && !inputs.device_smoke_only)) &&
+      !inputs.build_windows_only &&
+      !inputs.device_smoke_only &&
       (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
@@ -167,6 +220,17 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Package desktop web bundle for releases
+        run: tar -czf "desktop/socrates-desktop-web-${GITHUB_SHA}.tar.gz" -C desktop/dist .
+
+      - name: Upload desktop release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: socrates-desktop-web-package-${{ github.sha }}
+          path: desktop/socrates-desktop-web-${{ github.sha }}.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Install browser regression runner
         working-directory: frontend
         run: |
@@ -193,11 +257,15 @@ jobs:
     needs: verify
     if: >-
       always() && github.event_name != 'pull_request' &&
-      (github.event_name != 'workflow_dispatch' || (!inputs.build_windows_only && !inputs.device_smoke_only)) &&
+      !inputs.build_windows_only &&
+      !inputs.device_smoke_only &&
       (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     runs-on: ubuntu-latest
     env:
-      BUILD_PROFILE: ${{ github.event_name == 'workflow_dispatch' && inputs.build_profile || 'release' }}
+      # Ordinary pushes and manual builds are safe, non-publishing debug
+      # builds. The release workflow calls this reusable workflow explicitly
+      # with build_profile=release and supplies signing secrets.
+      BUILD_PROFILE: ${{ inputs.build_profile || 'debug' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -319,12 +387,14 @@ jobs:
 
   build-windows:
     name: Build RNW Windows shell
+    needs: verify
     if: >-
-      github.event_name == 'workflow_dispatch' &&
-      (inputs.build_windows || inputs.build_windows_only)
+      always() &&
+      (inputs.build_windows || inputs.build_windows_only) &&
+      (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     runs-on: windows-latest
     env:
-      BUILD_PROFILE: ${{ inputs.build_profile }}
+      BUILD_PROFILE: ${{ inputs.build_profile || 'debug' }}
       RN_VERSION: '0.84.1'
       RNW_VERSION: '0.84.0'
     steps:
@@ -415,6 +485,29 @@ jobs:
             Write-Host "Retargeted $changed generated Windows project file(s) to $env:WINDOWS_SDK_VERSION"
           }
 
+      - name: Set Windows package publisher
+        if: env.BUILD_PROFILE == 'release'
+        shell: pwsh
+        env:
+          WINDOWS_PUBLISHER: ${{ secrets.WINDOWS_PUBLISHER }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_PUBLISHER)) {
+            throw 'WINDOWS_PUBLISHER is required for Windows release packages.'
+          }
+          $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
+          $manifests = @(Get-ChildItem -Path (Join-Path $project 'windows') -Recurse -Filter '*appxmanifest' -File)
+          if ($manifests.Count -eq 0) { throw 'No Windows AppX manifest was generated.' }
+          foreach ($manifest in $manifests) {
+            $before = [IO.File]::ReadAllText($manifest.FullName)
+            $after = [regex]::Replace(
+              $before,
+              'Publisher="[^"]+"',
+              [System.Text.RegularExpressions.MatchEvaluator]{ param($match) 'Publisher="' + $env:WINDOWS_PUBLISHER + '"' }
+            )
+            if ($after -eq $before) { throw "Publisher field was not found in $($manifest.Name)" }
+            [IO.File]::WriteAllText($manifest.FullName, $after, [Text.UTF8Encoding]::new($false))
+          }
+
       - name: Build Windows package
         shell: pwsh
         run: |
@@ -422,6 +515,38 @@ jobs:
           $args = @('--arch', 'x64', '--no-launch', '--no-autolink', '--logging', '--msbuildprops', "WindowsTargetPlatformVersion=$env:WINDOWS_SDK_VERSION")
           if ($env:BUILD_PROFILE -eq 'release') { $args += '--release' }
           & npx react-native run-windows @args
+
+      - name: Restore Windows signing certificate
+        if: env.BUILD_PROFILE == 'release'
+        shell: pwsh
+        env:
+          WINDOWS_PFX_BASE64: ${{ secrets.WINDOWS_PFX_BASE64 }}
+          WINDOWS_PFX_PASSWORD: ${{ secrets.WINDOWS_PFX_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_PFX_BASE64) -or [string]::IsNullOrWhiteSpace($env:WINDOWS_PFX_PASSWORD)) {
+            throw 'WINDOWS_PFX_BASE64 and WINDOWS_PFX_PASSWORD are required for Windows release packages.'
+          }
+          $pfx = Join-Path $env:RUNNER_TEMP 'socrates-signing.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_PFX_BASE64))
+          "WINDOWS_PFX_PATH=$pfx" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Sign Windows package
+        if: env.BUILD_PROFILE == 'release'
+        shell: pwsh
+        env:
+          WINDOWS_PFX_PASSWORD: ${{ secrets.WINDOWS_PFX_PASSWORD }}
+        run: |
+          $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
+          $packages = @(Get-ChildItem -Path (Join-Path $project 'windows') -Recurse -File |
+            Where-Object { $_.Extension -in @('.msix', '.msixbundle', '.appx', '.appxbundle') })
+          if ($packages.Count -eq 0) { throw 'No Windows package was produced for signing.' }
+          $signTool = Get-ChildItem -Path (Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin') -Recurse -Filter signtool.exe |
+            Sort-Object FullName | Select-Object -Last 1
+          if (-not $signTool) { throw 'signtool.exe was not found on the Windows runner.' }
+          foreach ($package in $packages) {
+            & $signTool.FullName sign /fd SHA256 /f $env:WINDOWS_PFX_PATH /p $env:WINDOWS_PFX_PASSWORD $package.FullName
+            if ($LASTEXITCODE -ne 0) { throw "signtool failed for $($package.Name)" }
+          }
 
       - name: Collect Windows package
         shell: pwsh
@@ -436,6 +561,45 @@ jobs:
           $out = Join-Path $env:GITHUB_WORKSPACE 'desktop\windows-dist'
           New-Item -ItemType Directory -Force -Path $out | Out-Null
           $files | ForEach-Object { Copy-Item $_.FullName (Join-Path $out $_.Name) -Force }
+
+      - name: Package Windows release bundle
+        if: env.BUILD_PROFILE == 'release'
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:GITHUB_WORKSPACE 'desktop\windows-dist'
+          $archive = Join-Path $env:RUNNER_TEMP "socrates-windows-$env:BUILD_PROFILE-$env:GITHUB_SHA.zip"
+          Compress-Archive -Path (Join-Path $out '*') -DestinationPath $archive -Force
+          Copy-Item $archive $out -Force
+
+      - name: Create Windows checksums
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:GITHUB_WORKSPACE 'desktop\windows-dist'
+          Get-ChildItem -Path $out -File |
+            Where-Object { $_.Name -ne 'SHA256SUMS.txt' } |
+            ForEach-Object {
+              $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant()
+              "{0}  {1}" -f $hash, $_.Name
+            } |
+            Set-Content -Path (Join-Path $out 'SHA256SUMS.txt') -Encoding utf8
+
+      - name: Verify signed Windows package
+        if: env.BUILD_PROFILE == 'release'
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:GITHUB_WORKSPACE 'desktop\windows-dist'
+          $signTool = Get-ChildItem -Path (Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin') -Recurse -Filter signtool.exe |
+            Sort-Object FullName | Select-Object -Last 1
+          foreach ($package in Get-ChildItem -Path $out -File | Where-Object { $_.Extension -in @('.msix', '.msixbundle', '.appx', '.appxbundle') }) {
+            & $signTool.FullName verify /pa $package.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Signature verification failed for $($package.Name)" }
+          }
+
+      - name: Remove Windows signing material
+        if: always()
+        shell: pwsh
+        run: |
+          if ($env:WINDOWS_PFX_PATH -and (Test-Path $env:WINDOWS_PFX_PATH)) { Remove-Item -Force $env:WINDOWS_PFX_PATH }
 
       - name: Upload Windows package
         uses: actions/upload-artifact@v4
