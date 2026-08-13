@@ -406,7 +406,7 @@ jobs:
         shell: pwsh
         run: |
           Set-Location (Join-Path $env:RUNNER_TEMP 'SocratesWindows')
-          $args = @('--arch', 'x64', '--no-launch', '--logging', '--msbuildprops', "WindowsTargetPlatformVersion=$env:WINDOWS_SDK_VERSION")
+          $args = @('--arch', 'x64', '--no-launch', '--no-autolink', '--logging', '--msbuildprops', "WindowsTargetPlatformVersion=$env:WINDOWS_SDK_VERSION")
           if ($env:BUILD_PROFILE -eq 'release') { $args += '--release' }
           & npx react-native run-windows @args
 
