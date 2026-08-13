@@ -69,8 +69,8 @@ jobs:
           Pop-Location
           Set-Location $project
 
-          npm install --save --no-audit --no-fund "react-native-windows@$env:RNW_VERSION"
-          npm install --save --no-audit --no-fund `
+          npm install --install-links --save --no-audit --no-fund "react-native-windows@$env:RNW_VERSION"
+          npm install --install-links --save --no-audit --no-fund `
             (Join-Path $env:GITHUB_WORKSPACE 'packages\contracts') `
             (Join-Path $env:GITHUB_WORKSPACE 'packages\core')
 
