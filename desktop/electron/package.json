@@ -1,0 +1,17 @@
+{
+  "name": "socrates-desktop",
+  "version": "2.0.1",
+  "private": true,
+  "description": "Socrates desktop EXE wrapping the React Native web bundle",
+  "main": "main.js",
+  "author": "Socrates",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^25.1.8"
+  }
+}

@@ -617,6 +617,56 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  build-desktop-exe:
+    name: Build Desktop EXE installer
+    needs: verify
+    if: >-
+      always() &&
+      !inputs.build_windows_only &&
+      !inputs.device_smoke_only &&
+      (needs.verify.result == 'success' || needs.verify.result == 'skipped')
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            mobile/package-lock.json
+            desktop/electron/package-lock.json
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Export Expo Web desktop bundle
+        working-directory: mobile
+        run: npx expo export --platform web --output-dir ../desktop/dist
+
+      - name: Install Electron build dependencies
+        working-directory: desktop/electron
+        run: npm ci
+
+      - name: Stage web bundle into Electron app
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path desktop/electron/dist | Out-Null
+          Copy-Item -Path desktop/dist/* -Destination desktop/electron/dist -Recurse -Force
+
+      - name: Build EXE installer
+        working-directory: desktop/electron
+        run: npx electron-builder --win nsis --publish never
+
+      - name: Upload EXE installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: socrates-desktop-exe-${{ github.sha }}
+          path: desktop/electron/release/*.exe
+          if-no-files-found: error
+          retention-days: 30
+
   android-device-smoke:
     name: Android emulator RN smoke
     # Emulator boot on the shared GitHub runner is flaky and can exceed the job
