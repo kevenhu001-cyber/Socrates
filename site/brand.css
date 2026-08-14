@@ -46,7 +46,7 @@
      English-interface serif; CJK glyphs fall through to 思源黑体
      (Noto Sans SC) per the Chinese-page typography spec, with Noto Serif SC
      / Songti SC kept only as further fallbacks. */
-  --site-serif-cjk: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Sans SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
+  --site-serif-cjk: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Serif SC", "Noto Sans SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
   --site-mono: "Geist Mono", "JetBrains Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
   --site-shadow: 0 16px 42px rgba(33, 28, 22, .08);
 
