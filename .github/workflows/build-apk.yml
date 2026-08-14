@@ -477,6 +477,21 @@ jobs:
                 }
               }
             }
+            if ($file.Extension -eq '.vcxproj') {
+              # Ship as a loose Win32 (unpackaged) app so we can wrap it in an
+              # Inno Setup EXE installer. MSIX packaging needs a debug UCRT SDK
+              # that GitHub's Windows image does not ship (MSB3774), and an
+              # unpackaged RNW app is exactly what an .exe installer wants.
+              $propertyGroup = [regex]::Match($after, '<PropertyGroup[^>]*>')
+              if ($propertyGroup.Success) {
+                if ($after -notmatch '<WindowsPackageType>') {
+                  $after = $after.Insert($propertyGroup.Index + $propertyGroup.Length, "`r`n    <WindowsPackageType>None</WindowsPackageType>")
+                }
+                if ($after -notmatch '<WindowsAppSDKSelfContained>') {
+                  $after = $after.Insert($propertyGroup.Index + $propertyGroup.Length, "`r`n    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>")
+                }
+              }
+            }
             if ($after -ne $before) {
               [System.IO.File]::WriteAllText($file.FullName, $after, [System.Text.UTF8Encoding]::new($false))
               $changed++
@@ -512,18 +527,70 @@ jobs:
             [IO.File]::WriteAllText($manifest.FullName, $after, [Text.UTF8Encoding]::new($false))
           }
 
-      - name: Build Windows package
+      - name: Build loose Win32 app
         shell: pwsh
         run: |
-          Set-Location (Join-Path $env:RUNNER_TEMP 'SocratesWindows')
-          $args = @('--arch', 'x64', '--no-launch', '--no-autolink', '--logging', '--msbuildprops', "WindowsTargetPlatformVersion=$env:WINDOWS_SDK_VERSION")
-          # Always build the MSIX in Release configuration. GitHub's Windows
-          # image lacks the Microsoft.UniversalCRT.Debug SDK that a Debug MSIX
-          # packaging step imports, which surfaces as MSB3774. Release packaging
-          # uses the retail UCRT and avoids that missing component; signing is
-          # still gated separately on the release profile below.
-          $args += '--release'
-          & npx react-native run-windows @args
+          $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1
+          if (-not $msbuild) { throw 'MSBuild was not found via vswhere.' }
+          Write-Host "Using MSBuild: $msbuild"
+          $vcx = Join-Path $project 'windows\SocratesWindows\SocratesWindows.vcxproj'
+          if (-not (Test-Path $vcx)) {
+            Write-Host 'Available vcxproj files:'
+            Get-ChildItem (Join-Path $project 'windows') -Recurse -Filter '*.vcxproj' | Select-Object FullName
+            throw "App project not found at $vcx"
+          }
+          # Build the unpackaged Win32 app directly (not the MSIX wapproj) so we
+          # avoid the Microsoft.UniversalCRT.Debug SDK the package step wants.
+          & $msbuild $vcx /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal /t:Build
+          if ($LASTEXITCODE -ne 0) { throw "MSBuild failed with exit code $LASTEXITCODE" }
+          Write-Host '=== loose app .exe output ==='
+          Get-ChildItem (Join-Path $project 'windows') -Recurse -Filter '*.exe' | Select-Object FullName, Length
+
+      - name: Build EXE installer (Inno Setup)
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to install Inno Setup.' }
+          $iscc = Get-ChildItem "${env:ProgramFiles(x86)}\Inno Setup*" -Recurse -Filter 'ISCC.exe' -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+          if (-not $iscc) { throw 'ISCC.exe not found after Inno Setup install.' }
+          $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
+          $exe = Get-ChildItem (Join-Path $project 'windows') -Recurse -Filter 'SocratesWindows.exe' | Select-Object -First 1
+          if (-not $exe) {
+            Write-Host 'No SocratesWindows.exe found; listing build output:'
+            Get-ChildItem (Join-Path $project 'windows') -Recurse -File | Select-Object -First 120 FullName
+            throw 'SocratesWindows.exe not found in build output.'
+          }
+          $appDir = $exe.DirectoryName
+          $outDir = Join-Path $env:GITHUB_WORKSPACE 'desktop\windows-dist'
+          New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+          $iss = Join-Path $env:RUNNER_TEMP 'socrates.iss'
+          $script = @"
+          [Setup]
+          AppName=Socrates
+          AppVersion=2.0.1
+          AppPublisher=Socrates
+          DefaultDirName={autopf}\Socrates
+          DefaultGroupName=Socrates
+          OutputDir=$outDir
+          OutputBaseFilename=SocratesSetup-x64
+          Compression=lzma2
+          SolidCompression=yes
+          ArchitecturesInstallIn64BitMode=x64compatible
+          [Files]
+          Source: "$appDir\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+          [Icons]
+          Name: "{group}\Socrates"; Filename: "{app}\SocratesWindows.exe"
+          Name: "{commondesktop}\Socrates"; Filename: "{app}\SocratesWindows.exe"
+          [Run]
+          Filename: "{app}\SocratesWindows.exe"; Description: "Launch Socrates"; Flags: nowait postinstall skipifsilent
+          "@
+          Set-Content -Path $iss -Value $script -Encoding utf8
+          & $iscc.FullName $iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup compile failed with exit code $LASTEXITCODE" }
+          Get-ChildItem $outDir | Select-Object Name, Length
 
       - name: Restore Windows signing certificate
         if: env.BUILD_PROFILE == 'release'
@@ -545,31 +612,26 @@ jobs:
         env:
           WINDOWS_PFX_PASSWORD: ${{ secrets.WINDOWS_PFX_PASSWORD }}
         run: |
-          $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
-          $packages = @(Get-ChildItem -Path (Join-Path $project 'windows') -Recurse -File |
-            Where-Object { $_.Extension -in @('.msix', '.msixbundle', '.appx', '.appxbundle') })
-          if ($packages.Count -eq 0) { throw 'No Windows package was produced for signing.' }
+          $out = Join-Path $env:GITHUB_WORKSPACE 'desktop\windows-dist'
+          $setup = Get-ChildItem -Path $out -File -Filter 'SocratesSetup-*.exe' | Select-Object -First 1
+          if (-not $setup) { throw 'No SocratesSetup-*.exe was produced for signing.' }
           $signTool = Get-ChildItem -Path (Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin') -Recurse -Filter signtool.exe |
             Sort-Object FullName | Select-Object -Last 1
           if (-not $signTool) { throw 'signtool.exe was not found on the Windows runner.' }
-          foreach ($package in $packages) {
-            & $signTool.FullName sign /fd SHA256 /f $env:WINDOWS_PFX_PATH /p $env:WINDOWS_PFX_PASSWORD $package.FullName
-            if ($LASTEXITCODE -ne 0) { throw "signtool failed for $($package.Name)" }
-          }
+          & $signTool.FullName sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /f $env:WINDOWS_PFX_PATH /p $env:WINDOWS_PFX_PASSWORD $setup.FullName
+          if ($LASTEXITCODE -ne 0) { throw "signtool failed for $($setup.Name)" }
 
       - name: Collect Windows package
         shell: pwsh
         run: |
-          $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
-          $files = @(Get-ChildItem -Path (Join-Path $project 'windows') -Recurse -File `
-            | Where-Object { $_.Extension -in @('.msix', '.msixbundle', '.appx', '.appxbundle', '.zip') })
-          if ($files.Count -eq 0) {
-            Get-ChildItem -Path (Join-Path $project 'windows') -Recurse -File | Select-Object -First 100 FullName
-            throw 'No Windows package was produced.'
-          }
           $out = Join-Path $env:GITHUB_WORKSPACE 'desktop\windows-dist'
-          New-Item -ItemType Directory -Force -Path $out | Out-Null
-          $files | ForEach-Object { Copy-Item $_.FullName (Join-Path $out $_.Name) -Force }
+          $setup = Get-ChildItem -Path $out -File -Filter 'SocratesSetup-*.exe' | Select-Object -First 1
+          if (-not $setup) {
+            Write-Host 'windows-dist contents:'
+            Get-ChildItem -Path $out -Recurse -File | Select-Object FullName
+            throw 'No SocratesSetup-*.exe was produced.'
+          }
+          Write-Host "Windows installer ready: $($setup.FullName) ($($setup.Length) bytes)"
 
       - name: Package Windows release bundle
         if: env.BUILD_PROFILE == 'release'
@@ -599,10 +661,10 @@ jobs:
           $out = Join-Path $env:GITHUB_WORKSPACE 'desktop\windows-dist'
           $signTool = Get-ChildItem -Path (Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin') -Recurse -Filter signtool.exe |
             Sort-Object FullName | Select-Object -Last 1
-          foreach ($package in Get-ChildItem -Path $out -File | Where-Object { $_.Extension -in @('.msix', '.msixbundle', '.appx', '.appxbundle') }) {
-            & $signTool.FullName verify /pa $package.FullName
-            if ($LASTEXITCODE -ne 0) { throw "Signature verification failed for $($package.Name)" }
-          }
+          $setup = Get-ChildItem -Path $out -File -Filter 'SocratesSetup-*.exe' | Select-Object -First 1
+          if (-not $setup) { throw 'No SocratesSetup-*.exe to verify.' }
+          & $signTool.FullName verify /pa $setup.FullName
+          if ($LASTEXITCODE -ne 0) { throw "Signature verification failed for $($setup.Name)" }
 
       - name: Remove Windows signing material
         if: always()
