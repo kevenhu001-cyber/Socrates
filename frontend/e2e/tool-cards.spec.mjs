@@ -332,3 +332,98 @@ test('live chat shows only the latest tool card during a burst but persists ever
   });
   expect(toolCallIds).toEqual(['search-a', 'code-b', 'search-c']);
 });
+
+test('consecutive same-category tools merge into one grouped inline row', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route('**/api/**/chat/stream', async (route) => {
+    const stream = [
+      'event: tool_use\ndata: [{"id":"group-a","name":"web_search","input":{"query":"alpha"}}]\n\n',
+      'event: tool_use\ndata: [{"id":"group-b","name":"web_search","input":{"query":"beta"}}]\n\n',
+      'event: tool_result\ndata: {"id":"group-a","ok":true,"status":"completed","output":"a","results":[{"title":"Alpha","url":"https://example.test/alpha"}]}\n\n',
+      'event: tool_result\ndata: {"id":"group-b","ok":true,"status":"completed","output":"b","results":[{"title":"Beta","url":"https://example.test/beta"}]}\n\n',
+      'data: {"choices":[{"delta":{"content":"Both searches finished."}}]}\n\n',
+      'data: [DONE]\n\n',
+    ].join('');
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
+  });
+
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(async () => {
+    const sessionId = '66666666-6666-4666-8666-666666666666';
+    window.state.phase = 'chat';
+    window.state.currentSessionId = sessionId;
+    window.state.session.currentSessionId = sessionId;
+    window.state.messages = [{ clientId: 'user-group', role: 'user', rawText: 'Search twice', html: null }];
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    await window.askChatTurn('Search twice');
+  });
+
+  const bubble = page.locator('.msg.assistant').last();
+  await expect(bubble.locator('.tool-inline')).toHaveCount(1);
+  const row = bubble.locator('.tool-inline').first();
+  await expect(row).toHaveAttribute('data-group-count', '2');
+  await expect(row).toHaveAttribute('data-group-ids', 'group-a,group-b');
+  await expect(row).toHaveAttribute('data-state', 'done');
+  await expect(row.locator('.tool-inline-label')).toContainText('Found 2 sources');
+
+  await row.locator('summary').click();
+  await expect(row.locator('[data-member-id="group-a"]')).toHaveCount(1);
+  await expect(row.locator('[data-member-id="group-b"]')).toHaveCount(1);
+  await expect(row.locator('.tool-inline-sources')).toContainText('Alpha');
+  await expect(row.locator('.tool-inline-sources')).toContainText('Beta');
+
+  const persisted = await page.evaluate(() => {
+    const list = window.state.messages;
+    const last = list[list.length - 1];
+    return last && last.html ? last.html : '';
+  });
+  expect(persisted).toContain('data-group-ids="group-a,group-b"');
+  expect((persisted.match(/data-tcid="group-/g) || []).length).toBe(1);
+  const toolCallIds = await page.evaluate(() => {
+    const list = window.state.messages;
+    const last = list[list.length - 1];
+    return Array.isArray(last && last.toolCalls) ? last.toolCalls.map((t) => t.id) : [];
+  });
+  expect(toolCallIds).toEqual(['group-a', 'group-b']);
+});
+
+test('a failed member marks the grouped tool row as needs-attention', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route('**/api/**/chat/stream', async (route) => {
+    const stream = [
+      'event: tool_use\ndata: [{"id":"fail-a","name":"web_search","input":{"query":"ok"}}]\n\n',
+      'event: tool_use\ndata: [{"id":"fail-b","name":"web_search","input":{"query":"broken"}}]\n\n',
+      'event: tool_result\ndata: {"id":"fail-a","ok":true,"status":"completed","output":"ok"}\n\n',
+      'event: tool_result\ndata: {"id":"fail-b","ok":false,"status":"failed","output":"boom"}\n\n',
+      'data: {"choices":[{"delta":{"content":"One search failed."}}]}\n\n',
+      'data: [DONE]\n\n',
+    ].join('');
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
+  });
+
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(async () => {
+    const sessionId = '77777777-7777-4777-8777-777777777777';
+    window.state.phase = 'chat';
+    window.state.currentSessionId = sessionId;
+    window.state.session.currentSessionId = sessionId;
+    window.state.messages = [{ clientId: 'user-fail', role: 'user', rawText: 'Search', html: null }];
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    await window.askChatTurn('Search');
+  });
+
+  const bubble = page.locator('.msg.assistant').last();
+  const row = bubble.locator('.tool-inline').first();
+  await expect(row).toHaveAttribute('data-state', 'error');
+  await expect(row.locator('.tool-inline-label')).toContainText('Tool needs attention');
+  await row.locator('summary').click();
+  await expect(row.locator('[data-member-id="fail-b"]')).toContainText('boom');
+});

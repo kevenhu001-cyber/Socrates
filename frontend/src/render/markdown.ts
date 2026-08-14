@@ -11,6 +11,7 @@ import { renderMermaid, renderViz, renderVizLoading, renderPlot } from './viz.js
 import { preprocessMarkdown, preprocessMarkdownForStreaming } from './preprocess.js';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
 import { sanitizeUrls } from '../util/safe.js';
+import { ensureKatex, onKatexReady } from '../vendor/lazy.js';
 /* M4 — bundled DOMPurify fallback. The CDN <script> in index.html is
    still preferred (shared global, SRI-pinned), but if it fails to load
    (offline, blocked CDN, flaky network) sanitisation used to silently
@@ -374,8 +375,29 @@ interface KatexLike {
   ) => string;
 }
 
+let _katexRerenderArmed = false;
+
 function getKatex(): KatexLike | undefined {
-  return (globalThis as { katex?: KatexLike }).katex;
+  const katex = (globalThis as { katex?: KatexLike }).katex;
+  if (!katex) {
+    /* P_perf-lazy-katex — KaTeX ships after first paint; when a renderer
+       hits math before it arrives, arm a one-shot re-render so the same
+       message repaints with real formulas once the module loads. */
+    try { ensureKatex(); } catch (_) { /* ignore */ }
+    if (!_katexRerenderArmed) {
+      _katexRerenderArmed = true;
+      try {
+        onKatexReady(() => {
+          if (typeof window === 'undefined') return;
+          const rerender = (window as unknown as { __socratesRerenderMath?: () => void }).__socratesRerenderMath;
+          if (typeof rerender === 'function') {
+            try { rerender(); } catch (_) { /* ignore */ }
+          }
+        });
+      } catch (_) { /* ignore */ }
+    }
+  }
+  return katex;
 }
 
 interface MarkedLike {

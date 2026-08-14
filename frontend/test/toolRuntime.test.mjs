@@ -361,6 +361,9 @@ function installLiveSlotDocument() {
         getAttribute(name) {
           return name === 'data-tcid' ? (this.dataset.tcid || null) : (this.dataset[name] || null);
         },
+        hasAttribute(name) {
+          return name in this.dataset;
+        },
         setAttribute(name, value) { this.dataset[name] = String(value); },
         insertAdjacentElement() { return null; },
         addEventListener() {},
@@ -559,6 +562,188 @@ test('ToolRuntime expands a merged row when it settles', () => {
     assert.equal(row2.dataset.state, 'done');
     // The settled member replaces the collapsed head as the visible row.
     assert.equal(liveSlot.childNodes[liveSlot.childNodes.length - 1], row2);
+    runtime.dispose();
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+/* ─── Message-flow grouping (no live slot) ─────────────────────────── */
+
+function makeInlineFlowBody(rows) {
+  return {
+    querySelector(sel) {
+      const m = /^\[data-tcid="([^"]+)"\]$/.exec(sel || '');
+      if (!m) return null;
+      return rows.find((r) => r && r.dataset && r.dataset.tcid === m[1]) || null;
+    },
+    querySelectorAll() { return rows; },
+    appendChild() {},
+  };
+}
+
+test('ToolRuntime merges consecutive same-category rows in the message flow', () => {
+  const message = { toolCalls: [] };
+  const rows = [];
+  installLiveSlotDocument();
+  try {
+    const runtime = createToolRuntime({
+      body: makeInlineFlowBody(rows),
+      stillOwnsSlot: () => true,
+      getMessage: () => message,
+      onInlineTool(entry, row) {
+        rows.push(row);
+        row._isConnected = true;
+        return 10;
+      },
+      EventSource: null,
+      mode: 'compact',
+    });
+
+    runtime.recordToolUse({ id: 'g1', name: 'web_search', input: { query: 'a' } });
+    runtime.recordToolUse({ id: 'g2', name: 'web_search', input: { query: 'b' } });
+    runtime.recordToolUse({ id: 'g3', name: 'code_interpreter' });
+
+    assert.equal(rows.length, 2, 'same-category merge must not mount a second row');
+    const head = rows[0];
+    assert.equal(head.dataset.groupIds, 'g1,g2');
+    assert.equal(head.dataset.groupCount, '2');
+    assert.equal(message.toolCalls[1]._groupHeadId, 'g1');
+    assert.equal(message.toolCalls[1].textOffset, 10, 'merged member inherits head offset');
+    assert.equal(rows[1].dataset.tcid, 'g3', 'different category starts a new row');
+    runtime.dispose();
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('ToolRuntime breaks live grouping when text streams after a row', () => {
+  const message = { toolCalls: [] };
+  const rows = [];
+  installLiveSlotDocument();
+  try {
+    const runtime = createToolRuntime({
+      body: makeInlineFlowBody(rows),
+      stillOwnsSlot: () => true,
+      getMessage: () => message,
+      onInlineTool(entry, row) {
+        rows.push(row);
+        row._isConnected = true;
+        return 3;
+      },
+      EventSource: null,
+      mode: 'compact',
+    });
+
+    runtime.recordToolUse({ id: 't1', name: 'web_search' });
+    runtime.noteTextDelta();
+    runtime.recordToolUse({ id: 't2', name: 'web_search' });
+
+    assert.equal(rows.length, 2, 'text delta must break the merge group');
+    assert.equal(message.toolCalls[1]._groupHeadId, undefined);
+    assert.equal(rows[1].dataset.groupIds, undefined);
+    runtime.dispose();
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('ToolRuntime settles a grouped row with aggregate done state', () => {
+  const message = { toolCalls: [] };
+  const rows = [];
+  installLiveSlotDocument();
+  try {
+    const runtime = createToolRuntime({
+      body: makeInlineFlowBody(rows),
+      stillOwnsSlot: () => true,
+      getMessage: () => message,
+      onInlineTool(entry, row) {
+        rows.push(row);
+        row._isConnected = true;
+        return 7;
+      },
+      EventSource: null,
+      mode: 'compact',
+    });
+
+    runtime.recordToolUse({ id: 's1', name: 'web_search', input: { query: 'a' } });
+    runtime.recordToolUse({ id: 's2', name: 'web_search', input: { query: 'b' } });
+    runtime.recordToolResult({
+      id: 's2', ok: true, status: 'completed', output: 'b',
+      results: [{ title: 'B', url: 'https://b.test' }],
+    });
+    runtime.recordToolResult({
+      id: 's1', ok: true, status: 'completed', output: 'a',
+      results: [{ title: 'A', url: 'https://a.test' }],
+    });
+
+    const head = rows[0];
+    assert.equal(head.dataset.state, 'done');
+    assert.equal(head.dataset.groupSettled, '1');
+    assert.equal(message.toolCalls.length, 2, 'both members stay persisted');
+    runtime.dispose();
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('ToolRuntime marks a grouped row as error when a member fails', () => {
+  const message = { toolCalls: [] };
+  const rows = [];
+  installLiveSlotDocument();
+  try {
+    const runtime = createToolRuntime({
+      body: makeInlineFlowBody(rows),
+      stillOwnsSlot: () => true,
+      getMessage: () => message,
+      onInlineTool(entry, row) {
+        rows.push(row);
+        row._isConnected = true;
+        return 4;
+      },
+      EventSource: null,
+      mode: 'compact',
+    });
+
+    runtime.recordToolUse({ id: 'f1', name: 'web_search' });
+    runtime.recordToolUse({ id: 'f2', name: 'web_search' });
+    runtime.recordToolResult({ id: 'f2', ok: true, status: 'completed', output: 'ok' });
+    runtime.recordToolResult({ id: 'f1', ok: false, status: 'failed', output: 'boom' });
+
+    const head = rows[0];
+    assert.equal(head.dataset.state, 'error');
+    assert.equal(head.dataset.groupSettled, '1');
+    runtime.dispose();
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('ToolRuntime cancel settles grouped rows as stopped', () => {
+  const message = { toolCalls: [] };
+  const rows = [];
+  installLiveSlotDocument();
+  try {
+    const runtime = createToolRuntime({
+      body: makeInlineFlowBody(rows),
+      stillOwnsSlot: () => true,
+      getMessage: () => message,
+      onInlineTool(entry, row) {
+        rows.push(row);
+        row._isConnected = true;
+        return 0;
+      },
+      EventSource: null,
+      mode: 'compact',
+    });
+
+    runtime.recordToolUse({ id: 'c1', name: 'web_search' });
+    runtime.recordToolUse({ id: 'c2', name: 'web_search' });
+    runtime.cancel();
+
+    const head = rows[0];
+    assert.equal(head.dataset.state, 'stopped');
+    assert.equal(head.dataset.groupSettled, '1');
     runtime.dispose();
   } finally {
     delete globalThis.document;
