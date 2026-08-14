@@ -418,13 +418,17 @@ jobs:
           npm install --install-links --save --no-audit --no-fund `
             (Join-Path $env:GITHUB_WORKSPACE 'packages\contracts') `
             (Join-Path $env:GITHUB_WORKSPACE 'packages\core')
+          # init-windows --overwrite regenerates the host project and can reset
+          # tsconfig.json (dropping our path mappings). Customize the generated
+          # project only AFTER the regeneration so App.tsx, the shared local
+          # packages, and the pathed tsconfig survive for typecheck and bundling.
+          npx react-native init-windows --overwrite
+          if (-not (Test-Path (Join-Path $project 'windows'))) { throw 'RNW did not generate a Windows host project.' }
           Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'desktop\windows\App.tsx') (Join-Path $project 'App.tsx') -Force
           New-Item -ItemType Directory -Force -Path (Join-Path $project 'shared') | Out-Null
           Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'packages\contracts') (Join-Path $project 'shared\contracts') -Recurse -Force
           Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'packages\core') (Join-Path $project 'shared\core') -Recurse -Force
           Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'desktop\windows\tsconfig.json') (Join-Path $project 'tsconfig.json') -Force
-          npx react-native init-windows --overwrite
-          if (-not (Test-Path (Join-Path $project 'windows'))) { throw 'RNW did not generate a Windows host project.' }
 
       - name: Typecheck Windows shell
         shell: pwsh
@@ -513,7 +517,12 @@ jobs:
         run: |
           Set-Location (Join-Path $env:RUNNER_TEMP 'SocratesWindows')
           $args = @('--arch', 'x64', '--no-launch', '--no-autolink', '--logging', '--msbuildprops', "WindowsTargetPlatformVersion=$env:WINDOWS_SDK_VERSION")
-          if ($env:BUILD_PROFILE -eq 'release') { $args += '--release' }
+          # Always build the MSIX in Release configuration. GitHub's Windows
+          # image lacks the Microsoft.UniversalCRT.Debug SDK that a Debug MSIX
+          # packaging step imports, which surfaces as MSB3774. Release packaging
+          # uses the retail UCRT and avoids that missing component; signing is
+          # still gated separately on the release profile below.
+          $args += '--release'
           & npx react-native run-windows @args
 
       - name: Restore Windows signing certificate
@@ -634,6 +643,20 @@ jobs:
       - uses: android-actions/setup-android@v3
 
       - uses: gradle/actions/setup-gradle@v4
+
+      - name: Free runner disk space
+        run: |
+          # GitHub's ubuntu-latest image ships large toolchains we do not need
+          # here. Removing them before the Detox build/emulator avoids the
+          # recurring 'No space left on device' failures on this lane. Keep the
+          # Android SDK in /usr/local/lib/android intact because setup-android
+          # has already pointed ANDROID_HOME at it.
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/Swift
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          df -h /
 
       - name: Install pinned Android build components
         run: |
