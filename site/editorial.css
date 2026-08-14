@@ -4,7 +4,6 @@
    compatibility with the legacy selectors that still live below. The
    actual visible typography — display serif, CJK stack, legal layout,
    product-block scale — is owned by brand.css. */
-@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500&family=Noto+Sans+SC:wght@400;500;600;700&display=swap");
 :root {
   --ed-paper: #f4f1e9;
   --ed-paper-strong: #eee8dc;
@@ -25,8 +24,8 @@
      and --ed-sans below don't crash, but brand.css wins on the visible
      surface. We deliberately removed "Segoe UI" and the system CJK
      fallbacks so Microsoft YaHei / SimSun never leak through on Windows. */
-  --ed-serif: "Newsreader", "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Source Han Sans SC", sans-serif;
-  --ed-sans: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Source Han Sans SC", sans-serif;
+  --ed-serif: "Newsreader", "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "SimSun", sans-serif;
+  --ed-sans: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
   --ed-mono: "Geist Mono", "JetBrains Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
   --ed-radius-lg: 28px;
   --ed-radius-md: 20px;

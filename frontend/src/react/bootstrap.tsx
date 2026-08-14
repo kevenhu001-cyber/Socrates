@@ -26,6 +26,7 @@ import { mountSessionList } from './session-list';
 import { mountMessageList } from './message-list';
 import { RichComposer } from './composer-input';
 import { WorkflowLayer } from './extensions/WorkflowLayer';
+import { installThinkingPanelBridge, mountThinkingPanel } from './thinking-panel';
 import { getLegacyActions, i18n } from './legacy/gateway';
 
 const NEW_REPLY_PILL_ID = 'newReplyPill';
@@ -335,6 +336,20 @@ export function bootstrapReactCompatibilityRuntime(): Root {
       </ErrorBoundary>,
     );
   }
+
+  // Mount the thinking panel (right drawer on desktop / bottom sheet on
+  // mobile). The host lives on <body> so the overlay stays above every
+  // app surface; the legacy stream controller drives it through the
+  // typed bridge installed here.
+  installThinkingPanelBridge();
+  let thinkingPanelRoot = document.getElementById('thinkingPanelReactRoot');
+  if (!thinkingPanelRoot) {
+    thinkingPanelRoot = document.createElement('div');
+    thinkingPanelRoot.id = 'thinkingPanelReactRoot';
+    thinkingPanelRoot.setAttribute('data-react-migration-runtime', 'thinking-panel');
+    document.body.appendChild(thinkingPanelRoot);
+  }
+  mountThinkingPanel(thinkingPanelRoot);
 
   // Re-sync the workspace route now that __socratesMountWorkspace (and
   // the per-page createRoot) are registered. nav.js's own

@@ -5,6 +5,7 @@ import {
   usesSpecializedRenderer,
 } from './visualizationAdapters.js';
 import { whenFontsReady } from './helpers.js';
+import { ensureEcharts } from '../vendor/lazy.js';
 
 var echartsPromise = null;
 var visualCounter = 0;
@@ -21,19 +22,10 @@ var _mountingCards = new Map();
 
 async function loadEcharts() {
   if (!echartsPromise) {
-    /* Full echarts UMD is loaded as a classic <script> in index.html
-       (cdn.jsdelivr.net, SRI-pinned). The npm sub-imports would force
-       Rollup to walk echarts/core + echarts/charts + echarts/components
-       + echarts/renderers + zrender during build. The full bundle
-       already registers every chart/component/renderer globally, so
-       no manual `core.use([...])` step is needed. window.echarts is
-       guaranteed to be defined by the time a viz card mounts because
-       vite.config.js ensures ES modules start after the classic CDN
-       scripts. */
-    if (!window.echarts) {
-      throw new Error('echarts CDN not loaded');
-    }
-    echartsPromise = Promise.resolve(window.echarts);
+    /* P_perf-self-host — echarts UMD is copied as a static asset and
+       injected only when a viz card mounts. The full bundle registers
+       every chart / component / renderer, so no core.use([...]) step. */
+    echartsPromise = ensureEcharts();
   }
   return echartsPromise;
 }
@@ -462,11 +454,10 @@ function renderExtension(spec, cardId) {
   if (!extensionIsSafe(source)) return '<div class="visualization-fallback">此扩展内容未通过本地安全检查。标题和数据摘要仍可用。</div>';
   var nonce = 'viz-' + cardId + '-' + Math.random().toString(36).slice(2);
   var csp = "default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; font-src https: data:; form-action 'none'; base-uri 'none'";
+  /* P_perf-self-host — sandboxed extension iframes use the platform font
+     stack instead of blocking on fonts.googleapis.com. */
   var fontPreload =
-    '<link rel="preconnect" href="https://fonts.googleapis.com">' +
-    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
-    '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">' +
-    '<style>body{font-family:Inter,"Noto Sans SC",-apple-system,sans-serif;margin:0;padding:0}</style>';
+    '<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;margin:0;padding:0}</style>';
   var documentSource = '<!doctype html><meta http-equiv="Content-Security-Policy" content="' + csp + '">' + fontPreload + '<script>window.parent.postMessage({type:"socrates-viz-ready",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + '},"*")<\\/script>' + source;
   return '<iframe class="visualization-extension" sandbox="allow-scripts" title="' + esc(spec.title) + '" data-card-id="' + esc(cardId) + '" data-nonce="' + esc(nonce) + '" srcdoc="' + esc(documentSource) + '"></iframe>';
 }

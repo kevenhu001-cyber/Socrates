@@ -62,31 +62,6 @@ function lobehubIcon(raw) {
     .replace(/<svg /i, '<svg aria-hidden="true" ');
 }
 
-const CONNECTOR_IMAGE_URLS = {
-  github: "https://icon.horse/icon/github.com",
-  notion: "https://icon.horse/icon/notion.so",
-  gitee: "https://icon.horse/icon/gitee.com",
-  'baidu-netdisk': "https://icon.horse/icon/baidu.com",
-  baiducloud: "https://icon.horse/icon/baidu.com",
-  gmail: "https://icon.horse/icon/mail.google.com",
-  googledrive: "https://icon.horse/icon/drive.google.com",
-  google_drive: "https://icon.horse/icon/drive.google.com",
-  googlecalendar: "https://cdn.simpleicons.org/googlecalendar",
-  google_calendar: "https://cdn.simpleicons.org/googlecalendar",
-  'google-calendar': "https://cdn.simpleicons.org/googlecalendar",
-  todoist: "https://icon.horse/icon/todoist.com",
-  ticktick: "https://icon.horse/icon/ticktick.com",
-  discord: "https://icon.horse/icon/discord.com",
-  gitlab: "https://icon.horse/icon/gitlab.com",
-  arxiv: "https://icon.horse/icon/arxiv.org",
-  zotero: "https://icon.horse/icon/zotero.org",
-  onedrive: "https://raw.githubusercontent.com/gilbarbara/logos/master/logos/microsoft-onedrive.svg",
-  outlook: "https://icon.horse/icon/outlook.live.com",
-  feishu: "https://icon.horse/icon/feishu.cn",
-  tencentdocs: "https://icon.horse/icon/docs.qq.com",
-  qqmail: "https://icon.horse/icon/mail.qq.com",
-};
-
 const CONNECTOR_OFFLINE_SVG = {
   github: lobehubIcon(githubRaw),
   notion: lobehubIcon(notionRaw),
@@ -129,16 +104,14 @@ function normaliseProviderId(provider) {
 
 function connectorIcon(provider) {
   var key = normaliseProviderId(provider);
-  var url = CONNECTOR_IMAGE_URLS[key];
-  if (url) {
-    return '<img class="connector-logo" src="' + url + '" alt="" loading="lazy" decoding="async"'
-      + ' onerror="this.style.display=\'none\';var s=this.nextElementSibling;if(s)s.style.display=\'flex\';" />'
-      + '<span class="connector-logo-fallback" style="display:none" aria-hidden="true">'
-      + String(provider || "?").slice(0, 2).toUpperCase() + '</span>';
-  }
+  /* P_perf-local-icons — connector brand marks used to load from
+     icon.horse / simpleicons / raw.githubusercontent.com, which can hang
+     on mobile networks (especially in CN) and stall page switches. All
+     connectors now render local SVG marks or a monogram fallback. */
   var offline = CONNECTOR_OFFLINE_SVG[key] || CONNECTOR_OFFLINE_SVG[provider];
   if (offline) return offline;
-  return icon("app");
+  return '<span class="connector-logo-fallback" style="display:flex" aria-hidden="true">'
+    + esc(String(provider || "?").slice(0, 2).toUpperCase()) + '</span>';
 }
 
 /* Connected-app slash commands. Each connector that has a matching

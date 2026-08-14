@@ -1,8 +1,18 @@
+/* P_perf-self-host — Inter/Newsreader are bundled from @fontsource so the
+   site no longer blocks on fonts.googleapis.com. CJK text falls back to
+   the platform's system fonts (PingFang / Microsoft YaHei / Noto CJK). */
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/newsreader/400.css";
+@import "@fontsource/newsreader/500.css";
+@import "@fontsource/newsreader/400-italic.css";
+
 :root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px}
 html[data-mode=dark]{color-scheme:dark}
 html[data-mode=light]{color-scheme:light}
-[data-theme=socrates][data-mode=dark]{--bg-000:0 0% 11%;--bg-100:0 0% 8%;--bg-200:0 0% 13%;--bg-300:0 0% 18%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
-[data-theme=socrates][data-mode=light]{--bg-000:40 24% 91%;--bg-100:40 18% 87%;--bg-200:40 14% 81%;--bg-300:40 10% 73%;--bg-400:0 0% 100%;--text-000:40 12% 10%;--text-100:40 10% 16%;--text-200:40 8% 32%;--text-300:40 8% 32%;--text-400:40 6% 38%;--text-500:40 6% 38%;--border-100:40 10% 62%;--border-200:40 10% 62%;--border-300:40 10% 62%;--border-400:40 10% 62%;--accent-000:43 65% 42%;--accent-100:43 65% 38%;--accent-900:43 40% 90%;--brand-000:36 55% 42%;--brand-100:36 60% 47%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.6}
+[data-theme=socrates][data-mode=dark]{--bg-000:0 0% 11%;--bg-100:0 0% 8%;--bg-200:0 0% 13%;--bg-300:0 0% 18%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun","Noto Serif CJK SC",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
+[data-theme=socrates][data-mode=light]{--bg-000:40 24% 91%;--bg-100:40 18% 87%;--bg-200:40 14% 81%;--bg-300:40 10% 73%;--bg-400:0 0% 100%;--text-000:40 12% 10%;--text-100:40 10% 16%;--text-200:40 8% 32%;--text-300:40 8% 32%;--text-400:40 6% 38%;--text-500:40 6% 38%;--border-100:40 10% 62%;--border-200:40 10% 62%;--border-300:40 10% 62%;--border-400:40 10% 62%;--accent-000:43 65% 42%;--accent-100:43 65% 38%;--accent-900:43 40% 90%;--brand-000:36 55% 42%;--brand-100:36 60% 47%;--oncolor-100:0 0% 100%;--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;--font-display:"Newsreader",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun","Noto Serif CJK SC",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.6}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 /* ─── View Transition — cross-browser consistent ── */
@@ -1415,7 +1425,9 @@ true) but the dropdown never shows — see commit history. */
      reading-column max-width as before, so the composer visually
      lines up with the centred message text. */
   max-width:calc(58rem * var(--app-width-scale, 1));
-  margin:0 auto;
+  /* P_input-lift — keep a small breathing gap below the chat composer so
+     the input sits ~6px above the bottom edge on desktop and mobile. */
+  margin:0 auto 6px;
   display:flex;
   flex-direction:column;
   gap:4px;
@@ -3250,6 +3262,27 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .thinking-dot[data-mode="chat"]{color:hsl(var(--text-400))}
 .thinking-dot .loading{width:14px;height:14px}
 .thinking-status{display:inline-flex;align-items:center;gap:7px;margin:4px 0;padding:5px 0;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale,1));line-height:1.3}
+/* P_thinking-clickable — the "Thinking…" pill and placeholder open the
+   right-side thinking panel. They keep the live indicator look but gain
+   an explicit affordance: pointer cursor, hover accent, focus ring. */
+.thinking-status-clickable,.thinking-dot-clickable{
+  cursor:pointer;
+  border-radius:7px;
+  padding-left:3px;
+  padding-right:3px;
+  transition:color .15s ease,background-color .15s ease;
+}
+.thinking-status-clickable:hover,.thinking-dot-clickable:hover{
+  color:hsl(var(--text-200));
+  background:hsl(var(--bg-300)/0.55);
+}
+.thinking-status-clickable:focus-visible,.thinking-dot-clickable:focus-visible{
+  outline:1.5px solid hsl(var(--accent-000)/0.65);
+  outline-offset:1px;
+}
+.thinking-status-clickable:active,.thinking-dot-clickable:active{
+  background:hsl(var(--bg-300));
+}
 /* ChatGPT-like thinking status: a low-contrast sheen travels across the
    label while a tiny dot breathes beside it. The gradient is deliberately
    close to the regular text color; the old dark-to-white sweep looked like
@@ -6098,6 +6131,158 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   overflow:auto;
   max-height:none;
 }
+
+/* =====================================================================
+ * Thinking panel — right drawer on desktop, bottom sheet on mobile.
+ * Opened from the clickable "Thinking…" pill / placeholder; driven by
+ * the React bridge (src/react/thinking-panel/).
+ * ===================================================================== */
+.thinking-panel-backdrop{
+  position:fixed;
+  inset:0;
+  background:hsl(var(--always-black)/0.45);
+  -webkit-backdrop-filter:blur(3px);
+  backdrop-filter:blur(3px);
+  z-index:1200;
+  animation:fadeIn .16s ease;
+}
+.thinking-panel{
+  position:fixed;
+  top:0;
+  right:0;
+  bottom:0;
+  width:min(420px,90vw);
+  display:flex;
+  flex-direction:column;
+  background:hsl(var(--bg-100));
+  border-left:0.5px solid hsl(var(--border-300)/0.28);
+  box-shadow:-18px 0 50px -18px hsl(var(--always-black)/0.45);
+  z-index:1201;
+  animation:thinking-panel-drawer-in .24s cubic-bezier(.22,1,.36,1);
+}
+@keyframes thinking-panel-drawer-in{
+  from{transform:translateX(30px);opacity:.55}
+  to{transform:translateX(0);opacity:1}
+}
+.thinking-panel-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex:0 0 auto;
+  padding:14px 16px;
+  border-bottom:0.5px solid hsl(var(--border-300)/0.18);
+}
+.thinking-panel-heading{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  flex:1;
+}
+.thinking-panel-title{
+  margin:0;
+  font-size:calc(14px * var(--app-font-scale,1));
+  font-weight:600;
+  color:hsl(var(--text-100));
+  white-space:nowrap;
+}
+.thinking-panel-live{
+  width:7px;
+  height:7px;
+  flex:0 0 7px;
+  border-radius:50%;
+  background:hsl(var(--accent-000)/0.85);
+  animation:thinkingDotBreath 1.8s ease-in-out infinite;
+}
+.thinking-panel-meta{
+  flex:0 0 auto;
+  font-size:calc(11px * var(--app-font-scale,1));
+  color:hsl(var(--text-500));
+  white-space:nowrap;
+}
+.thinking-panel-close{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:28px;
+  flex:0 0 28px;
+  padding:0;
+  border:0;
+  border-radius:7px;
+  background:transparent;
+  color:hsl(var(--text-400));
+  cursor:pointer;
+  transition:background-color .14s ease,color .14s ease;
+}
+.thinking-panel-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.thinking-panel-close:focus-visible{outline:1.5px solid hsl(var(--accent-000)/0.65);outline-offset:1px}
+.thinking-panel-close svg{width:15px;height:15px;display:block}
+.thinking-panel-body{
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  padding:16px 18px 22px;
+  scrollbar-width:thin;
+  scrollbar-color:hsl(var(--text-500)/0.25) transparent;
+}
+.thinking-panel-text{
+  font-size:calc(13px * var(--app-font-scale,1));
+  line-height:1.7;
+  color:hsl(var(--text-200));
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.thinking-panel-empty{
+  margin:0;
+  font-size:calc(12.5px * var(--app-font-scale,1));
+  color:hsl(var(--text-500));
+  line-height:1.6;
+}
+@media (max-width:768px){
+  .thinking-panel{
+    top:auto;
+    left:0;
+    right:0;
+    bottom:0;
+    width:100%;
+    height:40vh;
+    border-left:0;
+    border-top:0.5px solid hsl(var(--border-300)/0.28);
+    border-radius:18px 18px 0 0;
+    box-shadow:0 -18px 50px -18px hsl(var(--always-black)/0.5);
+    animation:thinking-panel-sheet-in .28s cubic-bezier(.22,1,.36,1);
+  }
+  @keyframes thinking-panel-sheet-in{
+    from{transform:translateY(42px);opacity:.55}
+    to{transform:translateY(0);opacity:1}
+  }
+}
+
+/* P_perf-mobile-backdrop — backdrop-filter blur is one of the most
+   expensive effects on low-end phones and makes overlay open/close
+   visibly janky. Mobile overlays keep the dim scrim but drop the blur. */
+@media (max-width:768px){
+  .cmd-k-overlay,
+  .settings-overlay,
+  .profile-overlay,
+  .usage-overlay,
+  .exam-overlay,
+  .share-overlay,
+  .thinking-panel-backdrop,
+  .workspace-dialog,
+  .tutor-explore-overlay,
+  .viz-modal-backdrop{
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+  }
+  body.composer-tools-open::after{
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+  }
+}
+
 @media (max-width:640px){
   .canvas-block-header{
     flex-direction:column;
