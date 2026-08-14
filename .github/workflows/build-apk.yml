@@ -543,10 +543,7 @@ jobs:
           }
           # Build the unpackaged Win32 app directly (not the MSIX wapproj) so we
           # avoid the Microsoft.UniversalCRT.Debug SDK the package step wants.
-          # Override the target SDK for every project (including the RNW
-          # dependencies under node_modules that are pinned to 10.0.22621.0)
-          # with the highest SDK the runner actually has installed.
-          & $msbuild $vcx /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=$env:WINDOWS_SDK_VERSION /m /verbosity:minimal /t:Build
+          & $msbuild $vcx /p:Configuration=Release /p:Platform=x64 /m /verbosity:minimal /t:Build
           if ($LASTEXITCODE -ne 0) { throw "MSBuild failed with exit code $LASTEXITCODE" }
           Write-Host '=== loose app .exe output ==='
           Get-ChildItem (Join-Path $project 'windows') -Recurse -Filter '*.exe' | Select-Object FullName, Length
