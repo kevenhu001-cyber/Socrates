@@ -5,9 +5,13 @@
 // through src/windowExports.js.
 
 import { apiFetch } from '../util/api.js';
-// i18n translator (window.t). Lazy read so the module
-// does not require a circular import with i18n.js.
-const t = (typeof window !== "undefined" ? window.t : null);
+// i18n translator (window.t). Read lazily at call time: window.t is only
+// assigned after i18n.js evaluates, but this module is pulled in first via
+// windowExports.js, so a module-load capture would see undefined (and the
+// modal would throw `t is not a function` on open).
+function t(key) {
+  return typeof window !== "undefined" && typeof window.t === "function" ? window.t(key) : key;
+}
 
 /* React migration bridge — publishes state so the React compatibility
    root renders the modal content. Installed by

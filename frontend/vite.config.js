@@ -71,8 +71,10 @@ export default defineConfig({
   // `remove-module-type` plugin stripped `type="module"` (required by the
   // old IIFE bundle) and moved the bundle after the CDN <script> tags.
   // With ES output the entry scripts stay `type="module"`, which the spec
-  // defers until after HTML parsing — i.e. after the classic in-body CDN
-  // scripts (marked/dompurify/katex/echarts/plotly/mermaid/hljs/fuse)
-  // have executed — so every CDN global is already defined when a module
-  // first touches it.
+  // defers until after HTML parsing. The third-party CDN scripts are
+  // `defer` (see the P_stability-cdn-defer note in index.html), so they
+  // keep document-order execution relative to the module entry scripts
+  // (every CDN global is defined before a module first touches it) while
+  // a slow/hung CDN can no longer block app boot. All CDN globals are
+  // optional at runtime — render/viz/ui fall back when one is missing.
 });

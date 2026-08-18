@@ -5,6 +5,7 @@ import {
   getKeyboardInset,
   measureKeyboardInset,
   isTrackedInputFocused,
+  shouldRefreezeAppVh,
 } from '../src/ui/keyboardViewport.js';
 
 /*
@@ -67,4 +68,17 @@ test('isTrackedInputFocused survives detached/custom-element throws', () => {
   const active = {};
   /* must not propagate the throw */
   assert.equal(isTrackedInputFocused([evil], active), false);
+});
+
+test('shouldRefreezeAppVh requires a cached value to skip re-measuring', () => {
+  /* No freeze yet → must measure. */
+  assert.equal(shouldRefreezeAppVh(-1, -1, 390), true);
+  assert.equal(shouldRefreezeAppVh(0, -1, 390), true);
+  /* Cached height + same width → keep the freeze, do not re-measure. */
+  assert.equal(shouldRefreezeAppVh(844, 390, 390), false);
+});
+
+test('shouldRefreezeAppVh invalidates on width change (rotation / split-screen)', () => {
+  /* Same height, different width → re-measure for the new orientation. */
+  assert.equal(shouldRefreezeAppVh(844, 390, 844), true);
 });
