@@ -1,4 +1,5 @@
 import { whenFontsReady } from './helpers.js';
+import { ensureMermaid, ensurePlotly } from '../vendor/lazy.js';
 
 let plotlyPromise;
 let mermaidPromise;
@@ -34,13 +35,9 @@ function downloadSvgAdapter(stage) {
 }
 
 async function mountPlotly(spec, stage, helpers) {
-  /* Plotly is loaded as a classic <script> in index.html (SRI-pinned
-     cdn.jsdelivr.net). The npm import forced Rollup to parse the
-     4.85 MB plotly bundle just to build the dynamic chunk. */
-  if (!window.Plotly) {
-    throw new Error('plotly CDN not loaded');
-  }
-  plotlyPromise ||= Promise.resolve(window.Plotly);
+  /* P_perf-self-host — plotly UMD is copied as a static asset and
+     injected only when a Plotly card mounts. */
+  plotlyPromise ||= ensurePlotly();
   const Plotly = await plotlyPromise;
   const colors = {
     text: cssColor('--text-100', '#1c2637'),
@@ -76,7 +73,7 @@ async function mountPlotly(spec, stage, helpers) {
   const categories = spec.payload.categories || [];
   const longestCategory = categories.reduce((max, value) => Math.max(max, Array.from(String(value ?? '')).length), 0);
   const tickAngle = categories.length > 10 ? -40 : (categories.length > 6 && longestCategory > 18 ? -28 : 0);
-  await whenFontsReady('Noto Sans SC');
+  await whenFontsReady('Inter');
   await Plotly.newPlot(stage, traces, {
     autosize: true,
     margin: { l: 58, r: 22, t: 24, b: tickAngle ? 96 : 58 },
@@ -128,16 +125,9 @@ function mermaidText(spec) {
 }
 
 async function mountMermaid(spec, stage) {
-  /* Mermaid is loaded as a classic <script> in index.html (SRI-pinned
-     cdn.jsdelivr.net). The npm import would force Rollup to walk
-     mermaid.core.mjs's 38 lazy diagram imports — each pulling cytoscape
-     / fcose / dagre / lodash — adding ~500 MB to V8 old-space per build.
-     vite.config.js guarantees the ES bundle runs after the classic CDN
-     scripts, so window.mermaid is already populated here. */
-  if (!window.mermaid) {
-    throw new Error('mermaid CDN not loaded');
-  }
-  mermaidPromise ||= Promise.resolve(window.mermaid);
+  /* P_perf-self-host — mermaid UMD is copied as a static asset and
+     injected only when a mermaid card mounts. */
+  mermaidPromise ||= ensureMermaid();
   const mermaid = await mermaidPromise;
   mermaid.initialize({
     startOnLoad: false,
@@ -146,7 +136,7 @@ async function mountMermaid(spec, stage) {
     flowchart: { htmlLabels: false, curve: 'basis', useMaxWidth: true },
   });
   const id = `socrates-mermaid-${Math.random().toString(36).slice(2)}`;
-  await whenFontsReady('Noto Sans SC');
+  await whenFontsReady('Inter');
   const { svg, bindFunctions } = await mermaid.render(id, mermaidText(spec));
   stage.innerHTML = svg;
   bindFunctions?.(stage);

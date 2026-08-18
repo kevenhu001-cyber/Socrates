@@ -23,7 +23,7 @@ export function looksLikeMetaInstruction(s){
    setLabel() rewrites the visible label so tool events (searching /
    coding / data-processing) can announce themselves in place of
    "Thinking…". */
-export function appendThinking(){
+export function appendThinking(messageId){
   var list=document.getElementById("msgList");
   if(!list)return null;
   var last=list.lastElementChild;
@@ -39,14 +39,26 @@ export function appendThinking(){
   var status=body.querySelector(".thinking-status");
   if(!status){
     status=document.createElement("span");
-    status.className="thinking-status";
-    status.setAttribute("role","status");
-    status.setAttribute("aria-live","polite");
+    status.className="thinking-status thinking-status-clickable";
+    status.setAttribute("role","button");
+    status.setAttribute("tabindex","0");
+    status.setAttribute("aria-label",openPanelLabel());
     var label=document.createElement("span");
     label.className="thinking-status-label shimmer-text";
+    label.setAttribute("aria-live","polite");
     label.textContent=(typeof window.t==="function")?window.t("think.thinking"):"Thinking…";
     status.appendChild(label);
     body.appendChild(status);
+    status.addEventListener("click",function(ev){
+      ev.preventDefault();
+      openThinkingPanel(messageId);
+    });
+    status.addEventListener("keydown",function(ev){
+      if(ev.key==="Enter"||ev.key===" "){
+        ev.preventDefault();
+        openThinkingPanel(messageId);
+      }
+    });
   }
   if(typeof window.scrollMainToBottom==="function")window.scrollMainToBottom();
   function remove(){if(status&&status.parentNode)status.parentNode.removeChild(status)}
@@ -64,6 +76,25 @@ export function appendThinking(){
     if(typeof window.scrollMainToBottom==="function")window.scrollMainToBottom();
   }
   return {append:function(){},finalize:remove,remove:remove,setLabel:setLabel};
+}
+
+function openPanelLabel(){
+  try{
+    if(typeof window!=="undefined"&&typeof window.t==="function"){
+      var v=window.t("think.openPanel");
+      if(v&&v!=="think.openPanel")return v;
+    }
+  }catch(_){}
+  return "View thinking process";
+}
+
+function openThinkingPanel(messageId){
+  try{
+    var bridge=window.__socratesThinkingPanelBridge;
+    if(bridge&&typeof bridge.publish==="function"){
+      bridge.publish({type:"panel-open",messageId:messageId||null});
+    }
+  }catch(_){}
 }
 
 /* Standalone helper that mounts (or reuses) the status pill in the

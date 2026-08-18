@@ -32,6 +32,30 @@ export interface InlineToolResult {
   detail?: unknown;
 }
 
+export interface InlineToolGroupMember {
+  id: string;
+  name: string;
+  input?: unknown;
+  result?: InlineToolResult | null;
+  cancelled?: boolean;
+  failed?: boolean;
+}
+
+export interface InlineToolMessageCall {
+  id?: string;
+  name?: string;
+  input?: unknown;
+  output?: string | null;
+  isError?: boolean;
+  results?: unknown[];
+  stderr?: string;
+  error?: string;
+  userMessage?: string;
+  detail?: unknown;
+  durationMs?: number;
+  _run?: { phase?: string; durationMs?: number };
+}
+
 interface SourceItem {
   title: string;
   url: string;
@@ -315,6 +339,229 @@ function renderInlineDetails(
     detail.appendChild(empty);
   }
   row.dataset.expandable = '1';
+}
+
+function groupDurationMs(members: InlineToolGroupMember[]): number {
+  let total = 0;
+  for (const member of members) {
+    const duration = member.result && member.result.durationMs;
+    if (typeof duration === 'number' && duration > 0) total += duration;
+  }
+  return total;
+}
+
+function groupErrorLabel(members: InlineToolGroupMember[]): string {
+  const failed = members.filter((m) => m.failed || (m.result && m.result.ok === false)).length;
+  const base = translate('tool.groupNeedsAttention', 'Tool needs attention');
+  if (!failed) return base;
+  return base + ' · ' + translate('tool.failedCount', '{n} failed').replace('{n}', String(failed));
+}
+
+function groupDoneLabel(name: string, members: InlineToolGroupMember[]): string {
+  const count = members.length;
+  const failed = members.filter((m) => m.failed || (m.result && m.result.ok === false)).length;
+  if (failed > 0) return groupErrorLabel(members);
+  if (isInlineSearchTool(name)) {
+    let total = 0;
+    for (const member of members) {
+      const results = member.result && Array.isArray(member.result.results)
+        ? member.result.results
+        : [];
+      total += results.length;
+    }
+    if (total > 0) {
+      return translate('tool.groupSearchDone', 'Found {n} sources · {m} searches')
+        .replace('{n}', String(total))
+        .replace('{m}', String(count));
+    }
+    return translate('tool.groupSearchEmpty', 'No results · {m} searches')
+      .replace('{m}', String(count));
+  }
+  if (name === 'code_interpreter' || name === 'Code') {
+    return translate('tool.groupCodeDone', 'Executed {m} runs').replace('{m}', String(count));
+  }
+  if (name === 'render_visualization') {
+    return translate('tool.groupVisualDone', 'Created {m} visuals').replace('{m}', String(count));
+  }
+  return translate('tool.groupDone', 'Used {m} tools').replace('{m}', String(count));
+}
+
+function renderInlineGroupDetails(
+  row: HTMLElement,
+  members: InlineToolGroupMember[],
+  state: string,
+): void {
+  const detail = row.querySelector('.tool-inline-detail') as HTMLElement | null;
+  if (!detail) return;
+  detail.replaceChildren();
+  let hasContent = false;
+  const name = row.dataset.tool || '';
+
+  /* Combined source list for grouped search rows (deduped across calls). */
+  if (state !== 'error' && isInlineSearchTool(name)) {
+    const all: SourceItem[] = [];
+    const seen = new Set<string>();
+    for (const member of members) {
+      const results = member.result && Array.isArray(member.result.results)
+        ? member.result.results
+        : [];
+      for (const src of normalizeSources(results)) {
+        const key = src.url || src.title;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        all.push(src);
+        if (all.length >= 12) break;
+      }
+      if (all.length >= 12) break;
+    }
+    if (all.length) {
+      const section = document.createElement('section');
+      section.className = 'tool-inline-detail-section';
+      section.dataset.kind = 'sources';
+      const heading = document.createElement('div');
+      heading.className = 'tool-inline-detail-title';
+      heading.textContent = translate('tool.sources', 'Sources');
+      const list = document.createElement('div');
+      list.innerHTML = sourcesHtml(all);
+      section.appendChild(heading);
+      while (list.firstChild) section.appendChild(list.firstChild);
+      detail.appendChild(section);
+      hasContent = true;
+    }
+  }
+
+  for (let index = 0; index < members.length; index++) {
+    const member = members[index];
+    const result = member.result || null;
+    const failed = !!(member.failed || (result && result.ok === false));
+    const cancelled = !!member.cancelled;
+    const section = document.createElement('section');
+    section.className = 'tool-inline-detail-section';
+    section.dataset.kind = 'member';
+    section.dataset.memberId = member.id;
+    const heading = document.createElement('div');
+    heading.className = 'tool-inline-detail-title tool-inline-detail-member-title';
+    heading.textContent = members.length > 1
+      ? '#' + (index + 1) + ' ' + (member.name || 'tool')
+      : (member.name || 'tool');
+    section.appendChild(heading);
+    const sub = document.createElement('div');
+    sub.className = 'tool-inline-detail-member';
+    if (cancelled) {
+      const empty = document.createElement('p');
+      empty.className = 'tool-inline-detail-empty';
+      empty.textContent = translate('tool.statusStopped', 'Stopped');
+      sub.appendChild(empty);
+      hasContent = true;
+    } else {
+      hasContent = appendDetailSection(
+        sub,
+        translate('tool.arguments', 'Arguments'),
+        member.input,
+        'input',
+      ) || hasContent;
+      const errorMessage = failed
+        ? [result && result.userMessage, result && result.error].filter(Boolean).join('\n')
+        : '';
+      hasContent = appendDetailSection(
+        sub,
+        failed ? translate('tool.errorDetails', 'Error details') : translate('tool.result', 'Result'),
+        failed ? (result && result.output) || errorMessage : result && result.output,
+        failed ? 'error' : 'output',
+      ) || hasContent;
+      if (failed && result && result.detail != null && detailText(result.detail) !== errorMessage) {
+        hasContent = appendDetailSection(
+          sub,
+          translate('tool.details', 'Details'),
+          result.detail,
+          'technical',
+        ) || hasContent;
+      }
+      if (result && result.stderr) {
+        hasContent = appendDetailSection(sub, 'stderr', result.stderr, 'error') || hasContent;
+      }
+    }
+    section.appendChild(sub);
+    detail.appendChild(section);
+  }
+
+  if (!hasContent) {
+    const empty = document.createElement('p');
+    empty.className = 'tool-inline-detail-empty';
+    empty.textContent = translate('tool.noDetails', 'No additional details.');
+    detail.appendChild(empty);
+  }
+  row.dataset.expandable = '1';
+}
+
+/** Settle a grouped row with per-member aggregate status + details. */
+export function settleInlineToolGroupRow(
+  row: HTMLElement,
+  members: InlineToolGroupMember[],
+  opts?: { cancelled?: boolean },
+): void {
+  const name = row.dataset.tool || '';
+  const cancelledAll = !!(opts && opts.cancelled);
+  const failed = members.some((m) => m.failed || (m.result && m.result.ok === false));
+  const cancelled = cancelledAll || members.every((m) => m.cancelled);
+  const state = cancelled ? 'stopped' : failed ? 'error' : 'done';
+  row.dataset.state = state;
+  row.dataset.groupSettled = '1';
+  const toolIcon = row.querySelector('.tool-inline-tool-icon');
+  if (toolIcon) toolIcon.innerHTML = toolTypeIconHtml(name);
+  const label = row.querySelector('.tool-inline-label');
+  if (label) {
+    label.classList.remove('shimmer-text');
+    label.textContent = cancelled
+      ? translate('tool.statusStopped', 'Stopped')
+      : failed
+        ? groupErrorLabel(members)
+        : groupDoneLabel(name, members);
+  }
+  const meta = row.querySelector('.tool-inline-meta');
+  const duration = groupDurationMs(members);
+  if (meta) meta.textContent = duration > 0 ? (duration / 1000).toFixed(1) + 's' : '';
+  renderInlineGroupDetails(row, members, state);
+}
+
+/**
+ * Finish-time fallback: settle a row from the message's persisted toolCalls.
+ * Grouped rows (data-group-ids) settle as one aggregate row; plain rows keep
+ * the existing "stopped" behaviour for anything still running at finish.
+ */
+export function settleInlineToolRowFromMessage(
+  row: HTMLElement,
+  message: { toolCalls?: InlineToolMessageCall[] } | null,
+): void {
+  const groupIds = row.dataset.groupIds;
+  const calls = message && Array.isArray(message.toolCalls) ? message.toolCalls : [];
+  if (groupIds && calls.length) {
+    const ids = groupIds.split(',');
+    const members = ids
+      .map((id) => calls.find((call) => String(call.id) === id))
+      .filter(Boolean) as InlineToolMessageCall[];
+    if (members.length > 1) {
+      settleInlineToolGroupRow(row, members.map((member) => ({
+        id: String(member.id || ''),
+        name: member.name || row.dataset.tool || 'tool',
+        input: member.input,
+        result: {
+          ok: !member.isError,
+          output: member.output || undefined,
+          results: member.results,
+          error: member.isError ? (member.error || member.output || undefined) : undefined,
+          stderr: member.stderr,
+          userMessage: member.userMessage,
+          detail: member.detail,
+          durationMs: member._run && member._run.durationMs ? member._run.durationMs : member.durationMs || 0,
+        },
+        cancelled: !!(member._run && member._run.phase === 'cancelled'),
+        failed: !!member.isError,
+      })), { cancelled: true });
+      return;
+    }
+  }
+  settleInlineToolRow(row, null, { cancelled: true });
 }
 
 function iconHtml(state: string): string {

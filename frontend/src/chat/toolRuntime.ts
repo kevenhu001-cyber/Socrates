@@ -18,6 +18,7 @@ import {
 import {
   createInlineToolRow,
   replaceLiveInlineToolRow,
+  settleInlineToolGroupRow,
   settleInlineToolRow,
   toolCategory,
   updateInlineToolCodePreview,
@@ -25,6 +26,7 @@ import {
   updateInlineToolLabel,
   updateInlineToolMeta,
 } from '../ui/toolInline.js';
+import type { InlineToolGroupMember } from '../ui/toolInline.js';
 import { mountVisualization } from '../render/visualization.js';
 import {
   TOOL_RUN_PHASES,
@@ -58,6 +60,8 @@ interface ToolCallEntry {
   textOffset?: number;
   /** Client-only runtime metadata — not persisted. */
   _run?: ToolRun;
+  /** Id of the grouped inline row this call was merged into (live UI). */
+  _groupHeadId?: string;
   _pendingDeltas?: ToolCallDelta[];
   _pendingProgress?: ToolProgress[];
   _toolResultApplied?: boolean;
@@ -175,6 +179,8 @@ export interface ToolRuntime {
   recordToolCallDelta: (delta: ToolCallDelta) => void;
   recordExecutionStart: (event: ExecutionEvent) => void;
   recordToolResult: (result: ToolResult) => void;
+  /** Called when text streams after a tool row so live grouping breaks. */
+  noteTextDelta: () => void;
   cancel: () => void;
   dispose: () => void;
 }
@@ -311,6 +317,20 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   };
   const liveSingleCardSlot = options.liveSingleCardSlot || null;
 
+  /* P_tool-live-group — consecutive same-category tools while no text has
+     streamed in between collapse into one visible inline row. The state
+     lives here (per message runtime) so merged members can route progress
+     and results back to the head row without touching persisted data. */
+  interface LiveGroupState {
+    headId: string;
+    headRow: HTMLElement;
+    offset: number | null;
+    textSinceHead: boolean;
+    memberIds: string[];
+    settled: boolean;
+  }
+  let liveGroup: LiveGroupState | null = null;
+
   function mountInlineRow(entry: ToolCallEntry): number | null {
     if (findCard(entry.id)) return null;
     const row = createInlineToolRow({
@@ -320,7 +340,16 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     });
     let offset: number | null = null;
     try { offset = onInlineTool({ id: entry.id, name: entry.name }, row); } catch (_) { body.appendChild(row); }
-    return typeof offset === 'number' ? offset : null;
+    const resolved = typeof offset === 'number' ? offset : null;
+    liveGroup = {
+      headId: entry.id,
+      headRow: row,
+      offset: resolved,
+      textSinceHead: false,
+      memberIds: [entry.id],
+      settled: false,
+    };
+    return resolved;
   }
 
   /* P_tool_live_card — when a live single-card slot is configured, mount
@@ -374,6 +403,75 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     const w = getSocratesWasm();
     if (w) return w.categorize_tool_js(String(a || '')) === w.categorize_tool_js(String(b || ''));
     return toolCategory(String(a || '')) === toolCategory(String(b || ''));
+  }
+
+  /* P_tool-live-group — merge predicate: the previous row is still the
+     live head, still running, same display category, and no text has
+     streamed since the head mounted. */
+  function findMergeGroup(entry: ToolCallEntry): LiveGroupState | null {
+    if (!liveGroup || liveGroup.settled || liveGroup.textSinceHead) return null;
+    const headRow = liveGroup.headRow;
+    if (!headRow || !headRow.isConnected || headRow.dataset.state !== 'running') return null;
+    const message = activeMessage();
+    const headEntry = message ? findEntry(message, liveGroup.headId) : null;
+    if (!headEntry || !sameToolCategory(headEntry.name, entry.name)) return null;
+    return liveGroup;
+  }
+
+  function mergeIntoGroup(entry: ToolCallEntry, group: LiveGroupState): void {
+    group.memberIds.push(entry.id);
+    group.headRow.dataset.groupIds = group.memberIds.join(',');
+    entry._groupHeadId = group.headId;
+    if (group.offset != null) entry.textOffset = group.offset;
+    try { updateInlineToolGroupLabel(group.headRow, group.memberIds.length); } catch (_) { /* ignore */ }
+  }
+
+  function groupMemberSummaries(headRow: HTMLElement, opts?: { forceCancel?: boolean }): InlineToolGroupMember[] | null {
+    const message = activeMessage();
+    if (!message) return null;
+    const ids = (headRow.dataset.groupIds || '').split(',').filter(Boolean);
+    if (ids.length < 2) return null;
+    const entries = ids
+      .map((id) => findEntry(message, id))
+      .filter((entry): entry is ToolCallEntry => !!entry);
+    if (entries.length < 2) return null;
+    const allTerminal = entries.every((entry) => {
+      if (opts && opts.forceCancel) return true;
+      const run = getRun(entry);
+      if (run) return isTerminalToolPhase(run.phase);
+      return !!entry._toolResultApplied || entry.isError || entry.output != null;
+    });
+    if (!allTerminal) return null;
+    return entries.map((entry) => {
+      const run = getRun(entry);
+      const cancelled = !!(opts && opts.forceCancel) || (!!run && run.phase === TOOL_RUN_PHASES.cancelled);
+      return {
+        id: entry.id,
+        name: entry.name,
+        input: entry.input,
+        result: {
+          ok: !entry.isError,
+          output: entry.output || undefined,
+          results: entry.results,
+          error: entry.isError ? (entry.output || undefined) : undefined,
+          durationMs: (run && run.durationMs) || 0,
+        },
+        cancelled,
+        failed: entry.isError,
+      };
+    });
+  }
+
+  function maybeSettleGroup(headRow: HTMLElement, opts?: { forceCancel?: boolean }): void {
+    if (!headRow || headRow.dataset.groupSettled === '1') return;
+    const members = groupMemberSummaries(headRow, opts);
+    if (!members) return;
+    try {
+      settleInlineToolGroupRow(headRow, members, { cancelled: !!(opts && opts.forceCancel) });
+    } catch (_) { /* ignore */ }
+    if (liveGroup && headRow.getAttribute('data-tcid') === liveGroup.headId) {
+      liveGroup = null;
+    }
   }
 
   function findInlineRow(id: string): HTMLElement | null {
@@ -479,7 +577,11 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     entry._progressPhase = progress.phase;
     setRun(entry, phaseFromProgress(progress), { elapsedMs: progress.elapsedMs || 0 });
     updateRunSummary(message);
-    const card = findCard(progress.id);
+    let card = findCard(progress.id);
+    if (!card && entry._groupHeadId) {
+      const headCard = findCard(entry._groupHeadId);
+      if (headCard && headCard.classList.contains('tool-inline')) card = headCard;
+    }
     if (!card) {
       entry._pendingProgress = entry._pendingProgress || [];
       entry._pendingProgress.push(progress);
@@ -607,6 +709,19 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       matchedIds.add(found.id);
       try { updateInlineToolCodePreview(row, found.arguments || '', found.name || ''); } catch (_) { /* ignore */ }
     }
+
+    /* Merged members have no row of their own — stream their deltas into
+       the head row's live preview so code arguments stay visible. */
+    latest.forEach(function (delta) {
+      if (!delta || !delta.id || matchedIds.has(delta.id)) return;
+      const entry = findEntry(message, delta.id);
+      if (!entry || !entry._groupHeadId) return;
+      const head = findCard(entry._groupHeadId);
+      if (!head || !head.classList.contains('tool-inline')
+        || (head as HTMLElement).dataset.state !== 'running') return;
+      matchedIds.add(delta.id);
+      try { updateInlineToolCodePreview(head as HTMLElement, delta.arguments || '', delta.name || ''); } catch (_) { /* ignore */ }
+    });
 
     latest.forEach(function (delta) {
       if (!delta || !delta.id || matchedIds.has(delta.id)) return;
@@ -755,12 +870,20 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
 
     if (!Array.isArray(message.toolCalls)) message.toolCalls = [];
     message.toolCalls.push(entry);
+    let mergedInto: LiveGroupState | null = null;
+    if (mode === 'compact' && !liveSingleCardSlot) {
+      mergedInto = findMergeGroup(entry);
+      if (mergedInto) mergeIntoGroup(entry, mergedInto);
+    }
     let output: Element | null = null;
     if (mode === 'detailed') {
       output = appendToolModule(entry.name, entry.input || {}, ensureToolContainer());
       if (!output) return null;
       const card = output.closest('.agent-tool-card');
       if (card) card.setAttribute('data-tcid', entry.id);
+    } else if (mergedInto) {
+      /* Merged member: no new visible row; the head row carries the
+         aggregate count and the member's own textOffset is inherited. */
     } else if (liveSingleCardSlot) {
       mountLiveSingleCardRow(entry);
     } else {
@@ -783,7 +906,8 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
            replay into the compact row's live preview too; updateToolCardCode
            above is a no-op in compact mode (no .agent-tool-card exists). */
         if (mode === 'compact') {
-          const inlineRow = findInlineRow(entry.id);
+          const inlineRow = findInlineRow(entry.id)
+            || (mergedInto ? mergedInto.headRow : null);
           if (inlineRow) {
             try { updateInlineToolCodePreview(inlineRow, queuedDeltas[deltaIndex].arguments || '', queuedDeltas[deltaIndex].name || ''); } catch (_) { /* ignore */ }
           }
@@ -971,7 +1095,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       // Non-image artifacts (CSVs, JSON) are persisted on the entry and
       // discoverable via the session history, so we drop them silently.
       if (mode === 'compact') {
-        const row = findInlineRow(entry.id);
+        let row = findInlineRow(entry.id);
         if (row) {
           /* P_tool-live-group — a merged row settling expands it: unhide
              and swap it into the live slot as the visible row. */
@@ -979,12 +1103,23 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
             delete row.dataset.merged;
             try { replaceLiveInlineToolRow(liveSingleCardSlot, row, { skipFlash: true }); } catch (_) { /* ignore */ }
           }
-          settleInlineToolRow(row, {
-            ...result,
-            output: entry.output || result.output || '',
-          }, { cancelled: result.status === 'cancelled' });
+          if (row.dataset.groupIds && Number(row.dataset.groupCount || 1) > 1) {
+            maybeSettleGroup(row as HTMLElement);
+          } else {
+            settleInlineToolRow(row, {
+              ...result,
+              output: entry.output || result.output || '',
+            }, { cancelled: result.status === 'cancelled' });
+          }
+        } else if (entry._groupHeadId) {
+          const headRow = findCard(entry._groupHeadId);
+          if (headRow && headRow.classList.contains('tool-inline')) {
+            maybeSettleGroup(headRow as HTMLElement);
+          }
         }
-        const attachmentHost = row ? ensureRowAttachmentHost(row, entry.id) : body;
+        const attachRow = row
+          || (entry._groupHeadId ? (findCard(entry._groupHeadId) as HTMLElement | null) : null);
+        const attachmentHost = attachRow ? ensureRowAttachmentHost(attachRow, entry.id) : body;
         for (let artifactIndex = 0; artifactIndex < entry.artifacts.length; artifactIndex++) {
           const artifact = entry.artifacts[artifactIndex];
           if (artifact.id && artifact.mimeType && artifact.mimeType.indexOf('image/') === 0) {
@@ -1048,6 +1183,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   function dispose(): void {
     if (disposed) return;
     disposed = true;
+    liveGroup = null;
     pendingDeltas.length = 0;
     if (deltaFrame != null) {
       cancelFrame(deltaFrame);
@@ -1055,6 +1191,12 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     }
     Array.from(executionConnections.values()).forEach(closeConnection);
     executionConnections.clear();
+  }
+
+  /* Text streaming after a tool row breaks live grouping: the next
+     same-category call starts a fresh row instead of merging. */
+  function noteTextDelta(): void {
+    if (liveGroup) liveGroup.textSinceHead = true;
   }
 
   function cancel(): void {
@@ -1065,12 +1207,27 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
         if (!entry || (getRun(entry) && isTerminalToolPhase(getRun(entry)!.phase))) continue;
         setRun(entry, TOOL_RUN_PHASES.cancelled, { endedAt: Date.now() });
         const card = findCard(entry.id);
+        if (entry._groupHeadId) {
+          /* Merged member: the head row settles the whole group below. */
+          continue;
+        }
         if (card && (card as HTMLElement).classList.contains('tool-inline')) {
+          if (card && (card as HTMLElement).dataset.groupIds) {
+            /* Group head: settle as one aggregate row after the loop. */
+            continue;
+          }
           settleInlineToolRow(card as HTMLElement, null, { cancelled: true });
         } else if (card) {
           (card as HTMLElement).dataset.toolState = 'cancelled';
           const badge = card.querySelector('.agent-tool-status') as HTMLElement | null;
           if (badge) { badge.className = 'agent-tool-status mute'; badge.textContent = translate('tool.statusStopped', 'Stopped'); }
+        }
+      }
+      const groupRows = body.querySelectorAll('.tool-inline[data-group-ids]');
+      for (let gi = 0; gi < groupRows.length; gi++) {
+        const groupRow = groupRows[gi] as HTMLElement;
+        if (groupRow.dataset.groupSettled !== '1') {
+          maybeSettleGroup(groupRow, { forceCancel: true });
         }
       }
       updateRunSummary(message);
@@ -1085,6 +1242,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     recordToolCallDelta,
     recordExecutionStart,
     recordToolResult,
+    noteTextDelta,
     cancel,
     dispose,
   };

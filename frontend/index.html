@@ -48,18 +48,11 @@
   } catch (_) { /* not in Capacitor — fall through */ }
 })();
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<!-- P5.1 — Google Fonts CSS is intentionally NOT SRI-pinned: the CSS
-     response is generated per-user-agent and is tiny; the actual
-     font binaries are loaded with `crossorigin` and pinned with
-     stable fonts.googleapis.com URL.  For first-party SRI, swap to
-     self-hosting the .woff2 files. -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
-<!-- P5.1 — Subresource Integrity (SHA-384) for all third-party CDN
-     assets. If a CDN is compromised and serves a different file, the
-     browser refuses to apply it. `crossorigin="anonymous"` is required
-     for SRI to take effect on <link>/<script> without credentials. -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<!-- P_perf-self-host — fonts (Inter/Newsreader), KaTeX CSS, marked,
+     DOMPurify, KaTeX, highlight.js, and fuse.js are bundled by Vite from
+     npm (see src/vendor/init.js); mermaid / echarts / plotly are dynamic
+     imports loaded only when a visualization actually mounts. Nothing on
+     this page depends on fonts.googleapis.com or cdn.jsdelivr.net. -->
 <!-- P0.6 — pre-boot marker. -->
 <script>
 (function(){
@@ -778,64 +771,6 @@
 </main>
 </div>
 
-<!-- P_stability-cdn-defer — All third-party CDN scripts are loaded with
-     `defer` (NOT `async`). `async` would break the hard execution-order
-     requirement between katex → mhchem → auto-render (each reads the
-     previous global synchronously at load time). `defer` preserves
-     document-order execution AND releases the parser immediately, so a
-     slow/hung CDN can no longer block app boot: before this change a
-     stalled CDN <script> froze HTML parsing, which deferred the
-     `type="module"` entry bundle forever (app never boots, /api calls
-     never fire). Every CDN global is optional at runtime — render/
-     viz/ui all fall back gracefully when a global is missing — so boot
-     must never wait on them. `defer` scripts still run before DOMContentLoaded,
-     and module scripts execute after parse in document order, so the
-     "CDN globals defined before first module touch" guarantee holds. -->
-<!-- P5.1 — `marked` pinned to 13.0.3 (the URL was previously
-     `marked/marked.min.js` with no version — that resolves to
-     latest, which can break the chat UI silently). -->
-<script defer src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js" integrity="sha384-YTBHtsL8yVTHcLakYNyrOfK3K+QQcXiECuaALJ+3j7Mo681Rtzadt8NR6WrZH+eQ" crossorigin="anonymous"></script>
-<!-- P5.1 — DOMPurify 3.2.4 — required to sanitise the HTML output
-     of marked.parse() before it reaches innerHTML. marked passes
-     raw HTML through by default; without this, an attacker who
-     can inject content (prompt injection, malicious share view,
-     XSS in upstream model) can run arbitrary JavaScript via
-     <img onerror=…>, <svg onload=…>, etc. SRI-pinned so a CDN
-     compromise cannot swap the library out from under us. -->
-<script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-ifpG+NlgMq0kvOSGqGQxW1mJKpjjMDmZdpKGq3tbvD3WPhyshCEEYClriK/wRVU0" crossorigin="anonymous"></script>
-<!-- KaTeX auto-render — catches math the explicit $...$/$$...$$ pass
-     misses (e.g. model emits \(x+y\) with extra whitespace, or an
-     unclosed \( at end of stream). Loaded after katex.min.js since it
-     depends on the global `katex` symbol.
-     Note: KaTeX 0.16 dropped contrib/cancel; strikethrough macros
-     (\cancel, \bcancel, \xcancel) are emulated in KATEX_MACROS
-     instead. See frontend/src/render/helpers.js for details. -->
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.min.js" integrity="sha384-T/0lMUdJpd2S1ZHtRiofG3htU3xPCrFVeAQ1UUE2TJwlEJSV5NUwn30kP28n238E" crossorigin="anonymous" onload="try{var dm=document.documentElement.getAttribute('data-mode')==='dark';mermaid.initialize({startOnLoad:false,theme:dm?'dark':'default'})}catch(_){}"></script>
-<!-- P_viz-echarts-cdn — full echarts UMD, ~1.1 MB min. Importing via npm
-     pulled 4 sub-modules + zrender into the Rollup graph (~200 MB of
-     node_modules walked per build). The full bundle already registers
-     every chart/component/renderer, so visualization.js no longer needs
-     the `core.use([...])` step. SRI-pinned to echarts 6.1.0. -->
-<script defer src="https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js" integrity="sha384-C2iskrW/uPW46KzOjrvJIQo4YkV8lkD+QS0CrDN18IIPIpT/g2USu8bTP3nvmIAD" crossorigin="anonymous"></script>
-<!-- P_viz-plotly-cdn — plotly.js-dist-min ~4.85 MB. Imported via npm
-     it forces Rollup to parse a 4.85 MB single-file bundle just to
-     build the dynamic chunk, holding ~100 MB of AST in memory. The
-     CDN exposes the same Plotly global. SRI-pinned to 3.7.0. -->
-<script defer src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@3.7.0/plotly.min.js" integrity="sha384-l4G4qURPwALv583BKlynU/4LiUx0rk9jcTX58Aq+Jc+jgWb52zeH2geZkSS3UPPs" crossorigin="anonymous"></script>
-<!-- highlight.js (code syntax highlighting). Optional: if the CDN is
-     blocked, hljs is undefined and addStreamingMessage falls back to
-     plain <pre><code> rendering. -->
-<!-- P5.1 — SRI for highlight.js (style + script). -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css" integrity="sha384-oaMLBGEzBOJx3UHwac0cVndtX5fxGQIfnAeFZ35RTgqPcYlbprH9o9PUV/F8Le07" crossorigin="anonymous">
-<script defer src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js" integrity="sha384-F/bZzf7p3Joyp5psL90p/p89AZJsndkSoGwRpXcZhleCWhd8SnRuoYo4d0yirjJp" crossorigin="anonymous"></script>
-<!-- P1.2 — fuse.js for client-side global search. Pinned to 7.0.0
-     with SRI; ~12 KB gzipped. Builds a fuzzy-search index over
-     session titles, message raw text, and (when present) memory
-     and artifact entries. -->
-<script defer src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js" integrity="sha384-PCSoOZTpbkikBEtd/+uV3WNdc676i9KUf01KOA8CnJotvlx8rRrETbDuwdjqTYvt" crossorigin="anonymous"></script>
 <script type="module" src="/src/main.js"></script>
 <script type="module" src="/src/tutorSocratic.js"></script>
 

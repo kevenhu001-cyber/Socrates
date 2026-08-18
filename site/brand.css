@@ -6,8 +6,6 @@
  * editorial copy on English pages. Both families ship with `font-display:
  * swap` so first paint is never blocked on the webfont.
  */
-@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600&display=swap");
-
 /*
  * Socrates brand layer
  *
@@ -36,7 +34,7 @@
      any Latin glyph inside a Chinese page renders with the English-interface
      sans, and only CJK glyphs fall through to 思源黑体 (Noto Sans SC), which
      is loaded as a webfont (no YaHei / SimSun fallback on Windows). */
-  --site-sans-cjk: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", sans-serif;
+  --site-sans-cjk: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Microsoft JhengHei", "Source Han Sans SC", sans-serif;
   /* Latin editorial serif — Newsreader is a contemporary book serif that
      stays comfortable at long measure without the museum-piece weight of
      Spectral or Source Serif. Geist is intentionally NOT in this stack:
@@ -48,7 +46,7 @@
      English-interface serif; CJK glyphs fall through to 思源黑体
      (Noto Sans SC) per the Chinese-page typography spec, with Noto Serif SC
      / Songti SC kept only as further fallbacks. */
-  --site-serif-cjk: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Sans SC", "Source Han Serif SC", "Songti SC", serif;
+  --site-serif-cjk: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Serif SC", "Noto Sans SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
   --site-mono: "Geist Mono", "JetBrains Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
   --site-shadow: 0 16px 42px rgba(33, 28, 22, .08);
 

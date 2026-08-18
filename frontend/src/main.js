@@ -1,4 +1,12 @@
 /* ─── Module imports (Phase 2 split) ─── */
+/* P_perf-self-host — bundle the former CDN globals (marked, DOMPurify,
+   katex, hljs, Fuse) before any consumer module evaluates. */
+import './vendor/init.js';
+import { ensureFuse, ensureHighlight, onKatexReady } from './vendor/lazy.js';
+/* P_perf-react-eager — React compatibility runtime is a static import so
+   Vite preloads it (and its Tiptap/React deps) alongside the main entry
+   instead of the browser discovering it only after main.js executes. */
+import { bootstrapReactCompatibilityRuntime } from './react/bootstrap.tsx';
 /* Side-effect import: forces Vite/esbuild to keep windowExports.js
    (which re-exposes ~75 inline-handler-needed functions on window)
    in the bundle. Without this, esbuild's tree-shaking would drop
@@ -88,7 +96,7 @@ import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
    legacy e2e suite and `window.__startSearchProgress` test hook. */
 import { startSearchProgress } from './ui/searchProgress.js';
 import { createToolRuntime } from './chat/toolRuntime.js';
-import { settleInlineToolRow, createInlineToolRow } from './ui/toolInline.js';
+import { settleInlineToolRow, settleInlineToolRowFromMessage, createInlineToolRow } from './ui/toolInline.js';
 import { beginAgentTextStream, appendRunFooter } from './chat/agentStream.js';
 import { BUILTIN_TEMPLATES, SYSTEM_PROMPT_SUMMARIZE, SYSTEM_PROMPT_TRANSLATE, SYSTEM_PROMPT_EXPLAIN_CODE, SYSTEM_PROMPT_DEBUG, SYSTEM_PROMPT_QUIZ, SYSTEM_PROMPT_SOCRATIC, PROMPT_TEMPLATES_KEY, loadPromptTemplates, savePromptTemplates, findTemplateByShortcut, upsertCustomTemplate, deleteCustomTemplate } from './chat/promptTemplates.js';
 import { renderNoUrlHint, renderLinkPreviews } from './ui/linkPreviews.js';
@@ -133,6 +141,54 @@ function publishReactChatRuntime(event){
     if(bridge&&typeof bridge.publish==="function")bridge.publish(event);
   }catch(_){}
 }
+
+/* Thinking panel bridge — live reasoning text is published through the
+   React store so the right drawer / mobile sheet can render it without
+   touching the legacy stream DOM. The bridge is installed by
+   bootstrap.tsx; these helpers no-op safely when it is absent. */
+function publishThinkingPanelEvent(event){
+  try{
+    var bridge=window.__socratesThinkingPanelBridge;
+    if(bridge&&typeof bridge.publish==="function")bridge.publish(event);
+  }catch(_){}
+}
+function publishThinkingTurnStart(){
+  publishThinkingPanelEvent({type:"turn-start"});
+}
+
+/* P_perf-lazy-katex — re-render assistant messages once KaTeX arrives so
+   math that streamed as fallback text repaints as real formulas. React
+   owns #msgList, so we update state + bridge and let React repaint. */
+function rerenderMathAfterKatex(){
+  try{
+    var list=document.getElementById("msgList");
+    if(!list)return;
+    var msgs=(typeof state!=="undefined"&&state&&Array.isArray(state.messages))?state.messages:[];
+    var changed=false;
+    for(var mi=0;mi<msgs.length;mi++){
+      var m=msgs[mi];
+      if(!m||m.role!=="assistant"||typeof m.rawText!=="string")continue;
+      if(!/\$|\\\(/.test(m.rawText))continue;
+      var html=renderAssistantHTML(m.rawText);
+      m.html=html;
+      changed=true;
+      var id=m.clientId||m.id||"";
+      if(!id)continue;
+      var escId=typeof CSS!=="undefined"&&CSS.escape?CSS.escape(id):String(id).replace(/["\\]/g,"\\$&");
+      var node=list.querySelector('[data-client-id="'+escId+'"] .msg-body');
+      if(node&&!node.closest('[data-react-owned]')){
+        node.innerHTML=html;
+        try{processPendingMermaid()}catch(_){}
+        try{processPendingViz()}catch(_){}
+        try{processPendingVizActions()}catch(_){}
+        try{wireCodeBlockHeaders(node)}catch(_){}
+      }
+    }
+    if(changed)publishReactChatRuntime({type:"state-synced",reason:"katex-ready"});
+  }catch(_){}
+}
+window.__socratesRerenderMath = rerenderMathAfterKatex;
+try{onKatexReady(rerenderMathAfterKatex)}catch(_){}
 
 /* React owns #msgList's message nodes (marked data-react-owned). Wiping the
    container with innerHTML="" detaches React's nodes behind its back, and the
@@ -2819,6 +2875,7 @@ import { detectLanguage, languageDirectiveFor } from './chat/lang.js';
 
 
 async function startSession(){
+  publishThinkingTurnStart();
   /* P_slash-topic — if the slash command palette is open, don't
      start a session; the Enter key will be handled by the palette's
      keydown listener to insert the selected template. */
@@ -3382,6 +3439,7 @@ async function askNextQuestion(){
    that runs formatMsg exactly once — no renderAssistantHTML).
    ============================================================ */
 async function askChatTurn(userText,pendingOverride){
+  publishThinkingTurnStart();
   /* Abort the previous in-flight chat stream, if any. Without this the
      old streamCtl stays in "正在思考…" until its own 45 s timer fires,
      which makes the UI feel frozen when the user fires a follow-up
@@ -5452,6 +5510,58 @@ function addStreamingMessage(opts){
      during streaming but lost on reload. */
   var fullReasoning="";
   var finished=false;
+  /* P_thinking-panel — the right drawer shows both reasoning_content
+     deltas and inline <think> blocks. These helpers keep the panel's
+     text snapshot in sync with the live stream without slowing the
+     markdown renderer (the bridge throttles + dedupes commits). */
+  function _extractThinkText(raw){
+    if(typeof raw!=="string"||raw.indexOf("<think>")===-1)return "";
+    var out=[];
+    var re=/<think>([\s\S]*?)<\/think>/g;
+    var m;
+    while((m=re.exec(raw))!==null){
+      if(m[1])out.push(m[1]);
+    }
+    var lastOpen=raw.lastIndexOf("<think>");
+    var lastClose=raw.lastIndexOf("</think>");
+    if(lastOpen!==-1&&lastClose<lastOpen){
+      var tail=raw.slice(lastOpen+"<think>".length);
+      if(tail)out.push(tail);
+    }
+    return out.join("\n\n");
+  }
+  function _combinedThinkingText(){
+    var parts=[];
+    if(fullReasoning)parts.push(fullReasoning);
+    var thinkText=_extractThinkText(full);
+    if(thinkText)parts.push(thinkText);
+    if(parts.length<2)return parts.join("\n\n");
+    var divider="—— inline thinking ——";
+    try{
+      if(typeof window!=="undefined"&&typeof window.t==="function"){
+        var d=window.t("think.inlineThinkDivider");
+        if(d&&d!=="think.inlineThinkDivider")divider=d;
+      }
+    }catch(_){}
+    return parts[0]+"\n\n"+divider+"\n\n"+parts[1];
+  }
+  function _publishThinkingPanelLive(){
+    try{
+      var bridge=window.__socratesThinkingPanelBridge;
+      if(bridge&&typeof bridge.publishThinkingDelta==="function"){
+        bridge.publishThinkingDelta(clientId,_combinedThinkingText());
+      }
+    }catch(_){}
+  }
+  function _publishThinkingPanelEnd(){
+    publishThinkingPanelEvent({type:"thinking-end",messageId:clientId});
+  }
+  function _publishThinkingPanelStart(){
+    publishThinkingPanelEvent({type:"thinking-start",messageId:clientId});
+  }
+  function _openThinkingPanel(){
+    publishThinkingPanelEvent({type:"panel-open",messageId:clientId});
+  }
   /* P_session-stream-dispose — when resetApp() or loadSession() aborts
      an in-flight stream, already-queued delta chunks from the response
      body can still reach append()/finish() callbacks via stream.js's
@@ -5647,7 +5757,7 @@ function addStreamingMessage(opts){
        real reasoning_content arrives. Remove it here so the user
        sees only the thinking pill ("正在思考"), not both. */
     try{placeholder.remove()}catch(_){}
-    thinkCtl=appendThinking("");
+    thinkCtl=appendThinking(clientId);
     /* If appendThinking returned null (DOM not ready), fall back to no-op. */
     if(!thinkCtl)thinkCtl={append:function(){},finalize:function(){},remove:function(){}};
     return thinkCtl;
@@ -5715,6 +5825,35 @@ function addStreamingMessage(opts){
   placeholderText.textContent=appMode==="chat"?t("think.thinking"):t("common.generating");
   placeholderRow.appendChild(placeholderText);
   placeholder.appendChild(placeholderRow);
+  /* P_thinking-clickable — in chat mode the waiting placeholder opens
+     the right-side thinking panel too (the same affordance as the
+     reasoning pill). Tutor mode keeps its "Generating…" copy non-
+     interactive so the panel entry stays tied to "Thinking…". */
+  if(appMode==="chat"){
+    placeholderRow.classList.add("thinking-dot-clickable");
+    placeholderRow.setAttribute("role","button");
+    placeholderRow.setAttribute("tabindex","0");
+    try{
+      var _openLabel=t("think.openPanel");
+      if(_openLabel&&_openLabel!=="think.openPanel"){
+        placeholderRow.setAttribute("aria-label",_openLabel);
+      }else{
+        placeholderRow.setAttribute("aria-label","View thinking process");
+      }
+    }catch(_){
+      placeholderRow.setAttribute("aria-label","View thinking process");
+    }
+    placeholderRow.addEventListener("click",function(ev){
+      ev.preventDefault();
+      _openThinkingPanel();
+    });
+    placeholderRow.addEventListener("keydown",function(ev){
+      if(ev.key==="Enter"||ev.key===" "){
+        ev.preventDefault();
+        _openThinkingPanel();
+      }
+    });
+  }
   body.appendChild(placeholder);
   scheduleActiveTurnToTop(list,div,msgIdx,retryViewport);
   function setPlaceholderText(label){
@@ -6125,6 +6264,13 @@ function doRender(){
       }
     }
 
+    /* P_thinking-panel — surface inline <think> reasoning through the
+       same bridge as reasoning_content deltas. The bridge throttles and
+       dedupes, so this per-render call is cheap. */
+    if(fullReasoning||_extractThinkText(full)){
+      _publishThinkingPanelLive();
+    }
+
     /* P-H4 — remember the length we just rendered so an idle trailing
        frame with no new characters short-circuits at the top. */
     _lastParsedLen=displayFull.length;
@@ -6315,6 +6461,9 @@ function doRender(){
            (or whatever label the upcoming tool_use sets) visible. */
       }
       full+=delta;
+      if(toolRuntime&&typeof toolRuntime.noteTextDelta==="function"){
+        try{toolRuntime.noteTextDelta()}catch(_){}
+      }
       publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:full.length});
       /* Hide the status pill once the streamed text passes a small
          threshold — anything shorter is almost certainly a
@@ -6341,7 +6490,11 @@ function doRender(){
       /* P_session-stream-dispose — same guard as append().
          P_session-cross-talk — stillOwnsSlot() closes the race window. */
       if(!stillOwnsSlot())return;
-      if(typeof delta==="string")fullReasoning+=delta;
+      if(typeof delta==="string"){
+        if(!fullReasoning)_publishThinkingPanelStart();
+        fullReasoning+=delta;
+        _publishThinkingPanelLive();
+      }
       if(toolRuntime&&typeof toolRuntime.hasActiveTools==="function"&&toolRuntime.hasActiveTools())return;
       try{ensureThinkCtl().append(delta||"")}catch(_){}
     },
@@ -6391,6 +6544,7 @@ function doRender(){
       if(finished)return;
       finished=true;
       _disposed=true;
+      _publishThinkingPanelEnd();
       toolRuntime.dispose();
       clearTimeout(firstDeltaTimer);
       if(_elapsedTick)clearInterval(_elapsedTick);
@@ -6601,7 +6755,9 @@ function doRender(){
                    never arrived — settle it as stopped so the saved
                    HTML doesn't carry a perpetual spinner. */
                 if(_r.row.getAttribute("data-state")==="running"){
-                  try{settleInlineToolRow(_r.row,null,{cancelled:true})}catch(_){}
+                  try{
+                    settleInlineToolRowFromMessage(_r.row,msgIdx>=0?(state.messages[msgIdx]||null):null);
+                  }catch(_){}
                 }
                 _parts2.push(_r.row.outerHTML);
               }
@@ -7189,6 +7345,7 @@ function doRender(){
       if(finished)return;
       finished=true;
       _disposed=true;
+      _publishThinkingPanelEnd();
       clearTimeout(firstDeltaTimer);
       if(_elapsedTick)clearInterval(_elapsedTick);
       cancelScheduledRender();
@@ -7283,6 +7440,7 @@ function doRender(){
       replaceWithError:function(errMsg,onRetry){
         if(finished)return;
         finished=true;
+        _publishThinkingPanelEnd();
         toolRuntime.cancel();
         clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
@@ -8471,6 +8629,7 @@ async function resetApp(){
     var ok=await showConfirm(t("confirm.newSession.title"),t("confirm.newSession.msg"),false);
     if(!ok){ window._nextProjectId=null; return; }
   }
+  publishThinkingTurnStart();
   /* Drain any previous in-flight save first so the dirty cascade
      fires before resetState. Then fire the new save with the current
      snapshot — don't block the UI on the network roundtrip. */
@@ -9742,8 +9901,23 @@ installModalA11y({ overlayId: 'confirmDialog', closeFn: function () { if (typeof
    load — the legacy runtime still owns the visible document, but React
    hydrates specific feature slices (sidebar, cmd-k, session list, etc.)
    after all legacy initialization has completed. */
-import("./react/bootstrap.tsx").then(function(mod){
-  mod.bootstrapReactCompatibilityRuntime();
-}).catch(function(error){
+try{
+  bootstrapReactCompatibilityRuntime();
+}catch(error){
   console.error("[react-migration] compatibility runtime failed to initialize",error);
-});
+}
+/* P_perf-idle-vendor — highlight.js and fuse.js are non-critical: load
+   them after first paint so the main entry no longer carries their
+   parse cost. Cmd-K and code highlighting still work — they call the
+   same ensure* helpers if a user opens them before idle finishes. */
+window.__socratesEnsureHighlight = ensureHighlight;
+window.__socratesEnsureFuse = ensureFuse;
+function _loadIdleVendors(){
+  try{ensureHighlight().catch(function(){})}catch(_){}
+  try{ensureFuse().catch(function(){})}catch(_){}
+}
+if(typeof requestIdleCallback==="function"){
+  try{requestIdleCallback(_loadIdleVendors,{timeout:3000})}catch(_){setTimeout(_loadIdleVendors,1500)}
+}else{
+  setTimeout(_loadIdleVendors,1500);
+}

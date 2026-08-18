@@ -32,6 +32,7 @@
 var _vizId = 0;
 var _pendingMermaid = [];
 var _pendingViz = [];
+import { ensureMermaid } from '../vendor/lazy.js';
 
 export var VIZ_ICON_RENDER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>';
 export var VIZ_ICON_RELOAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
@@ -43,16 +44,13 @@ export var VIZ_ICON_SOURCE = '<svg viewBox="0 0 24 24" fill="none" stroke="curre
    font). We use postMessage from the iframe to ask the parent for
    the live token values once on load, then keep them in CSS vars. */
 export var VIZ_THEME_RESET =
-  /* P_viz-google-fonts — the iframe is a separate document, so it must
-     load the Google fonts itself or CJK text falls back to the OS
-     default (Microsoft YaHei on Windows). */
-  '<link rel="preconnect" href="https://fonts.googleapis.com">' +
-  '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
-  '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">' +
+  /* P_perf-self-host — the iframe is a separate document and fonts are
+     now bundled with the parent app, so it uses the platform font stack
+     instead of blocking on fonts.googleapis.com. */
   '<style>' +
     '*,*::before,*::after{box-sizing:border-box}' +
     'html,body{margin:0;padding:0}' +
-    'body{font-family:Inter,"Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.55}' +
+    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;font-size:14px;line-height:1.55}' +
     'body{color:var(--text-100,#3a3a3a);background:transparent}' +
     '[data-mode=dark] body{color:var(--text-100,#e8e8ec)}' +
     'a{color:var(--accent-000,#5b6fdb)}' +
@@ -139,10 +137,7 @@ function validMermaid(code) {
 
 export function renderMermaid(code, opts) {
   opts = opts || {};
-  if (typeof mermaid === "undefined") {
-    return '<pre><code class="language-mermaid">' + esc(code) + '</code></pre>';
-  }
-  if (!validMermaid(code)) {
+  if (typeof mermaid !== "undefined" && !validMermaid(code)) {
     return '<div class="viz" data-viz-state="error"><div class="viz-body">' + vizErrorHtml('Diagram syntax error', code) + '</div></div>';
   }
   /* P_viz-stable-id — accept opts.stableId so a streaming fence
@@ -153,6 +148,7 @@ export function renderMermaid(code, opts) {
   var id = opts.stableId || "mermaid-card-" + (++_vizId);
   _pendingMermaid.push({ id: id, code: code });
   queueVizActions(id);
+  if (typeof mermaid === "undefined") ensureMermaid();
   return '<div class="viz" id="' + id + '" data-viz-state="loading">' +
     vizActions(id) +
     '<div class="viz-body">' + vizLoadingHtml() + '</div>' +
@@ -166,8 +162,26 @@ export function renderMermaid(code, opts) {
    the first `.then` callback, or vice versa. */
 var _mermaidInFlight = Object.create(null);
 
+function renderMermaidFallback(item) {
+  var el = document.getElementById(item.id);
+  if (!el) return;
+  var body = el.querySelector('.viz-body');
+  if (!body) return;
+  body.innerHTML = '<pre><code class="language-mermaid">' + esc(item.code) + '</code></pre>';
+  el.setAttribute('data-viz-state', 'ready');
+}
+
 export function processPendingMermaid() {
-  if (typeof mermaid === "undefined") return;
+  if (typeof mermaid === "undefined") {
+    ensureMermaid().then(function () {
+      processPendingMermaid();
+    }).catch(function () {
+      var pending = _pendingMermaid;
+      _pendingMermaid = [];
+      pending.forEach(renderMermaidFallback);
+    });
+    return;
+  }
   var pending = _pendingMermaid;
   _pendingMermaid = [];
   pending.forEach(function (item) {
