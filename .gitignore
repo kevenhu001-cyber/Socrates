@@ -64,6 +64,9 @@ server.log.bak.*
 # ── Deploy state (written by deploy.sh on successful deploys) ──
 .deploy-state.json
 
+# ── Local runtime state (SQLite DB for desktop/mobile, project id) ──
+.freebuff/
+
 # ── Temp / debug / scratch files ──
 check_tmp.mjs
 commit_message.json
