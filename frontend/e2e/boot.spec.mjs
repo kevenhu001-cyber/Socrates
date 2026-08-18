@@ -1,7 +1,7 @@
 // e2e/boot.spec.mjs — Wave -1
 // Spec 1/6: page boots without JS errors, dist HTML matches the inline-handler
-// snapshot hash, and the app bundle loads as a deferred ES module (so the CDN
-// deps' globals are available by the time the bundle evaluates).
+// snapshot hash, and the app bundle loads as a deferred ES module with the
+// formerly-CDN globals (marked/DOMPurify/katex/hljs/Fuse) bundled locally.
 // This protects against:
 //   - Vite plugin regressions (script-tag ordering in dist/index.html)
 //   - Bundle missing (process exits before content paint)
@@ -47,11 +47,10 @@ test('page boots, dist HTML script ordering correct, inline-handler hash matches
   page.on('pageerror', (e) => consoleErrors.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
 
-  /* The browser sandbox intentionally has no public-network access. Serve a
-     CDN-free copy of the document for this boot contract instead of letting
-     blocked optional assets masquerade as an application failure. The static
-     assertions below still ensure production HTML keeps its pinned CDN tags;
-     this fixture verifies the app's documented local/offline degradation. */
+  /* The browser sandbox intentionally has no public-network access. The app
+     is fully self-hosted now (fonts + vendor libs), so the real dist HTML
+     boots offline; keep the route as a safety net for any stale external
+     reference that might slip back in. */
   const offlineHtml = fs.readFileSync(distHtml, 'utf8')
     .replace(/<link[^>]+https:\/\/cdn\.jsdelivr\.net[^>]*>\s*/gi, '')
     .replace(/<link[^>]+https:\/\/fonts\.googleapis\.com[^>]*>\s*/gi, '')
@@ -63,28 +62,34 @@ test('page boots, dist HTML script ordering correct, inline-handler hash matches
 
   await gotoAndSettle(page, '/');
 
-  // dist/index.html layout invariants (ES-module build): the 6 CDN deps are
-  // referenced, and the app bundle is emitted as a type="module" script.
-  // Vite injects the module into <head>; ES modules are deferred by spec, so
-  // the bundle evaluates only AFTER the document is parsed and every
-  // synchronous body CDN <script> has executed — i.e. the CDN globals
-  // (marked/DOMPurify/katex/mermaid/hljs/fuse) are guaranteed available at
-  // module-evaluation time regardless of textual position. (The prior IIFE
-  // build required the bundle to be moved textually after the CDN tags; the
-  // remove-module-type plugin that did so is retired under the ES output.)
+  // dist/index.html layout invariants (ES-module build): no external
+  // script/CSS/font dependency remains, and the app bundle is emitted as a
+  // type="module" script. Marked/DOMPurify/KaTeX/hljs/Fuse are bundled into
+  // the module graph by src/vendor/init.js; mermaid/echarts/plotly are
+  // self-hosted static assets injected only on demand.
   const html = fs.readFileSync(distHtml, 'utf8');
-  const cdnScripts = ['marked.min.js', 'purify.min.js', 'katex.min.js', 'mermaid.min.js', 'highlight.min.js', 'fuse.min.js'];
-  for (const s of cdnScripts) {
-    expect(html, `dist/index.html should reference ${s}`).toContain(s);
-  }
+  expect(html, 'dist/index.html must not load external JS/CSS').not.toMatch(/https:\/\/cdn\.jsdelivr\.net[^"']*\.(?:js|css)/);
+  expect(html, 'dist/index.html must not load Google Fonts').not.toContain('fonts.googleapis.com/css');
+  expect(html, 'dist/index.html must not preconnect to gstatic').not.toContain('fonts.gstatic.com');
   expect(html, 'dist/index.html should reference the assets/index-*.js bundle').toMatch(/assets\/index-[^"]+\.js/);
 
-  // The bundle must load as an ES module so its execution is deferred until
-  // after the synchronous CDN scripts have populated their globals.
+  // The bundle must load as an ES module (deferred, single entry point).
   expect(
     /<script[^>]*type="module"[^>]*src="[^"]*assets\/index-[^"]+\.js"/.test(html),
-    'app bundle must be a type="module" script (deferred execution after CDN globals)',
+    'app bundle must be a type="module" script',
   ).toBeTruthy();
+
+  // The eager vendor globals must be present after the bundle evaluates.
+  // katex / hljs / fuse intentionally load on demand (math, code blocks,
+  // Cmd-K) so they are not asserted here.
+  const globals = await page.evaluate(() => ({
+    marked: typeof window.marked,
+    dompurify: typeof window.DOMPurify,
+  }));
+  expect(globals).toEqual({
+    marked: 'function',
+    dompurify: 'function',
+  });
 
   // Page should render something meaningful within 30s.
   await page.waitForLoadState('networkidle').catch(() => {});

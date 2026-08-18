@@ -51,7 +51,16 @@ function _publishCmdKState() {
    results panel and reads its state from the CmdK bridge. */
 
 function rebuildCmdKIndex() {
-  if (typeof Fuse === "undefined") return;
+  if (typeof Fuse === "undefined") {
+    try {
+      if (typeof window.__socratesEnsureFuse === "function") {
+        window.__socratesEnsureFuse().then(function () {
+          if (typeof Fuse !== "undefined") rebuildCmdKIndex();
+        }).catch(function () { /* keep server search as fallback */ });
+      }
+    } catch (_) { /* ignore */ }
+    return;
+  }
   var docs = [];
   var sessions = window.SERVER_SESSIONS || [];
   sessions.forEach(function (s) {
