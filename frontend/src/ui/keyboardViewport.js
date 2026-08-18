@@ -77,6 +77,16 @@ export function isTrackedInputFocused(trackedInputs, activeElement) {
   return false;
 }
 
+/* P_topic-kb-stable — pure decision helper for the --app-vh freeze.
+   Returns true when the frozen height must be (re)measured while a
+   composer is focused: either no value is cached yet, or the window
+   width changed (rotation / split-screen) since the last freeze.
+   Split out from initKeyboardViewport so the cache semantics are
+   unit-testable without a DOM. */
+export function shouldRefreezeAppVh(frozenHeight, frozenWidth, currentWidth) {
+  return !(frozenHeight > 0 && frozenWidth === currentWidth);
+}
+
 export function initKeyboardViewport({ inputs, input, container, root = document.documentElement } = {}) {
   if (!root) return () => {};
 
@@ -246,6 +256,51 @@ export function initKeyboardViewport({ inputs, input, container, root = document
 
   const isInputFocused = () => isTrackedInputFocused(trackedInputs);
 
+  /* Current rendered height of the app shell in CSS pixels. Used both
+     for the frozen --app-vh (below) and the keyboard inset. */
+  const appShellHeight = () => {
+    const appEl = container
+      || (typeof document !== 'undefined' ? document.getElementById('appShell') : null)
+      || root;
+    try {
+      if (appEl && typeof appEl.getBoundingClientRect === 'function') {
+        const rect = appEl.getBoundingClientRect();
+        if (Number.isFinite(rect.height) && rect.height > 0) return rect.height;
+      }
+    } catch (_) { /* detached node — use the fallback */ }
+    return window.innerHeight || 0;
+  };
+
+  /* P_topic-kb-stable — freeze the app shell's height while a composer
+     is focused. On resize-mode keyboards (Firefox Android, Capacitor
+     Keyboard.resize:"native") the layout viewport shrinks when the
+     keyboard opens; without a frozen --app-vh the whole landing/topic
+     layout reflows and the focused input visibly jumps. The freeze
+     keeps the shell at its last keyboard-closed height, so the
+     keyboard simply covers the bottom edge (which is intended) and
+     the input keeps its exact position.
+
+     `--app-vh` is only written while a composer has focus; on blur we
+     remove it so the shell resumes tracking 100dvh. When the window
+     width changes (rotation, split-screen) the cached value is
+     invalidated and the next focus re-measures. */
+  const applyStableVh = (focused) => {
+    const width = window.innerWidth;
+    if (focused) {
+      if (!shouldRefreezeAppVh(appliedStableVh, stableVhWidth, width)) return;
+      const height = appShellHeight();
+      if (height <= 0) return;
+      root.style.setProperty('--app-vh', `${Math.round(height)}px`);
+      appliedStableVh = Math.round(height);
+      stableVhWidth = width;
+    } else {
+      if (appliedStableVh === -1) return;
+      root.style.removeProperty('--app-vh');
+      appliedStableVh = -1;
+      stableVhWidth = -1;
+    }
+  };
+
   const update = () => {
     /* P_kb-stuck — the input bar must never stay lifted after the
        keyboard closes. Some Android keyboards (Samsung, Gboard in
@@ -255,6 +310,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        the activeElement check is authoritative — visualViewport can
        be stale but focus cannot. */
     const focused = isInputFocused();
+    applyStableVh(focused);
     applyInset(
       focused
         ? measureKeyboardInset(appShellBottom(), viewport, window.innerHeight)
@@ -268,6 +324,20 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       updateFrame = 0;
       update();
     });
+  };
+
+  /* P_topic-kb-stable — freeze --app-vh SYNCHRONOUSLY on focus. The rAF
+     schedule above measures one frame later, but resize-mode keyboards
+     (Capacitor resize:"native", Firefox Android) can shrink the layout
+     viewport before that frame runs. Measuring then would freeze the
+     post-keyboard height and leave the composer under the keyboard.
+     focusin fires before the keyboard opens, so this sync write locks
+     the keyboard-closed shell height first; the later update() call
+     hits the `appliedStableVh > 0 && width === stableVhWidth` cache and
+     leaves it untouched. */
+  const onFocusIn = () => {
+    applyStableVh(true);
+    schedule();
   };
 
   const onBlur = () => {
@@ -295,7 +365,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   /* focus/blur do not bubble from the nested Tiptap editor to the React
      mount point. focusin/focusout do, and the document-level listener also
      covers an editor that mounts after this initializer has run. */
-  document.addEventListener('focusin', schedule);
+  document.addEventListener('focusin', onFocusIn);
   document.addEventListener('focusout', onBlur);
   /* Returning from the background (tab switch, native app pause) can
      swallow the close-resize entirely; re-measure on visibility flips.
@@ -314,7 +384,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       viewport.removeEventListener('scroll', schedule);
     }
     window.removeEventListener('resize', schedule);
-    document.removeEventListener('focusin', schedule);
+    document.removeEventListener('focusin', onFocusIn);
     document.removeEventListener('focusout', onBlur);
     document.removeEventListener('visibilitychange', schedule);
   };

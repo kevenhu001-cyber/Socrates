@@ -2784,9 +2784,16 @@ function doRenderRecents(){
 }
 
 function renderRecentsFilterChips(){
-  /* Fetch projects for the filter chips if not cached. */
-  var projects = window.__projectsCache || [];
-  if (!projects.length && !window.__projectsFetchFailed && typeof apiFetch === "function") {
+  /* Fetch projects for the filter chips if not cached. P_projects-once —
+     a successful response (including an empty project list) marks the
+     cache as populated so we never re-fetch. Previously an empty list
+     (`{projects: []}` for users with no projects) kept the
+     `!projects.length` guard true, so the success handler recursively
+     called renderRecentsFilterChips() → fetched again → looped
+     indefinitely, flooding /api/projects. */
+  var projects = window.__projectsCache;
+  var fetched = Array.isArray(projects) || window.__projectsFetchFailed;
+  if (!fetched && typeof apiFetch === "function") {
     apiFetch("/api/projects").then(function(r){
       window.__projectsCache = (r && r.projects) || [];
       renderRecentsFilterChips();
@@ -2799,7 +2806,7 @@ function renderRecentsFilterChips(){
   renderRecentsFilterChipsUI({
     currentFilter:getRecentsFilter(),
     tags:getKnownTags().slice(0,8),
-    projects: projects
+    projects: projects || []
   });
 }
 
