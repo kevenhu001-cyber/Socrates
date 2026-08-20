@@ -22,6 +22,7 @@ import './windowExports.js';
 import './batchStorage.js';
 import './state.js';
 import './i18n.js';
+import { initCookieConsent } from './cookieConsent.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
 import { initChatComposerReserve, scrollContainer, scrollToBottomIfPinned, smoothScrollToBottom } from './ui/scroll.js';
 import { initKeyboardViewport } from './ui/keyboardViewport.js';
@@ -107,6 +108,12 @@ import { loadAndRenderCrossSessionKB, resetCrossSessionKBCache } from './ui/know
 import { kbNodeHtml, toggleKBDetail } from './ui/knowledgeDetail.js';
 import { renderKnowledgeView } from './ui/knowledgeView.js';
 import { hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister, switchAuthTab, setAuthError, showAuthForgotPassword, showAuthCodeLogin, submitAuthSignin, submitAuthRegister, submitAuthVerify, submitAuthForgotPassword, submitAuthResetPassword, submitAuthSendCode, submitAuthLoginWithCode, resendVerification, resendAuthCode, afterAuthEnter } from './auth/index.js';
+
+/* Cookie consent — shown once on first visit; the choice is persisted in
+   localStorage and a shared first-party consent cookie. Non-essential
+   client-side cookie writes are gated by cookieConsent.js until the visitor
+   accepts them. */
+initCookieConsent({ privacyUrl: 'https://topodrive.top/privacy' });
 import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
 import { toggleSidebar, getRecentsFilter, setRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
 import { stripChatArtifacts } from './util/stripChatArtifacts.js';
@@ -170,7 +177,12 @@ function rerenderMathAfterKatex(){
       if(!m||m.role!=="assistant"||typeof m.rawText!=="string")continue;
       if(!/\$|\\\(/.test(m.rawText))continue;
       var html=renderAssistantHTML(m.rawText);
-      m.html=html;
+      /* React's MessageItem memo skips re-renders when the entry object
+         reference is unchanged (the legacy finish() path relies on the
+         entry being mounted fresh). Replacing the object with a shallow
+         copy carrying the new html is what makes the katex-ready repaint
+         actually land in the React message list. */
+      state.messages[mi]=Object.assign({},m,{html:html});
       changed=true;
       var id=m.clientId||m.id||"";
       if(!id)continue;
@@ -4751,7 +4763,14 @@ function branchFromMessage(messageId, opts){
   window._pendingBranchContext=_branchContext;
   /* Navigate to a new session. resetApp clears state, then we
      re-hydrate from the branch context. */
-  resetApp().then(function(){
+  resetApp().then(function(resetProceeded){
+    /* The new-session confirm can be cancelled; resetApp returns false in
+       that case. Do NOT continue the branch (push messages / fire a turn)
+       against the user's explicit choice. */
+    if(resetProceeded===false){
+      window._pendingBranchContext=null;
+      return;
+    }
     /* After resetApp completes, restore the branch context. */
     if(window._pendingBranchContext){
       var ctx=window._pendingBranchContext;
@@ -4783,6 +4802,9 @@ function branchFromMessage(messageId, opts){
           clientId: "re-explain-" + Date.now(),
           role: "user",
           rawText: reExplainMsg,
+          /* The React message list renders entry.html; without it the
+             re-explain prompt appeared as an empty user bubble. */
+          html: formatMsg(reExplainMsg),
           type: "text",
         });
         publishReactChatRuntime({type:"state-synced",reason:"re-explain-prompt"});
@@ -6349,6 +6371,22 @@ function doRender(){
    * detach, finalize, and feed it without re-querying the DOM. */
   var _searchProgress = null;
 
+  /* P_tool_retry_button — Retry buttons on failed inline tool rows
+     dispatch a `tool-retry` CustomEvent (toolInline.ts). The delegated
+     listener below routes to this handler. Falls back to window scope
+     for share/history replay. */
+  var _onSearchRetry=function(query){
+    const text=String(query||'').trim();
+    if(!text)return;
+    const retryText='Please retry the search: '+text;
+    if(typeof window.addMessage==='function'){
+      window.addMessage('user',retryText);
+    }
+    if(typeof window.askChatTurn==='function'){
+      window.askChatTurn(retryText);
+    }
+  };
+
   var toolRuntime=createToolRuntime({
     body:body,
     stillOwnsSlot:stillOwnsSlot,
@@ -6424,8 +6462,31 @@ function doRender(){
         cancelScheduledRender();
         pendingRender=requestAnimationFrame(function(){doRender()});
       }
-    }
+    },
+    /* P_tool_retry_button — Retry buttons inside failed inline tool
+       rows fire a `tool-retry` CustomEvent (toolInline.ts). Listen on
+       the bubble body (delegated) and route through onSearchRetry so
+       the user can re-run a failed search without retyping the query.
+       Non-search failures (web_fetch, code_interpreter) fall through;
+       the system prompt teaches the model to use a different strategy
+       per errorCode rather than blindly re-issuing the same call. */
+    onSearchRetry:_onSearchRetry
   });
+
+  /* P_tool_retry_button — delegated listener so failed search rows in
+     share / history replay (which don't go through createToolRuntime)
+     also get the retry affordance. The runtime-supplied onSearchRetry
+     handles live chat; share view can swap in its own handler via
+     window.__socratesToolRetry. */
+  if(typeof body.addEventListener==='function'){
+    body.addEventListener('tool-retry',function(ev){
+      const detail=ev&&ev.detail||{};
+      const handler=(typeof window.__socratesToolRetry==='function')
+        ?window.__socratesToolRetry
+        :_onSearchRetry;
+      try{if(typeof handler==='function')handler(detail.query||'');}catch(_){/*ignore*/}
+    });
+  }
   var ret={
     recordToolUse:toolRuntime.recordToolUse,
     recordToolProgress:toolRuntime.recordToolProgress,
@@ -8627,7 +8688,7 @@ async function resetApp(){
     || !!state.examSubmitted;
   if(state.topic||state.kbNodes.length>0||(Array.isArray(state.messages)&&state.messages.length>0)||_examDirty){
     var ok=await showConfirm(t("confirm.newSession.title"),t("confirm.newSession.msg"),false);
-    if(!ok){ window._nextProjectId=null; return; }
+    if(!ok){ window._nextProjectId=null; return false; }
   }
   publishThinkingTurnStart();
   /* Drain any previous in-flight save first so the dirty cascade
@@ -8746,6 +8807,7 @@ async function resetApp(){
   setTimeout(function(){
     focusComposer("topic");
   },50);
+  return true;
 }
 
 /* P_mobile-topbar — incognito ("无痕对话") chat. A temporary session

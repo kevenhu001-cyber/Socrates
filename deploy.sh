@@ -203,7 +203,22 @@ else
   $SUDO rm -rf "$APP_WEB_ROOT/assets"
   $SUDO install -m 644 -o www-data -g www-data "$DIST_DIR/index.html" "$APP_WEB_ROOT/index.html"
   $SUDO mkdir -p "$APP_WEB_ROOT/assets"
-  $SUDO install -m 644 -o www-data -g www-data "$DIST_DIR"/assets/* "$APP_WEB_ROOT/assets/"
+  # Copy top-level asset files only. install(1) returns non-zero when its
+  # source list contains a directory ("omitting directory"), which under
+  # `set -e` aborted the whole deploy mid-copy; nested subdirectories are
+  # handled by the recursive loop below.
+  while IFS= read -r -d '' asset_file; do
+    $SUDO install -m 644 -o www-data -g www-data "$asset_file" "$APP_WEB_ROOT/assets/"
+  done < <(find "$DIST_DIR/assets" -maxdepth 1 -type f -print0)
+
+  # Copy nested asset subdirectories (e.g. KaTeX fonts under assets/fonts/)
+  # so relative url(fonts/…) references in vendored CSS resolve in the
+  # web root too.
+  while IFS= read -r -d '' nested_asset; do
+    rel="${nested_asset#"$DIST_DIR/assets/"}"
+    $SUDO mkdir -p "$APP_WEB_ROOT/assets/$(dirname "$rel")"
+    $SUDO install -m 644 -o www-data -g www-data "$nested_asset" "$APP_WEB_ROOT/assets/$rel"
+  done < <(find "$DIST_DIR/assets" -mindepth 2 -type f -print0)
 
   # Copy static files from Vite's public/ directory (logo, favicon, etc.)
   for f in "$DIST_DIR"/*; do

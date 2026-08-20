@@ -21,6 +21,22 @@ export const REQUIRED_BINDINGS = [
 ];
 
 export async function gotoAndSettle(page, url = '/', opts = {}) {
+  // Default to an already-made consent choice so the banner never
+  // intercepts existing smoke tests. Pass { consent: false } for a spec
+  // that deliberately exercises the first-visit banner.
+  if (opts.consent !== false) {
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('socrates-cookie-consent', JSON.stringify({
+          v: 1,
+          choice: 'accept',
+          nonEssential: true,
+          updatedAt: new Date().toISOString(),
+        }));
+      } catch (_) {}
+    });
+  }
+
   const timeout = opts.timeout || 90000;
   try {
     await page.goto(url, { waitUntil: 'commit', timeout });

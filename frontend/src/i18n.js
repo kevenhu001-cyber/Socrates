@@ -1,6 +1,7 @@
 var I18N={
   en:{
     "chat.placeholder":"Type your thinking...",
+    "chat.inputPlaceholder":"Send a message",
     "chat.hint":"Shift+Enter for new line",
     "chat.send":"Send",
     /* P_attachments — UI strings for the chat-input attachment chip
@@ -763,10 +764,17 @@ var I18N={
     "topic.disclaimerChat":"Chat mode is a plain conversation.",
     "profile.savedAt":"Saved at {hh}:{mm}",
     "profile.instructionsSavedPlaceholder":"Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language.",
-    "profile.instructionsAboutPlaceholder":"e.g. I'm a backend engineer working on a payments product. I'm allergic to puns."
+    "profile.instructionsAboutPlaceholder":"e.g. I'm a backend engineer working on a payments product. I'm allergic to puns.",
+    /* Cookie consent banner */
+    "consent.title":"We respect your privacy",
+    "consent.message":"We use strictly necessary cookies to make Socrates work. Non-essential cookies (for example analytics) are only placed after you choose to allow them.",
+    "consent.accept":"Accept all",
+    "consent.essential":"Essential only",
+    "consent.learnMore":"Privacy policy"
   },
   zh:{
     "chat.placeholder":"输入你的想法...",
+    "chat.inputPlaceholder":"输入你的想法...",
     "chat.hint":"Shift+Enter 换行",
     "chat.send":"发送",
     /* P_attachments — see matching en block. */
@@ -1510,7 +1518,13 @@ var I18N={
     "topic.disclaimerChat":"聊天模式为普通对话。",
     "profile.savedAt":"已保存 {hh}:{mm}",
     "profile.instructionsSavedPlaceholder":"例如：用简洁的项目符号回复。引用来源标为 [1]、[2]。避免模棱两可的措辞。",
-    "profile.instructionsAboutPlaceholder":"例如：我是一名后端工程师，正在做支付产品。我讨厌双关语。"
+    "profile.instructionsAboutPlaceholder":"例如：我是一名后端工程师，正在做支付产品。我讨厌双关语。",
+    /* Cookie 同意横幅 */
+    "consent.title":"我们尊重你的隐私",
+    "consent.message":"我们使用严格必需的 Cookie 来让 Socrates 正常运行。只有在你允许后，我们才会放置非必要 Cookie（例如分析 Cookie）。",
+    "consent.accept":"全部接受",
+    "consent.essential":"仅必要 Cookie",
+    "consent.learnMore":"隐私政策"
   },
 };
 var _currentLang="en";
@@ -1519,6 +1533,7 @@ function setLang(lang){
   if(!I18N[lang])return;
   _currentLang=lang;
   window._currentLang=lang;
+  try{document.documentElement.lang=lang==="zh"?"zh":"en";}catch(_){}
   try{localStorage.setItem("socrates-lang-app",lang)}catch(_){}
   applyI18n();
   /* P_tutor-leak — applyI18n() rewrites #topicTitle / #topicSub /
@@ -1543,6 +1558,13 @@ function setLang(lang){
     if(lbl){
       if(lang==="zh")lbl.textContent="中";
       else lbl.textContent="EN";
+    }
+  }catch(_){}
+  /* Notify React-owned surfaces (Tiptap composer placeholders) that the
+     active language changed, so they can re-localize without a reload. */
+  try{
+    if(typeof CustomEvent!=="undefined"){
+      document.dispatchEvent(new CustomEvent("socrates:langchange",{detail:{lang:lang}}));
     }
   }catch(_){}
 }
@@ -1682,6 +1704,7 @@ try{
 try{
   var lbl=document.getElementById("langToggleLabel");
   if(lbl)lbl.textContent=_currentLang==="en"?"EN":"中";
+  document.documentElement.lang=_currentLang==="zh"?"zh":"en";
   applyI18n();
 }catch(_){}
 

@@ -311,6 +311,252 @@
     actions.appendChild(btn);
   }
 
+  /* ─────────────────────────────────────────────────────────────────
+   * Cookie consent banner (shared by every marketing page).
+   *
+   * The banner appears once, on first visit, until the visitor clicks
+   * either "Accept all" or "Essential only". The choice is persisted in
+   * localStorage and in a first-party `socrates_consent` cookie shared
+   * across topodrive.top and app.topodrive.top. Until the visitor
+   * accepts non-essential cookies, client-side `document.cookie` writes
+   * for anything other than the strictly-necessary set are dropped.
+   * ───────────────────────────────────────────────────────────────── */
+  var CONSENT_KEY = "socrates-cookie-consent";
+  var CONSENT_COOKIE = "socrates_consent";
+  var CONSENT_VERSION = 1;
+  var CONSENT_ACCEPT = "accept";
+  var CONSENT_ESSENTIAL = "essential";
+  var ESSENTIAL_COOKIES = {
+    sid: true,
+    csrf: true,
+    "xsrf-token": true,
+    socrates_consent: true
+  };
+  var consentGuardInstalled = false;
+
+  function consentNormalize(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    if (raw.v !== CONSENT_VERSION) return null;
+    if (typeof raw.nonEssential !== "boolean") return null;
+    return {
+      v: CONSENT_VERSION,
+      choice: raw.nonEssential ? CONSENT_ACCEPT : CONSENT_ESSENTIAL,
+      nonEssential: raw.nonEssential,
+      updatedAt: typeof raw.updatedAt === "string" ? raw.updatedAt : new Date().toISOString()
+    };
+  }
+
+  function consentReadCookie() {
+    try {
+      var m = document.cookie.match(new RegExp("(?:^|;\\s*)" + CONSENT_COOKIE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "=([^;]*)"));
+      return m ? decodeURIComponent(m[1]) : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function consentRead() {
+    var pref = null;
+    try {
+      var raw = window.localStorage.getItem(CONSENT_KEY);
+      if (raw) {
+        try { pref = consentNormalize(JSON.parse(raw)); } catch (error) {}
+      }
+    } catch (error) {}
+    if (!pref) {
+      var cookieRaw = consentReadCookie();
+      if (cookieRaw) {
+        try { pref = consentNormalize(JSON.parse(cookieRaw)); } catch (error) {}
+      }
+    }
+    if (pref) {
+      try { window.localStorage.setItem(CONSENT_KEY, JSON.stringify(pref)); } catch (error) {}
+    }
+    return pref;
+  }
+
+  function consentAllowsNonEssential() {
+    var pref = consentRead();
+    return !!(pref && pref.nonEssential);
+  }
+
+  function consentSharedDomain() {
+    var host = String(window.location.hostname || "").toLowerCase();
+    return host === "topodrive.top" || host === "www.topodrive.top" || host === "app.topodrive.top"
+      ? "; domain=.topodrive.top"
+      : "";
+  }
+
+  function consentSecure() {
+    return window.location.protocol === "https:" ? "; Secure" : "";
+  }
+
+  function consentCookieString(pref) {
+    return CONSENT_COOKIE + "=" + encodeURIComponent(JSON.stringify(pref)) +
+      "; path=/; max-age=31536000; SameSite=Lax" +
+      consentSharedDomain() + consentSecure();
+  }
+
+  function consentSet(choice) {
+    var pref = {
+      v: CONSENT_VERSION,
+      choice: choice === CONSENT_ACCEPT ? CONSENT_ACCEPT : CONSENT_ESSENTIAL,
+      nonEssential: choice === CONSENT_ACCEPT,
+      updatedAt: new Date().toISOString()
+    };
+    try { window.localStorage.setItem(CONSENT_KEY, JSON.stringify(pref)); } catch (error) {}
+    try { document.cookie = consentCookieString(pref); } catch (error) {}
+    return pref;
+  }
+
+  function consentIsEssential(name) {
+    return ESSENTIAL_COOKIES[String(name || "").trim().toLowerCase()] === true;
+  }
+
+  function consentParseAssignment(raw) {
+    var s = String(raw || "");
+    var first = s.split(";")[0] || "";
+    var eq = first.indexOf("=");
+    if (eq <= 0) return null;
+    var lower = s.toLowerCase();
+    var maxAgeMatch = /(?:^|;\s*)max-age\s*=\s*(-?\d+)/i.exec(lower);
+    var isDeletion = first.slice(eq + 1).trim() === "" ||
+      (maxAgeMatch && Number(maxAgeMatch[1]) <= 0) ||
+      /expires\s*=\s*thu,\s*01\s*jan\s*1970/i.test(lower);
+    return {
+      name: first.slice(0, eq).trim(),
+      isDeletion: isDeletion
+    };
+  }
+
+  function consentWriteAllowed(raw) {
+    var parsed = consentParseAssignment(raw);
+    if (!parsed) return true;
+    if (consentIsEssential(parsed.name)) return true;
+    if (parsed.isDeletion) return true;
+    return consentAllowsNonEssential();
+  }
+
+  function consentInstallGuard() {
+    if (consentGuardInstalled) return;
+    consentGuardInstalled = true;
+    try {
+      var proto = Object.getPrototypeOf(document);
+      var desc = Object.getOwnPropertyDescriptor(document, "cookie") ||
+        (proto && Object.getOwnPropertyDescriptor(proto, "cookie")) ||
+        (typeof Document !== "undefined" && Object.getOwnPropertyDescriptor(Document.prototype, "cookie"));
+      var nativeGet = desc && desc.get ? desc.get : null;
+      var nativeSet = desc && desc.set ? desc.set : null;
+      Object.defineProperty(document, "cookie", {
+        configurable: true,
+        enumerable: !!(desc && desc.enumerable),
+        get: function () {
+          return nativeGet ? nativeGet.call(document) : "";
+        },
+        set: function (value) {
+          if (consentWriteAllowed(value)) {
+            if (nativeSet) nativeSet.call(document, value);
+          }
+        }
+      });
+    } catch (error) {
+      /* Some embedded/hosted environments forbid redefining document.cookie. */
+    }
+  }
+
+  function consentText(key) {
+    var copy = localeForPath(window.location.pathname) === LOCALES.zh ? {
+      title: "我们尊重你的隐私",
+      message: "我们使用严格必需的 Cookie 来让 Socrates 正常运行。只有在你允许后，我们才会放置非必要 Cookie（例如分析 Cookie）。",
+      accept: "全部接受",
+      essential: "仅必要 Cookie",
+      learnMore: "隐私政策"
+    } : {
+      title: "We respect your privacy",
+      message: "We use strictly necessary cookies to make Socrates work. Non-essential cookies (for example analytics) are only placed after you choose to allow them.",
+      accept: "Accept all",
+      essential: "Essential only",
+      learnMore: "Privacy policy"
+    };
+    return copy[key] || key;
+  }
+
+  function consentStylesheet() {
+    if (document.getElementById("socrates-consent-css")) return;
+    var link = document.createElement("link");
+    link.id = "socrates-consent-css";
+    link.rel = "stylesheet";
+    link.href = "/consent.css?cb=20260815";
+    document.head.appendChild(link);
+  }
+
+  function consentInit() {
+    if (!document.body) {
+      document.addEventListener("DOMContentLoaded", consentInit, { once: true });
+      return;
+    }
+    consentStylesheet();
+    if (document.getElementById("socratesCookieConsent")) return;
+    if (consentRead()) return;
+
+    var banner = document.createElement("div");
+    banner.id = "socratesCookieConsent";
+    banner.className = "socrates-cookie-consent";
+    banner.setAttribute("role", "region");
+    banner.setAttribute("aria-label", consentText("title"));
+    banner.setAttribute("data-testid", "cookie-consent-banner");
+
+    var title = document.createElement("strong");
+    title.className = "socrates-cookie-consent-title";
+    title.textContent = consentText("title");
+
+    var message = document.createElement("p");
+    message.className = "socrates-cookie-consent-message";
+    message.textContent = consentText("message");
+
+    var actions = document.createElement("div");
+    actions.className = "socrates-cookie-consent-actions";
+
+    function choose(choice) {
+      consentSet(choice);
+      if (banner.parentNode) banner.parentNode.removeChild(banner);
+    }
+
+    var essentialBtn = document.createElement("button");
+    essentialBtn.type = "button";
+    essentialBtn.className = "socrates-cookie-consent-btn secondary";
+    essentialBtn.textContent = consentText("essential");
+    essentialBtn.setAttribute("data-consent-choice", CONSENT_ESSENTIAL);
+    essentialBtn.addEventListener("click", function () { choose(CONSENT_ESSENTIAL); });
+
+    var acceptBtn = document.createElement("button");
+    acceptBtn.type = "button";
+    acceptBtn.className = "socrates-cookie-consent-btn primary";
+    acceptBtn.textContent = consentText("accept");
+    acceptBtn.setAttribute("data-consent-choice", CONSENT_ACCEPT);
+    acceptBtn.addEventListener("click", function () { choose(CONSENT_ACCEPT); });
+
+    actions.appendChild(essentialBtn);
+    actions.appendChild(acceptBtn);
+
+    var link = document.createElement("a");
+    link.className = "socrates-cookie-consent-link";
+    link.href = localeForPath(window.location.pathname) === LOCALES.zh ? "/zh/privacy" : "/privacy";
+    link.textContent = consentText("learnMore");
+
+    banner.appendChild(title);
+    banner.appendChild(message);
+    banner.appendChild(actions);
+    banner.appendChild(link);
+    document.body.appendChild(banner);
+  }
+
+  window.SocratesConsent = {
+    getPreference: consentRead,
+    allowsNonEssential: consentAllowsNonEssential,
+    setPreference: consentSet
+  };
+
   function enhanceLegacyLegalLayout() {
     var body = document.body;
     if (!body || !body.classList.contains("legal-page") || body.classList.contains("ed-site")) return;
@@ -406,6 +652,13 @@
     addAccountShortcuts();
     addLoginButton();
   }
+
+  /* Install the client-side cookie guard before any later page script can
+     write a non-essential cookie. */
+  consentInstallGuard();
+  /* Start loading the shared banner stylesheet while the page parses so
+     the banner is styled as soon as it appears. */
+  consentStylesheet();
 
   applyStoredPreference();
 
@@ -503,8 +756,12 @@
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bootLocale);
+    document.addEventListener("DOMContentLoaded", function () {
+      bootLocale();
+      consentInit();
+    });
   } else {
     bootLocale();
+    consentInit();
   }
 })();
