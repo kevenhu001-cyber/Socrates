@@ -23,6 +23,7 @@ export interface InlineToolResult {
   ok?: boolean;
   status?: string;
   errorCode?: string | null;
+  retryable?: boolean;
   durationMs?: number;
   results?: unknown[];
   output?: string;
@@ -50,6 +51,8 @@ export interface InlineToolMessageCall {
   results?: unknown[];
   stderr?: string;
   error?: string;
+  errorCode?: string | null;
+  retryable?: boolean;
   userMessage?: string;
   detail?: unknown;
   durationMs?: number;
@@ -234,12 +237,21 @@ function appendDetailSection(
   title: string,
   value: unknown,
   kind: string,
+  attrs?: Record<string, string>,
 ): boolean {
   const text = detailText(value).trim();
   if (!text) return false;
   const section = document.createElement('section');
   section.className = 'tool-inline-detail-section';
   section.dataset.kind = kind;
+  /* P_tool_retryable — let callers stamp extra data-* attrs on the
+     section so CSS can colour-code (e.g. retryable=yes/no). Existing
+     call sites pass nothing and behave identically. */
+  if (attrs) {
+    for (const key of Object.keys(attrs)) {
+      try { section.dataset[key] = attrs[key]; } catch (_) { /* ignore */ }
+    }
+  }
   const heading = document.createElement('div');
   heading.className = 'tool-inline-detail-title';
   heading.textContent = title;
@@ -313,6 +325,69 @@ function renderInlineDetails(
     const errorMessage = failed
       ? [result.userMessage, result.error].filter(Boolean).join('\n')
       : '';
+    if (failed && result.errorCode) {
+      /* P_tool_error_code — surface the structured errorCode the
+         backend already emits (e.g. "web_fetch_failed", "not_connected",
+         "search_timeout"). Without it the model re-tries with the same
+         arguments on the next turn; with it the system prompt can teach
+         the model to switch strategy per code. Rendered as its own
+         technical section so the code stays copy-pasteable for
+         debugging. */
+      hasContent = appendDetailSection(
+        detail,
+        translate('tool.errorCode', 'Error code'),
+        String(result.errorCode),
+        'technical',
+      ) || hasContent;
+      row.dataset.errorCode = String(result.errorCode);
+    } else {
+      try { delete row.dataset.errorCode; } catch (_) { /* ignore */ }
+    }
+    if (failed && typeof result.retryable === 'boolean') {
+      /* P_tool_retryable — surface the backend's retryable hint so the
+         user knows whether to retry, edit their query, or stop. A row
+         that the backend flagged as non-retryable (e.g. "invalid_query",
+         "missing_url") should never be re-issued unchanged. */
+      const hint = result.retryable
+        ? translate('tool.retryableYes', 'Retryable — safe to run again')
+        : translate('tool.retryableNo', 'Not retryable — change the arguments first');
+      hasContent = appendDetailSection(detail, translate('tool.retryable', 'Retryable'), hint, 'technical', { retryable: result.retryable ? '1' : '0' }) || hasContent;
+      row.dataset.retryable = result.retryable ? '1' : '0';
+    } else {
+      try { delete row.dataset.retryable; } catch (_) { /* ignore */ }
+    }
+    /* P_tool_retry_button — for failed search rows, append a Retry
+       button that dispatches a `tool-retry` CustomEvent. The runtime
+       (main.js / toolRuntime) listens for it and routes to its
+       onSearchRetry handler. Avoids tight coupling between the inline
+       view module and the chat runtime; share/history replay gets the
+       same affordance without any extra wiring. */
+    if (failed && isInlineSearchTool(name) && result.retryable !== false) {
+      const actions = document.createElement('div');
+      actions.className = 'tool-inline-error-actions';
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'tool-inline-retry';
+      retry.textContent = translate('tool.retry', 'Retry search');
+      retry.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const stored = (row as HTMLElement & { _toolInput?: unknown })._toolInput;
+        const query = stored && typeof stored === 'object' && (stored as { query?: unknown }).query;
+        row.dispatchEvent(new CustomEvent('tool-retry', {
+          bubbles: true,
+          detail: {
+            toolId: row.dataset.tcid || '',
+            tool: name,
+            query: typeof query === 'string' ? query : '',
+            errorCode: result.errorCode || null,
+          },
+        }));
+      });
+      actions.appendChild(retry);
+      detail.appendChild(actions);
+      hasContent = true;
+    }
     hasContent = appendDetailSection(
       detail,
       failed ? translate('tool.errorDetails', 'Error details') : translate('tool.result', 'Result'),
@@ -463,6 +538,19 @@ function renderInlineGroupDetails(
       const errorMessage = failed
         ? [result && result.userMessage, result && result.error].filter(Boolean).join('\n')
         : '';
+      if (failed && result && result.errorCode) {
+        /* P_tool_error_code — per-member errorCode inside grouped rows
+           (mirrors renderInlineDetails). Lets the user see which
+           member of a multi-call failed and with which code. */
+        hasContent = appendDetailSection(sub, translate('tool.errorCode', 'Error code'), String(result.errorCode), 'technical') || hasContent;
+      }
+      if (failed && result && typeof result.retryable === 'boolean') {
+        /* P_tool_retryable — per-member retryable hint. */
+        const hint = result.retryable
+          ? translate('tool.retryableYes', 'Retryable — safe to run again')
+          : translate('tool.retryableNo', 'Not retryable — change the arguments first');
+        hasContent = appendDetailSection(sub, translate('tool.retryable', 'Retryable'), hint, 'technical', { retryable: result.retryable ? '1' : '0' }) || hasContent;
+      }
       hasContent = appendDetailSection(
         sub,
         failed ? translate('tool.errorDetails', 'Error details') : translate('tool.result', 'Result'),
@@ -521,6 +609,26 @@ export function settleInlineToolGroupRow(
   const meta = row.querySelector('.tool-inline-meta');
   const duration = groupDurationMs(members);
   if (meta) meta.textContent = duration > 0 ? (duration / 1000).toFixed(1) + 's' : '';
+  /* P_tool_error_code — stamp the first failed member's errorCode on
+     the row so the head chip area can show it without expansion, and
+     compute an aggregate retryable flag (true only when every failed
+     member is retryable). Mirrors the writeback in renderInlineDetails
+     for non-grouped rows. */
+  const firstFailed = members.find((m) => m.failed || (m.result && m.result.ok === false));
+  if (firstFailed && firstFailed.result && firstFailed.result.errorCode) {
+    row.dataset.errorCode = String(firstFailed.result.errorCode);
+  } else {
+    try { delete row.dataset.errorCode; } catch (_) { /* ignore */ }
+  }
+  const allRetryable = failed && members.every((m) => {
+    if (!(m.failed || (m.result && m.result.ok === false))) return true;
+    return m.result && m.result.retryable !== false;
+  });
+  if (failed) {
+    row.dataset.retryable = allRetryable ? '1' : '0';
+  } else {
+    try { delete row.dataset.retryable; } catch (_) { /* ignore */ }
+  }
   renderInlineGroupDetails(row, members, state);
 }
 
@@ -540,7 +648,7 @@ export function settleInlineToolRowFromMessage(
     const members = ids
       .map((id) => calls.find((call) => String(call.id) === id))
       .filter(Boolean) as InlineToolMessageCall[];
-    if (members.length > 1) {
+    if (members.length >= 1) {
       settleInlineToolGroupRow(row, members.map((member) => ({
         id: String(member.id || ''),
         name: member.name || row.dataset.tool || 'tool',
@@ -550,6 +658,8 @@ export function settleInlineToolRowFromMessage(
           output: member.output || undefined,
           results: member.results,
           error: member.isError ? (member.error || member.output || undefined) : undefined,
+          errorCode: member.errorCode || (member.isError ? 'tool_execution_failed' : undefined),
+          retryable: typeof member.retryable === 'boolean' ? member.retryable : undefined,
           stderr: member.stderr,
           userMessage: member.userMessage,
           detail: member.detail,

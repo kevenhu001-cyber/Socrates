@@ -128,11 +128,11 @@ function createPinnedAgent(addresses: { address: string; family: number }[]) {
  */
 async function materializeRustResponse(url: string, cached: urlCache.CacheEntry | null, raw: RustFetchResponse) {
   if (!raw.ok) {
-    return { ok: false, url, reason: raw.reason || (raw.status ? `HTTP ${raw.status}` : 'Fetch failed') };
+    return { ok: false, url, code: raw.code || (raw.status ? 'http_status' : 'fetch_failed'), reason: raw.reason || (raw.status ? `HTTP ${raw.status}` : 'Fetch failed') };
   }
 
   if (raw.status === 304) {
-    if (!cached) return { ok: false, url, reason: 'HTTP 304 without a cached response' };
+    if (!cached) return { ok: false, url, code: 'cache_miss', reason: 'HTTP 304 without a cached response' };
     let extracted: ExtractedArticle | null = null;
     try { extracted = (await extractArticle(cached.html, raw.finalUrl || url)) as unknown as ExtractedArticle; } catch { extracted = null; }
     if (extracted) {
@@ -234,10 +234,10 @@ export async function fetchBatch(urls: string[]) {
       try {
         parsedUrl = new URL(url);
       } catch {
-        return { ok: false, url, reason: 'Blocked: invalid URL' };
+        return { ok: false, url, code: 'invalid_url', reason: 'Blocked: invalid URL' };
       }
       if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-        return { ok: false, url, reason: 'Blocked: non-http(s) URL' };
+        return { ok: false, url, code: 'invalid_scheme', reason: 'Blocked: non-http(s) URL' };
       }
 
       // Phase 2: build conditional-GET headers from the URL cache.
@@ -266,7 +266,7 @@ export async function fetchBatch(urls: string[]) {
       try {
         pinnedRecords = await resolveAndPin(parsedUrl.hostname);
       } catch (err) {
-        return { ok: false, url, reason: (err as Error).message };
+        return { ok: false, url, code: 'dns_failure', reason: (err as Error).message };
       }
       let dispatcher = createPinnedAgent(pinnedRecords);
 
@@ -294,12 +294,12 @@ export async function fetchBatch(urls: string[]) {
           if (response.status >= 300 && response.status < 400) {
             const location = response.headers.get('location');
             if (!location) {
-              return { ok: false, url, reason: 'Redirect with no Location header' };
+              return { ok: false, url, code: 'redirect_missing_location', reason: 'Redirect with no Location header' };
             }
             const nextUrl = new URL(location, currentUrl).href;
             const nextParsed = new URL(nextUrl);
             if (nextParsed.protocol !== 'http:' && nextParsed.protocol !== 'https:') {
-              return { ok: false, url, reason: 'Blocked: redirect to non-http(s) URL' };
+              return { ok: false, url, code: 'redirect_invalid_scheme', reason: 'Blocked: redirect to non-http(s) URL' };
             }
             // Re-resolve if the hostname changed.
             if (nextParsed.hostname !== currentParsed.hostname) {
@@ -309,7 +309,7 @@ export async function fetchBatch(urls: string[]) {
                 dispatcher = createPinnedAgent(nextRecords);
                 previous.close().catch(() => {});
               } catch (err) {
-                return { ok: false, url, reason: `Blocked: redirect to ${nextParsed.hostname} — ${(err as Error).message}` };
+                return { ok: false, url, code: 'redirect_dns_failure', reason: `Blocked: redirect to ${nextParsed.hostname} — ${(err as Error).message}` };
               }
             }
             currentUrl = nextUrl;
@@ -319,7 +319,7 @@ export async function fetchBatch(urls: string[]) {
 
           // Too many redirects.
           if (redirectCount === maxRedirects) {
-            return { ok: false, url, reason: 'Too many redirects' };
+            return { ok: false, url, code: 'too_many_redirects', reason: 'Too many redirects' };
           }
 
           // Phase 2: 304 Not Modified — rebuild from cached entry.
@@ -354,12 +354,12 @@ export async function fetchBatch(urls: string[]) {
           }
 
           if (!response.ok) {
-            return { ok: false, url, reason: `HTTP ${response.status}` };
+            return { ok: false, url, code: 'http_status', reason: `HTTP ${response.status}` };
           }
 
           const contentType = response.headers.get('content-type') || '';
           if (!contentType.includes('text') && !contentType.includes('json') && !contentType.includes('html')) {
-            return { ok: false, url, reason: `Unsupported content type: ${contentType}` };
+            return { ok: false, url, code: 'unsupported_content_type', reason: `Unsupported content type: ${contentType}` };
           }
 
           let text = await response.text();
@@ -423,7 +423,7 @@ export async function fetchBatch(urls: string[]) {
         }
 
         // Unreachable — but satisfy the linter.
-        return { ok: false, url, reason: 'Unexpected loop exit' };
+        return { ok: false, url, code: 'fetch_failed', reason: 'Unexpected loop exit' };
       } finally {
         clearTimeout(timer);
         dispatcher.close().catch(() => {});
@@ -434,7 +434,7 @@ export async function fetchBatch(urls: string[]) {
   return {
     results: results.map((r, i) => {
       if (r.status === 'fulfilled') return r.value;
-      return { ok: false, url: urls[i], reason: r.reason?.message || 'Fetch failed' };
+      return { ok: false, url: urls[i], code: 'fetch_failed', reason: r.reason?.message || 'Fetch failed' };
     }),
   };
 }

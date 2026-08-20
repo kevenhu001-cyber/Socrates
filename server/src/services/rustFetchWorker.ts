@@ -28,6 +28,7 @@ export interface RustFetchResponse {
   id: string;
   ok: boolean;
   status: number;
+  code?: string;
   originalUrl: string;
   finalUrl?: string;
   headers?: Record<string, string>;

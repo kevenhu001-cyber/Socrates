@@ -47,7 +47,22 @@ const CSRF_COOKIE_VALUE = 'smoke-csrf-token';
  * Stub /api/* with predictable responses. Order matters — Playwright
  * matches the LAST registered route. We register the broad fallback LAST.
  */
-export async function mockAuthedApp(page) {
+export async function mockAuthedApp(page, options = {}) {
+  // Existing specs assume a first-visit consent banner is not in the way.
+  // Cookie-consent specs can opt out with { consent: false }.
+  if (options.consent !== false) {
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('socrates-cookie-consent', JSON.stringify({
+          v: 1,
+          choice: 'accept',
+          nonEssential: true,
+          updatedAt: new Date().toISOString(),
+        }));
+      } catch (_) {}
+    });
+  }
+
   // Cookies that auth/boot.js + util/api.js expect to find.
   await page.context().addCookies([{
     name: 'csrf', value: CSRF_COOKIE_VALUE, domain: '127.0.0.1', path: '/',

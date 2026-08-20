@@ -24,7 +24,7 @@
      and --ed-sans below don't crash, but brand.css wins on the visible
      surface. We deliberately removed "Segoe UI" and the system CJK
      fallbacks so Microsoft YaHei / SimSun never leak through on Windows. */
-  --ed-serif: "Newsreader", "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "SimSun", sans-serif;
+  --ed-serif: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Serif SC", "Noto Sans SC", "PingFang SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
   --ed-sans: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
   --ed-mono: "Geist Mono", "JetBrains Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
   --ed-radius-lg: 28px;
