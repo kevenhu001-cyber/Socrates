@@ -66,8 +66,8 @@
 
   /* Type — ALL SANS. No serif. The "editorial" feel comes from
      weight contrast + soft tracking + generous leading. */
-  /* CJK-first stack — Noto Sans SC is loaded as a webfont so we don't fall
-     through to Microsoft YaHei / SimSun on Windows hosts. */
+  /* CJK-first stack — Noto Sans SC is loaded from Google Fonts so we don't
+     fall through to Microsoft YaHei / SimSun on Windows hosts. */
   --mk-sans:  "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Microsoft JhengHei", "Helvetica Neue", Arial, sans-serif;
   --mk-mono:  "Geist Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 

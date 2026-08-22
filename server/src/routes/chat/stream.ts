@@ -787,10 +787,11 @@ data: ${JSON.stringify({
                   })}\n\n`);
                 } else {
                   const reason = (page && page.reason) || 'fetch_failed';
-                  result = { status: 'failed', error: reason, errorCode: 'web_fetch_failed', retryable: true };
+                  const errorCode = (page && (page as { code?: string }).code) || 'web_fetch_failed';
+                  result = { status: 'failed', error: reason, errorCode, retryable: true };
                   writeSse(`event: tool_result\ndata: ${JSON.stringify({
                     id: tc.id, ok: false, status: 'failed', output: '',
-                    error: reason, errorCode: 'web_fetch_failed', retryable: true,
+                    error: reason, errorCode, retryable: true,
                     userMessage: '无法抓取该网页。', detail: reason,
                   })}\n\n`);
                 }
