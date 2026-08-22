@@ -18,6 +18,7 @@ import { ExtensionToken } from './extensionToken';
 import { useAutoHeight } from './useAutoHeight';
 import type { ComposerExtensionToken } from './types';
 import { addComposerFiles } from '../../attachments/render.js';
+import { i18n } from '../legacy/gateway';
 
 interface RichComposerProps {
   surface: ComposerSurface;
@@ -116,9 +117,32 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
     legacyWindow.clearActiveTemplate?.();
   }, []);
 
+  /* P_placeholder-lang — the placeholder prop is captured at mount, but the
+     user can switch the app language at runtime. Re-derive the text from the
+     live i18n dictionary and re-render on the language-change event, so the
+     Tiptap placeholder (driven by --composer-placeholder) localizes without
+     recreating the editor and losing the draft. */
+  const [langRevision, setLangRevision] = useState(0);
+  useEffect(() => {
+    const onLangChange = () => setLangRevision((value) => value + 1);
+    document.addEventListener('socrates:langchange', onLangChange);
+    return () => document.removeEventListener('socrates:langchange', onLangChange);
+  }, []);
+  const activePlaceholder = useMemo(
+    () => i18n(
+      surface === 'chat' ? 'chat.inputPlaceholder' : 'topic.inputPlaceholder',
+      placeholder,
+    ),
+    [surface, placeholder, langRevision],
+  );
+
   const extensions = useMemo(() => [
     StarterKit.configure({ link: false, underline: false }),
-    Placeholder.configure({ placeholder, showOnlyWhenEditable: false }),
+    /* The visible hint text is rendered from --composer-placeholder (set on
+       the root below) so React owns the current language's copy. The Tiptap
+       extension still supplies the is-editor-empty / is-empty classes that
+       hide the hint while the user types. */
+    Placeholder.configure({ placeholder: '', showOnlyWhenEditable: false }),
     Underline,
     Link.configure({
       openOnClick: false,
@@ -129,7 +153,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
     TaskItem.configure({ nested: true }),
     ExtensionToken.configure({ onRemove: onRemoveExtension }),
     Markdown,
-  ], [onRemoveExtension, placeholder]);
+  ], [onRemoveExtension]);
 
   const tokenWasPresent = useRef(false);
   /* Class toggling instead of CSS `:has()`: avoids per-focus style recalc so
@@ -142,7 +166,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
     editorProps: {
       attributes: {
         class: 'rich-composer-editor',
-        'aria-label': placeholder,
+        'aria-label': activePlaceholder,
       },
       transformPastedHTML: (html) => DOMPurify.sanitize(html, {
         USE_PROFILES: { html: true },
@@ -310,9 +334,20 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
     },
   });
 
+  /* Keep the contenteditable's accessible name in sync when the language
+     changes after mount (the editorProps attributes are initial-only). */
+  useEffect(() => {
+    if (!editor) return;
+    editor.view.dom.setAttribute('aria-label', activePlaceholder);
+  }, [editor, activePlaceholder]);
+
   if (!editor) return null;
   return (
-    <div className="rich-composer" data-surface={surface}>
+    <div
+      className="rich-composer"
+      data-surface={surface}
+      style={{ '--composer-placeholder': JSON.stringify(activePlaceholder) } as React.CSSProperties}
+    >
       {showToolbar ? <FormattingToolbar editor={editor} /> : null}
       <EditorContent editor={editor} />
     </div>

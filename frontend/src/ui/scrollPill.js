@@ -117,7 +117,14 @@ export function wireScrollPill(){
          treating those geometry-only events as user intent strands the
          reader above the bottom. Downward programmatic snaps followed by
          same-task content growth must not release the pin either. */
-      const movedUp = previousTop != null && sc.scrollTop < previousTop - 1;
+      /* Layout settling (font metrics, image decode, appended content) can
+         nudge scrollTop a few pixels upward without any user intent, and
+         those tiny movements used to flip _userScrolledAway, killing the
+         content-follow for a reader who was still pinned. Real scroll-aways
+         (scrollbar drag, wheel/touch/keyboard) move by tens+ of pixels, and
+         the input-based listeners above already catch those gestures, so a
+         12px position threshold is safe. */
+      const movedUp = previousTop != null && sc.scrollTop < previousTop - 12;
       if(movedUp&&!debounceTmo){
         state._userScrolledAway = true;
         debounceTmo = setTimeout(function(){ debounceTmo = null; }, 300);

@@ -1,10 +1,9 @@
 /*
- * Web font stack — chosen so the marketing surface renders cleanly on every
- * major OS without falling back to system CJK fonts we don't control
- * (Microsoft YaHei / 微软雅黑 / SimSun / 宋体 on Windows). We load the
- * full Noto Sans SC weight range and a proper Newsreader serif for the
- * editorial copy on English pages. Both families ship with `font-display:
- * swap` so first paint is never blocked on the webfont.
+ * Web font stack — Chinese UI copy uses Noto Sans SC and Chinese editorial
+ * copy uses Noto Serif SC, both loaded from Google Fonts (with the local
+ * @font-face copies in fonts.css kept as an offline fallback). Latin stays
+ * on Geist / Newsreader. The stacks deliberately avoid Microsoft YaHei /
+ * SimSun on Windows hosts.
  */
 /*
  * Socrates brand layer
@@ -32,8 +31,7 @@
   --site-sans-latin: "Geist", "Inter", "Helvetica Neue", Arial, sans-serif;
   /* CJK UI sans — the Latin families (Geist / Inter) are listed FIRST so
      any Latin glyph inside a Chinese page renders with the English-interface
-     sans, and only CJK glyphs fall through to 思源黑体 (Noto Sans SC), which
-     is loaded as a webfont (no YaHei / SimSun fallback on Windows). */
+     sans, and CJK glyphs fall through to Noto Sans SC (Google Fonts). */
   --site-sans-cjk: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Microsoft JhengHei", "Source Han Sans SC", sans-serif;
   /* Latin editorial serif — Newsreader is a contemporary book serif that
      stays comfortable at long measure without the museum-piece weight of
@@ -43,9 +41,8 @@
   --site-serif-latin: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", serif;
   /* CJK editorial serif — the Latin families (Newsreader …) are listed
      FIRST so embedded English inside a Chinese page matches the
-     English-interface serif; CJK glyphs fall through to 思源黑体
-     (Noto Sans SC) per the Chinese-page typography spec, with Noto Serif SC
-     / Songti SC kept only as further fallbacks. */
+     English-interface serif; CJK glyphs fall through to Noto Serif SC
+     (Google Fonts), with Songti SC kept only as a local fallback. */
   --site-serif-cjk: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Serif SC", "Noto Sans SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
   --site-mono: "Geist Mono", "JetBrains Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
   --site-shadow: 0 16px 42px rgba(33, 28, 22, .08);
@@ -107,7 +104,7 @@
 html:lang(zh) {
   --font-sans: var(--site-sans-cjk);
   /* Display uses the serif CJK stack so embedded Latin matches the
-     English-interface display (Newsreader) and Chinese uses 思源黑体. */
+     English-interface display (Newsreader) and Chinese uses Noto Serif SC. */
   --font-display: var(--site-serif-cjk);
   --mk-sans: var(--site-sans-cjk);
 }
@@ -134,7 +131,7 @@ body {
 }
 html:lang(zh) body {
   font-family: var(--site-sans-cjk);
-  letter-spacing: 0;
+  letter-spacing: .01em;
   line-height: 1.72;
 }
 body::selection { color: var(--site-paper); background: var(--site-ink); }
@@ -151,7 +148,7 @@ body.ed-site {
   font-family: var(--site-sans-latin);
   letter-spacing: -.012em;
 }
-html:lang(zh) body.ed-site { font-family: var(--site-sans-cjk); letter-spacing: 0; }
+html:lang(zh) body.ed-site { font-family: var(--site-sans-cjk); letter-spacing: .01em; }
 body.ed-site .ed-shell { width: min(1272px, calc(100% - 64px)); }
 body.ed-site .ed-header { padding-top: 16px; background: var(--site-paper); }
 body.ed-site .ed-header-inner { min-height: 52px; }
@@ -248,18 +245,21 @@ html:lang(zh) body.ed-site .ed-product-block h2,
 html:lang(zh) body.ed-site .ed-contact-card h2,
 html:lang(zh) body.ed-site .ed-price-card h2 {
   /* Mirror the English interface: display/headings use the serif stack
-     (Latin → Newsreader), so Chinese falls through to 思源黑体. */
+     (Latin → Newsreader), so Chinese uses Noto Serif SC from Google Fonts. */
   font-family: var(--site-serif-cjk);
-  letter-spacing: 0;
-  line-height: 1.14;
+  letter-spacing: .02em;
+  line-height: 1.3;
   font-weight: 600;
+  text-wrap: balance;
 }
 html:lang(zh) body.ed-site .ed-serif,
 html:lang(zh) body.ed-site .ed-copy-serif,
 html:lang(zh) body.ed-site .ed-footer-brand p {
   font-family: var(--site-serif-cjk);
-  line-height: 1.65;
+  line-height: 1.72;
+  letter-spacing: .02em;
   font-weight: 500;
+  text-wrap: pretty;
 }
 body.ed-site .ed-page-hero { padding: clamp(72px, 9vw, 116px) 0 46px; }
 body.ed-site .ed-section { padding: clamp(62px, 8vw, 120px) 0; }
@@ -274,7 +274,7 @@ body.mk-page {
   font-family: var(--site-sans-latin);
   letter-spacing: -.012em;
 }
-html:lang(zh) body.mk-page { font-family: var(--site-sans-cjk); letter-spacing: 0; }
+html:lang(zh) body.mk-page { font-family: var(--site-sans-cjk); letter-spacing: .01em; }
 body.mk-page .mk-shell { width: min(1272px, calc(100% - 64px)); }
 body.mk-page .mk-nav {
   position: relative;
@@ -558,8 +558,22 @@ html:lang(zh) body.legal-page .ed-legal-section li { font-family: var(--site-ser
   body:not(.ed-site):not(.mk-page) footer .footer-inner { width: calc(100% - 44px); }
   body:not(.ed-site):not(.mk-page) .section-inner { width: calc(100% - 36px); }
   body.ed-site.legal-page .ed-shell,
-  body.ed-site.legal-page .ed-legal-layout { width: calc(100% - 64px); }
+  body.ed-site.legal-page .ed-legal-layout { width: calc(100% - 44px); }
   body.ed-site.legal-page .ed-legal-body { width: 100%; max-width: 640px; }
+  body.ed-site.legal-page .ed-legal-toc nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  body.ed-site.legal-page .ed-legal-toc a {
+    padding: 7px 10px;
+    border: 1px solid var(--site-line);
+    border-radius: 999px;
+    background: var(--site-paper-soft);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  body.ed-site.legal-page .ed-legal-section { scroll-margin-top: 20px; }
   body.legal-page:not(.ed-site) .page-header { padding-left: 0; padding-right: 0; }
   body.legal-page:not(.ed-site) .page > section { padding-left: 32px; padding-right: 32px; }
   body.ed-site .ed-display { font-size: clamp(36px, 9.2vw, 48px); letter-spacing: -.008em; line-height: 1.1; }
@@ -1015,7 +1029,9 @@ html:lang(zh) body.ed-site .ed-product-block h2,
 html:lang(zh) body.ed-site .ed-contact-card h2,
 html:lang(zh) body.ed-site .ed-price-card h2 {
   font-family: var(--site-serif-cjk);
-  letter-spacing: 0;
+  letter-spacing: .02em;
+  line-height: 1.3;
+  text-wrap: balance;
 }
 
 /* Old marketing pages are intentionally ALL SANS — keep their Chinese
@@ -1027,7 +1043,7 @@ html:lang(zh) body.mk-page p,
 html:lang(zh) body.mk-page a,
 html:lang(zh) body.mk-page button {
   font-family: var(--site-sans-cjk);
-  letter-spacing: 0;
+  letter-spacing: .01em;
 }
 
 body.ed-site .ed-product-block {
@@ -1094,20 +1110,46 @@ body.ed-site.legal-page .ed-legal-body {
   margin: 0;
 }
 
+/* Let the legal grid shrink on small screens instead of expanding to the
+   widest unbreakable table/URL. The table wrappers keep their own
+   horizontal scroll. */
+body.ed-site.legal-page .ed-legal-layout,
+body.ed-site.legal-page .ed-legal-toc,
+body.ed-site.legal-page .ed-legal-body,
+body.ed-site.legal-page .ed-legal-section {
+  min-width: 0;
+}
+body.ed-site.legal-page .ed-legal-table-scroll {
+  max-width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: var(--site-line) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+body.ed-site.legal-page .ed-legal-table-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+body.ed-site.legal-page .ed-legal-table-scroll::-webkit-scrollbar-thumb {
+  background: var(--site-line);
+  border-radius: 999px;
+}
+
 body.ed-site.legal-page .ed-legal-section p,
 body.ed-site.legal-page .ed-legal-section li {
   font-family: var(--site-sans-latin);
   font-size: 16px;
   line-height: 1.72;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 html:lang(zh) body.ed-site.legal-page .ed-legal-section p,
 html:lang(zh) body.ed-site.legal-page .ed-legal-section li {
   /* English legal body copy uses the serif Latin stack; keep the Chinese
-     page in step (Latin → Newsreader, Chinese → 思源黑体). */
+     page in step (Latin → Newsreader, Chinese → Noto Serif SC). */
   font-family: var(--site-serif-cjk);
   font-size: 16px;
   line-height: 1.75;
+  letter-spacing: .02em;
 }
 
 body.legal-page:not(.ed-site):not(.mk-page):not(.xa-page) .section-inner {
@@ -1127,6 +1169,7 @@ html:lang(zh) body.legal-page:not(.ed-site):not(.mk-page) .legal-section p,
 html:lang(zh) body.legal-page:not(.ed-site):not(.mk-page) .legal-section li {
   font-family: var(--site-serif-cjk);
   line-height: 1.75;
+  letter-spacing: .02em;
 }
 
 /* Account shortcut — only shown inside the mobile slide-out menu and
@@ -1194,6 +1237,25 @@ html:lang(zh) body.legal-page:not(.ed-site):not(.mk-page) .legal-section li {
   body.ed-site .ed-product-block .ed-meta { margin-top: 8px; }
   body.ed-site.legal-page .ed-legal-layout { width: calc(100% - 44px); }
   body.legal-page:not(.ed-site):not(.mk-page):not(.xa-page) .section-inner { width: calc(100% - 44px); }
+}
+
+@media (max-width: 480px) {
+  body.ed-site.legal-page .ed-shell,
+  body.ed-site.legal-page .ed-legal-layout { width: calc(100% - 32px); }
+  body.ed-site.legal-page .ed-legal-layout { gap: 28px; }
+  body.ed-site.legal-page .ed-legal-toc a {
+    padding: 6px 9px;
+    font-size: 11.5px;
+  }
+  body.ed-site.legal-page .ed-legal-section h3 { font-size: 20px; line-height: 1.3; }
+  body.ed-site.legal-page .ed-legal-section h4 { font-size: 16px; }
+  body.ed-site.legal-page .ed-legal-section p,
+  body.ed-site.legal-page .ed-legal-section li { font-size: 15px; line-height: 1.7; }
+  body.ed-site.legal-page .ed-legal-table-scroll th,
+  body.ed-site.legal-page .ed-legal-table-scroll td {
+    min-width: 124px;
+    padding: 9px 10px;
+  }
 }
 
 body.legal-page:not(.ed-site):not(.mk-page):not(.xa-page) .site-legal-layout {

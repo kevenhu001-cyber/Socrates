@@ -1,7 +1,8 @@
-/* P_perf-self-host — original Google Fonts set (Geist, Geist Mono,
-   Newsreader, Noto Sans SC, Noto Serif SC) served from this origin.
-   Files live in media/fonts/; unicode-range subsetting matches the
-   Google Fonts CSS so browsers download only the glyphs they need. */
+/* Local fallback copies of the Google Fonts set (Geist, Geist Mono,
+   Newsreader, Noto Sans SC, Noto Serif SC). Pages load the live Google
+   Fonts CSS after this file; if Google Fonts is unreachable, these local
+   files keep the same families working. Files live in media/fonts/;
+   unicode-range subsetting matches the Google Fonts CSS. */
 /* geist-sans-latin-400-normal */
 @font-face {
   font-family: 'Geist';

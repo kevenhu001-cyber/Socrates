@@ -45,10 +45,12 @@
   --brand-100:     0 0% 100%;
   --oncolor-100:   0 0% 0%;
 
-  /* CJK stack: webfont first so we never fall through to Microsoft YaHei
-     (微软雅黑) or SimSun (宋体) on Windows. */
+  /* CJK stack: Google Fonts (Noto Sans SC / Noto Serif SC) first so we
+     never fall through to Microsoft YaHei (微软雅黑) or SimSun (宋体)
+     on Windows. */
   --font-sans:    "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Microsoft JhengHei", "Helvetica Neue", Arial, sans-serif;
   --font-display: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Microsoft JhengHei", "Helvetica Neue", Arial, sans-serif;
+  --font-serif:   "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Serif SC", "Noto Sans SC", "Songti SC", "SimSun", serif;
   --font-mono:    "Geist Mono", "JetBrains Mono", "Cascadia Code", "Fira Code", ui-monospace, monospace;
 
   --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
@@ -60,6 +62,11 @@
   --radius-card:   16px;
   --radius-chip:   10px;
   --radius-input:  12px;
+}
+
+html:lang(zh) {
+  --font-sans: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Microsoft JhengHei", "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-serif);
 }
 
 /* ─────────────────────────────────────────────────────────────────────
