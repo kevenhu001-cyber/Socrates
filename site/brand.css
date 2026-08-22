@@ -1341,3 +1341,890 @@ body.legal-page .page > nav .nav-links .lang-switch {
   .ed-lang-caret { width: 12px; height: 12px; }
   .ed-lang-toggle { gap: 5px; padding: 10px; }
 }
+
+/* =========================================================================
+   2026-08 · "Signal" polish layer — Silicon Valley-grade surface work
+   Appended last so it wins the cascade without touching older layers.
+   The identity stays warm-paper + ink; what changes is depth, motion,
+   and typographic finish.
+   ========================================================================= */
+
+/* ── A. Tokens & globals ──────────────────────────────────────────────── */
+:root {
+  --sv-ease: cubic-bezier(.16, 1, .3, 1);
+  --sv-speed: .35s;
+  --sv-clay: #9a5a3b;
+  --sv-clay-bright: #b86a45;
+  --sv-glow-clay: rgba(184, 106, 69, .15);
+  --sv-glow-sand: rgba(210, 192, 162, .40);
+  --sv-shadow-sm: 0 1px 2px rgba(33, 28, 22, .05), 0 0 0 1px rgba(23, 23, 22, .04);
+  --sv-shadow-md: 0 2px 6px rgba(33, 28, 22, .06), 0 14px 34px -14px rgba(33, 28, 22, .16);
+  --sv-shadow-lg: 0 4px 10px rgba(33, 28, 22, .07), 0 30px 70px -28px rgba(33, 28, 22, .30);
+  accent-color: var(--sv-clay);
+}
+
+html { scrollbar-gutter: stable; }
+
+/* Warm clay selection instead of pure ink. */
+body.ed-site::selection,
+body.ed-site ::selection { background: rgba(184, 106, 69, .9); color: #fff; }
+
+/* Anchored headings clear the sticky header. */
+body.ed-site [id] { scroll-margin-top: 108px; }
+
+/* Numerals line up in dates, prices, and metadata. */
+body.ed-site .ed-meta,
+body.ed-site .ed-row-meta,
+body.ed-site .ed-essay-date,
+body.ed-site .ed-essay-tag,
+body.ed-site .ed-price,
+body.ed-site .ed-article-meta,
+body.ed-site .ed-article-byline { font-variant-numeric: tabular-nums; }
+
+/* ── B. Typography finish ─────────────────────────────────────────────── */
+body.ed-site h1, body.ed-site h2, body.ed-site h3 { text-wrap: balance; }
+body.ed-site p { text-wrap: pretty; }
+/* Headings that JS splits into inline-block word spans must opt out of
+   balancing — atomic inlines + balance overlap in Chromium. */
+body.ed-site [data-animate-text] { text-wrap: initial; }
+
+/* NOTE: deliberately NO background-clip:text gradient on .ed-display.
+   The hero headline is word-animated (inline-block spans, own composite
+   layers); clipped-gradient text garbles under that structure. */
+
+/* The standfirst answers in Newsreader italic — the editorial counterpoint.
+   Chinese pages keep upright glyphs (synthetic italics look wrong on CJK). */
+body.ed-site .ed-home-hero .ed-hero-sub { font-style: italic; }
+html:lang(zh) body.ed-site .ed-home-hero .ed-hero-sub { font-style: normal; }
+
+/* Eyebrows get a small clay marker — a quiet signature across pages. */
+body.ed-site .ed-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+body.ed-site .ed-kicker::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sv-clay-bright);
+  box-shadow: 0 0 0 3px rgba(184, 106, 69, .14);
+}
+
+/* Long-form reading details. */
+body.ed-site .ed-article li::marker { color: var(--sv-clay); }
+body.ed-site .ed-article strong { color: var(--site-ink); font-weight: 600; }
+body.ed-site .ed-article hr {
+  background: linear-gradient(90deg, transparent, var(--site-line) 28%, var(--site-line) 72%, transparent);
+}
+body.ed-site .ed-year-rule::after {
+  background: linear-gradient(90deg, var(--site-line), transparent);
+}
+
+/* ── C. Header: glass on scroll, animated nav underlines ──────────────── */
+body.ed-site .ed-header.is-scrolled {
+  background: rgba(244, 241, 233, .8);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  border-image: linear-gradient(90deg, transparent, rgba(23, 23, 22, .26) 18%, rgba(23, 23, 22, .26) 82%, transparent) 1;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  body.ed-site .ed-header.is-scrolled { background: var(--site-paper); }
+}
+
+@media (min-width: 821px) {
+  body.ed-site .ed-nav-links a { position: relative; }
+  body.ed-site .ed-nav-links a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 1.5px;
+    border-radius: 2px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform .3s var(--sv-ease);
+  }
+  body.ed-site .ed-nav-links a:hover::after,
+  body.ed-site .ed-nav-links a[aria-current="page"]::after { transform: scaleX(1); }
+  body.ed-site .ed-nav-links a[aria-current="page"] { box-shadow: none; }
+}
+
+/* Brand mark tilts on hover — a small living detail. */
+body.ed-site .ed-brand img { transition: transform .45s var(--sv-ease); }
+body.ed-site .ed-brand:hover img { transform: rotate(-8deg) scale(1.08); }
+
+/* Language menu: frosted panel with a soft entrance. */
+body.ed-site .ed-lang-menu {
+  background: rgba(250, 249, 245, .92);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 1px 2px rgba(23, 23, 22, .08), 0 18px 44px -16px rgba(23, 23, 22, .28);
+  animation: sv-pop .18s var(--sv-ease);
+}
+@keyframes sv-pop {
+  from { opacity: 0; transform: translateY(-4px) scale(.98); }
+}
+
+/* ── D. Buttons: lift, press, and a light sweep ───────────────────────── */
+body.ed-site .ed-button,
+body.ed-site .ed-button-quiet {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform var(--sv-speed) var(--sv-ease),
+    box-shadow var(--sv-speed) var(--sv-ease),
+    background-color .18s ease,
+    border-color .18s ease,
+    color .18s ease;
+}
+body.ed-site .ed-button:active,
+body.ed-site .ed-button-quiet:active {
+  transform: translateY(0) scale(.985);
+  transition-duration: .08s;
+}
+body.ed-site .ed-button::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -70%;
+  width: 45%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, .3), transparent);
+  transform: skewX(-18deg);
+  transition: left .55s var(--sv-ease);
+  pointer-events: none;
+}
+body.ed-site .ed-button-quiet:hover { background: #fff; }
+
+@media (hover: hover) and (pointer: fine) {
+  body.ed-site .ed-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px -10px rgba(23, 23, 22, .5);
+  }
+  body.ed-site .ed-button:hover::after { left: 125%; }
+  body.ed-site .ed-button-quiet:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--sv-shadow-sm);
+  }
+}
+
+/* ── E. Hero aurora + stage depth ─────────────────────────────────────── */
+body.ed-site .ed-home-hero,
+body.ed-site .ed-page-hero,
+body.ed-site .ed-reference-hero,
+body.ed-site .ed-learning-hero,
+body.ed-site .ed-news-hero {
+  position: relative;
+  isolation: isolate;
+}
+body.ed-site .ed-home-hero::before,
+body.ed-site .ed-page-hero::before,
+body.ed-site .ed-reference-hero::before,
+body.ed-site .ed-learning-hero::before,
+body.ed-site .ed-news-hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: clamp(-120px, -6vw, -40px);
+  left: 50%;
+  width: min(1160px, 96vw);
+  height: clamp(360px, 44vw, 660px);
+  transform: translateX(-50%);
+  background:
+    radial-gradient(46% 54% at 26% 34%, var(--sv-glow-clay), transparent 70%),
+    radial-gradient(40% 48% at 74% 24%, var(--sv-glow-sand), transparent 72%),
+    radial-gradient(30% 36% at 56% 62%, rgba(154, 90, 59, .07), transparent 70%);
+  pointer-events: none;
+}
+
+/* The home stage reads as a physical object on the paper. */
+body.ed-site .ed-home-stage {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .35),
+    0 0 0 1px rgba(23, 23, 22, .05),
+    var(--sv-shadow-lg);
+}
+body.ed-site .ed-stage-index a { position: relative; }
+body.ed-site .ed-stage-index a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .3s var(--sv-ease);
+}
+body.ed-site .ed-stage-index a:hover::after { transform: scaleX(1); }
+
+/* Stage headline keeps solid warm white — no background-clip:text here
+   either (same compositing risk as the hero, and it sits over an image). */
+
+/* ── F. Cards: resting shadow, hover lift ─────────────────────────────── */
+body.ed-site .ed-portal,
+body.ed-site .ed-story-card,
+body.ed-site .ed-price-card,
+body.ed-site .ed-contact-card,
+body.ed-site .ed-course-card,
+body.ed-site .ed-course-band,
+body.ed-site .ed-featured {
+  transition:
+    transform var(--sv-speed) var(--sv-ease),
+    box-shadow var(--sv-speed) var(--sv-ease),
+    border-color .2s ease,
+    background-color .2s ease;
+}
+body.ed-site .ed-portal,
+body.ed-site .ed-story-card,
+body.ed-site .ed-contact-card,
+body.ed-site .ed-course-band,
+body.ed-site .ed-featured { box-shadow: var(--sv-shadow-sm); }
+body.ed-site .ed-price-card { box-shadow: var(--sv-shadow-sm); }
+body.ed-site .ed-price-card.is-featured {
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .85), 0 24px 56px -22px rgba(23, 23, 22, .45);
+}
+
+/* Imagery breathes inside its card on hover. */
+body.ed-site .ed-story-card-media img,
+body.ed-site .ed-featured-media img { transition: transform .8s var(--sv-ease); }
+body.ed-site .ed-story-card:hover .ed-story-card-media img,
+body.ed-site .ed-featured:hover .ed-featured-media img { transform: scale(1.045); }
+
+/* Large media objects carry the same depth language. */
+body.ed-site .ed-showcase-media { box-shadow: var(--sv-shadow-lg); }
+body.ed-site .ed-policy-visual img,
+body.ed-site .ed-learning-object img { box-shadow: var(--sv-shadow-md); }
+body.ed-site .ed-news-split figure { box-shadow: var(--sv-shadow-sm); }
+
+@media (hover: hover) and (pointer: fine) {
+  body.ed-site .ed-portal:hover,
+  body.ed-site .ed-story-card:hover,
+  body.ed-site .ed-contact-card:hover,
+  body.ed-site .ed-course-card:hover,
+  body.ed-site .ed-price-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--sv-shadow-md);
+  }
+  body.ed-site .ed-price-card.is-featured:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 1px rgba(23, 23, 22, .85), 0 32px 72px -26px rgba(23, 23, 22, .5);
+  }
+}
+
+/* ── G. Lists & rows: slide, washes, ticks ────────────────────────────── */
+body.ed-site .ed-essay-row,
+body.ed-site .ed-publication-row,
+body.ed-site .ed-showcase-entry,
+body.ed-site .ed-news-item {
+  transition: transform var(--sv-speed) var(--sv-ease);
+}
+body.ed-site .ed-ledger-row { transition: background-color .2s ease; }
+body.ed-site .ed-ledger-row:hover {
+  background: linear-gradient(90deg, rgba(184, 106, 69, .05), transparent 55%);
+}
+body.ed-site .ed-team-grid h2 { transition: color .18s ease; }
+body.ed-site .ed-team-grid article:hover h2 { color: var(--sv-clay); }
+
+/* Product blocks and principles grow a clay tick on hover. */
+body.ed-site .ed-principle,
+body.ed-site .ed-product-block { position: relative; }
+body.ed-site .ed-principle::before,
+body.ed-site .ed-product-block::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 28px;
+  bottom: 28px;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--sv-clay-bright), rgba(184, 106, 69, 0));
+  transform: scaleY(0);
+  transform-origin: top center;
+  transition: transform .35s var(--sv-ease);
+}
+body.ed-site .ed-principle:hover::before,
+body.ed-site .ed-product-block:hover::before { transform: scaleY(1); }
+
+@media (hover: hover) and (pointer: fine) {
+  body.ed-site .ed-essay-row:hover,
+  body.ed-site .ed-publication-row:hover,
+  body.ed-site .ed-showcase-entry:hover,
+  body.ed-site .ed-news-item:hover { transform: translateX(6px); }
+}
+
+/* ── H. Filters, search, pills ────────────────────────────────────────── */
+body.ed-site .ed-filter-bar button {
+  border-radius: 999px;
+  transition:
+    color .18s ease,
+    background-color .18s ease,
+    border-color .18s ease,
+    transform .18s var(--sv-ease),
+    box-shadow .18s ease;
+}
+body.ed-site .ed-filter-bar button:hover {
+  border-color: rgba(23, 23, 22, .4);
+}
+body.ed-site .ed-filter-bar button.is-active {
+  background: linear-gradient(180deg, #2c2925, var(--site-ink));
+  border-color: var(--site-ink);
+  box-shadow: 0 6px 16px -8px rgba(23, 23, 22, .5);
+}
+body.ed-site .ed-search-field input {
+  border-radius: 12px;
+  transition:
+    border-color .18s ease,
+    background-color .18s ease,
+    box-shadow .25s var(--sv-ease);
+}
+body.ed-site .ed-search-field input:focus {
+  border-color: var(--sv-clay);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(184, 106, 69, .14);
+}
+body.ed-site .ed-pill,
+body.ed-site .ed-thread {
+  transition: border-color .18s ease, color .18s ease;
+}
+body.ed-site .ed-pill:hover { border-color: rgba(23, 23, 22, .35); }
+
+/* ── I. Dark surfaces & footer ────────────────────────────────────────── */
+body.ed-site .ed-black-band,
+body.ed-site .ed-inline-feature {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), var(--sv-shadow-lg);
+}
+body.ed-site .ed-footer-frame {
+  overflow: hidden;
+  background: var(--site-black);
+}
+body.ed-site .ed-footer-social a {
+  transition:
+    transform .25s var(--sv-ease),
+    color .18s ease,
+    background-color .18s ease,
+    border-color .18s ease,
+    box-shadow .25s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  body.ed-site .ed-footer-social a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px -8px rgba(0, 0, 0, .6);
+  }
+}
+
+/* Article footer prev/next cards join the lift family. */
+body.ed-site .ed-article-foot a {
+  transition:
+    transform var(--sv-speed) var(--sv-ease),
+    box-shadow var(--sv-speed) var(--sv-ease),
+    border-color .18s ease,
+    background-color .18s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  body.ed-site .ed-article-foot a:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sv-shadow-md);
+  }
+}
+
+/* ── J. Motion safety ─────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  body.ed-site *,
+  body.ed-site *::before,
+  body.ed-site *::after {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-delay: 0ms !important;
+  }
+  body.ed-site .ed-button::after { display: none; }
+  body.ed-site main { animation: none !important; }
+  .ed-marquee-track { animation: none !important; }
+}
+
+/* =========================================================================
+   2026-08 · "Motion" layer — award-site presence, kept quiet.
+   Everything below is gated:
+   · html.ed-js      → editorial.js sets it before first paint, so content
+                       is never hidden when scripts don't run.
+   · reduced-motion  → all movement collapses to static states.
+   ========================================================================= */
+
+/* ── K1. Scroll reveals (re-enables the site's own .ed-reveal system) ─── */
+html.ed-js body.ed-site .ed-reveal:not(.is-visible) {
+  opacity: 0 !important;
+  transform: translateY(26px) !important;
+}
+body.ed-site .ed-reveal {
+  transition: opacity .9s var(--sv-ease), transform .9s var(--sv-ease);
+}
+html.ed-js body.ed-site .ed-reveal-stagger > * {
+  transition: opacity .8s var(--sv-ease), transform .8s var(--sv-ease);
+}
+/* Without JS, stagger children must not stay hidden either. */
+html:not(.ed-js) body.ed-site .ed-reveal-stagger > * {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* ── K2. Page entrance — one quiet rise, then it never moves again ────── */
+@keyframes sv-page-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+html.ed-js body.ed-site main { animation: sv-page-in .8s var(--sv-ease) both; }
+
+/* ── K3. Aurora drift — the hero glow breathes very slowly ────────────── */
+@keyframes sv-drift {
+  from { transform: translateX(-50%) translate3d(-1.5%, 0, 0) scale(1); }
+  to   { transform: translateX(-50%) translate3d(1.5%, 2%, 0) scale(1.05); }
+}
+body.ed-site .ed-home-hero::before,
+body.ed-site .ed-page-hero::before,
+body.ed-site .ed-reference-hero::before,
+body.ed-site .ed-learning-hero::before,
+body.ed-site .ed-news-hero::before {
+  animation: sv-drift 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* ── K4. Stage wipe-in — the home artwork unveils instead of fading ───── */
+@media (min-width: 981px) {
+  html.ed-js body.ed-site .ed-home-stage {
+    clip-path: inset(7% 5% 7% 5% round 18px);
+    transition:
+      clip-path 1.15s var(--sv-ease),
+      box-shadow var(--sv-speed) var(--sv-ease);
+  }
+  html.ed-js body.ed-site .ed-home-stage.is-visible {
+    clip-path: inset(0 0 0 0 round 18px);
+  }
+}
+
+/* ── K5. Marquee band — a slow "trusted by" logo wall ─────────────────── */
+.ed-marquee {
+  overflow: hidden;
+  margin-top: clamp(56px, 7vw, 96px);
+  padding: clamp(26px, 3.6vw, 44px) 0 clamp(30px, 4vw, 50px);
+  border-top: 1px solid var(--site-line);
+  border-bottom: 1px solid var(--site-line);
+}
+.ed-marquee-title {
+  margin: 0 0 clamp(18px, 2.4vw, 28px);
+  padding: 0 clamp(20px, 5vw, 64px);
+  font-family: var(--site-serif-latin);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(23, 23, 22, .52);
+}
+html:lang(zh) .ed-marquee-title { font-family: var(--site-serif-cjk); letter-spacing: .3em; }
+.ed-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: sv-marquee 44s linear infinite;
+  will-change: transform;
+}
+.ed-marquee:hover .ed-marquee-track { animation-play-state: paused; }
+@keyframes sv-marquee { to { transform: translateX(-50%); } }
+.ed-marquee-seq {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(40px, 5.5vw, 84px);
+  padding-right: clamp(40px, 5.5vw, 84px);
+  white-space: nowrap;
+}
+.ed-logo-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: clamp(22px, 2.6vw, 32px);
+  width: clamp(96px, 11vw, 150px);
+  color: rgba(23, 23, 22, .58);
+  transition: color .35s ease;
+}
+.ed-logo-item:hover { color: var(--site-black); }
+.ed-logo-item svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── K6. (removed) logo masks — marks are now inlined with currentColor ─ */
+
+/* ── K7. Reading progress — a clay hairline along the very top ────────── */
+.ed-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 97;
+  background: linear-gradient(90deg, var(--sv-clay), var(--sv-clay-bright));
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+/* ── K8. Paper grain — a faint film that makes flat color feel tactile ── */
+body.ed-site::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  mix-blend-mode: soft-light;
+  opacity: .3;
+  pointer-events: none;
+}
+
+/* =========================================================================
+   L. Brand-study layer — patterns studied on the twelve reference sites
+   (Stripe · Anthropic · OpenAI · NVIDIA · Google · Meta · Netflix ·
+    Alibaba · Tencent · ByteDance · Spotify · Microsoft), translated into
+   the warm-paper system. Appended last, so it wins by cascade order.
+   ========================================================================= */
+
+/* ── L1. Forms — Stripe-grade fields (api-keys / profile / checkout) ──── */
+body.ed-site main input:not([type=radio]):not([type=checkbox]):not([type=submit]):not([type=button]):not([type=file]),
+body.ed-site main textarea,
+body.ed-site main select {
+  display: block;
+  width: 100%;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--site-black);
+  background: #fffdf8;
+  border: 1px solid var(--site-line);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 2px rgba(23, 23, 22, .04);
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+body.ed-site main input::placeholder,
+body.ed-site main textarea::placeholder { color: rgba(23, 23, 22, .38); opacity: 1; }
+body.ed-site main input:focus,
+body.ed-site main textarea:focus,
+body.ed-site main select:focus {
+  outline: none;
+  border-color: var(--sv-clay-bright);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(184, 106, 69, .16);
+}
+/* The seamless three-part card field keeps its own chrome. */
+body.ed-site .ed-card-input input {
+  display: block;
+  width: auto;
+  min-width: 0;
+  padding: 8px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+body.ed-site .ed-card-input input:focus {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+/* Field labels read as quiet mono eyebrows, Stripe-style. */
+body.ed-site main .ed-field > label {
+  display: block;
+  margin-bottom: 6px;
+  font-family: var(--ed-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(23, 23, 22, .62);
+}
+
+/* ── L2. Pull quotes — Anthropic's serif editorial voice ──────────────── */
+body.ed-site main blockquote {
+  margin: clamp(28px, 4vw, 44px) 0;
+  padding: 6px 0 6px clamp(20px, 3vw, 32px);
+  border-left: 3px solid var(--sv-clay-bright);
+  font-family: var(--site-serif-latin);
+  font-size: clamp(19px, 2vw, 24px);
+  font-style: italic;
+  line-height: 1.5;
+  color: rgba(23, 23, 22, .82);
+}
+html:lang(zh) body.ed-site main blockquote { font-family: var(--site-serif-cjk); }
+
+/* ── L3. Kickers — NVIDIA's category eyebrow, with a clay tick ────────── */
+body.ed-site .ed-kicker::before {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 1px;
+  margin-right: 10px;
+  vertical-align: middle;
+  transform: translateY(-1px);
+  background: var(--sv-clay-bright);
+}
+
+/* ── L4. Tables — Stripe's data discipline + legal-table structure ────── */
+body.ed-site main table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+body.ed-site main th {
+  padding: 10px 14px;
+  text-align: left;
+  font-family: var(--ed-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(23, 23, 22, .55);
+  border-bottom: 1px solid rgba(23, 23, 22, .28);
+}
+body.ed-site main td {
+  padding: 12px 14px;
+  vertical-align: top;
+  border-bottom: 1px solid var(--site-line);
+}
+body.ed-site main tbody tr { transition: background-color .15s ease; }
+body.ed-site main tbody tr:hover { background-color: rgba(184, 106, 69, .05); }
+
+/* ── L5. Keyboard focus — Material-crisp rings for every interactive ──── */
+body.ed-site :focus-visible {
+  outline: 2px solid var(--sv-clay-bright);
+  outline-offset: 2px;
+}
+
+/* ── L6. Figure captions — quiet mono metadata under research media ───── */
+body.ed-site main figcaption {
+  margin-top: 10px;
+  font-family: var(--ed-mono, monospace);
+  font-size: 11.5px;
+  letter-spacing: .04em;
+  color: rgba(23, 23, 22, .55);
+}
+
+/* ── L7. In-prose links — Google's crafted underline, clay on hover ───── */
+body.ed-site main p a:not(.ed-button),
+body.ed-site main li a:not(.ed-button) {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: rgba(184, 106, 69, .45);
+  text-underline-offset: 3px;
+  transition: color .18s ease, text-decoration-color .18s ease;
+}
+body.ed-site main p a:not(.ed-button):hover,
+body.ed-site main li a:not(.ed-button):hover {
+  color: var(--sv-clay-bright);
+  text-decoration-color: currentColor;
+}
+
+/* =========================================================================
+   M. Daylight layer — Anthropic-style warm paper.
+   The home opening returns to the ivory page: a bold sans display at
+   poster scale on the left, serif supporting copy and actions in a right
+   column, and the stage artwork framed as a quiet rounded panel. The
+   trusted-by marquee sits on the same paper between hairlines. The sticky
+   header keeps its standard light skin everywhere — the old dark-zone
+   flip is retired in both CSS and JS.
+   ========================================================================= */
+
+/* ── M1. Paper canvas ─────────────────────────────────────────────────── */
+body.ed-site .ed-home-hero {
+  background: transparent;
+  color: #1a1918;
+  padding-top: clamp(72px, 9vw, 128px);
+  padding-bottom: clamp(56px, 7vw, 104px);
+}
+
+/* ── M2. Typography & actions — bold sans headline, serif support ─────── */
+body.ed-site .ed-home-hero .ed-hero-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+body.ed-site .ed-home-hero .ed-hero-lead { max-width: none; }
+body.ed-site .ed-home-hero .ed-display {
+  font-family: "Inter", "Geist", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(40px, 5vw, 74px);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -.03em;
+  color: #1a1918;
+  max-width: 16ch;
+  margin-inline: 0;
+}
+html:lang(zh) body.ed-site .ed-home-hero .ed-display {
+  font-size: clamp(32px, 4.2vw, 58px);
+  line-height: 1.14;
+  letter-spacing: -.01em;
+  max-width: none;
+}
+body.ed-site .ed-home-hero .ed-hero-sub {
+  margin-top: 18px;
+  font-size: clamp(17px, 1.3vw, 20px);
+  line-height: 1.55;
+  color: rgba(26, 25, 24, .78);
+}
+@media (min-width: 981px) {
+  body.ed-site .ed-home-hero .ed-hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    column-gap: clamp(40px, 6vw, 96px);
+    align-items: end;
+  }
+  body.ed-site .ed-home-hero .ed-hero-lead { grid-column: 1; grid-row: 1 / span 2; }
+  body.ed-site .ed-home-hero .ed-hero-sub { grid-column: 2; grid-row: 1; align-self: end; margin-top: 0; }
+  body.ed-site .ed-home-hero .ed-hero-actions { grid-column: 2; grid-row: 2; justify-content: flex-start; margin-top: 22px; }
+}
+body.ed-site .ed-home-hero .ed-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 26px;
+}
+/* Primary — Anthropic charcoal pill. */
+body.ed-site .ed-home-hero .ed-button {
+  background: #191919;
+  border-color: #191919;
+  color: #f5f3ee;
+  font-weight: 500;
+  border-radius: 999px;
+}
+@media (hover: hover) and (pointer: fine) {
+  body.ed-site .ed-home-hero .ed-button:hover {
+    background: #000000;
+    border-color: #000000;
+    transform: translateY(-1px);
+  }
+}
+/* Secondary — quiet outline pill. */
+body.ed-site .ed-home-hero .ed-button-ghost {
+  background: transparent;
+  border: 1px solid rgba(25, 25, 25, .25);
+  color: #1a1918;
+}
+body.ed-site .ed-home-hero .ed-button-ghost:hover {
+  background: rgba(25, 25, 25, .05);
+  border-color: rgba(25, 25, 25, .5);
+}
+/* Announcement tag — hairline pill with a book-cloth pulse dot. */
+body.ed-site .ed-home-hero .ed-hero-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 22px;
+  padding: 6px 14px;
+  border: 1px solid rgba(25, 25, 25, .16);
+  border-radius: 999px;
+  font-family: var(--ed-mono, monospace);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(26, 25, 24, .62);
+}
+html:lang(zh) body.ed-site .ed-home-hero .ed-hero-flag { letter-spacing: .26em; }
+body.ed-site .ed-home-hero .ed-hero-flag span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c15f3c;
+  animation: sv-flag-pulse 2.4s ease-in-out infinite;
+}
+@keyframes sv-flag-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .45; transform: scale(.82); }
+}
+
+/* ── M3. The stage — a quiet rounded panel on the paper ───────────────── */
+body.ed-site .ed-home-stage {
+  border-radius: 18px;
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .09);
+}
+body.ed-site .ed-home-hero .ed-stage-index a { color: rgba(255, 255, 255, .6); }
+body.ed-site .ed-home-hero .ed-stage-index a:hover { color: #ffffff; }
+body.ed-site .ed-home-hero .ed-network-copy h2 { color: #fafafa; }
+body.ed-site .ed-home-hero .ed-network-copy p { color: rgba(255, 255, 255, .58); }
+body.ed-site .ed-home-hero .ed-stage-caption { color: rgba(255, 255, 255, .38); }
+
+/* ── M4. Marquee back on the paper, between hairlines ─────────────────── */
+body.ed-site .ed-home-hero + .ed-marquee {
+  margin-top: 0;
+  background: transparent;
+  border-top-color: rgba(23, 23, 22, .1);
+  border-bottom-color: rgba(23, 23, 22, .14);
+}
+body.ed-site .ed-home-hero + .ed-marquee .ed-marquee-title { color: rgba(26, 25, 24, .5); }
+body.ed-site .ed-home-hero + .ed-marquee .ed-logo-item { color: rgba(26, 25, 24, .68); }
+body.ed-site .ed-home-hero + .ed-marquee .ed-logo-item:hover { color: #14130f; }
+
+/* ── M5. Header dark skin retired ─────────────────────────────────────── */
+/* The hero is daylight paper again, so the light-on-dark nav flip and    */
+/* the no-JS dark glass bar are gone. editorial.js pins darkEnd to 0 so   */
+/* .ed-over-dark is never applied; the standard light header serves all   */
+/* scroll states.                                                         */
+
+/* ── M6. Below the fold — flat paper under the statement ──────────────── */
+body.ed-site main > section:has(.ed-home-statement) {
+  background: transparent;
+}
+body.ed-site .ed-home-statement .ed-statement-title {
+  font-size: clamp(32px, 3.8vw, 58px);
+  line-height: 1.08;
+  letter-spacing: -.018em;
+}
+
+/* ── M7. Essay rows — quiet editorial slide on hover ──────────────────── */
+body.ed-site .ed-essay-row {
+  transition:
+    padding-left .25s var(--sv-ease, ease),
+    transform var(--sv-speed, .25s) var(--sv-ease, ease),
+    background-color .2s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  body.ed-site .ed-essay-row:hover { padding-left: 14px; }
+}
+
+/* =========================================================================
+   N. Living background — retired with the Nocturne poster.
+   The daylight page keeps the flat Anthropic-style paper: the three-mass
+   aurora and every home-hero glow layer are switched off, and the K3/E
+   soft glow no longer paints on the home hero. Other pages keep their
+   gentle drift glow untouched. The hero keeps its stacking fix so any
+   future negative-z layer still paints above the paper.
+   ========================================================================= */
+
+/* ── N1. Stacking fix (kept — future-proofs negative-z layers) ────────── */
+body.ed-site .ed-home-hero {
+  position: relative;
+  isolation: isolate;
+}
+
+/* ── N2. Aurora off — a flat paper hero, Anthropic-style ──────────────── */
+body.ed-site .ed-home-hero::before,
+body.ed-site .ed-home-hero::after,
+body.ed-site .ed-home-hero .ed-hero-nebula { display: none; }
+
+/* ── N5. Marquee glow stays retired ───────────────────────────────────── */
+body.ed-site .ed-home-hero + .ed-marquee {
+  position: relative;
+  isolation: isolate;
+}
+body.ed-site .ed-home-hero + .ed-marquee::before { content: none; }
+
+/* ── N6. Motion safety — only the flag dot pulses; freeze it too ──────── */
+@media (prefers-reduced-motion: reduce) {
+  body.ed-site .ed-home-hero .ed-hero-flag span { animation: none !important; }
+}
