@@ -1,0 +1,28 @@
+# Research
+
+> A focused index of the six published research notes for agents working in the Socrates research area only.
+
+For the full Socrates llms.txt see [`/llms.txt`](/llms.txt). For long-form context see [`/llms-full.txt`](/llms-full.txt).
+
+## When to use this scope
+
+Reach for `/research/llms.txt` when the agent is already committed to reading or summarising Socrates research notes. It is a slimmer subset of `/llms.txt` for that context.
+
+## Research notes
+
+- [When a clear explanation becomes evidence](explanation-evidence.md) — Jul 29, 2026 · 6 min · explanation.
+- [The value of an honest pause](honest-pause.md) — Jul 11, 2026 · 5 min · practice.
+- [The route back to an idea](memory-recall.md) — Aug 12, 2026 · 7 min · memory.
+- [Maps that preserve the path](maps-preserve-path.md) — Jun 24, 2026 · 8 min · knowledge mapping.
+- [When a tutor should say it is unsure](tutor-curiosity.md) — May 14, 2026 · 7 min · practice.
+- [What learners keep after a session](what-learners-keep.md) — Apr 30, 2026 · 6 min · memory.
+
+Each note is published both as a markdown twin (this index) and as HTML at `https://topodrive.top/research/<slug>/`. Both are reachable via the same `<link rel="alternate" type="text/markdown">` advertisement.
+
+## Why we publish this
+
+We publish these notes to make our decisions legible. If the tutor behaves a particular way during a session, there is usually a note here that explains why.
+
+## Contact
+
+If a research note raises an idea you want to push further — partnership, replication, or a contradiction — write to `help@addtech.site`.

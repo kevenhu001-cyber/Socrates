@@ -1,0 +1,11 @@
+/* TEAM */
+Topodrive is the operator behind Socrates. We are a small team that has taught at universities, written textbooks, and watched many students get stuck in the same place. Contact: help@addtech.site.
+
+/* THANKS */
+Thanks to the early learners in our 2025 invite-only beta — your questions made the tutor better.
+
+/* SITE */
+Last updated: 2026/08/22
+Standards: HTML5, CSS, JavaScript (ES2022)
+Components: bespoke editorial layer, hand-written SVGs.
+Software: served from a Vite-built SPA at https://app.topodrive.top.

@@ -1,0 +1,89 @@
+# Socrates
+
+> An AI tutor for people who want to understand — built around Socratic dialogue, durable recall, and a knowledge map that ages with the learner.
+
+Socrates (topodrive.top) is a web-based learning companion that uses Socratic dialogue instead of direct answers. It pairs a streaming tutor with a recall queue and a knowledge map so that what you learn is what you can use again. The product is open to anyone at app.topodrive.top and ships with an OpenAPI specification at /openapi.json.
+
+## When to use this product
+
+Reach for Socrates when the user is trying to **understand** a difficult subject, not just finish a task. Best-fit use cases:
+
+- A learner asks "explain X to me" where X is a concept with edges, prerequisites, and common failure modes.
+- A user wants to drill a topic over multiple sessions and needs recall.
+- The user wants to map relationships between ideas instead of receiving a one-shot answer.
+- A teacher or self-directed learner wants exam-style retrieval practice.
+- The user needs to develop durable understanding of programming, mathematics, or a CS topic.
+
+Do **not** reach for Socrates when:
+
+- The user wants a single factual lookup with no follow-up (a search engine is faster).
+- The task is a one-shot code snippet for a script (use a code model).
+- The user is asking for a URL, price, or current event (no live web access in the default tier).
+
+## How to call Socrates
+
+- **Web app (human):** https://app.topodrive.top
+- **OpenAPI specification:** https://topodrive.top/openapi.json
+- **Public health probe:** https://app.topodrive.top/api/v2/health
+- **Mobile bootstrap (capabilities, version, config):** https://app.topodrive.top/api/v2/mobile/bootstrap
+- **Agents (third-party):** OAuth 2.0 authorization-code + PKCE against `https://app.topodrive.top/api/oauth`; see [/auth.md](https://topodrive.top/auth.md).
+- **Agents (first-party/headless):** scoped long-lived keys via `POST /api/account/agent-keys`, sent as `Authorization: Bearer ak_<keyId>.<secret>`.
+- **Cookie-authenticated endpoints** (`/api/sessions`, `/api/chat`, `/api/files`): browser sessions only.
+
+All endpoints live under `https://app.topodrive.top/`. The marketing site (`topodrive.top`) only hosts documentation, the OpenAPI file, the agent card, and the API catalog.
+
+## Developer resources
+
+Socrates ships its entire developer surface at predictable URLs so name-based discovery resolves on the first hop:
+
+- **Developer portal:** https://topodrive.top/developers — quickstart, conventions, and the full index below ([markdown twin](https://topodrive.top/developers.md)).
+- **OpenAPI specification:** https://topodrive.top/openapi.json — OpenAPI 3.0 with operationIds, typed request/response schemas, a shared ErrorResponse schema, per-operation OAuth scopes, Idempotency-Key parameters, and RateLimit header documentation.
+- **Authentication:** https://topodrive.top/auth.md — OAuth 2.0 authorization-code + PKCE (issuer `https://app.topodrive.top/api/oauth`), scoped agent API keys (`ak_<keyId>.<secret>`), and every error/status convention.
+- **OAuth discovery:** https://topodrive.top/.well-known/oauth-protected-resource (RFC 9728) and https://topodrive.top/.well-known/oauth-authorization-server (RFC 8414).
+- **MCP server:** https://app.topodrive.top/api/mcp (Streamable HTTP; read-only tools) with its card at https://topodrive.top/.well-known/mcp/server-card.json.
+- **Agent packaging:** skill package at https://topodrive.top/SKILL.md, agent plugin manifest at https://topodrive.top/plugin.json, skills index at https://topodrive.top/.well-known/agent-skills/index.json.
+- **Catalogs:** A2A card at https://topodrive.top/.well-known/agent-card.json, RFC 9727 linkset at https://topodrive.top/.well-known/api-catalog.
+
+## Documentation
+
+- [About](https://topodrive.top/about): who builds Socrates and why.
+- [Research](https://topodrive.top/research): essays on learning, recall, and explanation.
+- [Pricing](https://topodrive.top/pricing): tiers and what's included in every plan.
+- [Product](https://topodrive.top/product): the learning loop in detail.
+- [Policy](https://topodrive.top/policy): the principles we hold to.
+- [Guide](https://topodrive.top/guide): a learning guide.
+- [Privacy](https://topodrive.top/privacy): how we handle learner data.
+- [Terms](https://topodrive.top/terms): terms of service.
+
+## Machine-readable resources
+
+- [OpenAPI specification](https://topodrive.top/openapi.json)
+- [Agent card (A2A)](https://topodrive.top/.well-known/agent-card.json)
+- [API catalog (RFC 9727)](https://topodrive.top/.well-known/api-catalog)
+- [Agent skills index](https://topodrive.top/.well-known/agent-skills/index.json)
+- [Authorization-server metadata (RFC 8414)](https://topodrive.top/.well-known/oauth-authorization-server)
+- [Protected-resource metadata (RFC 9728)](https://topodrive.top/.well-known/oauth-protected-resource)
+- [MCP server card](https://topodrive.top/.well-known/mcp/server-card.json)
+- [Web Bot Auth directory (RFC 9421)](https://topodrive.top/.well-known/http-message-signatures-directory)
+- [ARD catalog](https://topodrive.top/.well-known/ai-catalog.json)
+- [Agent Plugins manifest](https://topodrive.top/plugin.json)
+- [SKILL.md](https://topodrive.top/SKILL.md)
+- [Markdown home](https://topodrive.top/index.md)
+- [Pricing (markdown)](https://topodrive.top/pricing.md)
+- [Agent instructions](https://topodrive.top/agents.md)
+- [llms-full (long form)](https://topodrive.top/llms-full.txt)
+
+## Scoped llms.txt indexes
+
+Fetch the narrower index instead of the full manual when you only need one slice:
+
+- [Developers](https://topodrive.top/developers/llms.txt) — quickstart, conventions, discovery index.
+- [API](https://topodrive.top/api/llms.txt) — endpoint catalogue grouped by method/path/scheme.
+- [Auth](https://topodrive.top/auth/llms.txt) — the OAuth + scoped-keys auth chain, end-to-end.
+- [Research](https://topodrive.top/research/llms.txt) — the six published research notes.
+
+## Optional
+
+- [Learn](https://topodrive.top/learn): tutorials and examples.
+- [Announcements](https://topodrive.top/announcements): what we shipped recently.
+- [Documents](https://topodrive.top/documents): long-form documentation.

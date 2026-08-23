@@ -1,0 +1,82 @@
+{
+  "$schema": "https://agenticresourcediscovery.org/schema/v1/ai-catalog.json",
+  "version": "1.0",
+  "name": "Socrates",
+  "description": "An AI tutor for people who want to understand. Lists every agentic resource Socrates exposes — agent card, OpenAPI spec, agent skills, llms.txt.",
+  "homepage": "https://topodrive.top",
+  "entries": [
+    {
+      "identifier": "urn:air:topodrive.top:agent-card",
+      "type": "AgentCard",
+      "displayName": "Socrates A2A Agent Card",
+      "mediaType": "application/json",
+      "url": "https://topodrive.top/.well-known/agent-card.json",
+      "description": "A2A agent card describing Socrates' identity, capabilities, and skills."
+    },
+    {
+      "identifier": "urn:air:topodrive.top:openapi-spec",
+      "type": "APISpecification",
+      "displayName": "Socrates OpenAPI Specification",
+      "mediaType": "application/openapi+json",
+      "url": "https://topodrive.top/openapi.json",
+      "description": "OpenAPI 3.0 specification of the public Socrates API (health, bootstrap, auth, mobile)."
+    },
+    {
+      "identifier": "urn:air:topodrive.top:agent-skills",
+      "type": "SkillSet",
+      "displayName": "Socrates Agent Skills Index",
+      "mediaType": "application/json",
+      "url": "https://topodrive.top/.well-known/agent-skills/index.json",
+      "description": "v0.2.0-conformant Agent Skills index for Socrates (Socratic dialogue, recall queue, knowledge map, exam mode, mistake book)."
+    },
+    {
+      "identifier": "urn:air:topodrive.top:llms-txt",
+      "type": "Documentation",
+      "displayName": "Socrates llms.txt Index",
+      "mediaType": "text/plain",
+      "url": "https://topodrive.top/llms.txt",
+      "description": "Navigation index for AI agents — capabilities, tutorials, API surface, citation rules."
+    },
+    {
+      "identifier": "urn:air:topodrive.top:agents-md",
+      "type": "AgentInstructions",
+      "displayName": "Socrates Agent Instructions",
+      "mediaType": "text/markdown",
+      "url": "https://topodrive.top/agents.md",
+      "description": "When to reach for Socrates, how to call it, and what its capabilities are."
+    },
+    {
+      "identifier": "urn:air:topodrive.top:api-catalog",
+      "type": "ServiceCatalog",
+      "displayName": "Socrates API Catalog (RFC 9727)",
+      "mediaType": "application/linkset+json",
+      "url": "https://topodrive.top/.well-known/api-catalog",
+      "description": "RFC 9727 linkset advertising Socrates service descriptions and discovery endpoints."
+    }
+  ],
+  "specVersion": "1.0",
+  "trustManifest": {
+    "identity": {
+      "name": "Socrates (TopoDrive)",
+      "homepage": "https://topodrive.top",
+      "contact": "help@addtech.site",
+      "canonicalDomain": "topodrive.top"
+    },
+    "attestations": [
+      {
+        "type": "security-txt",
+        "url": "https://topodrive.top/.well-known/security.txt"
+      },
+      {
+        "type": "humans-txt",
+        "url": "https://topodrive.top/.well-known/humans.txt"
+      },
+      {
+        "type": "ownership",
+        "url": "https://topodrive.top/about",
+        "note": "Company page states the operator of this domain."
+      }
+    ],
+    "generatedAt": "2026-08-22"
+  }
+}

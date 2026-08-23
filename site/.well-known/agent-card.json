@@ -1,0 +1,88 @@
+{
+  "name": "Socrates",
+  "description": "An AI tutor for people who want to understand. Socrates pairs a Socratic dialogue tutor with a recall queue and a knowledge map so that what you learn is what you can use again.",
+  "url": "https://app.topodrive.top",
+  "version": "2026.05",
+  "documentation": "https://topodrive.top/llms-full.txt",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "authentication": {
+    "schemes": [
+      {
+        "type": "sessionCookie",
+        "name": "sid",
+        "description": "Browser session cookie issued by /api/auth/login. HttpOnly, SameSite=Lax, 64-hex."
+      },
+      {
+        "type": "bearer",
+        "name": "mobileBearer",
+        "description": "Authorization: Bearer ma.<pairId>.<64-hex>. 15-minute TTL. Pair with /api/mobile/refresh using the matching mr.* refresh token."
+      },
+      {
+        "type": "csrfDoubleSubmit",
+        "name": "X-CSRF-Token",
+        "description": "Required for state-changing browser routes. Issued by GET /api/auth/csrf-token."
+      },
+      {
+        "type": "oauth2AuthCode",
+        "name": "github",
+        "authorizationUrl": "https://github.com/login/oauth/authorize",
+        "tokenUrl": "https://app.topodrive.top/api/auth/oauth/github/callback",
+        "scopes": ["user:email"],
+        "description": "Third-party GitHub OAuth flow that issues a sid cookie on exchange."
+      }
+    ]
+  },
+  "defaultInputModes": ["text/plain", "application/json"],
+  "defaultOutputModes": ["text/plain", "application/json", "text/markdown"],
+  "skills": [
+    {
+      "id": "tutor.socratic-dialogue",
+      "name": "Socratic dialogue",
+      "description": "Ask-then-answer tutoring style. The tutor asks before it answers.",
+      "tags": ["tutoring", "dialogue", "socratic", "explanation"]
+    },
+    {
+      "id": "tutor.recall-queue",
+      "name": "Recall queue",
+      "description": "Schedule prompts that surface saved moments at the right interval.",
+      "tags": ["spaced-repetition", "recall", "memory"]
+    },
+    {
+      "id": "tutor.knowledge-map",
+      "name": "Knowledge map",
+      "description": "Maintain a map of relationships between ideas across a user's sessions.",
+      "tags": ["knowledge-graph", "mapping", "links"]
+    },
+    {
+      "id": "tutor.exam-mode",
+      "name": "Exam mode",
+      "description": "Retrieval-practice mode that surfaces questions at the end of a study block.",
+      "tags": ["exam", "retrieval-practice", "quiz"]
+    },
+    {
+      "id": "tutor.mistake-book",
+      "name": "Mistake book",
+      "description": "Collects moments where the learner's explanation showed a seam.",
+      "tags": ["reflection", "spaced-repetition"]
+    },
+    {
+      "id": "research.markdown-twin",
+      "name": "Markdown twin publishing",
+      "description": "Every research note is published as a markdown twin alongside its HTML.",
+      "tags": ["markdown", "research"]
+    }
+  ],
+  "provider": {
+    "organization": "Topodrive",
+    "url": "https://topodrive.top",
+    "contactEmail": "help@addtech.site",
+    "sameAs": [
+      "https://app.topodrive.top",
+      "https://status.topodrive.top"
+    ]
+  }
+}
