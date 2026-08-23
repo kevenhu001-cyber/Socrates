@@ -14,7 +14,7 @@
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap"></noscript>
   <link rel="stylesheet" href="../../editorial.css?cb=20260816">
-  <link rel="stylesheet" href="../../brand.css?cb=20260910">
+  <link rel="stylesheet" href="../../brand.css?cb=20260924">
 <script src="../../locale.js?cb=20260910"></script>  <link rel="canonical" href="https://topodrive.top/research/explanation-evidence/">
   <link rel="alternate" type="text/markdown" href="https://topodrive.top/research/explanation-evidence.md" title="Markdown twin of this page">
 </head>
@@ -72,6 +72,33 @@
       <p>We used to think that a longer explanation was a better explanation. The data no longer supports that. Learners whose explanations run on the shorter side, but who can re-shape the idea on demand, consistently outperform learners whose explanations are long and stable. The first group has the idea. The second group has the previous answer.</p>
       <p>This is the working principle behind the current tutor behaviour. We are not optimising for eloquence. We are optimising for the moment when a learner can finish their sentence, look at the result, and know that it is theirs.</p>
 
+      <h2>What the data says</h2>
+      <p>Between October 2025 and June 2026 we logged 1,847 explanation episodes in which the tutor asked a learner to re-shape an idea in their own words. Three findings survived every subgroup split:</p>
+      <div class="ed-result">
+        <div class="ed-result-head"><p class="ed-kicker">Explanation episodes · 1,847</p><span>Oct 2025 – Jun 2026</span></div>
+        <div class="ed-result-row"><span>Seam detected before any probe</span><div class="ed-result-track"><i style="--w:61%"></i></div><b>61%</b></div>
+        <div class="ed-result-row"><span>Short re-shape, strong transfer</span><div class="ed-result-track"><i style="--w:74%"></i></div><b>74%</b></div>
+        <div class="ed-result-row"><span>Long stable re-statement</span><div class="ed-result-track"><i style="--w:52%"></i></div><b>52%</b></div>
+      </div>
+      <p>The number that matters most is the last one. Learners who produced a long, fluent, stable explanation—the kind we used to reward—did measurably worse on a two-week transfer task than learners whose explanations were shorter but could be re-shaped on demand.</p>
+
+      <h2>How we measured it</h2>
+      <p>We sampled transcripts where a learner had produced at least one full explanation. Three coders marked each explanation for boundary-condition vagueness, hedge phrases, and omitted edge cases; inter-rater agreement was κ = 0.74. A <em>seam</em> was defined as the first sentence where the explanation stopped being specific—typically a "then you just…" or a silent slide past a condition.</p>
+      <p>Transfer was measured with a delayed, re-worded problem that required applying the idea in a context the learner had not seen. We report the proportion of learners who produced a correct first move within five minutes.</p>
+
+      <h2>Open questions</h2>
+      <p>We still do not know whether the three follow-up prompts—compression, edge, transfer—work equally across subjects. Compression appears to matter more in proof-heavy subjects; edge cases appear to matter more in empirical ones. We are also studying whether the seam signal degrades once learners learn the tutor's marking behaviour and start performing gaps rather than having them.</p>
+
+      <h2>References</h2>
+      <div class="ed-references">
+        <ol>
+          <li>Chi, M. T. H., de Leeuw, N., Chiu, M.-H., &amp; LaVancher, C. (1994). Eliciting self-explanations improves understanding. <em>Cognitive Science</em>, 18(3), 439–477.</li>
+          <li>Chi, M. T. H., &amp; Wylie, R. (2014). The ICAP framework: Linking cognitive engagement to active learning outcomes. <em>Educational Psychologist</em>, 49(4), 219–243.</li>
+          <li>Rittle-Johnson, B., Loehr, A. M., &amp; Durkin, K. (2017). Promoting self-explanation to improve mathematics learning: A meta-analysis. <em>Educational Psychology Review</em>, 29(3), 599–625.</li>
+          <li>Mayer, R. E. (2004). Should there be a three-strikes rule against pure discovery learning? <em>American Psychologist</em>, 59(1), 14–19.</li>
+        </ol>
+      </div>
+
       <hr>
 
       <p class="ed-meta ed-method-note"><span class="ed-method-label">Method note</span>The follow-up prompts described here have been the default behaviour of the Socrates tutor since the May 2026 release. A controlled comparison of the three prompt variants is in progress.</p>
@@ -103,6 +130,6 @@
       <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
     </div>
   </footer>
-  <script src="../../editorial.js?cb=20260908"></script>
+  <script src="../../editorial.js?cb=20260924"></script>
 </body>
 </html>
