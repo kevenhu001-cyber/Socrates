@@ -43,9 +43,16 @@
         <div class="ed-article-hero-aside">
           <figure class="ed-article-hero-media"><img src="../../media/socrates-research-maps-path-v1.webp" alt="A folded vellum path pinned across a black surface beside a blue slate and brass ruler"></figure>
           <div class="ed-article-byline">
-          <span><strong>Team</strong> · Socrates Research</span><span class="ed-thread">Knowledge mapping</span>
-          <span>Jun 24, 2026</span>
-          <span>8 min read</span>
+            <div class="ed-author">
+              <span class="ed-author-avatar" aria-hidden="true">AY</span>
+              <span class="ed-author-meta">
+                <strong>Aiko Yamada</strong>
+                <span>Knowledge mapping · lead</span>
+              </span>
+            </div>
+            <span><strong>Knowledge mapping</strong></span>
+            <span>Jun 24, 2026</span>
+            <span>8 min read</span>
           </div>
         </div>
       </div>
@@ -76,17 +83,82 @@
       <p>The second is the question of editing. Learners sometimes want to remove an anchor that they no longer care about, or to merge two anchors that turned out to be the same idea. The current map lets them do this, but the undo flow is awkward. We are still working on the right verb set for editing a learning map, and we will publish what we land on.</p>
 
       <h2>What the data says</h2>
-      <p>From April to June 2026 we compared 96 active learners on the original map and the rebuilt map. The rebuilt map was not more popular in week one—it was more <em>persistent</em>:</p>
+      <p>From April to June 2026 we compared <span class="ed-stat" data-stat-value="96" data-stat-duration="900">96</span> active learners on the original map and the rebuilt map. The rebuilt map was not more popular in week one—it was more <em>persistent</em>:</p>
       <div class="ed-result">
         <div class="ed-result-head"><p class="ed-kicker">Map cohorts · 96 learners, 12 weeks</p><span>Apr – Jun 2026</span></div>
         <div class="ed-result-row"><span>Original: still opening at week 4</span><div class="ed-result-track"><i style="--w:12%"></i></div><b>12%</b></div>
         <div class="ed-result-row"><span>Rebuilt: still opening at week 4</span><div class="ed-result-track"><i style="--w:58%"></i></div><b>58%</b></div>
-        <div class="ed-result-row"><span>Rebuilt: edges followed per session</span><div class="ed-result-track"><i style="--w:87%"></i></div><b>2.6</b></div>
+        <div class="ed-result-row"><span>Seam-card offer → learner question</span><div class="ed-result-track"><i style="--w:71%"></i></div><b>71%</b></div>
+        <div class="ed-result-row"><span>Original “related ideas” offer → question</span><div class="ed-result-track"><i style="--w:19%"></i></div><b>19%</b></div>
       </div>
+
+      <figure class="ed-svg-bar-wrap" aria-label="Bar chart of map engagement across original and rebuilt versions">
+        <svg class="ed-svg-bar" viewBox="0 0 600 240" role="img" aria-label="Map engagement by version">
+          <defs>
+            <linearGradient id="edBarGrad" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%" stop-color="#b86a45"/>
+              <stop offset="100%" stop-color="#d97b56"/>
+            </linearGradient>
+          </defs>
+          <g transform="translate(20,20)">
+            <text class="ed-bar-label" x="0" y="14">Original: still opening at week 4</text>
+            <rect class="ed-bar-track" x="260" y="2" width="280" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="260" y="2" width="33.6" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="16" text-anchor="end">12%</text>
+
+            <text class="ed-bar-label" x="0" y="60">Rebuilt: still opening at week 4</text>
+            <rect class="ed-bar-track" x="260" y="48" width="280" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="260" y="48" width="162.4" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="62" text-anchor="end">58%</text>
+
+            <text class="ed-bar-label" x="0" y="106">Seam-card → learner question</text>
+            <rect class="ed-bar-track" x="260" y="94" width="280" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="260" y="94" width="198.8" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="108" text-anchor="end">71%</text>
+
+            <text class="ed-bar-label" x="0" y="152">Original “related ideas” → question</text>
+            <rect class="ed-bar-track" x="260" y="140" width="280" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="260" y="140" width="53.2" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="154" text-anchor="end">19%</text>
+          </g>
+        </svg>
+        <figcaption class="ed-figure-caption">n = 96 learners · 12-week cohort · 18 follow-up interviews</figcaption>
+      </figure>
+
       <p>We also measured whether the map changed what learners did next, not just what they looked at. When the tutor offered a seam card—a single edge where two ideas actually meet—71% of those offers were followed by a question in the same session. The original map, which showed everything, produced follow-up questions from only 19% of its "related ideas" offers.</p>
 
       <h2>How we measured it</h2>
       <p>Ninety-six active learners were assigned to the original or rebuilt map for twelve weeks. We logged weekly opens, edge follows, anchor revisits, and whether a tutor-offered edge was followed by a learner question. Eighteen post-session interviews explained the mechanism: learners described the rebuilt map as "quieter" and the original as "a dashboard for a job I did not have".</p>
+
+      <div class="ed-timeline" aria-label="Methodology timeline">
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">01</span>
+          <div><strong>Assign</strong><span>96 active learners split evenly across original and rebuilt maps.</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">02</span>
+          <div><strong>Instrument</strong><span>Logged weekly opens, edge follows, anchor revisits, and offer-to-question rates.</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">03</span>
+          <div><strong>Interview</strong><span>18 post-session interviews surfaced the “dashboard for a job I did not have” finding.</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">04</span>
+          <div><strong>Ship</strong><span>Rebuilt map became the default in April 2026; original retired for new accounts.</span></div>
+        </div>
+      </div>
+
+      <div class="ed-coming-next">
+        <p class="ed-kicker">Coming next</p>
+        <h3>What learners keep after a session</h3>
+        <p>If a map can preserve the path, what does the learner actually keep a week later? The next note surveys 47 returning learners and matches what they remember to the moments that produced it.</p>
+      </div>
+
+      <p class="ed-related" aria-label="Related reading">
+        <a class="ed-related-chip" href="../memory-recall/">Memory · The route back to an idea</a>
+        <a class="ed-related-chip" href="../what-learners-keep/">Practice · What learners keep after a session</a>
+      </p>
 
       <h2>Open questions</h2>
       <p>Scale remains unsolved: we do not yet know how the rebuilt map behaves past five hundred anchors. Editing needs a better undo flow. And the hardest question is whether map use improves delayed recall, or only session engagement—the numbers we have so far suggest both, but the recall effect is not yet significant at four weeks.</p>

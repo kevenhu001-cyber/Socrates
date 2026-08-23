@@ -11,6 +11,10 @@ last-updated: 2026-08-22
 
 Socrates Research is our ongoing notes on what we have learned about learning. The essays are short, written by the team, and updated when our view changes.
 
+## By the numbers
+
+Six published notes · five active research threads · 1,847 explanation episodes analysed.
+
 ## Latest essays
 
 - [The route back to an idea](research/memory-recall/) — How a small change in prompt can surface a concept more reliably than a repeated answer.

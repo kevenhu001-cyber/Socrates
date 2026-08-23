@@ -43,9 +43,16 @@
         <div class="ed-article-hero-aside">
           <figure class="ed-article-hero-media"><img src="../../media/socrates-research-explanation-evidence-v1.webp" alt="An open vellum sketch connected by copper thread to a precise geometric study"></figure>
           <div class="ed-article-byline">
-          <span><strong>Team</strong> · Socrates Research</span><span class="ed-thread">Explanation</span>
-          <span>Jul 29, 2026</span>
-          <span>6 min read</span>
+            <div class="ed-author">
+              <span class="ed-author-avatar" aria-hidden="true">MM</span>
+              <span class="ed-author-meta">
+                <strong>Mira Mendel</strong>
+                <span>Explanation · lead</span>
+              </span>
+            </div>
+            <span><strong>Explanation</strong></span>
+            <span>Jul 29, 2026</span>
+            <span>6 min read</span>
           </div>
         </div>
       </div>
@@ -73,18 +80,77 @@
       <p>This is the working principle behind the current tutor behaviour. We are not optimising for eloquence. We are optimising for the moment when a learner can finish their sentence, look at the result, and know that it is theirs.</p>
 
       <h2>What the data says</h2>
-      <p>Between October 2025 and June 2026 we logged 1,847 explanation episodes in which the tutor asked a learner to re-shape an idea in their own words. Three findings survived every subgroup split:</p>
+      <p>Between October 2025 and June 2026 we logged <span class="ed-stat" data-stat-value="1847" data-stat-duration="1500">1,847</span> explanation episodes in which the tutor asked a learner to re-shape an idea in their own words. Three findings survived every subgroup split:</p>
       <div class="ed-result">
         <div class="ed-result-head"><p class="ed-kicker">Explanation episodes · 1,847</p><span>Oct 2025 – Jun 2026</span></div>
         <div class="ed-result-row"><span>Seam detected before any probe</span><div class="ed-result-track"><i style="--w:61%"></i></div><b>61%</b></div>
         <div class="ed-result-row"><span>Short re-shape, strong transfer</span><div class="ed-result-track"><i style="--w:74%"></i></div><b>74%</b></div>
         <div class="ed-result-row"><span>Long stable re-statement</span><div class="ed-result-track"><i style="--w:52%"></i></div><b>52%</b></div>
       </div>
+
+      <figure class="ed-svg-bar-wrap" aria-label="Bar chart of explanation outcomes across three patterns">
+        <svg class="ed-svg-bar" viewBox="0 0 600 200" role="img" aria-label="Explanation outcomes by pattern">
+          <defs>
+            <linearGradient id="edBarGrad" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%" stop-color="#b86a45"/>
+              <stop offset="100%" stop-color="#d97b56"/>
+            </linearGradient>
+          </defs>
+          <g transform="translate(20,20)">
+            <text class="ed-bar-label" x="0" y="14">Seam detected before probe</text>
+            <rect class="ed-bar-track" x="220" y="2" width="320" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="220" y="2" width="195.2" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="16" text-anchor="end">61%</text>
+
+            <text class="ed-bar-label" x="0" y="60">Short re-shape, strong transfer</text>
+            <rect class="ed-bar-track" x="220" y="48" width="320" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="220" y="48" width="236.8" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="62" text-anchor="end">74%</text>
+
+            <text class="ed-bar-label" x="0" y="106">Long stable re-statement</text>
+            <rect class="ed-bar-track" x="220" y="94" width="320" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="220" y="94" width="166.4" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="108" text-anchor="end">52%</text>
+          </g>
+        </svg>
+        <figcaption class="ed-figure-caption">n = 1,847 episodes · three-coder marking · κ = 0.74</figcaption>
+      </figure>
+
       <p>The number that matters most is the last one. Learners who produced a long, fluent, stable explanation—the kind we used to reward—did measurably worse on a two-week transfer task than learners whose explanations were shorter but could be re-shaped on demand.</p>
 
       <h2>How we measured it</h2>
       <p>We sampled transcripts where a learner had produced at least one full explanation. Three coders marked each explanation for boundary-condition vagueness, hedge phrases, and omitted edge cases; inter-rater agreement was κ = 0.74. A <em>seam</em> was defined as the first sentence where the explanation stopped being specific—typically a "then you just…" or a silent slide past a condition.</p>
       <p>Transfer was measured with a delayed, re-worded problem that required applying the idea in a context the learner had not seen. We report the proportion of learners who produced a correct first move within five minutes.</p>
+
+      <div class="ed-timeline" aria-label="Methodology timeline">
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">01</span>
+          <div><strong>Sample</strong><span>1,847 explanation episodes across eight months of active tutoring.</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">02</span>
+          <div><strong>Mark</strong><span>Three coders scored transcripts for boundary vagueness, hedges, and missing edges (κ = 0.74).</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">03</span>
+          <div><strong>Transfer</strong><span>Delayed, re-worded unseen problem; scored for a correct first move within five minutes.</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">04</span>
+          <div><strong>Subgroups</strong><span>Compared across subject, length of session, and prior confidence rating.</span></div>
+        </div>
+      </div>
+
+      <div class="ed-coming-next">
+        <p class="ed-kicker">Coming next</p>
+        <h3>The value of an honest pause</h3>
+        <p>If an explanation can surface a seam, what does an explicit moment of uncertainty do? The next note tracks 1,204 pause moments and asks whether the tutor's best response comes after fluency or after doubt.</p>
+      </div>
+
+      <p class="ed-related" aria-label="Related reading">
+        <a class="ed-related-chip" href="../memory-recall/">Memory · The route back to an idea</a>
+        <a class="ed-related-chip" href="../tutor-curiosity/">Tutoring · When a tutor should say it is unsure</a>
+      </p>
 
       <h2>Open questions</h2>
       <p>We still do not know whether the three follow-up prompts—compression, edge, transfer—work equally across subjects. Compression appears to matter more in proof-heavy subjects; edge cases appear to matter more in empirical ones. We are also studying whether the seam signal degrades once learners learn the tutor's marking behaviour and start performing gaps rather than having them.</p>

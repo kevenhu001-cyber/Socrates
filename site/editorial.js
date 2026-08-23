@@ -541,6 +541,180 @@
   }
 
   /* --------------------------------------------------------------
+   * Q. Premium extension — counters, tilt, paragraph wave, mini demos
+   * -------------------------------------------------------------- */
+
+  /* Q1 — Animated stat counter.
+     <span class="ed-stat" data-stat-value="184" data-stat-duration="1100">0</span>
+     Optional data-stat-prefix="+" data-stat-suffix="%" data-stat-decimals="1" */
+  function formatStat(value, decimals) {
+    if (decimals > 0) return value.toFixed(decimals);
+    return Math.round(value).toLocaleString('en-US');
+  }
+  function animateStat(stat) {
+    if (stat.dataset.statDone === '1') return;
+    stat.dataset.statDone = '1';
+    var target = parseFloat(stat.getAttribute('data-stat-value') || '0');
+    var duration = parseInt(stat.getAttribute('data-stat-duration') || '1200', 10);
+    var decimals = parseInt(stat.getAttribute('data-stat-decimals') || '0', 10);
+    var prefix = stat.getAttribute('data-stat-prefix') || '';
+    var suffix = stat.getAttribute('data-stat-suffix') || '';
+    if (!isFinite(target)) target = 0;
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || duration <= 0) {
+      stat.firstChild.nodeValue = prefix + formatStat(target, decimals) + suffix;
+      stat.classList.add('is-done');
+      return;
+    }
+    var start = performance.now();
+    stat.classList.add('is-animating');
+    function tick(now) {
+      var t = Math.min(1, (now - start) / duration);
+      var eased = 1 - Math.pow(1 - t, 3);
+      var v = target * eased;
+      stat.firstChild.nodeValue = prefix + formatStat(v, decimals) + suffix;
+      if (t < 1) requestAnimationFrame(tick);
+      else {
+        stat.firstChild.nodeValue = prefix + formatStat(target, decimals) + suffix;
+        stat.classList.remove('is-animating');
+        stat.classList.add('is-done');
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  function initAnimatedStats() {
+    var stats = document.querySelectorAll('[data-stat-value]');
+    if (!stats.length) return;
+    /* Pre-populate the text node so reduced-motion users see the final value. */
+    stats.forEach(function (stat) {
+      var target = parseFloat(stat.getAttribute('data-stat-value') || '0');
+      var decimals = parseInt(stat.getAttribute('data-stat-decimals') || '0', 10);
+      var prefix = stat.getAttribute('data-stat-prefix') || '';
+      var suffix = stat.getAttribute('data-stat-suffix') || '';
+      if (!isFinite(target)) target = 0;
+      var node = stat.firstChild;
+      if (node && node.nodeType === Node.TEXT_NODE) {
+        node.nodeValue = prefix + formatStat(0, decimals) + suffix;
+      } else {
+        stat.insertBefore(document.createTextNode(prefix + formatStat(0, decimals) + suffix), stat.firstChild);
+      }
+    });
+    if (!('IntersectionObserver' in window)) {
+      stats.forEach(animateStat);
+      return;
+    }
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        animateStat(entry.target);
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: .35 });
+    stats.forEach(function (stat) { observer.observe(stat); });
+  }
+
+  /* Q2 — Card 3D tilt on hover. Wraps spotlight; writes --sv-tilt-x/y. */
+  function initCardTilt() {
+    var cards = document.querySelectorAll(
+      '.ed-portal, .ed-story-card, .ed-price-card, .ed-publication-side, ' +
+      '.ed-black-band-media, .ed-showcase-media, .ed-article-hero-media, ' +
+      '.ed-inline-feature, .ed-product-block, .ed-mini-demo, .ed-coming-next'
+    );
+    if (!cards.length) return;
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    cards.forEach(function (card) {
+      card.classList.add('ed-tilt');
+      card.addEventListener('pointermove', function (e) {
+        var rect = card.getBoundingClientRect();
+        var x = ((e.clientX - rect.left) / rect.width - .5) * 2;   // -1..1
+        var y = ((e.clientY - rect.top) / rect.height - .5) * 2;   // -1..1
+        card.style.setProperty('--sv-tilt-x', x.toFixed(3));
+        card.style.setProperty('--sv-tilt-y', y.toFixed(3));
+      });
+      card.addEventListener('pointerleave', function () {
+        card.style.removeProperty('--sv-tilt-x');
+        card.style.removeProperty('--sv-tilt-y');
+      });
+    });
+  }
+
+  /* Q3 — Paragraph wave reveal: add is-visible to parents with .ed-reveal-paragraphs. */
+  function initParagraphReveal() {
+    var nodes = document.querySelectorAll('.ed-reveal-paragraphs');
+    if (!nodes.length) return;
+    if (!('IntersectionObserver' in window) ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      nodes.forEach(function (n) { n.classList.add('is-visible'); });
+      return;
+    }
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: .12, rootMargin: '0px 0px -40px' });
+    nodes.forEach(function (n) { observer.observe(n); });
+  }
+
+  /* Q4 — Mini demos in product cards: trigger on enter or hover. */
+  function initMiniDemos() {
+    var demos = document.querySelectorAll('.ed-mini-demo');
+    if (!demos.length) return;
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        });
+      }, { threshold: .25 });
+      demos.forEach(function (demo) { observer.observe(demo); });
+    } else {
+      demos.forEach(function (demo) { demo.classList.add('is-visible'); });
+    }
+  }
+
+  /* Q5 — Path timeline: light up nodes on enter. */
+  function initTimeline() {
+    var timelines = document.querySelectorAll('.ed-path-timeline');
+    if (!timelines.length) return;
+    if (!('IntersectionObserver' in window)) {
+      timelines.forEach(function (t) { t.classList.add('is-visible'); });
+      return;
+    }
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: .3 });
+    timelines.forEach(function (t) { observer.observe(t); });
+  }
+
+  /* Q6 — Chat thread reveal: same trigger as paragraph reveal. */
+  function initChatDemo() {
+    var threads = document.querySelectorAll('.ed-chat-thread');
+    if (!threads.length) return;
+    if (!('IntersectionObserver' in window) ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      threads.forEach(function (t) { t.classList.add('is-visible'); });
+      return;
+    }
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: .2 });
+    threads.forEach(function (t) { observer.observe(t); });
+  }
+
+  /* --------------------------------------------------------------
    * Boot
    * -------------------------------------------------------------- */
   function boot() {
@@ -558,6 +732,12 @@
     initCardSpotlight();
     initArticleFurniture();
     initArticleParallax();
+    initAnimatedStats();
+    initCardTilt();
+    initParagraphReveal();
+    initMiniDemos();
+    initTimeline();
+    initChatDemo();
     if (window.SocratesLocale && typeof window.SocratesLocale.localizeLinks === 'function') {
       window.SocratesLocale.localizeLinks();
     }

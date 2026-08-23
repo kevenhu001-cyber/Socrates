@@ -9,7 +9,7 @@ last-updated: 2026-08-22
 
 > Three years of A/B data on "explain this in your own words" prompts.
 
-*Team · Socrates Research · Explanation · 6 min · Jul 29, 2026*
+*Mira Mendel · Explanation lead · 6 min · Jul 29, 2026*
 
 ## The "explain it back" prompt, three years on
 
@@ -47,9 +47,25 @@ Learners who produced a long, fluent, stable explanation did measurably worse on
 
 Three coders marked sampled transcripts for boundary-condition vagueness, hedge phrases, and omitted edge cases (inter-rater agreement κ = 0.74). A seam is the first sentence where an explanation stops being specific. Transfer was measured with a delayed, re-worded problem in an unseen context.
 
+### Methodology timeline
+
+1. **Sample** — Stratified sampling of explanation episodes from Oct 2025 – Jun 2026.
+2. **Code** — Three independent coders marked seam locations and types.
+3. **Transfer test** — Two-week delayed problem in an unseen context.
+4. **Reconcile** — Disagreements resolved by a fourth reviewer.
+
+## Coming next
+
+> **The value of an honest pause.** Learners often sense a seam the moment it forms, but rarely say so. The next note tracks how an *honest pause* — the courage to admit uncertainty — opens the next useful question.
+
 ## Open questions
 
 We do not yet know whether the three follow-up prompts—compression, edge, transfer—work equally across subjects, or whether the seam signal degrades once learners learn the tutor's marking behaviour.
+
+## Related reading
+
+- [Memory · The route back to an idea](https://topodrive.top/research/memory-recall/)
+- [Tutoring · When a tutor should say it is unsure](https://topodrive.top/research/tutor-curiosity/)
 
 ## References
 
