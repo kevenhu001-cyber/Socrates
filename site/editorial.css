@@ -5,21 +5,21 @@
    actual visible typography — display serif, CJK stack, legal layout,
    product-block scale — is owned by brand.css. */
 :root {
-  --ed-paper: #faf9f5;
-  --ed-paper-strong: #efe9de;
-  --ed-paper-soft: #f5f0e8;
-  --ed-sand: #e8e0d2;
-  --ed-sand-deep: #dfd6c5;
-  --ed-ink: #141413;
-  --ed-ink-soft: #3d3d3a;
-  --ed-ink-muted: #6c6a64;
-  --ed-line: #e6dfd8;
-  --ed-line-dark: #ebe6df;
-  --ed-black: #181715;
-  --ed-black-soft: #252320;
-  --ed-clay: #cc785c;
-  --ed-clay-warm: #a9583e;
-  --ed-clay-soft: rgba(204, 120, 92, 0.14);
+  --ed-paper: #0a0a0a;
+  --ed-paper-strong: #161616;
+  --ed-paper-soft: #111111;
+  --ed-sand: #1c1c1c;
+  --ed-sand-deep: #222222;
+  --ed-ink: #f5f1e8;
+  --ed-ink-soft: #a8a29e;
+  --ed-ink-muted: #78716c;
+  --ed-line: rgba(245, 241, 232, 0.08);
+  --ed-line-dark: rgba(245, 241, 232, 0.06);
+  --ed-black: #050505;
+  --ed-black-soft: #0d0d0d;
+  --ed-clay: #c4704a;
+  --ed-clay-warm: #d97757;
+  --ed-clay-soft: rgba(196, 112, 74, 0.15);
   /* Legacy aliases */
   --ed-serif: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Serif SC", "Noto Sans SC", "PingFang SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
   --ed-sans: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
@@ -27,9 +27,9 @@
   --ed-radius-lg: 28px;
   --ed-radius-md: 20px;
   --ed-radius-sm: 14px;
-  --ed-shadow: 0 16px 42px rgba(20, 20, 19, 0.08);
-  --ed-shadow-strong: 0 22px 60px rgba(20, 20, 19, 0.12);
-  --ed-shadow-button: 0 6px 18px rgba(20, 20, 19, 0.08);
+  --ed-shadow: 0 16px 42px rgba(0, 0, 0, 0.8);
+  --ed-shadow-strong: 0 22px 60px rgba(0, 0, 0, 0.9);
+  --ed-shadow-button: 0 6px 18px rgba(0, 0, 0, 0.5);
   --ed-ease: cubic-bezier(.22, .76, .26, 1);
   --ed-ease-out: cubic-bezier(.16, 1, .3, 1);
   --ed-ease-soft: cubic-bezier(.22, .61, .36, 1);
@@ -173,8 +173,8 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   -webkit-tap-highlight-color: transparent;
   transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
-.ed-button { color: #ffffff; background: var(--ed-clay); border-color: var(--ed-clay); font-weight: 500; }
-.ed-button:hover { color: #ffffff; background: var(--ed-clay-warm); border-color: var(--ed-clay-warm); }
+.ed-button { color: #2a1409; background: var(--ed-clay); border-color: var(--ed-clay); font-weight: 600; }
+.ed-button:hover { color: #2a1409; background: var(--ed-clay-warm); border-color: var(--ed-clay-warm); }
 .ed-button:active { transform: scale(.98); }
 .ed-button-quiet { color: var(--ed-ink); background: transparent; border-color: var(--ed-line); }
 .ed-button-quiet:hover { color: var(--ed-ink); border-color: var(--ed-ink); }
@@ -1328,28 +1328,27 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
 }
 
 /* ==========================================================================
-   CLAUDE BY ANTHROPIC AESTHETIC SYSTEM — warm cream edition
-   Cream canvas (#faf9f5), warm ink (#141413), coral (#cc785c) accent,
-   and dark navy product surfaces (#181715) for demos and manifesto bands.
+   CLAUDE BY ANTHROPIC AESTHETIC SYSTEM — pure dark edition
+   Near-black canvas, warm cream ink, restrained terracotta accents.
    ========================================================================== */
 
 :root {
-  --claude-bg: #faf9f5;
-  --claude-bg-deep: #181715;
-  --claude-surface: #ffffff;
-  --claude-surface-sub: #f5f0e8;
-  --claude-border: #e6dfd8;
-  --claude-border-hover: #c8beb0;
-  --claude-ink: #141413;
-  --claude-ink-secondary: #3d3d3a;
-  --claude-ink-tertiary: #6c6a64;
-  --claude-clay: #cc785c;
-  --claude-clay-bright: #a9583e;
-  --claude-clay-deep: #8f4a34;
-  --claude-on-clay: #ffffff;
-  --claude-clay-tint: rgba(204, 120, 92, 0.14);
+  --claude-bg: #0a0a0a;
+  --claude-bg-deep: #050505;
+  --claude-surface: #111111;
+  --claude-surface-sub: #0d0d0d;
+  --claude-border: rgba(245, 241, 232, 0.08);
+  --claude-border-hover: rgba(245, 241, 232, 0.20);
+  --claude-ink: #f5f1e8;
+  --claude-ink-secondary: #a8a29e;
+  --claude-ink-tertiary: #78716c;
+  --claude-clay: #c4704a;
+  --claude-clay-bright: #d97757;
+  --claude-clay-deep: #a85a3a;
+  --claude-on-clay: #1a0e07;
+  --claude-clay-tint: rgba(196, 112, 74, 0.14);
   --claude-radius-pill: 9999px;
-  --claude-radius-card: 16px;
+  --claude-radius-card: 20px;
   --claude-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1491,23 +1490,23 @@ html:lang(zh) .claude-hero-subtitle {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 22px;
+  padding: 13px 28px;
   background: var(--claude-clay);
   color: var(--claude-on-clay) !important;
-  border-radius: 10px;
-  font-size: 14.5px;
-  font-weight: 500;
+  border-radius: var(--claude-radius-pill);
+  font-size: 15px;
+  font-weight: 600;
   text-decoration: none;
   border: 1px solid var(--claude-clay);
-  box-shadow: 0 10px 30px -14px rgba(204, 120, 92, .55);
+  box-shadow: 0 10px 30px -12px rgba(217, 119, 87, .55);
   transition: all .25s var(--claude-ease);
 }
 
 .claude-btn-primary:hover {
   background: var(--claude-clay-bright);
   border-color: var(--claude-clay-bright);
-  transform: translateY(-1px);
-  box-shadow: 0 16px 38px -16px rgba(169, 88, 62, .6);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 38px -14px rgba(217, 119, 87, .65);
 }
 
 .claude-btn-primary:active {
@@ -1518,11 +1517,11 @@ html:lang(zh) .claude-hero-subtitle {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 22px;
-  background: transparent;
+  padding: 13px 26px;
+  background: rgba(250, 245, 235, .03);
   color: var(--claude-ink) !important;
-  border-radius: 10px;
-  font-size: 14.5px;
+  border-radius: var(--claude-radius-pill);
+  font-size: 15px;
   font-weight: 500;
   text-decoration: none;
   border: 1px solid var(--claude-border);
@@ -1530,9 +1529,9 @@ html:lang(zh) .claude-hero-subtitle {
 }
 
 .claude-btn-secondary:hover {
-  background: rgba(20, 20, 19, .05);
+  background: rgba(250, 245, 235, .07);
   border-color: var(--claude-border-hover);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .claude-btn-secondary:active {
@@ -1545,21 +1544,21 @@ html:lang(zh) .claude-hero-subtitle {
   align-items: center;
   gap: 10px;
   max-width: 560px;
-  padding: 6px 6px 6px 18px;
-  background: #ffffff;
+  padding: 7px 7px 7px 20px;
+  background: rgba(250, 245, 235, .045);
   border: 1px solid var(--claude-border);
-  border-radius: 12px;
+  border-radius: 16px;
   transition: border-color .2s ease, box-shadow .25s var(--claude-ease), background-color .2s ease;
 }
 
 .claude-prompt-box:hover {
-  border-color: var(--claude-border-hover);
+  border-color: rgba(250, 245, 235, .18);
 }
 
 .claude-prompt-box:focus-within {
-  border-color: var(--claude-clay);
-  background: #ffffff;
-  box-shadow: 0 0 0 4px var(--claude-clay-tint);
+  border-color: rgba(217, 119, 87, .65);
+  background: rgba(250, 245, 235, .06);
+  box-shadow: 0 0 0 4px rgba(217, 119, 87, .13);
 }
 
 .claude-prompt-input {
@@ -1591,7 +1590,7 @@ html:lang(zh) .claude-hero-subtitle {
   background: var(--claude-clay);
   color: var(--claude-on-clay);
   border: 0;
-  border-radius: 9px;
+  border-radius: 11px;
   font-size: 14.5px;
   font-weight: 600;
   letter-spacing: .01em;
@@ -1602,7 +1601,7 @@ html:lang(zh) .claude-hero-subtitle {
 .claude-prompt-submit:hover {
   background: var(--claude-clay-bright);
   transform: translateY(-1px);
-  box-shadow: 0 8px 22px -10px rgba(169, 88, 62, .55);
+  box-shadow: 0 8px 22px -8px rgba(217, 119, 87, .6);
 }
 
 .claude-prompt-submit:active {
@@ -1622,7 +1621,7 @@ html:lang(zh) .claude-hero-subtitle {
   align-items: center;
   gap: 8px;
   padding: 9px 16px;
-  background: #ffffff;
+  background: rgba(250, 245, 235, .04);
   border: 1px solid var(--claude-border);
   border-radius: var(--claude-radius-pill);
   color: var(--claude-ink-secondary) !important;
@@ -1639,8 +1638,8 @@ html:lang(zh) .claude-hero-subtitle {
 
 .claude-chip:hover {
   color: var(--claude-ink) !important;
-  background: var(--claude-surface-sub);
-  border-color: var(--claude-border-hover);
+  background: rgba(250, 245, 235, .07);
+  border-color: rgba(250, 245, 235, .22);
   transform: translateY(-1px);
 }
 
@@ -1654,20 +1653,13 @@ html:lang(zh) .claude-hero-subtitle {
 }
 
 .claude-showcase-wrap {
-  background: var(--claude-bg-deep);
-  border: 1px solid rgba(250, 249, 245, 0.08);
-  border-radius: 16px;
+  background: var(--claude-surface);
+  border: 1px solid var(--claude-border);
+  border-radius: 26px;
   padding: clamp(22px, 3vw, 36px) clamp(20px, 3vw, 38px) clamp(28px, 3vw, 42px);
   max-width: 1160px;
   margin: 0 auto;
-  box-shadow: 0 30px 80px -40px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(250, 249, 245, .06);
-  --claude-ink: #faf9f5;
-  --claude-ink-secondary: #a09d96;
-  --claude-ink-tertiary: #8e8b82;
-  --claude-border: rgba(250, 249, 245, 0.10);
-  --claude-border-hover: rgba(250, 249, 245, 0.24);
-  --claude-clay-bright: #d97757;
-  --claude-clay-tint: rgba(217, 119, 87, 0.16);
+  box-shadow: 0 30px 80px -40px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(250, 245, 235, .05);
 }
 
 .claude-showcase-nav {
@@ -1747,7 +1739,7 @@ html:lang(zh) .claude-hero-subtitle {
 }
 
 .claude-bubble-user {
-  background: #1f1e1b;
+  background: var(--claude-surface-sub);
   border: 1px solid var(--claude-border);
   border-radius: 14px;
   padding: 16px 20px;
@@ -1761,7 +1753,7 @@ html:lang(zh) .claude-hero-subtitle {
   padding: 0 4px;
   font-size: 15.5px;
   line-height: 1.68;
-  color: var(--claude-ink-secondary);
+  color: #d8d2c6;
 }
 
 .claude-bubble-socrates p {
@@ -1800,7 +1792,7 @@ html:lang(zh) .claude-bubble-socrates em {
 
 /* Right Pane: Artifact */
 .claude-artifact-pane {
-  background: #252320;
+  background: var(--claude-bg-deep);
   border: 1px solid var(--claude-border);
   border-radius: 18px;
   padding: 28px;
@@ -1893,16 +1885,16 @@ html:lang(zh) .claude-bubble-socrates em {
   justify-content: space-between;
   gap: 14px;
   padding: 13px 16px;
-  background: rgba(250, 249, 245, .04);
+  background: rgba(250, 245, 235, .03);
   border: 1px solid var(--claude-border);
   border-radius: 11px;
   font-size: 13.5px;
-  color: var(--claude-ink-secondary);
+  color: #d8d2c6;
   transition: border-color .2s ease, transform .2s var(--claude-ease);
 }
 
 .claude-tree-item:hover {
-  border-color: var(--claude-border-hover);
+  border-color: rgba(250, 245, 235, .18);
   transform: translateX(3px);
 }
 
@@ -1990,10 +1982,10 @@ html:lang(zh) .claude-pillars-header h2 {
 }
 
 .claude-pillar-card:hover {
-  border-color: rgba(204, 120, 92, .45);
+  border-color: rgba(217, 119, 87, .4);
   background: var(--claude-surface);
-  transform: translateY(-3px);
-  box-shadow: 0 20px 44px -28px rgba(20, 20, 19, .25);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 48px -28px rgba(0, 0, 0, .6);
 }
 
 .claude-pillar-card:hover::before {
@@ -2041,12 +2033,8 @@ html:lang(zh) .claude-pillar-card h3 {
   position: relative;
   background: var(--claude-bg-deep);
   padding: 104px 0;
-  border-top: 1px solid rgba(250, 249, 245, 0.08);
-  border-bottom: 1px solid rgba(250, 249, 245, 0.08);
-  --claude-ink: #faf9f5;
-  --claude-ink-secondary: #a09d96;
-  --claude-border: rgba(250, 249, 245, 0.10);
-  --claude-clay-bright: #d97757;
+  border-top: 1px solid var(--claude-border);
+  border-bottom: 1px solid var(--claude-border);
 }
 
 .claude-manifesto-header {
@@ -2080,7 +2068,7 @@ html:lang(zh) .claude-manifesto-title {
 /* Final CTA Section */
 .claude-cta-section {
   position: relative;
-  padding: 100px 0 120px;
+  padding: 110px 0 130px;
   background: transparent;
   text-align: center;
   overflow: hidden;
@@ -2142,14 +2130,6 @@ html:lang(zh) .claude-cta-title {
   height: auto;
   overflow: visible;
 }
-
-/* Hero artwork recolored for the cream canvas: ink silhouettes + coral sun */
-.claude-hero-art .thinker-sun { fill: var(--claude-clay); }
-.claude-hero-art .thinker-brush-ribbon { fill: #141413; }
-.claude-hero-art .thinker-bristles { stroke: #141413; }
-.claude-hero-art .art-line { stroke: #141413; }
-.claude-hero-art ellipse[data-fade],
-.claude-hero-art circle[data-fade] { fill: var(--claude-clay); }
 
 /* Layered optical depth classes */
 .art-layer-bg,
@@ -2316,3 +2296,6 @@ html.ed-js .claude-mascot.is-drawn [data-fade] {
     opacity: 1;
   }
 }
+
+
+
