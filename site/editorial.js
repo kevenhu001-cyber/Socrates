@@ -361,29 +361,9 @@
   }
 
   /* --------------------------------------------------------------
-   * Reading progress — a clay hairline along the top edge that
-   * fills as the visitor moves through the page.
+   * Reading progress removed — page uses a flat solid canvas with
+   * no top hairline progress indicator.
    * -------------------------------------------------------------- */
-  function initialiseScrollProgress() {
-    if (!document.body.classList.contains('ed-site')) return;
-    var bar = document.createElement('div');
-    bar.className = 'ed-progress';
-    bar.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(bar);
-    var ticking = false;
-    function update() {
-      var doc = document.documentElement;
-      var max = doc.scrollHeight - window.innerHeight;
-      var y = window.scrollY || window.pageYOffset || doc.scrollTop || 0;
-      var p = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0;
-      bar.style.transform = 'scaleX(' + p.toFixed(4) + ')';
-      ticking = false;
-    }
-    function request() { if (!ticking) { ticking = true; window.requestAnimationFrame(update); } }
-    window.addEventListener('scroll', request, { passive: true });
-    window.addEventListener('resize', request, { passive: true });
-    update();
-  }
 
   /* --------------------------------------------------------------
    * Marquee band — a slow "trusted by" logo wall injected under the
@@ -432,7 +412,286 @@
         '<span class="ed-marquee-seq" aria-hidden="true">' + seqHTML + '</span>' +
       '</div>';
     var hero = document.querySelector('.ed-home-hero');
-    hero.insertAdjacentElement('afterend', section);
+    if (hero) hero.insertAdjacentElement('afterend', section);
+  }
+
+  /* --------------------------------------------------------------
+   * Claude by Anthropic interactive modules
+   * -------------------------------------------------------------- */
+  function initialiseClaudeInteractions() {
+    // 1. Prompt Pill Dropdowns & Presets
+    var pillGroups = document.querySelectorAll('.claude-pill-group');
+    var promptInput = document.querySelector('.claude-prompt-input');
+    var promptBox = document.querySelector('.claude-prompt-box');
+    var typingTimer = null;
+
+    function typeTextIntoInput(targetText) {
+      if (!promptInput) return;
+      if (typingTimer) clearInterval(typingTimer);
+      promptInput.value = '';
+      promptInput.focus();
+      if (promptBox) {
+        promptBox.style.borderColor = 'var(--claude-clay)';
+      }
+      var idx = 0;
+      var step = Math.max(1, Math.floor(targetText.length / 25));
+      typingTimer = setInterval(function () {
+        idx += step;
+        if (idx >= targetText.length) {
+          promptInput.value = targetText;
+          clearInterval(typingTimer);
+          typingTimer = null;
+        } else {
+          promptInput.value = targetText.slice(0, idx);
+        }
+      }, 16);
+    }
+
+    pillGroups.forEach(function (group) {
+      var btn = group.querySelector('.claude-pill-btn');
+      var menu = group.querySelector('.claude-prompt-menu');
+      if (!btn || !menu) return;
+
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var isOpen = menu.classList.contains('is-open');
+        // Close other open menus
+        document.querySelectorAll('.claude-prompt-menu.is-open').forEach(function (m) {
+          if (m !== menu) m.classList.remove('is-open');
+        });
+        document.querySelectorAll('.claude-pill-btn.is-active').forEach(function (b) {
+          if (b !== btn) b.classList.remove('is-active');
+        });
+
+        menu.classList.toggle('is-open', !isOpen);
+        btn.classList.toggle('is-active', !isOpen);
+      });
+
+      menu.querySelectorAll('.claude-prompt-menu-item').forEach(function (item) {
+        item.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var text = item.getAttribute('data-prompt') || item.textContent.trim();
+          typeTextIntoInput(text);
+          menu.classList.remove('is-open');
+          btn.classList.remove('is-active');
+        });
+      });
+    });
+
+    // Close prompt menus on outside click or ESC
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.claude-pill-group')) {
+        document.querySelectorAll('.claude-prompt-menu.is-open').forEach(function (m) {
+          m.classList.remove('is-open');
+        });
+        document.querySelectorAll('.claude-pill-btn.is-active').forEach(function (b) {
+          b.classList.remove('is-active');
+        });
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.claude-prompt-menu.is-open').forEach(function (m) {
+          m.classList.remove('is-open');
+        });
+        document.querySelectorAll('.claude-pill-btn.is-active').forEach(function (b) {
+          b.classList.remove('is-active');
+        });
+      }
+    });
+
+    // Prompt Form Submit
+    var promptForm = document.querySelector('[data-claude-prompt-form]');
+    if (promptForm) {
+      promptForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var q = promptInput ? promptInput.value.trim() : '';
+        var targetUrl = 'https://app.topodrive.top' + (q ? '?q=' + encodeURIComponent(q) : '');
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      });
+    }
+
+    // 2. Multi-Tab Showcase Switcher
+    var tabPills = document.querySelectorAll('.claude-tab-pill');
+    var tabContents = document.querySelectorAll('[data-tab-content]');
+
+    tabPills.forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        var targetTab = pill.getAttribute('data-tab');
+        if (!targetTab) return;
+
+        tabPills.forEach(function (p) {
+          var isCurrent = (p === pill);
+          p.classList.toggle('is-active', isCurrent);
+          p.setAttribute('aria-selected', isCurrent ? 'true' : 'false');
+        });
+        tabContents.forEach(function (content) {
+          var isMatch = content.getAttribute('data-tab-content') === targetTab;
+          content.classList.toggle('is-active', isMatch);
+        });
+      });
+    });
+
+    // 3. Artifact Copy Action
+    document.querySelectorAll('[data-copy-artifact]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var container = btn.closest('.claude-artifact-pane');
+        if (!container) return;
+        var activeContent = container.querySelector('.claude-tab-content.is-active') || container;
+        var text = activeContent.textContent.trim();
+        var originalLabel = btn.textContent;
+
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(function () {
+            btn.textContent = isChinesePage() ? '已复制！' : 'Copied!';
+            setTimeout(function () { btn.textContent = originalLabel; }, 2000);
+          });
+        } else {
+          btn.textContent = isChinesePage() ? '已复制！' : 'Copied!';
+          setTimeout(function () { btn.textContent = originalLabel; }, 2000);
+        }
+      });
+    });
+  }
+
+  /* --------------------------------------------------------------
+   * Socrates owl mascot — living hero illustration.
+   * Anthropic-Style Abstract Hero Artwork — Living Interactive Line Art.
+   * Multi-plane optical depth tracking pointer movement,
+   * gentle responsive tilt, self-drawing paths on entrance,
+   * and click interaction spawning classical epistemic glyphs & radiant ripples.
+   * -------------------------------------------------------------- */
+  function initialiseMascots() {
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Stroke/fade draw-in for hero art and headline squiggles.
+    var drawable = document.querySelectorAll('.claude-hero-art, .claude-mascot, .squiggle-svg');
+    if (!drawable.length) return;
+    if (!('IntersectionObserver' in window) || reduceMotion) {
+      drawable.forEach(function (node) { node.classList.add('is-drawn'); });
+    } else {
+      var drawObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-drawn');
+          drawObserver.unobserve(entry.target);
+        });
+      }, { threshold: .2 });
+      drawable.forEach(function (node) { drawObserver.observe(node); });
+    }
+
+    if (reduceMotion) return;
+
+    document.querySelectorAll('.claude-hero-art, .claude-mascot').forEach(function (art) {
+      if (art.dataset.artBound) return;
+      art.dataset.artBound = '1';
+
+      var layerBg = art.querySelector('.art-layer-bg');
+      var layerMid = art.querySelector('.art-layer-mid');
+      var layerCore = art.querySelector('.art-layer-core');
+      var layerNodes = art.querySelector('.art-layer-nodes');
+      var layerHorizon = art.querySelector('.art-layer-horizon');
+      var pupils = Array.prototype.slice.call(art.querySelectorAll('.mascot-pupil, .art-pupil'));
+
+      /* --- Multi-Plane Pointer Parallax --------------------------- */
+      var frame = null;
+      var target = { x: 0, y: 0 };
+      var eased = { x: 0, y: 0 };
+
+      function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+      function step() {
+        eased.x += (target.x - eased.x) * 0.12;
+        eased.y += (target.y - eased.y) * 0.12;
+        var settledX = Math.abs(target.x - eased.x) < 0.001;
+        var settledY = Math.abs(target.y - eased.y) < 0.001;
+        if (settledX) eased.x = target.x;
+        if (settledY) eased.y = target.y;
+
+        var tx = eased.x;
+        var ty = eased.y;
+
+        // Differential parallax depth
+        if (layerBg) {
+          layerBg.style.transform = 'translate(' + (-tx * 6).toFixed(2) + 'px, ' + (-ty * 5).toFixed(2) + 'px)';
+        }
+        if (layerMid) {
+          layerMid.style.transform = 'rotate(' + (tx * 1.8).toFixed(2) + 'deg) translate(' + (tx * 4).toFixed(2) + 'px, ' + (ty * 3).toFixed(2) + 'px)';
+        }
+        if (layerCore) {
+          layerCore.style.transform = 'translate(' + (-tx * 10).toFixed(2) + 'px, ' + (-ty * 8).toFixed(2) + 'px) scale(' + (1 + Math.abs(tx) * 0.03).toFixed(3) + ')';
+        }
+        if (layerNodes) {
+          layerNodes.style.transform = 'translate(' + (tx * 12).toFixed(2) + 'px, ' + (ty * 10).toFixed(2) + 'px)';
+        }
+        if (layerHorizon) {
+          layerHorizon.style.transform = 'translate(' + (tx * 3).toFixed(2) + 'px, ' + (ty * 2).toFixed(2) + 'px)';
+        }
+
+        // Backward compatibility
+        if (pupils.length) {
+          var px = (tx * 10).toFixed(2);
+          var py = (ty * 8).toFixed(2);
+          pupils.forEach(function (pupil) {
+            pupil.setAttribute('transform', 'translate(' + px + ' ' + py + ')');
+          });
+        }
+
+        frame = (settledX && settledY) ? null : window.requestAnimationFrame(step);
+      }
+
+      function wake() { if (frame === null) frame = window.requestAnimationFrame(step); }
+
+      window.addEventListener('pointermove', function (event) {
+        if (event.pointerType === 'touch') return;
+        var rect = art.getBoundingClientRect();
+        if (rect.bottom < -100 || rect.top > (window.innerHeight || 0) + 100) return;
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        target.x = clamp((event.clientX - cx) / (rect.width * 0.7), -1, 1);
+        target.y = clamp((event.clientY - cy) / (rect.height * 0.7), -1, 1);
+        wake();
+      }, { passive: true });
+
+      document.documentElement.addEventListener('mouseleave', function () {
+        target.x = 0;
+        target.y = 0;
+        wake();
+      });
+
+      /* --- Classical Epistemic Glyphs & Ripple on Click ---------- */
+      var glyphs = ['∴', 'φ', 'λ', '∫', '∇', 'Σ', 'α', 'π', 'Ω', 'Q.E.D.'];
+
+      function spawnGlyph(e) {
+        var glyph = document.createElement('span');
+        glyph.className = 'art-glyph';
+        glyph.setAttribute('aria-hidden', 'true');
+        glyph.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+        
+        var rect = art.getBoundingClientRect();
+        var clickX = e ? (e.clientX - rect.left) : (rect.width * 0.5);
+        var clickY = e ? (e.clientY - rect.top) : (rect.height * 0.3);
+        
+        glyph.style.setProperty('--gx', clamp(clickX - 12, 20, rect.width - 40) + 'px');
+        glyph.style.top = clamp(clickY - 20, 20, rect.height - 40) + 'px';
+        glyph.style.setProperty('--grot', ((Math.random() * 16) - 8).toFixed(1) + 'deg');
+        art.appendChild(glyph);
+        setTimeout(function () { glyph.remove(); }, 1200);
+
+        // Radiant ripple
+        var ring = document.createElement('span');
+        ring.className = 'art-pulse-ring';
+        ring.style.setProperty('--px', clickX + 'px');
+        ring.style.setProperty('--py', clickY + 'px');
+        art.appendChild(ring);
+        setTimeout(function () { ring.remove(); }, 950);
+      }
+
+      art.addEventListener('click', function (e) {
+        spawnGlyph(e);
+      });
+    });
   }
 
   /* --------------------------------------------------------------
@@ -449,7 +708,8 @@
     initialiseReveal();
     initialiseWordAnimation();
     initialiseFooter();
-    initialiseScrollProgress();
+    initialiseClaudeInteractions();
+    initialiseMascots();
     if (window.SocratesLocale && typeof window.SocratesLocale.localizeLinks === 'function') {
       window.SocratesLocale.localizeLinks();
     }
@@ -460,3 +720,4 @@
     boot();
   }
 }());
+

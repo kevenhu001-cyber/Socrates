@@ -1,0 +1,545 @@
+/* ==========================================================================
+   Socrates Dark Theme — Anthropic-style pure dark override
+   Loaded AFTER editorial.css + brand.css on the homepage only.
+   Does NOT modify shared files; purely additive overrides.
+   ========================================================================== */
+
+/* ── 1. Pure Dark Palette ─────────────────────────────────────────────── */
+:root {
+  /* backgrounds */
+  --dark-bg:            #0a0a0a;
+  --dark-bg-deep:       #050505;
+  --dark-surface:       #111111;
+  --dark-surface-sub:   #0d0d0d;
+  --dark-surface-card:  #161616;
+
+  /* foreground */
+  --dark-ink:           #f5f1e8;
+  --dark-ink-secondary: #a8a29e;
+  --dark-ink-tertiary:  #78716c;
+  --dark-ink-muted:     #57534e;
+
+  /* accent — keep clay/terracotta */
+  --dark-clay:          #c4704a;
+  --dark-clay-bright:   #d97757;
+  --dark-clay-deep:     #a85a3a;
+  --dark-clay-on:       #1a0e07;
+  --dark-clay-glow:     rgba(201, 112, 74, 0.12);
+  --dark-clay-glow-strong: rgba(201, 112, 74, 0.22);
+
+  /* borders */
+  --dark-border:        rgba(245, 241, 232, 0.07);
+  --dark-border-hover:  rgba(245, 241, 232, 0.16);
+  --dark-border-glow:   rgba(201, 112, 74, 0.25);
+
+  /* shared */
+  --dark-radius:        16px;
+  --dark-radius-pill:   9999px;
+  --dark-ease:          cubic-bezier(0.16, 1, 0.3, 1);
+  --dark-ease-soft:     cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ── 2. Global Overrides (scoped to .dark-home) ───────────────────────── */
+body.dark-home {
+  background: var(--dark-bg) !important;
+  color: var(--dark-ink);
+}
+
+body.dark-home::selection {
+  background: var(--dark-clay);
+  color: var(--dark-bg);
+}
+
+/* ── 3. Header — glass-dark ───────────────────────────────────────────── */
+body.dark-home .ed-header {
+  background: rgba(10, 10, 10, 0.94) !important;
+  backdrop-filter: blur(18px) saturate(110%);
+  -webkit-backdrop-filter: blur(18px) saturate(110%);
+  border-bottom: 1px solid var(--dark-border) !important;
+  padding: 16px 0 14px;
+}
+
+body.dark-home .ed-header.is-scrolled {
+  padding: 12px 0 10px;
+  border-bottom-color: var(--dark-border-hover) !important;
+}
+
+body.dark-home .ed-brand { color: var(--dark-ink); }
+body.dark-home .ed-nav-links a { color: var(--dark-ink-tertiary); }
+body.dark-home .ed-nav-links a:hover,
+body.dark-home .ed-nav-links a[aria-current="page"] { color: var(--dark-ink); }
+body.dark-home .ed-button {
+  color: var(--dark-clay-on);
+  background: var(--dark-clay);
+  border-color: var(--dark-clay);
+}
+body.dark-home .ed-button:hover {
+  background: var(--dark-clay-bright);
+  border-color: var(--dark-clay-bright);
+}
+
+/* ── 4. Hero — Anthropic two-column layout ────────────────────────────── */
+body.dark-home .claude-hero-section {
+  padding: clamp(88px, 11vw, 152px) 0 clamp(62px, 7vw, 96px);
+  background: var(--dark-bg);
+  overflow: visible;
+}
+
+/* Keep the hero on a genuinely solid dark field. */
+body.dark-home .claude-hero-section::before {
+  display: none;
+}
+
+body.dark-home .claude-hero-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(380px, .86fr);
+  gap: clamp(44px, 7vw, 116px);
+  align-items: center;
+}
+
+body.dark-home .claude-hero-copy {
+  max-width: 620px;
+}
+
+/* Eyebrow */
+body.dark-home .claude-hero-eyebrow {
+  color: var(--dark-ink-tertiary);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  margin-bottom: 28px;
+  opacity: 1;
+}
+
+body.dark-home .claude-hero-eyebrow::before {
+  display: none;
+}
+
+/* Title */
+body.dark-home .claude-hero-title {
+  font-family: var(--site-serif-latin);
+  font-size: clamp(48px, 5vw, 74px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.032em;
+  color: var(--dark-ink);
+  max-width: 14ch;
+  margin: 0 0 24px;
+}
+
+body.dark-home .claude-hero-title em,
+body.dark-home .claude-hero-title .accent {
+  color: var(--dark-ink);
+  font-style: italic;
+}
+
+body.dark-home .squiggle-svg path { stroke: var(--dark-clay); }
+
+/* Subtitle */
+body.dark-home .claude-hero-subtitle {
+  font-size: clamp(16px, 1.2vw, 18px);
+  line-height: 1.65;
+  color: var(--dark-ink-secondary);
+  max-width: 48ch;
+  margin: 0 0 32px;
+}
+
+/* ── 5. Prompt Box — dark Anthropic style ─────────────────────────────── */
+body.dark-home .claude-prompt-box {
+  max-width: 520px;
+  padding: 6px 6px 6px 20px;
+  background: var(--dark-surface);
+  border: 1px solid var(--dark-border);
+  border-radius: 14px;
+  margin-bottom: 18px;
+  transition: border-color 0.2s ease, box-shadow 0.3s var(--dark-ease);
+}
+
+body.dark-home .claude-prompt-box:hover {
+  border-color: var(--dark-border-hover);
+}
+
+body.dark-home .claude-prompt-box:focus-within {
+  border-color: rgba(201, 112, 74, 0.45);
+  box-shadow: 0 0 0 3px rgba(201, 112, 74, 0.08);
+}
+
+body.dark-home .claude-prompt-input {
+  color: var(--dark-ink);
+  font-size: 15px;
+  background: transparent;
+}
+
+body.dark-home .claude-prompt-input::placeholder {
+  color: var(--dark-ink-muted);
+}
+
+body.dark-home .claude-prompt-submit {
+  padding: 10px 18px;
+  background: var(--dark-clay);
+  color: var(--dark-clay-on);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 0;
+  box-shadow: none;
+  transition: background 0.2s ease, transform 0.15s var(--dark-ease);
+}
+
+body.dark-home .claude-prompt-submit:hover {
+  background: var(--dark-clay-bright);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px -6px rgba(201, 112, 74, 0.5);
+}
+
+/* ── 6. Chip pills — dark, minimal ────────────────────────────────────── */
+body.dark-home .claude-chip-row {
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+body.dark-home .claude-chip {
+  padding: 7px 14px;
+  background: var(--dark-surface);
+  border: 1px solid var(--dark-border);
+  border-radius: var(--dark-radius-pill);
+  color: var(--dark-ink-secondary) !important;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+body.dark-home .claude-chip svg { color: var(--dark-ink-tertiary); opacity: 0.8; }
+
+body.dark-home .claude-chip:hover {
+  color: var(--dark-ink) !important;
+  background: rgba(245, 241, 232, 0.06);
+  border-color: var(--dark-border-hover);
+  transform: translateY(-1px);
+}
+
+/* ── 7. CTA Buttons — refined ─────────────────────────────────────────── */
+body.dark-home .claude-hero-actions {
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+body.dark-home .claude-btn-primary {
+  padding: 12px 26px;
+  background: var(--dark-clay);
+  color: var(--dark-clay-on) !important;
+  border-color: var(--dark-clay);
+  border-radius: var(--dark-radius-pill);
+  font-size: 14.5px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px -10px rgba(201, 112, 74, 0.45);
+}
+
+body.dark-home .claude-btn-primary:hover {
+  background: var(--dark-clay-bright);
+  border-color: var(--dark-clay-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px -12px rgba(201, 112, 74, 0.55);
+}
+
+body.dark-home .claude-btn-secondary {
+  padding: 12px 24px;
+  background: rgba(245, 241, 232, 0.03);
+  color: var(--dark-ink) !important;
+  border: 1px solid var(--dark-border);
+  border-radius: var(--dark-radius-pill);
+  font-size: 14.5px;
+}
+
+body.dark-home .claude-btn-secondary:hover {
+  background: rgba(245, 241, 232, 0.06);
+  border-color: var(--dark-border-hover);
+}
+
+/* ── 8. Showcase Section — darker, glowing ────────────────────────────── */
+body.dark-home .claude-showcase-section {
+  padding: 20px 0 100px;
+}
+
+body.dark-home .claude-showcase-wrap {
+  background: var(--dark-bg);
+  border: 1px solid var(--dark-border);
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1px rgba(245, 241, 232, 0.02),
+    0 24px 64px -32px rgba(0, 0, 0, 0.7);
+}
+
+body.dark-home .claude-showcase-nav {
+  border-bottom-color: var(--dark-border);
+}
+
+body.dark-home .claude-tab-pill {
+  color: var(--dark-ink-tertiary);
+  font-size: 12px;
+}
+
+body.dark-home .claude-tab-pill:hover {
+  color: var(--dark-ink-secondary);
+  background: rgba(245, 241, 232, 0.04);
+}
+
+body.dark-home .claude-tab-pill.is-active {
+  background: rgba(201, 112, 74, 0.1);
+  color: var(--dark-clay-bright);
+  border-color: rgba(201, 112, 74, 0.3);
+}
+
+body.dark-home .claude-bubble-user {
+  background: var(--dark-surface);
+  border-color: var(--dark-border);
+  color: var(--dark-ink);
+}
+
+body.dark-home .claude-bubble-socrates { color: var(--dark-ink-secondary); }
+body.dark-home .claude-bubble-socrates strong { color: var(--dark-ink); }
+
+body.dark-home .claude-artifact-pane {
+  background: var(--dark-bg-deep);
+  border-color: var(--dark-border);
+}
+
+body.dark-home .claude-artifact-header {
+  border-bottom-color: var(--dark-border);
+}
+
+body.dark-home .claude-artifact-title { color: var(--dark-ink-muted); }
+body.dark-home .claude-artifact-copy-btn {
+  color: var(--dark-ink-tertiary);
+  border-color: var(--dark-border);
+  background: rgba(245, 241, 232, 0.03);
+}
+
+body.dark-home .claude-tree-item {
+  background: rgba(245, 241, 232, 0.02);
+  border-color: var(--dark-border);
+  color: var(--dark-ink-secondary);
+}
+
+body.dark-home .claude-tree-item:hover {
+  border-color: var(--dark-border-hover);
+}
+
+body.dark-home .claude-proof-line {
+  background: rgba(245, 241, 232, 0.02);
+  border-left-color: var(--dark-clay);
+}
+
+/* ── 9. Pillars — Bento-style cards ───────────────────────────────────── */
+body.dark-home .claude-pillars-section {
+  padding: 80px 0 100px;
+  border-top-color: var(--dark-border);
+}
+
+body.dark-home .claude-pillars-header h2 {
+  color: var(--dark-ink);
+}
+
+body.dark-home .claude-pillars-header p {
+  color: var(--dark-ink-secondary);
+}
+
+body.dark-home .claude-pillar-card {
+  background: transparent;
+  border: 1px solid var(--dark-border);
+  border-radius: 14px;
+  padding: 34px 30px;
+  transition: all 0.3s var(--dark-ease);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glow border on hover */
+body.dark-home .claude-pillar-card::before {
+  background: var(--dark-clay);
+  height: 1.5px;
+}
+
+body.dark-home .claude-pillar-card:hover {
+  border-color: var(--dark-border-glow);
+  background: rgba(245, 241, 232, 0.025);
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-home .claude-pillar-num {
+  color: var(--dark-clay-bright);
+  background: rgba(201, 112, 74, 0.08);
+}
+
+body.dark-home .claude-pillar-card h3 { color: var(--dark-ink); }
+body.dark-home .claude-pillar-card p { color: var(--dark-ink-secondary); }
+
+/* ── 10. Manifesto Band ───────────────────────────────────────────────── */
+body.dark-home .claude-manifesto-band {
+  background: var(--dark-bg-deep);
+  border-top-color: var(--dark-border);
+  border-bottom-color: var(--dark-border);
+  padding: 110px 0;
+}
+
+body.dark-home .claude-manifesto-title { color: var(--dark-ink); }
+body.dark-home .claude-manifesto-lead { color: var(--dark-ink-secondary); }
+
+/* ── 11. CTA Section ──────────────────────────────────────────────────── */
+body.dark-home .claude-cta-section {
+  padding: 100px 0 120px;
+}
+
+body.dark-home .claude-cta-section::before {
+  display: none;
+}
+
+body.dark-home .claude-cta-title { color: var(--dark-ink); }
+body.dark-home .claude-cta-subtitle { color: var(--dark-ink-secondary); }
+
+/* ── 12. Footer — darker ─────────────────────────────────────────────── */
+body.dark-home .ed-footer {
+  background: var(--dark-bg-deep);
+}
+
+body.dark-home .ed-footer-frame {
+  background: var(--dark-bg-deep) !important;
+  border-color: var(--dark-border) !important;
+}
+
+/* ── 13. Abstract Hero Artwork — Anthropic Line Art Treatment ──────── */
+body.dark-home .claude-hero-stage {
+  position: relative;
+}
+
+body.dark-home .claude-hero-art,
+body.dark-home .claude-mascot {
+  max-width: 500px;
+  filter: none;
+}
+
+/* Subtle ambient floating motion */
+body.dark-home .claude-hero-art svg,
+body.dark-home .claude-mascot svg {
+  animation: darkArtFloat 6.8s ease-in-out infinite alternate;
+}
+
+@keyframes darkArtFloat {
+  0%   { transform: translateY(4px); }
+  100% { transform: translateY(-5px); }
+}
+
+/* Enhanced glyph glow */
+body.dark-home .art-glyph,
+body.dark-home .mascot-glyph {
+  font-size: 26px;
+  color: var(--dark-clay-bright);
+  text-shadow: 0 0 18px rgba(217, 119, 87, 0.65);
+}
+
+/* Stardust particles on click */
+.art-particle,
+.mascot-particle {
+  position: absolute;
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: var(--dark-clay-bright);
+  box-shadow: 0 0 8px rgba(217, 119, 87, 0.8);
+  pointer-events: none;
+  opacity: 0;
+}
+
+body.dark-home .is-pulsing .art-particle,
+body.dark-home .is-pulsing .mascot-particle {
+  animation: particleStardust 0.85s var(--dark-ease) forwards;
+}
+
+@keyframes particleStardust {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  35%  { opacity: 1; transform: translate(var(--px, 20px), var(--py, -25px)) scale(1.2); }
+  100% { opacity: 0; transform: translate(calc(var(--px, 20px) * 1.5), calc(var(--py, -25px) * 1.6)) scale(0.2); }
+}
+
+/* ── 14. Scrollbar ────────────────────────────────────────────────────── */
+body.dark-home::-webkit-scrollbar { width: 10px; }
+body.dark-home::-webkit-scrollbar-track { background: var(--dark-bg); }
+body.dark-home::-webkit-scrollbar-thumb {
+  background: rgba(245, 241, 232, 0.08);
+  border: 3px solid var(--dark-bg);
+  border-radius: 999px;
+}
+body.dark-home::-webkit-scrollbar-thumb:hover { background: var(--dark-clay); }
+body.dark-home { scrollbar-color: rgba(245, 241, 232, 0.1) var(--dark-bg); }
+
+/* ── 15. Reveal animations — enhanced ─────────────────────────────────── */
+body.dark-home .ed-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s var(--dark-ease), transform 0.6s var(--dark-ease);
+}
+
+body.dark-home .ed-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Staggered children */
+body.dark-home .claude-pillars-grid .claude-pillar-card {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.5s var(--dark-ease), transform 0.5s var(--dark-ease);
+}
+
+body.dark-home .claude-pillars-grid.is-visible .claude-pillar-card {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+body.dark-home .claude-pillars-grid.is-visible .claude-pillar-card:nth-child(1) { transition-delay: 0.05s; }
+body.dark-home .claude-pillars-grid.is-visible .claude-pillar-card:nth-child(2) { transition-delay: 0.15s; }
+body.dark-home .claude-pillars-grid.is-visible .claude-pillar-card:nth-child(3) { transition-delay: 0.25s; }
+
+/* ── 16. Responsive — mobile ──────────────────────────────────────────── */
+@media (max-width: 900px) {
+  body.dark-home .claude-hero-grid {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  body.dark-home .claude-hero-copy {
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  body.dark-home .claude-hero-title {
+    max-width: none;
+  }
+
+  body.dark-home .claude-hero-subtitle {
+    max-width: none;
+  }
+
+  body.dark-home .claude-prompt-box {
+    max-width: none;
+  }
+
+  body.dark-home .claude-chip-row {
+    justify-content: center;
+  }
+
+  body.dark-home .claude-hero-actions {
+    justify-content: center;
+  }
+
+  body.dark-home .claude-hero-stage {
+    max-width: 320px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  body.dark-home .claude-hero-title {
+    font-size: clamp(36px, 9vw, 48px);
+  }
+}
+
+/* ── 17. Progress bar override — removed: no top progress indicator. */

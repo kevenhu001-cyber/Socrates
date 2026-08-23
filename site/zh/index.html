@@ -3,102 +3,374 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Socrates 帮助你把困难的问题变成持久的理解。">
-  <title>Socrates — 从一个问题开始理解。</title>
+  <meta name="description" content="Socrates 是为真正想理解的人打造的 AI 导师。解构隐藏假设、推演严谨证明、构建知识图谱，把困难的问题变成持久的理解。">
+  <title>Socrates — 为问题解决者而生的 AI</title>
   <link rel="icon" href="../favicon.png">
-  
   
   <link rel="stylesheet" href="../fonts.css?cb=20260816">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap"></noscript>
-  <link rel="stylesheet" href="../editorial.css?cb=20260816">
+  <link rel="stylesheet" href="../editorial.css?cb=20260910">
   <link rel="stylesheet" href="../brand.css?cb=20260910">
-<script src="../locale.js?cb=20260910"></script></head>
-<body class="ed-site">
+  <link rel="stylesheet" href="../dark-theme.css?cb=20260823">
+  <script src="../locale.js?cb=20260910"></script>
+</head>
+<body class="ed-site dark-home">
   <a class="ed-skip" href="#main">跳到正文</a>
-  <header class="ed-header"><div class="ed-shell"><nav class="ed-header-inner" data-ed-nav aria-label="主导航"><a class="ed-brand" href="index" aria-label="Socrates 首页"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a><div class="ed-nav-links" id="site-menu" data-menu-panel><a href="../research">研究</a><a href="../policy">原则</a><a href="../learn">学习</a><a href="../announcements">动态</a><a href="../about">公司</a></div><div class="ed-header-actions"><div class="ed-lang" data-lang-root><button class="ed-lang-toggle" type="button" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Language"><svg class="ed-lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18" stroke="currentColor" stroke-width="1.6"/></svg><span class="ed-lang-label">语言</span><svg class="ed-lang-caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="ed-lang-menu" data-lang-menu role="menu" hidden><button class="ed-lang-item" type="button" data-lang="en" role="menuitem"><span>English</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ed-lang-item" type="button" data-lang="zh" role="menuitem"><span>中文</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div><a class="ed-button" href="https://app.topodrive.top">试用 Socrates</a></div><button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="菜单"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button></nav></div></header>
+
+  <header class="ed-header">
+    <div class="ed-shell">
+      <nav class="ed-header-inner" data-ed-nav aria-label="主导航">
+        <a class="ed-brand" href="index" aria-label="Socrates 首页"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel>
+          <a href="product">产品</a>
+          <a href="../research">研究</a>
+          <a href="../policy">原则</a>
+          <a href="../learn">学习</a>
+          <a href="../pricing">定价</a>
+          <a href="../about">公司</a>
+        </div>
+        <div class="ed-header-actions">
+          <div class="ed-lang" data-lang-root>
+            <button class="ed-lang-toggle" type="button" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Language">
+              <svg class="ed-lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18" stroke="currentColor" stroke-width="1.6"/></svg>
+              <span class="ed-lang-label">语言</span>
+              <svg class="ed-lang-caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="ed-lang-menu" data-lang-menu role="menu" hidden>
+              <button class="ed-lang-item" type="button" data-lang="en" role="menuitem"><span>English</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <button class="ed-lang-item" type="button" data-lang="zh" role="menuitem"><span>中文</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </div>
+          </div>
+          <a class="ed-button" href="https://app.topodrive.top">试用 Socrates</a>
+        </div>
+        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="菜单">
+          <span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+        </button>
+      </nav>
+    </div>
+  </header>
 
   <main id="main">
-    <section class="ed-home-hero">
-      <div class="ed-hero-nebula" aria-hidden="true"></div>
+    <!-- Claude-Style Hero Section -->
+    <section class="claude-hero-section">
       <div class="ed-shell">
-        <div class="ed-hero-grid ed-reveal">
-          <div class="ed-hero-lead">
-            <p class="ed-hero-flag"><span aria-hidden="true"></span>全新 · 问题图谱</p>
-            <h1 class="ed-display" data-animate-text>理解，始于一个问题。</h1>
+        <div class="claude-hero-grid">
+          <div class="claude-hero-copy ed-reveal">
+            <span class="claude-hero-eyebrow">Socrates 2.0 · 产品概览</span>
+            <h1 class="claude-hero-title" data-animate-text>为<span class="squiggle-wrap"><em>解决复杂问题</em><svg class="squiggle-svg" viewBox="0 0 220 26" preserveAspectRatio="none" aria-hidden="true"><path pathLength="100" d="M4 16 C 30 7, 54 22, 80 13 S 130 6, 156 15 S 202 21, 216 10"/></svg></span>而生。</h1>
+            <p class="claude-hero-subtitle">Socrates 将前沿学科知识与耐心的苏格拉底式追问融为一体，助你攻克复杂难题、推导严谨证明，建立持久稳固的思维模型。</p>
+            <form class="claude-prompt-box" data-claude-prompt-form action="https://app.topodrive.top" method="get">
+              <input class="claude-prompt-input" type="text" name="q" placeholder="今天想弄明白什么问题？" autocomplete="off" aria-label="向苏格拉底提问">
+              <button class="claude-prompt-submit" type="submit">提问<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 13V3M8 3L4 7m4-4l4 4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </form>
+            <div class="claude-chip-row">
+              <a class="claude-chip" href="product"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 6A3.5 3.5 0 0 1 6 2.5h4A3.5 3.5 0 0 1 13.5 6v2A3.5 3.5 0 0 1 10 11.5H7.4l-2.8 2.2c-.46.36-1.1.03-1.1-.55V6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>苏格拉底式对话</a>
+              <a class="claude-chip" href="learn"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3.6C6.5 2.6 4.8 2.5 3 3v9.4c1.8-.5 3.5-.4 5 .6 1.5-1 3.2-1.1 5-.6V3c-1.8-.5-3.5-.4-5 .6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 3.8v9" stroke="currentColor" stroke-width="1.5"/></svg>引导式学习</a>
+              <a class="claude-chip" href="../research"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M11.6 3H4.4L8 8l-3.6 5h7.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>形式化证明</a>
+            </div>
+            <div class="claude-hero-actions">
+              <a class="claude-btn-primary" href="https://app.topodrive.top">
+                <span>开始试用</span>
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <a class="claude-btn-secondary" href="product">探索教学方式</a>
+            </div>
           </div>
-          <p class="ed-serif ed-hero-sub">让一个想法，经由对话、回忆与连接，延续下去。</p>
-          <div class="ed-hero-actions">
-            <a class="ed-button" href="https://app.topodrive.top">开始使用</a>
-            <a class="ed-button ed-button-ghost" href="research">了解我们的研究</a>
+
+          <!-- Right: 一条清晰可识别的极简笔刷侧影，以及一枚安静的陶土色圆点。 -->
+          <div class="claude-hero-stage ed-reveal" aria-hidden="true">
+            <div class="claude-hero-art" title="苏格拉底，沉思者" style="max-width:480px">
+              <svg viewBox="0 0 520 620" fill="none" focusable="false" role="img" aria-label="极简笔刷沉思者侧影剪影">
+                <defs>
+                  <filter id="thinker-brush" x="-6%" y="-4%" width="112%" height="108%">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.02 0.16" numOctaves="2" seed="17" result="grain"/>
+                    <feDisplacementMap in="SourceGraphic" in2="grain" scale="1.8" xChannelSelector="R" yChannelSelector="G"/>
+                  </filter>
+                </defs>
+                <circle data-fade style="--d:.12s" class="thinker-sun" cx="270" cy="100" r="22" fill="#c4704a" filter="url(#thinker-brush)"/>
+                <path data-fade style="--d:.24s" class="thinker-brush-ribbon" fill="#f8f0e1" filter="url(#thinker-brush)" d="
+                  M111 253 C114 218 145 183 193 161 C245 138 303 139 343 157
+                  C375 171 394 204 398 240 C401 269 395 294 398 315
+                  C399 327 414 337 418 350 C421 363 412 374 400 377
+                  C390 379 394 386 399 395 C404 405 398 414 388 417
+                  C378 419 383 426 388 434 C393 442 386 449 375 454
+                  C361 459 345 470 335 489 C322 513 312 536 320 552
+                  C327 568 344 578 363 582 C375 585 390 580 397 569
+                  C393 582 375 594 352 597 C325 599 299 586 290 566
+                  C279 542 290 517 303 492 C314 469 332 451 350 442
+                  C364 435 374 427 370 418 C366 409 356 403 361 393
+                  C365 385 375 378 370 369 C365 360 355 352 359 343
+                  C363 333 374 325 371 311 C368 295 364 278 366 263
+                  C367 244 363 222 353 207 C340 187 320 177 296 174
+                  C266 170 238 176 211 187 C187 197 165 211 146 226
+                  C132 238 119 250 111 253 Z"/>
+                <g class="thinker-bristles" fill="none" stroke="#f8f0e1" stroke-linecap="round" opacity=".78">
+                  <path d="M112 253 C115 232 128 210 147 193" stroke-width="1.4"/>
+                  <path d="M116 254 C121 227 138 198 162 181" stroke-width="1.1"/>
+                  <path d="M120 254 C128 224 149 195 174 179" stroke-width=".8"/>
+                  <path d="M315 563 C338 579 368 586 391 577" stroke-width="1.2"/>
+                  <path d="M320 570 C343 586 370 588 394 574" stroke-width=".8"/>
+                </g>
+              </svg>
+            </div>
           </div>
-        </div>
-        <div class="ed-home-stage ed-reveal">
-          <nav class="ed-stage-index" aria-label="探索 Socrates">
-            <a href="../research">研究</a>
-            <a href="product">产品</a>
-            <a href="../policy">原则</a>
-          </nav>
-          <img  alt="一张深色编辑式学习地图，让一个问题穿过论据、回忆与相连的想法" src="../media/socrates-home-question-atlas-v2.webp" loading="lazy" decoding="async" width="1672" height="941">
-          <div class="ed-network-copy"><h2>问题，长成一片有待研究的田野。</h2><p>让一个棘手的主题，沿着对话、回忆，以及那些让它重新有用的连接，被一路追下去。</p></div>
-          <p class="ed-meta ed-stage-caption">Socrates 研究 / 2026</p>
         </div>
       </div>
     </section>
 
-    <section class="ed-section ed-section-line">
-      <div class="ed-shell ed-home-statement ed-reveal">
-        <div>
-          <p class="ed-kicker">围绕难题而构建</p>
-          <h2 class="ed-statement-title">我们不会把主题缩小。我们让走进它的路径更清晰。</h2>
-        </div>
-        <div class="ed-home-statement-copy">
-          <p class="ed-copy-serif">Socrates 是一个为想要理解的人打造的 AI 导师——而不只是为得到答案的人。</p>
-          <p class="ed-copy">从你所在之处开始。检验一个想法的边缘。在需要的时候，回到那个有用的连接。</p>
-          <a class="ed-link" href="product">探索学习循环 →</a>
+    <!-- Claude Multi-Tab Product Showcase (Spacious & Clean) -->
+    <section class="claude-showcase-section">
+      <div class="ed-shell">
+        <div class="claude-showcase-wrap ed-reveal">
+          <!-- Tab Navigation -->
+          <div class="claude-showcase-nav" role="tablist" aria-label="展示模块选择">
+            <button type="button" class="claude-tab-pill is-active" data-tab="dialogue" role="tab" aria-selected="true">01 对话引导</button>
+            <button type="button" class="claude-tab-pill" data-tab="proofs" role="tab" aria-selected="false">02 形式化推导</button>
+            <button type="button" class="claude-tab-pill" data-tab="atlas" role="tab" aria-selected="false">03 认知图谱</button>
+            <button type="button" class="claude-tab-pill" data-tab="recall" role="tab" aria-selected="false">04 间隔回忆</button>
+          </div>
+
+          <!-- Dual Pane Sandbox -->
+          <div class="claude-sandbox-grid">
+            <!-- Left Pane: Dialogue Flow -->
+            <div class="claude-chat-pane">
+              <!-- Turn 1: Dialogue -->
+              <div class="claude-chat-turn is-active" data-tab-content="dialogue">
+                <div class="claude-bubble-user">
+                  “如果一个系统总能正确回答所有问题，这能否证明它真正理解了背后的因果关系？”
+                </div>
+                <div class="claude-bubble-socrates">
+                  <p>我们先审视你前提的边界：<strong>正确回答</strong>与<strong>真正理解</strong>之间的差异。</p>
+                  <p><em>“一个无限容量的查表系统可以输出每一个正确结果，但它缺乏对因果关系的内部世界模型。”</em></p>
+                  <p>在继续之前，先思考两个问题：</p>
+                  <ol>
+                    <li>如果系统的物理规则发生微调，它能否外推出新的不变量？</li>
+                    <li>你能否区分‘Token 概率预测’与‘拥有心智模型’？</li>
+                  </ol>
+                </div>
+              </div>
+
+              <!-- Turn 2: Proofs -->
+              <div class="claude-chat-turn" data-tab-content="proofs">
+                <div class="claude-bubble-user">
+                  “为什么泰勒展开余项公式会有拉格朗日误差界？”
+                </div>
+                <div class="claude-bubble-socrates">
+                  <p>拉格朗日余项本质上是在区间 \([a, x]\) 上多次应用<strong>微分中值定理</strong>的自然推论。</p>
+                  <p>观察右侧生成的推导：高阶导数上界 \(\max |f^{(n+1)}(\xi)|\) 严格限制了泰勒多项式的最大逼近误差。</p>
+                </div>
+              </div>
+
+              <!-- Turn 3: Atlas -->
+              <div class="claude-chat-turn" data-tab-content="atlas">
+                <div class="claude-bubble-user">
+                  “机器学习中的交叉熵损失，和物理学中的熵有什么深层联系？”
+                </div>
+                <div class="claude-bubble-socrates">
+                  <p>两者的数学核心都在度量概率分布的<strong>平均意外程度与不确定性</strong>。</p>
+                  <p>在你的认知图谱中，统计力学玻尔兹曼熵公式与深度学习交叉熵损失在此交汇。</p>
+                </div>
+              </div>
+
+              <!-- Turn 4: Recall -->
+              <div class="claude-chat-turn" data-tab-content="recall">
+                <div class="claude-bubble-user">
+                  “我 5 天前学了特征向量，能做个快速自测吗？”
+                </div>
+                <div class="claude-bubble-socrates">
+                  <p>欢迎回来。不看公式，用你自己的话回答：</p>
+                  <p><em>“当矩阵对空间进行线性变换时，其特征向量的方向发生了什么？”</em></p>
+                  <p>先在脑海中组织语言，再查看右侧为你排期的记忆保持曲线。</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Pane: Live Artifact Canvas -->
+            <div class="claude-artifact-pane">
+              <div class="claude-artifact-header">
+                <span class="claude-artifact-title">作品 · session-0842.socrates</span>
+                <button type="button" class="claude-artifact-copy-btn" data-copy-artifact>复制</button>
+              </div>
+
+              <div class="claude-artifact-body">
+                <!-- Content 1: Assumptions Hierarchy -->
+                <div class="claude-tab-content is-active" data-tab-content="dialogue">
+                  <div class="claude-tree-view">
+                    <div class="claude-tree-item">
+                      <span>前提：正确输出 == 真正理解</span>
+                      <span class="tag">待验证</span>
+                    </div>
+                    <div class="claude-tree-item">
+                      <span>反例：中文屋与无限查表系统</span>
+                      <span class="tag tag-accent">核心探针</span>
+                    </div>
+                    <div class="claude-tree-item">
+                      <span>不变量：扰动下的因果外推能力</span>
+                      <span class="tag">下一步</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Content 2: Proof -->
+                <div class="claude-tab-content" data-tab-content="proofs">
+                  <div class="claude-proof-view">
+                    <div class="claude-proof-line">
+                      $$f(x) = \sum_{k=0}^{n} \frac{f^{(k)}(a)}{k!}(x-a)^k + R_n(x)$$
+                    </div>
+                    <div class="claude-proof-line">
+                      $$R_n(x) = \frac{f^{(n+1)}(\xi)}{(n+1)!}(x-a)^{n+1}, \quad \xi \in (a, x)$$
+                    </div>
+                    <p style="font-size: 12.5px; color: var(--claude-ink-secondary); margin-top: 14px;">误差上界：\(|R_n(x)| \le \frac{\sup |f^{(n+1)}|}{(n+1)!}|x-a|^{n+1}\)</p>
+                  </div>
+                </div>
+
+                <!-- Content 3: Knowledge Atlas -->
+                <div class="claude-tab-content" data-tab-content="atlas">
+                  <div class="claude-tree-view">
+                    <div class="claude-tree-item">
+                      <span>物理学 · 玻尔兹曼熵 (\(S = -k_B \sum p \ln p\))</span>
+                      <span class="tag">根源</span>
+                    </div>
+                    <div class="claude-tree-item">
+                      <span>信息论 · 香农信息熵 (\(H = -\sum p \log_2 p\))</span>
+                      <span class="tag">桥梁</span>
+                    </div>
+                    <div class="claude-tree-item">
+                      <span>机器学习 · 交叉熵损失 (\(L = -\sum y \log \hat{y}\))</span>
+                      <span class="tag tag-accent">应用</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Content 4: Recall -->
+                <div class="claude-tab-content" data-tab-content="recall">
+                  <div style="font-family: var(--ed-mono); font-size: 13px; color: #d8d2c6;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                      <span>特征向量概念记忆保持率</span>
+                      <span style="color: var(--claude-clay);">88%（良好）</span>
+                    </div>
+                    <div style="height: 4px; background: #211e19; border-radius: 999px; margin-bottom: 20px;">
+                      <div style="width: 88%; height: 100%; background: var(--claude-clay); border-radius: 999px;"></div>
+                    </div>
+                    <div style="font-size: 12px; color: var(--claude-ink-tertiary); display: flex; flex-direction: column; gap: 8px;">
+                      <div>• 第 1 天复习：已完成</div>
+                      <div style="color: #FFFFFF;">• 第 5 天复习：进行中</div>
+                      <div>• 第 14 天复习：排期于 8 月 28 日</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="ed-section ed-section-line" aria-labelledby="latest-research-title">
+    <!-- Three Core Pillars -->
+    <section class="claude-pillars-section">
       <div class="ed-shell">
-        <div class="ed-home-research-heading ed-reveal">
+        <div class="claude-pillars-header ed-reveal">
+          <h2>围绕答案背后的深度工作而构建。</h2>
+          <p>大多数 AI 界面专注于提供现成结论。Socrates 专注于帮你检验思维边界、留存推演轨迹，并将知识真正转化为个人理解。</p>
+        </div>
+
+        <div class="claude-pillars-grid ed-reveal">
+          <article class="claude-pillar-card">
+            <div class="claude-pillar-num">01 / 苏格拉底式对话</div>
+            <h3>停留在那个还说不通的地方。</h3>
+            <p>用日常语言提问。Socrates 会跟随你的推理，指出思维跃迁中的隐藏假设，并提出那个最关键的澄清问题。</p>
+          </article>
+
+          <article class="claude-pillar-card">
+            <div class="claude-pillar-num">02 / 形式化严谨性</div>
+            <h3>从第一性原理层层推演。</h3>
+            <p>公式、不变量与推导步骤层层展开，不跳过关键的代数细节，助你彻底掌握底层机制。</p>
+          </article>
+
+          <article class="claude-pillar-card">
+            <div class="claude-pillar-num">03 / 持久留存</div>
+            <h3>会话结束，思考依然延续。</h3>
+            <p>每次对话都会沉淀为结构化作品，并排期进入智能间隔复习循环，让理解经得起时间考验。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- High-Contrast Dark Manifesto & Principles Band -->
+    <section class="claude-manifesto-band">
+      <div class="ed-shell">
+        <div class="claude-manifesto-header ed-reveal">
+          <p class="ed-kicker" style="color: #A1A1AA;">核心原则</p>
+          <h2 class="claude-manifesto-title">我们不把学科简化，<br>而是把通往本质的路径打磨得更加清晰。</h2>
+          <p class="claude-manifesto-lead">大多数 AI 产品旨在提供不费力气的现成答案以替代人类思考。Socrates 被设计为智识上的同行者：陪你建立持久的理解力、检验边界条件，并真正掌握结论。</p>
           <div>
-            <p class="ed-kicker">最新研究</p>
-            <h2 class="ed-title" id="latest-research-title">我们在「学习」这件事上，学到的东西。</h2>
+            <a class="claude-btn-primary" href="../policy">阅读我们的原则与安全宣言</a>
           </div>
-          <a class="ed-link" href="../research">查看全部研究 →</a>
         </div>
+      </div>
+    </section>
 
-        <div class="ed-essay-list ed-reveal">
-          <a class="ed-essay-row" href="../research/memory-recall/">
-            <span class="ed-essay-date">2026 年 8 月 12 日</span>
-            <span class="ed-essay-title">回到一个想法的路径。</span>
-            <span class="ed-essay-tag">记忆 · 7 分钟</span>
+    <!-- Final Call to Action -->
+    <section class="claude-cta-section">
+      <div class="ed-shell ed-reveal">
+        <h2 class="claude-cta-title">把棘手的问题，变成持久的理解。</h2>
+        <p class="claude-cta-subtitle">今天就开启与 Socrates 的对话。不绑卡即可免费开始提问。</p>
+        <div class="claude-hero-actions" style="margin-bottom: 0;">
+          <a class="claude-btn-primary" href="https://app.topodrive.top">
+            <span>免费开始使用</span>
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </a>
-          <a class="ed-essay-row" href="../research/explanation-evidence/">
-            <span class="ed-essay-date">2026 年 7 月 29 日</span>
-            <span class="ed-essay-title">当清晰的解释变成论据。</span>
-            <span class="ed-essay-tag">解释 · 6 分钟</span>
-          </a>
-          <a class="ed-essay-row" href="../research/honest-pause/">
-            <span class="ed-essay-date">2026 年 7 月 11 日</span>
-            <span class="ed-essay-title">诚实停顿的价值。</span>
-            <span class="ed-essay-tag">练习 · 5 分钟</span>
-          </a>
-          <a class="ed-essay-row" href="../research/maps-preserve-path/">
-            <span class="ed-essay-date">2026 年 6 月 24 日</span>
-            <span class="ed-essay-title">保留路径的地图。</span>
-            <span class="ed-essay-tag">知识地图 · 8 分钟</span>
-          </a>
+          <a class="claude-btn-secondary" href="../pricing">查看套餐与权限</a>
         </div>
       </div>
     </section>
   </main>
 
-  <footer class="ed-footer"><div class="ed-shell ed-footer-frame"><div class="ed-footer-top"><div class="ed-footer-brand"><a class="ed-brand" href="index"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a><p>为真正想理解的人打造的 AI 导师。</p></div><div class="ed-footer-column"><h2>产品</h2><a href="product">学习循环</a><a href="../pricing">定价</a><a href="https://app.topodrive.top">打开 Socrates</a></div><div class="ed-footer-column"><h2>资料库</h2><a href="../announcements">动态</a><a href="../documents">文档</a><a href="../research">研究</a></div><div class="ed-footer-column"><h2>公司</h2><a href="../about">关于</a><a href="../contact">联系</a><a href="../guide">学习指南</a></div><div class="ed-footer-column"><h2>其他</h2><a href="../index">English</a><a href="../privacy">隐私</a><a href="../terms">条款</a></div></div><div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>为真正想理解的人打造。</span></div></div></footer>
-  <script src="../editorial.js?cb=20260908"></script>
+  <footer class="ed-footer">
+    <div class="ed-shell ed-footer-frame">
+      <div class="ed-footer-top">
+        <div class="ed-footer-brand">
+          <a class="ed-brand" href="index"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a>
+          <p>为真正想理解的人打造的 AI 导师。</p>
+        </div>
+        <div class="ed-footer-column">
+          <h2>产品</h2>
+          <a href="product">学习循环</a>
+          <a href="../pricing">定价</a>
+          <a href="https://app.topodrive.top">打开 Socrates</a>
+        </div>
+        <div class="ed-footer-column">
+          <h2>资料库</h2>
+          <a href="../announcements">动态</a>
+          <a href="../documents">文档</a>
+          <a href="../research">研究</a>
+        </div>
+        <div class="ed-footer-column">
+          <h2>公司</h2>
+          <a href="../about">关于</a>
+          <a href="../contact">联系</a>
+          <a href="../guide">学习指南</a>
+        </div>
+        <div class="ed-footer-column">
+          <h2>其他</h2>
+          <a href="../index">English</a>
+          <a href="../privacy">隐私</a>
+          <a href="../terms">条款</a>
+        </div>
+      </div>
+      <div class="ed-footer-bottom">
+        <span>© 2026 Socrates</span>
+        <span>为真正想理解的人打造。</span>
+      </div>
+    </div>
+  </footer>
+  <script>window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$']] }, svg: { fontCache: 'global' } };</script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.min.js"></script>
+  <script src="../editorial.js?cb=20260910"></script>
+  <script src="../dark-home.js?cb=20260823"></script>
 </body>
 </html>
+

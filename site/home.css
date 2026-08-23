@@ -270,16 +270,9 @@ body.xa-page {
   bottom: -.08em;
   height: 4px;
   border-radius: var(--xa-r-pill);
-  background-image: linear-gradient(90deg,
-    rgba(255,255,255,.18) 0%, rgba(255,255,255,.18) 30%,
-    #6366f1 38%, #a855f7 45%, #ec4899 50%, #f97316 55%, #eab308 62%,
-    rgba(255,255,255,.18) 70%, rgba(255,255,255,.18) 100%);
-  background-size: 220% 100%;
-  background-position: 0% 50%;
-  animation: xa-underline-pan 4.5s linear infinite;
+  background-color: #E07A5F;
   opacity: .85;
 }
-@keyframes xa-underline-pan { 0% { background-position: 0% 50%; } 100% { background-position: -200% 50%; } }
 
 .xa-hero-row {
   display: flex;
