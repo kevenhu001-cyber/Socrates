@@ -1,12 +1,12 @@
 /* ==========================================================================
-   Socrates Home — enhanced mascot interactions & animations
-   Loaded AFTER editorial.js on the claude-home homepage only.
+   Socrates Dark Home — enhanced mascot interactions & animations
+   Loaded AFTER editorial.js on the dark-home homepage only.
    ========================================================================== */
 (function () {
   'use strict';
 
-  /* Guard: only run on claude-home pages */
-  if (!document.body.classList.contains('claude-home')) return;
+  /* Guard: only run on dark-home pages */
+  if (!document.body.classList.contains('dark-home')) return;
 
   /* ──────────────────────────────────────────────────────────────────────
    * 1. HERO ARTWORK — Anthropic-style dynamic stardust & pulse
