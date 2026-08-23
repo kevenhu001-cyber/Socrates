@@ -673,6 +673,77 @@ export const connectorConnections = pgTable('connector_connections', {
   index('connector_connections_provider_idx').on(table.provider),
 ]);
 
+/* ──────────────────────────────────────────────
+   Agent API keys (Phase D) — long-lived scoped credentials for headless agents.
+   The plaintext secret is shown exactly once at creation; only the SHA-256 of
+   "<keyId>.<secret>" is persisted. keyId is public (it prefixes the bearer).
+   ────────────────────────────────────────────── */
+export const agentApiKeys = pgTable('agent_api_keys', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  ownerUserId: uuid('owner_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  /* SHA-256 of "<keyId>.<secret>" — never store the plaintext secret. */
+  secretHash: text('secret_hash').notNull(),
+  keyId: text('key_id').notNull().unique(),               // "ak_<base32>" — public identifier
+  label: text('label').notNull(),
+  scopes: jsonb('scopes').$type<string[]>().notNull(),    // ["chat:read", ...]
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+}, (table) => [
+  index('agent_api_keys_owner_idx').on(table.ownerUserId),
+]);
+
+/* ──────────────────────────────────────────────
+   OAuth 2.0 authorization server (Phase D)
+   First-party client registry for the authorization-code + PKCE flow.
+   ────────────────────────────────────────────── */
+export const oauthClients = pgTable('oauth_clients', {
+  clientId: text('client_id').primaryKey(),
+  clientSecretHash: text('client_secret_hash').notNull(),
+  name: text('name').notNull(),
+  homepageUrl: text('homepage_url'),
+  logoUrl: text('logo_url'),
+  redirectUris: jsonb('redirect_uris').$type<string[]>().notNull(),
+  allowedScopes: jsonb('allowed_scopes').$type<string[]>().notNull(),
+  requirePkce: boolean('require_pkce').notNull().default(true),
+  requireConsent: boolean('require_consent').notNull().default(true),
+  /* Null for dynamically registered clients (RFC 7591) — they have no
+   * account-holder owner until an operator adopts them. */
+  ownerUserId: uuid('owner_user_id').references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+});
+
+export const oauthAuthorizationCodes = pgTable('oauth_authorization_codes', {
+  codeHash: text('code_hash').primaryKey(),
+  clientId: text('client_id').notNull().references(() => oauthClients.clientId, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  redirectUri: text('redirect_uri').notNull(),
+  scopes: jsonb('scopes').$type<string[]>().notNull(),
+  codeChallenge: text('code_challenge'),
+  codeChallengeMethod: text('code_challenge_method').default('S256'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  consumedAt: timestamp('consumed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('oauth_authorization_codes_user_idx').on(table.userId),
+]);
+
+export const oauthAccessTokens = pgTable('oauth_access_tokens', {
+  tokenHash: text('token_hash').primaryKey(),
+  clientId: text('client_id').notNull().references(() => oauthClients.clientId, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  scopes: jsonb('scopes').$type<string[]>().notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  refreshTokenHash: text('refresh_token_hash'),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('oauth_access_tokens_user_idx').on(table.userId),
+  index('oauth_access_tokens_refresh_idx').on(table.refreshTokenHash),
+]);
+
 /* Metadata for OOMOL ProjectConnector accounts. OAuth tokens deliberately do
  * not appear here: they are held, refreshed, and isolated by OOMOL's gateway.
  * This table lets Socrates render a user's connection state and resume a

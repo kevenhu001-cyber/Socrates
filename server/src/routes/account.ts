@@ -1,14 +1,18 @@
 import { Router } from 'express';
-import { eq, count, sql, and, gte } from 'drizzle-orm';
+import { eq, count, sql, and, gte, desc, isNull } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { comparePassword } from '../lib/crypto.js';
-import { Unauthorized } from '../lib/errors.js';
+import { Unauthorized, BadRequest, NotFound } from '../lib/errors.js';
 import {
   users, sessions, messages, apiKeys, usageEvents, tags, sessionTags,
   projects, mistakes, memories, artifacts, artifactVersions, prompts,
   files, workspaces, workspaceMembers,
 } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { parseScopes } from '../middleware/scopes.js';
+import { createAgentKey } from '../services/agentKeys.js';
+import { agentApiKeys } from '../db/schema.js';
+import { audit } from '../middleware/audit.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -482,8 +486,7 @@ router.get('/export', async (req, res, next) => {
  * GET /api/account/usage-trend — daily token totals for a line chart.
  * Returns an array of {day, tokens, calls} for each day in the last N days
  * (default 30). Days with no usage still appear with tokens=0 so the
- * front-end can draw a continuous line. */
-router.get('/usage-trend', async (req, res, next) => {
+ * front-end can draw a continuous line. */router.get('/usage-trend', async (req, res, next) => {
   try {
     const db = getDb();
     const daysNum = Math.min(Math.max(parseInt(req.query.days as string, 10) || 30, 7), 90);
@@ -512,6 +515,112 @@ router.get('/usage-trend', async (req, res, next) => {
     const totalTokens = filled.reduce((s, b) => s + b.tokens, 0);
     const totalCalls = filled.reduce((s, b) => s + b.calls, 0);
     return res.json({ days: daysNum, entries: filled, totalTokens, totalCalls });
+  } catch (err) { next(err); }
+});
+
+/* ─── Agent API keys (Phase D) ──────────────────────────────
+ * Long-lived scoped credentials for headless agents. The plaintext secret
+ * is returned exactly once by the create call; only its SHA-256 lives in
+ * the database afterwards. */
+const MAX_AGENT_KEYS = 50;
+const MAX_KEY_LABEL_LENGTH = 100;
+const MAX_KEY_TTL_MS = 365 * 24 * 60 * 60 * 1000;
+
+function serializeAgentKeyRow(row: typeof agentApiKeys.$inferSelect) {
+  return {
+    id: row.id,
+    keyId: row.keyId,
+    label: row.label,
+    scopes: row.scopes,
+    createdAt: row.createdAt,
+    lastUsedAt: row.lastUsedAt,
+    expiresAt: row.expiresAt,
+    revokedAt: row.revokedAt,
+  };
+}
+
+/**
+ * POST /api/account/agent-keys — mint a scoped key for an agent.
+ * Body: { label: string, scopes: string[], expiresAt?: ISO string }.
+ * Response includes `credential` ("<keyId>.<secret>") exactly once.
+ */
+router.post('/agent-keys', audit('create_agent_key', (req) => ({ label: req.body?.label })), async (req, res, next) => {
+  try {
+    const db = getDb();
+    const label = typeof req.body?.label === 'string' ? req.body.label.trim() : '';
+    if (!label || label.length > MAX_KEY_LABEL_LENGTH) {
+      throw new BadRequest('label is required (max 100 chars)');
+    }
+    const scopes = parseScopes(req.body?.scopes);
+    if (!scopes || scopes.length === 0) {
+      throw new BadRequest('scopes must be a non-empty array drawn from the supported scope list');
+    }
+
+    let expiresAt: Date | null = null;
+    if (req.body?.expiresAt != null && req.body.expiresAt !== '') {
+      const parsed = new Date(String(req.body.expiresAt));
+      if (Number.isNaN(parsed.getTime())) throw new BadRequest('expiresAt must be an ISO date string');
+      if (parsed.getTime() <= Date.now()) throw new BadRequest('expiresAt must be in the future');
+      if (parsed.getTime() - Date.now() > MAX_KEY_TTL_MS) throw new BadRequest('expiresAt cannot exceed one year');
+      expiresAt = parsed;
+    }
+
+    const [activeCount] = await db
+      .select({ value: count() })
+      .from(agentApiKeys)
+      .where(and(eq(agentApiKeys.ownerUserId, req.userId!), isNull(agentApiKeys.revokedAt)));
+    if ((activeCount?.value ?? 0) >= MAX_AGENT_KEYS) {
+      throw new BadRequest(`Agent key limit reached (${MAX_AGENT_KEYS}). Revoke unused keys first.`);
+    }
+
+    const issued = await createAgentKey({
+      ownerUserId: req.userId!,
+      label,
+      scopes,
+      expiresAt,
+    });
+    return res.status(201).json({ ok: true, ...issued });
+  } catch (err) { next(err); }
+});
+
+/**
+ * GET /api/account/agent-keys — list this account's agent keys
+ * (newest first). Never includes any credential material.
+ */
+router.get('/agent-keys', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(agentApiKeys)
+      .where(eq(agentApiKeys.ownerUserId, req.userId!))
+      .orderBy(desc(agentApiKeys.createdAt));
+    return res.json({ keys: rows.map(serializeAgentKeyRow) });
+  } catch (err) { next(err); }
+});
+
+/**
+ * POST /api/account/agent-keys/:id/revoke — revoke one of this account's
+ * keys. Idempotent: revoking an already-revoked key returns ok.
+ */
+router.post('/agent-keys/:id/revoke', audit('revoke_agent_key'), async (req, res, next) => {
+  try {
+    const db = getDb();
+    const id = String(req.params.id || '');
+    if (!/^[0-9a-f-]{36}$/i.test(id)) throw new BadRequest('invalid key id');
+    const [row] = await db
+      .select()
+      .from(agentApiKeys)
+      .where(and(eq(agentApiKeys.id, id), eq(agentApiKeys.ownerUserId, req.userId!)))
+      .limit(1);
+    if (!row) throw new NotFound('Agent key not found');
+    if (!row.revokedAt) {
+      await db
+        .update(agentApiKeys)
+        .set({ revokedAt: new Date() })
+        .where(eq(agentApiKeys.id, row.id));
+    }
+    return res.json({ ok: true, revokedAt: row.revokedAt ?? new Date() });
   } catch (err) { next(err); }
 });
 

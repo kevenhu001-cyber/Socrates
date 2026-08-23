@@ -254,11 +254,18 @@ if [ -d "$SITE_DIR" ]; then
   # Static assets — images, fonts, and sibling .css/.js the marketing pages
   # reference. Files explicitly copied above are excluded by name so the
   # hard-coded install commands remain the source of truth for those.
+  # llms.txt / *.md / *.xml / *.json / *.jsonl are also installed so the
+  # site root gains a sitemap, an llms.txt, an OpenAPI reference, and a
+  # Markdown twin for agents that prefer non-HTML representations.
   while IFS= read -r -d '' asset; do
     fname=$(basename "$asset")
     case "$fname" in
-      *.png|*.ico|*.svg|*.jpg|*.jpeg|*.webp|*.gif|*.woff|*.woff2|*.css|*.js) ;;
+      *.png|*.ico|*.svg|*.jpg|*.jpeg|*.webp|*.gif|*.woff|*.woff2|*.css|*.js|*.md|*.txt|*.xml|*.json|*.jsonl) ;;
       *) continue ;;
+    esac
+    # Never overwrite any HTML or the editorial base stylesheet from this loop.
+    case "$fname" in
+      *.html|base.css) continue ;;
     esac
     $SUDO install -m 644 -o www-data -g www-data "$asset" "$SITE_WEB_ROOT/$fname"
   done < <(find "$SITE_DIR" -maxdepth 1 -type f \
@@ -267,6 +274,27 @@ if [ -d "$SITE_DIR" ]; then
       ! -name '.*' \
       ! -name '*~' \
       -print0)
+
+  # Markdown side-cars for the HTML pages ship beside the HTML files
+  # (e.g. site/pricing.md alongside site/pricing.html). The wildcard
+  # loop above only copies top-level files; mirror a parallel tree of
+  # .md twins so every page that has one is reachable as <page>.md.
+  while IFS= read -r -d '' md_src; do
+    rel="${md_src#"$SITE_DIR/"}"
+    $SUDO mkdir -p "$SITE_WEB_ROOT/$(dirname "$rel")"
+    $SUDO install -m 644 -o www-data -g www-data "$md_src" "$SITE_WEB_ROOT/$rel"
+  done < <(find "$SITE_DIR" -type f -name '*.md' \
+      ! -path '*/.git/*' \
+      -print0)
+
+  # /.well-known/* discovery files (agent-card, api-catalog, security.txt…)
+  if [ -d "$SITE_DIR/.well-known" ]; then
+    while IFS= read -r -d '' well_known; do
+      rel="${well_known#"$SITE_DIR/"}"
+      $SUDO mkdir -p "$SITE_WEB_ROOT/$(dirname "$rel")"
+      $SUDO install -m 644 -o www-data -g www-data "$well_known" "$SITE_WEB_ROOT/$rel"
+    done < <(find "$SITE_DIR/.well-known" -type f -print0)
+  fi
 
   # Copy site/media/ directory (editorial images referenced by new pages)
   if [ -d "$SITE_DIR/media" ]; then
@@ -277,7 +305,9 @@ if [ -d "$SITE_DIR" ]; then
   # Copy article subdirectories (research/, learn/, etc.) so each
   # essay/guide page is reachable as /research/<slug>/. nginx's
   # try_files already falls back to index.html inside the directory.
-  for sub in research learn announcements guides posts articles; do
+  # `developers`, `api`, and `auth` are also included so their
+  # llms.txt indexes (and any future siblings) get copied automatically.
+  for sub in research learn announcements guides posts articles developers api auth; do
     if [ -d "$SITE_DIR/$sub" ]; then
       $SUDO mkdir -p "$SITE_WEB_ROOT/$sub"
       $SUDO cp -a "$SITE_DIR/$sub/." "$SITE_WEB_ROOT/$sub/"
@@ -286,7 +316,7 @@ if [ -d "$SITE_DIR" ]; then
 
   # Copy translated article subdirectories as well. These live below
   # site/zh/ and must mirror the English directory layout on the public site.
-  for sub in research learn announcements guides posts articles; do
+  for sub in research learn announcements guides posts articles developers api auth; do
     if [ -d "$SITE_DIR/zh/$sub" ]; then
       $SUDO mkdir -p "$SITE_WEB_ROOT/zh/$sub"
       $SUDO cp -a "$SITE_DIR/zh/$sub/." "$SITE_WEB_ROOT/zh/$sub/"
@@ -421,6 +451,23 @@ fi
 # public versioned prefix so an APK cannot pass deployment while nginx or the
 # database path it actually uses is broken.
 gate_check "mobile api + db     " "${MOBILE_API_BASE_URL%/}/health"
+
+# 4.5c-2. Phase D — the RFC 8414 discovery document must be live on BOTH
+# hosts: static copy on the marketing origin (orank probes this URL) and the
+# dynamic Express route on the app origin (real OAuth clients discover here).
+# A missing file or a dead proxy turns agent discovery into an HTML 404.
+OAUTH_AS_URL="${SITE_PUBLIC_URL%/}/.well-known/oauth-authorization-server"
+OAUTH_AS_BODY=$(curl -sf --max-time 8 "$OAUTH_AS_URL" || true)
+if [[ -n "$OAUTH_AS_BODY" ]] && echo "$OAUTH_AS_BODY" | jq -e \
+  --arg issuer "${APP_PUBLIC_URL%/}/api/oauth" \
+  '.issuer == $issuer and (.scopes_supported | length >= 10) and .token_endpoint != null' \
+  >/dev/null 2>&1; then
+  GATE_RESULTS+=("  oauth-authorization-server metadata ok")
+else
+  echo "GATE FAIL: oauth AS metadata missing/misaligned ($OAUTH_AS_URL)" >&2
+  GATE_FAILED=1
+  GATE_RESULTS+=("  oauth AS metadata MISSING     ← FAIL")
+fi
 
 # 4.5d. API JSON shape via direct backend port — catches nginx 200'ing
 # an HTML error page from wrong upstream. Previously went through the

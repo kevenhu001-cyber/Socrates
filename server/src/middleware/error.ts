@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../lib/errors.js';
 import { safeUrl } from '../lib/log.js';
+import { wwwAuthenticateChallenge, OAUTH_AUTHORIZATION_ENDPOINT } from '../lib/oauthMeta.js';
 
 /**
  * Global request timeout middleware.
@@ -73,6 +74,19 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
 
   // Known ApiError — serialise consistently
   if (err instanceof ApiError) {
+    // RFC 6750 — every 401 from a protected resource carries a challenge so
+    // agents can discover the authorization endpoint. Handlers that already
+    // set a more specific challenge (requireScope's insufficient_scope) win.
+    if (err.status === 401 && !res.getHeader('WWW-Authenticate')) {
+      res.setHeader(
+        'WWW-Authenticate',
+        wwwAuthenticateChallenge(
+          req && req.headers.authorization === undefined
+            ? { authorizationUri: OAUTH_AUTHORIZATION_ENDPOINT }
+            : { error: 'invalid_token' },
+        ),
+      );
+    }
     return res.status(err.status).json({
       code: err.code,
       message: err.message,
@@ -110,10 +124,40 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
 
 /**
  * 404 catch-all — for unknown routes.
+ *
+ * Agents probe paths before reading docs; the body doubles as a recovery
+ * map (markdown when the client asks for it, JSON otherwise) pointing at
+ * the discovery surfaces that DO exist.
  */
-export function notFoundHandler(_req: Request, res: Response) {
+export function notFoundHandler(req: Request, res: Response) {
+  const accept = req && req.headers && req.headers.accept
+    ? String(req.headers.accept)
+    : '';
+  const wantsMarkdown = accept.includes('text/markdown')
+    || (req && typeof req.path === 'string' && req.path.endsWith('.md'));
+  if (wantsMarkdown) {
+    res.status(404).type('text/markdown; charset=utf-8');
+    return res.send([
+      '# 404 — Not found',
+      '',
+      'This path does not exist on the Socrates API. Start from one of these instead:',
+      '',
+      '- OpenAPI specification: `/openapi.json`',
+      '- Developer portal: `https://topodrive.top/developers`',
+      '- Auth reference: `https://topodrive.top/auth.md`',
+      '- Navigation index: `https://topodrive.top/llms.txt`',
+      '- Sitemap: `https://topodrive.top/sitemap.xml`',
+      '',
+      '_Request id: see the `X-Request-Id` response header._',
+    ].join('\n'));
+  }
   return res.status(404).json({
     code: 'NOT_FOUND',
     message: 'Endpoint not found',
+    hint: {
+      openapi: '/openapi.json',
+      developers: 'https://topodrive.top/developers',
+      llms_txt: 'https://topodrive.top/llms.txt',
+    },
   });
 }

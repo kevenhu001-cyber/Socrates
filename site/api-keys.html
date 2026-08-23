@@ -166,6 +166,60 @@
             <div id="keyItems"></div>
           </article>
 
+          <article class="ed-app-card ed-reveal" id="agentKeyForm">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">Agent API keys</p>
+                <h2 class="ed-app-card-title">Mint a scoped key for a headless agent.</h2>
+              </div>
+            </header>
+
+            <div id="agentKeyMsg" class="ed-app-msg"></div>
+
+            <p class="ed-copy" style="margin-top:0">An agent key lets an automated client call the Socrates API as you, limited to the scopes you tick below. The credential is shown once at creation and cannot be retrieved afterwards. Revoke it any time.</p>
+
+            <div class="ed-field">
+              <label for="agentLabel">Label</label>
+              <input id="agentLabel" placeholder="e.g. Cursor on my laptop" autocomplete="off" maxlength="100">
+              <p class="ed-field-hint">A short name so you can recognise this agent later.</p>
+            </div>
+
+            <div class="ed-field">
+              <label>Scopes</label>
+              <div id="agentScopeGrid" class="ed-agent-scopes"></div>
+              <p class="ed-field-hint">Grant the minimum the agent needs. Read scopes can list and download; write scopes can create or send.</p>
+            </div>
+
+            <div class="ed-field">
+              <label for="agentExpires">Expires (optional)</label>
+              <input id="agentExpires" type="date">
+              <p class="ed-field-hint">Leave empty for a key that never expires. Maximum one year.</p>
+            </div>
+
+            <div class="ed-app-actions">
+              <button class="ed-button" onclick="createAgentKey()">Create agent key</button>
+            </div>
+
+            <div id="agentSecretReveal" hidden>
+              <p class="ed-copy"><strong>Copy this credential now — it will not be shown again:</strong></p>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <code id="agentSecretValue" style="background:#f3ede3;padding:10px 12px;border-radius:8px;word-break:break-all;flex:1;min-width:240px"></code>
+                <button class="ed-button-quiet" type="button" onclick="copyAgentSecret()">Copy</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="ed-app-card ed-reveal" id="agentKeyListCard">
+            <header class="ed-app-card-head">
+              <div>
+                <p class="ed-kicker">Issued agent keys</p>
+                <h2 class="ed-app-card-title">Every key you have minted.</h2>
+              </div>
+              <span id="agentKeyCount" class="ed-meta">—</span>
+            </header>
+            <div id="agentKeyItems"></div>
+          </article>
+
           <article class="ed-app-card ed-reveal">
             <header class="ed-app-card-head">
               <div>
@@ -352,6 +406,138 @@
       });
     }
 
+    /* ── Agent API keys (Phase D) ─────────────────────────── */
+    var AGENT_SCOPES = [
+      ['chat:read', 'Read chat sessions and messages'],
+      ['chat:write', 'Send messages on your behalf'],
+      ['sessions:read', 'List tutoring sessions'],
+      ['sessions:write', 'Create or modify sessions'],
+      ['memory:read', 'Read cross-session memory'],
+      ['memory:write', 'Update cross-session memory'],
+      ['files:read', 'Download files'],
+      ['files:write', 'Upload files'],
+      ['projects:read', 'List projects'],
+      ['projects:write', 'Create or modify projects']
+    ];
+
+    function agentMsg(text, type) {
+      var el = document.getElementById('agentKeyMsg');
+      el.textContent = text;
+      el.className = 'ed-app-msg' + (type ? ' ' + type : '');
+    }
+
+    function renderScopePicker() {
+      var grid = document.getElementById('agentScopeGrid');
+      grid.innerHTML = AGENT_SCOPES.map(function(pair) {
+        return '<label style="display:flex;align-items:baseline;gap:8px;margin:4px 0;font-size:.9rem">' +
+          '<input type="checkbox" class="agent-scope" value="' + pair[0] + '"> ' +
+          '<span><code style="font-size:.82em">' + esc(pair[0]) + '</code> — ' + esc(pair[1]) + '</span></label>';
+      }).join('');
+    }
+
+    function createAgentKey() {
+      var label = document.getElementById('agentLabel').value.trim();
+      if (!label) { agentMsg('Please give this key a label.', 'err'); return; }
+      var scopes = Array.prototype.slice.call(document.querySelectorAll('.agent-scope:checked')).map(function(c){ return c.value; });
+      if (scopes.length === 0) { agentMsg('Tick at least one scope.', 'err'); return; }
+      var body = { label: label, scopes: scopes };
+      var expires = document.getElementById('agentExpires').value;
+      if (expires) body.expiresAt = new Date(expires + 'T23:59:59Z').toISOString();
+      agentMsg('Creating…', 'info');
+      fetch('/api/account/agent-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('csrf') || '' },
+        body: JSON.stringify(body),
+        credentials: 'same-origin'
+      }).then(function(r) {
+        if (r.status === 401) { window.location.href = '/account'; return null; }
+        return r.json();
+      }).then(function(d) {
+        if (!d) return;
+        if (d.detail || (!d.ok && d.message)) {
+          agentMsg((d.code ? d.code + ': ' : '') + (d.message || 'Failed to create key.'), 'err');
+          return;
+        }
+        document.getElementById('agentSecretValue').textContent = d.credential;
+        document.getElementById('agentSecretReveal').hidden = false;
+        document.getElementById('agentLabel').value = '';
+        document.getElementById('agentExpires').value = '';
+        document.querySelectorAll('.agent-scope').forEach(function(c){ c.checked = false; });
+        agentMsg('Key created. Copy the credential before you leave the page.', 'ok');
+        loadAgentKeys();
+      }).catch(function(){ agentMsg('Connection error. Please try again.', 'err'); });
+    }
+
+    function copyAgentSecret() {
+      var text = document.getElementById('agentSecretValue').textContent;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function(){ showToast('Credential copied.', 'success'); });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); showToast('Credential copied.', 'success'); } catch (_) {}
+        document.body.removeChild(ta);
+      }
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      try { return new Date(iso).toISOString().slice(0, 10); } catch (_) { return '—'; }
+    }
+
+    function loadAgentKeys() {
+      fetch('/api/account/agent-keys', { credentials: 'same-origin' }).then(function(r) {
+        if (r.status === 401) { window.location.href = '/account'; return null; }
+        return r.json();
+      }).then(function(d) {
+        if (d) renderAgentKeys(d.keys || []);
+      }).catch(function(){});
+    }
+
+    function renderAgentKeys(keys) {
+      var container = document.getElementById('agentKeyItems');
+      var countEl = document.getElementById('agentKeyCount');
+      countEl.textContent = keys.length + ' issued';
+      if (keys.length === 0) {
+        container.innerHTML = '<p class="ed-copy" style="margin:0">No agent keys yet. Create one above when an automated client needs API access.</p>';
+        return;
+      }
+      container.innerHTML = '<div class="ed-keys-list">' + keys.map(function(k) {
+        var dead = !!k.revokedAt;
+        var expired = k.expiresAt && new Date(k.expiresAt) < new Date();
+        return '<div class="ed-key" style="' + (dead || expired ? 'opacity:.55' : '') + '">' +
+          '<span class="ed-key-dot ' + (dead || expired ? 'is-off' : 'is-on') + '" aria-label="' + (dead ? 'Revoked' : expired ? 'Expired' : 'Active') + '"></span>' +
+          '<div><div class="ed-key-name">' + esc(k.label) + '</div>' +
+          '<div class="ed-key-meta">' + esc(k.scopes.join(', ')) + '</div>' +
+          '<div class="ed-key-meta">created ' + fmtDate(k.createdAt) + ' · last used ' + fmtDate(k.lastUsedAt) +
+          (k.expiresAt ? ' · expires ' + fmtDate(k.expiresAt) : '') +
+          (dead ? ' · revoked ' + fmtDate(k.revokedAt) : expired ? ' · expired' : '') + '</div></div>' +
+          (dead ? '' :
+          '<button class="ed-key-del" onclick="revokeAgentKey(\'' + k.id + '\')" title="Revoke" aria-label="Revoke key">' +
+          '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg>' +
+          '</button>') +
+        '</div>';
+      }).join('') + '</div>';
+    }
+
+    function revokeAgentKey(id) {
+      showConfirm('Revoke this agent key?', 'The credential stops working immediately. Any agent using it will need a new key.', {
+        confirmText: 'Revoke key',
+        danger: true,
+        onConfirm: function() {
+          fetch('/api/account/agent-keys/' + id + '/revoke', {
+            method: 'POST',
+            headers: { 'X-CSRF-Token': getCookie('csrf') || '' },
+            credentials: 'same-origin'
+          }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.error) { showToast(d.error, 'error'); return; }
+            showToast('Agent key revoked.', 'success');
+            loadAgentKeys();
+          }).catch(function(){ showToast('Connection error.', 'error'); });
+        }
+      });
+    }
+
     /* Custom select */
     (function(){
       var select = document.getElementById('keyUrlSelect');
@@ -394,7 +580,8 @@
     })();
 
     (function(){
-      fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}).then(function(){ loadKeys(); });
+      renderScopePicker();
+      fetch('/api/auth/csrf-token', { credentials: 'same-origin' }).catch(function(){}).then(function(){ loadKeys(); loadAgentKeys(); });
     })();
   </script>
 </body>

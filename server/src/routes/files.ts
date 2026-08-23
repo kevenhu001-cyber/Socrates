@@ -3,6 +3,7 @@ import { eq, and, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { files } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { resourceScope } from '../middleware/scopes.js';
 import { writeLimiter } from '../middleware/rateLimit.js';
 import { NotFound, BadRequest, PayloadTooLarge } from '../lib/errors.js';
 import multer from 'multer';
@@ -78,7 +79,7 @@ const upload = multer({
 });
 
 const router = Router();
-router.use(requireAuth);
+router.use(requireAuth, resourceScope('files'));
 
 /* GET /api/files — list all files for the authenticated user.
  * Supports cursor-based pagination via ?cursor=<id>&limit=<n>.

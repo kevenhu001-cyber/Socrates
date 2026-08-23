@@ -12,6 +12,7 @@ import {
   shares, sessionTags, tags as tagsTable,
 } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { resourceScope } from '../middleware/scopes.js';
 import { writeLimiter } from '../middleware/rateLimit.js';
 import { NotFound, Forbidden, BadRequest } from '../lib/errors.js';
 import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
@@ -138,7 +139,7 @@ const SessionPayloadSchema = z.object({
 
 const router = Router();
 
-router.use(requireAuth);
+router.use(requireAuth, resourceScope('sessions'));
 
 /* ─── List sessions ─── */
 router.get('/', async (req, res, next) => {

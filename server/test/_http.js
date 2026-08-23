@@ -57,7 +57,7 @@ export async function httpRequest(url, opts = {}) {
       headers['Content-Type'] = headers['Content-Type'] || 'application/json';
     }
   }
-  const r = await fetch(url, { method, headers, body });
+  const r = await fetch(url, { method, headers, body, redirect: opts.redirect || 'follow' });
   const setCookies = r.headers.getSetCookie?.() || [];
   let json = null;
   const text = await r.text();

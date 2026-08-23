@@ -16,6 +16,41 @@ const MOBILE_CREDENTIAL_PATHS = new Set([
   '/api/auth/mobile/oauth/exchange',
 ]);
 
+/* P_mcp-discovery — Model Context Protocol clients are not browsers. They
+ * speak JSON-RPC 2.0 over Streamable HTTP, they authenticate out of band
+ * (or not at all on the discovery surface we expose here), and they have
+ * no business carrying an ambient sid cookie. Skip the double-submit
+ * check so a stray csrf cookie cannot turn their POST into a 403. */
+const MCP_PATHS = new Set([
+  '/api/mcp',
+  '/api/mcp/',
+  '/api/mcp/docs',
+  '/api/mcp/docs/',
+]);
+
+/* P_oauth-token-endpoints — RFC 6749 §4.1.3 token / §2.1 revoke requests
+ * authenticate with client_secret (Basic or POST body) and carry no ambient
+ * sid cookie. The double-submit check would only see a stale browser csrf
+ * cookie and 403 a perfectly authenticated non-browser client.
+ *
+ * The consent decision (POST /api/oauth/authorize) rides the sid cookie, so
+ * it is ALSO listed here — but it does not rely on the blanket both-missing
+ * passthrough: routes/oauth.ts re-enforces the double-submit itself by
+ * comparing the form's hidden csrf_token field against the cookie, because a
+ * plain HTML form cannot send X-CSRF-Token headers. Removing the route-level
+ * check while keeping this exemption would drop CSRF protection entirely.
+ * req.path at app level is the full path; both trailing-slash variants are
+ * listed because Express keeps the slash when the router base matches with
+ * one. */
+const OAUTH_TOKEN_PATHS = new Set([
+  '/api/oauth/authorize',
+  '/api/oauth/authorize/',
+  '/api/oauth/token',
+  '/api/oauth/token/',
+  '/api/oauth/revoke',
+  '/api/oauth/revoke/',
+]);
+
 function timingSafeEqual(a: unknown, b: unknown): boolean {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
   const bufA = Buffer.from(a, 'utf8');
@@ -69,6 +104,19 @@ export function setCsrfCookie(res: Response, req: Request) {
   clearCsrfCookie(res, req);
   const token = crypto.randomBytes(32).toString('hex');
   res.cookie('csrf', token, getCsrfCookieOptions(req));
+}
+
+/**
+ * Mint a fresh double-submit pair AND return the new token so server-rendered
+ * no-JS forms (the OAuth consent screen) can embed it as a hidden field while
+ * the matching half lands in the cookie. Unlike setCsrfCookie, the caller
+ * learns the value — res.cookie() alone never populates req.cookies.
+ */
+export function rotateCsrfToken(res: Response, req: Request): string {
+  const token = crypto.randomBytes(32).toString('hex');
+  clearCsrfCookie(res, req);
+  res.cookie('csrf', token, getCsrfCookieOptions(req));
+  return token;
 }
 
 /**
@@ -154,6 +202,10 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
   }
 
   if (MOBILE_CREDENTIAL_PATHS.has(req.path)) return next();
+
+  if (MCP_PATHS.has(req.path)) return next();
+
+  if (OAUTH_TOKEN_PATHS.has(req.path)) return next();
 
   // A React Native request may coexist with an old WebView csrf cookie. Its
   // explicit access bearer remains safe without a double-submit header; do
