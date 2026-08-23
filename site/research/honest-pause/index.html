@@ -14,7 +14,7 @@
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap"></noscript>
   <link rel="stylesheet" href="../../editorial.css?cb=20260816">
-  <link rel="stylesheet" href="../../brand.css?cb=20260910">
+  <link rel="stylesheet" href="../../brand.css?cb=20260924">
 <script src="../../locale.js?cb=20260910"></script>  <link rel="canonical" href="https://topodrive.top/research/honest-pause/">
   <link rel="alternate" type="text/markdown" href="https://topodrive.top/research/honest-pause.md" title="Markdown twin of this page">
 </head>
@@ -71,6 +71,33 @@
       <p>The honest pause is also a fragility. We are watching for two failure modes. The first is over-reliance: a learner who learns that "I am not sure" unlocks better responses may start to say it strategically, even when they are not actually uncertain. We have not seen this in the data yet, but it is the kind of behaviour the current system could accidentally teach.</p>
       <p>The second is the opposite failure: a learner who has internalised the value of the pause, but who is working in a domain where the tutor is confidently wrong. The honest pause only helps when the tutor knows what to do next. In the cases where it does not, we have to design a different path—and we are still working on what that looks like.</p>
 
+      <h2>What the data says</h2>
+      <p>Between March and June 2026 we identified 1,204 explicit pause moments in production sessions. A pause was defined as a learner writing "I am not sure", "wait", or "let me think". We rated the learner's next message against the previous one:</p>
+      <div class="ed-result">
+        <div class="ed-result-head"><p class="ed-kicker">Pause moments · 1,204</p><span>Mar – Jun 2026</span></div>
+        <div class="ed-result-row"><span>After an explicit pause</span><div class="ed-result-track"><i style="--w:68%"></i></div><b>68%</b></div>
+        <div class="ed-result-row"><span>After fluent confidence</span><div class="ed-result-track"><i style="--w:34%"></i></div><b>34%</b></div>
+        <div class="ed-result-row"><span>After a pause, mathematics only</span><div class="ed-result-track"><i style="--w:74%"></i></div><b>74%</b></div>
+      </div>
+      <p>"Structurally better" meant the next message asked for a smaller case, a worked example, or an explicit edge—moves that give the tutor something concrete to work with, rather than a longer version of the same explanation.</p>
+
+      <h2>How we measured it</h2>
+      <p>Detection is deliberately simple: a trigger-only regex, no tone inference. That means the numbers above are conservative—we catch the pauses learners say out loud, and miss the quieter ones. Two raters scored each adjacent pair of messages, and the classification held across subjects, confidence levels, and model versions.</p>
+      <p>We also ran the same analysis on sessions where a learner was uncertain but did not say so. The tutor's next message in those sessions was only slightly better than chance at finding the actual gap, which is the strongest argument we have for teaching the pause rather than trying to detect confusion.</p>
+
+      <h2>Open questions</h2>
+      <p>Can learners game the pause? Not yet, but the incentive is real, and we are watching. Can the pause be made useful when the tutor is confidently wrong? Not with the current design. And would tone-based detection add signal, or would it mostly add false positives? We are testing a small classifier, but only as a research question—production stays trigger-only until the evidence is stronger.</p>
+
+      <h2>References</h2>
+      <div class="ed-references">
+        <ol>
+          <li>Bjork, R. A. (1994). Memory and metamemory considerations in the training of human beings. In J. Metcalfe &amp; A. Shimamura (Eds.), <em>Metacognition: Knowing about knowing</em> (pp. 185–205). MIT Press.</li>
+          <li>VanLehn, K., Siler, S., Murray, C., Yamauchi, T., &amp; Baggett, W. B. (2003). Why do only some events cause learning during human tutoring? <em>Cognition and Instruction</em>, 21(3), 209–249.</li>
+          <li>Metcalfe, J., &amp; Kornell, N. (2007). Principles of cognitive science in education: The effects of generation, errors, and feedback. <em>Psychonomic Bulletin &amp; Review</em>, 14(2), 225–238.</li>
+          <li>Metcalfe, J. (2009). Metacognitive judgments and control of study. <em>Current Directions in Psychological Science</em>, 18(3), 159–163.</li>
+        </ol>
+      </div>
+
       <hr>
 
       <p class="ed-meta ed-method-note"><span class="ed-method-label">Method note</span>The pause-detection logic was introduced in March 2026 and is the default behaviour of the production tutor. The detection is regex-based and explicitly trigger-only; the tutor does not currently infer uncertainty from tone.</p>
@@ -102,6 +129,6 @@
       <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
     </div>
   </footer>
-  <script src="../../editorial.js?cb=20260908"></script>
+  <script src="../../editorial.js?cb=20260924"></script>
 </body>
 </html>

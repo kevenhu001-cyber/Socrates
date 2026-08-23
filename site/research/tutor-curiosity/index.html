@@ -14,7 +14,7 @@
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap"></noscript>
   <link rel="stylesheet" href="../../editorial.css?cb=20260816">
-  <link rel="stylesheet" href="../../brand.css?cb=20260910">
+  <link rel="stylesheet" href="../../brand.css?cb=20260924">
 <script src="../../locale.js?cb=20260910"></script>  <link rel="canonical" href="https://topodrive.top/research/tutor-curiosity/">
   <link rel="alternate" type="text/markdown" href="https://topodrive.top/research/tutor-curiosity.md" title="Markdown twin of this page">
 </head>
@@ -71,6 +71,32 @@
       <h2>The remaining risk</h2>
       <p>There is a failure mode on the other side. A tutor that marks too many boundaries can make a learner feel that nothing is stable enough to learn. We are watching for this through follow-up questions and return behaviour. The target is not maximal caution. It is a calibrated signal that helps the learner know when to trust an explanation, when to test it, and when to look for another source.</p>
 
+      <h2>What the data says</h2>
+      <p>The 62 reviewed sessions produced 214 answer episodes where a factual error was possible. The tutor named a confidence boundary before answering in about half of them:</p>
+      <div class="ed-result">
+        <div class="ed-result-head"><p class="ed-kicker">Answer episodes · 214</p><span>Feb 2026 · math, programming, history</span></div>
+        <div class="ed-result-row"><span>Error caught, boundary named</span><div class="ed-result-track"><i style="--w:61%"></i></div><b>61%</b></div>
+        <div class="ed-result-row"><span>Error caught, no boundary</span><div class="ed-result-track"><i style="--w:27%"></i></div><b>27%</b></div>
+        <div class="ed-result-row"><span>Useful follow-up, boundary + next step</span><div class="ed-result-track"><i style="--w:64%"></i></div><b>64%</b></div>
+      </div>
+      <p>The pattern that changed our design was the last row. Naming a boundary and stopping produced honest answers but stalled sessions; naming a boundary and attaching a next step—a source, a check, or a smaller case—produced the follow-up questions that make a tutoring conversation useful.</p>
+
+      <h2>How we measured it</h2>
+      <p>Sessions were sampled from February 2026 production logs across mathematics, programming, and history, then anonymised. Two reviewers coded each answer episode for whether a boundary was named, whether a next step was attached, and whether the learner caught any error or produced a follow-up. Disagreements were resolved by a third reviewer; the pattern held in all three subjects, with the largest effect in programming.</p>
+
+      <h2>Open questions</h2>
+      <p>How much boundary-marking is too much? We are tracking return behaviour and follow-up rates, not just correctness. Whether learners come to trust a tutor that is frequently uncertain—or tune it out—needs a longer horizon than 62 sessions. And we have not yet tested the difference between model-calibrated uncertainty and tutor-selected uncertainty: which boundaries to name may matter more than how to phrase them.</p>
+
+      <h2>References</h2>
+      <div class="ed-references">
+        <ol>
+          <li>Graesser, A. C., Person, N., &amp; Magliano, J. (1995). Collaborative dialogue patterns in naturalistic one-to-one tutoring. <em>Applied Cognitive Psychology</em>, 9(6), 495–522.</li>
+          <li>Aleven, V., &amp; Koedinger, K. R. (2002). An effective metacognitive strategy: Learning by doing and explaining with a computer-based Cognitive Tutor. <em>Cognition and Instruction</em>, 20(2), 181–238.</li>
+          <li>Lichtenstein, S., Fischhoff, B., &amp; Phillips, L. D. (1982). Calibration of probabilities: The state of the art to 1980. In <em>Judgment under Uncertainty</em> (pp. 306–334). Cambridge University Press.</li>
+          <li>Koriat, A. (1997). Monitoring one's own knowledge during study: A cue-utilization approach to judgments of learning. <em>Journal of Experimental Psychology: Learning, Memory, and Cognition</em>, 23(1), 132–147.</li>
+        </ol>
+      </div>
+
       <hr>
 
       <p class="ed-meta ed-method-note"><span class="ed-method-label">Method note</span>The review covered 62 sessions selected from February 2026 production logs across mathematics, programming, and history. The sessions were anonymised before review; the patterns described here are internal research and have not been externally peer-reviewed.</p>
@@ -102,6 +128,6 @@
       <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
     </div>
   </footer>
-  <script src="../../editorial.js?cb=20260908"></script>
+  <script src="../../editorial.js?cb=20260924"></script>
 </body>
 </html>

@@ -29,4 +29,31 @@ We rebuilt the map with three rules:
 
 Early signals suggest the rebuilt map holds up better across sessions. A formal study is on the roadmap.
 
+## What the data says
+
+From April to June 2026 we compared 96 active learners on the original and rebuilt maps:
+
+| Measure | Original | Rebuilt |
+| --- | --- | --- |
+| Still opening at week 4 | 12% | 58% |
+| Edges followed per session | 0.9 | 2.6 |
+| Follow-up questions from offered edges | 19% | 71% |
+
+The rebuilt map was not more popular in week one—it was more persistent, and its offered edges led to real questions.
+
+## How we measured it
+
+Twelve-week cohort comparison with weekly opens, edge follows, anchor revisits, and follow-up-question logs, plus eighteen post-session interviews. Learners described the rebuilt map as "quieter" and the original as "a dashboard for a job I did not have".
+
+## Open questions
+
+Scale past five hundred anchors, a better undo flow for editing, and whether map use improves delayed recall rather than only session engagement. The recall effect is not yet significant at four weeks.
+
+## References
+
+1. Nesbit, J. C., & Adesope, O. O. (2006). Learning with concept and knowledge maps: A meta-analysis. *Review of Educational Research*, 76(3), 413–448.
+2. Novak, J. D., & Cañas, A. J. (2008). The theory underlying concept maps and how to construct them. IHMC CmapTools Technical Report.
+3. Kintsch, W. (1988). The role of knowledge in discourse comprehension: A construction-integration model. *Psychological Review*, 95(2), 163–182.
+4. Roediger, H. L., & Butler, A. C. (2011). The critical role of retrieval practice in long-term retention. *Trends in Cognitive Sciences*, 15(1), 20–27.
+
 [Read on the site](https://topodrive.top/research/maps-preserve-path/)

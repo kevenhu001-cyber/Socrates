@@ -2290,3 +2290,289 @@ body.ed-site .ed-home-hero + .ed-marquee::before { content: none; }
 @media (prefers-reduced-motion: reduce) {
   body.ed-site .ed-home-hero .ed-hero-flag span { animation: none !important; }
 }
+
+/* ==========================================================================
+   P. Anthropic premium layer — media frames, spotlight, article furniture
+   Appended last. Additive to the warm-paper system.
+   ========================================================================== */
+
+/* ── P0. Soft living glow behind the home hero (replaces retired aurora) ─ */
+body.ed-site .ed-home-hero::before {
+  content: "";
+  display: block;
+  position: absolute;
+  z-index: -1;
+  top: clamp(-160px, -8vw, -60px);
+  left: 50%;
+  width: min(1180px, 96vw);
+  height: clamp(420px, 48vw, 720px);
+  transform: translateX(-50%);
+  background:
+    radial-gradient(44% 52% at 24% 32%, rgba(184, 106, 69, .13), transparent 70%),
+    radial-gradient(38% 46% at 76% 22%, rgba(23, 23, 22, .05), transparent 72%),
+    radial-gradient(34% 40% at 52% 66%, rgba(184, 106, 69, .06), transparent 70%);
+  animation: sv-drift 20s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+/* ── P1. Home stage: deeper product-surface frame + glass chips ───────── */
+body.ed-site .ed-home-stage {
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    0 0 0 1px rgba(23, 23, 22, .06),
+    0 34px 80px -34px rgba(23, 23, 22, .5);
+}
+
+/* Soft vignette + top light so the artwork sits inside a physical panel. */
+body.ed-site .ed-home-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(180deg, transparent 62%, rgba(23, 23, 22, .42) 100%),
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, .07), transparent 58%);
+  pointer-events: none;
+}
+
+body.ed-site .ed-stage-index a {
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .14);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, .82);
+  transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s var(--sv-ease);
+}
+body.ed-site .ed-stage-index a::after { display: none; }
+body.ed-site .ed-stage-index a:hover {
+  background: rgba(255, 255, 255, .16);
+  color: #fff;
+  border-color: rgba(255, 255, 255, .28);
+  transform: translateY(-1px);
+}
+body.ed-site .ed-stage-caption { letter-spacing: .05em; }
+
+/* ── P2. Media frames: hairline ring, soft shadow, hover zoom ─────────── */
+body.ed-site .ed-publication-side img,
+body.ed-site .ed-showcase-media img,
+body.ed-site .ed-article-hero-media img,
+body.ed-site .ed-black-band-media img,
+body.ed-site .ed-inline-feature img,
+body.ed-site .ed-policy-visual img,
+body.ed-site .ed-learning-object img {
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .07), 0 18px 44px -26px rgba(23, 23, 22, .42);
+}
+
+body.ed-site .ed-publication-side img,
+body.ed-site .ed-showcase-media img,
+body.ed-site .ed-article-hero-media img,
+body.ed-site .ed-black-band-media img,
+body.ed-site .ed-inline-feature img {
+  transition: transform .9s var(--sv-ease), box-shadow .45s ease;
+  will-change: transform;
+}
+
+body.ed-site .ed-article-hero-media:hover,
+body.ed-site .ed-black-band-media:hover,
+body.ed-site .ed-showcase-media:hover,
+body.ed-site .ed-publication-side:hover {
+  box-shadow: 0 0 0 1px rgba(184, 106, 69, .35), 0 26px 60px -28px rgba(23, 23, 22, .5);
+}
+
+body.ed-site .ed-article-hero-media:hover img,
+body.ed-site .ed-black-band-media:hover img,
+body.ed-site .ed-showcase-media:hover img,
+body.ed-site .ed-publication-side:hover img {
+  transform: translateY(var(--parallax-y, 0)) scale(1.045);
+}
+
+body.ed-site .ed-showcase-media {
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+/* ── P3. Pointer spotlight on cards and dark bands ────────────────────── */
+body.ed-site .ed-portal,
+body.ed-site .ed-story-card,
+body.ed-site .ed-price-card,
+body.ed-site .ed-contact-card,
+body.ed-site .ed-course-card,
+body.ed-site .ed-featured {
+  background-image: radial-gradient(620px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(184, 106, 69, .08), transparent 44%);
+}
+body.ed-site .ed-black-band,
+body.ed-site .ed-inline-feature {
+  background-image: radial-gradient(760px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(184, 106, 69, .10), transparent 46%);
+}
+
+/* ── P4. Essay/publication rows: wash sweep on hover ──────────────────── */
+body.ed-site .ed-essay-row,
+body.ed-site .ed-publication-row {
+  border-radius: 10px;
+  background-image: linear-gradient(90deg, rgba(184, 106, 69, .07), transparent 65%);
+  background-size: 0% 100%;
+  background-repeat: no-repeat;
+  background-position: left center;
+  transition: transform .35s var(--sv-ease), background-size .4s ease;
+}
+body.ed-site .ed-essay-row:hover,
+body.ed-site .ed-publication-row:hover { background-size: 100% 100%; }
+
+/* ── P5. Staggered children inside reveal containers ──────────────────── */
+html.ed-js body.ed-site .ed-reveal > .ed-essay-row,
+html.ed-js body.ed-site .ed-reveal > .ed-publication-row,
+html.ed-js body.ed-site .ed-reveal > article {
+  opacity: 0;
+  transform: translateY(14px);
+}
+html.ed-js body.ed-site .ed-reveal.is-visible > .ed-essay-row,
+html.ed-js body.ed-site .ed-reveal.is-visible > .ed-publication-row,
+html.ed-js body.ed-site .ed-reveal.is-visible > article {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity .55s ease var(--d, 0s),
+    transform .55s var(--sv-ease) var(--d, 0s),
+    box-shadow .35s ease,
+    border-color .2s ease,
+    background-size .4s ease;
+}
+html.ed-js body.ed-site .ed-reveal > *:nth-child(1) { --d: 60ms; }
+html.ed-js body.ed-site .ed-reveal > *:nth-child(2) { --d: 130ms; }
+html.ed-js body.ed-site .ed-reveal > *:nth-child(3) { --d: 200ms; }
+html.ed-js body.ed-site .ed-reveal > *:nth-child(4) { --d: 270ms; }
+html.ed-js body.ed-site .ed-reveal > *:nth-child(5) { --d: 340ms; }
+html.ed-js body.ed-site .ed-reveal > *:nth-child(n+6) { --d: 410ms; }
+
+/* ── P6. Article furniture: contents card, result bars, references ────── */
+body.ed-site .ed-article-toc {
+  margin: 0 0 3.2em;
+  padding: 22px 26px;
+  border: 1px solid var(--site-line);
+  border-left: 2px solid var(--sv-clay);
+  border-radius: 0 14px 14px 0;
+  background: var(--site-paper-soft);
+}
+body.ed-site .ed-article-toc .ed-kicker { margin: 0 0 12px; }
+body.ed-site .ed-article-toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+body.ed-site .ed-article-toc a {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--site-ink-soft);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color .18s ease;
+}
+body.ed-site .ed-article-toc a::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sv-clay);
+  opacity: .35;
+  align-self: center;
+  transition: opacity .18s ease, transform .18s ease;
+}
+body.ed-site .ed-article-toc a:hover,
+body.ed-site .ed-article-toc a.is-active { color: var(--site-ink); }
+body.ed-site .ed-article-toc a.is-active::before { opacity: 1; transform: scale(1.4); }
+
+body.ed-site .ed-result {
+  margin: 2.2em 0;
+  padding: 24px 26px;
+  border: 1px solid var(--site-line);
+  border-radius: 14px;
+  background: var(--site-paper-soft);
+  font-family: var(--ed-sans);
+}
+body.ed-site .ed-result-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+body.ed-site .ed-result-head .ed-kicker { margin: 0; }
+body.ed-site .ed-result-head span {
+  font-family: var(--ed-mono);
+  font-size: 11px;
+  letter-spacing: .06em;
+  color: var(--site-ink-muted);
+  text-transform: uppercase;
+}
+body.ed-site .ed-result-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(140px, 2fr) 52px;
+  gap: 14px;
+  align-items: center;
+  padding: 9px 0;
+  border-top: 1px solid var(--site-line);
+}
+body.ed-site .ed-result-row:first-of-type { border-top: 0; }
+body.ed-site .ed-result-row span { font-size: 14.5px; color: var(--site-ink-soft); }
+body.ed-site .ed-result-row b {
+  font-variant-numeric: tabular-nums;
+  font-size: 14.5px;
+  color: var(--site-ink);
+  text-align: right;
+}
+body.ed-site .ed-result-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(23, 23, 22, .08);
+  overflow: hidden;
+}
+body.ed-site .ed-result-track i {
+  display: block;
+  height: 100%;
+  width: var(--w, 50%);
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--sv-clay), #d97b56);
+  transform-origin: left;
+  animation: edResultGrow 1s var(--sv-ease) .25s both;
+}
+@keyframes edResultGrow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+body.ed-site .ed-references {
+  margin: 2.6em 0 0;
+  padding-top: 1.4em;
+  border-top: 1px solid var(--site-line);
+}
+body.ed-site .ed-references ol {
+  margin: 0;
+  padding-left: 1.2em;
+  font-family: var(--ed-sans);
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--site-ink-muted);
+}
+body.ed-site .ed-references li { margin-bottom: .55em; }
+
+/* ── P7. Article hero media parallax target ───────────────────────────── */
+body.ed-site .ed-article-hero-media img {
+  transform: translateY(var(--parallax-y, 0));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.ed-site .ed-result-track i { animation: none; }
+  body.ed-site .ed-stage-index a:hover { transform: none; }
+  body.ed-site .ed-article-hero-media:hover img,
+  body.ed-site .ed-black-band-media:hover img,
+  body.ed-site .ed-showcase-media:hover img,
+  body.ed-site .ed-publication-side:hover img { transform: translateY(var(--parallax-y, 0)); }
+}

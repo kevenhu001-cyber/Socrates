@@ -436,6 +436,111 @@
   }
 
   /* --------------------------------------------------------------
+   * P. Anthropic premium interactions
+   * -------------------------------------------------------------- */
+
+  /* P1 — Pointer spotlight: cards and dark bands follow the cursor. */
+  function initCardSpotlight() {
+    var cards = document.querySelectorAll(
+      '.ed-portal, .ed-story-card, .ed-price-card, .ed-contact-card, ' +
+      '.ed-course-card, .ed-featured, .ed-black-band, .ed-inline-feature'
+    );
+    if (!cards.length) return;
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+
+    cards.forEach(function (card) {
+      card.addEventListener('pointermove', function (e) {
+        var rect = card.getBoundingClientRect();
+        var x = ((e.clientX - rect.left) / rect.width * 100).toFixed(2);
+        var y = ((e.clientY - rect.top) / rect.height * 100).toFixed(2);
+        card.style.setProperty('--spot-x', x + '%');
+        card.style.setProperty('--spot-y', y + '%');
+      });
+      card.addEventListener('pointerleave', function () {
+        card.style.removeProperty('--spot-x');
+        card.style.removeProperty('--spot-y');
+      });
+    });
+  }
+
+  /* P2 — Article furniture: auto contents card + scroll-spy. */
+  function initArticleFurniture() {
+    var article = document.querySelector('.ed-article');
+    if (!article) return;
+
+    var heads = Array.prototype.slice.call(article.querySelectorAll('h2'));
+    if (heads.length < 3) return;
+
+    var tocLinks = [];
+    heads.forEach(function (h, i) {
+      if (!h.id) h.id = 'sec-' + (i + 1);
+    });
+
+    var toc = document.createElement('nav');
+    toc.className = 'ed-article-toc';
+    var label = isChinesePage() ? '本页目录' : 'In this note';
+    toc.setAttribute('aria-label', label);
+    var kicker = document.createElement('p');
+    kicker.className = 'ed-kicker';
+    kicker.textContent = label;
+    var list = document.createElement('ol');
+
+    heads.forEach(function (h) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = '#' + h.id;
+      a.textContent = h.textContent;
+      a.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        try { history.replaceState(null, '', '#' + h.id); } catch (err) { /* noop */ }
+      });
+      li.appendChild(a);
+      list.appendChild(li);
+      tocLinks.push(a);
+    });
+    toc.appendChild(kicker);
+    toc.appendChild(list);
+    article.insertBefore(toc, article.firstChild);
+
+    if (!('IntersectionObserver' in window)) return;
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        tocLinks.forEach(function (a) {
+          a.classList.toggle('is-active', a.getAttribute('href') === '#' + entry.target.id);
+        });
+      });
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+    heads.forEach(function (h) { spy.observe(h); });
+  }
+
+  /* P3 — Article cover image: gentle parallax against scroll. */
+  function initArticleParallax() {
+    var media = document.querySelector('.ed-article-hero-media');
+    if (!media) return;
+    var img = media.querySelector('img');
+    if (!img) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (window.innerWidth < 900) return;
+
+    var ticking = false;
+    function update() {
+      var rect = media.getBoundingClientRect();
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      var p = Math.max(-1, Math.min(1, (rect.top + rect.height / 2 - vh / 2) / (vh * 0.9)));
+      img.style.setProperty('--parallax-y', (p * -14).toFixed(2) + 'px');
+      ticking = false;
+    }
+    function request() {
+      if (!ticking) { ticking = true; window.requestAnimationFrame(update); }
+    }
+    window.addEventListener('scroll', request, { passive: true });
+    window.addEventListener('resize', request, { passive: true });
+    request();
+  }
+
+  /* --------------------------------------------------------------
    * Boot
    * -------------------------------------------------------------- */
   function boot() {
@@ -450,6 +555,9 @@
     initialiseWordAnimation();
     initialiseFooter();
     initialiseScrollProgress();
+    initCardSpotlight();
+    initArticleFurniture();
+    initArticleParallax();
     if (window.SocratesLocale && typeof window.SocratesLocale.localizeLinks === 'function') {
       window.SocratesLocale.localizeLinks();
     }
