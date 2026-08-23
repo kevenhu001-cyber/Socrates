@@ -5,34 +5,31 @@
    actual visible typography — display serif, CJK stack, legal layout,
    product-block scale — is owned by brand.css. */
 :root {
-  --ed-paper: #f4f1e9;
-  --ed-paper-strong: #eee8dc;
-  --ed-paper-soft: #faf9f5;
-  --ed-sand: #e5dbc9;
-  --ed-sand-deep: #d9cdb9;
-  --ed-ink: #171716;
-  --ed-ink-soft: #56534e;
-  --ed-ink-muted: #77716a;
-  --ed-line: #d9d0c3;
-  --ed-line-dark: rgba(255, 255, 255, .17);
-  --ed-black: #171716;
-  --ed-black-soft: #22201d;
-  --ed-clay: #9a5a3b;
-  --ed-clay-warm: #b86a45;
-  --ed-clay-soft: rgba(154, 90, 59, .12);
-  /* Legacy aliases — kept so selectors that still reference --ed-serif
-     and --ed-sans below don't crash, but brand.css wins on the visible
-     surface. We deliberately removed "Segoe UI" and the system CJK
-     fallbacks so Microsoft YaHei / SimSun never leak through on Windows. */
+  --ed-paper: #0a0a0a;
+  --ed-paper-strong: #161616;
+  --ed-paper-soft: #111111;
+  --ed-sand: #1c1c1c;
+  --ed-sand-deep: #222222;
+  --ed-ink: #f5f1e8;
+  --ed-ink-soft: #a8a29e;
+  --ed-ink-muted: #78716c;
+  --ed-line: rgba(245, 241, 232, 0.08);
+  --ed-line-dark: rgba(245, 241, 232, 0.06);
+  --ed-black: #050505;
+  --ed-black-soft: #0d0d0d;
+  --ed-clay: #c4704a;
+  --ed-clay-warm: #d97757;
+  --ed-clay-soft: rgba(196, 112, 74, 0.15);
+  /* Legacy aliases */
   --ed-serif: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Serif SC", "Noto Sans SC", "PingFang SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
   --ed-sans: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
   --ed-mono: "Geist Mono", "JetBrains Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
   --ed-radius-lg: 28px;
   --ed-radius-md: 20px;
   --ed-radius-sm: 14px;
-  --ed-shadow: 0 16px 42px rgba(33, 28, 22, .08);
-  --ed-shadow-strong: 0 22px 60px rgba(33, 28, 22, .14);
-  --ed-shadow-button: 0 6px 18px rgba(23, 23, 22, .22);
+  --ed-shadow: 0 16px 42px rgba(0, 0, 0, 0.8);
+  --ed-shadow-strong: 0 22px 60px rgba(0, 0, 0, 0.9);
+  --ed-shadow-button: 0 6px 18px rgba(0, 0, 0, 0.5);
   --ed-ease: cubic-bezier(.22, .76, .26, 1);
   --ed-ease-out: cubic-bezier(.16, 1, .3, 1);
   --ed-ease-soft: cubic-bezier(.22, .61, .36, 1);
@@ -41,7 +38,7 @@
 }
 
 * { box-sizing: border-box; }
-html { background: var(--ed-paper); scroll-behavior: smooth; }
+html { background: var(--ed-paper); color: var(--ed-ink); scroll-behavior: smooth; }
 body.ed-site {
   min-width: 320px;
   margin: 0;
@@ -176,9 +173,9 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   -webkit-tap-highlight-color: transparent;
   transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
-.ed-button { color: var(--ed-paper); background: var(--ed-ink); }
-.ed-button:hover { color: var(--ed-paper); background: #000; border-color: #000; }
-.ed-button:active { background: var(--ed-clay-warm); border-color: var(--ed-clay-warm); }
+.ed-button { color: #2a1409; background: var(--ed-clay); border-color: var(--ed-clay); font-weight: 600; }
+.ed-button:hover { color: #2a1409; background: var(--ed-clay-warm); border-color: var(--ed-clay-warm); }
+.ed-button:active { transform: scale(.98); }
 .ed-button-quiet { color: var(--ed-ink); background: transparent; border-color: var(--ed-line); }
 .ed-button-quiet:hover { color: var(--ed-ink); border-color: var(--ed-ink); }
 .ed-button-quiet:active { background: var(--ed-paper-strong); }
@@ -345,7 +342,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   right: 0;
   left: 0;
   height: 48%;
-  background: linear-gradient(to bottom, rgba(11, 11, 12, .86), rgba(11, 11, 12, .34) 58%, rgba(11, 11, 12, 0));
+  background: rgba(0, 0, 0, .4);
   pointer-events: none;
 }
 .ed-stage-veil { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: var(--ed-black); pointer-events: none; }
@@ -1329,3 +1326,976 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
 
   .ed-article-foot-grid { grid-template-columns: 1fr; }
 }
+
+/* ==========================================================================
+   CLAUDE BY ANTHROPIC AESTHETIC SYSTEM — pure dark edition
+   Near-black canvas, warm cream ink, restrained terracotta accents.
+   ========================================================================== */
+
+:root {
+  --claude-bg: #0a0a0a;
+  --claude-bg-deep: #050505;
+  --claude-surface: #111111;
+  --claude-surface-sub: #0d0d0d;
+  --claude-border: rgba(245, 241, 232, 0.08);
+  --claude-border-hover: rgba(245, 241, 232, 0.20);
+  --claude-ink: #f5f1e8;
+  --claude-ink-secondary: #a8a29e;
+  --claude-ink-tertiary: #78716c;
+  --claude-clay: #c4704a;
+  --claude-clay-bright: #d97757;
+  --claude-clay-deep: #a85a3a;
+  --claude-on-clay: #1a0e07;
+  --claude-clay-tint: rgba(196, 112, 74, 0.14);
+  --claude-radius-pill: 9999px;
+  --claude-radius-card: 20px;
+  --claude-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Claude Hero Section — two-column, headline left / living mascot right */
+.claude-hero-section {
+  position: relative;
+  padding: clamp(56px, 7vw, 104px) 0 clamp(48px, 6vw, 88px);
+  background: transparent;
+  text-align: left;
+  overflow: hidden;
+}
+
+/* Ambient clay glow removed for a flat, solid dark canvas. */
+.claude-hero-section::before { display: none; }
+
+.claude-hero-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, .94fr);
+  gap: clamp(36px, 5vw, 84px);
+  align-items: center;
+}
+
+.claude-hero-copy {
+  max-width: 620px;
+}
+
+.claude-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--ed-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: var(--claude-clay-bright);
+  margin-bottom: 26px;
+}
+
+.claude-hero-eyebrow::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--claude-clay);
+  box-shadow: 0 0 0 4px rgba(217, 119, 87, .18);
+}
+
+.claude-hero-title {
+  font-family: var(--site-serif-latin);
+  font-size: clamp(46px, 5.6vw, 82px);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -.028em;
+  color: var(--claude-ink);
+  max-width: 12ch;
+  margin: 0 0 22px;
+}
+
+html:lang(zh) .claude-hero-title {
+  font-family: var(--site-serif-cjk);
+  letter-spacing: -.01em;
+  line-height: 1.18;
+  max-width: 16ch;
+}
+
+.claude-hero-title em,
+.claude-hero-title .accent {
+  font-style: italic;
+  color: var(--claude-clay-bright);
+}
+
+html:lang(zh) .claude-hero-title em,
+html:lang(zh) .claude-hero-title .accent {
+  font-style: normal;
+}
+
+/* Hand-drawn clay underline beneath the accent phrase */
+.squiggle-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.squiggle-wrap .squiggle-svg {
+  position: absolute;
+  left: 2%;
+  right: -1%;
+  bottom: -.16em;
+  width: 99%;
+  height: .28em;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.squiggle-svg path {
+  fill: none;
+  stroke: var(--claude-clay);
+  stroke-width: 7;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+html.ed-js .squiggle-svg path {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+}
+
+html.ed-js .squiggle-svg.is-drawn path {
+  transition: stroke-dashoffset 1s var(--claude-ease) .55s;
+  stroke-dashoffset: 0;
+}
+
+.claude-hero-subtitle {
+  font-family: var(--site-sans-latin);
+  font-size: clamp(16.5px, 1.3vw, 19px);
+  font-weight: 400;
+  line-height: 1.62;
+  color: var(--claude-ink-secondary);
+  max-width: 54ch;
+  margin: 0 0 30px;
+}
+
+html:lang(zh) .claude-hero-subtitle {
+  font-family: var(--site-sans-cjk);
+  line-height: 1.85;
+}
+
+.claude-hero-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 14px;
+  margin-bottom: 30px;
+}
+
+.claude-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 28px;
+  background: var(--claude-clay);
+  color: var(--claude-on-clay) !important;
+  border-radius: var(--claude-radius-pill);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--claude-clay);
+  box-shadow: 0 10px 30px -12px rgba(217, 119, 87, .55);
+  transition: all .25s var(--claude-ease);
+}
+
+.claude-btn-primary:hover {
+  background: var(--claude-clay-bright);
+  border-color: var(--claude-clay-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 38px -14px rgba(217, 119, 87, .65);
+}
+
+.claude-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.claude-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 26px;
+  background: rgba(250, 245, 235, .03);
+  color: var(--claude-ink) !important;
+  border-radius: var(--claude-radius-pill);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid var(--claude-border);
+  transition: all .25s var(--claude-ease);
+}
+
+.claude-btn-secondary:hover {
+  background: rgba(250, 245, 235, .07);
+  border-color: var(--claude-border-hover);
+  transform: translateY(-2px);
+}
+
+.claude-btn-secondary:active {
+  transform: scale(0.98);
+}
+
+/* Prompt bar — mirrors Claude's "Ask Claude" input */
+.claude-prompt-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 560px;
+  padding: 7px 7px 7px 20px;
+  background: rgba(250, 245, 235, .045);
+  border: 1px solid var(--claude-border);
+  border-radius: 16px;
+  transition: border-color .2s ease, box-shadow .25s var(--claude-ease), background-color .2s ease;
+}
+
+.claude-prompt-box:hover {
+  border-color: rgba(250, 245, 235, .18);
+}
+
+.claude-prompt-box:focus-within {
+  border-color: rgba(217, 119, 87, .65);
+  background: rgba(250, 245, 235, .06);
+  box-shadow: 0 0 0 4px rgba(217, 119, 87, .13);
+}
+
+.claude-prompt-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 0;
+  background: transparent;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--claude-ink);
+  font-size: 15.5px;
+}
+
+.claude-prompt-input::placeholder {
+  color: var(--claude-ink-tertiary);
+  opacity: 1;
+}
+
+.claude-prompt-input:focus {
+  outline: none;
+}
+
+.claude-prompt-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 11px 20px;
+  background: var(--claude-clay);
+  color: var(--claude-on-clay);
+  border: 0;
+  border-radius: 11px;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  cursor: pointer;
+  transition: background-color .2s ease, transform .2s var(--claude-ease), box-shadow .2s ease;
+}
+
+.claude-prompt-submit:hover {
+  background: var(--claude-clay-bright);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px -8px rgba(217, 119, 87, .6);
+}
+
+.claude-prompt-submit:active {
+  transform: scale(.97);
+}
+
+/* Chip row — Write/Learn/Code equivalents */
+.claude-chip-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.claude-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  background: rgba(250, 245, 235, .04);
+  border: 1px solid var(--claude-border);
+  border-radius: var(--claude-radius-pill);
+  color: var(--claude-ink-secondary) !important;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all .2s var(--claude-ease);
+}
+
+.claude-chip svg {
+  color: var(--claude-clay-bright);
+  opacity: .9;
+}
+
+.claude-chip:hover {
+  color: var(--claude-ink) !important;
+  background: rgba(250, 245, 235, .07);
+  border-color: rgba(250, 245, 235, .22);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   INTERACTIVE PRODUCT SHOWCASE (CALM & SPACIOUS)
+   ========================================================================== */
+
+.claude-showcase-section {
+  padding: 24px 0 110px;
+  background: transparent;
+}
+
+.claude-showcase-wrap {
+  background: var(--claude-surface);
+  border: 1px solid var(--claude-border);
+  border-radius: 26px;
+  padding: clamp(22px, 3vw, 36px) clamp(20px, 3vw, 38px) clamp(28px, 3vw, 42px);
+  max-width: 1160px;
+  margin: 0 auto;
+  box-shadow: 0 30px 80px -40px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(250, 245, 235, .05);
+}
+
+.claude-showcase-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--claude-border);
+  margin-bottom: 30px;
+}
+
+.claude-tab-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--claude-radius-pill);
+  font-family: var(--ed-mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--claude-ink-secondary);
+  cursor: pointer;
+  transition: all .2s var(--claude-ease);
+}
+
+.claude-tab-pill:hover {
+  color: var(--claude-ink);
+  background: rgba(250, 245, 235, .05);
+}
+
+.claude-tab-pill.is-active {
+  background: var(--claude-clay-tint);
+  color: var(--claude-clay-bright);
+  border-color: rgba(217, 119, 87, .38);
+}
+
+.claude-sandbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  gap: clamp(22px, 3vw, 36px);
+  min-height: 440px;
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .claude-hero-grid { grid-template-columns: 1fr; }
+  .claude-sandbox-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+/* Left Pane: Conversation */
+.claude-chat-pane {
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 24px;
+  padding: 10px 0;
+}
+
+.claude-chat-turn {
+  display: none;
+  opacity: 0;
+}
+
+.claude-chat-turn.is-active {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: claudeFadeUp .35s var(--claude-ease) forwards;
+}
+
+.claude-bubble-user {
+  background: var(--claude-surface-sub);
+  border: 1px solid var(--claude-border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--claude-ink);
+}
+
+.claude-bubble-socrates {
+  background: transparent;
+  padding: 0 4px;
+  font-size: 15.5px;
+  line-height: 1.68;
+  color: #d8d2c6;
+}
+
+.claude-bubble-socrates p {
+  margin: 0 0 14px;
+}
+
+.claude-bubble-socrates p:last-child {
+  margin-bottom: 0;
+}
+
+.claude-bubble-socrates strong {
+  color: var(--claude-ink);
+  font-weight: 500;
+}
+
+.claude-bubble-socrates em {
+  font-family: var(--site-serif-latin);
+  color: var(--claude-ink);
+  font-style: italic;
+}
+
+html:lang(zh) .claude-bubble-socrates em {
+  font-family: var(--site-serif-cjk);
+}
+
+.claude-bubble-socrates ul,
+.claude-bubble-socrates ol {
+  margin: 12px 0 0;
+  padding-left: 20px;
+}
+
+.claude-bubble-socrates li {
+  margin-bottom: 8px;
+  color: var(--claude-ink-secondary);
+}
+
+/* Right Pane: Artifact */
+.claude-artifact-pane {
+  background: var(--claude-bg-deep);
+  border: 1px solid var(--claude-border);
+  border-radius: 18px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.claude-artifact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--claude-border);
+  margin-bottom: 24px;
+}
+
+.claude-artifact-title {
+  font-family: var(--ed-mono);
+  font-size: 12px;
+  letter-spacing: .04em;
+  color: var(--claude-ink-tertiary);
+}
+
+.claude-artifact-copy-btn {
+  font-family: var(--ed-mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  background: rgba(250, 245, 235, .05);
+  border: 1px solid var(--claude-border);
+  border-radius: 6px;
+  color: var(--claude-ink-secondary);
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.claude-artifact-copy-btn:hover {
+  background: var(--claude-clay-tint);
+  color: var(--claude-clay-bright);
+  border-color: rgba(217, 119, 87, .45);
+}
+
+.claude-artifact-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.claude-tab-content {
+  display: none;
+  opacity: 0;
+}
+
+.claude-tab-content.is-active {
+  display: block;
+  animation: claudeFadeUp .35s var(--claude-ease) forwards;
+}
+
+@keyframes claudeFadeUp {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Artifact Content Blocks */
+.claude-proof-view {
+  font-family: var(--ed-mono);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--claude-ink);
+}
+
+.claude-proof-line {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: rgba(250, 245, 235, .03);
+  border-left: 2px solid var(--claude-clay);
+  border-radius: 0 6px 6px 0;
+}
+
+.claude-tree-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.claude-tree-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 16px;
+  background: rgba(250, 245, 235, .03);
+  border: 1px solid var(--claude-border);
+  border-radius: 11px;
+  font-size: 13.5px;
+  color: #d8d2c6;
+  transition: border-color .2s ease, transform .2s var(--claude-ease);
+}
+
+.claude-tree-item:hover {
+  border-color: rgba(250, 245, 235, .18);
+  transform: translateX(3px);
+}
+
+.claude-tree-item span.tag {
+  flex: 0 0 auto;
+  font-family: var(--ed-mono);
+  font-size: 10.5px;
+  letter-spacing: .04em;
+  color: var(--claude-ink-tertiary);
+}
+
+.claude-tree-item span.tag.tag-accent {
+  color: var(--claude-clay-bright);
+}
+
+/* ==========================================================================
+   THREE CORE PILLARS (CLEAN & AIRY)
+   ========================================================================== */
+
+.claude-pillars-section {
+  padding: 88px 0 110px;
+  background: transparent;
+  border-top: 1px solid var(--claude-border);
+}
+
+.claude-pillars-header {
+  max-width: 680px;
+  margin-bottom: 56px;
+}
+
+.claude-pillars-header h2 {
+  font-family: var(--site-serif-latin);
+  font-size: clamp(32px, 3.8vw, 50px);
+  font-weight: 400;
+  line-height: 1.12;
+  color: var(--claude-ink);
+  margin: 0 0 16px;
+}
+
+html:lang(zh) .claude-pillars-header h2 {
+  font-family: var(--site-serif-cjk);
+}
+
+.claude-pillars-header p {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--claude-ink-secondary);
+  margin: 0;
+}
+
+.claude-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+}
+
+@media (max-width: 860px) {
+  .claude-pillars-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+}
+
+.claude-pillar-card {
+  position: relative;
+  background: var(--claude-surface-sub);
+  border: 1px solid var(--claude-border);
+  border-radius: var(--claude-radius-card);
+  padding: 36px 32px;
+  overflow: hidden;
+  transition: border-color .25s var(--claude-ease), transform .25s var(--claude-ease), background-color .25s ease, box-shadow .25s ease;
+}
+
+.claude-pillar-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 32px;
+  right: 32px;
+  height: 2px;
+  border-radius: 0 0 3px 3px;
+  background: var(--claude-clay);
+  opacity: 0;
+  transition: opacity .3s var(--claude-ease);
+}
+
+.claude-pillar-card:hover {
+  border-color: rgba(217, 119, 87, .4);
+  background: var(--claude-surface);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 48px -28px rgba(0, 0, 0, .6);
+}
+
+.claude-pillar-card:hover::before {
+  opacity: 1;
+}
+
+.claude-pillar-num {
+  display: inline-block;
+  font-family: var(--ed-mono);
+  font-size: 11.5px;
+  letter-spacing: .06em;
+  color: var(--claude-clay-bright);
+  padding: 5px 12px;
+  background: var(--claude-clay-tint);
+  border-radius: var(--claude-radius-pill);
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.claude-pillar-card h3 {
+  font-family: var(--site-serif-latin);
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--claude-ink);
+  line-height: 1.25;
+  margin: 0 0 14px;
+}
+
+html:lang(zh) .claude-pillar-card h3 {
+  font-family: var(--site-serif-cjk);
+}
+
+.claude-pillar-card p {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--claude-ink-secondary);
+  margin: 0;
+}
+
+/* ==========================================================================
+   MANIFESTO / PRINCIPLES (QUIET EDITORIAL)
+   ========================================================================== */
+
+.claude-manifesto-band {
+  position: relative;
+  background: var(--claude-bg-deep);
+  padding: 104px 0;
+  border-top: 1px solid var(--claude-border);
+  border-bottom: 1px solid var(--claude-border);
+}
+
+.claude-manifesto-header {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.claude-manifesto-title {
+  font-family: var(--site-serif-latin);
+  font-size: clamp(36px, 4.4vw, 56px);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  color: var(--claude-ink);
+  margin: 18px 0 24px;
+}
+
+html:lang(zh) .claude-manifesto-title {
+  font-family: var(--site-serif-cjk);
+}
+
+.claude-manifesto-lead {
+  font-size: clamp(16px, 1.25vw, 19px);
+  line-height: 1.7;
+  color: var(--claude-ink-secondary);
+  margin: 0 auto 38px;
+  max-width: 640px;
+}
+
+/* Final CTA Section */
+.claude-cta-section {
+  position: relative;
+  padding: 110px 0 130px;
+  background: transparent;
+  text-align: center;
+  overflow: hidden;
+}
+
+.claude-cta-section::before { display: none; }
+
+.claude-cta-section .ed-shell {
+  position: relative;
+}
+
+.claude-cta-title {
+  font-family: var(--site-serif-latin);
+  font-size: clamp(36px, 4.2vw, 54px);
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--claude-ink);
+  margin: 0 auto 18px;
+}
+
+html:lang(zh) .claude-cta-title {
+  font-family: var(--site-serif-cjk);
+}
+
+.claude-cta-subtitle {
+  font-size: 17px;
+  color: var(--claude-ink-secondary);
+  margin: 0 auto 38px;
+}
+
+/* ==========================================================================
+   ANTHROPIC-STYLE ABSTRACT HERO ARTWORK — Epistemic Line Art & Geometry
+   ========================================================================== */
+
+.claude-hero-stage {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.claude-hero-art,
+.claude-mascot {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  perspective: 1000px;
+}
+
+.claude-hero-art svg,
+.claude-mascot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* Layered optical depth classes */
+.art-layer-bg,
+.art-layer-mid,
+.art-layer-core,
+.art-layer-nodes,
+.art-layer-horizon {
+  transition: transform .28s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: 270px 250px;
+}
+
+/* Gentle ambient breathing oscillation */
+.art-scene,
+.mascot-scene {
+  animation: artFloat 7.2s ease-in-out infinite alternate;
+  transform-origin: 270px 250px;
+}
+
+@keyframes artFloat {
+  0%   { transform: translateY(4px); }
+  100% { transform: translateY(-6px); }
+}
+
+/* Slow, graceful celestial orbit rotation */
+.art-orbit-slow,
+.mascot-orbit {
+  transform-origin: 270px 245px;
+  animation: artOrbitSlow 84s linear infinite;
+}
+
+.art-orbit-reverse {
+  transform-origin: 270px 245px;
+  animation: artOrbitSlow 110s linear infinite reverse;
+}
+
+@keyframes artOrbitSlow {
+  to { transform: rotate(360deg); }
+}
+
+/* Subtle solar core pulse */
+.art-core-pulse,
+.mascot-moon {
+  transform-origin: center;
+  animation: artCorePulse 5.4s ease-in-out infinite alternate;
+}
+
+@keyframes artCorePulse {
+  0%   { transform: scale(1); opacity: 0.95; }
+  100% { transform: scale(1.04); opacity: 1; }
+}
+
+/* Refined floating glyph (∴, φ, λ, ∫, ∇, Σ, α) on interaction */
+.art-glyph,
+.mascot-glyph {
+  position: absolute;
+  left: var(--gx, 50%);
+  top: 25%;
+  font-family: var(--site-serif-latin);
+  font-style: italic;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--claude-clay-bright);
+  text-shadow: 0 0 16px rgba(217, 119, 87, .55);
+  animation: artGlyphRise 1.1s var(--claude-ease) forwards;
+  pointer-events: none;
+}
+
+html:lang(zh) .art-glyph,
+html:lang(zh) .mascot-glyph { font-family: var(--site-serif-latin); }
+
+@keyframes artGlyphRise {
+  0%   { opacity: 0; transform: translateY(8px) scale(.6) rotate(-4deg); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-75px) scale(1.15) rotate(var(--grot, 6deg)); }
+}
+
+/* Radiant ripple pulse emitted on click */
+.art-pulse-ring {
+  position: absolute;
+  left: var(--px, 50%);
+  top: var(--py, 50%);
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  margin-top: -10px;
+  border-radius: 50%;
+  border: 1px solid var(--claude-clay-bright);
+  pointer-events: none;
+  opacity: 0;
+  animation: artPulseWave 0.9s var(--claude-ease) forwards;
+}
+
+@keyframes artPulseWave {
+  0%   { opacity: 0.8; transform: scale(0.2); }
+  100% { opacity: 0; transform: scale(7.5); }
+}
+
+/* Stroke draw-in — gated behind html.ed-js so no-JS visitors see full art */
+html.ed-js .claude-hero-art path[data-draw],
+html.ed-js .claude-hero-art line[data-draw],
+html.ed-js .claude-hero-art circle[data-draw],
+html.ed-js .claude-hero-art ellipse[data-draw],
+html.ed-js .claude-hero-art polygon[data-draw],
+html.ed-js .claude-mascot path[data-draw],
+html.ed-js .claude-mascot line[data-draw],
+html.ed-js .claude-mascot circle[data-draw],
+html.ed-js .claude-mascot ellipse[data-draw] {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+}
+
+html.ed-js .claude-hero-art.is-drawn path[data-draw],
+html.ed-js .claude-hero-art.is-drawn line[data-draw],
+html.ed-js .claude-hero-art.is-drawn circle[data-draw],
+html.ed-js .claude-hero-art.is-drawn ellipse[data-draw],
+html.ed-js .claude-hero-art.is-drawn polygon[data-draw],
+html.ed-js .claude-mascot.is-drawn path[data-draw],
+html.ed-js .claude-mascot.is-drawn line[data-draw],
+html.ed-js .claude-mascot.is-drawn circle[data-draw],
+html.ed-js .claude-mascot.is-drawn ellipse[data-draw] {
+  transition: stroke-dashoffset 1.35s var(--claude-ease) var(--d, 0s);
+  stroke-dashoffset: 0;
+}
+
+html.ed-js .claude-hero-art [data-fade],
+html.ed-js .claude-mascot [data-fade] {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+html.ed-js .claude-hero-art.is-drawn [data-fade],
+html.ed-js .claude-mascot.is-drawn [data-fade] {
+  transition: opacity .85s ease var(--d, .6s), transform .85s var(--claude-ease) var(--d, .6s);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .art-scene,
+  .mascot-scene,
+  .art-orbit-slow,
+  .art-orbit-reverse,
+  .mascot-orbit,
+  .art-core-pulse,
+  .mascot-moon,
+  .art-glyph,
+  .mascot-glyph,
+  .art-pulse-ring {
+    animation: none !important;
+  }
+
+  html.ed-js .claude-hero-art path[data-draw],
+  html.ed-js .claude-hero-art line[data-draw],
+  html.ed-js .claude-hero-art circle[data-draw],
+  html.ed-js .claude-hero-art ellipse[data-draw],
+  html.ed-js .claude-mascot path[data-draw],
+  html.ed-js .claude-mascot line[data-draw] {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
+
+  html.ed-js .claude-hero-art [data-fade],
+  html.ed-js .claude-mascot [data-fade] {
+    opacity: 1;
+  }
+}
+
+
+

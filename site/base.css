@@ -111,16 +111,6 @@ textarea:focus-visible {
 
 .bg-grid {
   display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background-image:
-    linear-gradient(hsl(var(--neu-line) / .22) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--neu-line) / .22) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at top, black 0%, transparent 65%);
-  -webkit-mask-image: radial-gradient(ellipse at top, black 0%, transparent 65%);
-  pointer-events: none;
 }
 
 /* ─────────────────────────────────────────────────────────────────────
