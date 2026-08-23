@@ -12,6 +12,7 @@
 
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
+import { resourceScope } from '../middleware/scopes.js';
 import { audit } from '../middleware/audit.js';
 import { callChatCompletion } from '../services/llm.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
@@ -35,7 +36,7 @@ const router = Router();
    flips the "Guest mode" checkbox at sign-in as a UI hint, but the
    underlying session is still a full authenticated account (just
    marked isGuest in DB). */
-router.post('/', requireAuth, chatRateLimitDispatch, audit('chat:sync'), async (req, res, next) => {
+router.post('/', requireAuth, resourceScope('chat'), chatRateLimitDispatch, audit('chat:sync'), async (req, res, next) => {
   try {
     const prep = await prepareChatRequest(req, res);
     if (!prep.ok) return;

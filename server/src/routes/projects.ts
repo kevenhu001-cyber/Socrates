@@ -8,10 +8,11 @@ import {
   mistakes, agentRuns, usageEvents, files, executions,
 } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { resourceScope } from '../middleware/scopes.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
 
 const router = Router();
-router.use(requireAuth);
+router.use(requireAuth, resourceScope('projects'));
 
 /* GET /api/projects — list projects */
 router.get('/', async (req, res, next) => {

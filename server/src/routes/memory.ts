@@ -3,11 +3,12 @@ import { eq, and, desc, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { memories } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { resourceScope } from '../middleware/scopes.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
 import { isUuid } from '../lib/validate.js';
 
 const router = Router();
-router.use(requireAuth);
+router.use(requireAuth, resourceScope('memory'));
 
 /* GET /api/memory (cursor-paginated) */
 router.get('/', async (req, res, next) => {

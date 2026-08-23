@@ -288,3 +288,32 @@ export const clientErrorLimiter = rateLimit({
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many error reports.'),
 });
+
+/* P_rate-limit-headers — default bucket for every /api request. The
+ * per-endpoint limiters above stay the real abuse controls; this one exists
+ * so EVERY API response advertises standard RateLimit-Limit/-Remaining/
+ * -Reset headers (RFC draft-7) and agents can self-throttle without
+ * guessing. 600/min/IP is far above any legitimate SPA or agent burst —
+ * it is a ceiling, not a target — and it composes with (never replaces)
+ * the endpoint limiters that run later in the chain. */
+export const apiDefaultLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 600,
+  keyGenerator: (req) => `ip:${req.ip}`,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: jsonLimit('TOO_MANY_REQUESTS', 'API rate limit exceeded.'),
+});
+
+/* Dynamic client registration (RFC 7591) is open by design — that is the
+ * point of agent_auth — so the only abuse gate is a hard per-IP cap.
+ * 20 registrations/hour/IP is generous for any real integrator and useless
+ * for a bulk-registration flood. */
+export const oauthRegisterLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  keyGenerator: (req) => `ip:${req.ip}`,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: jsonLimit('TOO_MANY_REQUESTS', 'Too many client registrations.'),
+});

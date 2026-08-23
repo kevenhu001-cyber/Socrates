@@ -176,6 +176,20 @@
       "when": 1787586400000,
       "tag": "0024_active_session_index",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1787672400000,
+      "tag": "0025_oauth_agent_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1787758800000,
+      "tag": "0026_oauth_client_owner_nullable",
+      "breakpoints": true
     }
   ]
 }

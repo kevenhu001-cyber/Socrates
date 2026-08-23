@@ -36,6 +36,13 @@ import knowledgeBoundaryRouter from './routes/knowledgeBoundary.js';
 import visionRouter from './routes/vision.js';
 import statusRouter from './routes/status.js';
 import mobileRouter from './routes/mobile.js';
+import mcpRouter from './routes/mcp.js';
+import mcpDocsRouter from './routes/mcpDocs.js';
+import nlwebRouter from './routes/nlweb.js';
+import oauthRouter from './routes/oauth.js';
+import { buildAuthorizationServerMetadata } from './lib/oauthMeta.js';
+import { apiDefaultLimiter } from './middleware/rateLimit.js';
+import { idempotencyMiddleware } from './middleware/idempotency.js';
 import { recordRequestSample } from './services/statusMonitor.js';
 import executionRouter from './routes/execution.js';
 import scheduledTasksRouter from './routes/scheduledTasks.js';
@@ -387,6 +394,48 @@ app.use('/api/status', statusRouter);
 // Android shell bootstrap (public, secret-free). Mounted before auth routes
 // so a fresh install can verify its same-origin API contract before login.
 app.use('/api/mobile', mobileRouter);
+
+// P_mcp-discovery — Model Context Protocol endpoint (Streamable HTTP).
+// Public discovery surface; six read-only tools, no write capability. Mounted
+// alongside the other public routers so the CSRF middleware doesn't block
+// non-browser MCP clients. See server/src/middleware/csrf.ts#MCP_PATHS.
+app.use('/api/mcp', mcpRouter);
+
+// Phase D — OAuth 2.0 authorization server (authorization_code + PKCE S256,
+// refresh rotation, RFC 7009 revocation). The token/revoke endpoints carry no
+// ambient sid cookie, so csrf.ts#OAUTH_TOKEN_PATHS skips them; the consent
+// screen enforces its own hidden-field double-submit inside the router.
+app.use('/api/oauth', oauthRouter);
+
+// P_rate-limit-headers — default bucket so every /api response carries
+// RateLimit-* headers. Mounted before all routers; endpoint limiters
+// compose on top. The Idempotency-Key middleware sits beside it: writes
+// that carry a key get their JSON response replayed on retry (24 h).
+app.use('/api', apiDefaultLimiter, idempotencyMiddleware);
+
+/* P_docs-mcp — the "learn" half of MCP coverage. Separate server instance
+ * from the product surface at /api/mcp; tools answer documentation
+ * questions only. */
+app.use('/api/mcp/docs', mcpDocsRouter);
+
+// P_nlweb — NLWeb-conformant natural-language query surface over Socrates'
+// public corpus. /api/nlweb/ask + /stream, with the short /api/ask alias.
+app.use('/api/nlweb', nlwebRouter);
+app.use('/api', nlwebRouter);
+
+/* Phase D discovery — RFC 8414 §2 authorization-server metadata plus the
+ * RFC 8414 §5 path-inserted form for our pathed issuer
+ * (https://app.topodrive.top/api/oauth → /.well-known/oauth-authorization-server/api/oauth),
+ * and an OIDC-style alias. Mounted BEFORE the SPA fallback so these paths are
+ * served as JSON on any host that proxies to Express. */
+const oauthServerMetadata = buildAuthorizationServerMetadata();
+function sendOauthMetadata(_req: express.Request, res: express.Response) {
+  res.set('Cache-Control', 'public, max-age=300');
+  return res.json(oauthServerMetadata);
+}
+app.get('/.well-known/oauth-authorization-server', sendOauthMetadata);
+app.get('/.well-known/oauth-authorization-server/api/oauth', sendOauthMetadata);
+app.get('/.well-known/openid-configuration', sendOauthMetadata);
 
 // Public configuration endpoint (no auth required).
 // Tells the SPA whether the built-in Beagle provider is available.

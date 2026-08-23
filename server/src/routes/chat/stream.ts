@@ -47,6 +47,7 @@ import { executeProjectConnectorTool, PROJECT_CONNECTOR_TOOL_NAMES } from '../..
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../../services/usageTracker.js';
 import { trackSseConnection, startSseKeepalive } from '../../lib/sse.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { resourceScope } from '../../middleware/scopes.js';
 
 import {
   prepareChatRequest,
@@ -122,7 +123,7 @@ export function registerStreamRoute(router: Router) {
    * with the sync POST / route in chat.js — both endpoints spend
    * the user's LLM quota and write per-user rows, so both must be
    * gated identically. */
-  router.post('/stream', requireAuth, chatRateLimitDispatch, async (req, res, next) => {
+  router.post('/stream', requireAuth, resourceScope('chat'), chatRateLimitDispatch, async (req, res, next) => {
     try {
       const sessionIdFromQuery = parseChatSessionId(req.query.sessionId);
       if (sessionIdFromQuery) {
