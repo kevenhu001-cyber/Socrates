@@ -14,83 +14,97 @@
  * language while leaving those hooks and component names intact.
  */
 :root {
-  --site-paper: #0a0a0a;
-  --site-paper-soft: #111111;
-  --site-paper-strong: #161616;
-  --site-sand: #1c1c1c;
-  --site-ink: #f5f1e8;
-  --site-ink-soft: #a8a29e;
-  --site-ink-muted: #78716c;
-  --site-line: rgba(245, 241, 232, 0.08);
-  --site-black: #050505;
-  --site-clay: #c4704a;
-  /* Latin UI sans */
+  --site-paper: #f4f1e9;
+  --site-paper-soft: #faf9f5;
+  --site-paper-strong: #eee8dc;
+  --site-sand: #e5dbc9;
+  --site-ink: #171716;
+  --site-ink-soft: #56534e;
+  --site-ink-muted: #77716a;
+  --site-line: #d9d0c3;
+  --site-black: #171716;
+  --site-clay: #9a5a3b;
+  /* Latin UI sans — Geist is the product's default. Inter is a visual
+     sibling that most readers already have, so it's a safe fallback. The
+     system stacks after Inter are deliberately limited so CJK characters
+     never collapse onto Microsoft YaHei / SimSun on Windows hosts. */
   --site-sans-latin: "Geist", "Inter", "Helvetica Neue", Arial, sans-serif;
-  /* CJK UI sans */
+  /* CJK UI sans — the Latin families (Geist / Inter) are listed FIRST so
+     any Latin glyph inside a Chinese page renders with the English-interface
+     sans, and CJK glyphs fall through to Noto Sans SC (Google Fonts). */
   --site-sans-cjk: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Microsoft JhengHei", "Source Han Sans SC", sans-serif;
-  /* Latin editorial serif */
+  /* Latin editorial serif — Newsreader is a contemporary book serif that
+     stays comfortable at long measure without the museum-piece weight of
+     Spectral or Source Serif. Geist is intentionally NOT in this stack:
+     it reads as "UI sans" and loses the quiet differentiation we want
+     between the marketing display and the body copy. */
   --site-serif-latin: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", serif;
-  /* CJK editorial serif */
+  /* CJK editorial serif — the Latin families (Newsreader …) are listed
+     FIRST so embedded English inside a Chinese page matches the
+     English-interface serif; CJK glyphs fall through to Noto Serif SC
+     (Google Fonts), with Songti SC kept only as a local fallback. */
   --site-serif-cjk: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Serif SC", "Noto Sans SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
   --site-mono: "Geist Mono", "JetBrains Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
-  --site-shadow: 0 16px 42px rgba(0, 0, 0, 0.55);
+  --site-shadow: 0 16px 42px rgba(33, 28, 22, .08);
 
-  /* HSL aliases */
-  --bg-000: 0 0% 4%;
-  --bg-100: 0 0% 6%;
-  --bg-200: 0 0% 8%;
-  --bg-300: 0 0% 10%;
-  --bg-400: 40 33% 96%;
-  --neu-bg: 0 0% 4%;
-  --neu-bg-deep: 0 0% 3%;
-  --neu-bg-darker: 0 0% 2%;
-  --neu-surface: 0 0% 6%;
-  --neu-line: 0 0% 14%;
-  --neu-line-soft: 0 0% 10%;
-  --neu-line-strong: 0 0% 22%;
-  --text-000: 40 33% 96%;
-  --text-100: 38 24% 88%;
-  --text-200: 36 12% 70%;
-  --text-300: 35 8% 58%;
-  --text-400: 34 7% 48%;
-  --text-500: 34 6% 40%;
-  --accent-000: 15 64% 55%;
-  --accent-100: 15 66% 60%;
-  --accent-200: 15 62% 65%;
-  --accent-soft: 35 8% 50%;
-  --accent-900: 25 40% 8%;
-  --border-100: 0 0% 14%;
-  --border-300: 0 0% 18%;
-  --brand-000: 0 0% 98%;
-  --brand-100: 0 0% 98%;
-  --oncolor-100: 0 0% 0%;
+  /* HSL aliases retained for the functional pages' inline styles. */
+  --bg-000: 0 0% 100%;
+  --bg-100: 40 24% 98%;
+  --bg-200: 38 25% 95%;
+  --bg-300: 35 17% 90%;
+  --bg-400: 30 8% 9%;
+  --neu-bg: 40 24% 98%;
+  --neu-bg-deep: 38 25% 95%;
+  --neu-bg-darker: 35 17% 90%;
+  --neu-surface: 0 0% 100%;
+  --neu-line: 34 18% 78%;
+  --neu-line-soft: 34 18% 86%;
+  --neu-line-strong: 30 8% 9%;
+  --text-000: 30 8% 9%;
+  --text-100: 30 8% 14%;
+  --text-200: 30 6% 29%;
+  --text-300: 30 5% 43%;
+  --text-400: 30 4% 49%;
+  --text-500: 30 4% 56%;
+  --accent-000: 30 8% 9%;
+  --accent-100: 30 7% 18%;
+  --accent-200: 30 5% 33%;
+  --accent-soft: 30 5% 43%;
+  --accent-900: 40 24% 98%;
+  --border-100: 34 18% 78%;
+  --border-300: 34 18% 78%;
+  --brand-000: 30 8% 9%;
+  --brand-100: 30 8% 9%;
+  --oncolor-100: 40 24% 98%;
   --font-sans: var(--site-sans-latin);
   --font-display: var(--site-sans-latin);
   --font-mono: var(--site-mono);
 
-  /* Legacy marketing aliases */
+  /* Legacy marketing aliases. */
   --mk-bg: var(--site-paper);
   --mk-bg-deep: var(--site-paper-strong);
   --mk-surface: var(--site-paper-soft);
   --mk-surface-2: var(--site-paper-strong);
-  --mk-line: rgba(245, 241, 232, 0.08);
-  --mk-line-soft: rgba(245, 241, 232, 0.05);
-  --mk-line-strong: rgba(245, 241, 232, 0.20);
+  --mk-line: rgba(23, 23, 22, .14);
+  --mk-line-soft: rgba(23, 23, 22, .08);
+  --mk-line-strong: rgba(23, 23, 22, .28);
   --mk-text: var(--site-ink);
-  --mk-text-90: rgba(245, 241, 232, .90);
-  --mk-text-70: rgba(245, 241, 232, .70);
-  --mk-text-60: rgba(245, 241, 232, .60);
-  --mk-text-50: rgba(245, 241, 232, .50);
-  --mk-text-40: rgba(245, 241, 232, .40);
-  --mk-text-30: rgba(245, 241, 232, .30);
+  --mk-text-90: rgba(23, 23, 22, .90);
+  --mk-text-70: rgba(23, 23, 22, .70);
+  --mk-text-60: rgba(23, 23, 22, .60);
+  --mk-text-50: rgba(23, 23, 22, .50);
+  --mk-text-40: rgba(23, 23, 22, .40);
+  --mk-text-30: rgba(23, 23, 22, .30);
   --mk-sunset: var(--site-clay);
-  --mk-sunset-border: rgba(196, 112, 74, .42);
+  --mk-sunset-border: rgba(154, 90, 59, .42);
   --mk-sans: var(--site-sans-latin);
   --mk-mono: var(--site-mono);
 }
 
 html:lang(zh) {
   --font-sans: var(--site-sans-cjk);
+  /* Display uses the serif CJK stack so embedded Latin matches the
+     English-interface display (Newsreader) and Chinese uses Noto Serif SC. */
   --font-display: var(--site-serif-cjk);
   --mk-sans: var(--site-sans-cjk);
 }
@@ -98,7 +112,6 @@ html:lang(zh) {
 *, *::before, *::after { box-sizing: border-box; }
 html {
   background: var(--site-paper);
-  color: var(--site-ink);
   scroll-behavior: smooth;
 }
 body {
@@ -121,7 +134,7 @@ html:lang(zh) body {
   letter-spacing: .01em;
   line-height: 1.72;
 }
-body::selection { color: #000000; background: var(--site-clay); }
+body::selection { color: var(--site-paper); background: var(--site-ink); }
 a { color: inherit; }
 button, input, select, textarea { font: inherit; }
 img { display: block; max-width: 100%; height: auto; }
@@ -137,23 +150,16 @@ body.ed-site {
 }
 html:lang(zh) body.ed-site { font-family: var(--site-sans-cjk); letter-spacing: .01em; }
 body.ed-site .ed-shell { width: min(1272px, calc(100% - 64px)); }
-body.ed-site .ed-header {
-  padding-top: 16px;
-  background: rgba(10, 10, 10, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(245, 241, 232, 0.06);
-}
+body.ed-site .ed-header { padding-top: 16px; background: var(--site-paper); }
 body.ed-site .ed-header-inner { min-height: 52px; }
-body.ed-site .ed-brand { color: #FFFFFF; }
-body.ed-site .ed-footer .ed-brand { color: #FFFFFF; }
+body.ed-site .ed-brand { color: var(--site-ink); }
+body.ed-site .ed-footer .ed-brand { color: var(--ed-paper); }
 body.ed-site .ed-brand img {
   width: 26px;
   height: 26px;
   flex: 0 0 26px;
   border-radius: 7px;
-  background: #161616;
-  border: 1px solid rgba(245, 241, 232, 0.10);
+  background: var(--site-black);
   padding: 3px;
   box-sizing: border-box;
   object-fit: contain;
@@ -162,27 +168,15 @@ body.ed-site .ed-nav-links a,
 body.ed-site .ed-header-language { color: var(--site-ink-soft); }
 body.ed-site .ed-nav-links a:hover,
 body.ed-site .ed-nav-links a[aria-current="page"],
-body.ed-site .ed-header-language:hover { color: #FFFFFF; }
-body.ed-site .ed-button {
-  color: #2a1409;
-  background: var(--site-clay);
-  border-color: var(--site-clay);
-  font-weight: 600;
-}
-body.ed-site .ed-button:hover {
-  color: #2a1409;
-  background: #d97757;
-  border-color: #d97757;
-}
-body.ed-site .ed-button-quiet {
-  color: var(--site-ink);
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-}
-body.ed-site .ed-button-quiet:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.25);
-}
+body.ed-site .ed-header-language:hover { color: var(--site-ink); }
+body.ed-site .ed-button { color: var(--site-paper); background: var(--site-ink); border-color: var(--site-ink); }
+body.ed-site .ed-button:hover { color: #fff; background: #000; border-color: #000; }
+body.ed-site .ed-button-quiet { color: var(--site-ink); border-color: var(--site-line); }
+body.ed-site .ed-button-quiet:hover { background: var(--site-paper-soft); border-color: var(--site-ink); }
+/* Anthropic-style type hierarchy: serif for display + prose, sans for UI chrome.
+   The serif is now Newsreader (loaded as a webfont) so English editorial
+   copy reads as a book face rather than a UI sans. Chinese pages fall
+   back to Noto Serif SC through html:lang(zh) overrides below. */
 body.ed-site .ed-display,
 body.ed-site .ed-page-title,
 body.ed-site .ed-title,
@@ -199,7 +193,6 @@ body.ed-site .ed-network-copy h2 {
   font-weight: 500;
   letter-spacing: -.014em;
   line-height: 1.08;
-  color: #FFFFFF;
   font-feature-settings: "kern", "liga", "calt";
 }
 body.ed-site .ed-display { font-size: clamp(44px, 5.4vw, 80px); line-height: 1.06; }
@@ -227,9 +220,9 @@ body.ed-site .ed-footer-brand p,
 body.ed-site .ed-product-block h2,
 body.ed-site .ed-contact-card h2,
 body.ed-site .ed-price-card h2,
-body.ed-site .ed-policy-visual h2 { font-family: var(--site-serif-latin); font-weight: 500; color: #FFFFFF; }
-body.ed-site .ed-copy { font-size: 17px; line-height: 1.62; color: var(--site-ink-soft); }
-body.ed-site .ed-copy-serif { font-size: clamp(18px, 1.4vw, 22px); line-height: 1.48; color: var(--site-ink-soft); }
+body.ed-site .ed-policy-visual h2 { font-family: var(--site-serif-latin); font-weight: 500; }
+body.ed-site .ed-copy { font-size: 17px; line-height: 1.62; }
+body.ed-site .ed-copy-serif { font-size: clamp(18px, 1.4vw, 22px); line-height: 1.48; }
 body.ed-site .ed-team-grid h2,
 body.ed-site .ed-showcase-entry h2,
 body.ed-site .ed-principle h3,
@@ -237,7 +230,6 @@ body.ed-site .ed-essay-row .ed-essay-title {
   font-family: var(--site-sans-latin);
   font-weight: 500;
   letter-spacing: -.018em;
-  color: #FFFFFF;
 }
 html:lang(zh) body.ed-site .ed-display,
 html:lang(zh) body.ed-site .ed-page-title,
@@ -252,12 +244,13 @@ html:lang(zh) body.ed-site .ed-footer-brand p,
 html:lang(zh) body.ed-site .ed-product-block h2,
 html:lang(zh) body.ed-site .ed-contact-card h2,
 html:lang(zh) body.ed-site .ed-price-card h2 {
+  /* Mirror the English interface: display/headings use the serif stack
+     (Latin → Newsreader), so Chinese uses Noto Serif SC from Google Fonts. */
   font-family: var(--site-serif-cjk);
   letter-spacing: .02em;
   line-height: 1.3;
   font-weight: 600;
   text-wrap: balance;
-  color: #FFFFFF;
 }
 html:lang(zh) body.ed-site .ed-serif,
 html:lang(zh) body.ed-site .ed-copy-serif,
@@ -267,16 +260,12 @@ html:lang(zh) body.ed-site .ed-footer-brand p {
   letter-spacing: .02em;
   font-weight: 500;
   text-wrap: pretty;
-  color: var(--site-ink-soft);
 }
 body.ed-site .ed-page-hero { padding: clamp(72px, 9vw, 116px) 0 46px; }
 body.ed-site .ed-section { padding: clamp(62px, 8vw, 120px) 0; }
 body.ed-site .ed-section-tight { padding: clamp(44px, 6vw, 84px) 0; }
 body.ed-site .ed-footer { padding: 18px 0 28px; }
-body.ed-site .ed-footer-frame {
-  background: #0d0d0d;
-  border: 1px solid rgba(245, 241, 232, 0.07);
-}
+body.ed-site .ed-footer-frame { background: var(--site-black); }
 
 /* Old marketing pages ------------------------------------------------- */
 body.mk-page {
@@ -1381,7 +1370,7 @@ body.legal-page .page > nav .nav-links .lang-switch {
   background: var(--site-paper-soft);
   border: 1px solid var(--site-line);
   border-radius: 12px;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, .8);
+  box-shadow: 0 14px 34px rgba(23, 23, 22, .16);
   z-index: 60;
   display: none;
 }
@@ -1426,13 +1415,13 @@ body.legal-page .page > nav .nav-links .lang-switch {
 :root {
   --sv-ease: cubic-bezier(.16, 1, .3, 1);
   --sv-speed: .35s;
-  --sv-clay: #c4704a;
-  --sv-clay-bright: #d97757;
-  --sv-glow-clay: rgba(196, 112, 74, .25);
-  --sv-glow-sand: rgba(255, 255, 255, .05);
-  --sv-shadow-sm: 0 1px 2px rgba(0, 0, 0, .5), 0 0 0 1px rgba(255, 255, 255, .08);
-  --sv-shadow-md: 0 4px 14px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .08);
-  --sv-shadow-lg: 0 16px 44px rgba(0, 0, 0, .85), 0 0 0 1px rgba(255, 255, 255, .1);
+  --sv-clay: #9a5a3b;
+  --sv-clay-bright: #b86a45;
+  --sv-glow-clay: rgba(184, 106, 69, .15);
+  --sv-glow-sand: rgba(210, 192, 162, .40);
+  --sv-shadow-sm: 0 1px 2px rgba(33, 28, 22, .05), 0 0 0 1px rgba(23, 23, 22, .04);
+  --sv-shadow-md: 0 2px 6px rgba(33, 28, 22, .06), 0 14px 34px -14px rgba(33, 28, 22, .16);
+  --sv-shadow-lg: 0 4px 10px rgba(33, 28, 22, .07), 0 30px 70px -28px rgba(33, 28, 22, .30);
   accent-color: var(--sv-clay);
 }
 
@@ -1440,7 +1429,7 @@ html { scrollbar-gutter: stable; }
 
 /* Warm clay selection instead of pure ink. */
 body.ed-site::selection,
-body.ed-site ::selection { background: rgba(196, 112, 74, .9); color: #000; }
+body.ed-site ::selection { background: rgba(184, 106, 69, .9); color: #fff; }
 
 /* Anchored headings clear the sticky header. */
 body.ed-site [id] { scroll-margin-top: 108px; }
@@ -1475,7 +1464,6 @@ body.ed-site .ed-kicker {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--site-ink-soft);
 }
 body.ed-site .ed-kicker::before {
   content: "";
@@ -1484,25 +1472,25 @@ body.ed-site .ed-kicker::before {
   height: 6px;
   border-radius: 50%;
   background: var(--sv-clay-bright);
-  box-shadow: 0 0 0 3px rgba(224, 122, 95, .18);
+  box-shadow: 0 0 0 3px rgba(184, 106, 69, .14);
 }
 
 /* Long-form reading details. */
 body.ed-site .ed-article li::marker { color: var(--sv-clay); }
-body.ed-site .ed-article strong { color: #FFFFFF; font-weight: 600; }
+body.ed-site .ed-article strong { color: var(--site-ink); font-weight: 600; }
 body.ed-site .ed-article hr {
-  background: var(--site-line);
+  background: linear-gradient(90deg, transparent, var(--site-line) 28%, var(--site-line) 72%, transparent);
 }
 body.ed-site .ed-year-rule::after {
-  background: var(--site-line);
+  background: linear-gradient(90deg, var(--site-line), transparent);
 }
 
 /* ── C. Header: glass on scroll, animated nav underlines ──────────────── */
 body.ed-site .ed-header.is-scrolled {
-  background: rgba(22, 19, 16, .86);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  backdrop-filter: blur(20px) saturate(160%);
-  border-bottom: 1px solid rgba(250, 245, 235, 0.08);
+  background: rgba(244, 241, 233, .8);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  border-image: linear-gradient(90deg, transparent, rgba(23, 23, 22, .26) 18%, rgba(23, 23, 22, .26) 82%, transparent) 1;
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   body.ed-site .ed-header.is-scrolled { background: var(--site-paper); }
@@ -1520,12 +1508,12 @@ body.ed-site .ed-header.is-scrolled {
     border-radius: 2px;
     background: currentColor;
     transform: scaleX(0);
-    transform-origin: center center;
-    transition: transform .25s var(--sv-ease);
+    transform-origin: left center;
+    transition: transform .3s var(--sv-ease);
   }
   body.ed-site .ed-nav-links a:hover::after,
   body.ed-site .ed-nav-links a[aria-current="page"]::after { transform: scaleX(1); }
-  body.ed-site .ed-nav-links a[aria-current="page"] { box-shadow: none; color: #FFFFFF; }
+  body.ed-site .ed-nav-links a[aria-current="page"] { box-shadow: none; }
 }
 
 /* Brand mark tilts on hover — a small living detail. */
@@ -1534,24 +1522,24 @@ body.ed-site .ed-brand:hover img { transform: rotate(-8deg) scale(1.08); }
 
 /* Language menu: frosted panel with a soft entrance. */
 body.ed-site .ed-lang-menu {
-  background: rgba(30, 26, 22, .96);
-  border: 1px solid rgba(250, 245, 235, 0.12);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, .6);
+  background: rgba(250, 249, 245, .92);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 1px 2px rgba(23, 23, 22, .08), 0 18px 44px -16px rgba(23, 23, 22, .28);
   animation: sv-pop .18s var(--sv-ease);
 }
 @keyframes sv-pop {
   from { opacity: 0; transform: translateY(-4px) scale(.98); }
 }
 
-/* ── D. Buttons: lift, press ─────────────────────────────────────────── */
+/* ── D. Buttons: lift, press, and a light sweep ───────────────────────── */
 body.ed-site .ed-button,
 body.ed-site .ed-button-quiet {
   position: relative;
   overflow: hidden;
   transition:
     transform var(--sv-speed) var(--sv-ease),
+    box-shadow var(--sv-speed) var(--sv-ease),
     background-color .18s ease,
     border-color .18s ease,
     color .18s ease;
@@ -1561,19 +1549,33 @@ body.ed-site .ed-button-quiet:active {
   transform: translateY(0) scale(.985);
   transition-duration: .08s;
 }
-body.ed-site .ed-button-quiet:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.3); }
+body.ed-site .ed-button::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -70%;
+  width: 45%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, .3), transparent);
+  transform: skewX(-18deg);
+  transition: left .55s var(--sv-ease);
+  pointer-events: none;
+}
+body.ed-site .ed-button-quiet:hover { background: #fff; }
 
 @media (hover: hover) and (pointer: fine) {
   body.ed-site .ed-button:hover {
     transform: translateY(-1px);
-    background: #E4E4E7;
+    box-shadow: 0 10px 24px -10px rgba(23, 23, 22, .5);
   }
+  body.ed-site .ed-button:hover::after { left: 125%; }
   body.ed-site .ed-button-quiet:hover {
     transform: translateY(-1px);
+    box-shadow: var(--sv-shadow-sm);
   }
 }
 
-/* ── E. Hero stage depth ──────────────────────────────────────────────── */
+/* ── E. Hero aurora + stage depth ─────────────────────────────────────── */
 body.ed-site .ed-home-hero,
 body.ed-site .ed-page-hero,
 body.ed-site .ed-reference-hero,
@@ -1582,10 +1584,32 @@ body.ed-site .ed-news-hero {
   position: relative;
   isolation: isolate;
 }
+body.ed-site .ed-home-hero::before,
+body.ed-site .ed-page-hero::before,
+body.ed-site .ed-reference-hero::before,
+body.ed-site .ed-learning-hero::before,
+body.ed-site .ed-news-hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: clamp(-120px, -6vw, -40px);
+  left: 50%;
+  width: min(1160px, 96vw);
+  height: clamp(360px, 44vw, 660px);
+  transform: translateX(-50%);
+  background:
+    radial-gradient(46% 54% at 26% 34%, var(--sv-glow-clay), transparent 70%),
+    radial-gradient(40% 48% at 74% 24%, var(--sv-glow-sand), transparent 72%),
+    radial-gradient(30% 36% at 56% 62%, rgba(154, 90, 59, .07), transparent 70%);
+  pointer-events: none;
+}
 
 /* The home stage reads as a physical object on the paper. */
 body.ed-site .ed-home-stage {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .35),
+    0 0 0 1px rgba(23, 23, 22, .05),
+    var(--sv-shadow-lg);
 }
 body.ed-site .ed-stage-index a { position: relative; }
 body.ed-site .ed-stage-index a::after {
@@ -1602,6 +1626,9 @@ body.ed-site .ed-stage-index a::after {
 }
 body.ed-site .ed-stage-index a:hover::after { transform: scaleX(1); }
 
+/* Stage headline keeps solid warm white — no background-clip:text here
+   either (same compositing risk as the hero, and it sits over an image). */
+
 /* ── F. Cards: resting shadow, hover lift ─────────────────────────────── */
 body.ed-site .ed-portal,
 body.ed-site .ed-story-card,
@@ -1612,13 +1639,18 @@ body.ed-site .ed-course-band,
 body.ed-site .ed-featured {
   transition:
     transform var(--sv-speed) var(--sv-ease),
+    box-shadow var(--sv-speed) var(--sv-ease),
     border-color .2s ease,
     background-color .2s ease;
-  background: #211e1a;
-  border: 1px solid rgba(250, 245, 235, 0.09);
 }
+body.ed-site .ed-portal,
+body.ed-site .ed-story-card,
+body.ed-site .ed-contact-card,
+body.ed-site .ed-course-band,
+body.ed-site .ed-featured { box-shadow: var(--sv-shadow-sm); }
+body.ed-site .ed-price-card { box-shadow: var(--sv-shadow-sm); }
 body.ed-site .ed-price-card.is-featured {
-  border-color: rgba(224, 122, 95, 0.4);
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .85), 0 24px 56px -22px rgba(23, 23, 22, .45);
 }
 
 /* Imagery breathes inside its card on hover. */
@@ -1627,6 +1659,12 @@ body.ed-site .ed-featured-media img { transition: transform .8s var(--sv-ease); 
 body.ed-site .ed-story-card:hover .ed-story-card-media img,
 body.ed-site .ed-featured:hover .ed-featured-media img { transform: scale(1.045); }
 
+/* Large media objects carry the same depth language. */
+body.ed-site .ed-showcase-media { box-shadow: var(--sv-shadow-lg); }
+body.ed-site .ed-policy-visual img,
+body.ed-site .ed-learning-object img { box-shadow: var(--sv-shadow-md); }
+body.ed-site .ed-news-split figure { box-shadow: var(--sv-shadow-sm); }
+
 @media (hover: hover) and (pointer: fine) {
   body.ed-site .ed-portal:hover,
   body.ed-site .ed-story-card:hover,
@@ -1634,12 +1672,11 @@ body.ed-site .ed-featured:hover .ed-featured-media img { transform: scale(1.045)
   body.ed-site .ed-course-card:hover,
   body.ed-site .ed-price-card:hover {
     transform: translateY(-4px);
-    background: #26231f;
-    border-color: rgba(250, 245, 235, 0.18);
+    box-shadow: var(--sv-shadow-md);
   }
   body.ed-site .ed-price-card.is-featured:hover {
     transform: translateY(-4px);
-    border-color: rgba(224, 122, 95, 0.6);
+    box-shadow: 0 0 0 1px rgba(23, 23, 22, .85), 0 32px 72px -26px rgba(23, 23, 22, .5);
   }
 }
 
@@ -1652,7 +1689,7 @@ body.ed-site .ed-news-item {
 }
 body.ed-site .ed-ledger-row { transition: background-color .2s ease; }
 body.ed-site .ed-ledger-row:hover {
-  background: rgba(224, 122, 95, .08);
+  background: linear-gradient(90deg, rgba(184, 106, 69, .05), transparent 55%);
 }
 body.ed-site .ed-team-grid h2 { transition: color .18s ease; }
 body.ed-site .ed-team-grid article:hover h2 { color: var(--sv-clay); }
@@ -1669,7 +1706,7 @@ body.ed-site .ed-product-block::before {
   bottom: 28px;
   width: 2px;
   border-radius: 2px;
-  background: var(--sv-clay-bright);
+  background: linear-gradient(180deg, var(--sv-clay-bright), rgba(184, 106, 69, 0));
   transform: scaleY(0);
   transform-origin: top center;
   transition: transform .35s var(--sv-ease);
@@ -1687,9 +1724,6 @@ body.ed-site .ed-product-block:hover::before { transform: scaleY(1); }
 /* ── H. Filters, search, pills ────────────────────────────────────────── */
 body.ed-site .ed-filter-bar button {
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--site-ink-soft);
   transition:
     color .18s ease,
     background-color .18s ease,
@@ -1698,20 +1732,15 @@ body.ed-site .ed-filter-bar button {
     box-shadow .18s ease;
 }
 body.ed-site .ed-filter-bar button:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #FFFFFF;
+  border-color: rgba(23, 23, 22, .4);
 }
 body.ed-site .ed-filter-bar button.is-active {
-  background: var(--site-clay);
-  color: #2a1409;
-  border-color: var(--site-clay);
-  box-shadow: 0 4px 14px rgba(217, 119, 87, 0.25);
+  background: linear-gradient(180deg, #2c2925, var(--site-ink));
+  border-color: var(--site-ink);
+  box-shadow: 0 6px 16px -8px rgba(23, 23, 22, .5);
 }
 body.ed-site .ed-search-field input {
   border-radius: 12px;
-  background: #23201b;
-  border: 1px solid rgba(250, 245, 235, 0.12);
-  color: #FFFFFF;
   transition:
     border-color .18s ease,
     background-color .18s ease,
@@ -1719,14 +1748,14 @@ body.ed-site .ed-search-field input {
 }
 body.ed-site .ed-search-field input:focus {
   border-color: var(--sv-clay);
-  background: #282420;
-  box-shadow: 0 0 0 4px rgba(217, 119, 87, .2);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(184, 106, 69, .14);
 }
 body.ed-site .ed-pill,
 body.ed-site .ed-thread {
   transition: border-color .18s ease, color .18s ease;
 }
-body.ed-site .ed-pill:hover { border-color: rgba(255, 255, 255, .3); }
+body.ed-site .ed-pill:hover { border-color: rgba(23, 23, 22, .35); }
 
 /* ── I. Dark surfaces & footer ────────────────────────────────────────── */
 body.ed-site .ed-black-band,
@@ -1735,8 +1764,7 @@ body.ed-site .ed-inline-feature {
 }
 body.ed-site .ed-footer-frame {
   overflow: hidden;
-  background: #0d0d0d;
-  border: 1px solid rgba(245, 241, 232, 0.07);
+  background: var(--site-black);
 }
 body.ed-site .ed-footer-social a {
   transition:
@@ -1858,7 +1886,7 @@ body.ed-site .ed-news-hero::before {
   font-weight: 500;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: rgba(250, 245, 235, .52);
+  color: rgba(23, 23, 22, .52);
 }
 html:lang(zh) .ed-marquee-title { font-family: var(--site-serif-cjk); letter-spacing: .3em; }
 .ed-marquee-track {
@@ -1882,10 +1910,10 @@ html:lang(zh) .ed-marquee-title { font-family: var(--site-serif-cjk); letter-spa
   justify-content: center;
   height: clamp(22px, 2.6vw, 32px);
   width: clamp(96px, 11vw, 150px);
-  color: rgba(250, 245, 235, .58);
+  color: rgba(23, 23, 22, .58);
   transition: color .35s ease;
 }
-.ed-logo-item:hover { color: #FFFFFF; }
+.ed-logo-item:hover { color: var(--site-black); }
 .ed-logo-item svg {
   display: block;
   width: 100%;
@@ -1894,12 +1922,31 @@ html:lang(zh) .ed-marquee-title { font-family: var(--site-serif-cjk); letter-spa
 
 /* ── K6. (removed) logo masks — marks are now inlined with currentColor ─ */
 
-/* ── K7. Reading progress — removed: page uses a flat solid canvas with
-       no top hairline progress indicator. */
+/* ── K7. Reading progress — a clay hairline along the very top ────────── */
+.ed-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 97;
+  background: linear-gradient(90deg, var(--sv-clay), var(--sv-clay-bright));
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
 
-/* ── K8. Clean surface ── */
+/* ── K8. Paper grain — a faint film that makes flat color feel tactile ── */
 body.ed-site::after {
-  display: none;
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  mix-blend-mode: soft-light;
+  opacity: .3;
+  pointer-events: none;
 }
 
 /* =========================================================================
@@ -1918,22 +1965,22 @@ body.ed-site main select {
   padding: 11px 14px;
   font: inherit;
   font-size: 15px;
-  color: #FFFFFF;
-  background: #23201b;
-  border: 1px solid rgba(250, 245, 235, 0.12);
+  color: var(--site-black);
+  background: #fffdf8;
+  border: 1px solid var(--site-line);
   border-radius: 10px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .3);
+  box-shadow: inset 0 1px 2px rgba(23, 23, 22, .04);
   transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
 }
 body.ed-site main input::placeholder,
-body.ed-site main textarea::placeholder { color: #847E73; opacity: 1; }
+body.ed-site main textarea::placeholder { color: rgba(23, 23, 22, .38); opacity: 1; }
 body.ed-site main input:focus,
 body.ed-site main textarea:focus,
 body.ed-site main select:focus {
   outline: none;
   border-color: var(--sv-clay-bright);
-  background: #282420;
-  box-shadow: 0 0 0 3px rgba(217, 119, 87, .25);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(184, 106, 69, .16);
 }
 /* The seamless three-part card field keeps its own chrome. */
 body.ed-site .ed-card-input input {
@@ -1960,7 +2007,7 @@ body.ed-site main .ed-field > label {
   font-weight: 600;
   letter-spacing: .08em;
   text-transform: uppercase;
-  color: #B3ADA2;
+  color: rgba(23, 23, 22, .62);
 }
 
 /* ── L2. Pull quotes — Anthropic's serif editorial voice ──────────────── */
@@ -1972,7 +2019,7 @@ body.ed-site main blockquote {
   font-size: clamp(19px, 2vw, 24px);
   font-style: italic;
   line-height: 1.5;
-  color: #EDEDED;
+  color: rgba(23, 23, 22, .82);
 }
 html:lang(zh) body.ed-site main blockquote { font-family: var(--site-serif-cjk); }
 
@@ -2002,16 +2049,16 @@ body.ed-site main th {
   font-weight: 600;
   letter-spacing: .08em;
   text-transform: uppercase;
-  color: #B3ADA2;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(23, 23, 22, .55);
+  border-bottom: 1px solid rgba(23, 23, 22, .28);
 }
 body.ed-site main td {
   padding: 12px 14px;
   vertical-align: top;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--site-line);
 }
 body.ed-site main tbody tr { transition: background-color .15s ease; }
-body.ed-site main tbody tr:hover { background-color: rgba(224, 122, 95, .08); }
+body.ed-site main tbody tr:hover { background-color: rgba(184, 106, 69, .05); }
 
 /* ── L5. Keyboard focus — Material-crisp rings for every interactive ──── */
 body.ed-site :focus-visible {
@@ -2025,20 +2072,23 @@ body.ed-site main figcaption {
   font-family: var(--ed-mono, monospace);
   font-size: 11.5px;
   letter-spacing: .04em;
-  color: #71717A;
+  color: rgba(23, 23, 22, .55);
 }
 
 /* ── L7. In-prose links — Google's crafted underline, clay on hover ───── */
-body.ed-site main p a:not(.ed-button) {
-  color: var(--site-ink);
+body.ed-site main p a:not(.ed-button),
+body.ed-site main li a:not(.ed-button) {
+  color: inherit;
   text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: rgba(184, 106, 69, .45);
   text-underline-offset: 3px;
-  text-decoration-color: rgba(255, 255, 255, 0.3);
-  transition: color .15s ease, text-decoration-color .15s ease;
+  transition: color .18s ease, text-decoration-color .18s ease;
 }
-body.ed-site main p a:not(.ed-button):hover {
+body.ed-site main p a:not(.ed-button):hover,
+body.ed-site main li a:not(.ed-button):hover {
   color: var(--sv-clay-bright);
-  text-decoration-color: var(--sv-clay-bright);
+  text-decoration-color: currentColor;
 }
 
 /* =========================================================================
@@ -2124,12 +2174,12 @@ body.ed-site .ed-home-hero .ed-button {
 /* Secondary — quiet outline pill. */
 body.ed-site .ed-home-hero .ed-button-ghost {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, .2);
-  color: #FFFFFF;
+  border: 1px solid rgba(25, 25, 25, .25);
+  color: #1a1918;
 }
 body.ed-site .ed-home-hero .ed-button-ghost:hover {
-  background: rgba(255, 255, 255, .08);
-  border-color: rgba(255, 255, 255, .5);
+  background: rgba(25, 25, 25, .05);
+  border-color: rgba(25, 25, 25, .5);
 }
 /* Announcement tag — hairline pill with a book-cloth pulse dot. */
 body.ed-site .ed-home-hero .ed-hero-flag {
@@ -2138,22 +2188,21 @@ body.ed-site .ed-home-hero .ed-hero-flag {
   gap: 8px;
   margin: 0 0 22px;
   padding: 6px 14px;
-  border: 1px solid rgba(255, 255, 255, .15);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(25, 25, 25, .16);
   border-radius: 999px;
   font-family: var(--ed-mono, monospace);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: #D4D4D8;
+  color: rgba(26, 25, 24, .62);
 }
 html:lang(zh) body.ed-site .ed-home-hero .ed-hero-flag { letter-spacing: .26em; }
 body.ed-site .ed-home-hero .ed-hero-flag span {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #e07a5f;
+  background: #c15f3c;
   animation: sv-flag-pulse 2.4s ease-in-out infinite;
 }
 @keyframes sv-flag-pulse {
@@ -2164,7 +2213,7 @@ body.ed-site .ed-home-hero .ed-hero-flag span {
 /* ── M3. The stage — a quiet rounded panel on the paper ───────────────── */
 body.ed-site .ed-home-stage {
   border-radius: 18px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .08);
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .09);
 }
 body.ed-site .ed-home-hero .ed-stage-index a { color: rgba(255, 255, 255, .6); }
 body.ed-site .ed-home-hero .ed-stage-index a:hover { color: #ffffff; }
@@ -2172,16 +2221,16 @@ body.ed-site .ed-home-hero .ed-network-copy h2 { color: #fafafa; }
 body.ed-site .ed-home-hero .ed-network-copy p { color: rgba(255, 255, 255, .58); }
 body.ed-site .ed-home-hero .ed-stage-caption { color: rgba(255, 255, 255, .38); }
 
-/* ── M4. Marquee ─────────────────── */
+/* ── M4. Marquee back on the paper, between hairlines ─────────────────── */
 body.ed-site .ed-home-hero + .ed-marquee {
   margin-top: 0;
   background: transparent;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-top-color: rgba(23, 23, 22, .1);
+  border-bottom-color: rgba(23, 23, 22, .14);
 }
-body.ed-site .ed-home-hero + .ed-marquee .ed-marquee-title { color: #71717A; }
-body.ed-site .ed-home-hero + .ed-marquee .ed-logo-item { color: #B3ADA2; }
-body.ed-site .ed-home-hero + .ed-marquee .ed-logo-item:hover { color: #FFFFFF; }
+body.ed-site .ed-home-hero + .ed-marquee .ed-marquee-title { color: rgba(26, 25, 24, .5); }
+body.ed-site .ed-home-hero + .ed-marquee .ed-logo-item { color: rgba(26, 25, 24, .68); }
+body.ed-site .ed-home-hero + .ed-marquee .ed-logo-item:hover { color: #14130f; }
 
 /* ── M5. Header dark skin retired ─────────────────────────────────────── */
 /* The hero is daylight paper again, so the light-on-dark nav flip and    */
