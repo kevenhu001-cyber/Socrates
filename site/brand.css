@@ -2569,10 +2569,619 @@ body.ed-site .ed-article-hero-media img {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body.ed-site .ed-result-track i { animation: none; }
-  body.ed-site .ed-stage-index a:hover { transform: none; }
+  body.ed-site .ed-result-track i { animation: none !important; }
+  body.ed-site .ed-stage-index a:hover { transform: none !important; }
   body.ed-site .ed-article-hero-media:hover img,
   body.ed-site .ed-black-band-media:hover img,
   body.ed-site .ed-showcase-media:hover img,
-  body.ed-site .ed-publication-side:hover img { transform: translateY(var(--parallax-y, 0)); }
+  body.ed-site .ed-publication-side:hover img {
+    transform: translateY(var(--parallax-y, 0)) !important;
+  }
+  body.ed-site .ed-tilt { transform: none !important; }
+  body.ed-site .ed-chat-bubble { opacity: 1 !important; transform: none !important; }
+  body.ed-site .ed-stat-value { transition: none !important; }
+  body.ed-site .ed-svg-bar rect { animation: none !important; }
+  body.ed-site .ed-timeline path { animation: none !important; stroke-dashoffset: 0 !important; }
+  body.ed-site .ed-mini-demo .ed-mini-bubble-a,
+  body.ed-site .ed-mini-demo .ed-mini-bubble-b { opacity: 1 !important; }
+  body.ed-site .ed-mini-card { transform: none !important; }
+  body.ed-site .ed-mini-pulse { animation: none !important; }
+}
+
+/* ==========================================================================
+   P8-P15.  Premium layer extension — counter, tilt, mini-demos, author,
+   svg-bar, timeline, hero chat, paragraph wave. All additive.
+   ========================================================================== */
+
+/* ── P8. Hover 3D tilt: ±3° on cards and dark bands ────────────────────── */
+body.ed-site .ed-tilt {
+  transform: perspective(900px) rotateX(calc(var(--sv-tilt-y, 0) * -.8deg))
+                                rotateY(calc(var(--sv-tilt-x, 0) * .8deg));
+  transition: transform .45s var(--sv-ease);
+  will-change: transform;
+}
+body.ed-site .ed-portal.ed-tilt,
+body.ed-site .ed-story-card.ed-tilt,
+body.ed-site .ed-price-card.ed-tilt,
+body.ed-site .ed-publication-side.ed-tilt,
+body.ed-site .ed-black-band-media.ed-tilt,
+body.ed-site .ed-showcase-media.ed-tilt,
+body.ed-site .ed-article-hero-media.ed-tilt,
+body.ed-site .ed-inline-feature.ed-tilt {
+  transform: perspective(900px) rotateX(calc(var(--sv-tilt-y, 0) * -.8deg))
+                                rotateY(calc(var(--sv-tilt-x, 0) * .8deg));
+}
+
+/* ── P9. Stat counter: animated number on enter ────────────────────────── */
+body.ed-site .ed-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .12em;
+  font-variant-numeric: tabular-nums;
+}
+body.ed-site .ed-stat-value {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  transition: color .2s ease;
+}
+body.ed-site .ed-stat-suffix {
+  font-variant-numeric: tabular-nums;
+}
+body.ed-site .ed-stat.is-animating .ed-stat-value { color: var(--sv-clay, #b86a45); }
+body.ed-site .ed-stat.is-done .ed-stat-value { color: inherit; }
+
+/* ── P10. Paragraph wave reveal ────────────────────────────────────────── */
+html.ed-js body.ed-site .ed-reveal-paragraphs p {
+  opacity: 0;
+  transform: translateY(10px);
+}
+html.ed-js body.ed-site .ed-reveal-paragraphs.is-visible p {
+  opacity: 1;
+  transform: none;
+  transition: opacity .55s ease var(--d, 0s), transform .55s var(--sv-ease) var(--d, 0s);
+}
+html.ed-js body.ed-site .ed-reveal-paragraphs.is-visible p:nth-child(1) { --d: 0ms; }
+html.ed-js body.ed-site .ed-reveal-paragraphs.is-visible p:nth-child(2) { --d: 70ms; }
+html.ed-js body.ed-site .ed-reveal-paragraphs.is-visible p:nth-child(3) { --d: 140ms; }
+html.ed-js body.ed-site .ed-reveal-paragraphs.is-visible p:nth-child(4) { --d: 210ms; }
+html.ed-js body.ed-site .ed-reveal-paragraphs.is-visible p:nth-child(5) { --d: 280ms; }
+html.ed-js body.ed-site .ed-reveal-paragraphs.is-visible p:nth-child(6) { --d: 350ms; }
+html.ed-js body.ed-site .ed-reveal-paragraphs.is-visible p:nth-child(n+7) { --d: 420ms; }
+
+/* ── P11. SVG bar chart (inline research viz) ──────────────────────────── */
+body.ed-site .ed-svg-bar {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--ed-sans, sans-serif);
+}
+body.ed-site .ed-svg-bar-wrap {
+  margin: 2em 0;
+  padding: 22px;
+  border: 1px solid var(--ed-line, #d9d0c3);
+  border-radius: 14px;
+  background: var(--ed-paper-soft, #faf9f5);
+}
+body.ed-site .ed-figure-caption {
+  margin: 10px 0 0;
+  font-family: var(--ed-mono, monospace);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ed-ink-muted, #77716a);
+  text-align: left;
+}
+body.ed-site .ed-svg-bar rect {
+  transform-origin: left center;
+  transform-box: fill-box;
+  animation: edBarFill .9s var(--sv-ease) .15s both;
+}
+body.ed-site .ed-svg-bar .ed-bar-label {
+  fill: var(--ed-ink-soft, #56534e);
+  font-size: 13px;
+  font-weight: 500;
+}
+body.ed-site .ed-svg-bar .ed-bar-value {
+  fill: var(--ed-ink, #171716);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+body.ed-site .ed-svg-bar .ed-bar-track {
+  fill: rgba(23, 23, 22, .08);
+}
+body.ed-site .ed-svg-bar .ed-bar-fill {
+  fill: url(#edBarGrad);
+}
+@keyframes edBarFill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* ── P12. Inline methodology timeline ──────────────────────────────────── */
+body.ed-site .ed-timeline {
+  margin: 1.6em 0;
+  padding: 18px 0 8px;
+  border: 1px solid var(--ed-line, #d9d0c3);
+  border-radius: 14px;
+  background: var(--ed-paper-soft, #faf9f5);
+  font-family: var(--ed-sans, sans-serif);
+}
+body.ed-site .ed-timeline-row {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 18px;
+  align-items: start;
+  padding: 10px 22px;
+}
+body.ed-site .ed-timeline-row + .ed-timeline-row {
+  border-top: 1px dashed var(--ed-line, #d9d0c3);
+}
+body.ed-site .ed-timeline-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--sv-clay, #b86a45);
+  border-radius: 999px;
+  background: var(--ed-paper, #f4f1e9);
+  color: var(--sv-clay, #b86a45);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+body.ed-site .ed-timeline-row strong {
+  display: block;
+  font-size: 14px;
+  color: var(--ed-ink, #171716);
+  font-weight: 600;
+}
+body.ed-site .ed-timeline-row span {
+  display: block;
+  font-size: 13px;
+  color: var(--ed-ink-muted, #77716a);
+  line-height: 1.55;
+  margin-top: 2px;
+}
+
+/* ── P13. Author card — initial avatar + role + one-liner ─────────────── */
+body.ed-site .ed-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 10px 10px;
+  border: 1px solid var(--ed-line, #d9d0c3);
+  border-radius: 999px;
+  background: var(--ed-paper-soft, #faf9f5);
+}
+body.ed-site .ed-author-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--sv-clay, #b86a45);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+body.ed-site .ed-author-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+body.ed-site .ed-author-meta strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ed-ink, #171716);
+}
+body.ed-site .ed-author-meta span {
+  font-size: 12px;
+  color: var(--ed-ink-muted, #77716a);
+  font-family: var(--ed-mono, monospace);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+/* ── P14. Hero chat bubble demo (homepage) ─────────────────────────────── */
+body.ed-site .ed-chat-demo {
+  margin: 56px auto 0;
+  padding: 28px;
+  border: 1px solid var(--ed-line, #d9d0c3);
+  border-radius: 22px;
+  background: var(--ed-paper-soft, #faf9f5);
+  box-shadow: 0 28px 80px -42px rgba(23, 23, 22, .42);
+}
+body.ed-site .ed-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--ed-line, #d9d0c3);
+  font-family: var(--ed-mono, monospace);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ed-ink-muted, #77716a);
+}
+body.ed-site .ed-chat-head-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--sv-clay, #b86a45);
+  box-shadow: 0 0 0 4px rgba(184, 106, 69, .12);
+}
+body.ed-site .ed-chat-thread {
+  display: grid;
+  gap: 14px;
+}
+body.ed-site .ed-chat-bubble {
+  max-width: 78%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 15px;
+  line-height: 1.55;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .55s ease var(--d, 0s), transform .55s var(--sv-ease) var(--d, 0s);
+}
+body.ed-site .ed-chat-thread.is-visible .ed-chat-bubble {
+  opacity: 1;
+  transform: none;
+}
+body.ed-site .ed-chat-bubble.user {
+  justify-self: end;
+  background: var(--ed-ink, #171716);
+  color: var(--ed-paper, #f4f1e9);
+  border-bottom-right-radius: 4px;
+}
+body.ed-site .ed-chat-bubble.tutor {
+  justify-self: start;
+  background: var(--ed-paper-strong, #eee8dc);
+  color: var(--ed-ink, #171716);
+  border: 1px solid var(--ed-line, #d9d0c3);
+  border-bottom-left-radius: 4px;
+}
+body.ed-site .ed-chat-bubble:nth-child(1) { --d: 0ms; }
+body.ed-site .ed-chat-bubble:nth-child(2) { --d: 250ms; }
+body.ed-site .ed-chat-bubble:nth-child(3) { --d: 500ms; }
+body.ed-site .ed-chat-bubble:nth-child(4) { --d: 750ms; }
+body.ed-site .ed-chat-caret {
+  display: inline-block;
+  width: 6px;
+  height: 14px;
+  margin-left: 4px;
+  background: currentColor;
+  vertical-align: text-bottom;
+  animation: edCaret 1s steps(2) infinite;
+  opacity: .85;
+}
+@keyframes edCaret {
+  50% { opacity: 0; }
+}
+@media (max-width: 720px) {
+  body.ed-site .ed-chat-demo { margin-top: 32px; padding: 18px; }
+  body.ed-site .ed-chat-bubble { font-size: 14px; }
+}
+
+/* ── P15. Mini demo (product card previews) ────────────────────────────── */
+body.ed-site .ed-mini-demo {
+  position: relative;
+  width: 168px;
+  height: 112px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #faf9f5 0%, #f4f1e9 100%);
+  border: 1px solid var(--ed-line, #d9d0c3);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+body.ed-site .ed-mini-bubble-a,
+body.ed-site .ed-mini-bubble-b {
+  position: absolute;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.35;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .5s ease var(--d, 0s), transform .5s var(--sv-ease) var(--d, 0s);
+}
+body.ed-site .ed-product-block:hover .ed-mini-bubble-a,
+body.ed-site .ed-product-block:hover .ed-mini-bubble-b,
+body.ed-site .ed-mini-demo.is-visible .ed-mini-bubble-a,
+body.ed-site .ed-mini-demo.is-visible .ed-mini-bubble-b {
+  opacity: 1;
+  transform: none;
+}
+body.ed-site .ed-mini-bubble-a {
+  top: 18px; left: 14px;
+  max-width: 70%;
+  background: var(--ed-paper-strong, #eee8dc);
+  color: var(--ed-ink, #171716);
+  border-bottom-left-radius: 2px;
+  --d: 0ms;
+}
+body.ed-site .ed-mini-bubble-b {
+  right: 14px; bottom: 16px;
+  max-width: 70%;
+  background: var(--ed-ink, #171716);
+  color: var(--ed-paper, #f4f1e9);
+  border-bottom-right-radius: 2px;
+  --d: 280ms;
+}
+body.ed-site .ed-mini-card {
+  position: absolute;
+  inset: 22px 28px 22px 28px;
+  display: grid;
+  place-items: center;
+  background: var(--ed-paper, #f4f1e9);
+  border: 1px solid var(--ed-line, #d9d0c3);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ed-ink, #171716);
+  transform: rotateY(180deg);
+  transform-style: preserve-3d;
+  transition: transform .8s var(--sv-ease);
+}
+body.ed-site .ed-mini-demo.is-visible .ed-mini-card,
+body.ed-site .ed-product-block:hover .ed-mini-card {
+  transform: rotateY(0deg);
+}
+body.ed-site .ed-mini-card::after {
+  content: attr(data-back);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--sv-clay, #b86a45);
+  color: #fff;
+  border-radius: 10px;
+  transform: rotateY(180deg);
+  backface-visibility: hidden;
+}
+body.ed-site .ed-mini-card-front,
+body.ed-site .ed-mini-card-back {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  backface-visibility: hidden;
+  border-radius: 10px;
+}
+body.ed-site .ed-mini-card-front { background: var(--ed-paper, #f4f1e9); border: 1px solid var(--ed-line, #d9d0c3); }
+body.ed-site .ed-mini-card-back {
+  background: var(--sv-clay, #b86a45);
+  color: #fff;
+  transform: rotateY(180deg);
+}
+body.ed-site .ed-mini-node {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--sv-clay, #b86a45);
+  box-shadow: 0 0 0 4px rgba(184, 106, 69, .18);
+  opacity: 0;
+  transform: scale(.5);
+  transition: opacity .4s ease var(--d, 0s), transform .4s var(--sv-ease) var(--d, 0s);
+}
+body.ed-site .ed-mini-demo.is-visible .ed-mini-node,
+body.ed-site .ed-product-block:hover .ed-mini-node {
+  opacity: 1;
+  transform: scale(1);
+}
+body.ed-site .ed-mini-node:nth-child(1) { top: 20%; left: 20%; --d: 0ms; }
+body.ed-site .ed-mini-node:nth-child(2) { top: 30%; left: 60%; --d: 120ms; }
+body.ed-site .ed-mini-node:nth-child(3) { top: 60%; left: 40%; --d: 240ms; }
+body.ed-site .ed-mini-node:nth-child(4) { top: 70%; left: 75%; --d: 360ms; }
+body.ed-site .ed-mini-pulse {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 32px; height: 32px;
+  border-radius: 999px;
+  background: rgba(184, 106, 69, .35);
+  transform: translate(-50%, -50%) scale(.5);
+  opacity: 0;
+  animation: edMiniPulse 2.2s ease-out infinite;
+}
+body.ed-site .ed-mini-demo.is-visible .ed-mini-pulse,
+body.ed-site .ed-product-block:hover .ed-mini-pulse {
+  opacity: 1;
+}
+@keyframes edMiniPulse {
+  0%   { transform: translate(-50%, -50%) scale(.5); opacity: .65; }
+  70%  { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+}
+
+/* ── P16. Coming-next preview + related chips (article footer) ────────── */
+body.ed-site .ed-coming-next {
+  margin: 1.8em 0 0;
+  padding: 18px 22px;
+  border: 1px solid var(--ed-line, #d9d0c3);
+  border-left: 2px solid var(--sv-clay, #b86a45);
+  border-radius: 0 14px 14px 0;
+  background: var(--ed-paper-soft, #faf9f5);
+}
+body.ed-site .ed-coming-next .ed-kicker { margin: 0 0 6px; }
+body.ed-site .ed-coming-next h3 {
+  margin: 0 0 6px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--ed-ink, #171716);
+}
+body.ed-site .ed-coming-next p { margin: 0; font-size: 15px; color: var(--ed-ink-soft, #56534e); }
+body.ed-site .ed-related {
+  margin: 1.4em 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+body.ed-site .ed-related-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ed-line, #d9d0c3);
+  background: var(--ed-paper, #f4f1e9);
+  color: var(--ed-ink-soft, #56534e);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color .18s ease, border-color .18s ease, background .18s ease;
+}
+body.ed-site .ed-related-chip::before {
+  content: "";
+  width: 5px; height: 5px;
+  border-radius: 999px;
+  background: var(--sv-clay, #b86a45);
+  opacity: .55;
+}
+body.ed-site .ed-related-chip:hover {
+  color: var(--ed-ink, #171716);
+  border-color: var(--sv-clay, #b86a45);
+  background: var(--ed-paper-soft, #faf9f5);
+}
+
+/* ── P17. Research hero stats strip ────────────────────────────────────── */
+body.ed-site .ed-stats-strip {
+  margin-top: 36px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  border: 1px solid var(--ed-line, #d9d0c3);
+  border-radius: 16px;
+  background: var(--ed-paper-soft, #faf9f5);
+  overflow: hidden;
+}
+body.ed-site .ed-stats-strip > div {
+  padding: 18px 22px;
+  border-right: 1px solid var(--ed-line, #d9d0c3);
+}
+body.ed-site .ed-stats-strip > div:last-child { border-right: 0; }
+body.ed-site .ed-stats-strip p {
+  margin: 0 0 4px;
+  font-family: var(--ed-mono, monospace);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ed-ink-muted, #77716a);
+}
+body.ed-site .ed-stats-strip b {
+  display: block;
+  font-size: clamp(22px, 2.4vw, 30px);
+  font-weight: 600;
+  color: var(--ed-ink, #171716);
+  letter-spacing: -.012em;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 720px) {
+  body.ed-site .ed-stats-strip { grid-template-columns: 1fr; }
+  body.ed-site .ed-stats-strip > div { border-right: 0; border-bottom: 1px solid var(--ed-line, #d9d0c3); }
+  body.ed-site .ed-stats-strip > div:last-child { border-bottom: 0; }
+}
+
+/* ── P18. Filter row hover lift ────────────────────────────────────────── */
+body.ed-site .ed-publication-row {
+  transition: transform .35s var(--sv-ease), background-size .4s ease, box-shadow .25s ease;
+}
+body.ed-site .ed-publication-row:hover .ed-publication-side img { transform: translateY(-3px); }
+body.ed-site .ed-filter-bar button { transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s var(--sv-ease); }
+body.ed-site .ed-filter-bar button:hover { transform: translateY(-1px); }
+
+/* ── P19. Product timeline (path fill on scroll) ───────────────────────── */
+body.ed-site .ed-path-timeline {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 56px 0 24px;
+  padding: 24px 0;
+}
+body.ed-site .ed-path-timeline::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 6%;
+  right: 6%;
+  height: 1px;
+  background: var(--ed-line, #d9d0c3);
+  z-index: 0;
+}
+body.ed-site .ed-path-step {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 8px 12px;
+}
+body.ed-site .ed-path-node {
+  width: 14px; height: 14px;
+  border-radius: 999px;
+  background: var(--ed-paper, #f4f1e9);
+  border: 1.5px solid var(--sv-clay, #b86a45);
+  margin: 0 auto 14px;
+  position: relative;
+}
+body.ed-site .ed-path-node::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: var(--sv-clay, #b86a45);
+  transform: scale(0);
+  transition: transform .5s var(--sv-ease);
+}
+body.ed-site .ed-path-timeline.is-visible .ed-path-node::after { transform: scale(1); }
+body.ed-site .ed-path-timeline .ed-path-node { transition-delay: var(--d, 0s); }
+body.ed-site .ed-path-timeline .ed-path-step:nth-child(1) .ed-path-node { --d: 0ms; }
+body.ed-site .ed-path-timeline .ed-path-step:nth-child(2) .ed-path-node { --d: 220ms; }
+body.ed-site .ed-path-timeline .ed-path-step:nth-child(3) .ed-path-node { --d: 440ms; }
+body.ed-site .ed-path-timeline .ed-path-step:nth-child(4) .ed-path-node { --d: 660ms; }
+body.ed-site .ed-path-step strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ed-ink, #171716);
+  letter-spacing: -.005em;
+}
+body.ed-site .ed-path-step span {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ed-ink-muted, #77716a);
+  margin-top: 4px;
+}
+@media (max-width: 720px) {
+  body.ed-site .ed-path-timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  body.ed-site .ed-path-timeline::before { display: none; }
+}
+
+/* ── P20. Article hero byline upgrade: author pill ─────────────────────── */
+body.ed-site .ed-article-byline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  font-family: var(--ed-mono, monospace);
+  font-size: 12px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ed-ink-muted, #77716a);
+}
+body.ed-site .ed-article-byline .ed-author {
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--ed-sans, sans-serif);
+}
+body.ed-site .ed-article-byline > span:not(.ed-author) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }

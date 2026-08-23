@@ -9,7 +9,7 @@ last-updated: 2026-08-22
 
 > On the conditions under which a model admitting uncertainty is more useful than a fluent guess.
 
-*Team · Socrates Research · Practice · 7 min · May 14, 2026*
+*Jules Laurent · Tutoring lead · 7 min · May 14, 2026*
 
 ## The problem with a smooth answer
 
@@ -47,9 +47,25 @@ Naming a boundary and stopping stalled sessions; naming a boundary and attaching
 
 Anonymised sessions from February 2026 logs across mathematics, programming, and history, coded by two reviewers with a third resolving disagreements. The pattern held in all three subjects, with the largest effect in programming.
 
+### Methodology timeline
+
+1. **Sample** — Sessions from Feb 2026 production logs across math, programming, history.
+2. **Anonymise** — Personal identifiers removed before coding.
+3. **Code** — Two reviewers independently mark boundary, next step, and error catches.
+4. **Reconcile** — Disagreements resolved by a third reviewer; result holds across subjects.
+
+## Coming next
+
+> **Back to the research index.** This series closes on an open question — the right *amount* of boundary-marking. We will keep tracking long-term trust and return visits, and publish all results quarterly, including the negative ones.
+
 ## Open questions
 
 How much boundary-marking is too much? Whether learners come to trust a frequently uncertain tutor over a longer horizon. And whether model-calibrated or tutor-selected uncertainty matters more—which boundaries to name may matter more than how to phrase them.
+
+## Related reading
+
+- [Practice · What learners keep after a session](https://topodrive.top/research/what-learners-keep/)
+- [Practice · The value of an honest pause](https://topodrive.top/research/honest-pause/)
 
 ## References
 

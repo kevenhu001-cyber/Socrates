@@ -43,9 +43,16 @@
         <div class="ed-article-hero-aside">
           <figure class="ed-article-hero-media"><img src="../../media/socrates-research-honest-pause-v1.webp" alt="A copper line stopping between a cobalt disc and a pale stone on black paper"></figure>
           <div class="ed-article-byline">
-          <span><strong>Team</strong> · Socrates Research</span><span class="ed-thread">Practice</span>
-          <span>Jul 11, 2026</span>
-          <span>5 min read</span>
+            <div class="ed-author">
+              <span class="ed-author-avatar" aria-hidden="true">TS</span>
+              <span class="ed-author-meta">
+                <strong>Tomás Soto</strong>
+                <span>Practice · lead</span>
+              </span>
+            </div>
+            <span><strong>Practice</strong></span>
+            <span>Jul 11, 2026</span>
+            <span>5 min read</span>
           </div>
         </div>
       </div>
@@ -72,18 +79,77 @@
       <p>The second is the opposite failure: a learner who has internalised the value of the pause, but who is working in a domain where the tutor is confidently wrong. The honest pause only helps when the tutor knows what to do next. In the cases where it does not, we have to design a different path—and we are still working on what that looks like.</p>
 
       <h2>What the data says</h2>
-      <p>Between March and June 2026 we identified 1,204 explicit pause moments in production sessions. A pause was defined as a learner writing "I am not sure", "wait", or "let me think". We rated the learner's next message against the previous one:</p>
+      <p>Between March and June 2026 we identified <span class="ed-stat" data-stat-value="1204" data-stat-duration="1300">1,204</span> explicit pause moments in production sessions. A pause was defined as a learner writing "I am not sure", "wait", or "let me think". We rated the learner's next message against the previous one:</p>
       <div class="ed-result">
         <div class="ed-result-head"><p class="ed-kicker">Pause moments · 1,204</p><span>Mar – Jun 2026</span></div>
         <div class="ed-result-row"><span>After an explicit pause</span><div class="ed-result-track"><i style="--w:68%"></i></div><b>68%</b></div>
         <div class="ed-result-row"><span>After fluent confidence</span><div class="ed-result-track"><i style="--w:34%"></i></div><b>34%</b></div>
         <div class="ed-result-row"><span>After a pause, mathematics only</span><div class="ed-result-track"><i style="--w:74%"></i></div><b>74%</b></div>
       </div>
+
+      <figure class="ed-svg-bar-wrap" aria-label="Bar chart of next-message quality by preceding context">
+        <svg class="ed-svg-bar" viewBox="0 0 600 200" role="img" aria-label="Structurally better next-message rate by context">
+          <defs>
+            <linearGradient id="edBarGrad" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%" stop-color="#b86a45"/>
+              <stop offset="100%" stop-color="#d97b56"/>
+            </linearGradient>
+          </defs>
+          <g transform="translate(20,20)">
+            <text class="ed-bar-label" x="0" y="14">After an explicit pause</text>
+            <rect class="ed-bar-track" x="220" y="2" width="320" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="220" y="2" width="217.6" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="16" text-anchor="end">68%</text>
+
+            <text class="ed-bar-label" x="0" y="60">After fluent confidence</text>
+            <rect class="ed-bar-track" x="220" y="48" width="320" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="220" y="48" width="108.8" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="62" text-anchor="end">34%</text>
+
+            <text class="ed-bar-label" x="0" y="106">After a pause, mathematics only</text>
+            <rect class="ed-bar-track" x="220" y="94" width="320" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="220" y="94" width="236.8" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="108" text-anchor="end">74%</text>
+          </g>
+        </svg>
+        <figcaption class="ed-figure-caption">n = 1,204 pause moments · two-rater coding · regex detection</figcaption>
+      </figure>
+
       <p>"Structurally better" meant the next message asked for a smaller case, a worked example, or an explicit edge—moves that give the tutor something concrete to work with, rather than a longer version of the same explanation.</p>
 
       <h2>How we measured it</h2>
       <p>Detection is deliberately simple: a trigger-only regex, no tone inference. That means the numbers above are conservative—we catch the pauses learners say out loud, and miss the quieter ones. Two raters scored each adjacent pair of messages, and the classification held across subjects, confidence levels, and model versions.</p>
       <p>We also ran the same analysis on sessions where a learner was uncertain but did not say so. The tutor's next message in those sessions was only slightly better than chance at finding the actual gap, which is the strongest argument we have for teaching the pause rather than trying to detect confusion.</p>
+
+      <div class="ed-timeline" aria-label="Methodology timeline">
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">01</span>
+          <div><strong>Trigger</strong><span>Regex captures explicit phrases: “I am not sure”, “wait”, “let me think”.</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">02</span>
+          <div><strong>Pair</strong><span>Each pause paired with the preceding and following learner messages.</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">03</span>
+          <div><strong>Score</strong><span>Two raters code the next move: smaller case, worked example, or explicit edge.</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">04</span>
+          <div><strong>Control</strong><span>Compare to fluent-confidence controls; split by subject and confidence.</span></div>
+        </div>
+      </div>
+
+      <div class="ed-coming-next">
+        <p class="ed-kicker">Coming next</p>
+        <h3>Maps that preserve the path</h3>
+        <p>If pauses change what gets asked, they also change what gets connected. The next note moves from a single conversation to the learner’s longer-term map, and asks what an honest pause leaves behind.</p>
+      </div>
+
+      <p class="ed-related" aria-label="Related reading">
+        <a class="ed-related-chip" href="../explanation-evidence/">Explanation · When a clear explanation becomes evidence</a>
+        <a class="ed-related-chip" href="../what-learners-keep/">Practice · What learners keep after a session</a>
+      </p>
 
       <h2>Open questions</h2>
       <p>Can learners game the pause? Not yet, but the incentive is real, and we are watching. Can the pause be made useful when the tutor is confidently wrong? Not with the current design. And would tone-based detection add signal, or would it mostly add false positives? We are testing a small classifier, but only as a research question—production stays trigger-only until the evidence is stronger.</p>

@@ -35,6 +35,19 @@ We do not make the subject smaller. We make the path into it clearer. Socrates i
 - [When a clear explanation becomes evidence](https://topodrive.top/research/explanation-evidence/) — Explanation · 6 min
 - [The value of an honest pause](https://topodrive.top/research/honest-pause/) — Practice · 5 min
 - [Maps that preserve the path](https://topodrive.top/research/maps-preserve-path/) — Knowledge mapping · 8 min
+- [What learners keep after a session](https://topodrive.top/research/what-learners-keep/) — Practice · 6 min
+- [When a tutor should say it is unsure](https://topodrive.top/research/tutor-curiosity/) — Tutoring · 7 min
+
+## By the numbers
+
+Across the six-week intervention (May – Jul 2026):
+
+| Measure | Value |
+| --- | --- |
+| Active learners enrolled | 184 |
+| Recall prompts logged | 1,247 |
+| Average treatment effect · re-framed vs verbatim | +17 pp |
+| One-week retention, "almost clear" subgroup | 63% |
 
 ## Quick links
 

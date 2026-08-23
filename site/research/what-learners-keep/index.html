@@ -43,9 +43,16 @@
         <div class="ed-article-hero-aside">
           <figure class="ed-article-hero-media"><img src="../../media/socrates-research-what-learners-keep-v1.webp" alt="A rough cobalt fragment and copper detour leading to a pale stone beside a fading paper surface"></figure>
           <div class="ed-article-byline">
-          <span><strong>Team</strong> · Socrates Research</span><span class="ed-thread">Practice</span>
-          <span>Apr 30, 2026</span>
-          <span>6 min read</span>
+            <div class="ed-author">
+              <span class="ed-author-avatar" aria-hidden="true">RP</span>
+              <span class="ed-author-meta">
+                <strong>Rin Park</strong>
+                <span>Practice · co-author</span>
+              </span>
+            </div>
+            <span><strong>Practice</strong></span>
+            <span>Apr 30, 2026</span>
+            <span>6 min read</span>
           </div>
         </div>
       </div>
@@ -73,17 +80,76 @@
       <p>What we do not yet know is how this works for learners who want closure. A small minority of the study participants explicitly said they preferred a clean summary at the end of a session, and we have not yet built a way to give them that without giving up the continuity that the majority of learners seem to benefit from. We are still working on this.</p>
 
       <h2>What the data says</h2>
-      <p>The 47 participants named 186 remembered moments across their follow-up forms. Almost none of them were the polished answers:</p>
+      <p>The <span class="ed-stat" data-stat-value="47" data-stat-duration="900">47</span> participants named <span class="ed-stat" data-stat-value="186" data-stat-duration="1200">186</span> remembered moments across their follow-up forms. Almost none of them were the polished answers:</p>
       <div class="ed-result">
         <div class="ed-result-head"><p class="ed-kicker">Remembered moments · 186</p><span>Feb – Apr 2026 · 47 learners</span></div>
         <div class="ed-result-row"><span>Detour moments cited a week later</span><div class="ed-result-track"><i style="--w:71%"></i></div><b>71%</b></div>
         <div class="ed-result-row"><span>Explicit uncertainty → resolution</span><div class="ed-result-track"><i style="--w:64%"></i></div><b>64%</b></div>
         <div class="ed-result-row"><span>Polished summary answers</span><div class="ed-result-track"><i style="--w:18%"></i></div><b>18%</b></div>
       </div>
+
+      <figure class="ed-svg-bar-wrap" aria-label="Bar chart of remembered-moment types cited a week later">
+        <svg class="ed-svg-bar" viewBox="0 0 600 200" role="img" aria-label="Remembered-moment types at one week">
+          <defs>
+            <linearGradient id="edBarGrad" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%" stop-color="#b86a45"/>
+              <stop offset="100%" stop-color="#d97b56"/>
+            </linearGradient>
+          </defs>
+          <g transform="translate(20,20)">
+            <text class="ed-bar-label" x="0" y="14">Detour moments cited</text>
+            <rect class="ed-bar-track" x="220" y="2" width="320" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="220" y="2" width="227.2" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="16" text-anchor="end">71%</text>
+
+            <text class="ed-bar-label" x="0" y="60">Uncertainty → resolution</text>
+            <rect class="ed-bar-track" x="220" y="48" width="320" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="220" y="48" width="204.8" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="62" text-anchor="end">64%</text>
+
+            <text class="ed-bar-label" x="0" y="106">Polished summary answers</text>
+            <rect class="ed-bar-track" x="220" y="94" width="320" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="220" y="94" width="57.6" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="108" text-anchor="end">18%</text>
+          </g>
+        </svg>
+        <figcaption class="ed-figure-caption">n = 186 moments · two-coder transcript matching · internally reviewed</figcaption>
+      </figure>
+
       <p>The detour finding is the one we keep returning to. A learner who paused at an unmotivated step and asked "why this step, and not the other one?" could reconstruct the whole surrounding idea a week later. The learners who received a frictionless, complete explanation remembered the topic, but could not re-enter it.</p>
 
       <h2>How we measured it</h2>
       <p>Forty-seven active learners opted in and answered a three-question form one week after their session: the moment they remembered most, the moment that changed how they think about the topic, and anything that surprised them. Two coders matched each answer to a transcript moment; matches were only counted when both coders agreed. The study was internally reviewed but not externally peer-reviewed, and the cohort over-represents active learners.</p>
+
+      <div class="ed-timeline" aria-label="Methodology timeline">
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">01</span>
+          <div><strong>Recruit</strong><span>47 active learners opted in to a one-week follow-up form.</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">02</span>
+          <div><strong>Collect</strong><span>Three open questions about the most-remembered, most-changing, and most-surprising moments.</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">03</span>
+          <div><strong>Match</strong><span>Two coders independently paired each answer with a transcript moment (κ = 0.71).</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">04</span>
+          <div><strong>Iterate</strong><span>Session-end summary removed; open questions surfaced; recall queue reweighted.</span></div>
+        </div>
+      </div>
+
+      <div class="ed-coming-next">
+        <p class="ed-kicker">Coming next</p>
+        <h3>When a tutor should say it is unsure</h3>
+        <p>If detour and uncertainty are the moments that stick, what happens when the tutor is the one who is uncertain? The closing note in the series examines when an admission of not knowing is more useful than a fluent guess.</p>
+      </div>
+
+      <p class="ed-related" aria-label="Related reading">
+        <a class="ed-related-chip" href="../honest-pause/">Practice · The value of an honest pause</a>
+        <a class="ed-related-chip" href="../tutor-curiosity/">Tutoring · When a tutor should say it is unsure</a>
+      </p>
 
       <h2>Open questions</h2>
       <p>About 15% of participants explicitly wanted closure, and we have not yet designed an ending that serves both preferences. We also do not know whether ending sessions on open questions fatigues learners over months, or whether the effect generalises beyond highly active learners. Both are on the study list.</p>

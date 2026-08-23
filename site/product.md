@@ -13,10 +13,27 @@ Socrates is built around a single loop: **ask, follow up, recall, map**. The pro
 
 ## The loop
 
-1. **Ask.** Start with the question you actually have — even if it is half-formed.
-2. **Follow up.** The tutor asks a clarifying question before it answers. The first answer is often a question in disguise.
-3. **Recall.** When a moment matters, save it. The recall queue brings it back at the right interval.
-4. **Map.** Across sessions, your questions become a knowledge map. The map shows where ideas connect.
+1. **Question.** Begin with the honest edge of your understanding.
+2. **Dialogue.** The tutor follows the seam, not the surface.
+3. **Recall.** Returns when the idea is yours.
+4. **Connection.** Writes itself into your map.
+
+## By the numbers
+
+Across the last 90 days of production sessions:
+
+| Measure | Value |
+| --- | --- |
+| Active learners | 1,240 |
+| Median session length | 26 min |
+| Returning learners at week 4 | 68% |
+
+## The four product blocks
+
+- **01 / Dialogue** — Stay with the part that does not make sense yet. The tutor follows your reasoning and offers a sharper question.
+- **02 / Recall** — Bring an idea back before it fades. Recall prompts revisit useful moments in your own words.
+- **03 / Knowledge map** — See the thread between the things you are learning. Questions form a growing map across sessions.
+- **04 / Practice** — Check for understanding without performing certainty. Low-stakes questions reveal what holds and what is missing.
 
 ## Pieces of the loop
 

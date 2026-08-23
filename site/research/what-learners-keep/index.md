@@ -9,7 +9,7 @@ last-updated: 2026-08-22
 
 > A small study on the parts of a conversation that people actually revisit a week later.
 
-*Team · Socrates Research · Memory · 6 min · Apr 30, 2026*
+*Rin Park · Practice co-author · 6 min · Apr 30, 2026*
 
 ## How we ran the study
 
@@ -43,9 +43,25 @@ Learners who paused at an unmotivated step and asked "why this step?" could reco
 
 One-week, three-question follow-up forms paired with transcripts; two coders matched each answer to a transcript moment, counting only agreed matches. Internally reviewed, not externally peer-reviewed, and the cohort over-represents active learners.
 
+### Methodology timeline
+
+1. **Recruit** — 47 active learners opted in and completed three questions.
+2. **Follow up** — Short form sent one week after the session.
+3. **Match** — Two coders independently matched each answer to a transcript moment.
+4. **Reconcile** — Only double-coded matches counted; disagreements resolved by a third.
+
+## Coming next
+
+> **When a tutor should say it is unsure.** Detours open the space, but the tutor's own uncertainty — the moment of marking a boundary — reshapes the learner's next step. The next note records how three response patterns differ across 62 sessions.
+
 ## Open questions
 
 About 15% of participants explicitly wanted closure, and we have not designed an ending that serves both preferences. We also do not know whether open-ended endings fatigue learners over months, or whether the effect generalises beyond active learners.
+
+## Related reading
+
+- [Practice · The value of an honest pause](https://topodrive.top/research/honest-pause/)
+- [Tutoring · When a tutor should say it is unsure](https://topodrive.top/research/tutor-curiosity/)
 
 ## References
 

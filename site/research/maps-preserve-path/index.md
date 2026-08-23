@@ -9,7 +9,7 @@ last-updated: 2026-08-22
 
 > A field note on showing relationships without turning a living subject into a static diagram.
 
-*Team · Socrates Research · Knowledge mapping · 8 min · Jun 24, 2026*
+*Aiko Yamada · Knowledge mapping lead · 8 min · Jun 24, 2026*
 
 ## The map that did not survive
 
@@ -45,9 +45,25 @@ The rebuilt map was not more popular in week one—it was more persistent, and i
 
 Twelve-week cohort comparison with weekly opens, edge follows, anchor revisits, and follow-up-question logs, plus eighteen post-session interviews. Learners described the rebuilt map as "quieter" and the original as "a dashboard for a job I did not have".
 
+### Methodology timeline
+
+1. **Assign** — 96 active learners split evenly across original and rebuilt maps.
+2. **Log** — Weekly opens, edge follows, and anchor revisits over 12 weeks.
+3. **Interview** — 18 post-session semi-structured interviews comparing experience.
+4. **Reconcile** — Two coders independently reviewed interview transcripts.
+
+## Coming next
+
+> **What learners keep after a session.** The map records long-term accumulation, but the *staying* at the end of a single session is a closer question. The next note tracks which moment 47 learners still recalled seven days later.
+
 ## Open questions
 
 Scale past five hundred anchors, a better undo flow for editing, and whether map use improves delayed recall rather than only session engagement. The recall effect is not yet significant at four weeks.
+
+## Related reading
+
+- [Memory · The route back to an idea](https://topodrive.top/research/memory-recall/)
+- [Practice · What learners keep after a session](https://topodrive.top/research/what-learners-keep/)
 
 ## References
 

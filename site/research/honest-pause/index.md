@@ -9,7 +9,7 @@ last-updated: 2026-08-22
 
 > Why a moment of uncertainty can give an intelligent tutor better material to work with.
 
-*Team · Socrates Research · Practice · 5 min · Jul 11, 2026*
+*Tomás Soto · Practice lead · 5 min · Jul 11, 2026*
 
 ## The moment that shows up
 
@@ -43,9 +43,25 @@ Between March and June 2026 we identified 1,204 explicit pause moments ("I am no
 
 Detection is trigger-only regex, no tone inference, so the numbers are conservative. Two raters scored adjacent message pairs; the classification held across subjects, confidence levels, and model versions. When a learner was quietly confused, the tutor's next message was only slightly better than chance at finding the gap.
 
+### Methodology timeline
+
+1. **Trigger detection** — Regular-expression match for "I am not sure", "wait", "let me think".
+2. **Pair** — For each pause, locate the most recent fluent message and pair it with the next message.
+3. **Score** — Two raters grade "structurally better" per pair.
+4. **Reconcile** — Disagreements resolved by a third rater; the result holds across subjects.
+
+## Coming next
+
+> **Maps that preserve the path.** A pause opens a question, but which *connection* truly belongs in the map. The next note records how the knowledge map keeps the route you came in by — instead of becoming a grid with no past.
+
 ## Open questions
 
 Can learners game the pause? Can the pause help when the tutor is confidently wrong? Would tone-based detection add signal or mostly false positives? Production stays trigger-only until the evidence is stronger.
+
+## Related reading
+
+- [Explanation · When a clear explanation becomes evidence](https://topodrive.top/research/explanation-evidence/)
+- [Practice · What learners keep after a session](https://topodrive.top/research/what-learners-keep/)
 
 ## References
 

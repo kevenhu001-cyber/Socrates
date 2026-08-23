@@ -9,7 +9,7 @@ last-updated: 2026-08-22
 
 > A study of why a changed prompt can surface a concept more reliably than a repeated answer.
 
-*Team · Socrates Research · Memory · 7 min · Aug 12, 2026*
+*Sora Reyes · Memory co-author · 7 min · Aug 12, 2026*
 
 ## The question we kept seeing
 
@@ -46,9 +46,25 @@ The gap between the first two rows is the average treatment effect; the "almost 
 
 Both groups received identical review intervals and total review time; only the surface of the prompt differed. Retention used a delayed free-recall prompt scored blindly by two raters, controlling for subject, prior session count, and self-reported confidence. The effect held across every shape pair, with the smallest effect for surface-only rewording.
 
+### Methodology timeline
+
+1. **Recruit** — 184 active learners, balanced by subject and prior session count.
+2. **Randomise** — Each learner assigned to verbatim or re-framed recall for the full window.
+3. **Measure** — Delayed free-recall at one week, scored blindly by two raters (κ = 0.78).
+4. **Replicate** — Four-week follow-up scheduled for September 2026 with same protocol.
+
+## Coming next
+
+> **When a clear explanation becomes evidence.** If a re-framed recall is the *route* back, what happens when a learner has to articulate the idea in their own words first? The next note examines three years of "explain it back" data.
+
 ## Open questions
 
 Whether the effect survives to one month; whether it holds under time pressure; and whether confident learners still benefit, or re-framing mostly helps the "almost clear" middle. A four-week follow-up is planned for September.
+
+## Related reading
+
+- [Explanation · When a clear explanation becomes evidence](https://topodrive.top/research/explanation-evidence/)
+- [Practice · What learners keep after a session](https://topodrive.top/research/what-learners-keep/)
 
 ## References
 

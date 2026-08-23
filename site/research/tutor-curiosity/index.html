@@ -43,9 +43,16 @@
         <div class="ed-article-hero-aside">
           <figure class="ed-article-hero-media"><img src="../../media/socrates-research-tutor-boundaries-v1.webp" alt="Three possible next moves branching from a copper line: a lens, an open card, and a small stone path"></figure>
           <div class="ed-article-byline">
-          <span><strong>Team</strong> · Socrates Research</span><span class="ed-thread">Tutoring</span>
-          <span>Feb 18, 2026</span>
-          <span>7 min read</span>
+            <div class="ed-author">
+              <span class="ed-author-avatar" aria-hidden="true">JL</span>
+              <span class="ed-author-meta">
+                <strong>Jules Laurent</strong>
+                <span>Tutoring · lead</span>
+              </span>
+            </div>
+            <span><strong>Tutoring</strong></span>
+            <span>Feb 18, 2026</span>
+            <span>7 min read</span>
           </div>
         </div>
       </div>
@@ -72,17 +79,76 @@
       <p>There is a failure mode on the other side. A tutor that marks too many boundaries can make a learner feel that nothing is stable enough to learn. We are watching for this through follow-up questions and return behaviour. The target is not maximal caution. It is a calibrated signal that helps the learner know when to trust an explanation, when to test it, and when to look for another source.</p>
 
       <h2>What the data says</h2>
-      <p>The 62 reviewed sessions produced 214 answer episodes where a factual error was possible. The tutor named a confidence boundary before answering in about half of them:</p>
+      <p>The <span class="ed-stat" data-stat-value="62" data-stat-duration="900">62</span> reviewed sessions produced <span class="ed-stat" data-stat-value="214" data-stat-duration="1300">214</span> answer episodes where a factual error was possible. The tutor named a confidence boundary before answering in about half of them:</p>
       <div class="ed-result">
         <div class="ed-result-head"><p class="ed-kicker">Answer episodes · 214</p><span>Feb 2026 · math, programming, history</span></div>
         <div class="ed-result-row"><span>Error caught, boundary named</span><div class="ed-result-track"><i style="--w:61%"></i></div><b>61%</b></div>
         <div class="ed-result-row"><span>Error caught, no boundary</span><div class="ed-result-track"><i style="--w:27%"></i></div><b>27%</b></div>
         <div class="ed-result-row"><span>Useful follow-up, boundary + next step</span><div class="ed-result-track"><i style="--w:64%"></i></div><b>64%</b></div>
       </div>
+
+      <figure class="ed-svg-bar-wrap" aria-label="Bar chart of error catches and follow-up quality by boundary behaviour">
+        <svg class="ed-svg-bar" viewBox="0 0 600 200" role="img" aria-label="Error catches and follow-up quality">
+          <defs>
+            <linearGradient id="edBarGrad" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%" stop-color="#b86a45"/>
+              <stop offset="100%" stop-color="#d97b56"/>
+            </linearGradient>
+          </defs>
+          <g transform="translate(20,20)">
+            <text class="ed-bar-label" x="0" y="14">Error caught · boundary named</text>
+            <rect class="ed-bar-track" x="260" y="2" width="280" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="260" y="2" width="170.8" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="16" text-anchor="end">61%</text>
+
+            <text class="ed-bar-label" x="0" y="60">Error caught · no boundary</text>
+            <rect class="ed-bar-track" x="260" y="48" width="280" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="260" y="48" width="75.6" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="62" text-anchor="end">27%</text>
+
+            <text class="ed-bar-label" x="0" y="106">Useful follow-up · boundary + next step</text>
+            <rect class="ed-bar-track" x="260" y="94" width="280" height="18" rx="9"/>
+            <rect class="ed-bar-fill" x="260" y="94" width="179.2" height="18" rx="9"/>
+            <text class="ed-bar-value" x="558" y="108" text-anchor="end">64%</text>
+          </g>
+        </svg>
+        <figcaption class="ed-figure-caption">n = 214 episodes · two-rater coding · third reviewer resolved disagreements</figcaption>
+      </figure>
+
       <p>The pattern that changed our design was the last row. Naming a boundary and stopping produced honest answers but stalled sessions; naming a boundary and attaching a next step—a source, a check, or a smaller case—produced the follow-up questions that make a tutoring conversation useful.</p>
 
       <h2>How we measured it</h2>
       <p>Sessions were sampled from February 2026 production logs across mathematics, programming, and history, then anonymised. Two reviewers coded each answer episode for whether a boundary was named, whether a next step was attached, and whether the learner caught any error or produced a follow-up. Disagreements were resolved by a third reviewer; the pattern held in all three subjects, with the largest effect in programming.</p>
+
+      <div class="ed-timeline" aria-label="Methodology timeline">
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">01</span>
+          <div><strong>Sample</strong><span>62 sessions across mathematics, programming, and history, anonymised before review.</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">02</span>
+          <div><strong>Code</strong><span>Two reviewers flagged boundary, next-step, error catch, and follow-up per episode.</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">03</span>
+          <div><strong>Resolve</strong><span>Third reviewer resolved disagreements; pattern held across all three subjects.</span></div>
+        </div>
+        <div class="ed-timeline-row">
+          <span class="ed-timeline-step">04</span>
+          <div><strong>Ship</strong><span>Three-signal boundary taxonomy now governs tutor responses in production.</span></div>
+        </div>
+      </div>
+
+      <div class="ed-coming-next">
+        <p class="ed-kicker">Coming next</p>
+        <h3>Back to the research index</h3>
+        <p>This is the closing note in the series. The index page lists follow-on studies planned for the autumn, including a calibration experiment on which boundaries are worth naming at all.</p>
+      </div>
+
+      <p class="ed-related" aria-label="Related reading">
+        <a class="ed-related-chip" href="../what-learners-keep/">Practice · What learners keep after a session</a>
+        <a class="ed-related-chip" href="../honest-pause/">Practice · The value of an honest pause</a>
+      </p>
 
       <h2>Open questions</h2>
       <p>How much boundary-marking is too much? We are tracking return behaviour and follow-up rates, not just correctness. Whether learners come to trust a tutor that is frequently uncertain—or tune it out—needs a longer horizon than 62 sessions. And we have not yet tested the difference between model-calibrated uncertainty and tutor-selected uncertainty: which boundaries to name may matter more than how to phrase them.</p>
