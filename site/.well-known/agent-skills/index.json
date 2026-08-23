@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "version": "0.2.0",
+  "name": "Socrates",
+  "description": "An AI tutor for people who want to understand — built around Socratic dialogue, recall, and a knowledge map.",
+  "homepage": "https://topodrive.top",
+  "skills": [
+    {
+      "type": "skill-md",
+      "name": "tutor.socratic-dialogue",
+      "url": "https://topodrive.top/agents.md",
+      "digest": "sha256:0aaa77645daf3a4a46ffcdeadedb3104d45ae02a4df251065229c73c36f1d5f0",
+      "description": "Ask-then-answer tutoring style. Use when the user is trying to understand a difficult subject with prerequisites and edges."
+    },
+    {
+      "type": "skill-md",
+      "name": "tutor.recall-queue",
+      "url": "https://topodrive.top/agents.md#recall",
+      "digest": "sha256:0aaa77645daf3a4a46ffcdeadedb3104d45ae02a4df251065229c73c36f1d5f0",
+      "description": "Schedule spaced-repetition prompts that surface saved moments at the right interval."
+    },
+    {
+      "type": "skill-md",
+      "name": "tutor.knowledge-map",
+      "url": "https://topodrive.top/agents.md#map",
+      "digest": "sha256:0aaa77645daf3a4a46ffcdeadedb3104d45ae02a4df251065229c73c36f1d5f0",
+      "description": "Maintain a map of relationships between ideas across the user's sessions."
+    },
+    {
+      "type": "skill-md",
+      "name": "tutor.exam-mode",
+      "url": "https://topodrive.top/agents.md#exam",
+      "digest": "sha256:0aaa77645daf3a4a46ffcdeadedb3104d45ae02a4df251065229c73c36f1d5f0",
+      "description": "Retrieval-practice mode that surfaces questions at the end of a study block."
+    },
+    {
+      "type": "skill-md",
+      "name": "tutor.mistake-book",
+      "url": "https://topodrive.top/agents.md#mistakes",
+      "digest": "sha256:0aaa77645daf3a4a46ffcdeadedb3104d45ae02a4df251065229c73c36f1d5f0",
+      "description": "Collect moments where the learner's explanation showed a seam."
+    },
+    {
+      "type": "skill-md",
+      "name": "docs.llms-txt",
+      "url": "https://topodrive.top/llms.txt",
+      "digest": "sha256:f1f4f4139c87d5f65b327fb8040966bc9044d142b0ee1328a9604c9a48641249",
+      "description": "A short navigation index pointing at every Socrates resource relevant to agents."
+    },
+    {
+      "type": "skill-md",
+      "name": "api.openapi-spec",
+      "url": "https://topodrive.top/openapi.json",
+      "digest": "sha256:7c51df2a146201feab237a5c3cc8f79ee0bf5c8a80335af65695967ab6b213eb",
+      "description": "OpenAPI 3.0 specification of Socrates' public API surface."
+    }
+  ]
+}

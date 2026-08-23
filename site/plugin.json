@@ -1,0 +1,25 @@
+{
+  "$schema": "https://agent-plugins.org/specification/schema/plugin.json",
+  "name": "socrates",
+  "version": "1.0.0",
+  "description": "Socrates \u2014 an AI tutor for people who want to understand. Socratic dialogue skills, a read-only MCP server over the Socrates API, and scoped agent authentication.",
+  "homepage": "https://topodrive.top",
+  "authors": [
+    {
+      "name": "TopoDrive",
+      "url": "https://topodrive.top/about"
+    }
+  ],
+  "skills": [
+    {
+      "path": "https://topodrive.top/SKILL.md"
+    }
+  ],
+  "mcpServers": {
+    "socrates": {
+      "type": "http",
+      "url": "https://app.topodrive.top/api/mcp",
+      "note": "Read-only discovery tools; write tools require a scoped agent key (see https://topodrive.top/auth.md)."
+    }
+  }
+}

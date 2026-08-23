@@ -1,0 +1,101 @@
+{
+  "resource": "https://app.topodrive.top",
+  "resource_documentation": "https://topodrive.top/auth.md",
+  "bearer_methods_supported": [
+    "header",
+    "cookie"
+  ],
+  "scopes_supported": [
+    "chat:read",
+    "chat:write",
+    "memory:read",
+    "memory:write",
+    "sessions:read",
+    "sessions:write",
+    "files:read",
+    "files:write",
+    "projects:read",
+    "projects:write"
+  ],
+  "auth_schemes_in_use": [
+    {
+      "scheme": "session_cookie",
+      "name": "sid",
+      "documentation": "https://topodrive.top/auth.md#1-browser-session-cookie--sid",
+      "status": "active"
+    },
+    {
+      "scheme": "bearer",
+      "name": "ma.<pairId>.<64-hex>",
+      "documentation": "https://topodrive.top/auth.md#2-mobile-bearer--mapairid64-hex",
+      "status": "active"
+    },
+    {
+      "scheme": "bearer",
+      "name": "mr.<pairId>.<64-hex> (refresh)",
+      "documentation": "https://topodrive.top/auth.md#2-mobile-bearer--mapairid64-hex",
+      "status": "active"
+    },
+    {
+      "scheme": "csrf_double_submit",
+      "name": "X-CSRF-Token",
+      "documentation": "https://topodrive.top/auth.md#1-browser-session-cookie--sid",
+      "status": "active"
+    },
+    {
+      "scheme": "oauth2_authorization_code",
+      "name": "github",
+      "documentation": "https://topodrive.top/auth.md#3-github-oauth-20--third-party-login",
+      "status": "active",
+      "note": "Third-party login only — does not issue an API access credential."
+    },
+    {
+      "scheme": "agent_api_key",
+      "name": "ak_<keyId>.<secret>",
+      "documentation": "https://topodrive.top/auth.md#6-scoped-agent-api-keys--ak_keyidsecret",
+      "status": "active",
+      "note": "Long-lived scoped keys minted by an account holder for a headless agent. Only the SHA-256 of the credential is stored; revoke any time from the API keys page.",
+      "management": "https://topodrive.top/api-keys"
+    },
+    {
+      "scheme": "oauth2_authorization_code_pkce",
+      "name": "socrates",
+      "issuer": "https://app.topodrive.top/api/oauth",
+      "metadata": "https://topodrive.top/.well-known/oauth-authorization-server",
+      "scopes_supported": [
+        "chat:read",
+        "chat:write",
+        "memory:read",
+        "memory:write",
+        "sessions:read",
+        "sessions:write",
+        "files:read",
+        "files:write",
+        "projects:read",
+        "projects:write"
+      ],
+      "grant_types": [
+        "authorization_code",
+        "refresh_token"
+      ],
+      "code_challenge_methods": [
+        "S256"
+      ],
+      "documentation": "https://topodrive.top/auth.md#5-oauth-20-authorization-server--scoped-agent-keys",
+      "status": "active"
+    }
+  ],
+  "authorization_servers": [
+    "https://app.topodrive.top/api/oauth"
+  ],
+  "www_authenticate": {
+    "realm": "socrates",
+    "challenge": "Bearer realm=\"socrates\", resource_metadata=\"https://topodrive.top/.well-known/oauth-protected-resource\", authorization_uri=\"https://app.topodrive.top/api/oauth/authorize\""
+  },
+  "history": {
+    "phase_d": {
+      "status": "shipped_2026_08",
+      "summary": "OAuth 2.0 authorization server with agent-issued, scoped API keys."
+    }
+  }
+}

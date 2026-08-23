@@ -1,0 +1,103 @@
+# Socrates — API (scoped llms.txt)
+
+> Scoped context for AI agents integrating with the Socrates REST API. For the full Socrates index, see [/llms.txt](https://topodrive.top/llms.txt). For developer-quickstart, see [/developers/llms.txt](https://topodrive.top/developers/llms.txt).
+
+The Socrates API is served from `https://app.topodrive.top`. The mobile shell uses the prefix `https://app.topodrive.top/api/v2`; nginx rewrites it to `/api/*` on the same origin. All endpoints below live under `/api/`.
+
+## Canonical reference
+
+- OpenAPI 3.0 specification: [/openapi.json](https://topodrive.top/openapi.json) — operationIds, typed schemas, error model, scopes, headers.
+- Auth reference: [/auth.md](https://topodrive.top/auth.md).
+- Live API base: `https://app.topodrive.top/api`.
+
+## Public, no-auth endpoints
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/health` | Liveness probe — 200 OK / 503 db-down. |
+| GET | `/v2/health` | Mobile-tier health probe (nginx-rewritten to `/health`). |
+| GET | `/hello` | Static handshake `{message: "hello"}`. |
+| GET | `/config` | Front-end capability blob (`hasBeagleKey`, `isReasoning`). |
+| GET | `/status` | Anonymous system status feed. |
+| GET | `/mobile/bootstrap` | Mobile-shell bootstrap contract. |
+| GET | `/auth/csrf-token` | Issues a CSRF token + cookie. |
+
+## Auth endpoints
+
+| Method | Path | Scheme | Description |
+| --- | --- | --- | --- |
+| POST | `/auth/login` | `csrfDoubleSubmit` | Email/password → `sid` cookie. |
+| POST | `/auth/register` | `csrfDoubleSubmit` | Create account, send verification email. |
+| GET | `/auth/me` | `sessionCookie` | Current user from `sid`. |
+| POST | `/auth/logout` | `csrfDoubleSubmit` | Clear `sid`. |
+| GET | `/auth/oauth/github/start` | — | Begin GitHub OAuth. |
+| GET | `/auth/oauth/github/callback` | — | Complete GitHub OAuth. |
+| POST | `/mobile/login` | — | Issue `ma.*` + `mr.*` bearer pair. |
+| POST | `/mobile/refresh` | `mobileRefresh` | Rotate `mr.*` for a fresh `ma.*`. |
+
+## OAuth 2.0 authorization server
+
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/oauth/register` | RFC 7591 dynamic client registration. |
+| POST | `/oauth/token` | RFC 6749 token endpoint (`authorization_code` + `refresh_token`). |
+| POST | `/oauth/revoke` | RFC 7009 token revocation. |
+
+Issuer: `https://app.topodrive.top/api/oauth`. Discovery: `/.well-known/oauth-authorization-server`.
+
+## Scoped agent API keys
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/account/agent-keys` | List current keys (no secret material). |
+| POST | `/account/agent-keys` | Mint a new scoped key. Secret shown ONCE. |
+| DELETE | `/account/agent-keys/{id}` | Immediate revocation. |
+
+All `/account/agent-keys` calls accept `Idempotency-Key: <uuid>` for safe retries.
+
+## Async jobs (202 Accepted)
+
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/import` | Queue a bulk import job. Returns `202 {id, status, progress}` + `Location` header. |
+| GET | `/import/{id}` | Poll a job (`queued`, `running`, `completed`, `failed`, `not_implemented`). |
+| GET | `/import` | List the 20 most recent jobs. |
+
+## Cursor pagination (list endpoints)
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/sessions?cursor=&limit=` | List the user's tutoring sessions. Response: `{items, nextCursor, hasMore}`. |
+
+## Bulk operations
+
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/sessions` | Bulk-create up to 50 sessions. Response carries per-item status. |
+
+## Streaming
+
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/chat/stream` | Server-Sent Events stream of the tutor's reply. Events: `start / tool / error / complete`. Accepts `Idempotency-Key`. |
+
+## Error model
+
+```json
+{
+  "code": "TOO_MANY_REQUESTS",
+  "message": "Rate limit exceeded. Try again in 1 min.",
+  "detail": { "scope": "chat:read" },
+  "requestId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "retryAfterSeconds": 60
+}
+```
+
+Closed code vocabulary: `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `INSUFFICIENT_SCOPE`, `NOT_FOUND`, `CONFLICT`, `TOO_MANY_REQUESTS`, `PAYLOAD_TOO_LARGE`, `REQUEST_TIMEOUT`. See OpenAPI `#/components/schemas/ErrorResponse`.
+
+## Headers on every response
+
+- `RateLimit-Limit` / `RateLimit-Remaining` / `RateLimit-Reset` — let the agent self-throttle.
+- `Retry-After` — present on rate-limited responses.
+- `X-Request-Id` — surface in support tickets for exact-call tracing.
+- `WWW-Authenticate` — on 401/403 from protected resources; carries `resource_metadata=`.

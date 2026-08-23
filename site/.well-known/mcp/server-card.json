@@ -1,0 +1,138 @@
+{
+  "name": "Socrates",
+  "displayName": "Socrates (AI tutor)",
+  "description": "An AI tutor for people who want to understand — built around Socratic dialogue, durable recall, and a knowledge map.",
+  "icon": "https://topodrive.top/logo.png",
+  "url": "https://app.topodrive.top/api/mcp",
+  "version": "2026.05",
+  "documentation": "https://topodrive.top/llms-full.txt",
+  "transport": {
+    "type": "streamable-http",
+    "endpoint": "https://app.topodrive.top/api/mcp",
+    "methods": ["POST", "GET", "DELETE"],
+    "accept": ["application/json", "text/event-stream"]
+  },
+  "capabilities": {
+    "tools": true,
+    "resources": true,
+    "prompts": false,
+    "sampling": false,
+    "logging": false
+  },
+  "ui": {
+    "framework": "mcp-apps",
+    "spec": "https://modelcontextprotocol.io/docs/extensions/agents-and-apps",
+    "extensions": ["io.modelcontextprotocol/apps"],
+    "resource_scheme": "ui://",
+    "render_target": "iframe",
+    "html_origin": "https://app.topodrive.top"
+  },
+  "tools": [
+    {
+      "name": "socrates.bootstrap",
+      "description": "Return the mobile-shell bootstrap contract (product, platform, webBaseUrl, apiBaseUrl, healthPath).",
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://socrates/bootstrap"
+        }
+      }
+    },
+    {
+      "name": "socrates.health",
+      "description": "Liveness probe. Returns 200 when the API and database are reachable."
+    },
+    {
+      "name": "socrates.config",
+      "description": "Front-end capability config (whether the built-in provider is configured and reasoning-capable)."
+    },
+    {
+      "name": "socrates.openapi_url",
+      "description": "Pointer to the Socrates OpenAPI 3.0 specification."
+    },
+    {
+      "name": "socrates.research_index",
+      "description": "Index of the six published research notes with slug, title, date, and URL.",
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://socrates/research-index"
+        }
+      }
+    },
+    {
+      "name": "socrates.docs",
+      "description": "Catalogue of long-form documentation pages with optional kind filter.",
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://socrates/docs"
+        }
+      }
+    },
+    {
+      "name": "socrates.skill",
+      "description": "Render an MCP App that explains a Socrates tutor skill (Socratic dialogue, recall queue, knowledge map, exam mode, mistake book) and lets the user open a relevant session.",
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://socrates/skill-explorer"
+        }
+      }
+    }
+  ],
+  "resources": [
+    {
+      "uri": "ui://socrates/bootstrap",
+      "name": "Bootstrap contract viewer",
+      "description": "Renders the mobile-shell bootstrap contract with copy-to-clipboard for every field.",
+      "mimeType": "text/html"
+    },
+    {
+      "uri": "ui://socrates/research-index",
+      "name": "Research index browser",
+      "description": "Sortable / filterable view of the six published research notes.",
+      "mimeType": "text/html"
+    },
+    {
+      "uri": "ui://socrates/docs",
+      "name": "Documentation browser",
+      "description": "Filterable index of the long-form documentation pages.",
+      "mimeType": "text/html"
+    },
+    {
+      "uri": "ui://socrates/skill-explorer",
+      "name": "Skill explorer",
+      "description": "Interactive panel that previews a Socrates tutor skill and deep-links to a relevant session in the web app.",
+      "mimeType": "text/html"
+    }
+  ],
+  "skills": [
+    {
+      "id": "tutor.socratic-dialogue",
+      "name": "Socratic dialogue",
+      "description": "Ask-then-answer tutoring style."
+    },
+    {
+      "id": "tutor.recall-queue",
+      "name": "Recall queue",
+      "description": "Spaced-repetition prompts that surface saved moments at the right interval."
+    },
+    {
+      "id": "tutor.knowledge-map",
+      "name": "Knowledge map",
+      "description": "Relationships between ideas, maintained across sessions."
+    },
+    {
+      "id": "tutor.exam-mode",
+      "name": "Exam mode",
+      "description": "Retrieval-practice mode that surfaces questions at the end of a study block."
+    },
+    {
+      "id": "tutor.mistake-book",
+      "name": "Mistake book",
+      "description": "Collect moments where the learner's explanation showed a seam."
+    }
+  ],
+  "provider": {
+    "organization": "Topodrive",
+    "url": "https://topodrive.top",
+    "contactEmail": "help@addtech.site"
+  }
+}

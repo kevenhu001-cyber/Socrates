@@ -1,0 +1,153 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://topodrive.top",
+      "item": [
+        {
+          "href": "https://topodrive.top/openapi.json",
+          "rel": "service-desc",
+          "type": "application/openapi+json",
+          "title": "Socrates OpenAPI specification"
+        },
+        {
+          "href": "https://topodrive.top/developers",
+          "rel": "service-doc",
+          "type": "text/html",
+          "title": "Socrates developer portal"
+        },
+        {
+          "href": "https://topodrive.top/auth.md",
+          "rel": "authorization-doc",
+          "type": "text/markdown",
+          "title": "Socrates authentication reference"
+        },
+        {
+          "href": "https://topodrive.top/llms-full.txt",
+          "rel": "describedby",
+          "type": "text/plain",
+          "title": "Socrates long-form context for LLMs"
+        },
+        {
+          "href": "https://topodrive.top/llms.txt",
+          "rel": "describedby",
+          "type": "text/plain",
+          "title": "Socrates llms.txt (navigation index)"
+        },
+        {
+          "href": "https://topodrive.top/agents.md",
+          "rel": "describedby",
+          "type": "text/markdown",
+          "title": "Socrates agent instructions"
+        },
+        {
+          "href": "https://topodrive.top/.well-known/agent-card.json",
+          "rel": "describedby",
+          "type": "application/json",
+          "title": "Socrates A2A agent card"
+        },
+        {
+          "href": "https://topodrive.top/.well-known/agent-skills/index.json",
+          "rel": "describedby",
+          "type": "application/json",
+          "title": "Socrates agent-skills index"
+        },
+        {
+          "href": "https://topodrive.top/.well-known/oauth-protected-resource",
+          "rel": "oauth-protected-resource",
+          "type": "application/json",
+          "title": "Socrates OAuth 2.0 protected-resource metadata (RFC 9728)"
+        },
+        {
+          "href": "https://topodrive.top/.well-known/oauth-authorization-server",
+          "rel": "oauth-authorization-server",
+          "type": "application/json",
+          "title": "Socrates authorization-server metadata (RFC 8414)"
+        },
+        {
+          "href": "https://app.topodrive.top/api/mcp",
+          "rel": "mcp-server",
+          "type": "application/json",
+          "title": "Socrates MCP server (Streamable HTTP)"
+        },
+        {
+          "href": "https://topodrive.top/.well-known/mcp/server-card.json",
+          "rel": "describedby",
+          "type": "application/json",
+          "title": "Socrates MCP server card"
+        },
+        {
+          "href": "https://app.topodrive.top/api/v2/health",
+          "rel": "health",
+          "type": "application/json",
+          "title": "Socrates health probe"
+        },
+        {
+          "href": "https://app.topodrive.top/api/v2/mobile/bootstrap",
+          "rel": "service-doc",
+          "type": "application/json",
+          "title": "Socrates mobile bootstrap contract"
+        },
+        {
+          "href": "https://app.topodrive.top/api/nlweb/ask",
+          "rel": "service-desc",
+          "type": "application/json",
+          "title": "Socrates NLWeb natural-language query endpoint (Microsoft NLWeb)"
+        },
+        {
+          "href": "https://app.topodrive.top/api/nlweb/stream",
+          "rel": "service-desc",
+          "type": "text/event-stream",
+          "title": "Socrates NLWeb SSE streaming endpoint"
+        },
+        {
+          "href": "https://app.topodrive.top/api/mcp/docs",
+          "rel": "mcp-server",
+          "type": "application/json",
+          "title": "Socrates docs MCP server — surfaces the long-form documentation corpus to agents"
+        },
+        {
+          "href": "https://topodrive.top/.well-known/http-message-signatures-directory",
+          "rel": "http-message-signatures-directory",
+          "type": "application/json",
+          "title": "Socrates Web Bot Auth directory (RFC 9421)"
+        },
+        {
+          "href": "https://topodrive.top/plugin.json",
+          "rel": "describedby",
+          "type": "application/json",
+          "title": "Socrates Agent Plugins manifest (agent-plugins.org)"
+        },
+        {
+          "href": "https://topodrive.top/SKILL.md",
+          "rel": "describedby",
+          "type": "text/markdown",
+          "title": "Socrates SKILL.md (skills.sh / agentskills.io)"
+        },
+        {
+          "href": "https://topodrive.top/developers/llms.txt",
+          "rel": "describedby",
+          "type": "text/plain",
+          "title": "Socrates llms.txt — developers scope"
+        },
+        {
+          "href": "https://topodrive.top/api/llms.txt",
+          "rel": "describedby",
+          "type": "text/plain",
+          "title": "Socrates llms.txt — API scope"
+        },
+        {
+          "href": "https://topodrive.top/auth/llms.txt",
+          "rel": "describedby",
+          "type": "text/plain",
+          "title": "Socrates llms.txt — auth scope"
+        },
+        {
+          "href": "https://topodrive.top/sitemap.xml",
+          "rel": "sitemap",
+          "type": "application/xml",
+          "title": "Socrates sitemap"
+        }
+      ]
+    }
+  ]
+}

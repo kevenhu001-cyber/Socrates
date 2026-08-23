@@ -1,0 +1,65 @@
+# Socrates — Developers (scoped llms.txt)
+
+> Scoped context for AI agents integrating with the Socrates developer surface. For the full Socrates index, see [/llms.txt](https://topodrive.top/llms.txt). For long-form prose, see [/llms-full.txt](https://topodrive.top/llms-full.txt).
+
+This index lists every developer-facing resource that lives under `https://topodrive.top/developers/` and adjacent paths. Reach for the full [/llms.txt](https://topodrive.top/llms.txt) if you need the marketing surface (research, pricing, policy) alongside the developer surface.
+
+## Quickstart
+
+| Step | Resource | Format |
+| --- | --- | --- |
+| Read the developer portal | [/developers](https://topodrive.top/developers) | `text/html` (also [/developers.md](https://topodrive.top/developers.md) as markdown twin) |
+| Read the OpenAPI 3.0 spec | [/openapi.json](https://topodrive.top/openapi.json) | `application/openapi+json` |
+| Read the auth reference | [/auth.md](https://topodrive.top/auth.md) | `text/markdown` |
+| Read the agent instructions | [/agents.md](https://topodrive.top/agents.md) | `text/markdown` |
+
+## Discovery endpoints
+
+- Protected-resource metadata (RFC 9728): [/.well-known/oauth-protected-resource](https://topodrive.top/.well-known/oauth-protected-resource) — `application/json`.
+- Authorization-server metadata (RFC 8414): [/.well-known/oauth-authorization-server](https://topodrive.top/.well-known/oauth-authorization-server) — `application/json`.
+- API catalog (RFC 9727): [/.well-known/api-catalog](https://topodrive.top/.well-known/api-catalog) — `application/linkset+json`.
+- ARD catalog: [/.well-known/ai-catalog.json](https://topodrive.top/.well-known/ai-catalog.json) — `application/json`.
+- Agent skills index (v0.2.0): [/.well-known/agent-skills/index.json](https://topodrive.top/.well-known/agent-skills/index.json) — `application/json`.
+- Agent card (A2A): [/.well-known/agent-card.json](https://topodrive.top/.well-known/agent-card.json) — `application/json`.
+- MCP server card: [/.well-known/mcp/server-card.json](https://topodrive.top/.well-known/mcp/server-card.json) — `application/json`.
+
+## Authentication
+
+- OAuth 2.0 authorization-code + PKCE: register your client at `POST /api/oauth/register`, then complete the flow described in [/auth.md#5-oauth-20-authorization-server--scoped-agent-keys](https://topodrive.top/auth.md#5-oauth-20-authorization-server--scoped-agent-keys).
+- Scoped agent API keys: `POST /api/account/agent-keys` (cookie + CSRF in the browser, OAuth bearer for headless), then `Authorization: Bearer ak_<keyId>.<secret>`.
+- WWW-Authenticate challenge (every 401 from the resource server): `Bearer realm="socrates", resource_metadata="https://topodrive.top/.well-known/oauth-protected-resource", authorization_uri="https://app.topodrive.top/api/oauth/authorize"`.
+- Closed scope vocabulary (also advertised in PRM `scopes_supported` and AS metadata): `chat|memory|sessions|files|projects` × `read|write`.
+
+## Conventions documented for agents
+
+| Convention | Where |
+| --- | --- |
+| Typed errors (`{code, message, detail?, requestId?}`) | OpenAPI `#/components/schemas/ErrorResponse` |
+| Idempotency-Key header (24h replay window) | OpenAPI `#/components/parameters/IdempotencyKey` |
+| RateLimit-Limit/-Remaining/-Reset + Retry-After | OpenAPI `#/components/headers/RateLimitLimit` etc. |
+| Cursor pagination (`{items, nextCursor, hasMore}`) | OpenAPI `#/components/schemas/Page` and `SessionPage` |
+| Async jobs (`202 {Location, …}` + `GET /api/import/{id}`) | OpenAPI `#/components/schemas/ImportJob` |
+| Batch / bulk endpoints (`POST /api/sessions` with `items[]`) | OpenAPI `#/components/schemas/BulkCreateSessionsRequest` |
+| Versioning (`/api/v2/*`) and deprecation policy | OpenAPI `info.x-deprecation-policy` |
+
+## SDK and packaging
+
+- Skill package: [/SKILL.md](https://topodrive.top/SKILL.md).
+- Agent plugin manifest: [/plugin.json](https://topodrive.top/plugin.json).
+- Skills index: [/.well-known/agent-skills/index.json](https://topodrive.top/.well-known/agent-skills/index.json).
+
+## MCP server
+
+- Streamable HTTP endpoint: `https://app.topodrive.top/api/mcp` (JSON-RPC 2.0).
+- Server card: [/.well-known/mcp/server-card.json](https://topodrive.top/.well-known/mcp/server-card.json).
+
+## NLWeb endpoint
+
+- `POST https://app.topodrive.top/api/nlweb/ask` with `{ query, prefer?: { streaming } }`.
+- Streaming variant: `POST https://app.topodrive.top/api/nlweb/stream` (SSE; `start / result / complete` events).
+
+## When you are done integrating
+
+1. Self-serve scopes at `https://topodrive.top/api-keys`.
+2. Read [/announcements](https://topodrive.top/announcements) before pinning a contract — deprecations are announced ≥ 90 days ahead.
+3. Reach support at `help@addtech.site` with the `X-Request-Id` from any failing call.

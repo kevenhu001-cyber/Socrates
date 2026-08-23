@@ -1,0 +1,49 @@
+# Socrates — Auth (scoped llms.txt)
+
+> Scoped context for AI agents authenticating against the Socrates API. The full prose lives at [/auth.md](https://topodrive.top/auth.md); this file is the index. For the full Socrates index, see [/llms.txt](https://topodrive.top/llms.txt).
+
+## The auth chain, end-to-end
+
+1. **Discover** — fetch [/.well-known/oauth-protected-resource](https://topodrive.top/.well-known/oauth-protected-resource) (RFC 9728). It carries `resource`, `authorization_servers`, `bearer_methods_supported`, `scopes_supported`, and the `www_authenticate` challenge template.
+2. **Authorize** — follow `authorization_servers[0]` to [/.well-known/oauth-authorization-server](https://topodrive.top/.well-known/oauth-authorization-server) (RFC 8414) to resolve `authorization_endpoint`, `token_endpoint`, `revocation_endpoint`, `registration_endpoint`, and the `agent_auth` block (register_uri, revocation_uri, identity_types_supported).
+3. **Register** — POST a JSON document to `https://app.topodrive.top/api/oauth/register` (RFC 7591) with at least `client_name` and `redirect_uris[]`. Receive `client_id` + `client_secret` (shown once).
+4. **Claim** — Send the user to the consent screen at `https://app.topodrive.top/api/oauth/authorize` with `response_type=code`, `code_challenge=<S256(verifier)>`, `code_challenge_method=S256`, and the scope set the user should approve.
+5. **Use** — Exchange the returned `code` at `https://app.topodrive.top/api/oauth/token` for `access_token` + `refresh_token`. Send `Authorization: Bearer at_<token>` on every call. The access token is a closed-vocabulary scope set; the server enforces scope per route (e.g. `chat:write` on `POST /api/chat/stream`).
+6. **Refresh** — When `at_<token>` is within 5 minutes of expiry, POST to `/api/oauth/token` with `grant_type=refresh_token`. The presented `mr.*` is single-use; every exchange rotates the pair within a fixed 30-day window.
+7. **Revoke** — Either half: `POST /api/oauth/revoke` with HTTP Basic auth and `token=`. Idempotent — calling on a dead token returns 200.
+
+## Alternative: scoped agent API keys (first-party)
+
+For headless workers that don't want the interactive consent dance, an account holder can mint long-lived scoped keys from [/api-keys](https://topodrive.top/api-keys). The full credential `ak_<keyId>.<secret>` is shown once; only the SHA-256 hash is persisted. Revoke any time via `POST /api/account/agent-keys/{id}/revoke`.
+
+## WWW-Authenticate
+
+Every 401 from a protected resource carries:
+
+```
+Bearer realm="socrates",
+      resource_metadata="https://topodrive.top/.well-known/oauth-protected-resource",
+      authorization_uri="https://app.topodrive.top/api/oauth/authorize"
+```
+
+The `resource_metadata` parameter is the spec anchor (WorkOS auth-md §Discover): an agent receiving a 401 can resolve the full chain from one request.
+
+## Closed scope vocabulary
+
+```
+chat:read, chat:write
+memory:read, memory:write
+sessions:read, sessions:write
+files:read, files:write
+projects:read, projects:write
+```
+
+Declared in both the PRM `scopes_supported` array and the AS metadata `scopes_supported` array. Server-side enforcement is per-route via the `requireScope(...)` middleware.
+
+## Reference
+
+- OpenAPI: [/openapi.json](https://topodrive.top/openapi.json).
+- Full auth reference: [/auth.md](https://topodrive.top/auth.md).
+- Protected-resource metadata (RFC 9728): [/.well-known/oauth-protected-resource](https://topodrive.top/.well-known/oauth-protected-resource).
+- Authorization-server metadata (RFC 8414): [/.well-known/oauth-authorization-server](https://topodrive.top/.well-known/oauth-authorization-server).
+- Agent-skills index: [/.well-known/agent-skills/index.json](https://topodrive.top/.well-known/agent-skills/index.json).

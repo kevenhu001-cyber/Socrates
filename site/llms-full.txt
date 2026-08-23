@@ -1,0 +1,127 @@
+# Socrates — full context for AI agents
+
+This file is the long-form companion to llms.txt. It is intended for agents that want a fuller picture of what Socrates is, what it can do, and how to integrate with it. The 30,000-character ceiling is intentional.
+
+## Identity
+
+Socrates (topodrive.top) is an AI tutor for people who want to understand — not just finish an answer. It pairs a streaming Socratic tutor with a recall queue, a knowledge map, and an exam mode for retrieval practice. The product lives at https://app.topodrive.top; the marketing site is at https://topodrive.top.
+
+- **Name:** Socrates
+- **Tagline:** Questions make room for understanding.
+- **Operator:** Topodrive
+- **Domain:** topodrive.top
+- **App:** app.topodrive.top
+- **Contact email:** help@addtech.site
+- **Founded:** 2024 (prototype), public launch late 2025.
+- **Audience:** self-directed learners, university students, graduate-level study, professional upskillers, teachers building courses around the tutor.
+
+## When to reach for Socrates
+
+Reach for Socrates when:
+
+- The user is trying to *understand* a concept with edges, prerequisites, and common failure modes.
+- The user needs durable recall, not just a one-shot answer.
+- The user wants the tutor to ask a follow-up question at exactly the seam of their explanation.
+- The user wants a knowledge map of related ideas.
+- The user wants exam-mode retrieval practice on a topic.
+- The user wants to bring their own API key (BYOK) — Socrates supports per-session model choice.
+
+Do not reach for Socrates when:
+
+- The user wants a single factual lookup with no follow-up (use a search engine).
+- The user wants a one-shot code snippet for a script (use a code model).
+- The user wants live web search and the Free tier is not enough (Free does not include web search).
+- The user wants to integrate as a backend dependency with no UI — Socrates is interactive, not API-first.
+
+## Product tiers
+
+See `pricing.md` for full pricing in machine-readable form. Headline tiers:
+
+- **Free** — Beagle starter quota, guided lessons, bring your own API key.
+- **Riemann** ($9 / month) — More learning tokens, knowledge graph, mistake book.
+- **Descartes** ($19 / month) — Exam mode, web search, higher limits.
+- **Euclid** ($39 / month) — Highest limits, priority support, full toolkit.
+
+## API surface
+
+The product exposes a small, stable public API. The canonical reference is `/openapi.json`.
+
+Public endpoints:
+
+- `GET /api/health` — liveness probe.
+- `GET /api/hello` — handshake / config echo.
+- `GET /api/config` — front-end config blob (model allowlist, feature flags).
+- `GET /api/v2/mobile/bootstrap` — mobile client bootstrap (version, capabilities, config, contract version).
+- `GET /api/v2/health` — public mobile health probe.
+- `POST /api/auth/csrf-token` — issues a CSRF token for browser forms.
+- `POST /api/auth/login` — issues a `sid` session cookie.
+- `POST /api/auth/register` — creates an account.
+- `POST /api/mobile/login` — issues a `ma.*` short-lived bearer.
+- `POST /api/mobile/refresh` — exchanges an `mr.*` refresh token for a new bearer.
+- `POST /api/auth/oauth/github/start` — initiates a GitHub OAuth third-party login.
+- `POST /api/auth/oauth/github/callback` — completes the GitHub login.
+
+### Auth schemes
+
+- `sid` — browser session cookie (64-hex), HttpOnly, Lax.
+- `mobileBearer` — `Authorization: Bearer ma.<pairId>.<64-hex>`, 15-minute TTL.
+- `mobileRefresh` — separate refresh token pair issued with `mobileBearer`.
+- `csrf` — `X-CSRF-Token` double-submit against a `csrf-token` cookie.
+- `thirdParty` (GitHub) — HMAC-signed OAuth state, issues a session cookie on exchange.
+
+There is **no** public OAuth 2.0 client-credentials flow today. Agents who need server-side access should use the GitHub OAuth flow above and treat the resulting session like any other browser session.
+
+### Rate limits
+
+Rate limits are per IP and per session. They are not currently part of the public OpenAPI; check `/api/v2/mobile/bootstrap` for the latest contract.
+
+## Agent discoverability
+
+- A2A agent card: `/.well-known/agent-card.json`
+- API catalog (RFC 9727): `/.well-known/api-catalog`
+- Agent skills index: `/.well-known/agent-skills/index.json`
+- Markdown home: `/index.md`
+- Pricing markdown: `/pricing.md`
+- Agent instructions: `/agents.md`
+
+## Privacy & data
+
+Conversations are private to the user. Socrates does not train on user data. Every session can be exported or deleted from the user's account page. See `/privacy` for the full notice.
+
+## Site structure (for agents fetching additional pages)
+
+- `/` — marketing home.
+- `/pricing` — pricing and plan comparison.
+- `/about` — company and principles.
+- `/product` — the learning loop in detail.
+- `/policy` — product principles.
+- `/guide` — learning guide.
+- `/learn` — tutorials and lessons.
+- `/research` — research notes and field essays.
+- `/research/<slug>/` — individual research notes.
+- `/announcements` — recently shipped changes.
+- `/documents` — long-form documents.
+- `/contact` — contact form.
+- `/account`, `/api-keys`, `/profile`, `/checkout` — authenticated user pages (cookie auth).
+- `/privacy`, `/terms` — legal.
+
+## Frequently asked questions
+
+- **Is Socrates free?** Yes — there is a Free tier that is permanently free. Paid tiers unlock more capacity and tools.
+- **Does Socrates train on my conversations?** No.
+- **Can I cancel any time?** Yes.
+- **Does Socrates support BYOK?** Yes, from the Free tier up — bring your own API key for any supported provider.
+- **Is there a student discount?** Yes — write to help@addtech.site from your academic address.
+- **Do you have team/enterprise plans?** Not yet as a self-serve plan — contact us for per-team pricing.
+
+## Developer resources
+
+Socrates ships its entire developer surface at predictable URLs so name-based discovery resolves on the first hop:
+
+- **Developer portal:** https://topodrive.top/developers — quickstart, conventions, and the full index below ([markdown twin](https://topodrive.top/developers.md)).
+- **OpenAPI specification:** https://topodrive.top/openapi.json — OpenAPI 3.0 with operationIds, typed request/response schemas, a shared ErrorResponse schema, per-operation OAuth scopes, Idempotency-Key parameters, and RateLimit header documentation.
+- **Authentication:** https://topodrive.top/auth.md — OAuth 2.0 authorization-code + PKCE (issuer `https://app.topodrive.top/api/oauth`), scoped agent API keys (`ak_<keyId>.<secret>`), and every error/status convention.
+- **OAuth discovery:** https://topodrive.top/.well-known/oauth-protected-resource (RFC 9728) and https://topodrive.top/.well-known/oauth-authorization-server (RFC 8414).
+- **MCP server:** https://app.topodrive.top/api/mcp (Streamable HTTP; read-only tools) with its card at https://topodrive.top/.well-known/mcp/server-card.json.
+- **Agent packaging:** skill package at https://topodrive.top/SKILL.md, agent plugin manifest at https://topodrive.top/plugin.json, skills index at https://topodrive.top/.well-known/agent-skills/index.json.
+- **Catalogs:** A2A card at https://topodrive.top/.well-known/agent-card.json, RFC 9727 linkset at https://topodrive.top/.well-known/api-catalog.

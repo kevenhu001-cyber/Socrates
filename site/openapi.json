@@ -1,0 +1,1349 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Socrates API",
+    "version": "2026.05",
+    "summary": "Public surface of the Socrates tutor: health, bootstrap, auth, mobile bearer exchange, OAuth 2.0, async jobs, and bulk operations.",
+    "description": "Socrates (topodrive.top) is an AI tutor. This document covers the public API surface — health, bootstrap, OAuth 2.0 authorization-code flow, scoped agent API keys, async import jobs, and a bulk-create endpoint. Authenticated browser routes (`/api/sessions`, `/api/chat`, `/api/files`) follow the same conventions and reuse the schemas declared here. Long-form reference: https://topodrive.top/llms-full.txt. Agent instructions: https://topodrive.top/agents.md.",
+    "contact": {
+      "name": "Socrates",
+      "email": "help@addtech.site",
+      "url": "https://topodrive.top/contact"
+    },
+    "license": {
+      "name": "Proprietary"
+    },
+    "x-deprecation-policy": "Versioned under `/api/v2/*`. Deprecations signal via the `Deprecation` and `Sunset` response headers (RFC 8594) at least 90 days before removal. See https://topodrive.top/announcements for the announcement feed."
+  },
+  "servers": [
+    {
+      "url": "https://app.topodrive.top",
+      "description": "Production"
+    },
+    {
+      "url": "https://app.topodrive.top/api/v2",
+      "description": "Production (mobile-shell contract prefix; nginx rewrites /api/v2/* → /api/* on the same origin)"
+    }
+  ],
+  "tags": [
+    { "name": "Health", "description": "Liveness and capability probes." },
+    { "name": "Bootstrap", "description": "Cold-start contracts for thin clients and shells." },
+    { "name": "Auth", "description": "Browser session cookies, CSRF, and third-party login flows." },
+    { "name": "Mobile", "description": "Bearer-token issuance for native mobile clients." },
+    { "name": "OAuth", "description": "Authorization-server endpoints (RFC 7591 register, RFC 7009 revoke)." },
+    { "name": "Agents", "description": "Scoped long-lived API keys for headless agents." },
+    { "name": "Jobs", "description": "Long-running async operations (bulk import, etc.)." },
+    { "name": "Batch", "description": "Bulk operations that don't merit a per-item endpoint." }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "operationId": "getHealth",
+        "summary": "Liveness probe",
+        "description": "Returns 200 when the API and primary database are reachable, with pubsub transport status. Returns 503 when the database is unreachable.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API and database are reachable.",
+            "headers": {
+              "RateLimit-Limit": { "$ref": "#/components/headers/RateLimitLimit" },
+              "RateLimit-Remaining": { "$ref": "#/components/headers/RateLimitRemaining" },
+              "RateLimit-Reset": { "$ref": "#/components/headers/RateLimitReset" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthResponse" }
+              }
+            }
+          },
+          "503": {
+            "description": "Database is unreachable.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthDownResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hello": {
+      "get": {
+        "tags": ["Health"],
+        "operationId": "getHello",
+        "summary": "Handshake",
+        "description": "Simple GET returning a static greeting. Useful as the cheapest possible smoke-test.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Static handshake.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HelloResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config": {
+      "get": {
+        "tags": ["Bootstrap"],
+        "operationId": "getConfig",
+        "summary": "Front-end config blob",
+        "description": "Returns a small capability blob for the SPA: whether the built-in provider is configured and whether it is reasoning-capable. The SPA uses this to choose stream timeouts and reasoning effort; the underlying model identity is intentionally not exposed.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Capability config.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ConfigResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/csrf-token": {
+      "get": {
+        "tags": ["Auth"],
+        "operationId": "getCsrfToken",
+        "summary": "Issue a CSRF token",
+        "description": "Issues a CSRF token and sets the matching double-submit cookie. Required as a preflight for state-changing browser routes.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "CSRF token pair.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CsrfResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "operationId": "authLogin",
+        "summary": "Email/password login",
+        "description": "Authenticate a browser user via email and password. Issues a `sid` session cookie on success.",
+        "security": [{ "csrfDoubleSubmit": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful. Set-Cookie: sid=<64-hex>; HttpOnly; SameSite=Lax.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SessionInfo" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "operationId": "authRegister",
+        "summary": "Create an account",
+        "description": "Create a new Socrates account and trigger an email-verification flow.",
+        "security": [{ "csrfDoubleSubmit": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account created. Verification email sent.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SessionInfo" }
+              }
+            }
+          },
+          "409": {
+            "description": "Email already registered.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/auth/oauth/github/start": {
+      "get": {
+        "tags": ["Auth"],
+        "operationId": "authOAuthGithubStart",
+        "summary": "Begin GitHub OAuth",
+        "description": "Redirects the browser to GitHub's authorization endpoint with an HMAC-signed state parameter. On callback the session is exchanged for a `sid` cookie.",
+        "security": [],
+        "responses": {
+          "302": { "description": "Redirect to GitHub." },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/auth/oauth/github/callback": {
+      "get": {
+        "tags": ["Auth"],
+        "operationId": "authOAuthGithubCallback",
+        "summary": "Complete GitHub OAuth",
+        "description": "GitHub redirects back here with `code` and `state`. The server exchanges the code, finds-or-creates the user, and either sets the `sid` cookie or returns a short-lived mobile-exchange token.",
+        "security": [],
+        "responses": {
+          "302": { "description": "Redirected back to the originating return path with `sid` cookie set." },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/mobile/bootstrap": {
+      "get": {
+        "tags": ["Bootstrap", "Mobile"],
+        "operationId": "mobileBootstrap",
+        "summary": "Mobile-shell bootstrap contract",
+        "description": "Public, secret-free contract used by the Android shell before it opens the shared SPA. Caches with `Cache-Control: no-store` so every cold start re-validates the contract.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Bootstrap config.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MobileBootstrap" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/login": {
+      "post": {
+        "tags": ["Auth", "Mobile"],
+        "operationId": "mobileLogin",
+        "summary": "Issue a mobile bearer pair",
+        "description": "Issues a 15-minute `ma.<pairId>.<hex>` access token paired with a long-lived `mr.*` refresh token. Used by the Android shell.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MobileLoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bearer pair issued.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MobileBearerPair" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/v2/health": {
+      "get": {
+        "tags": ["Health", "Mobile"],
+        "operationId": "getMobileHealth",
+        "summary": "Mobile-tier health probe",
+        "description": "Public health probe reachable at the same-origin mobile contract prefix `/api/v2/health`. Nginx rewrites the path to `/api/health`. Useful for the Android shell bootstrap and the deploy-script gate.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API and database are reachable.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthResponse" }
+              }
+            }
+          },
+          "503": {
+            "description": "Database is unreachable.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthDownResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "operationId": "authMe",
+        "summary": "Current session lookup",
+        "description": "Returns the user record attached to the ambient `sid` cookie. Useful for boot-time session validation in the SPA and for agents that already have a `sid` they want to verify.",
+        "security": [{ "sessionCookie": [] }],
+        "responses": {
+          "200": {
+            "description": "Active session.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SessionInfo" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "operationId": "authLogout",
+        "summary": "Clear the session",
+        "description": "Server-side revocation of the `sid` cookie. Idempotent — calling on a non-existent session returns 200 with `{ ok: true }`.",
+        "security": [{ "csrfDoubleSubmit": [] }],
+        "responses": {
+          "200": {
+            "description": "Session cleared.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["ok"],
+                  "properties": { "ok": { "type": "boolean", "enum": [true] } }
+                }
+              }
+            }
+          },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/status": {
+      "get": {
+        "tags": ["Health"],
+        "operationId": "getSystemStatus",
+        "summary": "Public system status feed",
+        "description": "Anonymous, secret-free status feed consumed by status.topodrive.top. No auth, no rate limit beyond what nginx imposes; safe to poll.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Current operational status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/refresh": {
+      "post": {
+        "tags": ["Auth", "Mobile"],
+        "operationId": "mobileRefresh",
+        "summary": "Refresh a mobile bearer",
+        "description": "Exchanges a long-lived `mr.*` refresh token for a fresh `ma.*` access token. The refresh token is rotated on every successful exchange.",
+        "security": [{ "mobileRefresh": [] }],
+        "responses": {
+          "200": {
+            "description": "Refreshed bearer pair.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MobileBearerPair" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/oauth/register": {
+      "post": {
+        "tags": ["OAuth"],
+        "operationId": "oauthRegisterClient",
+        "summary": "Dynamic client registration (RFC 7591)",
+        "description": "Open dynamic client registration for third-party agents. No human in the loop — POST a JSON document with at least `client_name` and `redirect_uris[]` and receive a `client_id` + `client_secret` (shown once). PKCE (`S256`) is required by default. Rate-limited per IP.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/OAuthClientRegistrationRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Client registered. Secret returned ONCE — store immediately.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OAuthClientRegistrationResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/oauth/token": {
+      "post": {
+        "tags": ["OAuth"],
+        "operationId": "oauthToken",
+        "summary": "OAuth 2.0 token endpoint (authorization_code | refresh_token)",
+        "description": "Exchanges an authorization `code` (with PKCE verifier) for an access+refresh token pair, or refreshes an existing refresh token. Authenticated via HTTP Basic with the registered client credentials.",
+        "security": [{ "oauthClientBasic": [], "oauthClientPost": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": { "$ref": "#/components/schemas/OAuthTokenRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token issued or refreshed.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OAuthTokenResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/oauth/revoke": {
+      "post": {
+        "tags": ["OAuth"],
+        "operationId": "oauthRevoke",
+        "summary": "OAuth 2.0 token revocation (RFC 7009)",
+        "description": "Revoke an access or refresh token. Killing either half of a pair invalidates both. Authenticated via HTTP Basic with the registered client credentials.",
+        "security": [{ "oauthClientBasic": [], "oauthClientPost": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": { "$ref": "#/components/schemas/OAuthRevokeRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Revocation accepted (idempotent — a no-op on an unknown token still returns 200)." }
+        }
+      }
+    },
+    "/account/agent-keys": {
+      "get": {
+        "tags": ["Agents"],
+        "operationId": "listAgentKeys",
+        "summary": "List agent API keys",
+        "description": "List the scoped agent API keys minted by the authenticated user. Never returns the secret material — only `keyId`, `label`, `scopes`, and timestamps.",
+        "security": [{ "sessionCookie": [], "csrfDoubleSubmit": [] }],
+        "responses": {
+          "200": {
+            "description": "List of agent keys.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AgentKeyListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Agents"],
+        "operationId": "createAgentKey",
+        "summary": "Mint a scoped agent API key",
+        "description": "Create a long-lived scoped API key for a headless agent. The full credential is returned exactly once in the create response; subsequent reads never expose the secret.",
+        "security": [{ "sessionCookie": [], "csrfDoubleSubmit": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/IdempotencyKey" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AgentKeyCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Key minted. `credential` shown ONCE.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AgentKeyCreateResponse" }
+              }
+            },
+            "headers": {
+              "RateLimit-Limit": { "$ref": "#/components/headers/RateLimitLimit" },
+              "RateLimit-Remaining": { "$ref": "#/components/headers/RateLimitRemaining" },
+              "RateLimit-Reset": { "$ref": "#/components/headers/RateLimitReset" }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/account/agent-keys/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string" },
+          "description": "The `keyId` (the `ak_<id>` portion before the dot)."
+        }
+      ],
+      "delete": {
+        "tags": ["Agents"],
+        "operationId": "revokeAgentKey",
+        "summary": "Revoke an agent API key",
+        "description": "Immediate, idempotent revocation. The key stops authenticating on the next request.",
+        "security": [{ "sessionCookie": [], "csrfDoubleSubmit": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/IdempotencyKey" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Key revoked (or already not present).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["ok"],
+                  "properties": { "ok": { "type": "boolean", "enum": [true] } }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/import": {
+      "get": {
+        "tags": ["Jobs"],
+        "operationId": "listImportJobs",
+        "summary": "List recent import jobs",
+        "description": "Returns the 20 most recent import jobs for the authenticated user, regardless of status.",
+        "security": [{ "sessionCookie": [], "oauthBearer": [] }],
+        "responses": {
+          "200": {
+            "description": "Import job history.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ImportJobListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Jobs"],
+        "operationId": "createImportJob",
+        "summary": "Queue a bulk import",
+        "description": "Submit a bulk import of sessions, messages, or other resources. Returns a job identifier; poll `GET /api/import/{id}` for status. Use the `Idempotency-Key` header to make retries safe — the same key returns the same job.",
+        "security": [{ "sessionCookie": [], "oauthBearer": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/IdempotencyKey" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ImportJobRequest" }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Job accepted.",
+            "headers": {
+              "Location": {
+                "schema": { "type": "string", "format": "uri" },
+                "description": "URL to poll for status: `/api/import/{id}`."
+              },
+              "RateLimit-Limit": { "$ref": "#/components/headers/RateLimitLimit" },
+              "RateLimit-Remaining": { "$ref": "#/components/headers/RateLimitRemaining" },
+              "RateLimit-Reset": { "$ref": "#/components/headers/RateLimitReset" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ImportJob" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/import/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" }
+        }
+      ],
+      "get": {
+        "tags": ["Jobs"],
+        "operationId": "getImportJob",
+        "summary": "Poll an import job",
+        "description": "Returns the current state of an import job including `status`, `progress`, and any `errors` collected so far. Poll until `status` is one of `completed`, `failed`, or `not_implemented`.",
+        "security": [{ "sessionCookie": [], "oauthBearer": [] }],
+        "responses": {
+          "200": {
+            "description": "Job status.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ImportJob" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/sessions": {
+      "get": {
+        "tags": ["Batch"],
+        "operationId": "listSessions",
+        "summary": "List sessions (cursor-paginated)",
+        "description": "List the authenticated user's tutoring sessions, newest first. Cursor-paginated — pass `cursor` from a previous response until `hasMore` is false.",
+        "security": [{ "sessionCookie": [], "oauthBearer": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/Cursor" },
+          { "$ref": "#/components/parameters/Limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated sessions.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SessionPage" }
+              }
+            },
+            "headers": {
+              "RateLimit-Limit": { "$ref": "#/components/headers/RateLimitLimit" },
+              "RateLimit-Remaining": { "$ref": "#/components/headers/RateLimitRemaining" },
+              "RateLimit-Reset": { "$ref": "#/components/headers/RateLimitReset" }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Batch"],
+        "operationId": "bulkCreateSessions",
+        "summary": "Bulk-create sessions",
+        "description": "Create up to 50 sessions in one request. Each entry is validated independently — the response carries the per-item outcome so partial successes are reported precisely.",
+        "security": [{ "sessionCookie": [], "oauthBearer": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/IdempotencyKey" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BulkCreateSessionsRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk-create result with per-item status.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BulkCreateSessionsResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/chat/stream": {
+      "post": {
+        "tags": ["Auth"],
+        "operationId": "streamChatCompletion",
+        "summary": "Streaming chat completion",
+        "description": "Stream a Socratic tutor reply as `text/event-stream`. The tutor asks before it answers. Reuse the same `Idempotency-Key` to make network retries safe — replays return the same stream.",
+        "security": [{ "sessionCookie": [], "oauthBearer": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/IdempotencyKey" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChatStreamRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Server-Sent Events stream of the tutor's reply.",
+            "content": {
+              "text/event-stream": {
+                "schema": { "$ref": "#/components/schemas/ChatStreamEvent" }
+              }
+            },
+            "headers": {
+              "RateLimit-Limit": { "$ref": "#/components/headers/RateLimitLimit" },
+              "RateLimit-Remaining": { "$ref": "#/components/headers/RateLimitRemaining" },
+              "RateLimit-Reset": { "$ref": "#/components/headers/RateLimitReset" }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sid",
+        "description": "Browser session cookie issued by /api/auth/login. 64-hex opaque token, HttpOnly, SameSite=Lax."
+      },
+      "mobileBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "ma.<pairId>.<64-hex>",
+        "description": "Mobile access token issued by /api/mobile/login. 15-minute TTL."
+      },
+      "mobileRefresh": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Mobile refresh token: `Authorization: Bearer mr.<pairId>.<64-hex>`."
+      },
+      "csrfDoubleSubmit": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-CSRF-Token",
+        "description": "CSRF double-submit token. Pair with a `csrf-token` cookie issued by /api/auth/csrf-token."
+      },
+      "oauthBearer": {
+        "type": "oauth2",
+        "description": "OAuth 2.0 access token issued by /api/oauth/token, or a scoped agent API key (ak_*). Carries one or more of the scopes below.",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://app.topodrive.top/api/oauth/authorize",
+            "tokenUrl": "https://app.topodrive.top/api/oauth/token",
+            "refreshUrl": "https://app.topodrive.top/api/oauth/token",
+            "scopes": {
+              "chat:read": "Read your chat sessions and messages.",
+              "chat:write": "Send messages on your behalf.",
+              "memory:read": "Read your cross-session memory notes.",
+              "memory:write": "Add or update your cross-session memory notes.",
+              "sessions:read": "List your tutoring sessions and their metadata.",
+              "sessions:write": "Create or modify tutoring sessions.",
+              "files:read": "Download files you uploaded or that Socrates produced for you.",
+              "files:write": "Upload files into your account.",
+              "projects:read": "List your projects.",
+              "projects:write": "Create or modify your projects."
+            }
+          },
+          "clientCredentials": {
+            "tokenUrl": "https://app.topodrive.top/api/oauth/token",
+            "scopes": {
+              "chat:read": "Read your chat sessions and messages.",
+              "chat:write": "Send messages on your behalf.",
+              "memory:read": "Read your cross-session memory notes.",
+              "memory:write": "Add or update your cross-session memory notes.",
+              "sessions:read": "List your tutoring sessions and their metadata.",
+              "sessions:write": "Create or modify tutoring sessions.",
+              "files:read": "Download files you uploaded or that Socrates produced for you.",
+              "files:write": "Upload files into your account.",
+              "projects:read": "List your projects.",
+              "projects:write": "Create or modify your projects."
+            }
+          }
+        }
+      },
+      "oauthClientBasic": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Registered OAuth client credentials (client_id:client_secret) for the token and revoke endpoints."
+      },
+      "oauthClientPost": {
+        "type": "oauth2",
+        "description": "Alternative client-credentials-in-body auth for the token and revoke endpoints.",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://app.topodrive.top/api/oauth/token",
+            "scopes": {}
+          }
+        }
+      }
+    },
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "maxLength": 255,
+          "description": "Client-generated unique key (UUID recommended). Replays within the 24-hour window return the original response."
+        },
+        "description": "Make this write idempotent: same key + same request = same response, without duplicating side effects. Use on every mutating call when the network is unreliable."
+      },
+      "Cursor": {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "string" },
+        "description": "Opaque cursor returned by the previous response's `nextCursor`. Pass it back until `hasMore` is false."
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 },
+        "description": "Page size. Defaults to 20; capped at 100."
+      }
+    },
+    "headers": {
+      "RateLimitLimit": {
+        "description": "The maximum number of requests permitted in the current window.",
+        "schema": { "type": "integer" }
+      },
+      "RateLimitRemaining": {
+        "description": "The number of requests remaining in the current window.",
+        "schema": { "type": "integer" }
+      },
+      "RateLimitReset": {
+        "description": "Seconds until the current rate-limit window resets.",
+        "schema": { "type": "integer" }
+      },
+      "RetryAfter": {
+        "description": "RFC 6585 — seconds until the client should retry. Present on 429 responses.",
+        "schema": { "type": "integer" }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Request was malformed. See `code` for the machine-readable reason.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing or invalid credentials.",
+        "headers": {
+          "WWW-Authenticate": {
+            "description": "RFC 6750 challenge. Includes `resource_metadata` so the agent can resolve the full auth chain from a single 401.",
+            "schema": { "type": "string" }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Credentials are valid but insufficient. Includes `error=\"insufficient_scope\"` if a scope check failed.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Resource conflict (e.g. duplicate key, already exists).",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limit hit. Respect `Retry-After` and back off.",
+        "headers": {
+          "Retry-After": { "$ref": "#/components/headers/RetryAfter" },
+          "RateLimit-Limit": { "$ref": "#/components/headers/RateLimitLimit" },
+          "RateLimit-Remaining": { "$ref": "#/components/headers/RateLimitRemaining" },
+          "RateLimit-Reset": { "$ref": "#/components/headers/RateLimitReset" }
+        },
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["code", "message"],
+        "description": "Typed error envelope. `code` is a stable machine-readable identifier from a closed vocabulary; `message` is a one-sentence explanation safe to show to a user; `detail` carries optional structured context; `requestId` correlates to the `X-Request-Id` response header.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Machine-readable error code (e.g. `BAD_REQUEST`, `UNAUTHORIZED`, `INSUFFICIENT_SCOPE`, `TOO_MANY_REQUESTS`).",
+            "example": "BAD_REQUEST"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable one-sentence explanation.",
+            "example": "source and payload required"
+          },
+          "detail": {
+            "description": "Optional structured context for the error — field-level validation errors, retry timing, etc.",
+            "oneOf": [
+              { "type": "object", "additionalProperties": true },
+              { "type": "array", "items": { "type": "object", "additionalProperties": true } }
+            ]
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Server-generated UUID. Matches the `X-Request-Id` response header for cross-log correlation.",
+            "example": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+          },
+          "retryAfterSeconds": {
+            "type": "integer",
+            "description": "Present on 429 responses. Seconds until the next request will be accepted.",
+            "example": 60
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": ["ok", "db", "uptime", "pubsub"],
+        "properties": {
+          "ok": { "type": "boolean", "enum": [true] },
+          "db": { "type": "string", "enum": ["connected"] },
+          "uptime": { "type": "number", "description": "Process uptime in seconds." },
+          "pubsub": {
+            "type": "object",
+            "properties": {
+              "transport": { "type": "string", "enum": ["pg_notify"] }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "HealthDownResponse": {
+        "type": "object",
+        "required": ["ok", "db", "uptime"],
+        "properties": {
+          "ok": { "type": "boolean", "enum": [false] },
+          "db": { "type": "string", "enum": ["disconnected"] },
+          "uptime": { "type": "number" }
+        }
+      },
+      "HelloResponse": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": { "type": "string", "enum": ["hello"] }
+        }
+      },
+      "ConfigResponse": {
+        "type": "object",
+        "required": ["hasBeagleKey", "isReasoning"],
+        "properties": {
+          "hasBeagleKey": { "type": "boolean" },
+          "isReasoning": { "type": "boolean" }
+        }
+      },
+      "CsrfResponse": {
+        "type": "object",
+        "required": ["csrfToken"],
+        "properties": {
+          "csrfToken": { "type": "string" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "password", "minLength": 8 }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "password", "minLength": 8 },
+          "name": { "type": "string" }
+        }
+      },
+      "SessionInfo": {
+        "type": "object",
+        "required": ["ok", "user"],
+        "properties": {
+          "ok": { "type": "boolean" },
+          "user": {
+            "type": "object",
+            "required": ["id", "email"],
+            "properties": {
+              "id": { "type": "string" },
+              "email": { "type": "string", "format": "email" }
+            }
+          }
+        }
+      },
+      "MobileBootstrap": {
+        "type": "object",
+        "required": ["ok", "contractVersion", "product", "platform", "webBaseUrl", "apiBaseUrl", "canonicalApiBaseUrl", "healthPath"],
+        "properties": {
+          "ok": { "type": "boolean", "enum": [true] },
+          "contractVersion": { "type": "integer", "enum": [1] },
+          "product": { "type": "string", "enum": ["socrates"] },
+          "platform": { "type": "string", "enum": ["android"] },
+          "webBaseUrl": { "type": "string", "format": "uri" },
+          "apiBaseUrl": { "type": "string", "format": "uri" },
+          "canonicalApiBaseUrl": { "type": "string", "format": "uri" },
+          "healthPath": { "type": "string", "enum": ["/api/v2/health"] }
+        }
+      },
+      "MobileLoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "password" }
+        }
+      },
+      "MobileBearerPair": {
+        "type": "object",
+        "required": ["accessToken", "refreshToken", "expiresIn"],
+        "properties": {
+          "accessToken": { "type": "string", "description": "ma.<pairId>.<64-hex>", "example": "ma.01JABC...XYZ" },
+          "refreshToken": { "type": "string", "description": "mr.<pairId>.<64-hex>" },
+          "expiresIn": { "type": "integer", "description": "Access token TTL in seconds (typically 900)." }
+        }
+      },
+      "OAuthClientRegistrationRequest": {
+        "type": "object",
+        "required": ["client_name", "redirect_uris"],
+        "properties": {
+          "client_name": { "type": "string", "maxLength": 128 },
+          "redirect_uris": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "format": "uri" }
+          },
+          "scope": { "type": "string", "description": "Space-separated subset of `chat|memory|sessions|files|projects` × `read|write`." },
+          "token_endpoint_auth_method": { "type": "string", "enum": ["client_secret_basic", "client_secret_post", "none"], "default": "client_secret_basic" },
+          "grant_types": { "type": "array", "items": { "type": "string", "enum": ["authorization_code", "refresh_token"] } },
+          "response_types": { "type": "array", "items": { "type": "string", "enum": ["code"] } }
+        }
+      },
+      "OAuthClientRegistrationResponse": {
+        "type": "object",
+        "required": ["client_id", "client_secret", "client_id_issued_at", "token_endpoint_auth_method"],
+        "properties": {
+          "client_id": { "type": "string", "example": "cli_01HXYZ..." },
+          "client_secret": { "type": "string", "description": "Returned ONCE. Store immediately." },
+          "client_id_issued_at": { "type": "integer", "description": "Unix seconds." },
+          "redirect_uris": { "type": "array", "items": { "type": "string" } },
+          "token_endpoint_auth_method": { "type": "string", "enum": ["client_secret_basic", "client_secret_post"] },
+          "grant_types": { "type": "array", "items": { "type": "string" } },
+          "scope": { "type": "string" }
+        }
+      },
+      "OAuthTokenRequest": {
+        "type": "object",
+        "required": ["grant_type"],
+        "properties": {
+          "grant_type": { "type": "string", "enum": ["authorization_code", "refresh_token"] },
+          "code": { "type": "string", "description": "Required when grant_type=authorization_code." },
+          "redirect_uri": { "type": "string", "format": "uri" },
+          "code_verifier": { "type": "string", "minLength": 43, "maxLength": 128 },
+          "refresh_token": { "type": "string", "description": "Required when grant_type=refresh_token." },
+          "scope": { "type": "string", "description": "Optional; must be a subset of the originally granted scopes." }
+        }
+      },
+      "OAuthTokenResponse": {
+        "type": "object",
+        "required": ["access_token", "token_type", "expires_in"],
+        "properties": {
+          "access_token": { "type": "string", "example": "at_01HXYZ..." },
+          "token_type": { "type": "string", "enum": ["Bearer"] },
+          "expires_in": { "type": "integer", "description": "Access token TTL in seconds (typically 3600)." },
+          "refresh_token": { "type": "string", "description": "Omitted only if the originally issued grant had no refresh scope." },
+          "scope": { "type": "string", "description": "Space-separated granted scopes." }
+        }
+      },
+      "OAuthRevokeRequest": {
+        "type": "object",
+        "required": ["token"],
+        "properties": {
+          "token": { "type": "string", "description": "The access or refresh token to revoke." },
+          "token_type_hint": { "type": "string", "enum": ["access_token", "refresh_token"] }
+        }
+      },
+      "AgentKey": {
+        "type": "object",
+        "required": ["keyId", "label", "scopes", "createdAt"],
+        "properties": {
+          "keyId": { "type": "string", "example": "ak_mrtxq9c2p4wnfhz6jbks" },
+          "label": { "type": "string" },
+          "scopes": { "type": "array", "items": { "type": "string" } },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time", "nullable": true },
+          "lastUsedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "revokedAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "AgentKeyListResponse": {
+        "type": "object",
+        "required": ["keys"],
+        "properties": {
+          "keys": { "type": "array", "items": { "$ref": "#/components/schemas/AgentKey" } }
+        }
+      },
+      "AgentKeyCreateRequest": {
+        "type": "object",
+        "required": ["label", "scopes"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "scopes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "enum": ["chat:read", "chat:write", "memory:read", "memory:write", "sessions:read", "sessions:write", "files:read", "files:write", "projects:read", "projects:write"]
+            }
+          },
+          "expiresAt": { "type": "string", "format": "date-time", "description": "Optional, capped at 1 year from creation." }
+        }
+      },
+      "AgentKeyCreateResponse": {
+        "type": "object",
+        "required": ["keyId", "credential", "label", "scopes", "createdAt"],
+        "properties": {
+          "keyId": { "type": "string", "example": "ak_mrtxq9c2p4wnfhz6jbks" },
+          "credential": {
+            "type": "string",
+            "description": "Full credential `ak_<keyId>.<secret>` shown ONCE. Store immediately — only the SHA-256 hash is persisted.",
+            "example": "ak_mrtxq9c2p4wnfhz6jbks.0a1b2c3d4e5f..."
+          },
+          "label": { "type": "string" },
+          "scopes": { "type": "array", "items": { "type": "string" } },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "ImportJob": {
+        "type": "object",
+        "required": ["id", "source", "status", "progress", "createdAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "source": { "type": "string", "example": "chatgpt" },
+          "status": {
+            "type": "string",
+            "enum": ["queued", "running", "completed", "failed", "not_implemented"],
+            "description": "`not_implemented` means the importer for this source is not yet wired up; no data was modified."
+          },
+          "progress": {
+            "type": "object",
+            "properties": {
+              "total": { "type": "integer" },
+              "processed": { "type": "integer" },
+              "errors": { "type": "integer" }
+            }
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": { "type": "integer" },
+                "code": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "completedAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "ImportJobRequest": {
+        "type": "object",
+        "required": ["source", "payload"],
+        "properties": {
+          "source": { "type": "string", "example": "chatgpt" },
+          "payload": { "description": "Source-specific blob. For `chatgpt`, pass the standard `conversations.json` array (or `{ sessions: [...] }`)." }
+        }
+      },
+      "ImportJobListResponse": {
+        "type": "object",
+        "required": ["jobs"],
+        "properties": {
+          "jobs": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ImportJob" }
+          }
+        }
+      },
+      "Page": {
+        "type": "object",
+        "required": ["items", "hasMore"],
+        "description": "Cursor-paginated response envelope. `nextCursor` is present whenever `hasMore` is true; pass it to the next request as `?cursor=`. When `hasMore` is false, `nextCursor` is null.",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": { "type": "object", "additionalProperties": true }
+          },
+          "nextCursor": { "type": "string", "nullable": true },
+          "hasMore": { "type": "boolean" }
+        }
+      },
+      "SessionPage": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Page" },
+          {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["id", "updatedAt"],
+                  "properties": {
+                    "id": { "type": "string" },
+                    "title": { "type": "string" },
+                    "updatedAt": { "type": "string", "format": "date-time" },
+                    "messageCount": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "BulkCreateSessionsRequest": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 50,
+            "items": {
+              "type": "object",
+              "required": ["title"],
+              "properties": {
+                "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+                "messages": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["role", "content"],
+                    "properties": {
+                      "role": { "type": "string", "enum": ["user", "assistant", "system"] },
+                      "content": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "BulkCreateSessionsResponse": {
+        "type": "object",
+        "required": ["results"],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["index", "status"],
+              "properties": {
+                "index": { "type": "integer", "description": "Position in the request `items` array." },
+                "status": { "type": "string", "enum": ["created", "failed"] },
+                "id": { "type": "string", "description": "New session id, present when status=created." },
+                "code": { "type": "string", "description": "Machine-readable error code, present when status=failed." },
+                "message": { "type": "string", "description": "Human-readable error, present when status=failed." }
+              }
+            }
+          }
+        }
+      },
+      "ChatStreamRequest": {
+        "type": "object",
+        "required": ["sessionId", "content"],
+        "properties": {
+          "sessionId": { "type": "string", "format": "uuid" },
+          "content": { "type": "string", "minLength": 1, "maxLength": 32000 },
+          "mode": { "type": "string", "enum": ["socratic", "tutor"], "default": "socratic" }
+        }
+      },
+      "ChatStreamEvent": {
+        "type": "object",
+        "description": "Single SSE frame. Wire format: `event: <event>\\ndata: <json>\\n\\n`.",
+        "required": ["event", "data"],
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": ["start", "token", "tool", "complete", "error"]
+          },
+          "data": { "type": "object", "additionalProperties": true }
+        }
+      }
+    }
+  }
+}

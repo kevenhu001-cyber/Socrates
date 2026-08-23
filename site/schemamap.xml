@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemamap xmlns="https://nlw.ai/schemas/schemamap/0.1">
+  <feed url="https://topodrive.top/sitemap.jsonl" type="application/jsonl" rel="sitemap" title="Socrates site URLs" />
+  <feed url="https://topodrive.top/sitemap.xml" type="application/xml" rel="sitemap" title="Socrates sitemap (XML)" />
+  <feed url="https://topodrive.top/llms-full.txt" type="text/plain" rel="llms-full" title="Socrates long-form context for LLMs" />
+  <feed url="https://topodrive.top/.well-known/agent-card.json" type="application/json" rel="agent-card" title="Socrates A2A agent card" />
+  <feed url="https://topodrive.top/.well-known/api-catalog" type="application/linkset+json" rel="api-catalog" title="Socrates API catalog (RFC 9727)" />
+</schemamap>

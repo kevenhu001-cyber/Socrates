@@ -1,0 +1,66 @@
+{
+  "issuer": "https://app.topodrive.top/api/oauth",
+  "authorization_endpoint": "https://app.topodrive.top/api/oauth/authorize",
+  "token_endpoint": "https://app.topodrive.top/api/oauth/token",
+  "revocation_endpoint": "https://app.topodrive.top/api/oauth/revoke",
+  "scopes_supported": [
+    "chat:read",
+    "chat:write",
+    "memory:read",
+    "memory:write",
+    "sessions:read",
+    "sessions:write",
+    "files:read",
+    "files:write",
+    "projects:read",
+    "projects:write"
+  ],
+  "response_types_supported": [
+    "code"
+  ],
+  "response_modes_supported": [
+    "query"
+  ],
+  "grant_types_supported": [
+    "authorization_code",
+    "refresh_token"
+  ],
+  "code_challenge_methods_supported": [
+    "S256"
+  ],
+  "token_endpoint_auth_methods_supported": [
+    "client_secret_basic",
+    "client_secret_post"
+  ],
+  "revocation_endpoint_auth_methods_supported": [
+    "client_secret_basic",
+    "client_secret_post"
+  ],
+  "authorization_response_iss_parameter_supported": true,
+  "service_documentation": "https://topodrive.top/auth.md",
+  "registration_endpoint": "https://app.topodrive.top/api/oauth/register",
+  "agent_auth": {
+    "register_uri": "https://app.topodrive.top/api/oauth/register",
+    "revocation_uri": "https://app.topodrive.top/api/oauth/revoke",
+    "identity_types_supported": [
+      "anonymous"
+    ],
+    "anonymous": {
+      "credential_types_supported": [
+        "oauth_client_credentials"
+      ]
+    },
+    "identity_assertion": {
+      "assertion_types_supported": [
+        "verified_email",
+        "urn:ietf:params:oauth:token-type:id-jag"
+      ],
+      "credential_types_supported": [
+        "jwt_vc",
+        "id_token"
+      ],
+      "_note": "Reserved for future use. Anonymous (`oauth_client_credentials`) is the only identity type currently issued. When identity_assertion ships, agents will be able to present a verified_email assertion or an id-jag to upgrade their anonymous registration."
+    },
+    "skill": "https://topodrive.top/auth.md"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://www.w3.org/TR/web-bot-auth/",
+  "directory_url": "https://topodrive.top/.well-known/http-message-signatures-directory",
+  "purpose": "RFC 9421 HTTP Message Signatures — lets agents sign their requests with an Ed25519 key whose public counterpart is registered here. Site operators verify the signature header against this directory before granting elevated trust, distinguishing signed bots from spoofers.",
+  "supported_signature_algorithms": ["ed25519"],
+  "required_headers": ["@authority", "@path", "signature-input", "signature"],
+  "verification_endpoint": "https://topodrive.top/api/web-bot-auth/verify",
+  "documentation": "https://topodrive.top/auth.md#web-bot-auth-rfc-9421",
+  "keys": [
+    {
+      "kid": "socrates-bot-2026-08-22",
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "use": "sig",
+      "alg": "Ed25519",
+      "nbf": 1724284800,
+      "exp": 1798761600,
+      "x": "placeholder-replace-with-real-ed25519-public-key-after-keypair-generation",
+      "_note": "Public key bytes (32-byte Ed25519 x coordinate), base64url-encoded. This directory is a public registry; the matching private key is held server-side and signs only verified-bot traffic. Replace `x` with the real value once the operator generates the keypair via `node scripts/rotate-web-bot-auth-key.mjs`."
+    }
+  ]
+}
