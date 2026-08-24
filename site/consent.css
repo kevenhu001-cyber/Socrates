@@ -1,91 +1,108 @@
-/* Cookie consent banner — shared marketing-site styles.
-   The banner is injected by site/locale.js on every page. */
-#socratesCookieConsent{
-  position:fixed;
-  left:50%;
-  bottom:calc(18px + env(safe-area-inset-bottom,0px));
-  transform:translateX(-50%);
-  z-index:99999;
-  width:min(600px,calc(100vw - 24px));
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  padding:18px 20px;
-  border-radius:16px;
-  background:var(--ed-paper-soft,#faf9f5);
-  border:1px solid var(--ed-line,#d9d0c3);
-  box-shadow:var(--ed-shadow-strong,0 22px 60px rgba(33,28,22,.14));
-  color:var(--ed-ink,#171716);
-  font-family:var(--ed-sans,inherit);
-  font-size:14px;
-  line-height:1.55;
-  box-sizing:border-box;
-  pointer-events:auto;
+/* Cookie consent banner — compact editorial dock.
+   Injected by site/locale.js on every page. */
+#socratesCookieConsent {
+  position: fixed;
+  right: 20px;
+  left: auto;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  transform: none;
+  z-index: 99999;
+  width: min(348px, calc(100vw - 28px));
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #f7f4ee;
+  border: 1px solid var(--ed-line, #d9d0c3);
+  box-shadow: 0 12px 28px rgba(23, 23, 22, 0.10);
+  color: var(--ed-ink, #171716);
+  font-family: var(--ed-sans, inherit);
+  font-size: 13px;
+  line-height: 1.45;
+  box-sizing: border-box;
+  pointer-events: auto;
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
-.socrates-cookie-consent-title{
-  font-size:15px;
-  font-weight:600;
-  color:var(--ed-ink,#171716);
+.socrates-cookie-consent-title {
+  padding-right: 88px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ed-ink, #171716);
+  letter-spacing: -0.01em;
 }
-.socrates-cookie-consent-message{
-  margin:0;
-  color:var(--ed-ink-soft,#56534e);
-  font-size:13.5px;
+.socrates-cookie-consent-message {
+  margin: 0;
+  color: var(--ed-ink-soft, #56534e);
+  font-size: 11.75px;
+  line-height: 1.48;
 }
-.socrates-cookie-consent-actions{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  margin-top:2px;
+.socrates-cookie-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
 }
-.socrates-cookie-consent-btn{
-  padding:9px 16px;
-  border-radius:999px;
-  border:1px solid var(--ed-line,#d9d0c3);
-  background:var(--ed-paper,#f4f1e9);
-  color:var(--ed-ink,#171716);
-  font-family:var(--ed-sans,inherit);
-  font-size:13px;
-  font-weight:500;
-  cursor:pointer;
-  transition:background .18s var(--ed-ease,cubic-bezier(.22,.76,.26,1)),
-             transform .15s var(--ed-ease,cubic-bezier(.22,.76,.26,1));
+.socrates-cookie-consent-btn {
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--ed-line, #d9d0c3);
+  background: var(--ed-paper, #f4f1e9);
+  color: var(--ed-ink, #171716);
+  font-family: var(--ed-sans, inherit);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
-.socrates-cookie-consent-btn:hover{
-  background:var(--ed-sand,#e5dbc9);
-  transform:translateY(-1px);
+.socrates-cookie-consent-btn:hover {
+  background: var(--ed-sand, #e5dbc9);
+  border-color: var(--ed-ink-soft, #56534e);
 }
-.socrates-cookie-consent-btn.primary{
-  background:var(--ed-ink,#171716);
-  border-color:var(--ed-ink,#171716);
-  color:var(--ed-paper,#f4f1e9);
+.socrates-cookie-consent-btn.primary {
+  background: var(--ed-ink, #171716);
+  border-color: var(--ed-ink, #171716);
+  color: var(--ed-paper, #f4f1e9);
 }
-.socrates-cookie-consent-btn.primary:hover{
-  background:#000;
+.socrates-cookie-consent-btn.primary:hover {
+  background: #000;
+  border-color: #000;
+  color: #fff;
 }
-.socrates-cookie-consent-link{
-  align-self:flex-start;
-  font-size:12.5px;
-  color:var(--ed-clay,#9a5a3b);
-  text-decoration:underline;
-  text-underline-offset:2px;
+.socrates-cookie-consent-link {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-size: 11px;
+  color: var(--ed-clay, #9a5a3b);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
-.socrates-cookie-consent-link:hover{
-  color:var(--ed-clay-warm,#b86a45);
+.socrates-cookie-consent-link:hover {
+  color: var(--ed-clay-warm, #b86a45);
 }
-@media (max-width:560px){
-  #socratesCookieConsent{
-    bottom:calc(10px + env(safe-area-inset-bottom,0px));
-    width:calc(100vw - 16px);
-    padding:14px 16px;
+@media (max-width: 560px) {
+  #socratesCookieConsent {
+    left: 10px;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    gap: 6px;
+    padding: 12px 13px;
+    border-radius: 9px;
   }
-  .socrates-cookie-consent-actions{
-    display:grid;
-    grid-template-columns:1fr 1fr;
+  .socrates-cookie-consent-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
-  .socrates-cookie-consent-btn{
-    width:100%;
-    text-align:center;
-    padding:10px 8px;
+  .socrates-cookie-consent-btn {
+    width: 100%;
+    text-align: center;
+    min-height: 32px;
+    padding: 5px 6px;
   }
+  .socrates-cookie-consent-title { padding-right: 78px; font-size: 12.5px; }
+  .socrates-cookie-consent-message { font-size: 11px; line-height: 1.42; }
+  .socrates-cookie-consent-link { top: 12px; right: 13px; font-size: 10.5px; }
 }

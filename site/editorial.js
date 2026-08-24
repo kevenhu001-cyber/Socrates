@@ -33,9 +33,10 @@
     var current = pathname.split('/').filter(Boolean).pop() || 'index';
     var items = [
       { href: prefix + 'research', label: 'Research', key: 'research' },
+      { href: prefix + 'product', label: 'Product', key: 'product' },
       { href: prefix + 'policy', label: 'Principles', key: 'policy' },
       { href: prefix + 'learn', label: 'Learn', key: 'learn' },
-      { href: prefix + 'announcements', label: 'News', key: 'announcements' },
+      { href: prefix + 'developers', label: 'Developers', key: 'developers' },
       { href: prefix + 'about', label: 'Company', key: 'about' }
     ];
 
@@ -131,8 +132,8 @@
   function initialiseReveal() {
     var nodes = document.querySelectorAll('.ed-reveal, .ed-reveal-stagger');
     if (!nodes.length) return;
+    nodes.forEach(function (node) { node.classList.add('is-visible'); });
     if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      nodes.forEach(function (node) { node.classList.add('is-visible'); });
       return;
     }
     var observer = new IntersectionObserver(function (entries) {
@@ -141,7 +142,7 @@
         entry.target.classList.add('is-visible');
         observer.unobserve(entry.target);
       });
-    }, { threshold: .08, rootMargin: '0px 0px -40px' });
+    }, { threshold: 0.01, rootMargin: '50px 0px 50px 0px' });
     nodes.forEach(function (node) { observer.observe(node); });
   }
 
@@ -585,20 +586,6 @@
   function initAnimatedStats() {
     var stats = document.querySelectorAll('[data-stat-value]');
     if (!stats.length) return;
-    /* Pre-populate the text node so reduced-motion users see the final value. */
-    stats.forEach(function (stat) {
-      var target = parseFloat(stat.getAttribute('data-stat-value') || '0');
-      var decimals = parseInt(stat.getAttribute('data-stat-decimals') || '0', 10);
-      var prefix = stat.getAttribute('data-stat-prefix') || '';
-      var suffix = stat.getAttribute('data-stat-suffix') || '';
-      if (!isFinite(target)) target = 0;
-      var node = stat.firstChild;
-      if (node && node.nodeType === Node.TEXT_NODE) {
-        node.nodeValue = prefix + formatStat(0, decimals) + suffix;
-      } else {
-        stat.insertBefore(document.createTextNode(prefix + formatStat(0, decimals) + suffix), stat.firstChild);
-      }
-    });
     if (!('IntersectionObserver' in window)) {
       stats.forEach(animateStat);
       return;
@@ -609,7 +596,7 @@
         animateStat(entry.target);
         observer.unobserve(entry.target);
       });
-    }, { threshold: .35 });
+    }, { threshold: 0.1, rootMargin: '50px 0px 50px 0px' });
     stats.forEach(function (stat) { observer.observe(stat); });
   }
 
@@ -644,74 +631,28 @@
   function initParagraphReveal() {
     var nodes = document.querySelectorAll('.ed-reveal-paragraphs');
     if (!nodes.length) return;
-    if (!('IntersectionObserver' in window) ||
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      nodes.forEach(function (n) { n.classList.add('is-visible'); });
-      return;
-    }
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('is-visible');
-        observer.unobserve(entry.target);
-      });
-    }, { threshold: .12, rootMargin: '0px 0px -40px' });
-    nodes.forEach(function (n) { observer.observe(n); });
+    nodes.forEach(function (n) { n.classList.add('is-visible'); });
   }
 
   /* Q4 — Mini demos in product cards: trigger on enter or hover. */
   function initMiniDemos() {
     var demos = document.querySelectorAll('.ed-mini-demo');
     if (!demos.length) return;
-    if ('IntersectionObserver' in window) {
-      var observer = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
-        });
-      }, { threshold: .25 });
-      demos.forEach(function (demo) { observer.observe(demo); });
-    } else {
-      demos.forEach(function (demo) { demo.classList.add('is-visible'); });
-    }
+    demos.forEach(function (demo) { demo.classList.add('is-visible'); });
   }
 
   /* Q5 — Path timeline: light up nodes on enter. */
   function initTimeline() {
     var timelines = document.querySelectorAll('.ed-path-timeline');
     if (!timelines.length) return;
-    if (!('IntersectionObserver' in window)) {
-      timelines.forEach(function (t) { t.classList.add('is-visible'); });
-      return;
-    }
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('is-visible');
-        observer.unobserve(entry.target);
-      });
-    }, { threshold: .3 });
-    timelines.forEach(function (t) { observer.observe(t); });
+    timelines.forEach(function (t) { t.classList.add('is-visible'); });
   }
 
   /* Q6 — Chat thread reveal: same trigger as paragraph reveal. */
   function initChatDemo() {
     var threads = document.querySelectorAll('.ed-chat-thread');
     if (!threads.length) return;
-    if (!('IntersectionObserver' in window) ||
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      threads.forEach(function (t) { t.classList.add('is-visible'); });
-      return;
-    }
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('is-visible');
-        observer.unobserve(entry.target);
-      });
-    }, { threshold: .2 });
-    threads.forEach(function (t) { observer.observe(t); });
+    threads.forEach(function (t) { t.classList.add('is-visible'); });
   }
 
   /* --------------------------------------------------------------
