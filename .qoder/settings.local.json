@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"^/\\\\*\\\\|^\\\\.ed-\\\\|premium\\\\|spotlight\\\\|article-toc\\\\|parallax\" /home/ubuntu/User/Socrates/site/brand.css | head -100)"
+    ]
+  }
+}
