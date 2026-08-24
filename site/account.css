@@ -473,3 +473,55 @@
   .ed-pm-tag { grid-column: 1 / -1; justify-self: start; }
   .ed-heatmap { grid-template-columns: 44px repeat(24, 1fr); min-width: 580px; }
 }
+
+/* 2026-08-24 · shared account-surface detail pass */
+.ed-app-page-hero { padding: clamp(72px, 7vw, 104px) 0 clamp(36px, 4vw, 54px); }
+.ed-app-page-title { max-width: 12ch; }
+.ed-app-section { padding: clamp(30px, 4vw, 56px) 0 clamp(72px, 8vw, 112px); }
+.ed-app-grid { grid-template-columns: minmax(210px, 260px) minmax(0, 1fr); gap: clamp(40px, 6vw, 88px); }
+.ed-app-main { gap: 18px; }
+.ed-app-side-nav a { padding: 12px 0; }
+.ed-app-card {
+  padding: 28px 30px 32px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .28);
+  box-shadow: none;
+}
+.ed-app-card-head { gap: 14px; padding-bottom: 18px; margin-bottom: 20px; }
+.ed-app-card-title { font-family: var(--site-serif-latin, var(--ed-serif)); font-weight: 500; letter-spacing: -.025em; }
+html:lang(zh) .ed-app-card-title { font-family: var(--site-serif-cjk, var(--ed-serif)); letter-spacing: .01em; }
+.ed-field { gap: 7px; margin-bottom: 16px; }
+.ed-field input,
+.ed-field textarea,
+.ed-field select,
+.ed-select-trigger { min-height: 44px; border-radius: 8px; background: rgba(255,255,255,.40); }
+.ed-plan,
+.ed-action,
+.ed-pm,
+.ed-auth,
+.ed-modal,
+.ed-toast { border-radius: 9px; box-shadow: none; }
+.ed-plan { padding: 17px 18px; }
+.ed-actions-list { gap: 8px; }
+.ed-action { padding: 14px 16px; }
+.ed-submit { min-height: 46px; border-radius: 8px; box-shadow: none; }
+.ed-submit:hover:not(:disabled) { box-shadow: none; }
+
+@media (max-width: 920px) {
+  .ed-app-grid { grid-template-columns: 1fr; gap: 28px; }
+  .ed-app-side { position: static; padding-top: 0; }
+  .ed-app-side-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 16px; }
+}
+
+@media (max-width: 620px) {
+  .ed-app-page-hero { padding: 56px 0 30px; }
+  .ed-app-section { padding: 24px 0 72px; }
+  .ed-app-side-nav { grid-template-columns: 1fr; }
+  .ed-app-card { padding: 22px 18px 24px; }
+  .ed-app-card-head { margin-bottom: 18px; padding-bottom: 16px; }
+  .ed-plan { grid-template-columns: auto minmax(0, 1fr); gap: 14px; padding: 15px 14px; }
+  .ed-auth { padding: 34px 22px; border-radius: 9px; }
+  .ed-modal { padding: 26px 20px 20px; }
+  .ed-toast-host { right: 12px; bottom: 12px; left: 12px; }
+  .ed-toast { width: 100%; min-width: 0; }
+}

@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -14,9 +14,8 @@
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap"></noscript>
   <link rel="stylesheet" href="editorial.css?cb=20260824">
-  <link rel="stylesheet" href="brand.css?cb=20260824">
-<script src="locale.js?cb=20260910"></script></head>
-  <link rel="stylesheet" href="account.css">
+  <link rel="stylesheet" href="brand.css?cb=20260824f">
+  <link rel="stylesheet" href="account.css?cb=20260824">
   <style>
     /* Checkout-specific overrides on top of account.css */
     .ed-checkout-shell { display: grid; gap: 28px; max-width: 720px; margin: 0 auto; }
@@ -64,7 +63,8 @@
     @keyframes edPulse { 0%,100% { box-shadow: 0 0 0 4px rgba(154, 90, 59, .2); } 50% { box-shadow: 0 0 0 8px rgba(154, 90, 59, .05); } }
     @keyframes edSpin { to { transform: rotate(360deg); } }
   </style>
-<script src="locale.js?cb=20260815"></script></head>
+  <script src="locale.js?cb=20260910"></script>
+</head>
 <body class="ed-site">
   <a class="ed-skip" href="#main">Skip to content</a>
 
@@ -72,7 +72,7 @@
     <div class="ed-shell">
       <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
         <a class="ed-brand" href="index" aria-label="Socrates home"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a>
-        <div class="ed-nav-links" id="site-menu" data-menu-panel><a href="research">Research</a><a href="policy">Principles</a><a href="learn">Learn</a><a href="announcements">News</a><a href="about">Company</a></div>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel><a href="research">Research</a><a href="product">Product</a><a href="policy">Principles</a><a href="learn">Learn</a><a href="developers">Developers</a><a href="about">Company</a></div>
         <div class="ed-header-actions"><div class="ed-lang" data-lang-root><button class="ed-lang-toggle" type="button" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Language"><svg class="ed-lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18" stroke="currentColor" stroke-width="1.6"/></svg><span class="ed-lang-label">Language</span><svg class="ed-lang-caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="ed-lang-menu" data-lang-menu role="menu" hidden><button class="ed-lang-item" type="button" data-lang="en" role="menuitem"><span>English</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ed-lang-item" type="button" data-lang="zh" role="menuitem"><span>中文</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div>
         <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
       </nav>
@@ -229,10 +229,10 @@
     <div class="ed-shell ed-footer-frame">
       <div class="ed-footer-top">
         <div class="ed-footer-brand"><a class="ed-brand" href="index"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a><p>An AI tutor for people who want to understand.</p></div>
-        <div class="ed-footer-column"><h2>Product</h2><a href="product">Learning loop</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
+        <div class="ed-footer-column"><h2>Product</h2><a href="product">Learning map</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
         <div class="ed-footer-column"><h2>Account</h2><a href="account">My account</a><a href="api-keys">API keys</a><a href="profile">Profile</a></div>
-        <div class="ed-footer-column"><h2>Library</h2><a href="announcements">Announcements</a><a href="documents">Documents</a><a href="research">Research</a></div>
-        <div class="ed-footer-column"><h2>Elsewhere</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div>
+        <div class="ed-footer-column"><h2>Learn</h2><a href="announcements">Announcements</a><a href="documents">Documents</a><a href="research">Research</a></div>
+        <div class="ed-footer-column"><h2>Resources</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div>
       </div>
       <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
     </div>
