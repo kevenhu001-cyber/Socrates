@@ -42,7 +42,33 @@ RELEASE_URL_BASE="${CODEX_MIRROR:-https://github.com/${CODEX_REPO}/releases/down
 
 BIN_PATH="${CODEX_INSTALL_DIR}/bin/codex-app-server"
 VERSION_MARKER="${CODEX_INSTALL_DIR}/.version"
+# When a host-provided Codex is used (auto-detected or pinned via
+# CODEX_APP_SERVER_BIN), we record its absolute path here so --check can
+# verify it without the downloaded package being present.
+LOCAL_BIN_MARKER="${CODEX_INSTALL_DIR}/.bin-path"
 CONFIG_PATH="${CODEX_HOME}/config.toml"
+
+# Resolve a locally-installed Codex binary without downloading anything.
+# Honors CODEX_APP_SERVER_BIN (absolute path) first, then falls back to a
+# PATH lookup. Prints the absolute path on stdout, or nothing if none is
+# usable. The binary must answer `-V` to be considered healthy.
+detect_local_codex() {
+  local candidate=""
+  if [[ -n "${CODEX_APP_SERVER_BIN:-}" ]]; then
+    candidate="$CODEX_APP_SERVER_BIN"
+  else
+    candidate=$(command -v codex-app-server 2>/dev/null || command -v codex 2>/dev/null || true)
+  fi
+  [[ -n "$candidate" ]] || return 0
+  # Normalize symlinks so the recorded path is stable.
+  if command -v readlink >/dev/null 2>&1; then
+    candidate=$(readlink -f "$candidate" 2>/dev/null || echo "$candidate")
+  fi
+  [[ -x "$candidate" ]] || return 0
+  if "$candidate" -V >/dev/null 2>&1; then
+    echo "$candidate"
+  fi
+}
 
 # ─── sudo detection (mirrors deploy.sh) ─────────────────────────────
 SUDO=""
@@ -124,6 +150,28 @@ EOF
 
 do_install() {
   require_curl
+
+  # ── Local Codex auto-detection (skip the download entirely) ─────────
+  # If the host already has a usable codex-app-server/codex (e.g. the npm
+  # global @openai/codex package) we prefer it over re-downloading the
+  # pinned release. Driven by CODEX_APP_SERVER_BIN or a PATH lookup.
+  local local_bin
+  local_bin=$(detect_local_codex || true)
+  if [[ -n "$local_bin" ]]; then
+    log "using locally-installed Codex: $local_bin (skipping download)"
+    $SUDO mkdir -p "$CODEX_INSTALL_DIR"
+    echo "$local_bin" | $SUDO tee "$LOCAL_BIN_MARKER" >/dev/null
+    # A host-provided binary supersedes any stale downloaded version marker.
+    $SUDO rm -f "$VERSION_MARKER"
+    seed_codex_home
+    if ! "$local_bin" -V >/dev/null 2>&1; then
+      err "local codex binary failed the -V smoke test"
+      exit 1
+    fi
+    log "local Codex ready (no download): $local_bin"
+    return 0
+  fi
+
   mkdir -p "$CODEX_CACHE_DIR"
 
   # Idempotent: skip the download when the pinned version is already installed.
@@ -169,24 +217,47 @@ do_install() {
 
 do_check() {
   local ok=1
-  if [[ ! -x "$BIN_PATH" ]]; then
-    err "binary not found: ${BIN_PATH}"
-    ok=0
+  local bp=""
+  if [[ -f "$LOCAL_BIN_MARKER" ]]; then
+    bp=$(cat "$LOCAL_BIN_MARKER")
   fi
-  if [[ ! -f "$VERSION_MARKER" ]] || [[ "$(cat "$VERSION_MARKER")" != "$CODEX_VERSION" ]]; then
-    err "installed version does not match CODEX_VERSION=${CODEX_VERSION}"
-    ok=0
+
+  if [[ -n "$bp" ]]; then
+    # Local / host-provided Codex recorded at install time.
+    if [[ ! -x "$bp" ]]; then
+      err "recorded local codex binary not executable: ${bp}"
+      ok=0
+    elif ! "$bp" -V >/dev/null 2>&1; then
+      err "recorded local codex binary crashed on -V: ${bp}"
+      ok=0
+    fi
+  else
+    # Downloaded package mode.
+    if [[ ! -x "$BIN_PATH" ]]; then
+      err "binary not found: ${BIN_PATH}"
+      ok=0
+    fi
+    if [[ ! -f "$VERSION_MARKER" ]] || [[ "$(cat "$VERSION_MARKER")" != "$CODEX_VERSION" ]]; then
+      err "installed version does not match CODEX_VERSION=${CODEX_VERSION}"
+      ok=0
+    fi
+    if [[ "$ok" == "1" ]] && ! "$BIN_PATH" -V >/dev/null 2>&1; then
+      err "installed binary is not executable / crashed on -V"
+      ok=0
+    fi
   fi
+
   if [[ ! -f "$CONFIG_PATH" ]]; then
     err "CODEX_HOME config missing: ${CONFIG_PATH}"
     ok=0
   fi
-  if [[ "$ok" == "1" ]] && ! "$BIN_PATH" -V >/dev/null 2>&1; then
-    err "installed binary is not executable / crashed on -V"
-    ok=0
-  fi
+
   if [[ "$ok" == "1" ]]; then
-    log "codex harness ${CODEX_VERSION} ok (${CODEX_INSTALL_DIR}, home ${CODEX_HOME})"
+    if [[ -n "$bp" ]]; then
+      log "codex harness (local) ok (${bp}, home ${CODEX_HOME})"
+    else
+      log "codex harness ${CODEX_VERSION} ok (${CODEX_INSTALL_DIR}, home ${CODEX_HOME})"
+    fi
     return 0
   fi
   return 1
@@ -204,6 +275,7 @@ MODE="${1:---install}"
 case "$MODE" in
   --install)  do_install ;;
   --check)    do_check ;;
+  --detect)   detect_local_codex ;;
   --uninstall) do_uninstall ;;
-  *) err "unknown mode: $MODE (use --install | --check | --uninstall)"; exit 1 ;;
+  *) err "unknown mode: $MODE (use --install | --check | --detect | --uninstall)"; exit 1 ;;
 esac

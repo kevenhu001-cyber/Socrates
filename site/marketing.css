@@ -1709,7 +1709,7 @@ body.mk-page .mk-btn-dark:hover { background: #e6e6e6; color: #000; border-color
 body.mk-page .mk-about-image {
   min-height: 420px;
   border-radius: 8px;
-  background: #101010 url('media/socrates-feature-study.webp') center / cover no-repeat;
+  background: #101010 url(/media/socrates-feature-study.webp) center / cover no-repeat;
 }
 body.mk-page .mk-about-image::before,
 body.mk-page .mk-about-image::after { display: none; }

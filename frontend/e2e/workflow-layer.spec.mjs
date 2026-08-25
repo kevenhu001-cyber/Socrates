@@ -1,9 +1,6 @@
-// Smoke coverage for the extension workflow layer (ExploreStepper +
-// AnalyzeWorkbench). The layer is mounted by bootstrap inside
-// #appShell (sibling of <main>) so it stays visible across all
-// panels. It subscribes to the agent-run store bridge; publishing
-// stage events from the bridge must drive the stepper/workbench
-// visibility.
+// Smoke coverage for the extension workflow layer. The layer is mounted
+// inside #chatView, immediately before the composer, so its height remains
+// part of the normal chat layout.
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
@@ -41,6 +38,7 @@ test('workflow layer mounts empty and shows stepper on research planning', async
   });
 
   await expect(page.locator('#workflowLayerReactRoot .workflow-layer')).toHaveCount(1);
+  await expect(page.locator('#chatView #workflowLayerReactRoot')).toHaveCount(1);
   await expect(page.locator('.agent-stepper')).toBeVisible();
   await expect(page.locator('.agent-stepper-workflow')).toHaveText('research');
   await expect(page.locator('.agent-stepper-stages .agent-stepper-stage')).toHaveCount(4);
@@ -79,7 +77,7 @@ test('stepper advances through searching and hides after completed', async ({ pa
   await expect(page.locator('#workflowLayerReactRoot .workflow-layer')).toHaveCount(0, { timeout: 5000 });
 });
 
-test('analyze planning shows the workbench panel', async ({ page }) => {
+test('analyze planning does not render a separate analysis workbench', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
@@ -91,7 +89,7 @@ test('analyze planning shows the workbench panel', async ({ page }) => {
     status: 'running',
   });
 
-  await expect(page.locator('.analyze-workbench')).toBeVisible();
-  await expect(page.locator('.analyze-workbench-title')).toHaveText('Analysis tools');
-  await expect(page.locator('.workflow-layer')).not.toHaveClass(/workflow-layer-done/);
+  await expect(page.locator('.analyze-workbench')).toHaveCount(0);
+  await expect(page.getByText('Analysis tools', { exact: true })).toHaveCount(0);
+  await expect(page.locator('.workflow-layer')).toHaveCount(0);
 });
