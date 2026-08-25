@@ -39,7 +39,7 @@ body.xa-page {
   color: var(--xa-text);
   /* CJK-first stack — Noto Sans SC is loaded as a webfont so we don't fall
      through to Microsoft YaHei / SimSun on Windows hosts. */
-  font-family: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
   letter-spacing: -0.011em;
@@ -180,7 +180,7 @@ body.xa-page {
 .xa-preview-kicker,
 .xa-start-kicker {
   color: var(--xa-text-40);
-  font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: .08em;
   line-height: 1.2;
@@ -214,7 +214,7 @@ body.xa-page {
   background: transparent;
   border: 1px solid var(--xa-sunset-border);
   border-radius: var(--xa-r-pill);
-  font-family: "Geist Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 9.5px;
   font-weight: 600;
   letter-spacing: .04em;
@@ -246,7 +246,7 @@ body.xa-page {
 .xa-section-heading h2,
 .xa-start-heading {
   margin: 0;
-  font-family: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-weight: 500;
   letter-spacing: -0.045em;
   line-height: 1.05;
@@ -347,7 +347,7 @@ body.xa-page {
   padding: 0 20px;
   border-right: 1px solid var(--xa-line);
   color: var(--xa-text-40);
-  font-family: "Geist Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -422,7 +422,7 @@ body.xa-page {
 .xa-message:first-child { border-top: 0; }
 .xa-message-name {
   color: var(--xa-text-30);
-  font-family: "Geist Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -468,7 +468,7 @@ body.xa-page {
 .xa-mode-links button > span:first-child,
 .xa-list-index {
   color: var(--xa-text-30);
-  font-family: "Geist Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: .04em;
 }
@@ -500,7 +500,7 @@ body.xa-page {
   margin-top: 22px;
   padding: 0 4px;
   color: var(--xa-text-30);
-  font-family: "Geist Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -603,7 +603,7 @@ body.xa-page {
   background: transparent;
   color: var(--xa-text-40);
   cursor: pointer;
-  font: 11px "Geist Mono", ui-monospace, monospace;
+  font: 11px var(--font-mono);
   letter-spacing: .04em;
   border-radius: 0;
   transition: color 160ms var(--xa-ease);
@@ -616,7 +616,7 @@ body.xa-page {
   padding: 28px 20px 32px;
   overflow-x: auto;
   color: #c3c3c1;
-  font: 12.5px/1.7 "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font: 12.5px/1.7 var(--font-mono);
   white-space: pre;
 }
 .xa-code-area code { font: inherit; }
@@ -658,7 +658,7 @@ body.xa-page {
 .xa-method-list article:last-child { border-right: 0; }
 .xa-method-list h3 {
   margin: -2px 0 10px;
-  font-family: "Geist", sans-serif;
+  font-family: var(--font-sans);
   font-size: 26px;
   font-weight: 500;
   letter-spacing: -0.03em;
@@ -701,7 +701,7 @@ body.xa-page {
 .xa-news-row time,
 .xa-news-row > span:nth-child(2) {
   color: var(--xa-text-30);
-  font-family: "Geist Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -710,7 +710,7 @@ body.xa-page {
   color: var(--xa-text);
   font-size: 15px;
   font-weight: 500;
-  font-family: "Geist", sans-serif;
+  font-family: var(--font-sans);
   letter-spacing: -0.015em;
 }
 
@@ -742,7 +742,7 @@ body.xa-page {
 .xa-start-grid strong {
   margin-top: 40px;
   color: var(--xa-text);
-  font-family: "Geist", sans-serif;
+  font-family: var(--font-sans);
   font-size: clamp(22px, 2.4vw, 30px);
   font-weight: 500;
   letter-spacing: -0.03em;
@@ -784,7 +784,7 @@ body.xa-page {
 .xa-footer-columns span {
   margin-bottom: 8px;
   color: var(--xa-text-30);
-  font-family: "Geist Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -799,7 +799,7 @@ body.xa-page {
   padding-top: 20px;
   border-top: 1px solid var(--xa-line);
   color: var(--xa-text-30);
-  font-family: "Geist Mono", ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -1030,7 +1030,7 @@ body.xa-page .xa-mobile-menu { order: 4; }
 .oa-side-card:hover img { transform: scale(1.025); }
 .oa-feature-caption { display: grid; gap: 10px; padding: 18px 2px 0; }
 .oa-feature-caption h2 { max-width: 850px; margin: 0; color: #fff; font-size: clamp(24px, 2.7vw, 40px); font-weight: 500; line-height: 1.04; letter-spacing: -.05em; }
-.oa-meta { color: var(--xa-text-40); font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.oa-meta { color: var(--xa-text-40); font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
 .oa-feature-rail { display: grid; gap: 24px; }
 .oa-side-card { border-bottom: 1px solid var(--xa-line); padding-bottom: 18px; }
 .oa-side-copy { padding: 12px 0 0; }
@@ -1047,7 +1047,7 @@ body.xa-page .xa-mobile-menu { order: 4; }
 .oa-feed-list { margin-top: 54px; border-top: 1px solid var(--xa-line); }
 .oa-feed-row { display: grid; grid-template-columns: 136px 86px minmax(0, 1fr) 16px; gap: 20px; align-items: center; min-height: 78px; padding: 12px 0; border-bottom: 1px solid var(--xa-line); }
 .oa-feed-row time,
-.oa-feed-row > span { color: var(--xa-text-40); font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; letter-spacing: .03em; text-transform: uppercase; }
+.oa-feed-row > span { color: var(--xa-text-40); font-family: var(--font-mono); font-size: 10px; letter-spacing: .03em; text-transform: uppercase; }
 .oa-feed-row strong { color: rgba(255,255,255,.88); font-size: 17px; font-weight: 400; letter-spacing: -.025em; }
 .oa-feed-row .xa-link-icon { width: 14px; height: 14px; color: var(--xa-text-30); transition: transform .15s ease, color .15s ease; }
 .oa-feed-row:hover strong { color: #fff; }
@@ -1063,7 +1063,7 @@ body.xa-page .xa-mobile-menu { order: 4; }
 .oa-method-section { border-top: 1px solid var(--xa-line); }
 .oa-method-list { margin-top: 52px; border-top: 1px solid var(--xa-line); }
 .oa-method-list > a { display: grid; grid-template-columns: 70px minmax(0, 1fr) 16px; gap: 22px; align-items: start; padding: 24px 0; border-bottom: 1px solid var(--xa-line); }
-.oa-method-list > a > span { color: var(--xa-text-40); font-family: "Geist Mono", ui-monospace, monospace; font-size: 11px; }
+.oa-method-list > a > span { color: var(--xa-text-40); font-family: var(--font-mono); font-size: 11px; }
 .oa-method-list h3 { margin: -4px 0 7px; color: #fff; font-size: 22px; font-weight: 500; letter-spacing: -.04em; }
 .oa-method-list p { max-width: 560px; margin: 0; color: var(--xa-text-50); font-size: 14px; line-height: 1.5; }
 .oa-method-list .xa-link-icon { width: 15px; height: 15px; color: var(--xa-text-30); }

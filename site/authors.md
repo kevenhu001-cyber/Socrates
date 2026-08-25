@@ -29,7 +29,7 @@ last-updated: 2026-08-22
 
 ## Principles
 
-Socrates holds these commitments: questions over performance, context over novelty, practice over consumption, clarity over spectacle, care with confidence, and the principle that the learner's thinking is their own data. The full principles are at /policy.
+Socrates holds these commitments: questions over performance, context over novelty, practice over consumption, clarity over spectacle, care with confidence, and the principle that the learner's thinking is their own data. The full principles are at /principles.
 
 ## How to cite
 

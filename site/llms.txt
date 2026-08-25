@@ -50,7 +50,7 @@ Socrates ships its entire developer surface at predictable URLs so name-based di
 - [Research](https://topodrive.top/research): essays on learning, recall, and explanation.
 - [Pricing](https://topodrive.top/pricing): tiers and what's included in every plan.
 - [Product](https://topodrive.top/product): the learning loop in detail.
-- [Policy](https://topodrive.top/policy): the principles we hold to.
+- [Principles](https://topodrive.top/principles): the principles we hold to.
 - [Guide](https://topodrive.top/guide): a learning guide.
 - [Privacy](https://topodrive.top/privacy): how we handle learner data.
 - [Terms](https://topodrive.top/terms): terms of service.
